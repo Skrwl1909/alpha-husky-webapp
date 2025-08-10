@@ -50,19 +50,29 @@
         <div class="badge" id="faction">PACK</div>
       </div>
 
-      <div class="grid">
-        <div class="row">
-          <button class="btn avatar">Avatar</button>
-          <button class="btn mission">Mission</button>
-          <button class="btn inventory">Inventory</button>
-          <button class="btn char">Character</button>
-          <button class="btn shop">Shop</button>
-          <button class="btn pets">Pets</button>
-        </div>
-        <div class="spacer"></div>
-      </div>
-    </div>
-  </div>
+      <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  const tg = window.Telegram?.WebApp;
+  tg?.ready(); tg?.expand();
+
+  function send(action){
+    try {
+      tg?.HapticFeedback?.impactOccurred("light");
+      tg?.showPopup?.({title:"Click", message:`${action}`, buttons:[{type:"ok"}]});
+      tg?.sendData(action);
+    } catch(e) {
+      alert("Not in Telegram WebApp or SDK issue: " + e);
+    }
+  }
+
+  // Podpinamy kliknięcia
+  document.querySelector(".btn.avatar")   ?.addEventListener("click", ()=>send("avatar_open"));
+  document.querySelector(".btn.mission")  ?.addEventListener("click", ()=>send("mission_open"));
+  document.querySelector(".btn.inventory")?.addEventListener("click", ()=>send("inventory_open"));
+  document.querySelector(".btn.char")     ?.addEventListener("click", ()=>send("char_open"));
+  document.querySelector(".btn.shop")     ?.addEventListener("click", ()=>send("shop_open"));
+  document.querySelector(".btn.pets")     ?.addEventListener("click", ()=>send("pets_open"));
+</script>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
@@ -117,3 +127,4 @@
   </script>
 </body>
 </html>
+
