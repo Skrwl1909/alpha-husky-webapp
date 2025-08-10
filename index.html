@@ -39,7 +39,7 @@
 </head>
 <body>
   <div class="app">
-    <!-- Podmień src na swoją pętlę MP4; bez dźwięku -->
+    <!-- Wideo w tle (zamień src na swoje) -->
     <div class="bg">
       <video src="background3.mp4" autoplay muted loop playsinline></video>
     </div>
@@ -50,62 +50,42 @@
         <div class="badge" id="faction">PACK</div>
       </div>
 
-      <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-  const tg = window.Telegram?.WebApp;
-  tg?.ready(); tg?.expand();
-
-  function send(action){
-    try {
-      tg?.HapticFeedback?.impactOccurred("light");
-      tg?.showPopup?.({title:"Click", message:`${action}`, buttons:[{type:"ok"}]});
-      tg?.sendData(action);
-    } catch(e) {
-      alert("Not in Telegram WebApp or SDK issue: " + e);
-    }
-  }
-
-  // Podpinamy kliknięcia
-  document.querySelector(".btn.avatar")   ?.addEventListener("click", ()=>send("avatar_open"));
-  document.querySelector(".btn.mission")  ?.addEventListener("click", ()=>send("mission_open"));
-  document.querySelector(".btn.inventory")?.addEventListener("click", ()=>send("inventory_open"));
-  document.querySelector(".btn.char")     ?.addEventListener("click", ()=>send("char_open"));
-  document.querySelector(".btn.shop")     ?.addEventListener("click", ()=>send("shop_open"));
-  document.querySelector(".btn.pets")     ?.addEventListener("click", ()=>send("pets_open"));
-</script>
+      <div class="grid">
+        <div class="row">
+          <button class="btn avatar">Avatar</button>
+          <button class="btn mission">Mission</button>
+          <button class="btn inventory">Inventory</button>
+          <button class="btn char">Character</button>
+          <button class="btn shop">Shop</button>
+          <button class="btn pets">Pets</button>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    const tg = window.Telegram?.WebApp;
+    document.addEventListener("DOMContentLoaded", () => {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) {
+        alert("Not inside Telegram WebApp");
+        return;
+      }
 
-    function hexToRgba(hex, a){
-      if(!hex) return `rgba(0,0,0,${a})`;
-      const h = hex.replace('#','');
-      const n = parseInt(h,16);
-      const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
-      return `rgba(${r},${g},${b},${a})`;
-    }
-
-    if (tg) {
       tg.ready();
       tg.expand();
 
-      // Dopasowanie do motywu TG
+      // Dopasowanie kolorów do motywu TG
       const p = tg.themeParams || {};
       document.documentElement.style.setProperty('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       document.documentElement.style.setProperty('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
 
-      // Nazwa gracza, jeśli dostępna
-      try {
-        const u = tg.initDataUnsafe?.user;
-        if (u) document.getElementById('player').textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
-      } catch {}
+      // Ustawienie nazwy gracza
+      const u = tg.initDataUnsafe?.user;
+      if (u) document.getElementById('player').textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
-      // Przycisk wstecz TG (zamyka okno)
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => tg.close());
-
-      // Mapowanie klików -> sendData do bota
+      // Mapowanie klików
       const actionMap = {
         ".btn.avatar":    "avatar_open",
         ".btn.mission":   "mission_open",
@@ -123,8 +103,15 @@
           });
         }
       });
-    }
+
+      function hexToRgba(hex, a){
+        if(!hex) return `rgba(0,0,0,${a})`;
+        const h = hex.replace('#','');
+        const n = parseInt(h,16);
+        const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
+        return `rgba(${r},${g},${b},${a})`;
+      }
+    });
   </script>
 </body>
 </html>
-
