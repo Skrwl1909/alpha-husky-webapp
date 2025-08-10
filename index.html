@@ -44,24 +44,44 @@
       <video src="background3.mp4" autoplay muted loop playsinline></video>
     </div>
 
-    <div class="ui">
-      <div class="topbar">
-        <div id="player">Alpha Husky</div>
-        <div class="badge" id="faction">PACK</div>
-      </div>
-
-      <div class="grid">
-        <div class="row">
-          <button class="btn" data-action="mission_open">Mission</button>
-          <button class="btn" data-action="inventory_open">Inventory</button>
-          <button class="btn" data-action="character_open">Character</button>
-          <button class="btn" data-action="shop_open">Shop</button>
-          <button class="btn" data-action="pets_open">Pets</button>
-        </div>
-        <div class="spacer"></div>
-      </div>
-    </div>
+    <div id="app" class="ui">
+  <div class="topbar">
+    <div id="player">Alpha Husky</div>
+    <div class="badge" id="faction">PACK</div>
   </div>
+
+  <div class="grid">
+    <div class="row">
+      <button class="btn avatar">Avatar</button>
+      <button class="btn mission">Mission</button>
+      <button class="btn inventory">Inventory</button>
+      <button class="btn char">Character</button>
+      <button class="btn shop">Shop</button>
+      <button class="btn pets">Pets</button>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready(); tg.expand();
+
+  // akcje -> bot
+  const map = {
+    ".btn.avatar":    "avatar_open",
+    ".btn.mission":   "mission_open",
+    ".btn.inventory": "inventory_open",
+    ".btn.char":      "char_open",
+    ".btn.shop":      "shop_open",
+    ".btn.pets":      "pets_open",
+  };
+  Object.entries(map).forEach(([sel, action])=>{
+    const el = document.querySelector(sel);
+    if (el) el.onclick = () => { tg.HapticFeedback?.impactOccurred('light'); tg.sendData(action); };
+  });
+</script>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
@@ -105,4 +125,5 @@
   </script>
 </body>
 </html>
+
 
