@@ -12,7 +12,7 @@
       --txt: #fff;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background:#000; }
+    html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; }
 
     /* Background video */
@@ -29,101 +29,91 @@
            background:var(--glass); border:1px solid var(--stroke); font:600 16px system-ui, sans-serif; cursor:pointer; }
     .btn:active { transform: translateY(1px); }
 
-    /* Optional title slot (e.g. player name / faction) */
+    /* Top bar */
     .topbar { position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-radius:14px; background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke); color:#cfe7ff; font:500 14px system-ui, sans-serif; }
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
 
-    /* Safe areas on iOS */
+    /* Safe area */
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- Replace src with your looped MP4 (no audio). Keep it short (3–6s) for fast load. -->
+    <!-- Podmień src na swoją pętlę MP4; bez dźwięku -->
     <div class="bg">
       <video src="background3.mp4" autoplay muted loop playsinline></video>
     </div>
 
     <div id="app" class="ui">
-  <div class="topbar">
-    <div id="player">Alpha Husky</div>
-    <div class="badge" id="faction">PACK</div>
-  </div>
+      <div class="topbar">
+        <div id="player">Alpha Husky</div>
+        <div class="badge" id="faction">PACK</div>
+      </div>
 
-  <div class="grid">
-    <div class="row">
-      <button class="btn avatar">Avatar</button>
-      <button class="btn mission">Mission</button>
-      <button class="btn inventory">Inventory</button>
-      <button class="btn char">Character</button>
-      <button class="btn shop">Shop</button>
-      <button class="btn pets">Pets</button>
+      <div class="grid">
+        <div class="row">
+          <button class="btn avatar">Avatar</button>
+          <button class="btn mission">Mission</button>
+          <button class="btn inventory">Inventory</button>
+          <button class="btn char">Character</button>
+          <button class="btn shop">Shop</button>
+          <button class="btn pets">Pets</button>
+        </div>
+        <div class="spacer"></div>
+      </div>
     </div>
-    <div class="spacer"></div>
   </div>
-</div>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-  const tg = window.Telegram.WebApp;
-  tg.ready(); tg.expand();
-
-  // akcje -> bot
-  const map = {
-    ".btn.avatar":    "avatar_open",
-    ".btn.mission":   "mission_open",
-    ".btn.inventory": "inventory_open",
-    ".btn.char":      "char_open",
-    ".btn.shop":      "shop_open",
-    ".btn.pets":      "pets_open",
-  };
-  Object.entries(map).forEach(([sel, action])=>{
-    const el = document.querySelector(sel);
-    if (el) el.onclick = () => { tg.HapticFeedback?.impactOccurred('light'); tg.sendData(action); };
-  });
-</script>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const tg = window.Telegram?.WebApp;
+
+    function hexToRgba(hex, a){
+      if(!hex) return `rgba(0,0,0,${a})`;
+      const h = hex.replace('#','');
+      const n = parseInt(h,16);
+      const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
     if (tg) {
       tg.ready();
-      tg.expand(); // use maximum height inside the TG webview
+      tg.expand();
 
-      // Optional: adapt some colors to Telegram theme
+      // Dopasowanie do motywu TG
       const p = tg.themeParams || {};
       document.documentElement.style.setProperty('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       document.documentElement.style.setProperty('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
 
-      // Show username/faction if available from initDataUnsafe
+      // Nazwa gracza, jeśli dostępna
       try {
         const u = tg.initDataUnsafe?.user;
         if (u) document.getElementById('player').textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
       } catch {}
 
-      // Wire buttons to sendData by default
-      document.querySelectorAll('.btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const action = btn.dataset.action;
-          // Haptics (nice touch on mobile)
-          tg.HapticFeedback?.impactOccurred('light');
-          tg.sendData(action);
-        });
-      });
-    }
+      // Przycisk wstecz TG (zamyka okno)
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => tg.close());
 
-    // Helper: #RRGGBB -> rgba
-    function hexToRgba(hex, a){
-      if(!hex) return `rgba(0,0,0,${a})`;
-      const h = hex.replace('#','');
-      const bigint = parseInt(h,16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgba(${r},${g},${b},${a})`;
+      // Mapowanie klików -> sendData do bota
+      const actionMap = {
+        ".btn.avatar":    "avatar_open",
+        ".btn.mission":   "mission_open",
+        ".btn.inventory": "inventory_open",
+        ".btn.char":      "char_open",
+        ".btn.shop":      "shop_open",
+        ".btn.pets":      "pets_open",
+      };
+      Object.entries(actionMap).forEach(([sel, action]) => {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.addEventListener("click", () => {
+            tg.HapticFeedback?.impactOccurred("light");
+            tg.sendData(action);
+          });
+        }
+      });
     }
   </script>
 </body>
 </html>
-
-
