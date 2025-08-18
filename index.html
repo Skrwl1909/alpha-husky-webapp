@@ -3,18 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alpha Husky Dashboard — Skins</title>
+  <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
-  <meta name="description" content="Alpha Husky — Telegram WebApp dashboard with animated skins overlay." />
   <style>
     :root {
       --glass: rgba(0,0,0,.45);
       --stroke: rgba(255,255,255,.18);
       --txt: #fff;
-      --muted: #a9b8c9;
-      --panel: rgba(255,255,255,.06);
-      --panel-2: rgba(255,255,255,.09);
-      --radius: 16px;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
@@ -40,31 +35,11 @@
 
     /* Safe area */
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
-
-    /* === Skins overlay === */
-    .overlay { position: fixed; inset: 0; z-index: 5; display: none; }
-    .overlay.show { display: grid; place-items: center; }
-    .backdrop { position: absolute; inset: 0; background: radial-gradient(1000px 600px at 30% 10%, rgba(0,0,0,.65), rgba(0,0,0,.85)); backdrop-filter: blur(6px); }
-    .panel { position: relative; width: min(1200px, 96vw); height: min(86vh, 900px); background: linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid var(--stroke); border-radius: var(--radius); box-shadow: 0 20px 80px rgba(0,0,0,.55); display:flex; flex-direction: column; overflow: hidden; }
-    .panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.08); color:#e6f1ff; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.15)); }
-    .panel-title { font:700 14px system-ui, sans-serif; letter-spacing:.3px; text-transform:uppercase; }
-    .close { appearance:none; border:none; background:var(--glass); border:1px solid var(--stroke); color:var(--txt); border-radius:12px; padding:8px 10px; cursor:pointer; font:600 12px system-ui, sans-serif; }
-
-    .skins-grid { flex:1; padding:12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; overflow:auto; }
-    .card { position:relative; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; overflow:hidden; transition: transform .2s ease, box-shadow .2s ease; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px -20px rgba(122,247,255,0.45); }
-    .media { width:100%; height:100%; object-fit:contain; display:block; }
-    .chip { position:absolute; top:8px; left:8px; padding:4px 8px; border-radius:999px; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.12); color:#aee; font:700 11px system-ui, sans-serif; letter-spacing:.3px; text-transform:uppercase; }
-    .title { position:absolute; left:0; right:0; bottom:0; padding:28px 10px 8px; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.75)); text-align:center; color:#e7f0ff; font:600 13px system-ui, sans-serif; }
-
-    .tip { color:var(--muted); font:500 12px system-ui, sans-serif; padding:8px 12px; border-top:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.25); }
   </style>
-  <!-- Lottie (tylko jeśli używasz animacji JSON) -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js" integrity="sha512-1m9Wk4pF0mKjl4qQ6YbAWW6OJ0c8uQNTJxkJfR71r5+UwgJQ7kQ5Z7aUqfWQPVl1k0NO3d+0zC04j0I2Y1jS8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
   <div class="app">
-    <!-- Background video (podmień src na swoje) -->
+    <!-- Wideo w tle (zamień src na swoje) -->
     <div class="bg">
       <video src="background3.mp4" autoplay muted loop playsinline></video>
     </div>
@@ -83,48 +58,34 @@
           <button class="btn char">Character</button>
           <button class="btn shop">Shop</button>
           <button class="btn pets">Pets</button>
-          <!-- NEW: Skins overlay trigger -->
-          <button class="btn skins">Skins</button>
         </div>
         <div class="spacer"></div>
       </div>
     </div>
   </div>
 
-  <!-- Skins Overlay -->
-  <div id="skinsOverlay" class="overlay" aria-hidden="true">
-    <div class="backdrop" data-close></div>
-    <section class="panel" role="dialog" aria-modal="true" aria-labelledby="skinsTitle">
-      <header class="panel-header">
-        <div class="panel-title" id="skinsTitle">Animated Skins</div>
-        <button class="close" data-close>Close</button>
-      </header>
-      <div id="skinsGrid" class="skins-grid" aria-label="Skins gallery"></div>
-      <div class="tip">Tip: preferuj <code>.webm</code> (VP9 z alphą). Dla iOS/Safari przygotuj fallback <code>.mp4</code> lub wersję bez przezroczystości.</div>
-    </section>
-  </div>
-
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const tg = window.Telegram?.WebApp;
-      const IN_TG = !!tg;
-
-      // Telegram integration (optional when outside TG)
-      if (IN_TG) {
-        tg.ready();
-        tg.expand();
-        // Dopasuj kolory do motywu TG
-        const p = tg.themeParams || {};
-        document.documentElement.style.setProperty('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-        document.documentElement.style.setProperty('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
+      if (!tg) {
+        alert("Not inside Telegram WebApp");
+        return;
       }
 
-      // Ustaw nazwę gracza (jeśli w TG)
-      const u = tg?.initDataUnsafe?.user;
+      tg.ready();
+      tg.expand();
+
+      // Dopasowanie kolorów do motywu TG
+      const p = tg.themeParams || {};
+      document.documentElement.style.setProperty('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+      document.documentElement.style.setProperty('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
+
+      // Ustawienie nazwy gracza
+      const u = tg.initDataUnsafe?.user;
       if (u) document.getElementById('player').textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
-      // Mapowanie klików TG → bot (działa tylko w TG)
+      // Mapowanie klików
       const actionMap = {
         ".btn.avatar":    "avatar_open",
         ".btn.mission":   "mission_open",
@@ -137,146 +98,11 @@
         const el = document.querySelector(sel);
         if (el) {
           el.addEventListener("click", () => {
-            if (IN_TG) tg.HapticFeedback?.impactOccurred("light");
-            if (IN_TG) tg.sendData(action);
+            tg.HapticFeedback?.impactOccurred("light");
+            tg.sendData(action);
           });
         }
       });
-
-      // === SKINS CATALOG (podmień na swoje pliki) ==========================
-      // type: 'video' | 'image' | 'lottie'
-      // video: {sources:[{src, type}], poster?}
-      // image: {src}
-      // lottie: {src}
-      const SKINS = [
-        // Wszystko w MP4 — upewnij się, że nazwy i wielkość liter zgadzają się z plikami w assets/skins/
-        { id:'ASHCLAW', name:'Ashclaw — Founder Blade', type:'video', sources:[{ src:'assets/skins/ASHCLAW.mp4', type:'video/mp4' }], badge:'mp4', alt:'Ashclaw animation' },
-        { id:'FROSTBORN', name:'Frostborn', type:'video', sources:[{ src:'assets/skins/FROSTBORN.mp4', type:'video/mp4' }], badge:'mp4', alt:'Frostborn animation' },
-        { id:'LUNARHOWL', name:'Lunarhowl', type:'video', sources:[{ src:'assets/skins/LUNARHOWL.mp4', type:'video/mp4' }], badge:'mp4', alt:'Lunarhowl animation' },
-
-        { id:'RUINWARDEN', name:'Ruinwarden', type:'video', sources:[{ src:'assets/skins/RUINWARDEN.mp4', type:'video/mp4' }], badge:'mp4', alt:'Ruinwarden animation' },
-        { id:'SHADOW_AGENT', name:'Shadow Agent', type:'video', sources:[{ src:'assets/skins/SHADOW_AGENT.mp4', type:'video/mp4' }], badge:'mp4', alt:'Shadow Agent animation' },
-        { id:'SHARDGLASS_RONIN', name:'Shardglass Ronin', type:'video', sources:[{ src:'assets/skins/SHARDGLASS_RONIN.mp4', type:'video/mp4' }], badge:'mp4', alt:'Shardglass Ronin animation' },
-        { id:'STORWAIN', name:'Storwain', type:'video', sources:[{ src:'assets/skins/STORWAIN.mp4', type:'video/mp4' }], badge:'mp4', alt:'Storwain animation' },
-        { id:'X_HOUND', name:'X-Hound', type:'video', sources:[{ src:'assets/skins/X_HOUND.mp4', type:'video/mp4' }], badge:'mp4', alt:'X-Hound animation' },
-        { id:'MOONLAB_ROGUE', name:'Moonlab Rogue', type:'video', sources:[{ src:'assets/skins/MOONLAB_ROGUE.mp4', type:'video/mp4' }], badge:'mp4', alt:'Moonlab Rogue animation' },
-        { id:'NOMADS_GUARD', name:"Nomad's Guard", type:'video', sources:[{ src:'assets/skins/NOMADS_GUARD.mp4', type:'video/mp4' }], badge:'mp4', alt:"Nomad's Guard animation" },
-
-        // Klipy koncepcyjne (mp4)
-        { id:'GROK_CLIP_1', name:'Concept Clip 1', type:'video', sources:[{ src:'assets/skins/grok_video_2025-08-14-09-20-44.mp4', type:'video/mp4' }], badge:'clip', alt:'AI concept clip' },
-        { id:'GROK_CLIP_2', name:'Concept Clip 2', type:'video', sources:[{ src:'assets/skins/grok_video_2025-08-14-09-45-16.mp4', type:'video/mp4' }], badge:'clip', alt:'AI concept clip' },
-        { id:'GROK_CLIP_3', name:'Concept Clip 3', type:'video', sources:[{ src:'assets/skins/grok_video_2025-08-14-09-46-53.mp4', type:'video/mp4' }], badge:'clip', alt:'AI concept clip' },
-      ];
-
-      // === Overlay logic ===================================================
-      const overlay = document.getElementById('skinsOverlay');
-      const grid = document.getElementById('skinsGrid');
-      const openBtn = document.querySelector('.btn.skins');
-      const closeEls = overlay.querySelectorAll('[data-close]');
-
-      function openSkins(){ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); location.hash = '#skins'; }
-      function closeSkins(){ overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); if (location.hash === '#skins') history.replaceState(null, '', ' '); }
-
-      openBtn?.addEventListener('click', openSkins);
-      closeEls.forEach(el => el.addEventListener('click', closeSkins));
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSkins(); });
-      window.addEventListener('hashchange', ()=>{ if(location.hash==='#skins') openSkins(); else closeSkins(); });
-      if(location.hash==='#skins') openSkins();
-
-      // === Render skins ====================================================
-      const videoObserver = new IntersectionObserver((entries)=>{
-        entries.forEach((entry)=>{
-          const v = entry.target;
-          if (entry.isIntersecting){
-            if (v.dataset.loaded !== '1'){ v.load(); v.dataset.loaded = '1'; }
-            v.play().catch(()=>{});
-          } else {
-            v.pause();
-          }
-        });
-      }, { threshold: 0.4 });
-
-      function makeCardBase(skin){
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.setAttribute('tabindex','0');
-        card.setAttribute('aria-label', skin.name);
-
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        chip.textContent = skin.badge || skin.type;
-        card.appendChild(chip);
-
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = skin.name;
-        card.appendChild(title);
-        return card;
-      }
-
-      function renderSkins(){
-        grid.innerHTML = '';
-        SKINS.forEach(skin => {
-          const card = makeCardBase(skin);
-
-          if (skin.type === 'video'){
-            const video = document.createElement('video');
-            video.className = 'media';
-            video.setAttribute('preload','none');
-            video.setAttribute('muted','');
-            video.setAttribute('loop','');
-            video.setAttribute('playsinline','');
-            video.setAttribute('autoplay','');
-            if (skin.poster) video.setAttribute('poster', skin.poster);
-            video.setAttribute('aria-label', skin.alt || skin.name);
-            (skin.sources || []).forEach(s => {
-              const source = document.createElement('source');
-              source.src = s.src; source.type = s.type || '';
-              video.appendChild(source);
-            });
-            card.appendChild(video);
-            grid.appendChild(card);
-            videoObserver.observe(video);
-          }
-          else if (skin.type === 'image'){
-            const img = document.createElement('img');
-            img.className = 'media';
-            img.loading = 'lazy';
-            img.src = skin.src;
-            img.alt = skin.alt || skin.name;
-            card.appendChild(img);
-            grid.appendChild(card);
-          }
-          else if (skin.type === 'lottie'){
-            const holder = document.createElement('div');
-            holder.className = 'media';
-            holder.style.display = 'flex';
-            holder.style.alignItems = 'center';
-            holder.style.justifyContent = 'center';
-            card.appendChild(holder);
-            grid.appendChild(card);
-
-            const tryLoad = () => {
-              if (window.lottie){
-                window.lottie.loadAnimation({
-                  container: holder,
-                  renderer: 'svg',
-                  loop: true,
-                  autoplay: true,
-                  path: skin.src,
-                  rendererSettings: { preserveAspectRatio: 'xMidYMid meet' }
-                });
-                holder.setAttribute('aria-label', skin.alt || skin.name);
-              } else {
-                setTimeout(tryLoad, 150);
-              }
-            };
-            tryLoad();
-          }
-        });
-      }
-
-      renderSkins();
 
       function hexToRgba(hex, a){
         if(!hex) return `rgba(0,0,0,${a})`;
