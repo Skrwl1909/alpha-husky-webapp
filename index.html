@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
+
+  <!-- Preloady dla szybszego startu -->
+  <link rel="preload" as="image" href="background_poster.jpg">
+  <link rel="preload" as="video"  href="background3.webm" type="video/webm">
+  <link rel="preload" as="video"  href="background3.mp4"  type="video/mp4">
+
   <style>
     :root {
       --glass: rgba(0,0,0,.45);
@@ -13,7 +19,7 @@
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
-    .app { position: fixed; inset: 0; overflow: hidden; }
+    .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
 
     /* Background */
     .bg { position: absolute; inset: 0; z-index: 0; }
@@ -103,6 +109,10 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // 100vh fix (stabilne wymiary na mobilkach)
+      const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+      setVh(); window.addEventListener('resize', setVh);
+
       const tg = window.Telegram?.WebApp;
       const $ = sel => document.querySelector(sel);
 
@@ -115,15 +125,30 @@
       tg.ready();
       tg.expand();
 
+      // Back (zamknij WebApp)
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => tg.close());
+
       // Motyw TG → CSS variables
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
       if (p.text_color) setVar('--txt', p.text_color);
 
+      // Live theme update
+      tg.onEvent('themeChanged', () => {
+        const p2 = tg.themeParams || {};
+        setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+        setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
+        if (p2.text_color) setVar('--txt', p2.text_color);
+      });
+
       // Ustawienie nazwy gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
+
+      // Handshake: log w bocie, że WebApp się otworzył
+      sendAction("webapp_opened", { version: "v0.1", ts: Date.now() });
 
       // MainButton (opcjonalny skrót)
       tg.MainButton.setText("Open Missions");
@@ -142,18 +167,21 @@
       Object.entries(actions).forEach(([sel, fn]) => { const el = $(sel); if (el) el.onclick = fn; });
 
       // Helpers
+      let _busy = false;
       function sendAction(action, extra = {}) {
-        try {
-          tg.HapticFeedback?.impactOccurred("light");
-        } catch(e) {}
+        if (_busy) return;
+        _busy = true; setTimeout(() => (_busy = false), 300); // anti double-tap
+
+        try { tg.HapticFeedback?.impactOccurred("light"); } catch(e) {}
         const payload = {
           action,
-          payload: {
-            userId: tg?.initDataUnsafe?.user?.id,
-            ...extra
-          }
+          payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra }
         };
-        tg.sendData(JSON.stringify(payload));
+        try {
+          tg.sendData(JSON.stringify(payload));
+        } catch (err) {
+          tg.showAlert?.("Send failed. Try again.");
+        }
       }
 
       function setVar(name, value){ document.documentElement.style.setProperty(name, value); }
@@ -161,7 +189,6 @@
       function hexToRgba(hex, a){
         if(!hex) return `rgba(0,0,0,${a})`;
         const h = hex.replace('#','');
-        // 3/6/8-znakowe heksy – normalizacja
         const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16);
         const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
