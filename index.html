@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -225,7 +225,11 @@
           icon:"/images/map/building/the_chain.png" },
         { id:"moon_lab", name:"Moon Lab", region:"moon_lab", x:58, y:35,
           desc:"Ruined research complex. Rare tech & shard bonus.",
-          icon:"/images/map/building/moon_lab.png", keyItem:"key_moon_lab" },
+          icon:"/images/map/building/moon_lab.png",
+          keyItem:"key_moon_lab",
+          action:"building_enter",               // <— DODANE
+          buildingId:"moonlab_fortress"         // <— DODANE
+},
         { id:"testnet_wastes", name:"Testnet Wastes", region:"testnet_wastes", x:78, y:72,
           desc:"Hazard fields. Higher materials, tougher enemies.",
           icon:"/images/map/building/testnet_wastes.png", keyItem:"key_testnet" },
@@ -238,32 +242,45 @@
       ];
 
       function renderMap() {
-        mapEl.innerHTML = "";
-        buildings.forEach(b => {
-          const unlocked = regionsUnlocked.has(b.region);
-          const btn = document.createElement("button");
-          btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
-          btn.style.left = b.x + "%";
-          btn.style.top  = b.y + "%";
-          btn.title = b.name + (unlocked ? " (unlocked)" : " (locked)");
+      mapEl.innerHTML = "";
+      buildings.forEach(b => {
+        const unlocked = regionsUnlocked.has(b.region);
+        const btn = document.createElement("button");
+        btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
+        btn.style.left = b.x + "%";
+        btn.style.top  = b.y + "%";
+        btn.title = b.name + (unlocked ? " (unlocked)" : " (locked)");
 
-          const ring = document.createElement("span");
-          ring.className = "ping";
-          btn.appendChild(ring);
+        const ring = document.createElement("span");
+        ring.className = "ping";
+        btn.appendChild(ring);
 
-          const img = document.createElement("img");
-          img.src = b.icon; img.alt = b.name;
-          btn.appendChild(img);
+        const img = document.createElement("img");
+        img.src = b.icon; img.alt = b.name;
+        btn.appendChild(img);
 
-          const chip = document.createElement("div");
-          chip.className = "chip";
-          chip.textContent = b.name + (unlocked ? "" : " • locked");
-          btn.appendChild(chip);
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.textContent = b.name + (unlocked ? "" : " • locked");
+        btn.appendChild(chip);
 
-          btn.addEventListener("click", () => unlocked ? openRegion(b.region) : openLocked(b));
-          mapEl.appendChild(btn);
+        // >>> NOWY handler kliku: najpierw locked, potem building_enter, na końcu wejście do regionu
+        btn.addEventListener("click", () => {
+          if (!unlocked) return openLocked(b);
+
+          // jeżeli budynek ma własną akcję (np. Moon Lab → fortress), wyślij do bota
+          if (b.action === "building_enter" && b.buildingId) {
+            return sendAction("building_enter", { buildingId: b.buildingId });
+          }
+
+          // domyślnie: wejście do regionu
+          return openRegion(b.region);
         });
-      }
+        // <<<
+
+        mapEl.appendChild(btn);
+      });
+    }
 
       // Otwórz/zamknij modal mapy
       $(".btn.map").onclick = () => { mapBack.style.display = "flex"; renderMap(); };
@@ -335,3 +352,4 @@
   </script>
 </body>
 </html>
+
