@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -6,7 +6,7 @@
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
 
-  <!-- Preloady dla szybszego startu -->
+  <!-- Preloady -->
   <link rel="preload" as="image" href="background_poster.jpg">
   <link rel="preload" as="video"  href="background3.webm" type="video/webm">
   <link rel="preload" as="video"  href="background3.mp4"  type="video/mp4">
@@ -16,19 +16,19 @@
       --glass: rgba(0,0,0,.45);
       --stroke: rgba(255,255,255,.18);
       --txt: #fff;
-      --ring: rgba(255,255,255,.15);
+      --ring: rgba(255,255,255,.12);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
 
-    /* Background */
+    /* ===== Background ===== */
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
 
-    /* UI layer */
+    /* ===== UI layer ===== */
     .ui { position: absolute; inset: 0; z-index: 2; }
     .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
 
@@ -36,7 +36,8 @@
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
-      background:var(--glass); border:1px solid var(--stroke); font:600 16px system-ui, sans-serif; cursor:pointer;
+      background:var(--glass); border:1px solid var(--stroke);
+      font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
     }
     .btn:active { transform: translateY(1px); }
 
@@ -48,17 +49,14 @@
       color:#cfe7ff; font:500 14px system-ui, sans-serif;
     }
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
-
-    /* Safe area bottom */
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
-    /* Reduced motion: wyłącz wideo, pokaż poster */
     @media (prefers-reduced-motion: reduce) {
       .bg video { display:none; }
       .bg .poster { display:block; }
     }
 
-    /* Fallback overlay gdy otwarte poza Telegramem */
+    /* ===== Fallback overlay ===== */
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
       background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
@@ -66,42 +64,83 @@
     }
     .fallback a { color:#aef; text-decoration:underline; }
 
-    /* ===== MAPA (modal) ===== */
+    /* ===== MAPA ===== */
     .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
     .map-wrap  { width:min(96vw,1200px); padding:12px; }
-    .map-card  { background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:12px; }
+    .map-card  { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
     .map-head  { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
-    .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; }
+    .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
     .map {
       position:relative; width:100%; aspect-ratio:16/9;
-      background: url("/images/map/wasteland.jpg") center/cover no-repeat;
+      background: url("/images/map/base/map_base_1920x1080.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
     }
-    .map::after { /* subtelny gradient przy dolnej krawędzi */
-      content:""; position:absolute; inset-x:0; bottom:0; height:80px; background:linear-gradient(0deg, rgba(0,0,0,.55), transparent);
+    .map::after { /* gradient przy dolnej krawędzi – lepszy odczyt labeli */
+      content:""; position:absolute; left:0; right:0; bottom:0; height:72px;
+      background:linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events:none;
+    }
+
+    /* ===== Hotspot / Pin ===== */
+    .hotspot {
+      position:absolute; transform:translate(-50%,-50%); text-align:center;
+      padding:0; background:none; border:none; cursor:pointer;
+      z-index:1; transition: transform .12s ease, filter .12s ease;
+    }
+    .hotspot:hover { transform:translate(-50%,-50%) scale(1.05); z-index:2; }
+
+    /* Ground decal (cień/znacznik pod ikonką) */
+    .hotspot::before {
+      content:""; position:absolute; left:50%; top:50%;
+      width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
+      transform: translate(-50%, calc(-50% + 20px));
+      background: url("/images/map/decals/decal_soft.png") center/contain no-repeat;
+      opacity:.9; filter: blur(.2px);
       pointer-events:none;
     }
 
-    .hotspot { position:absolute; transform:translate(-50%,-50%); text-align:center; }
-    .hotspot img { width: clamp(28px, 3vw, 64px); filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
-    .hotspot.locked img { opacity:.7; filter: grayscale(1) drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+    .hotspot img {
+      width: clamp(40px, 3.6vw, 72px);
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55));
+      pointer-events:none;
+    }
+    .hotspot.unlocked img {
+      /* delikatny lewy cyan / prawy violet – efekt „brand rim” */
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
+              drop-shadow(-2px 0 6px rgba(0,229,255,.22))
+              drop-shadow( 2px 0 6px rgba(155,77,255,.22));
+    }
+    .hotspot.locked img { filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+
+    /* Pulsujący ring */
+    .ping { position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px); transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
+    .hotspot.unlocked .ping { background:rgba(0,229,255,.14); }
+    .hotspot.locked   .ping { background:rgba(148,163,184,.10); }
+    @keyframes ping { 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
+
+    /* Etykieta – „pill” z ogonkiem */
     .chip {
       position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
-      font-size:12px; padding:3px 8px; border-radius:999px;
-      background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.12); color:#fff; white-space:nowrap;
+      font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
+      background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
+      backdrop-filter: blur(3px);
     }
-    .ping { position:absolute; inset:0; border-radius:50%; animation:ping 1.4s infinite; }
-    .hotspot.unlocked .ping { background:rgba(16,185,129,.22); }
-    .hotspot.locked   .ping { background:rgba(148,163,184,.14); }
-    @keyframes ping { 0%{ transform:scale(.9); opacity:.9 } 100%{ transform:scale(1.6); opacity:0 } }
+    .chip::before { content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px; transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
 
-    /* Locked info modal (wewnątrz mapy) */
+    /* Plakietka kłódki */
+    .lock-badge {
+      position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
+      background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
+      box-shadow: 0 2px 6px rgba(0,0,0,.5);
+    }
+    .lock-badge svg { width:14px; height:14px; }
+
+    /* Locked info modal */
     .locked-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
     .locked-card { width:min(92vw,440px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
-    .btn { cursor:pointer; padding:8px 12px; border-radius:12px; border:1px solid var(--stroke); background:#111; color:#fff; }
-    .btn.primary { background:rgba(16,185,129,.18); border-color:rgba(16,185,129,.35); color:#a7f3d0; }
+    .btn.primary { background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
   </style>
 </head>
 <body>
@@ -148,7 +187,7 @@
       </div>
     </div>
 
-    <!-- Locked info (shown when region not unlocked) -->
+    <!-- Locked info -->
     <div class="locked-back" id="lockedBack">
       <div class="locked-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -175,17 +214,16 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // 100vh fix (stabilne wymiary na mobilkach)
+      // 100vh fix
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
 
       const tg = window.Telegram?.WebApp;
       const $  = sel => document.querySelector(sel);
-
       if (!tg) { $("#fallback").style.display = "flex"; return; }
       tg.ready(); tg.expand();
 
-      // Back (zamknij WebApp)
+      // Back
       tg.BackButton.show();
       tg.BackButton.onClick(() => tg.close());
 
@@ -201,24 +239,22 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
-      // Ustawienie nazwy gracza
+      // Player label
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
-      // MainButton (opcjonalny skrót)
+      // MainButton
       tg.MainButton.setText("Open Missions");
       tg.MainButton.onClick(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton.show();
 
-      // ====== MAPA ======
+      // ===== MAPA =====
       const mapBack   = $("#mapBack");
       const mapEl     = $("#map");
       const closeMap  = $("#closeMap");
 
-      // Regiony odblokowane — NA START tylko Chain; potem podmienisz z API/bota.
-      const regionsUnlocked = new Set(["chain"]);
+      const regionsUnlocked = new Set(["chain"]); // start
 
-      // Budynki (x,y w % ekranu mapy)
       const buildings = [
         { id:"chain_gate", name:"The Chain Gate", region:"chain", x:22, y:62,
           desc:"Starter stronghold. Scavenging routes and basic missions.",
@@ -227,9 +263,9 @@
           desc:"Ruined research complex. Rare tech & shard bonus.",
           icon:"/images/map/building/moon_lab.png",
           keyItem:"key_moon_lab",
-          action:"building_enter",               // <— DODANE
-          buildingId:"moonlab_fortress"         // <— DODANE
-},
+          action:"building_enter",
+          buildingId:"moonlab_fortress"
+        },
         { id:"testnet_wastes", name:"Testnet Wastes", region:"testnet_wastes", x:78, y:72,
           desc:"Hazard fields. Higher materials, tougher enemies.",
           icon:"/images/map/building/testnet_wastes.png", keyItem:"key_testnet" },
@@ -242,48 +278,52 @@
       ];
 
       function renderMap() {
-      mapEl.innerHTML = "";
-      buildings.forEach(b => {
-        const unlocked = regionsUnlocked.has(b.region);
-        const btn = document.createElement("button");
-        btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
-        btn.style.left = b.x + "%";
-        btn.style.top  = b.y + "%";
-        btn.title = b.name + (unlocked ? " (unlocked)" : " (locked)");
+        mapEl.innerHTML = "";
+        buildings.forEach(b => {
+          const unlocked = regionsUnlocked.has(b.region);
+          const btn = document.createElement("button");
+          btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
+          btn.style.left = b.x + "%";
+          btn.style.top  = b.y + "%";
+          btn.title = b.name + (unlocked ? "" : " (locked)");
 
-        const ring = document.createElement("span");
-        ring.className = "ping";
-        btn.appendChild(ring);
+          const ring = document.createElement("span");
+          ring.className = "ping";
+          btn.appendChild(ring);
 
-        const img = document.createElement("img");
-        img.src = b.icon; img.alt = b.name;
-        btn.appendChild(img);
+          const img = document.createElement("img");
+          img.src = b.icon; img.alt = b.name;
+          btn.appendChild(img);
 
-        const chip = document.createElement("div");
-        chip.className = "chip";
-        chip.textContent = b.name + (unlocked ? "" : " • locked");
-        btn.appendChild(chip);
+          const chip = document.createElement("div");
+          chip.className = "chip";
+          chip.textContent = b.name; // bez "• locked"
+          btn.appendChild(chip);
 
-        // >>> NOWY handler kliku: najpierw locked, potem building_enter, na końcu wejście do regionu
-        btn.addEventListener("click", () => {
-          if (!unlocked) return openLocked(b);
-
-          // jeżeli budynek ma własną akcję (np. Moon Lab → fortress), wyślij do bota
-          if (b.action === "building_enter" && b.buildingId) {
-            return sendAction("building_enter", { buildingId: b.buildingId });
+          if (!unlocked) {
+            const lock = document.createElement("span");
+            lock.className = "lock-badge";
+            lock.innerHTML = "🔒"; // możesz podmienić na SVG jeśli masz /images/ui/lock.svg
+            btn.appendChild(lock);
           }
 
-          // domyślnie: wejście do regionu
-          return openRegion(b.region);
+          btn.addEventListener("click", () => {
+            if (!unlocked) return openLocked(b);
+            if (b.action === "building_enter" && b.buildingId) {
+              return sendAction("building_enter", { buildingId: b.buildingId });
+            }
+            return openRegion(b.region);
+          });
+
+          mapEl.appendChild(btn);
         });
-        // <<<
 
-        mapEl.appendChild(btn);
-      });
-    }
+        // anty-kolizja etykiet
+        resolveLabelCollisions();
+      }
 
-      // Otwórz/zamknij modal mapy
-      $(".btn.map").onclick = () => { mapBack.style.display = "flex"; renderMap(); };
+      // Otwórz/zamknij mapę
+      document.querySelector(".btn.map").onclick = () => { mapBack.style.display = "flex"; renderMap(); };
       closeMap.onclick = () => { mapBack.style.display = "none"; };
 
       // Locked info
@@ -303,16 +343,14 @@
         lockedBack.style.display = "flex";
       }
 
-      // Wejście do regionu → sygnał do bota (PRIMARY) + fallback link
-      function openRegion(region) {
-        sendAction("region_open", { region });
-      }
+      // Region enter
+      function openRegion(region) { sendAction("region_open", { region }); }
       function openBotRegion(region) {
         const link = `https://t.me/Alpha_husky_bot/AlphaWebApp?startapp=region=${region}`;
         if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, "_blank");
       }
 
-      // Pomocnik do wyklikania współrzędnych (kliknij puste tło mapy)
+      // Klik w tło mapy → loguj współrzędne
       mapEl.addEventListener("click", (e) => {
         if (e.target !== mapEl) return;
         const r = mapEl.getBoundingClientRect();
@@ -321,7 +359,7 @@
         console.log("coords:", x, y);
       });
 
-      // ====== Twoje istniejące akcje ======
+      // ===== Twoje akcje =====
       const actions = {
         ".btn.avatar":    () => sendAction("avatar_open"),
         ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
@@ -336,7 +374,7 @@
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
-        _busy = true; setTimeout(() => (_busy = false), 300); // anti double-tap
+        _busy = true; setTimeout(() => (_busy = false), 300);
         try { tg.HapticFeedback?.impactOccurred("light"); } catch(e) {}
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try { tg.sendData(JSON.stringify(payload)); }
@@ -348,8 +386,32 @@
         const h = hex.replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
+
+      // ===== Label collision resolver =====
+      function resolveLabelCollisions(){
+        const chips = [...document.querySelectorAll('.chip')];
+        // sortuj od góry do dołu (stabilne przesuwanie w dół)
+        chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+        for (let i=1;i<chips.length;i++){
+          const prev = chips[i-1].getBoundingClientRect();
+          const cur  = chips[i].getBoundingClientRect();
+          const overlap = (prev.bottom + 6) - cur.top;
+          if (overlap > 0) {
+            const current = chips[i].style.transform || "translateX(-50%)";
+            chips[i].style.transform = current + ` translateY(${overlap}px)`;
+          }
+        }
+        // niech nic nie wychodzi poza mapę (bezpieczne marginesy)
+        const mapRect = mapEl.getBoundingClientRect();
+        chips.forEach(ch => {
+          const r = ch.getBoundingClientRect();
+          const leftOverflow  = mapRect.left + 8 - r.left;
+          const rightOverflow = r.right - (mapRect.right - 8);
+          if (leftOverflow > 0)  ch.style.marginLeft = (leftOverflow)+"px";
+          if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
+        });
+      }
     });
   </script>
 </body>
 </html>
-
