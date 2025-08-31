@@ -435,11 +435,12 @@
       closeMap.onclick = () => { mapBack.style.display = "none"; };
 
       // Region enter
-      function openRegion(region) { sendAction("region_open", { region }); }
-      function openBotRegion(region) {
-        const link = `https://t.me/Alpha_husky_bot/AlphaWebApp?startapp=region=${region}`;
-        tg.openTelegramLink ? tg.openTelegramLink(link) : window.open(link, "_blank");
-      }
+     function openRegion(region) { sendAction("region_open", { region }); }
+     function openBotRegion(region) {
+     const bot = 'Alpha_husky_bot';
+     const link = `https://t.me/${bot}?startapp=${encodeURIComponent('region='+region)}`;
+     if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
+   }
 
       // Klik w tło mapy → loguj współrzędne
       mapRoot.addEventListener("click", (e) => {
@@ -534,3 +535,4 @@
   </script>
 </body>
 </html>
+
