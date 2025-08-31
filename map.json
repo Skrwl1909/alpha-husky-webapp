@@ -11,8 +11,7 @@
     "regionsUnlocked": ["chain"],
     "keys": [],
     "fragments": {
-      "key_moon_lab_fragment": 0,
-      "key_testnet_fragment": 0
+      "map_key_fragment": 0
     }
   },
 
@@ -29,8 +28,8 @@
       "name": "Moon Lab",
       "unlock": {
         "type": "fragments",
-        "item": "key_moon_lab_fragment",
-        "required": 5,
+        "item": "map_key_fragment",
+        "required": 10,
         "combineInto": "key_moon_lab",
         "combineCost": { "bones": 500, "scrap": 200, "rune_dust": 20 },
         "dropSources": [
@@ -40,7 +39,7 @@
         ],
         "shopSku": "moon_frag_pack"
       },
-      "lockedReason": "🔒 Assemble the Moon Access Key (5 fragments)."
+      "lockedReason": "🔒 Spend 10 Map Key Fragments to unlock Moon Lab (or craft the Moon Key in Forge)."
     },
 
     "testnet_wastes": {
@@ -48,11 +47,11 @@
       "name": "Testnet Wastes",
       "unlock": {
         "type": "fragments",
-        "item": "key_testnet_fragment",
-        "required": 3,
+        "item": "map_key_fragment",
+        "required": 15,
         "combineInto": "key_testnet"
       },
-      "lockedReason": "🔒 Forge the Testnet Sigil (3 fragments)."
+      "lockedReason": "🔒 Spend 15 Map Key Fragments to unlock Testnet Wastes (or craft the Testnet Sigil)."
     }
   },
 
@@ -67,6 +66,12 @@
       "desc": "The primal, unforgiving wilderness of code where everything begins.",
       "action": "region_hub",
       "hub": "chain_hub",
+      "gameplay": {
+        "type": "hub",
+        "services": ["forge", "shop", "mission_board", "stash", "fast_travel"],
+        "miniboss": { "id": "chain_gatekeeper", "cooldownSeconds": 900, "rareFragDrop": { "map_key_fragment": 0.06 } },
+        "daily": { "loginChest": true, "bounties": 3 }
+      },
       "tags": ["hub", "safe"]
     },
 
@@ -83,9 +88,13 @@
       "gameplay": {
         "loop": "dungeon",
         "rooms": { "min": 3, "max": 6 },
-        "risk": "medium",
+        "choicePerRoom": true,
+        "lockpickMiniGame": { "tries": 3, "perfectMultiplier": 1.25 },
+        "extractOnEnd": true,
+        "deathPenalty": 0.3,
+        "averageRunMinutes": 5,
         "rewards": { "scrap": [2, 6], "bones": [1, 3], "chanceItems": ["wallet_shard", "rune_dust"] },
-        "fragmentDrops": { "key_moon_lab_fragment": 0.08 }
+        "fragmentDrops": { "map_key_fragment": 0.08 }
       },
       "tags": ["loot", "chance"]
     },
@@ -102,9 +111,13 @@
       "buildingId": "broken_contracts_hub",
       "gameplay": {
         "loop": "puzzle+combat",
-        "risk": "medium",
+        "puzzles": ["pattern", "logic", "route"],
+        "rotation": "daily",
+        "combatWave": { "count": 1, "scaleWithProgress": true },
+        "averageRunMinutes": 6,
         "rewards": { "scrap": [3, 7], "rune_dust": [1, 2], "chanceItems": ["bug_token"] },
-        "fragmentDrops": { "key_moon_lab_fragment": 0.10 }
+        "fragmentDrops": { "map_key_fragment": 0.10 },
+        "leaderboard": { "metric": "time_ms", "season": "weekly" }
       },
       "tags": ["risk", "puzzle", "combat"]
     },
@@ -116,77 +129,80 @@
       "x": 58,
       "y": 35,
       "icon": "images/map/building/moon_lab.png",
-      "desc": "Multi-level boss fortress. One attack = one boss. Win → next floor after cooldown; lose → retry same floor.",
+      "desc": "Three-floor fortress: 10 sequential single-fights per floor. Win → next encounter after cooldown; lose → retry same encounter.",
       "action": "building_enter",
       "buildingId": "moonlab_fortress",
       "gameplay": {
         "type": "fortress",
         "attack": {
-          "type": "boss_fight",
-          "perAttempt": "single_boss",
+          "type": "single_fight",
           "cooldownSeconds": 3600,
           "energyCost": 10,
           "attemptsPerCooldown": 1
         },
         "progression": {
           "mode": "sequential",
-          "advanceOn": "boss_defeat",
-          "retryOnFail": "same_stage",
+          "unit": "encounter",
+          "advanceOn": "encounter_defeat",
+          "retryOnFail": "same_encounter",
           "resetOnLeave": false
         },
-        "stages": [
+        "floors": [
           {
             "id": "floor_1",
             "name": "Outer Ruins",
-            "boss": {
-              "id": "sentinel_alpha",
-              "name": "Sentinel Alpha",
-              "power": 120,
-              "element": "void",
-              "traits": ["shielded", "sweeping_beam"],
-              "rareDropBoost": 2.0
-            }
+            "encounters": [
+              { "id": "F1-E01", "rank": "elite", "power": 120, "rareDropBoost": 1.10 },
+              { "id": "F1-E02", "rank": "elite", "power": 138, "rareDropBoost": 1.12 },
+              { "id": "F1-E03", "rank": "elite", "power": 159, "rareDropBoost": 1.14 },
+              { "id": "F1-E04", "rank": "elite", "power": 183, "rareDropBoost": 1.16 },
+              { "id": "F1-E05", "rank": "elite", "power": 211, "rareDropBoost": 1.18 },
+              { "id": "F1-E06", "rank": "elite", "power": 243, "rareDropBoost": 1.20 },
+              { "id": "F1-E07", "rank": "elite", "power": 279, "rareDropBoost": 1.22 },
+              { "id": "F1-E08", "rank": "elite", "power": 321, "rareDropBoost": 1.24 },
+              { "id": "F1-E09", "rank": "elite", "power": 369, "rareDropBoost": 1.26 },
+              { "id": "F1-E10", "rank": "boss",  "power": 425, "rareDropBoost": 1.30 }
+            ],
+            "floorReward": { "firstClear": ["moon_shard", "tech_cache"] }
           },
           {
             "id": "floor_2",
             "name": "Collapsed Atrium",
-            "boss": {
-              "id": "warden_sigma",
-              "name": "Warden Sigma",
-              "power": 160,
-              "element": "frost",
-              "traits": ["armor_break", "freeze_zone"],
-              "rareDropBoost": 2.2
-            }
+            "encounters": [
+              { "id": "F2-E01", "rank": "elite", "power": 200, "rareDropBoost": 1.20 },
+              { "id": "F2-E02", "rank": "elite", "power": 236, "rareDropBoost": 1.23 },
+              { "id": "F2-E03", "rank": "elite", "power": 278, "rareDropBoost": 1.26 },
+              { "id": "F2-E04", "rank": "elite", "power": 328, "rareDropBoost": 1.29 },
+              { "id": "F2-E05", "rank": "elite", "power": 387, "rareDropBoost": 1.32 },
+              { "id": "F2-E06", "rank": "elite", "power": 457, "rareDropBoost": 1.35 },
+              { "id": "F2-E07", "rank": "elite", "power": 539, "rareDropBoost": 1.38 },
+              { "id": "F2-E08", "rank": "elite", "power": 636, "rareDropBoost": 1.41 },
+              { "id": "F2-E09", "rank": "elite", "power": 750, "rareDropBoost": 1.45 },
+              { "id": "F2-E10", "rank": "boss",  "power": 885, "rareDropBoost": 1.50 }
+            ],
+            "floorReward": { "firstClear": ["moon_shard", "tech_cache", "rune_dust"] }
           },
           {
             "id": "floor_3",
-            "name": "Cryo Vaults",
-            "boss": {
-              "id": "overseer_delta",
-              "name": "Overseer Delta",
-              "power": 200,
-              "element": "plasma",
-              "traits": ["adds_minions", "beam_ramp"],
-              "rareDropBoost": 2.4
-            }
-          },
-          {
-            "id": "floor_4",
             "name": "Core Spire",
-            "boss": {
-              "id": "lunarch_core",
-              "name": "Lunarch Core",
-              "power": 260,
-              "element": "arc",
-              "traits": ["phase_shift", "rage_enrage"],
-              "rareDropBoost": 2.6
-            }
+            "encounters": [
+              { "id": "F3-E01", "rank": "elite", "power": 320,  "rareDropBoost": 1.35 },
+              { "id": "F3-E02", "rank": "elite", "power": 384,  "rareDropBoost": 1.38 },
+              { "id": "F3-E03", "rank": "elite", "power": 461,  "rareDropBoost": 1.41 },
+              { "id": "F3-E04", "rank": "elite", "power": 553,  "rareDropBoost": 1.44 },
+              { "id": "F3-E05", "rank": "elite", "power": 664,  "rareDropBoost": 1.47 },
+              { "id": "F3-E06", "rank": "elite", "power": 797,  "rareDropBoost": 1.50 },
+              { "id": "F3-E07", "rank": "elite", "power": 956,  "rareDropBoost": 1.55 },
+              { "id": "F3-E08", "rank": "elite", "power": 1147, "rareDropBoost": 1.60 },
+              { "id": "F3-E09", "rank": "elite", "power": 1376, "rareDropBoost": 1.65 },
+              { "id": "F3-E10", "rank": "boss",  "power": 1651, "rareDropBoost": 1.75 }
+            ],
+            "floorReward": { "firstClear": ["lunar_core", "ancient_module"] }
           }
         ],
-        "bossDrops": {
-          "rareBase": 0.12,
-          "legendaryBase": 0.03,
+        "encounterDrops": {
+          "rareBase": 0.10,
+          "legendaryBase": 0.02,
           "useBoostMultiplier": true,
           "tables": {
             "rare": ["rune_dust", "moon_shard", "tech_cache"],
@@ -209,42 +225,26 @@
       "desc": "Unstable, experimental lands of high risk and higher reward.",
       "action": "region_open",
       "gameplay": {
+        "type": "expedition",
+        "sessionMinutes": { "min": 8, "max": 12 },
         "hazards": ["random_debuffs", "glitch_storms"],
-        "modifiers": { "materialsMultiplier": 1.5, "xpMultiplier": 1.2, "deathPenalty": 0.2 },
-        "fragmentDrops": { "key_testnet_fragment": 0.12 }
+        "mutators": ["enemy_overclock", "loot_surge", "skill_tax"],
+        "extract": { "beacons": 2, "safeWindowSeconds": 30 },
+        "materialsMultiplier": 1.5,
+        "xpMultiplier": 1.2,
+        "deathPenalty": 0.2,
+        "fragmentDrops": { "map_key_fragment": 0.12 },
+        "minPower": 1200
       },
       "tags": ["hazard", "materials", "endgame"]
     }
   ],
 
   "paths": [
-    {
-      "id": "p1",
-      "from": "chain_gate",
-      "to": "moon_lab",
-      "points": [[22,62],[40,50],[58,35]],
-      "lockForRegion": "moon_lab",
-      "emphasis": true
-    },
-    {
-      "id": "p2",
-      "from": "moon_lab",
-      "to": "testnet_wastes",
-      "points": [[58,35],[68,50],[78,72]],
-      "lockForRegion": "testnet_wastes"
-    },
-    {
-      "id": "p3",
-      "from": "chain_gate",
-      "to": "broken_contracts",
-      "points": [[22,62],[30,55],[38,48]]
-    },
-    {
-      "id": "p4",
-      "from": "chain_gate",
-      "to": "abandoned_wallets",
-      "points": [[22,62],[18,52],[12,40]]
-    }
+    { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[22,62],[40,50],[58,35]], "lockForRegion": "moon_lab", "emphasis": true },
+    { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" },
+    { "id": "p3", "from": "chain_gate", "to": "broken_contracts", "points": [[22,62],[30,55],[38,48]] },
+    { "id": "p4", "from": "chain_gate", "to": "abandoned_wallets", "points": [[22,62],[18,52],[12,40]] }
   ],
 
   "ui": {
