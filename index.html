@@ -12,12 +12,7 @@
   <link rel="preload" as="video"  href="background3.mp4"  type="video/mp4">
 
   <style>
-    :root {
-      --glass: rgba(0,0,0,.45);
-      --stroke: rgba(255,255,255,.18);
-      --txt: #fff;
-      --ring: rgba(255,255,255,.12);
-    }
+    :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: #fff; --ring: rgba(255,255,255,.12); }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
@@ -51,10 +46,7 @@
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
-    @media (prefers-reduced-motion: reduce) {
-      .bg video { display:none; }
-      .bg .poster { display:block; }
-    }
+    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
 
     /* ===== Fallback overlay ===== */
     .fallback {
@@ -72,75 +64,81 @@
     .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
-    .map {
+    .map{
       position:relative; width:100%; aspect-ratio:16/9;
-      background: url("/images/wasteland.jpg") center/cover no-repeat;
+      background: url("/images/map/base/wasteland.jpg") center/cover no-repeat; /* ← poprawiona ścieżka */
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
     }
-    .map::after { /* gradient przy dolnej krawędzi – lepszy odczyt labeli */
-      content:""; position:absolute; left:0; right:0; bottom:0; height:72px;
-      background:linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events:none;
+    /* overlaye: ścieżki pod pinami + fog + gradient nad pinami */
+    .map::before{
+      content:""; position:absolute; inset:0; z-index:0;
+      background: url("/images/map/overlays/paths.svg") center/cover no-repeat;
+      pointer-events:none;
+    }
+    .map::after{
+      content:""; position:absolute; inset:0; z-index:2;
+      background:
+        url("/images/map/overlays/fog.png") center/cover no-repeat,
+        linear-gradient(0deg, rgba(0,0,0,.55), transparent);
+      pointer-events:none;
     }
 
     /* ===== Hotspot / Pin ===== */
-    .hotspot {
+    .hotspot{
       position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
       z-index:1; transition: transform .12s ease, filter .12s ease;
     }
-    .hotspot:hover { transform:translate(-50%,-50%) scale(1.05); z-index:2; }
+    .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
 
     /* Ground decal (cień/znacznik pod ikonką) */
-    .hotspot::before {
+    .hotspot::before{
       content:""; position:absolute; left:50%; top:50%;
       width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
       transform: translate(-50%, calc(-50% + 20px));
       background: url("/images/map/decals/decal_soft.png") center/contain no-repeat;
-      opacity:.9; filter: blur(.2px);
-      pointer-events:none;
+      opacity:.9; filter: blur(.2px); pointer-events:none;
     }
 
-    .hotspot img {
+    .hotspot img{
       width: clamp(40px, 3.6vw, 72px);
-      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55));
-      pointer-events:none;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none;
     }
-    .hotspot.unlocked img {
-      /* delikatny lewy cyan / prawy violet – efekt „brand rim” */
+    .hotspot.unlocked img{
       filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
               drop-shadow(-2px 0 6px rgba(0,229,255,.22))
               drop-shadow( 2px 0 6px rgba(155,77,255,.22));
     }
-    .hotspot.locked img { filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+    .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
 
     /* Pulsujący ring */
-    .ping { position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px); transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
-    .hotspot.unlocked .ping { background:rgba(0,229,255,.14); }
-    .hotspot.locked   .ping { background:rgba(148,163,184,.10); }
-    @keyframes ping { 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
+    .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px); transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
+    .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
+    .hotspot.locked   .ping{ background:rgba(148,163,184,.10); }
+    @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
 
     /* Etykieta – „pill” z ogonkiem */
-    .chip {
+    .chip{
       position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
       font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
       background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
       backdrop-filter: blur(3px);
     }
-    .chip::before { content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px; transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
+    .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px; transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
 
     /* Plakietka kłódki */
-    .lock-badge {
+    .lock-badge{
       position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
       background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
       display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
       box-shadow: 0 2px 6px rgba(0,0,0,.5);
     }
-    .lock-badge svg { width:14px; height:14px; }
+    .lock-badge svg{ width:14px; height:14px; }
 
     /* Locked info modal */
-    .locked-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-    .locked-card { width:min(92vw,440px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
-    .btn.primary { background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
+    .locked-back{ position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+    .locked-card{ width:min(92vw,440px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
+    .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
   </style>
 </head>
 <body>
@@ -297,13 +295,13 @@
 
           const chip = document.createElement("div");
           chip.className = "chip";
-          chip.textContent = b.name; // bez "• locked"
+          chip.textContent = b.name;
           btn.appendChild(chip);
 
           if (!unlocked) {
             const lock = document.createElement("span");
             lock.className = "lock-badge";
-            lock.innerHTML = "🔒"; // możesz podmienić na SVG jeśli masz /images/ui/lock.svg
+            lock.innerHTML = "🔒"; // możesz podmienić na <img src="/images/ui/lock.svg">, jeśli chcesz
             btn.appendChild(lock);
           }
 
@@ -318,8 +316,7 @@
           mapEl.appendChild(btn);
         });
 
-        // anty-kolizja etykiet
-        resolveLabelCollisions();
+        resolveLabelCollisions(); // anty-kolizja etykiet
       }
 
       // Otwórz/zamknij mapę
@@ -390,7 +387,6 @@
       // ===== Label collision resolver =====
       function resolveLabelCollisions(){
         const chips = [...document.querySelectorAll('.chip')];
-        // sortuj od góry do dołu (stabilne przesuwanie w dół)
         chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
         for (let i=1;i<chips.length;i++){
           const prev = chips[i-1].getBoundingClientRect();
@@ -401,7 +397,6 @@
             chips[i].style.transform = current + ` translateY(${overlap}px)`;
           }
         }
-        // niech nic nie wychodzi poza mapę (bezpieczne marginesy)
         const mapRect = mapEl.getBoundingClientRect();
         chips.forEach(ch => {
           const r = ch.getBoundingClientRect();
@@ -415,4 +410,3 @@
   </script>
 </body>
 </html>
-
