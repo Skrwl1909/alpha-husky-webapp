@@ -189,7 +189,7 @@
             <button class="close-x" id="closeMap">×</button>
           </div>
           <div id="map" class="map" data-map-root>
-            <!-- warstwa SVG + piny (dodane też z JS na wszelki wypadek) -->
+            <!-- warstwa SVG + piny -->
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1000 562" preserveAspectRatio="xMidYMid meet"></svg></div>
             <div class="pins" id="pins"></div>
           </div>
@@ -265,130 +265,116 @@
       const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
       const closeMap  = $("#closeMap");
 
-      // Regions (demo) – później przeniesiemy do map.json
-      const MAP = {
-        regions: {
-          chain:          { id:"chain", name:"The Chain", unlockedByKey:null,             lockedReason:null },
-          moon_lab:       { id:"moon_lab", name:"Moon Lab", unlockedByKey:"key_moon_lab", lockedReason:"🔒 Find the Moon Access Key to enter." },
-          testnet_wastes: { id:"testnet_wastes", name:"Testnet Wastes", unlockedByKey:"key_testnet", lockedReason:"🔒 You need the Testnet Sigil to cross." }
-        },
-        paths: [
-          { id:"p1", from:"chain_gate", to:"moon_lab", points:[[22,62],[40,50],[58,35]], lockForRegion:"moon_lab", emphasis:true },
-          { id:"p2", from:"moon_lab", to:"testnet_wastes", points:[[58,35],[68,50],[78,72]], lockForRegion:"testnet_wastes" }
-        ]
-      };
-
+      // === MAP DATA (z pliku) ===
       const VIEW_W = 1000, VIEW_H = 562; // 16:9 viewBox
-      const regionsUnlocked = new Set(["chain"]); // start
-      const keys            = new Set([]);        // posiadane klucze (demo)
 
-      // Twoje budynki → używamy jako nodes
-      const buildings = [
-        { id:"chain_gate", name:"The Chain Gate", region:"chain", x:22, y:62,
-          desc:"Starter stronghold. Scavenging routes and basic missions.",
-          icon:"/images/map/building/the_chain.png" },
-        { id:"moon_lab", name:"Moon Lab", region:"moon_lab", x:58, y:35,
-          desc:"Ruined research complex. Rare tech & shard bonus.",
-          icon:"/images/map/building/moon_lab.png",
-          keyItem:"key_moon_lab",
-          action:"building_enter",
-          buildingId:"moonlab_fortress"
-        },
-        { id:"testnet_wastes", name:"Testnet Wastes", region:"testnet_wastes", x:78, y:72,
-          desc:"Hazard fields. Higher materials, tougher enemies.",
-          icon:"/images/map/building/testnet_wastes.png", keyItem:"key_testnet" },
-        { id:"broken_contracts", name:"Broken Contracts", region:"chain", x:38, y:48,
-          desc:"Abandoned legal hub, risky trades.",
-          icon:"/images/map/building/broken_contracts.png" },
-        { id:"abandoned_wallets", name:"Abandoned Wallets", region:"chain", x:12, y:40,
-          desc:"Lost vaults, chance-based finds.",
-          icon:"/images/map/building/abandoned_wallets.png" },
-      ];
+      let DATA = null;
+      let regionsUnlocked = new Set();
+      let keys = new Set();
+      let fragments = {}; // { itemId: count }
 
+      async function loadMapData(){
+        try{
+          DATA = await fetch('/map.json', { cache: 'no-store' }).then(r => r.json());
+        }catch(e){
+          console.error('map.json load error', e);
+          DATA = null;
+        }
+        regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
+        keys            = new Set(DATA?.defaults?.keys || []);
+        fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
+        renderMap();
+      }
+
+      // Sprawdzenie odblokowania regionu (free/key/fragments)
       function isRegionUnlocked(regionId){
-        const reg = MAP.regions[regionId];
+        const reg = DATA?.regions?.[regionId];
         if (!reg) return true;
+
+        // ręczne odblokowanie (np. z backendu) zawsze działa
         if (regionsUnlocked.has(regionId)) return true;
-        if (reg.unlockedByKey && keys.has(reg.unlockedByKey)) return true;
+
+        const u = reg.unlock || { type: 'free' };
+        if (u.type === 'free') return true;
+
+        if (u.type === 'key'){
+          // odblokowane jeśli mamy pełny klucz
+          return !!(u.id && keys.has(u.id));
+        }
+
+        if (u.type === 'fragments'){
+          // jeśli skraftowano pełny klucz → też OK
+          if (u.combineInto && keys.has(u.combineInto)) return true;
+          // odblokuj po samym zebraniu fragmentów (lub zmień na wariant „po craftcie”)
+          const have = fragments[u.item] || 0;
+          return have >= (u.required || Infinity);
+        }
+
         return false;
       }
+
       const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
-      // Rysuj ścieżki SVG
+      // Rysuj ścieżki SVG wg DATA.paths
       function drawPaths(){
-        pathsSVG.innerHTML = "";
-        for (const p of MAP.paths){
+        pathsSVG.innerHTML = '';
+        for (const p of (DATA?.paths || [])){
           const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
-          const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(" ");
+          const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
+
           if (!locked && p.emphasis){
-            const glow = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-            glow.setAttribute("points", ptsStr);
-            glow.setAttribute("class", "path glow");
+            const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+            glow.setAttribute('points', ptsStr);
+            glow.setAttribute('class', 'path glow');
             pathsSVG.appendChild(glow);
           }
-          const poly = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-          poly.setAttribute("points", ptsStr);
-          poly.setAttribute("class", "path" + (locked ? " locked" : ""));
-          poly.setAttribute("data-id", p.id);
+          const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+          poly.setAttribute('points', ptsStr);
+          poly.setAttribute('class', 'path' + (locked ? ' locked' : ''));
+          poly.setAttribute('data-id', p.id);
           pathsSVG.appendChild(poly);
         }
       }
 
-      // Render pinów (hotspotów)
+      // Render pinów wg DATA.nodes
       function renderPins(){
-        pinsEl.innerHTML = "";
-        buildings.forEach(b => {
+        pinsEl.innerHTML = '';
+        for (const b of (DATA?.nodes || [])){
           const unlocked = isRegionUnlocked(b.region);
-          const btn = document.createElement("button");
-          btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
-          btn.style.left = b.x + "%";
-          btn.style.top  = b.y + "%";
-          btn.title = b.name + (unlocked ? "" : " (locked)");
+          const btn = document.createElement('button');
+          btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
+          btn.style.left = b.x + '%';
+          btn.style.top  = b.y + '%';
+          btn.title = b.name + (unlocked ? '' : ' (locked)');
 
-          const ring = document.createElement("span");
-          ring.className = "ping";
-          btn.appendChild(ring);
+          const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
+          const img  = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
 
-          const img = document.createElement("img");
-          img.src = b.icon; img.alt = b.name;
-          btn.appendChild(img);
+          const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
 
-          const chip = document.createElement("div");
-          chip.className = "chip";
-          chip.textContent = b.name;
-          btn.appendChild(chip);
-
-          if (!unlocked) {
-            const lock = document.createElement("span");
-            lock.className = "lock-badge";
-            lock.innerHTML = `<img src="/images/ui/lock.svg" alt="locked">`;
+          if (!unlocked){
+            const lock = document.createElement('span');
+            lock.className = 'lock-badge';
+            lock.innerHTML = `<img src="${(DATA?.ui?.pin?.badgeLock || '/images/ui/lock.svg')}" alt="locked">`;
             btn.appendChild(lock);
           }
 
-          btn.addEventListener("click", () => {
+          btn.addEventListener('click', () => {
             if (!unlocked) return openLocked(b);
-            if (b.action === "building_enter" && b.buildingId) {
-              return sendAction("building_enter", { buildingId: b.buildingId });
+            if (b.action === 'building_enter' && b.buildingId) {
+              return sendAction('building_enter', { buildingId: b.buildingId });
             }
             return openRegion(b.region);
           });
 
           pinsEl.appendChild(btn);
-        });
-
+        }
         resolveLabelCollisions();
       }
 
-      function renderMap(){
-        drawPaths();
-        renderPins();
-      }
+      function renderMap(){ drawPaths(); renderPins(); }
 
-      // Otwórz/zamknij mapę
-      document.querySelector(".btn.map").onclick = () => { mapBack.style.display = "flex"; renderMap(); };
-      closeMap.onclick = () => { mapBack.style.display = "none"; };
-
-      // Locked info
+      // Locked modal — pokaż postęp fragmentów, jeżeli dotyczy
       const lockedBack  = $("#lockedBack");
       const lockedTitle = $("#lockedTitle");
       const lockedDesc  = $("#lockedDesc");
@@ -396,16 +382,38 @@
       const lockedAsk   = $("#lockedAsk");
       $("#closeLocked").onclick = () => lockedBack.style.display = "none";
 
-      function openLocked(b) {
-        const reason = MAP.regions[b.region]?.lockedReason;
-        const keyLbl = (b.keyItem||MAP.regions[b.region]?.unlockedByKey||'region_key')
-                        .replace('key_','').replaceAll('_',' ');
+      function openLocked(b){
+        const reg    = DATA?.regions?.[b.region];
+        const u      = reg?.unlock || {};
+        const reason = reg?.lockedReason;
+
         lockedTitle.textContent = `Locked: ${b.name}`;
-        lockedDesc.innerHTML = reason || `Requires <b>${keyLbl}</b> to unlock. Find it in <b>Shop</b>, craft in <b>Forge</b>, or as a rare drop.`;
-        lockedForge.href = `/forge?recipe=${encodeURIComponent(b.keyItem||MAP.regions[b.region]?.unlockedByKey||'region_key')}`;
+
+        if (u.type === 'fragments'){
+          const cur   = fragments[u.item] || 0;
+          const need  = u.required || 0;
+          const label = (u.item || '').replace('key_','').replaceAll('_',' ');
+          lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
+          lockedForge.href = `/forge?recipe=${encodeURIComponent(u.combineInto || u.item)}`;
+        } else if (u.type === 'key'){
+          const label = (u.id || 'region key').replace('key_','').replaceAll('_',' ');
+          lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
+          lockedForge.href = `/forge?recipe=${encodeURIComponent(u.id)}`;
+        } else {
+          lockedDesc.textContent = reason || 'Complete requirements to unlock.';
+          lockedForge.href = '#';
+        }
+
         lockedAsk.onclick = () => openBotRegion(b.region);
-        lockedBack.style.display = "flex";
+        lockedBack.style.display = 'flex';
       }
+
+      // Otwórz/zamknij mapę
+      document.querySelector(".btn.map").onclick = () => {
+        mapBack.style.display = "flex";
+        if (DATA) renderMap(); else loadMapData();
+      };
+      closeMap.onclick = () => { mapBack.style.display = "none"; };
 
       // Region enter
       function openRegion(region) { sendAction("region_open", { region }); }
@@ -490,14 +498,19 @@
         root.appendChild(layer); return layer;
       }
 
-      // === Ekspozycja helperów do testów w konsoli ===
+      // === helpery do testów w konsoli (front-only) ===
       window.alphaMap = {
         unlockRegion: (r) => { regionsUnlocked.add(r); renderMap(); },
         lockRegion:   (r) => { regionsUnlocked.delete(r); renderMap(); },
         haveKey:      (k) => { keys.add(k); renderMap(); },
         removeKey:    (k) => { keys.delete(k); renderMap(); },
-        redraw:       ()  => { renderMap(); }
+        addFragments: (item, n=1) => { fragments[item] = (fragments[item]||0) + n; renderMap(); },
+        setFragments: (item, n=0) => { fragments[item] = n; renderMap(); },
+        redraw:       () => renderMap()
       };
+
+      // Opcjonalnie: preload mapy w tle (jeśli chcesz)
+      // loadMapData();
     });
   </script>
 </body>
