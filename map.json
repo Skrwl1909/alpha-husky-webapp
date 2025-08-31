@@ -12,7 +12,8 @@
     "keys": [],
     "fragments": {
       "key_moon_lab_fragment": 0,
-      "key_testnet_fragment": 0
+      "key_testnet_fragment": 0,
+      "key_salt_fragment": 0
     }
   },
 
@@ -23,7 +24,6 @@
       "unlock": { "type": "free" },
       "lockedReason": null
     },
-
     "moon_lab": {
       "id": "moon_lab",
       "name": "Moon Lab",
@@ -41,7 +41,6 @@
       },
       "lockedReason": "🔒 Assemble the Moon Access Key (5 fragments)."
     },
-
     "testnet_wastes": {
       "id": "testnet_wastes",
       "name": "Testnet Wastes",
@@ -52,6 +51,17 @@
         "combineInto": "key_testnet"
       },
       "lockedReason": "🔒 Forge the Testnet Sigil (3 fragments)."
+    },
+    "salt_flats": {
+      "id": "salt_flats",
+      "name": "Salt Flats",
+      "unlock": {
+        "type": "fragments",
+        "item": "key_salt_fragment",
+        "required": 4,
+        "combineInto": "key_salt"
+      },
+      "lockedReason": "🔒 Assemble the Salt Sigil (4 fragments)."
     }
   },
 
@@ -67,6 +77,28 @@
       "action": "region_hub",
       "hub": "chain_hub",
       "tags": ["hub", "safe"]
+    },
+    {
+      "id": "broken_contracts",
+      "name": "Broken Contracts",
+      "region": "chain",
+      "x": 38,
+      "y": 48,
+      "icon": "/images/map/building/broken_contracts.png",
+      "desc": "Abandoned legal hub, risky trades.",
+      "action": "building_enter",
+      "buildingId": "broken_contracts_hub"
+    },
+    {
+      "id": "abandoned_wallets",
+      "name": "Abandoned Wallets",
+      "region": "chain",
+      "x": 12,
+      "y": 40,
+      "icon": "/images/map/building/abandoned_wallets.png",
+      "desc": "Lost vaults, chance-based finds.",
+      "action": "building_enter",
+      "buildingId": "abandoned_wallets_vault"
     },
     {
       "id": "moon_lab",
@@ -94,32 +126,22 @@
       "tags": ["hazard", "materials"]
     },
     {
-      "id": "broken_contracts",
-      "name": "Broken Contracts",
-      "region": "chain",
-      "x": 38,
-      "y": 48,
-      "icon": "/images/map/building/broken_contracts.png",
-      "desc": "Abandoned legal hub, risky trades.",
-      "action": "building_enter",
-      "buildingId": "broken_contracts_hub"
-    },
-    {
-      "id": "abandoned_wallets",
-      "name": "Abandoned Wallets",
-      "region": "chain",
-      "x": 12,
-      "y": 40,
-      "icon": "/images/map/building/abandoned_wallets.png",
-      "desc": "Lost vaults, chance-based finds.",
-      "action": "building_enter",
-      "buildingId": "abandoned_wallets_vault"
+      "id": "salt_node",
+      "name": "Salt Flats",
+      "region": "salt_flats",
+      "x": 73,
+      "y": 74,
+      "icon": "/images/map/building/salt_flats.png",
+      "desc": "Cracked, hostile flats.",
+      "action": "region_open",
+      "tags": ["hazard"]
     }
   ],
 
   "paths": [
     { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[22,62],[40,50],[58,35]], "lockForRegion": "moon_lab", "emphasis": true },
-    { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" }
+    { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" },
+    { "id": "p3", "from": "moon_lab", "to": "salt_node", "points": [[58,35],[66,49],[73,74]], "lockForRegion": "salt_flats" }
   ],
 
   "ui": {
