@@ -3,8 +3,8 @@
   "meta": { "name": "Alpha Husky Overworld", "viewBox": [1000, 562] },
 
   "assets": {
-    "icons": "/images/map/building",
-    "ui": "/images/ui"
+    "icons": "images/map/building",
+    "ui": "images/ui"
   },
 
   "defaults": {
@@ -12,8 +12,7 @@
     "keys": [],
     "fragments": {
       "key_moon_lab_fragment": 0,
-      "key_testnet_fragment": 0,
-      "key_salt_fragment": 0
+      "key_testnet_fragment": 0
     }
   },
 
@@ -24,6 +23,7 @@
       "unlock": { "type": "free" },
       "lockedReason": null
     },
+
     "moon_lab": {
       "id": "moon_lab",
       "name": "Moon Lab",
@@ -34,13 +34,15 @@
         "combineInto": "key_moon_lab",
         "combineCost": { "bones": 500, "scrap": 200, "rune_dust": 20 },
         "dropSources": [
-          { "type": "mission", "id": "chain_missions", "rate": "rare" },
-          { "type": "boss", "id": "chain_gatekeeper", "rate": "uncommon" }
+          { "type": "region", "id": "broken_contracts", "rate": "uncommon" },
+          { "type": "region", "id": "abandoned_wallets", "rate": "uncommon" },
+          { "type": "mission", "id": "chain_missions", "rate": "rare" }
         ],
         "shopSku": "moon_frag_pack"
       },
       "lockedReason": "🔒 Assemble the Moon Access Key (5 fragments)."
     },
+
     "testnet_wastes": {
       "id": "testnet_wastes",
       "name": "Testnet Wastes",
@@ -51,17 +53,6 @@
         "combineInto": "key_testnet"
       },
       "lockedReason": "🔒 Forge the Testnet Sigil (3 fragments)."
-    },
-    "salt_flats": {
-      "id": "salt_flats",
-      "name": "Salt Flats",
-      "unlock": {
-        "type": "fragments",
-        "item": "key_salt_fragment",
-        "required": 4,
-        "combineInto": "key_salt"
-      },
-      "lockedReason": "🔒 Assemble the Salt Sigil (4 fragments)."
     }
   },
 
@@ -72,80 +63,192 @@
       "region": "chain",
       "x": 22,
       "y": 62,
-      "icon": "/images/map/building/the_chain.png",
-      "desc": "Starter stronghold. Scavenging routes and basic missions.",
+      "icon": "images/map/building/the_chain.png",
+      "desc": "The primal, unforgiving wilderness of code where everything begins.",
       "action": "region_hub",
       "hub": "chain_hub",
       "tags": ["hub", "safe"]
     },
-    {
-      "id": "broken_contracts",
-      "name": "Broken Contracts",
-      "region": "chain",
-      "x": 38,
-      "y": 48,
-      "icon": "/images/map/building/broken_contracts.png",
-      "desc": "Abandoned legal hub, risky trades.",
-      "action": "building_enter",
-      "buildingId": "broken_contracts_hub"
-    },
+
     {
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
       "region": "chain",
       "x": 12,
       "y": 40,
-      "icon": "/images/map/building/abandoned_wallets.png",
-      "desc": "Lost vaults, chance-based finds.",
+      "icon": "images/map/building/abandoned_wallets.png",
+      "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
-      "buildingId": "abandoned_wallets_vault"
+      "buildingId": "abandoned_wallets_vault",
+      "gameplay": {
+        "loop": "dungeon",
+        "rooms": { "min": 3, "max": 6 },
+        "risk": "medium",
+        "rewards": { "scrap": [2, 6], "bones": [1, 3], "chanceItems": ["wallet_shard", "rune_dust"] },
+        "fragmentDrops": { "key_moon_lab_fragment": 0.08 }
+      },
+      "tags": ["loot", "chance"]
     },
+
+    {
+      "id": "broken_contracts",
+      "name": "Broken Contracts",
+      "region": "chain",
+      "x": 38,
+      "y": 48,
+      "icon": "images/map/building/broken_contracts.png",
+      "desc": "Shattered smart contracts spilling glitches and danger.",
+      "action": "building_enter",
+      "buildingId": "broken_contracts_hub",
+      "gameplay": {
+        "loop": "puzzle+combat",
+        "risk": "medium",
+        "rewards": { "scrap": [3, 7], "rune_dust": [1, 2], "chanceItems": ["bug_token"] },
+        "fragmentDrops": { "key_moon_lab_fragment": 0.10 }
+      },
+      "tags": ["risk", "puzzle", "combat"]
+    },
+
     {
       "id": "moon_lab",
       "name": "Moon Lab",
       "region": "moon_lab",
       "x": 58,
       "y": 35,
-      "icon": "/images/map/building/moon_lab.png",
-      "desc": "Ruined research complex. Multi-level boss fortress.",
+      "icon": "images/map/building/moon_lab.png",
+      "desc": "Multi-level boss fortress. One attack = one boss. Win → next floor after cooldown; lose → retry same floor.",
       "action": "building_enter",
       "buildingId": "moonlab_fortress",
-      "difficulty": "mid",
-      "rewards": ["shards", "rune_dust"],
-      "tags": ["boss", "fortress"]
+      "gameplay": {
+        "type": "fortress",
+        "attack": {
+          "type": "boss_fight",
+          "perAttempt": "single_boss",
+          "cooldownSeconds": 3600,
+          "energyCost": 10,
+          "attemptsPerCooldown": 1
+        },
+        "progression": {
+          "mode": "sequential",
+          "advanceOn": "boss_defeat",
+          "retryOnFail": "same_stage",
+          "resetOnLeave": false
+        },
+        "stages": [
+          {
+            "id": "floor_1",
+            "name": "Outer Ruins",
+            "boss": {
+              "id": "sentinel_alpha",
+              "name": "Sentinel Alpha",
+              "power": 120,
+              "element": "void",
+              "traits": ["shielded", "sweeping_beam"],
+              "rareDropBoost": 2.0
+            }
+          },
+          {
+            "id": "floor_2",
+            "name": "Collapsed Atrium",
+            "boss": {
+              "id": "warden_sigma",
+              "name": "Warden Sigma",
+              "power": 160,
+              "element": "frost",
+              "traits": ["armor_break", "freeze_zone"],
+              "rareDropBoost": 2.2
+            }
+          },
+          {
+            "id": "floor_3",
+            "name": "Cryo Vaults",
+            "boss": {
+              "id": "overseer_delta",
+              "name": "Overseer Delta",
+              "power": 200,
+              "element": "plasma",
+              "traits": ["adds_minions", "beam_ramp"],
+              "rareDropBoost": 2.4
+            }
+          },
+          {
+            "id": "floor_4",
+            "name": "Core Spire",
+            "boss": {
+              "id": "lunarch_core",
+              "name": "Lunarch Core",
+              "power": 260,
+              "element": "arc",
+              "traits": ["phase_shift", "rage_enrage"],
+              "rareDropBoost": 2.6
+            }
+          }
+        ],
+        "bossDrops": {
+          "rareBase": 0.12,
+          "legendaryBase": 0.03,
+          "useBoostMultiplier": true,
+          "tables": {
+            "rare": ["rune_dust", "moon_shard", "tech_cache"],
+            "legendary": ["lunar_core", "ancient_module"]
+          }
+        }
+      },
+      "rewards": ["shards", "rune_dust", "tech_cache"],
+      "difficulty": "mid-high",
+      "tags": ["boss", "fortress", "raid"]
     },
+
     {
       "id": "testnet_wastes",
       "name": "Testnet Wastes",
       "region": "testnet_wastes",
       "x": 78,
       "y": 72,
-      "icon": "/images/map/building/testnet_wastes.png",
-      "desc": "Hazard fields. Higher materials, tougher enemies.",
+      "icon": "images/map/building/testnet_wastes.png",
+      "desc": "Unstable, experimental lands of high risk and higher reward.",
       "action": "region_open",
-      "tags": ["hazard", "materials"]
-    },
-    {
-      "id": "salt_node",
-      "name": "Salt Flats",
-      "region": "salt_flats",
-      "x": 73,
-      "y": 74,
-      "icon": "/images/map/building/salt_flats.png",
-      "desc": "Cracked, hostile flats.",
-      "action": "region_open",
-      "tags": ["hazard"]
+      "gameplay": {
+        "hazards": ["random_debuffs", "glitch_storms"],
+        "modifiers": { "materialsMultiplier": 1.5, "xpMultiplier": 1.2, "deathPenalty": 0.2 },
+        "fragmentDrops": { "key_testnet_fragment": 0.12 }
+      },
+      "tags": ["hazard", "materials", "endgame"]
     }
   ],
 
   "paths": [
-    { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[22,62],[40,50],[58,35]], "lockForRegion": "moon_lab", "emphasis": true },
-    { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" },
-    { "id": "p3", "from": "moon_lab", "to": "salt_node", "points": [[58,35],[66,49],[73,74]], "lockForRegion": "salt_flats" }
+    {
+      "id": "p1",
+      "from": "chain_gate",
+      "to": "moon_lab",
+      "points": [[22,62],[40,50],[58,35]],
+      "lockForRegion": "moon_lab",
+      "emphasis": true
+    },
+    {
+      "id": "p2",
+      "from": "moon_lab",
+      "to": "testnet_wastes",
+      "points": [[58,35],[68,50],[78,72]],
+      "lockForRegion": "testnet_wastes"
+    },
+    {
+      "id": "p3",
+      "from": "chain_gate",
+      "to": "broken_contracts",
+      "points": [[22,62],[30,55],[38,48]]
+    },
+    {
+      "id": "p4",
+      "from": "chain_gate",
+      "to": "abandoned_wallets",
+      "points": [[22,62],[18,52],[12,40]]
+    }
   ],
 
   "ui": {
-    "pin": { "badgeLock": "/images/ui/lock.svg" },
+    "pin": { "badgeLock": "images/ui/lock.svg" },
     "path": {
       "stroke": "rgba(255,255,255,.25)",
       "strokeLocked": "rgba(255,255,255,.16)",
