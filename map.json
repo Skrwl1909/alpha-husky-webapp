@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "meta": { "name": "Alpha Husky Overworld", "viewBox": [1000, 562] },
+
+  "assets": {
+    "icons": "/images/map/building",
+    "ui": "/images/ui"
+  },
+
+  "defaults": {
+    "regionsUnlocked": ["chain"],
+    "keys": [],
+    "fragments": {
+      "key_moon_lab_fragment": 0,
+      "key_testnet_fragment": 0
+    }
+  },
+
+  "regions": {
+    "chain": {
+      "id": "chain",
+      "name": "The Chain",
+      "unlock": { "type": "free" },
+      "lockedReason": null
+    },
+
+    "moon_lab": {
+      "id": "moon_lab",
+      "name": "Moon Lab",
+      "unlock": {
+        "type": "fragments",
+        "item": "key_moon_lab_fragment",
+        "required": 5,
+        "combineInto": "key_moon_lab",
+        "combineCost": { "bones": 500, "scrap": 200, "rune_dust": 20 },
+        "dropSources": [
+          { "type": "mission", "id": "chain_missions", "rate": "rare" },
+          { "type": "boss", "id": "chain_gatekeeper", "rate": "uncommon" }
+        ],
+        "shopSku": "moon_frag_pack"
+      },
+      "lockedReason": "🔒 Assemble the Moon Access Key (5 fragments)."
+    },
+
+    "testnet_wastes": {
+      "id": "testnet_wastes",
+      "name": "Testnet Wastes",
+      "unlock": {
+        "type": "fragments",
+        "item": "key_testnet_fragment",
+        "required": 3,
+        "combineInto": "key_testnet"
+      },
+      "lockedReason": "🔒 Forge the Testnet Sigil (3 fragments)."
+    }
+  },
+
+  "nodes": [
+    {
+      "id": "chain_gate",
+      "name": "The Chain Gate",
+      "region": "chain",
+      "x": 22,
+      "y": 62,
+      "icon": "/images/map/building/the_chain.png",
+      "desc": "Starter stronghold. Scavenging routes and basic missions.",
+      "action": "region_hub",
+      "hub": "chain_hub",
+      "tags": ["hub", "safe"]
+    },
+    {
+      "id": "moon_lab",
+      "name": "Moon Lab",
+      "region": "moon_lab",
+      "x": 58,
+      "y": 35,
+      "icon": "/images/map/building/moon_lab.png",
+      "desc": "Ruined research complex. Multi-level boss fortress.",
+      "action": "building_enter",
+      "buildingId": "moonlab_fortress",
+      "difficulty": "mid",
+      "rewards": ["shards", "rune_dust"],
+      "tags": ["boss", "fortress"]
+    },
+    {
+      "id": "testnet_wastes",
+      "name": "Testnet Wastes",
+      "region": "testnet_wastes",
+      "x": 78,
+      "y": 72,
+      "icon": "/images/map/building/testnet_wastes.png",
+      "desc": "Hazard fields. Higher materials, tougher enemies.",
+      "action": "region_open",
+      "tags": ["hazard", "materials"]
+    },
+    {
+      "id": "broken_contracts",
+      "name": "Broken Contracts",
+      "region": "chain",
+      "x": 38,
+      "y": 48,
+      "icon": "/images/map/building/broken_contracts.png",
+      "desc": "Abandoned legal hub, risky trades.",
+      "action": "building_enter",
+      "buildingId": "broken_contracts_hub"
+    },
+    {
+      "id": "abandoned_wallets",
+      "name": "Abandoned Wallets",
+      "region": "chain",
+      "x": 12,
+      "y": 40,
+      "icon": "/images/map/building/abandoned_wallets.png",
+      "desc": "Lost vaults, chance-based finds.",
+      "action": "building_enter",
+      "buildingId": "abandoned_wallets_vault"
+    }
+  ],
+
+  "paths": [
+    { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[22,62],[40,50],[58,35]], "lockForRegion": "moon_lab", "emphasis": true },
+    { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" }
+  ],
+
+  "ui": {
+    "pin": { "badgeLock": "/images/ui/lock.svg" },
+    "path": {
+      "stroke": "rgba(255,255,255,.25)",
+      "strokeLocked": "rgba(255,255,255,.16)",
+      "dashLocked": [7,6],
+      "glow": "rgba(255,0,0,.08)"
+    }
+  }
+}
