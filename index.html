@@ -69,12 +69,10 @@
       background: url("/images/map/base/wasteland.jpg") center/cover no-repeat; /* ← poprawiona ścieżka */
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
     }
-    /* overlaye: ścieżki pod pinami + fog + gradient nad pinami */
-    .map::before{
-      content:""; position:absolute; inset:0; z-index:0;
-      background: url("/images/map/overlays/paths.svg") center/cover no-repeat;
-      pointer-events:none;
-    }
+    /* PRZEŁĄCZAMY: statyczne ścieżki wyłączone – rysujemy SVG */
+    .map::before{ content:none; }
+
+    /* Mgła i gradient NAD ścieżkami, POD pinami */
     .map::after{
       content:""; position:absolute; inset:0; z-index:2;
       background:
@@ -83,15 +81,20 @@
       pointer-events:none;
     }
 
+    /* ===== Warstwy mapy ===== */
+    .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+    .paths-layer svg{ width:100%; height:100%; }
+    .pins{ position:absolute; inset:0; z-index:3; } /* piny NAD mgłą */
+
     /* ===== Hotspot / Pin ===== */
     .hotspot{
       position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
-      z-index:1; transition: transform .12s ease, filter .12s ease;
+      z-index:3; transition: transform .12s ease, filter .12s ease;
     }
     .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
 
-    /* Ground decal (cień/znacznik pod ikonką) */
+    /* Ground decal (cień pod ikonką) */
     .hotspot::before{
       content:""; position:absolute; left:50%; top:50%;
       width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
@@ -133,7 +136,12 @@
       display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
       box-shadow: 0 2px 6px rgba(0,0,0,.5);
     }
-    .lock-badge svg{ width:14px; height:14px; }
+    .lock-badge img{ width:14px; height:14px; opacity:.9 }
+
+    /* SVG ścieżki */
+    .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
+    .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
+    .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
     /* Locked info modal */
     .locked-back{ position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
@@ -180,7 +188,11 @@
             <h2>Regions Map</h2>
             <button class="close-x" id="closeMap">×</button>
           </div>
-          <div id="map" class="map" data-map-root></div>
+          <div id="map" class="map" data-map-root>
+            <!-- warstwa SVG + piny (dodane też z JS na wszelki wypadek) -->
+            <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1000 562" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="pins" id="pins"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -248,11 +260,29 @@
 
       // ===== MAPA =====
       const mapBack   = $("#mapBack");
-      const mapEl     = $("#map");
+      const mapRoot   = $("#map");
+      const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
+      const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
       const closeMap  = $("#closeMap");
 
-      const regionsUnlocked = new Set(["chain"]); // start
+      // Regions (demo) – później przeniesiemy do map.json
+      const MAP = {
+        regions: {
+          chain:          { id:"chain", name:"The Chain", unlockedByKey:null,             lockedReason:null },
+          moon_lab:       { id:"moon_lab", name:"Moon Lab", unlockedByKey:"key_moon_lab", lockedReason:"🔒 Find the Moon Access Key to enter." },
+          testnet_wastes: { id:"testnet_wastes", name:"Testnet Wastes", unlockedByKey:"key_testnet", lockedReason:"🔒 You need the Testnet Sigil to cross." }
+        },
+        paths: [
+          { id:"p1", from:"chain_gate", to:"moon_lab", points:[[22,62],[40,50],[58,35]], lockForRegion:"moon_lab", emphasis:true },
+          { id:"p2", from:"moon_lab", to:"testnet_wastes", points:[[58,35],[68,50],[78,72]], lockForRegion:"testnet_wastes" }
+        ]
+      };
 
+      const VIEW_W = 1000, VIEW_H = 562; // 16:9 viewBox
+      const regionsUnlocked = new Set(["chain"]); // start
+      const keys            = new Set([]);        // posiadane klucze (demo)
+
+      // Twoje budynki → używamy jako nodes
       const buildings = [
         { id:"chain_gate", name:"The Chain Gate", region:"chain", x:22, y:62,
           desc:"Starter stronghold. Scavenging routes and basic missions.",
@@ -275,10 +305,40 @@
           icon:"/images/map/building/abandoned_wallets.png" },
       ];
 
-      function renderMap() {
-        mapEl.innerHTML = "";
+      function isRegionUnlocked(regionId){
+        const reg = MAP.regions[regionId];
+        if (!reg) return true;
+        if (regionsUnlocked.has(regionId)) return true;
+        if (reg.unlockedByKey && keys.has(reg.unlockedByKey)) return true;
+        return false;
+      }
+      const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
+
+      // Rysuj ścieżki SVG
+      function drawPaths(){
+        pathsSVG.innerHTML = "";
+        for (const p of MAP.paths){
+          const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
+          const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(" ");
+          if (!locked && p.emphasis){
+            const glow = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+            glow.setAttribute("points", ptsStr);
+            glow.setAttribute("class", "path glow");
+            pathsSVG.appendChild(glow);
+          }
+          const poly = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+          poly.setAttribute("points", ptsStr);
+          poly.setAttribute("class", "path" + (locked ? " locked" : ""));
+          poly.setAttribute("data-id", p.id);
+          pathsSVG.appendChild(poly);
+        }
+      }
+
+      // Render pinów (hotspotów)
+      function renderPins(){
+        pinsEl.innerHTML = "";
         buildings.forEach(b => {
-          const unlocked = regionsUnlocked.has(b.region);
+          const unlocked = isRegionUnlocked(b.region);
           const btn = document.createElement("button");
           btn.className = "hotspot " + (unlocked ? "unlocked" : "locked");
           btn.style.left = b.x + "%";
@@ -301,7 +361,7 @@
           if (!unlocked) {
             const lock = document.createElement("span");
             lock.className = "lock-badge";
-            lock.innerHTML = "🔒"; // możesz podmienić na <img src="/images/ui/lock.svg">, jeśli chcesz
+            lock.innerHTML = `<img src="/images/ui/lock.svg" alt="locked">`;
             btn.appendChild(lock);
           }
 
@@ -313,10 +373,15 @@
             return openRegion(b.region);
           });
 
-          mapEl.appendChild(btn);
+          pinsEl.appendChild(btn);
         });
 
-        resolveLabelCollisions(); // anty-kolizja etykiet
+        resolveLabelCollisions();
+      }
+
+      function renderMap(){
+        drawPaths();
+        renderPins();
       }
 
       // Otwórz/zamknij mapę
@@ -332,10 +397,12 @@
       $("#closeLocked").onclick = () => lockedBack.style.display = "none";
 
       function openLocked(b) {
+        const reason = MAP.regions[b.region]?.lockedReason;
+        const keyLbl = (b.keyItem||MAP.regions[b.region]?.unlockedByKey||'region_key')
+                        .replace('key_','').replaceAll('_',' ');
         lockedTitle.textContent = `Locked: ${b.name}`;
-        lockedDesc.innerHTML = `Requires <b>${(b.keyItem||'region key').replace('key_','').replace('_',' ')}</b> to unlock.
-                                 Find it in <b>Shop</b>, craft in <b>Forge</b>, or as a rare drop.`;
-        lockedForge.href = `/forge?recipe=${encodeURIComponent(b.keyItem||'region_key')}`;
+        lockedDesc.innerHTML = reason || `Requires <b>${keyLbl}</b> to unlock. Find it in <b>Shop</b>, craft in <b>Forge</b>, or as a rare drop.`;
+        lockedForge.href = `/forge?recipe=${encodeURIComponent(b.keyItem||MAP.regions[b.region]?.unlockedByKey||'region_key')}`;
         lockedAsk.onclick = () => openBotRegion(b.region);
         lockedBack.style.display = "flex";
       }
@@ -348,9 +415,9 @@
       }
 
       // Klik w tło mapy → loguj współrzędne
-      mapEl.addEventListener("click", (e) => {
-        if (e.target !== mapEl) return;
-        const r = mapEl.getBoundingClientRect();
+      mapRoot.addEventListener("click", (e) => {
+        if (e.target !== mapRoot) return;
+        const r = mapRoot.getBoundingClientRect();
         const x = ((e.clientX - r.left)/r.width*100).toFixed(1);
         const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
         console.log("coords:", x, y);
@@ -386,7 +453,7 @@
 
       // ===== Label collision resolver =====
       function resolveLabelCollisions(){
-        const chips = [...document.querySelectorAll('.chip')];
+        const chips = [...document.querySelectorAll('.pins .chip')];
         chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
         for (let i=1;i<chips.length;i++){
           const prev = chips[i-1].getBoundingClientRect();
@@ -397,7 +464,7 @@
             chips[i].style.transform = current + ` translateY(${overlap}px)`;
           }
         }
-        const mapRect = mapEl.getBoundingClientRect();
+        const mapRect = mapRoot.getBoundingClientRect();
         chips.forEach(ch => {
           const r = ch.getBoundingClientRect();
           const leftOverflow  = mapRect.left + 8 - r.left;
@@ -406,6 +473,31 @@
           if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
         });
       }
+
+      // Warstwy bezpieczeństwa (gdyby HTML był bez nich)
+      function createPathsLayer(root){
+        const layer = document.createElement("div");
+        layer.className = "paths-layer";
+        const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+        svg.setAttribute("id","pathsSVG");
+        svg.setAttribute("viewBox","0 0 1000 562");
+        svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+        layer.appendChild(svg); root.appendChild(layer); return svg;
+      }
+      function createPinsLayer(root){
+        const layer = document.createElement("div");
+        layer.className = "pins"; layer.id = "pins";
+        root.appendChild(layer); return layer;
+      }
+
+      // === Ekspozycja helperów do testów w konsoli ===
+      window.alphaMap = {
+        unlockRegion: (r) => { regionsUnlocked.add(r); renderMap(); },
+        lockRegion:   (r) => { regionsUnlocked.delete(r); renderMap(); },
+        haveKey:      (k) => { keys.add(k); renderMap(); },
+        removeKey:    (k) => { keys.delete(k); renderMap(); },
+        redraw:       ()  => { renderMap(); }
+      };
     });
   </script>
 </body>
