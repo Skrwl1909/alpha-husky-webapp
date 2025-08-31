@@ -66,17 +66,17 @@
 
     .map{
       position:relative; width:100%; aspect-ratio:16/9;
-      background: url("/images/map/base/wasteland.jpg") center/cover no-repeat; /* ← poprawiona ścieżka */
+      background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
     }
-    /* PRZEŁĄCZAMY: statyczne ścieżki wyłączone – rysujemy SVG */
+    /* Statyczne ścieżki off – rysujemy SVG */
     .map::before{ content:none; }
 
     /* Mgła i gradient NAD ścieżkami, POD pinami */
     .map::after{
       content:""; position:absolute; inset:0; z-index:2;
       background:
-        url("/images/map/overlays/fog.png") center/cover no-repeat,
+        url("images/map/overlays/fog.png") center/cover no-repeat,
         linear-gradient(0deg, rgba(0,0,0,.55), transparent);
       pointer-events:none;
     }
@@ -99,7 +99,7 @@
       content:""; position:absolute; left:50%; top:50%;
       width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
       transform: translate(-50%, calc(-50% + 20px));
-      background: url("/images/map/decals/decal_soft.png") center/contain no-repeat;
+      background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
       opacity:.9; filter: blur(.2px); pointer-events:none;
     }
 
@@ -228,21 +228,39 @@
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
 
-      const tg = window.Telegram?.WebApp;
+      // === DEV STUB dla pracy poza Telegramem ===
+      const nativeTg = window.Telegram?.WebApp;
+      let tg = nativeTg;
       const $  = sel => document.querySelector(sel);
-      if (!tg) { $("#fallback").style.display = "flex"; return; }
-      tg.ready(); tg.expand();
+
+      if (!tg) {
+        // Ukryj fallback i włącz tryb dev
+        const fb = $("#fallback"); if (fb) fb.style.display = "none";
+        tg = {
+          ready(){}, expand(){},
+          themeParams:{},
+          onEvent(){},
+          BackButton:{ show(){}, onClick(){} },
+          MainButton:{ setText(){}, onClick(){}, show(){} },
+          HapticFeedback:{ impactOccurred(){} },
+          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\\n"+payload); },
+          openTelegramLink(u){ window.open(u,"_blank"); },
+          showAlert(msg){ alert(msg); },
+          initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
+        };
+      }
 
       // Back
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => tg.close());
+      tg.ready?.(); tg.expand?.();
+      tg.BackButton?.show?.();
+      tg.BackButton?.onClick?.(() => window.history.back());
 
       // Theme → CSS vars
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
       if (p.text_color) setVar('--txt', p.text_color);
-      tg.onEvent('themeChanged', () => {
+      tg.onEvent?.('themeChanged', () => {
         const p2 = tg.themeParams || {};
         setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
         setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
@@ -254,9 +272,9 @@
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
       // MainButton
-      tg.MainButton.setText("Open Missions");
-      tg.MainButton.onClick(() => sendAction("mission_open", { level: 1 }));
-      tg.MainButton.show();
+      tg.MainButton?.setText?.("Open Missions");
+      tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
+      tg.MainButton?.show?.();
 
       // ===== MAPA =====
       const mapBack   = $("#mapBack");
@@ -275,7 +293,8 @@
 
       async function loadMapData(){
         try{
-          DATA = await fetch('/map.json', { cache: 'no-store' }).then(r => r.json());
+          // UWAGA: ścieżka względna – działa na GitHub Pages (repo subpath)
+          DATA = await fetch('map.json', { cache: 'no-store' }).then(r => r.json());
         }catch(e){
           console.error('map.json load error', e);
           DATA = null;
@@ -355,7 +374,7 @@
           if (!unlocked){
             const lock = document.createElement('span');
             lock.className = 'lock-badge';
-            lock.innerHTML = `<img src="${(DATA?.ui?.pin?.badgeLock || '/images/ui/lock.svg')}" alt="locked">`;
+            lock.innerHTML = `<img src="${(DATA?.ui?.pin?.badgeLock || 'images/ui/lock.svg')}" alt="locked">`;
             btn.appendChild(lock);
           }
 
@@ -419,7 +438,7 @@
       function openRegion(region) { sendAction("region_open", { region }); }
       function openBotRegion(region) {
         const link = `https://t.me/Alpha_husky_bot/AlphaWebApp?startapp=region=${region}`;
-        if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, "_blank");
+        tg.openTelegramLink ? tg.openTelegramLink(link) : window.open(link, "_blank");
       }
 
       // Klik w tło mapy → loguj współrzędne
@@ -509,7 +528,7 @@
         redraw:       () => renderMap()
       };
 
-      // Opcjonalnie: preload mapy w tle (jeśli chcesz)
+      // Opcjonalnie: preload mapy w tle
       // loadMapData();
     });
   </script>
