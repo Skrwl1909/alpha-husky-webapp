@@ -35,6 +35,7 @@
       font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
     }
     .btn:active { transform: translateY(1px); }
+    .btn.linklike { text-decoration:none; }
 
     /* Top bar */
     .topbar {
@@ -69,10 +70,7 @@
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
     }
-    /* Statyczne ścieżki off – rysujemy SVG */
     .map::before{ content:none; }
-
-    /* Mgła i gradient NAD ścieżkami, POD pinami */
     .map::after{
       content:""; position:absolute; inset:0; z-index:2;
       background:
@@ -81,20 +79,16 @@
       pointer-events:none;
     }
 
-    /* ===== Warstwy mapy ===== */
     .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
     .paths-layer svg{ width:100%; height:100%; }
-    .pins{ position:absolute; inset:0; z-index:3; } /* piny NAD mgłą */
+    .pins{ position:absolute; inset:0; z-index:3; }
 
-    /* ===== Hotspot / Pin ===== */
     .hotspot{
       position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
       z-index:3; transition: transform .12s ease, filter .12s ease;
     }
     .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
-
-    /* Ground decal (cień pod ikonką) */
     .hotspot::before{
       content:""; position:absolute; left:50%; top:50%;
       width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
@@ -114,13 +108,11 @@
     }
     .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
 
-    /* Pulsujący ring */
     .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px); transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
     .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
     .hotspot.locked   .ping{ background:rgba(148,163,184,.10); }
     @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
 
-    /* Etykieta – „pill” z ogonkiem */
     .chip{
       position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
       font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
@@ -129,7 +121,6 @@
     }
     .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px; transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
 
-    /* Plakietka kłódki */
     .lock-badge{
       position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
       background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
@@ -138,12 +129,10 @@
     }
     .lock-badge img{ width:14px; height:14px; opacity:.9 }
 
-    /* SVG ścieżki */
     .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
-    /* Locked info modal */
     .locked-back{ position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
     .locked-card{ width:min(92vw,440px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
@@ -151,7 +140,6 @@
 </head>
 <body>
   <div class="app">
-    <!-- Background -->
     <div class="bg">
       <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
         <source src="background3.webm" type="video/webm" />
@@ -189,7 +177,6 @@
             <button class="close-x" id="closeMap">×</button>
           </div>
           <div id="map" class="map" data-map-root>
-            <!-- warstwa SVG + piny -->
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1000 562" preserveAspectRatio="xMidYMid meet"></svg></div>
             <div class="pins" id="pins"></div>
           </div>
@@ -206,9 +193,9 @@
         </div>
         <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a class="btn" id="lockedShop" href="/shop?tab=boosts">Open Shop</a>
-          <a class="btn" id="lockedForge" href="#">Open Forge</a>
-          <button class="btn primary" id="lockedAsk">Ask the Bot</button>
+          <button class="btn linklike" id="lockedShop"  type="button">Open Shop</button>
+          <button class="btn linklike" id="lockedForge" type="button">Open Forge</button>
+          <button class="btn primary"  id="lockedAsk"   type="button">Ask the Bot</button>
         </div>
       </div>
     </div>
@@ -224,17 +211,14 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // 100vh fix
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
 
-      // === DEV STUB dla pracy poza Telegramem ===
       const nativeTg = window.Telegram?.WebApp;
       let tg = nativeTg;
       const $  = sel => document.querySelector(sel);
 
       if (!tg) {
-        // Ukryj fallback i włącz tryb dev
         const fb = $("#fallback"); if (fb) fb.style.display = "none";
         tg = {
           ready(){}, expand(){},
@@ -250,12 +234,10 @@
         };
       }
 
-      // Back
       tg.ready?.(); tg.expand?.();
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
 
-      // Theme → CSS vars
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
@@ -267,29 +249,25 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
-      // Player label
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
-      // MainButton
       tg.MainButton?.setText?.("Open Missions");
       tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton?.show?.();
 
-      // ===== MAPA =====
       const mapBack   = $("#mapBack");
       const mapRoot   = $("#map");
       const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
       const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
       const closeMap  = $("#closeMap");
 
-      // === MAP DATA (z pliku) ===
-      const VIEW_W = 1000, VIEW_H = 562; // 16:9 viewBox
+      const VIEW_W = 1000, VIEW_H = 562;
 
       let DATA = null;
       let regionsUnlocked = new Set();
       let keys = new Set();
-      let fragments = {}; // { itemId: count }
+      let fragments = {};
 
       // ===== BOOTSTRAP from backend (?s=base64url(json)) =====
       (function bootstrapFromQuery(){
@@ -300,13 +278,10 @@
           const raw = atob(q.replace(/-/g,'+').replace(/_/g,'/') + pad);
           const s   = JSON.parse(decodeURIComponent(escape(raw)));
 
-          // preferuj stan z backendu
           if (s.regions_unlocked){
-            regionsUnlocked = new Set(Object.entries(s.regions_unlocked)
-              .filter(([,v])=>!!v).map(([k])=>k));
+            regionsUnlocked = new Set(Object.entries(s.regions_unlocked).filter(([,v])=>!!v).map(([k])=>k));
           }
           if (s.keys){
-            // back → dict {moon_lab: n, testnet_wastes: n} → map.json keys:
             keys = new Set(Object.entries(s.keys).flatMap(([rid, cnt])=>{
               if (!cnt) return [];
               if (rid === 'moon_lab') return ['key_moon_lab'];
@@ -314,9 +289,6 @@
               return [];
             }));
           }
-          // fragments zostawiamy po stronie DATA.defaults (map.json)
-
-          // (opcjonalnie) piny z backendu (id/unlocked)
           window.__alphaBuildingsFromBackend = s.buildings || [];
           window.__alphaBootstrapped = true;
         }catch(e){ console.warn('bootstrap error', e); }
@@ -329,55 +301,39 @@
           console.error('map.json load error', e);
           DATA = null;
         }
-        // Jeśli nie było bootstrapu – użyj defaults z map.json
         if (!window.__alphaBootstrapped){
           regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
           keys            = new Set(DATA?.defaults?.keys || []);
         } else {
-          // upewnij się, że chain zawsze dostępny
           regionsUnlocked.add('chain');
         }
-        // fragments bierzemy z map.json zawsze (to frontowy licznik)
-        fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
+        fragments = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
       }
 
-      // Sprawdzenie odblokowania regionu (free/key/fragments)
       function isRegionUnlocked(regionId){
         const reg = DATA?.regions?.[regionId];
         if (!reg) return true;
-
-        // ręczne odblokowanie (np. z backendu) zawsze działa
         if (regionsUnlocked.has(regionId)) return true;
 
         const u = reg.unlock || { type: 'free' };
         if (u.type === 'free') return true;
-
-        if (u.type === 'key'){
-          // odblokowane jeśli mamy pełny klucz
-          return !!(u.id && keys.has(u.id));
-        }
-
+        if (u.type === 'key')  return !!(u.id && keys.has(u.id));
         if (u.type === 'fragments'){
-          // jeśli skraftowano pełny klucz → też OK
           if (u.combineInto && keys.has(u.combineInto)) return true;
-          // odblokuj po samym zebraniu fragmentów (lub zmień na wariant „po craftcie”)
           const have = fragments[u.item] || 0;
           return have >= (u.required || Infinity);
         }
-
         return false;
       }
 
       const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
-      // Rysuj ścieżki SVG wg DATA.paths
       function drawPaths(){
         pathsSVG.innerHTML = '';
         for (const p of (DATA?.paths || [])){
           const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
           const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
-
           if (!locked && p.emphasis){
             const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
             glow.setAttribute('points', ptsStr);
@@ -392,15 +348,11 @@
         }
       }
 
-      // Render pinów wg DATA.nodes
       function renderPins(){
         pinsEl.innerHTML = '';
         for (const b of (DATA?.nodes || [])){
-          // override z backendu (jeśli przyszedł w ?s=)
           const fromBackend = (window.__alphaBuildingsFromBackend || []).find(x => x.id === b.id);
-          const unlocked = (fromBackend && typeof fromBackend.unlocked === 'boolean')
-            ? fromBackend.unlocked
-            : isRegionUnlocked(b.region);
+          const unlocked = (fromBackend && typeof fromBackend.unlocked === 'boolean') ? fromBackend.unlocked : isRegionUnlocked(b.region);
 
           const btn = document.createElement('button');
           btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
@@ -410,7 +362,6 @@
 
           const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
           const img  = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
-
           const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
 
           if (!unlocked){
@@ -435,11 +386,11 @@
 
       function renderMap(){ drawPaths(); renderPins(); }
 
-      // Locked modal — pokaż postęp fragmentów, jeżeli dotyczy
       const lockedBack  = $("#lockedBack");
       const lockedTitle = $("#lockedTitle");
       const lockedDesc  = $("#lockedDesc");
       const lockedForge = $("#lockedForge");
+      const lockedShop  = $("#lockedShop");
       const lockedAsk   = $("#lockedAsk");
       $("#closeLocked").onclick = () => lockedBack.style.display = "none";
 
@@ -450,42 +401,38 @@
 
         lockedTitle.textContent = `Locked: ${b.name}`;
 
+        let forgeRecipe = null;
+
         if (u.type === 'fragments'){
           const cur   = fragments[u.item] || 0;
           const need  = u.required || 0;
           const label = (u.item || '').replace('key_','').replaceAll('_',' ');
           lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
-          lockedForge.href = `/forge?recipe=${encodeURIComponent(u.combineInto || u.item)}`;
+          forgeRecipe = (u.combineInto || u.item) || null;
         } else if (u.type === 'key'){
           const label = (u.id || 'region key').replace('key_','').replaceAll('_',' ');
           lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
-          lockedForge.href = `/forge?recipe=${encodeURIComponent(u.id)}`;
+          forgeRecipe = u.id || null;
         } else {
           lockedDesc.textContent = reason || 'Complete requirements to unlock.';
-          lockedForge.href = '#';
         }
 
-        // Zmieniamy: wysyłamy prośbę do bota o unlock (zamiast otwierać link)
-        lockedAsk.onclick = () => sendAction('unlock_region', { region: b.region });
+        // Wszystkie 3 przyciski wysyłają sendData → brak 404 w WebApp
+        lockedShop.onclick  = (e) => { e?.preventDefault?.(); sendAction('shop_open',  { tab: 'boosts' }); };
+        lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
+        lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
+
         lockedBack.style.display = 'flex';
       }
 
-      // Otwórz/zamknij mapę
       document.querySelector(".btn.map").onclick = () => {
         mapBack.style.display = "flex";
         if (DATA) renderMap(); else loadMapData();
       };
       closeMap.onclick = () => { mapBack.style.display = "none"; };
 
-      // Region enter
       function openRegion(region) { sendAction("region_open", { region }); }
-      function openBotRegion(region) {
-        const bot = 'Alpha_husky_bot';
-        const link = `https://t.me/${bot}?startapp=${encodeURIComponent('region='+region)}`;
-        if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
-      }
 
-      // Klik w tło mapy → loguj współrzędne
       mapRoot.addEventListener("click", (e) => {
         if (e.target !== mapRoot) return;
         const r = mapRoot.getBoundingClientRect();
@@ -494,7 +441,6 @@
         console.log("coords:", x, y);
       });
 
-      // ===== Twoje akcje =====
       const actions = {
         ".btn.avatar":    () => sendAction("avatar_open"),
         ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
@@ -505,7 +451,6 @@
       };
       Object.entries(actions).forEach(([sel, fn]) => { const el = document.querySelector(sel); if (el) el.onclick = fn; });
 
-      // Helpers
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
@@ -522,7 +467,6 @@
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
 
-      // ===== Label collision resolver =====
       function resolveLabelCollisions(){
         const chips = [...document.querySelectorAll('.pins .chip')];
         chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
@@ -545,7 +489,6 @@
         });
       }
 
-      // Warstwy bezpieczeństwa (gdyby HTML był bez nich)
       function createPathsLayer(root){
         const layer = document.createElement("div");
         layer.className = "paths-layer";
@@ -561,7 +504,6 @@
         root.appendChild(layer); return layer;
       }
 
-      // === helpery do testów w konsoli (front-only) ===
       window.alphaMap = {
         unlockRegion: (r) => { regionsUnlocked.add(r); renderMap(); },
         lockRegion:   (r) => { regionsUnlocked.delete(r); renderMap(); },
