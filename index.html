@@ -243,7 +243,7 @@
           BackButton:{ show(){}, onClick(){} },
           MainButton:{ setText(){}, onClick(){}, show(){} },
           HapticFeedback:{ impactOccurred(){} },
-          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\\n"+payload); },
+          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\n"+payload); },
           openTelegramLink(u){ window.open(u,"_blank"); },
           showAlert(msg){ alert(msg); },
           initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
@@ -291,16 +291,53 @@
       let keys = new Set();
       let fragments = {}; // { itemId: count }
 
+      // ===== BOOTSTRAP from backend (?s=base64url(json)) =====
+      (function bootstrapFromQuery(){
+        try{
+          const q = new URLSearchParams(location.search).get('s');
+          if(!q) return;
+          const pad = q.length % 4 ? '='.repeat(4 - (q.length % 4)) : '';
+          const raw = atob(q.replace(/-/g,'+').replace(/_/g,'/') + pad);
+          const s   = JSON.parse(decodeURIComponent(escape(raw)));
+
+          // preferuj stan z backendu
+          if (s.regions_unlocked){
+            regionsUnlocked = new Set(Object.entries(s.regions_unlocked)
+              .filter(([,v])=>!!v).map(([k])=>k));
+          }
+          if (s.keys){
+            // back → dict {moon_lab: n, testnet_wastes: n} → map.json keys:
+            keys = new Set(Object.entries(s.keys).flatMap(([rid, cnt])=>{
+              if (!cnt) return [];
+              if (rid === 'moon_lab') return ['key_moon_lab'];
+              if (rid === 'testnet_wastes') return ['key_testnet'];
+              return [];
+            }));
+          }
+          // fragments zostawiamy po stronie DATA.defaults (map.json)
+
+          // (opcjonalnie) piny z backendu (id/unlocked)
+          window.__alphaBuildingsFromBackend = s.buildings || [];
+          window.__alphaBootstrapped = true;
+        }catch(e){ console.warn('bootstrap error', e); }
+      })();
+
       async function loadMapData(){
         try{
-          // UWAGA: ścieżka względna – działa na GitHub Pages (repo subpath)
           DATA = await fetch('map.json', { cache: 'no-store' }).then(r => r.json());
         }catch(e){
           console.error('map.json load error', e);
           DATA = null;
         }
-        regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
-        keys            = new Set(DATA?.defaults?.keys || []);
+        // Jeśli nie było bootstrapu – użyj defaults z map.json
+        if (!window.__alphaBootstrapped){
+          regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
+          keys            = new Set(DATA?.defaults?.keys || []);
+        } else {
+          // upewnij się, że chain zawsze dostępny
+          regionsUnlocked.add('chain');
+        }
+        // fragments bierzemy z map.json zawsze (to frontowy licznik)
         fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
       }
@@ -359,7 +396,12 @@
       function renderPins(){
         pinsEl.innerHTML = '';
         for (const b of (DATA?.nodes || [])){
-          const unlocked = isRegionUnlocked(b.region);
+          // override z backendu (jeśli przyszedł w ?s=)
+          const fromBackend = (window.__alphaBuildingsFromBackend || []).find(x => x.id === b.id);
+          const unlocked = (fromBackend && typeof fromBackend.unlocked === 'boolean')
+            ? fromBackend.unlocked
+            : isRegionUnlocked(b.region);
+
           const btn = document.createElement('button');
           btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
           btn.style.left = b.x + '%';
@@ -423,7 +465,8 @@
           lockedForge.href = '#';
         }
 
-        lockedAsk.onclick = () => openBotRegion(b.region);
+        // Zmieniamy: wysyłamy prośbę do bota o unlock (zamiast otwierać link)
+        lockedAsk.onclick = () => sendAction('unlock_region', { region: b.region });
         lockedBack.style.display = 'flex';
       }
 
@@ -435,12 +478,12 @@
       closeMap.onclick = () => { mapBack.style.display = "none"; };
 
       // Region enter
-     function openRegion(region) { sendAction("region_open", { region }); }
-     function openBotRegion(region) {
-     const bot = 'Alpha_husky_bot';
-     const link = `https://t.me/${bot}?startapp=${encodeURIComponent('region='+region)}`;
-     if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
-   }
+      function openRegion(region) { sendAction("region_open", { region }); }
+      function openBotRegion(region) {
+        const bot = 'Alpha_husky_bot';
+        const link = `https://t.me/${bot}?startapp=${encodeURIComponent('region='+region)}`;
+        if (tg?.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
+      }
 
       // Klik w tło mapy → loguj współrzędne
       mapRoot.addEventListener("click", (e) => {
@@ -535,4 +578,3 @@
   </script>
 </body>
 </html>
-
