@@ -6,7 +6,6 @@
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
 
-  <!-- Preloady -->
   <link rel="preload" as="image" href="background_poster.jpg">
   <link rel="preload" as="video"  href="background3.webm" type="video/webm">
   <link rel="preload" as="video"  href="background3.mp4"  type="video/mp4">
@@ -17,17 +16,14 @@
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
 
-    /* ===== Background ===== */
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
 
-    /* ===== UI layer ===== */
     .ui { position: absolute; inset: 0; z-index: 2; }
     .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
 
-    /* Buttons */
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
@@ -37,7 +33,6 @@
     .btn:active { transform: translateY(1px); }
     .btn.linklike { text-decoration:none; }
 
-    /* Top bar */
     .topbar {
       position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
       padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
@@ -49,7 +44,6 @@
 
     @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
 
-    /* ===== Fallback overlay ===== */
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
       background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
@@ -57,7 +51,6 @@
     }
     .fallback a { color:#aef; text-decoration:underline; }
 
-    /* ===== MAPA ===== */
     .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
     .map-wrap  { width:min(96vw,1200px); padding:12px; }
     .map-card  { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
@@ -65,42 +58,31 @@
     .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
-    .map{
-      position:relative; width:100%; aspect-ratio:16/9;
+    .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
-      border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset;
-    }
+      border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
     .map::before{ content:none; }
-    .map::after{
-      content:""; position:absolute; inset:0; z-index:2;
-      background:
-        url("images/map/overlays/fog.png") center/cover no-repeat,
-        linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-      pointer-events:none;
-    }
+    .map::after{ content:""; position:absolute; inset:0; z-index:2;
+      background: url("images/map/overlays/fog.png") center/cover no-repeat,
+                  linear-gradient(0deg, rgba(0,0,0,.55), transparent);
+      pointer-events:none; }
 
     .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
     .paths-layer svg{ width:100%; height:100%; }
     .pins{ position:absolute; inset:0; z-index:3; }
 
-    .hotspot{
-      position:absolute; transform:translate(-50%,-50%); text-align:center;
+    .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
-      z-index:3; transition: transform .12s ease, filter .12s ease;
-    }
+      z-index:3; transition: transform .12s ease, filter .12s ease; }
     .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
-    .hotspot::before{
-      content:""; position:absolute; left:50%; top:50%;
+    .hotspot::before{ content:""; position:absolute; left:50%; top:50%;
       width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
       transform: translate(-50%, calc(-50% + 20px));
       background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-      opacity:.9; filter: blur(.2px); pointer-events:none;
-    }
+      opacity:.9; filter: blur(.2px); pointer-events:none; }
 
-    .hotspot img{
-      width: clamp(40px, 3.6vw, 72px);
-      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none;
-    }
+    .hotspot img{ width: clamp(40px, 3.6vw, 72px);
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
     .hotspot.unlocked img{
       filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
               drop-shadow(-2px 0 6px rgba(0,229,255,.22))
@@ -108,34 +90,35 @@
     }
     .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
 
-    .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px); transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
+    .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
+      transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
     .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
     .hotspot.locked   .ping{ background:rgba(148,163,184,.10); }
     @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
 
-    .chip{
-      position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
+    .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
       font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
       background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
-      backdrop-filter: blur(3px);
-    }
-    .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px; transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
+      backdrop-filter: blur(3px); }
+    .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
+      transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
 
-    .lock-badge{
-      position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
+    .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
       background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
       display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
-      box-shadow: 0 2px 6px rgba(0,0,0,.5);
-    }
+      box-shadow: 0 2px 6px rgba(0,0,0,.5); }
     .lock-badge img{ width:14px; height:14px; opacity:.9 }
 
     .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
-    .locked-back{ position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-    .locked-card{ width:min(92vw,440px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
+    .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+    .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
+    .tab{ padding:8px 12px; border-radius:999px; border:1px solid var(--stroke); background:rgba(255,255,255,.06); cursor:pointer; }
+    .tab.active{ outline:2px solid rgba(255,255,255,.18); }
   </style>
 </head>
 <body>
@@ -155,6 +138,7 @@
       </div>
 
       <div class="grid">
+        <!-- Row 1 -->
         <div class="row">
           <button class="btn map"      aria-label="Open Map">Map</button>
           <button class="btn avatar"    aria-label="Open Avatar">Avatar</button>
@@ -164,6 +148,18 @@
           <button class="btn shop"      aria-label="Open Shop">Shop</button>
           <button class="btn pets"      aria-label="Open Pets">Pets</button>
         </div>
+
+        <!-- Row 2: Quick Actions (Twoje komendy) -->
+        <div class="row" style="margin-top:10px;">
+          <button class="btn equipped">Equipped</button>
+          <button class="btn keys">Keys</button>
+          <button class="btn feed">Feed</button>
+          <button class="btn mystats">MyStats</button>
+          <button class="btn mypets">MyPets</button>
+          <button class="btn profile">Profile</button>
+          <button class="btn howlboard">Howlboard</button>
+        </div>
+
         <div class="spacer"></div>
       </div>
     </div>
@@ -200,6 +196,22 @@
       </div>
     </div>
 
+    <!-- Howlboard modal (zakładki) -->
+    <div class="sheet-back" id="boardBack">
+      <div class="sheet-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:700;">Howlboard</div>
+          <button class="btn" id="closeBoard">×</button>
+        </div>
+        <div class="tabs" style="margin-top:10px;">
+          <button class="tab" data-sort="bones">Bones</button>
+          <button class="tab" data-sort="level">Level</button>
+          <button class="tab" data-sort="howls">Howls</button>
+        </div>
+        <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
+      </div>
+    </div>
+
     <div class="fallback" id="fallback">
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
@@ -222,8 +234,7 @@
         const fb = $("#fallback"); if (fb) fb.style.display = "none";
         tg = {
           ready(){}, expand(){},
-          themeParams:{},
-          onEvent(){},
+          themeParams:{}, onEvent(){},
           BackButton:{ show(){}, onClick(){} },
           MainButton:{ setText(){}, onClick(){}, show(){} },
           HapticFeedback:{ impactOccurred(){} },
@@ -256,43 +267,18 @@
       tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton?.show?.();
 
+      // ===== Map (jak wcześniej) =====
       const mapBack   = $("#mapBack");
       const mapRoot   = $("#map");
       const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
       const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
       const closeMap  = $("#closeMap");
 
-      const VIEW_W = 1000, VIEW_H = 562;
-
       let DATA = null;
+      const VIEW_W = 1000, VIEW_H = 562;
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
-
-      // ===== BOOTSTRAP from backend (?s=base64url(json)) =====
-      (function bootstrapFromQuery(){
-        try{
-          const q = new URLSearchParams(location.search).get('s');
-          if(!q) return;
-          const pad = q.length % 4 ? '='.repeat(4 - (q.length % 4)) : '';
-          const raw = atob(q.replace(/-/g,'+').replace(/_/g,'/') + pad);
-          const s   = JSON.parse(decodeURIComponent(escape(raw)));
-
-          if (s.regions_unlocked){
-            regionsUnlocked = new Set(Object.entries(s.regions_unlocked).filter(([,v])=>!!v).map(([k])=>k));
-          }
-          if (s.keys){
-            keys = new Set(Object.entries(s.keys).flatMap(([rid, cnt])=>{
-              if (!cnt) return [];
-              if (rid === 'moon_lab') return ['key_moon_lab'];
-              if (rid === 'testnet_wastes') return ['key_testnet'];
-              return [];
-            }));
-          }
-          window.__alphaBuildingsFromBackend = s.buildings || [];
-          window.__alphaBootstrapped = true;
-        }catch(e){ console.warn('bootstrap error', e); }
-      })();
 
       async function loadMapData(){
         try{
@@ -301,13 +287,9 @@
           console.error('map.json load error', e);
           DATA = null;
         }
-        if (!window.__alphaBootstrapped){
-          regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
-          keys            = new Set(DATA?.defaults?.keys || []);
-        } else {
-          regionsUnlocked.add('chain');
-        }
-        fragments = Object.assign({}, DATA?.defaults?.fragments || {});
+        regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
+        keys            = new Set(DATA?.defaults?.keys || []);
+        fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
       }
 
@@ -351,9 +333,7 @@
       function renderPins(){
         pinsEl.innerHTML = '';
         for (const b of (DATA?.nodes || [])){
-          const fromBackend = (window.__alphaBuildingsFromBackend || []).find(x => x.id === b.id);
-          const unlocked = (fromBackend && typeof fromBackend.unlocked === 'boolean') ? fromBackend.unlocked : isRegionUnlocked(b.region);
-
+          const unlocked = isRegionUnlocked(b.region);
           const btn = document.createElement('button');
           btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
           btn.style.left = b.x + '%';
@@ -386,6 +366,7 @@
 
       function renderMap(){ drawPaths(); renderPins(); }
 
+      // Locked modal (jak wcześniej)
       const lockedBack  = $("#lockedBack");
       const lockedTitle = $("#lockedTitle");
       const lockedDesc  = $("#lockedDesc");
@@ -400,7 +381,6 @@
         const reason = reg?.lockedReason;
 
         lockedTitle.textContent = `Locked: ${b.name}`;
-
         let forgeRecipe = null;
 
         if (u.type === 'fragments'){
@@ -411,13 +391,12 @@
           forgeRecipe = (u.combineInto || u.item) || null;
         } else if (u.type === 'key'){
           const label = (u.id || 'region key').replace('key_','').replaceAll('_',' ');
-          lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
+          lockedDesc.innerHTML = reason || `Requires <b>{label}</b> to unlock.`;
           forgeRecipe = u.id || null;
         } else {
           lockedDesc.textContent = reason || 'Complete requirements to unlock.';
         }
 
-        // Wszystkie 3 przyciski wysyłają sendData → brak 404 w WebApp
         lockedShop.onclick  = (e) => { e?.preventDefault?.(); sendAction('shop_open',  { tab: 'boosts' }); };
         lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
         lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
@@ -441,16 +420,42 @@
         console.log("coords:", x, y);
       });
 
+      // ===== Akcje przycisków =====
       const actions = {
+        // Row 1
         ".btn.avatar":    () => sendAction("avatar_open"),
         ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
-        ".btn.inventory": () => sendAction("inventory_open"),
+        ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
         ".btn.char":      () => sendAction("char_open"),
         ".btn.shop":      () => sendAction("shop_open"),
         ".btn.pets":      () => sendAction("pets_open"),
+
+        // Row 2 (tekstowe komendy jako klik)
+        ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
+        ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
+        ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
+        ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
+        ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
+        ".btn.howlboard": () => openBoard(),
       };
       Object.entries(actions).forEach(([sel, fn]) => { const el = document.querySelector(sel); if (el) el.onclick = fn; });
 
+      // Howlboard modal
+      const boardBack = $("#boardBack");
+      const closeBoard = $("#closeBoard");
+      function openBoard(){ boardBack.style.display = "flex"; }
+      closeBoard.onclick = () => boardBack.style.display = "none";
+      document.querySelectorAll(".tab").forEach(t => {
+        t.onclick = () => {
+          document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x===t));
+          const sort = t.getAttribute("data-sort");
+          sendAction("cmd", { name: "howlboard", args: [sort] });
+          boardBack.style.display = "none";
+        };
+      });
+
+      // Helpers
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
@@ -466,7 +471,6 @@
         const h = hex.replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
-
       function resolveLabelCollisions(){
         const chips = [...document.querySelectorAll('.pins .chip')];
         chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
@@ -488,7 +492,6 @@
           if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
         });
       }
-
       function createPathsLayer(root){
         const layer = document.createElement("div");
         layer.className = "paths-layer";
@@ -503,19 +506,6 @@
         layer.className = "pins"; layer.id = "pins";
         root.appendChild(layer); return layer;
       }
-
-      window.alphaMap = {
-        unlockRegion: (r) => { regionsUnlocked.add(r); renderMap(); },
-        lockRegion:   (r) => { regionsUnlocked.delete(r); renderMap(); },
-        haveKey:      (k) => { keys.add(k); renderMap(); },
-        removeKey:    (k) => { keys.delete(k); renderMap(); },
-        addFragments: (item, n=1) => { fragments[item] = (fragments[item]||0) + n; renderMap(); },
-        setFragments: (item, n=0) => { fragments[item] = n; renderMap(); },
-        redraw:       () => renderMap()
-      };
-
-      // Opcjonalnie: preload mapy w tle
-      // loadMapData();
     });
   </script>
 </body>
