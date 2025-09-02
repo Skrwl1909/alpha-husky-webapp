@@ -42,9 +42,7 @@
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
-    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; }
-
-    }
+    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
 
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
@@ -63,7 +61,6 @@
     .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
-    .map::before{ content:none; }
     .map::after{ content:""; position:absolute; inset:0; z-index:2;
       background: url("images/map/overlays/fog.png") center/cover no-repeat,
                   linear-gradient(0deg, rgba(0,0,0,.55), transparent);
@@ -239,6 +236,7 @@
       const $  = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
 
+      // DEV fallback (poza Telegramem)
       if (!tg) {
         const fb = $("#fallback"); if (fb) fb.style.display = "none";
         tg = {
@@ -258,6 +256,7 @@
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
 
+      // Theming
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
@@ -269,9 +268,11 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
+      // Ustaw nazwę gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
+      // MainButton – przykład
       tg.MainButton?.setText?.("Open Missions");
       tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton?.show?.();
@@ -285,6 +286,7 @@
 
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
+          console.log("[sendData]", payload);            // <= debug do DevTools
           tg.sendData(JSON.stringify(payload));
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
@@ -303,18 +305,18 @@
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
 
-      // ===== Map =====
+      // ===== MAP / STATE =====
       const mapBack   = $("#mapBack");
       const mapRoot   = $("#map");
       const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
       const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
-      const closeMap  = $("#closeMap");
 
       let DATA = null;
       const VIEW_W = 1000, VIEW_H = 562;
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
+      let PLAYER_STATE = null;
 
       async function loadMapData(){
         try{
@@ -323,10 +325,38 @@
           console.error('map.json load error', e);
           DATA = null;
         }
+        // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
         keys            = new Set(DATA?.defaults?.keys || []);
         fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
+      }
+
+      function applyStateToMap(){
+        if (!PLAYER_STATE) return;
+        if (Array.isArray(PLAYER_STATE.regionsUnlocked)) {
+          regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
+        }
+        if (typeof PLAYER_STATE.keyFragments === "number") {
+          // jeśli map.json korzysta z 'fragments.key_fragments'
+          fragments.key_fragments = PLAYER_STATE.keyFragments;
+        }
+      }
+
+      async function loadPlayerState(){
+        try {
+          const res = await fetch("/webapp/state", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+          });
+          const state = await res.json();
+          PLAYER_STATE = state;
+          applyStateToMap();
+          if (mapBack.style.display === "flex" && DATA) renderMap();
+        } catch (e) {
+          console.warn("state load failed", e);
+        }
       }
 
       function isRegionUnlocked(regionId){
@@ -348,6 +378,7 @@
       const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
       function drawPaths(){
+        if (!DATA) return;
         pathsSVG.innerHTML = '';
         for (const p of (DATA?.paths || [])){
           const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
@@ -367,6 +398,7 @@
       }
 
       function renderPins(){
+        if (!DATA) return;
         pinsEl.innerHTML = '';
         for (const b of (DATA?.nodes || [])){
           const unlocked = isRegionUnlocked(b.region);
@@ -440,10 +472,12 @@
         lockedBack.style.display = 'flex';
       }
 
-      // Open/close map — BEZPIECZNE BINDY
+      // Open/close map
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
-        if (DATA) renderMap(); else loadMapData();
+        if (!DATA) loadMapData();
+        // odśwież stan przy każdym otwarciu mapy (żeby pokrywać live unlocki)
+        loadPlayerState();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
 
@@ -472,7 +506,7 @@
         ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
         ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }), // alias -> mypet po stronie bota
         ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
@@ -542,6 +576,7 @@
           case "map":
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
+            loadPlayerState(); // dociągnij świeży stan przy wejściu z linka
             break;
           case "mission":
             sendAction("mission_open", { level: 1 });
@@ -559,16 +594,14 @@
             sendAction("pets_open");
             break;
           default:
-            // dashboard — nic nie robimy
             break;
         }
       }
 
       // Prefetch stanu (żeby mapa znała odblokowane regiony)
-      // (Jeśli używasz endpointu /webapp/state — tu możesz go wywołać)
+      loadPlayerState();
 
       if (sectionParam) {
-        // lekka pauza, żeby Telegram zdążył zainicjalizować WebApp
         setTimeout(() => showSection(sectionParam), 80);
       }
     });
