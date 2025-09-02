@@ -42,9 +42,7 @@
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
-    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; }
-
-    }
+    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
 
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
@@ -63,7 +61,6 @@
     .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
-    .map::before{ content:none; }
     .map::after{ content:""; position:absolute; inset:0; z-index:2;
       background: url("images/map/overlays/fog.png") center/cover no-repeat,
                   linear-gradient(0deg, rgba(0,0,0,.55), transparent);
@@ -225,7 +222,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Debug globalny — pokaże JS error jako alert w WebApp
+      // Debug: pokazuj błędy JS jako alert w WebApp
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
@@ -239,15 +236,16 @@
       const $  = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
 
+      // DEV fallback (poza Telegramem)
       if (!tg) {
-        const fb = $("#fallback"); if (fb) fb.style.display = "none";
+        const fb = $("#fallback"); if (fb) fb.style.display = "none"; // dev: ukryj fallback
         tg = {
           ready(){}, expand(){},
           themeParams:{}, onEvent(){},
           BackButton:{ show(){}, onClick(){} },
           MainButton:{ setText(){}, onClick(){}, show(){} },
           HapticFeedback:{ impactOccurred(){} },
-          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\n"+payload); },
+          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\\n"+payload); },
           openTelegramLink(u){ window.open(u,"_blank"); },
           showAlert(msg){ alert(msg); },
           initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
@@ -258,6 +256,7 @@
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
 
+      // Theming
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
@@ -269,9 +268,11 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
+      // Ustaw nazwę gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
+      // MainButton – przykład
       tg.MainButton?.setText?.("Open Missions");
       tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton?.show?.();
@@ -303,7 +304,7 @@
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
 
-      // ===== Map =====
+      // ===== MAP / STATE =====
       const mapBack   = $("#mapBack");
       const mapRoot   = $("#map");
       const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
@@ -315,6 +316,7 @@
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
+      let PLAYER_STATE = null;
 
       async function loadMapData(){
         try{
@@ -323,10 +325,34 @@
           console.error('map.json load error', e);
           DATA = null;
         }
+        // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
         keys            = new Set(DATA?.defaults?.keys || []);
         fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
+      }
+
+      async function loadPlayerState(){
+        try {
+          const res = await fetch("/webapp/state", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+          });
+          const state = await res.json();
+          PLAYER_STATE = state;
+          if (Array.isArray(state.regionsUnlocked)) {
+            regionsUnlocked = new Set(state.regionsUnlocked);
+          }
+          if (typeof state.keyFragments === "number") {
+            fragments.key_fragments = state.keyFragments; // jeśli map.json oczekuje takiego klucza
+          }
+          // Sigils (jeśli używasz)
+          // state.sigils -> możesz tu coś z tym robić w UI
+          if (mapBack.style.display === "flex") renderMap();
+        } catch (e) {
+          console.warn("state load failed", e);
+        }
       }
 
       function isRegionUnlocked(regionId){
@@ -400,7 +426,7 @@
         resolveLabelCollisions();
       }
 
-      function renderMap(){ drawPaths(); renderPins(); }
+      function renderMap(){ if (!DATA) return; drawPaths(); renderPins(); }
 
       // Locked modal
       const lockedBack  = $("#lockedBack");
@@ -440,10 +466,10 @@
         lockedBack.style.display = 'flex';
       }
 
-      // Open/close map — BEZPIECZNE BINDY
+      // Open/close map — bezpieczne bindy
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
-        if (DATA) renderMap(); else loadMapData();
+        if (!DATA) loadMapData();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
 
@@ -467,12 +493,12 @@
         ".btn.shop":      () => sendAction("shop_open"),
         ".btn.pets":      () => sendAction("pets_open"),
 
-        // Row 2 (tekstowe komendy jako klik)
+        // Row 2
         ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
         ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
         ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypet" }), // dopasowane do bota
         ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
@@ -526,6 +552,50 @@
           if (leftOverflow > 0)  ch.style.marginLeft = (leftOverflow)+"px";
           if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
         });
+      }
+
+      // ===== Routing z URL-a =====
+      const qs = new URLSearchParams(location.search);
+      const sectionParam = (qs.get("section") || "").toLowerCase();
+      const toastParam   = qs.get("toast");
+
+      if (toastParam) {
+        try { tg.showAlert?.(toastParam.replace(/_/g,' ')); } catch(_) {}
+      }
+
+      function showSection(name){
+        switch(name){
+          case "map":
+            mapBack.style.display = "flex";
+            if (!DATA) loadMapData();
+            break;
+          case "mission":
+            sendAction("mission_open", { level: 1 });
+            break;
+          case "inventory":
+            sendAction("cmd", { name: "inventory" });
+            break;
+          case "shop":
+            sendAction("shop_open");
+            break;
+          case "profile":
+            sendAction("cmd", { name: "profile" });
+            break;
+          case "pets":
+            sendAction("pets_open");
+            break;
+          default:
+            // dashboard — nic nie robimy
+            break;
+        }
+      }
+
+      // Prefetch stanu (żeby mapa znała odblokowane regiony)
+      loadPlayerState();
+
+      if (sectionParam) {
+        // lekka pauza, żeby Telegram zdążył zainicjalizować WebApp
+        setTimeout(() => showSection(sectionParam), 80);
       }
     });
   </script>
