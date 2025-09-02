@@ -16,19 +16,22 @@
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
 
-    .bg { position: absolute; inset: 0; z-index: 0; }
+    /* 👇 tło nie łapie klików */
+    .bg { position: absolute; inset: 0; z-index: 0; pointer-events:none; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
 
-    .ui { position: absolute; inset: 0; z-index: 2; }
-    .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
+    /* 👇 UI wyżej niż wszystko, przyciski responsywne na dotyk */
+    .ui { position: absolute; inset: 0; z-index: 50; }
+    .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; z-index: 50; }
 
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
       background:var(--glass); border:1px solid var(--stroke);
       font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
+      touch-action: manipulation;
     }
     .btn:active { transform: translateY(1px); }
     .btn.linklike { text-decoration:none; }
@@ -51,7 +54,8 @@
     }
     .fallback a { color:#aef; text-decoration:underline; }
 
-    .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
+    .map-back { position:fixed; inset:0; z-index: 40; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); pointer-events:none; }
+    .map-back.show { pointer-events:auto; }
     .map-wrap  { width:min(96vw,1200px); padding:12px; }
     .map-card  { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
     .map-head  { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
@@ -112,7 +116,8 @@
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
-    .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+    .locked-back, .sheet-back { position:fixed; inset:0; z-index:45; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); pointer-events:none; }
+    .locked-back.show, .sheet-back.show { pointer-events:auto; }
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
@@ -245,7 +250,7 @@
           BackButton:{ show(){}, onClick(){} },
           MainButton:{ setText(){}, onClick(){}, show(){} },
           HapticFeedback:{ impactOccurred(){} },
-          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\\n"+payload); },
+          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\n"+payload); },
           openTelegramLink(u){ window.open(u,"_blank"); },
           showAlert(msg){ alert(msg); },
           initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
@@ -287,6 +292,7 @@
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
           tg.sendData(JSON.stringify(payload));
+          console.log("[sendData]", payload);
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
           console.error(err);
@@ -347,9 +353,7 @@
           if (typeof state.keyFragments === "number") {
             fragments.key_fragments = state.keyFragments; // jeśli map.json oczekuje takiego klucza
           }
-          // Sigils (jeśli używasz)
-          // state.sigils -> możesz tu coś z tym robić w UI
-          if (mapBack.style.display === "flex") renderMap();
+          if (mapBack.classList.contains("show")) renderMap();
         } catch (e) {
           console.warn("state load failed", e);
         }
@@ -435,7 +439,7 @@
       const lockedForge = $("#lockedForge");
       const lockedShop  = $("#lockedShop");
       const lockedAsk   = $("#lockedAsk");
-      $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
+      $("#closeLocked")?.addEventListener("click", () => { lockedBack.classList.remove("show"); lockedBack.style.display = "none"; });
 
       function openLocked(b){
         const reg    = DATA?.regions?.[b.region];
@@ -463,15 +467,17 @@
         lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
         lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
 
+        lockedBack.classList.add('show');
         lockedBack.style.display = 'flex';
       }
 
       // Open/close map — bezpieczne bindy
       bind(".btn.map", () => {
+        mapBack.classList.add('show');
         mapBack.style.display = "flex";
         if (!DATA) loadMapData();
       });
-      bind("#closeMap", () => { mapBack.style.display = "none"; });
+      bind("#closeMap", () => { mapBack.classList.remove('show'); mapBack.style.display = "none"; });
 
       function openRegion(region) { sendAction("region_open", { region }); }
 
@@ -498,7 +504,7 @@
         ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
         ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypet" }), // dopasowane do bota
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypet" }),
         ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
@@ -506,13 +512,14 @@
 
       // Howlboard modal
       const boardBack = $("#boardBack");
-      bind("#closeBoard", () => boardBack.style.display = "none");
-      function openBoard(){ boardBack.style.display = "flex"; }
+      bind("#closeBoard", () => { boardBack.classList.remove("show"); boardBack.style.display = "none"; });
+      function openBoard(){ boardBack.classList.add("show"); boardBack.style.display = "flex"; }
       $$(".tab").forEach(t => {
         t.addEventListener("click", () => {
           $$(".tab").forEach(x => x.classList.toggle("active", x===t));
           const sort = t.getAttribute("data-sort");
           sendAction("cmd", { name: "howlboard", args: [sort] });
+          boardBack.classList.remove("show");
           boardBack.style.display = "none";
         });
       });
@@ -566,6 +573,7 @@
       function showSection(name){
         switch(name){
           case "map":
+            mapBack.classList.add("show");
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
             break;
@@ -597,6 +605,31 @@
         // lekka pauza, żeby Telegram zdążył zainicjalizować WebApp
         setTimeout(() => showSection(sectionParam), 80);
       }
+
+      // ===== Globalny bezpiecznik: delegacja pointerup =====
+      document.addEventListener('pointerup', (e) => {
+        const el = e.target.closest('.btn');
+        if (!el) return;
+        if (el.classList.contains('map')) {
+          mapBack.classList.add('show');
+          mapBack.style.display = 'flex';
+          if (!DATA) loadMapData();
+          return;
+        }
+        if (el.classList.contains('avatar'))    return sendAction("avatar_open");
+        if (el.classList.contains('mission'))   return sendAction("mission_open", { level: 1 });
+        if (el.classList.contains('inventory')) return sendAction("cmd", { name: "inventory" });
+        if (el.classList.contains('char'))      return sendAction("char_open");
+        if (el.classList.contains('shop'))      return sendAction("shop_open");
+        if (el.classList.contains('pets'))      return sendAction("pets_open");
+        if (el.classList.contains('equipped'))  return sendAction("cmd", { name: "equipped" });
+        if (el.classList.contains('keys'))      return sendAction("cmd", { name: "keys" });
+        if (el.classList.contains('feed'))      return sendAction("cmd", { name: "feed" });
+        if (el.classList.contains('mystats'))   return sendAction("cmd", { name: "mystats" });
+        if (el.classList.contains('mypets'))    return sendAction("cmd", { name: "mypet" });
+        if (el.classList.contains('profile'))   return sendAction("cmd", { name: "profile" });
+        if (el.classList.contains('howlboard')) { boardBack.classList.add('show'); boardBack.style.display = "flex"; return; }
+      }, { capture: true });
     });
   </script>
 </body>
