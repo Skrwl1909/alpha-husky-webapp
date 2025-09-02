@@ -16,22 +16,19 @@
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
 
-    /* 👇 tło nie łapie klików */
-    .bg { position: absolute; inset: 0; z-index: 0; pointer-events:none; }
+    .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
 
-    /* 👇 UI wyżej niż wszystko, przyciski responsywne na dotyk */
-    .ui { position: absolute; inset: 0; z-index: 50; }
-    .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; z-index: 50; }
+    .ui { position: absolute; inset: 0; z-index: 2; }
+    .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
 
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
       background:var(--glass); border:1px solid var(--stroke);
       font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
-      touch-action: manipulation;
     }
     .btn:active { transform: translateY(1px); }
     .btn.linklike { text-decoration:none; }
@@ -45,7 +42,9 @@
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
-    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
+    @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; }
+
+    }
 
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
@@ -54,8 +53,7 @@
     }
     .fallback a { color:#aef; text-decoration:underline; }
 
-    .map-back { position:fixed; inset:0; z-index: 40; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); pointer-events:none; }
-    .map-back.show { pointer-events:auto; }
+    .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
     .map-wrap  { width:min(96vw,1200px); padding:12px; }
     .map-card  { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
     .map-head  { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
@@ -65,6 +63,7 @@
     .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
+    .map::before{ content:none; }
     .map::after{ content:""; position:absolute; inset:0; z-index:2;
       background: url("images/map/overlays/fog.png") center/cover no-repeat,
                   linear-gradient(0deg, rgba(0,0,0,.55), transparent);
@@ -116,8 +115,7 @@
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
-    .locked-back, .sheet-back { position:fixed; inset:0; z-index:45; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); pointer-events:none; }
-    .locked-back.show, .sheet-back.show { pointer-events:auto; }
+    .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
@@ -227,7 +225,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Debug: pokazuj błędy JS jako alert w WebApp
+      // Debug globalny — pokaże JS error jako alert w WebApp
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
@@ -241,9 +239,8 @@
       const $  = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-      // DEV fallback (poza Telegramem)
       if (!tg) {
-        const fb = $("#fallback"); if (fb) fb.style.display = "none"; // dev: ukryj fallback
+        const fb = $("#fallback"); if (fb) fb.style.display = "none";
         tg = {
           ready(){}, expand(){},
           themeParams:{}, onEvent(){},
@@ -261,7 +258,6 @@
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
 
-      // Theming
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
@@ -273,11 +269,9 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
-      // Ustaw nazwę gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
-      // MainButton – przykład
       tg.MainButton?.setText?.("Open Missions");
       tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
       tg.MainButton?.show?.();
@@ -292,7 +286,6 @@
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
           tg.sendData(JSON.stringify(payload));
-          console.log("[sendData]", payload);
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
           console.error(err);
@@ -310,7 +303,7 @@
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
 
-      // ===== MAP / STATE =====
+      // ===== Map =====
       const mapBack   = $("#mapBack");
       const mapRoot   = $("#map");
       const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
@@ -322,7 +315,6 @@
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
-      let PLAYER_STATE = null;
 
       async function loadMapData(){
         try{
@@ -331,32 +323,10 @@
           console.error('map.json load error', e);
           DATA = null;
         }
-        // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
         keys            = new Set(DATA?.defaults?.keys || []);
         fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
-      }
-
-      async function loadPlayerState(){
-        try {
-          const res = await fetch("/webapp/state", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
-          });
-          const state = await res.json();
-          PLAYER_STATE = state;
-          if (Array.isArray(state.regionsUnlocked)) {
-            regionsUnlocked = new Set(state.regionsUnlocked);
-          }
-          if (typeof state.keyFragments === "number") {
-            fragments.key_fragments = state.keyFragments; // jeśli map.json oczekuje takiego klucza
-          }
-          if (mapBack.classList.contains("show")) renderMap();
-        } catch (e) {
-          console.warn("state load failed", e);
-        }
       }
 
       function isRegionUnlocked(regionId){
@@ -430,7 +400,7 @@
         resolveLabelCollisions();
       }
 
-      function renderMap(){ if (!DATA) return; drawPaths(); renderPins(); }
+      function renderMap(){ drawPaths(); renderPins(); }
 
       // Locked modal
       const lockedBack  = $("#lockedBack");
@@ -439,7 +409,7 @@
       const lockedForge = $("#lockedForge");
       const lockedShop  = $("#lockedShop");
       const lockedAsk   = $("#lockedAsk");
-      $("#closeLocked")?.addEventListener("click", () => { lockedBack.classList.remove("show"); lockedBack.style.display = "none"; });
+      $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
 
       function openLocked(b){
         const reg    = DATA?.regions?.[b.region];
@@ -467,17 +437,15 @@
         lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
         lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
 
-        lockedBack.classList.add('show');
         lockedBack.style.display = 'flex';
       }
 
-      // Open/close map — bezpieczne bindy
+      // Open/close map — BEZPIECZNE BINDY
       bind(".btn.map", () => {
-        mapBack.classList.add('show');
         mapBack.style.display = "flex";
-        if (!DATA) loadMapData();
+        if (DATA) renderMap(); else loadMapData();
       });
-      bind("#closeMap", () => { mapBack.classList.remove('show'); mapBack.style.display = "none"; });
+      bind("#closeMap", () => { mapBack.style.display = "none"; });
 
       function openRegion(region) { sendAction("region_open", { region }); }
 
@@ -499,12 +467,12 @@
         ".btn.shop":      () => sendAction("shop_open"),
         ".btn.pets":      () => sendAction("pets_open"),
 
-        // Row 2
+        // Row 2 (tekstowe komendy jako klik)
         ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
         ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
         ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypet" }),
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
         ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
@@ -512,14 +480,13 @@
 
       // Howlboard modal
       const boardBack = $("#boardBack");
-      bind("#closeBoard", () => { boardBack.classList.remove("show"); boardBack.style.display = "none"; });
-      function openBoard(){ boardBack.classList.add("show"); boardBack.style.display = "flex"; }
+      bind("#closeBoard", () => boardBack.style.display = "none");
+      function openBoard(){ boardBack.style.display = "flex"; }
       $$(".tab").forEach(t => {
         t.addEventListener("click", () => {
           $$(".tab").forEach(x => x.classList.toggle("active", x===t));
           const sort = t.getAttribute("data-sort");
           sendAction("cmd", { name: "howlboard", args: [sort] });
-          boardBack.classList.remove("show");
           boardBack.style.display = "none";
         });
       });
@@ -573,7 +540,6 @@
       function showSection(name){
         switch(name){
           case "map":
-            mapBack.classList.add("show");
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
             break;
@@ -599,37 +565,12 @@
       }
 
       // Prefetch stanu (żeby mapa znała odblokowane regiony)
-      loadPlayerState();
+      // (Jeśli używasz endpointu /webapp/state — tu możesz go wywołać)
 
       if (sectionParam) {
         // lekka pauza, żeby Telegram zdążył zainicjalizować WebApp
         setTimeout(() => showSection(sectionParam), 80);
       }
-
-      // ===== Globalny bezpiecznik: delegacja pointerup =====
-      document.addEventListener('pointerup', (e) => {
-        const el = e.target.closest('.btn');
-        if (!el) return;
-        if (el.classList.contains('map')) {
-          mapBack.classList.add('show');
-          mapBack.style.display = 'flex';
-          if (!DATA) loadMapData();
-          return;
-        }
-        if (el.classList.contains('avatar'))    return sendAction("avatar_open");
-        if (el.classList.contains('mission'))   return sendAction("mission_open", { level: 1 });
-        if (el.classList.contains('inventory')) return sendAction("cmd", { name: "inventory" });
-        if (el.classList.contains('char'))      return sendAction("char_open");
-        if (el.classList.contains('shop'))      return sendAction("shop_open");
-        if (el.classList.contains('pets'))      return sendAction("pets_open");
-        if (el.classList.contains('equipped'))  return sendAction("cmd", { name: "equipped" });
-        if (el.classList.contains('keys'))      return sendAction("cmd", { name: "keys" });
-        if (el.classList.contains('feed'))      return sendAction("cmd", { name: "feed" });
-        if (el.classList.contains('mystats'))   return sendAction("cmd", { name: "mystats" });
-        if (el.classList.contains('mypets'))    return sendAction("cmd", { name: "mypet" });
-        if (el.classList.contains('profile'))   return sendAction("cmd", { name: "profile" });
-        if (el.classList.contains('howlboard')) { boardBack.classList.add('show'); boardBack.style.display = "flex"; return; }
-      }, { capture: true });
     });
   </script>
 </body>
