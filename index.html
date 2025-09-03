@@ -39,6 +39,7 @@
       background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke);
       color:#cfe7ff; font:500 14px system-ui, sans-serif;
     }
+    .topbar .right { display:flex; gap:8px; align-items:center; }
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
 
@@ -133,11 +134,13 @@
     <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
-        <div class="badge" id="faction">PACK</div>
+        <div class="right">
+          <span class="badge" id="faction">PACK</span>
+          <span class="badge" id="entry" data-badge>entry=?</span>
+        </div>
       </div>
 
       <div class="grid">
-        <!-- Row 1 -->
         <div class="row">
           <button class="btn map"      aria-label="Open Map" type="button">Map</button>
           <button class="btn avatar"    aria-label="Open Avatar" type="button">Avatar</button>
@@ -148,7 +151,6 @@
           <button class="btn pets"      aria-label="Open Pets" type="button">Pets</button>
         </div>
 
-        <!-- Row 2 -->
         <div class="row" style="margin-top:10px;">
           <button class="btn equipped" type="button">Equipped</button>
           <button class="btn keys"     type="button">Keys</button>
@@ -215,6 +217,7 @@
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
         <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
+        <p><a href="https://t.me/ALPHA_husky_bot">Open in Telegram</a></p>
       </div>
     </div>
   </div>
@@ -222,7 +225,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Debug globalny — pokaże JS error jako alert w WebApp
+      // Global debug: pokaż JS error w WebApp
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
@@ -235,20 +238,26 @@
       let tg = nativeTg;
       const $  = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
+      const params = new URLSearchParams(location.search);
+      const DEV = params.get("dev") === "1";
 
-      // DEV fallback (poza Telegramem)
+      // Fallback poza Telegramem (z trybem dev ?dev=1)
       if (!tg) {
-        const fb = $("#fallback"); if (fb) fb.style.display = "none";
+        const fb = $("#fallback"); if (fb) fb.style.display = "flex"; // pokaż info
+        if (!DEV) return; // produkcyjnie: stop
+        // tryb developerski — emulacja TG
+        fb.style.display = "none";
         tg = {
           ready(){}, expand(){},
           themeParams:{}, onEvent(){},
           BackButton:{ show(){}, onClick(){} },
           MainButton:{ setText(){}, onClick(){}, show(){} },
           HapticFeedback:{ impactOccurred(){} },
-          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\n"+payload); },
+          sendData(payload){ console.log("[DEV] sendData:", payload); alert("[DEV] sendData:\\n"+payload); },
           openTelegramLink(u){ window.open(u,"_blank"); },
           showAlert(msg){ alert(msg); },
-          initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
+          initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } },
+          platform:"browser-dev"
         };
       }
 
@@ -268,9 +277,13 @@
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
 
-      // Ustaw nazwę gracza
+      // Player name
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
+
+      // pokaż źródło wejścia i platformę
+      const src = params.get("src") || "unknown";
+      $("#entry")?.textContent = `entry=${src} · ${tg?.platform || "browser"}`;
 
       // MainButton – przykład
       tg.MainButton?.setText?.("Open Missions");
@@ -286,7 +299,7 @@
 
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
-          console.log("[sendData]", payload);            // <= debug do DevTools
+          console.log("[sendData]", payload);
           tg.sendData(JSON.stringify(payload));
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
@@ -325,7 +338,6 @@
           console.error('map.json load error', e);
           DATA = null;
         }
-        // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
         keys            = new Set(DATA?.defaults?.keys || []);
         fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
@@ -338,7 +350,6 @@
           regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
         }
         if (typeof PLAYER_STATE.keyFragments === "number") {
-          // jeśli map.json korzysta z 'fragments.key_fragments'
           fragments.key_fragments = PLAYER_STATE.keyFragments;
         }
       }
@@ -364,13 +375,13 @@
         if (!reg) return true;
         if (regionsUnlocked.has(regionId)) return true;
 
-        const u = reg.unlock || { type: 'free' };
-        if (u.type === 'free') return true;
-        if (u.type === 'key')  return !!(u.id && keys.has(u.id));
-        if (u.type === 'fragments'){
-          if (u.combineInto && keys.has(u.combineInto)) return true;
-          const have = fragments[u.item] || 0;
-          return have >= (u.required || Infinity);
+        const udef = reg.unlock || { type: 'free' };
+        if (udef.type === 'free') return true;
+        if (udef.type === 'key')  return !!(udef.id && keys.has(udef.id));
+        if (udef.type === 'fragments'){
+          if (udef.combineInto && keys.has(udef.combineInto)) return true;
+          const have = fragments[udef.item] || 0;
+          return have >= (udef.required || Infinity);
         }
         return false;
       }
@@ -445,22 +456,22 @@
 
       function openLocked(b){
         const reg    = DATA?.regions?.[b.region];
-        const u      = reg?.unlock || {};
+        const udef   = reg?.unlock || {};
         const reason = reg?.lockedReason;
 
         lockedTitle.textContent = `Locked: ${b.name}`;
         let forgeRecipe = null;
 
-        if (u.type === 'fragments'){
-          const cur   = fragments[u.item] || 0;
-          const need  = u.required || 0;
-          const label = (u.item || '').replace('key_','').replaceAll('_',' ');
+        if (udef.type === 'fragments'){
+          const cur   = fragments[udef.item] || 0;
+          const need  = udef.required || 0;
+          const label = (udef.item || '').replace('key_','').replaceAll('_',' ');
           lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
-          forgeRecipe = (u.combineInto || u.item) || null;
-        } else if (u.type === 'key'){
-          const label = (u.id || 'region key').replace('key_','').replaceAll('_',' ');
-          lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
-          forgeRecipe = u.id || null;
+          forgeRecipe = (udef.combineInto || udef.item) || null;
+        } else if (udef.type === 'key'){
+          const label = (udef.id || 'region key').replace('key_','').replaceAll('_',' ');
+          lockedDesc.innerHTML = reason || `Requires <b>{${label}}</b> to unlock.`;
+          forgeRecipe = udef.id || null;
         } else {
           lockedDesc.textContent = reason || 'Complete requirements to unlock.';
         }
@@ -476,7 +487,6 @@
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
         if (!DATA) loadMapData();
-        // odśwież stan przy każdym otwarciu mapy (żeby pokrywać live unlocki)
         loadPlayerState();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
@@ -493,7 +503,6 @@
 
       // ===== Akcje przycisków =====
       const actions = {
-        // Row 1
         ".btn.avatar":    () => sendAction("avatar_open"),
         ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
         ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
@@ -501,12 +510,11 @@
         ".btn.shop":      () => sendAction("shop_open"),
         ".btn.pets":      () => sendAction("pets_open"),
 
-        // Row 2 (tekstowe komendy jako klik)
         ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
         ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
         ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }), // alias -> mypet po stronie bota
+        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
         ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
@@ -563,9 +571,8 @@
       }
 
       // ===== Routing z URL-a =====
-      const qs = new URLSearchParams(location.search);
-      const sectionParam = (qs.get("section") || "").toLowerCase();
-      const toastParam   = qs.get("toast");
+      const sectionParam = (params.get("section") || "").toLowerCase();
+      const toastParam   = params.get("toast");
 
       if (toastParam) {
         try { tg.showAlert?.(toastParam.replace(/_/g,' ')); } catch(_) {}
@@ -576,7 +583,7 @@
           case "map":
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
-            loadPlayerState(); // dociągnij świeży stan przy wejściu z linka
+            loadPlayerState();
             break;
           case "mission":
             sendAction("mission_open", { level: 1 });
@@ -598,7 +605,16 @@
         }
       }
 
-      // Prefetch stanu (żeby mapa znała odblokowane regiony)
+      // ESC zamyka modale
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        ["mapBack","lockedBack","boardBack"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "none";
+        });
+      });
+
+      // Prefetch stanu (żeby mapa znała odblokowania)
       loadPlayerState();
 
       if (sectionParam) {
