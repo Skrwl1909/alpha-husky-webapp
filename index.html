@@ -210,7 +210,19 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
-
+  <!-- Quests modal -->
+  <div class="sheet-back" id="questsBack">
+    <div class="sheet-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700;">Daily Quests</div>
+        <button class="btn" id="closeQuests" type="button">×</button>
+      </div>
+      <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
+      <p style="opacity:.7; font-size:12px; margin-top:10px;">
+        Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
+      </p>
+    </div>
+  </div>
     <div class="fallback" id="fallback">
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
@@ -608,5 +620,6 @@
   </script>
 </body>
 </html>
+
 
 
