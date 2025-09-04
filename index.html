@@ -273,9 +273,9 @@
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
 
       // MainButton – przykład
-      tg.MainButton?.setText?.("Open Missions");
-      tg.MainButton?.onClick?.(() => sendAction("mission_open", { level: 1 }));
-      tg.MainButton?.show?.();
+     tg.MainButton?.setText?.("Quests");
+     tg.MainButton?.onClick?.(() => openQuests());
+     tg.MainButton?.show?.();
 
       // ===== Helpers =====
       let _busy = false;
@@ -608,4 +608,5 @@
   </script>
 </body>
 </html>
+
 
