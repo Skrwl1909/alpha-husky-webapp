@@ -536,6 +536,91 @@
           boardBack.style.display = "none";
         });
       });
+      // ===== Daily Quests (korzysta z backendu /webapp/daily/*) =====
+const questsBack = document.getElementById("questsBack");
+const questsList = document.getElementById("questsList");
+document.getElementById("closeQuests")?.addEventListener("click", () => {
+  questsBack.style.display = "none";
+});
+
+function openQuests(){
+  questsBack.style.display = "flex";
+  refreshQuests();
+}
+
+async function refreshQuests(){
+  questsList.innerHTML = "";
+  try{
+    const res = await fetch("/webapp/daily/state", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+    });
+    const s = await res.json();
+    if (!s.ok) throw new Error(s.error || "state failed");
+
+    const rows = [];
+    function card(label, q, raid){
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--ring);border-radius:12px;background:rgba(0,0,0,.4)";
+      wrap.innerHTML = `
+        <div>
+          <div style="font-weight:700">${label}</div>
+          <div style="opacity:.85">${q ? q.desc : "—"}</div>
+          <div style="opacity:.7;font-size:12px;margin-top:4px;">Reward: ${q ? q.rewardText : "-"}</div>
+        </div>
+        <div class="qa"></div>
+      `;
+      const act = wrap.querySelector(".qa");
+      if (!q){
+        act.innerHTML = `<span style="opacity:.6">No quest</span>`;
+        return wrap;
+      }
+      if (q.availableActions.length === 0){
+        act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed ✅" : (q.done ? "Completed ✅" : "")}</span>`;
+      } else {
+        q.availableActions.forEach(a => {
+          const b = document.createElement("button");
+          b.className = "btn";
+          b.textContent =
+            a === "daily_claim" ? "Claim" :
+            a === "daily_raid"  ? "RAID"  : "Do it";
+          b.addEventListener("click", () => triggerDaily(a, !!raid));
+          act.appendChild(b);
+        });
+      }
+      return wrap;
+    }
+
+    if (s.normal) rows.push(card("Daily", s.normal, false));
+    if (s.raid)   rows.push(card("Raid",  s.raid,   true));
+    rows.forEach(r => questsList.appendChild(r));
+  }catch(e){
+    console.warn(e);
+    questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
+  }
+}
+
+async function triggerDaily(action, raid){
+  try{
+    const res = await fetch("/webapp/daily/action", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        init_data: window.Telegram?.WebApp?.initData || "",
+        action, raid
+      })
+    });
+    const ans = await res.json();
+    if (!ans.ok) throw new Error(ans.error || "action failed");
+    if (ans.message) try{ window.Telegram?.WebApp?.showAlert?.(ans.message); }catch(_){}
+    await refreshQuests();
+  }catch(e){
+    console.warn(e);
+    try{ window.Telegram?.WebApp?.showAlert?.("Action failed. Try again."); }catch(_){}
+  }
+}
+// ⬆️ KONIEC BLOKU „Daily Quests”
 
       // Safety layers (gdyby HTML był bez nich)
       function createPathsLayer(root){
@@ -620,6 +705,7 @@
   </script>
 </body>
 </html>
+
 
 
 
