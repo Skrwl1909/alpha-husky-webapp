@@ -207,12 +207,19 @@
   </div>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    const start = () => {
       // Debug globalny — pokaże JS error jako alert w WebApp
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
-      });
+      };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+      // event już był – odpalamy od razu
+      start();
+    }
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
       const nativeTg = window.Telegram?.WebApp;
@@ -634,4 +641,5 @@ async function triggerDaily(action, raid){
   </script>
 </body>
 </html>
+
 
