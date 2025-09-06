@@ -230,7 +230,7 @@
       </div>
     </div>
   </div>
-
+ <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -542,7 +542,44 @@ const questsList = document.getElementById("questsList");
 document.getElementById("closeQuests")?.addEventListener("click", () => {
   questsBack.style.display = "none";
 });
-
+      // <== WKLEJ TU CAŁY FRAGMENT Z INITREALTIME:
+      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// Odczytaj klucze z env vars Vercel (bezpieczne, bez hardcoded)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function initRealtime() {
+  const channel = supabase.channel('realtime-changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'quests' }, (payload) => {
+      console.log('Nowa misja dodana:', payload.new); // Log do console
+      // Update UI – np. dodaj do div#leaderboard
+      const lb = document.getElementById('leaderboard');
+      if (lb) {
+        lb.innerHTML += `<p>Nowa misja: ${payload.new.mission_id} (nagroda: ${payload.new.reward})</p>`;
+      }
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users' }, (payload) => {
+      console.log('Update gracza:', payload.new); // Log do console
+      // Update UI – np. odśwież div#player-stats
+      const stats = document.getElementById('player-stats');
+      if (stats) {
+        stats.innerHTML = `Level: ${payload.new.level}, Faction: ${payload.new.faction}`;
+      }
+    })
+    .subscribe((status) => {
+      console.log('Subskrypcja status:', status); // 'SUBSCRIBED' jeśli OK
+      if (status === 'SUBSCRIBED') {
+        document.getElementById('status').textContent = 'Listening for changes...';
+      }
+    });
+  // Cleanup przy unload (opcjonalne, ale dobre praktyka)
+  window.addEventListener('beforeunload', () => {
+    supabase.removeChannel(channel);
+  });
+}
+// Uruchom po load strony
+initRealtime();
+      
 function openQuests(){
   questsBack.style.display = "flex";
   refreshQuests();
@@ -705,6 +742,7 @@ async function triggerDaily(action, raid){
   </script>
 </body>
 </html>
+
 
 
 
