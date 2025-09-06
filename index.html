@@ -207,7 +207,7 @@
   </div>
  <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script type="module">
+  <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Debug globalny — pokaże JS error jako alert w WebApp
       window.addEventListener('error', e => {
@@ -518,7 +518,7 @@ function initRealtime() {
 }
 // Uruchom po load strony
 initRealtime();
-     
+    
 function openQuests(){
   questsBack.style.display = "flex";
   refreshQuests();
