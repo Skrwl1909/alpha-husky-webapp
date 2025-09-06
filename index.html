@@ -185,19 +185,19 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
-  <!-- Quests modal -->
-  <div class="sheet-back" id="questsBack">
-    <div class="sheet-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-weight:700;">Daily Quests</div>
-        <button class="btn" id="closeQuests" type="button">×</button>
+    <!-- Quests modal -->
+    <div class="sheet-back" id="questsBack">
+      <div class="sheet-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:700;">Daily Quests</div>
+          <button class="btn" id="closeQuests" type="button">×</button>
+        </div>
+        <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
+        <p style="opacity:.7; font-size:12px; margin-top:10px;">
+          Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
+        </p>
       </div>
-      <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
-      <p style="opacity:.7; font-size:12px; margin-top:10px;">
-        Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
-      </p>
     </div>
-  </div>
     <div class="fallback" id="fallback">
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
@@ -205,27 +205,25 @@
       </div>
     </div>
   </div>
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const start = () => {
-      // Debug globalny — pokaże JS error jako alert w WebApp
+      // Globalny handler błędów (naprawione zamknięcie "});")
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
-      };
+      });
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', start, { once: true });
-    } else {
-      // event już był – odpalamy od razu
-      start();
-    }
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
+
       const nativeTg = window.Telegram?.WebApp;
       let tg = nativeTg;
-      const $ = sel => document.querySelector(sel);
+
+      const $  = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
+
       // DEV fallback (poza Telegramem)
       if (!tg) {
         const fb = $("#fallback"); if (fb) fb.style.display = "none";
@@ -241,27 +239,33 @@
           initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
         };
       }
+
       tg.ready?.(); tg.expand?.();
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
+
       // Theming
       const p = tg.themeParams || {};
-      setVar('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-      setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
+      setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+      setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color, 0.22)        : 'rgba(255,255,255,.18)');
       if (p.text_color) setVar('--txt', p.text_color);
+
       tg.onEvent?.('themeChanged', () => {
         const p2 = tg.themeParams || {};
-        setVar('--glass', p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-        setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
+        setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+        setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color, 0.22)        : 'rgba(255,255,255,.18)');
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
+
       // Ustaw nazwę gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
+
       // MainButton – przykład
-     tg.MainButton?.setText?.("Quests");
-     tg.MainButton?.onClick?.(() => openQuests());
-     tg.MainButton?.show?.();
+      tg.MainButton?.setText?.("Quests");
+      tg.MainButton?.onClick?.(() => openQuests());
+      tg.MainButton?.show?.();
+
       // ===== Helpers =====
       let _busy = false;
       function sendAction(action, extra = {}) {
@@ -270,7 +274,7 @@
         try { tg.HapticFeedback?.impactOccurred("light"); } catch(e) {}
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
-          console.log("[sendData]", payload); // <= debug do DevTools
+          console.log("[sendData]", payload);
           tg.sendData(JSON.stringify(payload));
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
@@ -288,17 +292,20 @@
         const h = hex.replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
+
       // ===== MAP / STATE =====
       const mapBack = $("#mapBack");
       const mapRoot = $("#map");
       const pinsEl = $("#pins") || createPinsLayer(mapRoot);
       const pathsSVG = $("#pathsSVG") || createPathsLayer(mapRoot);
+
       let DATA = null;
       const VIEW_W = 1000, VIEW_H = 562;
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
       let PLAYER_STATE = null;
+
       async function loadMapData(){
         try{
           DATA = await fetch('map.json', { cache: 'no-store' }).then(r => r.json());
@@ -312,16 +319,17 @@
         fragments = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
       }
+
       function applyStateToMap(){
         if (!PLAYER_STATE) return;
         if (Array.isArray(PLAYER_STATE.regionsUnlocked)) {
           regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
         }
         if (typeof PLAYER_STATE.keyFragments === "number") {
-          // jeśli map.json korzysta z 'fragments.key_fragments'
           fragments.key_fragments = PLAYER_STATE.keyFragments;
         }
       }
+
       async function loadPlayerState(){
         try {
           const res = await fetch("/webapp/state", {
@@ -337,6 +345,7 @@
           console.warn("state load failed", e);
         }
       }
+
       function isRegionUnlocked(regionId){
         const reg = DATA?.regions?.[regionId];
         if (!reg) return true;
@@ -351,7 +360,9 @@
         }
         return false;
       }
+
       const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
+
       function drawPaths(){
         if (!DATA) return;
         pathsSVG.innerHTML = '';
@@ -371,6 +382,7 @@
           pathsSVG.appendChild(poly);
         }
       }
+
       function renderPins(){
         if (!DATA) return;
         pinsEl.innerHTML = '';
@@ -401,15 +413,19 @@
         }
         resolveLabelCollisions();
       }
+
       function renderMap(){ drawPaths(); renderPins(); }
+
       // Locked modal
-      const lockedBack = $("#lockedBack");
+      const lockedBack  = $("#lockedBack");
       const lockedTitle = $("#lockedTitle");
-      const lockedDesc = $("#lockedDesc");
+      const lockedDesc  = $("#lockedDesc");
       const lockedForge = $("#lockedForge");
-      const lockedShop = $("#lockedShop");
-      const lockedAsk = $("#lockedAsk");
+      const lockedShop  = $("#lockedShop");
+      const lockedAsk   = $("#lockedAsk");
+
       $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
+
       function openLocked(b){
         const reg = DATA?.regions?.[b.region];
         const u = reg?.unlock || {};
@@ -431,9 +447,10 @@
         }
         lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
         lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
-        lockedAsk.onclick = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
+        lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
         lockedBack.style.display = 'flex';
       }
+
       // Open/close map
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
@@ -442,7 +459,9 @@
         loadPlayerState();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
+
       function openRegion(region) { sendAction("region_open", { region }); }
+
       mapRoot.addEventListener("click", (e) => {
         if (e.target !== mapRoot) return;
         const r = mapRoot.getBoundingClientRect();
@@ -450,25 +469,27 @@
         const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
         console.log("coords:", x, y);
       });
+
       // ===== Akcje przycisków =====
       const actions = {
         // Row 1
-        ".btn.avatar": () => sendAction("avatar_open"),
-        ".btn.mission": () => sendAction("mission_open", { level: 1 }),
-        ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
-        ".btn.char": () => sendAction("char_open"),
-        ".btn.shop": () => sendAction("shop_open"),
-        ".btn.pets": () => sendAction("pets_open"),
-        // Row 2 (tekstowe komendy jako klik)
+        ".btn.avatar":   () => sendAction("avatar_open"),
+        ".btn.mission":  () => sendAction("mission_open", { level: 1 }),
+        ".btn.inventory":() => sendAction("cmd", { name: "inventory" }),
+        ".btn.char":     () => sendAction("char_open"),
+        ".btn.shop":     () => sendAction("shop_open"),
+        ".btn.pets":     () => sendAction("pets_open"),
+        // Row 2
         ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
-        ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-        ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-        ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets": () => sendAction("cmd", { name: "mypets" }), // alias -> mypet po stronie bota
-        ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-        ".btn.howlboard": () => openBoard(),
+        ".btn.keys":     () => sendAction("cmd", { name: "keys" }),
+        ".btn.feed":     () => sendAction("cmd", { name: "feed" }),
+        ".btn.mystats":  () => sendAction("cmd", { name: "mystats" }),
+        ".btn.mypets":   () => sendAction("cmd", { name: "mypets" }),
+        ".btn.profile":  () => sendAction("cmd", { name: "profile" }),
+        ".btn.howlboard":() => openBoard(),
       };
       Object.entries(actions).forEach(([sel, fn]) => bind(sel, fn));
+
       // Howlboard modal
       const boardBack = $("#boardBack");
       bind("#closeBoard", () => boardBack.style.display = "none");
@@ -481,88 +502,92 @@
           boardBack.style.display = "none";
         });
       });
+
       // ===== Daily Quests (korzysta z backendu /webapp/daily/*) =====
-const questsBack = document.getElementById("questsBack");
-const questsList = document.getElementById("questsList");
-document.getElementById("closeQuests")?.addEventListener("click", () => {
-  questsBack.style.display = "none";
-});
-     
-    
-function openQuests(){
-  questsBack.style.display = "flex";
-  refreshQuests();
-}
-async function refreshQuests(){
-  questsList.innerHTML = "";
-  try{
-    const res = await fetch("/webapp/daily/state", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
-    });
-    const s = await res.json();
-    if (!s.ok) throw new Error(s.error || "state failed");
-    const rows = [];
-    function card(label, q, raid){
-      const wrap = document.createElement("div");
-      wrap.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--ring);border-radius:12px;background:rgba(0,0,0,.4)";
-      wrap.innerHTML = `
-        <div>
-          <div style="font-weight:700">${label}</div>
-          <div style="opacity:.85">${q ? q.desc : "—"}</div>
-          <div style="opacity:.7;font-size:12px;margin-top:4px;">Reward: ${q ? q.rewardText : "-"}</div>
-        </div>
-        <div class="qa"></div>
-      `;
-      const act = wrap.querySelector(".qa");
-      if (!q){
-        act.innerHTML = `<span style="opacity:.6">No quest</span>`;
-        return wrap;
+      const questsBack = document.getElementById("questsBack");
+      const questsList = document.getElementById("questsList");
+      document.getElementById("closeQuests")?.addEventListener("click", () => {
+        questsBack.style.display = "none";
+      });
+
+      function openQuests(){
+        questsBack.style.display = "flex";
+        refreshQuests();
       }
-      if (q.availableActions.length === 0){
-        act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed ✅" : (q.done ? "Completed ✅" : "")}</span>`;
-      } else {
-        q.availableActions.forEach(a => {
-          const b = document.createElement("button");
-          b.className = "btn";
-          b.textContent =
-            a === "daily_claim" ? "Claim" :
-            a === "daily_raid" ? "RAID" : "Do it";
-          b.addEventListener("click", () => triggerDaily(a, !!raid));
-          act.appendChild(b);
-        });
+
+      async function refreshQuests(){
+        questsList.innerHTML = "";
+        try{
+          const res = await fetch("/webapp/daily/state", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+          });
+          const s = await res.json();
+          if (!s.ok) throw new Error(s.error || "state failed");
+
+          const rows = [];
+          function card(label, q, raid){
+            const wrap = document.createElement("div");
+            wrap.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--ring);border-radius:12px;background:rgba(0,0,0,.4)";
+            wrap.innerHTML = `
+              <div>
+                <div style="font-weight:700">${label}</div>
+                <div style="opacity:.85">${q ? q.desc : "—"}</div>
+                <div style="opacity:.7;font-size:12px;margin-top:4px;">Reward: ${q ? q.rewardText : "-"}</div>
+              </div>
+              <div class="qa"></div>
+            `;
+            const act = wrap.querySelector(".qa");
+            if (!q){
+              act.innerHTML = `<span style="opacity:.6">No quest</span>`;
+              return wrap;
+            }
+            if (q.availableActions.length === 0){
+              act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed ✅" : (q.done ? "Completed ✅" : "")}</span>`;
+            } else {
+              q.availableActions.forEach(a => {
+                const b = document.createElement("button");
+                b.className = "btn";
+                b.textContent =
+                  a === "daily_claim" ? "Claim" :
+                  a === "daily_raid"  ? "RAID"  : "Do it";
+                b.addEventListener("click", () => triggerDaily(a, !!raid));
+                act.appendChild(b);
+              });
+            }
+            return wrap;
+          }
+          if (s.normal) rows.push(card("Daily", s.normal, false));
+          if (s.raid)   rows.push(card("Raid", s.raid, true));
+          rows.forEach(r => questsList.appendChild(r));
+        }catch(e){
+          console.warn(e);
+          questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
+        }
       }
-      return wrap;
-    }
-    if (s.normal) rows.push(card("Daily", s.normal, false));
-    if (s.raid) rows.push(card("Raid", s.raid, true));
-    rows.forEach(r => questsList.appendChild(r));
-  }catch(e){
-    console.warn(e);
-    questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
-  }
-}
-async function triggerDaily(action, raid){
-  try{
-    const res = await fetch("/webapp/daily/action", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        init_data: window.Telegram?.WebApp?.initData || "",
-        action, raid
-      })
-    });
-    const ans = await res.json();
-    if (!ans.ok) throw new Error(ans.error || "action failed");
-    if (ans.message) try{ window.Telegram?.WebApp?.showAlert?.(ans.message); }catch(_){}
-    await refreshQuests();
-  }catch(e){
-    console.warn(e);
-    try{ window.Telegram?.WebApp?.showAlert?.("Action failed. Try again."); }catch(_){}
-  }
-}
-// ⬆️ KONIEC BLOKU „Daily Quests”
+
+      async function triggerDaily(action, raid){
+        try{
+          const res = await fetch("/webapp/daily/action", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+              init_data: window.Telegram?.WebApp?.initData || "",
+              action, raid
+            })
+          });
+          const ans = await res.json();
+          if (!ans.ok) throw new Error(ans.error || "action failed");
+          if (ans.message) try{ window.Telegram?.WebApp?.showAlert?.(ans.message); }catch(_){}
+          await refreshQuests();
+        }catch(e){
+          console.warn(e);
+          try{ window.Telegram?.WebApp?.showAlert?.("Action failed. Try again."); }catch(_){}
+        }
+      }
+      // ⬆️ KONIEC BLOKU „Daily Quests”
+
       // Safety layers (gdyby HTML był bez nich)
       function createPathsLayer(root){
         const layer = document.createElement("div");
@@ -593,19 +618,21 @@ async function triggerDaily(action, raid){
         const mapRect = mapRoot.getBoundingClientRect();
         chips.forEach(ch => {
           const r = ch.getBoundingClientRect();
-          const leftOverflow = mapRect.left + 8 - r.left;
+          const leftOverflow  = mapRect.left + 8 - r.left;
           const rightOverflow = r.right - (mapRect.right - 8);
-          if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
+          if (leftOverflow  > 0) ch.style.marginLeft = (leftOverflow)+"px";
           if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
         });
       }
+
       // ===== Routing z URL-a =====
       const qs = new URLSearchParams(location.search);
       const sectionParam = (qs.get("section") || "").toLowerCase();
-      const toastParam = qs.get("toast");
+      const toastParam   = qs.get("toast");
       if (toastParam) {
         try { tg.showAlert?.(toastParam.replace(/_/g,' ')); } catch(_) {}
       }
+
       function showSection(name){
         switch(name){
           case "map":
@@ -632,14 +659,20 @@ async function triggerDaily(action, raid){
             break;
         }
       }
+
       // Prefetch stanu (żeby mapa znała odblokowane regiony)
       loadPlayerState();
       if (sectionParam) {
         setTimeout(() => showSection(sectionParam), 80);
       }
-    });
+    }; // end of start()
+
+    // Guard uruchomienia PRZED startem (bez rekurencji)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+      start();
+    }
   </script>
 </body>
 </html>
-
-
