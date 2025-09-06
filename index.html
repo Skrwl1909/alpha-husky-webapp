@@ -5,25 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
-
   <link rel="preload" as="image" href="background_poster.jpg">
-  <link rel="preload" as="video"  href="background3.webm" type="video/webm">
-  <link rel="preload" as="video"  href="background3.mp4"  type="video/mp4">
-
+  <link rel="preload" as="video" href="background3.webm" type="video/webm">
+  <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
   <style>
     :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: #fff; --ring: rgba(255,255,255,.12); }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
-
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
-
     .ui { position: absolute; inset: 0; z-index: 2; }
     .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
-
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
@@ -32,7 +27,6 @@
     }
     .btn:active { transform: translateY(1px); }
     .btn.linklike { text-decoration:none; }
-
     .topbar {
       position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
       padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
@@ -41,23 +35,19 @@
     }
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
-
     @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
-
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
       background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
       align-items:center; justify-content:center; text-align:center; padding:24px;
     }
     .fallback a { color:#aef; text-decoration:underline; }
-
     .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
-    .map-wrap  { width:min(96vw,1200px); padding:12px; }
-    .map-card  { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
-    .map-head  { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
+    .map-wrap { width:min(96vw,1200px); padding:12px; }
+    .map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+    .map-head { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
     .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
-
     .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
@@ -65,11 +55,9 @@
       background: url("images/map/overlays/fog.png") center/cover no-repeat,
                   linear-gradient(0deg, rgba(0,0,0,.55), transparent);
       pointer-events:none; }
-
     .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
     .paths-layer svg{ width:100%; height:100%; }
     .pins{ position:absolute; inset:0; z-index:3; }
-
     .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
       z-index:3; transition: transform .12s ease, filter .12s ease; }
@@ -79,7 +67,6 @@
       transform: translate(-50%, calc(-50% + 20px));
       background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
       opacity:.9; filter: blur(.2px); pointer-events:none; }
-
     .hotspot img{ width: clamp(40px, 3.6vw, 72px);
       filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
     .hotspot.unlocked img{
@@ -88,30 +75,25 @@
               drop-shadow( 2px 0 6px rgba(155,77,255,.22));
     }
     .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
-
     .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
       transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
     .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
-    .hotspot.locked   .ping{ background:rgba(148,163,184,.10); }
+    .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
     @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
-
     .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
       font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
       background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
       backdrop-filter: blur(3px); }
     .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
       transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
-
     .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
       background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
       display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
       box-shadow: 0 2px 6px rgba(0,0,0,.5); }
     .lock-badge img{ width:14px; height:14px; opacity:.9 }
-
     .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
-
     .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
@@ -125,44 +107,39 @@
     <div class="bg">
       <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
         <source src="background3.webm" type="video/webm" />
-        <source src="background3.mp4"  type="video/mp4" />
+        <source src="background3.mp4" type="video/mp4" />
       </video>
       <div class="poster" style="background-image:url('background_poster.jpg');"></div>
     </div>
-
     <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
       </div>
-
       <div class="grid">
         <!-- Row 1 -->
         <div class="row">
-          <button class="btn map"      aria-label="Open Map" type="button">Map</button>
-          <button class="btn avatar"    aria-label="Open Avatar" type="button">Avatar</button>
-          <button class="btn mission"   aria-label="Open Missions" type="button">Mission</button>
+          <button class="btn map" aria-label="Open Map" type="button">Map</button>
+          <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
+          <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
           <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
-          <button class="btn char"      aria-label="Open Character" type="button">Character</button>
-          <button class="btn shop"      aria-label="Open Shop" type="button">Shop</button>
-          <button class="btn pets"      aria-label="Open Pets" type="button">Pets</button>
+          <button class="btn char" aria-label="Open Character" type="button">Character</button>
+          <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
+          <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
         </div>
-
         <!-- Row 2 -->
         <div class="row" style="margin-top:10px;">
           <button class="btn equipped" type="button">Equipped</button>
-          <button class="btn keys"     type="button">Keys</button>
-          <button class="btn feed"     type="button">Feed</button>
-          <button class="btn mystats"  type="button">MyStats</button>
-          <button class="btn mypets"   type="button">MyPets</button>
-          <button class="btn profile"  type="button">Profile</button>
+          <button class="btn keys" type="button">Keys</button>
+          <button class="btn feed" type="button">Feed</button>
+          <button class="btn mystats" type="button">MyStats</button>
+          <button class="btn mypets" type="button">MyPets</button>
+          <button class="btn profile" type="button">Profile</button>
           <button class="btn howlboard" type="button">Howlboard</button>
         </div>
-
         <div class="spacer"></div>
       </div>
     </div>
-
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
       <div class="map-wrap">
@@ -178,7 +155,6 @@
         </div>
       </div>
     </div>
-
     <!-- Locked info -->
     <div class="locked-back" id="lockedBack">
       <div class="locked-card">
@@ -188,13 +164,12 @@
         </div>
         <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn linklike" id="lockedShop"  type="button">Open Shop</button>
+          <button class="btn linklike" id="lockedShop" type="button">Open Shop</button>
           <button class="btn linklike" id="lockedForge" type="button">Open Forge</button>
-          <button class="btn primary"  id="lockedAsk"   type="button">Ask the Bot</button>
+          <button class="btn primary" id="lockedAsk" type="button">Ask the Bot</button>
         </div>
       </div>
     </div>
-
     <!-- Howlboard modal -->
     <div class="sheet-back" id="boardBack">
       <div class="sheet-card">
@@ -232,22 +207,19 @@
   </div>
  <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
+  <script type="module">
     document.addEventListener("DOMContentLoaded", () => {
       // Debug globalny — pokaże JS error jako alert w WebApp
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
       });
-
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
-
       const nativeTg = window.Telegram?.WebApp;
       let tg = nativeTg;
-      const $  = sel => document.querySelector(sel);
+      const $ = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
-
       // DEV fallback (poza Telegramem)
       if (!tg) {
         const fb = $("#fallback"); if (fb) fb.style.display = "none";
@@ -263,42 +235,36 @@
           initDataUnsafe:{ user:{ id:0, username:"dev_user", first_name:"Dev" } }
         };
       }
-
       tg.ready?.(); tg.expand?.();
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
-
       // Theming
       const p = tg.themeParams || {};
-      setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+      setVar('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
       if (p.text_color) setVar('--txt', p.text_color);
       tg.onEvent?.('themeChanged', () => {
         const p2 = tg.themeParams || {};
-        setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+        setVar('--glass', p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
         setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
         if (p2.text_color) setVar('--txt', p2.text_color);
       });
-
       // Ustaw nazwę gracza
       const u = tg.initDataUnsafe?.user;
       if (u) $("#player").textContent = (u.username ? '@'+u.username : (u.first_name||'Player'));
-
       // MainButton – przykład
      tg.MainButton?.setText?.("Quests");
      tg.MainButton?.onClick?.(() => openQuests());
      tg.MainButton?.show?.();
-
       // ===== Helpers =====
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
         _busy = true; setTimeout(() => (_busy = false), 300);
         try { tg.HapticFeedback?.impactOccurred("light"); } catch(e) {}
-
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
-          console.log("[sendData]", payload);            // <= debug do DevTools
+          console.log("[sendData]", payload); // <= debug do DevTools
           tg.sendData(JSON.stringify(payload));
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
@@ -316,20 +282,17 @@
         const h = hex.replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
-
       // ===== MAP / STATE =====
-      const mapBack   = $("#mapBack");
-      const mapRoot   = $("#map");
-      const pinsEl    = $("#pins") || createPinsLayer(mapRoot);
-      const pathsSVG  = $("#pathsSVG") || createPathsLayer(mapRoot);
-
+      const mapBack = $("#mapBack");
+      const mapRoot = $("#map");
+      const pinsEl = $("#pins") || createPinsLayer(mapRoot);
+      const pathsSVG = $("#pathsSVG") || createPathsLayer(mapRoot);
       let DATA = null;
       const VIEW_W = 1000, VIEW_H = 562;
       let regionsUnlocked = new Set();
       let keys = new Set();
       let fragments = {};
       let PLAYER_STATE = null;
-
       async function loadMapData(){
         try{
           DATA = await fetch('map.json', { cache: 'no-store' }).then(r => r.json());
@@ -339,11 +302,10 @@
         }
         // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
-        keys            = new Set(DATA?.defaults?.keys || []);
-        fragments       = Object.assign({}, DATA?.defaults?.fragments || {});
+        keys = new Set(DATA?.defaults?.keys || []);
+        fragments = Object.assign({}, DATA?.defaults?.fragments || {});
         renderMap();
       }
-
       function applyStateToMap(){
         if (!PLAYER_STATE) return;
         if (Array.isArray(PLAYER_STATE.regionsUnlocked)) {
@@ -354,7 +316,6 @@
           fragments.key_fragments = PLAYER_STATE.keyFragments;
         }
       }
-
       async function loadPlayerState(){
         try {
           const res = await fetch("/webapp/state", {
@@ -370,15 +331,13 @@
           console.warn("state load failed", e);
         }
       }
-
       function isRegionUnlocked(regionId){
         const reg = DATA?.regions?.[regionId];
         if (!reg) return true;
         if (regionsUnlocked.has(regionId)) return true;
-
         const u = reg.unlock || { type: 'free' };
         if (u.type === 'free') return true;
-        if (u.type === 'key')  return !!(u.id && keys.has(u.id));
+        if (u.type === 'key') return !!(u.id && keys.has(u.id));
         if (u.type === 'fragments'){
           if (u.combineInto && keys.has(u.combineInto)) return true;
           const have = fragments[u.item] || 0;
@@ -386,9 +345,7 @@
         }
         return false;
       }
-
       const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
-
       function drawPaths(){
         if (!DATA) return;
         pathsSVG.innerHTML = '';
@@ -408,7 +365,6 @@
           pathsSVG.appendChild(poly);
         }
       }
-
       function renderPins(){
         if (!DATA) return;
         pinsEl.innerHTML = '';
@@ -417,20 +373,17 @@
           const btn = document.createElement('button');
           btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
           btn.style.left = b.x + '%';
-          btn.style.top  = b.y + '%';
+          btn.style.top = b.y + '%';
           btn.title = b.name + (unlocked ? '' : ' (locked)');
-
           const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
-          const img  = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
+          const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
           const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
-
           if (!unlocked){
             const lock = document.createElement('span');
             lock.className = 'lock-badge';
             lock.innerHTML = `<img src="${(DATA?.ui?.pin?.badgeLock || 'images/ui/lock.svg')}" alt="locked">`;
             btn.appendChild(lock);
           }
-
           btn.addEventListener('click', () => {
             if (!unlocked) return openLocked(b);
             if (b.action === 'building_enter' && b.buildingId) {
@@ -438,34 +391,28 @@
             }
             return openRegion(b.region);
           });
-
           pinsEl.appendChild(btn);
         }
         resolveLabelCollisions();
       }
-
       function renderMap(){ drawPaths(); renderPins(); }
-
       // Locked modal
-      const lockedBack  = $("#lockedBack");
+      const lockedBack = $("#lockedBack");
       const lockedTitle = $("#lockedTitle");
-      const lockedDesc  = $("#lockedDesc");
+      const lockedDesc = $("#lockedDesc");
       const lockedForge = $("#lockedForge");
-      const lockedShop  = $("#lockedShop");
-      const lockedAsk   = $("#lockedAsk");
+      const lockedShop = $("#lockedShop");
+      const lockedAsk = $("#lockedAsk");
       $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
-
       function openLocked(b){
-        const reg    = DATA?.regions?.[b.region];
-        const u      = reg?.unlock || {};
+        const reg = DATA?.regions?.[b.region];
+        const u = reg?.unlock || {};
         const reason = reg?.lockedReason;
-
         lockedTitle.textContent = `Locked: ${b.name}`;
         let forgeRecipe = null;
-
         if (u.type === 'fragments'){
-          const cur   = fragments[u.item] || 0;
-          const need  = u.required || 0;
+          const cur = fragments[u.item] || 0;
+          const need = u.required || 0;
           const label = (u.item || '').replace('key_','').replaceAll('_',' ');
           lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
           forgeRecipe = (u.combineInto || u.item) || null;
@@ -476,14 +423,11 @@
         } else {
           lockedDesc.textContent = reason || 'Complete requirements to unlock.';
         }
-
-        lockedShop.onclick  = (e) => { e?.preventDefault?.(); sendAction('shop_open',  { tab: 'boosts' }); };
+        lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
         lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
-        lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
-
+        lockedAsk.onclick = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
         lockedBack.style.display = 'flex';
       }
-
       // Open/close map
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
@@ -492,9 +436,7 @@
         loadPlayerState();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
-
       function openRegion(region) { sendAction("region_open", { region }); }
-
       mapRoot.addEventListener("click", (e) => {
         if (e.target !== mapRoot) return;
         const r = mapRoot.getBoundingClientRect();
@@ -502,28 +444,25 @@
         const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
         console.log("coords:", x, y);
       });
-
       // ===== Akcje przycisków =====
       const actions = {
         // Row 1
-        ".btn.avatar":    () => sendAction("avatar_open"),
-        ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
+        ".btn.avatar": () => sendAction("avatar_open"),
+        ".btn.mission": () => sendAction("mission_open", { level: 1 }),
         ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
-        ".btn.char":      () => sendAction("char_open"),
-        ".btn.shop":      () => sendAction("shop_open"),
-        ".btn.pets":      () => sendAction("pets_open"),
-
+        ".btn.char": () => sendAction("char_open"),
+        ".btn.shop": () => sendAction("shop_open"),
+        ".btn.pets": () => sendAction("pets_open"),
         // Row 2 (tekstowe komendy jako klik)
-        ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
-        ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
-        ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
-        ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-        ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }), // alias -> mypet po stronie bota
-        ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
+        ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
+        ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+        ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+        ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+        ".btn.mypets": () => sendAction("cmd", { name: "mypets" }), // alias -> mypet po stronie bota
+        ".btn.profile": () => sendAction("cmd", { name: "profile" }),
         ".btn.howlboard": () => openBoard(),
       };
       Object.entries(actions).forEach(([sel, fn]) => bind(sel, fn));
-
       // Howlboard modal
       const boardBack = $("#boardBack");
       bind("#closeBoard", () => boardBack.style.display = "none");
@@ -579,12 +518,11 @@ function initRealtime() {
 }
 // Uruchom po load strony
 initRealtime();
-      
+     
 function openQuests(){
   questsBack.style.display = "flex";
   refreshQuests();
 }
-
 async function refreshQuests(){
   questsList.innerHTML = "";
   try{
@@ -595,7 +533,6 @@ async function refreshQuests(){
     });
     const s = await res.json();
     if (!s.ok) throw new Error(s.error || "state failed");
-
     const rows = [];
     function card(label, q, raid){
       const wrap = document.createElement("div");
@@ -621,23 +558,21 @@ async function refreshQuests(){
           b.className = "btn";
           b.textContent =
             a === "daily_claim" ? "Claim" :
-            a === "daily_raid"  ? "RAID"  : "Do it";
+            a === "daily_raid" ? "RAID" : "Do it";
           b.addEventListener("click", () => triggerDaily(a, !!raid));
           act.appendChild(b);
         });
       }
       return wrap;
     }
-
     if (s.normal) rows.push(card("Daily", s.normal, false));
-    if (s.raid)   rows.push(card("Raid",  s.raid,   true));
+    if (s.raid) rows.push(card("Raid", s.raid, true));
     rows.forEach(r => questsList.appendChild(r));
   }catch(e){
     console.warn(e);
     questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
   }
 }
-
 async function triggerDaily(action, raid){
   try{
     const res = await fetch("/webapp/daily/action", {
@@ -658,7 +593,6 @@ async function triggerDaily(action, raid){
   }
 }
 // ⬆️ KONIEC BLOKU „Daily Quests”
-
       // Safety layers (gdyby HTML był bez nich)
       function createPathsLayer(root){
         const layer = document.createElement("div");
@@ -679,7 +613,7 @@ async function triggerDaily(action, raid){
         chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
         for (let i=1;i<chips.length;i++){
           const prev = chips[i-1].getBoundingClientRect();
-          const cur  = chips[i].getBoundingClientRect();
+          const cur = chips[i].getBoundingClientRect();
           const overlap = (prev.bottom + 6) - cur.top;
           if (overlap > 0) {
             const current = chips[i].style.transform || "translateX(-50%)";
@@ -689,22 +623,19 @@ async function triggerDaily(action, raid){
         const mapRect = mapRoot.getBoundingClientRect();
         chips.forEach(ch => {
           const r = ch.getBoundingClientRect();
-          const leftOverflow  = mapRect.left + 8 - r.left;
+          const leftOverflow = mapRect.left + 8 - r.left;
           const rightOverflow = r.right - (mapRect.right - 8);
-          if (leftOverflow > 0)  ch.style.marginLeft = (leftOverflow)+"px";
+          if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
           if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
         });
       }
-
       // ===== Routing z URL-a =====
       const qs = new URLSearchParams(location.search);
       const sectionParam = (qs.get("section") || "").toLowerCase();
-      const toastParam   = qs.get("toast");
-
+      const toastParam = qs.get("toast");
       if (toastParam) {
         try { tg.showAlert?.(toastParam.replace(/_/g,' ')); } catch(_) {}
       }
-
       function showSection(name){
         switch(name){
           case "map":
@@ -731,10 +662,8 @@ async function triggerDaily(action, raid){
             break;
         }
       }
-
       // Prefetch stanu (żeby mapa znała odblokowane regiony)
       loadPlayerState();
-
       if (sectionParam) {
         setTimeout(() => showSection(sectionParam), 80);
       }
@@ -742,8 +671,3 @@ async function triggerDaily(action, raid){
   </script>
 </body>
 </html>
-
-
-
-
-
