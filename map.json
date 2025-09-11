@@ -24,23 +24,22 @@
     },
 
     "moon_lab": {
-      "id": "moon_lab",
-      "name": "Moon Lab",
-      "unlock": {
-        "type": "fragments",
-        "item": "map_key_fragment",
-        "required": 10,
-        "combineInto": "key_moon_lab",
-        "combineCost": { "bones": 500, "scrap": 200, "rune_dust": 20 },
-        "dropSources": [
-          { "type": "region", "id": "broken_contracts", "rate": "uncommon" },
-          { "type": "region", "id": "abandoned_wallets", "rate": "uncommon" },
-          { "type": "mission", "id": "chain_missions", "rate": "rare" }
-        ],
-        "shopSku": "moon_frag_pack"
-      },
-      "lockedReason": "🔒 Spend 10 Map Key Fragments to unlock Moon Lab (or craft the Moon Key in Forge)."
+    "id": "moon_lab",
+    "name": "Moon Lab",
+     "unlock": {
+     "type": "fragments",
+      "item": "map_key_fragment",
+      "required": 10,
+      "combineCost": { "bones": 500, "scrap": 200, "rune_dust": 20 },
+      "dropSources": [
+        { "type": "region", "id": "broken_contracts", "rate": "uncommon" },
+        { "type": "region", "id": "abandoned_wallets", "rate": "uncommon" },
+        { "type": "mission", "id": "chain_missions", "rate": "rare" }
+      ],
+      "shopSku": "moon_frag_pack"
     },
+    "lockedReason": "🔒 Spend 10 Map Key Fragments to unlock Moon Lab."
+  },
 
     "testnet_wastes": {
       "id": "testnet_wastes",
