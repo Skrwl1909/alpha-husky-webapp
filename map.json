@@ -56,22 +56,23 @@
 
   "nodes": [
     {
-  "id": "chain_actions",
-  "name": "Hunt & Explore",
+ {
+  "id": "chain_gate",
+  "name": "The Chain Gate",
   "region": "chain",
-  "x": 28,
-  "y": 58,
-  "icon": "images/map/building/hunt_explore.png",
-  "desc": "Quick activities in The Chain: short expedition or instant hunt.",
-  "action": "building_enter",
-  "buildingId": "chain_actions",
+  "x": 22,
+  "y": 62,
+  "icon": "images/map/building/the_chain.png",
+  "desc": "The primal, unforgiving wilderness of code where everything begins.",
+  "action": "region_hub",
+  "hub": "chain_hub",
   "gameplay": {
-    "type": "activities",
-    "actions": ["explore_10min", "quick_hunt"],
-    "explore": { "minutes": 10 },
-    "hunt": { "instant": true }
+    "type": "hub",
+    "services": ["forge", "shop", "mission_board", "stash", "fast_travel"],
+    "miniboss": { "id": "chain_gatekeeper", "cooldownSeconds": 900, "rareFragDrop": { "map_key_fragment": 0.06 } },
+    "daily": { "loginChest": true, "bounties": 3 }
   },
-  "tags": ["activities", "fast"]
+  "tags": ["hub", "safe"]
 },
 
     {
