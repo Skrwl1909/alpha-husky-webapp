@@ -8,7 +8,7 @@
   },
 
   "defaults": {
-    "regionsUnlocked": ["chain"],
+    "regionsUnlocked": ["chain", "moon_lab", "testnet_wastes"],
     "keys": [],
     "fragments": {
       "map_key_fragment": 0
@@ -26,7 +26,7 @@
     "moon_lab": {
     "id": "moon_lab",
     "name": "Moon Lab",
-     "unlock": {
+     "unlock": { "type": "free" },
      "type": "fragments",
       "item": "map_key_fragment",
       "required": 10,
@@ -44,7 +44,7 @@
     "testnet_wastes": {
       "id": "testnet_wastes",
       "name": "Testnet Wastes",
-      "unlock": {
+      "unlock": { "type": "free" },
         "type": "fragments",
         "item": "map_key_fragment",
         "required": 15,
