@@ -98,7 +98,6 @@
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
-    .tab{ padding:8px 12px; border-radius:999px; border:1px solid var(--stroke); background:rgba(255,255,255,.06); cursor:pointer; }
     .tab.active{ outline:2px solid rgba(255,255,255,.18); }
   </style>
 </head>
@@ -209,7 +208,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const start = () => {
-      // Globalny handler błędów (naprawione zamknięcie "});")
+      // Globalny handler błędów
       window.addEventListener('error', e => {
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
         console.error(e);
@@ -267,6 +266,7 @@
       tg.MainButton?.show?.();
 
       // ===== Helpers =====
+      const DEV_DEBUG = false; // ustaw na true, żeby widzieć alerty z tym co wysyła WebApp
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
@@ -275,6 +275,7 @@
         const payload = { action, payload: { userId: tg?.initDataUnsafe?.user?.id, ...extra } };
         try {
           console.log("[sendData]", payload);
+          if (DEV_DEBUG) { try { tg.showAlert?.(action + "\n" + JSON.stringify(extra)); } catch(_) {} }
           tg.sendData(JSON.stringify(payload));
         } catch (err) {
           tg.showAlert?.("Send failed. Try again.");
@@ -308,7 +309,8 @@
 
       async function loadMapData(){
         try{
-          DATA = await fetch('map.json', { cache: 'no-store' }).then(r => r.json());
+          const v = '20250914a'; // cache-bust wersji mapy
+          DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
         }catch(e){
           console.error('map.json load error', e);
           DATA = null;
@@ -325,8 +327,9 @@
         if (Array.isArray(PLAYER_STATE.regionsUnlocked)) {
           regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
         }
+        // zachowaj nazwę klucza taką, jak w map.json (map_key_fragment)
         if (typeof PLAYER_STATE.keyFragments === "number") {
-          fragments.key_fragments = PLAYER_STATE.keyFragments;
+          fragments.map_key_fragment = PLAYER_STATE.keyFragments;
         }
       }
 
@@ -405,9 +408,11 @@
           btn.addEventListener('click', () => {
             if (!unlocked) return openLocked(b);
             if (b.action === 'building_enter' && b.buildingId) {
-              return sendAction('building_enter', { buildingId: b.buildingId });
+              // KLUCZOWA ZMIANA: wyślij buildingId + nodeId + region
+              return sendAction('building_enter', { buildingId: b.buildingId, nodeId: b.id, region: b.region });
             }
-            return openRegion(b.region);
+            // fallback do regionu – ale doślij nodeId, by backend mógł zmapować
+            return openRegion(b.region, b.id);
           });
           pinsEl.appendChild(btn);
         }
@@ -460,7 +465,8 @@
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
 
-      function openRegion(region) { sendAction("region_open", { region }); }
+      // KLUCZOWA ZMIANA: openRegion z nodeId
+      function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
 
       mapRoot.addEventListener("click", (e) => {
         if (e.target !== mapRoot) return;
