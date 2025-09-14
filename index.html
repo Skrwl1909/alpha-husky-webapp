@@ -420,6 +420,96 @@
         }
         resolveLabelCollisions();
       }
+      // ===== Particles Burst Animation =====
+// Inicjalizacja canvas (dodaj to raz, po definicji VIEW_W/H)
+const canvas = document.getElementById('particlesCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+if (!ctx) {
+  console.warn('Canvas not supported – skipping particles');
+}
+
+// Funkcja burst – particle explosion przy kliknięciu pinu
+function createBurst(xPercent, yPercent, isUnlocked = true) {
+  if (!ctx) return;
+  
+  // Włącz canvas z fade-in
+  canvas.style.display = 'block';
+  canvas.style.opacity = '1';
+  
+  // Konwertuj % na koordynaty viewBox (1000x562)
+  const x = (xPercent / 100) * VIEW_W;
+  const y = (yPercent / 100) * VIEW_H;
+  
+  // Particle config (dostosowane do theme: cyan/purple dla unlocked)
+  const particles = [];
+  const numParticles = 12;
+  const colors = isUnlocked 
+    ? ['#00E5FF', '#9B4DFF']  // Glow unlocked
+    : ['#9483B4'];             // Szary teaser dla locked
+  
+  for (let i = 0; i < numParticles; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      size: Math.random() * 3 + 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1,
+      decay: Math.random() * 0.02 + 0.01
+    });
+  }
+  
+  // Animacja (RAF loop)
+  let animId;
+  function animate() {
+    ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+    
+    let activeParticles = 0;
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.1;  // Lekka grawitacja
+      p.life -= p.decay;
+      
+      if (p.life > 0) {
+        activeParticles++;
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Glow (opcjonalny, usuń jeśli laguje)
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = p.color;
+        ctx.fill();
+        ctx.restore();
+      }
+    });
+    
+    // Filtruj martwe particles
+    particles.length = 0;
+    particles.push(...particles.filter(p => p.life > 0));  // Poprawka: filtruj inline
+    
+    if (activeParticles > 0) {
+      animId = requestAnimationFrame(animate);
+    } else {
+      // Wyłącz canvas z fade-out
+      canvas.style.opacity = '0';
+      setTimeout(() => { canvas.style.display = 'none'; }, 200);
+      if (animId) cancelAnimationFrame(animId);
+    }
+  }
+  
+  animate();
+  
+  // Haptic feedback (już masz tg, ale wzmocnij dla unlocked)
+  try {
+    tg.HapticFeedback?.impactOccurred(isUnlocked ? "medium" : "light");
+  } catch(e) {}
+}
 
       function renderMap(){ drawPaths(); renderPins(); }
 
@@ -684,4 +774,5 @@
   </script>
 </body>
 </html>
+
 
