@@ -45,7 +45,7 @@
     .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
     .map-wrap { width:min(96vw,1200px); padding:12px; }
     .map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
-    .map-head { display:flex; justify-content:space-between; align-items:center; padding:6px 4px 10px; }
+    .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; }
     .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
     .map{ position:relative; width:100%; aspect-ratio:16/9;
@@ -99,6 +99,16 @@
     .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
     .tab.active{ outline:2px solid rgba(255,255,255,.18); }
+
+    /* --- Added: progress bar + region sheet width --- */
+    .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
+      background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
+      font:600 12px system-ui}
+    .progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
+      background:rgba(255,255,255,.1);overflow:hidden}
+    .progress-bar>i{display:block;height:100%;width:0%;
+      background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
+    .region-sheet .sheet-card{width:min(92vw,520px)}
   </style>
 </head>
 <body>
@@ -145,6 +155,14 @@
         <div class="map-card">
           <div class="map-head">
             <h2>Regions Map</h2>
+
+            <!-- Added: unlock progress pill -->
+            <div id="unlockProgress" class="progress-pill" style="display:none">
+              <span id="unlockLabel">Moon Lab</span>
+              <span class="progress-bar"><i id="unlockFill"></i></span>
+              <span id="unlockCount">0/5</span>
+            </div>
+
             <button class="close-x" id="closeMap" type="button">×</button>
           </div>
           <div id="map" class="map" data-map-root>
@@ -185,6 +203,22 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
+
+    <!-- Added: Region Sheet modal -->
+    <div class="sheet-back region-sheet" id="regionBack">
+      <div class="sheet-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div id="regionTitle" style="font-weight:700;"></div>
+          <button class="btn" id="closeRegion" type="button">×</button>
+        </div>
+        <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn primary" id="regionGo" type="button">Travel</button>
+          <button class="btn linklike" id="regionLore" type="button">Lore</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Quests modal -->
     <div class="sheet-back" id="questsBack">
       <div class="sheet-card">
@@ -310,7 +344,7 @@
 
       async function loadMapData(){
         try{
-          const v = '20250914a'; // cache-bust wersji mapy
+          const v = '20250915a'; // cache-bust wersji mapy (podbite)
           DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
         }catch(e){
           console.error('map.json load error', e);
@@ -334,6 +368,26 @@
         }
       }
 
+      // Added: pasek progresu + topbar mini-stats
+      function updateUnlockProgress(){
+        const el = document.getElementById('unlockProgress');
+        const cfg = DATA?.ui?.unlockTarget;
+        if (!el || !cfg) { if (el) el.style.display = 'none'; return; }
+        const have = (fragments[cfg.item] || 0), need = cfg.required || 0;
+        const fill = Math.max(0, Math.min(100, Math.round((have / Math.max(1,need)) * 100)));
+        const regName = DATA?.regions?.[cfg.region]?.name || 'Region';
+        document.getElementById('unlockLabel').textContent = regName;
+        document.getElementById('unlockFill').style.width = fill + '%';
+        document.getElementById('unlockCount').textContent = `${have}/${need}`;
+        el.style.display = 'flex';
+      }
+      function renderTopbar(){
+        const s = PLAYER_STATE?.stats;
+        if (!s || typeof s !== 'object') return;
+        const fac = document.getElementById('faction');
+        if (fac) fac.textContent = `LVL ${s.level ?? 1} • ${s.bones ?? 0}🦴`;
+      }
+
       async function loadPlayerState(){
         try {
           const res = await fetch("/webapp/state", {
@@ -344,7 +398,8 @@
           const state = await res.json();
           PLAYER_STATE = state;
           applyStateToMap();
-          if (mapBack.style.display === "flex" && DATA) renderMap();
+          renderTopbar();
+          if (mapBack.style.display === "flex" && DATA) { renderMap(); updateUnlockProgress(); }
         } catch (e) {
           console.warn("state load failed", e);
         }
@@ -409,109 +464,91 @@
           btn.addEventListener('click', () => {
             // Burst zawsze przy kliku (unlocked: kolorowy, locked: szary teaser)
             createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
-  
+
             if (!unlocked) return openLocked(b);
+
+            // NEW: pin otwierający Quests bez przejścia do czatu
+            if (b.action === 'open_quests') {
+              return openQuests();
+            }
+
+            // Budynek – dotychczasowe zachowanie
             if (b.action === 'building_enter' && b.buildingId) {
               return sendAction('building_enter', { buildingId: b.buildingId });
             }
+
+            // Jeśli region ma opis – pokaż Region Sheet
+            const reg = DATA?.regions?.[b.region];
+            if (reg?.desc || b?.desc) {
+              return openRegionSheet(b, reg);
+            }
+
+            // Fallback
             return openRegion(b.region);
           });
           pinsEl.appendChild(btn);
         }
         resolveLabelCollisions();
       }
+
       // ===== Particles Burst Animation =====
-// Inicjalizacja canvas (dodaj to raz, po definicji VIEW_W/H)
-const canvas = document.getElementById('particlesCanvas');
-const ctx = canvas ? canvas.getContext('2d') : null;
-if (!ctx) {
-  console.warn('Canvas not supported – skipping particles');
-}
+      const canvas = document.getElementById('particlesCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+      if (!ctx) { console.warn('Canvas not supported – skipping particles'); }
 
-// Funkcja burst – particle explosion przy kliknięciu pinu
-function createBurst(xPercent, yPercent, isUnlocked = true) {
-  if (!ctx) return;
-  
-  // Włącz canvas z fade-in
-  canvas.style.display = 'block';
-  canvas.style.opacity = '1';
-  
-  // Konwertuj % na koordynaty viewBox (1000x562)
-  const x = (xPercent / 100) * VIEW_W;
-  const y = (yPercent / 100) * VIEW_H;
-  
-  // Particle config (dostosowane do theme: cyan/purple dla unlocked)
-  const particles = [];
-  const numParticles = 12;
-  const colors = isUnlocked 
-    ? ['#00E5FF', '#9B4DFF']  // Glow unlocked
-    : ['#9483B4'];             // Szary teaser dla locked
-  
-  for (let i = 0; i < numParticles; i++) {
-    particles.push({
-      x: x,
-      y: y,
-      vx: (Math.random() - 0.5) * 8,
-      vy: (Math.random() - 0.5) * 8,
-      size: Math.random() * 3 + 1,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      life: 1,
-      decay: Math.random() * 0.02 + 0.01
-    });
-  }
-  
-  // Animacja (RAF loop)
-  let animId;
-  function animate() {
-    ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    
-    let activeParticles = 0;
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.1;  // Lekka grawitacja
-      p.life -= p.decay;
-      
-      if (p.life > 0) {
-        activeParticles++;
-        ctx.save();
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Glow (opcjonalny, usuń jeśli laguje)
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = p.color;
-        ctx.fill();
-        ctx.restore();
+      function createBurst(xPercent, yPercent, isUnlocked = true) {
+        if (!ctx) return;
+        canvas.style.display = 'block';
+        canvas.style.opacity = '1';
+        const x = (xPercent / 100) * VIEW_W;
+        const y = (yPercent / 100) * VIEW_H;
+
+        const particles = [];
+        const numParticles = 12;
+        const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
+        for (let i = 0; i < numParticles; i++) {
+          particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            size: Math.random() * 3 + 1,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 1,
+            decay: Math.random() * 0.02 + 0.01
+          });
+        }
+        let animId;
+        function animate() {
+          ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+          let activeParticles = 0;
+          particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= p.decay;
+            if (p.life > 0) {
+              activeParticles++;
+              ctx.save();
+              ctx.globalAlpha = p.life;
+              ctx.fillStyle = p.color;
+              ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+              ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill();
+              ctx.restore();
+            }
+          });
+          particles.length = 0; // reset
+          particles.push(...particles.filter(p => p.life > 0)); // keep alive (inline filter)
+          if (activeParticles > 0) {
+            animId = requestAnimationFrame(animate);
+          } else {
+            canvas.style.opacity = '0';
+            setTimeout(() => { canvas.style.display = 'none'; }, 200);
+            if (animId) cancelAnimationFrame(animId);
+          }
+        }
+        animate();
+        try { tg.HapticFeedback?.impactOccurred(isUnlocked ? "medium" : "light"); } catch(e) {}
       }
-    });
-    
-    // Filtruj martwe particles
-    particles.length = 0;
-    particles.push(...particles.filter(p => p.life > 0));  // Poprawka: filtruj inline
-    
-    if (activeParticles > 0) {
-      animId = requestAnimationFrame(animate);
-    } else {
-      // Wyłącz canvas z fade-out
-      canvas.style.opacity = '0';
-      setTimeout(() => { canvas.style.display = 'none'; }, 200);
-      if (animId) cancelAnimationFrame(animId);
-    }
-  }
-  
-  animate();
-  
-  // Haptic feedback (już masz tg, ale wzmocnij dla unlocked)
-  try {
-    tg.HapticFeedback?.impactOccurred(isUnlocked ? "medium" : "light");
-  } catch(e) {}
-}
 
-      function renderMap(){ drawPaths(); renderPins(); }
+      // Updated: renderMap z progressem
+      function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
 
       // Locked modal
       const lockedBack  = $("#lockedBack");
@@ -548,6 +585,21 @@ function createBurst(xPercent, yPercent, isUnlocked = true) {
         lockedBack.style.display = 'flex';
       }
 
+      // Added: Region Sheet logic
+      const regionBack = document.getElementById('regionBack');
+      const regionTitle = document.getElementById('regionTitle');
+      const regionDesc  = document.getElementById('regionDesc');
+      const btnRegionGo = document.getElementById('regionGo');
+      const btnRegionLo = document.getElementById('regionLore');
+      document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
+      function openRegionSheet(node, reg){
+        regionTitle.textContent = reg?.name || node?.name || 'Region';
+        regionDesc.textContent  = reg?.desc || node?.desc || '';
+        btnRegionGo.onclick = () => { regionBack.style.display='none'; sendAction('region_open', { region: node.region, nodeId: node.id }); };
+        btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open',   { region: node.region }); };
+        regionBack.style.display = 'flex';
+      }
+
       // Open/close map
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
@@ -557,7 +609,7 @@ function createBurst(xPercent, yPercent, isUnlocked = true) {
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
 
-      // KLUCZOWA ZMIANA: openRegion z nodeId
+      // openRegion z nodeId
       function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
 
       mapRoot.addEventListener("click", (e) => {
@@ -738,6 +790,9 @@ function createBurst(xPercent, yPercent, isUnlocked = true) {
             if (!DATA) loadMapData();
             loadPlayerState(); // dociągnij świeży stan przy wejściu z linka
             break;
+          case "quests": // Added: bezpośrednie otwarcie Daily Quests
+            openQuests();
+            break;
           case "mission":
             sendAction("mission_open", { level: 1 });
             break;
@@ -774,5 +829,3 @@ function createBurst(xPercent, yPercent, isUnlocked = true) {
   </script>
 </body>
 </html>
-
-
