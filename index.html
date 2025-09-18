@@ -241,7 +241,13 @@
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Minimalny config API (bezpieczny): -->
+  <script>window.API_BASE = "https://api.alphahusky.win";</script>
+
   <script>
+    // Helper do budowy URL-i API (działa też gdy API_BASE puste)
+    function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
+
     const start = () => {
       // Globalny handler błędów
       window.addEventListener('error', e => {
@@ -390,7 +396,7 @@
 
       async function loadPlayerState(){
         try {
-          const res = await fetch("/webapp/state", {
+          const res = await fetch(api("/webapp/state"), {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
@@ -668,7 +674,7 @@
       async function refreshQuests(){
         questsList.innerHTML = "";
         try{
-          const res = await fetch("/webapp/daily/state", {
+          const res = await fetch(api("/webapp/daily/state"), {
             method: "POST",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
@@ -719,7 +725,7 @@
 
       async function triggerDaily(action, raid){
         try{
-          const res = await fetch("/webapp/daily/action", {
+          const res = await fetch(api("/webapp/daily/action"), {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
