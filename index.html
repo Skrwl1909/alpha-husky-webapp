@@ -9,18 +9,9 @@
   <link rel="preload" as="video" href="background3.webm" type="video/webm">
   <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
   <style>
-    /* Telegram theme integration + safe fallbacks */
-    :root { color-scheme: var(--tg-color-scheme, dark); }
-
-    :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: var(--tg-theme-text-color, #fff); --ring: rgba(255,255,255,.12); }
+    :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: #fff; --ring: rgba(255,255,255,.12); }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
-    a { color: var(--tg-theme-link-color, #aef); }
-
-    /* hard overrides if UI contains black text/background utilities */
-    .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
-    .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
-
+    html, body { height: 100%; margin: 0; background:#000; overscroll-behavior:none; }
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -36,13 +27,6 @@
     }
     .btn:active { transform: translateY(1px); }
     .btn.linklike { text-decoration:none; }
-    .btn.primary {
-      background: var(--tg-theme-button-color, rgba(16,185,129,.18));
-      color: var(--tg-theme-button-text-color, #fff);
-      border: 1px solid rgba(255,255,255,.18);
-    }
-    .btn-row { display:flex; flex-wrap:wrap; gap:10px; }
-
     .topbar {
       position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
       padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
@@ -111,11 +95,12 @@
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
     .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-    .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
+    .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; }
+    .btn.primary{ background:rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.35); color:#a7f3d0; }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
     .tab.active{ outline:2px solid rgba(255,255,255,.18); }
 
-    /* progress + region sheet width */
+    /* --- Added: progress bar + region sheet width --- */
     .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
       background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
       font:600 12px system-ui}
@@ -124,7 +109,6 @@
     .progress-bar>i{display:block;height:100%;width:0%;
       background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
     .region-sheet .sheet-card{width:min(92vw,520px)}
-    .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
   </style>
 </head>
 <body>
@@ -165,7 +149,6 @@
         <div class="spacer"></div>
       </div>
     </div>
-
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
       <div class="map-wrap">
@@ -173,7 +156,7 @@
           <div class="map-head">
             <h2>Regions Map</h2>
 
-            <!-- unlock progress pill -->
+            <!-- Added: unlock progress pill -->
             <div id="unlockProgress" class="progress-pill" style="display:none">
               <span id="unlockLabel">Moon Lab</span>
               <span class="progress-bar"><i id="unlockFill"></i></span>
@@ -190,7 +173,6 @@
         </div>
       </div>
     </div>
-
     <!-- Locked info -->
     <div class="locked-back" id="lockedBack">
       <div class="locked-card">
@@ -206,7 +188,6 @@
         </div>
       </div>
     </div>
-
     <!-- Howlboard modal -->
     <div class="sheet-back" id="boardBack">
       <div class="sheet-card">
@@ -223,7 +204,7 @@
       </div>
     </div>
 
-    <!-- Region Sheet modal -->
+    <!-- Added: Region Sheet modal -->
     <div class="sheet-back region-sheet" id="regionBack">
       <div class="sheet-card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -234,32 +215,6 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button class="btn primary" id="regionGo" type="button">Travel</button>
           <button class="btn linklike" id="regionLore" type="button">Lore</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Building modal (HTTP) -->
-    <div class="sheet-back" id="buildingBack">
-      <div class="sheet-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div id="buildingTitle" style="font-weight:700;">Building</div>
-          <button class="btn" id="closeBuilding" type="button">×</button>
-        </div>
-        <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
-
-        <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
-          <div><b>Status:</b> <span id="buildingStatus">—</span></div>
-          <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
-          <div id="buildingRoutesWrap" style="display:none;">
-            <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
-            <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:var(--tg-theme-text-color,#fff)"></select>
-          </div>
-        </div>
-
-        <div class="btn-row" style="margin-top:12px;">
-          <button class="btn" id="buildingRefresh" type="button">Refresh</button>
-          <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
-          <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
         </div>
       </div>
     </div>
@@ -277,7 +232,6 @@
         </p>
       </div>
     </div>
-
     <div class="fallback" id="fallback">
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
@@ -330,7 +284,7 @@
       tg.BackButton?.show?.();
       tg.BackButton?.onClick?.(() => window.history.back());
 
-      // Theming (map na zmienne CSS)
+      // Theming
       const p = tg.themeParams || {};
       setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
       setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color, 0.22)        : 'rgba(255,255,255,.18)');
@@ -353,7 +307,7 @@
       tg.MainButton?.show?.();
 
       // ===== Helpers =====
-      const DEV_DEBUG = false;
+      const DEV_DEBUG = false; // ustaw na true, żeby widzieć alerty z tym co wysyła WebApp
       let _busy = false;
       function sendAction(action, extra = {}) {
         if (_busy) return;
@@ -380,18 +334,6 @@
         const h = hex.replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
         const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
       }
-      const init_data = window.Telegram?.WebApp?.initData || "";
-
-      async function apiPost(path, payload){
-        const res = await fetch(api(path), {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ init_data, ...(payload||{}) })
-        });
-        const data = await res.json().catch(()=> ({}));
-        if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
-        return data;
-      }
 
       // ===== MAP / STATE =====
       const mapBack = $("#mapBack");
@@ -408,12 +350,13 @@
 
       async function loadMapData(){
         try{
-          const v = '20250915a';
+          const v = '20250915a'; // cache-bust wersji mapy (podbite)
           DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
         }catch(e){
           console.error('map.json load error', e);
           DATA = null;
         }
+        // fallback defaults z map.json — nadpisywane przez state
         regionsUnlocked = new Set(DATA?.defaults?.regionsUnlocked || ['chain']);
         keys = new Set(DATA?.defaults?.keys || []);
         fragments = Object.assign({}, DATA?.defaults?.fragments || {});
@@ -425,11 +368,13 @@
         if (Array.isArray(PLAYER_STATE.regionsUnlocked)) {
           regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
         }
+        // zachowaj nazwę klucza taką, jak w map.json (map_key_fragment)
         if (typeof PLAYER_STATE.keyFragments === "number") {
           fragments.map_key_fragment = PLAYER_STATE.keyFragments;
         }
       }
 
+      // Added: pasek progresu + topbar mini-stats
       function updateUnlockProgress(){
         const el = document.getElementById('unlockProgress');
         const cfg = DATA?.ui?.unlockTarget;
@@ -451,7 +396,12 @@
 
       async function loadPlayerState(){
         try {
-          const state = await apiPost("/webapp/state");
+          const res = await fetch(api("/webapp/state"), {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+          });
+          const state = await res.json();
           PLAYER_STATE = state;
           applyStateToMap();
           renderTopbar();
@@ -518,26 +468,28 @@
             btn.appendChild(lock);
           }
           btn.addEventListener('click', () => {
+            // Burst zawsze przy kliku (unlocked: kolorowy, locked: szary teaser)
             createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
 
             if (!unlocked) return openLocked(b);
 
-            // NEW: in-app actions
+            // NEW: pin otwierający Quests bez przejścia do czatu
             if (b.action === 'open_quests') {
               return openQuests();
             }
 
-            // NEW: buildings over HTTP
+            // Budynek – dotychczasowe zachowanie
             if (b.action === 'building_enter' && b.buildingId) {
-              return openBuilding(b.buildingId, b.name, b.desc);
+              return sendAction('building_enter', { buildingId: b.buildingId });
             }
 
-            // Region sheet as before
+            // Jeśli region ma opis – pokaż Region Sheet
             const reg = DATA?.regions?.[b.region];
             if (reg?.desc || b?.desc) {
               return openRegionSheet(b, reg);
             }
 
+            // Fallback
             return openRegion(b.region);
           });
           pinsEl.appendChild(btn);
@@ -545,7 +497,7 @@
         resolveLabelCollisions();
       }
 
-      // Particles Burst Animation
+      // ===== Particles Burst Animation =====
       const canvas = document.getElementById('particlesCanvas');
       const ctx = canvas ? canvas.getContext('2d') : null;
       if (!ctx) { console.warn('Canvas not supported – skipping particles'); }
@@ -575,7 +527,7 @@
         function animate() {
           ctx.clearRect(0, 0, VIEW_W, VIEW_H);
           let activeParticles = 0;
-          for (const p of particles) {
+          particles.forEach(p => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= p.decay;
             if (p.life > 0) {
               activeParticles++;
@@ -586,7 +538,9 @@
               ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill();
               ctx.restore();
             }
-          }
+          });
+          particles.length = 0; // reset
+          particles.push(...particles.filter(p => p.life > 0)); // keep alive (inline filter)
           if (activeParticles > 0) {
             animId = requestAnimationFrame(animate);
           } else {
@@ -599,6 +553,7 @@
         try { tg.HapticFeedback?.impactOccurred(isUnlocked ? "medium" : "light"); } catch(e) {}
       }
 
+      // Updated: renderMap z progressem
       function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
 
       // Locked modal
@@ -636,7 +591,7 @@
         lockedBack.style.display = 'flex';
       }
 
-      // Region Sheet logic
+      // Added: Region Sheet logic
       const regionBack = document.getElementById('regionBack');
       const regionTitle = document.getElementById('regionTitle');
       const regionDesc  = document.getElementById('regionDesc');
@@ -651,125 +606,16 @@
         regionBack.style.display = 'flex';
       }
 
-      // Building modal logic (HTTP)
-      const bBack   = $("#buildingBack");
-      const bTitle  = $("#buildingTitle");
-      const bDesc   = $("#buildingDesc");
-      const bStatus = $("#buildingStatus");
-      const bTimerW = $("#buildingTimerWrap");
-      const bTimer  = $("#buildingTimer");
-      const bRoutesW= $("#buildingRoutesWrap");
-      const bRoute  = $("#buildingRoute");
-      const bBtnRef = $("#buildingRefresh");
-      const bBtnStart=$("#buildingStartBtn");
-      const bBtnRes = $("#buildingResolveBtn");
-      $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
-
-      let CURRENT_BID = null;
-      let ticker = null;
-
-      function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
-      function startBuildingTicker(endTs){
-        stopBuildingTicker();
-        const tick = () => {
-          const left = Math.max(0, Math.floor(endTs - Date.now()/1000));
-          bTimer.textContent = formatLeft(left);
-          if (left <= 0) { stopBuildingTicker(); loadBuildingState(); }
-        };
-        tick();
-        ticker = setInterval(tick, 1000);
-      }
-      function formatLeft(sec){
-        const m = Math.floor(sec/60), s = sec%60;
-        return (m>0? m+"m ":"") + s + "s";
-      }
-
-      async function openBuilding(bid, name, desc){
-        CURRENT_BID = bid;
-        bTitle.textContent = name || "Building";
-        bDesc.textContent  = desc || "";
-        bBack.style.display = 'flex';
-        await loadBuildingState();
-      }
-
-      async function loadBuildingState(){
-        if (!CURRENT_BID) return;
-        try{
-          const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
-          bTitle.textContent = st.name || bTitle.textContent;
-          bDesc.textContent  = st.desc || bDesc.textContent;
-
-          // routes
-          bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
-          bRoute.innerHTML = '';
-          if (st.routes && st.routes.length){
-            for (const r of st.routes){
-              const opt = document.createElement('option');
-              opt.value = r.id; opt.textContent = r.label || r.id;
-              bRoute.appendChild(opt);
-            }
-          }
-
-          if (st.active){
-            bStatus.textContent = "Active";
-            bBtnStart.style.display = "none";
-            bBtnRes.style.display = "inline-block";
-            bTimerW.style.display = "block";
-            startBuildingTicker(Math.floor(Date.now()/1000) + (st.timeLeftSec||0));
-          } else {
-            bStatus.textContent = "Idle";
-            bBtnStart.style.display = "inline-block";
-            bBtnRes.style.display = "none";
-            bTimerW.style.display = "none";
-            stopBuildingTicker();
-          }
-        }catch(e){
-          console.warn(e);
-          try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
-        }
-      }
-
-      bBtnRef.addEventListener("click", loadBuildingState);
-      bBtnStart.addEventListener("click", async () => {
-        if (!CURRENT_BID) return;
-        try{
-          const route = bRoute?.value || "";
-          const out = await apiPost("/webapp/building/start", { buildingId: CURRENT_BID, route });
-          if (out && out.endsAt){
-            bStatus.textContent = "Active";
-            bBtnStart.style.display = "none";
-            bBtnRes.style.display = "inline-block";
-            bTimerW.style.display = "block";
-            startBuildingTicker(out.endsAt);
-          }
-        }catch(e){
-          const msg = e?.data?.reason || "Start failed";
-          try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
-        }
-      });
-      bBtnRes.addEventListener("click", async () => {
-        if (!CURRENT_BID) return;
-        try{
-          const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
-          const rw = out?.rewards || {};
-          const summary = `+${rw.scrap||0} scrap, +${rw.bones||0} bones, +${rw.rune_dust||0} dust` + (rw.fragment? ", fragment +1":"");
-          try { window.Telegram?.WebApp?.showAlert?.(summary); } catch(_){}
-          await loadPlayerState();
-          await loadBuildingState();
-        }catch(e){
-          const msg = e?.data?.reason || "Resolve failed";
-          try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
-        }
-      });
-
       // Open/close map
       bind(".btn.map", () => {
         mapBack.style.display = "flex";
         if (!DATA) loadMapData();
+        // odśwież stan przy każdym otwarciu mapy (żeby pokrywać live unlocki)
         loadPlayerState();
       });
       bind("#closeMap", () => { mapBack.style.display = "none"; });
 
+      // openRegion z nodeId
       function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
 
       mapRoot.addEventListener("click", (e) => {
@@ -782,12 +628,14 @@
 
       // ===== Akcje przycisków =====
       const actions = {
+        // Row 1
         ".btn.avatar":   () => sendAction("avatar_open"),
         ".btn.mission":  () => sendAction("mission_open", { level: 1 }),
         ".btn.inventory":() => sendAction("cmd", { name: "inventory" }),
         ".btn.char":     () => sendAction("char_open"),
         ".btn.shop":     () => sendAction("shop_open"),
         ".btn.pets":     () => sendAction("pets_open"),
+        // Row 2
         ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
         ".btn.keys":     () => sendAction("cmd", { name: "keys" }),
         ".btn.feed":     () => sendAction("cmd", { name: "feed" }),
@@ -811,7 +659,7 @@
         });
       });
 
-      // ===== Daily Quests (HTTP) =====
+      // ===== Daily Quests (korzysta z backendu /webapp/daily/*) =====
       const questsBack = document.getElementById("questsBack");
       const questsList = document.getElementById("questsList");
       document.getElementById("closeQuests")?.addEventListener("click", () => {
@@ -826,7 +674,12 @@
       async function refreshQuests(){
         questsList.innerHTML = "";
         try{
-          const s = await apiPost("/webapp/daily/state");
+          const res = await fetch(api("/webapp/daily/state"), {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ init_data: window.Telegram?.WebApp?.initData || "" })
+          });
+          const s = await res.json();
           if (!s.ok) throw new Error(s.error || "state failed");
 
           const rows = [];
@@ -872,7 +725,15 @@
 
       async function triggerDaily(action, raid){
         try{
-          const ans = await apiPost("/webapp/daily/action", { action, raid });
+          const res = await fetch(api("/webapp/daily/action"), {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+              init_data: window.Telegram?.WebApp?.initData || "",
+              action, raid
+            })
+          });
+          const ans = await res.json();
           if (!ans.ok) throw new Error(ans.error || "action failed");
           if (ans.message) try{ window.Telegram?.WebApp?.showAlert?.(ans.message); }catch(_){}
           await refreshQuests();
@@ -933,9 +794,9 @@
           case "map":
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
-            loadPlayerState();
+            loadPlayerState(); // dociągnij świeży stan przy wejściu z linka
             break;
-          case "quests":
+          case "quests": // Added: bezpośrednie otwarcie Daily Quests
             openQuests();
             break;
           case "mission":
@@ -958,11 +819,14 @@
         }
       }
 
-      // Prefetch stanu
+      // Prefetch stanu (żeby mapa znała odblokowane regiony)
       loadPlayerState();
-      if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
+      if (sectionParam) {
+        setTimeout(() => showSection(sectionParam), 80);
+      }
     }; // end of start()
 
+    // Guard uruchomienia PRZED startem (bez rekurencji)
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', start, { once: true });
     } else {
