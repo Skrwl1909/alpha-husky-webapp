@@ -402,11 +402,7 @@
         async function apiPost(path, payload){
           const res = await fetch(api(path), {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${init_data}`,
-            "X-Telegram-Init-Data": init_data
-          },
+          headers: { "Content-Type": "application/json" },   // ← tylko to
           body: JSON.stringify({ init_data, ...(payload||{}) })
         });
           const data = await res.json().catch(()=> ({}));
@@ -986,4 +982,5 @@
   </script>
 </body>
 </html>
+
 
