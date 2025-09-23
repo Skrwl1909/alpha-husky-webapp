@@ -401,10 +401,14 @@
 
         async function apiPost(path, payload){
           const res = await fetch(api(path), {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ init_data, ...(payload||{}) })
-          });
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${init_data}`,
+            "X-Telegram-Init-Data": init_data
+          },
+          body: JSON.stringify({ init_data, ...(payload||{}) })
+        });
           const data = await res.json().catch(()=> ({}));
           if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
           return data;
@@ -982,3 +986,4 @@
   </script>
 </body>
 </html>
+
