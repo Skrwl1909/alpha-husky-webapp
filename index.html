@@ -388,11 +388,15 @@
           el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
         }
 
-        async function apiPost(path, payload){
+                async function apiPost(path, payload){
+          const init_data = window.Telegram?.WebApp?.initData || "";
+          const headers = { "Content-Type": "application/json" };
+          if (init_data) headers.Authorization = `Bearer ${init_data}`; // <-- DODANE
+
           const res = await fetch(api(path), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },   // tylko to (bez custom X-*)
-            body: JSON.stringify({ init_data, ...(payload||{}) })
+            headers,
+            body: JSON.stringify({ init_data, ...(payload||{}) }) // <-- jak było
           });
           const data = await res.json().catch(()=> ({}));
           if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
@@ -967,3 +971,4 @@
   </script>
 </body>
 </html>
+
