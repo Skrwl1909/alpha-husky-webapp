@@ -15,11 +15,9 @@
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
     a { color: var(--tg-theme-link-color, #aef); }
-
     /* twarde nadpisanie „black” */
     .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
     .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
-
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -40,7 +38,6 @@
       color: var(--tg-theme-button-text-color, #fff);
       border: 1px solid rgba(255,255,255,.18);
     }
-
     .topbar {
       position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
       padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
@@ -112,7 +109,6 @@
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
     .tab.active{ outline:2px solid rgba(255,255,255,.18); }
-
     /* progress + region sheet width */
     .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
       background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
@@ -123,7 +119,6 @@
       background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
     .region-sheet .sheet-card{width:min(92vw,520px)}
     .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-
     /* DEBUG banner */
     #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
       background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
@@ -168,21 +163,18 @@
         <div class="spacer"></div>
       </div>
     </div>
-
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
       <div class="map-wrap">
         <div class="map-card">
           <div class="map-head">
             <h2>Regions Map</h2>
-
             <!-- unlock progress pill -->
             <div id="unlockProgress" class="progress-pill" style="display:none">
               <span id="unlockLabel">Moon Lab</span>
               <span class="progress-bar"><i id="unlockFill"></i></span>
               <span id="unlockCount">0/5</span>
             </div>
-
             <button class="close-x" id="closeMap" type="button">×</button>
           </div>
           <div id="map" class="map" data-map-root>
@@ -193,7 +185,6 @@
         </div>
       </div>
     </div>
-
     <!-- Locked info -->
     <div class="locked-back" id="lockedBack">
       <div class="locked-card">
@@ -209,7 +200,6 @@
         </div>
       </div>
     </div>
-
     <!-- Howlboard modal -->
     <div class="sheet-back" id="boardBack">
       <div class="sheet-card">
@@ -225,7 +215,6 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
-
     <!-- Region Sheet modal -->
     <div class="sheet-back region-sheet" id="regionBack">
       <div class="sheet-card">
@@ -240,7 +229,6 @@
         </div>
       </div>
     </div>
-
     <!-- Building modal (HTTP) -->
     <div class="sheet-back" id="buildingBack">
       <div class="sheet-card">
@@ -249,7 +237,6 @@
           <button class="btn" id="closeBuilding" type="button">×</button>
         </div>
         <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
-
         <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
           <div><b>Status:</b> <span id="buildingStatus">—</span></div>
           <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
@@ -258,7 +245,6 @@
             <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
           </div>
         </div>
-
         <div class="btn-row" style="margin-top:12px;">
           <button class="btn" id="buildingRefresh" type="button">Refresh</button>
           <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
@@ -266,7 +252,6 @@
         </div>
       </div>
     </div>
-
     <!-- Quests modal -->
     <div class="sheet-back" id="questsBack">
       <div class="sheet-card">
@@ -280,7 +265,6 @@
         </p>
       </div>
     </div>
-
     <div class="fallback" id="fallback">
       <div>
         <p>Open this page inside Telegram WebApp for full functionality.</p>
@@ -288,49 +272,38 @@
       </div>
     </div>
   </div>
-
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
-
   <script>
     /* === Mini debug === */
     const DEBUG_UI = true;
     function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
-
     /* Helper URL API */
     function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
-
     const start = () => {
       try {
         dbg('boot…');
-
         /* Global error guard */
         window.addEventListener('error', e => {
           dbg('ERR: '+(e?.message||'error'));
           try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
           console.error(e);
         });
-
         const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
         setVh(); window.addEventListener('resize', setVh);
-
         const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         let tg = nativeTg;
-
-        const $  = sel => document.querySelector(sel);
+        const $ = sel => document.querySelector(sel);
         const $$ = sel => Array.from(document.querySelectorAll(sel));
-
         /* Jeśli NIE w Telegramie – pokaż fallback (bez trybu DEV) */
         if (!tg) {
           const fb = $("#fallback"); if (fb) fb.style.display = "flex";
           dbg('Open inside Telegram');
         }
-
         tg?.ready?.();
         tg?.expand?.();
         tg?.BackButton?.show?.();
         tg?.BackButton?.onClick?.(() => { if (tg.close) try{ tg.close(); }catch(_){}});
-
         /* Theming */
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
         const hexToRgba = (hex, a) => {
@@ -340,46 +313,58 @@
         };
         const p = tg?.themeParams || {};
         try{
-          setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-          setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color, 0.22)        : 'rgba(255,255,255,.18)');
+          setVar('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+          setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
           if (p.text_color) setVar('--txt', p.text_color);
-        }catch(_){}  // bezpiecznik
+        }catch(_){} // bezpiecznik
         tg?.onEvent?.('themeChanged', () => {
           const p2 = tg?.themeParams || {};
           try{
-            setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-            setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color, 0.22)        : 'rgba(255,255,255,.18)');
+            setVar('--glass', p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+            setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
             if (p2.text_color) setVar('--txt', p2.text_color);
           }catch(_){}
         });
-
         /* Nazwa gracza (z initDataUnsafe) */
         const unsafeUser = tg?.initDataUnsafe?.user;
         if (unsafeUser) $("#player").textContent = (unsafeUser.username ? '@'+unsafeUser.username : (unsafeUser.first_name||'Player'));
-
         /* == INIT_DATA — kluczowy fragment == */
         const init_data = window.Telegram?.WebApp?.initData || "";
-
         /* MainButton » Quests */
         tg?.MainButton?.setText?.("Quests");
         tg?.MainButton?.onClick?.(() => openQuests());
         tg?.MainButton?.show?.();
-
         /* Helpers */
         const DEV_DEBUG = false;
         let _busy = false;
-        function sendAction(action, extra = {}) {
-          try {
-            if (_busy) return;
-            _busy = true; setTimeout(() => (_busy = false), 300);
-            tg?.HapticFeedback?.impactOccurred?.("light");
-            const payload = { action, payload: { userId: (tg?.initDataUnsafe?.user?.id), ...extra } };
-            console.log("[sendData]", payload);
-            if (DEV_DEBUG && tg?.showAlert) tg.showAlert(action + "\n" + JSON.stringify(extra));
-            tg?.sendData?.(JSON.stringify(payload));
-          } catch (err) {
-            tg?.showAlert?.("Send failed. Try again.");
-            console.error(err);
+        async function sendAction(action, payload = {}) {  // ZMIANA: Zaktualizowana funkcja sendAction
+          const unsafe = tg.initDataUnsafe || {};
+          if (unsafe.query_id) {
+            // Menu (BotFather): Użyj fetch do backendu, który proxy'uje do bota
+            try {
+              const res = await apiPost("/webapp/action", { action, payload });
+              if (res.ok) {
+                tg.close();  // Zamknij app po akcji (jak w sendData)
+              } else {
+                tg.showAlert(res.reason || "Akcja nieudana.");
+              }
+            } catch (e) {
+              tg.showAlert("Błąd sieci. Spróbuj ponownie.");
+              console.error(e);
+            }
+          } else {
+            // Klawiatura: Użyj sendData (bez zmian)
+            try {
+              _busy = true; setTimeout(() => (_busy = false), 300);
+              tg?.HapticFeedback?.impactOccurred?.("light");
+              const data = { action, payload: { userId: (tg?.initDataUnsafe?.user?.id), ...payload } };
+              console.log("[sendData]", data);
+              if (DEV_DEBUG && tg?.showAlert) tg.showAlert(action + "\n" + JSON.stringify(payload));
+              tg?.sendData?.(JSON.stringify(data));
+            } catch (err) {
+              tg?.showAlert?.("Wysłanie nieudane. Spróbuj ponownie.");
+              console.error(err);
+            }
           }
         }
         function bind(sel, fn){
@@ -387,12 +372,10 @@
           if (!el) return;
           el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
         }
-
                 async function apiPost(path, payload){
           const init_data = window.Telegram?.WebApp?.initData || "";
           const headers = { "Content-Type": "application/json" };
           if (init_data) headers.Authorization = `Bearer ${init_data}`; // <-- DODANE
-
           const res = await fetch(api(path), {
             method: "POST",
             headers,
@@ -402,20 +385,17 @@
           if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
           return data;
         }
-
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
-        const pinsEl  = document.getElementById("pins") || createPinsLayer(mapRoot);
+        const pinsEl = document.getElementById("pins") || createPinsLayer(mapRoot);
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapRoot);
-
         let DATA = null;
         const VIEW_W = 1000, VIEW_H = 562;
         let regionsUnlocked = new Set();
         let keys = new Set();
         let fragments = {};
         let PLAYER_STATE = null;
-
         async function loadMapData(){
           try{
             const v = '20250920a';
@@ -429,13 +409,11 @@
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
           renderMap();
         }
-
         function applyStateToMap(){
           if (!PLAYER_STATE) return;
           if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
           if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
         }
-
         function updateUnlockProgress(){
           const el = document.getElementById('unlockProgress');
           const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
@@ -454,7 +432,6 @@
           const fac = document.getElementById('faction');
           if (fac) fac.textContent = `LVL ${s.level ?? 1} • ${s.bones ?? 0}🦴`;
         }
-
         async function loadPlayerState(){
           try {
             const state = await apiPost("/webapp/state");
@@ -466,7 +443,6 @@
             console.warn("state load failed", e);
           }
         }
-
         function isRegionUnlocked(regionId){
           const reg = DATA && DATA.regions && DATA.regions[regionId];
           if (!reg) return true;
@@ -481,9 +457,7 @@
           }
           return false;
         }
-
         const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
-
         function drawPaths(){
           if (!DATA) return;
           pathsSVG.innerHTML = '';
@@ -503,7 +477,6 @@
             pathsSVG.appendChild(poly);
           }
         }
-
         function renderPins(){
           if (!DATA) return;
           pinsEl.innerHTML = '';
@@ -536,7 +509,6 @@
           }
           resolveLabelCollisions();
         }
-
         /* Particles burst */
         const canvas = document.getElementById('particlesCanvas');
         const ctx = canvas ? canvas.getContext('2d') : null;
@@ -546,7 +518,6 @@
           canvas.style.opacity = '1';
           const x = (xPercent / 100) * VIEW_W;
           const y = (yPercent / 100) * VIEW_H;
-
           const particles = [];
           const numParticles = 12;
           const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
@@ -592,19 +563,15 @@
           animate();
           try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
         }
-
         function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
-
         /* Locked modal */
-        const lockedBack  = $("#lockedBack");
+        const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
-        const lockedDesc  = $("#lockedDesc");
+        const lockedDesc = $("#lockedDesc");
         const lockedForge = $("#lockedForge");
-        const lockedShop  = $("#lockedShop");
-        const lockedAsk   = $("#lockedAsk");
-
+        const lockedShop = $("#lockedShop");
+        const lockedAsk = $("#lockedAsk");
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
-
         function openLocked(b){
           const reg = DATA && DATA.regions && DATA.regions[b.region];
           const u = (reg && reg.unlock) || {};
@@ -626,39 +593,36 @@
           }
           lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
           lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
-          lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
+          lockedAsk.onclick = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
           lockedBack.style.display = 'flex';
         }
-
         /* Region sheet */
         const regionBack = document.getElementById('regionBack');
         const regionTitle = document.getElementById('regionTitle');
-        const regionDesc  = document.getElementById('regionDesc');
+        const regionDesc = document.getElementById('regionDesc');
         const btnRegionGo = document.getElementById('regionGo');
         const btnRegionLo = document.getElementById('regionLore');
         document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
         function openRegionSheet(node, reg){
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
-          regionDesc.textContent  = (reg && reg.desc) || (node && node.desc) || '';
+          regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
           btnRegionGo.onclick = () => { regionBack.style.display='none'; sendAction('region_open', { region: node.region, nodeId: node.id }); };
-          btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open',   { region: node.region }); };
+          btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open', { region: node.region }); };
           regionBack.style.display = 'flex';
         }
-
         /* Building modal (HTTP) */
-        const bBack   = $("#buildingBack");
-        const bTitle  = $("#buildingTitle");
-        const bDesc   = $("#buildingDesc");
+        const bBack = $("#buildingBack");
+        const bTitle = $("#buildingTitle");
+        const bDesc = $("#buildingDesc");
         const bStatus = $("#buildingStatus");
         const bTimerW = $("#buildingTimerWrap");
-        const bTimer  = $("#buildingTimer");
+        const bTimer = $("#buildingTimer");
         const bRoutesW= $("#buildingRoutesWrap");
-        const bRoute  = $("#buildingRoute");
+        const bRoute = $("#buildingRoute");
         const bBtnRef = $("#buildingRefresh");
         const bBtnStart=$("#buildingStartBtn");
         const bBtnRes = $("#buildingResolveBtn");
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
-
         let CURRENT_BID = null;
         let ticker = null;
         function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
@@ -676,21 +640,19 @@
           const m = Math.floor(sec/60), s = sec%60;
           return (m>0? m+"m ":"") + s + "s";
         }
-
         async function openBuilding(bid, name, desc){
           CURRENT_BID = bid;
           bTitle.textContent = name || "Building";
-          bDesc.textContent  = desc || "";
+          bDesc.textContent = desc || "";
           bBack.style.display = 'flex';
           await loadBuildingState();
         }
-
         async function loadBuildingState(){
           if (!CURRENT_BID) return;
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             bTitle.textContent = st.name || bTitle.textContent;
-            bDesc.textContent  = st.desc || bDesc.textContent;
+            bDesc.textContent = st.desc || bDesc.textContent;
             bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
             bRoute.innerHTML = '';
             if (st.routes && st.routes.length){
@@ -718,7 +680,6 @@
             try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
           }
         }
-
         bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
         bBtnStart && bBtnStart.addEventListener("click", async () => {
           if (!CURRENT_BID) return;
@@ -758,7 +719,6 @@
             try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
           }
         });
-
         /* Open/close map */
         bind(".btn.map", () => {
           mapBack.style.display = "flex";
@@ -766,9 +726,7 @@
           loadPlayerState();
         });
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
-
         function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
-
         mapRoot?.addEventListener("click", (e) => {
           if (e.target !== mapRoot) return;
           const r = mapRoot.getBoundingClientRect();
@@ -776,25 +734,23 @@
           const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
           console.log("coords:", x, y);
         });
-
         /* Kliknięcia przycisków (sendData – widać je w czacie bota) */
         const actions = {
-          ".btn.avatar":   () => sendAction("avatar_open"),
-          ".btn.mission":  () => sendAction("mission_open", { level: 1 }),
+          ".btn.avatar": () => sendAction("avatar_open"),
+          ".btn.mission": () => sendAction("mission_open", { level: 1 }),
           ".btn.inventory":() => sendAction("cmd", { name: "inventory" }),
-          ".btn.char":     () => sendAction("char_open"),
-          ".btn.shop":     () => sendAction("shop_open"),
-          ".btn.pets":     () => sendAction("pets_open"),
+          ".btn.char": () => sendAction("char_open"),
+          ".btn.shop": () => sendAction("shop_open"),
+          ".btn.pets": () => sendAction("pets_open"),
           ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
-          ".btn.keys":     () => sendAction("cmd", { name: "keys" }),
-          ".btn.feed":     () => sendAction("cmd", { name: "feed" }),
-          ".btn.mystats":  () => sendAction("cmd", { name: "mystats" }),
-          ".btn.mypets":   () => sendAction("cmd", { name: "mypets" }),
-          ".btn.profile":  () => sendAction("cmd", { name: "profile" }),
+          ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+          ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+          ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+          ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
+          ".btn.profile": () => sendAction("cmd", { name: "profile" }),
           ".btn.howlboard":() => openBoard(),
         };
         Object.entries(actions).forEach(([sel, fn]) => bind(sel, fn));
-
         /* Howlboard modal */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
@@ -808,19 +764,16 @@
             boardBack.style.display = "none";
           });
         });
-
         /* Daily (HTTP) */
         const questsBack = document.getElementById("questsBack");
         const questsList = document.getElementById("questsList");
         document.getElementById("closeQuests")?.addEventListener("click", () => {
           questsBack.style.display = "none";
         });
-
         function openQuests(){
           questsBack.style.display = "flex";
           refreshQuests();
         }
-
         async function refreshQuests(){
           questsList.innerHTML = "";
           try{
@@ -857,26 +810,31 @@
               return wrap;
             }
             if (s.normal) rows.push(card("Daily", s.normal, false));
-            if (s.raid)   rows.push(card("Raid", s.raid, true));
+            if (s.raid) rows.push(card("Raid", s.raid, true));
             rows.forEach(r => questsList.appendChild(r));
           }catch(e){
             console.warn(e);
             questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
           }
         }
-
-        async function triggerDaily(action, raid){
-          try{
-            const ans = await apiPost("/webapp/daily/action", { action, raid });
-            if (!ans.ok) throw new Error(ans.error || "action failed");
-            if (ans.message) window.Telegram?.WebApp?.showAlert?.(ans.message);
-            await refreshQuests();
-          }catch(e){
-            console.warn(e);
-            window.Telegram?.WebApp?.showAlert?.("Action failed. Try again.");
+        async function triggerDaily(action, raid){  // ZMIANA: Zaktualizowana funkcja triggerDaily
+          const unsafe = tg.initDataUnsafe || {};
+          if (unsafe.query_id) {
+            // Menu: Użyj fetch (bez zmian)
+            try {
+              const ans = await apiPost("/webapp/daily/action", { action, raid });
+              if (!ans.ok) throw new Error(ans.error || "Błąd akcji");
+              if (ans.message) tg.showAlert(ans.message);
+            } catch (e) {
+              console.warn(e);
+              tg.showAlert("Akcja nieudana. Spróbuj ponownie.");
+            }
+          } else {
+            // Klawiatura: Użyj sendData zamiast fetch
+            tg.sendData(JSON.stringify({ action: "daily_action", payload: { action, raid } }));
           }
+          refreshQuests();  // Odśwież UI po akcji
         }
-
         /* Safety layers */
         function createPathsLayer(root){
           const layer = document.createElement("div");
@@ -907,21 +865,18 @@
           const mapRect = mapRoot.getBoundingClientRect();
           chips.forEach(ch => {
             const r = ch.getBoundingClientRect();
-            const leftOverflow  = mapRect.left + 8 - r.left;
+            const leftOverflow = mapRect.left + 8 - r.left;
             const rightOverflow = r.right - (mapRect.right - 8);
-            if (leftOverflow  > 0) ch.style.marginLeft = (leftOverflow)+"px";
+            if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
             if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
           });
         }
-
         /* Routing z URL */
         const qs = new URLSearchParams(location.search);
         const sectionParam = (qs.get("section") || "").toLowerCase();
-        const toastParam   = qs.get("toast");
+        const toastParam = qs.get("toast");
         if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
-
         function openBoard(){ document.getElementById("boardBack").style.display = "flex"; }
-
         function showSection(name){
           switch(name){
             case "map":
@@ -951,18 +906,15 @@
               break;
           }
         }
-
         /* Prefetch */
         loadPlayerState();
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
-
         dbg('Ready');
       } catch (fatal) {
         dbg('FATAL: '+(fatal && fatal.message ? fatal.message : 'error'));
         console.error('FATAL', fatal);
       }
     }; // start()
-
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', start, { once: true });
     } else {
@@ -971,4 +923,3 @@
   </script>
 </body>
 </html>
-
