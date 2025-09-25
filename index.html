@@ -551,11 +551,11 @@
             const btn = document.createElement('button');
             btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
             btn.style.left = b.x + '%';
-            btn.style.top = b.y + '%';
+            btn.style.top  = b.y + '%';
             btn.title = b.name + (unlocked ? '' : ' (locked)');
 
             const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
-            const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
+            const img  = document.createElement('img');  img.src = b.icon; img.alt = b.name; btn.appendChild(img);
             const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
 
             if (!unlocked){
@@ -705,19 +705,31 @@
         const bBtnRes = $("#buildingResolveBtn");
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
+        /* === NOWE: auto-resolve po zakończeniu + czytelny alert z nagrodami === */
+        const AUTO_RESOLVE_ON_READY = true;
+
         let CURRENT_BID = null;
         let ticker = null;
         function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
+
         function startBuildingTicker(endTs){
           stopBuildingTicker();
           const tick = () => {
             const left = Math.max(0, Math.floor(endTs - Date.now()/1000));
             bTimer.textContent = formatLeft(left);
-            if (left <= 0) { stopBuildingTicker(); loadBuildingState(); }
+            if (left <= 0) {
+              stopBuildingTicker();
+              bStatus.textContent = "Complete";
+              bTimerW.style.display = "none";
+              bBtnRes.style.display = "inline-block";
+              try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
+              if (AUTO_RESOLVE_ON_READY) resolveRun();
+            }
           };
           tick();
           ticker = setInterval(tick, 1000);
         }
+
         function formatLeft(sec){
           const m = Math.floor(sec/60), s = sec%60;
           return (m>0? m+"m ":"") + s + "s";
@@ -767,6 +779,25 @@
           }
         }
 
+        async function resolveRun(){
+          if (!CURRENT_BID) return;
+          try{
+            const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
+            const rw = out?.rewards || {};
+            const lines = [];
+            if (rw.scrap)     lines.push(`+${rw.scrap} scrap`);
+            if (rw.bones)     lines.push(`+${rw.bones} bones`);
+            if (rw.rune_dust) lines.push(`+${rw.rune_dust} dust`);
+            if (rw.fragment)  lines.push(`+1 shard`);
+            tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
+            await loadPlayerState();
+            await loadBuildingState();
+          }catch(e){
+            const msg = (e && e.data && e.data.reason) || "Resolve failed";
+            tg?.showAlert?.(msg);
+          }
+        }
+
         bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
         bBtnStart && bBtnStart.addEventListener("click", async () => {
           if (!CURRENT_BID) return;
@@ -793,20 +824,7 @@
           }
         });
 
-        bBtnRes && bBtnRes.addEventListener("click", async () => {
-          if (!CURRENT_BID) return;
-          try{
-            const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
-            const rw = (out && out.rewards) || {};
-            const summary = `+${rw.scrap||0} scrap, +${rw.bones||0} bones, +${rw.rune_dust||0} dust` + (rw.fragment? ", fragment +1":"");
-            try { window.Telegram?.WebApp?.showAlert?.(summary); } catch(_){}
-            await loadPlayerState();
-            await loadBuildingState();
-          }catch(e){
-            const msg = (e && e.data && e.data.reason) || "Resolve failed";
-            try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
-          }
-        });
+        bBtnRes && bBtnRes.addEventListener("click", resolveRun);
 
         /* Open/close map */
         document.querySelector(".btn.map")?.addEventListener("click", () => {
