@@ -140,7 +140,7 @@
 
     /* DEBUG banner */
     #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
-      background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border:1px solid rgba(255,255,255,.12); display:none}
+      background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
   </style>
 </head>
 <body>
@@ -311,8 +311,18 @@
   <!-- 2) Globalny endpoint API -->
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
-  <!-- 3) NOWE: logika Moon Lab (fortress UI + helpery) -->
-  <script src="js/fortress.js?v=2"></script>
+  <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
+  <script>window.WEBAPP_VER = "2025-09-28a";</script>
+
+  <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
+  <script>
+    (function(v){
+      var s = document.createElement('script');
+      s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
+      s.defer = true;
+      document.head.appendChild(s);
+    })(window.WEBAPP_VER);
+  </script>
 
   <!-- 4) Główny skrypt aplikacji -->
   <script>
@@ -460,7 +470,7 @@
 
         async function loadMapData(){
           try{
-            const v = '20250920a';
+            const v = window.WEBAPP_VER || 'dev';
             DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
           }catch(e){
             console.error('map.json load error', e);
