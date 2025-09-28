@@ -117,6 +117,7 @@
 
     .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
+
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
 
     .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
@@ -304,9 +305,16 @@
     </div>
   </div>
 
+  <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- 2) Globalny endpoint API -->
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
+  <!-- 3) NOWE: logika Moon Lab (fortress UI + helpery) -->
+  <script src="js/fortress.js?v=2"></script>
+
+  <!-- 4) Główny skrypt aplikacji -->
   <script>
     /* === Mini debug === */
     const DEBUG_UI = true;
@@ -1106,4 +1114,3 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
-
