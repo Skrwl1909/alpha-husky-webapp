@@ -1,3 +1,5 @@
+// js/fortress.js
+// === Twoje oryginalne helpery + fallback api ===
 const API_BASE = 'https://api.alphahusky.win'; // twój VPS (CORS masz już whitelistowany)
 
 async function apiPost(path, payload) {
@@ -157,6 +159,206 @@ BOSS [${hpbar(bHp, boss.hpMax)}] ${bHp}/${boss.hpMax}`;
 .fb-log{max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px}
 .fb-result{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)}
 .btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:none;color:#fff}
-`;
+
+/* === NOWE: karta stanu fortress === */
+.fx-headline{font-weight:700;margin-bottom:2px}
+.fx-sub{opacity:.8}
+.fx-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fx-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);font-size:12px}
+.fx-progress{display:grid;gap:8px}
+.fx-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.fx-bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.65),rgba(155,77,255,.65))}
+.fx-muted{opacity:.8}
+.fx-select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff}
+  `;
   const s=document.createElement('style'); s.id='fb-css'; s.textContent=css; document.head.appendChild(s);
 })();
+
+/* =========================
+   NOWE: moduł window.Fortress
+   ========================= */
+(function(global){
+  const BUILDING_ID = 'moonlab_fortress';
+  let _apiPostRef = null;
+  let _tg = null;
+  let _dbg = ()=>{};
+
+  function init({ apiPost: injectedApiPost, tg, dbg } = {}){
+    _apiPostRef = injectedApiPost || global.apiPost; // fallback do lokalnego apiPost z tego pliku
+    _tg = tg || (global.Telegram && global.Telegram.WebApp) || null;
+    _dbg = dbg || (global.dbg || (()=>{}));
+  }
+
+  function getApiPost(){
+    return _apiPostRef || global.apiPost;
+  }
+
+  /** Publiczne: otwórz lekką kartę Moon Lab */
+  async function open(){
+    const api = getApiPost();
+    if (!api) { alert('Fortress not initialized'); return; }
+
+    const ui = buildStateUI();
+    openModal('Moon Lab — Fortress', ui.wrap);
+    await refreshState(ui);
+  }
+
+  /** Publiczne: ręczne wystartowanie (opcjonalny route) */
+  async function start(route){
+    const api = getApiPost();
+    try{
+      const data = await api('/webapp/building/start', { buildingId: BUILDING_ID, route });
+      if (data && data.ok && data.mode === 'fortress') {
+        renderFortressBattle(data);
+        return true;
+      }
+      alert(`Run started: ${data.minutes} min`);
+      return true;
+    }catch(e){
+      const reason = e?.data?.reason || e?.response?.data?.reason || e?.message;
+      if (/COOLDOWN/i.test(reason||'')){
+        const left = e?.data?.cooldownLeftSec ?? e?.response?.data?.cooldownLeftSec ?? 3600;
+        toast(`⏳ Cooldown: ${fmtLeft(left)}`);
+        return false;
+      }
+      if (/LOCKED_REGION/i.test(reason||'')) return toast('🔒 Region locked'), false;
+      if (/UNKNOWN_BUILDING/i.test(reason||'')) return toast('Unknown building'), false;
+      if (/FORTRESS_MODE|UNSUPPORTED_FOR_FORTRESS/i.test(reason||'')){
+        try {
+          const st = await api('/webapp/building/state', { buildingId: BUILDING_ID });
+          toast(st.cooldownLeftSec > 0 ? `Cooldown: ${fmtLeft(st.cooldownLeftSec)}` : 'Ready');
+        } catch(_) {}
+        return false;
+      }
+      console.error(e); toast('Something went wrong.');
+      return false;
+    }
+  }
+
+  /** UI: karta stanu + progres */
+  function buildStateUI(){
+    const wrap = document.createElement('div');
+    wrap.className = 'fortress-state';
+    wrap.innerHTML = `
+      <div class="fx-headline">Moon Lab — Fortress</div>
+      <div class="fx-row">
+        <span class="fx-pill"><b>Status:</b> <span id="fx-status">—</span></span>
+        <span class="fx-pill" id="fx-cool-wrap" style="display:none"><b>Cooldown:</b> <span id="fx-timer">0s</span></span>
+      </div>
+
+      <div class="fx-progress" id="fx-progress" style="display:none">
+        <div class="fx-row fx-muted">
+          <span id="fx-levelLbl">L—</span> •
+          <span id="fx-encLbl">Encounter —/—</span>
+        </div>
+        <div class="fx-bar"><i id="fx-fill"></i></div>
+      </div>
+
+      <div id="fx-routes" style="display:none">
+        <label class="fx-muted" for="fx-route" style="font-size:12px">Route</label>
+        <select id="fx-route" class="fx-select"></select>
+      </div>
+
+      <div class="fb-footer" style="display:flex; gap:8px; margin-top:8px">
+        <button class="btn" id="fx-close" type="button">Close</button>
+        <button class="btn" id="fx-refresh" type="button">Refresh</button>
+        <button class="btn primary" id="fx-start" type="button">Start</button>
+      </div>
+    `;
+
+    const ui = {
+      wrap,
+      status: wrap.querySelector('#fx-status'),
+      coolWrap: wrap.querySelector('#fx-cool-wrap'),
+      timer: wrap.querySelector('#fx-timer'),
+      progWrap: wrap.querySelector('#fx-progress'),
+      levelLbl: wrap.querySelector('#fx-levelLbl'),
+      encLbl: wrap.querySelector('#fx-encLbl'),
+      fill: wrap.querySelector('#fx-fill'),
+      routesWrap: wrap.querySelector('#fx-routes'),
+      routeSel: wrap.querySelector('#fx-route'),
+      btnClose: wrap.querySelector('#fx-close'),
+      btnRefresh: wrap.querySelector('#fx-refresh'),
+      btnStart: wrap.querySelector('#fx-start'),
+    };
+
+    ui.btnClose.onclick = closeModal;
+    ui.btnRefresh.onclick = () => refreshState(ui);
+    ui.btnStart.onclick = () => start(ui.routeSel?.value || '');
+
+    return ui;
+  }
+
+  /** Pobierz stan i odśwież UI (z progressem) */
+  async function refreshState(ui){
+    const api = getApiPost();
+    try{
+      const st = await api('/webapp/building/state', { buildingId: BUILDING_ID });
+
+      // Status + cooldown
+      const cd = Math.max(0, st?.cooldownLeftSec | 0);
+      if (cd > 0){
+        ui.status.textContent = 'Cooldown';
+        ui.coolWrap.style.display = 'inline-flex';
+        ui.timer.textContent = fmtLeft(cd);
+        ui.btnStart.disabled = true;
+      } else {
+        ui.status.textContent = 'Ready';
+        ui.coolWrap.style.display = 'none';
+        ui.btnStart.disabled = false;
+      }
+
+      // Routes (jeśli backend zwraca)
+      ui.routesWrap.style.display = (st?.routes && st.routes.length) ? 'block' : 'none';
+      ui.routeSel.innerHTML = '';
+      if (st?.routes && st.routes.length){
+        st.routes.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id; opt.textContent = r.label || r.id;
+          ui.routeSel.appendChild(opt);
+        });
+      }
+
+      // Progres (próbuje kilka konwencji pól – działa „best effort”)
+      const lvl = st?.level ?? st?.progress?.level ?? st?.currentLevel ?? null;
+
+      const floor = st?.floor ?? st?.currentFloor ?? st?.progress?.floor ?? null;
+      // encounter może być numerem lub indeksem — spróbuje kilku nazw
+      const encRaw = st?.encounter ?? st?.currentEncounter ?? st?.progress?.encounter ?? st?.encounterIndex ?? st?.encounterNo ?? null;
+
+      const floorTotal = st?.floorEncounters ?? st?.totalEncounters ?? st?.progress?.totalEncounters ?? 10;
+
+      const enc = encRaw ? Number(encRaw) : null;
+      const pct =
+        (typeof enc === 'number' && typeof floorTotal === 'number' && floorTotal > 0)
+          ? Math.max(0, Math.min(100, Math.round((enc / floorTotal) * 100)))
+          : (typeof st?.progressPercent === 'number' ? Math.max(0, Math.min(100, Math.round(st.progressPercent))) : null);
+
+      // Render labeli
+      if (lvl != null || floor != null || enc != null){
+        ui.progWrap.style.display = 'grid';
+        ui.levelLbl.textContent = (lvl != null) ? `L${lvl}` : (floor != null ? `Floor ${floor}` : 'Progress');
+        if (enc != null && floorTotal != null) {
+          const num = Math.max(1, Math.min(enc, floorTotal));
+          ui.encLbl.textContent = `Encounter ${num}/${floorTotal}`;
+        } else {
+          ui.encLbl.textContent = 'Encounter —/—';
+        }
+        // Pasek
+        ui.fill.style.width = (pct != null ? pct : 0) + '%';
+      } else {
+        ui.progWrap.style.display = 'none';
+      }
+
+    }catch(e){
+      console.error(e);
+      ui.status.textContent = '—';
+      ui.coolWrap.style.display = 'none';
+      ui.btnStart.disabled = true;
+      toast('Failed to load state.');
+    }
+  }
+
+  // Eksport modułu
+  global.Fortress = { init, open, start, renderFortressBattle };
+})(window);
