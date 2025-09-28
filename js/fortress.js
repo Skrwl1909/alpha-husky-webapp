@@ -63,6 +63,52 @@
     if (m) m.remove();
   }
 
+  // ---------- helpers do „elastycznego” mapowania ----------
+  const getPath = (obj, path) =>
+    String(path).split('.').reduce((o,k)=> (o && (k in o) ? o[k] : undefined), obj);
+
+  function pick(obj, paths, def){
+    for (const p of paths){
+      const v = getPath(obj, p);
+      if (v !== undefined && v !== null) return v;
+    }
+    return def;
+  }
+
+  function buildNextLabel(st){
+    const nx = pick(st, [
+      'next','nextEncounter','encounter.next','progress.next','fortress.next','state.next','data.next'
+    ], null) || {};
+
+    const level = pick({nx,st}, [
+      'nx.level','st.nextLevel','st.level','st.progress.level','st.fortress.level'
+    ], undefined);
+
+    const name  = pick({nx,st}, [
+      'nx.name','nx.id','nx.boss.name','st.nextName','st.encounter.name','st.encounter.id'
+    ], undefined);
+
+    const rank  = pick({nx,st}, [
+      'nx.rank','nx.boss.rank','st.encounter.rank'
+    ], undefined);
+
+    const power = pick({nx,st}, [
+      'nx.power','nx.boss.power','st.encounter.power'
+    ], undefined);
+
+    const floorName = pick(st, [
+      'progress.floorName','progress.floor','fortress.floorName'
+    ], undefined);
+
+    const bits = [];
+    if (typeof level === 'number') bits.push(`L${level}`);
+    if (name) bits.push(String(name));
+    if (rank) bits.push(String(rank));
+    if (typeof power === 'number') bits.push(`Pwr ${power}`);
+    const label = bits.join(' · ') + (floorName ? ` • ${floorName}` : '');
+    return label || '—';
+  }
+
   // ---------- public UI ----------
   function open(){
     injectCss();
@@ -134,49 +180,38 @@
     b.style.background = txt==='Ready' ? green : (txt==='Active' ? blue : base);
   }
 
-  function inferNextFromState(st){
-    const nx = st.next || st.nextEncounter || st.encounter?.next || st.progress?.next || null;
-    if (!nx && !st.encounter && !st.progress) return { label:'—' };
-
-    const level   = nx?.level ?? st.nextLevel ?? st.level ?? st.progress?.level;
-    const name    = nx?.name || nx?.id || st.nextName || st.encounter?.name || st.encounter?.id;
-    const rank    = nx?.rank || st.encounter?.rank || st.rank;
-    const power   = nx?.power || st.encounter?.power || st.power;
-    const floorNm = nx?.floorName || st.progress?.floorName || (st.progress?.floor ? `Floor ${st.progress.floor}` : null);
-
-    const bits = [];
-    if (typeof level === 'number') bits.push(`L${level}`);
-    if (name) bits.push(String(name));
-    if (rank) bits.push(String(rank));
-    if (typeof power === 'number') bits.push(`Pwr ${power}`);
-    const label = bits.join(' · ') + (floorNm ? ` • ${floorNm}` : '');
-    return { label: label || '—' };
-  }
-
   async function refresh(){
     stopTicker();
     try{
       const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
 
-      const cooldown = Math.max(0, st.cooldownLeftSec|0);
+      const cooldown = Math.max(0, (st.cooldownLeftSec|0));
       const active   = !!st.active;
       const ready    = !active && cooldown<=0;
 
-      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
-      const encCur   = st.encounterIndex ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0; // 0-based
-      const encTotal = st.encountersTotal ?? st.progress?.encountersTotal ?? 10;
+      const lvl = pick(st, [
+        'level','currentLevel','nextLevel','progress.level','fortress.level','data.level'
+      ], 1);
 
-      const attemptsLeft = (typeof st.attemptsLeft === 'number') ? st.attemptsLeft
-                           : (typeof st.attack?.attemptsLeft === 'number') ? st.attack.attemptsLeft
-                           : null;
+      const encCur = pick(st, [
+        'encounterIndex','progress.encounterIndex','encounter.index','fortress.encounterIndex'
+      ], 0); // 0-based
 
-      const nextInfo = inferNextFromState(st);
+      const encTotal = pick(st, [
+        'encountersTotal','progress.encountersTotal','fortress.encountersTotal','meta.encountersTotal'
+      ], 10);
+
+      const attemptsLeft = pick(st, [
+        'attemptsLeft','attack.attemptsLeft','fortress.attemptsLeft'
+      ], null);
+
+      const nextLabel = buildNextLabel(st);
 
       // statusy
       setBadge(ready ? 'Ready' : (active ? 'Active' : 'Cooldown'));
       $('#fx-status').textContent = ready ? 'Ready' : (active ? 'Active' : 'Cooldown');
       $('#fx-cd').textContent = ready ? '—' : fmtLeft(cooldown);
-      $('#fx-next').textContent = nextInfo.label || '—';
+      $('#fx-next').textContent = nextLabel;
 
       // level / próby
       $('#fx-lvl').textContent = `L ${lvl}`;
@@ -189,7 +224,7 @@
       }
 
       // encounter progress
-      const curDisp = clamp(encCur + 1, 1, encTotal); // pokazujemy 1-based
+      const curDisp = clamp((encCur|0) + 1, 1, encTotal);
       $('#fx-encLbl').textContent = `${curDisp}/${encTotal}`;
       const pct = clamp(Math.round((curDisp-1) / Math.max(1, encTotal-1) * 100), 0, 100);
       $('#fx-barFill').style.width = pct + '%';
