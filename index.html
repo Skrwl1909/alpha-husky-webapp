@@ -140,7 +140,7 @@
 
     /* DEBUG banner */
     #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
-      background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
+      background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border:1px solid rgba(255,255,255,.12); display:none}
   </style>
 </head>
 <body>
@@ -442,6 +442,9 @@
           return data;
         }
 
+        /* >>> INIT fortress.js helperów <<< */
+        window.Fortress?.init?.({ apiPost, tg, dbg });
+
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
@@ -577,6 +580,12 @@
               createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
               if (!unlocked) return openLocked(b);
               if (b.action === 'open_quests') return openQuests();
+
+              /* >>> SPECJALNY SKRĘT DLA MOON LAB FORTRESS <<< */
+              if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
+                return window.Fortress.open();
+              }
+
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
               const reg = DATA && DATA.regions && DATA.regions[b.region];
               if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
