@@ -1,364 +1,378 @@
 // js/fortress.js
-// === Twoje oryginalne helpery + fallback api ===
-const API_BASE = 'https://api.alphahusky.win'; // twój VPS (CORS masz już whitelistowany)
+// Alpha Husky — Moon Lab (Fortress) UI
+// Integracja: window.Fortress.init({ apiPost, tg, dbg })
 
-async function apiPost(path, payload) {
-  const init_data = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) || '';
-  const res = await fetch(API_BASE + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, init_data })
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    const err = new Error('API error');
-    err.response = { status: res.status, data };
-    throw err;
-  }
-  return data;
-}
+(function (global) {
+  const BID = 'moonlab_fortress';
 
-// UŻYJ: onclick="startBuilding('moonlab_fortress')"
-async function startBuilding(buildingId, route) {
-  try {
-    const data = await apiPost('/webapp/building/start', { buildingId, route });
-
-    // Tryb fortecy — pokaż walkę
-    if (data && data.ok && data.mode === 'fortress') {
-      renderFortressBattle(data);
-      return;
-    }
-
-    // Zwykły budynek (timer)
-    alert(`Run started: ${data.minutes} min`);
-  } catch (e) {
-    const reason = e?.response?.data?.reason;
-    if (reason === 'COOLDOWN') {
-      const left = e.response?.data?.cooldownLeftSec ?? 3600;
-      toast(`⏳ Cooldown: ${fmtLeft(left)}`);
-      return;
-    }
-    if (reason === 'LOCKED_REGION') return toast('🔒 Region locked');
-    if (reason === 'UNKNOWN_BUILDING') return toast('Unknown building');
-    if (reason === 'FORTRESS_MODE' || reason === 'UNSUPPORTED_FOR_FORTRESS') {
-      // Gdyby front trafił w starą ścieżkę — odśwież modal stanu
-      const st = await apiPost('/webapp/building/state', { buildingId });
-      toast(st.cooldownLeftSec > 0 ? `Cooldown: ${fmtLeft(st.cooldownLeftSec)}` : 'Ready');
-      return;
-    }
-    console.error(e); toast('Something went wrong.');
-  }
-}
-
-function fmtLeft(sec){const m=Math.floor(sec/60),s=sec%60;if(m>=60){const h=Math.floor(m/60),mm=m%60;return `${h}h ${mm}m`;}if(m>0)return `${m}m ${s}s`;return `${s}s`;}
-function hpbar(cur,max){const W=18;cur=Math.max(0,cur|0);max=Math.max(1,max|0);const fill=Math.round(W*(cur/max));return '█'.repeat(fill)+'░'.repeat(W-fill);}
-function toast(msg){try{Telegram.WebApp.showPopup({title:'Info',message:String(msg)})}catch(_){alert(msg)}}
-
-function openModal(title, bodyEl){
-  closeModal();
-  const wrap=document.createElement('div');
-  wrap.id='fb-modal';
-  wrap.innerHTML=`
-    <div class="fb-mask"></div>
-    <div class="fb-card">
-      <div class="fb-head">
-        <div class="fb-head-title">${title||''}</div>
-        <button class="fb-x" onclick="closeModal()">×</button>
-      </div>
-      <div class="fb-body"></div>
-    </div>`;
-  wrap.querySelector('.fb-body').appendChild(bodyEl);
-  document.body.appendChild(wrap);
-}
-function closeModal(){const m=document.getElementById('fb-modal'); if(m) m.remove();}
-
-// Prosty renderer walki Moon Lab
-function renderFortressBattle(data){
-  const { level, boss, player, steps, winner, rewards, next } = data;
-  const cont=document.createElement('div');
-  cont.className='fortress-battle';
-  cont.innerHTML=`
-    <div class="fb-header">
-      ${boss.sprite ? `<img class="fb-boss" src="${boss.sprite}" alt="${boss.name}">` : ''}
-      <div class="fb-titles">
-        <div class="fb-sub">Moon Lab — Fortress</div>
-        <div class="fb-title">L${level} · ${boss.name}</div>
-      </div>
-    </div>
-    <pre class="fb-board">
-YOU  [${hpbar(player.hpMax, player.hpMax)}] ${player.hpMax}/${player.hpMax}
-BOSS [${hpbar(boss.hpMax, boss.hpMax)}] ${boss.hpMax}/${boss.hpMax}
-    </pre>
-    <div class="fb-log"></div>
-    <div class="fb-footer">
-      <button class="btn" id="fb-close">Close</button>
-      <button class="btn" id="fb-refresh">Refresh</button>
-    </div>`;
-  openModal('Battle', cont);
-
-  const logEl=cont.querySelector('.fb-log'), boardEl=cont.querySelector('.fb-board');
-  let pHp=player.hpMax, bHp=boss.hpMax, i=0;
-  function tick(){
-    if(i>=steps.length){
-      const lines=[];
-      lines.push(winner==='you'?'✅ Victory!':'❌ Defeat!');
-      if(rewards?.materials){
-        const {scrap=0,rune_dust=0}=rewards.materials;
-        const mats=[]; if(scrap)mats.push(`Scrap ×${scrap}`); if(rune_dust)mats.push(`Rune Dust ×${rune_dust}`);
-        if(mats.length) lines.push('Rewards: '+mats.join(', '));
-      }
-      if(rewards?.rare) lines.push('💎 Rare drop!');
-      if(rewards?.firstClear?.length) lines.push('🌟 First clear: '+rewards.firstClear.join(', '));
-      if(next) lines.push(`Next: L${next.level} · Cooldown 1h`);
-      logEl.insertAdjacentHTML('beforeend', `<div class="fb-result">${lines.join('<br>')}</div>`);
-      return;
-    }
-    const s=steps[i++];
-    if(s.actor==='you'){
-      bHp=s.b_hp;
-      logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${s.dodge?'shoot… boss <b>DODGED</b>!':`hit for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
-    }else{
-      pHp=s.p_hp;
-      logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${s.dodge?'attacks… you <b>DODGE</b>!':`hits for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
-    }
-    boardEl.textContent =
-`YOU  [${hpbar(pHp, player.hpMax)}] ${pHp}/${player.hpMax}
-BOSS [${hpbar(bHp, boss.hpMax)}] ${bHp}/${boss.hpMax}`;
-    logEl.scrollTop=logEl.scrollHeight;
-    setTimeout(tick, 500);
-  }
-  setTimeout(tick, 350);
-
-  cont.querySelector('#fb-close').onclick=closeModal;
-  cont.querySelector('#fb-refresh').onclick=async ()=>{
-    try{
-      const st=await apiPost('/webapp/building/state',{buildingId:'moonlab_fortress'});
-      closeModal();
-      toast(st.cooldownLeftSec>0?`Cooldown: ${fmtLeft(st.cooldownLeftSec)}`:'Ready');
-    }catch(e){ toast('Error refreshing.'); }
+  const S = {
+    apiPost: null,   // wstrzykiwane z index.html
+    tg: null,
+    dbg: () => {},
   };
-}
 
-// minimalny CSS wstrzyknięty automatycznie, jeśli nie dodałeś do pliku .css
-(function injectCss(){
-  if(document.getElementById('fb-css')) return;
-  const css=`
-#fb-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
-#fb-modal .fb-mask{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-#fb-modal .fb-card{position:relative;width:min(92vw,520px);max-height:86vh;background:rgba(20,22,30,.96);border-radius:16px;padding:12px;color:#fff;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.4)}
-.fb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.fb-head-title{font-weight:700;opacity:.9}
-.fb-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
-.fb-body{display:flex;flex-direction:column;gap:12px}
-.fortress-battle{display:flex;flex-direction:column;gap:12px}
-.fb-header{display:flex;gap:12px;align-items:center}
-.fb-boss{width:64px;height:64px;object-fit:contain;border-radius:10px;background:rgba(255,255,255,.06)}
-.fb-sub{opacity:.8;font-size:.9rem}
-.fb-title{font-weight:700;font-size:1.05rem}
-.fb-board{background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
-.fb-log{max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px}
-.fb-result{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)}
-.btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:none;color:#fff}
+  // ---------- utils ----------
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const el = (t, cls) => { const x=document.createElement(t); if(cls) x.className=cls; return x; };
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 
-/* === NOWE: karta stanu fortress === */
-.fx-headline{font-weight:700;margin-bottom:2px}
-.fx-sub{opacity:.8}
-.fx-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.fx-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);font-size:12px}
-.fx-progress{display:grid;gap:8px}
-.fx-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
-.fx-bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.65),rgba(155,77,255,.65))}
-.fx-muted{opacity:.8}
-.fx-select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff}
-  `;
-  const s=document.createElement('style'); s.id='fb-css'; s.textContent=css; document.head.appendChild(s);
-})();
-
-/* =========================
-   NOWE: moduł window.Fortress
-   ========================= */
-(function(global){
-  const BUILDING_ID = 'moonlab_fortress';
-  let _apiPostRef = null;
-  let _tg = null;
-  let _dbg = ()=>{};
-
-  function init({ apiPost: injectedApiPost, tg, dbg } = {}){
-    _apiPostRef = injectedApiPost || global.apiPost; // fallback do lokalnego apiPost z tego pliku
-    _tg = tg || (global.Telegram && global.Telegram.WebApp) || null;
-    _dbg = dbg || (global.dbg || (()=>{}));
+  function fmtLeft(sec){
+    sec = Math.max(0, sec|0);
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec%60;
+    if (h) return `${h}h ${m}m`;
+    if (m) return `${m}m ${s}s`;
+    return `${s}s`;
   }
 
-  function getApiPost(){
-    return _apiPostRef || global.apiPost;
+  function toast(msg){
+    try { S.tg?.showAlert?.(String(msg)); } catch(_){ try{ alert(msg); }catch(_){} }
   }
 
-  /** Publiczne: otwórz lekką kartę Moon Lab */
-  async function open(){
-    const api = getApiPost();
-    if (!api) { alert('Fortress not initialized'); return; }
-
-    const ui = buildStateUI();
-    openModal('Moon Lab — Fortress', ui.wrap);
-    await refreshState(ui);
+  function injectCss(){
+    if (document.getElementById('fortress-css')) return;
+    const css = `
+#fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
+#fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+#fortress-modal .card{position:relative;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
+.fx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.fx-title{font-weight:800;letter-spacing:.2px}
+.fx-badge{font:600 12px system-ui;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
+.fx-body{display:grid;gap:10px}
+.fx-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fx-col{display:grid;gap:8px}
+.fx-kv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fx-chip{padding:6px 10px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.06);font-weight:700}
+.fx-prog{display:grid;gap:6px}
+.fx-bar{position:relative;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.fx-bar>i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
+.fx-actions{display:flex;gap:8px;justify-content:flex-end}
+.fx-btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
+.fx-btn.primary{background:rgba(16,185,129,.18)}
+.fx-btn[disabled]{opacity:.55;cursor:not-allowed;filter:grayscale(.1)}
+.fx-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
+.fx-note{opacity:.75;font-size:12px}
+@media (max-width:480px){ .fx-title{font-size:15px} }
+    `;
+    const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
   }
 
-  /** Publiczne: ręczne wystartowanie (opcjonalny route) */
-  async function start(route){
-    const api = getApiPost();
-    try{
-      const data = await api('/webapp/building/start', { buildingId: BUILDING_ID, route });
-      if (data && data.ok && data.mode === 'fortress') {
-        renderFortressBattle(data);
-        return true;
-      }
-      alert(`Run started: ${data.minutes} min`);
-      return true;
-    }catch(e){
-      const reason = e?.data?.reason || e?.response?.data?.reason || e?.message;
-      if (/COOLDOWN/i.test(reason||'')){
-        const left = e?.data?.cooldownLeftSec ?? e?.response?.data?.cooldownLeftSec ?? 3600;
-        toast(`⏳ Cooldown: ${fmtLeft(left)}`);
-        return false;
-      }
-      if (/LOCKED_REGION/i.test(reason||'')) return toast('🔒 Region locked'), false;
-      if (/UNKNOWN_BUILDING/i.test(reason||'')) return toast('Unknown building'), false;
-      if (/FORTRESS_MODE|UNSUPPORTED_FOR_FORTRESS/i.test(reason||'')){
-        try {
-          const st = await api('/webapp/building/state', { buildingId: BUILDING_ID });
-          toast(st.cooldownLeftSec > 0 ? `Cooldown: ${fmtLeft(st.cooldownLeftSec)}` : 'Ready');
-        } catch(_) {}
-        return false;
-      }
-      console.error(e); toast('Something went wrong.');
-      return false;
-    }
+  function closeModal(){
+    const m = document.getElementById('fortress-modal');
+    if (m) m.remove();
   }
 
-  /** UI: karta stanu + progres */
-  function buildStateUI(){
-    const wrap = document.createElement('div');
-    wrap.className = 'fortress-state';
+  // ---------- public UI ----------
+  function open(){
+    injectCss();
+    closeModal();
+
+    const wrap = el('div'); wrap.id='fortress-modal';
     wrap.innerHTML = `
-      <div class="fx-headline">Moon Lab — Fortress</div>
-      <div class="fx-row">
-        <span class="fx-pill"><b>Status:</b> <span id="fx-status">—</span></span>
-        <span class="fx-pill" id="fx-cool-wrap" style="display:none"><b>Cooldown:</b> <span id="fx-timer">0s</span></span>
-      </div>
-
-      <div class="fx-progress" id="fx-progress" style="display:none">
-        <div class="fx-row fx-muted">
-          <span id="fx-levelLbl">L—</span> •
-          <span id="fx-encLbl">Encounter —/—</span>
+      <div class="mask"></div>
+      <div class="card">
+        <div class="fx-head">
+          <div class="fx-title">Moon Lab — Fortress</div>
+          <div class="fx-kv">
+            <span id="fx-badge" class="fx-badge">…</span>
+            <button class="fx-x" id="fx-x" aria-label="Close">×</button>
+          </div>
         </div>
-        <div class="fx-bar"><i id="fx-fill"></i></div>
-      </div>
 
-      <div id="fx-routes" style="display:none">
-        <label class="fx-muted" for="fx-route" style="font-size:12px">Route</label>
-        <select id="fx-route" class="fx-select"></select>
-      </div>
+        <div class="fx-body">
+          <div class="fx-row">
+            <div class="fx-col">
+              <div class="fx-kv"><b>Status:</b> <span id="fx-status">—</span></div>
+              <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">—</span></div>
+              <div class="fx-kv"><b>Next opponent:</b> <span id="fx-next">—</span></div>
+            </div>
+            <div class="fx-col" style="min-width:170px;align-items:flex-end">
+              <div class="fx-kv">
+                <span class="fx-chip" id="fx-lvl">L —</span>
+                <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
+              </div>
+            </div>
+          </div>
 
-      <div class="fb-footer" style="display:flex; gap:8px; margin-top:8px">
-        <button class="btn" id="fx-close" type="button">Close</button>
-        <button class="btn" id="fx-refresh" type="button">Refresh</button>
-        <button class="btn primary" id="fx-start" type="button">Start</button>
+          <div class="fx-prog">
+            <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">—/—</span></div>
+            <div class="fx-bar"><i id="fx-barFill"></i></div>
+          </div>
+
+          <div class="fx-actions">
+            <button class="fx-btn" id="fx-close">Close</button>
+            <button class="fx-btn" id="fx-refresh">Refresh</button>
+            <button class="fx-btn primary" id="fx-start">Start</button>
+          </div>
+
+          <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
+        </div>
       </div>
     `;
+    document.body.appendChild(wrap);
 
-    const ui = {
-      wrap,
-      status: wrap.querySelector('#fx-status'),
-      coolWrap: wrap.querySelector('#fx-cool-wrap'),
-      timer: wrap.querySelector('#fx-timer'),
-      progWrap: wrap.querySelector('#fx-progress'),
-      levelLbl: wrap.querySelector('#fx-levelLbl'),
-      encLbl: wrap.querySelector('#fx-encLbl'),
-      fill: wrap.querySelector('#fx-fill'),
-      routesWrap: wrap.querySelector('#fx-routes'),
-      routeSel: wrap.querySelector('#fx-route'),
-      btnClose: wrap.querySelector('#fx-close'),
-      btnRefresh: wrap.querySelector('#fx-refresh'),
-      btnStart: wrap.querySelector('#fx-start'),
-    };
+    $('#fx-x').onclick = closeModal;
+    $('#fx-close').onclick = closeModal;
+    $('#fx-refresh').onclick = () => refresh();
+    $('#fx-start').onclick = () => doStart();
 
-    ui.btnClose.onclick = closeModal;
-    ui.btnRefresh.onclick = () => refreshState(ui);
-    ui.btnStart.onclick = () => start(ui.routeSel?.value || '');
-
-    return ui;
+    refresh();
   }
 
-  /** Pobierz stan i odśwież UI (z progressem) */
-  async function refreshState(ui){
-    const api = getApiPost();
+  // live cooldown ticker
+  let ticker = null;
+  function stopTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
+
+  function setBadge(txt){
+    const b = $('#fx-badge');
+    if (!b) return;
+    b.textContent = txt;
+    const base = 'rgba(255,255,255,.06)';
+    const green = 'rgba(16,185,129,.18)';
+    const blue  = 'rgba(59,130,246,.18)';
+    b.style.background = txt==='Ready' ? green : (txt==='Active' ? blue : base);
+  }
+
+  function inferNextFromState(st){
+    const nx = st.next || st.nextEncounter || st.encounter?.next || st.progress?.next || null;
+    if (!nx && !st.encounter && !st.progress) return { label:'—' };
+
+    const level   = nx?.level ?? st.nextLevel ?? st.level ?? st.progress?.level;
+    const name    = nx?.name || nx?.id || st.nextName || st.encounter?.name || st.encounter?.id;
+    const rank    = nx?.rank || st.encounter?.rank || st.rank;
+    const power   = nx?.power || st.encounter?.power || st.power;
+    const floorNm = nx?.floorName || st.progress?.floorName || (st.progress?.floor ? `Floor ${st.progress.floor}` : null);
+
+    const bits = [];
+    if (typeof level === 'number') bits.push(`L${level}`);
+    if (name) bits.push(String(name));
+    if (rank) bits.push(String(rank));
+    if (typeof power === 'number') bits.push(`Pwr ${power}`);
+    const label = bits.join(' · ') + (floorNm ? ` • ${floorNm}` : '');
+    return { label: label || '—' };
+  }
+
+  async function refresh(){
+    stopTicker();
     try{
-      const st = await api('/webapp/building/state', { buildingId: BUILDING_ID });
+      const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
 
-      // Status + cooldown
-      const cd = Math.max(0, st?.cooldownLeftSec | 0);
-      if (cd > 0){
-        ui.status.textContent = 'Cooldown';
-        ui.coolWrap.style.display = 'inline-flex';
-        ui.timer.textContent = fmtLeft(cd);
-        ui.btnStart.disabled = true;
+      const cooldown = Math.max(0, st.cooldownLeftSec|0);
+      const active   = !!st.active;
+      const ready    = !active && cooldown<=0;
+
+      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
+      const encCur   = st.encounterIndex ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0; // 0-based
+      const encTotal = st.encountersTotal ?? st.progress?.encountersTotal ?? 10;
+
+      const attemptsLeft = (typeof st.attemptsLeft === 'number') ? st.attemptsLeft
+                           : (typeof st.attack?.attemptsLeft === 'number') ? st.attack.attemptsLeft
+                           : null;
+
+      const nextInfo = inferNextFromState(st);
+
+      // statusy
+      setBadge(ready ? 'Ready' : (active ? 'Active' : 'Cooldown'));
+      $('#fx-status').textContent = ready ? 'Ready' : (active ? 'Active' : 'Cooldown');
+      $('#fx-cd').textContent = ready ? '—' : fmtLeft(cooldown);
+      $('#fx-next').textContent = nextInfo.label || '—';
+
+      // level / próby
+      $('#fx-lvl').textContent = `L ${lvl}`;
+      const at = $('#fx-attempts');
+      if (attemptsLeft !== null && attemptsLeft !== undefined){
+        at.style.display = 'inline-block';
+        at.textContent = `🎯 ${attemptsLeft}`;
       } else {
-        ui.status.textContent = 'Ready';
-        ui.coolWrap.style.display = 'none';
-        ui.btnStart.disabled = false;
+        at.style.display = 'none';
       }
 
-      // Routes (jeśli backend zwraca)
-      ui.routesWrap.style.display = (st?.routes && st.routes.length) ? 'block' : 'none';
-      ui.routeSel.innerHTML = '';
-      if (st?.routes && st.routes.length){
-        st.routes.forEach(r => {
-          const opt = document.createElement('option');
-          opt.value = r.id; opt.textContent = r.label || r.id;
-          ui.routeSel.appendChild(opt);
-        });
-      }
+      // encounter progress
+      const curDisp = clamp(encCur + 1, 1, encTotal); // pokazujemy 1-based
+      $('#fx-encLbl').textContent = `${curDisp}/${encTotal}`;
+      const pct = clamp(Math.round((curDisp-1) / Math.max(1, encTotal-1) * 100), 0, 100);
+      $('#fx-barFill').style.width = pct + '%';
 
-      // Progres (próbuje kilka konwencji pól – działa „best effort”)
-      const lvl = st?.level ?? st?.progress?.level ?? st?.currentLevel ?? null;
-
-      const floor = st?.floor ?? st?.currentFloor ?? st?.progress?.floor ?? null;
-      // encounter może być numerem lub indeksem — spróbuje kilku nazw
-      const encRaw = st?.encounter ?? st?.currentEncounter ?? st?.progress?.encounter ?? st?.encounterIndex ?? st?.encounterNo ?? null;
-
-      const floorTotal = st?.floorEncounters ?? st?.totalEncounters ?? st?.progress?.totalEncounters ?? 10;
-
-      const enc = encRaw ? Number(encRaw) : null;
-      const pct =
-        (typeof enc === 'number' && typeof floorTotal === 'number' && floorTotal > 0)
-          ? Math.max(0, Math.min(100, Math.round((enc / floorTotal) * 100)))
-          : (typeof st?.progressPercent === 'number' ? Math.max(0, Math.min(100, Math.round(st.progressPercent))) : null);
-
-      // Render labeli
-      if (lvl != null || floor != null || enc != null){
-        ui.progWrap.style.display = 'grid';
-        ui.levelLbl.textContent = (lvl != null) ? `L${lvl}` : (floor != null ? `Floor ${floor}` : 'Progress');
-        if (enc != null && floorTotal != null) {
-          const num = Math.max(1, Math.min(enc, floorTotal));
-          ui.encLbl.textContent = `Encounter ${num}/${floorTotal}`;
-        } else {
-          ui.encLbl.textContent = 'Encounter —/—';
-        }
-        // Pasek
-        ui.fill.style.width = (pct != null ? pct : 0) + '%';
+      // przycisk Start + live cooldown
+      const startBtn = $('#fx-start');
+      if (active) {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Active…';
+      } else if (cooldown>0) {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Start';
+        let left = cooldown;
+        $('#fx-cd').textContent = fmtLeft(left);
+        ticker = setInterval(() => {
+          left = Math.max(0, left-1);
+          $('#fx-cd').textContent = fmtLeft(left);
+          if (left<=0){
+            stopTicker();
+            setBadge('Ready');
+            $('#fx-status').textContent = 'Ready';
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start';
+            $('#fx-cd').textContent = '—';
+          }
+        }, 1000);
       } else {
-        ui.progWrap.style.display = 'none';
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start';
       }
 
-    }catch(e){
+    } catch(e){
+      S.dbg('fortress/state fail');
       console.error(e);
-      ui.status.textContent = '—';
-      ui.coolWrap.style.display = 'none';
-      ui.btnStart.disabled = true;
-      toast('Failed to load state.');
+      toast('Failed to load Moon Lab state.');
     }
   }
 
-  // Eksport modułu
-  global.Fortress = { init, open, start, renderFortressBattle };
+  async function doStart(){
+    const btn = $('#fx-start');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try{
+      S.tg?.HapticFeedback?.impactOccurred?.('light');
+      const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
+
+      // Tryb fortress — render bitwy
+      if (out && out.ok && out.mode === 'fortress'){
+        closeModal();
+        renderFortressBattle(out);
+        return;
+      }
+
+      // fallback (gdyby backend oddał "minutes" jak zwykły budynek)
+      if (out && out.minutes){
+        toast(`Run started: ${out.minutes} min`);
+        await refresh();
+        return;
+      }
+
+      await refresh();
+    }catch(e){
+      const reason = (e?.response?.data?.reason) || (e?.data?.reason) || e?.message || 'Start failed';
+      if (/COOLDOWN/i.test(reason)){
+        const left = e?.response?.data?.cooldownLeftSec ?? e?.data?.cooldownLeftSec ?? 60;
+        toast(`⏳ Cooldown: ${fmtLeft(left)}`);
+        await refresh();
+      } else if (/LOCKED_REGION/i.test(reason)){
+        toast('🔒 Region locked');
+      } else {
+        console.error(e);
+        toast('Something went wrong.');
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- prosty renderer walki ----------
+  function hpbar(cur,max){
+    const W=18; cur=Math.max(0,cur|0); max=Math.max(1,max|0);
+    const fill = Math.round(W*(cur/max));
+    return '█'.repeat(fill)+'░'.repeat(W-fill);
+  }
+
+  function renderFortressBattle(data){
+    // data: { level, boss, player, steps[], winner, rewards, next }
+    injectCss();
+    closeModal();
+
+    const cont = el('div','fortress-battle');
+    const nextLine = (() => {
+      const nx = data?.next || {};
+      const parts = [];
+      if (typeof nx.level === 'number') parts.push(`L${nx.level}`);
+      if (nx.name) parts.push(nx.name);
+      if (nx.rank) parts.push(nx.rank);
+      if (typeof nx.power === 'number') parts.push(`Pwr ${nx.power}`);
+      return parts.length ? `Next: ${parts.join(' · ')} · Cooldown 1h` : '';
+    })();
+
+    cont.innerHTML = `
+      <div class="fx-head" style="margin-bottom:6px">
+        <div class="fx-title">Moon Lab — Fortress</div>
+        <button class="fx-x" id="fb-x">×</button>
+      </div>
+      <div style="margin-bottom:4px;font-weight:700">L${data.level} · ${data.boss?.name||'Boss'}</div>
+      <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+YOU  [${hpbar(data.player.hpMax, data.player.hpMax)}] ${data.player.hpMax}/${data.player.hpMax}
+BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss.hpMax}
+      </pre>
+      <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
+      <div class="fx-actions">
+        <button class="fx-btn" id="fb-close">Close</button>
+        <button class="fx-btn" id="fb-refresh">Refresh</button>
+      </div>
+      ${nextLine ? `<div class="fx-note" style="margin-top:4px">${nextLine}</div>` : ''}
+    `;
+    const wrap = el('div'); wrap.id='fortress-modal';
+    const card = el('div','card'); card.style.padding='12px';
+    const mask = el('div','mask');
+    card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
+    document.body.appendChild(wrap);
+
+    $('#fb-close').onclick = closeModal;
+    $('#fb-x').onclick = closeModal;
+    $('#fb-refresh').onclick = async () => {
+      try{
+        const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+        closeModal();
+        const cd = Math.max(0, st.cooldownLeftSec|0);
+        toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
+      }catch(_){ toast('Error refreshing.'); }
+    };
+
+    const logEl = $('#fb-log', cont);
+    const boardEl = $('#fb-board', cont);
+    let pHp = data.player.hpMax, bHp = data.boss.hpMax, i=0;
+
+    function step(){
+      if (i >= (data.steps?.length||0)){
+        const lines = [];
+        lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
+        const mats = [];
+        if (data.rewards?.materials?.scrap)     mats.push(`Scrap ×${data.rewards.materials.scrap}`);
+        if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
+        if (mats.length) lines.push('Rewards: '+mats.join(', '));
+        if (data.rewards?.rare) lines.push('💎 Rare drop!');
+        if (data.rewards?.firstClear?.length) lines.push('🌟 First clear: '+data.rewards.firstClear.join(', '));
+        if (data.next?.level || data.next?.name){
+          const nbits = [];
+          if (typeof data.next.level === 'number') nbits.push(`L${data.next.level}`);
+          if (data.next.name) nbits.push(data.next.name);
+          lines.push(`Next: ${nbits.join(' · ')} · Cooldown 1h`);
+        }
+        logEl.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join('<br>')}</div>`);
+        return;
+      }
+      const s = data.steps[i++];
+      if (s.actor==='you'){
+        bHp = s.b_hp;
+        logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${s.dodge?'shoot… boss <b>DODGED</b>!':`hit for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
+      } else {
+        pHp = s.p_hp;
+        logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${s.dodge?'attacks… you <b>DODGE</b>!':`hits for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
+      }
+      boardEl.textContent =
+`YOU  [${hpbar(pHp, data.player.hpMax)}] ${pHp}/${data.player.hpMax}
+BOSS [${hpbar(bHp, data.boss.hpMax)}] ${bHp}/${data.boss.hpMax}`;
+      logEl.scrollTop = logEl.scrollHeight;
+      setTimeout(step, 500);
+    }
+    setTimeout(step, 350);
+  }
+
+  // ---------- API ----------
+  function init(deps){
+    S.apiPost = deps?.apiPost || S.apiPost;
+    S.tg = deps?.tg || S.tg;
+    S.dbg = deps?.dbg || S.dbg;
+  }
+
+  // eksport
+  global.Fortress = { init, open, refresh };
+
 })(window);
