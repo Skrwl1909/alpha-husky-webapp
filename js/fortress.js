@@ -30,6 +30,7 @@
     try { S.tg?.showAlert?.(String(msg)); } catch(_){ try{ alert(msg); }catch(_){} }
   }
 
+  // --- DOM CSS
   function injectCss(){
     if (document.getElementById('fortress-css')) return;
     const css = `
@@ -64,8 +65,37 @@
     if (m) m.remove();
   }
 
+  // ---------- deps / fallback ----------
+  // Domyślne apiPost (jeśli nie zostało wstrzyknięte)
+  async function defaultApiPost(path, payload){
+    const base = global.API_BASE || '';
+    const initData = (global.Telegram && global.Telegram.WebApp && global.Telegram.WebApp.initData) || '';
+    const r = await fetch(base + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + initData
+      },
+      body: JSON.stringify(payload || {})
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const err = new Error(j?.reason || ('HTTP '+r.status));
+      err.response = { status:r.status, data:j };
+      throw err;
+    }
+    return j;
+  }
+
+  function ensureDeps(){
+    if (!S.apiPost) S.apiPost = defaultApiPost;
+    if (!S.tg)      S.tg = global.Telegram?.WebApp || null;
+    if (!S.dbg)     S.dbg = () => {};
+  }
+
   // ---------- public UI ----------
   function open(){
+    ensureDeps();
     injectCss();
     closeModal();
 
@@ -136,60 +166,77 @@
   function stopTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
 
   async function refresh(){
-  stopTicker();
-  try{
-    // 1) Pobierz stan (ważne: buildingId!)
-    let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+    ensureDeps();
+    stopTicker();
+    try{
+      let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+      if (st && st.data) st = st.data;   // tolerancja na wrappery
 
-    // 2) Akceptuj ewentualne „wrappery”
-    if (st && st.data) st = st.data;
+      // --- aliasy pól (różne wersje backendu)
+      const cdRaw = (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0) | 0;
+      const cd    = Math.max(0, cdRaw);
+      const ready =
+        !!(st.canFight ?? st.canStart ?? st.ready ?? (st.status && String(st.status).toLowerCase()==='ready')) || cd === 0;
 
-    // 3) Pola z backendu
-    const cd    = Math.max(0, (st.cooldownLeftSec|0));
-    const ready = !!st.canFight || cd === 0;
+      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
 
-    // 4) Render podstaw
-    $('#fx-lvl').textContent  = `L ${st.level ?? 1}`;
-    $('#fx-next').textContent = st.bossName ? `${st.bossName} (L${st.level ?? ''})` : '—';
+      // boss/opponent
+      const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || {};
+      const bossName = st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
+      $('#fx-next').textContent = (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—';
 
-    setBadge(ready ? 'Ready' : (cd>0 ? 'Cooldown' : ''));
-    $('#fx-status').textContent = ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—');
-    $('#fx-cd').textContent     = ready ? '—' : fmtLeft(cd);
+      // próby na cooldown (opcjonalne)
+      const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
+      $('#fx-attempts').style.display = attemptsLeft != null ? '' : 'none';
+      if (attemptsLeft != null) $('#fx-attempts').textContent = `🎯 ${attemptsLeft}`;
 
-    // 5) Pasek „Encounter” – jeśli nie masz liczników, pokaż 1/10 dla look&feel
-    $('#fx-encLbl').textContent = `1/10`;
-    $('#fx-barFill').style.width = '0%';
+      // licznik encounterów (opcjonalny)
+      const encCurRaw   = (st.encounterIndex ?? st.encountersDone ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0)|0;
+      const encTotalRaw = (st.encountersTotal ?? st.encountersCount ?? st.progress?.encountersTotal ?? 10)|0;
+      const encCur  = clamp(encCurRaw + 1, 1, Math.max(1, encTotalRaw));
+      const encTot  = Math.max(1, encTotalRaw || 10);
+      $('#fx-encLbl').textContent = `${encCur}/${encTot}`;
+      const pct = clamp(Math.round((encCur-1) / Math.max(1, encTot-1) * 100), 0, 100);
+      $('#fx-barFill').style.width = pct + '%';
 
-    // 6) Guzik Start
-    const btn = $('#fx-start');
-    if (!btn) return;
-    if (cd>0){                          // cooldown – z tickingiem
-      btn.disabled = true;
-      btn.textContent = 'Start';
-      let left = cd;
-      ticker = setInterval(() => {
-        left = Math.max(0, left-1);
-        $('#fx-cd').textContent = fmtLeft(left);
-        if (left<=0){
-          stopTicker();
-          setBadge('Ready');
-          $('#fx-status').textContent = 'Ready';
-          $('#fx-cd').textContent = '—';
-          btn.disabled = false;
-          btn.textContent = 'Start';
-        }
-      }, 1000);
-    } else {
-      btn.disabled = !ready;
-      btn.textContent = 'Start';
-      btn.title = btn.disabled ? 'Not ready' : '';
+      // status + badge
+      $('#fx-lvl').textContent     = `L ${lvl}`;
+      setBadge(ready ? 'Ready' : (cd>0 ? 'Cooldown' : ''));
+      $('#fx-status').textContent  = ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—');
+      $('#fx-cd').textContent      = ready ? '—' : fmtLeft(cd);
+
+      // przycisk Start
+      const btn = $('#fx-start');
+      if (!btn) return;
+      if (cd>0){
+        btn.disabled = true;
+        btn.textContent = 'Start';
+        let left = cd;
+        ticker = setInterval(() => {
+          left = Math.max(0, left-1);
+          $('#fx-cd').textContent = fmtLeft(left);
+          if (left<=0){
+            stopTicker();
+            setBadge('Ready');
+            $('#fx-status').textContent = 'Ready';
+            $('#fx-cd').textContent = '—';
+            btn.disabled = false;
+            btn.textContent = 'Start';
+          }
+        }, 1000);
+      } else {
+        btn.disabled = !ready;
+        btn.textContent = 'Start';
+        btn.title = btn.disabled ? 'Not ready' : '';
+      }
+
+    } catch(e){
+      const msg = e?.response?.data?.reason || e?.message || 'Failed to load Moon Lab state.';
+      S.dbg('fortress/state fail', e);
+      toast('Fortress: ' + msg);
+      // zostaw Start zablokowany
     }
-  } catch(e){
-    S.dbg('fortress/state fail', e);
-    toast('Failed to load Moon Lab state.');
-    // zostaw Start zablokowany
   }
-}
 
   function setBadge(txt){
     const b = $('#fx-badge');
@@ -202,6 +249,7 @@
   }
 
   async function doStart(){
+    ensureDeps();
     const btn = $('#fx-start');
     if (!btn || btn.disabled) return;
     btn.disabled = true;
@@ -209,13 +257,16 @@
       S.tg?.HapticFeedback?.impactOccurred?.('light');
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
 
-      if (out && out.ok && out.mode === 'fortress'){
+      // tolerancja na wrapper
+      const res = out?.data || out;
+
+      if (res && res.ok && (res.mode === 'fortress' || res.battle === 'fortress')){
         closeModal();
-        renderFortressBattle(out);
+        renderFortressBattle(res);
         return;
       }
-      if (out && out.minutes){
-        toast(`Run started: ${out.minutes} min`);
+      if (res && (res.minutes || res.durationMinutes)){
+        toast(`Run started: ${res.minutes ?? res.durationMinutes} min`);
         await refresh();
         return;
       }
@@ -226,7 +277,7 @@
         const left = e?.response?.data?.cooldownLeftSec ?? e?.data?.cooldownLeftSec ?? 60;
         toast(`⏳ Cooldown: ${fmtLeft(left)}`);
         await refresh();
-      } else if (/LOCKED_REGION/i.test(reason)){
+      } else if (/LOCKED_REGION|LOCKED/i.test(reason)){
         toast('🔒 Region locked');
       } else {
         console.error(e);
@@ -253,13 +304,13 @@
       <div class="fx-head" style="margin-bottom:6px">
         <div>
           <div class="fx-sub">Moon Lab — Fortress</div>
-          <div class="fx-title">L${data.level} · ${data.boss?.name||'Boss'}</div>
+          <div class="fx-title">L${data.level ?? data.lvl ?? '?'} · ${data.boss?.name||data.bossName||'Boss'}</div>
         </div>
         <button class="fx-x" id="fb-x" type="button">×</button>
       </div>
       <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
-YOU  [${hpbar(data.player.hpMax, data.player.hpMax)}] ${data.player.hpMax}/${data.player.hpMax}
-BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss.hpMax}
+YOU  [${hpbar(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1)}] ${data.player?.hpMax ?? 0}/${data.player?.hpMax ?? 0}
+BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax ?? 0}/${data.boss?.hpMax ?? 0}
       </pre>
       <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
       <div class="fx-actions">
@@ -279,9 +330,10 @@ BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss
       if (btn.id==='fb-x' || btn.id==='fb-close') closeModal();
       if (btn.id==='fb-refresh') (async () => {
         try{
-          const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+          let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+          if (st && st.data) st = st.data;
           closeModal();
-          const cd = Math.max(0, st.cooldownLeftSec|0);
+          const cd = Math.max(0, (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0)|0);
           toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
         }catch(_){ toast('Error refreshing.'); }
       })();
@@ -289,7 +341,7 @@ BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss
 
     const logEl = $('#fb-log', cont);
     const boardEl = $('#fb-board', cont);
-    let pHp = data.player.hpMax, bHp = data.boss.hpMax, i=0;
+    let pHp = data.player?.hpMax ?? 0, bHp = data.boss?.hpMax ?? 0, i=0;
 
     function step(){
       if (i >= (data.steps?.length||0)){
@@ -314,8 +366,8 @@ BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss
         logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${s.dodge?'attacks… you <b>DODGE</b>!':`hits for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
       }
       boardEl.textContent =
-`YOU  [${hpbar(pHp, data.player.hpMax)}] ${pHp}/${data.player.hpMax}
-BOSS [${hpbar(bHp, data.boss.hpMax)}] ${bHp}/${data.boss.hpMax}`;
+`YOU  [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
+BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
       logEl.scrollTop = logEl.scrollHeight;
       setTimeout(step, 500);
     }
@@ -327,6 +379,7 @@ BOSS [${hpbar(bHp, data.boss.hpMax)}] ${bHp}/${data.boss.hpMax}`;
     S.apiPost = deps?.apiPost || S.apiPost;
     S.tg = deps?.tg || S.tg;
     S.dbg = deps?.dbg || S.dbg;
+    ensureDeps();
   }
 
   global.Fortress = { init, open, refresh };
