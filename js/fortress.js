@@ -15,6 +15,8 @@
   const $ = (sel, root=document) => root.querySelector(sel);
   const el = (t, cls) => { const x=document.createElement(t); if(cls) x.className=cls; return x; };
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const setText = (sel, v) => { const n = $(sel); if (n) n.textContent = String(v); };
+  const setWidth = (sel, v) => { const n = $(sel); if (n) n.style.width = String(v); };
 
   function fmtLeft(sec){
     sec = Math.max(0, sec|0);
@@ -66,7 +68,6 @@
   }
 
   // ---------- deps / fallback ----------
-  // Domyślne apiPost (jeśli nie zostało wstrzyknięte)
   async function defaultApiPost(path, payload){
     const base = global.API_BASE || '';
     const initData = (global.Telegram && global.Telegram.WebApp && global.Telegram.WebApp.initData) || '';
@@ -146,7 +147,6 @@
     `;
     document.body.appendChild(wrap);
 
-    // Jedno miejsce obsługi kliknięć (pewne nawet przy reflow DOM)
     wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
       if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
@@ -168,11 +168,19 @@
   async function refresh(){
     ensureDeps();
     stopTicker();
+
+    // ⬇️ Awaryjny rebuild: jeśli jest stary modal (bez #fx-lvl), zamknij i zbuduj nowy
+    if (document.getElementById('fortress-modal') && !document.querySelector('#fx-lvl')) {
+      closeModal();
+      open(); // open() -> postawi świeży layout i samo wywoła refresh()
+      return;
+    }
+
     try{
       let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
       if (st && st.data) st = st.data;   // tolerancja na wrappery
 
-      // --- aliasy pól (różne wersje backendu)
+      // --- aliasy pól
       const cdRaw = (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0) | 0;
       const cd    = Math.max(0, cdRaw);
       const ready =
@@ -183,27 +191,30 @@
       // boss/opponent
       const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || {};
       const bossName = st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
-      $('#fx-next').textContent = (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—';
+      setText('#fx-next', (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—');
 
       // próby na cooldown (opcjonalne)
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
-      $('#fx-attempts').style.display = attemptsLeft != null ? '' : 'none';
-      if (attemptsLeft != null) $('#fx-attempts').textContent = `🎯 ${attemptsLeft}`;
+      const atEl = $('#fx-attempts');
+      if (atEl){
+        atEl.style.display = attemptsLeft != null ? '' : 'none';
+        if (attemptsLeft != null) atEl.textContent = `🎯 ${attemptsLeft}`;
+      }
 
-      // licznik encounterów (opcjonalny)
+      // encounter (opcjonalny)
       const encCurRaw   = (st.encounterIndex ?? st.encountersDone ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0)|0;
       const encTotalRaw = (st.encountersTotal ?? st.encountersCount ?? st.progress?.encountersTotal ?? 10)|0;
       const encCur  = clamp(encCurRaw + 1, 1, Math.max(1, encTotalRaw));
       const encTot  = Math.max(1, encTotalRaw || 10);
-      $('#fx-encLbl').textContent = `${encCur}/${encTot}`;
+      setText('#fx-encLbl', `${encCur}/${encTot}`);
       const pct = clamp(Math.round((encCur-1) / Math.max(1, encTot-1) * 100), 0, 100);
-      $('#fx-barFill').style.width = pct + '%';
+      setWidth('#fx-barFill', pct + '%');
 
       // status + badge
-      $('#fx-lvl').textContent     = `L ${lvl}`;
+      setText('#fx-lvl', `L ${lvl}`);
       setBadge(ready ? 'Ready' : (cd>0 ? 'Cooldown' : ''));
-      $('#fx-status').textContent  = ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—');
-      $('#fx-cd').textContent      = ready ? '—' : fmtLeft(cd);
+      setText('#fx-status', ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—'));
+      setText('#fx-cd', ready ? '—' : fmtLeft(cd));
 
       // przycisk Start
       const btn = $('#fx-start');
@@ -214,12 +225,13 @@
         let left = cd;
         ticker = setInterval(() => {
           left = Math.max(0, left-1);
-          $('#fx-cd').textContent = fmtLeft(left);
+          setText('#fx-cd', fmtLeft(left));
+          if (!document.getElementById('fortress-modal')) { stopTicker(); return; }
           if (left<=0){
             stopTicker();
             setBadge('Ready');
-            $('#fx-status').textContent = 'Ready';
-            $('#fx-cd').textContent = '—';
+            setText('#fx-status', 'Ready');
+            setText('#fx-cd', '—');
             btn.disabled = false;
             btn.textContent = 'Start';
           }
@@ -257,7 +269,6 @@
       S.tg?.HapticFeedback?.impactOccurred?.('light');
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
 
-      // tolerancja na wrapper
       const res = out?.data || out;
 
       if (res && res.ok && (res.mode === 'fortress' || res.battle === 'fortress')){
@@ -382,6 +393,6 @@ BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
     ensureDeps();
   }
 
-  global.Fortress = { init, open, refresh };
+  global.Fortress = { init, open, refresh, close: closeModal };
 
 })(window);
