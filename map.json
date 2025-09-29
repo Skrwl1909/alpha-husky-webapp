@@ -202,27 +202,21 @@
     },
 
     {
-      "id": "testnet_wastes",
-      "name": "Testnet Wastes",
-      "region": "testnet_wastes",
-      "x": 78,
-      "y": 72,
-      "icon": "images/map/building/testnet_wastes.png",
-      "desc": "Unstable, experimental lands of high risk and higher reward.",
-      "action": "region_open",
-      "gameplay": {
-        "type": "expedition",
-        "sessionMinutes": { "min": 8, "max": 12 },
-        "hazards": ["random_debuffs", "glitch_storms"],
-        "mutators": ["enemy_overclock", "loot_surge", "skill_tax"],
-        "extract": { "beacons": 2, "safeWindowSeconds": 30 },
-        "materialsMultiplier": 1.5,
-        "xpMultiplier": 1.2,
-        "deathPenalty": 0.2,
-        "fragmentDrops": { "map_key_fragment": 0.12 },
-        "minPower": 1200
-      },
-      "tags": ["hazard", "materials", "endgame"]
+  "id": "testnet_wastes_dojo",
+  "name": "Testnet Wastes — Dojo",
+  "region": "testnet_wastes",
+  "x": 82,
+  "y": 62,
+  "icon": "images/map/building/testnet_wastes.png",
+  "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
+  "action": "building_enter",
+  "buildingId": "testnet_wastes_dojo",
+  "gameplay": {
+    "type": "dojo",
+    "timerSeconds": 60,
+    "dummy": { "hp": 50000, "def": 12 }
+  },
+  "tags": ["training", "utility", "no-reward"]
     }
   ],
 
