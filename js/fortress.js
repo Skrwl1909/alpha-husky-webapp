@@ -136,79 +136,60 @@
   function stopTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
 
   async function refresh(){
-    stopTicker();
-    try{
-      const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+  stopTicker();
+  try{
+    // 1) Pobierz stan (ważne: buildingId!)
+    let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
 
-      // cooldown / status
-      const cooldown = Math.max(0, st.cooldownLeftSec|0);
-      const active   = !!st.active;
-      const ready    = !active && cooldown<=0;
+    // 2) Akceptuj ewentualne „wrappery”
+    if (st && st.data) st = st.data;
 
-      // level & attempts (opcjonalnie)
-      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
-      const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
-      $('#fx-lvl').textContent = `L ${lvl}`;
-      if (attemptsLeft != null) {
-        $('#fx-attempts').style.display = '';
-        $('#fx-attempts').textContent = `🎯 ${attemptsLeft}`;
-      } else {
-        $('#fx-attempts').style.display = 'none';
-      }
+    // 3) Pola z backendu
+    const cd    = Math.max(0, (st.cooldownLeftSec|0));
+    const ready = !!st.canFight || cd === 0;
 
-      // next opponent — zbieramy z różnych gałęzi
-      const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || st.fortress?.next || {};
-      const nxName = nx.name || nx.id || st.nextName || st.nextId || '';
-      const nxLvl  = nx.level ?? nx.lvl ?? st.nextLevel ?? '';
-      $('#fx-next').textContent = (nxName || nxLvl) ? [nxName, nxLvl ? `(L${nxLvl})` : ''].filter(Boolean).join(' ') : '—';
+    // 4) Render podstaw
+    $('#fx-lvl').textContent  = `L ${st.level ?? 1}`;
+    $('#fx-next').textContent = st.bossName ? `${st.bossName} (L${st.level ?? ''})` : '—';
 
-      // encounter progress
-      const encCur   = st.encounterIndex ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0; // 0-based
-      const encTotal = st.encountersTotal ?? st.progress?.encountersTotal ?? 10;
-      const curDisp  = clamp(encCur + 1, 1, encTotal);
-      $('#fx-encLbl').textContent = `${curDisp}/${encTotal}`;
-      const pct = clamp(Math.round((curDisp-1) / Math.max(1, encTotal-1) * 100), 0, 100);
-      $('#fx-barFill').style.width = pct + '%';
+    setBadge(ready ? 'Ready' : (cd>0 ? 'Cooldown' : ''));
+    $('#fx-status').textContent = ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—');
+    $('#fx-cd').textContent     = ready ? '—' : fmtLeft(cd);
 
-      // status + badge
-      setBadge(ready ? 'Ready' : (active ? 'Active' : 'Cooldown'));
-      $('#fx-status').textContent = ready ? 'Ready' : (active ? 'Active' : 'Cooldown');
-      $('#fx-cd').textContent = ready ? '—' : fmtLeft(cooldown);
+    // 5) Pasek „Encounter” – jeśli nie masz liczników, pokaż 1/10 dla look&feel
+    $('#fx-encLbl').textContent = `1/10`;
+    $('#fx-barFill').style.width = '0%';
 
-      // przycisk Start
-      const startBtn = $('#fx-start');
-      if (active) {
-        startBtn.disabled = true;
-        startBtn.textContent = 'Active…';
-      } else if (cooldown>0) {
-        startBtn.disabled = true;
-        startBtn.textContent = 'Start';
-        let left = cooldown;
+    // 6) Guzik Start
+    const btn = $('#fx-start');
+    if (!btn) return;
+    if (cd>0){                          // cooldown – z tickingiem
+      btn.disabled = true;
+      btn.textContent = 'Start';
+      let left = cd;
+      ticker = setInterval(() => {
+        left = Math.max(0, left-1);
         $('#fx-cd').textContent = fmtLeft(left);
-        ticker = setInterval(() => {
-          left = Math.max(0, left-1);
-          $('#fx-cd').textContent = fmtLeft(left);
-          if (left<=0){
-            stopTicker();
-            setBadge('Ready');
-            $('#fx-status').textContent = 'Ready';
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start';
-            $('#fx-cd').textContent = '—';
-          }
-        }, 1000);
-      } else {
-        startBtn.disabled = false;
-        startBtn.textContent = 'Start';
-      }
-
-    } catch(e){
-      S.dbg('fortress/state fail');
-      console.error(e);
-      toast('Failed to load Moon Lab state.');
-      // zostaw Start zablokowany, żeby nie strzelać w ciemno
+        if (left<=0){
+          stopTicker();
+          setBadge('Ready');
+          $('#fx-status').textContent = 'Ready';
+          $('#fx-cd').textContent = '—';
+          btn.disabled = false;
+          btn.textContent = 'Start';
+        }
+      }, 1000);
+    } else {
+      btn.disabled = !ready;
+      btn.textContent = 'Start';
+      btn.title = btn.disabled ? 'Not ready' : '';
     }
+  } catch(e){
+    S.dbg('fortress/state fail', e);
+    toast('Failed to load Moon Lab state.');
+    // zostaw Start zablokowany
   }
+}
 
   function setBadge(txt){
     const b = $('#fx-badge');
