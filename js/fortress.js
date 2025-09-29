@@ -1,17 +1,17 @@
 // js/fortress.js
 // Alpha Husky — Moon Lab (Fortress) UI
-// Integracja: window.Fortress.init({ apiPost, tg, dbg })
+// Użycie: window.Fortress.init({ apiPost, tg, dbg });  →  window.Fortress.open();
 
 (function (global) {
   const BID = 'moonlab_fortress';
 
   const S = {
-    apiPost: null,   // wstrzykiwane z index.html
+    apiPost: null,
     tg: null,
     dbg: () => {},
   };
 
-  // ---------- utils ----------
+  // ---------- helpers ----------
   const $ = (sel, root=document) => root.querySelector(sel);
   const el = (t, cls) => { const x=document.createElement(t); if(cls) x.className=cls; return x; };
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
@@ -34,10 +34,11 @@
     if (document.getElementById('fortress-css')) return;
     const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
-#fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-#fortress-modal .card{position:relative;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
+#fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
+#fortress-modal .card{position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
 .fx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .fx-title{font-weight:800;letter-spacing:.2px}
+.fx-sub{opacity:.8;font-weight:600}
 .fx-badge{font:600 12px system-ui;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
 .fx-body{display:grid;gap:10px}
 .fx-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -63,52 +64,6 @@
     if (m) m.remove();
   }
 
-  // ---------- helpers do „elastycznego” mapowania ----------
-  const getPath = (obj, path) =>
-    String(path).split('.').reduce((o,k)=> (o && (k in o) ? o[k] : undefined), obj);
-
-  function pick(obj, paths, def){
-    for (const p of paths){
-      const v = getPath(obj, p);
-      if (v !== undefined && v !== null) return v;
-    }
-    return def;
-  }
-
-  function buildNextLabel(st){
-    const nx = pick(st, [
-      'next','nextEncounter','encounter.next','progress.next','fortress.next','state.next','data.next'
-    ], null) || {};
-
-    const level = pick({nx,st}, [
-      'nx.level','st.nextLevel','st.level','st.progress.level','st.fortress.level'
-    ], undefined);
-
-    const name  = pick({nx,st}, [
-      'nx.name','nx.id','nx.boss.name','st.nextName','st.encounter.name','st.encounter.id'
-    ], undefined);
-
-    const rank  = pick({nx,st}, [
-      'nx.rank','nx.boss.rank','st.encounter.rank'
-    ], undefined);
-
-    const power = pick({nx,st}, [
-      'nx.power','nx.boss.power','st.encounter.power'
-    ], undefined);
-
-    const floorName = pick(st, [
-      'progress.floorName','progress.floor','fortress.floorName'
-    ], undefined);
-
-    const bits = [];
-    if (typeof level === 'number') bits.push(`L${level}`);
-    if (name) bits.push(String(name));
-    if (rank) bits.push(String(rank));
-    if (typeof power === 'number') bits.push(`Pwr ${power}`);
-    const label = bits.join(' · ') + (floorName ? ` • ${floorName}` : '');
-    return label || '—';
-  }
-
   // ---------- public UI ----------
   function open(){
     injectCss();
@@ -116,13 +71,16 @@
 
     const wrap = el('div'); wrap.id='fortress-modal';
     wrap.innerHTML = `
-      <div class="mask"></div>
+      <div class="mask" id="fx-mask"></div>
       <div class="card">
         <div class="fx-head">
-          <div class="fx-title">Moon Lab — Fortress</div>
+          <div>
+            <div class="fx-sub">Moon Lab — Fortress</div>
+            <div class="fx-title">Moon Lab — Fortress</div>
+          </div>
           <div class="fx-kv">
             <span id="fx-badge" class="fx-badge">…</span>
-            <button class="fx-x" id="fx-x" aria-label="Close">×</button>
+            <button class="fx-x" id="fx-x" type="button" aria-label="Close">×</button>
           </div>
         </div>
 
@@ -147,9 +105,9 @@
           </div>
 
           <div class="fx-actions">
-            <button class="fx-btn" id="fx-close">Close</button>
-            <button class="fx-btn" id="fx-refresh">Refresh</button>
-            <button class="fx-btn primary" id="fx-start">Start</button>
+            <button class="fx-btn" id="fx-close" type="button">Close</button>
+            <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
+            <button class="fx-btn primary" id="fx-start" type="button" disabled>Start</button>
           </div>
 
           <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
@@ -158,78 +116,66 @@
     `;
     document.body.appendChild(wrap);
 
-    $('#fx-x').onclick = closeModal;
-    $('#fx-close').onclick = closeModal;
-    $('#fx-refresh').onclick = () => refresh();
-    $('#fx-start').onclick = () => doStart();
+    // Jedno miejsce obsługi kliknięć (pewne nawet przy reflow DOM)
+    wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
+      switch (btn.id) {
+        case 'fx-x':
+        case 'fx-close': closeModal(); break;
+        case 'fx-refresh': refresh(); break;
+        case 'fx-start': doStart(); break;
+      }
+    });
 
     refresh();
   }
 
-  // live cooldown ticker
+  // live ticker
   let ticker = null;
   function stopTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
-
-  function setBadge(txt){
-    const b = $('#fx-badge');
-    if (!b) return;
-    b.textContent = txt;
-    const base = 'rgba(255,255,255,.06)';
-    const green = 'rgba(16,185,129,.18)';
-    const blue  = 'rgba(59,130,246,.18)';
-    b.style.background = txt==='Ready' ? green : (txt==='Active' ? blue : base);
-  }
 
   async function refresh(){
     stopTicker();
     try{
       const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
 
-      const cooldown = Math.max(0, (st.cooldownLeftSec|0));
+      // cooldown / status
+      const cooldown = Math.max(0, st.cooldownLeftSec|0);
       const active   = !!st.active;
       const ready    = !active && cooldown<=0;
 
-      const lvl = pick(st, [
-        'level','currentLevel','nextLevel','progress.level','fortress.level','data.level'
-      ], 1);
-
-      const encCur = pick(st, [
-        'encounterIndex','progress.encounterIndex','encounter.index','fortress.encounterIndex'
-      ], 0); // 0-based
-
-      const encTotal = pick(st, [
-        'encountersTotal','progress.encountersTotal','fortress.encountersTotal','meta.encountersTotal'
-      ], 10);
-
-      const attemptsLeft = pick(st, [
-        'attemptsLeft','attack.attemptsLeft','fortress.attemptsLeft'
-      ], null);
-
-      const nextLabel = buildNextLabel(st);
-
-      // statusy
-      setBadge(ready ? 'Ready' : (active ? 'Active' : 'Cooldown'));
-      $('#fx-status').textContent = ready ? 'Ready' : (active ? 'Active' : 'Cooldown');
-      $('#fx-cd').textContent = ready ? '—' : fmtLeft(cooldown);
-      $('#fx-next').textContent = nextLabel;
-
-      // level / próby
+      // level & attempts (opcjonalnie)
+      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
+      const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
       $('#fx-lvl').textContent = `L ${lvl}`;
-      const at = $('#fx-attempts');
-      if (attemptsLeft !== null && attemptsLeft !== undefined){
-        at.style.display = 'inline-block';
-        at.textContent = `🎯 ${attemptsLeft}`;
+      if (attemptsLeft != null) {
+        $('#fx-attempts').style.display = '';
+        $('#fx-attempts').textContent = `🎯 ${attemptsLeft}`;
       } else {
-        at.style.display = 'none';
+        $('#fx-attempts').style.display = 'none';
       }
 
+      // next opponent — zbieramy z różnych gałęzi
+      const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || st.fortress?.next || {};
+      const nxName = nx.name || nx.id || st.nextName || st.nextId || '';
+      const nxLvl  = nx.level ?? nx.lvl ?? st.nextLevel ?? '';
+      $('#fx-next').textContent = (nxName || nxLvl) ? [nxName, nxLvl ? `(L${nxLvl})` : ''].filter(Boolean).join(' ') : '—';
+
       // encounter progress
-      const curDisp = clamp((encCur|0) + 1, 1, encTotal);
+      const encCur   = st.encounterIndex ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0; // 0-based
+      const encTotal = st.encountersTotal ?? st.progress?.encountersTotal ?? 10;
+      const curDisp  = clamp(encCur + 1, 1, encTotal);
       $('#fx-encLbl').textContent = `${curDisp}/${encTotal}`;
       const pct = clamp(Math.round((curDisp-1) / Math.max(1, encTotal-1) * 100), 0, 100);
       $('#fx-barFill').style.width = pct + '%';
 
-      // przycisk Start + live cooldown
+      // status + badge
+      setBadge(ready ? 'Ready' : (active ? 'Active' : 'Cooldown'));
+      $('#fx-status').textContent = ready ? 'Ready' : (active ? 'Active' : 'Cooldown');
+      $('#fx-cd').textContent = ready ? '—' : fmtLeft(cooldown);
+
+      // przycisk Start
       const startBtn = $('#fx-start');
       if (active) {
         startBtn.disabled = true;
@@ -260,7 +206,18 @@
       S.dbg('fortress/state fail');
       console.error(e);
       toast('Failed to load Moon Lab state.');
+      // zostaw Start zablokowany, żeby nie strzelać w ciemno
     }
+  }
+
+  function setBadge(txt){
+    const b = $('#fx-badge');
+    if (!b) return;
+    b.textContent = txt;
+    const base = 'rgba(255,255,255,.06)';
+    const green = 'rgba(16,185,129,.18)';
+    const blue  = 'rgba(59,130,246,.18)';
+    b.style.background = txt==='Ready' ? green : (txt==='Active' ? blue : base);
   }
 
   async function doStart(){
@@ -271,20 +228,16 @@
       S.tg?.HapticFeedback?.impactOccurred?.('light');
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
 
-      // Tryb fortress — render bitwy
       if (out && out.ok && out.mode === 'fortress'){
         closeModal();
         renderFortressBattle(out);
         return;
       }
-
-      // fallback (gdyby backend oddał "minutes" jak zwykły budynek)
       if (out && out.minutes){
         toast(`Run started: ${out.minutes} min`);
         await refresh();
         return;
       }
-
       await refresh();
     }catch(e){
       const reason = (e?.response?.data?.reason) || (e?.data?.reason) || e?.message || 'Start failed';
@@ -311,54 +264,47 @@
   }
 
   function renderFortressBattle(data){
-    // data: { level, boss, player, steps[], winner, rewards, next }
     injectCss();
     closeModal();
 
     const cont = el('div','fortress-battle');
-    const nextLine = (() => {
-      const nx = data?.next || {};
-      const parts = [];
-      if (typeof nx.level === 'number') parts.push(`L${nx.level}`);
-      if (nx.name) parts.push(nx.name);
-      if (nx.rank) parts.push(nx.rank);
-      if (typeof nx.power === 'number') parts.push(`Pwr ${nx.power}`);
-      return parts.length ? `Next: ${parts.join(' · ')} · Cooldown 1h` : '';
-    })();
-
     cont.innerHTML = `
       <div class="fx-head" style="margin-bottom:6px">
-        <div class="fx-title">Moon Lab — Fortress</div>
-        <button class="fx-x" id="fb-x">×</button>
+        <div>
+          <div class="fx-sub">Moon Lab — Fortress</div>
+          <div class="fx-title">L${data.level} · ${data.boss?.name||'Boss'}</div>
+        </div>
+        <button class="fx-x" id="fb-x" type="button">×</button>
       </div>
-      <div style="margin-bottom:4px;font-weight:700">L${data.level} · ${data.boss?.name||'Boss'}</div>
       <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
 YOU  [${hpbar(data.player.hpMax, data.player.hpMax)}] ${data.player.hpMax}/${data.player.hpMax}
 BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss.hpMax}
       </pre>
       <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
       <div class="fx-actions">
-        <button class="fx-btn" id="fb-close">Close</button>
-        <button class="fx-btn" id="fb-refresh">Refresh</button>
+        <button class="fx-btn" id="fb-close" type="button">Close</button>
+        <button class="fx-btn" id="fb-refresh" type="button">Refresh</button>
       </div>
-      ${nextLine ? `<div class="fx-note" style="margin-top:4px">${nextLine}</div>` : ''}
     `;
     const wrap = el('div'); wrap.id='fortress-modal';
     const card = el('div','card'); card.style.padding='12px';
-    const mask = el('div','mask');
+    const mask = el('div','mask'); mask.id='fb-mask';
     card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
     document.body.appendChild(wrap);
 
-    $('#fb-close').onclick = closeModal;
-    $('#fb-x').onclick = closeModal;
-    $('#fb-refresh').onclick = async () => {
-      try{
-        const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
-        closeModal();
-        const cd = Math.max(0, st.cooldownLeftSec|0);
-        toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
-      }catch(_){ toast('Error refreshing.'); }
-    };
+    wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) { if (e.target.id === 'fb-mask') closeModal(); return; }
+      if (btn.id==='fb-x' || btn.id==='fb-close') closeModal();
+      if (btn.id==='fb-refresh') (async () => {
+        try{
+          const st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+          closeModal();
+          const cd = Math.max(0, st.cooldownLeftSec|0);
+          toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
+        }catch(_){ toast('Error refreshing.'); }
+      })();
+    });
 
     const logEl = $('#fb-log', cont);
     const boardEl = $('#fb-board', cont);
@@ -369,17 +315,12 @@ BOSS [${hpbar(data.boss.hpMax, data.boss.hpMax)}] ${data.boss.hpMax}/${data.boss
         const lines = [];
         lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
         const mats = [];
-        if (data.rewards?.materials?.scrap)     mats.push(`Scrap ×${data.rewards.materials.scrap}`);
+        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.rewards.materials.scrap}`);
         if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
         if (mats.length) lines.push('Rewards: '+mats.join(', '));
         if (data.rewards?.rare) lines.push('💎 Rare drop!');
         if (data.rewards?.firstClear?.length) lines.push('🌟 First clear: '+data.rewards.firstClear.join(', '));
-        if (data.next?.level || data.next?.name){
-          const nbits = [];
-          if (typeof data.next.level === 'number') nbits.push(`L${data.next.level}`);
-          if (data.next.name) nbits.push(data.next.name);
-          lines.push(`Next: ${nbits.join(' · ')} · Cooldown 1h`);
-        }
+        if (data.next?.level) lines.push(`Next: L${data.next.level} · Cooldown 1h`);
         logEl.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join('<br>')}</div>`);
         return;
       }
@@ -407,7 +348,6 @@ BOSS [${hpbar(bHp, data.boss.hpMax)}] ${bHp}/${data.boss.hpMax}`;
     S.dbg = deps?.dbg || S.dbg;
   }
 
-  // eksport
   global.Fortress = { init, open, refresh };
 
 })(window);
