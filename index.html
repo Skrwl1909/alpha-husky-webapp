@@ -462,6 +462,10 @@
 
         /* >>> INIT fortress.js helperów <<< */
         window.Fortress?.init?.({ apiPost, tg, dbg });
+        <script>
+  // to samo apiPost co dla Fortecy
+  window.Dojo?.init({ apiPost, tg: Telegram.WebApp, dbg: console.debug });
+</script>
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -1141,6 +1145,7 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
+
 
 
 
