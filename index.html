@@ -323,14 +323,16 @@
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
+
+  <!-- 3.1) dojo.js ładowany dynamicznie (cache-busting) -->
   <script>
-  (function(v){
-    var s=document.createElement('script');
-    s.src='js/dojo.js?v='+encodeURIComponent(v||'dev');
-    s.defer=true;
-    document.head.appendChild(s);
-  })(window.WEBAPP_VER);
-</script>
+    (function(v){
+      var s=document.createElement('script');
+      s.src='js/dojo.js?v='+encodeURIComponent(v||'dev');
+      s.defer=true;
+      document.head.appendChild(s);
+    })(window.WEBAPP_VER);
+  </script>
 
   <!-- 4) Główny skrypt aplikacji -->
   <script>
@@ -460,12 +462,9 @@
           return data;
         }
 
-        /* >>> INIT fortress.js helperów <<< */
+        // >>> INIT helpers (fortress + dojo) <<<
         window.Fortress?.init?.({ apiPost, tg, dbg });
-        <script>
-  // to samo apiPost co dla Fortecy
-  window.Dojo?.init({ apiPost, tg: Telegram.WebApp, dbg: console.debug });
-</script>
+        window.Dojo?.init?.({ apiPost, tg, dbg });  // ⬅️ poprawne init Dojo
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -603,9 +602,14 @@
               if (!unlocked) return openLocked(b);
               if (b.action === 'open_quests') return openQuests();
 
-              /* >>> SPECJALNY SKRĘT DLA MOON LAB FORTRESS <<< */
+              /* SPECJALNE SKRĘTY */
               if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
                 return window.Fortress.open();
+              }
+              // ⬇️ Dojo: jeśli node lub building wskazuje na Testnet Wastes Dojo
+              if ((b.id === 'testnet_wastes') ||
+                  (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
+                if (window.Dojo?.open) return window.Dojo.open();
               }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
@@ -725,7 +729,12 @@
         function openRegionSheet(node, reg){
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
           regionDesc.textContent  = (reg && reg.desc) || (node && node.desc) || '';
-          btnRegionGo.onclick = () => { regionBack.style.display='none'; sendAction('region_open', { region: node.region, nodeId: node.id }); };
+          btnRegionGo.onclick = () => {
+            regionBack.style.display='none';
+            // ⬇️ SPECJALNY SKRĘT: Testnet Wastes -> Dojo modal zamiast akcji region_open
+            if (node?.id === 'testnet_wastes' && window.Dojo?.open) { window.Dojo.open(); return; }
+            sendAction('region_open', { region: node.region, nodeId: node.id });
+          };
           btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open',   { region: node.region }); };
           regionBack.style.display = 'flex';
         }
@@ -963,8 +972,8 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
         /* Howlboard modal */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
-        closeBoard?.addEventListener("click", () => boardBack.style.display = "none");
         function openBoard(){ boardBack.style.display = "flex"; }
+        closeBoard?.addEventListener("click", () => boardBack.style.display = "none");
         $$(".tab").forEach(t => {
           t.addEventListener("click", () => {
             $$(".tab").forEach(x => x.classList.toggle("active", x===t));
@@ -1145,11 +1154,3 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
