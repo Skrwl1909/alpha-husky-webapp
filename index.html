@@ -312,7 +312,7 @@
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
   <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
-  <script>window.WEBAPP_VER = "2025-10-01g";</script>
+  <script>window.WEBAPP_VER = "2025-09-30b";</script>
 
   <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
   <script>
@@ -382,15 +382,15 @@
         };
         const p = tg?.themeParams || {};
         try{
-          setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)';
-          setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color,        0.22) : 'rgba(255,255,255,.18)';
+          setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+          setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color,        0.22) : 'rgba(255,255,255,.18)');
           if (p.text_color) setVar('--txt', p.text_color);
         }catch(_){}  // bezpiecznik
         tg?.onEvent?.('themeChanged', () => {
           const p2 = tg?.themeParams || {};
           try{
-            setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)';
-            setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color,        0.22) : 'rgba(255,255,255,.18)';
+            setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
+            setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color,        0.22) : 'rgba(255,255,255,.18)');
             if (p2.text_color) setVar('--txt', p2.text_color);
           }catch(_){}
         });
@@ -1154,5 +1154,3 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
-
-
