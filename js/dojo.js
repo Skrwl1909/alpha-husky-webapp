@@ -210,7 +210,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
 
     // inputs from state
     const timerSec = st?.timerSec || st?.seconds || 60;
-    const bestDpsState = st?.bestDps ?? +localStorage.getItem('dojo_best_dps') || 0;
+    const bestDpsState = (st?.bestDps ?? +localStorage.getItem('dojo_best_dps')) || 0;
 
     const w = el('div'); w.id='dojo-modal'; w.innerHTML = tpl(timerSec); document.body.appendChild(w);
 
