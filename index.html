@@ -312,7 +312,7 @@
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
   <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
-  <script>window.WEBAPP_VER = "2025-10-01a";</script>
+  <script>window.WEBAPP_VER = "2025-10-01e";</script>
 
   <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
   <script>
@@ -382,15 +382,15 @@
         };
         const p = tg?.themeParams || {};
         try{
-          setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-          setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color,        0.22) : 'rgba(255,255,255,.18)');
+          setVar('--glass',  p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)';
+          setVar('--stroke', p.hint_color        ? hexToRgba(p.hint_color,        0.22) : 'rgba(255,255,255,.18)';
           if (p.text_color) setVar('--txt', p.text_color);
         }catch(_){}  // bezpiecznik
         tg?.onEvent?.('themeChanged', () => {
           const p2 = tg?.themeParams || {};
           try{
-            setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-            setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color,        0.22) : 'rgba(255,255,255,.18)');
+            setVar('--glass',  p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)';
+            setVar('--stroke', p2.hint_color        ? hexToRgba(p2.hint_color,        0.22) : 'rgba(255,255,255,.18)';
             if (p2.text_color) setVar('--txt', p2.text_color);
           }catch(_){}
         });
@@ -753,16 +753,17 @@
         const bBtnRes = $("#buildingResolveBtn");
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
-        /* === AUTO-RESOLVE ... (bez zmian) === */
+        /* === AUTO-RESOLVE z checkiem po stronie serwera + ciche retrysy NOT_READY === */
 const AUTO_RESOLVE_ON_READY = true;
-const READY_GRACE_MS = 2000;
-const RETRY_INTERVAL_MS = 1200;
+const READY_GRACE_MS = 2000;       // odczekaj 2s po zejściu lokalnego timera
+const RETRY_INTERVAL_MS = 1200;    // odstęp między retriami NOT_READY
 const MAX_RESOLVE_RETRIES = 5;
 
 let CURRENT_BID = null;
 let ticker = null;
 
 function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
+
 function startBuildingTicker(endTs){
   stopBuildingTicker();
   const tick = () => {
@@ -776,10 +777,12 @@ function startBuildingTicker(endTs){
   tick();
   ticker = setInterval(tick, 1000);
 }
+
 function formatLeft(sec){
   const m = Math.floor(sec/60), s = sec%60;
   return (m>0? m+"m ":"") + s + "s";
 }
+
 async function openBuilding(bid, name, desc){
   CURRENT_BID = bid;
   bTitle.textContent = name || "Building";
@@ -787,12 +790,16 @@ async function openBuilding(bid, name, desc){
   bBack.style.display = 'flex';
   await loadBuildingState();
 }
+
 async function loadBuildingState(){
   if (!CURRENT_BID) return;
   try{
     const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
+
     bTitle.textContent = st.name || bTitle.textContent;
     bDesc.textContent  = st.desc || bDesc.textContent;
+
+    // routes
     bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
     bRoute.innerHTML = '';
     if (st.routes && st.routes.length){
@@ -802,15 +809,17 @@ async function loadBuildingState(){
         bRoute.appendChild(opt);
       }
     }
+
     if (st.active){
       const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
       bStatus.textContent = "Active";
       bBtnStart.style.display = "none";
-      bBtnRes.style.display   = "none";
+      bBtnRes.style.display   = "none";       // dopiero przy “Ready”
       bTimerW.style.display   = "block";
       if (left > 0){
         startBuildingTicker(Math.floor(Date.now()/1000) + left);
       } else {
+        // Serwer mówi “końcówka”, sprawdź gotowość/resolve
         verifyReadyAndMaybeResolve();
       }
     } else {
@@ -825,13 +834,17 @@ async function loadBuildingState(){
     try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
   }
 }
+
+/* Po zejściu timera: sprawdź stan po stronie serwera i spróbuj zauto-resolvować */
 async function verifyReadyAndMaybeResolve(){
   bStatus.textContent = "Finalizing…";
   bBtnRes.style.display = "none";
   bTimerW.style.display = "none";
+
   try{
     const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
     if (st.active && (st.timeLeftSec||0) > 0){
+      // run jeszcze trwa wg serwera — wracamy do licznika
       bStatus.textContent = "Active";
       bBtnStart.style.display = "none";
       bBtnRes.style.display   = "none";
@@ -839,16 +852,20 @@ async function verifyReadyAndMaybeResolve(){
       startBuildingTicker(Math.floor(Date.now()/1000) + st.timeLeftSec);
       return;
     }
-  }catch(_){}
+  }catch(_){ /* zignoruj — spróbujemy resolve po grace */ }
+
   if (AUTO_RESOLVE_ON_READY){
-    setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, true), READY_GRACE_MS);
+    setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
   } else {
     bStatus.textContent = "Ready";
     bBtnRes.style.display = "inline-block";
   }
 }
+
+/* Resolve z cichymi retriami NOT_READY (różne warianty stringów) */
 async function resolveRun(maxRetries=0, silentRetries=false){
   if (!CURRENT_BID) return false;
+
   for (let i=0; i<=maxRetries; i++){
     try{
       const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
@@ -868,6 +885,7 @@ async function resolveRun(maxRetries=0, silentRetries=false){
       const R = String(reason).toUpperCase();
       const isNotReady = R.includes("NOT_READY");
       if (isNotReady && i < maxRetries){
+        // cichy retry
         await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
         continue;
       }
@@ -877,11 +895,15 @@ async function resolveRun(maxRetries=0, silentRetries=false){
       return false;
     }
   }
+
+  // po wszystkich retriiach — pokaż ręczny odbiór
   bStatus.textContent = "Ready";
   bBtnRes.style.display = "inline-block";
   return false;
 }
+
 bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
+
 bBtnStart && bBtnStart.addEventListener("click", async () => {
   if (!CURRENT_BID) return;
   try{
@@ -906,8 +928,8 @@ bBtnStart && bBtnStart.addEventListener("click", async () => {
     try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
   }
 });
-bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
+bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
         /* Open/close map */
         document.querySelector(".btn.map")?.addEventListener("click", () => {
           mapBack.style.display = "flex";
@@ -1107,10 +1129,6 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
               break;
             case "pets":
               sendAction("pets_open");
-              break;
-            /* ⬇️ DODANE: deep-link na Dojo */
-            case "dojo":
-              if (window.Dojo?.open) window.Dojo.open();
               break;
             default:
               break;
