@@ -1,7 +1,7 @@
 // js/dojo.js
 // Alpha Husky — Testnet Wastes (Dojo) UI — REAL DATA EDITION
 // API: window.Dojo.init({ apiPost, tg, dbg }); → window.Dojo.open();
-// Feed real hits from your game loop: window.Dojo.feed(hitDamage, isCrit=false)
+// Feed real hits from your game loop: window.DOJO_FEED(damage, isCrit)
 
 (function (global) {
   const BID = 'testnet_wastes_dojo';
@@ -192,13 +192,14 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
       const v=series[i], x=i*step, y=h-(v/maxV)*(h-14)-7; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
   }
 
-  function compute(series, critIdxs){
-    const total = sum(series);
-    const dpsAvg = avg(series);
-    const hits = series.length;              // 1 bucket = 1 "hit" sekundowy (jeśli chcesz: podstaw realną liczbę trafień)
-    const avgHit = hits ? total / hits : 0;
-    const maxHit = Math.max(0,...series);
-    const critRate = (critIdxs?.length||0) / Math.max(series.length,1);
+  // --- NEW: compute using real hits, maxHit, crit hits ---
+  function computeRunStats(series, hitsCount, maxHitVal, critHits){
+    const total    = sum(series);
+    const dpsAvg   = avg(series);
+    const hits     = hitsCount;
+    const avgHit   = hits ? total / hits : 0;
+    const maxHit   = maxHitVal || 0;
+    const critRate = hits ? (critHits / hits) : 0;
     return { total, dpsAvg, hits, avgHit, maxHit, critRate };
   }
 
@@ -228,18 +229,27 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     let dur = +durSel.value, t = dur;
     let series = [];         // DPS/s (suma dmg w danej sekundzie)
     let critIdxs = [];       // indeksy sekund z ≥1 CRIT
-    let bucketDamage = 0;    // trafienia napływające w ciągu bieżącej sekundy
-    let bucketCrits = 0;
+    let bucketDamage = 0;    // dmg z bieżącej sekundy
+    let bucketCrits = 0;     // ile CRIT-ów w bieżącej sekundzie
     let bestDps = bestDpsState;
+
+    // NEW: real counters
+    let hitsCount = 0;       // faktyczna liczba trafień
+    let critHits  = 0;       // łączna liczba CRIT-ów
+    let maxHitVal = 0;       // największy pojedynczy hit
 
     // expose feeder
     _feed = (hitDamage, isCrit = false) => {
-      if (typeof hitDamage === 'number') bucketDamage += Math.max(0, hitDamage);
-      if (isCrit) bucketCrits += 1;
+      const d = Number(hitDamage);
+      if (!Number.isFinite(d) || d <= 0) return;
+      bucketDamage += d;            // do DPS/s
+      hitsCount += 1;               // real hits
+      if (isCrit) { bucketCrits += 1; critHits += 1; }
+      if (d > maxHitVal) maxHitVal = d;
     };
 
     function updateStats(){
-      const c = compute(series, critIdxs);
+      const c = computeRunStats(series, hitsCount, maxHitVal, critHits);
       totalEl.textContent = Math.round(c.total).toString();
       hitsEl.textContent  = c.hits.toString();
       avgEl.textContent   = c.avgHit.toFixed(2);
@@ -284,7 +294,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     function endRun(){
       clearInterval(S.tick); S.tick=null; startBtn.textContent='Restart';
 
-      const c = compute(series, critIdxs);
+      const c = computeRunStats(series, hitsCount, maxHitVal, critHits);
       const payload = {
         seconds: dur,
         dpsAvg: +avg(series).toFixed(2),
@@ -306,16 +316,26 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     }
 
     async function startRunAndLoop(){
-      // reset UI
+      // reset UI + counters
       if (S.tick) clearInterval(S.tick);
-      t = dur; series = []; critIdxs = []; bucketDamage = 0; bucketCrits = 0; prBadge.hidden = true;
+      t = dur; series = []; critIdxs = [];
+      bucketDamage = 0; bucketCrits = 0;
+      hitsCount = 0; critHits = 0; maxHitVal = 0;
+      prBadge.hidden = true;
+
       timerEl.textContent = t+'s'; dpsEl.textContent = '—'; setRing(progress, 0);
       drawSpark(spark, series, critIdxs); updateStats();
       startBtn.textContent = 'Pause';
 
       // 1× start (opcjonalnie przekaż dur do backendu)
-      try { const out = await startRun(dur); if (typeof out?.bestDps === 'number') { bestDps = out.bestDps; localStorage.setItem('dojo_best_dps', String(bestDps)); bestEl.textContent = bestDps.toFixed(2); } }
-      catch(e){ S.dbg('dojo.start error', e); }
+      try {
+        const out = await startRun(dur);
+        if (typeof out?.bestDps === 'number') {
+          bestDps = out.bestDps;
+          localStorage.setItem('dojo_best_dps', String(bestDps));
+          bestEl.textContent = bestDps.toFixed(2);
+        }
+      } catch(e){ S.dbg('dojo.start error', e); }
 
       // sekundowy drenaż kubełka
       S.tick = setInterval(drainSecond, 1000);
@@ -339,12 +359,15 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
         else togglePause();
       }
       if (tEl.id==='dj-copy'){
+        const c = computeRunStats(series, hitsCount, maxHitVal, critHits);
         const payload = {
-          duration: dur,
+          seconds: dur,
           dpsAvg: +avg(series).toFixed(2),
-          total: Math.round(sum(series)),
-          hits: series.length,
-          critRate: +(series.length ? (critIdxs.length/series.length) : 0).toFixed(4),
+          total: Math.round(c.total),
+          hits: c.hits,
+          avgHit: +c.avgHit.toFixed(2),
+          maxHit: Math.round(c.maxHit),
+          critRate: +c.critRate.toFixed(4),
           series: series.map(x=>+x.toFixed(2)),
           critIdxs,
         };
@@ -357,7 +380,8 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     durSel.addEventListener('change', ()=>{
       if (S.tick) { clearInterval(S.tick); S.tick=null; }
       dur = +durSel.value; t = dur; spanEl.textContent = dur+'s';
-      series=[]; critIdxs=[]; bucketDamage=0; bucketCrits=0; prBadge.hidden=true;
+      series=[]; critIdxs=[]; bucketDamage=0; bucketCrits=0;
+      hitsCount=0; critHits=0; maxHitVal=0; prBadge.hidden=true;
       timerEl.textContent = t+'s'; dpsEl.textContent='—'; setRing(progress,0);
       drawSpark(spark, series, critIdxs); updateStats();
       startBtn.textContent='Start test';
@@ -379,4 +403,11 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
   function feed(hitDamage, isCrit=false){ if (_feed) _feed(hitDamage, !!isCrit); }
 
   global.Dojo = { init, open, feed };
+
+  // Convenience helper for game code:
+  // Use anywhere after Dojo is loaded: window.DOJO_FEED(dmg, isCrit)
+  global.DOJO_FEED = function(dmg, crit){
+    try { global.Dojo && global.Dojo.feed(dmg, !!crit); } catch(e){}
+  };
+
 })(window);
