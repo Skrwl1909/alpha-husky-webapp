@@ -312,7 +312,7 @@
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
   <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
-  <script>window.WEBAPP_VER = "2025-10-01d";</script>
+  <script>window.WEBAPP_VER = "2025-10-01a";</script>
 
   <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
   <script>
@@ -691,37 +691,32 @@
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
 
         function openLocked(b){
-  const reg = DATA && DATA.regions && DATA.regions[b.region];
-  const u = (reg && reg.unlock) || {};
-  const reason = reg && reg.lockedReason;
+          const reg = DATA && DATA.regions && DATA.regions[b.region];
+          const u = (reg && reg.unlock) || {};
+          const reason = reg && reg.lockedReason;
 
-  lockedTitle.textContent = `Locked: ${b.name}`;
-  let forgeRecipe = null;
+          lockedTitle.textContent = `Locked: ${b.name}`;
+          let forgeRecipe = null;
 
-  if (u.type === 'fragments'){
-    const cur = fragments[u.item] || 0;
-    const need = u.required || 0;
-    const label = (u.item || '').replace(/key_/g,'').replace(/_/g,' ');
-    lockedDesc.innerHTML = (reason ? reason :
-      `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. `
-      + `Craft into a key in <b>Forge</b> if required.`);
-    forgeRecipe = (u.combineInto || u.item) || null;
+          if (u.type === 'fragments'){
+            const cur = fragments[u.item] || 0;
+            const need = u.required || 0;
+            const label = (u.item || '').replace(/key_/g,'').replace(/_/g,' ');
+            lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
+            forgeRecipe = (u.combineInto || u.item) || null;
+          } else if (u.type === 'key'){
+            const label = (u.id || 'region key').replace(/key_/g,'').replace(/_/g,' ');
+            lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
+            forgeRecipe = u.id || null;
+          } else {
+            lockedDesc.textContent = reason || 'Complete requirements to unlock.';
+          }
 
-  } else if (u.type === 'key'){
-    const label = (u.id || 'region key').replace(/key_/g,'').replace(/_/g,' ');
-    lockedDesc.innerHTML = (reason ? reason : `Requires <b>${label}</b> to unlock.`);
-    forgeRecipe = u.id || null;
-
-  } else {
-    lockedDesc.textContent = (reason ? reason : 'Complete requirements to unlock.');
-  }
-
-  lockedShop.onclick  = (e) => { e && e.preventDefault && e.preventDefault(); sendAction('shop_open',  { tab: 'boosts' }); };
-  lockedForge.onclick = (e) => { e && e.preventDefault && e.preventDefault(); sendAction('forge_open', { recipe: forgeRecipe }); };
-  lockedAsk.onclick   = (e) => { e && e.preventDefault && e.preventDefault(); sendAction('unlock_region', { region: b.region }); };
-
-  lockedBack.style.display = 'flex';
-}
+          lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
+          lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
+          lockedAsk.onclick   = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
+          lockedBack.style.display = 'flex';
+        }
 
         /* Region sheet */
         const regionBack = document.getElementById('regionBack');
@@ -1141,9 +1136,3 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
-
-
-
-
-
-
