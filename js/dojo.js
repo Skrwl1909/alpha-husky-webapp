@@ -13,7 +13,12 @@
     dbg: () => {},
     tick: null,
     runId: null,
+    player: null,     // statystyki gracza ze state
+    feeder: null      // interval generatora "ciosów" w Dojo
   };
+
+  // co ile ms Dojo ma „atakować” w treningu (możesz nadpisać window.DOJO_HIT_MS)
+  const TRAIN_HIT_MS = global.DOJO_HIT_MS || 400;
 
   // exposed feeder (set in render)
   let _feed = null;
@@ -192,7 +197,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
       const v=series[i], x=i*step, y=h-(v/maxV)*(h-14)-7; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
   }
 
-  // --- NEW: compute using real hits, maxHit, crit hits ---
+  // --- compute using real hits, maxHit, crit hits ---
   function computeRunStats(series, hitsCount, maxHitVal, critHits){
     const total    = sum(series);
     const dpsAvg   = avg(series);
@@ -203,8 +208,38 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     return { total, dpsAvg, hits, avgHit, maxHit, critRate };
   }
 
+  // ---------- feeder control (poza render, żeby close() też mógł wyłączyć) ----------
+  function stopFeeder(){
+    if (S.feeder) { clearInterval(S.feeder); S.feeder = null; }
+  }
+  function startFeeder(attacker, trainingTarget){
+    if (S.feeder) return;
+    if (!global.Combat) { S.dbg('Combat.js not loaded — Dojo feeder disabled'); return; }
+
+    const seed = (S.runId || Date.now()) + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
+    try {
+      global.Combat.init({
+        seed,
+        feedHook: global.DOJO_FEED,
+        cfg: global.COMBAT_CFG || undefined
+      });
+    } catch(e){ S.dbg('Combat.init error', e); }
+
+    S.feeder = setInterval(() => {
+      try {
+        const hit = global.Combat.rollHit(attacker, trainingTarget, { training:true });
+        if (_feed) _feed(hit.dmg, !!hit.isCrit);
+      } catch(e){ S.dbg('dojo.feeder error', e); }
+    }, TRAIN_HIT_MS);
+  }
+
   // ---------- modal ----------
-  function close(){ const m=$('#dojo-modal'); if(m) m.remove(); if(S.tick){ clearInterval(S.tick); S.tick=null; } _feed=null; }
+  function close(){
+    const m=$('#dojo-modal'); if(m) m.remove();
+    if(S.tick){ clearInterval(S.tick); S.tick=null; }
+    stopFeeder();
+    _feed=null;
+  }
 
   function render(st){
     injectCSS(); close();
@@ -225,6 +260,10 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     bestEl.textContent = bestDpsState ? bestDpsState.toFixed(2) : '—';
     deltaEl.textContent = '';
 
+    // staty atakującego (z backendu lub fallback)
+    S.player = st?.player || global.PLAYER_TOTALS || global.PLAYER || null;
+    const trainingTarget = st?.trainingTarget || { defense: st?.targetDefense || 0, level: st?.targetLevel || 1, resist_pct: 0 };
+
     // local run state
     let dur = +durSel.value, t = dur;
     let series = [];         // DPS/s (suma dmg w danej sekundzie)
@@ -233,7 +272,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     let bucketCrits = 0;     // ile CRIT-ów w bieżącej sekundzie
     let bestDps = bestDpsState;
 
-    // NEW: real counters
+    // real counters
     let hitsCount = 0;       // faktyczna liczba trafień
     let critHits  = 0;       // łączna liczba CRIT-ów
     let maxHitVal = 0;       // największy pojedynczy hit
@@ -292,6 +331,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     }
 
     function endRun(){
+      stopFeeder();
       clearInterval(S.tick); S.tick=null; startBtn.textContent='Restart';
 
       const c = computeRunStats(series, hitsCount, maxHitVal, critHits);
@@ -318,6 +358,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     async function startRunAndLoop(){
       // reset UI + counters
       if (S.tick) clearInterval(S.tick);
+      stopFeeder();
       t = dur; series = []; critIdxs = [];
       bucketDamage = 0; bucketCrits = 0;
       hitsCount = 0; critHits = 0; maxHitVal = 0;
@@ -337,6 +378,10 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
         }
       } catch(e){ S.dbg('dojo.start error', e); }
 
+      // feeder oparty o Combat (jeśli Combat jest załadowany)
+      const attacker = S.player || { strength:10, agility:5, defense:0, luck:5, vitality:5, intelligence:5, level:1 };
+      startFeeder(attacker, trainingTarget);
+
       // sekundowy drenaż kubełka
       S.tick = setInterval(drainSecond, 1000);
     }
@@ -344,9 +389,12 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     function togglePause(){
       if (S.tick) {
         clearInterval(S.tick); S.tick=null; startBtn.textContent='Resume';
+        stopFeeder();
       } else {
         startBtn.textContent='Pause';
         S.tick = setInterval(drainSecond, 1000);
+        const attacker = S.player || { strength:10, agility:5, defense:0, luck:5, vitality:5, intelligence:5, level:1 };
+        startFeeder(attacker, trainingTarget);
       }
     }
 
@@ -379,6 +427,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
 
     durSel.addEventListener('change', ()=>{
       if (S.tick) { clearInterval(S.tick); S.tick=null; }
+      stopFeeder();
       dur = +durSel.value; t = dur; spanEl.textContent = dur+'s';
       series=[]; critIdxs=[]; bucketDamage=0; bucketCrits=0;
       hitsCount=0; critHits=0; maxHitVal=0; prBadge.hidden=true;
