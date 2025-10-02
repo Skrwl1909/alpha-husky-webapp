@@ -30,11 +30,19 @@
   const sum = a => a.reduce((x,y)=>x+y,0);
   const avg = a => a.length ? sum(a)/a.length : 0;
 
+  // Formatery liczb – czytelne separatory/miejsca po przecinku
+  const FMT = {
+    int:  (x) => Math.round(x||0).toLocaleString('en-US'),
+    d1:   (x) => Number(x||0).toLocaleString('en-US',{minimumFractionDigits:1, maximumFractionDigits:1}),
+    d2:   (x) => Number(x||0).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}),
+    perc: (x) => (100*Number(x||0)).toLocaleString('en-US',{minimumFractionDigits:1, maximumFractionDigits:1}) + '%'
+  };
+
   // ---------- CSS ----------
-function injectCSS() {
-  if ($('#dojo-css')) return;
-  const s = el('style'); s.id='dojo-css';
-  s.textContent = `
+  function injectCSS() {
+    if ($('#dojo-css')) return;
+    const s = el('style'); s.id='dojo-css';
+    s.textContent = `
 :root{
   --bg:#0b0f14; --panel:#111823; --muted:#7e8aa3; --text:#e6ecff;
   --accent:#5ef0ff; --accent2:#b08cff; --good:#2ecc71; --bad:#ff5e7a;
@@ -62,7 +70,7 @@ function injectCSS() {
 
 .dojo-body{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:center;margin:12px 0}
 
-/* >>> Zmiany dla lepszej czytelności pierścienia i liczb */
+/* >>> Czytelność pierścienia i liczb */
 .ring-wrap{position:relative;width:260px;height:260px;margin:auto}
 .ring{width:260px;height:260px;transform:rotate(-90deg)}
 .track{fill:none;stroke:#0f172a;stroke-width:12}
@@ -98,15 +106,15 @@ select{background:#0f1420;color:var(--text);border:1px solid #1e2a3d;border-radi
 button.primary{background:linear-gradient(90deg,rgba(94,240,255,.2),rgba(176,140,255,.2));border:1px solid #244a5a;color:#dffaff;padding:10px 14px;border-radius:12px}
 button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:10px 14px;border-radius:12px}
 
-/* mobile: statystyki pod zegarem + mniejszy ring na wąskich ekranach */
+/* mobile */
 @media (max-width:520px){
   .dojo-body{grid-template-columns:1fr}
   .ring-wrap{width:240px;height:240px}
   .ring{width:240px;height:240px}
 }
 `;
-  document.head.appendChild(s);
-}
+    document.head.appendChild(s);
+  }
 
   // ---------- API ----------
   async function api(path, payload) {
@@ -224,7 +232,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     return { total, dpsAvg, hits, avgHit, maxHit, critRate };
   }
 
-  // ---------- feeder control (poza render, żeby close() też mógł wyłączyć) ----------
+  // ---------- feeder control ----------
   function stopFeeder(){
     if (S.feeder) { clearInterval(S.feeder); S.feeder = null; }
   }
@@ -273,7 +281,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     const barTotal=$('#bar-total',w), barHits=$('#bar-hits',w), barAvg=$('#bar-avg',w), barMax=$('#bar-max',w), barCrit=$('#bar-crit',w);
     const spark=$('#dj-spark',w), startBtn=$('#dj-start',w), durSel=$('#dj-dur',w), copyBtn=$('#dj-copy',w);
 
-    bestEl.textContent = bestDpsState ? bestDpsState.toFixed(2) : '—';
+    bestEl.textContent = bestDpsState ? FMT.d2(bestDpsState) : '—';
     deltaEl.textContent = '';
 
     // staty atakującego (z backendu lub fallback)
@@ -305,11 +313,11 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
 
     function updateStats(){
       const c = computeRunStats(series, hitsCount, maxHitVal, critHits);
-      totalEl.textContent = Math.round(c.total).toString();
-      hitsEl.textContent  = c.hits.toString();
-      avgEl.textContent   = c.avgHit.toFixed(2);
-      maxEl.textContent   = c.maxHit.toFixed(0);
-      critEl.textContent  = (c.critRate*100).toFixed(1)+'%';
+      totalEl.textContent = FMT.int(c.total);
+      hitsEl.textContent  = FMT.int(c.hits);
+      avgEl.textContent   = FMT.d2(c.avgHit);
+      maxEl.textContent   = FMT.int(c.maxHit);
+      critEl.textContent  = FMT.perc(c.critRate);
 
       // bars (proste heurystyki)
       barTotal.style.width = '100%';
@@ -322,7 +330,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
       const dpsAvg = avg(series);
       if (bestDps && dpsAvg) {
         const diff = ((dpsAvg - bestDps)/bestDps)*100;
-        deltaEl.textContent = (diff>=0 ? '↑ ' : '↓ ') + (diff||0).toFixed(1) + '%';
+        deltaEl.textContent = (diff>=0 ? '↑ ' : '↓ ') + FMT.d1(diff);
         deltaEl.className = diff>=0 ? 'up' : 'down';
       } else {
         deltaEl.textContent = '';
@@ -333,7 +341,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     function drainSecond() {
       // przenieś zgromadzony dmg do serii
       const dps = bucketDamage; const hadCrit = bucketCrits > 0;
-      dpsEl.textContent = dps.toFixed(2);
+      dpsEl.textContent = FMT.d2(dps);
       series.push(dps);
       if (hadCrit) critIdxs.push(series.length-1);
       bucketDamage = 0; bucketCrits = 0;
@@ -366,7 +374,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
       if (!bestDps || payload.dpsAvg > bestDps) {
         bestDps = payload.dpsAvg;
         localStorage.setItem('dojo_best_dps', String(bestDps));
-        bestEl.textContent = bestDps.toFixed(2);
+        bestEl.textContent = FMT.d2(bestDps);
       }
       resolveRun(payload); // fire-and-forget
     }
@@ -390,7 +398,7 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
         if (typeof out?.bestDps === 'number') {
           bestDps = out.bestDps;
           localStorage.setItem('dojo_best_dps', String(bestDps));
-          bestEl.textContent = bestDps.toFixed(2);
+          bestEl.textContent = FMT.d2(bestDps);
         }
       } catch(e){ S.dbg('dojo.start error', e); }
 
@@ -444,7 +452,8 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
     durSel.addEventListener('change', ()=>{
       if (S.tick) { clearInterval(S.tick); S.tick=null; }
       stopFeeder();
-      dur = +durSel.value; t = dur; spanEl.textContent = dur+'s';
+      let durNew = +durSel.value; dur = durNew; let tNew = durNew; t = tNew;
+      spanEl.textContent = dur+'s';
       series=[]; critIdxs=[]; bucketDamage=0; bucketCrits=0;
       hitsCount=0; critHits=0; maxHitVal=0; prBadge.hidden=true;
       timerEl.textContent = t+'s'; dpsEl.textContent='—'; setRing(progress,0);
