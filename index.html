@@ -314,6 +314,15 @@
   <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
   <script>window.WEBAPP_VER = "2025-09-30b";</script>
 
+  <script>
+    (function(v){
+      var s = document.createElement('script');
+      s.src  = 'js/combat.js?v=' + encodeURIComponent(v || 'dev');
+      s.async = false; // zachowaj kolejność ładowania
+      document.head.appendChild(s);
+    })(window.WEBAPP_VER);
+  </script>
+  
   <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
   <script>
     (function(v){
@@ -1154,3 +1163,4 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
+
