@@ -31,10 +31,10 @@
   const avg = a => a.length ? sum(a)/a.length : 0;
 
   // ---------- CSS ----------
-  function injectCSS() {
-    if ($('#dojo-css')) return;
-    const s = el('style'); s.id='dojo-css';
-    s.textContent = `
+function injectCSS() {
+  if ($('#dojo-css')) return;
+  const s = el('style'); s.id='dojo-css';
+  s.textContent = `
 :root{
   --bg:#0b0f14; --panel:#111823; --muted:#7e8aa3; --text:#e6ecff;
   --accent:#5ef0ff; --accent2:#b08cff; --good:#2ecc71; --bad:#ff5e7a;
@@ -61,36 +61,52 @@
 .fx-btn[disabled]{opacity:.55;cursor:not-allowed}
 
 .dojo-body{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:center;margin:12px 0}
-.ring-wrap{position:relative;width:240px;height:240px;margin:auto}
-.ring{width:240px;height:240px;transform:rotate(-90deg)}
-.track{fill:none;stroke:#1b2535;stroke-width:10}
-.progress{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(94,240,255,.35))}
+
+/* >>> Zmiany dla lepszej czytelności pierścienia i liczb */
+.ring-wrap{position:relative;width:260px;height:260px;margin:auto}
+.ring{width:260px;height:260px;transform:rotate(-90deg)}
+.track{fill:none;stroke:#0f172a;stroke-width:12}
+.progress{fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(94,240,255,.35))}
 .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateZ(0)}
 .ring-center .label{font-size:12px;color:var(--muted);letter-spacing:.08em}
-.ring-center .value{font-size:34px;font-weight:800;line-height:1.1}
+.ring-center .value{
+  font-size:46px;font-weight:800;line-height:1.1;letter-spacing:.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-shadow:0 0 8px rgba(94,240,255,.25)
+}
 .ring-center .sub{font-size:12px;color:var(--muted)}
 .pr-badge{position:absolute;top:18px;right:18px;background:linear-gradient(90deg,var(--accent),var(--accent2));
   color:#041018;font-weight:700;padding:3px 8px;border-radius:999px;font-size:11px}
 
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.stat{background:#0f1420;border:1px solid #1e2a3d;border-radius:12px;padding:10px}
+.stat{background:#0f1420;border:1px solid #1e2a3d;border-radius:12px;padding:12px}
 .stat span{display:block;font-size:12px;color:var(--muted)}
-.stat strong{display:flex;align-items:center;gap:8px;font-size:16px;margin-top:2px}
+.stat strong{
+  display:flex;align-items:center;gap:8px;font-size:18px;margin-top:2px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
 .stat .bar{margin-top:6px;height:6px;background:#121a28;border-radius:6px;overflow:hidden}
 .stat .bar i{display:block;height:100%;background:linear-gradient(90deg,rgba(94,240,255,.4),rgba(176,140,255,.4))}
 .stat.best strong em{font-style:normal;font-size:12px}
 .up{color:var(--good)} .down{color:var(--bad)}
 
-.sparkline-wrap{background:#0f1420;border:1px solid #1e2a3d;border-radius:12px;padding:10px;margin-top:6px}
-.spark-legend{font-size:11px;color:var(--muted);margin-top:6px}
+.sparkline-wrap{background:#0f1420;border:1px solid #1e2a3d;border-radius:12px;padding:12px;margin-top:8px}
+.spark-legend{font-size:12px;color:#9fb0c9}
 
 .actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
 select{background:#0f1420;color:var(--text);border:1px solid #1e2a3d;border-radius:10px;padding:6px 10px}
 button.primary{background:linear-gradient(90deg,rgba(94,240,255,.2),rgba(176,140,255,.2));border:1px solid #244a5a;color:#dffaff;padding:10px 14px;border-radius:12px}
 button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:10px 14px;border-radius:12px}
+
+/* mobile: statystyki pod zegarem + mniejszy ring na wąskich ekranach */
+@media (max-width:520px){
+  .dojo-body{grid-template-columns:1fr}
+  .ring-wrap{width:240px;height:240px}
+  .ring{width:240px;height:240px}
+}
 `;
-    document.head.appendChild(s);
-  }
+  document.head.appendChild(s);
+}
 
   // ---------- API ----------
   async function api(path, payload) {
