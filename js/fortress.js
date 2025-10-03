@@ -94,6 +94,111 @@
     if (!S.dbg)     S.dbg = () => {};
   }
 
+  // ====== COMBAT INTEGRATION (ten sam silnik co Dojo) ======
+  // mapowanie elastyczne → format wymagany przez Combat
+  function mapPlayerTotals(ps){
+    if (!ps) return {
+      level:1, strength:10, agility:5, intelligence:5, vitality:5, defense:0, luck:5
+    };
+    return {
+      level:        ps.level ?? ps.lvl ?? 1,
+      strength:     ps.strength ?? ps.str ?? 0,
+      agility:      ps.agility ?? ps.agi ?? 0,
+      intelligence: ps.intelligence ?? ps.int ?? 0,
+      vitality:     ps.vitality ?? ps.vit ?? 0,
+      defense:      ps.defense ?? ps.def ?? 0,
+      luck:         ps.luck ?? ps.lck ?? 0
+    };
+  }
+  // paramy celu (kiedy gracz atakuje bossa)
+  function mapBossAsTarget(b){
+    b = b || {};
+    return {
+      hp:          b.hpMax ?? b.hp ?? 0,
+      defense:     b.defense ?? b.def ?? 0,
+      level:       b.level ?? b.lvl ?? 1,
+      resist_pct:  b.resist_pct ?? b.resist ?? 0,
+      dodge_base_override: b.dodge_base ?? null
+    };
+  }
+  // staty atakera bossa (kiedy boss bije gracza)
+  function mapBossAsAttacker(b){
+    b = b || {};
+    return {
+      level:        b.level ?? b.lvl ?? 1,
+      strength:     b.power ?? b.attack ?? b.strength ?? b.str ?? 6,
+      agility:      b.agility ?? b.agi ?? 0,
+      intelligence: b.intelligence ?? b.int ?? 0,
+      vitality:     b.vitality ?? b.vit ?? 0,
+      defense:      b.defense ?? b.def ?? 0,
+      luck:         b.luck ?? 0
+    };
+  }
+
+  async function loadPlayerTotalsFallback(){
+    // spróbuj pobrać /webapp/state → stats / totals; jeśli brak, użyj globali z frontu
+    try {
+      const st = await S.apiPost('/webapp/state', {});
+      const t = st?.stats || st?.totals || st?.playerTotals || st;
+      if (t && typeof t === 'object') return t;
+    } catch(_){}
+    return global.PLAYER_TOTALS || global.PLAYER || { level:1, strength:10, agility:5, intelligence:5, vitality:5, defense:0, luck:5 };
+  }
+
+  // lokalna symulacja jeśli backend nie da kroków — 1:1 z combat.js
+  async function simulateFortressBattle(serverPayload){
+    if (!global.Combat) return null;
+
+    // seed zgodny z Dojo: runId + userId
+    const seed = (serverPayload?.runId || serverPayload?.run_id || Date.now())
+               + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
+
+    global.Combat.init({ seed, feedHook: null, cfg: global.COMBAT_CFG || undefined });
+
+    // gracz
+    const playerTotalsRaw = serverPayload?.playerTotals || serverPayload?.player?.totals || await loadPlayerTotalsFallback();
+    const att = mapPlayerTotals(playerTotalsRaw);
+    const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
+
+    // boss
+    const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
+    const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
+    const tgt = mapBossAsTarget(bossRaw);
+    const bHpMax = global.Combat.computeEnemyMaxHp(tgt);
+    tgt.hp = bHpMax;
+
+    const bossAtt = mapBossAsAttacker(bossRaw);
+
+    // pętla rund
+    const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
+    const steps = [];
+    let pHp = pHpMax, bHp = bHpMax;
+
+    for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
+      // You → Boss
+      const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
+      bHp = Math.max(0, bHp - h1.dmg);
+      steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
+      if (bHp <= 0) break;
+
+      // Boss → You
+      const h2 = global.Combat.rollHit(bossAtt, { defense: att.defense, level: att.level, hp:pHp }, { round:r, actor:'boss' });
+      pHp = Math.max(0, pHp - h2.dmg);
+      steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
+    }
+
+    const winner = (bHp <= 0) ? 'you' : (pHp <= 0 ? 'boss' : 'boss');
+
+    return {
+      mode: 'fortress',
+      level: tgt.level || 1,
+      boss: { name: bossName, hpMax: bHpMax },
+      player: { hpMax: pHpMax },
+      steps,
+      winner
+    };
+  }
+
   // ---------- public UI ----------
   function open(){
     ensureDeps();
@@ -271,11 +376,20 @@
 
       const res = out?.data || out;
 
-      if (res && res.ok && (res.mode === 'fortress' || res.battle === 'fortress')){
+      // === Nowe: jeśli to walka Fortress i brak kroków – policz lokalnie Combatem ===
+      if (res && (res.mode === 'fortress' || res.battle === 'fortress')){
+        let payload = res;
+        if (!Array.isArray(res.steps) || !res.steps.length){
+          try {
+            const sim = await simulateFortressBattle(res);
+            if (sim) payload = sim;
+          } catch(e){ S.dbg('local sim fail', e); }
+        }
         closeModal();
-        renderFortressBattle(res);
+        renderFortressBattle(payload);
         return;
       }
+
       if (res && (res.minutes || res.durationMinutes)){
         toast(`Run started: ${res.minutes ?? res.durationMinutes} min`);
         await refresh();
