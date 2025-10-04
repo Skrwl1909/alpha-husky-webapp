@@ -32,6 +32,20 @@
     try { S.tg?.showAlert?.(String(msg)); } catch(_){ try{ alert(msg); }catch(_){} }
   }
 
+  // === [KROK 2] helper do ustawiania sprite'a bossa ===
+  async function setEnemySprite(src){
+    const img = document.querySelector('#fx-enemy');
+    if (!img) return;
+    const url = src || '/images/bosses/default.png';
+    await new Promise((ok)=>{
+      const t = new Image();
+      t.onload = ()=>ok(true);
+      t.onerror = ()=>ok(false);
+      t.src = url;
+    });
+    img.src = url;
+  }
+
   // --- DOM CSS
   function injectCss(){
     if (document.getElementById('fortress-css')) return;
@@ -58,6 +72,12 @@
 .fx-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
 .fx-note{opacity:.75;font-size:12px}
 @media (max-width:480px){ .fx-title{font-size:15px} }
+
+/* --- Fortress enemy portrait (KROK 2) --- */
+.fx-portrait{ position:relative; display:grid; place-items:center; min-height:220px; border-radius:14px;
+  background: radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0)); overflow:hidden }
+#fx-enemy{ max-width:min(46vh, 440px); max-height:min(46vh, 440px); object-fit:contain;
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,.45)); }
     `;
     const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
   }
@@ -240,6 +260,11 @@
             <div class="fx-bar"><i id="fx-barFill"></i></div>
           </div>
 
+          <!-- [KROK 2] portret przeciwnika -->
+          <div class="fx-portrait">
+            <img id="fx-enemy" alt="Opponent" src="/images/bosses/default.png">
+          </div>
+
           <div class="fx-actions">
             <button class="fx-btn" id="fx-close" type="button">Close</button>
             <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
@@ -297,6 +322,10 @@
       const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || {};
       const bossName = st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
       setText('#fx-next', (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—');
+
+      // [KROK 2] ustaw sprite z STATE
+      const sprite = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '/images/bosses/default.png';
+      setEnemySprite(sprite);
 
       // próby na cooldown (opcjonalne)
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
@@ -375,6 +404,11 @@
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
 
       const res = out?.data || out;
+
+      // [KROK 2] jeśli START zwróci własny sprite — ustaw go
+      const runId = res?.runId || res?.run_id || null;
+      const startSprite = res?.boss?.sprite || res?.sprite || res?.bossSprite || null;
+      if (startSprite) setEnemySprite(startSprite);
 
       // === Nowe: jeśli to walka Fortress i brak kroków – policz lokalnie Combatem ===
       if (res && (res.mode === 'fortress' || res.battle === 'fortress')){
@@ -473,7 +507,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         const lines = [];
         lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
         const mats = [];
-        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.rewards.materials.scrap}`);
+        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.reards.materials.scrap}`);
         if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
         if (mats.length) lines.push('Rewards: '+mats.join(', '));
         if (data.rewards?.rare) lines.push('💎 Rare drop!');
