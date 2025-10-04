@@ -32,24 +32,31 @@
     try { S.tg?.showAlert?.(String(msg)); } catch(_){ try{ alert(msg); }catch(_){} }
   }
 
-  // === [KROK 2] helper do ustawiania sprite'a bossa ===
-  async function setEnemySprite(src){
-    const img = document.querySelector('#fx-enemy');
-    if (!img) return;
-    const url = src || '/images/bosses/default.png';
-    await new Promise((ok)=>{
-      const t = new Image();
-      t.onload = ()=>ok(true);
-      t.onerror = ()=>ok(false);
-      t.src = url;
-    });
-    img.src = url;
+  // === [KROK 2] helper do ustawiania sprite'a bossa (obsługuje nazwę lub pełną ścieżkę) ===
+  function setEnemySprite(spriteOrName){
+    const img = $('#fx-enemy'); if (!img) return;
+    const v = global.WEBAPP_VER || 'dev';
+
+    let src = spriteOrName || '';
+
+    // Jeśli podano samą nazwę (np. "gleam_warden") → zbuduj ścieżkę
+    const looksLikeUrl = /^https?:\/\//i.test(src) || /\/.+\.(png|webp|jpg|jpeg|gif)$/i.test(src);
+    if (!looksLikeUrl) {
+      const slug = String(src||'')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,'_')
+        .replace(/^_|_$/g,'');
+      if (slug) src = `images/bosses/${slug}.png`;
+    }
+
+    if (!src) src = 'images/bosses/core_custodian.png'; // fallback
+    img.src = src + (src.includes('?') ? `&v=${encodeURIComponent(v)}` : `?v=${encodeURIComponent(v)}`);
   }
 
   // --- DOM CSS
   function injectCss(){
-  if (document.getElementById('fortress-css')) return;
-  const css = `
+    if (document.getElementById('fortress-css')) return;
+    const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
 #fortress-modal .card{position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
@@ -86,13 +93,15 @@
   .fx-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(12,14,18,.96) 30%);padding-bottom:6px}
   .fx-btn{padding:12px 14px}
 }
-  `;
-  const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
-}
+    `;
+    const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
+  }
 
   function closeModal(){
     const m = document.getElementById('fortress-modal');
     if (m) m.remove();
+    // przywróć Telegram MainButton
+    try { S.tg?.MainButton?.show?.(); } catch(_){}
   }
 
   // ---------- deps / fallback ----------
@@ -123,7 +132,6 @@
   }
 
   // ====== COMBAT INTEGRATION (ten sam silnik co Dojo) ======
-  // mapowanie elastyczne → format wymagany przez Combat
   function mapPlayerTotals(ps){
     if (!ps) return {
       level:1, strength:10, agility:5, intelligence:5, vitality:5, defense:0, luck:5
@@ -138,7 +146,6 @@
       luck:         ps.luck ?? ps.lck ?? 0
     };
   }
-  // paramy celu (kiedy gracz atakuje bossa)
   function mapBossAsTarget(b){
     b = b || {};
     return {
@@ -149,7 +156,6 @@
       dodge_base_override: b.dodge_base ?? null
     };
   }
-  // staty atakera bossa (kiedy boss bije gracza)
   function mapBossAsAttacker(b){
     b = b || {};
     return {
@@ -164,7 +170,6 @@
   }
 
   async function loadPlayerTotalsFallback(){
-    // spróbuj pobrać /webapp/state → stats / totals; jeśli brak, użyj globali z frontu
     try {
       const st = await S.apiPost('/webapp/state', {});
       const t = st?.stats || st?.totals || st?.playerTotals || st;
@@ -173,22 +178,18 @@
     return global.PLAYER_TOTALS || global.PLAYER || { level:1, strength:10, agility:5, intelligence:5, vitality:5, defense:0, luck:5 };
   }
 
-  // lokalna symulacja jeśli backend nie da kroków — 1:1 z combat.js
   async function simulateFortressBattle(serverPayload){
     if (!global.Combat) return null;
 
-    // seed zgodny z Dojo: runId + userId
     const seed = (serverPayload?.runId || serverPayload?.run_id || Date.now())
                + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
 
     global.Combat.init({ seed, feedHook: null, cfg: global.COMBAT_CFG || undefined });
 
-    // gracz
     const playerTotalsRaw = serverPayload?.playerTotals || serverPayload?.player?.totals || await loadPlayerTotalsFallback();
     const att = mapPlayerTotals(playerTotalsRaw);
     const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
 
-    // boss
     const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
     const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
     const tgt = mapBossAsTarget(bossRaw);
@@ -197,19 +198,16 @@
 
     const bossAtt = mapBossAsAttacker(bossRaw);
 
-    // pętla rund
     const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
     const steps = [];
     let pHp = pHpMax, bHp = bHpMax;
 
     for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
-      // You → Boss
       const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
       bHp = Math.max(0, bHp - h1.dmg);
       steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
       if (bHp <= 0) break;
 
-      // Boss → You
       const h2 = global.Combat.rollHit(bossAtt, { defense: att.defense, level: att.level, hp:pHp }, { round:r, actor:'boss' });
       pHp = Math.max(0, pHp - h2.dmg);
       steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
@@ -229,83 +227,83 @@
 
   // ---------- public UI ----------
   function open(){
-  ensureDeps();
-  injectCss();
-  closeModal();
+    ensureDeps();
+    injectCss();
+    closeModal();
 
-  const wrap = el('div'); wrap.id='fortress-modal';
-  wrap.innerHTML = `
-    <div class="mask" id="fx-mask"></div>
-    <div class="card">
-      <div class="fx-head">
-        <div>
-          <div class="fx-sub">Moon Lab — Fortress</div>
-          <div class="fx-title">Moon Lab — Fortress</div>
-        </div>
-        <div class="fx-kv">
-          <span id="fx-badge" class="fx-badge">…</span>
-          <button class="fx-x" id="fx-x" type="button" aria-label="Close">×</button>
-        </div>
-      </div>
-
-      <div class="fx-body">
-        <div class="fx-row">
-          <div class="fx-col">
-            <div class="fx-kv"><b>Status:</b> <span id="fx-status">—</span></div>
-            <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">—</span></div>
-            <div class="fx-kv"><b>Next opponent:</b> <span id="fx-next">—</span></div>
+    const wrap = el('div'); wrap.id='fortress-modal';
+    wrap.innerHTML = `
+      <div class="mask" id="fx-mask"></div>
+      <div class="card">
+        <div class="fx-head">
+          <div>
+            <div class="fx-sub">Moon Lab — Fortress</div>
+            <div class="fx-title">Moon Lab — Fortress</div>
           </div>
-          <div class="fx-col" style="min-width:170px;align-items:flex-end">
-            <div class="fx-kv">
-              <span class="fx-chip" id="fx-lvl">L —</span>
-              <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
+          <div class="fx-kv">
+            <span id="fx-badge" class="fx-badge">…</span>
+            <button class="fx-x" id="fx-x" type="button" aria-label="Close">×</button>
+          </div>
+        </div>
+
+        <div class="fx-body">
+          <div class="fx-row">
+            <div class="fx-col">
+              <div class="fx-kv"><b>Status:</b> <span id="fx-status">—</span></div>
+              <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">—</span></div>
+              <div class="fx-kv"><b>Next opponent:</b> <span id="fx-next">—</span></div>
+            </div>
+            <div class="fx-col" style="min-width:170px;align-items:flex-end">
+              <div class="fx-kv">
+                <span class="fx-chip" id="fx-lvl">L —</span>
+                <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="fx-prog">
-          <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">—/—</span></div>
-          <div class="fx-bar"><i id="fx-barFill"></i></div>
-        </div>
-
-        <!-- Portret przeciwnika -->
-        <div class="fx-portrait">
-          <img id="fx-enemy" alt="Enemy" src="images/bosses/core_custodian.png">
-        </div>
-
-        <!-- Pasek akcji: lewa (Close/Refresh) / prawa (Start) -->
-        <div class="fx-actions">
-          <div class="fx-actions-left">
-            <button class="fx-btn" id="fx-close" type="button">Close</button>
-            <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
+          <div class="fx-prog">
+            <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">—/—</span></div>
+            <div class="fx-bar"><i id="fx-barFill"></i></div>
           </div>
-          <div class="fx-actions-right">
-            <button class="fx-btn primary" id="fx-start" type="button" disabled>Start</button>
-          </div>
-        </div>
 
-        <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
+          <!-- Portret przeciwnika -->
+          <div class="fx-portrait">
+            <img id="fx-enemy" alt="Enemy" src="images/bosses/core_custodian.png">
+          </div>
+
+          <!-- Pasek akcji: lewa (Close/Refresh) / prawa (Start) -->
+          <div class="fx-actions">
+            <div class="fx-actions-left">
+              <button class="fx-btn" id="fx-close" type="button">Close</button>
+              <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
+            </div>
+            <div class="fx-actions-right">
+              <button class="fx-btn primary" id="fx-start" type="button" disabled>Start</button>
+            </div>
+          </div>
+
+          <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
+        </div>
       </div>
-    </div>
-  `;
-  document.body.appendChild(wrap);
+    `;
+    document.body.appendChild(wrap);
 
-  // schowaj dolny MainButton TG, żeby nie zasłaniał paska akcji modala
-  try { S.tg?.MainButton?.hide?.(); } catch(_){}
+    // schowaj dolny MainButton TG, żeby nie zasłaniał paska akcji modala
+    try { S.tg?.MainButton?.hide?.(); } catch(_){}
 
-  wrap.addEventListener('click', (e) => {
-    const btn = e.target.closest('button');
-    if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
-    switch (btn.id) {
-      case 'fx-x':
-      case 'fx-close': closeModal(); break;
-      case 'fx-refresh': refresh(); break;
-      case 'fx-start': doStart(); break;
-    }
-  });
+    wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
+      switch (btn.id) {
+        case 'fx-x':
+        case 'fx-close': closeModal(); break;
+        case 'fx-refresh': refresh(); break;
+        case 'fx-start': doStart(); break;
+      }
+    });
 
-  refresh();
-}
+    refresh();
+  }
 
   // live ticker
   let ticker = null;
@@ -318,7 +316,7 @@
     // ⬇️ Awaryjny rebuild: jeśli jest stary modal (bez #fx-lvl), zamknij i zbuduj nowy
     if (document.getElementById('fortress-modal') && !document.querySelector('#fx-lvl')) {
       closeModal();
-      open(); // open() -> postawi świeży layout i samo wywoła refresh()
+      open();
       return;
     }
 
@@ -339,9 +337,9 @@
       const bossName = st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
       setText('#fx-next', (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—');
 
-      // [KROK 2] ustaw sprite z STATE
-      const sprite = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '/images/bosses/default.png';
-      setEnemySprite(sprite);
+      // sprite z STATE albo z nazwy
+      const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '';
+      setEnemySprite(spriteRaw || bossName);
 
       // próby na cooldown (opcjonalne)
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
@@ -396,7 +394,6 @@
       const msg = e?.response?.data?.reason || e?.message || 'Failed to load Moon Lab state.';
       S.dbg('fortress/state fail', e);
       toast('Fortress: ' + msg);
-      // zostaw Start zablokowany
     }
   }
 
@@ -421,12 +418,11 @@
 
       const res = out?.data || out;
 
-      // [KROK 2] jeśli START zwróci własny sprite — ustaw go
-      const runId = res?.runId || res?.run_id || null;
+      // sprite z odpowiedzi START (jeśli jest)
       const startSprite = res?.boss?.sprite || res?.sprite || res?.bossSprite || null;
       if (startSprite) setEnemySprite(startSprite);
 
-      // === Nowe: jeśli to walka Fortress i brak kroków – policz lokalnie Combatem ===
+      // Jeśli to walka Fortress, a brak kroków – policz lokalnie Combatem
       if (res && (res.mode === 'fortress' || res.battle === 'fortress')){
         let payload = res;
         if (!Array.isArray(res.steps) || !res.steps.length){
@@ -489,8 +485,11 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       </pre>
       <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
       <div class="fx-actions">
-        <button class="fx-btn" id="fb-close" type="button">Close</button>
-        <button class="fx-btn" id="fb-refresh" type="button">Refresh</button>
+        <div class="fx-actions-left">
+          <button class="fx-btn" id="fb-close" type="button">Close</button>
+          <button class="fx-btn" id="fb-refresh" type="button">Refresh</button>
+        </div>
+        <div class="fx-actions-right"></div>
       </div>
     `;
     const wrap = el('div'); wrap.id='fortress-modal';
@@ -498,6 +497,9 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     const mask = el('div','mask'); mask.id='fb-mask';
     card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
     document.body.appendChild(wrap);
+
+    // ukryj MainButton również w widoku walki
+    try { S.tg?.MainButton?.hide?.(); } catch(_){}
 
     wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
@@ -523,7 +525,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         const lines = [];
         lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
         const mats = [];
-        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.reards.materials.scrap}`);
+        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.rewards.materials.scrap}`);
         if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
         if (mats.length) lines.push('Rewards: '+mats.join(', '));
         if (data.rewards?.rare) lines.push('💎 Rare drop!');
@@ -535,10 +537,16 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       const s = data.steps[i++];
       if (s.actor==='you'){
         bHp = s.b_hp;
-        logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${s.dodge?'shoot… boss <b>DODGED</b>!':`hit for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
+        const youTxt = s.dodge
+          ? 'shoot… boss <b>DODGED</b>!'
+          : ('hit for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
+        logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${youTxt}</div>`);
       } else {
         pHp = s.p_hp;
-        logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${s.dodge?'attacks… you <b>DODGE</b>!':`hits for <b>${s.dmg}</b>${s.crit?' <i>(CRIT)</i>':''}.`}</div>`);
+        const bossTxt = s.dodge
+          ? 'attacks… you <b>DODGE</b>!'
+          : ('hits for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
+        logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${bossTxt}</div>`);
       }
       boardEl.textContent =
 `YOU  [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
