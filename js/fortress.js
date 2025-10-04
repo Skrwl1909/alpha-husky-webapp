@@ -48,8 +48,8 @@
 
   // --- DOM CSS
   function injectCss(){
-    if (document.getElementById('fortress-css')) return;
-    const css = `
+  if (document.getElementById('fortress-css')) return;
+  const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
 #fortress-modal .card{position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
@@ -65,22 +65,30 @@
 .fx-prog{display:grid;gap:6px}
 .fx-bar{position:relative;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
 .fx-bar>i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
-.fx-actions{display:flex;gap:8px;justify-content:flex-end}
+
+/* --- nowy pasek akcji --- */
+.fx-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+.fx-actions-left,.fx-actions-right{display:flex;gap:8px;flex-wrap:wrap}
 .fx-btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
-.fx-btn.primary{background:rgba(16,185,129,.18)}
+.fx-btn.primary{background:rgba(16,185,129,.18);min-width:120px}
 .fx-btn[disabled]{opacity:.55;cursor:not-allowed;filter:grayscale(.1)}
 .fx-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
 .fx-note{opacity:.75;font-size:12px}
-@media (max-width:480px){ .fx-title{font-size:15px} }
 
 /* --- Fortress enemy portrait (KROK 2) --- */
-.fx-portrait{ position:relative; display:grid; place-items:center; min-height:220px; border-radius:14px;
-  background: radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0)); overflow:hidden }
-#fx-enemy{ max-width:min(46vh, 440px); max-height:min(46vh, 440px); object-fit:contain;
-  filter: drop-shadow(0 14px 28px rgba(0,0,0,.45)); }
-    `;
-    const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
-  }
+.fx-portrait{position:relative;display:grid;place-items:center;min-height:220px;border-radius:14px;
+  background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));overflow:hidden}
+#fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
+
+@media (max-width:480px){
+  .fx-title{font-size:15px}
+  .fx-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(12,14,18,.96) 30%);padding-bottom:6px}
+  .fx-btn{padding:12px 14px}
+}
+  `;
+  const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
+}
 
   function closeModal(){
     const m = document.getElementById('fortress-modal');
