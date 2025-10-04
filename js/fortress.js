@@ -229,75 +229,83 @@
 
   // ---------- public UI ----------
   function open(){
-    ensureDeps();
-    injectCss();
-    closeModal();
+  ensureDeps();
+  injectCss();
+  closeModal();
 
-    const wrap = el('div'); wrap.id='fortress-modal';
-    wrap.innerHTML = `
-      <div class="mask" id="fx-mask"></div>
-      <div class="card">
-        <div class="fx-head">
-          <div>
-            <div class="fx-sub">Moon Lab — Fortress</div>
-            <div class="fx-title">Moon Lab — Fortress</div>
-          </div>
-          <div class="fx-kv">
-            <span id="fx-badge" class="fx-badge">…</span>
-            <button class="fx-x" id="fx-x" type="button" aria-label="Close">×</button>
-          </div>
+  const wrap = el('div'); wrap.id='fortress-modal';
+  wrap.innerHTML = `
+    <div class="mask" id="fx-mask"></div>
+    <div class="card">
+      <div class="fx-head">
+        <div>
+          <div class="fx-sub">Moon Lab — Fortress</div>
+          <div class="fx-title">Moon Lab — Fortress</div>
         </div>
-
-        <div class="fx-body">
-          <div class="fx-row">
-            <div class="fx-col">
-              <div class="fx-kv"><b>Status:</b> <span id="fx-status">—</span></div>
-              <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">—</span></div>
-              <div class="fx-kv"><b>Next opponent:</b> <span id="fx-next">—</span></div>
-            </div>
-            <div class="fx-col" style="min-width:170px;align-items:flex-end">
-              <div class="fx-kv">
-                <span class="fx-chip" id="fx-lvl">L —</span>
-                <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="fx-prog">
-            <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">—/—</span></div>
-            <div class="fx-bar"><i id="fx-barFill"></i></div>
-          </div>
-
-          <!-- [KROK 2] portret przeciwnika -->
-          <div class="fx-portrait">
-            <img id="fx-enemy" alt="Opponent" src="/images/bosses/default.png">
-          </div>
-
-          <div class="fx-actions">
-            <button class="fx-btn" id="fx-close" type="button">Close</button>
-            <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
-            <button class="fx-btn primary" id="fx-start" type="button" disabled>Start</button>
-          </div>
-
-          <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
+        <div class="fx-kv">
+          <span id="fx-badge" class="fx-badge">…</span>
+          <button class="fx-x" id="fx-x" type="button" aria-label="Close">×</button>
         </div>
       </div>
-    `;
-    document.body.appendChild(wrap);
 
-    wrap.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
-      switch (btn.id) {
-        case 'fx-x':
-        case 'fx-close': closeModal(); break;
-        case 'fx-refresh': refresh(); break;
-        case 'fx-start': doStart(); break;
-      }
-    });
+      <div class="fx-body">
+        <div class="fx-row">
+          <div class="fx-col">
+            <div class="fx-kv"><b>Status:</b> <span id="fx-status">—</span></div>
+            <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">—</span></div>
+            <div class="fx-kv"><b>Next opponent:</b> <span id="fx-next">—</span></div>
+          </div>
+          <div class="fx-col" style="min-width:170px;align-items:flex-end">
+            <div class="fx-kv">
+              <span class="fx-chip" id="fx-lvl">L —</span>
+              <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
+            </div>
+          </div>
+        </div>
 
-    refresh();
-  }
+        <div class="fx-prog">
+          <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">—/—</span></div>
+          <div class="fx-bar"><i id="fx-barFill"></i></div>
+        </div>
+
+        <!-- Portret przeciwnika -->
+        <div class="fx-portrait">
+          <img id="fx-enemy" alt="Enemy" src="images/bosses/core_custodian.png">
+        </div>
+
+        <!-- Pasek akcji: lewa (Close/Refresh) / prawa (Start) -->
+        <div class="fx-actions">
+          <div class="fx-actions-left">
+            <button class="fx-btn" id="fx-close" type="button">Close</button>
+            <button class="fx-btn" id="fx-refresh" type="button">Refresh</button>
+          </div>
+          <div class="fx-actions-right">
+            <button class="fx-btn primary" id="fx-start" type="button" disabled>Start</button>
+          </div>
+        </div>
+
+        <div class="fx-note" id="fx-hint">Win → next encounter after cooldown; lose → retry same encounter.</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  // schowaj dolny MainButton TG, żeby nie zasłaniał paska akcji modala
+  try { S.tg?.MainButton?.hide?.(); } catch(_){}
+
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) { if (e.target.id === 'fx-mask') closeModal(); return; }
+    switch (btn.id) {
+      case 'fx-x':
+      case 'fx-close': closeModal(); break;
+      case 'fx-refresh': refresh(); break;
+      case 'fx-start': doStart(); break;
+    }
+  });
+
+  refresh();
+}
 
   // live ticker
   let ticker = null;
