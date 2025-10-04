@@ -314,6 +314,7 @@
   <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
   <script>window.WEBAPP_VER = "2025-09-30b";</script>
 
+  <!-- 2.2) combat.js (kolejność gwarantowana) -->
   <script>
     (function(v){
       var s = document.createElement('script');
@@ -322,13 +323,13 @@
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
-  
+
   <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
   <script>
     (function(v){
       var s = document.createElement('script');
       s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
-      s.defer = true;
+      s.async = false; // ważne: zachowaj kolejność po combat.js
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
@@ -473,7 +474,7 @@
 
         // >>> INIT helpers (fortress + dojo) <<<
         window.Fortress?.init?.({ apiPost, tg, dbg });
-        window.Dojo?.init?.({ apiPost, tg, dbg });  // ⬅️ poprawne init Dojo
+        window.Dojo?.init?.({ apiPost, tg, dbg });
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -487,6 +488,42 @@
         let keys = new Set();
         let fragments = {};
         let PLAYER_STATE = null;
+
+        function createPathsLayer(root){
+          const layer = document.createElement("div");
+          layer.className = "paths-layer";
+          const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+          svg.setAttribute("id","pathsSVG");
+          svg.setAttribute("viewBox","0 0 1000 562");
+          svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+          layer.appendChild(svg); root.appendChild(layer); return svg;
+        }
+        function createPinsLayer(root){
+          const layer = document.createElement("div");
+          layer.className = "pins"; layer.id = "pins";
+          root.appendChild(layer); return layer;
+        }
+        function resolveLabelCollisions(){
+          const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
+          chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+          for (let i=1;i<chips.length;i++){
+            const prev = chips[i-1].getBoundingClientRect();
+            const cur = chips[i].getBoundingClientRect();
+            const overlap = (prev.bottom + 6) - cur.top;
+            if (overlap > 0) {
+              const current = chips[i].style.transform || "translateX(-50%)";
+              chips[i].style.transform = current + ` translateY(${overlap}px)`;
+            }
+          }
+          const mapRect = mapRoot.getBoundingClientRect();
+          chips.forEach(ch => {
+            const r = ch.getBoundingClientRect();
+            const leftOverflow  = mapRect.left + 8 - r.left;
+            const rightOverflow = r.right - (mapRect.right - 8);
+            if (leftOverflow  > 0) ch.style.marginLeft = (leftOverflow)+"px";
+            if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
+          });
+        }
 
         async function loadMapData(){
           try{
@@ -763,182 +800,183 @@
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
         /* === AUTO-RESOLVE z checkiem po stronie serwera + ciche retrysy NOT_READY === */
-const AUTO_RESOLVE_ON_READY = true;
-const READY_GRACE_MS = 2000;       // odczekaj 2s po zejściu lokalnego timera
-const RETRY_INTERVAL_MS = 1200;    // odstęp między retriami NOT_READY
-const MAX_RESOLVE_RETRIES = 5;
+        const AUTO_RESOLVE_ON_READY = true;
+        const READY_GRACE_MS = 2000;       // odczekaj 2s po zejściu lokalnego timera
+        const RETRY_INTERVAL_MS = 1200;    // odstęp między retriami NOT_READY
+        const MAX_RESOLVE_RETRIES = 5;
 
-let CURRENT_BID = null;
-let ticker = null;
+        let CURRENT_BID = null;
+        let ticker = null;
 
-function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
+        function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
 
-function startBuildingTicker(endTs){
-  stopBuildingTicker();
-  const tick = () => {
-    const left = Math.ceil(endTs - Date.now()/1000);
-    bTimer.textContent = formatLeft(Math.max(0,left));
-    if (left <= 0) {
-      stopBuildingTicker();
-      verifyReadyAndMaybeResolve();
-    }
-  };
-  tick();
-  ticker = setInterval(tick, 1000);
-}
+        function startBuildingTicker(endTs){
+          stopBuildingTicker();
+          const tick = () => {
+            const left = Math.ceil(endTs - Date.now()/1000);
+            bTimer.textContent = formatLeft(Math.max(0,left));
+            if (left <= 0) {
+              stopBuildingTicker();
+              verifyReadyAndMaybeResolve();
+            }
+          };
+          tick();
+          ticker = setInterval(tick, 1000);
+        }
 
-function formatLeft(sec){
-  const m = Math.floor(sec/60), s = sec%60;
-  return (m>0? m+"m ":"") + s + "s";
-}
+        function formatLeft(sec){
+          const m = Math.floor(sec/60), s = sec%60;
+          return (m>0? m+"m ":"") + s + "s";
+        }
 
-async function openBuilding(bid, name, desc){
-  CURRENT_BID = bid;
-  bTitle.textContent = name || "Building";
-  bDesc.textContent  = desc || "";
-  bBack.style.display = 'flex';
-  await loadBuildingState();
-}
+        async function openBuilding(bid, name, desc){
+          CURRENT_BID = bid;
+          bTitle.textContent = name || "Building";
+          bDesc.textContent  = desc || "";
+          bBack.style.display = 'flex';
+          await loadBuildingState();
+        }
 
-async function loadBuildingState(){
-  if (!CURRENT_BID) return;
-  try{
-    const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
+        async function loadBuildingState(){
+          if (!CURRENT_BID) return;
+          try{
+            const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
 
-    bTitle.textContent = st.name || bTitle.textContent;
-    bDesc.textContent  = st.desc || bDesc.textContent;
+            bTitle.textContent = st.name || bTitle.textContent;
+            bDesc.textContent  = st.desc || bDesc.textContent;
 
-    // routes
-    bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
-    bRoute.innerHTML = '';
-    if (st.routes && st.routes.length){
-      for (const r of st.routes){
-        const opt = document.createElement('option');
-        opt.value = r.id; opt.textContent = r.label || r.id;
-        bRoute.appendChild(opt);
-      }
-    }
+            // routes
+            bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
+            bRoute.innerHTML = '';
+            if (st.routes && st.routes.length){
+              for (const r of st.routes){
+                const opt = document.createElement('option');
+                opt.value = r.id; opt.textContent = r.label || r.id;
+                bRoute.appendChild(opt);
+              }
+            }
 
-    if (st.active){
-      const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
-      bStatus.textContent = "Active";
-      bBtnStart.style.display = "none";
-      bBtnRes.style.display   = "none";       // dopiero przy “Ready”
-      bTimerW.style.display   = "block";
-      if (left > 0){
-        startBuildingTicker(Math.floor(Date.now()/1000) + left);
-      } else {
-        // Serwer mówi “końcówka”, sprawdź gotowość/resolve
-        verifyReadyAndMaybeResolve();
-      }
-    } else {
-      bStatus.textContent = "Idle";
-      bBtnStart.style.display = "inline-block";
-      bBtnRes.style.display   = "none";
-      bTimerW.style.display   = "none";
-      stopBuildingTicker();
-    }
-  }catch(e){
-    console.warn(e); dbg('building/state fail');
-    try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
-  }
-}
+            if (st.active){
+              const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
+              bStatus.textContent = "Active";
+              bBtnStart.style.display = "none";
+              bBtnRes.style.display   = "none";       // dopiero przy “Ready”
+              bTimerW.style.display   = "block";
+              if (left > 0){
+                startBuildingTicker(Math.floor(Date.now()/1000) + left);
+              } else {
+                // Serwer mówi “końcówka”, sprawdź gotowość/resolve
+                verifyReadyAndMaybeResolve();
+              }
+            } else {
+              bStatus.textContent = "Idle";
+              bBtnStart.style.display = "inline-block";
+              bBtnRes.style.display   = "none";
+              bTimerW.style.display   = "none";
+              stopBuildingTicker();
+            }
+          }catch(e){
+            console.warn(e); dbg('building/state fail');
+            try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
+          }
+        }
 
-/* Po zejściu timera: sprawdź stan po stronie serwera i spróbuj zauto-resolvować */
-async function verifyReadyAndMaybeResolve(){
-  bStatus.textContent = "Finalizing…";
-  bBtnRes.style.display = "none";
-  bTimerW.style.display = "none";
+        /* Po zejściu timera: sprawdź stan po stronie serwera i spróbuj zauto-resolvować */
+        async function verifyReadyAndMaybeResolve(){
+          bStatus.textContent = "Finalizing…";
+          bBtnRes.style.display = "none";
+          bTimerW.style.display = "none";
 
-  try{
-    const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
-    if (st.active && (st.timeLeftSec||0) > 0){
-      // run jeszcze trwa wg serwera — wracamy do licznika
-      bStatus.textContent = "Active";
-      bBtnStart.style.display = "none";
-      bBtnRes.style.display   = "none";
-      bTimerW.style.display   = "block";
-      startBuildingTicker(Math.floor(Date.now()/1000) + st.timeLeftSec);
-      return;
-    }
-  }catch(_){ /* zignoruj — spróbujemy resolve po grace */ }
+          try{
+            const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
+            if (st.active && (st.timeLeftSec||0) > 0){
+              // run jeszcze trwa wg serwera — wracamy do licznika
+              bStatus.textContent = "Active";
+              bBtnStart.style.display = "none";
+              bBtnRes.style.display   = "none";
+              bTimerW.style.display   = "block";
+              startBuildingTicker(Math.floor(Date.now()/1000) + st.timeLeftSec);
+              return;
+            }
+          }catch(_){ /* zignoruj — spróbujemy resolve po grace */ }
 
-  if (AUTO_RESOLVE_ON_READY){
-    setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
-  } else {
-    bStatus.textContent = "Ready";
-    bBtnRes.style.display = "inline-block";
-  }
-}
+          if (AUTO_RESOLVE_ON_READY){
+            setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
+          } else {
+            bStatus.textContent = "Ready";
+            bBtnRes.style.display = "inline-block";
+          }
+        }
 
-/* Resolve z cichymi retriami NOT_READY (różne warianty stringów) */
-async function resolveRun(maxRetries=0, silentRetries=false){
-  if (!CURRENT_BID) return false;
+        /* Resolve z cichymi retriami NOT_READY (różne warianty stringów) */
+        async function resolveRun(maxRetries=0, silentRetries=false){
+          if (!CURRENT_BID) return false;
 
-  for (let i=0; i<=maxRetries; i++){
-    try{
-      const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
-      const rw = out?.rewards || {};
-      const lines = [];
-      if (rw.scrap)     lines.push(`+${rw.scrap} scrap`);
-      if (rw.bones)     lines.push(`+${rw.bones} bones`);
-      if (rw.rune_dust) lines.push(`+${rw.rune_dust} dust`);
-      if (rw.fragment)  lines.push(`+1 shard`);
-      try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
-      tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
-      await loadPlayerState();
-      await loadBuildingState();
-      return true;
-    }catch(e){
-      const reason = (e && e.data && e.data.reason) || e?.message || "";
-      const R = String(reason).toUpperCase();
-      const isNotReady = R.includes("NOT_READY");
-      if (isNotReady && i < maxRetries){
-        // cichy retry
-        await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
-        continue;
-      }
-      if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
-      bStatus.textContent = "Ready";
-      bBtnRes.style.display = "inline-block";
-      return false;
-    }
-  }
+          for (let i=0; i<=maxRetries; i++){
+            try{
+              const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
+              const rw = out?.rewards || {};
+              const lines = [];
+              if (rw.scrap)     lines.push(`+${rw.scrap} scrap`);
+              if (rw.bones)     lines.push(`+${rw.bones} bones`);
+              if (rw.rune_dust) lines.push(`+${rw.rune_dust} dust`);
+              if (rw.fragment)  lines.push(`+1 shard`);
+              try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
+              tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
+              await loadPlayerState();
+              await loadBuildingState();
+              return true;
+            }catch(e){
+              const reason = (e && e.data && e.data.reason) || e?.message || "";
+              const R = String(reason).toUpperCase();
+              const isNotReady = R.includes("NOT_READY");
+              if (isNotReady && i < maxRetries){
+                // cichy retry
+                await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
+                continue;
+              }
+              if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
+              bStatus.textContent = "Ready";
+              bBtnRes.style.display = "inline-block";
+              return false;
+            }
+          }
 
-  // po wszystkich retriiach — pokaż ręczny odbiór
-  bStatus.textContent = "Ready";
-  bBtnRes.style.display = "inline-block";
-  return false;
-}
+          // po wszystkich retriiach — pokaż ręczny odbiór
+          bStatus.textContent = "Ready";
+          bBtnRes.style.display = "inline-block";
+          return false;
+        }
 
-bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
+        bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
 
-bBtnStart && bBtnStart.addEventListener("click", async () => {
-  if (!CURRENT_BID) return;
-  try{
-    const route = bRoute && bRoute.value || "";
-    const out = await apiPost("/webapp/building/start", { buildingId: CURRENT_BID, route });
-    if (out && out.endsAt){
-      bStatus.textContent = "Active";
-      bBtnStart.style.display = "none";
-      bBtnRes.style.display   = "none";
-      bTimerW.style.display   = "block";
-      startBuildingTicker(out.endsAt);
-    } else if (out && out.minutes){
-      const ends = Math.floor(Date.now()/1000) + (out.minutes*60);
-      bStatus.textContent = "Active";
-      bBtnStart.style.display = "none";
-      bBtnRes.style.display   = "none";
-      bTimerW.style.display   = "block";
-      startBuildingTicker(ends);
-    }
-  }catch(e){
-    const msg = (e && e.data && e.data.reason) || "Start failed";
-    try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
-  }
-});
+        bBtnStart && bBtnStart.addEventListener("click", async () => {
+          if (!CURRENT_BID) return;
+          try{
+            const route = bRoute && bRoute.value || "";
+            const out = await apiPost("/webapp/building/start", { buildingId: CURRENT_BID, route });
+            if (out && out.endsAt){
+              bStatus.textContent = "Active";
+              bBtnStart.style.display = "none";
+              bBtnRes.style.display   = "none";
+              bTimerW.style.display   = "block";
+              startBuildingTicker(out.endsAt);
+            } else if (out && out.minutes){
+              const ends = Math.floor(Date.now()/1000) + (out.minutes*60);
+              bStatus.textContent = "Active";
+              bBtnStart.style.display = "none";
+              bBtnRes.style.display   = "none";
+              bTimerW.style.display   = "block";
+              startBuildingTicker(ends);
+            }
+          }catch(e){
+            const msg = (e && e.data && e.data.reason) || "Start failed";
+            try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
+          }
+        });
 
-bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
+        bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
+
         /* Open/close map */
         document.querySelector(".btn.map")?.addEventListener("click", () => {
           mapBack.style.display = "flex";
@@ -1069,43 +1107,6 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
           refreshQuests();
         }
 
-        /* Safety layers */
-        function createPathsLayer(root){
-          const layer = document.createElement("div");
-          layer.className = "paths-layer";
-          const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-          svg.setAttribute("id","pathsSVG");
-          svg.setAttribute("viewBox","0 0 1000 562");
-          svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-          layer.appendChild(svg); root.appendChild(layer); return svg;
-        }
-        function createPinsLayer(root){
-          const layer = document.createElement("div");
-          layer.className = "pins"; layer.id = "pins";
-          root.appendChild(layer); return layer;
-        }
-        function resolveLabelCollisions(){
-          const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
-          chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-          for (let i=1;i<chips.length;i++){
-            const prev = chips[i-1].getBoundingClientRect();
-            const cur = chips[i].getBoundingClientRect();
-            const overlap = (prev.bottom + 6) - cur.top;
-            if (overlap > 0) {
-              const current = chips[i].style.transform || "translateX(-50%)";
-              chips[i].style.transform = current + ` translateY(${overlap}px)`;
-            }
-          }
-          const mapRect = mapRoot.getBoundingClientRect();
-          chips.forEach(ch => {
-            const r = ch.getBoundingClientRect();
-            const leftOverflow  = mapRect.left + 8 - r.left;
-            const rightOverflow = r.right - (mapRect.right - 8);
-            if (leftOverflow  > 0) ch.style.marginLeft = (leftOverflow)+"px";
-            if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
-          });
-        }
-
         /* Routing z URL */
         const qs = new URLSearchParams(location.search);
         const sectionParam = (qs.get("section") || "").toLowerCase();
@@ -1139,6 +1140,10 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
             case "pets":
               sendAction("pets_open");
               break;
+            case "fortress": /* <= NOWE: router otwiera Fortress */
+              if (window.Fortress?.open) window.Fortress.open();
+              else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
+              break;
             default:
               break;
           }
@@ -1163,4 +1168,3 @@ bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
   </script>
 </body>
 </html>
-
