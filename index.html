@@ -311,8 +311,8 @@
   <!-- 2) Globalny endpoint API -->
   <script>window.API_BASE = "https://api.alphahusky.win";</script>
 
-  <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu, np. 2025-09-29a) -->
-  <script>window.WEBAPP_VER = "2025-09-30b";</script>
+  <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu) -->
+  <script>window.WEBAPP_VER = "2025-10-05a";</script>
 
   <!-- 2.2) combat.js (kolejność gwarantowana) -->
   <script>
@@ -324,17 +324,17 @@
     })(window.WEBAPP_VER);
   </script>
 
-  <!-- 3) fortress.js ładowany dynamicznie z wersją (cache-busting) -->
+  <!-- 3) fortress.js (po combat.js) -->
   <script>
     (function(v){
       var s = document.createElement('script');
       s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false; // ważne: zachowaj kolejność po combat.js
+      s.async = false; // ważne: po combat.js
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
 
-  <!-- 3.1) dojo.js ładowany dynamicznie (cache-busting) -->
+  <!-- 3.1) dojo.js -->
   <script>
     (function(v){
       var s=document.createElement('script');
@@ -514,7 +514,7 @@
               const current = chips[i].style.transform || "translateX(-50%)";
               chips[i].style.transform = current + ` translateY(${overlap}px)`;
             }
-          }
+            }
           const mapRect = mapRoot.getBoundingClientRect();
           chips.forEach(ch => {
             const r = ch.getBoundingClientRect();
@@ -536,6 +536,8 @@
           regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
           keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
+          /* NOWE: globalny manifest przeciwników Fortress z map.json */
+          window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
           renderMap();
         }
 
@@ -1113,8 +1115,6 @@
         const toastParam   = qs.get("toast");
         if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
 
-        function openBoard(){ document.getElementById("boardBack").style.display = "flex"; }
-
         function showSection(name){
           switch(name){
             case "map":
@@ -1140,7 +1140,7 @@
             case "pets":
               sendAction("pets_open");
               break;
-            case "fortress": /* <= NOWE: router otwiera Fortress */
+            case "fortress": /* router otwiera Fortress */
               if (window.Fortress?.open) window.Fortress.open();
               else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
               break;
