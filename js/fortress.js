@@ -156,18 +156,31 @@
       dodge_base_override: b.dodge_base ?? null
     };
   }
-  function mapBossAsAttacker(b){
-    b = b || {};
-    return {
-      level:        b.level ?? b.lvl ?? 1,
-      strength:     b.power ?? b.attack ?? b.strength ?? b.str ?? 6,
-      agility:      b.agility ?? b.agi ?? 0,
-      intelligence: b.intelligence ?? b.int ?? 0,
-      vitality:     b.vitality ?? b.vit ?? 0,
-      defense:      b.defense ?? b.def ?? 0,
-      luck:         b.luck ?? 0
-    };
-  }
+  // staty atakera bossa (kiedy boss bije gracza) — z aliasami + fallbackiem po poziomie
+function mapBossAsAttacker(b){
+  b = b || {};
+  const lvl = b.level ?? b.lvl ?? 1;
+
+  // łapiemy różne nazwy "ataku"
+  const rawStr =
+    b.power ?? b.attack ?? b.atk ?? b.strength ?? b.str ?? null;
+
+  // jeśli brak liczby → sensowny baseline po poziomie
+  // (6 dla L1, potem +4 na poziom; dopasuj w razie potrzeby)
+  const byLevel = 6 + 4 * Math.max(0, (lvl|0) - 1);
+
+  return {
+    level:        lvl,
+    strength:     (rawStr == null ? byLevel : rawStr),
+    agility:      b.agility ?? b.agi ?? 0,
+    intelligence: b.intelligence ?? b.int ?? 0,
+    vitality:     b.vitality ?? b.vit ?? 0,
+    defense:      b.defense ?? b.def ?? 0,
+    luck:         b.luck ?? 0,
+    // opcjonalnie penetracja pancerza, jeśli backend ją podaje
+    armor_pen:    b.armor_pen ?? b.pen ?? 0,
+  };
+}
 
   async function loadPlayerTotalsFallback(){
     try {
@@ -179,51 +192,67 @@
   }
 
   async function simulateFortressBattle(serverPayload){
-    if (!global.Combat) return null;
+  if (!global.Combat) return null;
 
-    const seed = (serverPayload?.runId || serverPayload?.run_id || Date.now())
-               + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
+  const seed = (serverPayload?.runId || serverPayload?.run_id || Date.now())
+             + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
 
-    global.Combat.init({ seed, feedHook: null, cfg: global.COMBAT_CFG || undefined });
+  global.Combat.init({ seed, feedHook: null, cfg: global.COMBAT_CFG || undefined });
 
-    const playerTotalsRaw = serverPayload?.playerTotals || serverPayload?.player?.totals || await loadPlayerTotalsFallback();
-    const att = mapPlayerTotals(playerTotalsRaw);
-    const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
+  // gracz
+  const playerTotalsRaw = serverPayload?.playerTotals || serverPayload?.player?.totals || await loadPlayerTotalsFallback();
+  const att = mapPlayerTotals(playerTotalsRaw);
+  const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
 
-    const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
-    const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
-    const tgt = mapBossAsTarget(bossRaw);
-    const bHpMax = global.Combat.computeEnemyMaxHp(tgt);
-    tgt.hp = bHpMax;
+  // boss
+  const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
+  const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
+  const tgt = mapBossAsTarget(bossRaw);
+  const bHpMax = global.Combat.computeEnemyMaxHp(tgt);
+  tgt.hp = bHpMax;
 
-    const bossAtt = mapBossAsAttacker(bossRaw);
+  const bossAtt = mapBossAsAttacker(bossRaw);
 
-    const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
-    const steps = [];
-    let pHp = pHpMax, bHp = bHpMax;
+  // pętla rund
+  const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
+  const steps = [];
+  let pHp = pHpMax, bHp = bHpMax;
 
-    for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
-      const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
-      bHp = Math.max(0, bHp - h1.dmg);
-      steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
-      if (bHp <= 0) break;
+  for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
+    // You → Boss
+    const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
+    bHp = Math.max(0, bHp - h1.dmg);
+    steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
+    if (bHp <= 0) break;
 
-      const h2 = global.Combat.rollHit(bossAtt, { defense: att.defense, level: att.level, hp:pHp }, { round:r, actor:'boss' });
-      pHp = Math.max(0, pHp - h2.dmg);
-      steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
-    }
-
-    const winner = (bHp <= 0) ? 'you' : (pHp <= 0 ? 'boss' : 'boss');
-
-    return {
-      mode: 'fortress',
-      level: tgt.level || 1,
-      boss: { name: bossName, hpMax: bHpMax },
-      player: { hpMax: pHpMax },
-      steps,
-      winner
+    // Boss → You (bogatszy target gracza)
+    const youTarget = {
+      defense: att.defense,
+      level:   att.level,
+      hp:      pHp,
+      resist_pct: ((playerTotalsRaw && (playerTotalsRaw.resist_pct ?? playerTotalsRaw.resist)) || 0) | 0,
+      dodge_base_override: null,
     };
+    const h2 = global.Combat.rollHit(bossAtt, youTarget, { round:r, actor:'boss' });
+
+    // mini-debug (opcjonalny)
+    try { S.dbg && S.dbg('BOSS_HIT', { lvl: bossAtt.level, str: bossAtt.strength, def: youTarget.defense, resist: youTarget.resist_pct, dmg: h2.dmg }); } catch(_){}
+
+    pHp = Math.max(0, pHp - h2.dmg);
+    steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
   }
+
+  const winner = (bHp <= 0) ? 'you' : (pHp <= 0 ? 'boss' : 'boss');
+
+  return {
+    mode: 'fortress',
+    level: tgt.level || 1,
+    boss: { name: bossName, hpMax: bHpMax },
+    player: { hpMax: pHpMax },
+    steps,
+    winner
+  };
+}
 
   // ---------- public UI ----------
   function open(){
