@@ -4,7 +4,8 @@
 
   "assets": {
     "icons": "images/map/building",
-    "ui": "images/ui"
+    "ui": "images/ui",
+    "bosses": "images/bosses"
   },
 
   "defaults": {
@@ -38,6 +39,16 @@
       "desc": "Unstable, experimental lands of high risk and higher reward.",
       "unlock": { "type": "free" },
       "lockedReason": null
+    }
+  },
+
+  "fortress": {
+    "enemies": {
+      "atrium_sentinel": { "name": "Atrium Sentinel",  "sprite": "images/bosses/atrium_sentinel.png" },
+      "core_custodian":  { "name": "Core Custodian",   "sprite": "images/bosses/core_custodian.png" },
+      "gleam_warden":    { "name": "Gleam Warden",     "sprite": "images/bosses/gleam_warden.png" },
+      "lunar_myrmidon":  { "name": "Lunar Myrmidon",   "sprite": "images/bosses/lunar_myrmidon.png" },
+      "phase_knight":    { "name": "Phase Knight",     "sprite": "images/bosses/phase_knight.png" }
     }
   },
 
@@ -202,21 +213,21 @@
     },
 
     {
-  "id": "testnet_wastes_dojo",
-  "name": "Testnet Wastes — Dojo",
-  "region": "testnet_wastes",
-  "x": 82,
-  "y": 62,
-  "icon": "images/map/building/testnet_wastes.png",
-  "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
-  "action": "building_enter",
-  "buildingId": "testnet_wastes_dojo",
-  "gameplay": {
-    "type": "dojo",
-    "timerSeconds": 60,
-    "dummy": { "hp": 50000, "def": 12 }
-  },
-  "tags": ["training", "utility", "no-reward"]
+      "id": "testnet_wastes_dojo",
+      "name": "Testnet Wastes — Dojo",
+      "region": "testnet_wastes",
+      "x": 82,
+      "y": 62,
+      "icon": "images/map/building/testnet_wastes.png",
+      "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
+      "action": "building_enter",
+      "buildingId": "testnet_wastes_dojo",
+      "gameplay": {
+        "type": "dojo",
+        "timerSeconds": 60,
+        "dummy": { "hp": 50000, "def": 12 }
+      },
+      "tags": ["training", "utility", "no-reward"]
     }
   ],
 
