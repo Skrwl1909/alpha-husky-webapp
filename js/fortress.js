@@ -379,8 +379,21 @@ function mapBossAsAttacker(b){
       setText('#fx-next', (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—');
 
       // sprite z STATE albo z nazwy
-      const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '';
-      setEnemySprite(spriteRaw || bossName);
+const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '';
+setEnemySprite(spriteRaw || bossName);
+
+// ▼ UI hint: rekomendowany poziom (liczba lub string → liczba)
+const recLvlRaw =
+  (nx && (nx.recommended_player_level ?? nx.recLevel ?? nx.rec_lvl)) ??
+  (st.recommended_player_level ?? st.recLevel ?? null);
+
+const recLvl = Number(recLvlRaw);
+
+if (Number.isFinite(recLvl) && recLvl > 0) {
+  setText('#fx-hint', `Recommended ~L${Math.round(recLvl)} (gear can offset)`);
+} else {
+  setText('#fx-hint', 'Win → next encounter after cooldown; lose → retry same encounter.');
+}
 
       // próby na cooldown (opcjonalne)
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
