@@ -159,29 +159,36 @@
   // staty atakera bossa (kiedy boss bije gracza) — z aliasami + fallbackiem po poziomie
 function mapBossAsAttacker(b){
   b = b || {};
-  const lvl = b.level ?? b.lvl ?? 1;
+  const n = v => (Number.isFinite(+v) ? +v : null);
+  const lvl = n(b.level ?? b.lvl) ?? 1;
 
-  // łapiemy różne nazwy "ataku"
-  const rawStr =
-    b.power ?? b.attack ?? b.atk ?? b.strength ?? b.str ?? null;
+  // czytaj wszystkie możliwe nazwy siły ataku
+  let atk =
+    n(b.atk) ?? n(b.attack) ?? n(b.power) ??
+    n(b.dps) ?? n(b.damage) ?? n(b.strength) ?? n(b.str);
 
-  // jeśli brak liczby → sensowny baseline po poziomie
-  // (6 dla L1, potem +4 na poziom; dopasuj w razie potrzeby)
-  const byLevel = 6 + 4 * Math.max(0, (lvl|0) - 1);
+  // sensowny fallback po poziomie (gdy backend nie poda)
+  if (atk == null) atk = 10 + 8 * (lvl - 1);
+
+  const critChance = n(b.critChance ?? b.crit ?? b.crit_rate) ?? 0;
+  const critMult   = n(b.critMult ?? b.critMultiplier ?? b.crit_multi) ?? 1.5;
+  const pen        = n(b.armorPen ?? b.armor_pen ?? b.pen ?? b.arp) ?? 0;
 
   return {
-    level:        lvl,
-    strength:     (rawStr == null ? byLevel : rawStr),
-    agility:      b.agility ?? b.agi ?? 0,
-    intelligence: b.intelligence ?? b.int ?? 0,
-    vitality:     b.vitality ?? b.vit ?? 0,
-    defense:      b.defense ?? b.def ?? 0,
-    luck:         b.luck ?? 0,
-    // opcjonalnie penetracja pancerza, jeśli backend ją podaje
-    armor_pen:    b.armor_pen ?? b.pen ?? 0,
+    level: lvl,
+    strength: atk,  // zgodność z Combat
+    atk,            // i dla innych ścieżek
+
+    agility:      n(b.agility ?? b.agi) ?? 0,
+    intelligence: n(b.intelligence ?? b.int) ?? 0,
+    vitality:     n(b.vitality ?? b.vit) ?? 0,
+    defense:      n(b.defense ?? b.def) ?? 0,
+    luck:         n(b.luck) ?? 0,
+
+    armor_pen: pen, armorPen: pen,
+    critChance, critMult,
   };
 }
-
   async function loadPlayerTotalsFallback(){
     try {
       const st = await S.apiPost('/webapp/state', {});
