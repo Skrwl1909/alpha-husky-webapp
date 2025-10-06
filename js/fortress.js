@@ -212,10 +212,15 @@ function mapBossAsAttacker(b){
   const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
 
   // boss
-  const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
+   const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
   const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
   const tgt = mapBossAsTarget(bossRaw);
-  const bHpMax = global.Combat.computeEnemyMaxHp(tgt);
+
+  // ⬇️ preferuj hp z payloadu; fallback do formuły
+  let bHpMax = Number(bossRaw.hpMax ?? bossRaw.hp);
+  if (!Number.isFinite(bHpMax) || bHpMax <= 0) {
+    bHpMax = global.Combat.computeEnemyMaxHp(tgt);
+  }
   tgt.hp = bHpMax;
 
   const bossAtt = mapBossAsAttacker(bossRaw);
@@ -234,12 +239,12 @@ function mapBossAsAttacker(b){
 
     // Boss → You (bogatszy target gracza)
     const youTarget = {
-      defense: att.defense,
-      level:   att.level,
-      hp:      pHp,
-      resist_pct: ((playerTotalsRaw && (playerTotalsRaw.resist_pct ?? playerTotalsRaw.resist)) || 0) | 0,
-      dodge_base_override: null,
-    };
+    defense: att.defense,
+    level:   att.level,
+    hp:      pHp,
+    resist_pct: Number((playerTotalsRaw && (playerTotalsRaw.resist_pct ?? playerTotalsRaw.resist)) || 0),
+    dodge_base_override: null,
+  };
     const h2 = global.Combat.rollHit(bossAtt, youTarget, { round:r, actor:'boss' });
 
     // mini-debug (opcjonalny)
