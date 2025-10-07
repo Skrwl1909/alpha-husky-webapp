@@ -81,7 +81,7 @@
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
-      "buildingId": "abandoned_wallets",
+      "buildingId": "abandoned_wallets_vault",
       "gameplay": {
         "loop": "dungeon",
         "rooms": { "min": 3, "max": 6 },
@@ -104,8 +104,8 @@
       "y": 48,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
-      "action": "building_enter",
-      "buildingId": "broken_contracts",
+      "action": "open_quests",
+      "buildingId": "broken_contracts_hub",
       "gameplay": {
         "loop": "puzzle+combat",
         "puzzles": ["pattern", "logic", "route"],
