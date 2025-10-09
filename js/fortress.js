@@ -144,7 +144,7 @@
     b = b || {};
     const n = v => (Number.isFinite(+v) ? +v : null);
     const lvl = n(b.level ?? b.lvl) ?? 1;
-    / NEW: Lookup boss ladder for missing stats
+    // NEW: Lookup boss ladder for missing stats
 if (bossId || b.name) {
   const bossKey = bossId || b.name.toLowerCase().replace(/\s+/g, '_');
   const ladder = global.Combat?.cfg()?.BOSS_LADDER?.[lvl];  // Access from engine
