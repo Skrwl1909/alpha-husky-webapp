@@ -26,6 +26,22 @@
     HP_PLAYER: { BASE: 35, PER_DEF: 4, PER_VIT: 6, PER_LVL: 2, MIN: 30, MAX: 400 },
     HP_ENEMY: { FALLBACK_BASE: 28, FALLBACK_PER_DEF: 5, FALLBACK_PER_LVL: 6 }
   };
+  // Boss ladder dla early-game (L1-10); rozszerz później
+BOSS_LADDER: {
+  1: { hp: 60, strength: 12, def: 2, agi: 0.5 },
+  2: { hp: 75, strength: 16, def: 4, agi: 1 },
+  3: { hp: 100, strength: 22, def: 6, agi: 1.5 },
+  4: { hp: 115, strength: 26, def: 8, agi: 2 },
+  5: { hp: 155, strength: 32, def: 10, agi: 2.5 },
+  6: { hp: 170, strength: 36, def: 12, agi: 3 },
+  7: { hp: 210, strength: 42, def: 14, agi: 3.5 },
+  8: { hp: 225, strength: 46, def: 16, agi: 4 },
+  9: { hp: 265, strength: 52, def: 18, agi: 4.5 },
+  10: { hp: 300, strength: 58, def: 20, agi: 5 }
+},
+// Formuły dla dynamicznego skalowania (jeśli brak tabeli)
+HP_FORMULA: { BASE: 25, PER_LVL: 1, VARIANCE: 0.2, SPIKE_EVERY: 3 },
+DMG_FORMULA: { BASE: 12, PER_LVL: 1, VARIANCE: 0.15 }
   // --- prosty RNG z opcjonalnym seedem (sfc32) ---
   function makeRng(seedStr) {
     if (!seedStr) return Math.random.bind(Math);
@@ -109,12 +125,30 @@
     return clamp(Math.floor(hp), C.MIN, C.MAX);
   }
   function computeEnemyMaxHp(enemy) {
-    const e = normalizeTarget(enemy);
-    if (enemy && typeof enemy.hp === 'number' && enemy.hp > 0) return Math.max(1, Math.floor(enemy.hp));
-    const C = S.cfg.HP_ENEMY;
-    const hp = C.FALLBACK_BASE + e.defense * C.FALLBACK_PER_DEF + (e.level||1) * C.FALLBACK_PER_LVL;
+  const e = normalizeTarget(enemy);
+  if (enemy && typeof enemy.hp === 'number' && enemy.hp > 0) return Math.max(1, Math.floor(enemy.hp));
+  
+  // NEW: Boss ladder lookup/formula
+  const lvl = e.level || 1;
+  const ladder = S.cfg.BOSS_LADDER?.[lvl];
+  if (ladder) {
+    // Use table + variance
+    const baseHp = ladder.hp;
+    const variance = (S.rng() - 0.5) * 2 * (baseHp * S.cfg.HP_FORMULA.VARIANCE);
+    let hp = baseHp + variance + e.defense * 3;  // Dodaj def z target
+    // Apply spike curve
+    if (lvl % S.cfg.HP_FORMULA.SPIKE_EVERY === 0) hp *= 1.05;
     return Math.max(1, Math.floor(hp));
   }
+  
+  // Fallback formula if no table (dla wyższych lvl lub non-boss)
+  const C = S.cfg.HP_FORMULA;
+  const baseHp = C.BASE * lvl;
+  const variance = (S.rng() - 0.5) * 2 * (baseHp * C.VARIANCE);
+  let hp = baseHp + C.PER_LVL * lvl + variance + e.defense * 3;
+  if (lvl % C.SPIKE_EVERY === 0) hp *= 1.05;
+  return Math.max(1, Math.floor(hp));
+}
   // --- Animacje: Tworzenie latającego dmg number ---
   function createDamageNumber(x, y, damage, isCrit = false) {
     if (!S.container) return; // Brak container – pomiń animację
@@ -232,12 +266,25 @@
     return Combat;
   }
   const Combat = {
-    init, rollHit, applyHit, strike,
-    computePlayerMaxHp, computeEnemyMaxHp,
-    cfg: () => ({ ...S.cfg }),
-    // Publiczne dla UI: createDamageNumber, animateTargetShake (jeśli potrzeba poza strike)
-    createDamageNumber,
-    animateTargetShake
-  };
+  init, rollHit, applyHit, strike,
+  computePlayerMaxHp, computeEnemyMaxHp,
+  cfg: () => ({ ...S.cfg }),
+  // NEW: Dla fortress.js – oblicz boss strength z formuły
+  computeBossStrength: (lvl) => {
+    const ladder = S.cfg.BOSS_LADDER?.[lvl];
+    if (ladder) {
+      const base = ladder.strength;
+      const C = S.cfg.DMG_FORMULA;
+      return base + (S.rng() - 0.5) * 2 * (base * C.VARIANCE);
+    }
+    // Fallback
+    const C = S.cfg.DMG_FORMULA;
+    const base = C.BASE * lvl + C.PER_LVL * lvl;
+    return base + (S.rng() - 0.5) * 2 * (base * C.VARIANCE);
+  },
+  // Publiczne dla UI: ...
+  createDamageNumber,
+  animateTargetShake
+};
   global.Combat = Combat;
 })(window);
