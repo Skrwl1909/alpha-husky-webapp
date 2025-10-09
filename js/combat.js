@@ -26,16 +26,6 @@
     HP_PLAYER: { BASE: 35, PER_DEF: 4, PER_VIT: 6, PER_LVL: 2, MIN: 30, MAX: 400 },
     HP_ENEMY: { FALLBACK_BASE: 28, FALLBACK_PER_DEF: 5, FALLBACK_PER_LVL: 6 }
   };
-  // Add to CFG_DEF:
-BOSS_LADDER: {  // Early-game table (L1-10); extend later
-  1: { hp: 60, strength: 12, def: 2, agi: 0.5 },  // Avg values; formulas derive from these
-  2: { hp: 75, strength: 16, def: 4, agi: 1 },
-  3: { hp: 100, strength: 22, def: 6, agi: 1.5 },
-  // ... up to 10: { hp: 300, strength: 58, def: 20, agi: 5 }
-  // Full table from above balancing.
-},
-HP_FORMULA: { BASE: 25, PER_LVL: 1, VARIANCE: 0.2, SPIKE_EVERY: 3 },  // For dynamic calc if no table hit
-DMG_FORMULA: { BASE: 12, PER_LVL: 1, VARIANCE: 0.15 }
   // --- prosty RNG z opcjonalnym seedem (sfc32) ---
   function makeRng(seedStr) {
     if (!seedStr) return Math.random.bind(Math);
@@ -119,29 +109,11 @@ DMG_FORMULA: { BASE: 12, PER_LVL: 1, VARIANCE: 0.15 }
     return clamp(Math.floor(hp), C.MIN, C.MAX);
   }
   function computeEnemyMaxHp(enemy) {
-  const e = normalizeTarget(enemy);
-  if (enemy && typeof enemy.hp === 'number' && enemy.hp > 0) return Math.max(1, Math.floor(enemy.hp));
-  
-  // NEW: Boss ladder lookup/formula
-  const lvl = e.level || 1;
-  const ladder = S.cfg.BOSS_LADDER?.[lvl];
-  if (ladder) {
-    // Use table + variance
-    const baseHp = ladder.hp;
-    const variance = (S.rng() - 0.5) * 2 * (baseHp * S.cfg.HP_FORMULA.VARIANCE);
-    let hp = baseHp + variance;
-    // Apply spike curve
-    if (lvl % S.cfg.HP_FORMULA.SPIKE_EVERY === 0) hp *= 1.05;
+    const e = normalizeTarget(enemy);
+    if (enemy && typeof enemy.hp === 'number' && enemy.hp > 0) return Math.max(1, Math.floor(enemy.hp));
+    const C = S.cfg.HP_ENEMY;
+    const hp = C.FALLBACK_BASE + e.defense * C.FALLBACK_PER_DEF + (e.level||1) * C.FALLBACK_PER_LVL;
     return Math.max(1, Math.floor(hp));
-  }
-  
-  // Fallback formula if no table
-  const C = S.cfg.HP_FORMULA;
-  const baseHp = C.BASE * lvl;
-  const variance = (S.rng() - 0.5) * 2 * (baseHp * C.VARIANCE);
-  let hp = baseHp + C.PER_LVL * lvl + variance + e.defense * 3;
-  if (lvl % C.SPIKE_EVERY === 0) hp *= 1.05;
-  return Math.max(1, Math.floor(hp));
   }
   // --- Animacje: Tworzenie latającego dmg number ---
   function createDamageNumber(x, y, damage, isCrit = false) {
