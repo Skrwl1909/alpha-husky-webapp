@@ -75,6 +75,61 @@
   background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));overflow:hidden}
 #fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
   filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
+/* --- Animacje UI w walce --- */
+@keyframes damageFloat {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; translateY(-30px) scale(1.2); }
+}
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-1px, 1px); }
+}
+@keyframes hitFlash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) saturate(1.2); }
+}
+@keyframes critBurst {
+  0% { opacity: 1; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+.damage-number {
+  position: absolute;
+  font-weight: bold;
+  font-size: 18px;
+  color: #ffcc00;
+  pointer-events: none;
+  z-index: 10;
+  animation: damageFloat 800ms ease-out forwards;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+.damage-number.crit-damage {
+  color: #ff4444;
+  font-size: 20px;
+  animation: damageFloat 1000ms ease-out forwards;
+}
+.damage-number.crit-damage::after {
+  content: ' CRIT!';
+  color: #ffff00;
+}
+.attack-shake {
+  animation: screenShake 200ms ease-in-out;
+}
+.hit-impact {
+  animation: hitFlash 300ms ease-out;
+}
+.particle-burst {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #ffff00;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  animation: critBurst 600ms ease-out forwards;
+}
 @media (max-width:480px){
   .fx-title{font-size:15px}
   .fx-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(12,14,18,.96) 30%);padding-bottom:6px}
@@ -145,19 +200,20 @@
     const n = v => (Number.isFinite(+v) ? +v : null);
     const lvl = n(b.level ?? b.lvl) ?? 1;
     // NEW: Lookup boss ladder for missing stats
-if (bossId || b.name) {
-  const bossKey = bossId || b.name.toLowerCase().replace(/\s+/g, '_');
-  const ladder = global.Combat?.cfg()?.BOSS_LADDER?.[lvl];  // Access from engine
-  if (ladder) {
-    atk = atk ?? ladder.strength;
-    // Apply dmg formula + variance if needed
-    if (!atk) {
-      const C = global.Combat?.cfg()?.DMG_FORMULA;
-      atk = C.BASE * lvl + C.PER_LVL * lvl;
-      atk += (S.rng ? S.rng() - 0.5 * 2 * (atk * C.VARIANCE) : 0);  // Reuse engine RNG if avail
+    if (bossId || b.name) {
+      const bossKey = bossId || b.name.toLowerCase().replace(/\s+/g, '_');
+      const ladder = global.Combat?.cfg()?.BOSS_LADDER?.[lvl]; // Access from engine
+      if (ladder) {
+        let atk = n(b.atk) ?? n(b.strength) ?? n(b.str);  // Inicjalizuj atk tutaj
+        atk = atk ?? ladder.strength;
+        // Apply dmg formula + variance if needed
+        if (!atk) {
+          const C = global.Combat?.cfg()?.DMG_FORMULA;
+          atk = C.BASE * lvl + C.PER_LVL * lvl;
+          atk += (global.Combat?.rng ? global.Combat.rng() - 0.5 * 2 * (atk * C.VARIANCE) : 0); // Reuse engine RNG
+        }
+      }
     }
-  }
-}
     // Priorytet: power z payload lub map.json (lookup po ID/nazwie)
     let atk =
       n(b.power) ?? // z encounters/map.json
@@ -215,10 +271,10 @@ if (bossId || b.name) {
     tgt.hp = bHpMax;
     const bossAtt = mapBossAsAttacker(bossRaw, bossId);
     // NEW: Ensure HP uses formula if zero
-if (bHpMax <= 0) {
-  tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId });  // Triggers ladder
-  bHpMax = tgt.hp;
-}
+    if (bHpMax <= 0) {
+      tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId }); // Triggers ladder
+      bHpMax = tgt.hp;
+    }
     // Debug: Log stats bossa
     console.log('BOSS STATS:', { name: bossName, lvl: bossAtt.level, strength: bossAtt.strength, power: bossRaw.power, pen: bossAtt.intelligence * 0.01 });
     // pętla rund
@@ -508,6 +564,8 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     const mask = el('div','mask'); mask.id='fb-mask';
     card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
     document.body.appendChild(wrap);
+    // Ustaw container dla animacji combat (relatywnie do card)
+    global.Combat.container = card;
     // ukryj MainButton również w widoku walki
     try { S.tg?.MainButton?.hide?.(); } catch(_){}
     wrap.addEventListener('click', (e) => {
@@ -526,6 +584,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     });
     const logEl = $('#fb-log', cont);
     const boardEl = $('#fb-board', cont);
+    const portrait = cont.querySelector('.fx-portrait img') || boardEl;  // Fallback na board jeśli brak portrait w battle view
     let pHp = data.player?.hpMax ?? 0, bHp = data.boss?.hpMax ?? 0, i=0;
     function step(){
       if (i >= (data.steps?.length||0)){
@@ -542,6 +601,8 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         return;
       }
       const s = data.steps[i++];
+      let targetEl = portrait;  // Domyślnie boss portrait
+      if (s.actor === 'boss') targetEl = boardEl;  // Dla ataku bossa – shake na board (gracz)
       if (s.actor==='you'){
         bHp = s.b_hp;
         const youTxt = s.dodge
@@ -559,6 +620,21 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 `YOU [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
 BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
       logEl.scrollTop = logEl.scrollHeight;
+      // Animacje UI
+      if (s.dmg > 0) {
+        const rect = targetEl.getBoundingClientRect();
+        const containerRect = card.getBoundingClientRect();
+        global.Combat.createDamageNumber(
+          rect.left - containerRect.left + rect.width / 2,
+          rect.top - containerRect.top + rect.height / 2,
+          s.dmg,
+          s.crit
+        );
+      }
+      if (targetEl) {
+        targetEl.classList.add('attack-shake', 'hit-impact');
+        setTimeout(() => targetEl.classList.remove('attack-shake', 'hit-impact'), 300);
+      }
       setTimeout(step, 500);
     }
     setTimeout(step, 350);
