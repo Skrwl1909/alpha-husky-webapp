@@ -144,6 +144,20 @@
     b = b || {};
     const n = v => (Number.isFinite(+v) ? +v : null);
     const lvl = n(b.level ?? b.lvl) ?? 1;
+    / NEW: Lookup boss ladder for missing stats
+if (bossId || b.name) {
+  const bossKey = bossId || b.name.toLowerCase().replace(/\s+/g, '_');
+  const ladder = global.Combat?.cfg()?.BOSS_LADDER?.[lvl];  // Access from engine
+  if (ladder) {
+    atk = atk ?? ladder.strength;
+    // Apply dmg formula + variance if needed
+    if (!atk) {
+      const C = global.Combat?.cfg()?.DMG_FORMULA;
+      atk = C.BASE * lvl + C.PER_LVL * lvl;
+      atk += (S.rng ? S.rng() - 0.5 * 2 * (atk * C.VARIANCE) : 0);  // Reuse engine RNG if avail
+    }
+  }
+}
     // Priorytet: power z payload lub map.json (lookup po ID/nazwie)
     let atk =
       n(b.power) ?? // z encounters/map.json
@@ -199,7 +213,12 @@
       bHpMax = global.Combat.computeEnemyMaxHp(tgt);
     }
     tgt.hp = bHpMax;
-    const bossAtt = mapBossAsAttacker(bossRaw, bossId); // przekaż bossId dla lookup power
+    const bossAtt = mapBossAsAttacker(bossRaw, bossId);
+    // NEW: Ensure HP uses formula if zero
+if (bHpMax <= 0) {
+  tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId });  // Triggers ladder
+  bHpMax = tgt.hp;
+}
     // Debug: Log stats bossa
     console.log('BOSS STATS:', { name: bossName, lvl: bossAtt.level, strength: bossAtt.strength, power: bossRaw.power, pen: bossAtt.intelligence * 0.01 });
     // pętla rund
