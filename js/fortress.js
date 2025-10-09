@@ -78,7 +78,7 @@
 /* --- Animacje UI w walce --- */
 @keyframes damageFloat {
   0% { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; translateY(-30px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1.2); }
 }
 @keyframes screenShake {
   0%, 100% { transform: translate(0, 0); }
