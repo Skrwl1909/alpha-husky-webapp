@@ -191,6 +191,45 @@
       animation: hit-impact 0.4s ease-out;
     }
   </style>
+  <!-- ⬇⬇⬇ NOWY BLOK: Mission Board (inline CSS) — wstawiony bezpośrednio po Twoim <style> ⬆⬆⬆ -->
+  <style id="quests-css">
+    /* --- Mission Board modal & cards --- */
+    .q-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
+    .q-modal-body{background:#0b0f14;border:1px solid #243244;border-radius:14px;width:min(720px,92vw);max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:16px}
+    .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .q-title{margin:0;font-size:18px}
+    .q-head-actions{display:flex;gap:6px}
+    .q-btn{border:1px solid #2a3b4d;background:#14202c;color:#d9e3ec;border-radius:10px;padding:6px 10px;cursor:pointer}
+    .q-btn:hover{filter:brightness(1.1)}
+    .q-btn-ghost{background:transparent;border-color:#2a3b4d}
+    .q-btn-acc{background:#1e2937;border-color:#3a516a}
+    .q-status{font-size:12px;opacity:.9;margin:0 2px 10px 2px}
+    .q-loader,.q-empty{padding:16px;opacity:.85}
+    .q-filters{display:flex;gap:6px;margin:6px 2px 10px 2px}
+    .q-tab{border:1px solid #243244;background:#0f1620;color:#d7e0ea;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
+    .q-tab--on{background:#172433}
+    .quest-board{display:grid;grid-template-columns:1fr;gap:10px}
+    @media (min-width:720px){.quest-board{grid-template-columns:1fr 1fr}}
+    .quest{border:1px solid #243244;border-radius:12px;padding:10px;background:#0e141b}
+    .q-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .q-name{font-weight:600}
+    .q-type{opacity:.7;font-size:12px;margin-left:6px}
+    .q-head-right{display:flex;gap:8px;align-items:center}
+    .q-step{font-size:12px;opacity:.8}
+    .q-done{font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;padding:2px 6px;border-radius:999px}
+    .q-reqs{display:flex;flex-direction:column;gap:8px}
+    .q-row-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:4px}
+    .q-req-name{opacity:.9}
+    .q-req-val{opacity:.7}
+    .q-bar{height:6px;border-radius:999px;background:#16202a;overflow:hidden}
+    .q-bar-fill{height:100%;background:#2b8bd9}
+    .q-rew{margin-top:8px}
+    .q-badge{display:inline-block;border:1px solid #2a3b4d;border-radius:999px;padding:2px 8px;margin:2px;font-size:11px;opacity:.95}
+    .q-actions{margin-top:10px;display:flex;gap:8px}
+    /* --- Floating launcher (📜) --- */
+    #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
+  </style>
 </head>
 <body>
   <div id="dbg">init…</div>
@@ -483,6 +522,10 @@
           if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
           return data;
         }
+        /* ⬇⬇⬇ NOWE: udostępnij apiPost do użytku przez quests.js */
+        window.S = window.S || {};
+        window.S.apiPost = apiPost;
+        
         // >>> INIT helpers (fortress + dojo) <<<
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
@@ -646,7 +689,8 @@
             btn.addEventListener('click', () => {
               createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
               if (!unlocked) return openLocked(b);
-              if (b.action === 'open_quests') return openQuests();
+             /* ⬇⬇⬇ ZMIANA: najpierw Mission Board, fallback do starego daily-quests */
+              if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
               /* SPECJALNE SKRĘTY */
               if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
                 return window.Fortress.open();
@@ -1115,8 +1159,12 @@
       start();
     }
   </script>
+<!-- ⬇⬇⬇ NOWE: skrypty Mission Board — DODAJEMY NA SAMYM KOŃCU PRZED </body> -->
+  <script src="/js/quests.js?v=20251010"></script>
+  <script src="/js/quests-launcher.js?v=20251010"></script>
 </body>
 </html>
+
 
 
 
