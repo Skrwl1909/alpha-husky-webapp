@@ -1,206 +1,359 @@
 // public/js/quests.js
 (function (global) {
-  // ---- utils ---------------------------------------------------------------
+  // ===== Utils =====
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const esc = (s) => String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  const byId = (id) => document.getElementById(id);
+  const noop = () => {};
 
-  async function post(path, payload) {
-    // zgodne z Twoim S.apiPost; fallback na fetch gdyby nie było S
-    const res = await (global.S && global.S.apiPost ? global.S.apiPost(path, payload || {}) : fetch(path, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload || {})
-    }).then(r=>r.json()));
-    return (res && res.data) ? res.data : res;
+  // Percent by summing all required keys (caps progress at requirement)
+  function progressPct(item) {
+    const req = item.required || item.req || {};
+    const prg = item.progress || {};
+    const keys = Object.keys(req);
+    if (!keys.length) return 0;
+    let need = 0, have = 0;
+    for (const k of keys) {
+      const n = Number(req[k] || 0);
+      const h = Math.min(Number(prg[k] || 0), n);
+      need += n; have += h;
+    }
+    return Math.max(0, Math.min(100, Math.round(100 * have / Math.max(1, need))));
   }
 
+  // Badge label for quest type
+  function typeLabel(t) {
+    if (t === "chain" || t === "story") return "Story";
+    if (t === "daily") return "Daily";
+    if (t === "repeatable") return "Repeatable";
+    if (t === "bounty") return "Bounty";
+    return String(t || "Quest");
+  }
+
+  // ===== API layer =====
   const endpoints = {
-    list:  "/webapp/quests",
-    action: "/webapp/quests/action",       // preferowane
-    accept_legacy: "/webapp/quest/accept", // fallback
+    list: "/webapp/quests",
+    accept: "/webapp/quest/accept",
+    complete: "/webapp/quest/complete",
   };
 
-  // ---- API -----------------------------------------------------------------
-  async function fetchQuests() {
-    const data = await post(endpoints.list, {});
-    if (!data || data.ok === false) throw new Error(data?.reason || "Failed to fetch quests");
+  async function apiPost(path, payload) {
+    // prefer S.apiPost z index.html
+    if (global.S && typeof global.S.apiPost === "function") {
+      return await global.S.apiPost(path, payload || {});
+    }
+    // twardy fallback
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
     return data;
   }
-  async function acceptQuest(id) {
-    let data = await post(endpoints.action, { action:"accept", questId:id });
-    if (!data || data.ok === false) {
-      data = await post(endpoints.accept_legacy, { id });
-    }
-    if (!data || data.ok === false) throw new Error(data?.reason || data?.msg || "Failed to accept quest");
-    return data;
+
+  async function fetchBoard() {
+    const out = await apiPost(endpoints.list, {});
+    // obsługa formatu { ok, data } i „gołego” payloadu
+    if (out && out.ok === false) throw new Error(out.error || out.reason || "Failed to fetch quests");
+    return out.data || out;
   }
 
-  // ---- UI (modal) ----------------------------------------------------------
-  function ensureModal() {
-    let wrap = byId("quests-modal");
-    if (wrap) return wrap;
-    wrap = document.createElement("div");
-    wrap.id = "quests-modal";
-    wrap.className = "q-modal";
-    wrap.innerHTML = `
-      <div class="q-modal-body">
-        <div class="q-modal-head">
-          <h2 class="q-title">Mission Board</h2>
-          <div class="q-head-actions">
-            <button id="q-refresh" type="button" class="q-btn q-btn-ghost" aria-label="refresh">↻</button>
-            <button id="q-close" type="button" class="q-btn q-btn-ghost" aria-label="close">×</button>
-          </div>
-        </div>
-        <div id="q-status" class="q-status"></div>
-        <div class="q-filters" id="q-filters" hidden>
-          <button class="q-tab q-tab--on" data-f="all">All</button>
-          <button class="q-tab" data-f="daily">Daily</button>
-          <button class="q-tab" data-f="repeatable">Repeatable</button>
-          <button class="q-tab" data-f="chain">Story</button>
-        </div>
-        <div id="quest-board" class="quest-board"></div>
-      </div>`;
-    document.body.appendChild(wrap);
-    byId("q-close").onclick = () => { wrap.remove(); };
-    byId("q-refresh").onclick = () => { Quests.fetch(); };
-    return wrap;
+  async function acceptQuest(quest_id) {
+    const out = await apiPost(endpoints.accept, { quest_id });
+    if (!out || out.ok === false) throw new Error(out.error || out.reason || "Accept failed");
+    return out.data || out;
   }
 
-  function reqProgressRows(q) {
-    const rows = [];
-    const req = q.req || {};
-    const prog = q.progress || {};
-    for (const k of Object.keys(req)) {
-      const need = Number(req[k] || 0);
-      const have = Number(prog[k] || 0);
-      const pct = need > 0 ? Math.min(100, Math.floor((have/need)*100)) : 0;
-      rows.push(`
-        <div class="q-row">
-          <div class="q-row-top">
-            <span class="q-req-name">${esc(k)}</span>
-            <span class="q-req-val">${have}/${need}</span>
-          </div>
-          <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
-        </div>
-      `);
-    }
-    return rows.join("");
+  async function completeQuest(quest_id) {
+    const out = await apiPost(endpoints.complete, { quest_id });
+    if (!out || out.ok === false) throw new Error(out.error || out.reason || "Claim failed");
+    return out.data || out;
   }
 
-  function rewardBadgeList(reward) {
+  // ===== Rendering =====
+  const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
+  const TABS = ["all", "daily", "repeatable", "story", "bounties"];
+
+  function mergeBoard(board) {
+    const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
+    // mapuj done -> cooldown
+    return [
+      ...add(board.ready, "ready"),
+      ...add(board.accepted, "accepted"),
+      ...add(board.available, "available"),
+      ...add(board.done, "cooldown"),
+    ];
+  }
+
+  function matchTab(item, tab) {
+    if (tab === "all") return true;
+    if (tab === "daily") return item.type === "daily";
+    if (tab === "repeatable") return item.type === "repeatable";
+    if (tab === "story") return (item.type === "chain" || item.type === "story");
+    if (tab === "bounties") return item.type === "bounty";
+    return true;
+  }
+
+  function matchFilter(item, filter) {
+    if (filter === "any") return true;
+    return item.status === filter;
+  }
+
+  function sortItems(items) {
+    return items.sort((a, b) => {
+      const o = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+      if (o !== 0) return o;
+      return (a.title || a.name || a.id).localeCompare(b.title || b.name || b.id);
+    });
+  }
+
+  function rewardBadges(rew) {
     const items = [];
-    for (const [k,v] of Object.entries(reward || {})) {
+    for (const [k, v] of Object.entries(rew || {})) {
       items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
     }
     return items.join(" ");
   }
 
-  function isQuestDone(q) {
-    const req = q.req || {};
-    const prog = q.progress || {};
-    for (const [k,v] of Object.entries(req)) {
-      if ((prog[k] || 0) < v) return false;
-    }
-    return Object.keys(req).length > 0;
+  function cooldownText(iso) {
+    if (!iso) return "Today";
+    const end = new Date(iso).getTime();
+    const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+    if (left <= 0) return "Soon";
+    const h = Math.floor(left / 3600);
+    const m = Math.floor((left % 3600) / 60);
+    const s = left % 60;
+    return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
   }
 
-  function card(q) {
-    const done = isQuestDone(q);
-    const acceptBtn = (q.type === "repeatable")
-      ? `<button class="q-btn q-btn-acc" data-accept="${esc(q.id)}">Accept</button>`
-      : "";
-    const stepInfo = (q.steps && typeof q.step !== "undefined")
-      ? `<span class="q-step">Step ${Number(q.step)+1}/${Number(q.steps)}</span>`
-      : "";
-    const doneTag = done ? `<span class="q-done">Complete</span>` : "";
+  function makeCard(q, actions) {
+    const pct = progressPct(q);
+    const title = esc(q.title || q.name || q.id);
+    const type = esc(typeLabel(q.type));
+    const status = esc(q.status);
 
-    return `
-      <div class="quest" data-type="${esc(q.type)}">
-        <div class="q-head">
-          <div class="q-name">${esc(q.name)} <span class="q-type">(${esc(q.type)})</span></div>
-          <div class="q-head-right">
-            ${stepInfo}
-            ${doneTag}
-          </div>
+    const card = document.createElement("div");
+    card.className = "quest";
+    card.setAttribute("data-type", q.type || "");
+    card.setAttribute("data-status", q.status || "");
+
+    card.innerHTML = `
+      <div class="q-head">
+        <div class="q-name">${title} <span class="q-type">(${type})</span></div>
+        <div class="q-head-right">
+          ${q.step != null && q.steps ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>` : ""}
+          <span class="q-badge">${status}</span>
         </div>
-        <div class="q-reqs">${reqProgressRows(q)}</div>
-        <div class="q-rew">${rewardBadgeList(q.reward)}</div>
-        <div class="q-actions">${acceptBtn}</div>
       </div>
+
+      <div class="q-reqs">
+        <div class="q-row-top">
+          <span class="q-req-name">Progress</span>
+          <span class="q-req-val">${pct}%</span>
+        </div>
+        <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+
+      <div class="q-rew">${rewardBadges(q.reward)}</div>
+      <div class="q-actions"></div>
     `;
+
+    const act = $(".q-actions", card);
+
+    if (q.status === "available") {
+      const b = document.createElement("button");
+      b.className = "q-btn q-btn-acc";
+      b.textContent = "Accept";
+      b.onclick = () => actions.accept(q.id, b);
+      act.appendChild(b);
+    } else if (q.status === "ready") {
+      const b = document.createElement("button");
+      b.className = "q-btn";
+      b.textContent = "Claim";
+      b.onclick = () => actions.claim(q.id, b);
+      act.appendChild(b);
+    } else if (q.status === "cooldown") {
+      const span = document.createElement("span");
+      span.className = "q-badge";
+      span.title = q.cooldown_end ? new Date(q.cooldown_end).toLocaleString() : "Next reset";
+      span.textContent = "Cooldown " + cooldownText(q.cooldown_end);
+      act.appendChild(span);
+    }
+    return card;
   }
 
-  function bindCardEvents(root) {
-    root.querySelectorAll("[data-accept]").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-accept");
-        btn.disabled = true;
-        setStatus("Accepting quest…");
-        try {
-          await acceptQuest(id);
-          await Quests.fetch();
-          setStatus("Accepted ✔");
-        } catch (e) {
-          console.error(e);
-          setStatus("Failed to accept quest.");
-          btn.disabled = false;
-        }
-      });
+  // ===== Controller =====
+  const state = {
+    tab: "all",
+    filter: "any",
+    board: null,
+    el: {
+      back: null,
+      list: null,
+      tabs: null,
+      chips: null,
+      status: null,
+      refresh: null,
+    },
+    tg: null,
+    debug: noop,
+  };
+
+  function setStatus(msg) {
+    if (!state.el.status) return;
+    state.el.status.textContent = msg || "";
+    if (!msg) return;
+    clearTimeout(state.el.status._t);
+    state.el.status._t = setTimeout(() => { state.el.status.textContent = ""; }, 1800);
+  }
+
+  function toast(msg) {
+    try {
+      if (state.tg?.showPopup) { state.tg.showPopup({ message: msg }); return; }
+      if (state.tg?.showAlert) { state.tg.showAlert(msg); return; }
+    } catch (_) {}
+    console.log("[Quests]", msg);
+  }
+
+  function renderCounters(board) {
+    const items = mergeBoard(board);
+    const countReady = (tab) => items.filter(x => matchTab(x, tab) && x.status === "ready").length;
+    TABS.forEach(tab => {
+      const el = document.querySelector(`[data-count="${tab}"]`);
+      if (el) el.textContent = String(countReady(tab));
     });
   }
 
-  function setStatus(s, kind) {
-    const el = byId("q-status");
-    if (!el) return;
-    el.textContent = s || "";
-    el.className = `q-status ${kind || ""}`;
-    if (s) {
-      clearTimeout(el._t);
-      el._t = setTimeout(()=>{ el.textContent = ""; }, 2000);
+  function renderList() {
+    if (!state.el.list || !state.board) return;
+    const items = sortItems(
+      mergeBoard(state.board).filter(x => matchTab(x, state.tab) && matchFilter(x, state.filter))
+    );
+
+    state.el.list.innerHTML = "";
+    if (!items.length) {
+      state.el.list.innerHTML = `<div class="q-empty">No quests here yet.</div>`;
+      return;
+    }
+
+    const actions = {
+      accept: async (id, btn) => {
+        try {
+          btn.disabled = true;
+          setStatus("Accepting…");
+          const data = await acceptQuest(id);
+          state.board = data || state.board;
+          renderCounters(state.board);
+          renderList();
+          toast("Accepted");
+        } catch (e) {
+          state.debug(e);
+          toast(e?.message || "Accept failed");
+          btn.disabled = false;
+        } finally { setStatus(""); }
+      },
+      claim: async (id, btn) => {
+        try {
+          btn.disabled = true;
+          setStatus("Claiming…");
+          const data = await completeQuest(id);
+          state.board = data || state.board;
+          renderCounters(state.board);
+          renderList();
+          toast("Reward claimed");
+        } catch (e) {
+          state.debug(e);
+          toast(e?.message || "Claim failed");
+          btn.disabled = false;
+        } finally { setStatus(""); }
+      }
+    };
+
+    const frag = document.createDocumentFragment();
+    for (const q of items) frag.appendChild(makeCard(q, actions));
+    state.el.list.appendChild(frag);
+  }
+
+  async function refresh() {
+    if (!state.el.status) return;
+    setStatus("Loading…");
+    try {
+      const board = await fetchBoard();
+      state.board = board;
+      renderCounters(board);
+      renderList();
+      setStatus("");
+    } catch (e) {
+      state.debug(e);
+      setStatus("Failed to load");
+      if (state.el.list) state.el.list.innerHTML = `<div class="q-empty">Failed to load quests.</div>`;
     }
   }
 
-  function bindFilters() {
-    const filters = byId("q-filters");
-    if (!filters) return;
-    filters.hidden = false;
-    filters.addEventListener("click", (e) => {
+  function wireUI() {
+    // Tabs
+    state.el.tabs?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
-      if (!b) return;
-      filters.querySelectorAll(".q-tab").forEach(x=>x.classList.remove("q-tab--on"));
-      b.classList.add("q-tab--on");
-      const f = b.getAttribute("data-f");
-      const cards = document.querySelectorAll(".quest-board .quest");
-      cards.forEach(c => {
-        const t = c.getAttribute("data-type");
-        c.style.display = (f === "all" || t === f) ? "" : "none";
-      });
+      if (!b || !b.dataset.tab) return;
+      $$(".q-tab", state.el.tabs).forEach(x => x.classList.toggle("q-tab--on", x === b));
+      state.tab = b.dataset.tab;
+      renderList();
+    });
+
+    // Chips (state filter)
+    state.el.chips?.addEventListener("click", (e) => {
+      const b = e.target.closest(".q-tab");
+      if (!b || !b.dataset.state) return;
+      $$(".q-tab", state.el.chips).forEach(x => x.classList.toggle("q-tab--on", x === b));
+      state.filter = b.dataset.state;
+      renderList();
+    });
+
+    // Refresh
+    state.el.refresh && (state.el.refresh.onclick = () => refresh());
+
+    // ESC to close
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && state.el.back && state.el.back.style.display === "flex") {
+        state.el.back.style.display = "none";
+      }
     });
   }
 
-  // ---- public API ----------------------------------------------------------
+  // ===== Public API =====
   const Quests = {
-    async open() {
-      ensureModal();
-      await this.fetch();
-      bindFilters();
-    },
-    async fetch() {
-      const board = byId("quest-board") || ensureModal().querySelector("#quest-board");
-      board.innerHTML = `<div class="q-loader">Loading quests…</div>`;
-      try {
-        const data = await fetchQuests();
-        const list = data.active || [];
-        if (data.warning === "QUESTS_MODULE_MISSING") setStatus("Quests module not found on server.", "warn");
-        if (!list.length) { board.innerHTML = `<div class="q-empty">No quests available right now.</div>`; return; }
-        board.innerHTML = list.map(card).join("");
-        bindCardEvents(board);
-      } catch (e) {
-        console.error(e);
-        board.innerHTML = `<div class="q-empty">Failed to load quests.</div>`;
+    init({ apiPost: extApiPost, tg, dbg } = {}) {
+      // pozwól nadpisać transport (z index.js już przekazujemy)
+      if (extApiPost) {
+        // podmieniamy nasz apiPost przez referencję
+        // (zachowujemy fallbacki gdyby ktoś otworzył poza TG)
+        global.S = global.S || {};
+        global.S.apiPost = extApiPost;
       }
+      state.tg = tg || null;
+      state.debug = typeof dbg === "function" ? dbg : noop;
+
+      state.el.back = $("#qBack");
+      state.el.list = $("#qList");
+      state.el.tabs = $("#qTabs");
+      state.el.chips = $("#qState");
+      state.el.status = $("#qStatus");
+      state.el.refresh = $("#qRefresh") || $("#q-refresh");
+
+      wireUI();
+    },
+
+    async open() {
+      // Bind elements if init wasn't called (defensive)
+      if (!state.el.back) {
+        this.init({ apiPost: global.S?.apiPost, tg: global.Telegram?.WebApp, dbg: global.dbg || noop });
+      }
+      if (state.el.back) state.el.back.style.display = "flex";
+      await refresh();
     }
   };
 
