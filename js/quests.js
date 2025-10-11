@@ -8,7 +8,17 @@
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const noop = () => {};
 
-  // Percent by summing all required keys (caps progress at requirement)
+  function isComplete(q) {
+    const req = q.req || q.required || {};
+    const prg = q.progress || {};
+    const keys = Object.keys(req);
+    if (!keys.length) return false;
+    for (const k of keys) {
+      if (Number(prg[k] || 0) < Number(req[k] || 0)) return false;
+    }
+    return true;
+  }
+
   function progressPct(item) {
     const req = item.required || item.req || {};
     const prg = item.progress || {};
@@ -23,7 +33,6 @@
     return Math.max(0, Math.min(100, Math.round(100 * have / Math.max(1, need))));
   }
 
-  // Badge label for quest type
   function typeLabel(t) {
     if (t === "chain" || t === "story") return "Story";
     if (t === "daily") return "Daily";
@@ -32,7 +41,7 @@
     return String(t || "Quest");
   }
 
-  // ===== API layer =====
+  // ===== API =====
   const endpoints = {
     list: "/webapp/quests",
     accept: "/webapp/quest/accept",
@@ -40,11 +49,9 @@
   };
 
   async function apiPost(path, payload) {
-    // prefer S.apiPost z index.html
     if (global.S && typeof global.S.apiPost === "function") {
       return await global.S.apiPost(path, payload || {});
     }
-    // twardy fallback
     const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -55,23 +62,34 @@
     return data;
   }
 
-  async function fetchBoard() {
+  async function fetchRaw() {
     const out = await apiPost(endpoints.list, {});
-    // obsługa formatu { ok, data } i „gołego” payloadu
     if (out && out.ok === false) throw new Error(out.error || out.reason || "Failed to fetch quests");
     return out.data || out;
   }
 
-  async function acceptQuest(quest_id) {
-    const out = await apiPost(endpoints.accept, { quest_id });
-    if (!out || out.ok === false) throw new Error(out.error || out.reason || "Accept failed");
-    return out.data || out;
-  }
-
-  async function completeQuest(quest_id) {
-    const out = await apiPost(endpoints.complete, { quest_id });
-    if (!out || out.ok === false) throw new Error(out.error || out.reason || "Claim failed");
-    return out.data || out;
+  // ===== Normalizacja odpowiedzi serwera =====
+  // wspiera:
+  //  A) nowy format: { ready, accepted, available, done }
+  //  B) stary format: { active: [...] }
+  function normalizeBoard(payload) {
+    const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
+    if (hasNew) {
+      return {
+        ready: payload.ready || [],
+        accepted: payload.accepted || [],
+        available: payload.available || [],
+        done: payload.done || []
+      };
+    }
+    const out = { ready: [], accepted: [], available: [], done: [] };
+    const list = Array.isArray(payload?.active) ? payload.active : [];
+    for (const q of list) {
+      // „active” u Ciebie = przyjęte zadania; policzmy „ready”
+      if (isComplete(q)) out.ready.push({ ...q, status: "ready" });
+      else out.accepted.push({ ...q, status: "accepted" });
+    }
+    return out;
   }
 
   // ===== Rendering =====
@@ -80,7 +98,6 @@
 
   function mergeBoard(board) {
     const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
-    // mapuj done -> cooldown
     return [
       ...add(board.ready, "ready"),
       ...add(board.accepted, "accepted"),
@@ -134,12 +151,12 @@
     const pct = progressPct(q);
     const title = esc(q.title || q.name || q.id);
     const type = esc(typeLabel(q.type));
-    const status = esc(q.status);
+    const status = esc(q.status || "accepted");
 
     const card = document.createElement("div");
     card.className = "quest";
     card.setAttribute("data-type", q.type || "");
-    card.setAttribute("data-status", q.status || "");
+    card.setAttribute("data-status", status);
 
     card.innerHTML = `
       <div class="q-head">
@@ -164,19 +181,19 @@
 
     const act = $(".q-actions", card);
 
-    if (q.status === "available") {
+    if (status === "available") {
       const b = document.createElement("button");
       b.className = "q-btn q-btn-acc";
       b.textContent = "Accept";
       b.onclick = () => actions.accept(q.id, b);
       act.appendChild(b);
-    } else if (q.status === "ready") {
+    } else if (status === "ready") {
       const b = document.createElement("button");
       b.className = "q-btn";
       b.textContent = "Claim";
       b.onclick = () => actions.claim(q.id, b);
       act.appendChild(b);
-    } else if (q.status === "cooldown") {
+    } else if (status === "cooldown") {
       const span = document.createElement("span");
       span.className = "q-badge";
       span.title = q.cooldown_end ? new Date(q.cooldown_end).toLocaleString() : "Next reset";
@@ -222,7 +239,7 @@
   function renderCounters(board) {
     const items = mergeBoard(board);
     const countReady = (tab) => items.filter(x => matchTab(x, tab) && x.status === "ready").length;
-    TABS.forEach(tab => {
+    ["all","daily","repeatable","story","bounties"].forEach(tab => {
       const el = document.querySelector(`[data-count="${tab}"]`);
       if (el) el.textContent = String(countReady(tab));
     });
@@ -246,7 +263,7 @@
           btn.disabled = true;
           setStatus("Accepting…");
           const data = await acceptQuest(id);
-          state.board = data || state.board;
+          state.board = normalizeBoard(data || state.board);
           renderCounters(state.board);
           renderList();
           toast("Accepted");
@@ -261,7 +278,7 @@
           btn.disabled = true;
           setStatus("Claiming…");
           const data = await completeQuest(id);
-          state.board = data || state.board;
+          state.board = normalizeBoard(data || state.board);
           renderCounters(state.board);
           renderList();
           toast("Reward claimed");
@@ -282,9 +299,9 @@
     if (!state.el.status) return;
     setStatus("Loading…");
     try {
-      const board = await fetchBoard();
-      state.board = board;
-      renderCounters(board);
+      const raw = await fetchRaw();
+      state.board = normalizeBoard(raw);
+      renderCounters(state.board);
       renderList();
       setStatus("");
     } catch (e) {
@@ -295,7 +312,7 @@
   }
 
   function wireUI() {
-    // Tabs
+    // Tabs (kategorie)
     state.el.tabs?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.tab) return;
@@ -304,7 +321,7 @@
       renderList();
     });
 
-    // Chips (state filter)
+    // Chips (stany)
     state.el.chips?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.state) return;
@@ -327,10 +344,7 @@
   // ===== Public API =====
   const Quests = {
     init({ apiPost: extApiPost, tg, dbg } = {}) {
-      // pozwól nadpisać transport (z index.js już przekazujemy)
       if (extApiPost) {
-        // podmieniamy nasz apiPost przez referencję
-        // (zachowujemy fallbacki gdyby ktoś otworzył poza TG)
         global.S = global.S || {};
         global.S.apiPost = extApiPost;
       }
@@ -348,7 +362,6 @@
     },
 
     async open() {
-      // Bind elements if init wasn't called (defensive)
       if (!state.el.back) {
         this.init({ apiPost: global.S?.apiPost, tg: global.Telegram?.WebApp, dbg: global.dbg || noop });
       }
