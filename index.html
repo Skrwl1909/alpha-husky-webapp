@@ -666,6 +666,7 @@
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
           /* NOWE: globalny manifest przeciwników Fortress z map.json */
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
+          window.DATA = DATA; 
           renderMap();
         }
 
@@ -1297,5 +1298,6 @@
   <script src="/js/quests-launcher.js?v=20251010"></script>
 </body>
 </html>
+
 
 
