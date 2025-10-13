@@ -43,15 +43,20 @@
   },
 
   "fortress": {
-    "enemies": {
-      "atrium_sentinel": { "name": "Atrium Sentinel",  "sprite": "images/bosses/atrium_sentinel.png" },
-      "core_custodian":  { "name": "Core Custodian",   "sprite": "images/bosses/core_custodian.png" },
-      "gleam_warden":    { "name": "Gleam Warden",     "sprite": "images/bosses/gleam_warden.png" },
-      "lunar_myrmidon":  { "name": "Lunar Myrmidon",   "sprite": "images/bosses/lunar_myrmidon.png" },
-      "phase_knight":    { "name": "Phase Knight",     "sprite": "images/bosses/phase_knight.png" }
-    }
-  },
+  "enemies": {
+    "ion_sentry":      { "name": "Ion Sentry",      "sprite": "images/bosses/ion_sentry.png" },
+    "flux_corpion":    { "name": "Flux Scorpion",   "sprite": "images/bosses/flux_corpion.png" },
+    "shatter_hound":   { "name": "Shatter Hound",   "sprite": "images/bosses/shatter_hound.png" },
+    "echo_revenant":   { "name": "Echo Revenant",   "sprite": "images/bosses/echo_revenant.png" },
+    "neon_goliath":    { "name": "Neon Goliath",    "sprite": "images/bosses/neon_goliath.png" },
 
+    "atrium_sentinel": { "name": "Atrium Sentinel", "sprite": "images/bosses/atrium_sentinel.png" },
+    "core_custodian":  { "name": "Core Custodian",  "sprite": "images/bosses/core_custodian.png" },
+    "gleam_warden":    { "name": "Gleam Warden",    "sprite": "images/bosses/gleam_warden.png" },
+    "lunar_myrmidon":  { "name": "Lunar Myrmidon",  "sprite": "images/bosses/lunar_myrmidon.png" },
+    "phase_knight":    { "name": "Phase Knight",    "sprite": "images/bosses/phase_knight.png" }
+  }
+},
   "nodes": [
     {
       "id": "chain_gate",
