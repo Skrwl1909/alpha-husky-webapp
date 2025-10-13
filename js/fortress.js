@@ -11,7 +11,7 @@
   // ---------- helpers ----------
   const $ = (sel, root=document) => root.querySelector(sel);
   const el = (t, cls) => { const x=document.createElement(t); if(cls) x.className=cls; return x; };
-  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max, v));
   const setText = (sel, v) => { const n = $(sel); if (n) n.textContent = String(v); };
   const setWidth = (sel, v) => { const n = $(sel); if (n) n.style.width = String(v); };
   function fmtLeft(sec){
@@ -26,14 +26,35 @@
   function toast(msg){
     try { S.tg?.showAlert?.(String(msg)); } catch(_){ try{ alert(msg); }catch(_){} }
   }
-  // === [KROK 2] helper do ustawiania sprite'a bossa (obsługuje nazwę lub pełną ścieżkę) ===
-  function setEnemySprite(spriteOrName){
+
+  // Bezpieczny fallback dla animowanych liczb obrażeń,
+  // jeśli engine Combat nie poda własnej implementacji.
+  function ensureDamageParticles(){
+    if (!global.Combat) global.Combat = {};
+    if (typeof global.Combat.createDamageNumber !== 'function') {
+      global.Combat.createDamageNumber = function(x, y, dmg, crit){
+        const container = global.Combat.container || document.body;
+        const span = document.createElement('div');
+        span.className = 'damage-number' + (crit ? ' crit-damage' : '');
+        span.textContent = String(dmg);
+        span.style.left = (x - 10) + 'px';
+        span.style.top = (y - 10) + 'px';
+        span.style.position = 'absolute';
+        container.appendChild(span);
+        setTimeout(() => { span.remove(); }, 1100);
+      };
+    }
+  }
+
+  // === helper: ustaw sprite bossa; przyjmuje klucz (ion_sentry), nazwę lub pełną ścieżkę ===
+  function setEnemySprite(spriteOrNameOrKey){
     const img = $('#fx-enemy'); if (!img) return;
     const v = global.WEBAPP_VER || 'dev';
-    let src = spriteOrName || '';
-    // Jeśli podano samą nazwę (np. "gleam_warden") → zbuduj ścieżkę
+    let src = spriteOrNameOrKey || '';
+    // pełna ścieżka/URL?
     const looksLikeUrl = /^https?:\/\//i.test(src) || /\/.+\.(png|webp|jpg|jpeg|gif)$/i.test(src);
     if (!looksLikeUrl) {
+      // potraktuj jako key lub nazwę → zrób slug i zbuduj ścieżkę
       const slug = String(src||'')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g,'_')
@@ -43,6 +64,7 @@
     if (!src) src = 'images/bosses/core_custodian.png'; // fallback
     img.src = src + (src.includes('?') ? `&v=${encodeURIComponent(v)}` : `?v=${encodeURIComponent(v)}`);
   }
+
   // --- DOM CSS
   function injectCss(){
     if (document.getElementById('fortress-css')) return;
@@ -70,7 +92,7 @@
 .fx-btn[disabled]{opacity:.55;cursor:not-allowed;filter:grayscale(.1)}
 .fx-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
 .fx-note{opacity:.75;font-size:12px}
-/* --- Fortress enemy portrait (KROK 2) --- */
+/* --- Fortress enemy portrait --- */
 .fx-portrait{position:relative;display:grid;place-items:center;min-height:220px;border-radius:14px;
   background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));overflow:hidden}
 #fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
@@ -114,21 +136,11 @@
   content: ' CRIT!';
   color: #ffff00;
 }
-.attack-shake {
-  animation: screenShake 200ms ease-in-out;
-}
-.hit-impact {
-  animation: hitFlash 300ms ease-out;
-}
+.attack-shake { animation: screenShake 200ms ease-in-out; }
+.hit-impact  { animation: hitFlash 300ms ease-out; }
 .particle-burst {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: #ffff00;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10;
-  animation: critBurst 600ms ease-out forwards;
+  position: absolute; width: 4px; height: 4px; background: #ffff00; border-radius: 50%;
+  pointer-events: none; z-index: 10; animation: critBurst 600ms ease-out forwards;
 }
 @media (max-width:480px){
   .fx-title{font-size:15px}
@@ -141,9 +153,9 @@
   function closeModal(){
     const m = document.getElementById('fortress-modal');
     if (m) m.remove();
-    // przywróć Telegram MainButton
     try { S.tg?.MainButton?.show?.(); } catch(_){}
   }
+
   // ---------- deps / fallback ----------
   async function defaultApiPost(path, payload){
     const base = global.API_BASE || '';
@@ -169,6 +181,7 @@
     if (!S.tg) S.tg = global.Telegram?.WebApp || null;
     if (!S.dbg) S.dbg = () => {};
   }
+
   // ====== COMBAT INTEGRATION (ten sam silnik co Dojo) ======
   function mapPlayerTotals(ps){
     if (!ps) return {
@@ -194,50 +207,35 @@
       dodge_base_override: b.dodge_base ?? null
     };
   }
-  // Poprawione: staty atakera bossa (kiedy boss bije gracza) — z aliasami + fallbackiem po poziomie + POWER z map.json
   function mapBossAsAttacker(b, bossId = null) {
     b = b || {};
     const n = v => (Number.isFinite(+v) ? +v : null);
     const lvl = n(b.level ?? b.lvl) ?? 1;
-    // NEW: Lookup boss ladder for missing stats
-    if (bossId || b.name) {
-      const bossKey = bossId || b.name.toLowerCase().replace(/\s+/g, '_');
-      const ladder = global.Combat?.cfg()?.BOSS_LADDER?.[lvl]; // Access from engine
-      if (ladder) {
-        let atk = n(b.atk) ?? n(b.strength) ?? n(b.str);  // Inicjalizuj atk tutaj
-        atk = atk ?? ladder.strength;
-        // Apply dmg formula + variance if needed
-        if (!atk) {
-          const C = global.Combat?.cfg()?.DMG_FORMULA;
-          atk = C.BASE * lvl + C.PER_LVL * lvl;
-          atk += (global.Combat?.rng ? global.Combat.rng() - 0.5 * 2 * (atk * C.VARIANCE) : 0); // Reuse engine RNG
-        }
-      }
-    }
-    // Priorytet: power z payload lub map.json (lookup po ID/nazwie)
+
+    // Priorytet: power z payload lub z map.json (lookup po ID/nazwie)
     let atk =
-      n(b.power) ?? // z encounters/map.json
+      n(b.power) ??
       n(b.atk) ?? n(b.attack) ?? n(b.dps) ?? n(b.damage) ?? n(b.strength) ?? n(b.str);
-    // Lookup w FORTRESS_ENEMIES lub global DATA (z map.json)
+
     if (!atk && bossId) {
       const enemies = global.FORTRESS_ENEMIES || global.DATA?.fortress?.enemies || {};
-      const encData = global.DATA?.regions?.moon_lab?.gameplay?.floors?.find(f => f.id.includes(bossId?.split('-')[1]))?.encounters?.find(e => e.id === bossId) || {};
+      const encData = global.DATA?.regions?.moon_lab?.gameplay?.floors?.find(f => f.id?.includes(bossId?.split('-')[1]))?.encounters?.find(e => e.id === bossId) || {};
       atk = n(encData.power) ?? n(enemies[bossId]?.power) ?? atk;
     }
-    // Sensowny fallback po poziomie (jeśli nadal brak)
+
     if (atk == null) atk = 10 + 8 * (lvl - 1);
-    const critChance = n(b.critChance ?? b.crit ?? b.crit_rate) ?? 0.15; // wyższa dla bossów
+    const critChance = n(b.critChance ?? b.crit ?? b.crit_rate) ?? 0.15;
     const critMult = n(b.critMult ?? b.critMultiplier ?? b.crit_multi) ?? 1.5;
-    const pen = n(b.armorPen ?? b.armor_pen ?? b.pen ?? b.arp) ?? (lvl * 0.02); // lekka pen po lvl
+    const pen = n(b.armorPen ?? b.armor_pen ?? b.pen ?? b.arp) ?? (lvl * 0.02);
+
     return {
       level: lvl,
-      strength: atk, // zgodność z Combat
-      atk, // i dla innych ścieżek
+      strength: atk, atk,
       agility: n(b.agility ?? b.agi) ?? (lvl * 0.5),
       intelligence: n(b.intelligence ?? b.int) ?? (lvl * 0.3),
       vitality: n(b.vitality ?? b.vit) ?? 0,
       defense: n(b.defense ?? b.def) ?? 0,
-      luck: n(b.luck) ?? (lvl * 0.2), // lekki luck dla crit
+      luck: n(b.luck) ?? (lvl * 0.2),
       armor_pen: pen, armorPen: pen,
       critChance, critMult,
     };
@@ -263,31 +261,25 @@
     const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
     const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
     const tgt = mapBossAsTarget(bossRaw);
-    // ⬇️ preferuj hp z payloadu; fallback do formuły
     let bHpMax = Number(bossRaw.hpMax ?? bossRaw.hp);
     if (!Number.isFinite(bHpMax) || bHpMax <= 0) {
       bHpMax = global.Combat.computeEnemyMaxHp(tgt);
     }
     tgt.hp = bHpMax;
     const bossAtt = mapBossAsAttacker(bossRaw, bossId);
-    // NEW: Ensure HP uses formula if zero
     if (bHpMax <= 0) {
-      tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId }); // Triggers ladder
+      tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId });
       bHpMax = tgt.hp;
     }
-    // Debug: Log stats bossa
-    console.log('BOSS STATS:', { name: bossName, lvl: bossAtt.level, strength: bossAtt.strength, power: bossRaw.power, pen: bossAtt.intelligence * 0.01 });
     // pętla rund
     const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
     const steps = [];
     let pHp = pHpMax, bHp = bHpMax;
     for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
-      // You → Boss
       const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
       bHp = Math.max(0, bHp - h1.dmg);
       steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
       if (bHp <= 0) break;
-      // Boss → You (bogatszy target gracza)
       const youTarget = {
         defense: att.defense,
         level: att.level,
@@ -296,8 +288,6 @@
         dodge_base_override: null,
       };
       const h2 = global.Combat.rollHit(bossAtt, youTarget, { round:r, actor:'boss' });
-      // Debug dla bossa
-      console.log(`BOSS HIT R${r}: raw=${h2.rolls.raw}, defEff=${h2.rolls.enemyDefEff}, pen=${h2.rolls.pen}, dmg=${h2.dmg}, crit=${h2.isCrit}`);
       pHp = Math.max(0, pHp - h2.dmg);
       steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
     }
@@ -311,6 +301,7 @@
       winner
     };
   }
+
   // ---------- public UI ----------
   function open(){
     ensureDeps();
@@ -323,7 +314,7 @@
         <div class="fx-head">
           <div>
             <div class="fx-sub">Moon Lab — Fortress</div>
-            <div class="fx-title">Moon Lab — Fortress</div>
+            <div class="fx-title" id="fx-title">Moon Lab — Fortress</div>
           </div>
           <div class="fx-kv">
             <span id="fx-badge" class="fx-badge">…</span>
@@ -340,6 +331,7 @@
             <div class="fx-col" style="min-width:170px;align-items:flex-end">
               <div class="fx-kv">
                 <span class="fx-chip" id="fx-lvl">L —</span>
+                <span class="fx-chip" id="fx-best" style="display:none" title="Best floor">⭐ Best F —</span>
                 <span class="fx-chip" id="fx-attempts" style="display:none" title="Attempts left">🎯 —</span>
               </div>
             </div>
@@ -367,7 +359,6 @@
       </div>
     `;
     document.body.appendChild(wrap);
-    // schowaj dolny MainButton TG, żeby nie zasłaniał paska akcji modala
     try { S.tg?.MainButton?.hide?.(); } catch(_){}
     wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
@@ -381,13 +372,15 @@
     });
     refresh();
   }
+
   // live ticker
   let ticker = null;
   function stopTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
+
   async function refresh(){
     ensureDeps();
     stopTicker();
-    // ⬇️ Awaryjny rebuild: jeśli jest stary modal (bez #fx-lvl), zamknij i zbuduj nowy
+    // Awaryjny rebuild starego modala (gdyby się rozjechał)
     if (document.getElementById('fortress-modal') && !document.querySelector('#fx-lvl')) {
       closeModal();
       open();
@@ -396,20 +389,30 @@
     try{
       let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
       if (st && st.data) st = st.data; // tolerancja na wrappery
-      // --- aliasy pól
+
+      // cooldown / status
       const cdRaw = (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0) | 0;
       const cd = Math.max(0, cdRaw);
       const ready =
         !!(st.canFight ?? st.canStart ?? st.ready ?? (st.status && String(st.status).toLowerCase()==='ready')) || cd === 0;
-      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? 1;
+
+      // poziomy / piętra
+      const curFloor = Number.isFinite(+st.currentFloor) ? (+st.currentFloor) : null;
+      const bestFloor = Number.isFinite(+st.bestFloor) ? (+st.bestFloor) : null;
+      const lvl = st.level ?? st.currentLevel ?? st.nextLevel ?? st.progress?.level ?? (curFloor != null ? (curFloor+1) : 1);
+
       // boss/opponent
       const nx = st.next || st.progress?.next || st.encounter?.next || st.upcoming || {};
-      const bossName = st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
+      const bossName = st.nextEncounterName || st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || '';
+      const bossKey  = st.nextEncounterKey || nx.key || st.nextKey || null;
+
       setText('#fx-next', (bossName || lvl) ? [bossName, lvl ? `(L${lvl})` : ''].filter(Boolean).join(' ') : '—');
-      // sprite z STATE albo z nazwy
-      const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || '';
-      setEnemySprite(spriteRaw || bossName);
-      // ▼ UI hint: rekomendowany poziom (liczba lub string → liczba)
+
+      // sprite z STATE (priorytet): bossSprite → nextEncounterKey → bossName
+      const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || null;
+      setEnemySprite(spriteRaw || bossKey || bossName);
+
+      // rekomendowany poziom (jeśli jest)
       const recLvlRaw =
         (nx && (nx.recommended_player_level ?? nx.recLevel ?? nx.rec_lvl)) ??
         (st.recommended_player_level ?? st.recLevel ?? null);
@@ -419,14 +422,16 @@
       } else {
         setText('#fx-hint', 'Win → next encounter after cooldown; lose → retry same encounter.');
       }
-      // próby na cooldown (opcjonalne)
+
+      // próby (opcjonalnie)
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
       const atEl = $('#fx-attempts');
       if (atEl){
         atEl.style.display = attemptsLeft != null ? '' : 'none';
         if (attemptsLeft != null) atEl.textContent = `🎯 ${attemptsLeft}`;
       }
-      // encounter (opcjonalny)
+
+      // encounter progress (opcjonalny)
       const encCurRaw = (st.encounterIndex ?? st.encountersDone ?? st.progress?.encounterIndex ?? st.encounter?.index ?? 0)|0;
       const encTotalRaw = (st.encountersTotal ?? st.encountersCount ?? st.progress?.encountersTotal ?? 10)|0;
       const encCur = clamp(encCurRaw + 1, 1, Math.max(1, encTotalRaw));
@@ -434,12 +439,40 @@
       setText('#fx-encLbl', `${encCur}/${encTot}`);
       const pct = clamp(Math.round((encCur-1) / Math.max(1, encTot-1) * 100), 0, 100);
       setWidth('#fx-barFill', pct + '%');
+
+      // ——— Licznik pięter w tytule (F X / totalFloors jeśli znamy total z map.json)
+      const titleEl = $('#fx-title');
+      if (titleEl) {
+        let suffix = '';
+        const node = Array.isArray(global.DATA?.nodes)
+          ? global.DATA.nodes.find(n => n.buildingId === BID)
+          : null;
+        const totalFloors = Array.isArray(node?.gameplay?.floors) ? node.gameplay.floors.length : null;
+
+        if (Number.isFinite(curFloor)) {
+          suffix = totalFloors ? ` (F ${curFloor+1}/${totalFloors})` : ` (F ${curFloor+1})`;
+        }
+        titleEl.textContent = 'Moon Lab — Fortress' + suffix;
+      }
+
+      // ——— Chip „Best F …”
+      const bestEl = $('#fx-best');
+      if (bestEl) {
+        if (Number.isFinite(bestFloor) && bestFloor >= 0) {
+          bestEl.style.display = '';
+          bestEl.textContent = `⭐ Best F ${bestFloor + 1}`;
+        } else {
+          bestEl.style.display = 'none';
+        }
+      }
+
       // status + badge
-      setText('#fx-lvl', `L ${lvl}`);
+      setText('#fx-lvl', curFloor != null ? `F ${curFloor+1}` : `L ${lvl}`);
       setBadge(ready ? 'Ready' : (cd>0 ? 'Cooldown' : ''));
       setText('#fx-status', ready ? 'Ready' : (cd>0 ? 'Cooldown' : '—'));
       setText('#fx-cd', ready ? '—' : fmtLeft(cd));
-      // przycisk Start
+
+      // przycisk Start + licznik
       const btn = $('#fx-start');
       if (!btn) return;
       if (cd>0){
@@ -470,6 +503,7 @@
       toast('Fortress: ' + msg);
     }
   }
+
   function setBadge(txt){
     const b = $('#fx-badge');
     if (!b) return;
@@ -479,6 +513,7 @@
     const blue = 'rgba(59,130,246,.18)';
     b.style.background = txt==='Ready' ? green : (txt==='Active' ? blue : base);
   }
+
   async function doStart(){
     ensureDeps();
     const btn = $('#fx-start');
@@ -488,12 +523,15 @@
       S.tg?.HapticFeedback?.impactOccurred?.('light');
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
       const res = out?.data || out;
-      // sprite z odpowiedzi START (jeśli jest)
+
+      // sprite z odpowiedzi START (jeśli backend zwrócił ścieżkę)
       const startSprite = res?.boss?.sprite || res?.sprite || res?.bossSprite || null;
       if (startSprite) setEnemySprite(startSprite);
-      // Pobierz bossId z res (np. F1-E01) dla lookup power
+
+      // bossId (opcjonalnie) dla local sim
       const bossId = res?.boss?.id || res?.encounterId || res?.next?.id || null;
-      // Jeśli to walka Fortress, a brak kroków – policz lokalnie Combatem
+
+      // Widok walki — jeśli brak kroków, policz lokalnie przez Combat
       if (res && (res.mode === 'fortress' || res.battle === 'fortress')){
         let payload = res;
         if (!Array.isArray(res.steps) || !res.steps.length){
@@ -528,15 +566,19 @@
       btn.disabled = false;
     }
   }
+
   // ---------- prosty renderer walki ----------
   function hpbar(cur,max){
     const W=18; cur=Math.max(0,cur|0); max=Math.max(1,max|0);
     const fill = Math.round(W*(cur/max));
     return '█'.repeat(fill)+'░'.repeat(W-fill);
   }
+
   function renderFortressBattle(data){
     injectCss();
+    ensureDamageParticles();
     closeModal();
+
     const cont = el('div','fortress-battle');
     cont.innerHTML = `
       <div class="fx-head" style="margin-bottom:6px">
@@ -564,10 +606,10 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     const mask = el('div','mask'); mask.id='fb-mask';
     card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
     document.body.appendChild(wrap);
-    // Ustaw container dla animacji combat (relatywnie do card)
+
     global.Combat.container = card;
-    // ukryj MainButton również w widoku walki
     try { S.tg?.MainButton?.hide?.(); } catch(_){}
+
     wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
       if (!btn) { if (e.target.id === 'fb-mask') closeModal(); return; }
@@ -582,9 +624,11 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         }catch(_){ toast('Error refreshing.'); }
       })();
     });
+
     const logEl = $('#fb-log', cont);
     const boardEl = $('#fb-board', cont);
-    const portrait = cont.querySelector('.fx-portrait img') || boardEl;  // Fallback na board jeśli brak portrait w battle view
+    const portrait = cont.querySelector('.fx-portrait img') || boardEl;
+
     let pHp = data.player?.hpMax ?? 0, bHp = data.boss?.hpMax ?? 0, i=0;
     function step(){
       if (i >= (data.steps?.length||0)){
@@ -601,8 +645,9 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         return;
       }
       const s = data.steps[i++];
-      let targetEl = portrait;  // Domyślnie boss portrait
-      if (s.actor === 'boss') targetEl = boardEl;  // Dla ataku bossa – shake na board (gracz)
+      let targetEl = portrait;
+      if (s.actor === 'boss') targetEl = boardEl;
+
       if (s.actor==='you'){
         bHp = s.b_hp;
         const youTxt = s.dodge
@@ -616,11 +661,13 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
           : ('hits for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
         logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${bossTxt}</div>`);
       }
+
       boardEl.textContent =
 `YOU [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
 BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
+
       logEl.scrollTop = logEl.scrollHeight;
-      // Animacje UI
+
       if (s.dmg > 0) {
         const rect = targetEl.getBoundingClientRect();
         const containerRect = card.getBoundingClientRect();
@@ -639,6 +686,7 @@ BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
     }
     setTimeout(step, 350);
   }
+
   // ---------- API ----------
   function init(deps){
     S.apiPost = deps?.apiPost || S.apiPost;
