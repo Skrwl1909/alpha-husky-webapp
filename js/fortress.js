@@ -302,6 +302,92 @@
     };
   }
 
+  // === Fortress payload normalizer (akceptuje stare i nowe formaty) ===
+  function normalizeFortressPayload(raw){
+    if (!raw) return null;
+
+    // 1) Rozpakuj { ok, data } jeśli przyszło z fortress_start()
+    let t = (raw && raw.ok !== undefined && raw.data) ? raw.data : raw;
+
+    // 2) Zbuduj kroki w jednolitym kształcie
+    let steps = [];
+    if (Array.isArray(t.steps)) {
+      if (t.steps[0] && ('att' in t.steps[0])) {
+        // format: {t, att:'P'|'E', dmg, crit, php, ehp}
+        steps = t.steps.map(s => ({
+          actor: s.att === 'P' ? 'you' : 'boss',
+          dmg: Number(s.dmg) || 0,
+          crit: !!s.crit,
+          dodge: !!s.dodge,
+          b_hp: s.att === 'P' ? (Number(s.ehp) || 0) : undefined,
+          p_hp: s.att === 'E' ? (Number(s.php) || 0) : undefined,
+        }));
+      } else if (t.steps[0] && ('actor' in t.steps[0])) {
+        // już w nowym kształcie
+        steps = t.steps.map(s => ({
+          actor: s.actor === 'you' ? 'you' : 'boss',
+          dmg: Number(s.dmg) || 0,
+          crit: !!s.crit,
+          dodge: !!s.dodge,
+          b_hp: Number(s.b_hp ?? s.bhp ?? s.b) || undefined,
+          p_hp: Number(s.p_hp ?? s.php ?? s.p) || undefined,
+        }));
+      }
+    }
+
+    // 3) Oszacuj HP max (z sum obrażeń + HP na końcu)
+    const dmgToBoss   = steps.filter(s => s.actor==='you').reduce((a,s)=>a+(s.dmg||0), 0);
+    const dmgToPlayer = steps.filter(s => s.actor==='boss').reduce((a,s)=>a+(s.dmg||0), 0);
+
+    let bossHpLeft   = Number(t.stats?.enemyHpLeft ?? t.enemyHpLeft ?? 0);
+    let playerHpLeft = Number(t.stats?.playerHpLeft ?? t.playerHpLeft ?? 0);
+
+    if (!Number.isFinite(bossHpLeft) || bossHpLeft<=0){
+      const lastYou = [...steps].reverse().find(s => s.actor==='you' && Number.isFinite(s.b_hp));
+      bossHpLeft = lastYou ? lastYou.b_hp : 0;
+    }
+    if (!Number.isFinite(playerHpLeft) || playerHpLeft<=0){
+      const lastBoss = [...steps].reverse().find(s => s.actor==='boss' && Number.isFinite(s.p_hp));
+      playerHpLeft = lastBoss ? lastBoss.p_hp : 0;
+    }
+
+    const bossHpMax   = Math.max(1, Math.round((bossHpLeft||0)   + dmgToBoss));
+    const playerHpMax = Math.max(1, Math.round((playerHpLeft||0) + dmgToPlayer));
+
+    // 4) Pola prezentacyjne
+    const bossName   = t.boss?.name || t.bossName || 'Boss';
+    const bossSprite = t.boss?.sprite || t.bossSprite || null;
+
+    // Lvl/Floor: preferuj floorCleared/Attempted z fortress.py
+    const level = Number(t.floorCleared ?? t.floorAttempted ?? raw.level ?? 1) || 1;
+
+    // Winner
+    const winner = t.result ? (t.result === 'VICTORY' ? 'you' : 'boss') : (raw.winner || 'boss');
+
+    // Rewards → materials
+    const mats = {
+      scrap: Number(t.rewards?.scrap || 0),
+      rune_dust: Number(t.rewards?.rune_dust || 0),
+    };
+    const firstClear = [];
+    Object.keys(t.rewards || {}).forEach(k => {
+      if (!['scrap','rune_dust'].includes(k)) firstClear.push(`${k} ×${t.rewards[k]}`);
+    });
+
+    const nextLevel = winner === 'you' ? (level + 1) : level;
+
+    return {
+      mode: 'fortress',
+      level: level,
+      boss:   { name: bossName, hpMax: bossHpMax, sprite: bossSprite },
+      player: { hpMax: playerHpMax },
+      steps,
+      winner,
+      rewards: { materials: mats, rare: false, firstClear },
+      next: { level: nextLevel }
+    };
+  }
+
   // ---------- public UI ----------
   function open(){
     ensureDeps();
@@ -522,20 +608,21 @@
     try{
       S.tg?.HapticFeedback?.impactOccurred?.('light');
       const out = await S.apiPost('/webapp/building/start', { buildingId: BID });
-      const res = out?.data || out;
+      let res = out?.data || out;
 
       // sprite z odpowiedzi START (jeśli backend zwrócił ścieżkę)
       const startSprite = res?.boss?.sprite || res?.sprite || res?.bossSprite || null;
       if (startSprite) setEnemySprite(startSprite);
 
-      // bossId (opcjonalnie) dla local sim
-      const bossId = res?.boss?.id || res?.encounterId || res?.next?.id || null;
+      // 1) Spróbuj znormalizować payload (obsłuży fortress_start z backendu)
+      let payload = null;
+      try { payload = normalizeFortressPayload(res); } catch(_) { payload = null; }
 
-      // Widok walki — jeśli brak kroków, policz lokalnie przez Combat
-      if (res && (res.mode === 'fortress' || res.battle === 'fortress')){
-        let payload = res;
-        if (!Array.isArray(res.steps) || !res.steps.length){
+      // 2) Jeśli to fortress i mamy kroki — renderuj; jeśli brak kroków, policz lokalnie
+      if (payload && payload.mode === 'fortress') {
+        if (!Array.isArray(payload.steps) || !payload.steps.length){
           try {
+            const bossId = res?.boss?.id || res?.encounterId || res?.next?.id || null;
             const sim = await simulateFortressBattle(res, bossId);
             if (sim) payload = sim;
           } catch(e){ S.dbg('local sim fail', e); }
@@ -544,11 +631,15 @@
         renderFortressBattle(payload);
         return;
       }
+
+      // 3) Fallback: stary tryb “run” (minuty)
       if (res && (res.minutes || res.durationMinutes)){
         toast(`Run started: ${res.minutes ?? res.durationMinutes} min`);
         await refresh();
         return;
       }
+
+      // 4) Bez rozpoznania — po prostu odśwież
       await refresh();
     }catch(e){
       const reason = (e?.response?.data?.reason) || (e?.data?.reason) || e?.message || 'Start failed';
