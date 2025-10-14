@@ -248,59 +248,6 @@
     } catch(_){}
     return global.PLAYER_TOTALS || global.PLAYER || { level:1, strength:10, agility:5, intelligence:5, vitality:5, defense:0, luck:5 };
   }
-  async function simulateFortressBattle(serverPayload, bossId = null){
-    if (!global.Combat) return null;
-    const seed = (serverPayload?.runId || serverPayload?.run_id || Date.now())
-               + ':' + (S.tg?.initDataUnsafe?.user?.id || 'u');
-    global.Combat.init({ seed, feedHook: null, cfg: global.COMBAT_CFG || undefined });
-    // gracz
-    const playerTotalsRaw = serverPayload?.playerTotals || serverPayload?.player?.totals || await loadPlayerTotalsFallback();
-    const att = mapPlayerTotals(playerTotalsRaw);
-    const pHpMax = global.Combat.computePlayerMaxHp(att, att.level);
-    // boss
-    const bossRaw = serverPayload?.boss || serverPayload?.next || serverPayload?.enemy || {};
-    const bossName = bossRaw?.name || serverPayload?.bossName || 'Boss';
-    const tgt = mapBossAsTarget(bossRaw);
-    let bHpMax = Number(bossRaw.hpMax ?? bossRaw.hp);
-    if (!Number.isFinite(bHpMax) || bHpMax <= 0) {
-      bHpMax = global.Combat.computeEnemyMaxHp(tgt);
-    }
-    tgt.hp = bHpMax;
-    const bossAtt = mapBossAsAttacker(bossRaw, bossId);
-    if (bHpMax <= 0) {
-      tgt.hp = global.Combat.computeEnemyMaxHp({ ...tgt, id: bossId });
-      bHpMax = tgt.hp;
-    }
-    // pętla rund
-    const maxRounds = (global.Combat.cfg().MAX_ROUNDS || 12);
-    const steps = [];
-    let pHp = pHpMax, bHp = bHpMax;
-    for (let r=0; r<maxRounds && pHp>0 && bHp>0; r++){
-      const h1 = global.Combat.rollHit(att, tgt, { round:r, actor:'you' });
-      bHp = Math.max(0, bHp - h1.dmg);
-      steps.push({ actor:'you', dmg:h1.dmg, crit:h1.isCrit, dodge:h1.dodged, b_hp:bHp });
-      if (bHp <= 0) break;
-      const youTarget = {
-        defense: att.defense,
-        level: att.level,
-        hp: pHp,
-        resist_pct: Number((playerTotalsRaw && (playerTotalsRaw.resist_pct ?? playerTotalsRaw.resist)) || 0),
-        dodge_base_override: null,
-      };
-      const h2 = global.Combat.rollHit(bossAtt, youTarget, { round:r, actor:'boss' });
-      pHp = Math.max(0, pHp - h2.dmg);
-      steps.push({ actor:'boss', dmg:h2.dmg, crit:h2.isCrit, dodge:h2.dodged, p_hp:pHp });
-    }
-    const winner = (bHp <= 0) ? 'you' : (pHp <= 0 ? 'boss' : 'boss');
-    return {
-      mode: 'fortress',
-      level: tgt.level || 1,
-      boss: { name: bossName, hpMax: bHpMax },
-      player: { hpMax: pHpMax },
-      steps,
-      winner
-    };
-  }
 
   // === Fortress payload normalizer (akceptuje stare i nowe formaty) ===
   function normalizeFortressPayload(raw){
@@ -618,15 +565,8 @@
       let payload = null;
       try { payload = normalizeFortressPayload(res); } catch(_) { payload = null; }
 
-      // 2) Jeśli to fortress i mamy kroki — renderuj; jeśli brak kroków, policz lokalnie
+      // 2) Jeśli to fortress i mamy kroki — renderuj; backend zawsze dostarcza steps, więc bez fallbacku
       if (payload && payload.mode === 'fortress') {
-        if (!Array.isArray(payload.steps) || !payload.steps.length){
-          try {
-            const bossId = res?.boss?.id || res?.encounterId || res?.next?.id || null;
-            const sim = await simulateFortressBattle(res, bossId);
-            if (sim) payload = sim;
-          } catch(e){ S.dbg('local sim fail', e); }
-        }
         closeModal();
         renderFortressBattle(payload);
         return;
@@ -731,7 +671,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         if (mats.length) lines.push('Rewards: '+mats.join(', '));
         if (data.rewards?.rare) lines.push('💎 Rare drop!');
         if (data.rewards?.firstClear?.length) lines.push('🌟 First clear: '+data.rewards.firstClear.join(', '));
-        if (data.next?.level) lines.push(`Next: L${data.next.level} · Cooldown 1h`);
+        if (data.next?.level) lines.push(`Next: L${data.next.level}`);
         logEl.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join('<br>')}</div>`);
         return;
       }
