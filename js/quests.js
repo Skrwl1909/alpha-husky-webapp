@@ -105,31 +105,58 @@
     return postFirstOk(EP.complete, { id });
   }
 
-  // ===== Normalization =====
-  // supports:
-  //  A) new grouped format: { ready, accepted, available, done }
-  //  B) legacy format: { active: [...] } or { quests: [...] }
   function normalizeBoard(payload) {
-    const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
-    if (hasNew) {
-      return {
-        ready: payload.ready || [],
-        accepted: payload.accepted || [],
-        available: payload.available || [],
-        done: payload.done || []
-      };
-    }
+  // Nowy format (już masz)
+  const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
+  if (hasNew) {
+    return {
+      ready: payload.ready || [],
+      accepted: payload.accepted || [],
+      available: payload.available || [],
+      done: payload.done || []
+    };
+  }
+
+  // NOWE: Obsługa daily legacy {normal, raid}
+  if (payload && (payload.normal || payload.raid)) {
     const out = { ready: [], accepted: [], available: [], done: [] };
-    const list = Array.isArray(payload?.active) ? payload.active
-               : Array.isArray(payload?.quests) ? payload.quests
-               : [];
-    for (const q of list) {
-      // Treat all "active" as accepted; compute ready if server didn't mark it
-      const ready = (q.ready === true) ? true : isComplete(q);
-      if (ready) out.ready.push({ ...q, status: "ready" });
-      else out.accepted.push({ ...q, status: "accepted" });
+    // Normal daily
+    if (payload.normal) {
+      const q = payload.normal;
+      if (q.claimed || q.done) {
+        out.done.push({ ...q, status: "cooldown" });  // Claimed/done → cooldown
+      } else if (q.availableActions && q.availableActions.length > 0) {
+        out.available.push({ ...q, status: "available", type: "daily" });  // Available → available
+      } else {
+        out.accepted.push({ ...q, status: "accepted", type: "daily" });  // In progress
+      }
+    }
+    // Raid (analogicznie)
+    if (payload.raid) {
+      const q = payload.raid;
+      if (q.claimed || q.done) {
+        out.done.push({ ...q, status: "cooldown" });
+      } else if (q.availableActions && q.availableActions.length > 0) {
+        out.available.push({ ...q, status: "available", type: "daily" });  // Raid jako daily
+      } else {
+        out.accepted.push({ ...q, status: "accepted", type: "daily" });
+      }
     }
     return out;
+  }
+
+  // Legacy fallback (już masz) – active/quests jako accepted/ready
+  const out = { ready: [], accepted: [], available: [], done: [] };
+  const list = Array.isArray(payload?.active) ? payload.active
+             : Array.isArray(payload?.quests) ? payload.quests
+             : [];
+  for (const q of list) {
+    const ready = (q.ready === true) ? true : isComplete(q);
+    if (ready) out.ready.push({ ...q, status: "ready" });
+    else out.accepted.push({ ...q, status: "accepted" });
+  }
+  return out;
+}
   }
 
   // ===== Rendering =====
