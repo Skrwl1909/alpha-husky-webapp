@@ -1319,11 +1319,37 @@
     }
   </script>
 
-  <!-- ⬇⬇⬇ NOWE: skrypty Mission Board — NA SAMYM KOŃCU PRZED </body> -->
-  <script src="/js/quests.js?v=20251010"></script>
-  <script src="/js/quests-launcher.js?v=20251010"></script>
+    <!-- ⬇⬇⬇ Mission Board scripts — at very end -->
+  <script src="js/quests.js?v=20251010" defer></script>
+  <script src="js/quests-launcher.js?v=20251010" defer></script>
+  <script>
+    // Fallback init (gdyby quests.js załadował się po start())
+    (function () {
+      const tg = window.Telegram && window.Telegram.WebApp;
+      const apiPost = (window.S && window.S.apiPost) || (async (path, data) => {
+        const init_data = tg && tg.initData;
+        const url = (window.API_BASE || "") + path;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
+          },
+          body: JSON.stringify({ init_data, ...(data || {}) })
+        });
+        return res.json();
+      });
+
+      // tylko raz
+      if (window.Quests && !window.__questsInited) {
+        window.Quests.init({ apiPost, tg, dbg: console.debug });
+        window.__questsInited = true;
+      }
+    })();
+  </script>
 </body>
 </html>
+
 
 
 
