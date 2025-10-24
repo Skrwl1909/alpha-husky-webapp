@@ -8,6 +8,7 @@
   <link rel="preload" as="image" href="background_poster.jpg">
   <link rel="preload" as="video" href="background3.webm" type="video/webm">
   <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
+
   <style>
     /* Telegram theme + bezpieczne fallbacki */
     :root { color-scheme: var(--tg-color-scheme, dark); }
@@ -15,17 +16,21 @@
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
     a { color: var(--tg-theme-link-color, #aef); }
+
     /* twarde nadpisanie „black” */
     .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
     .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
+
     .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
     .bg { position: absolute; inset: 0; z-index: 0; }
     .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .bg video { filter: contrast(1.08) brightness(.9); }
     .bg .poster { display:none; background-position:center; background-size:cover; }
+
     .ui { position: absolute; inset: 0; z-index: 2; }
     .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
     .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
     .btn {
       appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
       background:var(--glass); border:1px solid var(--stroke);
@@ -38,6 +43,7 @@
       color: var(--tg-theme-button-text-color, #fff);
       border: 1px solid rgba(255,255,255,.18);
     }
+
     .topbar {
       position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
       padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
@@ -46,19 +52,23 @@
     }
     .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
     .spacer { height: max(12px, env(safe-area-inset-bottom)); }
+
     @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
+
     .fallback {
       position: absolute; inset: 0; display:none; z-index: 3;
       background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
       align-items:center; justify-content:center; text-align:center; padding:24px;
     }
     .fallback a { color:#aef; text-decoration:underline; }
+
     .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
     .map-wrap { width:min(96vw,1200px); padding:12px; }
     .map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
     .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; }
     .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
     .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
+
     .map{ position:relative; width:100%; aspect-ratio:16/9;
       background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
       border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
@@ -66,9 +76,11 @@
       background: url("images/map/overlays/fog.png") center/cover no-repeat,
                   linear-gradient(0deg, rgba(0,0,0,.55), transparent);
       pointer-events:none; }
+
     .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
     .paths-layer svg{ width:100%; height:100%; }
     .pins{ position:absolute; inset:0; z-index:3; }
+
     .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
       padding:0; background:none; border:none; cursor:pointer;
       z-index:3; transition: transform .12s ease, filter .12s ease; }
@@ -78,6 +90,7 @@
       transform: translate(-50%, calc(-50% + 20px));
       background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
       opacity:.9; filter: blur(.2px); pointer-events:none; }
+
     .hotspot img{ width: clamp(40px, 3.6vw, 72px);
       filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
     .hotspot.unlocked img{
@@ -86,29 +99,35 @@
               drop-shadow( 2px 0 6px rgba(155,77,255,.22));
     }
     .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+
     .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
       transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
     .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
     .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
     @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
+
     .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
       font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
       background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
       backdrop-filter: blur(3px); }
     .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
       transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
+
     .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
       background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
       display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
       box-shadow: 0 2px 6px rgba(0,0,0,.5); }
     .lock-badge img{ width:14px; height:14px; opacity:.9 }
+
     .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
     .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
     .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
+
     .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
     .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
     .tab.active{ outline:2px solid rgba(255,255,255,.18); }
+
     /* progress + region sheet width */
     .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
       background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
@@ -119,81 +138,14 @@
       background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
     .region-sheet .sheet-card{width:min(92vw,520px)}
     .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-    /* DEBUG banner */
+
+    /* DEBUG banner (pojedynczy) */
     #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
       background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
-    /* Animacje ataków i critów */
-    @keyframes attack-shake {
-      0%, 100% { transform: translate(0, 0); }
-      25% { transform: translate(2px, -1px); }
-      50% { transform: translate(-2px, 1px); }
-      75% { transform: translate(1px, -2px); }
-    }
+  </style>
 
-    @keyframes damage-float {
-      0% { 
-        transform: translateY(0) scale(1); 
-        opacity: 1; 
-        color: #ff6b6b; /* domyślny dmg czerwony */
-      }
-      100% { 
-        transform: translateY(-40px) scale(1.2); 
-        opacity: 0; 
-      }
-    }
-
-    @keyframes crit-flash {
-      0%, 100% { 
-        color: #ffd700; /* złoty crit */
-        text-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700;
-        transform: scale(1);
-      }
-      50% { 
-        transform: scale(1.3);
-        text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700;
-      }
-    }
-
-    @keyframes hit-impact {
-      0% { 
-        transform: scale(1); 
-        filter: brightness(1); 
-      }
-      50% { 
-        transform: scale(1.1); 
-        filter: brightness(1.5); 
-      }
-      100% { 
-        transform: scale(1); 
-        filter: brightness(1); 
-      }
-    }
-
-    /* Klasy do użycia w JS */
-    .damage-number {
-      position: absolute;
-      pointer-events: none;
-      font: bold 24px system-ui;
-      z-index: 10;
-      animation: damage-float 1s ease-out forwards;
-    }
-
-    .crit-damage {
-      animation: crit-flash 0.6s ease-in-out;
-      font-size: 28px !important; /* większe dla crita */
-    }
-
-    .attack-shake {
-      animation: attack-shake 0.3s ease-in-out;
-    }
-
-    .hit-impact {
-      animation: hit-impact 0.4s ease-out;
-    }
- </style>
-  <!-- ⬇⬇⬇ NOWY BLOK: Mission Board (inline CSS) — wstawiony bezpośrednio po Twoim <style> ⬆⬆⬆ -->
+  <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
   <style id="quests-css">
-    /* (Twój blok CSS zostaje bez zmian) */
     .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
     .q-modal-body{background:#0b0f14;border:1px solid #243244;border-radius:14px;width:min(720px,92vw);max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:16px}
     .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -226,31 +178,14 @@
     .q-rew{margin-top:8px}
     .q-badge{display:inline-block;border:1px solid #2a3b4d;border-radius:999px;padding:2px 8px;margin:2px;font-size:11px;opacity:.95}
     .q-actions{margin-top:10px;display:flex;gap:8px}
-    /* --- Floating launcher (📜) --- */
     #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
   </style>
 </head>
+
 <body>
-  <!-- USUNIĘTO duplikat modala Mission Board (pierwszy #qBack) -->
   <div id="dbg">init…</div>
-  
 
-      <!-- Chips: state filters -->
-      <div id="qState" class="q-filters">
-        <button class="q-tab q-tab--on" data-state="any">Any</button>
-        <button class="q-tab" data-state="ready">Ready</button>
-        <button class="q-tab" data-state="accepted">In progress</button>
-        <button class="q-tab" data-state="cooldown">Cooldown</button>
-      </div>
-
-      <!-- List -->
-      <div id="qList" class="quest-board"></div>
-    </div>
-  </div>
-
-  <!-- (reszta Twojego kodu, bez zmian) -->
-  <div id="dbg">init…</div>
   <div class="app">
     <div class="bg">
       <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
@@ -259,11 +194,13 @@
       </video>
       <div class="poster" style="background-image:url('background_poster.jpg');"></div>
     </div>
+
     <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
       </div>
+
       <div class="grid">
         <!-- Row 1 -->
         <div class="row">
@@ -295,7 +232,6 @@
         <div class="map-card">
           <div class="map-head">
             <h2>Regions Map</h2>
-            <!-- unlock progress pill -->
             <div id="unlockProgress" class="progress-pill" style="display:none">
               <span id="unlockLabel">Moon Lab</span>
               <span class="progress-bar"><i id="unlockFill"></i></span>
@@ -397,7 +333,7 @@
       </div>
     </div>
 
-    <!-- ⬇⬇⬇ NOWY MODAL: MISSION BOARD (All/Daily/Repeatable/Story/Bounties) -->
+    <!-- NOWY MODAL: Mission Board -->
     <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
       <div class="q-modal-body">
         <div class="q-modal-head">
@@ -407,6 +343,7 @@
             <button class="q-btn" id="qClose" type="button" title="Close">×</button>
           </div>
         </div>
+
         <div id="qStatus" class="q-status">Ready</div>
 
         <!-- Zakładki -->
@@ -445,32 +382,30 @@
 
   <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- 2) Globalny endpoint API -->
-  <script>window.API_BASE = "https://api.alphahusky.win";</script>
-  <!-- 2.1) Globalna wersja frontu (zmieniaj przy deployu) -->
-  <script>window.WEBAPP_VER = "2025-10-24b";</script>
 
-  <!-- 2.2) combat.js (kolejność gwarantowana) -->
+  <!-- 2) Globalny endpoint API i wersja -->
+  <script>
+    window.API_BASE = "https://api.alphahusky.win";
+    window.WEBAPP_VER = "2025-10-24c";
+  </script>
+
+  <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
   <script>
     (function(v){
       var s = document.createElement('script');
       s.src = 'js/combat.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false; // zachowaj kolejność ładowania
+      s.async = false;
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
-
-  <!-- 3) fortress.js (po combat.js) -->
   <script>
     (function(v){
       var s = document.createElement('script');
       s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false; // ważne: po combat.js
+      s.async = false;
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
-
-  <!-- 3.1) dojo.js -->
   <script>
     (function(v){
       var s=document.createElement('script');
@@ -482,18 +417,14 @@
 
   <!-- 4) Główny skrypt aplikacji -->
   <script>
-    /* === Mini debug === */
     const DEBUG_UI = true;
     function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
-
-    /* Helper URL API */
     function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
 
     const start = () => {
       try {
         dbg('boot…');
 
-        /* Global error guard */
         window.addEventListener('error', e => {
           dbg('ERR: '+(e?.message||'error'));
           try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
@@ -506,10 +437,9 @@
         const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         let tg = nativeTg;
 
-        const $ = sel => document.querySelector(sel);
+        const $  = sel => document.querySelector(sel);
         const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-        /* Jeśli NIE w Telegramie – pokaż fallback */
         if (!tg) {
           const fb = $("#fallback"); if (fb) fb.style.display = "flex";
           dbg('Open inside Telegram');
@@ -519,7 +449,6 @@
         tg?.BackButton?.show?.();
         tg?.BackButton?.onClick?.(() => { if (tg.close) try{ tg.close(); }catch(_){}});
 
-        /* Theming */
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
         const hexToRgba = (hex, a) => {
           if(!hex) return `rgba(0,0,0,${a})`;
@@ -531,7 +460,7 @@
           setVar('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
           setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
           if (p.text_color) setVar('--txt', p.text_color);
-        }catch(_){} // bezpiecznik
+        }catch(_){}
         tg?.onEvent?.('themeChanged', () => {
           const p2 = tg?.themeParams || {};
           try{
@@ -541,35 +470,28 @@
           }catch(_){}
         });
 
-        /* Pomocnicze: ustawianie nicku */
         function setPlayerLabel(lbl){
           const el = document.getElementById('player');
           if (el && lbl) el.textContent = lbl;
         }
 
-        /* Wstępnie z initDataUnsafe (nadpiszemy po /state) */
         const unsafeUser = tg?.initDataUnsafe?.user;
         if (unsafeUser) setPlayerLabel(unsafeUser.username ? '@'+unsafeUser.username : (unsafeUser.first_name||'Player'));
 
-        /* == INIT_DATA — kluczowy fragment == */
         const init_data = window.Telegram?.WebApp?.initData || "";
 
-        /* MainButton » Quests -> najpierw Mission Board, fallback do Daily */
         tg?.MainButton?.setText?.("Quests");
         tg?.MainButton?.onClick?.(() => { (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests(); });
         tg?.MainButton?.show?.();
 
-        /* Helpers */
         const DEV_DEBUG = false;
         let _busy = false;
 
-        /* === DUAL-TRANSPORT: sendAction (keyboard → sendData, menu → HTTP+answerWebAppQuery) === */
         async function sendAction(action, payload = {}) {
           const unsafe = tg?.initDataUnsafe || {};
-          const hasQuery = !!unsafe.query_id; // true = Menu/BotFather (inline), false = Keyboard
+          const hasQuery = !!unsafe.query_id;
 
           if (hasQuery) {
-            // MENU: proxy do bota przez backend
             try {
               const res = await apiPost("/webapp/action", { action, payload });
               if (res.ok) { try { tg?.close?.(); } catch(_){} }
@@ -579,7 +501,6 @@
               console.error(e);
             }
           } else {
-            // KEYBOARD: klasyczny kanał web_app_data
             try {
               if (_busy) return;
               _busy = true; setTimeout(() => (_busy = false), 300);
@@ -593,11 +514,10 @@
           }
         }
 
-        /* HTTP helper – z Authorization: Bearer <init_data> */
         async function apiPost(path, payload){
           const init_data = window.Telegram?.WebApp?.initData || "";
           const headers = { "Content-Type": "application/json" };
-          if (init_data) headers.Authorization = `Bearer ${init_data}`; // ważne dla weryfikacji
+          if (init_data) headers.Authorization = `Bearer ${init_data}`;
           const res = await fetch(api(path), {
             method: "POST",
             headers,
@@ -608,19 +528,14 @@
           return data;
         }
 
-        /* ⬇⬇⬇ NOWE: udostępnij apiPost do użytku zewnętrznego + init Quests */
         window.S = window.S || {};
         window.S.apiPost = apiPost;
 
-        // >>> INIT helpers (fortress + dojo + quests) <<<
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
 
-        // Init dla Combat (po załadowaniu combat.js, z fallback container)
-        setTimeout(() => {
-          window.Combat?.init?.({ container: document.body });
-        }, 100);
+        setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -682,9 +597,8 @@
           regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
           keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
-          /* NOWE: globalny manifest przeciwników Fortress z map.json */
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
-          window.DATA = DATA; 
+          window.DATA = DATA;
           renderMap();
         }
 
@@ -720,7 +634,6 @@
             PLAYER_STATE = state;
             applyStateToMap();
             renderTopbar();
-            // Nadpisz nick po stronie serwera (anty-bot w initDataUnsafe)
             if (state && state.user && !state.user.is_bot) {
               const lbl = state.user.username ? '@' + state.user.username : (state.user.first_name || 'Player');
               setPlayerLabel(lbl);
@@ -776,7 +689,7 @@
             const btn = document.createElement('button');
             btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
             btn.style.left = b.x + '%';
-            btn.style.top = b.y + '%';
+            btn.style.top  = b.y + '%';
             btn.title = b.name + (unlocked ? '' : ' (locked)');
 
             const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
@@ -794,15 +707,12 @@
               createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
               if (!unlocked) return openLocked(b);
 
-              /* ⬇⬇⬇ ZMIANA: najpierw Mission Board, fallback do starego daily-quests */
               if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-              /* SPECJALNE SKRĘTY */
               if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
                 return window.Fortress.open();
               }
 
-              // ⬇️ Dojo: jeśli node lub building wskazuje na Testnet Wastes Dojo
               if ((b.id === 'testnet_wastes') ||
                   (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
                 if (window.Dojo?.open) return window.Dojo.open();
@@ -820,7 +730,6 @@
           resolveLabelCollisions();
         }
 
-        /* Particles burst — poprawione */
         const canvas = document.getElementById('particlesCanvas');
         const ctx = canvas ? canvas.getContext('2d') : null;
 
@@ -880,7 +789,6 @@
 
         function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
 
-        /* Locked modal */
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
         const lockedDesc = $("#lockedDesc");
@@ -916,10 +824,9 @@
           lockedBack.style.display = 'flex';
         }
 
-        /* Region sheet */
-        const regionBack = document.getElementById('regionBack');
+        const regionBack  = document.getElementById('regionBack');
         const regionTitle = document.getElementById('regionTitle');
-        const regionDesc = document.getElementById('regionDesc');
+        const regionDesc  = document.getElementById('regionDesc');
         const btnRegionGo = document.getElementById('regionGo');
         const btnRegionLo = document.getElementById('regionLore');
         document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
@@ -929,7 +836,6 @@
           regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
           btnRegionGo.onclick = () => {
             regionBack.style.display='none';
-            // ⬇️ SPECJALNY SKRĘT: Testnet Wastes -> Dojo modal zamiast akcji region_open
             if (node?.id === 'testnet_wastes' && window.Dojo?.open) { window.Dojo.open(); return; }
             sendAction('region_open', { region: node.region, nodeId: node.id });
           };
@@ -937,25 +843,23 @@
           regionBack.style.display = 'flex';
         }
 
-        /* Building modal (HTTP) */
-        const bBack = $("#buildingBack");
-        const bTitle = $("#buildingTitle");
-        const bDesc = $("#buildingDesc");
+        const bBack   = $("#buildingBack");
+        const bTitle  = $("#buildingTitle");
+        const bDesc   = $("#buildingDesc");
         const bStatus = $("#buildingStatus");
         const bTimerW = $("#buildingTimerWrap");
-        const bTimer = $("#buildingTimer");
+        const bTimer  = $("#buildingTimer");
         const bRoutesW= $("#buildingRoutesWrap");
-        const bRoute = $("#buildingRoute");
+        const bRoute  = $("#buildingRoute");
         const bBtnRef = $("#buildingRefresh");
         const bBtnStart=$("#buildingStartBtn");
         const bBtnRes = $("#buildingResolveBtn");
 
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
-        /* === AUTO-RESOLVE z checkiem po stronie serwera + ciche retrysy NOT_READY === */
         const AUTO_RESOLVE_ON_READY = true;
-        const READY_GRACE_MS = 2000; // odczekaj 2s po zejściu lokalnego timera
-        const RETRY_INTERVAL_MS = 1200; // odstęp między retriami NOT_READY
+        const READY_GRACE_MS = 2000;
+        const RETRY_INTERVAL_MS = 1200;
         const MAX_RESOLVE_RETRIES = 5;
 
         let CURRENT_BID = null;
@@ -992,9 +896,8 @@
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             bTitle.textContent = st.name || bTitle.textContent;
-            bDesc.textContent = st.desc || bDesc.textContent;
+            bDesc.textContent  = st.desc || bDesc.textContent;
 
-            // routes
             bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
             bRoute.innerHTML = '';
             if (st.routes && st.routes.length){
@@ -1009,12 +912,11 @@
               const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
               bStatus.textContent = "Active";
               bBtnStart.style.display = "none";
-              bBtnRes.style.display = "none"; // dopiero przy “Ready”
+              bBtnRes.style.display = "none";
               bTimerW.style.display = "block";
               if (left > 0){
                 startBuildingTicker(Math.floor(Date.now()/1000) + left);
               } else {
-                // Serwer mówi “końcówka”, sprawdź gotowość/resolve
                 verifyReadyAndMaybeResolve();
               }
             } else {
@@ -1030,7 +932,6 @@
           }
         }
 
-        /* Po zejściu timera: sprawdź stan po stronie serwera i spróbuj zauto-resolvować */
         async function verifyReadyAndMaybeResolve(){
           bStatus.textContent = "Finalizing…";
           bBtnRes.style.display = "none";
@@ -1038,7 +939,6 @@
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             if (st.active && (st.timeLeftSec||0) > 0){
-              // run jeszcze trwa wg serwera — wracamy do licznika
               bStatus.textContent = "Active";
               bBtnStart.style.display = "none";
               bBtnRes.style.display = "none";
@@ -1046,7 +946,7 @@
               startBuildingTicker(Math.floor(Date.now()/1000) + st.timeLeftSec);
               return;
             }
-          }catch(_){ /* zignoruj — spróbujemy resolve po grace */ }
+          }catch(_){}
 
           if (AUTO_RESOLVE_ON_READY){
             setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
@@ -1056,7 +956,6 @@
           }
         }
 
-        /* Resolve z cichymi retriami NOT_READY (różne warianty stringów) */
         async function resolveRun(maxRetries=0, silentRetries=false){
           if (!CURRENT_BID) return false;
           for (let i=0; i<=maxRetries; i++){
@@ -1078,7 +977,6 @@
               const R = String(reason).toUpperCase();
               const isNotReady = R.includes("NOT_READY");
               if (isNotReady && i < maxRetries){
-                // cichy retry
                 await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
                 continue;
               }
@@ -1088,7 +986,6 @@
               return false;
             }
           }
-          // po wszystkich retriiach — pokaż ręczny odbiór
           bStatus.textContent = "Ready";
           bBtnRes.style.display = "inline-block";
           return false;
@@ -1121,7 +1018,6 @@
         });
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
-        /* Open/close map */
         document.querySelector(".btn.map")?.addEventListener("click", () => {
           mapBack.style.display = "flex";
           if (!DATA) loadMapData();
@@ -1139,20 +1035,19 @@
           console.log("coords:", x, y);
         });
 
-        /* Kliknięcia przycisków */
         const actions = {
-          ".btn.avatar": () => sendAction("avatar_open"),
-          ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+          ".btn.avatar":    () => sendAction("avatar_open"),
+          ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
           ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
-          ".btn.char": () => sendAction("char_open"),
-          ".btn.shop": () => sendAction("shop_open"),
-          ".btn.pets": () => sendAction("pets_open"),
-          ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
-          ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-          ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-          ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
-          ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
-          ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+          ".btn.char":      () => sendAction("char_open"),
+          ".btn.shop":      () => sendAction("shop_open"),
+          ".btn.pets":      () => sendAction("pets_open"),
+          ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
+          ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
+          ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
+          ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
+          ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
+          ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
           ".btn.howlboard": () => openBoard(),
         };
         Object.entries(actions).forEach(([sel, fn]) => {
@@ -1160,7 +1055,6 @@
           el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
         });
 
-        /* Howlboard modal */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
         function openBoard(){ boardBack.style.display = "flex"; }
@@ -1174,7 +1068,7 @@
           });
         });
 
-        /* Daily (HTTP w obu trybach; w klawiaturze akcje mogą iść sendData) – Fallback */
+        /* Daily fallback (stary modal) */
         const questsBack = document.getElementById("questsBack");
         const questsList = document.getElementById("questsList");
         document.getElementById("closeQuests")?.addEventListener("click", () => {
@@ -1220,7 +1114,7 @@
               return wrap;
             }
             if (s.normal) rows.push(card("Daily", s.normal, false));
-            if (s.raid) rows.push(card("Raid", s.raid, true));
+            if (s.raid)   rows.push(card("Raid",  s.raid,   true));
             rows.forEach(r => questsList.appendChild(r));
           }catch(e){
             console.warn(e);
@@ -1230,7 +1124,6 @@
         async function triggerDaily(action, raid){
           const unsafe = tg?.initDataUnsafe || {};
           if (unsafe.query_id) {
-            // Menu: HTTP do backendu
             try {
               const ans = await apiPost("/webapp/daily/action", { action, raid });
               if (!ans.ok) throw new Error(ans.error || "Action failed");
@@ -1240,7 +1133,6 @@
               tg?.showAlert?.("Action failed. Try again.");
             }
           } else {
-            // Keyboard: wyślij do bota (obsłuż w on_webapp_data → daily_action)
             tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } }));
           }
           refreshQuests();
@@ -1276,7 +1168,7 @@
             case "pets":
               sendAction("pets_open");
               break;
-            case "fortress": /* router otwiera Fortress */
+            case "fortress":
               if (window.Fortress?.open) window.Fortress.open();
               else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
               break;
@@ -1285,16 +1177,13 @@
           }
         }
 
-        /* Prefetch */
         loadPlayerState();
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
-        /* Fallback dla przycisku-launchera jeśli quests-launcher.js się nie wczyta */
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
           (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
         });
 
-        /* Zamknięcie Mission Board */
         document.getElementById('qClose')?.addEventListener('click', () => { document.getElementById('qBack').style.display='none'; });
 
         dbg('Ready');
@@ -1302,7 +1191,7 @@
         dbg('FATAL: '+(fatal && fatal.message ? fatal.message : 'error'));
         console.error('FATAL', fatal);
       }
-    }; // start()
+    };
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', start, { once: true });
@@ -1311,7 +1200,7 @@
     }
   </script>
 
-    <!-- ⬇⬇⬇ Mission Board scripts — at very end -->
+  <!-- Mission Board scripts — at very end -->
   <script src="js/quests.js?v=20251010" defer></script>
   <script src="js/quests-launcher.js?v=20251010" defer></script>
   <script>
@@ -1332,7 +1221,6 @@
         return res.json();
       });
 
-      // tylko raz
       if (window.Quests && !window.__questsInited) {
         window.Quests.init({ apiPost, tg, dbg: console.debug });
         window.__questsInited = true;
@@ -1341,14 +1229,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
