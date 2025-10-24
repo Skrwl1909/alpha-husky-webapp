@@ -52,8 +52,8 @@
     return String(t || "Quest");
   }
 
-   // ===== API =====
-  // Obsługa obu zestawów endpointów (nowe i stare)
+    // ===== API =====
+  // Obsługa obu zestawów endpointów (nowe i stare) – próbujemy po kolei
   const EP = {
     list:     ["/webapp/quests/state", "/webapp/quests"],
     accept:   ["/webapp/quests/accept", "/webapp/quest/accept"],
@@ -72,27 +72,23 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const err = new Error(data.reason || res.statusText);
-      err.status = res.status; err.data = data;
+      err.status = res.status; err.data = data; err.path = path;
       throw err;
     }
     return data;
   }
 
-  // spróbuj po kolei ścieżek aż któraś zadziała
+  // spróbuj kolejnych ścieżek; 404 -> następna, każdy inny błąd -> przerwij
   async function postFirstOk(paths, payload) {
     let lastErr = null;
     for (const p of paths) {
       try {
         const out = await apiPostRaw(p, payload);
-        if (out && out.ok === false) {
-          // część naszych handlerów zwraca {ok:false} ale 200 – to nie jest 404, więc kończymy
-          return out;
-        }
         return out;
       } catch (e) {
         lastErr = e;
-        if (e && e.status === 404) continue; // próbuj następnej ścieżki
-        throw e; // inne błędy – przerywamy
+        if (e && e.status === 404) continue;
+        throw e;
       }
     }
     throw lastErr || new Error("All endpoints failed");
@@ -100,8 +96,7 @@
 
   async function fetchRaw() {
     const out = await postFirstOk(EP.list, {});
-    // backend może zwrócić { ok, quests, active } – zostawiamy całość dla normalizacji
-    return out;
+    return out; // może być {ok, quests, active} albo nowy format grupowany
   }
   async function acceptQuest(id) {
     return postFirstOk(EP.accept, { id });
@@ -367,15 +362,17 @@
     setStatus("Loading…");
     try {
       const raw = await fetchRaw();
-      // normalize using either {quests|active} or grouped lists
       state.board = normalizeBoard(raw);
       renderCounters(state.board);
       renderList();
-      setStatus("");
+      setStatus(""); // ok
     } catch (e) {
       state.debug(e);
-      setStatus("Failed to load");
-      if (state.el.list) state.el.list.innerHTML = `<div class="q-empty">Failed to load quests.</div>`;
+      const msg = (e && (e.data?.reason || e.message)) || "Failed to load";
+      setStatus("Error: " + msg);
+      if (state.el.list) {
+        state.el.list.innerHTML = `<div class="q-empty">Failed to load quests<br><small>${esc(msg)}</small></div>`;
+      }
     }
   }
 
