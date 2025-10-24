@@ -193,7 +193,7 @@
  </style>
   <!-- ⬇⬇⬇ NOWY BLOK: Mission Board (inline CSS) — wstawiony bezpośrednio po Twoim <style> ⬆⬆⬆ -->
   <style id="quests-css">
-    /* --- Mission Board modal & cards --- */
+    /* (Twój blok CSS zostaje bez zmian) */
     .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
     .q-modal-body{background:#0b0f14;border:1px solid #243244;border-radius:14px;width:min(720px,92vw);max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:16px}
     .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -232,17 +232,8 @@
   </style>
 </head>
 <body>
-
-  <!-- Mission Board modal -->
-  <div id="qBack" class="q-modal" style="display:none">
-    <div class="q-modal-body">
-      <div class="q-modal-head">
-        <h3 class="q-title">Mission Board</h3>
-        <div class="q-head-actions">
-          <button id="qRefresh" class="q-btn q-btn-ghost" type="button">Refresh</button>
-          <button class="q-btn q-btn-ghost" type="button" onclick="document.getElementById('qBack').style.display='none'">Close</button>
-        </div>
-      </div>
+  <!-- USUNIĘTO duplikat modala Mission Board (pierwszy #qBack) -->
+  <div id="dbg">init…</div>
 
       <div id="qStatus" class="q-status"></div>
 
@@ -1335,6 +1326,7 @@
   <script src="/js/quests-launcher.js?v=20251010"></script>
 </body>
 </html>
+
 
 
 
