@@ -55,8 +55,8 @@
     // ===== API =====
   // Obsługa obu zestawów endpointów (nowe i stare) – próbujemy po kolei
   const EP = {
-    list:     ["/webapp/quests/state", "/webapp/quests"],
-    accept:   ["/webapp/quests/accept", "/webapp/quest/accept"],
+    list: ["/webapp/quests/state", "/webapp/daily/state", "/webapp/quests"],
+    accept: ["/webapp/quests/accept", "/webapp/quest/accept"],
     complete: ["/webapp/quests/complete", "/webapp/quest/complete"],
   };
 
