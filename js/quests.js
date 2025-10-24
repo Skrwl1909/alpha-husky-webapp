@@ -52,7 +52,7 @@
     return String(t || "Quest");
   }
 
-    // ===== API =====
+  // ===== API =====
   // Obsługa obu zestawów endpointów (nowe i stare) – próbujemy po kolei
   const EP = {
     list: ["/webapp/quests/state", "/webapp/daily/state", "/webapp/quests"],
@@ -106,62 +106,61 @@
   }
 
   function normalizeBoard(payload) {
-  // Nowy format (już masz)
-  const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
-  if (hasNew) {
-    return {
-      ready: payload.ready || [],
-      accepted: payload.accepted || [],
-      available: payload.available || [],
-      done: payload.done || []
-    };
-  }
-
-  // NOWE: Obsługa daily legacy {normal, raid}
-  if (payload && (payload.normal || payload.raid)) {
-    const out = { ready: [], accepted: [], available: [], done: [] };
-    // Normal daily
-    if (payload.normal) {
-      const q = payload.normal;
-      if (q.claimed || q.done) {
-        out.done.push({ ...q, status: "cooldown" });  // Claimed/done → cooldown
-      } else if (q.availableActions && q.availableActions.length > 0) {
-        out.available.push({ ...q, status: "available", type: "daily" });  // Available → available
-      } else {
-        out.accepted.push({ ...q, status: "accepted", type: "daily" });  // In progress
-      }
+    // Nowy format (grupowany)
+    const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
+    if (hasNew) {
+      return {
+        ready: payload.ready || [],
+        accepted: payload.accepted || [],
+        available: payload.available || [],
+        done: payload.done || []
+      };
     }
-    // Raid (analogicznie)
-    if (payload.raid) {
-      const q = payload.raid;
-      if (q.claimed || q.done) {
-        out.done.push({ ...q, status: "cooldown" });
-      } else if (q.availableActions && q.availableActions.length > 0) {
-        out.available.push({ ...q, status: "available", type: "daily" });  // Raid jako daily
-      } else {
-        out.accepted.push({ ...q, status: "accepted", type: "daily" });
+
+    // Obsługa daily legacy {normal, raid}
+    if (payload && (payload.normal || payload.raid)) {
+      const out = { ready: [], accepted: [], available: [], done: [] };
+      // Normal daily
+      if (payload.normal) {
+        const q = payload.normal;
+        if (q.claimed || q.done) {
+          out.done.push({ ...q, status: "cooldown" });  // Claimed/done → cooldown
+        } else if (q.availableActions && q.availableActions.length > 0) {
+          out.available.push({ ...q, status: "available", type: "daily" });  // Available → available
+        } else {
+          out.accepted.push({ ...q, status: "accepted", type: "daily" });  // In progress
+        }
       }
+      // Raid (analogicznie)
+      if (payload.raid) {
+        const q = payload.raid;
+        if (q.claimed || q.done) {
+          out.done.push({ ...q, status: "cooldown" });
+        } else if (q.availableActions && q.availableActions.length > 0) {
+          out.available.push({ ...q, status: "available", type: "daily" });  // Raid jako daily
+        } else {
+          out.accepted.push({ ...q, status: "accepted", type: "daily" });
+        }
+      }
+      return out;
+    }
+
+    // Legacy fallback – active/quests jako accepted/ready
+    const out = { ready: [], accepted: [], available: [], done: [] };
+    const list = Array.isArray(payload?.active) ? payload.active
+               : Array.isArray(payload?.quests) ? payload.quests
+               : [];
+    for (const q of list) {
+      const ready = (q.ready === true) ? true : isComplete(q);
+      if (ready) out.ready.push({ ...q, status: "ready" });
+      else out.accepted.push({ ...q, status: "accepted" });
     }
     return out;
   }
 
-  // Legacy fallback (już masz) – active/quests jako accepted/ready
-  const out = { ready: [], accepted: [], available: [], done: [] };
-  const list = Array.isArray(payload?.active) ? payload.active
-             : Array.isArray(payload?.quests) ? payload.quests
-             : [];
-  for (const q of list) {
-    const ready = (q.ready === true) ? true : isComplete(q);
-    if (ready) out.ready.push({ ...q, status: "ready" });
-    else out.accepted.push({ ...q, status: "accepted" });
-  }
-  return out;
-}
-  }
-
   // ===== Rendering =====
   const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
-  const TABS = ["all", "daily", "repeatable", "story", "bounties"];
+  const TABS = ["all", "daily", "repeatable", "story", "bounties"]; // (na przyszłość)
 
   function mergeBoard(board) {
     const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
@@ -333,7 +332,8 @@
     const items = mergeBoard(board);
     const countReady = (tab) => items.filter(x => matchTab(x, tab) && x.status === "ready").length;
     ["all","daily","repeatable","story","bounties"].forEach(tab => {
-      const el = document.querySelector(`[data-count="${tab}"]`);
+      const scope = state.el.tabs || state.el.back || document;
+      const el = scope.querySelector(`[data-count="${tab}"]`);
       if (el) el.textContent = String(countReady(tab));
     });
   }
@@ -355,8 +355,8 @@
         try {
           btn.disabled = true;
           setStatus("Accepting…");
-          await acceptQuest(id);          // UPDATED: just call and then refresh
-          await refresh();                // fetch fresh state
+          await acceptQuest(id);
+          await refresh();
           toast("Accepted");
         } catch (e) {
           state.debug(e);
@@ -368,8 +368,8 @@
         try {
           btn.disabled = true;
           setStatus("Claiming…");
-          const res = await completeQuest(id); // might contain rewardText
-          await refresh();                     // UPDATED
+          const res = await completeQuest(id);
+          await refresh();
           toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
         } catch (e) {
           state.debug(e);
@@ -409,6 +409,8 @@
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.tab) return;
       $$(".q-tab", state.el.tabs).forEach(x => x.classList.toggle("q-tab--on", x === b));
+      // optional aria
+      $$(".q-tab[role='tab']", state.el.tabs).forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
       state.tab = b.dataset.tab;
       renderList();
     });
@@ -443,12 +445,15 @@
       state.tg = tg || null;
       state.debug = typeof dbg === "function" ? dbg : noop;
 
+      // scope wszystko do modala Mission Board (#qBack)
       state.el.back = $("#qBack");
-      state.el.list = $("#qList");
-      state.el.tabs = $("#qTabs");
-      state.el.chips = $("#qState");
-      state.el.status = $("#qStatus");
-      state.el.refresh = $("#qRefresh") || $("#q-refresh");
+      const root = state.el.back || document;
+
+      state.el.list    = $("#qList",   root);
+      state.el.tabs    = $("#qTabs",   root);
+      state.el.chips   = $("#qState",  root);
+      state.el.status  = $("#qStatus", root);
+      state.el.refresh = $("#qRefresh", root) || $("#q-refresh", root);
 
       wireUI();
     },
