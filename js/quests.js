@@ -20,6 +20,17 @@
   }
 
   function progressPct(item) {
+    // Prefer new server fields if present
+    if (item && item.progressTotal != null && item.reqTotal != null) {
+      const need = Math.max(1, Number(item.reqTotal) || 1);
+      const have = Math.min(Number(item.progressTotal) || 0, need);
+      return Math.max(0, Math.min(100, Math.round(100 * have / need)));
+    }
+    if (item && item.percent != null) {
+      const p = Number(item.percent) || 0;
+      return Math.max(0, Math.min(100, Math.round(p)));
+    }
+    // Legacy fallback (sum per-keys)
     const req = item.required || item.req || {};
     const prg = item.progress || {};
     const keys = Object.keys(req);
@@ -43,9 +54,9 @@
 
   // ===== API =====
   const endpoints = {
-    list: "/webapp/quests",
-    accept: "/webapp/quest/accept",
-    complete: "/webapp/quest/complete",
+    list: "/webapp/quests/state",       // UPDATED
+    accept: "/webapp/quests/accept",    // UPDATED
+    complete: "/webapp/quests/complete" // UPDATED
   };
 
   async function apiPost(path, payload) {
@@ -65,13 +76,22 @@
   async function fetchRaw() {
     const out = await apiPost(endpoints.list, {});
     if (out && out.ok === false) throw new Error(out.error || out.reason || "Failed to fetch quests");
-    return out.data || out;
+    // backend returns {ok, quests, active}; keep compatibility by returning whole payload
+    return out;
   }
 
-  // ===== Normalizacja odpowiedzi serwera =====
-  // wspiera:
-  //  A) nowy format: { ready, accepted, available, done }
-  //  B) stary format: { active: [...] }
+  // Simple wrappers for actions (missing before)
+  async function acceptQuest(id) {
+    return apiPost(endpoints.accept, { id });
+  }
+  async function completeQuest(id) {
+    return apiPost(endpoints.complete, { id });
+  }
+
+  // ===== Normalization =====
+  // supports:
+  //  A) new grouped format: { ready, accepted, available, done }
+  //  B) legacy format: { active: [...] } or { quests: [...] }
   function normalizeBoard(payload) {
     const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
     if (hasNew) {
@@ -83,10 +103,13 @@
       };
     }
     const out = { ready: [], accepted: [], available: [], done: [] };
-    const list = Array.isArray(payload?.active) ? payload.active : [];
+    const list = Array.isArray(payload?.active) ? payload.active
+               : Array.isArray(payload?.quests) ? payload.quests
+               : [];
     for (const q of list) {
-      // „active” u Ciebie = przyjęte zadania; policzmy „ready”
-      if (isComplete(q)) out.ready.push({ ...q, status: "ready" });
+      // Treat all "active" as accepted; compute ready if server didn't mark it
+      const ready = (q.ready === true) ? true : isComplete(q);
+      if (ready) out.ready.push({ ...q, status: "ready" });
       else out.accepted.push({ ...q, status: "accepted" });
     }
     return out;
@@ -131,6 +154,7 @@
   function rewardBadges(rew) {
     const items = [];
     for (const [k, v] of Object.entries(rew || {})) {
+      if (v == null || v === 0) continue;
       items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
     }
     return items.join(" ");
@@ -149,6 +173,14 @@
 
   function makeCard(q, actions) {
     const pct = progressPct(q);
+
+    // New meta line using progressTotal/reqTotal/unit if present
+    const need = (q.reqTotal != null) ? Number(q.reqTotal) : sumVals(q.req || q.required);
+    const have = (q.progressTotal != null) ? Number(q.progressTotal)
+               : sumClamp(q.progress, q.req || q.required);
+    const unit = q.unit || "steps";
+    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+
     const title = esc(q.title || q.name || q.id);
     const type = esc(typeLabel(q.type));
     const status = esc(q.status || "accepted");
@@ -173,6 +205,8 @@
           <span class="q-req-val">${pct}%</span>
         </div>
         <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
+        <div class="q-meta">${metaLine}</div>
+        ${q.hint ? `<div class="q-hint">${esc(q.hint)}</div>` : ""}
       </div>
 
       <div class="q-rew">${rewardBadges(q.reward)}</div>
@@ -196,11 +230,26 @@
     } else if (status === "cooldown") {
       const span = document.createElement("span");
       span.className = "q-badge";
-      span.title = q.cooldown_end ? new Date(q.cooldown_end).toLocaleString() : "Next reset";
-      span.textContent = "Cooldown " + cooldownText(q.cooldown_end);
+      span.title = q.cooldownEndsAt ? new Date(q.cooldownEndsAt).toLocaleString() : "Next reset";
+      span.textContent = "Cooldown " + cooldownText(q.cooldownEndsAt);
       act.appendChild(span);
     }
     return card;
+  }
+
+  function sumVals(obj) {
+    let s = 0; for (const k in (obj||{})) s += (Number(obj[k])||0);
+    return s;
+  }
+  function sumClamp(progress, req) {
+    let s = 0;
+    const keys = Object.keys(req || {});
+    for (const k of keys) {
+      const need = Number(req[k]||0);
+      const have = Math.min(Number((progress||{})[k]||0), need);
+      s += have;
+    }
+    return s;
   }
 
   // ===== Controller =====
@@ -262,10 +311,8 @@
         try {
           btn.disabled = true;
           setStatus("Accepting…");
-          const data = await acceptQuest(id);
-          state.board = normalizeBoard(data || state.board);
-          renderCounters(state.board);
-          renderList();
+          await acceptQuest(id);          // UPDATED: just call and then refresh
+          await refresh();                // fetch fresh state
           toast("Accepted");
         } catch (e) {
           state.debug(e);
@@ -277,11 +324,9 @@
         try {
           btn.disabled = true;
           setStatus("Claiming…");
-          const data = await completeQuest(id);
-          state.board = normalizeBoard(data || state.board);
-          renderCounters(state.board);
-          renderList();
-          toast("Reward claimed");
+          const res = await completeQuest(id); // might contain rewardText
+          await refresh();                     // UPDATED
+          toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
         } catch (e) {
           state.debug(e);
           toast(e?.message || "Claim failed");
@@ -300,6 +345,7 @@
     setStatus("Loading…");
     try {
       const raw = await fetchRaw();
+      // normalize using either {quests|active} or grouped lists
       state.board = normalizeBoard(raw);
       renderCounters(state.board);
       renderList();
@@ -312,7 +358,7 @@
   }
 
   function wireUI() {
-    // Tabs (kategorie)
+    // Tabs (categories)
     state.el.tabs?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.tab) return;
@@ -321,7 +367,7 @@
       renderList();
     });
 
-    // Chips (stany)
+    // Chips (states)
     state.el.chips?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.state) return;
