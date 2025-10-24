@@ -190,7 +190,7 @@
     .hit-impact {
       animation: hit-impact 0.4s ease-out;
     }
-  </style>
+ </style>
   <!-- ⬇⬇⬇ NOWY BLOK: Mission Board (inline CSS) — wstawiony bezpośrednio po Twoim <style> ⬆⬆⬆ -->
   <style id="quests-css">
     /* --- Mission Board modal & cards --- */
@@ -232,6 +232,43 @@
   </style>
 </head>
 <body>
+
+  <!-- Mission Board modal -->
+  <div id="qBack" class="q-modal" style="display:none">
+    <div class="q-modal-body">
+      <div class="q-modal-head">
+        <h3 class="q-title">Mission Board</h3>
+        <div class="q-head-actions">
+          <button id="qRefresh" class="q-btn q-btn-ghost" type="button">Refresh</button>
+          <button class="q-btn q-btn-ghost" type="button" onclick="document.getElementById('qBack').style.display='none'">Close</button>
+        </div>
+      </div>
+
+      <div id="qStatus" class="q-status"></div>
+
+      <!-- Tabs: categories -->
+      <div id="qTabs" class="q-filters">
+        <button class="q-tab q-tab--on" data-tab="all">All <span class="q-badge" data-count="all">0</span></button>
+        <button class="q-tab" data-tab="daily">Daily <span class="q-badge" data-count="daily">0</span></button>
+        <button class="q-tab" data-tab="repeatable">Repeatable <span class="q-badge" data-count="repeatable">0</span></button>
+        <button class="q-tab" data-tab="story">Story <span class="q-badge" data-count="story">0</span></button>
+        <button class="q-tab" data-tab="bounties">Bounties <span class="q-badge" data-count="bounties">0</span></button>
+      </div>
+
+      <!-- Chips: state filters -->
+      <div id="qState" class="q-filters">
+        <button class="q-tab q-tab--on" data-state="any">Any</button>
+        <button class="q-tab" data-state="ready">Ready</button>
+        <button class="q-tab" data-state="accepted">In progress</button>
+        <button class="q-tab" data-state="cooldown">Cooldown</button>
+      </div>
+
+      <!-- List -->
+      <div id="qList" class="quest-board"></div>
+    </div>
+  </div>
+
+  <!-- (reszta Twojego kodu, bez zmian) -->
   <div id="dbg">init…</div>
   <div class="app">
     <div class="bg">
@@ -1298,6 +1335,7 @@
   <script src="/js/quests-launcher.js?v=20251010"></script>
 </body>
 </html>
+
 
 
 
