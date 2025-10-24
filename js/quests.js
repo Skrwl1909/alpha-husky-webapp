@@ -115,7 +115,7 @@
       available: payload.available || [],
       done: payload.done || []
     };
-  }
+  
 
   // NOWE: Obsługa daily legacy {normal, raid}
   if (payload && (payload.normal || payload.raid)) {
