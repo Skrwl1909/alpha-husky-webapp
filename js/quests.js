@@ -52,14 +52,15 @@
     return String(t || "Quest");
   }
 
-  // ===== API =====
-  const endpoints = {
-    list: "/webapp/quests/state",       // UPDATED
-    accept: "/webapp/quests/accept",    // UPDATED
-    complete: "/webapp/quests/complete" // UPDATED
+   // ===== API =====
+  // Obsługa obu zestawów endpointów (nowe i stare)
+  const EP = {
+    list:     ["/webapp/quests/state", "/webapp/quests"],
+    accept:   ["/webapp/quests/accept", "/webapp/quest/accept"],
+    complete: ["/webapp/quests/complete", "/webapp/quest/complete"],
   };
 
-  async function apiPost(path, payload) {
+  async function apiPostRaw(path, payload) {
     if (global.S && typeof global.S.apiPost === "function") {
       return await global.S.apiPost(path, payload || {});
     }
@@ -69,23 +70,44 @@
       body: JSON.stringify(payload || {})
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
+    if (!res.ok) {
+      const err = new Error(data.reason || res.statusText);
+      err.status = res.status; err.data = data;
+      throw err;
+    }
     return data;
   }
 
-  async function fetchRaw() {
-    const out = await apiPost(endpoints.list, {});
-    if (out && out.ok === false) throw new Error(out.error || out.reason || "Failed to fetch quests");
-    // backend returns {ok, quests, active}; keep compatibility by returning whole payload
-    return out;
+  // spróbuj po kolei ścieżek aż któraś zadziała
+  async function postFirstOk(paths, payload) {
+    let lastErr = null;
+    for (const p of paths) {
+      try {
+        const out = await apiPostRaw(p, payload);
+        if (out && out.ok === false) {
+          // część naszych handlerów zwraca {ok:false} ale 200 – to nie jest 404, więc kończymy
+          return out;
+        }
+        return out;
+      } catch (e) {
+        lastErr = e;
+        if (e && e.status === 404) continue; // próbuj następnej ścieżki
+        throw e; // inne błędy – przerywamy
+      }
+    }
+    throw lastErr || new Error("All endpoints failed");
   }
 
-  // Simple wrappers for actions (missing before)
+  async function fetchRaw() {
+    const out = await postFirstOk(EP.list, {});
+    // backend może zwrócić { ok, quests, active } – zostawiamy całość dla normalizacji
+    return out;
+  }
   async function acceptQuest(id) {
-    return apiPost(endpoints.accept, { id });
+    return postFirstOk(EP.accept, { id });
   }
   async function completeQuest(id) {
-    return apiPost(endpoints.complete, { id });
+    return postFirstOk(EP.complete, { id });
   }
 
   // ===== Normalization =====
