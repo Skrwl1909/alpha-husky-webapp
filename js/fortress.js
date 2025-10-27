@@ -282,12 +282,10 @@
       }
     }
 
-    // 3) Oszacuj HP max (z sum obrażeń + HP na końcu)
-    const dmgToBoss   = steps.filter(s => s.actor==='you').reduce((a,s)=>a+(s.dmg||0), 0);
-    const dmgToPlayer = steps.filter(s => s.actor==='boss').reduce((a,s)=>a+(s.dmg||0), 0);
-
-    let bossHpLeft   = Number(t.stats?.enemyHpLeft ?? t.enemyHpLeft ?? 0);
-    let playerHpLeft = Number(t.stats?.playerHpLeft ?? t.playerHpLeft ?? 0);
+    // 3) Odczytaj HP left, preferując pola z backendu
+    const sObj = t.stats || {};
+    let bossHpLeft   = Number(sObj.enemyHpLeft ?? t.enemyHpLeft ?? 0);
+    let playerHpLeft = Number(sObj.playerHpLeft ?? t.playerHpLeft ?? 0);
 
     if (!Number.isFinite(bossHpLeft) || bossHpLeft<=0){
       const lastYou = [...steps].reverse().find(s => s.actor==='you' && Number.isFinite(s.b_hp));
@@ -298,10 +296,17 @@
       playerHpLeft = lastBoss ? lastBoss.p_hp : 0;
     }
 
-    const bossHpMax   = Math.max(1, Math.round((bossHpLeft||0)   + dmgToBoss));
-    const playerHpMax = Math.max(1, Math.round((playerHpLeft||0) + dmgToPlayer));
+    // 4) HP MAX — PRIORYTET z backendu, fallback do wyliczenia ze stepów
+    let bossHpMaxPref   = Number(sObj.enemyHpMax ?? t.boss?.hpMax ?? t.enemyHpMax);
+    let playerHpMaxPref = Number(sObj.playerHpMax ?? t.playerHpMax);
 
-    // 4) Pola prezentacyjne
+    const dmgToBoss   = steps.filter(s => s.actor==='you').reduce((a,s)=>a+(s.dmg||0), 0);
+    const dmgToPlayer = steps.filter(s => s.actor==='boss').reduce((a,s)=>a+(s.dmg||0), 0);
+
+    let bossHpMax   = Number.isFinite(bossHpMaxPref)   && bossHpMaxPref   > 0 ? bossHpMaxPref   : Math.max(1, Math.round((bossHpLeft||0)   + dmgToBoss));
+    let playerHpMax = Number.isFinite(playerHpMaxPref) && playerHpMaxPref > 0 ? playerHpMaxPref : Math.max(1, Math.round((playerHpLeft||0) + dmgToPlayer));
+
+    // 5) Pola prezentacyjne
     const bossName   = t.boss?.name || t.bossName || 'Boss';
     const bossSprite = t.boss?.sprite || t.bossSprite || null;
 
