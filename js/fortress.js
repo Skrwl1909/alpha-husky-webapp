@@ -259,26 +259,40 @@
     // 2) Zbuduj kroki w jednolitym kształcie
     let steps = [];
     if (Array.isArray(t.steps)) {
-      if (t.steps[0] && ('att' in t.steps[0])) {
-        // format: {t, att:'P'|'E', dmg, crit, php, ehp}
-        steps = t.steps.map(s => ({
-          actor: s.att === 'P' ? 'you' : 'boss',
-          dmg: Number(s.dmg) || 0,
-          crit: !!s.crit,
-          dodge: !!s.dodge,
-          b_hp: s.att === 'P' ? (Number(s.ehp) || 0) : undefined,
-          p_hp: s.att === 'E' ? (Number(s.php) || 0) : undefined,
-        }));
-      } else if (t.steps[0] && ('actor' in t.steps[0])) {
-        // już w nowym kształcie
-        steps = t.steps.map(s => ({
-          actor: s.actor === 'you' ? 'you' : 'boss',
-          dmg: Number(s.dmg) || 0,
-          crit: !!s.crit,
-          dodge: !!s.dodge,
-          b_hp: Number(s.b_hp ?? s.bhp ?? s.b) || undefined,
-          p_hp: Number(s.p_hp ?? s.php ?? s.p) || undefined,
-        }));
+      const s0 = t.steps[0] || {};
+      const hasAtt = ('att' in s0);         // 'P' / 'E'
+      const hasWho = ('who' in s0);         // 'P' / 'E' / 'you' / 'enemy'
+      const hasActor = ('actor' in s0);     // 'you' / 'boss'
+
+      if (hasAtt || hasWho || hasActor) {
+        steps = t.steps.map(s => {
+          const flag = (s.att ?? s.who ?? s.actor);
+          const actor = (flag === 'P' || flag === 'you' || flag === 'player') ? 'you'
+                       : (flag === 'E' || flag === 'enemy' || flag === 'boss') ? 'boss'
+                       : (String(flag||'').toLowerCase()==='you' ? 'you' : 'boss');
+          return {
+            actor,
+            dmg: Number(s.dmg ?? s.damage) || 0,
+            crit: !!(s.crit ?? s.isCrit),
+            dodge: !!(s.dodge ?? s.isDodge),
+            // obsługa wielu wariantów nazw: php/pHp/p_hp, ehp/eHp/e_hp/b_hp/bhp
+            p_hp: Number(s.p_hp ?? s.php ?? s.pHp ?? s.playerHp ?? s.p) || undefined,
+            b_hp: Number(s.b_hp ?? s.bhp ?? s.bHp ?? s.enemyHp ?? s.ehp ?? s.eHp ?? s.b) || undefined,
+          };
+        });
+      } else if ('t' in s0 || 'dmg' in s0) {
+        // ultra-stary format: {t, who:'P'|'E', dmg, crit, pHp, eHp}
+        steps = t.steps.map(s => {
+          const actor = (s.who === 'P') ? 'you' : 'boss';
+          return {
+            actor,
+            dmg: Number(s.dmg) || 0,
+            crit: !!s.crit,
+            dodge: !!s.dodge,
+            p_hp: Number(s.pHp ?? s.php ?? s.p_hp) || undefined,
+            b_hp: Number(s.eHp ?? s.ehp ?? s.b_hp ?? s.bhp) || undefined,
+          };
+        });
       }
     }
 
@@ -648,7 +662,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 
     wrap.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
-      if (!btn) { if (e.target.id === 'fb-mask') closeModal(); return; }
+      if (!btn) { if (e.target.id==='fb-mask') closeModal(); return; }
       if (btn.id==='fb-x' || btn.id==='fb-close') closeModal();
       if (btn.id==='fb-refresh') (async () => {
         try{
@@ -685,13 +699,13 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       if (s.actor === 'boss') targetEl = boardEl;
 
       if (s.actor==='you'){
-        bHp = s.b_hp;
+        bHp = s.b_hp ?? bHp;
         const youTxt = s.dodge
           ? 'shoot… boss <b>DODGED</b>!'
           : ('hit for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
         logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${youTxt}</div>`);
       } else {
-        pHp = s.p_hp;
+        pHp = s.p_hp ?? pHp;
         const bossTxt = s.dodge
           ? 'attacks… you <b>DODGE</b>!'
           : ('hits for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
