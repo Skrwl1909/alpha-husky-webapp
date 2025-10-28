@@ -379,6 +379,18 @@
       </div>
     </div>
   </div>
+  <!-- Avatar Skin Preview Modal -->
+<div class="sheet-back" id="avatarBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;">Avatar Skin Preview</div>
+      <button class="btn" id="closeAvatar" type="button">×</button>
+    </div>
+    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
+    <div style="text-align:center; opacity:.8; font-size:12px;">Biohazard Skin – Flex your alpha! 🐺</div>
+    <button class="btn primary" id="equipSkin" type="button" style="display:block; margin:10px auto;">Equip Skin</button>  <!-- Zmiana nazwy -->
+  </div>
+</div>
 
   <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -1036,25 +1048,70 @@
         });
 
         const actions = {
-          ".btn.avatar":    () => sendAction("avatar_open"),
-          ".btn.mission":   () => sendAction("mission_open", { level: 1 }),
-          ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
-          ".btn.char":      () => sendAction("char_open"),
-          ".btn.shop":      () => sendAction("shop_open"),
-          ".btn.pets":      () => sendAction("pets_open"),
-          ".btn.equipped":  () => sendAction("cmd", { name: "equipped" }),
-          ".btn.keys":      () => sendAction("cmd", { name: "keys" }),
-          ".btn.feed":      () => sendAction("cmd", { name: "feed" }),
-          ".btn.mystats":   () => sendAction("cmd", { name: "mystats" }),
-          ".btn.mypets":    () => sendAction("cmd", { name: "mypets" }),
-          ".btn.profile":   () => sendAction("cmd", { name: "profile" }),
-          ".btn.howlboard": () => openBoard(),
-        };
-        Object.entries(actions).forEach(([sel, fn]) => {
-          const el = document.querySelector(sel);
-          el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
-        });
+  ".btn.avatar": () => sendAction("avatar_open"),  // Stare – usuń lub zostaw, ale nadpiszemy
+  ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+  ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
+  ".btn.char": () => sendAction("char_open"),
+  ".btn.shop": () => sendAction("shop_open"),
+  ".btn.pets": () => sendAction("pets_open"),
+  ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
+  ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+  ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+  ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+  ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
+  ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+  ".btn.howlboard": () => openBoard(),
 
+  // NOWA DEFINICJA – nadpisuje starą .btn.avatar
+  ".btn.avatar": () => {
+    avatarBack.style.display = 'flex';
+    loadBiohazardSkin();
+  }
+};
+
+Object.entries(actions).forEach(([sel, fn]) => {
+  const el = document.querySelector(sel);
+  el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
+});
+
+// Avatar Skin Preview (reszta kodu – bez override, bo już w actions)
+const avatarBack = document.getElementById('avatarBack');
+const skinCanvas = document.getElementById('skinCanvas');
+const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
+const closeAvatar = document.getElementById('closeAvatar');
+const equipSkin = document.getElementById('equipSkin');
+
+closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
+
+equipSkin?.addEventListener('click', () => {
+  // Dedykowana akcja dla skinu – nie wpływa na ekwipunek
+  sendAction('equip_skin', { skin: 'biohazard' });  // Backend zapisze equippedSkin
+  tg?.showAlert?.('Biohazard Skin equipped! Check in Character 🧪');
+  avatarBack.style.display = 'none';
+});
+
+function loadBiohazardSkin() {
+  if (!skinCtx) return;
+  const img = new Image();
+  img.src = '/assets/skins/biohazard_skin.webp';
+  img.onload = () => {
+    skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+    const scaleX = skinCanvas.width / img.width;
+    const scaleY = skinCanvas.height / img.height;
+    const scale = Math.min(scaleX, scaleY);
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    const offsetX = (skinCanvas.width - drawW) / 2;
+    const offsetY = (skinCanvas.height - drawH) / 2;
+    skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+  };
+  img.onerror = () => {
+    console.error('Błąd ładowania skinu');
+    skinCtx.fillStyle = '#333'; skinCtx.fillRect(0, 0, skinCanvas.width, skinCanvas.height);
+    skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
+    skinCtx.fillText('Skin load error', skinCanvas.width/2, skinCanvas.height/2);
+  };
+}
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
         function openBoard(){ boardBack.style.display = "flex"; }
@@ -1229,3 +1286,4 @@
   </script>
 </body>
 </html>
+
