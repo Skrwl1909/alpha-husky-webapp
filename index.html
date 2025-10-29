@@ -380,15 +380,16 @@
     </div>
   </div>
   <!-- Avatar Skin Preview Modal -->
-<div class="sheet-back" id="avatarBack">
-  <div class="sheet-card">
+<!-- Avatar Skin Preview Modal -->
+<div class="sheet-back avatar-sheet" id="avatarBack">
+  <div class="sheet-card" style="width: min(92vw, 480px); max-height: 80vh; overflow: auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Avatar Skin Preview</div>
       <button class="btn" id="closeAvatar" type="button">×</button>
     </div>
-    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
+    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5); max-width:100%; height:auto;"></canvas>
     <div style="text-align:center; opacity:.8; font-size:12px;">Biohazard Skin – Flex your alpha! 🐺</div>
-    <button class="btn primary" id="equipSkin" type="button" style="display:block; margin:10px auto;">Equip Skin</button>  <!-- Zmiana nazwy -->
+    <button class="btn primary" id="equipSkin" type="button" style="display:block; margin:10px auto;">Equip Skin</button>
   </div>
 </div>
 
@@ -1286,4 +1287,5 @@ function loadBiohazardSkin() {
   </script>
 </body>
 </html>
+
 
