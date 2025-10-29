@@ -272,117 +272,112 @@
       </div>
     </div>
 
-    <!-- Region Sheet modal -->
-    <div class="sheet-back region-sheet" id="regionBack">
-      <div class="sheet-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div id="regionTitle" style="font-weight:700;"></div>
-          <button class="btn" id="closeRegion" type="button">×</button>
-        </div>
-        <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-          <button class="btn primary" id="regionGo" type="button">Travel</button>
-          <button class="btn linklike" id="regionLore" type="button">Lore</button>
-        </div>
-      </div>
+   <!-- Region Sheet modal -->
+<div class="sheet-back region-sheet" id="regionBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div id="regionTitle" style="font-weight:700;"></div>
+      <button class="btn" id="closeRegion" type="button">×</button>
     </div>
-
-    <!-- Building modal (HTTP) -->
-    <div class="sheet-back" id="buildingBack">
-      <div class="sheet-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div id="buildingTitle" style="font-weight:700;">Building</div>
-          <button class="btn" id="closeBuilding" type="button">×</button>
-        </div>
-        <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
-        <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
-          <div><b>Status:</b> <span id="buildingStatus">—</span></div>
-          <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
-          <div id="buildingRoutesWrap" style="display:none;">
-            <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
-            <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
-          </div>
-        </div>
-        <div class="btn-row" style="margin-top:12px;">
-          <button class="btn" id="buildingRefresh" type="button">Refresh</button>
-          <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
-          <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quests modal (STARY – fallback Daily) -->
-    <div class="sheet-back" id="questsBack">
-      <div class="sheet-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-weight:700;">Daily Quests</div>
-          <button class="btn" id="closeQuests" type="button">×</button>
-        </div>
-        <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
-        <p style="opacity:.7; font-size:12px; margin-top:10px;">
-          Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
-        </p>
-      </div>
-    </div>
-
-    <!-- NOWY MODAL: Mission Board -->
-    <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
-      <div class="q-modal-body">
-        <div class="q-modal-head">
-          <h3 class="q-title">Mission Board</h3>
-          <div class="q-head-actions">
-            <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh">↻</button>
-            <button class="q-btn" id="qClose" type="button" title="Close">×</button>
-          </div>
-        </div>
-
-        <div id="qStatus" class="q-status">Ready</div>
-
-        <!-- Zakładki -->
-        <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
-          <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
-          <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
-          <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
-          <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
-          <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
-        </div>
-
-        <!-- Filtry stanu -->
-        <div id="qState" class="q-filters" aria-label="Quest state filters">
-          <button class="q-tab q-tab--on" data-state="any">All</button>
-          <button class="q-tab" data-state="ready">Ready</button>
-          <button class="q-tab" data-state="accepted">Accepted</button>
-          <button class="q-tab" data-state="available">Available</button>
-          <button class="q-tab" data-state="cooldown">Cooldown</button>
-        </div>
-
-        <!-- Lista -->
-        <div id="qList" class="quest-board"></div>
-      </div>
-    </div>
-
-    <!-- Floating launcher (📜) -->
-    <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
-
-    <div class="fallback" id="fallback">
-      <div>
-        <p>Open this page inside Telegram WebApp for full functionality.</p>
-        <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
-      </div>
+    <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn primary" id="regionGo" type="button">Travel</button>
+      <button class="btn linklike" id="regionLore" type="button">Lore</button>
     </div>
   </div>
-  <!-- Avatar Skin Preview Modal -->
+</div>
+
 <!-- Avatar Skin Preview Modal -->
 <div class="sheet-back avatar-sheet" id="avatarBack">
-  <div class="sheet-card" style="width: min(92vw, 480px); max-height: 80vh; overflow: auto;">
+  <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Avatar Skin Preview</div>
       <button class="btn" id="closeAvatar" type="button">×</button>
     </div>
-    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5); max-width:100%; height:auto;"></canvas>
+    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
     <div style="text-align:center; opacity:.8; font-size:12px;">Biohazard Skin – Flex your alpha! 🐺</div>
     <button class="btn primary" id="equipSkin" type="button" style="display:block; margin:10px auto;">Equip Skin</button>
   </div>
+</div>
+
+<!-- Building modal (HTTP) -->
+<div class="sheet-back" id="buildingBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div id="buildingTitle" style="font-weight:700;">Building</div>
+      <button class="btn" id="closeBuilding" type="button">×</button>
+    </div>
+    <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
+    <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
+      <div><b>Status:</b> <span id="buildingStatus">—</span></div>
+      <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
+      <div id="buildingRoutesWrap" style="display:none;">
+        <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
+        <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn" id="buildingRefresh" type="button">Refresh</button>
+      <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
+      <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quests modal (STARY – fallback Daily) -->
+<div class="sheet-back" id="questsBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;">Daily Quests</div>
+      <button class="btn" id="closeQuests" type="button">×</button>
+    </div>
+    <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
+    <p style="opacity:.7; font-size:12px; margin-top:10px;">
+      Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
+    </p>
+  </div>
+</div>
+
+<!-- NOWY MODAL: Mission Board -->
+<div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
+  <div class="q-modal-body">
+    <div class="q-modal-head">
+      <h3 class="q-title">Mission Board</h3>
+      <div class="q-head-actions">
+        <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh">↻</button>
+        <button class="q-btn" id="qClose" type="button" title="Close">×</button>
+      </div>
+    </div>
+    <div id="qStatus" class="q-status">Ready</div>
+    <!-- Zakładki -->
+    <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
+      <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
+      <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
+      <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
+      <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
+      <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
+    </div>
+    <!-- Filtry stanu -->
+    <div id="qState" class="q-filters" aria-label="Quest state filters">
+      <button class="q-tab q-tab--on" data-state="any">All</button>
+      <button class="q-tab" data-state="ready">Ready</button>
+      <button class="q-tab" data-state="accepted">Accepted</button>
+      <button class="q-tab" data-state="available">Available</button>
+      <button class="q-tab" data-state="cooldown">Cooldown</button>
+    </div>
+    <!-- Lista -->
+    <div id="qList" class="quest-board"></div>
+  </div>
+</div>
+
+<!-- Floating launcher (📜) -->
+<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
+<div class="fallback" id="fallback">
+  <div>
+    <p>Open this page inside Telegram WebApp for full functionality.</p>
+    <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
+  </div>
+</div>
 </div>
 
   <!-- 1) SDK Telegrama -->
@@ -1279,6 +1274,7 @@ function loadBiohazardSkin() {
   </script>
 </body>
 </html>
+
 
 
 
