@@ -291,12 +291,22 @@
 <div class="sheet-back avatar-sheet" id="avatarBack">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-weight:700;">Avatar Skin Preview</div>
+      <div style="font-weight:700;">Avatar Skin Gallery</div>
       <button class="btn" id="closeAvatar" type="button">×</button>
     </div>
     <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
-    <div style="text-align:center; opacity:.8; font-size:12px;">Biohazard Skin – Flex your alpha! 🐺</div>
-    <button class="btn primary" id="equipSkin" type="button" style="display:block; margin:10px auto;">Equip Skin</button>
+    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">Biohazard Skin – Flex your alpha! 🐺</div>
+    <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
+      <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
+      <button class="btn" id="shareSkin" type="button">Share Flex</button>
+    </div>
+    <!-- Galeria skinów – buttons do switch (dopasowane do twoich plików) -->
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0;">
+      <button class="btn skin-btn" data-skin="biohazard" style="padding:8px 12px; font-size:14px;">Biohazard</button>
+      <button class="btn skin-btn" data-skin="frostborn" style="padding:8px 12px; font-size:14px;">Frostborn</button>
+      <button class="btn skin-btn" data-skin="lunarhowl" style="padding:8px 12px; font-size:14px;">Lunarhowl</button>
+      <button class="btn skin-btn" data-skin="shardglass" style="padding:8px 12px; font-size:14px;">Shardglass</button>
+    </div>
   </div>
 </div>
 
@@ -1062,44 +1072,84 @@ Object.entries(actions).forEach(([sel, fn]) => {
   el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
 });
 
-// Avatar Skin Preview (reszta kodu – bez override, bo już w actions)
+// Avatar Skin Preview
 const avatarBack = document.getElementById('avatarBack');
 const skinCanvas = document.getElementById('skinCanvas');
 const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
+const skinDesc = document.getElementById('skinDesc');
 const closeAvatar = document.getElementById('closeAvatar');
 const equipSkin = document.getElementById('equipSkin');
+const shareSkin = document.getElementById('shareSkin');
+const skinBtns = document.querySelectorAll('.skin-btn');
+
+// Close na klik poza card
+avatarBack?.addEventListener('click', (e) => {
+  if (e.target === avatarBack) avatarBack.style.display = 'none';
+});
 
 closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
 
+// Equip – jak wcześniej
 equipSkin?.addEventListener('click', () => {
-  // Dedykowana akcja dla skinu – nie wpływa na ekwipunek
-  sendAction('equip_skin', { skin: 'biohazard' });  // Backend zapisze equippedSkin
-  tg?.showAlert?.('Biohazard Skin equipped! Check in Character 🧪');
+  const currentSkin = document.querySelector('.skin-btn.active')?.dataset.skin || 'biohazard';
+  sendAction('equip_skin', { skin: currentSkin });
+  tg?.showAlert?.(`${currentSkin.charAt(0).toUpperCase() + currentSkin.slice(1)} Skin equipped! 🧪`);
   avatarBack.style.display = 'none';
 });
 
+// Share Flex – screenshot Canvas do Story
+shareSkin?.addEventListener('click', () => {
+  const currentSkin = document.querySelector('.skin-btn.active')?.dataset.skin || 'biohazard';
+  skinCanvas.toBlob((blob) => {
+    tg?.shareToStory?.(blob, { 
+      text: `Flex my ${currentSkin} Skin in @The_Alpha_Husky! Stake HUSKY 🐺🧪`, 
+      widgetLink: 'https://t.me/AlphaHuskyBot'  // Link do bota
+    });
+    tg?.HapticFeedback?.impactOccurred?.('medium');
+  }, 'image/png');
+});
+
+// Galeria switch
+skinBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    skinBtns.forEach(b => b.classList.remove('active'));  // Reset active
+    btn.classList.add('active');  // Highlight current
+
+    const skinName = btn.dataset.skin;
+    skinDesc.textContent = `${skinName.charAt(0).toUpperCase() + skinName.slice(1)} Skin – Flex your alpha! 🐺`;
+
+    // Ładuj skin
+    if (!skinCtx) return;
+    const img = new Image();
+    img.src = `/assets/skins/${skinName}_skin.webp`;  // Dynamic src
+
+    img.onload = () => {
+      skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+      const scaleX = skinCanvas.width / img.width;
+      const scaleY = skinCanvas.height / img.height;
+      const scale = Math.min(scaleX, scaleY);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const offsetX = (skinCanvas.width - drawW) / 2;
+      const offsetY = (skinCanvas.height - drawH) / 2;
+      skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      tg?.HapticFeedback?.impactOccurred?.('light');  // Feedback
+    };
+
+    img.onerror = () => {
+      console.error(`Błąd ładowania ${skinName}`);
+      skinCtx.fillStyle = '#333'; skinCtx.fillRect(0, 0, skinCanvas.width, skinCanvas.height);
+      skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
+      skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
+    };
+  });
+});
+
+// Default load biohazard na otwarcie
 function loadBiohazardSkin() {
-  if (!skinCtx) return;
-  const img = new Image();
-  img.src = '/assets/skins/biohazard_skin.webp';
-  img.onload = () => {
-    skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
-    const scaleX = skinCanvas.width / img.width;
-    const scaleY = skinCanvas.height / img.height;
-    const scale = Math.min(scaleX, scaleY);
-    const drawW = img.width * scale;
-    const drawH = img.height * scale;
-    const offsetX = (skinCanvas.width - drawW) / 2;
-    const offsetY = (skinCanvas.height - drawH) / 2;
-    skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
-  };
-  img.onerror = () => {
-    console.error('Błąd ładowania skinu');
-    skinCtx.fillStyle = '#333'; skinCtx.fillRect(0, 0, skinCanvas.width, skinCanvas.height);
-    skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
-    skinCtx.fillText('Skin load error', skinCanvas.width/2, skinCanvas.height/2);
-  };
+  document.querySelector('[data-skin="biohazard"]').click();  // Trigger pierwszy button
 }
+
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
         function openBoard(){ boardBack.style.display = "flex"; }
@@ -1274,6 +1324,7 @@ function loadBiohazardSkin() {
   </script>
 </body>
 </html>
+
 
 
 
