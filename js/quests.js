@@ -259,11 +259,24 @@
     const act = $(".q-actions", card);
 
     if (status === "available") {
-      const b = document.createElement("button");
-      b.className = "q-btn q-btn-acc";
-      b.textContent = "Accept";
-      b.onclick = () => actions.accept(q.id, b);
-      act.appendChild(b);
+      // === PATCH: legacy daily → użyj /webapp/daily/action zamiast accept ===
+      if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
+        const action = q.availableActions.includes("daily_claim")
+          ? "daily_claim"
+          : q.availableActions[0]; // np. "daily_raid" albo inna akcja daily
+        const isRaid = !!(q.raid || q.isRaid || /raid/i.test(String(q.id || "")));
+        const b = document.createElement("button");
+        b.className = "q-btn q-btn-acc";
+        b.textContent = action === "daily_claim" ? "Claim" : "Do it";
+        b.onclick = () => actions.daily(action, isRaid, b);
+        act.appendChild(b);
+      } else {
+        const b = document.createElement("button");
+        b.className = "q-btn q-btn-acc";
+        b.textContent = "Accept";
+        b.onclick = () => actions.accept(q.id, b);
+        act.appendChild(b);
+      }
     } else if (status === "ready") {
       const b = document.createElement("button");
       b.className = "q-btn";
@@ -375,6 +388,21 @@
           state.debug(e);
           toast(e?.message || "Claim failed");
           btn.disabled = false;
+        } finally { setStatus(""); }
+      },
+      // === PATCH: akcja dla legacy daily (/webapp/daily/action) ===
+      daily: async (action, raid, btn) => {
+        try {
+          if (btn) btn.disabled = true;
+          setStatus("Doing…");
+          const caller = (global.S && global.S.apiPost) ? global.S.apiPost : apiPostRaw;
+          await caller("/webapp/daily/action", { action, raid });
+          await refresh();
+          toast("Done");
+        } catch (e) {
+          state.debug(e);
+          toast(e?.message || "Action failed");
+          if (btn) btn.disabled = false;
         } finally { setStatus(""); }
       }
     };
