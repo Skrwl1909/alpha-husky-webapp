@@ -1133,7 +1133,7 @@
 
         async function openSkinsModal(){
           try{
-            const out = await apiPost("/webapp/skins/get", {});
+            const out = await apiPost("/webapp/skins", {});
             if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
             _skins = Array.isArray(out.skins) ? out.skins : [];
             _activeSkinKey = out.active || "";
@@ -1343,3 +1343,4 @@
   </script>
 </body>
 </html>
+
