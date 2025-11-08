@@ -1064,133 +1064,109 @@
           console.log("coords:", x, y);
         });
 
-        <!-- === SKINS UI (fixed) === -->
-<script>
-  const avatarBack = document.getElementById('avatarBack');
-  const skinCanvas = document.getElementById('skinCanvas');
-  const skinCtx    = skinCanvas ? skinCanvas.getContext('2d') : null;
-  const skinDesc   = document.getElementById('skinDesc');
-  const closeAvatar= document.getElementById('closeAvatar');
-  const equipSkin  = document.getElementById('equipSkin');
-  const shareSkin  = document.getElementById('shareSkin');
-  const skinButtonsWrap = document.getElementById('skinButtons');
+        /* === SKINS UI === */
+        const avatarBack = document.getElementById('avatarBack');
+        const skinCanvas = document.getElementById('skinCanvas');
+        const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
+        const skinDesc = document.getElementById('skinDesc');
+        const closeAvatar = document.getElementById('closeAvatar');
+        const equipSkin = document.getElementById('equipSkin');
+        const shareSkin = document.getElementById('shareSkin');
+        const skinButtonsWrap = document.getElementById('skinButtons');
+        let _skins = [];
+        let _activeSkinKey = "";
 
-  let _skins = [];
-  let _activeSkinKey = "";
+        avatarBack?.addEventListener('click', (e) => { if (e.target === avatarBack) avatarBack.style.display = 'none'; });
+        closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
 
-  avatarBack?.addEventListener('click', (e) => { if (e.target === avatarBack) avatarBack.style.display = 'none'; });
-  closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
+        function renderSkinPreview(imgUrl, name){
+          if (!skinCtx) return;
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = imgUrl;
+          img.onload = () => {
+            skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+            const scaleX = skinCanvas.width / img.width;
+            const scaleY = skinCanvas.height / img.height;
+            const scale = Math.min(scaleX, scaleY);
+            const drawW = img.width * scale;
+            const drawH = img.height * scale;
+            const offsetX = (skinCanvas.width - drawW) / 2;
+            const offsetY = (skinCanvas.height - drawH) / 2;
+            skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+          };
+          img.onerror = () => {
+            skinCtx.clearRect(0,0,skinCanvas.width, skinCanvas.height);
+            skinCtx.fillStyle = '#333'; skinCtx.fillRect(0,0,skinCanvas.width, skinCanvas.height);
+            skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
+            skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
+          };
+          skinDesc.textContent = `${name} — Flex your alpha! 🐺`;
+        }
 
-  // Akceptuje: pełne URL, /assets/..., krótkie „lunarhowl”, lub „lunarhowl_skin.webp”
-  function resolveSkinUrl(s) {
-    if (!s) return '/assets/skins/placeholder.webp';
-    if (s.startsWith('http://') || s.startsWith('https://') || s.startsWith('/')) return s;
-    if (/\.(webp|png|jpg|jpeg)$/i.test(s)) return '/assets/skins/' + s;
-    return '/assets/skins/' + s + '_skin.webp';
-  }
+        function buildSkinButtons(skins, active){
+          skinButtonsWrap.innerHTML = "";
+          skins.forEach(s => {
+            const b = document.createElement('button');
+            b.className = 'btn skin-btn' + (s.key === active ? ' active' : '');
+            b.type = 'button';
+            b.textContent = s.name || s.key;
+            b.dataset.skin = s.key;
+            b.addEventListener('click', () => {
+              $$(`#skinButtons .skin-btn`).forEach(x => x.classList.remove('active'));
+              b.classList.add('active');
+              _activeSkinKey = s.key;
+              renderSkinPreview(s.img, s.name || s.key);
+              try { tg?.HapticFeedback?.impactOccurred?.('light'); } catch(_){}
+            });
+            skinButtonsWrap.appendChild(b);
+          });
+          const first = skins.find(s => s.key === active) || skins[0];
+          if (first){
+            _activeSkinKey = first.key;
+            renderSkinPreview(first.img, first.name || first.key);
+            // zaznacz aktywny
+            const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);
+            if (btn) btn.classList.add('active');
+          }
+        }
 
-  function renderSkinPreview(imgSrc, name) {
-    if (!skinCtx) return;
-    const img = new Image();
-    const url = resolveSkinUrl(imgSrc);
-    img.src = url + (url.includes('?') ? '' : ('?v=' + encodeURIComponent(window.WEBAPP_VER || 'dev')));
-    img.onload = () => {
-      skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
-      const scaleX = skinCanvas.width / img.width;
-      const scaleY = skinCanvas.height / img.height;
-      const scale  = Math.min(scaleX, scaleY);
-      const drawW  = img.width  * scale;
-      const drawH  = img.height * scale;
-      const offX   = (skinCanvas.width  - drawW) / 2;
-      const offY   = (skinCanvas.height - drawH) / 2;
-      skinCtx.drawImage(img, offX, offY, drawW, drawH);
-    };
-    img.onerror = () => {
-      skinCtx.clearRect(0,0,skinCanvas.width, skinCanvas.height);
-      skinCtx.fillStyle = '#333'; skinCtx.fillRect(0,0,skinCanvas.width, skinCanvas.height);
-      skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
-      skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
-    };
-    skinDesc.textContent = `${name} — Flex your alpha! 🐺`;
-  }
+        async function openSkinsModal(){
+          try{
+            const out = await apiPost("/webapp/skins", {});
+            if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
+            _skins = Array.isArray(out.skins) ? out.skins : [];
+            _activeSkinKey = out.active || "";
+            buildSkinButtons(_skins, _activeSkinKey || "");
+            avatarBack.style.display = 'flex';
+          }catch(e){
+            console.warn(e);
+            tg?.showAlert?.("Failed to load skins.");
+          }
+        }
 
-  function buildSkinButtons(skins, active) {
-    skinButtonsWrap.innerHTML = "";
-    skins.forEach(s => {
-      const b = document.createElement('button');
-      b.className = 'btn skin-btn' + (s.key === active ? ' active' : '');
-      b.type = 'button';
-      b.textContent = s.name || s.key;
-      b.dataset.skin = s.key;
-      b.addEventListener('click', () => {
-        document.querySelectorAll('#skinButtons .skin-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        _activeSkinKey = s.key;
-        renderSkinPreview(s.img || s.key, s.name || s.key);
-        try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light'); } catch(_){}
-      });
-      skinButtonsWrap.appendChild(b);
-    });
+        equipSkin?.addEventListener('click', async () => {
+          const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "";
+          if (!key) { tg?.showAlert?.("Pick a skin first"); return; }
+          try{
+            const out = await apiPost("/webapp/skins/equip", { skin: key });
+            if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
+            tg?.showAlert?.("Skin equipped!");
+            avatarBack.style.display = 'none';
+          }catch(e){
+            console.warn(e);
+            tg?.showAlert?.(e?.message || "Equip failed");
+          }
+        });
 
-    const first = skins.find(s => s.key === active) || skins[0];
-    if (first) {
-      _activeSkinKey = first.key;
-      renderSkinPreview(first.img || first.key, first.name || first.key);
-      const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);
-      if (btn) btn.classList.add('active');
-    } else {
-      if (skinCtx) skinCtx.clearRect(0,0,skinCanvas.width, skinCanvas.height);
-      skinDesc.textContent = 'No skins available.';
-    }
-  }
-
-  async function fetchSkins() {
-    // Najpierw nowy endpoint, potem fallback do starego
-    try { return await S.apiPost('/webapp/skins/get', {}); }
-    catch(_) {
-      return await S.apiPost('/webapp/skins', {});
-    }
-  }
-
-  async function openSkinsModal() {
-    try {
-      const out = await fetchSkins();
-      if (!out || !out.ok) throw new Error(out?.reason || 'skins get failed');
-      _skins = Array.isArray(out.skins) ? out.skins : [];
-      _activeSkinKey = out.active || (_skins[0]?.key || "");
-      buildSkinButtons(_skins, _activeSkinKey || "");
-      avatarBack.style.display = 'flex';
-    } catch(e) {
-      console.warn(e);
-      try { window.Telegram?.WebApp?.showAlert?.("Failed to load skins."); } catch(_) {}
-    }
-  }
-
-  // Equip i Share bez zmian
-  equipSkin?.addEventListener('click', async () => {
-    const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "";
-    if (!key) { window.Telegram?.WebApp?.showAlert?.("Pick a skin first"); return; }
-    try{
-      const out = await S.apiPost("/webapp/skins/equip", { skin: key });
-      if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
-      window.Telegram?.WebApp?.showAlert?.("Skin equipped!");
-      avatarBack.style.display = 'none';
-    } catch(e){
-      console.warn(e);
-      window.Telegram?.WebApp?.showAlert?.(e?.message || "Equip failed");
-    }
-  });
-
-  shareSkin?.addEventListener('click', () => {
-    const tg = window.Telegram?.WebApp;
-    if (!tg?.shareToStory || !skinCanvas?.toBlob) { tg?.showAlert?.("Sharing not supported"); return; }
-    const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "skin";
-    skinCanvas.toBlob((blob) => {
-      tg.shareToStory(blob, { text: `Flex my ${key} Skin in @The_Alpha_Husky! 🐺`, widgetLink: 'https://t.me/Alpha_husky_bot' });
-      try { tg.HapticFeedback?.impactOccurred?.('medium'); } catch(_){}
-    }, 'image/png');
-  });
-</script>
+        shareSkin?.addEventListener('click', () => {
+          if (!tg?.shareToStory || !skinCanvas?.toBlob) { tg?.showAlert?.("Sharing not supported"); return; }
+          const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "skin";
+          skinCanvas.toBlob((blob) => {
+            tg?.shareToStory?.(blob, { text: `Flex my ${key} Skin in @The_Alpha_Husky! 🐺`, widgetLink: 'https://t.me/Alpha_husky_bot' });
+            try { tg?.HapticFeedback?.impactOccurred?.('medium'); } catch(_){}
+          }, 'image/png');
+        });
 
         /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
@@ -1367,5 +1343,3 @@
   </script>
 </body>
 </html>
-
-
