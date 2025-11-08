@@ -104,7 +104,7 @@
     box-shadow: 0 2px 6px rgba(0,0,0,.5); }
   .lock-badge img{ width:14px; height:14px; opacity:.9 }
   .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
-  .path.locked{ stroke:rgba(255,255,255,.16); stroke-dasharray:7 6; }
+  .path.locked{ stroke:rgba(255,255,255,.16); }
   .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
   .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
   .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
@@ -124,9 +124,9 @@
   #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
     background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
 
-  /* Avatar Sheet – kompaktowy modal dla skinów */
+  /* Avatar/Skins modal */
   .avatar-sheet .sheet-card {
-    width: min(92vw, 480px);
+    width: min(92vw, 520px);
     max-height: 80vh;
     overflow: auto;
   }
@@ -134,11 +134,9 @@
     max-width: 100%;
     height: auto;
   }
-    .skin-btn.active {
-  background: var(--tg-theme-button-color, rgba(16,185,129,.18));
-  color: var(--tg-theme-button-text-color, #fff);
-}
-</style>
+  .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
+  .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
+  </style>
 
   <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
   <style id="quests-css">
@@ -202,6 +200,7 @@
         <div class="row">
           <button class="btn map" aria-label="Open Map" type="button">Map</button>
           <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
+          <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
           <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
           <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
           <button class="btn char" aria-label="Open Character" type="button">Character</button>
@@ -291,26 +290,21 @@
   </div>
 </div>
 
-<!-- Avatar Skin Preview Modal -->
+<!-- SKINS MODAL -->
 <div class="sheet-back avatar-sheet" id="avatarBack">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-weight:700;">Avatar Skin Gallery</div>
+      <div style="font-weight:700;">Skin Gallery</div>
       <button class="btn" id="closeAvatar" type="button">×</button>
     </div>
     <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
-    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">Biohazard Skin – Flex your alpha! 🐺</div>
+    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">—</div>
     <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
       <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
       <button class="btn" id="shareSkin" type="button">Share Flex</button>
     </div>
-    <!-- Galeria skinów – buttons do switch (dopasowane do twoich plików) -->
-    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0;">
-      <button class="btn skin-btn" data-skin="biohazard" style="padding:8px 12px; font-size:14px;">Biohazard</button>
-      <button class="btn skin-btn" data-skin="frostborn" style="padding:8px 12px; font-size:14px;">Frostborn</button>
-      <button class="btn skin-btn" data-skin="lunarhowl" style="padding:8px 12px; font-size:14px;">Lunarhowl</button>
-      <button class="btn skin-btn" data-skin="shardglass" style="padding:8px 12px; font-size:14px;">Shardglass</button>
-    </div>
+    <!-- Galeria skinów renderowana dynamicznie -->
+    <div id="skinButtons" class="skins-grid"></div>
   </div>
 </div>
 
@@ -400,7 +394,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2025-10-24c";
+    window.WEBAPP_VER = "2025-11-08a";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -991,7 +985,7 @@
               const R = String(reason).toUpperCase();
               const isNotReady = R.includes("NOT_READY");
               if (isNotReady && i < maxRetries){
-                await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
+                await new Promise(r => setTimeout(r, 1200));
                 continue;
               }
               if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
@@ -1032,10 +1026,31 @@
         });
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
-        document.querySelector(".btn.map")?.addEventListener("click", () => {
-          mapBack.style.display = "flex";
-          if (!DATA) loadMapData();
-          loadPlayerState();
+        /* === BUTTONS / ACTIONS === */
+        const actions = {
+          ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
+          ".btn.skins":  () => openSkinsModal(),                   // Skins – WebApp modal
+          ".btn.map": () => {
+            mapBack.style.display = "flex";
+            if (!DATA) loadMapData();
+            loadPlayerState();
+          },
+          ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+          ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
+          ".btn.char": () => sendAction("char_open"),
+          ".btn.shop": () => sendAction("shop_open"),
+          ".btn.pets": () => sendAction("pets_open"),
+          ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
+          ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+          ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+          ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+          ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
+          ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+          ".btn.howlboard": () => openBoard(),
+        };
+        Object.entries(actions).forEach(([sel, fn]) => {
+          const el = document.querySelector(sel);
+          el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
         });
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
 
@@ -1049,111 +1064,111 @@
           console.log("coords:", x, y);
         });
 
-        const actions = {
-  ".btn.avatar": () => sendAction("avatar_open"),  // Stare – usuń lub zostaw, ale nadpiszemy
-  ".btn.mission": () => sendAction("mission_open", { level: 1 }),
-  ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
-  ".btn.char": () => sendAction("char_open"),
-  ".btn.shop": () => sendAction("shop_open"),
-  ".btn.pets": () => sendAction("pets_open"),
-  ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
-  ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-  ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-  ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
-  ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
-  ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-  ".btn.howlboard": () => openBoard(),
+        /* === SKINS UI === */
+        const avatarBack = document.getElementById('avatarBack');
+        const skinCanvas = document.getElementById('skinCanvas');
+        const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
+        const skinDesc = document.getElementById('skinDesc');
+        const closeAvatar = document.getElementById('closeAvatar');
+        const equipSkin = document.getElementById('equipSkin');
+        const shareSkin = document.getElementById('shareSkin');
+        const skinButtonsWrap = document.getElementById('skinButtons');
+        let _skins = [];
+        let _activeSkinKey = "";
 
-  // NOWA DEFINICJA – nadpisuje starą .btn.avatar
-  ".btn.avatar": () => {
-    avatarBack.style.display = 'flex';
-    loadBiohazardSkin();
-  }
-};
+        avatarBack?.addEventListener('click', (e) => { if (e.target === avatarBack) avatarBack.style.display = 'none'; });
+        closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
 
-Object.entries(actions).forEach(([sel, fn]) => {
-  const el = document.querySelector(sel);
-  el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
-});
+        function renderSkinPreview(imgUrl, name){
+          if (!skinCtx) return;
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = imgUrl;
+          img.onload = () => {
+            skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+            const scaleX = skinCanvas.width / img.width;
+            const scaleY = skinCanvas.height / img.height;
+            const scale = Math.min(scaleX, scaleY);
+            const drawW = img.width * scale;
+            const drawH = img.height * scale;
+            const offsetX = (skinCanvas.width - drawW) / 2;
+            const offsetY = (skinCanvas.height - drawH) / 2;
+            skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+          };
+          img.onerror = () => {
+            skinCtx.clearRect(0,0,skinCanvas.width, skinCanvas.height);
+            skinCtx.fillStyle = '#333'; skinCtx.fillRect(0,0,skinCanvas.width, skinCanvas.height);
+            skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
+            skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
+          };
+          skinDesc.textContent = `${name} — Flex your alpha! 🐺`;
+        }
 
-// Avatar Skin Preview
-const avatarBack = document.getElementById('avatarBack');
-const skinCanvas = document.getElementById('skinCanvas');
-const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
-const skinDesc = document.getElementById('skinDesc');
-const closeAvatar = document.getElementById('closeAvatar');
-const equipSkin = document.getElementById('equipSkin');
-const shareSkin = document.getElementById('shareSkin');
-const skinBtns = document.querySelectorAll('.skin-btn');
+        function buildSkinButtons(skins, active){
+          skinButtonsWrap.innerHTML = "";
+          skins.forEach(s => {
+            const b = document.createElement('button');
+            b.className = 'btn skin-btn' + (s.key === active ? ' active' : '');
+            b.type = 'button';
+            b.textContent = s.name || s.key;
+            b.dataset.skin = s.key;
+            b.addEventListener('click', () => {
+              $$(`#skinButtons .skin-btn`).forEach(x => x.classList.remove('active'));
+              b.classList.add('active');
+              _activeSkinKey = s.key;
+              renderSkinPreview(s.img, s.name || s.key);
+              try { tg?.HapticFeedback?.impactOccurred?.('light'); } catch(_){}
+            });
+            skinButtonsWrap.appendChild(b);
+          });
+          const first = skins.find(s => s.key === active) || skins[0];
+          if (first){
+            _activeSkinKey = first.key;
+            renderSkinPreview(first.img, first.name || first.key);
+            // zaznacz aktywny
+            const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);
+            if (btn) btn.classList.add('active');
+          }
+        }
 
-// Close na klik poza card
-avatarBack?.addEventListener('click', (e) => {
-  if (e.target === avatarBack) avatarBack.style.display = 'none';
-});
+        async function openSkinsModal(){
+          try{
+            const out = await apiPost("/webapp/skins/get", {});
+            if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
+            _skins = Array.isArray(out.skins) ? out.skins : [];
+            _activeSkinKey = out.active || "";
+            buildSkinButtons(_skins, _activeSkinKey || "");
+            avatarBack.style.display = 'flex';
+          }catch(e){
+            console.warn(e);
+            tg?.showAlert?.("Failed to load skins.");
+          }
+        }
 
-closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
+        equipSkin?.addEventListener('click', async () => {
+          const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "";
+          if (!key) { tg?.showAlert?.("Pick a skin first"); return; }
+          try{
+            const out = await apiPost("/webapp/skins/equip", { skin: key });
+            if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
+            tg?.showAlert?.("Skin equipped!");
+            avatarBack.style.display = 'none';
+          }catch(e){
+            console.warn(e);
+            tg?.showAlert?.(e?.message || "Equip failed");
+          }
+        });
 
-// Equip – jak wcześniej
-equipSkin?.addEventListener('click', () => {
-  const currentSkin = document.querySelector('.skin-btn.active')?.dataset.skin || 'biohazard';
-  sendAction('equip_skin', { skin: currentSkin });
-  tg?.showAlert?.(`${currentSkin.charAt(0).toUpperCase() + currentSkin.slice(1)} Skin equipped! 🧪`);
-  avatarBack.style.display = 'none';
-});
+        shareSkin?.addEventListener('click', () => {
+          if (!tg?.shareToStory || !skinCanvas?.toBlob) { tg?.showAlert?.("Sharing not supported"); return; }
+          const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "skin";
+          skinCanvas.toBlob((blob) => {
+            tg?.shareToStory?.(blob, { text: `Flex my ${key} Skin in @The_Alpha_Husky! 🐺`, widgetLink: 'https://t.me/Alpha_husky_bot' });
+            try { tg?.HapticFeedback?.impactOccurred?.('medium'); } catch(_){}
+          }, 'image/png');
+        });
 
-// Share Flex – screenshot Canvas do Story
-shareSkin?.addEventListener('click', () => {
-  const currentSkin = document.querySelector('.skin-btn.active')?.dataset.skin || 'biohazard';
-  skinCanvas.toBlob((blob) => {
-    tg?.shareToStory?.(blob, { 
-      text: `Flex my ${currentSkin} Skin in @The_Alpha_Husky! Stake HUSKY 🐺🧪`, 
-      widgetLink: 'https://t.me/AlphaHuskyBot'  // Link do bota
-    });
-    tg?.HapticFeedback?.impactOccurred?.('medium');
-  }, 'image/png');
-});
-
-// Galeria switch
-skinBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    skinBtns.forEach(b => b.classList.remove('active'));  // Reset active
-    btn.classList.add('active');  // Highlight current
-
-    const skinName = btn.dataset.skin;
-    skinDesc.textContent = `${skinName.charAt(0).toUpperCase() + skinName.slice(1)} Skin – Flex your alpha! 🐺`;
-
-    // Ładuj skin
-    if (!skinCtx) return;
-    const img = new Image();
-    img.src = `/assets/skins/${skinName}_skin.webp`;  // Dynamic src
-
-    img.onload = () => {
-      skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
-      const scaleX = skinCanvas.width / img.width;
-      const scaleY = skinCanvas.height / img.height;
-      const scale = Math.min(scaleX, scaleY);
-      const drawW = img.width * scale;
-      const drawH = img.height * scale;
-      const offsetX = (skinCanvas.width - drawW) / 2;
-      const offsetY = (skinCanvas.height - drawH) / 2;
-      skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
-      tg?.HapticFeedback?.impactOccurred?.('light');  // Feedback
-    };
-
-    img.onerror = () => {
-      console.error(`Błąd ładowania ${skinName}`);
-      skinCtx.fillStyle = '#333'; skinCtx.fillRect(0, 0, skinCanvas.width, skinCanvas.height);
-      skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
-      skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
-    };
-  });
-});
-
-// Default load biohazard na otwarcie
-function loadBiohazardSkin() {
-  document.querySelector('[data-skin="biohazard"]').click();  // Trigger pierwszy button
-}
-
+        /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
         function openBoard(){ boardBack.style.display = "flex"; }
@@ -1328,9 +1343,3 @@ function loadBiohazardSkin() {
   </script>
 </body>
 </html>
-
-
-
-
-
-
