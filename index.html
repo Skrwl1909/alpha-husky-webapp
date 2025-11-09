@@ -175,66 +175,6 @@
     #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
   </style>
-
-  <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
-  <style id="faq-styles">
-  /* Floating FAQ button */
-  .fab-faq{
-    position: fixed;
-    left: max(14px, env(safe-area-inset-left));
-    bottom: max(18px, calc(env(safe-area-inset-bottom) + 18px));
-    z-index: 1200;
-    display: inline-flex; align-items: center; gap: .45rem;
-    padding: .55rem .8rem; border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.14);
-    background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
-    color: #eaeaea; cursor: pointer; user-select: none;
-    box-shadow: 0 6px 24px rgba(0,0,0,.35);
-  }
-  .fab-faq:hover{ border-color: rgba(255,255,255,.28); }
-  .fab-faq:active{ transform: translateY(1px); }
-  .fab-faq svg{ opacity:.9 }
-  @media (max-width: 420px){
-    .fab-faq span{ display:none; }
-    .fab-faq{ padding:.6rem; border-radius:16px; }
-  }
-
-  /* FAQ modal */
-  .faq-modal[hidden]{ display:none; }
-  .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
-  .faq-sheet{ position:fixed; inset:6% 4% auto 4%; max-height:88vh; background:rgba(10,10,14,.92);
-    border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.6); color:#eaeaea; }
-  @media (min-width:800px){ .faq-sheet{ inset:8% 12% auto 12%; } }
-
-  .faq-header{ display:flex; align-items:center; justify-content:space-between; padding:.9rem 1rem; border-bottom:1px solid rgba(255,255,255,.08); }
-  .faq-header h2{ margin:0; font-size:1.05rem; letter-spacing:.2px; }
-  .faq-close{ border:0; background:transparent; color:#aaa; font-size:1.1rem; cursor:pointer; }
-  .faq-close:hover{ color:#fff; }
-
-  .faq-toolbar{ display:flex; gap:.6rem; padding:.7rem 1rem; border-bottom:1px solid rgba(255,255,255,.06); flex-wrap:wrap; }
-  #faqSearch{ flex:1 1 220px; padding:.55rem .7rem; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.35); color:#eaeaea; }
-  #faqSearch::placeholder{ color:#9aa; }
-
-  .faq-tabs{ display:flex; gap:.4rem; overflow:auto; scrollbar-width:none; }
-  .faq-tabs::-webkit-scrollbar{ display:none; }
-  .faq-tab{ padding:.45rem .65rem; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); border-radius:999px; font-size:.85rem; cursor:pointer; white-space:nowrap; }
-  .faq-tab[aria-selected="true"]{ border-color:#00E5FF; box-shadow:0 0 0 1px rgba(0,229,255,.25) inset; }
-
-  .faq-list{ padding:.4rem 1rem 1rem; max-height:58vh; overflow:auto; }
-  .faq-item{ border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(0,0,0,.25); margin:.5rem 0; overflow:hidden; }
-  .faq-q{ width:100%; text-align:left; padding:.7rem .9rem; background:transparent; color:#eaeaea; border:0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-  .faq-q span{ font-weight:600; font-size:.95rem; }
-  .faq-q svg{ opacity:.7; transition: transform .18s ease; }
-  .faq-item[open] .faq-q svg{ transform:rotate(180deg); }
-
-  .faq-a{ padding:.5rem .9rem 1rem; color:#cfd5db; line-height:1.45; border-top:1px solid rgba(255,255,255,.06); }
-  .faq-a p{ margin:.45rem 0; }
-  .faq-a code, .faq-a kbd{ background:rgba(255,255,255,.06); padding:.08rem .35rem; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
-
-  .faq-footer{ display:flex; justify-content:space-between; align-items:center; padding:.6rem 1rem; border-top:1px solid rgba(255,255,255,.08); }
-  .faq-copylink{ border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#eaeaea; padding:.4rem .6rem; border-radius:10px; cursor:pointer; }
-  .faq-hint{ color:#9aa; font-size:.85rem; }
-  </style>
 </head>
 
 <body>
@@ -438,37 +378,6 @@
   </div>
 </div>
 
-<!-- === FAQ MODAL (nowy) === -->
-<div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
-  <div class="faq-backdrop" data-close></div>
-  <div class="faq-sheet" role="document">
-    <header class="faq-header">
-      <h2 id="faqTitle">Alpha Husky — FAQ</h2>
-      <button class="faq-close" data-close aria-label="Close FAQ">✕</button>
-    </header>
-
-    <div class="faq-toolbar">
-      <input id="faqSearch" type="search" placeholder="Search FAQ…" autocomplete="off" />
-      <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
-    </div>
-
-    <div id="faqList" class="faq-list" role="region" aria-live="polite"></div>
-
-    <footer class="faq-footer">
-      <button class="faq-copylink" id="faqCopyLink" type="button" title="Copy link to this FAQ view">Copy link</button>
-      <span class="faq-hint">Tip: type to filter. Tap a question to expand.</span>
-    </footer>
-  </div>
-</div>
-
-<!-- Floating FAQ button (bottom-left, kontra Quests po prawej) -->
-<button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2zm0 15.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5zM12 6a4 4 0 0 1 4 4c0 1.6-1.05 2.7-2.2 3.48-.42.29-.8.55-.98.82-.18.26-.27.55-.27.9v.3h-2v-.35c0-.74.19-1.36.56-1.86.37-.5.9-.88 1.54-1.32C13.4 11.32 14 10.77 14 10a2 2 0 0 0-4 0H8a4 4 0 0 1 4-4z"/>
-  </svg>
-  <span>FAQ</span>
-</button>
-
 <!-- Floating launcher (📜) -->
 <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
 <div class="fallback" id="fallback">
@@ -485,7 +394,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2025-11-08b";
+    window.WEBAPP_VER = "2025-11-08c";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -957,7 +866,7 @@
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
         const AUTO_RESOLVE_ON_READY = true;
-        the READY_GRACE_MS = 2000;
+        const READY_GRACE_MS = 2000;
         const RETRY_INTERVAL_MS = 1200;
         const MAX_RESOLVE_RETRIES = 5;
 
@@ -1204,7 +1113,7 @@
             b.textContent = s.name || s.key;
             b.dataset.skin = s.key;
             b.addEventListener('click', () => {
-              $$(`#skinButtons .skin-btn`).forEach(x => x.classList.remove('active'));   <!-- FIX -->
+              $$(`#skinButtons .skin-btn`).forEach(x => x.classList.remove('active'));
               b.classList.add('active');
               _activeSkinKey = s.key;
               renderSkinPreview(s.img, s.name || s.key);
@@ -1217,7 +1126,7 @@
             _activeSkinKey = first.key;
             renderSkinPreview(first.img, first.name || first.key);
             // zaznacz aktywny
-            const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);  <!-- FIX -->
+            const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);
             if (btn) btn.classList.add('active');
           }
         }
@@ -1338,7 +1247,7 @@
               tg?.showAlert?.("Action failed. Try again.");
             }
           } else {
-            tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } } ));
+            tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } }));
           }
           refreshQuests();
         }
@@ -1429,39 +1338,6 @@
       if (window.Quests && !window.__questsInited) {
         window.Quests.init({ apiPost, tg, dbg: console.debug });
         window.__questsInited = true;
-      }
-    })();
-  </script>
-
-  <!-- FAQ module + init -->
-  <script src="js/faq.js?v=20251108" defer></script>
-  <script>
-    (function () {
-      const tg = window.Telegram && window.Telegram.WebApp;
-      const apiPost = (window.S && window.S.apiPost) || (async (path, data) => {
-        const init_data = tg && tg.initData;
-        const url = (window.API_BASE || "") + path;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-          },
-          body: JSON.stringify({ init_data, ...(data || {}) })
-        });
-        return res.json();
-      });
-
-      function tryInitFAQ(){
-        if (window.FAQ && !window.__faqInited) {
-          window.FAQ.init({ apiPost, tg, dbg: console.debug });
-          window.__faqInited = true;
-        }
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryInitFAQ, { once:true });
-      } else {
-        tryInitFAQ();
       }
     })();
   </script>
