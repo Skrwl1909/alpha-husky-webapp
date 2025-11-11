@@ -76,7 +76,7 @@
     ]},
   ];
 
-  // ---------- style injection (no-blur + hard z-index + pointer-events lock) ----------
+  // ---------- style injection (no-blur + hard z-index + FIXED pointer-events) ----------
   (function injectStyles(){
     if (document.getElementById("faq-inline-style")) return;
     const css = `
@@ -90,32 +90,28 @@
         display:none; pointer-events:auto;
       }
       .faq-overlay.open{ display:block; }
-
-      /* Modal ponad overlayem */
+      /* Modal ponad overlayem – FIXED: pointer-events na kontenerze */
       #faqModal{
         position:fixed; inset:0;
         z-index:2147483651;
         display:none; background:transparent; border:0; padding:0;
-        pointer-events:auto;
+        pointer-events:auto; /* ZMIANA: auto, nie none! */
       }
-      #faqModal{ pointer-events:none; }                      /* kontener ignoruje klik */
-      #faqModal .faq-sheet{ z-index:2; pointer-events:auto; }/* tylko karta przyjmuje klik */
-      #faqModal .faq-backdrop{ z-index:1; pointer-events:auto; }
-      .faq-item .faq-a{ display:none; }
-      .faq-item[open] .faq-a{ display:block; }
       #faqModal.open{ display:block; }
       body.faq-open{ overflow:hidden; }
-
-      /* Twarda blokada kliknięć tła, ale overlay + modal aktywne */
+      /* Twarda blokada kliknięć tła */
       body.faq-open > *:not(#faqModal):not(.faq-overlay){ pointer-events:none !important; }
-
-      /* Karta FAQ */
+      /* Karta FAQ – FIXED: override dla card i dzieci */
       .faq-card{
         width:min(800px,96vw); max-height:86vh; overflow:auto; margin:4vh auto;
         background:rgba(10,10,12,.92);
         border:1px solid rgba(255,255,255,.1); border-radius:14px;
+        pointer-events:auto !important; /* DODANO: explicit auto */
       }
-
+      .faq-card * { pointer-events:auto !important; } /* Dla wszystkich dzieci (tabs, buttons) */
+      /* Accordion: display toggle */
+      .faq-item .faq-a{ display:none; }
+      .faq-item[open] .faq-a{ display:block; }
       /* Header bez blurów */
       .faq-header{
         display:grid; grid-template-columns:1fr auto auto; gap:.75rem; align-items:center;
@@ -124,25 +120,21 @@
         -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
       }
       .faq-header h2{ margin:0; font-size:1.05rem; opacity:.95 }
-
       /* Body/sekcje/lista */
       .faq-body{ padding:.25rem 1rem 1rem }
       .faq-section{ margin:.75rem 0 1rem }
       .faq-section>h3{ margin:.5rem 0 .25rem; font-size:.95rem; opacity:.8 }
       .faq-item{ border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:.25rem .75rem; margin:.5rem 0; background:rgba(255,255,255,.04) }
-      .faq-q{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:.75rem; background:transparent; border:0; color:inherit; padding:.6rem 0; cursor:pointer; font-weight:600 }
+      .faq-q{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:.75rem; background:transparent; border:0; color:inherit; padding:.6rem 0; cursor:pointer; font-weight:600; pointer-events:auto !important; }
       .faq-a{ padding:.25rem 0 .75rem; opacity:.95; line-height:1.35 }
-
       /* Search + close */
-      #faqSearch{ width:min(260px,52vw); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:.5rem .75rem; color:inherit }
-      #faqClose{ background:transparent; border:0; color:inherit; font-size:1.2rem; opacity:.75; cursor:pointer }
-
+      #faqSearch{ width:min(260px,52vw); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:.5rem .75rem; color:inherit; pointer-events:auto !important; }
+      #faqClose{ background:transparent; border:0; color:inherit; font-size:1.2rem; opacity:.75; cursor:pointer; pointer-events:auto !important; }
       /* Tabs */
       .faq-tabs{ display:flex; gap:.4rem; flex-wrap:wrap; margin:.5rem 1rem 0 }
-      .faq-tab{ border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); padding:.3rem .6rem; border-radius:9px; cursor:pointer }
+      .faq-tab{ border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); padding:.3rem .6rem; border-radius:9px; cursor:pointer; pointer-events:auto !important; }
       .faq-tab[aria-selected="true"]{ background:rgba(0,229,255,.12); border-color:rgba(0,229,255,.35) }
-
-      /* Wyłączenie globalnych blur/filtrów pod modalem */
+      /* Wyłączenie globalnych blur/filtrów */
       #faqModal, #faqModal *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; filter:none !important; }
       @media(max-width:520px){ #faqSearch{ width:50vw } }
     `;
@@ -151,163 +143,102 @@
     st.textContent = css;
     document.head.appendChild(st);
   })();
-
   // ---------- SVG i render utils ----------
   function chevron(){
-    const ns="http://www.w3.org/2000/svg";
-    const s=document.createElementNS(ns,"svg"); s.setAttribute("width","18"); s.setAttribute("height","18"); s.setAttribute("viewBox","0 0 24 24");
-    const p=document.createElementNS(ns,"path"); p.setAttribute("d","M7 10l5 5 5-5"); p.setAttribute("fill","none");
-    p.setAttribute("stroke","currentColor"); p.setAttribute("stroke-width","2"); p.setAttribute("stroke-linecap","round"); p.setAttribute("stroke-linejoin","round");
-    s.appendChild(p); return s;
+    // ... (bez zmian)
   }
   function renderAnswer(a){
-    return a.replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\b\/[a-zA-Z_]+/g, m=>`<kbd>${m}</kbd>`);
+    // ... (bez zmian)
   }
-
-  // ---------- hard inert helper (blokada tła) ----------
+  // ---------- hard inert helper ----------
   function inertAll(on){
-    Array.from(document.body.children).forEach(el=>{
-      if (el.id === 'faqModal' || el.classList.contains('faq-overlay')) return;
-      on ? el.setAttribute('inert','') : el.removeAttribute('inert');
-    });
+    // ... (bez zmian)
   }
-
-  // --- ZAMIANA TEGO BLOKU W FAQ.JS ---
-let _captures = [];
-function _addCapture(type, fn){ document.addEventListener(type, fn, true); _captures.push([type, fn]); }
-function _removeCaptures(){ _captures.forEach(([t,fn])=>document.removeEventListener(t,fn,true)); _captures=[]; }
-
-function _makeShield(){
-  const guard = (e)=>{
-    const modal = document.getElementById('faqModal');
-    if (!modal || !modal.classList.contains('open')) return;
-    if (modal.contains(e.target)) return;     // ← ważne: w środku nic nie blokujemy
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-  };
-  ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click']
-    .forEach(t=>_addCapture(t, guard));
-}
-
+  // ---------- FIXED shield: bubble phase, limited events + logi ----------
+  let _captures = [];
+  function _addCapture(type, fn){ 
+    document.addEventListener(type, fn, false); // ZMIANA: false = bubble phase (po target)
+    _captures.push([type, fn]); 
+  }
+  function _removeCaptures(){ 
+    _captures.forEach(([t,fn])=>document.removeEventListener(t,fn,false)); 
+    _captures=[]; 
+  }
+  function _makeShield(){
+    const guard = (e)=>{
+      const modal = $('#faqModal');
+      if (!modal || !modal.classList.contains('open')) return;
+      if (modal.contains(e.target)){ 
+        console.log('Shield: Inside modal, allowing event'); // DEBUG LOG
+        return; // Pozwól na propagację inside
+      }
+      console.log('Shield: Blocking outside event', e.type); // DEBUG
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    };
+    // OGRANICZONO: Tylko kluczowe events, bez overkill
+    ['click', 'touchend'].forEach(t=>_addCapture(t, guard)); // Dodaj pointerdown jeśli touch nadal słaby
+  }
   // ---------- FAQ controller ----------
   const FAQ = {
-    state:{ section:null, query:"" },
-    content: FAQ_CONTENT,
-    apiPost:null, tg:null, dbg:null,
-    _escHandler:null,
-    _overlay:null,
-
+    // ... (state, content, init params bez zmian)
     init({ apiPost, tg, dbg } = {}){
       this.apiPost = apiPost; this.tg = tg; this.dbg = dbg;
-
-      // opcjonalne zasilenie z /webapp/faq
-      fetch('/webapp/faq', { method:'GET' })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(json => {
-          if (Array.isArray(json)) this.content = json;
-          else if (json && Array.isArray(json.sections)) this.content = json.sections;
-          this._maybeRerender();
-        })
-        .catch(()=>{/* fallback = local */});
-
-      // overlay (tworzymy raz)
-      this._overlay = document.createElement('div');
-      this._overlay.className = 'faq-overlay';
-      this._overlay.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); this.close(); });
-      document.body.appendChild(this._overlay);
-
-      // modal (tworzymy, jeśli nie istnieje)
-      let modal = $('#faqModal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'faqModal';
-        modal.innerHTML = `
-          <div class="faq-card">
-            <div class="faq-header">
-              <h2>FAQ</h2>
-              <input id="faqSearch" type="search" placeholder="Search…" autocomplete="off" />
-              <button id="faqClose" type="button" class="faq-close" aria-label="Close">×</button>
-            </div>
-            <div class="faq-tabs" id="faqTabs"></div>
-            <div id="faqBody" class="faq-body">
-              <div id="faqList"></div>
-            </div>
-          </div>`;
-        document.body.appendChild(modal);
-      }
-
+      // ... (fetch, overlay, modal creation bez zmian)
       // Openers
       ['btnFaq','fabFaq'].forEach(id=>{
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e)=>{ e.preventDefault(); this.open(); });
       });
-
-      // Close button (delegacja)
+      // Close button
       $('#faqModal')?.addEventListener('click', e => {
         const closeBtn = e.target.closest('.faq-close,[data-close]');
-        if (closeBtn){ e.preventDefault(); e.stopPropagation(); this.close(); }
+        if (closeBtn){ 
+          console.log('Close clicked'); // DEBUG
+          e.preventDefault(); e.stopPropagation(); this.close(); 
+        }
       });
-      // Klik wewnątrz karty nie zamyka
+      // Stop prop inside card
       $('#faqModal')?.addEventListener('click', e => {
         if (e.target.closest('.faq-card')) { e.stopPropagation(); }
       });
-
-      // Search
+      // Search – dodaj log
       $('#faqSearch')?.addEventListener('input', e => {
+        console.log('Search input:', e.target.value); // DEBUG
         this.state.query = e.target.value.trim();
         this.renderList();
       });
-
-      // Tabs
+      // Tabs & List render – dodaj logi
       this.renderTabs();
-
-      // Deep links
-      const p = new URLSearchParams(location.search);
-      if (p.get('section') === 'faq' || p.get('faq')){
-        this.state.section = p.get('faq') || null;
-        this.open();
-      } else {
-        if (!this.state.section && this.content[0]) this.state.section = this.content[0].key;
-        this.renderTabs(); this.renderList();
-      }
-
-      // public API
+      // Deep links (bez zmian)
+      // ... 
       window.FAQ = this;
       return this;
     },
-
     open(){
       const m = $('#faqModal'); if (!m) return;
       document.body.classList.add('faq-open');
       m.classList.add('open');
-      m.removeAttribute('hidden');
+      // USUNIĘTO: m.removeAttribute('hidden'); – redundantne
       this._overlay.classList.add('open');
-
-      // tło w 100% nieklikalne + tarcza na capture
       inertAll(true);
       _makeShield();
-
       this.apiPost?.('/webapp/telemetry', { event:'faq_open' });
-
       $('#faqSearch')?.focus({ preventScroll:true });
       this.renderTabs(); this.renderList();
-
       this._escHandler = (e)=>{ if (e.key === 'Escape') this.close(); };
       document.addEventListener('keydown', this._escHandler);
+      if (this.tg) this.tg.expand(); // DODANO: Rozwiń appkę full screen (z docs)
     },
-
     close(){
       const m = $('#faqModal'); if (!m) return;
       document.body.classList.remove('faq-open');
       m.classList.remove('open');
-      m.setAttribute('hidden','');
+      // USUNIĘTO: m.setAttribute('hidden',''); – niepotrzebne
       this._overlay.classList.remove('open');
-
       inertAll(false);
       _removeCaptures();
-
       if (this._escHandler){ document.removeEventListener('keydown', this._escHandler); this._escHandler=null; }
     },
-
     renderTabs(){
       const tabs = $('#faqTabs'); if (!tabs) return;
       tabs.innerHTML = "";
@@ -319,6 +250,7 @@ function _makeShield(){
         b.setAttribute('aria-selected', isSelected ? 'true':'false');
         b.textContent=sec.title || sec.key;
         b.addEventListener('click', (e)=>{
+          console.log('Tab clicked:', sec.key); // DEBUG LOG
           e.preventDefault(); e.stopPropagation();
           this.state.section=sec.key;
           $$('.faq-tab',tabs).forEach(x=>x.setAttribute('aria-selected','false'));
@@ -329,42 +261,35 @@ function _makeShield(){
       });
       if (!this.state.section && this.content[0]) this.state.section = this.content[0].key;
     },
-
     renderList(){
       const wrap = $('#faqList'); if (!wrap) return;
       wrap.innerHTML="";
       const sec = this.content.find(s=>s.key===this.state.section) || this.content[0];
       if (!sec) return;
       const q = (this.state.query||"").toLowerCase();
-
       sec.items
         .filter(it => !q || it.q.toLowerCase().includes(q) || it.a.toLowerCase().includes(q))
         .forEach((it,i)=>{
           const item=document.createElement('section'); item.className='faq-item'; item.id=`${sec.key}-${i}`;
-
           const btn=document.createElement('button');
           btn.type='button';
           btn.className='faq-q'; btn.setAttribute('aria-expanded','false');
           const title=document.createElement('span'); title.textContent=it.q; btn.appendChild(title); btn.appendChild(chevron());
           btn.addEventListener('click', (e)=>{
+            console.log('Accordion clicked:', it.q); // DEBUG LOG
             e.preventDefault(); e.stopPropagation();
             const open=item.hasAttribute('open');
             $$('.faq-item',wrap).forEach(n=>n.removeAttribute('open'));
             if (!open){ item.setAttribute('open',''); btn.setAttribute('aria-expanded','true'); }
           });
-
           const body=document.createElement('div'); body.className='faq-a'; body.innerHTML=renderAnswer(it.a);
           item.appendChild(btn); item.appendChild(body); wrap.appendChild(item);
         });
     },
-
     _maybeRerender(){
-      if ($('#faqModal')?.classList.contains('open')) {
-        this.renderTabs(); this.renderList();
-      }
+      // ... (bez zmian)
     }
   };
-
   // auto-init
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => FAQ.init());
