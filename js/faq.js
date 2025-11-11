@@ -98,6 +98,8 @@
         display:none; background:transparent; border:0; padding:0;
         pointer-events:auto;
       }
+      .faq-item .faq-a{ display:none; }
+      .faq-item[open] .faq-a{ display:block; }
       #faqModal.open{ display:block; }
       body.faq-open{ overflow:hidden; }
 
@@ -167,25 +169,27 @@
     });
   }
 
-  // ---------- global capture-shield (blokuje bąbelkowanie do WebView) ----------
-  let _captures = [];
-  function _addCapture(type, fn){ document.addEventListener(type, fn, true); _captures.push([type, fn]); }
-  function _removeCaptures(){ _captures.forEach(([t,fn])=>document.removeEventListener(t,fn,true)); _captures=[]; }
-  function _makeShield(){
-    const guard = (e)=>{
-      const modal = $('#faqModal');
-      if (!modal || !modal.classList.contains('open')) return;
-      // jeśli klik wewnątrz modala — zatrzymaj propagację do WebApp
-      if (modal.contains(e.target)){
-        e.stopPropagation(); e.stopImmediatePropagation();
-        return;
-      }
-      // jeśli klik w tło — zablokuj domyślne akcje (np. focus/scroll submit)
-      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-    };
-    ['click','pointerdown','pointerup','mousedown','mouseup','touchstart','touchend']
-      .forEach(t=>_addCapture(t, guard));
-  }
+  // --- ZAMIANA TEGO BLOKU W FAQ.JS ---
+let _captures = [];
+function _addCapture(type, fn){ document.addEventListener(type, fn, true); _captures.push([type, fn]); }
+function _removeCaptures(){ _captures.forEach(([t,fn])=>document.removeEventListener(t,fn,true)); _captures=[]; }
+
+function _makeShield(){
+  const guard = (e)=>{
+    const modal = document.getElementById('faqModal');
+    if (!modal || !modal.classList.contains('open')) return;
+
+    // ⬇️ Jeśli klik W ŚRODKU modala – NIC nie blokujemy (pozwalamy działać handlerom FAQ)
+    if (modal.contains(e.target)) return;
+
+    // ⬇️ Klik poza modalem (tło) – blokujemy domyślne akcje i propagację
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  };
+  ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click']
+    .forEach(t=>_addCapture(t, guard));
+}
 
   // ---------- FAQ controller ----------
   const FAQ = {
