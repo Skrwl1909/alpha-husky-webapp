@@ -76,7 +76,7 @@
     ]},
   ];
 
-  // ---------- style injection (no-blur + hard z-index) ----------
+  // ---------- style injection (no-blur + hard z-index + pointer-events lock) ----------
   (function injectStyles(){
     if (document.getElementById("faq-inline-style")) return;
     const css = `
@@ -100,6 +100,9 @@
       }
       #faqModal.open{ display:block; }
       body.faq-open{ overflow:hidden; }
+
+      /* Twarda blokada kliknięć tła, ale overlay + modal aktywne */
+      body.faq-open > *:not(#faqModal):not(.faq-overlay){ pointer-events:none !important; }
 
       /* Karta FAQ */
       .faq-card{
@@ -134,7 +137,7 @@
       .faq-tab{ border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); padding:.3rem .6rem; border-radius:9px; cursor:pointer }
       .faq-tab[aria-selected="true"]{ background:rgba(0,229,255,.12); border-color:rgba(0,229,255,.35) }
 
-      /* Na wszelki wypadek wyłącz globalne blur/filtry pod modalem */
+      /* Wyłączenie globalnych blur/filtrów pod modalem */
       #faqModal, #faqModal *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; filter:none !important; }
       @media(max-width:520px){ #faqSearch{ width:50vw } }
     `;
@@ -164,6 +167,26 @@
     });
   }
 
+  // ---------- global capture-shield (blokuje bąbelkowanie do WebView) ----------
+  let _captures = [];
+  function _addCapture(type, fn){ document.addEventListener(type, fn, true); _captures.push([type, fn]); }
+  function _removeCaptures(){ _captures.forEach(([t,fn])=>document.removeEventListener(t,fn,true)); _captures=[]; }
+  function _makeShield(){
+    const guard = (e)=>{
+      const modal = $('#faqModal');
+      if (!modal || !modal.classList.contains('open')) return;
+      // jeśli klik wewnątrz modala — zatrzymaj propagację do WebApp
+      if (modal.contains(e.target)){
+        e.stopPropagation(); e.stopImmediatePropagation();
+        return;
+      }
+      // jeśli klik w tło — zablokuj domyślne akcje (np. focus/scroll submit)
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    };
+    ['click','pointerdown','pointerup','mousedown','mouseup','touchstart','touchend']
+      .forEach(t=>_addCapture(t, guard));
+  }
+
   // ---------- FAQ controller ----------
   const FAQ = {
     state:{ section:null, query:"" },
@@ -188,7 +211,7 @@
       // overlay (tworzymy raz)
       this._overlay = document.createElement('div');
       this._overlay.className = 'faq-overlay';
-      this._overlay.addEventListener('click', ()=> this.close());
+      this._overlay.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); this.close(); });
       document.body.appendChild(this._overlay);
 
       // modal (tworzymy, jeśli nie istnieje)
@@ -257,8 +280,9 @@
       m.classList.add('open');
       this._overlay.classList.add('open');
 
-      // tło w 100% nieklikalne
+      // tło w 100% nieklikalne + tarcza na capture
       inertAll(true);
+      _makeShield();
 
       this.apiPost?.('/webapp/telemetry', { event:'faq_open' });
 
@@ -276,6 +300,7 @@
       this._overlay.classList.remove('open');
 
       inertAll(false);
+      _removeCaptures();
 
       if (this._escHandler){ document.removeEventListener('keydown', this._escHandler); this._escHandler=null; }
     },
