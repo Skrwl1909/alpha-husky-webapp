@@ -181,14 +181,8 @@ function _makeShield(){
   const guard = (e)=>{
     const modal = document.getElementById('faqModal');
     if (!modal || !modal.classList.contains('open')) return;
-
-    // ⬇️ Jeśli klik W ŚRODKU modala – NIC nie blokujemy (pozwalamy działać handlerom FAQ)
-    if (modal.contains(e.target)) return;
-
-    // ⬇️ Klik poza modalem (tło) – blokujemy domyślne akcje i propagację
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    if (modal.contains(e.target)) return;     // ← ważne: w środku nic nie blokujemy
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
   };
   ['pointerdown','pointerup','mousedown','mouseup','touchstart','touchend','click']
     .forEach(t=>_addCapture(t, guard));
