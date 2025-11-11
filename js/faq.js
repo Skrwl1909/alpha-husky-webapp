@@ -201,7 +201,7 @@
             <div class="faq-header">
               <h2>FAQ</h2>
               <input id="faqSearch" type="search" placeholder="Search…" autocomplete="off" />
-              <button id="faqClose" class="faq-close" aria-label="Close">×</button>
+              <button id="faqClose" type="button" class="faq-close" aria-label="Close">×</button>
             </div>
             <div class="faq-tabs" id="faqTabs"></div>
             <div id="faqBody" class="faq-body">
@@ -214,16 +214,24 @@
       // Openers
       ['btnFaq','fabFaq'].forEach(id=>{
         const el = document.getElementById(id);
-        if (el) el.addEventListener('click', ()=> this.open());
+        if (el) el.addEventListener('click', (e)=>{ e.preventDefault(); this.open(); });
       });
 
-      // Close buttons
+      // Close button (delegacja)
       $('#faqModal')?.addEventListener('click', e => {
-        if (e.target.classList?.contains('faq-close') || e.target.hasAttribute('data-close')) this.close();
+        const closeBtn = e.target.closest('.faq-close,[data-close]');
+        if (closeBtn){ e.preventDefault(); e.stopPropagation(); this.close(); }
+      });
+      // Klik wewnątrz karty nie zamyka
+      $('#faqModal')?.addEventListener('click', e => {
+        if (e.target.closest('.faq-card')) { e.stopPropagation(); }
       });
 
       // Search
-      $('#faqSearch')?.addEventListener('input', e => { this.state.query = e.target.value.trim(); this.renderList(); });
+      $('#faqSearch')?.addEventListener('input', e => {
+        this.state.query = e.target.value.trim();
+        this.renderList();
+      });
 
       // Tabs
       this.renderTabs();
@@ -277,11 +285,13 @@
       tabs.innerHTML = "";
       this.content.forEach((sec, idx)=>{
         const b=document.createElement('button');
+        b.type = 'button';
         b.className='faq-tab'; b.setAttribute('role','tab');
         const isSelected = (this.state.section ? this.state.section===sec.key : idx===0);
         b.setAttribute('aria-selected', isSelected ? 'true':'false');
         b.textContent=sec.title || sec.key;
-        b.addEventListener('click', ()=>{
+        b.addEventListener('click', (e)=>{
+          e.preventDefault(); e.stopPropagation();
           this.state.section=sec.key;
           $$('.faq-tab',tabs).forEach(x=>x.setAttribute('aria-selected','false'));
           b.setAttribute('aria-selected','true');
@@ -304,9 +314,12 @@
         .forEach((it,i)=>{
           const item=document.createElement('section'); item.className='faq-item'; item.id=`${sec.key}-${i}`;
 
-          const btn=document.createElement('button'); btn.className='faq-q'; btn.setAttribute('aria-expanded','false');
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='faq-q'; btn.setAttribute('aria-expanded','false');
           const title=document.createElement('span'); title.textContent=it.q; btn.appendChild(title); btn.appendChild(chevron());
-          btn.addEventListener('click', ()=>{
+          btn.addEventListener('click', (e)=>{
+            e.preventDefault(); e.stopPropagation();
             const open=item.hasAttribute('open');
             $$('.faq-item',wrap).forEach(n=>n.removeAttribute('open'));
             if (!open){ item.setAttribute('open',''); btn.setAttribute('aria-expanded','true'); }
