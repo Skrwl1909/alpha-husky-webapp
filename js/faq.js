@@ -98,6 +98,9 @@
         display:none; background:transparent; border:0; padding:0;
         pointer-events:auto;
       }
+      #faqModal{ pointer-events:none; }                      /* kontener ignoruje klik */
+      #faqModal .faq-sheet{ z-index:2; pointer-events:auto; }/* tylko karta przyjmuje klik */
+      #faqModal .faq-backdrop{ z-index:1; pointer-events:auto; }
       .faq-item .faq-a{ display:none; }
       .faq-item[open] .faq-a{ display:block; }
       #faqModal.open{ display:block; }
@@ -282,6 +285,7 @@ function _makeShield(){
       const m = $('#faqModal'); if (!m) return;
       document.body.classList.add('faq-open');
       m.classList.add('open');
+      m.removeAttribute('hidden');
       this._overlay.classList.add('open');
 
       // tło w 100% nieklikalne + tarcza na capture
@@ -301,6 +305,7 @@ function _makeShield(){
       const m = $('#faqModal'); if (!m) return;
       document.body.classList.remove('faq-open');
       m.classList.remove('open');
+      m.setAttribute('hidden','');
       this._overlay.classList.remove('open');
 
       inertAll(false);
