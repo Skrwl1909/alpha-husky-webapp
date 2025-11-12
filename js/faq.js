@@ -147,13 +147,29 @@
     ]},
   ];
 
-  // Udostępnij globalnie (renderer tego oczekuje)
-  window.FAQ_CONTENT = CONTENT;
-
   // Opcjonalny refresh jeśli masz taki hook
   if (window.FAQ && typeof window.FAQ.refresh === "function") {
-    try { window.FAQ.refresh(); } catch {}
+    try { window.FAQ.refresh(); } catch (e) { console.warn("[FAQ] refresh error:", e); }
   }
+
+  // ----- Smooth open + scroll to "commands" (jeśli masz przycisk w topbarze)
+  function openFAQ() {
+    if (window.FAQ && typeof window.FAQ.open === "function") return window.FAQ.open();
+    const trigger = $(".js-open-faq,[data-action='open-faq'],#openFaqBtn");
+    if (trigger) trigger.click();
+  }
+  function scrollToFaq(key) {
+    const el = document.querySelector(`#faq-${key}, [data-faq-key="${key}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.classList.add("faq-ring");
+    setTimeout(() => el.classList.remove("faq-ring"), 1200);
+  }
+  $("#btnFaqCommands")?.addEventListener("click", () => {
+    openFAQ();
+    setTimeout(() => scrollToFaq("commands"), 150);
+  });
+})();
 
 
   // ---------- style injection: high z-index + accordion fix ----------
