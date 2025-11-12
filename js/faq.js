@@ -6,75 +6,146 @@
 
   // ---------- CONTENT (Twoje) ----------
   let FAQ_CONTENT = [
-    { key:"quickstart", title:"Quick Start", items:[
-      { q:"What is Alpha Husky?",
-        a:"A lean, post-apocalyptic, tribal-tech Telegram mini-game and brand. We ship first, talk later. Play via the Telegram WebApp." },
-      { q:"How do I start?",
-        a:"Open the WebApp, set your Profile, then explore the map. Run a Mission, test the Dojo, or challenge the Moon Lab fortress to earn Bones and materials." },
-      { q:"Core loop in one line",
-        a:"Missions/Dojo → earn materials → Forge shards → upgrade gear (and pets) → push deeper content (Moon Lab, quests) → repeat. Momentum must be maintained." },
-    ]},
-    { key:"map", title:"Map & Activities", items:[
-      { q:"What can I do on the map?",
-        a:"• Missions (solo/coop) • Moon Lab (boss ladder) • Dojo (DPS timer) • Daily Quests (Mission Board) • Shop/Forge • Event nodes when live." },
-      { q:"Why cooldowns?",
-        a:"Some activities (e.g., Moon Lab) pace attempts with cooldowns to reward consistency and balance the economy." },
-    ]},
-    { key:"stats", title:"Stats & Combat", items:[
-      { q:"Where do my stats come from?",
-        a:"Single source of truth: base stats + equipped gear (+pet) → totals → combat. We compute everything from the same pipeline across modes." },
-      { q:"How is HP calculated?",
-        a:"HP is derived from VIT using a unified rule so modes match: internally HP ≈ 50 + 12×VIT (after base+gear+pet totals). This fixed past inconsistencies." },
-    ]},
-    { key:"materials", title:"Materials & Ledger", items:[
-      { q:"What are Bones, Scrap, Rune Dust?",
-        a:"Bones are the universal soft currency tracked via a ledger. Scrap and Rune Dust are crafting resources. Check true balances in /materials." },
-      { q:"Where do I get materials?",
-        a:"Missions, boxes, quests, events. The Shop also rotates consumables daily." },
-    ]},
-    { key:"forge", title:"Forge & Shards", items:[
-      { q:"What are Shards?",
-        a:"Slot-specific fragments (weapon, armor, helmet, ring, offhand, cloak, collar, gloves, rune, etc.). Use Forge → Shards to craft/upgrade items." },
-      { q:"How fair is crafting?",
-        a:"Shard crafting uses 80/20 RNG with pity at 5 attempts and an optional refine bonus. Costs: materials (Bones, Scrap, Rune Dust from ★3)." },
-      { q:"Stars, reforge, fuse?",
-        a:"Upgrades raise ★ up to 5. Reforge/Fuse exist with sensible daily limits to keep progress fair and the economy stable." },
-    ]},
-    { key:"moonlab", title:"Moon Lab (Fortress)", items:[
-      { q:"What is Moon Lab?",
-        a:"A boss-ladder fortress with win/lose cooldowns. Clear floors to push your best run; rewards scale with progress." },
-      { q:"Why did I see 1-HP before?",
-        a:"Fixed. All modes now share the same stat → HP pipeline, so Moon Lab and Missions match your totals (base + gear + pet)." },
-    ]},
-    { key:"dojo", title:"Dojo (Training)", items:[
-      { q:"What does Dojo do?",
-        a:"A timed DPS test (30/60s variants). It’s for benchmarking builds and future challenges; some events/quests may hook into its milestones." },
-    ]},
-    { key:"quests", title:"Daily Quests & Progress", items:[
-      { q:"How do Daily Quests work?",
-        a:"Open the Mission Board, accept tasks, play to progress, then claim rewards. There’s rotation; UI shows requirements and states." },
-      { q:"Progress not updating?",
-        a:"Reopen the WebApp to refresh state. If it persists, drop your username and steps in the Den—we’ll check logs." },
-    ]},
-    { key:"pets", title:"Pets", items:[
-      { q:"Do pets matter?",
-        a:"Yes. Pets contribute stats and bonuses. They level through play; some quests and events feature pet-related tasks." },
-    ]},
-    { key:"token", title:"Token & TGE", items:[
-      { q:"Is the token live?",
-        a:"Not yet. We ship gameplay first. Planned total supply: 25M with 10M locked treasury. No paid hype—community > noise." },
-      { q:"What does TGE mean here?",
-        a:"We go live only when utility, sinks/sources, and fair allocations are locked. Details will be announced when ready." },
-    ]},
-    { key:"safety", title:"Safety, OG & Terms", items:[
-      { q:"Security basics",
-        a:"We will never DM for keys. Only use the official bot/WebApp link. Beware fakes." },
-      { q:"OG / Purge",
-        a:"Purge resets progression but preserves OG identity/badges. Early contributors are remembered—the Pack doesn’t forget." },
-      { q:"Terms / Privacy",
-        a:"MVP/Beta. No promises of financial return. We use gameplay telemetry to balance the game. Links to Terms/Privacy will appear here." },
-    ]},
-  ];
+  { key:"quickstart", title:"Quick Start", items:[
+    { q:"🐺 What is Alpha Husky?",
+      a:"A lean, post-apocalyptic, tribal-tech Telegram mini-game and brand. We ship first, talk later. Play via the Telegram WebApp." },
+    { q:"🧭 How do I start?",
+      a:"Open the WebApp, set your Profile, then explore the map. Run a Mission, test the Dojo, or challenge the Moon Lab fortress to earn Bones and materials." },
+    { q:"🔁 Core loop in one line",
+      a:"Missions/Dojo → earn materials → Forge shards → upgrade gear (and pets) → push deeper content (Moon Lab, quests) → repeat. Momentum must be maintained." },
+  ]},
+
+  { key:"commands", title:"Commands", items:[
+  { q:"📊 /stats",
+    a:"Shows your totals (base + pet + gear + sets view) and HP/XP bars. Internally we compute everything from a single pipeline so all modes match." },
+  { q:"🛠️ /mystats",
+    a:"Interactive stat upgrades (+1 per tap) using your unspent points. Immediate recalc of totals." },
+  { q:"🦴 /feed",
+    a:"Feed your husky (standard cooldown). The 'Turbo Bone' (*double_feed*) item lets you eat twice in a row with no cooldown (2 uses)." },
+  { q:"🏷️ /setnick",
+    a:"Unlock via a shop item with effect 'custom_nick', then use this command to set your nickname/color/glow." },
+
+  // NEW: pełna lista dla graczy
+  { q:"📜 All player commands",
+    a:
+`• /start — Start the game / onboarding
+• /setprofile - to set up your nickname
+• /badges - to see your badges collection
+• /mission — Start or check your daily mission
+• /inventory — View your items
+• /materials — View Scrap, Rune Dust and Shards
+• /shop — Browse and buy items
+• /feed — Feed Alpha Husky and earn Bones
+• /howlboard — View the top of the Pack
+• /mystats — See your detailed stats + spend stat points
+• /equip — Equip an item to your character
+• /equipped — View your equipped gear
+• /pets — Manage your pets
+• /adopt - adopt center for pets
+• /achievements — Unlocked achievements
+• /settitle — Change your profile title
+• /daily — Claim your daily bonus
+• /dailyhowl - to claim your daily presence
+• /huskyhelp — List all available commands
+
+// Forge Week — inventory & forge
+• /lock — Lock an item type (protect from salvage/dupe)
+• /unlock — Unlock a previously locked item type
+• /locks — List your locked item types
+• /salvage — Dismantle an item into Scrap/Dust
+• /bulk_dismantle — Bulk salvage by filter (e.g. rarity=common,uncommon keep=0)
+• /craft — Craft gear from shards: /craft <slot> [count] [refine N]
+
+// Tips
+• Example bulk: /bulk_dismantle rarity=common,uncommon keep=0
+• Example craft: /craft weapon 5 refine 2
+• Some commands may be gated by cooldowns or role (beta).`
+  },
+]}
+
+  { key:"map", title:"Map & Activities", items:[
+    { q:"🗺️ What can I do on the map?",
+      a:"• Missions (solo/coop) • Moon Lab (boss ladder) • Dojo (DPS timer) • Daily Quests (Mission Board) • Shop/Forge • Event nodes when live." },
+    { q:"⏳ Why cooldowns?",
+      a:"Some activities (e.g., Moon Lab) pace attempts with cooldowns to reward consistency and balance the economy." },
+  ]},
+
+  { key:"materials", title:"Materials & Ledger", items:[
+    { q:"🧪 Material types",
+      a:"• Bones (soft currency, ledger-based) • Scrap (craft) • Rune Dust (from ★3+ or salvage) • Slot Shards (weapon/armor/helmet/ring/offhand/cloak/collar/gloves/fangs...) • Universal/Region Key Shards (map unlocks)." },
+    { q:"📦 How to get them?",
+      a:"Missions & events, Daily Quests, and boxes. Mystery/Premium/Legendary boxes grant multiple rolls for Bones/Scrap/Rune Dust/Shards; drops are mirrored from the ledger into your UI. The Shop rotates consumables daily." },
+    { q:"🧾 Where to check balances?",
+      a:"Open the WebApp (Materials) or use /materials if available — values reflect the ledger snapshot." }
+  ]},
+
+  { key:"forge", title:"Forge & Shards", items:[
+    { q:"🔷 What are Shards?",
+      a:"Slot-specific fragments (weapon, armor, helmet, ring, offhand, cloak, collar, gloves, fangs...). Use Forge → Shards to craft/upgrade items." },
+    { q:"⚖️ How fair is crafting?",
+      a:"80/20 RNG with pity at 5 attempts and optional refine bonus. Costs use Bones/Scrap and Rune Dust (from ★3) to keep progression fair." },
+    { q:"⭐ Stars, reforge, fuse?",
+      a:"Upgrades raise ★ up to 5. Reforge/Fuse exist with sensible daily limits to stabilize the economy." },
+  ]},
+
+  { key:"stats", title:"Stats, HP & Leveling", items:[
+    { q:"📈 Where do my stats come from?",
+      a:"Single source of truth: base stats + equipped gear (+pet) → totals → combat. One pipeline across all modes." },
+    { q:"❤️ How is HP calculated?",
+      a:"HP = 50 + 12×VIT (after base+gear+pet totals). This unified rule fixed the old inconsistencies between modes." },
+    { q:"🆙 Leveling & XP",
+      a:"Level XP requirement grows linearly: need(lvl) = 100 + 25×(lvl−1). Spend unspent points via /mystats to tailor your build." }
+  ]},
+
+  { key:"moonlab", title:"Moon Lab (Fortress)", items:[
+    { q:"🌕 What is Moon Lab?",
+      a:"A boss-ladder fortress with win/lose cooldowns. Clear floors to push your best run; rewards scale with progress." },
+    { q:"🛠️ 1-HP bug status",
+      a:"Fixed. Moon Lab now reads the same stat→HP pipeline as Missions (base + gear + pet)." },
+  ]},
+
+  { key:"dojo", title:"Dojo (Training)", items:[
+    { q:"🥋 What does Dojo do?",
+      a:"A timed DPS test (30/60s). Useful to benchmark builds; some quests/events hook into its milestones." },
+  ]},
+
+  { key:"shop", title:"Daily Shop", items:[
+    { q:"🔄 How does it rotate?",
+      a:"Auto-rotation every 24h. Daily pool: 6–8 main items plus up to 3 consumables shown separately. UI displays time to next refresh." },
+    { q:"💰 How do prices work?",
+      a:"Items can cost Bones or $TOKEN. Purchases are validated and written to an append-only ledger, then mirrored to your balances in UI." },
+    { q:"🗝️ Faction locks?",
+      a:"Some items may require a faction; non-matching players won’t see those offers." }
+  ]},
+
+  { key:"quests", title:"Daily Quests & Progress", items:[
+    { q:"📜 How do Daily Quests work?",
+      a:"Open the Mission Board, accept tasks, play to progress, then claim rewards. There’s rotation; UI shows requirements and states." },
+    { q:"⚠️ Progress not updating?",
+      a:"Reopen the WebApp to refresh state. If it persists, drop your username and steps in the Den — we’ll check logs." },
+  ]},
+
+  { key:"pets", title:"Pets", items:[
+    { q:"🐾 Do pets matter?",
+      a:"Yes. Pets contribute stats and bonuses. They level through play; some quests and events feature pet-related tasks." },
+  ]},
+
+  { key:"token", title:"Token & TGE", items:[
+    { q:"🪙 Is the token live?",
+      a:"Not yet. We ship gameplay first. Planned total supply: 25M with 10M locked treasury. No paid hype — community > noise." },
+    { q:"🚀 What does TGE mean here?",
+      a:"We go live only when utility, sinks/sources, and fair allocations are locked. Details will be announced when ready." },
+  ]},
+
+  { key:"safety", title:"Safety, OG & Terms", items:[
+    { q:"🔒 Security basics",
+      a:"We will never DM for keys. Only use the official bot/WebApp link. Beware fakes." },
+    { q:"🛡️ OG / Purge",
+      a:"Purge resets progression but preserves OG identity/badges. Early contributors are remembered — the Pack doesn’t forget." },
+    { q:"📄 Terms / Privacy",
+      a:"MVP/Beta. No promises of financial return. We use gameplay telemetry to balance the game. Links to Terms/Privacy will appear here." },
+  ]},
+];
 
   // ---------- style injection: high z-index + accordion fix ----------
   (function injectStyles(){
