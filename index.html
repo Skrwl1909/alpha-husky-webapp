@@ -34,6 +34,37 @@
   }
   .btn:active { transform: translateY(1px); }
   .btn.linklike { text-decoration:none; }
+
+  /* Ogólny styl dla ikon w buttonach */
+  .btn-icon {
+    width: 24px;      /* Mniejszy rozmiar na buttonie (z 64x64) */
+    height: 24px;
+    margin-bottom: 4px;  /* Odstęp od tekstu */
+    display: block;   /* Układ pionowy */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));  /* Cień dla głębi */
+    transition: filter 0.2s ease;  /* Płynna animacja */
+  }
+
+  /* Specyficznie dla Map – mroczny vibe */
+  .btn.map {
+    flex-direction: column;  /* Ikona nad tekstem */
+    align-items: center;
+    padding: 12px 16px;      /* Lekko mniejszy */
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));  /* Mroczny gradient */
+    border: 1px solid rgba(139, 69, 19, 0.6);  /* Rdzawe obramowanie dla post-apo */
+    min-width: 80px;
+    height: auto;
+  }
+
+  .btn.map:hover .btn-icon {
+    filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);  /* Neonowy czerwony glow na hover */
+  }
+
+  .btn.map:hover {
+    transform: scale(1.02);  /* Lekki zoom */
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);  /* Rdzawe światło */
+  }
+
   .btn.primary {
     background: var(--tg-theme-button-color, rgba(16,185,129,.18));
     color: var(--tg-theme-button-text-color, #fff);
@@ -258,7 +289,10 @@
       <div class="grid">
         <!-- Row 1 -->
         <div class="row">
-          <button class="btn map" aria-label="Open Map" type="button">Map</button>
+          <button class="btn map" aria-label="Open Alpha Map" type="button">
+          <img src="assets/ui/map-icon.png" alt="Alpha Map" class="btn-icon">  <!-- Ikona! -->
+          <span>Alpha Map</span>  <!-- Podpis pod ikoną -->
+          </button>
           <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
           <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
           <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
@@ -1471,6 +1505,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
