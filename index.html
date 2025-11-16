@@ -690,12 +690,24 @@
         });
 
         function setPlayerLabel(lbl){
+          const name = lbl || 'Alpha Husky';
+
+          // Nick w topbarze
           const el = document.getElementById('player');
-          if (el && lbl) el.textContent = lbl;
+          if (el) el.textContent = name;
+
+          // Nick pod centralnym oknem skina (jeśli istnieje)
+          const heroName = document.getElementById('heroName');
+          if (heroName) heroName.textContent = name;
         }
 
         const unsafeUser = tg?.initDataUnsafe?.user;
-        if (unsafeUser) setPlayerLabel(unsafeUser.username ? '@'+unsafeUser.username : (unsafeUser.first_name||'Player'));
+        if (unsafeUser) {
+          const fallbackName = unsafeUser.username
+            ? '@' + unsafeUser.username
+            : (unsafeUser.first_name || 'Player');
+          setPlayerLabel(fallbackName);
+        }
 
         const init_data = window.Telegram?.WebApp?.initData || "";
 
@@ -842,9 +854,15 @@
 
         function renderTopbar(){
           const s = PLAYER_STATE && PLAYER_STATE.stats;
-          if (!s || typeof s !== 'object') return;
+          const lvl   = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+          const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
+
           const fac = document.getElementById('faction');
-          if (fac) fac.textContent = `LVL ${s.level ?? 1} • ${s.bones ?? 0}🦴`;
+          if (fac) fac.textContent = `LVL ${lvl} • ${bones}🦴`;
+
+          // Level pod centralnym oknem skina (jeśli istnieje)
+          const heroLevel = document.getElementById('heroLevel');
+          if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
         }
 
         async function loadPlayerState(){
@@ -852,12 +870,25 @@
             const state = await apiPost("/webapp/state");
             PLAYER_STATE = state;
             applyStateToMap();
-            renderTopbar();
-            if (state && state.user && !state.user.is_bot) {
-              const lbl = state.user.username ? '@' + state.user.username : (state.user.first_name || 'Player');
+
+            // 1) Nick z profilu gry
+            if (state && state.profile && state.profile.nickname){
+              setPlayerLabel(state.profile.nickname);
+            }
+            // 2) Fallback – dane z Telegrama
+            else if (state && state.user && !state.user.is_bot) {
+              const lbl = state.user.username
+                ? '@' + state.user.username
+                : (state.user.first_name || 'Player');
               setPlayerLabel(lbl);
             }
-            if (mapBack.style.display === "flex" && DATA) { renderMap(); updateUnlockProgress(); }
+
+            // 3) LVL/Bones → topbar + hero HUD
+            renderTopbar();
+
+            if (mapBack.style.display === "flex" && DATA) {
+              renderMap(); updateUnlockProgress();
+            }
           } catch (e) {
             console.warn("state load failed", e);
           }
@@ -1610,5 +1641,6 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
