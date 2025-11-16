@@ -59,23 +59,22 @@
 },
   "nodes": [
     {
-      "id": "chain_gate",
-      "name": "The Chain Gate",
-      "region": "chain",
-      "x": 22,
-      "y": 62,
-      "icon": "images/map/building/the_chain.png",
-      "desc": "The primal, unforgiving wilderness of code where everything begins.",
-      "action": "region_hub",
-      "hub": "chain_hub",
-      "gameplay": {
-        "type": "hub",
-        "services": ["forge", "shop", "mission_board", "stash", "fast_travel"],
-        "miniboss": { "id": "chain_gatekeeper", "cooldownSeconds": 900, "rareFragDrop": { "map_key_fragment": 0.06 } },
-        "daily": { "loginChest": true, "bounties": 3 }
-      },
-      "tags": ["hub", "safe"]
-    },
+  "id": "chain_gate",
+  "name": "The Chain Gate",
+  "region": "chain",
+  "x": 22,
+  "y": 62,
+  "icon": "images/map/building/the_chain.png",
+  "desc": "Long-haul expeditions through dead chain fragments. Small but steady scrap, rune dust, and a tiny chance for item shards.",
+  "action": "building_enter",
+  "buildingId": "chain_gate",
+  "gameplay": {
+    "loop": "expedition",
+    "averageRunMinutes": 120,
+    "rewards": { "scrap": [2,4], "rune_dust": [0,1], "chanceShards": true }
+  },
+  "tags": ["expedition", "safe", "afk"]
+},
 
     {
       "id": "abandoned_wallets",
