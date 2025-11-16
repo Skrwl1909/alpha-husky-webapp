@@ -360,33 +360,46 @@
       </div>
 
       <div class="grid">
-        <!-- Row 1 -->
-        <div class="row">
-          <button class="btn map" aria-label="Open Alpha Map" type="button">
-          <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
-          <span>Alpha Map</span>
-          </button>
-          <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
-          <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
-          <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
-          <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
-          <button class="btn char" aria-label="Open Character" type="button">Character</button>
-          <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
-          <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
+        <div class="hud-layout">
+
+          <!-- LEWA KOLUMNA (utility / progres) -->
+          <div class="hud-col hud-left">
+            <button class="btn map" aria-label="Open Alpha Map" type="button">
+              <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
+              <span>Alpha Map</span>
+            </button>
+            <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
+            <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
+            <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
+            <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
+            <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
+          </div>
+
+          <!-- ŚRODEK – SKIN / HERO -->
+          <div class="hero-center">
+            <div class="hero-frame" id="heroFrame"></div>
+            <div class="hero-caption">
+              <span id="heroName">Alpha Husky</span>
+              <span>·</span>
+              <span id="heroLevel">Lv.1</span>
+            </div>
+          </div>
+
+          <!-- PRAWA KOLUMNA (tożsamość / companions) -->
+          <div class="hud-col hud-right">
+            <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
+            <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
+            <button class="btn char" aria-label="Open Character" type="button">Character</button>
+            <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
+            <button class="btn equipped" aria-label="Open Equipped" type="button">Equipped</button>
+            <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
+            <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
+          </div>
+
         </div>
-        <!-- Row 2 -->
-        <div class="row" style="margin-top:10px;">
-          <button class="btn equipped" type="button">Equipped</button>
-          <button class="btn keys" type="button">Keys</button>
-          <button class="btn feed" type="button">Feed</button>
-          <button class="btn mystats" type="button">MyStats</button>
-          <button class="btn mypets" type="button">MyPets</button>
-          <button class="btn profile" type="button">Profile</button>
-          <button class="btn howlboard" type="button">Howlboard</button>
-        </div>
+
         <div class="spacer"></div>
       </div>
-    </div>
 
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
@@ -1597,4 +1610,5 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
