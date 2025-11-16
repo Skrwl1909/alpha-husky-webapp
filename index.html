@@ -40,33 +40,33 @@
 
   /* Ogólny styl dla ikon w buttonach */
   .btn-icon {
-    width: 28px;      /* Zwiększone z 24px dla lepszego balansu */
+    width: 28px;
     height: 28px;
-    margin-bottom: 4px;  /* Odstęp od tekstu */
-    display: block;   /* Układ pionowy */
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));  /* Cień dla głębi */
-    transition: filter 0.2s ease;  /* Płynna animacja */
+    margin-bottom: 4px;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    transition: filter 0.2s ease;
   }
 
   /* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
   .btn.map {
-    flex-direction: column;  /* Ikona nad tekstem */
+    flex-direction: column;
     align-items: center;
-    padding: 8px 12px;       /* ZMNIEJSZONE: Mniejszy padding dla kompaktu */
-    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));  /* Mroczny gradient */
-    border: 1px solid rgba(139, 69, 19, 0.6);  /* Rdzawe obramowanie dla post-apo */
-    min-width: 70px;         /* ZMNIEJSZONE: Jeszcze mniejszy */
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));
+    border: 1px solid rgba(139, 69, 19, 0.6);
+    min-width: 70px;
     height: auto;
-    font-size: 14px;         /* ZMNIEJSZONE: Mniejsza czcionka dla tekstu */
+    font-size: 14px;
   }
 
   .btn.map:hover .btn-icon {
-    filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);  /* Neonowy czerwony glow na hover */
+    filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
   }
 
   .btn.map:hover {
-    transform: scale(1.02);  /* Lekki zoom */
-    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);  /* Rdzawe światło */
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
   }
 
   .btn.primary {
@@ -294,8 +294,8 @@
         <!-- Row 1 -->
         <div class="row">
           <button class="btn map" aria-label="Open Alpha Map" type="button">
-          <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">  <!-- Ikona! -->
-          <span>Alpha Map</span>  <!-- Podpis pod ikoną -->
+          <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
+          <span>Alpha Map</span>
           </button>
           <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
           <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
@@ -523,7 +523,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2025-11-14a";
+    window.WEBAPP_VER = "2025-11-16a";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -1093,17 +1093,36 @@
           }
         }
 
+        /* helper do formatowania nagród z budynków (w tym item shards) */
+        function formatBuildingRewards(rewardsRaw) {
+          const rw = rewardsRaw || {};
+          const lines = [];
+
+          if (rw.scrap)      lines.push(`+${rw.scrap} Scrap`);
+          if (rw.rune_dust)  lines.push(`+${rw.rune_dust} Rune Dust`);
+          if (rw.bones)      lines.push(`+${rw.bones} Bones`);
+          if (rw.fragment)   lines.push(`+1 Map Key Fragment`);
+
+          // item shards z The Chain Gate (opcjonalne pole)
+          if (rw.shards && rw.shards.amount) {
+            const slot = rw.shards.slot || "item";
+            const amt  = rw.shards.amount;
+            const label = (slot + " shards")
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards → Helmet Shards
+            lines.push(`+${amt} ${label}`);
+          }
+
+          return lines;
+        }
+
         async function resolveRun(maxRetries=0, silentRetries=false){
           if (!CURRENT_BID) return false;
           for (let i=0; i<=maxRetries; i++){
             try{
               const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
               const rw = out?.rewards || {};
-              const lines = [];
-              if (rw.scrap) lines.push(`+${rw.scrap} scrap`);
-              if (rw.bones) lines.push(`+${rw.bones} bones`);
-              if (rw.rune_dust) lines.push(`+${rw.rune_dust} dust`);
-              if (rw.fragment) lines.push(`+1 shard`);
+              const lines = formatBuildingRewards(rw);
               try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
               tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
               await loadPlayerState();
@@ -1509,16 +1528,3 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
