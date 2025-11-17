@@ -29,436 +29,204 @@
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 
   /* === HUD: boczne kolumny + centralny skin === */
-.hud-layout {
-  width: 100%;
-  max-width: 520px;
-  display: flex;
-  justify-content: space-between; /* Na mobile zmień na center, by nie rozciągało */
-  align-items: flex-end;
-  gap: 12px;
-}
-
-/* **NOWE: Media query dla tabletów i większych – opcjonalne, jeśli HUD za szeroki */
-@media (min-width: 768px) {
-  .hud-layout {
-    max-width: 600px; /* Lekko zwiększ na desktop/tablet */
+  .hud-layout{
+    width:100%;
+    max-width:520px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:12px;
   }
-}
+  .hud-col{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .hud-col .btn{
+    min-width:0;
+    padding:8px 10px;
+    font-size:13px;
+  }
 
-.hud-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .hero-center{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+  }
+  .hero-frame{
+    width:min(46vw, 210px);
+    aspect-ratio:3/4;
+    border-radius:24px;
+    background:
+      radial-gradient(circle at top left, rgba(0,229,255,.2), transparent 60%),
+      radial-gradient(circle at bottom right, rgba(255,176,0,.2), transparent 60%),
+      rgba(0,0,0,.7);
+    border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 18px 40px rgba(0,0,0,.6);
+    overflow:hidden;
+  }
+  .hero-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .hero-caption{
+    font-size:13px;
+    display:flex;
+    gap:6px;
+    align-items:center;
+    justify-content:center;
+    padding:4px 8px;
+    border-radius:999px;
+    background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.16);
+    backdrop-filter:blur(8px);
+  }
 
-.hud-col .btn {
-  min-width: 0;
-  padding: 8px 10px;
-  font-size: 13px;
-  /* **DODAJ: Min. wysokość dla touch */
-  min-height: 44px; /* Standard dla mobile – łatwiejsze tapnięcia */
-}
+  @media (max-width:380px){
+    .hud-layout{ gap:8px; }
+    .hud-col .btn{
+      font-size:12px;
+      padding:6px 8px;
+    }
+    .hero-frame{ width:56vw; }
+  }
 
-.hero-center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.hero-frame {
-  width: min(46vw, 210px);
-  aspect-ratio: 3/4;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(0, 229, 255, .2), transparent 60%),
-    radial-gradient(circle at bottom right, rgba(255, 176, 0, .2), transparent 60%),
-    rgba(0, 0, 0, .7);
-  border: 1px solid rgba(255, 255, 255, .22);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, .6);
-  overflow: hidden;
-}
-
-.hero-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.hero-caption {
-  font-size: 13px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .55);
-  border: 1px solid rgba(255, 255, 255, .16);
-  backdrop-filter: blur(8px);
-}
-
-/* **AKTUALIZUJ: Rozszerz media query – dodaj dla mniejszych ekranów */
-@media (max-width: 480px) { /* **NOWE: Dla telefonów <480px */
-  .hud-layout {
-    justify-content: center; /* **DODAJ: Centruj zamiast space-between – uniknie ucięcia */
-    flex-direction: column; /* **DODAJ: Układ pionowy na bardzo małych ekranach */
+  .btn {
+    appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
+    background:var(--glass); border:1px solid var(--stroke);
+    font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
+    display: flex;  /* Umożliwia column layout w .btn.map */
     align-items: center;
-    gap: 8px;
+    justify-content: center;
   }
-  .hud-col {
-    flex-direction: row; /* **DODAJ: Buttony w rzędzie, by nie zajmowały dużo miejsca */
-    gap: 4px;
-  }
-  .hud-col .btn {
-    font-size: 12px;
-    padding: 6px 8px;
-    min-height: 44px; /* Zachowaj touch-friendly */
-    flex: 1; /* Rozciągnij równo */
-  }
-  .hero-frame {
-    width: 56vw; /* **DODAJ: Większy na mobile, ale responsywny */
-    max-width: 180px; /* **DODAJ: Limit, by nie dominował */
-  }
-}
+  .btn:active { transform: translateY(1px); }
+  .btn.linklike { text-decoration:none; }
 
-@media (max-width: 380px) { /* Istniejący – zostaw, ale dodaj */
-  .hud-layout { gap: 8px; }
-  .hud-col .btn {
-    font-size: 12px;
-    padding: 6px 8px;
+  /* Ogólny styl dla ikon w buttonach */
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 4px;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    transition: filter 0.2s ease;
   }
-  .hero-frame { width: 56vw; }
-}
 
-/* **DODAJ: Ogólne buttony – ulepsz dla mobile */
-.btn {
-  appearance: none;
-  border: none;
-  padding: 12px 16px;
-  border-radius: 16px;
-  color: var(--txt);
-  background: var(--glass);
-  border: 1px solid var(--stroke);
-  font: 600 16px system-ui, sans-serif;
-  cursor: pointer;
-  transition: transform .08s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* **DODAJ: Touch-friendly */
-  min-height: 44px; /* Min. wysokość dla palca */
-  touch-action: manipulation; /* Poprawia responsywność touch */
-  -webkit-tap-highlight-color: transparent; /* Usuń niebieski highlight na iOS */
-}
-.btn:active { transform: translateY(1px); }
-.btn.linklike { text-decoration: none; }
-/* Ogólny styl dla ikon w buttonach */
-.btn-icon {
-  width: 28px;
-  height: 28px;
-  margin-bottom: 4px;
-  display: block;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-  transition: filter 0.2s ease;
-}
-/* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
-.btn.map {
-  flex-direction: column;
-  align-items: center;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));
-  border: 1px solid rgba(139, 69, 19, 0.6);
-  min-width: 70px;
-  height: auto;
-  font-size: 14px;
-}
-.btn.map:hover .btn-icon {
-  filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
-}
-.btn.map:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
-}
-.btn.primary {
-  background: var(--tg-theme-button-color, rgba(16,185,129,.18));
-  color: var(--tg-theme-button-text-color, #fff);
-  border: 1px solid rgba(255,255,255,.18);
-}
-.topbar {
-  position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
-  padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
-  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke);
-  color:#cfe7ff; font:500 14px system-ui, sans-serif;
-}
-.badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
-.spacer { height: max(12px, env(safe-area-inset-bottom)); }
-@media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
-.fallback {
-  position: absolute; inset: 0; display:none; z-index: 3;
-  background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
-  align-items:center; justify-content:center; text-align:center; padding:24px;
-}
-.fallback a { color:#aef; text-decoration:underline; }
-.map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
-.map-wrap { 
-  width:min(96vw,1200px); 
-  padding:12px; 
-  /* **DODAJ: Dla mobile – scroll jeśli mapa nie mieści się */
-  overflow-x: auto;
-  overflow-y: auto; /* Opcjonalnie: pionowy scroll dla dłuższych map */
-}
-.map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,.5); }
-.map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; }
-.map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
-.close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
-.map{ 
-  position:relative; 
-  width:100%; 
-  aspect-ratio:16/9;
-  background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
-  border-radius:16px; 
-  overflow:hidden; 
-  box-shadow:0 0 0 1px var(--ring) inset; 
-}
-.map::after{ 
-  content:""; 
-  position:absolute; 
-  inset:0; 
-  z-index:2;
-  background: url("images/map/overlays/fog.png") center/cover no-repeat,
-              linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-  pointer-events:none; 
-}
-.paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
-.paths-layer svg{ width:100%; height:100%; }
-.pins{ position:absolute; inset:0; z-index:3; }
-.hotspot{ 
-  position:absolute; 
-  transform:translate(-50%,-50%); 
-  text-align:center;
-  padding:0; 
-  background:none; 
-  border:none; 
-  cursor:pointer;
-  z-index:3; 
-  transition: transform .12s ease, filter .12s ease; 
-}
-.hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
-.hotspot::before{ 
-  content:""; 
-  position:absolute; 
-  left:50%; 
-  top:50%;
-  width: clamp(48px, 7vw, 120px); 
-  height: clamp(22px, 3.4vw, 60px);
-  transform: translate(-50%, calc(-50% + 20px));
-  background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-  opacity:.9; 
-  filter: blur(.2px); 
-  pointer-events:none; 
-}
-.hotspot img{ 
-  width: clamp(40px, 3.6vw, 72px);
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); 
-  pointer-events:none; 
-}
-.hotspot.unlocked img{
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
-          drop-shadow(-2px 0 6px rgba(0,229,255,.22))
-          drop-shadow( 2px 0 6px rgba(155,77,255,.22));
-}
-.hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
-.ping{ 
-  position:absolute; 
-  left:50%; 
-  top:50%; 
-  width: clamp(40px, 3.8vw, 76px); 
-  height: clamp(40px, 3.8vw, 76px);
-  transform: translate(-50%,-50%); 
-  border-radius:50%; 
-  animation:ping 1.4s infinite; 
-  pointer-events:none; 
-}
-.hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
-.hotspot.locked .ping{ background:rgba(148,163,184,.10); }
-@keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
-.chip{ 
-  position:absolute; 
-  left:50%; 
-  transform:translateX(-50%); 
-  margin-top:6px;
-  font-size:12px; 
-  line-height:1; 
-  padding:6px 10px; 
-  border-radius:999px;
-  background:rgba(10,12,16,.8); 
-  border:1px solid rgba(255,255,255,.07); 
-  color:#fff; 
-  white-space:nowrap;
-  backdrop-filter: blur(3px); 
-}
-.chip::before{ 
-  content:""; 
-  position:absolute; 
-  top:-6px; 
-  left:50%; 
-  width:10px; 
-  height:10px;
-  transform: translateX(-50%) rotate(45deg); 
-  background:inherit; 
-  border-left:inherit; 
-  border-top:inherit; 
-}
-.lock-badge{ 
-  position:absolute; 
-  right:-6px; 
-  top:-6px; 
-  width:22px; 
-  height:22px; 
-  border-radius:50%;
-  background:rgba(18,20,26,.96); 
-  border:1px solid rgba(255,255,255,.08);
-  display:flex; 
-  align-items:center; 
-  justify-content:center; 
-  font-size:12px; 
-  color:#cbd5e1;
-  box-shadow: 0 2px 6px rgba(0,0,0,.5); 
-}
-.lock-badge img{ width:14px; height:14px; opacity:.9 }
-.path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
-.path.locked{ stroke:rgba(255,255,255,.16); }
-.path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
-.locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-.locked-card, .sheet-card{ 
-  width:min(92vw,480px); 
-  background:rgba(0,0,0,.85); 
-  border:1px solid var(--ring); 
-  border-radius:16px; 
-  padding:18px; 
-  color: var(--tg-theme-text-color, #fff); 
-  /* **DODAJ: Dla mobile – mniejsze padding i max-width, by mieściło się bez scrolla */
-  max-width: 95vw;
-  margin: 10px;
-}
-.tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
-.tab.active{ outline:2px solid rgba(255,255,255,.18); }
-/* progress + region sheet width */
-.progress-pill{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  border:1px solid var(--ring);
-  background:rgba(0,0,0,.45);
-  border-radius:999px;
-  padding:6px 10px;
-  color:#cfe7ff;
-  font:600 12px system-ui
-}
-.progress-bar{
-  width:140px;
-  max-width:28vw;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,255,255,.1);
-  overflow:hidden
-}
-.progress-bar>i{
-  display:block;
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))
-}
-.region-sheet .sheet-card{
-  width:min(92vw,520px)
-}
-.muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-/* DEBUG banner (pojedynczy) */
-#dbg{
-  position:fixed; 
-  right:8px; 
-  top:8px; 
-  z-index:9; 
-  font:600 11px system-ui;
-  background:rgba(0,0,0,.6); 
-  color:#fff; 
-  padding:6px 8px; 
-  border-radius:10px; 
-  border:1px solid rgba(255,255,255,.12); 
-  display:none
-}
-
-/* **DODAJ: Media query dla mapy – kluczowe ulepszenia mobile (brakowało tego w poprzednim fragmencie) */
-@media (max-width: 480px) {
-  .map {
-    aspect-ratio: 1/1; /* **DODAJ: Kwadratowy kształt na mobile – lepiej pasuje do pionowego ekranu, mniej pustej przestrzeni */
-    max-width: 100vw; /* **DODAJ: Pełna szerokość, bez cropu */
-  }
-  .hotspot img {
-    width: clamp(32px, 5vw, 48px); /* **DODAJ: Mniejsze ikony na małych ekranach – łatwiejsze tapnięcia, mniej kolizji */
-  }
-  .hotspot::before {
-    width: clamp(40px, 6vw, 100px); /* **DODAJ: Dostosuj decal – mniejszy, by nie wystawał poza mapę */
-    height: clamp(18px, 2.8vw, 50px);
-  }
-  .ping {
-    width: clamp(32px, 3.5vw, 60px); /* **DODAJ: Mniejsza animacja ping – subtelniejsza na mobile */
-    height: clamp(32px, 3.5vw, 60px);
-  }
-  .chip {
-    font-size: 10px; /* **DODAJ: Mniejszy tekst chipa – mieści się lepiej */
-    padding: 4px 6px;
-    margin-top: 4px; /* **DODAJ: Mniejszy margines, by nie nakładał się na dolną krawędź */
-    max-width: 80vw; /* **DODAJ: Limit szerokości, by długie nazwy nie wystawały */
-  }
-  .map-head {
-    flex-direction: column; /* **DODAJ: Nagłówek mapy w kolumnie na mobile – lepiej na wąskich ekranach */
-    gap: 6px;
-    padding: 4px;
-  }
-  .close-x {
-    align-self: flex-end; /* **DODAJ: Przycisk zamknij na końcu, by nie kolidował */
-    padding: 4px 8px;
+  /* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
+  .btn.map {
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));
+    border: 1px solid rgba(139, 69, 19, 0.6);
+    min-width: 70px;
+    height: auto;
     font-size: 14px;
   }
-  .map-card {
-    padding: 8px; /* **DODAJ: Mniejsze padding w karcie mapy – oszczędza miejsce */
-    margin: 5px;
-  }
-  .paths-layer svg {
-    /* **DODAJ: Skaluj ścieżki na mobile, jeśli SVG jest wektorowe – uniknie distortion */
-    transform: scale(0.95);
-  }
-  .locked-card, .sheet-card {
-    padding: 12px; /* **DODAJ: Mniejsze padding w modalach – mieści więcej treści */
-    width: min(95vw, 400px);
-  }
-  .progress-bar {
-    width: 120px; /* **DODAJ: Węższy progress bar – pasuje do wąskich ekranów */
-    max-width: 25vw;
-  }
-}
 
-/* **DODAJ: Dla ultra-małych ekranów (np. stare telefony <360px) – opcjonalne, ale zalecane */
-@media (max-width: 360px) {
-  .map {
-    aspect-ratio: 4/5; /* **DODAJ: Lekko wyższy na bardzo pionowych ekranach */
+  .btn.map:hover .btn-icon {
+    filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
   }
-  .hotspot img {
-    width: clamp(28px, 4.5vw, 40px); /* **DODAJ: Jeszcze mniejsze, by uniknąć nakładania */
+
+  .btn.map:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
   }
-  .chip {
-    font-size: 9px;
-    padding: 3px 5px;
+
+  .btn.primary {
+    background: var(--tg-theme-button-color, rgba(16,185,129,.18));
+    color: var(--tg-theme-button-text-color, #fff);
+    border: 1px solid rgba(255,255,255,.18);
   }
-  .map-wrap {
-    padding: 8px; /* **DODAJ: Mniejszy padding wrapera */
+  .topbar {
+    position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
+    padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
+    background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke);
+    color:#cfe7ff; font:500 14px system-ui, sans-serif;
   }
-}
+  .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
+  .spacer { height: max(12px, env(safe-area-inset-bottom)); }
+  @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
+  .fallback {
+    position: absolute; inset: 0; display:none; z-index: 3;
+    background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
+    align-items:center; justify-content:center; text-align:center; padding:24px;
+  }
+  .fallback a { color:#aef; text-decoration:underline; }
+  .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
+  .map-wrap { width:min(96vw,1200px); padding:12px; }
+  .map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+  .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; }
+  .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+  .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
+  .map{ position:relative; width:100%; aspect-ratio:16/9;
+    background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
+    border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
+  .map::after{ content:""; position:absolute; inset:0; z-index:2;
+    background: url("images/map/overlays/fog.png") center/cover no-repeat,
+                linear-gradient(0deg, rgba(0,0,0,.55), transparent);
+    pointer-events:none; }
+  .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .paths-layer svg{ width:100%; height:100%; }
+  .pins{ position:absolute; inset:0; z-index:3; }
+  .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
+    padding:0; background:none; border:none; cursor:pointer;
+    z-index:3; transition: transform .12s ease, filter .12s ease; }
+  .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
+  .hotspot::before{ content:""; position:absolute; left:50%; top:50%;
+    width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
+    transform: translate(-50%, calc(-50% + 20px));
+    background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
+    opacity:.9; filter: blur(.2px); pointer-events:none; }
+  .hotspot img{ width: clamp(40px, 3.6vw, 72px);
+    filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
+  .hotspot.unlocked img{
+    filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
+            drop-shadow(-2px 0 6px rgba(0,229,255,.22))
+            drop-shadow( 2px 0 6px rgba(155,77,255,.22));
+  }
+  .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+  .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
+    transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
+  .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
+  .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
+  @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
+  .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
+    font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
+    background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
+    backdrop-filter: blur(3px); }
+  .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
+    transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
+  .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
+    background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+  .lock-badge img{ width:14px; height:14px; opacity:.9 }
+  .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
+  .path.locked{ stroke:rgba(255,255,255,.16); }
+  .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
+  .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+  .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
+  .tab.active{ outline:2px solid rgba(255,255,255,.18); }
+  /* progress + region sheet width */
+  .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
+    background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
+    font:600 12px system-ui}
+  .progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
+    background:rgba(255,255,255,.1);overflow:hidden}
+  .progress-bar>i{display:block;height:100%;width:0%;
+    background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
+  .region-sheet .sheet-card{width:min(92vw,520px)}
+  .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
+  /* DEBUG banner (pojedynczy) */
+  #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
+    background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
 
   /* Avatar/Skins modal */
   .avatar-sheet .sheet-card {
@@ -1929,5 +1697,3 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
-
-
