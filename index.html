@@ -378,14 +378,15 @@
           <!-- ŚRODEK – SKIN / HERO -->
           <div class="hero-center">
             <div class="hero-frame" id="heroFrame">
-              <img id="player-skin"
-                   src="/assets/skins/lunarhowl_skin.webp"
-                   alt="Alpha Husky skin">
+              <img
+                id="player-skin"
+                src="/assets/skins/lunarhowl_skin.webp"
+                alt="Alpha Husky skin">
             </div>
             <div class="hero-caption">
               <span id="heroName">Alpha Husky</span>
               <span>·</span>
-              <span id="player-level">Lv.1</span>
+              <span id="heroLevel">Lv.1</span>
             </div>
           </div>
 
@@ -609,7 +610,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2025-11-17a";
+    window.WEBAPP_VER = "2025-11-16a";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -705,12 +706,6 @@
           if (heroName) heroName.textContent = name;
         }
 
-        function setLevelLabel(level){
-          const lvl = (typeof level === 'number' && !isNaN(level)) ? level : 1;
-          const heroLevel = document.getElementById('player-level');
-          if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
-        }
-
         const unsafeUser = tg?.initDataUnsafe?.user;
         if (unsafeUser) {
           const fallbackName = unsafeUser.username
@@ -789,6 +784,7 @@
         let keys = new Set();
         let fragments = {};
         let PLAYER_STATE = null;
+        let PROFILE = null;
 
         function createPathsLayer(root){
           const layer = document.createElement("div");
@@ -849,25 +845,76 @@
           if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
         }
 
+        function updateUnlockProgress(){
+          const el = document.getElementById('unlockProgress');
+          const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
+          if (!el || !cfg) { if (el) el.style.display = 'none'; return; }
+          const have = (fragments[cfg.item] || 0), need = cfg.required || 0;
+          const fill = Math.max(0, Math.min(100, Math.round((have / Math.max(1,need)) * 100)));
+          const regName = (DATA && DATA.regions && DATA.regions[cfg.region] && DATA.regions[cfg.region].name) || 'Region';
+          document.getElementById('unlockLabel').textContent = regName;
+          document.getElementById('unlockFill').style.width = fill + '%';
+          document.getElementById('unlockCount').textContent = `${have}/${need}`;
+          el.style.display = 'flex';
+        }
+
         function renderTopbar(){
           const s = PLAYER_STATE && PLAYER_STATE.stats;
-          const lvl   = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+          const lvlFromState = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+          const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
           const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
 
           const fac = document.getElementById('faction');
-          if (fac) fac.textContent = `LVL ${lvl} • ${bones}🦴`;
+          if (fac) {
+            const base = (PROFILE && PROFILE.faction)
+              ? PROFILE.faction
+              : (fac.dataset.base || fac.textContent || 'PACK');
+            if (!fac.dataset.base) fac.dataset.base = base;
+            fac.textContent = `${base} • Lv ${lvl} • ${bones}🦴`;
+          }
 
-          // Level pod centralnym oknem skina (jeśli istnieje)
-          setLevelLabel(lvl);
+          const heroLevel = document.getElementById('heroLevel');
+          if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
         }
 
-        function setSkinImage(url){
-          const img = document.getElementById('player-skin');
-          if (!img) return;
-          if (url && typeof url === 'string') {
-            img.src = url;
-          } else if (!img.src) {
-            img.src = "/assets/skins/lunarhowl_skin.webp";
+        function applyProfileSkin(skin){
+          const skinImg = document.getElementById('player-skin');
+          if (!skinImg || !skin) return;
+
+          if (typeof skin === 'string') {
+            skinImg.src = skin;
+            skinImg.alt = 'Active skin';
+            return;
+          }
+
+          if (skin.img) skinImg.src = skin.img;
+          if (skin.name) skinImg.alt = skin.name;
+        }
+
+        async function loadProfile(){
+          try {
+            const out = await apiPost("/webapp/profile", {});
+            if (!out) return;
+            // pozwalamy na dwa kształty: { ok, profile:{...} } albo bezpośrednio dane
+            const p = out.profile || out;
+
+            PROFILE = PROFILE || {};
+            if (typeof p.level === "number") PROFILE.level = p.level;
+            else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
+
+            if (p.nickname || p.name){
+              PROFILE.nickname = p.nickname || p.name;
+              setPlayerLabel(PROFILE.nickname);
+            }
+
+            if (p.faction) PROFILE.faction = p.faction;
+
+            PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
+            if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
+
+            renderTopbar();
+          } catch (e){
+            console.warn("profile load failed", e);
           }
         }
 
@@ -897,46 +944,6 @@
             }
           } catch (e) {
             console.warn("state load failed", e);
-          }
-        }
-
-        async function loadProfileCard(){
-          try {
-            const out = await apiPost("/webapp/profile", {});
-            if (!out) return;
-
-            const prof = out.profile || out.data || out;
-            if (!prof || typeof prof !== 'object') return;
-
-            // Nick / display name
-            const nickname = prof.nickname || prof.name || prof.username || null;
-            if (nickname) {
-              setPlayerLabel(nickname);
-            }
-
-            // Level
-            const lvl = (typeof prof.level === 'number')
-              ? prof.level
-              : (prof.stats && typeof prof.stats.level === 'number' ? prof.stats.level : null);
-            if (lvl != null) {
-              setLevelLabel(lvl);
-              const fac = document.getElementById('faction');
-              const bones = (typeof prof.bones === 'number')
-                ? prof.bones
-                : (prof.stats && typeof prof.stats.bones === 'number' ? prof.stats.bones : null);
-              if (fac) {
-                fac.textContent = bones != null ? `LVL ${lvl} • ${bones}🦴` : `LVL ${lvl}`;
-              }
-            }
-
-            // Active skin
-            const skinInfo = prof.skin || prof.active_skin || prof.activeSkin;
-            const skinUrl = skinInfo && (skinInfo.img || skinInfo.image || skinInfo.url);
-            if (skinUrl) {
-              setSkinImage(skinUrl);
-            }
-          } catch (e) {
-            console.warn("profile load failed", e);
           }
         }
 
@@ -1464,8 +1471,8 @@ equipSkin?.addEventListener('click', async () => {
     if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
     tg?.showAlert?.("Skin equipped!");
     avatarBack.style.display = 'none';
-    // odśwież kartę gracza po zmianie skina
-    loadProfileCard();
+    // odśwież player-card z backendowego profilu
+    loadProfile();
   }catch(e){
     console.warn(e);
     tg?.showAlert?.(e?.message || "Equip failed");
@@ -1605,7 +1612,7 @@ shareSkin?.addEventListener('click', () => {
         }
 
         loadPlayerState();
-        loadProfileCard();
+        loadProfile();
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
