@@ -693,29 +693,7 @@
             if (p2.text_color) setVar('--txt', p2.text_color);
           }catch(_){}
         });
-
-        function setPlayerLabel(lbl){
-          const name = lbl || 'Alpha Husky';
-
-          // Nick w topbarze
-          const el = document.getElementById('player');
-          if (el) el.textContent = name;
-
-          // Nick pod centralnym oknem skina (jeśli istnieje)
-          const heroName = document.getElementById('heroName');
-          if (heroName) heroName.textContent = name;
-        }
-
-        const unsafeUser = tg?.initDataUnsafe?.user;
-        if (unsafeUser) {
-          const fallbackName = unsafeUser.username
-            ? '@' + unsafeUser.username
-            : (unsafeUser.first_name || 'Player');
-          setPlayerLabel(fallbackName);
-        }
-
-        const init_data = window.Telegram?.WebApp?.initData || "";
-
+        
         tg?.MainButton?.setText?.("Quests");
         tg?.MainButton?.onClick?.(() => { (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests(); });
         tg?.MainButton?.show?.();
@@ -767,6 +745,72 @@
         window.S = window.S || {};
         window.S.apiPost = apiPost;
 
+        // --- PLAYER CARD: realny nick + lvl + skin z data.json ---
+        let PROFILE = null;
+
+        function applyProfile(profile) {
+          PROFILE = profile || {};
+
+          const nameEl     = document.getElementById('player');     // topbar
+          const heroNameEl = document.getElementById('heroName');   // podpis pod kartą
+          const levelEl    = document.getElementById('heroLevel');  // "Lv.1" pod kartą
+          const badgeEl    = document.getElementById('faction');    // PACK / LVL • Bones
+
+          const displayName = PROFILE.name || 'Howler';
+
+          if (nameEl)     nameEl.textContent     = displayName;
+          if (heroNameEl) heroNameEl.textContent = displayName;
+
+          const lvl =
+            (typeof PROFILE.level === "number" && PROFILE.level) ||
+            (PROFILE.stats && typeof PROFILE.stats.level === "number" && PROFILE.stats.level) ||
+            1;
+
+          if (levelEl) levelEl.textContent = 'Lv.' + lvl;
+
+          // Bones / tokens do badga
+          const bones =
+            (PROFILE.stats && typeof PROFILE.stats.bones === "number" && PROFILE.stats.bones) ||
+            (typeof PROFILE.tokens === "number" && PROFILE.tokens) ||
+            0;
+
+          if (badgeEl) {
+            badgeEl.textContent = `LVL ${lvl} • ${bones}🦴`;
+          }
+
+          // Skin w centralnym frame
+          const frame = document.getElementById('heroFrame');
+          if (frame) {
+            let img = frame.querySelector('#player-skin');
+            if (!img) {
+              img = document.createElement('img');
+              img.id = 'player-skin';
+              frame.appendChild(img);
+            }
+
+            if (PROFILE.skin && PROFILE.skin.img) {
+              img.src = PROFILE.skin.img;
+              img.alt = PROFILE.skin.name || 'Skin';
+            } else {
+              img.src = '/assets/skins/lunarhowl_skin.webp';
+              img.alt = 'Alpha Husky skin';
+            }
+          }
+        }
+
+        async function loadProfile() {
+          try {
+            const res = await apiPost("/webapp/profile", {});
+            if (res && res.ok && res.profile) {
+              applyProfile(res.profile);
+            } else {
+              console.warn("profile error", res);
+            }
+          } catch (err) {
+            console.error("profile load failed", err);
+          }
+        }
+        
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
@@ -1697,4 +1741,5 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
