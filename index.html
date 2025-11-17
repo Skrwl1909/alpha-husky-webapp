@@ -8,7 +8,6 @@
   <link rel="preload" as="image" href="background_poster.jpg">
   <link rel="preload" as="video" href="background3.webm" type="video/webm">
   <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
-
   <style>
   /* Telegram theme + bezpieczne fallbacki */
   :root { color-scheme: var(--tg-color-scheme, dark); }
@@ -27,7 +26,6 @@
   .ui { position: absolute; inset: 0; z-index: 2; }
   .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-
   /* === HUD: boczne kolumny + centralny skin === */
   .hud-layout{
     width:100%;
@@ -47,7 +45,6 @@
     padding:8px 10px;
     font-size:13px;
   }
-
   .hero-center{
     flex:1;
     display:flex;
@@ -86,7 +83,6 @@
     border:1px solid rgba(255,255,255,.16);
     backdrop-filter:blur(8px);
   }
-
   @media (max-width:380px){
     .hud-layout{ gap:8px; }
     .hud-col .btn{
@@ -95,18 +91,48 @@
     }
     .hero-frame{ width:56vw; }
   }
-
+  /* Nowa media query dla bardzo małych ekranów (<360px) - stack HUD pionowo, wrap kolumn */
+  @media (max-width:360px){
+    .grid { padding: 16px; } /* Mniejszy padding wokół HUD */
+    .hud-layout{
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+    }
+    .hud-col{
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      max-width: 280px; /* Ogranicz szerokość kolumn */
+    }
+    .hero-center {
+      order: -1; /* Hero na górze dla lepszej widoczności */
+      margin-bottom: 8px;
+    }
+    .hud-col .btn{
+      min-width: 72px; /* Min szerokość przycisków dla touch */
+      padding: 6px 6px;
+      font-size: 11px;
+      flex: 1 1 auto;
+      max-width: 80px;
+    }
+    .hero-caption { font-size: 11px; padding: 3px 6px; }
+    .hero-frame { width: min(60vw, 180px); } /* Mniejszy hero na ultra-małych */
+  }
   .btn {
     appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
     background:var(--glass); border:1px solid var(--stroke);
     font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
-    display: flex;  /* Umożliwia column layout w .btn.map */
+    display: flex; /* Umożliwia column layout w .btn.map */
     align-items: center;
     justify-content: center;
+    min-height: 44px; /* Min wysokość dla touch targets (Apple guideline) */
   }
   .btn:active { transform: translateY(1px); }
   .btn.linklike { text-decoration:none; }
-
   /* Ogólny styl dla ikon w buttonach */
   .btn-icon {
     width: 28px;
@@ -116,7 +142,6 @@
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     transition: filter 0.2s ease;
   }
-
   /* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
   .btn.map {
     flex-direction: column;
@@ -128,16 +153,13 @@
     height: auto;
     font-size: 14px;
   }
-
   .btn.map:hover .btn-icon {
     filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
   }
-
   .btn.map:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
   }
-
   .btn.primary {
     background: var(--tg-theme-button-color, rgba(16,185,129,.18));
     color: var(--tg-theme-button-text-color, #fff);
@@ -148,6 +170,19 @@
     padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
     background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke);
     color:#cfe7ff; font:500 14px system-ui, sans-serif;
+  }
+  /* Dostosuj topbar na małych ekranach */
+  @media (max-width:360px) {
+    .topbar { 
+      font-size: 12px; 
+      left: 8px; 
+      right: 8px; 
+      padding: calc(6px + env(safe-area-inset-top)) 8px 6px; 
+    }
+    .badge { 
+      padding: 2px 6px; 
+      font-size: 11px; 
+    }
   }
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
   .spacer { height: max(12px, env(safe-area-inset-bottom)); }
@@ -227,7 +262,6 @@
   /* DEBUG banner (pojedynczy) */
   #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
     background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
-
   /* Avatar/Skins modal */
   .avatar-sheet .sheet-card {
     width: min(92vw, 520px);
@@ -241,7 +275,6 @@
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
   </style>
-
   <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
   <style id="quests-css">
     .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
@@ -279,7 +312,6 @@
     #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
   </style>
-
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
   /* Floating FAQ button */
@@ -302,48 +334,39 @@
     .fab-faq span{ display:none; }
     .fab-faq{ padding:.6rem; border-radius:16px; }
   }
-
   /* FAQ modal */
   .faq-modal[hidden]{ display:none; }
   .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
   .faq-sheet{ position:fixed; inset:6% 4% auto 4%; max-height:88vh; background:rgba(10,10,14,.92);
     border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.6); color:#eaeaea; }
   @media (min-width:800px){ .faq-sheet{ inset:8% 12% auto 12%; } }
-
   .faq-header{ display:flex; align-items:center; justify-content:space-between; padding:.9rem 1rem; border-bottom:1px solid rgba(255,255,255,.08); }
   .faq-header h2{ margin:0; font-size:1.05rem; letter-spacing:.2px; }
   .faq-close{ border:0; background:transparent; color:#aaa; font-size:1.1rem; cursor:pointer; }
   .faq-close:hover{ color:#fff; }
-
   .faq-toolbar{ display:flex; gap:.6rem; padding:.7rem 1rem; border-bottom:1px solid rgba(255,255,255,.06); flex-wrap:wrap; }
   #faqSearch{ flex:1 1 220px; padding:.55rem .7rem; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.35); color:#eaeaea; }
   #faqSearch::placeholder{ color:#9aa; }
-
   .faq-tabs{ display:flex; gap:.4rem; overflow:auto; scrollbar-width:none; }
   .faq-tabs::-webkit-scrollbar{ display:none; }
   .faq-tab{ padding:.45rem .65rem; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); border-radius:999px; font-size:.85rem; cursor:pointer; white-space:nowrap; }
   .faq-tab[aria-selected="true"]{ border-color:#00E5FF; box-shadow:0 0 0 1px rgba(0,229,255,.25) inset; }
-
   .faq-list{ padding:.4rem 1rem 1rem; max-height:58vh; overflow:auto; }
   .faq-item{ border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(0,0,0,.25); margin:.5rem 0; overflow:hidden; }
   .faq-q{ width:100%; text-align:left; padding:.7rem .9rem; background:transparent; color:#eaeaea; border:0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
   .faq-q span{ font-weight:600; font-size:.95rem; }
   .faq-q svg{ opacity:.7; transition: transform .18s ease; }
   .faq-item[open] .faq-q svg{ transform:rotate(180deg); }
-
   .faq-a{ padding:.5rem .9rem 1rem; color:#cfd5db; line-height:1.45; border-top:1px solid rgba(255,255,255,.06); }
   .faq-a p{ margin:.45rem 0; }
   .faq-a code, .faq-a kbd{ background:rgba(255,255,255,.06); padding:.08rem .35rem; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
-
   .faq-footer{ display:flex; justify-content:space-between; align-items:center; padding:.6rem 1rem; border-top:1px solid rgba(255,255,255,.08); }
   .faq-copylink{ border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#eaeaea; padding:.4rem .6rem; border-radius:10px; cursor:pointer; }
   .faq-hint{ color:#9aa; font-size:.85rem; }
   </style>
 </head>
-
 <body>
   <div id="dbg">init…</div>
-
   <div class="app">
     <div class="bg">
       <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
@@ -352,16 +375,13 @@
       </video>
       <div class="poster" style="background-image:url('background_poster.jpg');"></div>
     </div>
-
     <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
       </div>
-
       <div class="grid">
         <div class="hud-layout">
-
           <!-- LEWA KOLUMNA (utility / progres) -->
           <div class="hud-col hud-left">
             <button class="btn map" aria-label="Open Alpha Map" type="button">
@@ -374,7 +394,6 @@
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
-
           <!-- ŚRODEK – SKIN / HERO -->
           <div class="hero-center">
             <div class="hero-frame" id="heroFrame"></div>
@@ -384,7 +403,6 @@
               <span id="heroLevel">Lv.1</span>
             </div>
           </div>
-
           <!-- PRAWA KOLUMNA (tożsamość / companions) -->
           <div class="hud-col hud-right">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
@@ -395,12 +413,9 @@
             <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
             <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
           </div>
-
         </div>
-
         <div class="spacer"></div>
       </div>
-
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
       <div class="map-wrap">
@@ -422,7 +437,6 @@
         </div>
       </div>
     </div>
-
     <!-- Locked info -->
     <div class="locked-back" id="lockedBack">
       <div class="locked-card">
@@ -438,7 +452,6 @@
         </div>
       </div>
     </div>
-
     <!-- Howlboard modal -->
     <div class="sheet-back" id="boardBack">
       <div class="sheet-card">
@@ -454,7 +467,6 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
-
    <!-- Region Sheet modal -->
 <div class="sheet-back region-sheet" id="regionBack">
   <div class="sheet-card">
@@ -469,7 +481,6 @@
     </div>
   </div>
 </div>
-
 <!-- SKINS MODAL -->
 <div class="sheet-back avatar-sheet" id="avatarBack">
   <div class="sheet-card">
@@ -487,7 +498,6 @@
     <div id="skinButtons" class="skins-grid"></div>
   </div>
 </div>
-
 <!-- Building modal (HTTP) -->
 <div class="sheet-back" id="buildingBack">
   <div class="sheet-card">
@@ -511,7 +521,6 @@
     </div>
   </div>
 </div>
-
 <!-- Quests modal (STARY – fallback Daily) -->
 <div class="sheet-back" id="questsBack">
   <div class="sheet-card">
@@ -525,7 +534,6 @@
     </p>
   </div>
 </div>
-
 <!-- NOWY MODAL: Mission Board -->
 <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
   <div class="q-modal-body">
@@ -557,7 +565,6 @@
     <div id="qList" class="quest-board"></div>
   </div>
 </div>
-
 <!-- === FAQ MODAL (nowy) === -->
 <div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
   <div class="faq-backdrop" data-close></div>
@@ -566,21 +573,17 @@
       <h2 id="faqTitle">Alpha Husky — FAQ</h2>
       <button class="faq-close" data-close aria-label="Close FAQ">✕</button>
     </header>
-
     <div class="faq-toolbar">
       <input id="faqSearch" type="search" placeholder="Search FAQ…" autocomplete="off" />
       <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
     </div>
-
     <div id="faqList" class="faq-list" role="region" aria-live="polite"></div>
-
     <footer class="faq-footer">
       <button class="faq-copylink" id="faqCopyLink" type="button" title="Copy link to this FAQ view">Copy link</button>
       <span class="faq-hint">Tip: type to filter. Tap a question to expand.</span>
     </footer>
   </div>
 </div>
-
 <!-- Floating FAQ button (bottom-left, kontra Quests po prawej) -->
 <button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -588,7 +591,6 @@
   </svg>
   <span>FAQ</span>
 </button>
-
 <!-- Floating launcher (📜) -->
 <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
 <div class="fallback" id="fallback">
@@ -598,16 +600,13 @@
   </div>
 </div>
 </div>
-
   <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
     window.WEBAPP_VER = "2025-11-16a";
   </script>
-
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
   <script>
     (function(v){
@@ -633,41 +632,32 @@
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
-
   <!-- 4) Główny skrypt aplikacji -->
   <script>
     const DEBUG_UI = true;
     function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
     function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
-
     const start = () => {
       try {
         dbg('boot…');
-
         window.addEventListener('error', e => {
           dbg('ERR: '+(e?.message||'error'));
           try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
           console.error(e);
         });
-
         const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
         setVh(); window.addEventListener('resize', setVh);
-
         const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         let tg = nativeTg;
-
-        const $  = sel => document.querySelector(sel);
+        const $ = sel => document.querySelector(sel);
         const $$ = sel => Array.from(document.querySelectorAll(sel));
-
         if (!tg) {
           const fb = $("#fallback"); if (fb) fb.style.display = "flex";
           dbg('Open inside Telegram');
         }
-
         tg?.ready?.(); tg?.expand?.();
         tg?.BackButton?.show?.();
         tg?.BackButton?.onClick?.(() => { if (tg.close) try{ tg.close(); }catch(_){}});
-
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
         const hexToRgba = (hex, a) => {
           if(!hex) return `rgba(0,0,0,${a})`;
@@ -688,19 +678,15 @@
             if (p2.text_color) setVar('--txt', p2.text_color);
           }catch(_){}
         });
-
         function setPlayerLabel(lbl){
           const name = lbl || 'Alpha Husky';
-
           // Nick w topbarze
           const el = document.getElementById('player');
           if (el) el.textContent = name;
-
           // Nick pod centralnym oknem skina (jeśli istnieje)
           const heroName = document.getElementById('heroName');
           if (heroName) heroName.textContent = name;
         }
-
         const unsafeUser = tg?.initDataUnsafe?.user;
         if (unsafeUser) {
           const fallbackName = unsafeUser.username
@@ -708,20 +694,15 @@
             : (unsafeUser.first_name || 'Player');
           setPlayerLabel(fallbackName);
         }
-
         const init_data = window.Telegram?.WebApp?.initData || "";
-
         tg?.MainButton?.setText?.("Quests");
         tg?.MainButton?.onClick?.(() => { (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests(); });
         tg?.MainButton?.show?.();
-
         const DEV_DEBUG = false;
         let _busy = false;
-
         async function sendAction(action, payload = {}) {
           const unsafe = tg?.initDataUnsafe || {};
           const hasQuery = !!unsafe.query_id;
-
           if (hasQuery) {
             try {
               const res = await apiPost("/webapp/action", { action, payload });
@@ -744,7 +725,6 @@
             }
           }
         }
-
         async function apiPost(path, payload){
           const init_data = window.Telegram?.WebApp?.initData || "";
           const headers = { "Content-Type": "application/json" };
@@ -758,16 +738,12 @@
           if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
           return data;
         }
-
         window.S = window.S || {};
         window.S.apiPost = apiPost;
-
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
-
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
-
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
@@ -779,7 +755,6 @@
         let keys = new Set();
         let fragments = {};
         let PLAYER_STATE = null;
-
         function createPathsLayer(root){
           const layer = document.createElement("div");
           layer.className = "paths-layer";
@@ -794,7 +769,6 @@
           layer.className = "pins"; layer.id = "pins";
           root.appendChild(layer); return layer;
         }
-
         function resolveLabelCollisions(){
           const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
           chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
@@ -816,7 +790,6 @@
             if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
           });
         }
-
         async function loadMapData(){
           try{
             const v = window.WEBAPP_VER || 'dev';
@@ -832,13 +805,11 @@
           window.DATA = DATA;
           renderMap();
         }
-
         function applyStateToMap(){
           if (!PLAYER_STATE) return;
           if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
           if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
         }
-
         function updateUnlockProgress(){
           const el = document.getElementById('unlockProgress');
           const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
@@ -851,26 +822,21 @@
           document.getElementById('unlockCount').textContent = `${have}/${need}`;
           el.style.display = 'flex';
         }
-
         function renderTopbar(){
           const s = PLAYER_STATE && PLAYER_STATE.stats;
-          const lvl   = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+          const lvl = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
           const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
-
           const fac = document.getElementById('faction');
           if (fac) fac.textContent = `LVL ${lvl} • ${bones}🦴`;
-
           // Level pod centralnym oknem skina (jeśli istnieje)
           const heroLevel = document.getElementById('heroLevel');
           if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
         }
-
         async function loadPlayerState(){
           try {
             const state = await apiPost("/webapp/state");
             PLAYER_STATE = state;
             applyStateToMap();
-
             // 1) Nick z profilu gry
             if (state && state.profile && state.profile.nickname){
               setPlayerLabel(state.profile.nickname);
@@ -882,10 +848,8 @@
                 : (state.user.first_name || 'Player');
               setPlayerLabel(lbl);
             }
-
             // 3) LVL/Bones → topbar + hero HUD
             renderTopbar();
-
             if (mapBack.style.display === "flex" && DATA) {
               renderMap(); updateUnlockProgress();
             }
@@ -893,7 +857,6 @@
             console.warn("state load failed", e);
           }
         }
-
         function isRegionUnlocked(regionId){
           const reg = DATA && DATA.regions && DATA.regions[regionId];
           if (!reg) return true;
@@ -908,9 +871,7 @@
           }
           return false;
         }
-
         const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
-
         function drawPaths(){
           if (!DATA) return;
           pathsSVG.innerHTML = '';
@@ -930,7 +891,6 @@
             pathsSVG.appendChild(poly);
           }
         }
-
         function renderPins(){
           if (!DATA) return;
           pinsEl.innerHTML = '';
@@ -939,50 +899,39 @@
             const btn = document.createElement('button');
             btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
             btn.style.left = b.x + '%';
-            btn.style.top  = b.y + '%';
+            btn.style.top = b.y + '%';
             btn.title = b.name + (unlocked ? '' : ' (locked)');
-
             const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
             const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
             const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
-
             if (!unlocked){
               const lock = document.createElement('span');
               lock.className = 'lock-badge';
               lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
               btn.appendChild(lock);
             }
-
             btn.addEventListener('click', () => {
               createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
               if (!unlocked) return openLocked(b);
-
               if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
-
               if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
                 return window.Fortress.open();
               }
-
               if ((b.id === 'testnet_wastes') ||
                   (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
                 if (window.Dojo?.open) return window.Dojo.open();
               }
-
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
-
               const reg = DATA && DATA.regions && DATA.regions[b.region];
               if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
               return openRegion(b.region);
             });
-
             pinsEl.appendChild(btn);
           }
           resolveLabelCollisions();
         }
-
         const canvas = document.getElementById('particlesCanvas');
         const ctx = canvas ? canvas.getContext('2d') : null;
-
         function createBurst(xPercent, yPercent, isUnlocked = true) {
           if (!ctx) return;
           canvas.style.display = 'block';
@@ -992,7 +941,6 @@
           const particles = [];
           const numParticles = 12;
           const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
-
           for (let i = 0; i < numParticles; i++) {
             particles.push({
               x, y,
@@ -1004,7 +952,6 @@
               decay: Math.random() * 0.02 + 0.01
             });
           }
-
           let animId;
           function animate() {
             ctx.clearRect(0, 0, VIEW_W, VIEW_H);
@@ -1036,9 +983,7 @@
           animate();
           try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
         }
-
         function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
-
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
         const lockedDesc = $("#lockedDesc");
@@ -1046,14 +991,12 @@
         const lockedShop = $("#lockedShop");
         const lockedAsk = $("#lockedAsk");
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
-
         function openLocked(b){
           const reg = DATA && DATA.regions && DATA.regions[b.region];
           const u = (reg && reg.unlock) || {};
           const reason = reg && reg.lockedReason;
           lockedTitle.textContent = `Locked: ${b.name}`;
           let forgeRecipe = null;
-
           if (u.type === 'fragments'){
             const cur = fragments[u.item] || 0;
             const need = u.required || 0;
@@ -1067,20 +1010,17 @@
           } else {
             lockedDesc.textContent = reason || 'Complete requirements to unlock.';
           }
-
           lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
           lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
           lockedAsk.onclick = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
           lockedBack.style.display = 'flex';
         }
-
-        const regionBack  = document.getElementById('regionBack');
+        const regionBack = document.getElementById('regionBack');
         const regionTitle = document.getElementById('regionTitle');
-        const regionDesc  = document.getElementById('regionDesc');
+        const regionDesc = document.getElementById('regionDesc');
         const btnRegionGo = document.getElementById('regionGo');
         const btnRegionLo = document.getElementById('regionLore');
         document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
-
         function openRegionSheet(node, reg){
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
           regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
@@ -1092,26 +1032,22 @@
           btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open', { region: node.region }); };
           regionBack.style.display = 'flex';
         }
-
-        const bBack   = $("#buildingBack");
-        const bTitle  = $("#buildingTitle");
-        const bDesc   = $("#buildingDesc");
+        const bBack = $("#buildingBack");
+        const bTitle = $("#buildingTitle");
+        const bDesc = $("#buildingDesc");
         const bStatus = $("#buildingStatus");
         const bTimerW = $("#buildingTimerWrap");
-        const bTimer  = $("#buildingTimer");
+        const bTimer = $("#buildingTimer");
         const bRoutesW= $("#buildingRoutesWrap");
-        const bRoute  = $("#buildingRoute");
+        const bRoute = $("#buildingRoute");
         const bBtnRef = $("#buildingRefresh");
         const bBtnStart=$("#buildingStartBtn");
         const bBtnRes = $("#buildingResolveBtn");
-
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
-
         const AUTO_RESOLVE_ON_READY = true;
         const READY_GRACE_MS = 2000;
         const RETRY_INTERVAL_MS = 1200;
         const MAX_RESOLVE_RETRIES = 5;
-
         let CURRENT_BID = null;
         let ticker = null;
         function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
@@ -1132,7 +1068,6 @@
           const m = Math.floor(sec/60), s = sec%60;
           return (m>0? m+"m ":"") + s + "s";
         }
-
         async function openBuilding(bid, name, desc){
           CURRENT_BID = bid;
           bTitle.textContent = name || "Building";
@@ -1140,14 +1075,12 @@
           bBack.style.display = 'flex';
           await loadBuildingState();
         }
-
         async function loadBuildingState(){
           if (!CURRENT_BID) return;
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             bTitle.textContent = st.name || bTitle.textContent;
-            bDesc.textContent  = st.desc || bDesc.textContent;
-
+            bDesc.textContent = st.desc || bDesc.textContent;
             bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
             bRoute.innerHTML = '';
             if (st.routes && st.routes.length){
@@ -1157,7 +1090,6 @@
                 bRoute.appendChild(opt);
               }
             }
-
             if (st.active){
               const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
               bStatus.textContent = "Active";
@@ -1181,7 +1113,6 @@
             try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
           }
         }
-
         async function verifyReadyAndMaybeResolve(){
           bStatus.textContent = "Finalizing…";
           bBtnRes.style.display = "none";
@@ -1197,7 +1128,6 @@
               return;
             }
           }catch(_){}
-
           if (AUTO_RESOLVE_ON_READY){
             setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
           } else {
@@ -1205,30 +1135,25 @@
             bBtnRes.style.display = "inline-block";
           }
         }
-
         /* helper do formatowania nagród z budynków (w tym item shards) */
         function formatBuildingRewards(rewardsRaw) {
           const rw = rewardsRaw || {};
           const lines = [];
-
-          if (rw.scrap)      lines.push(`+${rw.scrap} Scrap`);
-          if (rw.rune_dust)  lines.push(`+${rw.rune_dust} Rune Dust`);
-          if (rw.bones)      lines.push(`+${rw.bones} Bones`);
-          if (rw.fragment)   lines.push(`+1 Map Key Fragment`);
-
+          if (rw.scrap) lines.push(`+${rw.scrap} Scrap`);
+          if (rw.rune_dust) lines.push(`+${rw.rune_dust} Rune Dust`);
+          if (rw.bones) lines.push(`+${rw.bones} Bones`);
+          if (rw.fragment) lines.push(`+1 Map Key Fragment`);
           // item shards z The Chain Gate (opcjonalne pole)
           if (rw.shards && rw.shards.amount) {
             const slot = rw.shards.slot || "item";
-            const amt  = rw.shards.amount;
+            const amt = rw.shards.amount;
             const label = (slot + " shards")
               .replace(/_/g, " ")
               .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards → Helmet Shards
             lines.push(`+${amt} ${label}`);
           }
-
           return lines;
         }
-
         async function resolveRun(maxRetries=0, silentRetries=false){
           if (!CURRENT_BID) return false;
           for (let i=0; i<=maxRetries; i++){
@@ -1259,7 +1184,6 @@
           bBtnRes.style.display = "inline-block";
           return false;
         }
-
         bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
         bBtnStart && bBtnStart.addEventListener("click", async () => {
           if (!CURRENT_BID) return;
@@ -1286,11 +1210,10 @@
           }
         });
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
-
         /* === BUTTONS / ACTIONS === */
         const actions = {
-          ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-          ".btn.skins":  () => openSkinsModal(),                   // Skins – WebApp modal
+          ".btn.avatar": () => sendAction("avatar_open"), // Avatar – wraca do bota
+          ".btn.skins": () => openSkinsModal(), // Skins – WebApp modal
           ".btn.map": () => {
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
@@ -1314,9 +1237,7 @@
           el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
         });
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
-
         function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
-
         mapRoot?.addEventListener("click", (e) => {
           if (e.target !== mapRoot) return;
           const r = mapRoot.getBoundingClientRect();
@@ -1324,7 +1245,6 @@
           const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
           console.log("coords:", x, y);
         });
-
        /* === SKINS UI === */
 const avatarBack = document.getElementById('avatarBack');
 const skinCanvas = document.getElementById('skinCanvas');
@@ -1336,10 +1256,8 @@ const shareSkin = document.getElementById('shareSkin');
 const skinButtonsWrap = document.getElementById('skinButtons');
 let _skins = [];
 let _activeSkinKey = "";
-
 avatarBack?.addEventListener('click', (e) => { if (e.target === avatarBack) avatarBack.style.display = 'none'; });
 closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
-
 function renderSkinPreview(imgUrl, name){
   if (!skinCtx) return;
   const img = new Image();
@@ -1364,7 +1282,6 @@ function renderSkinPreview(imgUrl, name){
   };
   skinDesc.textContent = `${name} — Flex your alpha! 🐺`;
 }
-
 function buildSkinButtons(skins, active){
   if (!skinButtonsWrap) return;
   skinButtonsWrap.innerHTML = "";
@@ -1383,7 +1300,6 @@ function buildSkinButtons(skins, active){
     });
     skinButtonsWrap.appendChild(b);
   });
-
   const first = skins.find(s => s.key === active) || skins[0];
   if (first){
     _activeSkinKey = first.key;
@@ -1395,7 +1311,6 @@ function buildSkinButtons(skins, active){
     skinDesc.textContent = 'No skins available yet.';
   }
 }
-
 async function openSkinsModal(){
   try{
     const out = await apiPost("/webapp/skins", {});
@@ -1409,7 +1324,6 @@ async function openSkinsModal(){
     tg?.showAlert?.("Failed to load skins.");
   }
 }
-
 equipSkin?.addEventListener('click', async () => {
   const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "";
   if (!key) { tg?.showAlert?.("Pick a skin first"); return; }
@@ -1423,7 +1337,6 @@ equipSkin?.addEventListener('click', async () => {
     tg?.showAlert?.(e?.message || "Equip failed");
   }
 });
-
 shareSkin?.addEventListener('click', () => {
   if (!tg?.shareToStory || !skinCanvas?.toBlob) { tg?.showAlert?.("Sharing not supported"); return; }
   const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "skin";
@@ -1432,7 +1345,6 @@ shareSkin?.addEventListener('click', () => {
     try { tg?.HapticFeedback?.impactOccurred?.('medium'); } catch(_){}
   }, 'image/png');
 });
-
         /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
@@ -1446,7 +1358,6 @@ shareSkin?.addEventListener('click', () => {
             boardBack.style.display = "none";
           });
         });
-
         /* Daily fallback (stary modal) */
         const questsBack = document.getElementById("questsBack");
         const questsList = document.getElementById("questsList");
@@ -1493,7 +1404,7 @@ shareSkin?.addEventListener('click', () => {
               return wrap;
             }
             if (s.normal) rows.push(card("Daily", s.normal, false));
-            if (s.raid)   rows.push(card("Raid",  s.raid,   true));
+            if (s.raid) rows.push(card("Raid", s.raid, true));
             rows.forEach(r => questsList.appendChild(r));
           }catch(e){
             console.warn(e);
@@ -1516,7 +1427,6 @@ shareSkin?.addEventListener('click', () => {
           }
           refreshQuests();
         }
-
         /* Routing z URL */
         const qs = new URLSearchParams(location.search);
         const sectionParam = (qs.get("section") || "").toLowerCase();
@@ -1555,30 +1465,24 @@ shareSkin?.addEventListener('click', () => {
               break;
           }
         }
-
         loadPlayerState();
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
-
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
           (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
         });
-
         document.getElementById('qClose')?.addEventListener('click', () => { document.getElementById('qBack').style.display='none'; });
-
         dbg('Ready');
       } catch (fatal) {
         dbg('FATAL: '+(fatal && fatal.message ? fatal.message : 'error'));
         console.error('FATAL', fatal);
       }
     };
-
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', start, { once: true });
     } else {
       start();
     }
   </script>
-
   <!-- Mission Board scripts — at very end -->
   <script src="js/quests.js?v=20251010" defer></script>
   <script src="js/quests-launcher.js?v=20251010" defer></script>
@@ -1599,14 +1503,12 @@ shareSkin?.addEventListener('click', () => {
         });
         return res.json();
       });
-
       if (window.Quests && !window.__questsInited) {
         window.Quests.init({ apiPost, tg, dbg: console.debug });
         window.__questsInited = true;
       }
     })();
   </script>
-
   <!-- FAQ module + init -->
   <script src="js/faq.js?v=20251108" defer></script>
   <script>
@@ -1625,7 +1527,6 @@ shareSkin?.addEventListener('click', () => {
         });
         return res.json();
       });
-
       function tryInitFAQ(){
         if (window.FAQ && !window.__faqInited) {
           window.FAQ.init({ apiPost, tg, dbg: console.debug });
@@ -1641,6 +1542,3 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
-
-
-
