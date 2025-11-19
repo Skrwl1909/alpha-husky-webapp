@@ -224,7 +224,8 @@
     const unit = q.unit || "steps";
     const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
-    const title = esc(q.title || q.name || q.id);
+    const title = esc(q.name || q.title || q.id);
+    const description = q.desc ? esc(q.desc) : (q.hint ? `<span class="q-hint">${esc(q.hint)}</span>` : "");
     const type = esc(typeLabel(q.type));
     const status = esc(q.status || "accepted");
 
@@ -235,12 +236,15 @@
 
     card.innerHTML = `
       <div class="q-head">
+      <div class="q-name-wrapper">
         <div class="q-name">${title} <span class="q-type">(${type})</span></div>
-        <div class="q-head-right">
-          ${q.step != null && q.steps ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>` : ""}
-          <span class="q-badge">${status}</span>
-        </div>
+        ${description ? `<div class="q-desc">${description}</div>` : ""}
       </div>
+      <div class="q-head-right">
+        ${q.step != null && q.steps ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>` : ""}
+        <span class="q-badge">${status}</span>
+      </div>
+    </div>
 
       <div class="q-reqs">
         <div class="q-row-top">
