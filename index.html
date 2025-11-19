@@ -1604,9 +1604,12 @@ shareSkin?.addEventListener('click', () => {
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
-          (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
-        });
-
+  if (window.Quests && window.Quests.open) {
+    window.Quests.open();  // ← ZAWSZE nowy Mission Board z opisami
+  } else {
+    openQuests();  // fallback tylko jeśli Quests.js się nie wczyta
+  }
+});
         document.getElementById('qClose')?.addEventListener('click', () => { document.getElementById('qBack').style.display='none'; });
 
         dbg('Ready');
@@ -1685,6 +1688,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
