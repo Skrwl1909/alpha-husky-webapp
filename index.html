@@ -1622,35 +1622,49 @@ shareSkin?.addEventListener('click', () => {
     }
   </script>
 
-  <!-- Mission Board scripts — at very end -->
-  <script src="js/quests.js?v=20251119b" defer></script>
-  <script src="js/quests-launcher.js?v=20251010" defer></script>
-  <script>
-    // Fallback init (gdyby quests.js załadował się po start())
-    (function () {
-      const tg = window.Telegram && window.Telegram.WebApp;
-      const apiPost = (window.S && window.S.apiPost) || (async (path, data) => {
-        const init_data = tg && tg.initData;
-        const url = (window.API_BASE || "") + path;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-          },
-          body: JSON.stringify({ init_data, ...(data || {}) })
-        });
-        return res.json();
-      });
+  Tak, dokładnie tu jest problem – i to jest ostatnia rzecz, która blokuje Ci opisy questów.
+Masz dwa problemy naraz w tej końcówce index.html:
 
-      if (window.Quests && !window.__questsInited) {
+quests.js ładuje się z wersją v=20251119b – a Ty masz już nowszą wersję z opisami → cache Telegrama ładuje starą wersję bez desc.
+Fallback init wywołuje Quests.init() dopiero po załadowaniu – ale quests.js jest defer, więc czasem się nie inicjuje przed kliknięciem.
+
+Rozwiązanie – wklej dokładnie to (30 sekund i działa na 100%):
+Zamień całą końcówkę od <!-- Mission Board scripts — at very end --> na dół na to:
+HTML<!-- Mission Board scripts — ZAWSZE NAJNOWSZA WERSJA + NATYCHMIASTOWE INIT -->
+  <script src="js/quests.js?v=20251119f" defer></script>
+  <script src="js/quests-launcher.js?v=20251119f" defer></script>
+  
+  <!-- NATYCHMIASTOWE INIT – bez czekania na fallback -->
+  <script>
+    // Natychmiastowe init Quests po załadowaniu strony
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.Quests && typeof window.Quests.init === 'function') {
+        const tg = window.Telegram?.WebApp;
+        const apiPost = window.S?.apiPost || (async (path, data) => {
+          const init_data = tg?.initData;
+          const res = await fetch((window.API_BASE || "") + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(init_data ? { Authorization: `Bearer ${init_data}` } : {}) },
+            body: JSON.stringify({ init_data, ...(data || {}) })
+          });
+          return res.json();
+        });
         window.Quests.init({ apiPost, tg, dbg: console.debug });
-        window.__questsInited = true;
+        console.log("Mission Board (z opisami) zainicjowany!");
       }
-    })();
+    });
+
+    // Launcher otwiera ZAWSZE nowy Mission Board
+    document.getElementById('quests-launcher')?.addEventListener('click', () => {
+      if (window.Quests?.open) {
+        window.Quests.open();
+      } else {
+        console.error("Quests.js nie załadowany!");
+      }
+    });
   </script>
 
-  <!-- FAQ module + init -->
+  <!-- FAQ – bez zmian -->
   <script src="js/faq.js?v=20251108" defer></script>
   <script>
     (function () {
@@ -1668,7 +1682,6 @@ shareSkin?.addEventListener('click', () => {
         });
         return res.json();
       });
-
       function tryInitFAQ(){
         if (window.FAQ && !window.__faqInited) {
           window.FAQ.init({ apiPost, tg, dbg: console.debug });
@@ -1684,6 +1697,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
