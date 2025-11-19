@@ -253,7 +253,10 @@
         </div>
         <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
         <div class="q-meta">${metaLine}</div>
-        ${q.hint ? `<div class="q-hint">${esc(q.hint)}</div>` : ""}
+        ${(() => {
+            const desc = (q.desc && String(q.desc).trim()) || (q.hint && String(q.hint).trim()) || "";
+            return desc ? `<div class="q-hint">${esc(desc)}</div>` : "";
+        })()}
       </div>
 
       <div class="q-rew">${rewardBadges(q.reward)}</div>
