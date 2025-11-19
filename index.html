@@ -8,7 +8,6 @@
   <link rel="preload" as="image" href="background_poster.jpg">
   <link rel="preload" as="video" href="background3.webm" type="video/webm">
   <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
-
   <style>
   /* Telegram theme + bezpieczne fallbacki */
   :root { color-scheme: var(--tg-color-scheme, dark); }
@@ -27,7 +26,6 @@
   .ui { position: absolute; inset: 0; z-index: 2; }
   .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px; }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-
   /* === HUD: boczne kolumny + centralny skin === */
   .hud-layout{
     width:100%;
@@ -47,7 +45,6 @@
     padding:8px 10px;
     font-size:13px;
   }
-
   .hero-center{
     flex:1;
     display:flex;
@@ -86,7 +83,6 @@
     border:1px solid rgba(255,255,255,.16);
     backdrop-filter:blur(8px);
   }
-
   @media (max-width:380px){
     .hud-layout{ gap:8px; }
     .hud-col .btn{
@@ -95,18 +91,16 @@
     }
     .hero-frame{ width:56vw; }
   }
-
   .btn {
     appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
     background:var(--glass); border:1px solid var(--stroke);
     font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
-    display: flex;  /* Umożliwia column layout w .btn.map */
+    display: flex; /* Umożliwia column layout w .btn.map */
     align-items: center;
     justify-content: center;
   }
   .btn:active { transform: translateY(1px); }
   .btn.linklike { text-decoration:none; }
-
   /* Ogólny styl dla ikon w buttonach */
   .btn-icon {
     width: 28px;
@@ -116,7 +110,6 @@
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     transition: filter 0.2s ease;
   }
-
   /* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
   .btn.map {
     flex-direction: column;
@@ -128,16 +121,13 @@
     height: auto;
     font-size: 14px;
   }
-
   .btn.map:hover .btn-icon {
     filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
   }
-
   .btn.map:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
   }
-
   .btn.primary {
     background: var(--tg-theme-button-color, rgba(16,185,129,.18));
     color: var(--tg-theme-button-text-color, #fff);
@@ -227,7 +217,6 @@
   /* DEBUG banner (pojedynczy) */
   #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
     background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
-
   /* Avatar/Skins modal */
   .avatar-sheet .sheet-card {
     width: min(92vw, 520px);
@@ -241,8 +230,7 @@
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
   </style>
-
-  <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
+  <!-- ⬇⬇⬇ Mission Board (inline CSS) + NOWY CSS DLA DESC -->
   <style id="quests-css">
     .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
     .q-modal-body{background:#0b0f14;border:1px solid #243244;border-radius:14px;width:min(720px,92vw);max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:16px}
@@ -278,8 +266,27 @@
     .q-actions{margin-top:10px;display:flex;gap:8px}
     #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
-  </style>
 
+    /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+    /* NOWY CSS DLA OPISÓW (desc) – działa idealnie */
+    .q-name-wrapper { 
+      flex: 1; 
+    }
+    .q-desc {
+      font-size: 13px;
+      color: #a0d8ff;
+      margin-top: 5px;
+      line-height: 1.35;
+      opacity: 0.92;
+    }
+    .q-hint {
+      font-style: italic;
+      color: #88c0ff;
+      font-size: 12.5px;
+      margin-top: 4px;
+    }
+    /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+  </style>
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
   /* Floating FAQ button */
@@ -302,48 +309,39 @@
     .fab-faq span{ display:none; }
     .fab-faq{ padding:.6rem; border-radius:16px; }
   }
-
   /* FAQ modal */
   .faq-modal[hidden]{ display:none; }
   .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
   .faq-sheet{ position:fixed; inset:6% 4% auto 4%; max-height:88vh; background:rgba(10,10,14,.92);
     border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.6); color:#eaeaea; }
   @media (min-width:800px){ .faq-sheet{ inset:8% 12% auto 12%; } }
-
   .faq-header{ display:flex; align-items:center; justify-content:space-between; padding:.9rem 1rem; border-bottom:1px solid rgba(255,255,255,.08); }
   .faq-header h2{ margin:0; font-size:1.05rem; letter-spacing:.2px; }
   .faq-close{ border:0; background:transparent; color:#aaa; font-size:1.1rem; cursor:pointer; }
   .faq-close:hover{ color:#fff; }
-
   .faq-toolbar{ display:flex; gap:.6rem; padding:.7rem 1rem; border-bottom:1px solid rgba(255,255,255,.06); flex-wrap:wrap; }
   #faqSearch{ flex:1 1 220px; padding:.55rem .7rem; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.35); color:#eaeaea; }
   #faqSearch::placeholder{ color:#9aa; }
-
   .faq-tabs{ display:flex; gap:.4rem; overflow:auto; scrollbar-width:none; }
   .faq-tabs::-webkit-scrollbar{ display:none; }
   .faq-tab{ padding:.45rem .65rem; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); border-radius:999px; font-size:.85rem; cursor:pointer; white-space:nowrap; }
   .faq-tab[aria-selected="true"]{ border-color:#00E5FF; box-shadow:0 0 0 1px rgba(0,229,255,.25) inset; }
-
   .faq-list{ padding:.4rem 1rem 1rem; max-height:58vh; overflow:auto; }
   .faq-item{ border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(0,0,0,.25); margin:.5rem 0; overflow:hidden; }
   .faq-q{ width:100%; text-align:left; padding:.7rem .9rem; background:transparent; color:#eaeaea; border:0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
   .faq-q span{ font-weight:600; font-size:.95rem; }
   .faq-q svg{ opacity:.7; transition: transform .18s ease; }
   .faq-item[open] .faq-q svg{ transform:rotate(180deg); }
-
   .faq-a{ padding:.5rem .9rem 1rem; color:#cfd5db; line-height:1.45; border-top:1px solid rgba(255,255,255,.06); }
   .faq-a p{ margin:.45rem 0; }
   .faq-a code, .faq-a kbd{ background:rgba(255,255,255,.06); padding:.08rem .35rem; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
-
   .faq-footer{ display:flex; justify-content:space-between; align-items:center; padding:.6rem 1rem; border-top:1px solid rgba(255,255,255,.08); }
   .faq-copylink{ border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#eaeaea; padding:.4rem .6rem; border-radius:10px; cursor:pointer; }
   .faq-hint{ color:#9aa; font-size:.85rem; }
   </style>
 </head>
-
 <body>
   <div id="dbg">init…</div>
-
   <div class="app">
     <div class="bg">
       <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
@@ -352,16 +350,13 @@
       </video>
       <div class="poster" style="background-image:url('background_poster.jpg');"></div>
     </div>
-
     <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
       </div>
-
       <div class="grid">
         <div class="hud-layout">
-
           <!-- LEWA KOLUMNA (utility / progres) -->
           <div class="hud-col hud-left">
             <button class="btn map" aria-label="Open Alpha Map" type="button">
@@ -374,7 +369,6 @@
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
-
           <!-- ŚRODEK – SKIN / HERO -->
           <div class="hero-center">
             <div class="hero-frame" id="heroFrame">
@@ -389,7 +383,6 @@
               <span id="heroLevel">Lv.1</span>
             </div>
           </div>
-
           <!-- PRAWA KOLUMNA (tożsamość / companions) -->
           <div class="hud-col hud-right">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
@@ -400,9 +393,7 @@
             <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
             <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
           </div>
-
         </div>
-
         <div class="spacer"></div>
       </div>
 
@@ -532,36 +523,33 @@
 </div>
 
 <!-- NOWY MODAL: Mission Board -->
-<div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
-  <div class="q-modal-body">
-    <div class="q-modal-head">
-      <h3 class="q-title">Mission Board</h3>
-      <div class="q-head-actions">
-        <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh">↻</button>
-        <button class="q-btn" id="qClose" type="button" title="Close">×</button>
+      <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
+        <div class="q-modal-body">
+          <div class="q-modal-head">
+            <h3 class="q-title">Mission Board</h3>
+            <div class="q-head-actions">
+              <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh">↻</button>
+              <button class="q-btn" id="qClose" type="button" title="Close">×</button>
+            </div>
+          </div>
+          <div id="qStatus" class="q-status">Ready</div>
+          <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
+            <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
+            <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
+            <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
+            <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
+            <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
+          </div>
+          <div id="qState" class="q-filters" aria-label="Quest state filters">
+            <button class="q-tab q-tab--on" data-state="any">All</button>
+            <button class="q-tab" data-state="ready">Ready</button>
+            <button class="q-tab" data-state="accepted">Accepted</button>
+            <button class="q-tab" data-state="available">Available</button>
+            <button class="q-tab" data-state="cooldown">Cooldown</button>
+          </div>
+          <div id="qList" class="quest-board"></div>
+        </div>
       </div>
-    </div>
-    <div id="qStatus" class="q-status">Ready</div>
-    <!-- Zakładki -->
-    <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
-      <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
-      <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
-      <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
-      <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
-      <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
-    </div>
-    <!-- Filtry stanu -->
-    <div id="qState" class="q-filters" aria-label="Quest state filters">
-      <button class="q-tab q-tab--on" data-state="any">All</button>
-      <button class="q-tab" data-state="ready">Ready</button>
-      <button class="q-tab" data-state="accepted">Accepted</button>
-      <button class="q-tab" data-state="available">Available</button>
-      <button class="q-tab" data-state="cooldown">Cooldown</button>
-    </div>
-    <!-- Lista -->
-    <div id="qList" class="quest-board"></div>
-  </div>
-</div>
 
 <!-- === FAQ MODAL (nowy) === -->
 <div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
@@ -1697,5 +1685,6 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
