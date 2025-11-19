@@ -215,90 +215,102 @@
   }
 
   function makeCard(q, actions) {
-    const pct = progressPct(q);
+  const pct = progressPct(q);
 
-    // New meta line using progressTotal/reqTotal/unit if present
-    const need = (q.reqTotal != null) ? Number(q.reqTotal) : sumVals(q.req || q.required);
-    const have = (q.progressTotal != null) ? Number(q.progressTotal)
-               : sumClamp(q.progress, q.req || q.required);
-    const unit = q.unit || "steps";
-    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+  // Meta (sumaryczny progres)
+  const need = (q.reqTotal != null)
+    ? Number(q.reqTotal)
+    : sumVals(q.req || q.required);
+  const have = (q.progressTotal != null)
+    ? Number(q.progressTotal)
+    : sumClamp(q.progress, q.req || q.required);
+  const unit = q.unit || "actions";
+  const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
-    const title = esc(q.name || q.title || q.id);
-    const description = q.desc ? esc(q.desc) : (q.hint ? `<span class="q-hint">${esc(q.hint)}</span>` : "");
-    const type = esc(typeLabel(q.type));
-    const status = esc(q.status || "accepted");
+  const title  = esc(q.title || q.name || q.id);
+  const type   = esc(typeLabel(q.type));
+  const status = esc(q.status || "accepted");
 
-    const card = document.createElement("div");
-    card.className = "quest";
-    card.setAttribute("data-type", q.type || "");
-    card.setAttribute("data-status", status);
+  const desc = q.desc || q.description || "";
+  const hint = q.hint || q.tips || "";
 
-    card.innerHTML = `
-      <div class="q-head">
+  const card = document.createElement("div");
+  card.className = "quest";
+  card.setAttribute("data-type", q.type || "");
+  card.setAttribute("data-status", status);
+
+  card.innerHTML = `
+    <div class="q-head">
       <div class="q-name-wrapper">
-        <div class="q-name">${title} <span class="q-type">(${type})</span></div>
-        ${description ? `<div class="q-desc">${description}</div>` : ""}
+        <div class="q-name">
+          ${title} <span class="q-type">(${type})</span>
+        </div>
+        ${desc ? `<div class="q-desc">${esc(desc)}</div>` : ""}
       </div>
       <div class="q-head-right">
-        ${q.step != null && q.steps ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>` : ""}
+        ${q.step != null && q.steps
+          ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
+          : ""
+        }
         <span class="q-badge">${status}</span>
       </div>
     </div>
 
-      <div class="q-reqs">
-        <div class="q-row-top">
-          <span class="q-req-name">Progress</span>
-          <span class="q-req-val">${pct}%</span>
-        </div>
-        <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
-        <div class="q-meta">${metaLine}</div>
-        ${(() => {
-            const desc = (q.desc && String(q.desc).trim()) || (q.hint && String(q.hint).trim()) || "";
-            return desc ? `<div class="q-hint">${esc(desc)}</div>` : "";
-        })()}
+    <div class="q-reqs">
+      <div class="q-row-top">
+        <span class="q-req-name">Progress</span>
+        <span class="q-req-val">${pct}%</span>
       </div>
+      <div class="q-bar">
+        <div class="q-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="q-meta">${metaLine}</div>
+      ${hint ? `<div class="q-hint">${esc(hint)}</div>` : ""}
+    </div>
 
-      <div class="q-rew">${rewardBadges(q.reward)}</div>
-      <div class="q-actions"></div>
-    `;
+    <div class="q-rew">${rewardBadges(q.reward)}</div>
+    <div class="q-actions"></div>
+  `;
 
-    const act = $(".q-actions", card);
+  const act = $(".q-actions", card);
 
-    if (status === "available") {
-      // === PATCH: legacy daily → użyj /webapp/daily/action zamiast accept ===
-      if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
-        const action = q.availableActions.includes("daily_claim")
-          ? "daily_claim"
-          : q.availableActions[0]; // np. "daily_raid" albo inna akcja daily
-        const isRaid = !!(q.raid || q.isRaid || /raid/i.test(String(q.id || "")));
-        const b = document.createElement("button");
-        b.className = "q-btn q-btn-acc";
-        b.textContent = action === "daily_claim" ? "Claim" : "Do it";
-        b.onclick = () => actions.daily(action, isRaid, b);
-        act.appendChild(b);
-      } else {
-        const b = document.createElement("button");
-        b.className = "q-btn q-btn-acc";
-        b.textContent = "Accept";
-        b.onclick = () => actions.accept(q.id, b);
-        act.appendChild(b);
-      }
-    } else if (status === "ready") {
+  if (status === "available") {
+    // Legacy daily → /webapp/daily/action
+    if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
+      const action = q.availableActions.includes("daily_claim")
+        ? "daily_claim"
+        : q.availableActions[0]; // np. daily_raid
+      const isRaid = !!(q.raid || q.isRaid || /raid/i.test(String(q.id || "")));
       const b = document.createElement("button");
-      b.className = "q-btn";
-      b.textContent = "Claim";
-      b.onclick = () => actions.claim(q.id, b);
+      b.className = "q-btn q-btn-acc";
+      b.textContent = action === "daily_claim" ? "Claim" : "Do it";
+      b.onclick = () => actions.daily(action, isRaid, b);
       act.appendChild(b);
-    } else if (status === "cooldown") {
-      const span = document.createElement("span");
-      span.className = "q-badge";
-      span.title = q.cooldownEndsAt ? new Date(q.cooldownEndsAt).toLocaleString() : "Next reset";
-      span.textContent = "Cooldown " + cooldownText(q.cooldownEndsAt);
-      act.appendChild(span);
+    } else {
+      const b = document.createElement("button");
+      b.className = "q-btn q-btn-acc";
+      b.textContent = "Accept";
+      b.onclick = () => actions.accept(q.id, b);
+      act.appendChild(b);
     }
-    return card;
+  } else if (status === "ready") {
+    const b = document.createElement("button");
+    b.className = "q-btn";
+    b.textContent = "Claim";
+    b.onclick = () => actions.claim(q.id, b);
+    act.appendChild(b);
+  } else if (status === "cooldown") {
+    const span = document.createElement("span");
+    span.className = "q-badge";
+    span.title = q.cooldownEndsAt
+      ? new Date(q.cooldownEndsAt).toLocaleString()
+      : "Next reset";
+    span.textContent = "Cooldown " + cooldownText(q.cooldownEndsAt);
+    act.appendChild(span);
   }
+
+  return card;
+}
 
   function sumVals(obj) {
     let s = 0; for (const k in (obj||{})) s += (Number(obj[k])||0);
