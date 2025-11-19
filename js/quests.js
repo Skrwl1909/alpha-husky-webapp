@@ -215,63 +215,53 @@
   }
 
   function makeCard(q, actions) {
-  const pct = progressPct(q);
+    const pct = progressPct(q);
 
-  // meta: ile / ile + jednostka
-  const need = (q.reqTotal != null) ? Number(q.reqTotal) : sumVals(q.req || q.required);
-  const have = (q.progressTotal != null)
-    ? Number(q.progressTotal)
-    : sumClamp(q.progress, q.req || q.required);
-  const unit = q.unit || "actions";
-  const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+    // New meta line using progressTotal/reqTotal/unit if present
+    const need = (q.reqTotal != null) ? Number(q.reqTotal) : sumVals(q.req || q.required);
+    const have = (q.progressTotal != null) ? Number(q.progressTotal)
+               : sumClamp(q.progress, q.req || q.required);
+    const unit = q.unit || "steps";
+    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
-  const title  = esc(q.title || q.name || q.id);
-  const type   = esc(typeLabel(q.type));
-  const status = esc(q.status || "accepted");
+    const title = esc(q.name || q.title || q.id);
+    const description = q.desc ? esc(q.desc) : (q.hint ? `<span class="q-hint">${esc(q.hint)}</span>` : "");
+    const type = esc(typeLabel(q.type));
+    const status = esc(q.status || "accepted");
 
-  // >>> NOWE: opis + hint z backendu <<<
-  const descRaw = q.desc != null ? String(q.desc).trim() : "";
-  const hintRaw = q.hint != null ? String(q.hint).trim() : "";
+    const card = document.createElement("div");
+    card.className = "quest";
+    card.setAttribute("data-type", q.type || "");
+    card.setAttribute("data-status", status);
 
-  let extraTextHtml = "";
-  if (descRaw) extraTextHtml += `<div class="q-desc">${esc(descRaw)}</div>`;
-  if (hintRaw) extraTextHtml += `<div class="q-hint">${esc(hintRaw)}</div>`;
-
-  const card = document.createElement("div");
-  card.className = "quest";
-  card.setAttribute("data-type", q.type || "");
-  card.setAttribute("data-status", status);
-
-  card.innerHTML = `
-    <div class="q-head">
-      <div class="q-name">${title} <span class="q-type">(${type})</span></div>
+    card.innerHTML = `
+      <div class="q-head">
+      <div class="q-name-wrapper">
+        <div class="q-name">${title} <span class="q-type">(${type})</span></div>
+        ${description ? `<div class="q-desc">${description}</div>` : ""}
+      </div>
       <div class="q-head-right">
-        ${q.step != null && q.steps
-          ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
-          : ""
-        }
+        ${q.step != null && q.steps ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>` : ""}
         <span class="q-badge">${status}</span>
       </div>
     </div>
 
-    <div class="q-reqs">
-      <div class="q-row-top">
-        <span class="q-req-name">Progress</span>
-        <span class="q-req-val">${pct}%</span>
+      <div class="q-reqs">
+        <div class="q-row-top">
+          <span class="q-req-name">Progress</span>
+          <span class="q-req-val">${pct}%</span>
+        </div>
+        <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
+        <div class="q-meta">${metaLine}</div>
+        ${(() => {
+            const desc = (q.desc && String(q.desc).trim()) || (q.hint && String(q.hint).trim()) || "";
+            return desc ? `<div class="q-hint">${esc(desc)}</div>` : "";
+        })()}
       </div>
-      <div class="q-bar"><div class="q-bar-fill" style="width:${pct}%"></div></div>
-      <div class="q-meta">${metaLine}</div>
-      ${extraTextHtml}
-    </div>
 
-    <div class="q-rew">${rewardBadges(q.reward)}</div>
-    <div class="q-actions"></div>
-  `;
-
-  const actionsWrap = card.querySelector(".q-actions");
-  (actions || []).forEach(a => actionsWrap.appendChild(a));
-  return card;
-}
+      <div class="q-rew">${rewardBadges(q.reward)}</div>
+      <div class="q-actions"></div>
+    `;
 
     const act = $(".q-actions", card);
 
