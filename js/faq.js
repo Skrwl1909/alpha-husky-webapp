@@ -289,8 +289,6 @@ Tips:
           e.preventDefault(); this.close();
         }
       });
-      // Kliki wewnątrz karty nie zamykają
-      $('.faq-sheet')?.addEventListener('click', e => e.stopPropagation());
 
       // Search
       $('#faqSearch')?.addEventListener('input', e => {
