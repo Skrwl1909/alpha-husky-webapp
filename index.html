@@ -290,26 +290,69 @@
   </style>
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
-  /* Floating FAQ button */
+  /* Floating FAQ button – mocniej widoczny */
+.fab-faq{
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  /* podnieś nad przycisk Quests */
+  bottom: max(92px, calc(env(safe-area-inset-bottom) + 20px));
+  z-index: 1200;
+
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+
+  padding: .6rem .9rem;
+  border-radius: 999px;
+
+  border: 1px solid rgba(0,229,255,0.85);
+  background:
+    radial-gradient(circle at 30% 30%,
+      rgba(0,229,255,0.9),
+      rgba(0,0,0,0.96));
+  backdrop-filter: blur(6px);
+
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow:
+    0 0 16px rgba(0,229,255,0.85),
+    0 0 28px rgba(0,0,0,0.9);
+
+  font-weight: 600;
+  font-size: .9rem;
+
+  animation: faqPulse 2.4s ease-in-out infinite;
+}
+
+.fab-faq:hover{
+  border-color: rgba(0,229,255,1);
+}
+
+.fab-faq:active{
+  transform: translateY(1px);
+}
+
+.fab-faq svg{
+  opacity:.9;
+}
+
+/* Na bardzo małych ekranach tylko ikonka */
+@media (max-width: 420px){
+  .fab-faq span{ display:none; }
   .fab-faq{
-    position: fixed;
-    left: max(14px, env(safe-area-inset-left));
-    bottom: max(18px, calc(env(safe-area-inset-bottom) + 18px));
-    z-index: 1200;
-    display: inline-flex; align-items: center; gap: .45rem;
-    padding: .55rem .8rem; border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.14);
-    background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
-    color: #eaeaea; cursor: pointer; user-select: none;
-    box-shadow: 0 6px 24px rgba(0,0,0,.35);
+    padding:.6rem;
+    border-radius:16px;
   }
-  .fab-faq:hover{ border-color: rgba(255,255,255,.28); }
-  .fab-faq:active{ transform: translateY(1px); }
-  .fab-faq svg{ opacity:.9 }
-  @media (max-width: 420px){
-    .fab-faq span{ display:none; }
-    .fab-faq{ padding:.6rem; border-radius:16px; }
-  }
+}
+
+/* delikatny puls */
+@keyframes faqPulse{
+  0%   { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
+  50%  { box-shadow: 0 0 22px rgba(0,229,255,0.95); transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
+}
   /* FAQ modal */
   .faq-modal[hidden]{ display:none; }
   .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
@@ -1698,6 +1741,7 @@ HTML<!-- Mission Board scripts — ZAWSZE NAJNOWSZA WERSJA + NATYCHMIASTOWE INIT
   </script>
 </body>
 </html>
+
 
 
 
