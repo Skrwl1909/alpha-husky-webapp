@@ -282,20 +282,44 @@ Tips:
         if (el) el.addEventListener('click', (e)=>{ e.preventDefault(); this.open(); });
       });
 
-      // Close (backdrop lub przycisk)
+       // Close (backdrop lub przycisk)
       const modal = $('#faqModal');
-      modal?.addEventListener('click', e => {
-        if (e.target.closest('.faq-close') || e.target.hasAttribute('data-close')){
-          e.preventDefault(); this.close();
-        }
-      });
-      // Kliki wewnątrz karty nie zamykają
-      $('.faq-sheet')?.addEventListener('click', e => e.stopPropagation());
+      if (modal) {
+        // klik w backdrop (ciemne tło z data-close)
+        modal.addEventListener('click', (e) => {
+          const t = e.target;
+          if (t && (t.hasAttribute('data-close') || t.classList.contains('faq-backdrop'))) {
+            e.preventDefault();
+            this.close();
+          }
+        });
+      }
+
+      // X w nagłówku – osobny listener, bo siedzi wewnątrz .faq-sheet
+      const closeBtn = $('.faq-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();  // nie wypychaj eventu wyżej
+          this.close();
+        });
+      }
+
+      // Kliki wewnątrz karty nie zamykają modala, ale nie blokują X
+      const sheet = $('.faq-sheet');
+      if (sheet) {
+        sheet.addEventListener('click', (e) => {
+          if (!e.target.closest('.faq-close')) {
+            e.stopPropagation();
+          }
+        });
+      }
 
       // Search
       $('#faqSearch')?.addEventListener('input', e => {
         this.state.query = e.target.value.trim();
         this.renderList();
+      });
       });
 
       // Tabs
