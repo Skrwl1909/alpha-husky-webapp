@@ -1668,16 +1668,6 @@ shareSkin?.addEventListener('click', () => {
       start();
     }
   </script>
-
-  Tak, dokładnie tu jest problem – i to jest ostatnia rzecz, która blokuje Ci opisy questów.
-Masz dwa problemy naraz w tej końcówce index.html:
-
-quests.js ładuje się z wersją v=20251119b – a Ty masz już nowszą wersję z opisami → cache Telegrama ładuje starą wersję bez desc.
-Fallback init wywołuje Quests.init() dopiero po załadowaniu – ale quests.js jest defer, więc czasem się nie inicjuje przed kliknięciem.
-
-Rozwiązanie – wklej dokładnie to (30 sekund i działa na 100%):
-Zamień całą końcówkę od <!-- Mission Board scripts — at very end --> na dół na to:
-HTML<!-- Mission Board scripts — ZAWSZE NAJNOWSZA WERSJA + NATYCHMIASTOWE INIT -->
   <script src="js/quests.js?v=20251119f" defer></script>
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
   
@@ -1744,6 +1734,7 @@ HTML<!-- Mission Board scripts — ZAWSZE NAJNOWSZA WERSJA + NATYCHMIASTOWE INIT
   </script>
 </body>
 </html>
+
 
 
 
