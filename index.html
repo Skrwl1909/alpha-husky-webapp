@@ -28,12 +28,13 @@
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   /* === HUD: boczne kolumny + centralny skin === */
   .hud-layout{
-    width:100%;
-    max-width:520px;
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    gap:12px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;                 /* centrowanie całości w poziomie */
+  display: flex;
+  justify-content: center;        /* zamiast space-between */
+  align-items: flex-end;
+  gap: 16px;                      /* stały, równy odstęp lewo–środek–prawo */
   }
   .hud-col{
     display:flex;
@@ -1697,6 +1698,7 @@ HTML<!-- Mission Board scripts — ZAWSZE NAJNOWSZA WERSJA + NATYCHMIASTOWE INIT
   </script>
 </body>
 </html>
+
 
 
 
