@@ -155,100 +155,107 @@
     }
 
     // 4) Legacy fallback – active/quests jako accepted/ready
-    const out = { ready: [], accepted: [], available: [], done: [] };
-    const list = Array.isArray(payload?.active) ? payload.active
-               : Array.isArray(payload?.quests) ? payload.quests
-               : [];
-    for (const q of list) {
-      const ready = (q.ready === true) ? true : isComplete(q);
-      if (ready) out.ready.push({ ...q, status: "ready" });
-      else out.accepted.push({ ...q, status: "accepted" });
-    }
-    return out;
+  const out = { ready: [], accepted: [], available: [], done: [] };
+  const list = Array.isArray(payload?.active) ? payload.active
+             : Array.isArray(payload?.quests) ? payload.quests
+             : [];
+  for (const q of list) {
+    const ready = (q.ready === true) ? true : isComplete(q);
+    if (ready) out.ready.push({ ...q, status: "ready" });
+    else out.accepted.push({ ...q, status: "accepted" });
   }
+  return out;
+}
 
-  // ===== Rendering =====
-  const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
-  const TABS = ["all", "daily", "repeatable", "story", "bounties"]; // (na przyszłość)
+// ===== Rendering =====
+const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
+const TABS = ["all", "daily", "repeatable", "story", "bounties"]; // (na przyszłość)
 
-  function mergeBoard(board) {
-    const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
-    return [
-      ...add(board.ready, "ready"),
-      ...add(board.accepted, "accepted"),
-      ...add(board.available, "available"),
-      ...add(board.done, "cooldown"),
-    ];
+function mergeBoard(board) {
+  const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
+  return [
+    ...add(board.ready, "ready"),
+    ...add(board.accepted, "accepted"),
+    ...add(board.available, "available"),
+    ...add(board.done, "cooldown"),
+  ];
+}
+
+function questCategory(item) {
+  // preferuj backendowe category, fallback na type
+  return (item && (item.category || item.type || "")).toString();
+}
+
+function matchTab(item, tab) {
+  const cat = questCategory(item); // 'daily' | 'repeatable' | 'story' | 'chain' | 'bounty'
+
+  if (tab === "all") return true;
+  if (tab === "daily") return cat === "daily";
+  if (tab === "repeatable") return cat === "repeatable";
+  if (tab === "story") return (cat === "story" || cat === "chain");
+  if (tab === "bounties") return cat === "bounty";
+  return true;
+}
+
+function matchFilter(item, filter) {
+  if (filter === "any") return true;
+  return item.status === filter;
+}
+
+function sortItems(items) {
+  return items.sort((a, b) => {
+    const o = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+    if (o !== 0) return o;
+    return (a.title || a.name || a.id).localeCompare(b.title || b.name || b.id);
+  });
+}
+
+function rewardBadges(rew) {
+  const items = [];
+  for (const [k, v] of Object.entries(rew || {})) {
+    if (v == null || v === 0) continue;
+    items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
   }
+  return items.join(" ");
+}
 
-  function matchTab(item, tab) {
-    if (tab === "all") return true;
-    if (tab === "daily") return item.type === "daily";
-    if (tab === "repeatable") return item.type === "repeatable";
-    if (tab === "story") return (item.type === "chain" || item.type === "story");
-    if (tab === "bounties") return item.type === "bounty";
-    return true;
-  }
+function cooldownText(iso) {
+  if (!iso) return "Today";
+  const end = new Date(iso).getTime();
+  const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+  if (left <= 0) return "Soon";
+  const h = Math.floor(left / 3600);
+  const m = Math.floor((left % 3600) / 60);
+  const s = left % 60;
+  return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
+}
 
-  function matchFilter(item, filter) {
-    if (filter === "any") return true;
-    return item.status === filter;
-  }
+function makeCard(q, actions) {
+  const pct = progressPct(q);
 
-  function sortItems(items) {
-    return items.sort((a, b) => {
-      const o = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
-      if (o !== 0) return o;
-      return (a.title || a.name || a.id).localeCompare(b.title || b.name || b.id);
-    });
-  }
+  // Meta (sumaryczny progres)
+  const need = (q.reqTotal != null)
+    ? Number(q.reqTotal)
+    : sumVals(q.req || q.required);
+  const have = (q.progressTotal != null)
+    ? Number(q.progressTotal)
+    : sumClamp(q.progress, q.req || q.required);
+  const unit = q.unit || "actions";
+  const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
-  function rewardBadges(rew) {
-    const items = [];
-    for (const [k, v] of Object.entries(rew || {})) {
-      if (v == null || v === 0) continue;
-      items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
-    }
-    return items.join(" ");
-  }
+  const cat    = questCategory(q);
+  const title  = esc(q.title || q.name || q.id);
+  const type   = esc(typeLabel(cat));
+  const status = esc(q.status || "accepted");
 
-  function cooldownText(iso) {
-    if (!iso) return "Today";
-    const end = new Date(iso).getTime();
-    const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
-    if (left <= 0) return "Soon";
-    const h = Math.floor(left / 3600);
-    const m = Math.floor((left % 3600) / 60);
-    const s = left % 60;
-    return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
-  }
+  // NOWE: opis + hint z backendu (quests.py → serialize_active_quests_for_front)
+  const desc   = q.desc || q.description || "";
+  const hint   = q.hint || q.tips || "";
 
-  function makeCard(q, actions) {
-    const pct = progressPct(q);
-
-    // Meta (sumaryczny progres)
-    const need = (q.reqTotal != null)
-      ? Number(q.reqTotal)
-      : sumVals(q.req || q.required);
-    const have = (q.progressTotal != null)
-      ? Number(q.progressTotal)
-      : sumClamp(q.progress, q.req || q.required);
-    const unit = q.unit || "actions";
-    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
-
-    const title  = esc(q.title || q.name || q.id);
-    const type   = esc(typeLabel(q.type));
-    const status = esc(q.status || "accepted");
-
-    // NOWE: opis + hint z backendu (quests.py → serialize_active_quests_for_front)
-    const desc   = q.desc || q.description || "";
-    const hint   = q.hint || q.tips || "";
-
-    const card = document.createElement("div");
-    card.className = "quest";
-    card.setAttribute("data-type", q.type || "");
-    card.setAttribute("data-status", status);
-
+  const card = document.createElement("div");
+  card.className = "quest";
+  card.setAttribute("data-type", cat || "");
+  card.setAttribute("data-status", status);
     card.innerHTML = `
       <div class="q-head">
         <div class="q-name-wrapper">
