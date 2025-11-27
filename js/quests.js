@@ -45,11 +45,21 @@
   }
 
   function typeLabel(t) {
-    if (t === "chain" || t === "story") return "Story";
+    // przyjmujemy zarówno type jak i category
+    t = String(t || "").toLowerCase();
+    if (t === "story" || t === "chain") return "Story";
     if (t === "daily") return "Daily";
-    if (t === "repeatable") return "Repeatable";
-    if (t === "bounty") return "Bounty";
-    return String(t || "Quest");
+    if (t === "bounty" || t === "bounties" || t === "repeatable") return "Bounty";
+    return "Quest";
+  }
+
+  function statusLabel(s) {
+    s = String(s || "").toLowerCase();
+    if (s === "ready") return "Ready";
+    if (s === "accepted") return "In progress";
+    if (s === "available") return "Available";
+    if (s === "cooldown") return "Cooldown";
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   // ===== API =====
@@ -155,107 +165,118 @@
     }
 
     // 4) Legacy fallback – active/quests jako accepted/ready
-  const out = { ready: [], accepted: [], available: [], done: [] };
-  const list = Array.isArray(payload?.active) ? payload.active
+    const out = { ready: [], accepted: [], available: [], done: [] };
+    const list = Array.isArray(payload?.active) ? payload.active
              : Array.isArray(payload?.quests) ? payload.quests
              : [];
-  for (const q of list) {
-    const ready = (q.ready === true) ? true : isComplete(q);
-    if (ready) out.ready.push({ ...q, status: "ready" });
-    else out.accepted.push({ ...q, status: "accepted" });
+    for (const q of list) {
+      const ready = (q.ready === true) ? true : isComplete(q);
+      if (ready) out.ready.push({ ...q, status: "ready" });
+      else out.accepted.push({ ...q, status: "accepted" });
+    }
+    return out;
   }
-  return out;
-}
 
-// ===== Rendering =====
-const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
-const TABS = ["all", "daily", "repeatable", "story", "bounties"]; // (na przyszłość)
+  // ===== Rendering =====
+  const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
+  // Finalne zakładki w UI – bez "repeatable"
+  const TABS = ["all", "daily", "story", "bounties"];
 
-function mergeBoard(board) {
-  const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
-  return [
-    ...add(board.ready, "ready"),
-    ...add(board.accepted, "accepted"),
-    ...add(board.available, "available"),
-    ...add(board.done, "cooldown"),
-  ];
-}
-
-function questCategory(item) {
-  // preferuj backendowe category, fallback na type
-  return (item && (item.category || item.type || "")).toString();
-}
-
-function matchTab(item, tab) {
-  const cat = questCategory(item); // 'daily' | 'repeatable' | 'story' | 'chain' | 'bounty'
-
-  if (tab === "all") return true;
-  if (tab === "daily") return cat === "daily";
-  if (tab === "repeatable") return cat === "repeatable";
-  if (tab === "story") return (cat === "story" || cat === "chain");
-  if (tab === "bounties") return cat === "bounty";
-  return true;
-}
-
-function matchFilter(item, filter) {
-  if (filter === "any") return true;
-  return item.status === filter;
-}
-
-function sortItems(items) {
-  return items.sort((a, b) => {
-    const o = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
-    if (o !== 0) return o;
-    return (a.title || a.name || a.id).localeCompare(b.title || b.name || b.id);
-  });
-}
-
-function rewardBadges(rew) {
-  const items = [];
-  for (const [k, v] of Object.entries(rew || {})) {
-    if (v == null || v === 0) continue;
-    items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
+  function mergeBoard(board) {
+    const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
+    return [
+      ...add(board.ready, "ready"),
+      ...add(board.accepted, "accepted"),
+      ...add(board.available, "available"),
+      ...add(board.done, "cooldown"),
+    ];
   }
-  return items.join(" ");
-}
 
-function cooldownText(iso) {
-  if (!iso) return "Today";
-  const end = new Date(iso).getTime();
-  const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
-  if (left <= 0) return "Soon";
-  const h = Math.floor(left / 3600);
-  const m = Math.floor((left % 3600) / 60);
-  const s = left % 60;
-  return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
-}
+  function questCategory(item) {
+    // preferuj backendowe category, fallback na type
+    return (item && (item.category || item.type || "")).toString();
+  }
 
-function makeCard(q, actions) {
-  const pct = progressPct(q);
+  function matchTab(item, tab) {
+    const cat = questCategory(item).toLowerCase(); // 'daily' | 'repeatable' | 'story' | 'chain' | 'bounty'
 
-  // Meta (sumaryczny progres)
-  const need = (q.reqTotal != null)
-    ? Number(q.reqTotal)
-    : sumVals(q.req || q.required);
-  const have = (q.progressTotal != null)
-    ? Number(q.progressTotal)
-    : sumClamp(q.progress, q.req || q.required);
-  const unit = q.unit || "actions";
-  const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+    if (tab === "all") return true;
+    if (tab === "daily") return cat === "daily";
+    if (tab === "story") return (cat === "story" || cat === "chain");
 
-  const cat    = questCategory(q);
-  const title  = esc(q.title || q.name || q.id);
-  const type   = esc(typeLabel(cat));
-  const status = esc(q.status || "accepted");
+    if (tab === "bounties") {
+      // nowe + legacy
+      return (
+        cat === "bounties" ||
+        cat === "bounty" ||
+        cat === "repeatable" ||
+        cat === "chain"
+      );
+    }
+    return true;
+  }
 
-  // NOWE: opis + hint z backendu (quests.py → serialize_active_quests_for_front)
-  const desc   = q.desc || q.description || "";
-  const hint   = q.hint || q.tips || "";
+  function matchFilter(item, filter) {
+    if (filter === "any") return true;
+    return item.status === filter;
+  }
 
-  const card = document.createElement("div");
-  card.className = "quest";
-  card.setAttribute("data-type", cat || "");
-  card.setAttribute("data-status", status);
+  function sortItems(items) {
+    return items.sort((a, b) => {
+      const o = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+      if (o !== 0) return o;
+      return (a.title || a.name || a.id).localeCompare(b.title || b.name || b.id);
+    });
+  }
+
+  function rewardBadges(rew) {
+    const items = [];
+    for (const [k, v] of Object.entries(rew || {})) {
+      if (v == null || v === 0) continue;
+      items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
+    }
+    return items.join(" ");
+  }
+
+  function cooldownText(iso) {
+    if (!iso) return "Today";
+    const end = new Date(iso).getTime();
+    const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+    if (left <= 0) return "Soon";
+    const h = Math.floor(left / 3600);
+    const m = Math.floor((left % 3600) / 60);
+    const s = left % 60;
+    return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
+  }
+
+  function makeCard(q, actions) {
+    const pct = progressPct(q);
+
+    // Meta (sumaryczny progres)
+    const need = (q.reqTotal != null)
+      ? Number(q.reqTotal)
+      : sumVals(q.req || q.required);
+    const have = (q.progressTotal != null)
+      ? Number(q.progressTotal)
+      : sumClamp(q.progress, q.req || q.required);
+    const unit = q.unit || "actions";
+    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+
+    const cat       = questCategory(q);
+    const title     = esc(q.title || q.name || q.id);
+    const typeRaw   = q.type || cat;
+    const type      = esc(typeLabel(typeRaw));
+    const statusRaw = q.status || "accepted";
+    const status    = esc(statusLabel(statusRaw));
+
+    // NOWE: opis + hint z backendu (quests.py → serialize_active_quests_for_front)
+    const desc   = q.desc || q.description || "";
+    const hint   = q.hint || q.tips || "";
+
+    const card = document.createElement("div");
+    card.className = "quest";
+    card.setAttribute("data-type", cat || "");
+    card.setAttribute("data-status", statusRaw);
     card.innerHTML = `
       <div class="q-head">
         <div class="q-name-wrapper">
@@ -291,7 +312,7 @@ function makeCard(q, actions) {
 
     const act = $(".q-actions", card);
 
-    if (status === "available") {
+    if (statusRaw === "available") {
       // Legacy daily → /webapp/daily/action
       if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
         const action = q.availableActions.includes("daily_claim")
@@ -310,13 +331,13 @@ function makeCard(q, actions) {
         b.onclick = () => actions.accept(q.id, b);
         act.appendChild(b);
       }
-    } else if (status === "ready") {
+    } else if (statusRaw === "ready") {
       const b = document.createElement("button");
       b.className = "q-btn";
       b.textContent = "Claim";
       b.onclick = () => actions.claim(q.id, b);
       act.appendChild(b);
-    } else if (status === "cooldown") {
+    } else if (statusRaw === "cooldown") {
       const span = document.createElement("span");
       span.className = "q-badge";
       span.title = q.cooldownEndsAt
@@ -380,7 +401,7 @@ function makeCard(q, actions) {
   function renderCounters(board) {
     const items = mergeBoard(board);
     const countReady = (tab) => items.filter(x => matchTab(x, tab) && x.status === "ready").length;
-    ["all","daily","repeatable","story","bounties"].forEach(tab => {
+    TABS.forEach(tab => {
       const scope = state.el.tabs || state.el.back || document;
       const el = scope.querySelector(`[data-count="${tab}"]`);
       if (el) el.textContent = String(countReady(tab));
