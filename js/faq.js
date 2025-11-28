@@ -163,6 +163,12 @@ Tips:
         a:"Pets gain levels from activity and, in future, from dedicated systems like Adoption Center and pet-focused quests. Higher level = better stats and sometimes new traits." },
       { q:"🏠 Adoption Center?",
         a:"The idea is to have a separate Adoption Center for new pets instead of stuffing everything into the shop. Rollout is done in phases, so if you don’t see it yet, it’s still in progress." },
+
+      { q:"🧬 Do pets have real stats now?",
+        a:"Yes. Every pet in Alpha Husky now has a proper stat profile (strength, agility, luck, vitality, defense) instead of just “vibes”. That includes adoptable pets, evolutions and exclusive/event pets, so Pet Arena and future systems can treat them as real fighters." },
+
+      { q:"⚔️ What are Feral / Trickster / Mystic archetypes and RPS?",
+        a:"Each pet belongs to one of three archetypes used in Pet Arena: Feral (brutal/tanky beasts), Trickster (fast and sneaky, crit/evade energy) and Mystic (aura, ice, glitch, weird magic). Arena uses a light rock–paper–scissors layer: Feral has an edge over Trickster, Trickster over Mystic, and Mystic over Feral. It’s a small stat bias, not an auto-win — your build, level and RNG still matter a lot." },
     ]},
 
     { key:"referrals", title:"Referrals & Friends", items:[
