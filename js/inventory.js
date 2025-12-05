@@ -1,19 +1,17 @@
-// js/inventory.js – DZIAŁA Z TWOIM PROJEKTEM
+// js/inventory.js – FINALNA, DZIAŁAJĄCA WERSJA
 window.Inventory = {
   async open() {
-    // Ukrywamy wszystko inne
     document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(el => el.style.display = "none");
 
     const container = document.getElementById("app") || document.body;
-    container.innerHTML = `<div style="padding:30px;color:#fff;text-align:center;font-family:system-ui;"><h2>Inventory</h2><div id="inv-loading">Loading...</div></div>`;
+    container.innerHTML = `<div style="padding:30px;color:#fff;text-align:center;"><h2>Inventory</h2><div id="inv-loading">Loading...</div></div>`;
 
     try {
-      // ←←← UŻYWAMY TWOJEJ GLOBALNEJ FUNKCJI apiPost
-      const res = await (window.apiPost || window.S?.apiPost)( "/webapp/inventory/state", {} );
+      // ←←← TO JEST TWOJA DZIAŁAJĄCA FUNKCJA Z PROJEKTU
+      const res = await (window.S?.apiPost || window.apiPost)("/webapp/inventory/state", {});
 
-      if (!res || !res.ok) {
-        document.getElementById("inv-loading").innerHTML = 
-          `<p style="color:#f66;">Error: ${res?.reason || "No response"}</p>`;
+      if (!res?.ok) {
+        document.getElementById("inv-loading").innerHTML = `<p style="color:#f66;">Error: ${res?.reason || "No data"}</p>`;
         return;
       }
 
@@ -28,7 +26,7 @@ window.Inventory = {
       `).join("");
 
       document.getElementById("inv-loading").innerHTML = `
-        <div style="margin:20px 0;font-size:17px;text-align:center;opacity:0.9;">
+        <div style="margin:20px 0;font-size:17px;text-align:center;">
           Bones: <b style="color:#ff8;">${(res.bones ?? 0).toLocaleString()}</b> • 
           Scrap: <b style="color:#8af;">${(res.scrap ?? 0).toLocaleString()}</b> • 
           Rune Dust: <b style="color:#f8f;">${(res.rune_dust ?? 0).toLocaleString()}</b>
@@ -44,9 +42,8 @@ window.Inventory = {
       `;
 
     } catch (err) {
+      document.getElementById("inv-loading").innerHTML = `<p style="color:#f66;">Failed<br><small>Check console</small></p>`;
       console.error("Inventory error:", err);
-      document.getElementById("inv-loading").innerHTML = 
-        `<p style="color:#f66;">Connection failed<br><small>${err.message}</small></p>`;
     }
   }
 };
