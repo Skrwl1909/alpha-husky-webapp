@@ -1,45 +1,44 @@
+// js/inventory.js – FINALNA WERSJA
 window.Inventory = {
   async open() {
-    // Ukrywamy mapę i inne modale
-    document.querySelectorAll(".map-back, .q-modal, .locked-back, .sheet-back").forEach(el => el.style.display = "none");
+    // Ukrywamy mapę i inne rzeczy
+    document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(el => el.style.display = "none");
 
     const container = document.getElementById("app") || document.body;
-    container.innerHTML = `
-      <div style="padding:20px; color:#fff; text-align:center;">
-        <h2 style="margin:12px 0; font-size:22px;">Inventory</h2>
-        <div id="inv-content">Ładowanie...</div>
-      </div>
-    `;
+    container.innerHTML = `<div style="padding:20px;color:#fff;"><h2>Inventory</h2><div id="inv-loading">Ładowanie ekwipunku...</div></div>`;
 
     const res = await apiPost("/webapp/inventory/state", {});
     if (!res.ok) {
-      document.getElementById("inv-content").innerHTML = `<p style="color:#f66;">${res.reason || "Failed"}</p>`;
+      document.getElementById("inv-loading").innerHTML = `<p style="color:#f66;">${res.reason || "Błąd połączenia"}</p>`;
       return;
     }
 
     const grid = res.slots.map(item => `
-      <div style="display:inline-block; margin:8px; text-align:center; width:88px;">
-        <img src="${item.icon || '/assets/items/unknown.webp'}" width="64" height="64" style="border:2px solid #444; border-radius:12px;">
-        <div style="font-size:12px; margin-top:4px;">${item.name}</div>
-        <div style="font-size:14px; color:#0f0;">×${item.amount}</div>
-        ${item.equipped ? '<div style="color:#00e5ff; font-size:10px;">EQUIPPED</div>' : ''}
+      <div style="display:inline-block;margin:8px;width:90px;text-align:center;position:relative;">
+        <img src="${item.icon || '/assets/items/unknown.webp'}" width="72" height="72"
+             style="border:3px solid ${item.rarity==='legendary'?'#ff0':item.rarity==='epic'?'#a0f':item.rarity==='rare'?'#08f':item.rarity==='uncommon'?'#0f8':'#888'};
+                    border-radius:12px;">
+        ${item.equipped ? '<div style="position:absolute;top:4px;right:4px;background:#0f0;color:#000;padding:2px 6px;border-radius:6px;font-size:10px;">EQ</div>' : ''}
+        <div style="margin-top:4px;font-size:13px;">${item.name}</div>
+        <div style="font-size:14px;color:#0f8;">×${item.amount}</div>
       </div>
     `).join("");
 
-    document.getElementById("inv-content").innerHTML = `
-      <div style="margin:20px 0;">
-        <div style="margin-bottom:16px; font-size:14px; opacity:0.8;">
-          Gold: <b>${res.gold.toLocaleString()}</b> • 
-          Scrap: <b>${res.scrap}</b> • 
-          Rune Dust: <b>${res.rune_dust}</b>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; justify-content:center;">
-          ${grid || "<p>Empty inventory</p>"}
-        </div>
+    document.getElementById("inv-loading").innerHTML = `
+      <div style="margin:20px 0;font-size:15px;opacity:0.8;">
+        Gold: <b>${(res.gold||0).toLocaleString()}</b> • 
+        Scrap: <b>${res.scrap||0}</b> • 
+        Rune Dust: <b>${res.rune_dust||0}</b> • 
+        Bones: <b>${res.bones||0}</b>
       </div>
-      <button onclick="Telegram.WebApp.close()" style="margin-top:20px; padding:10px 20px; border-radius:12px; background:#333;">
-        ← Back to chat
-      </button>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;">
+        ${grid || "<p>Pusto w ekwipunku</p>"}
+      </div>
+      <div style="text-align:center;margin-top:30px;">
+        <button onclick="Telegram.WebApp.close()" style="padding:12px 30px;border-radius:12px;background:#333;border:none;color:#fff;">
+          ← Back to chat
+        </button>
+      </div>
     `;
   }
 };
