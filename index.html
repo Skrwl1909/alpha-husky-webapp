@@ -1385,7 +1385,7 @@
             loadPlayerState();
           },
           ".btn.mission": () => sendAction("mission_open", { level: 1 }),
-          ".btn.inventory": () => sendAction("cmd", { name: "inventory" }),
+          ".btn.inventory": () => window.Inventory?.open?.(),
           ".btn.char": () => sendAction("char_open"),
           ".btn.shop": () => sendAction("shop_open"),
           ".btn.pets": () => sendAction("pets_open"),
@@ -1751,6 +1751,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
