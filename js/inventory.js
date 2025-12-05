@@ -5,11 +5,11 @@ window.Inventory = {
     document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(el => el.style.display = "none");
 
     const container = document.getElementById("app") || document.body;
-    container.innerHTML = `<div style="padding:20px;color:#fff;"><h2>Inventory</h2><div id="inv-loading">Ładowanie ekwipunku...</div></div>`;
+    container.innerHTML = `<div style="padding:20px;color:#fff;"><h2>Inventory</h2><div id="inv-loading">Loading equipment...</div></div>`;
 
     const res = await apiPost("/webapp/inventory/state", {});
     if (!res.ok) {
-      document.getElementById("inv-loading").innerHTML = `<p style="color:#f66;">${res.reason || "Błąd połączenia"}</p>`;
+      document.getElementById("inv-loading").innerHTML = `<p style="color:#f66;">${res.reason || "no connection"}</p>`;
       return;
     }
 
