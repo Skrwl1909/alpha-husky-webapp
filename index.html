@@ -1732,8 +1732,26 @@ shareSkin?.addEventListener('click', () => {
       }
     })();
   </script>
+    <!-- ====================== INVENTORY ROUTING (2025-12-05) ====================== -->
+  <script>
+    // --- INVENTORY Z ?section=inventory ---
+    const params = new URLSearchParams(location.search);
+    const section = params.get("section")?.toLowerCase();
+
+    if (section === "inventory" && window.Inventory) {
+      setTimeout(() => window.Inventory.open(), 100);
+    }
+
+    // --- Przycisk Inventory na HUD-zie ---
+    document.querySelector(".btn.inventory")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.Inventory?.open();
+    });
+  </script>
 </body>
 </html>
+
 
 
 
