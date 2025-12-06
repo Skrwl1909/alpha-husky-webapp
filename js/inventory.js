@@ -8,10 +8,10 @@ window.Inventory = {
       <div style="padding:20px;color:#fff;max-width:600px;margin:0 auto;font-family:system-ui;">
         <h2 style="text-align:center;margin:0 0 16px 0;">Inventory</h2>
         <div id="stats-bar" style="text-align:center;margin-bottom:20px;opacity:0.9;font-size:16px;">
-          Ładowanie...
+          loading...
         </div>
         <div id="inventory-grid" style="max-height:68vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px;padding:12px;background:rgba(0,0,0,0.4);border-radius:20px;">
-          <div style="grid-column:1/-1;text-align:center;padding:40px;opacity:0.7;">Ładowanie przedmiotów...</div>
+          <div style="grid-column:1/-1;text-align:center;padding:40px;opacity:0.7;">loading items...</div>
         </div>
         <div style="text-align:center;margin-top:24px;">
           <button onclick="Telegram.WebApp.close()" style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:18px;border:none;">
