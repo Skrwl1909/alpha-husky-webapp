@@ -16,15 +16,15 @@ window.Inventory = {
       }
 
       const grid = (res.slots || []).map(item => `
-        <div style="display:inline-block;margin:12px;width:96px;text-align:center;position:relative;">
-         <img src="${item.icon || item.image || item.image_path || '/assets/items/unknown.png'}" 
+  <div style="display:inline-block;margin:12px;width:96px;text-align:center;position:relative;">
+    <img src="${item.image || item.image_path || item.icon || '/assets/items/unknown.png'}" 
          width="80" height="80"
          style="border:4px solid ${item.rarity==='legendary'?'#ff0':item.rarity==='epic'?'#a0f':item.rarity==='rare'?'#08f':item.rarity==='uncommon'?'#0f8':'#888'};border-radius:16px;">
-          ${item.equipped ? '<div style="position:absolute;top:6px;right:6px;background:#0f8;color:#000;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:bold;">EQ</div>' : ''}
-          <div style="margin-top:6px;font-size:14px;">${item.name}</div>
-          <div style="font-size:15px;color:#0f8;">×${item.amount}</div>
-        </div>
-      `).join("");
+    ${item.equipped ? '<div style="position:absolute;top:6px;right:6px;background:#0f8;color:#000;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:bold;">EQ</div>' : ''}
+    <div style="margin-top:6px;font-size:14px;">${item.name}</div>
+    <div style="font-size:15px;color:#0f8;">×${item.amount}</div>
+  </div>
+`).join("");
 
       document.getElementById("inv-loading").innerHTML = `
         <div style="margin:20px 0;font-size:17px;text-align:center;">
