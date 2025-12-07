@@ -80,7 +80,7 @@ window.Inventory = {
 
     const grid = document.getElementById("inventory-grid");
     grid.innerHTML = filtered.map((item, i) => {
-      const icon = item.icon || item.image || item.image_path || item.imagePath || "/assets/items/unknown.png";
+      const iconUrl = item.icon || item.image || item.image_path || '/assets/items/unknown.png';
       return `
         <div onclick="Inventory.showDetails(${i})"
              style="cursor:pointer;background:rgba(255,255,255,0.07);border-radius:16px;padding:10px;text-align:center;position:relative;transition:0.2s;"
