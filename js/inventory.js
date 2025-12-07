@@ -1,116 +1,250 @@
-// js/inventory.js – INTERAKTYWNY + SCROLL + KATEGORIE (Gear / Consumables / Utility / All)
+// js/inventory.js – OFICJALNA WERSJA 2025 – ZGODNA Z BACKENDEM (key-based)
 window.Inventory = {
-  items: [], // tu trzymamy wszystkie itemy
+  items: [],
+  equipped: {}, // { weapon: "iron_sword", armor: "leather_vest", ... }
+  resources: { bones: 0, scrap: 0, rune_dust: 0 },
+  currentTab: "all",
 
   async open() {
-    document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(el => el.style.display = "none");
+    document.querySelectorAll(".map-back, .q-modal,.sheet-back,.locked-back").forEach(el => el.style.display = "none");
 
     const container = document.getElementById("app") || document.body;
     container.innerHTML = `
-      <div style="padding:20px;color:#fff;max-width:600px;margin:0 auto;font-family:system-ui;">
+      <div style="padding:20px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;">
         <h2 style="text-align:center;margin:0 0 16px 0;">Inventory</h2>
+        
         <div id="stats-bar" style="text-align:center;margin-bottom:20px;opacity:0.9;font-size:16px;">
           loading...
         </div>
 
-        <!-- KATEGORIE -->
         <div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-          <button onclick="Inventory.showTab('gear')" class="tab-btn active" data-type="gear">Gear</button>
+          <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all">All</button>
+          <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear">Gear</button>
           <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable">Consumables</button>
           <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility">Utility</button>
-          <button onclick="Inventory.showTab('all')" class="tab-btn" data-type="all">All</button>
         </div>
 
-        <div id="inventory-grid" style="max-height:68vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:16px;padding:12px;background:rgba(0,0,0,0.4);border-radius:20px;">
-          <div style="grid-column:1/-1;text-align:center;padding:40px;opacity:0.7;">loading items...</div>
+        <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
+          <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
         </div>
 
         <div style="text-align:center;margin-top:24px;">
           <button onclick="Telegram.WebApp.close()" style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:18px;border:none;">
-            ← Back to chat
+            Back to chat
           </button>
         </div>
       </div>
     `;
 
     try {
-      const res = await (window.S?.apiPost || window.apiPost)("/webapp/inventory/state", {});
-      console.log("Inventory raw response:", res);
+      const apiPost = window.S?.apiPost || window.apiPost;
+      const res = await apiPost("/webapp/inventory/state", {});
 
-      if (!res?.ok || !res.slots) {
-        document.getElementById("inventory-grid").innerHTML = `<p style="grid-column:1/-1;color:#f66;text-align:center;">Error: ${res?.reason || "No data"}</p>`;
-        return;
-      }
+      if (!res?.ok) throw new Error(res?.reason || "No data");
 
-      // Statystyki
+      this.items = res.slots || [];
+      this.equipped = res.equipped || {};
+      this.resources = {
+        bones: parseInt(res.bones || 0),
+        scrap: parseInt(res.scrap || 0),
+        rune_dust: parseInt(res.rune_dust || 0),
+      };
+
       document.getElementById("stats-bar").innerHTML = `
-        Bones: <b style="color:#ff8;">${(res.bones ?? 0).toLocaleString()}</b> •
-        Scrap: <b style="color:#8af;">${(res.scrap ?? 0).toLocaleString()}</b> •
-        Rune Dust: <b style="color:#f8f;">${(res.rune_dust ?? 0).toLocaleString()}</b>
+        Bones: <b style="color:#ff8;">${this.resources.bones.toLocaleString()}</b> •
+        Scrap: <b style="color:#8af;">${this.resources.scrap.toLocaleString()}</b> •
+        Rune Dust: <b style="color:#f8f;">${this.resources.rune_dust.toLocaleString()}</b>
       `;
 
-      // Zapisujemy itemy globalnie
-      window.Inventory.items = res.slots || [];
-      window.lastInventoryData = res.slots; // dla starych kliknięć
-
-      // Domyślnie pokazujemy Gear
-      Inventory.showTab('gear');
+      this.showTab(this.currentTab);
 
     } catch (err) {
-      console.error("Inventory error:", err);
-      document.getElementById("inventory-grid").innerHTML = `<p style="grid-column:1/-1;color:#f66;">Connection failed</p>`;
+      console.error("Inventory load failed:", err);
+      document.getElementById("inventory-grid").innerHTML = `
+        <p style="grid-column:1/-1;color:#f66;text-align:center;padding:40px;">
+          Connection failed<br><small>${err.message || "Unknown error"}</small>
+        </p>`;
     }
   },
 
-  // FILTR + WYŚWIETLANIE
   showTab(type) {
-    // podświetlamy aktywny przycisk
-    document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-    document.querySelector(`.tab-btn[data-type="${type}"]`).classList.add("active");
+    this.currentTab = type;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelector(`[data-type="${type}"]`)?.classList.add("active");
 
-    let filtered = window.Inventory.items;
+    let filtered = this.items;
 
     if (type !== "all") {
-      filtered = filtered.filter(item => {
+      filtered = this.items.filter(item => {
         const t = (item.type || "").toLowerCase();
-        if (type === "utility") return !["gear", "consumable"].includes(t) && t !== "";
+        if (type === "utility") return !["gear", "consumable"].includes(t) && t;
         return t === type;
       });
     }
 
     const grid = document.getElementById("inventory-grid");
-    grid.innerHTML = filtered.map((item, i) => {
-      const icon = item.icon || item.image || item.image_path || item.imagePath || "/assets/items/unknown.png";
+    if (!filtered.length) {
+      grid.innerHTML = `<p style="grid-column:1/-1;opacity:0.6;margin:60px 0;text-align:center;">No items here</p>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(item => {
+      const key = item.key || item.item_key || item.item;
+      const data = item.data || {};
+      const amount = item.amount || 1;
+      const level = data.level || 1;
+      const stats = data.stat_bonus || {};
+
+      const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
+      const name = item.name || key;
+      const rarity = (item.rarity || "common").toLowerCase();
+
+      const isGear = item.type === "gear" && item.slot;
+      const isEquipped = isGear && this.equipped[item.slot] === key;
+      const isConsumable = item.type === "consumable";
+
+      const rarityColor = {
+        common: "#888", uncommon: "#0f8", rare: "#08f",
+        epic: "#a0f", legendary: "#ff0", mythic: "#f0f"
+      }[rarity] || "#888";
+
+      const statText = Object.entries(stats)
+        .map(([k, v]) => `${k.slice(0,3).toUpperCase()}+${v}`)
+        .join(" ");
+
+      // Escape dla onclick
+      const safeKey = String(key || "").replace(/"/g, "&quot;");
+
       return `
-        <div onclick="Inventory.showDetails(${i})"
-             style="cursor:pointer;background:rgba(255,255,255,0.07);border-radius:16px;padding:10px;text-align:center;position:relative;transition:0.2s;"
-             onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-          <img src="${icon}" width="80" height="80"
-               style="border:4px solid ${item.rarity==='legendary'?'#ff0':item.rarity==='epic'?'#a0f':item.rarity==='rare'?'#08f':item.rarity==='uncommon'?'#0f8':'#888'};border-radius:12px;"
+        <div class="item-card" style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
+             onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform='scale(1)'">
+          
+          <img src="${icon}" width="86" height="86"
+               style="border:5px solid ${rarityColor};border-radius:14px;"
                onerror="this.src='/assets/items/unknown.png'">
-          ${item.equipped ? '<div style="position:absolute;top:6px;right:6px;background:#0f8;color:#000;padding:3px 7px;border-radius:8px;font-size:10px;font-weight:bold;">EQ</div>' : ''}
-          <div style="margin-top:8px;font-size:13px;font-weight:bold;">${item.name || "??"}</div>
-          <div style="font-size:14px;color:#0f8;">×${item.amount || 1}</div>
-        </div>
-      `;
-    }).join("") || `<p style="grid-column:1/-1;opacity:0.6;margin-top:40px;">No items in this category</p>`;
+
+          ${isEquipped ? '<div style="position:absolute;top:8px;right:8px;background:#0f8;color:#000;padding:4px 9px;border-radius:10px;font-size:11px;font-weight:bold;">EQ</div>' : ''}
+
+          <div style="margin:10px 0 4px;font-size:14px;font-weight:bold;color:#fff;line-height:1.3;">
+            ${name}
+          </div>
+
+          ${isGear ? `<div style="font-size:12px;color:#ff8;margin-bottom:4px;">Level ${level}</div>` : ''}
+          ${statText ? `<div style="font-size:11px;color:#8f8;opacity:0.9;margin-bottom:6px;">${statText}</div>` : ''}
+
+          <div style="font-size:15px;color:#0f8;margin:8px 0;">×${amount.toLocaleString()}</div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">
+            ${isConsumable ? `
+              <button onclick="event.stopPropagation(); Inventory.use('${safeKey}')"
+                      style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;">
+                USE
+              </button>` : ''}
+
+            ${isGear && !isEquipped ? `
+              <button onclick="event.stopPropagation(); Inventory.equip('${safeKey}')"
+                      style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;cursor:pointer;">
+                EQUIP
+              </button>` : ''}
+
+            ${isEquipped ? `
+              <button onclick="event.stopPropagation(); Inventory.unequip('${item.slot}')"
+                      style="padding:6px 10px;background:#800;color:#fff;border:none;border-radius:10px;font-size:11px;cursor:pointer;">
+                UNEQ
+              </button>
+              <button onclick="event.stopPropagation(); Inventory.upgrade('${item.slot}')"
+                      style="padding:6px 10px;background:#e0a;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:11px;cursor:pointer;">
+                UPGRADE
+              </button>` : ''}
+          </div>
+        </div>`;
+    }).join("");
   },
 
-  // Szczegóły po kliknięciu
-  showDetails(index) {
-    const item = window.Inventory.items[index] || window.lastInventoryData[index];
-    if (!item) return;
+  // Pomocnik: znajdź item po key
+  findByKey(key) {
+    return this.items.find(it => {
+      const k = it.key || it.item_key || it.item;
+      return k === key;
+    }) || null;
+  },
 
-    const stats = item.stat_bonus ? Object.entries(item.stat_bonus)
-      .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: +${v}`).join("\n") : "No stats";
+  // USE (po key)
+  async use(key) {
+    const item = this.findByKey(key);
+    if (!item || item.type !== "consumable") return;
 
-    const desc = item.desc || item.description || "No description";
+    Telegram.WebApp.HapticFeedback.impactOccurred("medium");
+    const apiPost = window.S?.apiPost || window.apiPost;
 
-    Telegram.WebApp.showAlert(
-      `${item.name}\n` +
-      `Rarity: ${item.rarity?.toUpperCase() || "COMMON"}\n` +
-      `${desc}\n\n` +
-      `${stats}`
-    );
+    try {
+      const res = await apiPost("/webapp/inventory/use", { key });
+      if (res.ok) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        if (res.message) Telegram.WebApp.showAlert(res.message);
+        await this.open();
+      } else throw new Error(res.reason);
+    } catch (e) {
+      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
+      Telegram.WebApp.showAlert("Use failed: " + (e.message || "Error"));
+    }
+  },
+
+  // EQUIP (po key)
+  async equip(key) {
+    const item = this.findByKey(key);
+    if (!item || !item.slot) return;
+
+    Telegram.WebApp.HapticFeedback.impactOccurred("light");
+    const apiPost = window.S?.apiPost || window.apiPost;
+
+    try {
+      const res = await apiPost("/webapp/inventory/equip", { key });
+      if (res.ok) {
+        this.equipped[item.slot] = key;
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        this.showTab(this.currentTab);
+      } else throw new Error(res.reason);
+    } catch (e) {
+      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
+      Telegram.WebApp.showAlert("Equip failed: " + e.message);
+    }
+  },
+
+  // UNEQUIP (po slot)
+  async unequip(slot) {
+    {
+    Telegram.WebApp.HapticFeedback.impactOccurred("light");
+    const apiPost = window.S?.apiPost || window.apiPost;
+
+    try {
+      const res = await apiPost("/webapp/inventory/unequip", { slot });
+      if (res.ok) {
+        delete this.equipped[slot];
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        this.showTab(this.currentTab);
+      } else throw new Error(res.reason);
+    } catch (e) {
+      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
+      Telegram.WebApp.showAlert("Unequip failed");
+    }
+  },
+
+  // UPGRADE (po slot)
+  async upgrade(slot) {
+    Telegram.WebApp.HapticFeedback.impactOccurred("heavy");
+    const apiPost = window.S?.apiPost || window.apiPost;
+
+    try {
+      const res = await apiPost("/webapp/inventory/upgrade", { slot });
+      if (res.ok) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        if (res.message) Telegram.WebApp.showAlert(res.message);
+        await this.open(); // odśwież level + zasoby
+      } else throw new Error(res.reason || "Not enough materials");
+    } catch (e) {
+      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
+      Telegram.WebApp.showAlert("Upgrade failed:\n" + e.message);
+    }
   }
 };
