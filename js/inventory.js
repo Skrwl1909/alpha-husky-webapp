@@ -1,12 +1,14 @@
-// js/inventory.js – OFICJALNA WERSJA 2025 – ZGODNA Z BACKENDEM (key-based)
+// js/inventory.js – FINALNA WERSJA – USE + EQUIP + UNEQUIP + UPGRADE (fix key-based)
 window.Inventory = {
   items: [],
-  equipped: {}, // { weapon: "iron_sword", armor: "leather_vest", ... }
+  equipped: {},
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
   currentTab: "all",
 
   async open() {
-    document.querySelectorAll(".map-back, .q-modal,.sheet-back,.locked-back").forEach(el => el.style.display = "none");
+    document
+      .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+      .forEach((el) => (el.style.display = "none"));
 
     const container = document.getElementById("app") || document.body;
     container.innerHTML = `
@@ -39,43 +41,44 @@ window.Inventory = {
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
       const res = await apiPost("/webapp/inventory/state", {});
-
-      if (!res?.ok) throw new Error(res?.reason || "No data");
+      if (!res?.ok) throw new Error(res?.reason || "No response");
 
       this.items = res.slots || [];
-      this.equipped = res.equipped || {};
+      this.equipped = res.equipped || {}; // {slot: key}
       this.resources = {
         bones: parseInt(res.bones || 0),
         scrap: parseInt(res.scrap || 0),
         rune_dust: parseInt(res.rune_dust || 0),
       };
 
-      document.getElementById("stats-bar").innerHTML = `
-        Bones: <b style="color:#ff8;">${this.resources.bones.toLocaleString()}</b> •
-        Scrap: <b style="color:#8af;">${this.resources.scrap.toLocaleString()}</b> •
-        Rune Dust: <b style="color:#f8f;">${this.resources.rune_dust.toLocaleString()}</b>
-      `;
+      const bar = document.getElementById("stats-bar");
+      if (bar) {
+        bar.innerHTML = `
+          Bones: <b style="color:#ff8;">${this.resources.bones.toLocaleString()}</b> •
+          Scrap: <b style="color:#8af;">${this.resources.scrap.toLocaleString()}</b> •
+          Rune Dust: <b style="color:#f8f;">${this.resources.rune_dust.toLocaleString()}</b>
+        `;
+      }
 
       this.showTab(this.currentTab);
-
     } catch (err) {
-      console.error("Inventory load failed:", err);
-      document.getElementById("inventory-grid").innerHTML = `
-        <p style="grid-column:1/-1;color:#f66;text-align:center;padding:40px;">
-          Connection failed<br><small>${err.message || "Unknown error"}</small>
-        </p>`;
+      console.error("Inventory open error:", err);
+      document.getElementById("inventory-grid").innerHTML =
+        `<p style="grid-column:1/-1;color:#f66;text-align:center;">Connection error</p>`;
     }
   },
 
   showTab(type) {
     this.currentTab = type;
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelector(`[data-type="${type}"]`)?.classList.add("active");
 
-    let filtered = this.items;
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    const btn = document.querySelector(`[data-type="${type}"]`);
+    if (btn) btn.classList.add("active");
+
+    let filtered = this.items || [];
 
     if (type !== "all") {
-      filtered = this.items.filter(item => {
+      filtered = filtered.filter((item) => {
         const t = (item.type || "").toLowerCase();
         if (type === "utility") return !["gear", "consumable"].includes(t) && t;
         return t === type;
@@ -84,39 +87,45 @@ window.Inventory = {
 
     const grid = document.getElementById("inventory-grid");
     if (!filtered.length) {
-      grid.innerHTML = `<p style="grid-column:1/-1;opacity:0.6;margin:60px 0;text-align:center;">No items here</p>`;
+      grid.innerHTML = `<p style="grid-column:1/-1;opacity:0.6;margin:50px 0;">No items</p>`;
       return;
     }
 
-    grid.innerHTML = filtered.map(item => {
-      const key = item.key || item.item_key || item.item;
-      const data = item.data || {};
-      const amount = item.amount || 1;
-      const level = data.level || 1;
-      const stats = data.stat_bonus || {};
+    grid.innerHTML = filtered
+      .map((item) => {
+        const key = item.key || item.item_key || item.item;
+        const data = item.data || {};
+        const amount = item.amount || 1;
+        const level = data.level || 1;
+        const stats = data.stat_bonus || {};
 
-      const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
-      const name = item.name || key;
-      const rarity = (item.rarity || "common").toLowerCase();
+        const icon =
+          item.icon || item.image || item.image_path || "/assets/items/unknown.png";
+        const name = item.name || key;
+        const rarity = (item.rarity || "common").toLowerCase();
 
-      const isGear = item.type === "gear" && item.slot;
-      const isEquipped = isGear && this.equipped[item.slot] === key;
-      const isConsumable = item.type === "consumable";
+        const isGear = item.type === "gear" && item.slot;
+        const isEquipped = isGear && this.equipped[item.slot] === key;
+        const isConsumable = item.type === "consumable";
 
-      const rarityColor = {
-        common: "#888", uncommon: "#0f8", rare: "#08f",
-        epic: "#a0f", legendary: "#ff0", mythic: "#f0f"
-      }[rarity] || "#888";
+        const rarityColor =
+          {
+            common: "#888",
+            uncommon: "#0f8",
+            rare: "#08f",
+            epic: "#a0f",
+            legendary: "#ff0",
+            mythic: "#f0f",
+          }[rarity] || "#888";
 
-      const statText = Object.entries(stats)
-        .map(([k, v]) => `${k.slice(0,3).toUpperCase()}+${v}`)
-        .join(" ");
+        const statLines = Object.entries(stats)
+          .map(([k, v]) => `${k.slice(0, 3).toUpperCase()}: +${v}`)
+          .join("  ");
 
-      // Escape dla onclick
-      const safeKey = String(key || "").replace(/"/g, "&quot;");
+        const keyEsc = String(key || "").replace(/"/g, "&quot;");
 
-      return `
-        <div class="item-card" style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
+        return `
+        <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform='scale(1)'">
           
           <img src="${icon}" width="86" height="86"
@@ -125,126 +134,142 @@ window.Inventory = {
 
           ${isEquipped ? '<div style="position:absolute;top:8px;right:8px;background:#0f8;color:#000;padding:4px 9px;border-radius:10px;font-size:11px;font-weight:bold;">EQ</div>' : ''}
 
-          <div style="margin:10px 0 4px;font-size:14px;font-weight:bold;color:#fff;line-height:1.3;">
+          <div style="margin:10px 0 6px;font-size:14px;font-weight:bold;color:#fff;min-height:40px;">
             ${name}
           </div>
 
-          ${isGear ? `<div style="font-size:12px;color:#ff8;margin-bottom:4px;">Level ${level}</div>` : ''}
-          ${statText ? `<div style="font-size:11px;color:#8f8;opacity:0.9;margin-bottom:6px;">${statText}</div>` : ''}
+          ${isGear ? `<div style="font-size:12px;color:#ff8;margin-bottom:4px;">★${level}</div>` : ''}
+          ${statLines ? `<div style="font-size:11px;color:#8f8;margin-bottom:6px;opacity:0.9;">${statLines}</div>` : ''}
 
-          <div style="font-size:15px;color:#0f8;margin:8px 0;">×${amount.toLocaleString()}</div>
+          <div style="font-size:15px;color:#0f8;margin:6px 0;">×${amount.toLocaleString()}</div>
 
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;">
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+
             ${isConsumable ? `
-              <button onclick="event.stopPropagation(); Inventory.use('${safeKey}')"
-                      style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;">
+              <button onclick="event.stopPropagation(); Inventory.use('${keyEsc}')"
+                      style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;">
                 USE
-              </button>` : ''}
+              </button>
+            ` : ''}
 
             ${isGear && !isEquipped ? `
-              <button onclick="event.stopPropagation(); Inventory.equip('${safeKey}')"
-                      style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;cursor:pointer;">
+              <button onclick="event.stopPropagation(); Inventory.equip('${keyEsc}')"
+                      style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;">
                 EQUIP
-              </button>` : ''}
+              </button>
+            ` : ''}
 
             ${isEquipped ? `
               <button onclick="event.stopPropagation(); Inventory.unequip('${item.slot}')"
-                      style="padding:6px 10px;background:#800;color:#fff;border:none;border-radius:10px;font-size:11px;cursor:pointer;">
+                      style="padding:6px 10px;background:#800;color:#fff;border:none;border-radius:10px;font-size:11px;">
                 UNEQ
               </button>
               <button onclick="event.stopPropagation(); Inventory.upgrade('${item.slot}')"
-                      style="padding:6px 10px;background:#e0a;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:11px;cursor:pointer;">
+                      style="padding:6px 10px;background:#e0a;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:11px;">
                 UPGRADE
-              </button>` : ''}
+              </button>
+            ` : ''}
           </div>
-        </div>`;
-    }).join("");
+        </div>
+      `;
+      })
+      .join("");
   },
 
-  // Pomocnik: znajdź item po key
+  // === helper: szukamy itemu po key ===
   findByKey(key) {
-    return this.items.find(it => {
+    if (!key) return null;
+    return (this.items || []).find((it) => {
       const k = it.key || it.item_key || it.item;
       return k === key;
-    }) || null;
+    });
   },
 
-  // USE (po key)
+  // === USE ITEM ===
   async use(key) {
     const item = this.findByKey(key);
     if (!item || item.type !== "consumable") return;
 
-    Telegram.WebApp.HapticFeedback.impactOccurred("medium");
+    Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
       const res = await apiPost("/webapp/inventory/use", { key });
       if (res.ok) {
-        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open();
-      } else throw new Error(res.reason);
+        await this.open(); // pełny refresh
+      } else {
+        throw new Error(res.reason || "Failed");
+      }
     } catch (e) {
-      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
-      Telegram.WebApp.showAlert("Use failed: " + (e.message || "Error"));
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+      Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
     }
   },
 
-  // EQUIP (po key)
+  // === EQUIP ===
   async equip(key) {
     const item = this.findByKey(key);
-    if (!item || !item.slot) return;
+    if (!item || item.type !== "gear" || !item.slot) return;
 
-    Telegram.WebApp.HapticFeedback.impactOccurred("light");
+    Telegram.WebApp.HapticFeedback?.impactOccurred?.("light");
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
       const res = await apiPost("/webapp/inventory/equip", { key });
       if (res.ok) {
         this.equipped[item.slot] = key;
-        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         this.showTab(this.currentTab);
-      } else throw new Error(res.reason);
+      } else {
+        throw new Error(res.reason || "Failed");
+      }
     } catch (e) {
-      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
-      Telegram.WebApp.showAlert("Equip failed: " + e.message);
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+      Telegram.WebApp.showAlert("Cannot equip: " + (e.message || "Error"));
     }
   },
 
-  // UNEQUIP (po slot)
+  // === UNEQUIP ===
   async unequip(slot) {
-    {
-    Telegram.WebApp.HapticFeedback.impactOccurred("light");
+    if (!slot) return;
+    Telegram.WebApp.HapticFeedback?.impactOccurred?.("light");
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
       const res = await apiPost("/webapp/inventory/unequip", { slot });
       if (res.ok) {
         delete this.equipped[slot];
-        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         this.showTab(this.currentTab);
-      } else throw new Error(res.reason);
+      } else {
+        throw new Error(res.reason || "Failed");
+      }
     } catch (e) {
-      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
-      Telegram.WebApp.showAlert("Unequip failed");
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+      Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
     }
   },
 
-  // UPGRADE (po slot)
+  // === UPGRADE ===
   async upgrade(slot) {
-    Telegram.WebApp.HapticFeedback.impactOccurred("heavy");
+    if (!slot) return;
+    Telegram.WebApp.HapticFeedback?.impactOccurred?.("heavy");
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
       const res = await apiPost("/webapp/inventory/upgrade", { slot });
       if (res.ok) {
-        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open(); // odśwież level + zasoby
-      } else throw new Error(res.reason || "Not enough materials");
+        await this.open(); // odśwież zasoby + level
+      } else {
+        throw new Error(res.reason || "Not enough materials");
+      }
     } catch (e) {
-      Telegram.WebApp.HapticFeedback.notificationOccurred("error");
-      Telegram.WebApp.showAlert("Upgrade failed:\n" + e.message);
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+      Telegram.WebApp.showAlert("Upgrade failed:\n" + (e.message || "Error"));
     }
-  }
+  },
 };
