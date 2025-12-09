@@ -1390,7 +1390,7 @@
           ".btn.char": () => sendAction("char_open"),
           ".btn.shop": () => sendAction("shop_open"),
           ".btn.pets": () => sendAction("pets_open"),
-          ".btn.equipped": () => sendAction("cmd", { name: "equipped" }),
+          ".btn.equipped": () => window.Equipped?.open?.(),
           ".btn.keys": () => sendAction("cmd", { name: "keys" }),
           ".btn.feed": () => sendAction("cmd", { name: "feed" }),
           ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
@@ -1762,6 +1762,7 @@ document.querySelectorAll(".btn.inventory").forEach(btn => {
 </script>
 </body>
 </html>
+
 
 
 
