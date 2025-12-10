@@ -10,44 +10,23 @@
 
   async function loadCharacterPngInto(imgEl) {
   if (!imgEl) return;
-  const tg = getTg();
-  if (!tg) return;
-
-  const initData = tg.initData || window.INIT_DATA || "";
-  if (!initData) {
-    console.warn("Equipped: no initData");
-    imgEl.alt = "No init data";
-    return;
-  }
-
   try {
-    const resp = await fetch((API_BASE || "") + "/webapp/character/image", {
+    const resp = await fetch("/webapp/character/image", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // opcjonalnie: dodaj nagłówek, bo middleware go lubi
-        "X-Telegram-Init-Data": initData
+        "X-Telegram-Init-Data": Telegram.WebApp.initData
       },
-      body: JSON.stringify({ init_data: initData }) // działa oba sposoby
+      body: JSON.stringify({init_data: Telegram.WebApp.initData})
     });
-
-    if (!resp.ok) {
-      console.error("Character image failed:", resp.status, await resp.text());
-      imgEl.alt = "Failed to load character";
-      return;
-    }
-
+    if (!resp.ok) throw new Error("status " + resp.status);
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
     imgEl.src = url;
-
-    if (window.__EquippedCharImgUrl) {
-      URL.revokeObjectURL(window.__EquippedCharImgUrl);
-    }
+    if (window.__EquippedCharImgUrl) URL.revokeObjectURL(window.__EquippedCharImgUrl);
     window.__EquippedCharImgUrl = url;
   } catch (err) {
-    console.error("loadCharacterPngInto error:", err);
-    imgEl.alt = "Error loading image";
+    console.error("loadCharacterPngInto failed:", err);
   }
 }
 
