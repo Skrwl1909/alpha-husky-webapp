@@ -1733,35 +1733,48 @@ shareSkin?.addEventListener('click', () => {
       }
     })();
   </script>
-    <!-- <<< DODAJ TO LINIA!!! >>> -->
+
+  <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
   <script src="js/inventory.js?v=20251205"></script>
-    <!-- ====================== INVENTORY ROUTING (2025-12-05) ====================== -->
+  <script src="js/equipped.js?v=20251210"></script>
+
+  <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
-// === INVENTORY Z ?section=inventory – BEZPIECZNY ROUTER ===
-const params = new URLSearchParams(location.search);
-const section = params.get("section");
+  // === ROUTING Z ?section=... ===
+  const params = new URLSearchParams(location.search);
+  const section = params.get("section");
 
-if (section === "inventory" && window.Inventory) {
-  setTimeout(() => {
-    window.Inventory.open();
-  }, 100);
-}
-
-// === NADPISANIE PRZYCISKU INVENTORY NA HUD ===
-document.querySelectorAll(".btn.inventory").forEach(btn => {
-  btn.addEventListener("click", e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (window.Inventory) {
+  if (section === "inventory" && window.Inventory) {
+    setTimeout(() => {
       window.Inventory.open();
-    } else {
-      Telegram.WebApp.showAlert("Inventory jeszcze się ładuje...");
-    }
+    }, 100);
+  }
+
+  if (section === "equipped" && window.Equipped) {
+    setTimeout(() => {
+      window.Equipped.open();
+    }, 100);
+  }
+
+  // === NADPISANIE PRZYCISKU INVENTORY NA HUD ===
+  document.querySelectorAll(".btn.inventory").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.Inventory) {
+        window.Inventory.open();
+      } else {
+        Telegram.WebApp.showAlert("Inventory jeszcze się ładuje...");
+      }
+    });
   });
-});
-</script>
+
+  // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
+  // ".btn.equipped": () => window.Equipped?.open?.()
+  </script>
 </body>
 </html>
+
 
 
 
