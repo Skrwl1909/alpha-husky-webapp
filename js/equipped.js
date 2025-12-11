@@ -79,22 +79,29 @@
     },
 
     async refresh() {
-      try {
-        const res = await apiPost("/webapp/equipped/state", {});
-        if (!res || !res.ok) {
-          console.error("Equipped.state error:", res);
-          const tg = getTg();
-          tg && tg.showAlert && tg.showAlert("Failed to load equipped state.");
-          return;
-        }
-        this.state = res.data;
-        this.render();
-      } catch (err) {
-        console.error("Equipped.refresh error", err);
-        const tg = getTg();
-        tg && tg.showAlert && tg.showAlert("Error while loading equipped.");
-      }
-    },
+  try {
+    const initData = Telegram.WebApp.initData || "";
+    
+    const res = await fetch("/webapp/equipped/state", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData
+      },
+      body: JSON.stringify({ init_data: initData })
+    });
+
+    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    this.state = await res.json();
+    this.render();
+
+  } catch (err) {
+    console.error("Equipped.refresh error", err);
+    const tg = getTg();
+    tg?.showAlert?.("Error while loading equipped.);
+  }
+},
 
     render() {
       if (!this.state) return;
