@@ -1,40 +1,34 @@
-// js/equipped.js
-// Character panel + Equipped view for Alpha Husky WebApp.
-
+// js/equipped.js – wersja ostateczna 2025 – Twój design + moja niezawodność
 (function () {
-  const API_BASE = window.API_BASE || ""; // e.g. "https://api.alphahusky.win"
+  const tg = window.Telegram?.WebApp;
+  const realInitData = tg?.initData || "";
 
-  function getTg() {
-    return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
-  }
+  // Fallback dla testów w przeglądarce (zmień ID jeśli chcesz)
+  const debugInitData = "query_id=AAHdF6eQAAAAAN0Xp5Aow8rW&user=%7B%22id%22%3A749352125%2C%22first_name%22%3A%22Alpha%22%2C%22last_name%22%3A%22Husky%22%2C%22username%22%3A%22alphahusky%22%7D&auth_date=1737048600&hash=examplehash1234567890";
+  const initData = realInitData || debugInitData;
 
-  async function loadCharacterPngInto(imgEl) {
-  if (!imgEl) return;
-  try {
-    const resp = await fetch("/webapp/character/image", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": Telegram.WebApp.initData
-      },
-      body: JSON.stringify({init_data: Telegram.WebApp.initData})
-    });
-    if (!resp.ok) throw new Error("status " + resp.status);
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    imgEl.src = url;
-    if (window.__EquippedCharImgUrl) URL.revokeObjectURL(window.__EquippedCharImgUrl);
-    window.__EquippedCharImgUrl = url;
-  } catch (err) {
-    console.error("loadCharacterPngInto failed:", err);
+  // Uniwersalna funkcja do API – działa wszędzie
+  async function api(path, data = {}) {
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Init-Data": initData
+        },
+        body: JSON.stringify({ ...data, init_data: initData })
+      });
+      return res.ok ? await res.json() : { ok: false };
+    } catch (e) {
+      console.error("API error:", e);
+      return { ok: false };
+    }
   }
-}
 
   window.Equipped = {
     state: null,
 
     async open() {
-      // Schowaj mapę i inne overlaye
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(el => {
         el.style.display = "none";
       });
@@ -47,29 +41,24 @@
             <div style="display:flex;gap:8px;">
               <button type="button"
                       style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.Inventory && window.Inventory.open && window.Inventory.open()">
+                      onclick="window.Inventory?.open?.()">
                 Inventory
               </button>
               <button type="button"
                       style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.Equipped && window.Equipped.refresh && window.Equipped.refresh()">
+                      onclick="window.Equipped.refresh()">
                 Refresh
               </button>
             </div>
           </div>
-
           <div id="equip-main" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
-            <!-- LEFT: character -->
             <div id="equip-avatar" style="flex:1;min-width:260px;text-align:center;">
               <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading character...</div>
             </div>
-
-            <!-- RIGHT: slots -->
             <div id="equip-slots" style="flex:1;min-width:260px;">
               <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading equipment...</div>
             </div>
           </div>
-
           <div id="equip-sets" style="margin-top:12px;font-size:13px;opacity:.9;"></div>
           <div id="equip-total" style="margin-top:4px;font-size:13px;opacity:.9;"></div>
         </div>
@@ -79,29 +68,14 @@
     },
 
     async refresh() {
-  try {
-    const initData = Telegram.WebApp.initData || "";
-    
-    const res = await fetch("/webapp/equipped/state", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData
-      },
-      body: JSON.stringify({ init_data: initData })
-    });
-
-    if (!res.ok) throw new Error("HTTP " + res.status);
-
-    this.state = await res.json();
-    this.render();
-
-  } catch (err) {
-    console.error("Equipped.refresh error", err);
-    const tg = getTg();
-    tg?.showAlert?.("Error while loading equipped.);
-  }
-},
+      const res = await api("/webapp/equipped/state");
+      if (!res || !res.ok) {
+        tg?.showAlert?.("Error while loading equipped.");
+        return;
+      }
+      this.state = res.data || res; // na wypadek różnej struktury odpowiedzi
+      this.render();
+    },
 
     render() {
       if (!this.state) return;
@@ -111,7 +85,7 @@
       const setsBox = document.getElementById("equip-sets");
       const totalBox = document.getElementById("equip-total");
 
-      // --- LEFT: CHARACTER IMG + LEVEL ---
+      // === TWOJA PIĘKNA LEWA STRONA Z POSTACIĄ ===
       if (avatarBox) {
         const level = this.state.level || 1;
         avatarBox.innerHTML = `
@@ -134,12 +108,19 @@
             </div>
           </div>
         `;
-
         const imgEl = document.getElementById("equipped-character-img");
-        loadCharacterPngInto(imgEl);
+        fetch("/webapp/character/image", {
+          method: "POST",
+          headers: { "X-Telegram-Init-Data": initData },
+          body: JSON.stringify({ init_data: initData })
+        })
+        .then(r => r.blob())
+        .then(b => URL.createObjectURL(b))
+        .then(url => imgEl.src = url)
+        .catch(() => imgEl.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjYwIiBoZWlnaHQ9IjI2MCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzIyMiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjY2NjIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+");
       }
 
-      // --- RIGHT: SLOTS LIST ---
+      // === TWOJA PIĘKNA PRAWA STRONA ZE SLOTAMI ===
       if (slotsBox) {
         const slots = this.state.slots || [];
         const html = slots.map(slot => {
@@ -151,11 +132,7 @@
                  <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
                </div>`
             : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
-
-          const lockBadge = unlocked
-            ? ""
-            : `<span style="font-size:11px;opacity:.8;margin-left:6px;">🔒 Lv ${slot.level_req}</span>`;
-
+          const lockBadge = unlocked ? "" : `<span style="font-size:11px;opacity:.8;margin-left:6px;">Lock Lv ${slot.level_req}</span>`;
           const subtitle = slot.item_key
             ? `Lv ${slot.level || 1}${slot.is_pet ? " • Pet" : ""}`
             : (unlocked ? "Empty slot" : "Locked");
@@ -163,21 +140,7 @@
           return `
             <button data-slot="${slot.slot}"
                     class="equip-slot-btn"
-                    style="
-                      width:100%;
-                      display:flex;
-                      align-items:center;
-                      gap:10px;
-                      background:rgba(10,10,25,.9);
-                      border-radius:14px;
-                      border:1px solid rgba(255,255,255,.06);
-                      padding:8px 10px;
-                      margin-bottom:8px;
-                      color:#fff;
-                      text-align:left;
-                      cursor:${unlocked ? "pointer" : "default"};
-                      opacity:${unlocked ? "1" : ".5"};
-                    ">
+                    style="width:100%;display:flex;align-items:center;gap:10px;background:rgba(10,10,25,.9);border-radius:14px;border:1px solid rgba(255,255,255,.06);padding:8px 10px;margin-bottom:8px;color:#fff;text-align:left;cursor:${unlocked?'pointer':'default'};opacity:${unlocked?1:.5};">
               ${icon}
               <div style="flex:1;min-width:0;">
                 <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
@@ -186,191 +149,97 @@
                 <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                   ${itemName} ${rarity}
                 </div>
-                <div style="font-size:11px;opacity:.7;">
-                  ${subtitle}
-                </div>
+                <div style="font-size:11px;opacity:.7;">${subtitle}</div>
               </div>
-            </button>
-          `;
+            </button>`;
         }).join("");
 
         slotsBox.innerHTML = `
-          <div style="font-size:13px;margin-bottom:6px;opacity:.9;">
-            Tap a slot to inspect or unequip.
-          </div>
-          <div>${html}</div>
-        `;
+          <div style="font-size:13px;margin-bottom:6px;opacity:.9;">Tap a slot to inspect or unequip.</div>
+          <div>${html}</div>`;
 
-        // attach clicks
+        // Klikanie w sloty
         slotsBox.querySelectorAll(".equip-slot-btn").forEach(btn => {
-          const slot = btn.getAttribute("data-slot");
-          const slotState = (this.state.slots || []).find(s => s.slot === slot);
-          if (!slotState || !slotState.unlocked) return;
+          const slot = btn.dataset.slot;
+          const slotState = slots.find(s => s.slot === slot);
+          if (!slotState?.unlocked) return;
 
-          if (!slotState.item_key) {
-            // empty slot -> haptic only for now
-            btn.onclick = () => {
-              const tg = getTg();
-              tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred && tg.HapticFeedback.impactOccurred("light");
-            };
-          } else {
-            btn.onclick = () => {
+          btn.onclick = () => {
+            if (!slotState.item_key) {
+              tg?.HapticFeedback?.impactOccurred?.("light");
+            } else {
               this.inspect(slot);
-            };
-          }
+            }
+          };
         });
       }
 
-      // --- ACTIVE SETS ---
-      if (setsBox) {
-        const sets = this.state.active_sets || [];
-        if (sets.length) {
-          setsBox.innerHTML = "<b>Active set bonuses:</b> " + sets.map(s => {
-            return `${s.set} (${s.count})`;
-          }).join(" • ");
-        } else {
-          setsBox.innerHTML = "";
-        }
-      }
+      // Set bonuses & total bonus – Twoje oryginalne
+      if (setsBox && (this.state.active_sets || []).length) {
+        setsBox.innerHTML = "<b>Active set bonuses:</b> " + this.state.active_sets.map(s => `${s.set} (${s.count})`).join(" • ");
+      } else setsBox && (setsBox = "";
 
-      // --- TOTAL BONUS ---
-      if (totalBox) {
-        const t = this.state.total_bonus || {};
-        const keys = Object.keys(t);
-        if (keys.length) {
-          totalBox.innerHTML = "<b>Total gear bonus:</b> " +
-            keys.map(k => `${k}+${t[k]}`).join(", ");
-        } else {
-          totalBox.innerHTML = "";
-        }
-      }
+      if (totalBox && Object.keys(this.state.total_bonus || {}).length) {
+        totalBox.innerHTML = "<b>Total gear bonus:</b> " + Object.entries(this.state.total_bonus).map(([k,v])=>`${k}+${v}`).join(", ");
+      } else totalBox && (totalBox.innerHTML = "");
     },
 
+    // === TWÓJ PIĘKNY MODAL INSPECT + UNEQUIP ===
     async inspect(slot) {
-      try {
-        const res = await apiPost("/webapp/equipped/inspect", { slot });
-        if (!res || !res.ok) {
-          const tg = getTg();
-          tg && tg.showAlert && tg.showAlert("Failed to inspect item.");
-          return;
-        }
-        const d = res.data;
-        if (!d || d.empty) {
-          const tg = getTg();
-          tg && tg.showAlert && tg.showAlert("Nothing equipped in this slot.");
-          return;
-        }
-        this.renderInspect(d);
-      } catch (err) {
-        console.error("Equipped.inspect error", err);
-        const tg = getTg();
-        tg && tg.showAlert && tg.showAlert("Error while loading item.");
+      const res = await api("/webapp/equipped/inspect", { slot });
+      if (!res?.ok || res.empty) {
+        tg?.showAlert?.("Nothing equipped in this slot.");
+        return;
       }
-    },
+      const d = res.data;
 
-    renderInspect(d) {
-      // remove old modal
       const old = document.getElementById("equip-inspect");
       if (old) old.remove();
 
       const wrapper = document.createElement("div");
       wrapper.id = "equip-inspect";
-      wrapper.style.position = "fixed";
-      wrapper.style.left = "0";
-      wrapper.style.top = "0";
-      wrapper.style.right = "0";
-      wrapper.style.bottom = "0";
-      wrapper.style.background = "rgba(0,0,0,.65)";
-      wrapper.style.zIndex = "999";
-      wrapper.style.display = "flex";
-      wrapper.style.alignItems = "center";
-      wrapper.style.justifyContent = "center";
-
+      wrapper.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;display:flex;align-items:center;justify-content:center;";
+      
       const card = document.createElement("div");
-      card.style.background = "rgba(10,10,25,.98)";
-      card.style.borderRadius = "18px";
-      card.style.border = "1px solid rgba(255,255,255,.12)";
-      card.style.maxWidth = "420px";
-      card.style.width = "90%";
-      card.style.padding = "16px";
-      card.style.color = "#fff";
-      card.style.fontFamily = "system-ui";
-      card.style.boxShadow = "0 18px 60px rgba(0,0,0,.6)";
+      card.style.cssText = "background:rgba(10,10,25,.98);border-radius:18px;border:1px solid rgba(255,255,255,.12);max-width:420px;width:90%;padding:16px;color:#fff;font-family:system-ui;box-shadow:0 18px 60px rgba(0,0,0,.6);";
 
       const iconUrl = d.icon || "";
-      const stats = d.stats || {};
-      const statsLines = Object.keys(stats).map(k => {
-        return `<div style="font-size:13px;">▫ ${k}: <b>${stats[k]}</b></div>`;
-      }).join("") || "<div style='font-size:13px;opacity:.8;'>No bonuses</div>";
-
+      const statsLines = Object.entries(d.stats || {}).map(([k,v])=>`<div style="font-size:13px;">▫ ${k}: <b>${v}</b></div>`).join("") || "<div style='font-size:13px;opacity:.8;'>No bonuses</div>";
       const starInfo = d.star_cap ? ` / ${d.star_cap}★ cap` : "";
 
       card.innerHTML = `
         <div style="display:flex;gap:12px;">
-          ${iconUrl ? `
-          <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
-            <img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;">
-          </div>` : ""}
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${d.name || d.item_key}</div>
-            <div style="font-size:12px;opacity:.8;margin-bottom:4px;">
-               ${d.rarity ? d.rarity.toUpperCase() : ""} ${d.set ? "• " + d.set : ""}
-            </div>
+          ${iconUrl ? `<div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;"><img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;"></div>` : ""}
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;">${d.name || d.item_key}</div>
+            <div style="font-size:12px;opacity:.8;">${d.rarity?.toUpperCase()||""} ${d.set ? "• "+d.set : ""}</div>
             <div style="font-size:12px;opacity:.8;">Slot: ${d.slot}</div>
             <div style="font-size:12px;opacity:.8;">Level: ${d.level}${starInfo}</div>
           </div>
         </div>
-        <div style="font-size:12px;opacity:.85;margin-top:8px;margin-bottom:8px;">
-          ${d.desc || ""}
-        </div>
+        <div style="font-size:12px;opacity:.85;margin:8px 0;">${d.desc || ""}</div>
         <div style="border-top:1px solid rgba(255,255,255,.08);margin:8px 0 6px;"></div>
         <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Stats</div>
         ${statsLines}
         <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">
-          <button id="equip-unequip-btn" style="
-             border-radius:999px;
-             border:1px solid rgba(255,255,255,.15);
-             background:rgba(60,10,10,.9);
-             color:#fff;
-             padding:6px 14px;
-             font-size:13px;
-          ">Unequip</button>
-          <button id="equip-close-btn" style="
-             border-radius:999px;
-             border:0;
-             background:rgba(255,255,255,.08);
-             color:#fff;
-             padding:6px 14px;
-             font-size:13px;
-          ">Close</button>
+          <button id="equip-unequip-btn" style="border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(60,10,10,.9);color:#fff;padding:6px 14px;font-size:13px;">Unequip</button>
+          <button id="equip-close-btn" style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:6px 14px;font-size:13px;">Close</button>
         </div>
       `;
 
       wrapper.appendChild(card);
       document.body.appendChild(wrapper);
 
-      document.getElementById("equip-close-btn").onclick = () => {
-        const el = document.getElementById("equip-inspect");
-        el && el.remove();
-      };
-
+      document.getElementById("equip-close-btn").onclick = () => wrapper.remove();
       document.getElementById("equip-unequip-btn").onclick = async () => {
-        try {
-          const res = await apiPost("/webapp/equipped/unequip", { slot: d.slot });
-          if (res && res.ok) {
-            this.state = res.data;
-            this.render();
-          } else {
-            const tg = getTg();
-            tg && tg.showAlert && tg.showAlert("Failed to unequip.");
-          }
-        } catch (err) {
-          console.error("Equipped.unequip error", err);
-          const tg = getTg();
-          tg && tg.showAlert && tg.showAlert("Failed to unequip.");
-        } finally {
-          const el = document.getElementById("equip-inspect");
-          el && el.remove();
+        const r = await api("/webapp/equipped/unequip", { slot });
+        if (r?.ok) {
+          this.state = r.data || this.state;
+          this.render();
+          wrapper.remove();
+          tg?.showAlert?.("Item unequipped");
+        } else {
+          tg?.showAlert?.("Failed to unequip");
         }
       };
     }
