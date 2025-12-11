@@ -1,9 +1,7 @@
 // js/equipped.js – wersja ostateczna 2025 – Twój design + moja niezawodność
-(function () {
+window.Equipped = (function () {
   const tg = window.Telegram?.WebApp;
   const realInitData = tg?.initData || "";
-
-  // Fallback dla testów w przeglądarce (zmień ID jeśli chcesz)
   const debugInitData = "query_id=AAHdF6eQAAAAAN0Xp5Aow8rW&user=%7B%22id%22%3A749352125%2C%22first_name%22%3A%22Alpha%22%2C%22last_name%22%3A%22Husky%22%2C%22username%22%3A%22alphahusky%22%7D&auth_date=1737048600&hash=examplehash1234567890";
   const initData = realInitData || debugInitData;
 
