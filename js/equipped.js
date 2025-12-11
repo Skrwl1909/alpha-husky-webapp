@@ -39,7 +39,6 @@
   }
 
   // Ładowanie PNG postaci z backendu (legacy endpoint – /api/character-image)
-  // Jeśli kiedyś przejdziesz na this.state.characterUrl, łatwo to podmienimy.
   async function loadCharacterPngInto(imgEl) {
     if (!imgEl) return;
     const tg = getTg();
@@ -117,7 +116,7 @@
           <div id="equip-sets" style="margin-top:12px;font-size:13px;opacity:.9;"></div>
           <div id="equip-total" style="margin-top:4px;font-size:13px;opacity:.9;"></div>
         </div>
-      ";
+      `;
 
       try {
         await this.refresh();
@@ -198,9 +197,7 @@
         `;
 
         const imgEl = document.getElementById("equipped-character-img");
-
-        // Jeśli kiedyś będziesz używać characterUrl z backendu, można podmienić to na:
-        // if (this.state.characterUrl) imgEl.src = this.state.characterUrl; else loadCharacterPngInto(imgEl);
+        // Można podmienić na this.state.characterUrl w przyszłości
         loadCharacterPngInto(imgEl);
       }
 
@@ -226,7 +223,6 @@
               ? `<div style="font-size:11px;opacity:.7;">${slot.bonusesText}</div>`
               : "";
 
-            // Ikonka – jeśli backend kiedyś doda icon, pokaże, inaczej placeholder
             const icon = slot.icon
               ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
                    <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
@@ -285,7 +281,6 @@
           if (!slotState) return;
 
           if (slotState.empty) {
-            // empty slot -> tylko lekka haptics
             btn.onclick = () => {
               const tg = getTg();
               if (
@@ -304,7 +299,7 @@
         });
       }
 
-      // --- ACTIVE SETS (nowy backend: activeSets) ---
+      // --- ACTIVE SETS ---
       if (setsBox) {
         const sets = this.state.activeSets || this.state.active_sets || [];
         if (sets.length) {
@@ -320,7 +315,7 @@
         }
       }
 
-      // --- TOTAL BONUS (nowy backend: totalBonus) ---
+      // --- TOTAL BONUS ---
       if (totalBox) {
         const t = this.state.totalBonus || this.state.total_bonus || {};
         const keys = Object.keys(t);
