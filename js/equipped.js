@@ -1,6 +1,6 @@
 // js/equipped.js – Character panel + Equipped view for Alpha Husky WebApp.
 (function () {
-  const API_BASE = window.API_BASE || ""; // e.g. "https://api.alphahusky.win";
+  const API_BASE = window.API_BASE || ""; // zostaw puste, jeśli front i API są pod tym samym hostem
 
   function getTg() {
     return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
@@ -12,7 +12,9 @@
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
 
     if (!initData) {
-      console.warn("Equipped: NO initData – to działa poprawnie tylko wewnątrz Telegram Mini App.");
+      console.warn(
+        "Equipped: NO initData – to działa poprawnie tylko wewnątrz Telegram Mini App."
+      );
       throw new Error("NO_INIT_DATA");
     }
 
@@ -36,7 +38,8 @@
     return data;
   }
 
-  // Ładowanie PNG postaci z backendu
+  // Ładowanie PNG postaci z backendu (legacy endpoint – /api/character-image)
+  // Jeśli kiedyś przejdziesz na this.state.characterUrl, łatwo to podmienimy.
   async function loadCharacterPngInto(imgEl) {
     if (!imgEl) return;
     const tg = getTg();
@@ -114,7 +117,7 @@
           <div id="equip-sets" style="margin-top:12px;font-size:13px;opacity:.9;"></div>
           <div id="equip-total" style="margin-top:4px;font-size:13px;opacity:.9;"></div>
         </div>
-      `;
+      ";
 
       try {
         await this.refresh();
@@ -138,7 +141,7 @@
           tg && tg.showAlert && tg.showAlert("Failed to load equipped state.");
           return;
         }
-        this.state = res.data;
+        this.state = res.data; // { characterUrl, stats, slots, activeSets, totalBonus }
         this.render();
       } catch (err) {
         console.error("Equipped.refresh error", err);
@@ -156,11 +159,18 @@
       const setsBox = document.getElementById("equip-sets");
       const totalBox = document.getElementById("equip-total");
 
-      // --- LEFT: CHARACTER IMG + LEVEL ---
+      const stats = this.state.stats || {};
+      const level = stats.level || this.state.level || 1;
+      const hp = stats.hp;
+      const atk = stats.attack;
+      const def = stats.defense;
+      const agi = stats.agility;
+      const luck = stats.luck;
+
+      // --- LEFT: CHARACTER IMG + LEVEL + STATY ---
       if (avatarBox) {
-        const level = this.state.level || 1;
         avatarBox.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
             <div style="
                 position:relative;
                 width:260px;
@@ -174,76 +184,88 @@
                    alt="Character"
                    style="width:100%;height:100%;object-fit:contain;display:block;"/>
             </div>
-            <div style="font-size:13px;opacity:.9;">
+            <div style="font-size:13px;opacity:.95;">
               Level <b>${level}</b>
+            </div>
+            <div style="font-size:11px;opacity:.85;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
+              <span>HP: <b>${hp ?? "?"}</b></span>
+              <span>ATK: <b>${atk ?? "?"}</b></span>
+              <span>DEF: <b>${def ?? "?"}</b></span>
+              <span>AGI: <b>${agi ?? "?"}</b></span>
+              <span>LUCK: <b>${luck ?? "?"}</b></span>
             </div>
           </div>
         `;
 
         const imgEl = document.getElementById("equipped-character-img");
+
+        // Jeśli kiedyś będziesz używać characterUrl z backendu, można podmienić to na:
+        // if (this.state.characterUrl) imgEl.src = this.state.characterUrl; else loadCharacterPngInto(imgEl);
         loadCharacterPngInto(imgEl);
       }
 
-      // --- RIGHT: SLOTS LIST ---
+      // --- RIGHT: SLOTS LIST (dopasowane do nowego payloadu z backendu) ---
       if (slotsBox) {
         const slots = this.state.slots || [];
         const html = slots
           .map((slot) => {
-            const unlocked = !!slot.unlocked;
-            const itemName = slot.item_key
-              ? slot.name || slot.item_key
-              : "Empty";
+            const isEmpty = !!slot.empty;
+            const label = slot.label || slot.slot || "Slot";
+            const itemName = isEmpty
+              ? "Empty"
+              : slot.name || slot.item_key || "Unknown";
             const rarity = slot.rarity
               ? `<span style="opacity:.8;">(${slot.rarity})</span>`
               : "";
+            const subtitle = isEmpty
+              ? "Empty slot"
+              : slot.level
+              ? `Lv ${slot.level}`
+              : "";
+            const bonuses = slot.bonusesText
+              ? `<div style="font-size:11px;opacity:.7;">${slot.bonusesText}</div>`
+              : "";
+
+            // Ikonka – jeśli backend kiedyś doda icon, pokaże, inaczej placeholder
             const icon = slot.icon
               ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
-                 <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
-               </div>`
+                   <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
+                 </div>`
               : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
 
-            const lockBadge = unlocked
-              ? ""
-              : `<span style="font-size:11px;opacity:.8;margin-left:6px;">🔒 Lv ${slot.level_req}</span>`;
-
-            const subtitle = slot.item_key
-              ? `Lv ${slot.level || 1}${slot.is_pet ? " • Pet" : ""}`
-              : unlocked
-              ? "Empty slot"
-              : "Locked";
-
             return `
-            <button data-slot="${slot.slot}"
-                    class="equip-slot-btn"
-                    style="
-                      width:100%;
-                      display:flex;
-                      align-items:center;
-                      gap:10px;
-                      background:rgba(10,10,25,.9);
-                      border-radius:14px;
-                      border:1px solid rgba(255,255,255,.06);
-                      padding:8px 10px;
-                      margin-bottom:8px;
-                      color:#fff;
-                      text-align:left;
-                      cursor:${unlocked ? "pointer" : "default"};
-                      opacity:${unlocked ? "1" : ".5"};
-                    ">
-              ${icon}
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
-                  ${slot.label}${lockBadge}
+              <button data-slot="${slot.slot}"
+                      class="equip-slot-btn"
+                      style="
+                        width:100%;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                        background:rgba(10,10,25,.9);
+                        border-radius:14px;
+                        border:1px solid rgba(255,255,255,.06);
+                        padding:8px 10px;
+                        margin-bottom:8px;
+                        color:#fff;
+                        text-align:left;
+                        cursor:${isEmpty ? "default" : "pointer"};
+                        opacity:1;
+                      ">
+                ${icon}
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
+                    ${label}
+                  </div>
+                  <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    ${itemName} ${rarity}
+                  </div>
+                  <div style="font-size:11px;opacity:.7;">
+                    ${subtitle}
+                  </div>
+                  ${bonuses}
                 </div>
-                <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${itemName} ${rarity}
-                </div>
-                <div style="font-size:11px;opacity:.7;">
-                  ${subtitle}
-                </div>
-              </div>
-            </button>
-          `;
+              </button>
+            `;
           })
           .join("");
 
@@ -256,13 +278,13 @@
 
         // attach clicks
         slotsBox.querySelectorAll(".equip-slot-btn").forEach((btn) => {
-          const slot = btn.getAttribute("data-slot");
+          const slotKey = btn.getAttribute("data-slot");
           const slotState = (this.state.slots || []).find(
-            (s) => s.slot === slot
+            (s) => s.slot === slotKey
           );
-          if (!slotState || !slotState.unlocked) return;
+          if (!slotState) return;
 
-          if (!slotState.item_key) {
+          if (slotState.empty) {
             // empty slot -> tylko lekka haptics
             btn.onclick = () => {
               const tg = getTg();
@@ -276,15 +298,15 @@
             };
           } else {
             btn.onclick = () => {
-              this.inspect(slot);
+              this.inspect(slotKey);
             };
           }
         });
       }
 
-      // --- ACTIVE SETS ---
+      // --- ACTIVE SETS (nowy backend: activeSets) ---
       if (setsBox) {
-        const sets = this.state.active_sets || [];
+        const sets = this.state.activeSets || this.state.active_sets || [];
         if (sets.length) {
           setsBox.innerHTML =
             "<b>Active set bonuses:</b> " +
@@ -298,9 +320,9 @@
         }
       }
 
-      // --- TOTAL BONUS ---
+      // --- TOTAL BONUS (nowy backend: totalBonus) ---
       if (totalBox) {
-        const t = this.state.total_bonus || {};
+        const t = this.state.totalBonus || this.state.total_bonus || {};
         const keys = Object.keys(t);
         if (keys.length) {
           totalBox.innerHTML =
@@ -440,7 +462,7 @@
             slot: d.slot,
           });
           if (res && res.ok) {
-            this.state = res.data;
+            this.state = res.data; // backend /unequip powinien zwracać ten sam payload co /state
             this.render();
           } else {
             const tg = getTg();
