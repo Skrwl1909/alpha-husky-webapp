@@ -242,4 +242,10 @@ window.Equipped = (function () {
       };
     }
   };
+return {
+    open,
+    refresh,
+    render,
+    inspect
+  };
 })();
