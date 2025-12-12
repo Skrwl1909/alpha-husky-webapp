@@ -150,38 +150,70 @@
     align-items:center; justify-content:center; text-align:center; padding:24px;
   }
   .fallback a { color:#aef; text-decoration:underline; }
-  .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
-  .map-wrap { width:min(96vw,1200px); padding:12px; }
-  .map-card { background:rgba(12,14,18,.82); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,.5); }
-  .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; }
-  .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
-  .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
-  .map{ position:relative; width:100%; aspect-ratio:16/9;
-    background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
-    border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--ring) inset; }
-  .map::after{ content:""; position:absolute; inset:0; z-index:2;
-    background: url("images/map/overlays/fog.png") center/cover no-repeat,
-                linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-    pointer-events:none; }
-  .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
-  .paths-layer svg{ width:100%; height:100%; }
-  .pins{ position:absolute; inset:0; z-index:3; }
-  .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
-    padding:0; background:none; border:none; cursor:pointer;
-    z-index:3; transition: transform .12s ease, filter .12s ease; }
-  .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
-  .hotspot::before{ content:""; position:absolute; left:50%; top:50%;
-    width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
-    transform: translate(-50%, calc(-50% + 20px));
-    background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-    opacity:.9; filter: blur(.2px); pointer-events:none; }
-  .hotspot img{ width: clamp(40px, 3.6vw, 72px);
-    filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
-  .hotspot.unlocked img{
-    filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
-            drop-shadow(-2px 0 6px rgba(0,229,255,.22))
-            drop-shadow( 2px 0 6px rgba(155,77,255,.22));
-  }
+
+.map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
+
+/* PATCH: większy modal + flex layout */
+.map-wrap { width:min(96vw, 980px); padding:12px; }
+
+.map-card {
+  background:rgba(12,14,18,.82);
+  border:1px solid var(--ring);
+  border-radius:16px;
+  padding:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  max-height: 88dvh;
+  display:flex;
+  flex-direction:column;
+}
+
+.map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; flex:0 0 auto; }
+.map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
+
+/* PATCH: zamiast aspect-ratio -> realna wysokość mapy */
+.map{
+  position:relative;
+  width:100%;
+  flex: 1 1 auto;
+  height: min(66dvh, 620px);
+  aspect-ratio: auto;
+  background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 0 0 1px var(--ring) inset;
+}
+
+.map::after{ content:""; position:absolute; inset:0; z-index:2;
+  background: url("images/map/overlays/fog.png") center/cover no-repeat,
+              linear-gradient(0deg, rgba(0,0,0,.55), transparent);
+  pointer-events:none; }
+
+.paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+.paths-layer svg{ width:100%; height:100%; }
+
+.pins{ position:absolute; inset:0; z-index:3; }
+
+.hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
+  padding:0; background:none; border:none; cursor:pointer;
+  z-index:3; transition: transform .12s ease, filter .12s ease; }
+
+.hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
+
+.hotspot::before{ content:""; position:absolute; left:50%; top:50%;
+  width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
+  transform: translate(-50%, calc(-50% + 20px));
+  background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
+  opacity:.9; filter: blur(.2px); pointer-events:none; }
+
+.hotspot img{ width: clamp(40px, 3.6vw, 72px);
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
+
+.hotspot.unlocked img{
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
+          drop-shadow(-2px 0 6px rgba(0,229,255,.22))
+          drop-shadow( 2px 0 6px rgba(155,77,255,.22));
+}
   .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
   .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
     transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
@@ -1774,6 +1806,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
