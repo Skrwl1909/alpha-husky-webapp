@@ -493,9 +493,9 @@
             <button class="close-x" id="closeMap" type="button">×</button>
           </div>
           <div id="map" class="map" data-map-root>
-            <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
-            <div class="pins" id="pins"></div> 
-          <canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
+            <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1000 562" preserveAspectRatio="xMidYMid meet"></svg></div>
+            <div class="pins" id="pins"></div>
+            <canvas id="particlesCanvas" class="particles-layer" width="1000" height="562" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
           </div>
         </div>
       </div>
@@ -842,313 +842,323 @@
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
         /* ===== MAP / STATE ===== */
-const mapBack = document.getElementById("mapBack");
-const mapRoot = document.getElementById("map");
-const pinsEl = document.getElementById("pins") || createPinsLayer(mapRoot);
-const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapRoot);
+        const mapBack = document.getElementById("mapBack");
+        const mapRoot = document.getElementById("map");
+        const pinsEl = document.getElementById("pins") || createPinsLayer(mapRoot);
+        const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapRoot);
+        let DATA = null;
+        const VIEW_W = 1000, VIEW_H = 562;
+        let regionsUnlocked = new Set();
+        let keys = new Set();
+        let fragments = {};
+        let PLAYER_STATE = null;
+        let PROFILE = null;
 
-let DATA = null;
+        function createPathsLayer(root){
+          const layer = document.createElement("div");
+          layer.className = "paths-layer";
+          const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+          svg.setAttribute("id","pathsSVG");
+          svg.setAttribute("viewBox","0 0 1000 562");
+          svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+          layer.appendChild(svg); root.appendChild(layer); return svg;
+        }
+        function createPinsLayer(root){
+          const layer = document.createElement("div");
+          layer.className = "pins"; layer.id = "pins";
+          root.appendChild(layer); return layer;
+        }
 
-// było const -> zmieniamy na let (bo ustawiamy po map.json meta.viewBox)
-let VIEW_W = 1000, VIEW_H = 562;
+        function resolveLabelCollisions(){
+          const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
+          chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+          for (let i=1;i<chips.length;i++){
+            const prev = chips[i-1].getBoundingClientRect();
+            const cur = chips[i].getBoundingClientRect();
+            const overlap = (prev.bottom + 6) - cur.top;
+            if (overlap > 0) {
+              const current = chips[i].style.transform || "translateX(-50%)";
+              chips[i].style.transform = current + ` translateY(${overlap}px)`;
+            }
+          }
+          const mapRect = mapRoot.getBoundingClientRect();
+          chips.forEach(ch => {
+            const r = ch.getBoundingClientRect();
+            const leftOverflow = mapRect.left + 8 - r.left;
+            const rightOverflow = r.right - (mapRect.right - 8);
+            if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
+            if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
+          });
+        }
 
-let regionsUnlocked = new Set();
-let keys = new Set();
-let fragments = {};
-let PLAYER_STATE = null;
-let PROFILE = null;
+        async function loadMapData(){
+          try{
+            const v = window.WEBAPP_VER || 'dev';
+            DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
+          }catch(e){
+            console.error('map.json load error', e);
+            DATA = null;
+          }
+          regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
+          keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
+          fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
+          window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
+          window.DATA = DATA;
+          renderMap();
+        }
 
-function createPathsLayer(root){
-  const layer = document.createElement("div");
-  layer.className = "paths-layer";
-  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("id","pathsSVG");
-  svg.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
-  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-  layer.appendChild(svg);
-  root.appendChild(layer);
-  return svg;
-}
+        function applyStateToMap(){
+          if (!PLAYER_STATE) return;
+          if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
+          if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
+        }
 
-function createPinsLayer(root){
-  const layer = document.createElement("div");
-  layer.className = "pins";
-  layer.id = "pins";
-  root.appendChild(layer);
-  return layer;
-}
+        function updateUnlockProgress(){
+          const el = document.getElementById('unlockProgress');
+          const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
+          if (!el || !cfg) { if (el) el.style.display = 'none'; return; }
+          const have = (fragments[cfg.item] || 0), need = cfg.required || 0;
+          const fill = Math.max(0, Math.min(100, Math.round((have / Math.max(1,need)) * 100)));
+          const regName = (DATA && DATA.regions && DATA.regions[cfg.region] && DATA.regions[cfg.region].name) || 'Region';
+          document.getElementById('unlockLabel').textContent = regName;
+          document.getElementById('unlockFill').style.width = fill + '%';
+          document.getElementById('unlockCount').textContent = `${have}/${need}`;
+          el.style.display = 'flex';
+        }
 
-// ✅ AUTO: bierzemy viewBox z map.json meta.viewBox i ustawiamy wszystko (SVG + canvas + VIEW_W/H)
-function applyViewBoxFromData(data){
-  const vb = data?.meta?.viewBox;
-  const W = (Array.isArray(vb) && vb.length === 2) ? (+vb[0] || 1000) : 1000;
-  const H = (Array.isArray(vb) && vb.length === 2) ? (+vb[1] || 562)  : 562;
+        function renderTopbar(){
+          const s = PLAYER_STATE && PLAYER_STATE.stats;
+          const lvlFromState = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+          const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
+          const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
 
-  VIEW_W = W;
-  VIEW_H = H;
+          const fac = document.getElementById('faction');
+          if (fac) {
+            const base = (PROFILE && PROFILE.faction)
+              ? PROFILE.faction
+              : (fac.dataset.base || fac.textContent || 'PACK');
+            if (!fac.dataset.base) fac.dataset.base = base;
+            fac.textContent = `${base} • Lv ${lvl} • ${bones}🦴`;
+          }
 
-  // paths SVG
-  if (pathsSVG) pathsSVG.setAttribute("viewBox", `0 0 ${VIEW_W} ${VIEW_H}`);
+          const heroLevel = document.getElementById('heroLevel');
+          if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
+        }
 
-  // particles canvas
-  const c = document.getElementById("particlesCanvas");
-  if (c) { c.width = VIEW_W; c.height = VIEW_H; }
-}
+        function applyProfileSkin(skin){
+          const skinImg = document.getElementById('player-skin');
+          if (!skinImg || !skin) return;
 
-function resolveLabelCollisions(){
-  const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
-  chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-  for (let i=1;i<chips.length;i++){
-    const prev = chips[i-1].getBoundingClientRect();
-    const cur = chips[i].getBoundingClientRect();
-    const overlap = (prev.bottom + 6) - cur.top;
-    if (overlap > 0) {
-      const current = chips[i].style.transform || "translateX(-50%)";
-      chips[i].style.transform = current + ` translateY(${overlap}px)`;
-    }
-  }
-  const mapRect = mapRoot.getBoundingClientRect();
-  chips.forEach(ch => {
-    const r = ch.getBoundingClientRect();
-    const leftOverflow = mapRect.left + 8 - r.left;
-    const rightOverflow = r.right - (mapRect.right - 8);
-    if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
-    if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
-  });
-}
+          if (typeof skin === 'string') {
+            skinImg.src = skin;
+            skinImg.alt = 'Active skin';
+            return;
+          }
 
-async function loadMapData(){
-  try{
-    const v = window.WEBAPP_VER || 'dev';
-    DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
-  }catch(e){
-    console.error('map.json load error', e);
-    DATA = null;
-  }
+          if (skin.img) skinImg.src = skin.img;
+          if (skin.name) skinImg.alt = skin.name;
+        }
 
-  regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
-  keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
-  fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
-  window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
-  window.DATA = DATA;
+        async function loadProfile(){
+          try {
+            const out = await apiPost("/webapp/profile", {});
+            if (!out) return;
+            // pozwalamy na dwa kształty: { ok, profile:{...} } albo bezpośrednio dane
+            const p = out.profile || out;
 
-  // ✅ kluczowe: ustawiamy viewBox + canvas z map.json
-  applyViewBoxFromData(DATA);
+            PROFILE = PROFILE || {};
+            if (typeof p.level === "number") PROFILE.level = p.level;
+            else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
 
-  renderMap();
-}
+            if (p.nickname || p.name){
+              PROFILE.nickname = p.nickname || p.name;
+              setPlayerLabel(PROFILE.nickname);
+            }
 
-function applyStateToMap(){
-  if (!PLAYER_STATE) return;
-  if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
-  if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
-}
+            if (p.faction) PROFILE.faction = p.faction;
 
-function updateUnlockProgress(){
-  const el = document.getElementById('unlockProgress');
-  const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
-  if (!el || !cfg) { if (el) el.style.display = 'none'; return; }
-  const have = (fragments[cfg.item] || 0), need = cfg.required || 0;
-  const fill = Math.max(0, Math.min(100, Math.round((have / Math.max(1,need)) * 100)));
-  const regName = (DATA && DATA.regions && DATA.regions[cfg.region] && DATA.regions[cfg.region].name) || 'Region';
-  document.getElementById('unlockLabel').textContent = regName;
-  document.getElementById('unlockFill').style.width = fill + '%';
-  document.getElementById('unlockCount').textContent = `${have}/${need}`;
-  el.style.display = 'flex';
-}
+            PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
+            if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-function isRegionUnlocked(regionId){
-  const reg = DATA && DATA.regions && DATA.regions[regionId];
-  if (!reg) return true;
-  if (regionsUnlocked.has(regionId)) return true;
-  const u = reg.unlock || { type: 'free' };
-  if (u.type === 'free') return true;
-  if (u.type === 'key') return !!(u.id && keys.has(u.id));
-  if (u.type === 'fragments'){
-    if (u.combineInto && keys.has(u.combineInto)) return true;
-    const have = fragments[u.item] || 0;
-    return have >= (u.required || Infinity);
-  }
-  return false;
-}
+            renderTopbar();
+          } catch (e){
+            console.warn("profile load failed", e);
+          }
+        }
 
-const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
+        async function loadPlayerState(){
+          try {
+            const state = await apiPost("/webapp/state");
+            PLAYER_STATE = state;
+            applyStateToMap();
 
-function drawPaths(){
-  if (!DATA) return;
-  pathsSVG.innerHTML = '';
-  for (const p of (DATA.paths || [])){
-    const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
-    const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
-    if (!locked && p.emphasis){
-      const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-      glow.setAttribute('points', ptsStr);
-      glow.setAttribute('class', 'path glow');
-      pathsSVG.appendChild(glow);
-    }
-    const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-    poly.setAttribute('points', ptsStr);
-    poly.setAttribute('class', 'path' + (locked ? ' locked' : ''));
-    poly.setAttribute('data-id', p.id);
-    pathsSVG.appendChild(poly);
-  }
-}
+            // 1) Nick z profilu gry
+            if (state && state.profile && state.profile.nickname){
+              setPlayerLabel(state.profile.nickname);
+            }
+            // 2) Fallback – dane z Telegrama
+            else if (state && state.user && !state.user.is_bot) {
+              const lbl = state.user.username
+                ? '@' + state.user.username
+                : (state.user.first_name || 'Player');
+              setPlayerLabel(lbl);
+            }
 
-/* ✅ Forge Hub: open_forge → Upgrade + Craft (fallbackowo zawsze coś robi) */
-function openForgeHub(node){
-  // 1) jeśli masz kiedyś moduł webapp Forge, tu go podepniemy
-  if (window.Forge?.open) return window.Forge.open({ node });
+            // 3) LVL/Bones → topbar + hero HUD
+            renderTopbar();
 
-  // 2) popup w Telegramie (najczyściej)
-  if (tg?.showPopup){
-    return tg.showPopup({
-      title: node?.name || "Forge",
-      message: node?.desc || "Choose an action:",
-      buttons: [
-        { id: "upgrade", type: "default", text: "Upgrade" },
-        { id: "craft",   type: "default", text: "Craft" },
-        { id: "close",   type: "cancel",  text: "Close" }
-      ]
-    }, (btnId) => {
-      if (btnId === "upgrade") return sendAction("forge_open", { tab: "upgrade", buildingId: node?.buildingId });
-      if (btnId === "craft")   return sendAction("forge_open", { tab: "craft",   buildingId: node?.buildingId });
-    });
-  }
+            if (mapBack.style.display === "flex" && DATA) {
+              renderMap(); updateUnlockProgress();
+            }
+          } catch (e) {
+            console.warn("state load failed", e);
+          }
+        }
 
-  // 3) fallback: otwórz cokolwiek (żeby klik działał zawsze)
-  try { tg?.HapticFeedback?.impactOccurred?.("light"); } catch(e) {}
-  return sendAction("forge_open", { tab: "hub", buildingId: node?.buildingId });
-}
+        function isRegionUnlocked(regionId){
+          const reg = DATA && DATA.regions && DATA.regions[regionId];
+          if (!reg) return true;
+          if (regionsUnlocked.has(regionId)) return true;
+          const u = reg.unlock || { type: 'free' };
+          if (u.type === 'free') return true;
+          if (u.type === 'key') return !!(u.id && keys.has(u.id));
+          if (u.type === 'fragments'){
+            if (u.combineInto && keys.has(u.combineInto)) return true;
+            const have = fragments[u.item] || 0;
+            return have >= (u.required || Infinity);
+          }
+          return false;
+        }
 
-// === PINS ===
-function renderPins(){
-  if (!DATA) return;
-  pinsEl.innerHTML = '';
+        const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
-  for (const b of (DATA.nodes || [])){
-    const unlocked = isRegionUnlocked(b.region);
-    const btn = document.createElement('button');
-    btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
-    btn.style.left = b.x + '%';
-    btn.style.top  = b.y + '%';
-    btn.title = b.name + (unlocked ? '' : ' (locked)');
+        function drawPaths(){
+          if (!DATA) return;
+          pathsSVG.innerHTML = '';
+          for (const p of (DATA.paths || [])){
+            const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
+            const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
+            if (!locked && p.emphasis){
+              const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+              glow.setAttribute('points', ptsStr);
+              glow.setAttribute('class', 'path glow');
+              pathsSVG.appendChild(glow);
+            }
+            const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+            poly.setAttribute('points', ptsStr);
+            poly.setAttribute('class', 'path' + (locked ? ' locked' : ''));
+            poly.setAttribute('data-id', p.id);
+            pathsSVG.appendChild(poly);
+          }
+        }
 
-    const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
-    const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
-    const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
+        function renderPins(){
+          if (!DATA) return;
+          pinsEl.innerHTML = '';
+          for (const b of (DATA.nodes || [])){
+            const unlocked = isRegionUnlocked(b.region);
+            const btn = document.createElement('button');
+            btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
+            btn.style.left = b.x + '%';
+            btn.style.top  = b.y + '%';
+            btn.title = b.name + (unlocked ? '' : ' (locked)');
 
-    if (!unlocked){
-      const lock = document.createElement('span');
-      lock.className = 'lock-badge';
-      lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
-      btn.appendChild(lock);
-    }
+            const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
+            const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
+            const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
 
-    btn.addEventListener('click', () => {
-      createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
-      if (!unlocked) return openLocked(b);
+            if (!unlocked){
+              const lock = document.createElement('span');
+              lock.className = 'lock-badge';
+              lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
+              btn.appendChild(lock);
+            }
 
-      if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
+            btn.addEventListener('click', () => {
+              createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
+              if (!unlocked) return openLocked(b);
 
-      // ✅ Forge node
-      if (b.action === 'open_forge') return openForgeHub(b);
+              if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-        return window.Fortress.open();
-      }
+              if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
+                return window.Fortress.open();
+              }
 
-      if ((b.id === 'testnet_wastes') ||
-          (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-        if (window.Dojo?.open) return window.Dojo.open();
-      }
+              if ((b.id === 'testnet_wastes') ||
+                  (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
+                if (window.Dojo?.open) return window.Dojo.open();
+              }
 
-      if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+              if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
-      const reg = DATA && DATA.regions && DATA.regions[b.region];
-      if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-      return openRegion(b.region);
-    });
+              const reg = DATA && DATA.regions && DATA.regions[b.region];
+              if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
+              return openRegion(b.region);
+            });
 
-    pinsEl.appendChild(btn);
-  }
+            pinsEl.appendChild(btn);
+          }
+          resolveLabelCollisions();
+        }
 
-  resolveLabelCollisions();
-}
+        const canvas = document.getElementById('particlesCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
 
-// === PARTICLES BURST ===
-const canvas = document.getElementById('particlesCanvas');
-const ctx = canvas ? canvas.getContext('2d') : null;
+        function createBurst(xPercent, yPercent, isUnlocked = true) {
+          if (!ctx) return;
+          canvas.style.display = 'block';
+          canvas.style.opacity = '1';
+          const x = (xPercent / 100) * VIEW_W;
+          const y = (yPercent / 100) * VIEW_H;
+          const particles = [];
+          const numParticles = 12;
+          const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
 
-function createBurst(xPercent, yPercent, isUnlocked = true) {
-  if (!ctx || !canvas) return;
+          for (let i = 0; i < numParticles; i++) {
+            particles.push({
+              x, y,
+              vx: (Math.random() - 0.5) * 8,
+              vy: (Math.random() - 0.5) * 8,
+              size: Math.random() * 3 + 1,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              life: 1,
+              decay: Math.random() * 0.02 + 0.01
+            });
+          }
 
-  canvas.style.display = 'block';
-  canvas.style.opacity = '1';
+          let animId;
+          function animate() {
+            ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+            let alive = 0;
+            for (let i = 0; i < particles.length; i++){
+              const p = particles[i];
+              if (!p) continue;
+              p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= p.decay;
+              if (p.life > 0) {
+                alive++;
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill();
+                ctx.restore();
+              } else {
+                particles.splice(i,1); i--;
+              }
+            }
+            if (alive > 0) {
+              animId = requestAnimationFrame(animate);
+            } else {
+              canvas.style.opacity = '0';
+              setTimeout(() => { canvas.style.display = 'none'; }, 200);
+              if (animId) cancelAnimationFrame(animId);
+            }
+          }
+          animate();
+          try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
+        }
 
-  const x = (xPercent / 100) * VIEW_W;
-  const y = (yPercent / 100) * VIEW_H;
-
-  const particles = [];
-  const numParticles = 12;
-  const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
-
-  for (let i = 0; i < numParticles; i++) {
-    particles.push({
-      x, y,
-      vx: (Math.random() - 0.5) * 8,
-      vy: (Math.random() - 0.5) * 8,
-      size: Math.random() * 3 + 1,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      life: 1,
-      decay: Math.random() * 0.02 + 0.01
-    });
-  }
-
-  let animId;
-  function animate() {
-    ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    let alive = 0;
-
-    for (let i = 0; i < particles.length; i++){
-      const p = particles[i];
-      if (!p) continue;
-
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.1;
-      p.life -= p.decay;
-
-      if (p.life > 0) {
-        alive++;
-        ctx.save();
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = p.color;
-        ctx.fill();
-        ctx.restore();
-      } else {
-        particles.splice(i, 1);
-        i--;
-      }
-    }
-
-    if (alive > 0) {
-      animId = requestAnimationFrame(animate);
-    } else {
-      canvas.style.opacity = '0';
-      setTimeout(() => { canvas.style.display = 'none'; }, 200);
-      if (animId) cancelAnimationFrame(animId);
-    }
-  }
-
-  animate();
-  try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
-}
-
-function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
+        function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
@@ -1796,8 +1806,6 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
-
-
 
 
 
