@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "meta": { "name": "Alpha Husky Overworld", "viewBox": [1600, 900] },
   "assets": {
     "icons": "images/map/building",
