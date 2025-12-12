@@ -94,6 +94,20 @@
       "tags": ["expedition", "safe", "afk"]
     },
     {
+  "id": "vault_forge",
+  "name": "Forgotten Tokens’ Vault",
+  "region": "chain",
+  "x": 30,
+  "y": 54,
+  "icon": "images/map/building/vault_forge.webp",
+  "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
+  "action": "open_forge",
+  "buildingId": "forgotten_tokens_vault_forge",
+  "labelOffset": { "x": 0, "y": 30 },
+  "gameplay": { "type": "forge" },
+  "tags": ["forge", "upgrade", "utility"]
+},
+    {
       "id": "broken_contracts",
       "name": "Broken Contracts",
       "region": "chain",
@@ -233,7 +247,9 @@
     { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[22,62],[40,50],[58,35]], "lockForRegion": "moon_lab", "emphasis": true },
     { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[58,35],[68,50],[78,72]], "lockForRegion": "testnet_wastes" },
     { "id": "p3", "from": "chain_gate", "to": "broken_contracts", "points": [[22,62],[30,55],[38,48]] },
-    { "id": "p4", "from": "chain_gate", "to": "abandoned_wallets", "points": [[22,62],[18,52],[12,40]] }
+    { "id": "p4", "from": "chain_gate", "to": "abandoned_wallets", "points": [[22,62],[18,52],[12,40]] },
+    { "id": "p5", "from": "chain_gate", "to": "vault_forge", "points": [[22,62],[26,58],[30,54]] },
+{ "id": "p6", "from": "vault_forge", "to": "moon_lab", "points": [[30,54],[44,46],[58,35]], "lockForRegion": "moon_lab" }
   ],
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
