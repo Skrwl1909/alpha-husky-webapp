@@ -2,104 +2,8 @@
 (function () {
   const API_BASE = window.API_BASE || ""; // zostaw puste, jeśli front i API są pod tym samym hostem
 
-  // Twoje slot coords (px w układzie PNG z backendu)
-  // Format: [x, y, w, h]
-  const SLOT_COORDS = {
-    helmet:  [530,  40, 175, 175],
-    fangs:   [195, 100, 134, 134],
-    armor:   [195, 300, 134, 134],
-    ring:    [195, 489, 134, 134],
-    weapon:  [435, 650, 156, 156],
-    cloak:   [945, 100, 134, 134],
-    collar:  [945, 285, 134, 134],
-    gloves:  [945, 450, 134, 134],
-    pet:     [945, 640, 134, 134],
-    offhand: [682, 655, 156, 156],
-  };
-
   function getTg() {
     return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
-  }
-
-  function haptic(kind) {
-    const tg = getTg();
-    try {
-      if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-        tg.HapticFeedback.impactOccurred(kind || "light");
-      }
-    } catch (_) {}
-  }
-
-  function showAlert(msg) {
-    const tg = getTg();
-    if (tg && tg.showAlert) tg.showAlert(msg);
-    else alert(msg);
-  }
-
-  function ensureEquippedStyles() {
-    if (document.getElementById("equipped-styles")) return;
-    const style = document.createElement("style");
-    style.id = "equipped-styles";
-    style.textContent = `
-      .equip-stage-wrap{
-        position:relative;
-        width:100%;
-        max-width:680px;
-        margin:0 auto;
-        border-radius:22px;
-        overflow:hidden;
-        background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
-        box-shadow:0 14px 40px rgba(0,0,0,.7);
-      }
-      #equip-hotspots{
-        position:absolute;
-        inset:0;
-        pointer-events:none;
-      }
-      .equip-hotspot{
-        position:absolute;
-        pointer-events:auto;
-        border:0;
-        padding:0;
-        margin:0;
-        background:transparent;
-        border-radius:18px;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .equip-hotspot:active{
-        box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
-        background:rgba(0,229,255,.10);
-      }
-      .equip-hotspot.is-empty:active{
-        box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
-        background:rgba(255,255,255,.06);
-      }
-      .equip-mini-list{
-        margin-top:10px;
-      }
-      .equip-mini-row{
-        width:100%;
-        display:flex;
-        align-items:center;
-        gap:10px;
-        background:rgba(10,10,25,.9);
-        border-radius:14px;
-        border:1px solid rgba(255,255,255,.06);
-        padding:8px 10px;
-        margin-bottom:8px;
-        color:#fff;
-      }
-      .equip-mini-ico{
-        width:32px;height:32px;border-radius:8px;overflow:hidden;
-        background:rgba(0,0,0,.4);flex-shrink:0;
-        display:flex;align-items:center;justify-content:center;
-      }
-      .equip-mini-ico img{ width:100%;height:100%;object-fit:contain;display:block; }
-      .equip-mini-ico.empty{
-        background:transparent;border:1px dashed rgba(255,255,255,.15);
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   // Uniwersalny POST tylko dla Equipped – nie zależy od globalnego apiPost
@@ -108,7 +12,9 @@
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
 
     if (!initData) {
-      console.warn("Equipped: NO initData – działa poprawnie tylko wewnątrz Telegram Mini App.");
+      console.warn(
+        "Equipped: NO initData – to działa poprawnie tylko wewnątrz Telegram Mini App."
+      );
       throw new Error("NO_INIT_DATA");
     }
 
@@ -133,7 +39,7 @@
   }
 
   // Ładowanie PNG postaci z backendu (legacy endpoint – /api/character-image)
-  async function loadCharacterPngInto(imgEl, onLoaded) {
+  async function loadCharacterPngInto(imgEl) {
     if (!imgEl) return;
     const tg = getTg();
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
@@ -154,12 +60,6 @@
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-
-      // ustaw onload zanim przypniesz src
-      imgEl.onload = () => {
-        try { onLoaded && onLoaded(); } catch (_) {}
-      };
-
       imgEl.src = url;
 
       if (window.__EquippedCharImgUrl) {
@@ -171,20 +71,16 @@
     }
   }
 
-  function pct(n) {
-    return (Math.round(n * 10000) / 100).toFixed(2) + "%";
-  }
-
   window.Equipped = {
     state: null,
 
     async open() {
-      ensureEquippedStyles();
-
       // Schowaj mapę i inne overlaye
-      document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach((el) => {
-        el.style.display = "none";
-      });
+      document
+        .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+        .forEach((el) => {
+          el.style.display = "none";
+        });
 
       const container = document.getElementById("app") || document.body;
       container.innerHTML = `
@@ -205,13 +101,15 @@
             </div>
           </div>
 
-          <div id="equip-main" style="display:flex;flex-direction:column;gap:14px;align-items:stretch;">
-            <div id="equip-avatar" style="text-align:center;">
+          <div id="equip-main" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+            <!-- LEFT: character -->
+            <div id="equip-avatar" style="flex:1;min-width:260px;text-align:center;">
               <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading character...</div>
             </div>
 
-            <div id="equip-slots" style="">
-              <div style="font-size:13px;opacity:.8;padding:10px 8px;">Loading equipment...</div>
+            <!-- RIGHT: slots -->
+            <div id="equip-slots" style="flex:1;min-width:260px;">
+              <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading equipment...</div>
             </div>
           </div>
 
@@ -224,7 +122,12 @@
         await this.refresh();
       } catch (e) {
         console.error("Equipped.open error", e);
-        showAlert("Error while loading equipped.");
+        const tg = getTg();
+        if (tg && tg.showAlert) {
+          tg.showAlert("Error while loading equipped.");
+        } else {
+          alert("Error while loading equipped.");
+        }
       }
     },
 
@@ -233,14 +136,16 @@
         const res = await equippedPost("/webapp/equipped/state", {});
         if (!res || !res.ok) {
           console.error("Equipped.state error:", res);
-          showAlert("Failed to load equipped state.");
+          const tg = getTg();
+          tg && tg.showAlert && tg.showAlert("Failed to load equipped state.");
           return;
         }
-        this.state = res.data; // { stats, slots, activeSets, totalBonus, ... }
+        this.state = res.data; // { characterUrl, stats, slots, activeSets, totalBonus }
         this.render();
       } catch (err) {
         console.error("Equipped.refresh error", err);
-        showAlert("Error while loading equipped.");
+        const tg = getTg();
+        tg && tg.showAlert && tg.showAlert("Error while loading equipped.");
         throw err;
       }
     },
@@ -261,17 +166,23 @@
       const agi = stats.agility;
       const luck = stats.luck;
 
-      // --- OVERLAY + HOTSPOTY NA OBRAZKU ---
+      // --- LEFT: CHARACTER IMG + LEVEL + STATY ---
       if (avatarBox) {
         avatarBox.innerHTML = `
           <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-            <div class="equip-stage-wrap">
+            <div style="
+                position:relative;
+                width:260px;
+                height:260px;
+                border-radius:22px;
+                overflow:hidden;
+                background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.4), rgba(0,0,0,.9));
+                box-shadow:0 14px 40px rgba(0,0,0,.7);
+            ">
               <img id="equipped-character-img"
                    alt="Character"
-                   style="width:100%;height:auto;display:block;" />
-              <div id="equip-hotspots"></div>
+                   style="width:100%;height:100%;object-fit:contain;display:block;"/>
             </div>
-
             <div style="font-size:13px;opacity:.95;">
               Level <b>${level}</b>
             </div>
@@ -282,58 +193,110 @@
               <span>AGI: <b>${agi ?? "?"}</b></span>
               <span>LUCK: <b>${luck ?? "?"}</b></span>
             </div>
-
-            <div style="font-size:13px;opacity:.9;margin-top:2px;">
-              Tap a slot <b>on the card</b> to inspect or unequip.
-            </div>
           </div>
         `;
 
         const imgEl = document.getElementById("equipped-character-img");
-
-        // Załaduj PNG i dopiero po onload zbuduj hotspoty (bo potrzebujemy naturalWidth/Height)
-        loadCharacterPngInto(imgEl, () => {
-          this._mountHotspots();
-        });
-
-        // fallback (gdyby onload nie zadziałał w jakimś edge case)
-        this._waitAndMountHotspots();
+        // Można podmienić na this.state.characterUrl w przyszłości
+        loadCharacterPngInto(imgEl);
       }
 
-      // --- (opcjonalnie) mini lista jako info (już nie-interaktywna) ---
+      // --- RIGHT: SLOTS LIST (dopasowane do nowego payloadu z backendu) ---
       if (slotsBox) {
         const slots = this.state.slots || [];
-        const bySlot = {};
-        slots.forEach((s) => (bySlot[s.slot] = s));
+        const html = slots
+          .map((slot) => {
+            const isEmpty = !!slot.empty;
+            const label = slot.label || slot.slot || "Slot";
+            const itemName = isEmpty
+              ? "Empty"
+              : slot.name || slot.item_key || "Unknown";
+            const rarity = slot.rarity
+              ? `<span style="opacity:.8;">(${slot.rarity})</span>`
+              : "";
+            const subtitle = isEmpty
+              ? "Empty slot"
+              : slot.level
+              ? `Lv ${slot.level}`
+              : "";
+            const bonuses = slot.bonusesText
+              ? `<div style="font-size:11px;opacity:.7;">${slot.bonusesText}</div>`
+              : "";
 
-        // kolejność jak w UI
-        const order = ["weapon","armor","cloak","collar","helmet","ring","offhand","gloves","fangs","pet"];
+            const icon = slot.icon
+              ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
+                   <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
+                 </div>`
+              : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
 
-        const rows = order.map((k) => {
-          const s = bySlot[k] || { slot: k, empty: true, label: k };
-          const isEmpty = !!s.empty;
-          const label = (s.label || s.slot || "Slot");
-          const itemName = isEmpty ? "Empty" : (s.name || s.item_key || "Unknown");
-          const icon = s.icon;
-
-          return `
-            <div class="equip-mini-row" style="opacity:${isEmpty ? ".85" : "1"};">
-              ${
-                icon
-                  ? `<div class="equip-mini-ico"><img src="${icon}"></div>`
-                  : `<div class="equip-mini-ico empty"></div>`
-              }
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:600;">${label}</div>
-                <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${itemName}
+            return `
+              <button data-slot="${slot.slot}"
+                      class="equip-slot-btn"
+                      style="
+                        width:100%;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                        background:rgba(10,10,25,.9);
+                        border-radius:14px;
+                        border:1px solid rgba(255,255,255,.06);
+                        padding:8px 10px;
+                        margin-bottom:8px;
+                        color:#fff;
+                        text-align:left;
+                        cursor:${isEmpty ? "default" : "pointer"};
+                        opacity:1;
+                      ">
+                ${icon}
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
+                    ${label}
+                  </div>
+                  <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    ${itemName} ${rarity}
+                  </div>
+                  <div style="font-size:11px;opacity:.7;">
+                    ${subtitle}
+                  </div>
+                  ${bonuses}
                 </div>
-              </div>
-            </div>
-          `;
-        }).join("");
+              </button>
+            `;
+          })
+          .join("");
 
-        slotsBox.innerHTML = `<div class="equip-mini-list">${rows}</div>`;
+        slotsBox.innerHTML = `
+          <div style="font-size:13px;margin-bottom:6px;opacity:.9;">
+            Tap a slot to inspect or unequip.
+          </div>
+          <div>${html}</div>
+        `;
+
+        // attach clicks
+        slotsBox.querySelectorAll(".equip-slot-btn").forEach((btn) => {
+          const slotKey = btn.getAttribute("data-slot");
+          const slotState = (this.state.slots || []).find(
+            (s) => s.slot === slotKey
+          );
+          if (!slotState) return;
+
+          if (slotState.empty) {
+            btn.onclick = () => {
+              const tg = getTg();
+              if (
+                tg &&
+                tg.HapticFeedback &&
+                tg.HapticFeedback.impactOccurred
+              ) {
+                tg.HapticFeedback.impactOccurred("light");
+              }
+            };
+          } else {
+            btn.onclick = () => {
+              this.inspect(slotKey);
+            };
+          }
+        });
       }
 
       // --- ACTIVE SETS ---
@@ -342,7 +305,11 @@
         if (sets.length) {
           setsBox.innerHTML =
             "<b>Active set bonuses:</b> " +
-            sets.map((s) => `${s.set} (${s.count})`).join(" • ");
+            sets
+              .map((s) => {
+                return `${s.set} (${s.count})`;
+              })
+              .join(" • ");
         } else {
           setsBox.innerHTML = "";
         }
@@ -362,98 +329,27 @@
       }
     },
 
-    _waitAndMountHotspots() {
-      let tries = 0;
-      const tick = () => {
-        tries++;
-        const imgEl = document.getElementById("equipped-character-img");
-        if (imgEl && imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
-          this._mountHotspots();
-          return;
-        }
-        if (tries < 80) setTimeout(tick, 60); // ~4.8s max
-      };
-      tick();
-    },
-
-    _mountHotspots() {
-      if (!this.state) return;
-
-      const imgEl = document.getElementById("equipped-character-img");
-      const layer = document.getElementById("equip-hotspots");
-      if (!imgEl || !layer) return;
-
-      const W = imgEl.naturalWidth || 0;
-      const H = imgEl.naturalHeight || 0;
-      if (!W || !H) return;
-
-      const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
-
-      const slots = this.state.slots || [];
-      const bySlot = {};
-      slots.forEach((s) => (bySlot[s.slot] = s));
-
-      layer.innerHTML = "";
-
-      Object.keys(SLOT_COORDS).forEach((slotKey) => {
-        const rect = SLOT_COORDS[slotKey];
-        if (!rect) return;
-
-        const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
-        const [x, y, w, h] = rect;
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
-        btn.setAttribute("data-slot", slotKey);
-
-        // % względem rozmiaru PNG (naturalWidth/Height)
-        btn.style.left = pct((x / W) * 100);
-        btn.style.top = pct((y / H) * 100);
-        btn.style.width = pct((w / W) * 100);
-        btn.style.height = pct((h / H) * 100);
-
-        if (dbg) {
-          btn.style.outline = s.empty
-            ? "1px dashed rgba(255,255,255,.35)"
-            : "1px solid rgba(0,229,255,.55)";
-          btn.style.background = s.empty
-            ? "rgba(255,255,255,.05)"
-            : "rgba(0,229,255,.08)";
-        }
-
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          haptic("light");
-
-          if (s.empty) {
-            showAlert("Empty slot.");
-            return;
-          }
-          this.inspect(slotKey);
-        });
-
-        layer.appendChild(btn);
-      });
-    },
-
     async inspect(slot) {
       try {
         const res = await equippedPost("/webapp/equipped/inspect", { slot });
         if (!res || !res.ok) {
-          showAlert("Failed to inspect item.");
+          const tg = getTg();
+          tg && tg.showAlert && tg.showAlert("Failed to inspect item.");
           return;
         }
         const d = res.data;
         if (!d || d.empty) {
-          showAlert("Nothing equipped in this slot.");
+          const tg = getTg();
+          tg &&
+            tg.showAlert &&
+            tg.showAlert("Nothing equipped in this slot.");
           return;
         }
         this.renderInspect(d);
       } catch (err) {
         console.error("Equipped.inspect error", err);
-        showAlert("Error while loading item.");
+        const tg = getTg();
+        tg && tg.showAlert && tg.showAlert("Error while loading item.");
       }
     },
 
@@ -489,7 +385,10 @@
       const stats = d.stats || {};
       const statsLines =
         Object.keys(stats)
-          .map((k) => `<div style="font-size:13px;">▫ ${k}: <b>${stats[k]}</b></div>`)
+          .map(
+            (k) =>
+              `<div style="font-size:13px;">▫ ${k}: <b>${stats[k]}</b></div>`
+          )
           .join("") ||
         "<div style='font-size:13px;opacity:.8;'>No bonuses</div>";
 
@@ -506,9 +405,13 @@
               : ""
           }
           <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${d.name || d.item_key}</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${
+              d.name || d.item_key
+            }</div>
             <div style="font-size:12px;opacity:.8;margin-bottom:4px;">
-               ${d.rarity ? d.rarity.toUpperCase() : ""} ${d.set ? "• " + d.set : ""}
+               ${d.rarity ? d.rarity.toUpperCase() : ""} ${
+        d.set ? "• " + d.set : ""
+      }
             </div>
             <div style="font-size:12px;opacity:.8;">Slot: ${d.slot}</div>
             <div style="font-size:12px;opacity:.8;">Level: ${d.level}${starInfo}</div>
@@ -528,7 +431,6 @@
              color:#fff;
              padding:6px 14px;
              font-size:13px;
-             cursor:pointer;
           ">Unequip</button>
           <button id="equip-close-btn" style="
              border-radius:999px;
@@ -537,7 +439,6 @@
              color:#fff;
              padding:6px 14px;
              font-size:13px;
-             cursor:pointer;
           ">Close</button>
         </div>
       `;
@@ -552,16 +453,20 @@
 
       document.getElementById("equip-unequip-btn").onclick = async () => {
         try {
-          const res = await equippedPost("/webapp/equipped/unequip", { slot: d.slot });
+          const res = await equippedPost("/webapp/equipped/unequip", {
+            slot: d.slot,
+          });
           if (res && res.ok) {
-            this.state = res.data; // backend /unequip powinien zwracać payload jak /state
+            this.state = res.data; // backend /unequip powinien zwracać ten sam payload co /state
             this.render();
           } else {
-            showAlert("Failed to unequip.");
+            const tg = getTg();
+            tg && tg.showAlert && tg.showAlert("Failed to unequip.");
           }
         } catch (err) {
           console.error("Equipped.unequip error", err);
-          showAlert("Failed to unequip.");
+          const tg = getTg();
+          tg && tg.showAlert && tg.showAlert("Failed to unequip.");
         } finally {
           const el = document.getElementById("equip-inspect");
           el && el.remove();
