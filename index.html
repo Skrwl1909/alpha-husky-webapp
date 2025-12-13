@@ -1089,8 +1089,9 @@
                   (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
                 if (window.Dojo?.open) return window.Dojo.open();
               }
-              if (node.id === "alpha_network_hq" || node.buildingId === "alpha_network_hq_shop") {
-            return window.Shop.open();
+              
+              if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
+            return window.Shop?.open?.();
           }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
@@ -1811,6 +1812,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
