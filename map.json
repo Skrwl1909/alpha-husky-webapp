@@ -56,7 +56,7 @@
       "name": "Abandoned Wallets",
       "region": "chain",
       "x": 15,
-      "y": 60,
+      "y": 40,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
