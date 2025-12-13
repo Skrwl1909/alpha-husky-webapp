@@ -838,6 +838,7 @@
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
+        window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1088,6 +1089,9 @@
                   (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
                 if (window.Dojo?.open) return window.Dojo.open();
               }
+              if (node.id === "alpha_network_hq" || node.buildingId === "alpha_network_hq_shop") {
+            return window.Shop.open();
+          }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
@@ -1420,7 +1424,7 @@
           ".btn.mission": () => sendAction("mission_open", { level: 1 }),
           ".btn.inventory": () => window.Inventory?.open?.(),
           ".btn.char": () => sendAction("char_open"),
-          ".btn.shop": () => sendAction("shop_open"),
+          ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
           ".btn.pets": () => sendAction("pets_open"),
           ".btn.equipped": () => window.Equipped?.open?.(),
           ".btn.keys": () => sendAction("cmd", { name: "keys" }),
@@ -1769,6 +1773,7 @@ shareSkin?.addEventListener('click', () => {
   <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
   <script src="js/inventory.js?v=20251205"></script>
   <script src="js/equipped.js?v=20251210"></script>
+  <script src="js/shop.js?v=WEBAPP_VER"></script>
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -1806,6 +1811,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
