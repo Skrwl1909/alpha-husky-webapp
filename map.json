@@ -258,46 +258,26 @@
     }
   ],
   "paths": [
-  {
-    "id": "p1",
-    "from": "chain_gate",
-    "to": "moon_lab",
-    "points": [[34,72],[46,46],[58,24]],
-    "lockForRegion": "moon_lab",
-    "emphasis": true
-  },
-  {
-    "id": "p2",
-    "from": "moon_lab",
-    "to": "testnet_wastes",
-    "points": [[58,24],[74,44],[86,66]],
-    "lockForRegion": "testnet_wastes"
-  },
-  {
-    "id": "p3",
-    "from": "chain_gate",
-    "to": "broken_contracts",
-    "points": [[34,72],[40,60],[44,48]]
-  },
-  {
-    "id": "p4",
-    "from": "chain_gate",
-    "to": "abandoned_wallets",
-    "points": [[34,72],[20,72],[13,40],[13,10]]
-  },
-  {
-    "id": "p5",
-    "from": "chain_gate",
-    "to": "vault_forge",
-    "points": [[34,72],[50,76],[62,74]]
-  },
-  {
-    "id": "p6",
-    "from": "vault_forge",
-    "to": "moon_lab",
-    "points": [[62,74],[62,48],[58,24]],
-    "lockForRegion": "moon_lab"
-  }
+  { "id":"p1", "from":"chain_gate", "to":"moon_lab",
+    "points":[[28,78],[44,58],[60,26]], "lockForRegion":"moon_lab", "emphasis":true },
+
+  { "id":"p2", "from":"moon_lab", "to":"testnet_wastes",
+    "points":[[60,26],[72,50],[86,78]], "lockForRegion":"testnet_wastes" },
+
+  { "id":"p3", "from":"chain_gate", "to":"broken_contracts",
+    "points":[[28,78],[38,66],[46,55]] },
+
+  { "id":"p4", "from":"chain_gate", "to":"abandoned_wallets",
+    "points":[[28,78],[18,42],[13,10]] },
+
+  { "id":"p5", "from":"chain_gate", "to":"vault_forge",
+    "points":[[28,78],[40,84],[50,82]] },
+
+  { "id":"p6", "from":"vault_forge", "to":"moon_lab",
+    "points":[[50,82],[55,54],[60,26]], "lockForRegion":"moon_lab" },
+
+  { "id":"p7", "from":"broken_contracts", "to":"alpha_network_hq",
+    "points":[[46,55],[60,58],[74,60]] }
 ],
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
