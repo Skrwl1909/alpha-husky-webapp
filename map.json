@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "meta": { "name": "Alpha Husky Overworld", "viewBox": [1600, 900] },
   "assets": {
     "icons": "images/map/building",
@@ -55,13 +55,13 @@
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
       "region": "chain",
-      "x": 10,
-      "y": 65,
+      "x": 18,
+      "y": 78,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
       "buildingId": "abandoned_wallets_vault",
-      "labelOffset": {"x": -15, "y": 25},
+      "labelOffset": { "x": -25, "y": 30 },
       "gameplay": {
         "loop": "dungeon",
         "rooms": { "min": 3, "max": 6 },
@@ -79,13 +79,13 @@
       "id": "chain_gate",
       "name": "The Chain Gate",
       "region": "chain",
-      "x": 20,
-      "y": 70,
+      "x": 35,
+      "y": 86,
       "icon": "images/map/building/the_chain.png",
       "desc": "Long-haul expeditions through dead chain fragments. Small but steady scrap, rune dust, and a tiny chance for item shards.",
       "action": "building_enter",
       "buildingId": "chain_gate",
-      "labelOffset": {"x": 0, "y": 32},
+      "labelOffset": { "x": -10, "y": -42 },
       "gameplay": {
         "loop": "expedition",
         "averageRunMinutes": 120,
@@ -97,13 +97,13 @@
   "id": "vault_forge",
   "name": "Forgotten Tokens’ Vault",
   "region": "chain",
-  "x": 30,
-  "y": 65,
+  "x": 52,
+  "y": 78,
   "icon": "images/map/building/vault_forge.webp",
   "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
   "action": "open_forge",
   "buildingId": "forgotten_tokens_vault_forge",
-  "labelOffset": {"x": 10, "y": 25},
+  "labelOffset": { "x": -10, "y": 30 },
   "gameplay": { "type": "forge" },
   "tags": ["forge", "upgrade", "utility"]
 },
@@ -111,13 +111,13 @@
       "id": "broken_contracts",
       "name": "Broken Contracts",
       "region": "chain",
-      "x": 35,
-      "y": 50,
+      "x": 50,
+      "y": 56,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
       "action": "open_quests",
       "buildingId": "broken_contracts_hub",
-      "labelOffset": {"x": 0, "y": 35},
+      "labelOffset": { "x": -10, "y": 38 },
       "gameplay": {
         "loop": "puzzle+combat",
         "puzzles": ["pattern", "logic", "route"],
@@ -134,13 +134,13 @@
       "id": "moon_lab",
       "name": "Moon Lab",
       "region": "moon_lab",
-      "x": 55,
-      "y": 30,
+      "x": 60,
+      "y": 32,
       "icon": "images/map/building/moon_lab.png",
       "desc": "Three-floor fortress: 10 sequential single-fights per floor. Win → next encounter after cooldown; lose → retry same encounter.",
       "action": "building_enter",
       "buildingId": "moonlab_fortress",
-      "labelOffset": {"x": 0, "y": 38},
+      "labelOffset": { "x": -10, "y": 38 },
       "gameplay": {
         "type": "fortress",
         "attack": {
@@ -228,13 +228,13 @@
       "id": "testnet_wastes_dojo",
       "name": "Testnet Wastes — Dojo",
       "region": "testnet_wastes",
-      "x": 85,
-      "y": 68,
+      "x": 86,
+      "y": 76,
       "icon": "images/map/building/testnet_wastes.png",
       "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
       "action": "building_enter",
       "buildingId": "testnet_wastes_dojo",
-      "labelOffset": {"x": -20, "y": 25},
+      "labelOffset": { "x": -55, "y": 30 },
       "gameplay": {
         "type": "dojo",
         "timerSeconds": 60,
@@ -244,12 +244,23 @@
     }
   ],
   "paths": [
-  { "id": "p1", "from": "chain_gate", "to": "moon_lab", "points": [[20,70],[37,50],[55,30]], "lockForRegion": "moon_lab", "emphasis": true },
-  { "id": "p2", "from": "moon_lab", "to": "testnet_wastes", "points": [[55,30],[70,49],[85,68]], "lockForRegion": "testnet_wastes" },
-  { "id": "p3", "from": "chain_gate", "to": "broken_contracts", "points": [[20,70],[27,60],[35,50]] },
-  { "id": "p4", "from": "chain_gate", "to": "abandoned_wallets", "points": [[20,70],[15,67],[10,65]] },
-  { "id": "p5", "from": "chain_gate", "to": "vault_forge", "points": [[20,70],[25,67],[30,65]] },
-  { "id": "p6", "from": "vault_forge", "to": "moon_lab", "points": [[30,65],[42,47],[55,30]], "lockForRegion": "moon_lab" }
+  { "id":"p1", "from":"chain_gate", "to":"moon_lab",
+  "points":[[35,86],[50,60],[60,32]], "lockForRegion":"moon_lab", "emphasis":true },
+
+{ "id":"p2", "from":"moon_lab", "to":"testnet_wastes",
+  "points":[[60,32],[72,54],[86,76]], "lockForRegion":"testnet_wastes" },
+
+{ "id":"p3", "from":"chain_gate", "to":"broken_contracts",
+  "points":[[35,86],[44,70],[50,56]] },
+
+{ "id":"p4", "from":"chain_gate", "to":"abandoned_wallets",
+  "points":[[35,86],[26,82],[18,78]] },
+
+{ "id":"p5", "from":"chain_gate", "to":"vault_forge",
+  "points":[[35,86],[44,82],[52,78]] },
+
+{ "id":"p6", "from":"vault_forge", "to":"moon_lab",
+  "points":[[52,78],[56,56],[60,32]], "lockForRegion":"moon_lab" }
 ],
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
