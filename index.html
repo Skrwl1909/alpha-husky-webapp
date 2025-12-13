@@ -1093,6 +1093,9 @@
               if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
             return window.Shop?.open?.();
           }
+              if (b.id === "vault_forge" || b.action === "open_forge") {
+              return window.Forge?.open?.(); // później dodamy Forge.init/open
+            }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
@@ -1812,6 +1815,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
