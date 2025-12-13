@@ -76,6 +76,20 @@
       "tags": ["loot", "chance"]
     },
     {
+  "id": "alpha_network_hq",
+  "name": "Alpha Network HQ",
+  "region": "chain",
+  "x": 18,
+  "y": 43,
+  "icon": "images/map/building/alpha_network_hq.webp",
+  "desc": "Hidden command hub & safe-zone shop for the Pack.",
+  "action": "building_enter",
+  "buildingId": "alpha_network_hq_shop",
+  "labelOffset": { "x": 12, "y": 30 },
+  "gameplay": { "type": "shop" },
+  "tags": ["shop", "safe", "utility"]
+},
+    {
       "id": "chain_gate",
       "name": "The Chain Gate",
       "region": "chain",
