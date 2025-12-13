@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "meta": { "name": "Alpha Husky Overworld", "viewBox": [1600, 900] },
   "assets": {
     "icons": "images/map/building",
@@ -55,8 +55,8 @@
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
       "region": "chain",
-      "x": 18,
-      "y": 78,
+      "x": 15,
+      "y": 60,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
