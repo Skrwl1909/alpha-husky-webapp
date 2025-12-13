@@ -25,36 +25,48 @@
     },
 
     async open() {
-      document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach(x => x.style.display = "none");
+  document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+    .forEach(x => x.style.display = "none");
 
-      const container = el("app") || document.body;
-      container.innerHTML = `
-  <div style="padding:14px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;height:78vh;display:flex;flex-direction:column;">
-    <h2 style="text-align:center;margin:0 0 8px 0;">Daily Shop</h2>
+  // ✅ zablokuj przewijanie tła (tylko na czas Shop)
+  document.body.dataset.prevOverflow = document.body.style.overflow || "";
+  document.body.style.overflow = "hidden";
 
-    <div id="shop-meta" style="text-align:center;opacity:.9;margin-bottom:10px;flex:0 0 auto;">
-      loading…
+  const container = el("app") || document.body;
+  container.innerHTML = `
+    <div style="padding:14px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;height:78vh;display:flex;flex-direction:column;">
+      <h2 style="text-align:center;margin:0 0 8px 0;">Daily Shop</h2>
+
+      <div id="shop-meta" style="text-align:center;opacity:.9;margin-bottom:10px;flex:0 0 auto;">
+        loading…
+      </div>
+
+      <!-- ✅ SCROLL AREA -->
+      <div id="shop-list"
+        style="flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-right:6px;">
+      </div>
+
+      <div style="height:10px;flex:0 0 auto;"></div>
+
+      <button id="shop-close" type="button"
+        style="width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;flex:0 0 auto;">
+        Close
+      </button>
     </div>
+  `;
 
-    <!-- SCROLL AREA -->
-    <div id="shop-list"
-      style="flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px;">
-    </div>
+  // ✅ close: odblokuj tło + wróć do mapy
+  el("shop-close").onclick = () => {
+    document.body.style.overflow = document.body.dataset.prevOverflow || "";
+    delete document.body.dataset.prevOverflow;
 
-    <div style="height:10px;flex:0 0 auto;"></div>
+    // wróć do mapy bez reloadu jeśli masz Map.open
+    if (window.Map?.open) return window.Map.open();
+    window.location.reload();
+  };
 
-    <button id="shop-close" type="button"
-      style="width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;flex:0 0 auto;">
-      Close
-    </button>
-  </div>
-`;
-
-      el("shop-close").onclick = () => window.Map?.open?.() || window.location.reload();
-
-      await this.refresh();
-    },
-
+  await this.refresh();
+},
     async refresh() {
       const res = await this._apiPost("/webapp/shop/state", {});
       if (!res || !res.ok) {
