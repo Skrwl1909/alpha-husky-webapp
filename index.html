@@ -839,6 +839,7 @@
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
         window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
+        window.Forge?.init?.({ apiPost, tg, dbg });
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1093,9 +1094,9 @@
               if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
             return window.Shop?.open?.();
           }
-              if (b.id === "vault_forge" || b.action === "open_forge") {
-              return window.Forge?.open?.(); // później dodamy Forge.init/open
-            }
+              if (b.action === "open_forge" || b.id === "vault_forge") {
+          return window.Forge?.open?.();
+        }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
@@ -1778,6 +1779,7 @@ shareSkin?.addEventListener('click', () => {
   <script src="js/inventory.js?v=20251205"></script>
   <script src="js/equipped.js?v=20251210"></script>
   <script src="js/shop.js?v=WEBAPP_VER"></script>
+  <script src="js/forge.js?v=WEBAPP_VER"></script>
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -1815,6 +1817,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
