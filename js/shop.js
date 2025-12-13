@@ -29,16 +29,26 @@
 
       const container = el("app") || document.body;
       container.innerHTML = `
-        <div style="padding:20px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;">
-          <h2 style="text-align:center;margin:0 0 10px 0;">Daily Shop</h2>
-          <div id="shop-meta" style="text-align:center;opacity:.9;margin-bottom:14px;">loading…</div>
-          <div id="shop-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-          <div style="height:16px"></div>
-          <button id="shop-close" type="button" style="width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;">
-            Close
-          </button>
-        </div>
-      `;
+  <div style="padding:14px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;height:78vh;display:flex;flex-direction:column;">
+    <h2 style="text-align:center;margin:0 0 8px 0;">Daily Shop</h2>
+
+    <div id="shop-meta" style="text-align:center;opacity:.9;margin-bottom:10px;flex:0 0 auto;">
+      loading…
+    </div>
+
+    <!-- SCROLL AREA -->
+    <div id="shop-list"
+      style="flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px;">
+    </div>
+
+    <div style="height:10px;flex:0 0 auto;"></div>
+
+    <button id="shop-close" type="button"
+      style="width:100%;padding:14px;border-radius:12px;border:0;cursor:pointer;flex:0 0 auto;">
+      Close
+    </button>
+  </div>
+`;
 
       el("shop-close").onclick = () => window.Map?.open?.() || window.location.reload();
 
