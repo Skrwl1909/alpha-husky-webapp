@@ -61,7 +61,7 @@
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
       "buildingId": "abandoned_wallets_vault",
-      "labelOffset": { "x": 0, "y": 30 },
+      "labelOffset": { "x": 10, "y": 30 },
       "gameplay": {
         "loop": "dungeon",
         "rooms": { "min": 3, "max": 6 },
