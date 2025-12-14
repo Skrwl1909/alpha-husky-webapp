@@ -1094,8 +1094,9 @@
               if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
             return window.Shop?.open?.();
           }
-              if (b.action === "open_forge" || b.id === "vault_forge") {
-          return window.Forge?.open?.();
+              if (b.action === "open_forge" || b.id === "vault_forge" || (b.gameplay && b.gameplay.type === "forge")) {
+          const bid = b.buildingId || b.id;
+          return window.Forge?.open?.({ buildingId: bid, name: b.name });
         }
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
@@ -1817,6 +1818,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
