@@ -839,7 +839,7 @@
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
         window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
-        window.Forge?.init?.({ apiPost, tg, dbg });
+        window.Forge && window.Forge.init({ apiPost, tg, dbg });
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1818,6 +1818,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
