@@ -36,6 +36,48 @@
     return String(s ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
   }
 
+  // -------------------------
+  // PITY micro-patch helpers
+  // -------------------------
+  function _num(v, d = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  // normalize "percent" to 0..1 if backend sends 20 instead of 0.20
+  function _pct01(v, fallback01) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback01;
+    if (n > 1.000001) return n / 100;
+    return n;
+  }
+
+  function _getPityTrigger(state) {
+    // prefer craftCfg.pityTrigger (backend), then legacy aliases, fallback 5
+    return _num(
+      state?.craftCfg?.pityTrigger ??
+      state?.craftCfg?.pity ??
+      state?.pityTrigger,
+      5
+    );
+  }
+
+  function _getPityForSlot(state, slot, pityOverride) {
+    const fromState = state?.pityMap?.[slot];
+    if (fromState != null) return _num(fromState, 0);
+    const fromOv = pityOverride && pityOverride[slot];
+    if (fromOv != null) return _num(fromOv, 0);
+    return null;
+  }
+
+  function renderCraftPity(state, slot, pityOverride) {
+    const elP = document.getElementById("forge-craft-pity");
+    if (!elP) return;
+    const p = _getPityForSlot(state, slot, pityOverride);
+    const t = _getPityTrigger(state);
+    elP.textContent = (p == null) ? "Pity: —" : `Pity: ${p}/${t}`;
+  }
+
   function ensureStyles() {
     if (document.getElementById("ah-forge-styles")) return;
     const s = el("style");
@@ -84,6 +126,9 @@
       @media(min-width:560px){.ah-results{grid-template-columns:1fr 1fr}}
       .ah-result{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03)}
       .ah-tag{font-size:11px;opacity:.8;border:1px solid rgba(255,255,255,.10);padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.25);font-weight:900}
+
+      /* pity micro patch */
+      .ah-forge-pity{margin-top:6px;font-size:12px;opacity:.85}
     `;
     document.head.appendChild(s);
   }
@@ -111,13 +156,47 @@
 
   function getCfg() {
     const cfg = (_state && _state.craftCfg) || {};
+    const weights = cfg.weights || {};
+
+    const baseCost = _num(cfg.baseCost ?? cfg.baseShardCost, 5);
+    const refineCost = _num(cfg.refineCost ?? cfg.refineAdd, 2);
+
+    // pity trigger (canonical)
+    const pityTrigger = _num(cfg.pityTrigger ?? cfg.pity, 5);
+
+    // uncommon base/cap can be 0..1 or 0..100
+    let uncommonBase = cfg.uncommonBase ?? cfg.baseUncommon;
+    if (uncommonBase == null) {
+      const wc = _num(weights.common, 80);
+      const wu = _num(weights.uncommon, 20);
+      const total = wc + wu;
+      uncommonBase = total > 0 ? (wu / total) : 0.20;
+    }
+    uncommonBase = _pct01(uncommonBase, 0.20);
+
+    // refine add can be 0..1 or 0..100
+    let uncommonRefineAdd = cfg.uncommonRefineAdd ?? cfg.refineUncommonAdd;
+    if (uncommonRefineAdd == null) {
+      // if backend gives bonusPerExtraShard + refineCost, approximate pp increase per refine step
+      const bonusPerExtra = _num(cfg.bonusPerExtraShard, 0);
+      if (bonusPerExtra > 0) {
+        uncommonRefineAdd = (bonusPerExtra * refineCost) / 100;
+      } else {
+        uncommonRefineAdd = 0.05;
+      }
+    }
+    uncommonRefineAdd = _pct01(uncommonRefineAdd, 0.05);
+
+    let uncommonCap = cfg.uncommonCap;
+    uncommonCap = _pct01(uncommonCap, 0.55);
+
     return {
-      baseCost: cfg.baseCost ?? cfg.baseShardCost ?? 5,
-      refineCost: cfg.refineCost ?? cfg.refineAdd ?? 2,
-      pity: cfg.pity ?? 5,
-      uncommonBase: cfg.uncommonBase ?? cfg.baseUncommon ?? 0.20,
-      uncommonRefineAdd: cfg.uncommonRefineAdd ?? cfg.refineUncommonAdd ?? 0.05,
-      uncommonCap: cfg.uncommonCap ?? 0.55,
+      baseCost,
+      refineCost,
+      pity: pityTrigger,
+      uncommonBase,
+      uncommonRefineAdd,
+      uncommonCap,
     };
   }
 
@@ -324,12 +403,17 @@
 
     const fCost = el("div", "ah-note", "");
 
+    // pity line (micro patch)
+    const pityLine = el("div", "ah-forge-pity", "");
+    pityLine.id = "forge-craft-pity";
+
     function currentPity(slot) {
-  const fromState = _state && _state.pityMap && _state.pityMap[slot];
-  if (fromState != null) return fromState;
-  const fromOverride = _pityOverride && _pityOverride[slot];
-  return (fromOverride != null ? fromOverride : null);
-  }
+      const fromState = _state && _state.pityMap && _state.pityMap[slot];
+      if (fromState != null) return fromState;
+      const fromOverride = _pityOverride && _pityOverride[slot];
+      return (fromOverride != null ? fromOverride : null);
+    }
+
     function updateCost() {
       const slot = sel.value;
       const n = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
@@ -354,6 +438,9 @@
           Uncommon chance: <b>${Math.round(pU * 100)}%</b>${pity != null ? ` · Pity: <b>${pity}</b>/${cfg.pity}` : ``}
         </div>
       `;
+
+      // micro patch render (separate line)
+      renderCraftPity(_state, slot, _pityOverride);
     }
 
     inpCount.addEventListener("input", updateCost);
@@ -411,6 +498,7 @@
     controls.appendChild(quick);
     controls.appendChild(fRefine);
     controls.appendChild(fCost);
+    controls.appendChild(pityLine);
     controls.appendChild(btn);
 
     // right: results
@@ -452,7 +540,9 @@
 
     body.appendChild(form);
 
+    // initial render
     updateCost();
+    renderCraftPity(_state, sel.value, _pityOverride);
   }
 
   function draw() {
