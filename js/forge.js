@@ -325,11 +325,11 @@
     const fCost = el("div", "ah-note", "");
 
     function currentPity(slot) {
-      // if backend starts returning state.pityMap, read it here; else use override
-      const fromOverride = _pityOverride && _pityOverride[slot];
-      return (fromOverride != null ? fromOverride : null);
-    }
-
+  const fromState = _state && _state.pityMap && _state.pityMap[slot];
+  if (fromState != null) return fromState;
+  const fromOverride = _pityOverride && _pityOverride[slot];
+  return (fromOverride != null ? fromOverride : null);
+  }
     function updateCost() {
       const slot = sel.value;
       const n = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
