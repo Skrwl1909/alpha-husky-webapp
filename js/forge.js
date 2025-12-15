@@ -415,12 +415,13 @@
     const fSlot = el("div", "ah-field");
     fSlot.appendChild(el("label", "", "Slot"));
     const sel = document.createElement("select");
-    shardSlots.forEach((s) => {
-      const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
-      sel.appendChild(opt);
-    });
+   shardSlots.forEach((s) => {
+  const opt = document.createElement("option");
+  opt.value = s;
+  const have = shardsHave(s);
+  opt.textContent = `${s} (${have})`;
+  sel.appendChild(opt);
+});
     fSlot.appendChild(sel);
 
     const fCount = el("div", "ah-field");
