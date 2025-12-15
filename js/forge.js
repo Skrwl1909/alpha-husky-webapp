@@ -83,7 +83,7 @@
     const s = el("style");
     s.id = "ah-forge-styles";
     s.textContent = `
-      .ah-forge-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+      .ah-forge-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:2147483640;display:flex;align-items:flex-end;justify-content:center}
       .ah-forge{width:min(1040px,100%);max-height:90vh;background:rgba(14,16,18,.97);border:1px solid rgba(255,255,255,.08);
         border-radius:18px 18px 0 0;overflow:hidden;box-shadow:0 -12px 40px rgba(0,0,0,.55)}
       .ah-forge-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -245,102 +245,142 @@
   }
 
   function renderUpgrade(body) {
-    const eq = (_state && _state.equipped) || [];
-    if (!eq.length) {
-      body.appendChild(el("div", "ah-small", "No equipped items found."));
+  const eq = (_state && _state.equipped) || [];
+  if (!eq.length) {
+    body.appendChild(el("div", "ah-small", "No equipped items found."));
+    return;
+  }
+
+  body.appendChild(el("div", "ah-note",
+    `<b>Upgrade</b><div class="ah-small">Tap an item to see details. Upgrade uses materials (same core as Telegram).</div>`
+  ));
+
+  const split = el("div", "ah-split");
+  const list = el("div", "ah-list");
+  const panel = el("div", "ah-note", `<b>Details</b><div class="ah-small">Select an item.</div>`);
+
+  let selectedKey = null;
+
+  async function doUpgrade(it) {
+    if (!it || _busy || !it.canUpgrade) return;
+    _busy = true;
+    draw();
+
+    try {
+      await post("/webapp/forge/upgrade", {
+        buildingId: _ctx.buildingId,
+        slot: it.slot,
+        run_id: `web_upg_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      });
+      await loadState();
+      toast(`Upgraded ${it.slotLabel}.`);
+    } catch (e) {
+      toast(`Upgrade failed: ${e.message}`);
+    } finally {
+      _busy = false;
+      draw();
+
+      // odśwież panel na świeżych danych
+      const fresh = ((_state && _state.equipped) || []).find(x => x.key === selectedKey);
+      drawPanel(fresh);
+    }
+  }
+
+  function drawPanel(it) {
+    if (!it) {
+      panel.innerHTML = `<b>Details</b><div class="ah-small">Select an item.</div>`;
       return;
     }
 
-    body.appendChild(el("div", "ah-note",
-      `<b>Upgrade</b><div class="ah-small">Upgrade uses materials. Same core logic as Telegram (no drift).</div>`
-    ));
+    const cost = it.costNext || null;
+    const miss = cost ? missingForCost(cost) : [];
+    const isMaxed = (it.stars >= it.maxStars);
 
-    const split = el("div", "ah-split");
-    const list = el("div", "ah-list");
-    const panel = el("div", "ah-note", `<b>Details</b><div class="ah-small">Select an item.</div>`);
+    panel.innerHTML = `
+      <b>${esc(it.slotLabel)}</b>
+      <div class="ah-small">${esc(it.name || "—")} · <span class="ah-tag">${esc(it.rarity || "common")}</span></div>
+      <div class="ah-divider"></div>
+      <div class="ah-small">Stars: <b>★${it.stars}</b> / ★${it.maxStars}</div>
+      ${cost ? `<div class="ah-small">Next cost: <b>${fmtCost(cost)}</b></div>` : `<div class="ah-small">No further upgrades.</div>`}
+      ${miss.length ? `<div class="ah-missing ah-small"><i>Missing:</i> ${esc(miss.join(", "))}</div>` : ``}
+      <div class="ah-divider"></div>
+      <div id="ah-upg-actions"></div>
+      <div class="ah-small">Tip: Upgrade cost scales with ★.</div>
+    `;
 
-    let selectedKey = null;
+    const actions = panel.querySelector("#ah-upg-actions");
+    const row = el("div", "ah-btnrow");
 
-    function drawPanel(it) {
-      if (!it) {
-        panel.innerHTML = `<b>Details</b><div class="ah-small">Select an item.</div>`;
-        return;
-      }
-      const cost = it.costNext || null;
-      const miss = cost ? missingForCost(cost) : [];
-      panel.innerHTML = `
-        <b>${esc(it.slotLabel)}</b>
-        <div class="ah-small">${esc(it.name || "—")} · <span class="ah-tag">${esc(it.rarity || "common")}</span></div>
-        <div class="ah-divider"></div>
-        <div class="ah-small">Stars: <b>★${it.stars}</b> / ★${it.maxStars}</div>
-        ${cost ? `<div class="ah-small">Next cost: <b>${fmtCost(cost)}</b></div>` : `<div class="ah-small">No further upgrades.</div>`}
-        ${miss.length ? `<div class="ah-missing ah-small"><i>Missing:</i> ${esc(miss.join(", "))}</div>` : ``}
-        <div class="ah-divider"></div>
-        <div class="ah-small">Tip: Upgrade cost scales with ★.</div>
-      `;
-    }
-
-    eq.forEach((it) => {
-      const row = el("div", "ah-card");
-      const left = el("div", "ah-left");
-
-      const ico = el("div", "ah-ico");
-      const img = document.createElement("img");
-      img.alt = it.name || it.key || "item";
-      img.src = it.icon || "";
-      img.onerror = () => { img.remove(); ico.textContent = "✦"; };
-      ico.appendChild(img);
-
-      const meta = el("div", "ah-meta");
-      meta.appendChild(el("div", "ah-line", `<b>${esc(it.slotLabel)}</b> — ${esc(it.name || "—")}`));
-      meta.appendChild(el("div", "ah-small", `★${it.stars} / ${it.maxStars} · ${esc(it.rarity || "common")}`));
-      if (it.costNext) meta.appendChild(el("div", "ah-small", `Cost: ${fmtCost(it.costNext)}`));
-
-      left.appendChild(ico);
-      left.appendChild(meta);
-      row.appendChild(left);
-
-      const btn = el("button", "ah-btn", it.canUpgrade ? "Upgrade" : "Maxed");
-      btn.disabled = _busy || !it.canUpgrade;
-
-      row.addEventListener("click", () => {
-        selectedKey = it.key;
-        drawPanel(it);
-      });
-
-      btn.addEventListener("click", async (ev) => {
-        ev.stopPropagation();
-        if (_busy || !it.canUpgrade) return;
-        _busy = true;
-        draw();
-
-        try {
-          await post("/webapp/forge/upgrade", {
-            buildingId: _ctx.buildingId,
-            slot: it.slot,
-            run_id: `web_upg_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-          });
-          await loadState();
-          toast(`Upgraded ${it.slotLabel}.`);
-        } catch (e) {
-          toast(`Upgrade failed: ${e.message}`);
-        } finally {
-          _busy = false;
-          draw();
-          // refresh details if still same selected item
-          const fresh = ((_state && _state.equipped) || []).find(x => x.key === selectedKey);
-          drawPanel(fresh);
-        }
-      });
-
-      row.appendChild(btn);
-      list.appendChild(row);
+    const btn = el("button", "ah-btn",
+      isMaxed ? "Maxed" : (it.canUpgrade ? "Upgrade" : "Upgrade (missing mats)")
+    );
+    btn.type = "button";
+    btn.disabled = _busy || isMaxed || !it.canUpgrade;
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      doUpgrade(it);
     });
 
+    row.appendChild(btn);
+    actions.appendChild(row);
+  }
+
+  eq.forEach((it) => {
+    const row = el("div", "ah-card");
+    const left = el("div", "ah-left");
+
+    const ico = el("div", "ah-ico");
+    const img = document.createElement("img");
+    img.alt = it.name || it.key || "item";
+    img.src = it.icon || "";
+    img.onerror = () => { img.remove(); ico.textContent = "✦"; };
+    ico.appendChild(img);
+
+    const meta = el("div", "ah-meta");
+    meta.appendChild(el("div", "ah-line", `<b>${esc(it.slotLabel)}</b> — ${esc(it.name || "—")}`));
+    meta.appendChild(el("div", "ah-small", `★${it.stars} / ${it.maxStars} · ${esc(it.rarity || "common")}`));
+    if (it.costNext) meta.appendChild(el("div", "ah-small", `Cost: ${fmtCost(it.costNext)}`));
+
+    left.appendChild(ico);
+    left.appendChild(meta);
+    row.appendChild(left);
+
+    // mini status button po prawej (zostawiamy, ale Details ma też duży przycisk)
+    const btn = el("button", "ah-btn", it.canUpgrade ? "Upgrade" : "Maxed");
+    btn.type = "button";
+    btn.disabled = _busy || !it.canUpgrade;
+
+    row.addEventListener("click", () => {
+      selectedKey = it.key;
+      drawPanel(it);
+
+      // na mobile przewiń do panelu, żeby było widać akcję
+      if (window.innerWidth < 860) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    btn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      doUpgrade(it);
+    });
+
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+
+  // ✅ Na mobile panel nad listą (żeby nie trzeba było scrollować na dół)
+  if (window.innerWidth < 860) {
+    split.appendChild(panel);
+    split.appendChild(list);
+  } else {
     split.appendChild(list);
     split.appendChild(panel);
-    body.appendChild(split);
   }
+
+  body.appendChild(split);
+}
 
   function renderCraft(body) {
     const cfg = getCfg();
