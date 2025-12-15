@@ -392,217 +392,230 @@
 }
 
   function renderCraft(body) {
-    const cfg = getCfg();
-    const shardSlots = (_state && _state.shardSlots) || [
-      "weapon","armor","fangs","cloak","collar","helmet","ring","offhand","gloves"
-    ];
+  const cfg = getCfg();
+  const shardSlots = (_state && _state.shardSlots) || [
+    "weapon","armor","fangs","cloak","collar","helmet","ring","offhand","gloves"
+  ];
 
-    body.appendChild(
-      el("div", "ah-note",
-        `<b>Shards Craft</b>
-         <div class="ah-small">
-          Base cost: <b>${cfg.baseCost}</b> · Refine +<b>${cfg.refineCost}</b>/lvl · Uncommon: <b>${Math.round(cfg.uncommonBase*100)}%</b> (+${Math.round(cfg.uncommonRefineAdd*100)}%/refine, cap ${Math.round(cfg.uncommonCap*100)}%) · Pity <b>${cfg.pity}</b>
-         </div>`
-      )
-    );
+  body.appendChild(
+    el("div", "ah-note",
+      `<b>Shards Craft</b>
+       <div class="ah-small">
+        Base cost: <b>${cfg.baseCost}</b> · Refine +<b>${cfg.refineCost}</b>/lvl ·
+        Uncommon: <b>${Math.round(cfg.uncommonBase*100)}%</b>
+        (+${Math.round(cfg.uncommonRefineAdd*100)}%/refine, cap ${Math.round(cfg.uncommonCap*100)}%) ·
+        Pity <b>${cfg.pity}</b>
+       </div>`
+    )
+  );
 
-    const form = el("div", "ah-split");
+  const form = el("div", "ah-split");
 
-    // left: controls
-    const controls = el("div", "ah-note");
-    controls.appendChild(el("div", "", `<b>Controls</b><div class="ah-small">Craft pulls from <b>{slot}_shards</b>.</div>`));
+  // left: controls
+  const controls = el("div", "ah-note");
+  controls.appendChild(el("div", "", `<b>Controls</b><div class="ah-small">Craft pulls from <b>{slot}_shards</b>.</div>`));
 
-    const fSlot = el("div", "ah-field");
-    fSlot.appendChild(el("label", "", "Slot"));
-    const sel = document.createElement("select");
-   shardSlots.forEach((s) => {
-  const opt = document.createElement("option");
-  opt.value = s;
-  const have = shardsHave(s);
-  opt.textContent = `${s} (${have})`;
-  sel.appendChild(opt);
-});
-    fSlot.appendChild(sel);
+  const fSlot = el("div", "ah-field");
+  fSlot.appendChild(el("label", "", "Slot"));
+  const sel = document.createElement("select");
 
-    const fCount = el("div", "ah-field");
-    fCount.appendChild(el("label", "", "Count"));
-    const inpCount = document.createElement("input");
-    inpCount.type = "number";
-    inpCount.min = "1";
-    inpCount.max = "50";
-    inpCount.value = "1";
-    fCount.appendChild(inpCount);
-
-    const quick = el("div", "ah-btnrow");
-    [1, 5, 10].forEach(n => {
-      const b = el("button", "ah-btn", String(n));
-      b.type = "button";
-      b.disabled = _busy;
-      b.addEventListener("click", () => { inpCount.value = String(n); updateCost(); });
-      quick.appendChild(b);
-    });
-
-    const fRefine = el("div", "ah-field");
-    fRefine.appendChild(el("label", "", "Refine"));
-    const inpRef = document.createElement("input");
-    inpRef.type = "number";
-    inpRef.min = "0";
-    inpRef.max = "5"; // IMPORTANT: match backend
-    inpRef.value = "0";
-    fRefine.appendChild(inpRef);
-
-    const fCost = el("div", "ah-note", "");
-
-    // pity line (micro patch)
-    const pityLine = el("div", "ah-forge-pity", "");
-    pityLine.id = "forge-craft-pity";
-
-    function currentPity(slot) {
-      const fromState = _state && _state.pityMap && _state.pityMap[slot];
-      if (fromState != null) return fromState;
-      const fromOverride = _pityOverride && _pityOverride[slot];
-      return (fromOverride != null ? fromOverride : null);
-    }
-
-    function updateCost() {
-      const slot = sel.value;
-      const n = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
-      const r = Math.max(0, Math.min(5, parseInt(inpRef.value || "0", 10)));
-
-      inpCount.value = String(n);
-      inpRef.value = String(r);
-
-      const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
-      const total = per * n;
-
-      const have = shardsHave(slot);
-      const left = have - total;
-      const pU = Math.min(cfg.uncommonBase + cfg.uncommonRefineAdd * r, cfg.uncommonCap);
-      const pity = currentPity(slot);
-
-      fCost.innerHTML = `
-        <b>Cost preview</b>
-        <div class="ah-small">
-          Asset: <b>${esc(slot)}_shards</b><br>
-          Have: <b>${have}</b> · Per: <b>${per}</b> · Total: <b>${total}</b> · After: <b>${left}</b><br>
-          Uncommon chance: <b>${Math.round(pU * 100)}%</b>${pity != null ? ` · Pity: <b>${pity}</b>/${cfg.pity}` : ``}
-        </div>
-      `;
-
-      // micro patch render (separate line)
-      renderCraftPity(_state, slot, _pityOverride);
-    }
-
-    inpCount.addEventListener("input", updateCost);
-    inpRef.addEventListener("input", updateCost);
-    sel.addEventListener("change", updateCost);
-
-    const btn = el("button", "ah-btn", "Craft");
-    btn.disabled = _busy;
-
-    btn.addEventListener("click", async () => {
-      if (_busy) return;
-      const slot = sel.value;
-      const count = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
-      const refine = Math.max(0, Math.min(5, parseInt(inpRef.value || "0", 10)));
-
-      // quick client-side check
-      const per = (cfg.baseCost || 5) + refine * (cfg.refineCost || 2);
-      const total = per * count;
-      const have = shardsHave(slot);
-      if (have < total) {
-        toast(`Not enough ${slot}_shards.`);
-        return;
-      }
-
-      _busy = true;
-      draw();
-
-      try {
-        const res = await post("/webapp/forge/craft", {
-          buildingId: _ctx.buildingId,
-          slot,
-          count,
-          refine,
-          run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        });
-
-        const made = (res && (res.made || res.result?.made)) || [];
-        const pity = res && (res.result?.pity ?? res.pity);
-        if (pity != null) _pityOverride[slot] = pity;
-
-        _lastCraft = { slot, made };
-
-    // ✅ jeśli backend zwrócił świeży payload, bierzemy go bez kolejnego requestu
-    if (res && res.data) {
-      _state = res.data;
-    } else {
-      await loadState();
-    }
-
-// odśwież cost preview + pity w aktualnym slocie
-try { updateCost(); } catch (_) {}
-
-toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
-      } catch (e) {
-        toast(`Craft failed: ${e.message}`);
-      } finally {
-        _busy = false;
-        draw();
-      }
-    });
-
-    controls.appendChild(fSlot);
-    controls.appendChild(fCount);
-    controls.appendChild(quick);
-    controls.appendChild(fRefine);
-    controls.appendChild(fCost);
-    controls.appendChild(pityLine);
-    controls.appendChild(btn);
-
-    // right: results
-    const results = el("div", "ah-note");
-    results.appendChild(el("div", "", `<b>Results</b><div class="ah-small">Your last craft shows here.</div>`));
-
-    const out = el("div", "ah-results");
-    function drawResults() {
-      out.innerHTML = "";
-      const made = (_lastCraft && _lastCraft.made) || [];
-      if (!made.length) {
-        out.appendChild(el("div", "ah-small", "No craft results yet."));
-        return;
-      }
-      made.forEach((it) => {
-        const card = el("div", "ah-result");
-        const ico = el("div", "ah-ico");
-        const img = document.createElement("img");
-        img.alt = it.name || it.key || "item";
-        img.src = it.icon || "";
-        img.onerror = () => { img.remove(); ico.textContent = "✦"; };
-        ico.appendChild(img);
-
-        const meta = el("div", "ah-meta");
-        meta.appendChild(el("div", "ah-line", `<b>${esc(it.name || it.key || "Item")}</b>`));
-        meta.appendChild(el("div", "ah-small", `<span class="ah-tag">${esc(it.rarity || "common")}</span> · ${esc(_lastCraft.slot || "")}`));
-
-        card.appendChild(ico);
-        card.appendChild(meta);
-        out.appendChild(card);
-      });
-    }
-    drawResults();
-    results.appendChild(el("div", "ah-divider", ""));
-    results.appendChild(out);
-
-    form.appendChild(controls);
-    form.appendChild(results);
-
-    body.appendChild(form);
-
-    // initial render
-    updateCost();
-    renderCraftPity(_state, sel.value, _pityOverride);
+  // helper: pity read
+  function currentPity(slot) {
+    const fromState = _state && _state.pityMap && _state.pityMap[slot];
+    if (fromState != null) return fromState;
+    const fromOverride = _pityOverride && _pityOverride[slot];
+    return (fromOverride != null ? fromOverride : null);
   }
+
+  // helper: render dropdown labels with counts
+  function refreshSlotLabels() {
+    Array.from(sel.options).forEach((opt) => {
+      const s = opt.value;
+      opt.textContent = `${s} (${shardsHave(s)})`;
+    });
+  }
+
+  // build options
+  shardSlots.forEach((s) => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = `${s} (${shardsHave(s)})`;
+    sel.appendChild(opt);
+  });
+  fSlot.appendChild(sel);
+
+  const fCount = el("div", "ah-field");
+  fCount.appendChild(el("label", "", "Count"));
+  const inpCount = document.createElement("input");
+  inpCount.type = "number";
+  inpCount.min = "1";
+  inpCount.max = "50";
+  inpCount.value = "1";
+  fCount.appendChild(inpCount);
+
+  const quick = el("div", "ah-btnrow");
+  [1, 5, 10].forEach(n => {
+    const b = el("button", "ah-btn", String(n));
+    b.type = "button";
+    b.disabled = _busy;
+    b.addEventListener("click", () => { inpCount.value = String(n); updateCost(); });
+    quick.appendChild(b);
+  });
+
+  const fRefine = el("div", "ah-field");
+  fRefine.appendChild(el("label", "", "Refine"));
+  const inpRef = document.createElement("input");
+  inpRef.type = "number";
+  inpRef.min = "0";
+  inpRef.max = "5"; // IMPORTANT: match backend
+  inpRef.value = "0";
+  fRefine.appendChild(inpRef);
+
+  const fCost = el("div", "ah-note", "");
+
+  function updateCost() {
+    const slot = sel.value;
+    const n = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
+    const r = Math.max(0, Math.min(5, parseInt(inpRef.value || "0", 10)));
+
+    inpCount.value = String(n);
+    inpRef.value = String(r);
+
+    const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
+    const total = per * n;
+
+    const have = shardsHave(slot);
+    const left = have - total;
+    const pU = Math.min(cfg.uncommonBase + cfg.uncommonRefineAdd * r, cfg.uncommonCap);
+    const pity = currentPity(slot);
+
+    fCost.innerHTML = `
+      <b>Cost preview</b>
+      <div class="ah-small">
+        Asset: <b>${esc(slot)}_shards</b><br>
+        Have: <b>${have}</b> · Per: <b>${per}</b> · Total: <b>${total}</b> · After: <b>${left}</b><br>
+        Uncommon chance: <b>${Math.round(pU * 100)}%</b>${pity != null ? ` · Pity: <b>${pity}</b>/${cfg.pity}` : ``}
+      </div>
+    `;
+  }
+
+  inpCount.addEventListener("input", updateCost);
+  inpRef.addEventListener("input", updateCost);
+  sel.addEventListener("change", updateCost);
+
+  const btn = el("button", "ah-btn", "Craft");
+  btn.type = "button";
+  btn.disabled = _busy;
+
+  btn.addEventListener("click", async () => {
+    if (_busy) return;
+
+    const slot = sel.value;
+    const count = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
+    const refine = Math.max(0, Math.min(5, parseInt(inpRef.value || "0", 10)));
+
+    // quick client-side check
+    const per = (cfg.baseCost || 5) + refine * (cfg.refineCost || 2);
+    const total = per * count;
+    const have = shardsHave(slot);
+    if (have < total) {
+      toast(`Not enough ${slot}_shards.`);
+      return;
+    }
+
+    _busy = true;
+    draw();
+
+    try {
+      const res = await post("/webapp/forge/craft", {
+        buildingId: _ctx.buildingId,
+        slot,
+        count,
+        refine,
+        run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      });
+
+      // made can be objects after backend patch; keep fallback for keys
+      const made = (res && (res.made || res.result?.made)) || [];
+      const pity = res && (res.result?.pity ?? res.pity);
+      if (pity != null) _pityOverride[slot] = pity;
+
+      _lastCraft = { slot, made };
+
+      // ✅ use payload if present (saves 1 request)
+      if (res && res.data) {
+        _state = res.data;
+      } else {
+        await loadState();
+      }
+
+      // refresh dropdown labels + cost preview
+      try { refreshSlotLabels(); } catch (_) {}
+      try { updateCost(); } catch (_) {}
+
+      toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
+    } catch (e) {
+      toast(`Craft failed: ${e.message}`);
+    } finally {
+      _busy = false;
+      draw();
+    }
+  });
+
+  controls.appendChild(fSlot);
+  controls.appendChild(fCount);
+  controls.appendChild(quick);
+  controls.appendChild(fRefine);
+  controls.appendChild(fCost);
+  controls.appendChild(btn);
+
+  // right: results
+  const results = el("div", "ah-note");
+  results.appendChild(el("div", "", `<b>Results</b><div class="ah-small">Your last craft shows here.</div>`));
+
+  const out = el("div", "ah-results");
+  function drawResults() {
+    out.innerHTML = "";
+    const made = (_lastCraft && _lastCraft.made) || [];
+    if (!made.length) {
+      out.appendChild(el("div", "ah-small", "No craft results yet."));
+      return;
+    }
+
+    made.forEach((it) => {
+      // support both: object {key,name,rarity,icon} OR string key
+      const obj = (typeof it === "string") ? { key: it } : (it || {});
+      const card = el("div", "ah-result");
+      const ico = el("div", "ah-ico");
+
+      const img = document.createElement("img");
+      img.alt = obj.name || obj.key || "item";
+      img.src = obj.icon || "";
+      img.onerror = () => { img.remove(); ico.textContent = "✦"; };
+      ico.appendChild(img);
+
+      const meta = el("div", "ah-meta");
+      meta.appendChild(el("div", "ah-line", `<b>${esc(obj.name || obj.key || "Item")}</b>`));
+      meta.appendChild(el("div", "ah-small", `<span class="ah-tag">${esc(obj.rarity || "common")}</span> · ${esc(_lastCraft.slot || "")}`));
+
+      card.appendChild(ico);
+      card.appendChild(meta);
+      out.appendChild(card);
+    });
+  }
+
+  drawResults();
+  results.appendChild(el("div", "ah-divider", ""));
+  results.appendChild(out);
+
+  form.appendChild(controls);
+  form.appendChild(results);
+  body.appendChild(form);
+
+  // initial refresh
+  refreshSlotLabels();
+  updateCost();
+}
 
   function draw() {
     if (!_root) return;
