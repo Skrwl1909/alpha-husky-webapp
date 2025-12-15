@@ -482,9 +482,18 @@
         if (pity != null) _pityOverride[slot] = pity;
 
         _lastCraft = { slot, made };
-        await loadState();
 
-        toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
+    // ✅ jeśli backend zwrócił świeży payload, bierzemy go bez kolejnego requestu
+    if (res && res.data) {
+      _state = res.data;
+    } else {
+      await loadState();
+    }
+
+// odśwież cost preview + pity w aktualnym slocie
+try { updateCost(); } catch (_) {}
+
+toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
       } catch (e) {
         toast(`Craft failed: ${e.message}`);
       } finally {
