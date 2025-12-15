@@ -118,7 +118,7 @@
       .ah-field select,.ah-field input{width:180px;max-width:55vw;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
         background:rgba(0,0,0,.25);color:#fff}
       .ah-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(0,0,0,.78);color:#fff;
-        padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);z-index:10000;max-width:min(560px,92vw)}
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);z-index:2147483641;max-width:min(560px,92vw)}
       .ah-divider{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
       .ah-missing{opacity:.9}
       .ah-missing i{opacity:.8}
@@ -128,8 +128,17 @@
       .ah-tag{font-size:11px;opacity:.8;border:1px solid rgba(255,255,255,.10);padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.25);font-weight:900}
 
       /* pity micro patch */
-      .ah-forge-pity{margin-top:6px;font-size:12px;opacity:.85}
-    `;
+     /* ---- contrast overrides ---- */
+  .ah-forge{color:#f4f6ff}
+  .ah-forge *{color:inherit}
+  .ah-forge-title,.ah-forge-sub,.ah-forge-close,.ah-forge-tab,.ah-btn{color:#f4f6ff}
+  .ah-small{opacity:.88}
+  .ah-note{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
+  .ah-card{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14)}
+  .ah-field select,.ah-field input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.18);color:#fff}
+  .ah-forge-tab{background:rgba(255,255,255,.06)}
+  .ah-forge-tab.active{background:rgba(255,255,255,.16)}
+`;
     document.head.appendChild(s);
   }
 
