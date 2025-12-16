@@ -6,9 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
-  <link rel="preload" as="image" href="background_poster.jpg">
-  <link rel="preload" as="video" href="background3.webm" type="video/webm">
-  <link rel="preload" as="video" href="background3.mp4" type="video/mp4">
+
+  <!-- background2: video + fallback -->
+  <link rel="preload" as="image" href="background2.webp">
+  <link rel="preload" as="video" href="background2.webm" type="video/webm">
+  <link rel="preload" as="video" href="background2.mp4" type="video/mp4">
+
   <style>
   /* Telegram theme + bezpieczne fallbacki */
   :root { color-scheme: var(--tg-color-scheme, dark); }
@@ -23,7 +26,15 @@
   .bg { position: absolute; inset: 0; z-index: 0; }
   .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .bg video { filter: contrast(1.08) brightness(.9); }
-  .bg .poster { display:none; background-position:center; background-size:cover; }
+
+  /* fallback poster */
+  .bg .poster {
+    display:none;
+    background-image: url("background2.webp");
+    background-position:center;
+    background-size:cover;
+  }
+
   .ui { position: absolute; inset: 0; z-index: 2; }
   .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px 16px; }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
@@ -424,15 +435,15 @@
 </head>
 <body>
   <div id="dbg">init…</div>
-  <div class="app">
-    <div class="bg">
-      <video autoplay muted loop playsinline poster="background_poster.jpg" preload="metadata">
-        <source src="background3.webm" type="video/webm" />
-        <source src="background3.mp4" type="video/mp4" />
-      </video>
-      <div class="poster" style="background-image:url('background_poster.jpg');"></div>
-    </div>
-    <div id="app" class="ui">
+<div class="app">
+  <div class="bg">
+    <video autoplay muted loop playsinline poster="background2.webp" preload="metadata">
+      <source src="background2.webm" type="video/webm" />
+      <source src="background2.mp4" type="video/mp4" />
+    </video>
+    <div class="poster" style="background-image:url('background2.webp');"></div>
+  </div>
+  <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
@@ -1822,6 +1833,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
