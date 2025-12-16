@@ -720,14 +720,14 @@
       document.head.appendChild(s);
     })(window.WEBAPP_VER);
   </script>
-   <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
+  <script>
+  (function(v){
+    var s = document.createElement('script');
+    s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
+    s.async = false;
+    document.head.appendChild(s);
+  })(window.WEBAPP_VER);
+</script>
 
   <!-- 4) Główny skrypt aplikacji -->
   <script>
@@ -862,7 +862,7 @@
         window.Quests?.init?.({ apiPost, tg, dbg });
         window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
         window.Forge && window.Forge.init({ apiPost, tg, dbg });
-        window.Referrals?.init({ apiPost, tg, dbg });
+        window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1846,6 +1846,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
