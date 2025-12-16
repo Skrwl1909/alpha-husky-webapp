@@ -459,6 +459,9 @@
             <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
             <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
             <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
+            <button class="btn referral referral-btn" aria-label="Open Referrals" type="button">
+          Referrals
+        </button>
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
@@ -1462,6 +1465,7 @@
           ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
           ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
           ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+          ".btn.referral": () => window.Referrals?.open?.(),
           ".btn.howlboard": () => openBoard(),
         };
         Object.entries(actions).forEach(([sel, fn]) => {
@@ -1842,6 +1846,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
