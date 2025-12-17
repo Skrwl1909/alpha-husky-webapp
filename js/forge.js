@@ -555,11 +555,45 @@
 
       toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
     } catch (e) {
-      toast(`Craft failed: ${e.message}`);
-    } finally {
-      _busy = false;
-      draw();
-    }
+  // ---- ensure UI error box exists ----
+  let uiErrorEl = document.getElementById("forge-error");
+  if (!uiErrorEl) {
+    uiErrorEl = document.createElement("pre");
+    uiErrorEl.id = "forge-error";
+    uiErrorEl.style.whiteSpace = "pre-wrap";
+    uiErrorEl.style.wordBreak = "break-word";
+    uiErrorEl.style.margin = "10px 0 0";
+    uiErrorEl.style.padding = "10px 12px";
+    uiErrorEl.style.border = "1px solid rgba(255,255,255,.18)";
+    uiErrorEl.style.borderRadius = "10px";
+    uiErrorEl.style.background = "rgba(0,0,0,.35)";
+    uiErrorEl.style.fontSize = "12px";
+    uiErrorEl.style.lineHeight = "1.35";
+
+    // spróbuj wpiąć w modal/sekcję forge; fallback: na koniec body
+    const mount =
+      document.querySelector("#forge-modal .modal-body") ||
+      document.querySelector("#forge-modal") ||
+      document.querySelector("#forge") ||
+      document.body;
+
+    mount.appendChild(uiErrorEl);
+  }
+
+  // ---- extract rich error info (apiPost throws Error with {status,data}) ----
+  const d = e?.data || {};          // twoje apiPost zwykle podczepia {status, data}
+  const payload = d?.data || d;     // czasem error ma shape {data:{reason...}}
+
+  const msg =
+    "Craft failed: " + (payload?.reason || e?.message || "unknown") +
+    (payload?.trace ? ("\n" + payload.trace) : "") +
+    (payload?.dbg ? ("\nDBG: " + JSON.stringify(payload.dbg)) : "");
+
+  uiErrorEl.textContent = msg;
+
+  // toast krótki (żeby nie spamować trace w dymku)
+  toast(`Craft failed: ${payload?.reason || e?.message || "unknown"}`);
+}
   });
 
   controls.appendChild(fSlot);
