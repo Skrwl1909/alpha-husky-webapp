@@ -527,34 +527,38 @@
     draw();
 
     try {
-      const res = await post("/webapp/forge/craft", {
-        buildingId: _ctx.buildingId,
-        slot,
-        count,
-        refine,
-        run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      });
+  const res = await post("/webapp/forge/craft", {
+    buildingId: _ctx.buildingId,
+    slot,
+    count,
+    refine,
+    run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+  });
 
-      // made can be objects after backend patch; keep fallback for keys
-      const made = (res && (res.made || res.result?.made)) || [];
-      const pity = res && (res.result?.pity ?? res.pity);
-      if (pity != null) _pityOverride[slot] = pity;
+  // made can be objects after backend patch; keep fallback for keys
+  const made = (res && (res.made || res.result?.made)) || [];
+  const pity = res && (res.result?.pity ?? res.pity);
+  if (pity != null) _pityOverride[slot] = pity;
 
-      _lastCraft = { slot, made };
+  _lastCraft = { slot, made };
 
-      // ✅ use payload if present (saves 1 request)
-      if (res && res.data) {
-        _state = res.data;
-      } else {
-        await loadState();
-      }
+  // ✅ use payload if present (saves 1 request)
+  if (res && res.data) {
+    _state = res.data;
+  } else {
+    await loadState();
+  }
 
-      // refresh dropdown labels + cost preview
-      try { refreshSlotLabels(); } catch (_) {}
-      try { updateCost(); } catch (_) {}
+  // refresh dropdown labels + cost preview
+  try { refreshSlotLabels(); } catch (_) {}
+  try { updateCost(); } catch (_) {}
 
-      toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
-    } catch (e) {
+  // clear old error box on success
+  const uiErrorEl = document.getElementById("forge-error");
+  if (uiErrorEl) uiErrorEl.textContent = "";
+
+  toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
+} catch (e) {
   // ---- ensure UI error box exists ----
   let uiErrorEl = document.getElementById("forge-error");
   if (!uiErrorEl) {
@@ -585,7 +589,6 @@
   const status = e?.status ?? e?.data?.status ?? "";
   const payload = e?.data?.data || e?.data || {}; // supports both shapes
   const rawMsg = (e && typeof e === "object" && e.message) ? e.message : String(e);
-
   const reason = payload?.reason || rawMsg || "unknown";
 
   let payloadPretty = "";
@@ -604,6 +607,9 @@
     `PAYLOAD:\n${payloadPretty}`;
 
   toast(`Craft failed${status ? " [" + status + "]" : ""}: ${reason}`);
+} finally {
+  _busy = false;
+  draw();
 }
   });
 
