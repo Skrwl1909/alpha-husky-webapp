@@ -9,15 +9,26 @@
     _tg = tg || (window.Telegram && window.Telegram.WebApp) || null;
     _dbg = !!dbg;
   }
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
+  async function getInitDataSafe(timeoutMs = 800) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeoutMs) {
+      const v = (_tg && _tg.initData) || window.Telegram?.WebApp?.initData || window.__INIT_DATA__ || "";
+      if (v && v.length > 20) return v;
+      await sleep(50);
+    }
+    return (_tg && _tg.initData) || window.Telegram?.WebApp?.initData || window.__INIT_DATA__ || "";
+  }
+  
   async function post(path, payload) {
     if (_apiPost) return await _apiPost(path, payload || {});
-    const API_BASE = window.API_BASE || "";
-    const initData = (_tg && _tg.initData) || window.__INIT_DATA__ || "";
+    const initData = await getInitDataSafe();
     const res = await fetch(API_BASE + path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: initData, ...(payload || {}) }),
+      // ✅ init_data LAST so payload can't override it
+      body: JSON.stringify({ ...(payload || {}), init_data: initData }),
     });
     const json = await res.json().catch(() => null);
     if (!res.ok) throw new Error((json && (json.reason || json.error)) || `HTTP_${res.status}`);
