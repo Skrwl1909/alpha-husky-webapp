@@ -840,19 +840,34 @@
           }
         }
 
-        async function apiPost(path, payload){
-          const init_data = window.Telegram?.WebApp?.initData || "";
-          const headers = { "Content-Type": "application/json" };
-          if (init_data) headers.Authorization = `Bearer ${init_data}`;
-          const res = await fetch(api(path), {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ init_data, ...(payload||{}) })
-          });
-          const data = await res.json().catch(()=> ({}));
-          if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
-          return data;
-        }
+        function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+async function getInitDataSafe(timeoutMs = 800) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const v = window.Telegram?.WebApp?.initData;
+    if (v && v.length > 20) return v;
+    await sleep(50);
+  }
+  return window.Telegram?.WebApp?.initData || "";
+}
+
+async function apiPost(path, payload){
+  const init_data = await getInitDataSafe();
+  const headers = { "Content-Type": "application/json" };
+  if (init_data) headers.Authorization = `Bearer ${init_data}`;
+
+  const res = await fetch(api(path), {
+    method: "POST",
+    headers,
+    // ✅ init_data LAST so payload can’t override it
+    body: JSON.stringify({ ...(payload||{}), init_data })
+  });
+
+  const data = await res.json().catch(()=> ({}));
+  if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
+  return data;
+}
 
         window.S = window.S || {};
         window.S.apiPost = apiPost;
@@ -1846,6 +1861,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
