@@ -570,7 +570,6 @@
     uiErrorEl.style.fontSize = "12px";
     uiErrorEl.style.lineHeight = "1.35";
 
-    // spróbuj wpiąć w modal/sekcję forge; fallback: na koniec body
     const mount =
       document.querySelector("#forge-modal .modal-body") ||
       document.querySelector("#forge-modal") ||
@@ -580,19 +579,31 @@
     mount.appendChild(uiErrorEl);
   }
 
-  // ---- extract rich error info (apiPost throws Error with {status,data}) ----
-  const d = e?.data || {};          // twoje apiPost zwykle podczepia {status, data}
-  const payload = d?.data || d;     // czasem error ma shape {data:{reason...}}
+  console.error("CRAFT ERROR:", e);
 
-  const msg =
-    "Craft failed: " + (payload?.reason || e?.message || "unknown") +
-    (payload?.trace ? ("\n" + payload.trace) : "") +
-    (payload?.dbg ? ("\nDBG: " + JSON.stringify(payload.dbg)) : "");
+  // apiPost usually throws Error with {status, data}
+  const status = e?.status ?? e?.data?.status ?? "";
+  const payload = e?.data?.data || e?.data || {}; // supports both shapes
+  const rawMsg = (e && typeof e === "object" && e.message) ? e.message : String(e);
 
-  uiErrorEl.textContent = msg;
+  const reason = payload?.reason || rawMsg || "unknown";
 
-  // toast krótki (żeby nie spamować trace w dymku)
-  toast(`Craft failed: ${payload?.reason || e?.message || "unknown"}`);
+  let payloadPretty = "";
+  try { payloadPretty = JSON.stringify(payload, null, 2); }
+  catch { payloadPretty = String(payload); }
+
+  const dbgPretty = payload?.dbg ? (() => {
+    try { return JSON.stringify(payload.dbg, null, 2); } catch { return String(payload.dbg); }
+  })() : "";
+
+  uiErrorEl.textContent =
+    `Craft failed${status ? " [" + status + "]" : ""}: ${reason}\n\n` +
+    `raw: ${String(e)}\n\n` +
+    (dbgPretty ? `DBG:\n${dbgPretty}\n\n` : "") +
+    (payload?.trace ? `TRACE:\n${payload.trace}\n\n` : "") +
+    `PAYLOAD:\n${payloadPretty}`;
+
+  toast(`Craft failed${status ? " [" + status + "]" : ""}: ${reason}`);
 }
   });
 
