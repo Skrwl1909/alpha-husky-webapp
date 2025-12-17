@@ -251,8 +251,29 @@
   }
 
   async function loadState() {
-    const res = await post("/webapp/referrals/state", {});
-    _state = (res && (res.data || res)) || null;
+    let lastErr = null;
+
+    // small delay before first call (helps Telegram init timing)
+    await sleep(120);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await post("/webapp/referrals/state", {});
+        _state = (res && (res.data || res)) || null;
+        return;
+      } catch (e) {
+        lastErr = e;
+        const msg = String(e?.message || "");
+        // retry only for init/auth timing issues
+        if (msg.includes("MISSING") || msg.includes("HTTP_401")) {
+          await sleep(150 + attempt * 250); // 150ms, 400ms, 650ms
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    throw lastErr;
   }
 
   async function open() {
