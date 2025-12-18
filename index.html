@@ -878,6 +878,7 @@ async function apiPost(path, payload){
         window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
         window.Forge && window.Forge.init({ apiPost, tg, dbg });
         window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
+        window.Skins?.init?.({ apiPost, tg, dbg });
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1824,6 +1825,7 @@ shareSkin?.addEventListener('click', () => {
   <script src="js/equipped.js?v=20251210"></script>
   <script src="js/shop.js?v=WEBAPP_VER"></script>
   <script src="js/forge.js?v=WEBAPP_VER"></script>
+  <script src="js/skins.js?v="+(window.WEBAPP_VER||"1")></script>
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -1861,6 +1863,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
