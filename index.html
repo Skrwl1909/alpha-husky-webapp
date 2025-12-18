@@ -1472,7 +1472,7 @@ async function apiPost(path, payload){
         /* === BUTTONS / ACTIONS === */
         const actions = {
           ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-          ".btn.skins":  () => openSkinsModal(),                   // Skins – WebApp modal
+          ".btn.skins": () => window.Skins?.open?.(),
           ".btn.map": () => {
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
@@ -1870,6 +1870,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
