@@ -907,16 +907,19 @@ function loadScriptOnce(src) {
 }
 
 let _skinsLoading = null;
-async function ensureSkinsLoaded(apiPost, tg, dbg) {
-  // jeśli skins już istnieją, nie rób nic
-  if (window.Skins?.open && window.Skins?.init) return;
 
-  // jeśli już trwa ładowanie — poczekaj
+async function ensureSkinsLoaded(apiPost, tg, dbg) {
+  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() ma _apiPost=null)
+  if (window.Skins?.open && window.Skins?.init) {
+    try { window.Skins.init({ apiPost, tg, dbg }); } catch (_) {}
+    return;
+  }
+
   if (_skinsLoading) return await _skinsLoading;
 
   _skinsLoading = (async () => {
     await loadScriptOnce("js/skins.js");
-    window.Skins?.init?.({ apiPost, tg, dbg });
+    try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch (_) {}
   })();
 
   return await _skinsLoading;
@@ -1836,6 +1839,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
