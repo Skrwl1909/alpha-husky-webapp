@@ -880,10 +880,11 @@ async function apiPost(path, payload){
         window.S = window.S || {};
         window.S.apiPost = apiPost;
         // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
-    function loadScriptOnce(src) {
-      return new Promise((resolve, reject) => {
-        const existing = [...document.scripts].find(s => (s.src || "").includes(src));
-        if (existing) return resolve();
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    // jeśli już jest w DOM, nie ładuj drugi raz
+    const existing = [...document.scripts].find(s => (s.src || "").includes(src));
+    if (existing) return resolve();
 
     const v = encodeURIComponent(String(window.WEBAPP_VER || Date.now()));
     const full = src + (src.includes("?") ? "&" : "?") + "v=" + v;
@@ -1796,6 +1797,7 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
   </script>
 </body>
 </html>
+
 
 
 
