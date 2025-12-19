@@ -1034,7 +1034,7 @@ async function apiPost(path, payload){
             console.warn("profile load failed", e);
           }
         }
-
+        window.loadProfile = loadProfile;
         async function loadPlayerState(){
           try {
             const state = await apiPost("/webapp/state");
@@ -1508,115 +1508,6 @@ async function apiPost(path, payload){
           console.log("coords:", x, y);
         });
 
-       /* === SKINS UI === */
-const avatarBack = document.getElementById('avatarBack');
-const skinCanvas = document.getElementById('skinCanvas');
-const skinCtx = skinCanvas ? skinCanvas.getContext('2d') : null;
-const skinDesc = document.getElementById('skinDesc');
-const closeAvatar = document.getElementById('closeAvatar');
-const equipSkin = document.getElementById('equipSkin');
-const shareSkin = document.getElementById('shareSkin');
-const skinButtonsWrap = document.getElementById('skinButtons');
-let _skins = [];
-let _activeSkinKey = "";
-
-avatarBack?.addEventListener('click', (e) => { if (e.target === avatarBack) avatarBack.style.display = 'none'; });
-closeAvatar?.addEventListener('click', () => { avatarBack.style.display = 'none'; });
-
-function renderSkinPreview(imgUrl, name){
-  if (!skinCtx) return;
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = imgUrl;
-  img.onload = () => {
-    skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
-    const scaleX = skinCanvas.width / img.width;
-    const scaleY = skinCanvas.height / img.height;
-    const scale = Math.min(scaleX, scaleY);
-    const drawW = img.width * scale;
-    const drawH = img.height * scale;
-    const offsetX = (skinCanvas.width - drawW) / 2;
-    const offsetY = (skinCanvas.height - drawH) / 2;
-    skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
-  };
-  img.onerror = () => {
-    skinCtx.clearRect(0,0,skinCanvas.width, skinCanvas.height);
-    skinCtx.fillStyle = '#333'; skinCtx.fillRect(0,0,skinCanvas.width, skinCanvas.height);
-    skinCtx.fillStyle = '#fff'; skinCtx.font = '20px Arial'; skinCtx.textAlign = 'center';
-    skinCtx.fillText('Skin not found', skinCanvas.width/2, skinCanvas.height/2);
-  };
-  skinDesc.textContent = `${name} — Flex your alpha! 🐺`;
-}
-
-function buildSkinButtons(skins, active){
-  if (!skinButtonsWrap) return;
-  skinButtonsWrap.innerHTML = "";
-  skins.forEach(s => {
-    const b = document.createElement('button');
-    b.className = 'btn skin-btn' + (s.key === active ? ' active' : '');
-    b.type = 'button';
-    b.textContent = s.name || s.key;
-    b.dataset.skin = s.key;
-    b.addEventListener('click', () => {
-      $$(`#skinButtons .skin-btn`).forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      _activeSkinKey = s.key;
-      renderSkinPreview(s.img, s.name || s.key);
-      try { tg?.HapticFeedback?.impactOccurred?.('light'); } catch(_){}
-    });
-    skinButtonsWrap.appendChild(b);
-  });
-
-  const first = skins.find(s => s.key === active) || skins[0];
-  if (first){
-    _activeSkinKey = first.key;
-    renderSkinPreview(first.img, first.name || first.key);
-    const btn = skinButtonsWrap.querySelector(`[data-skin="${_activeSkinKey}"]`);
-    if (btn) btn.classList.add('active');
-  } else {
-    skinCtx?.clearRect(0,0,skinCanvas.width, skinCanvas.height);
-    skinDesc.textContent = 'No skins available yet.';
-  }
-}
-
-async function openSkinsModal(){
-  try{
-    const out = await apiPost("/webapp/skins", {});
-    if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
-    _skins = Array.isArray(out.skins) ? out.skins : [];
-    _activeSkinKey = out.active || "";
-    buildSkinButtons(_skins, _activeSkinKey || "");
-    avatarBack.style.display = 'flex';
-  }catch(e){
-    console.warn(e);
-    tg?.showAlert?.("Failed to load skins.");
-  }
-}
-
-equipSkin?.addEventListener('click', async () => {
-  const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "";
-  if (!key) { tg?.showAlert?.("Pick a skin first"); return; }
-  try{
-    const out = await apiPost("/webapp/skins/equip", { skin: key });
-    if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
-    tg?.showAlert?.("Skin equipped!");
-    avatarBack.style.display = 'none';
-    // odśwież player-card z backendowego profilu
-    loadProfile();
-  }catch(e){
-    console.warn(e);
-    tg?.showAlert?.(e?.message || "Equip failed");
-  }
-});
-
-shareSkin?.addEventListener('click', () => {
-  if (!tg?.shareToStory || !skinCanvas?.toBlob) { tg?.showAlert?.("Sharing not supported"); return; }
-  const key = (skinButtonsWrap.querySelector('.skin-btn.active')?.dataset.skin) || _activeSkinKey || "skin";
-  skinCanvas.toBlob((blob) => {
-    tg?.shareToStory?.(blob, { text: `Flex my ${key} Skin in @The_Alpha_Husky! 🐺`, widgetLink: 'https://t.me/Alpha_husky_bot' });
-    try { tg?.HapticFeedback?.impactOccurred?.('medium'); } catch(_){}
-  }, 'image/png');
-});
 
         /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
@@ -1870,6 +1761,7 @@ shareSkin?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
