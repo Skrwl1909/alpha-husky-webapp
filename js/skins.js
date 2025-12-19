@@ -3,6 +3,7 @@
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
+  let _bound = false;
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
@@ -14,26 +15,29 @@
   let _selectedKey = "";
 
   function init({ apiPost, tg, dbg }) {
-    _apiPost = apiPost || null;
-    _tg = tg || (window.Telegram && window.Telegram.WebApp) || null;
-    _dbg = !!dbg;
+    _apiPost = apiPost || window.S?.apiPost || null;
+_tg = tg || (window.Telegram && window.Telegram.WebApp) || null;
+_dbg = !!dbg;
 
-    avatarBack = document.getElementById("avatarBack");
-    skinCanvas = document.getElementById("skinCanvas");
-    skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
-    skinDesc = document.getElementById("skinDesc");
-    closeAvatar = document.getElementById("closeAvatar");
-    equipBtn = document.getElementById("equipSkin");
-    shareBtn = document.getElementById("shareSkin");
-    skinButtonsWrap = document.getElementById("skinButtons");
+avatarBack = document.getElementById("avatarBack");
+skinCanvas = document.getElementById("skinCanvas");
+skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
+skinDesc = document.getElementById("skinDesc");
+closeAvatar = document.getElementById("closeAvatar");
+equipBtn = document.getElementById("equipSkin");
+shareBtn = document.getElementById("shareSkin");
+skinButtonsWrap = document.getElementById("skinButtons");
 
-    avatarBack?.addEventListener("click", (e) => {
-      if (e.target === avatarBack) avatarBack.style.display = "none";
-    });
-    closeAvatar?.addEventListener("click", () => (avatarBack.style.display = "none"));
+if (_bound) return;        // ✅ nie dubluj listenerów
+_bound = true;
 
-    equipBtn?.addEventListener("click", onPrimaryAction);
-    shareBtn?.addEventListener("click", onShare);
+avatarBack?.addEventListener("click", (e) => {
+  if (e.target === avatarBack) avatarBack.style.display = "none";
+});
+closeAvatar?.addEventListener("click", () => (avatarBack.style.display = "none"));
+
+equipBtn?.addEventListener("click", onPrimaryAction);
+shareBtn?.addEventListener("click", onShare);
   }
 
   function dbg(msg) {
@@ -190,22 +194,31 @@
   }
 
   async function open() {
-    try {
-      const out = await _apiPost("/webapp/skins", {});
-      if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
-
-      _catalog = Array.isArray(out.skins) ? out.skins : [];
-      _owned = Array.isArray(out.owned) ? out.owned : ["default"];
-      _equipped = (out.equipped && typeof out.equipped === "object") ? out.equipped : { skin: (out.active || "") };
-
-      buildSkinButtons();
-      avatarBack.style.display = "flex";
-      setPrimaryButtonState();
-    } catch (e) {
-      console.warn(e);
-      _tg?.showAlert?.("Failed to load skins.");
-    }
+  // ✅ guard: jeśli init nie ustawił apiPost (albo loader jeszcze nie zdążył)
+  if (!_apiPost) {
+    console.warn("[Skins] apiPost missing (init not called yet?)");
+    _tg?.showAlert?.("Skins not ready yet.");
+    return;
   }
+
+  try {
+    const out = await _apiPost("/webapp/skins", {});
+    if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
+
+    _catalog = Array.isArray(out.skins) ? out.skins : [];
+    _owned = Array.isArray(out.owned) ? out.owned : ["default"];
+    _equipped = (out.equipped && typeof out.equipped === "object")
+      ? out.equipped
+      : { skin: (out.active || "") };
+
+    buildSkinButtons();
+    avatarBack.style.display = "flex";
+    setPrimaryButtonState();
+  } catch (e) {
+    console.warn(e);
+    _tg?.showAlert?.("Failed to load skins.");
+  }
+}
 
   async function onPrimaryAction() {
     const key = (_selectedKey || "").trim().toLowerCase();
@@ -252,19 +265,25 @@
   }
 
   function onShare() {
-    if (!_tg?.shareToStory || !skinCanvas?.toBlob) {
-      _tg?.showAlert?.("Sharing not supported");
+  if (!_tg?.shareToStory || !skinCanvas?.toBlob) {
+    _tg?.showAlert?.("Sharing not supported");
+    return;
+  }
+  const key = (_selectedKey || "skin").toLowerCase();
+  skinCanvas.toBlob((blob) => {
+    // ✅ guard: czasem toBlob zwraca null (np. błędy canvas/CORS)
+    if (!blob) {
+      _tg?.showAlert?.("Share failed");
       return;
     }
-    const key = (_selectedKey || "skin").toLowerCase();
-    skinCanvas.toBlob((blob) => {
-      _tg?.shareToStory?.(blob, {
-        text: `Flex my ${key} skin in @The_Alpha_Husky! 🐺`,
-        widgetLink: "https://t.me/Alpha_husky_bot"
-      });
-      haptic("medium");
-    }, "image/png");
-  }
+
+    _tg?.shareToStory?.(blob, {
+      text: `Flex my ${key} skin in @The_Alpha_Husky! 🐺`,
+      widgetLink: "https://t.me/Alpha_husky_bot"
+    });
+    haptic("medium");
+  }, "image/png");
+}
 
   window.Skins = { init, open };
 })();
