@@ -563,18 +563,24 @@
 </div>
 
 <!-- SKINS MODAL -->
-<div class="sheet-back avatar-sheet" id="avatarBack">
+<div class="sheet-back avatar-sheet" id="avatarBack" style="display:none;">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Skin Gallery</div>
       <button class="btn" id="closeAvatar" type="button">×</button>
     </div>
-    <canvas id="skinCanvas" width="400" height="600" style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);"></canvas>
+
+    <canvas id="skinCanvas" width="400" height="600"
+      style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);">
+    </canvas>
+
     <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">—</div>
+
     <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
       <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
       <button class="btn" id="shareSkin" type="button">Share Flex</button>
     </div>
+
     <!-- Galeria skinów renderowana dynamicznie -->
     <div id="skinButtons" class="skins-grid"></div>
   </div>
@@ -1830,6 +1836,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
