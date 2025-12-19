@@ -13,11 +13,16 @@
   let _owned = [];
   let _equipped = { skin: "" };
   let _selectedKey = "";
+  let _inited = false;
 
-  function init({ apiPost, tg, dbg }) {
-    _apiPost = apiPost || window.S?.apiPost || null;
-_tg = tg || (window.Telegram && window.Telegram.WebApp) || null;
-_dbg = !!dbg;
+ function init({ apiPost, tg, dbg }) {
+  // ✅ zawsze uzupełnij apiPost nawet jeśli init wołany ponownie
+  _apiPost = apiPost || window.S?.apiPost || _apiPost || null;
+  _tg = tg || (window.Telegram && window.Telegram.WebApp) || _tg || null;
+  _dbg = !!dbg;
+
+  if (_inited) return;   // ✅ nie dubluj event listenerów
+  _inited = true;
 
 avatarBack = document.getElementById("avatarBack");
 skinCanvas = document.getElementById("skinCanvas");
