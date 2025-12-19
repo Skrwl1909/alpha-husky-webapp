@@ -879,6 +879,8 @@ async function apiPost(path, payload){
 
         window.S = window.S || {};
         window.S.apiPost = apiPost;
+        const _tg  = window.tg || window.Telegram?.WebApp || null;
+        const _dbg = !!window.DBG;
         // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
 function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
@@ -1508,8 +1510,8 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
         /* === BUTTONS / ACTIONS === */
         const actions = {
           ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-          ".btn.skins": () =>
-  ensureSkinsLoaded(apiPost, tg, dbg)
+         ".btn.skins": () =>
+  ensureSkinsLoaded(apiPost, _tg, _dbg)
     .then(() => window.Skins?.open?.())
     .catch((e) => { console.warn("skins load/open failed", e); }),
           ".btn.map": () => {
@@ -1811,6 +1813,7 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
   </script>
 </body>
 </html>
+
 
 
 
