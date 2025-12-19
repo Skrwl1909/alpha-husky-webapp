@@ -916,15 +916,15 @@ async function ensureSkinsLoaded(apiPost, tg, dbg) {
   return await _skinsLoading;
 }
         
-        window.Fortress?.init?.({ apiPost, tg, dbg });
-        window.Dojo?.init?.({ apiPost, tg, dbg });
-        window.Quests?.init?.({ apiPost, tg, dbg });
-        window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
-        window.Forge && window.Forge.init({ apiPost, tg, dbg });
-        window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
+        window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
+window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
+window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
 // skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
-ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
+ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1813,6 +1813,7 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
   </script>
 </body>
 </html>
+
 
 
 
