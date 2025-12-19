@@ -1508,7 +1508,10 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
         /* === BUTTONS / ACTIONS === */
         const actions = {
           ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-          ".btn.skins": () => window.Skins?.open?.(),
+          ".btn.skins": () =>
+  ensureSkinsLoaded(apiPost, tg, dbg)
+    .then(() => window.Skins?.open?.())
+    .catch((e) => { console.warn("skins load/open failed", e); }),
           ".btn.map": () => {
             mapBack.style.display = "flex";
             if (!DATA) loadMapData();
@@ -1529,9 +1532,20 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
           ".btn.howlboard": () => openBoard(),
         };
         Object.entries(actions).forEach(([sel, fn]) => {
-          const el = document.querySelector(sel);
-          el && el.addEventListener('click', (e) => { e.preventDefault(); try{ fn(e); }catch(err){ console.error(err); dbg('ERR: '+(err?.message||err)); } });
-        });
+  const el = document.querySelector(sel);
+  if (!el) return;
+
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    Promise.resolve()
+      .then(() => fn(e))
+      .catch((err) => {
+        console.error(err);
+        try { dbg('ERR: ' + (err?.message || err)); } catch (_) {}
+      });
+  });
+});
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
 
         function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
@@ -1797,6 +1811,7 @@ ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
   </script>
 </body>
 </html>
+
 
 
 
