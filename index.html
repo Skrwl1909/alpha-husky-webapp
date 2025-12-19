@@ -879,14 +879,49 @@ async function apiPost(path, payload){
 
         window.S = window.S || {};
         window.S.apiPost = apiPost;
+        // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
+    function loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const existing = [...document.scripts].find(s => (s.src || "").includes(src));
+        if (existing) return resolve();
 
+    const v = encodeURIComponent(String(window.WEBAPP_VER || Date.now()));
+    const full = src + (src.includes("?") ? "&" : "?") + "v=" + v;
+
+    const s = document.createElement("script");
+    s.src = full;
+    s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = (e) => reject(e);
+    document.head.appendChild(s);
+  });
+}
+
+let _skinsLoading = null;
+async function ensureSkinsLoaded(apiPost, tg, dbg) {
+  // jeśli skins już istnieją, nie rób nic
+  if (window.Skins?.open && window.Skins?.init) return;
+
+  // jeśli już trwa ładowanie — poczekaj
+  if (_skinsLoading) return await _skinsLoading;
+
+  _skinsLoading = (async () => {
+    await loadScriptOnce("js/skins.js");
+    window.Skins?.init?.({ apiPost, tg, dbg });
+  })();
+
+  return await _skinsLoading;
+}
+        
         window.Fortress?.init?.({ apiPost, tg, dbg });
         window.Dojo?.init?.({ apiPost, tg, dbg });
         window.Quests?.init?.({ apiPost, tg, dbg });
         window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
         window.Forge && window.Forge.init({ apiPost, tg, dbg });
         window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
-        window.Skins?.init?.({ apiPost, tg, dbg });
+
+// skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
+ensureSkinsLoaded(apiPost, tg, dbg).catch(()=>{});
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1761,6 +1796,7 @@ async function apiPost(path, payload){
   </script>
 </body>
 </html>
+
 
 
 
