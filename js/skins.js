@@ -241,14 +241,16 @@ shareBtn?.addEventListener("click", onShare);
       }
 
       // not owned -> buy
-      const price = getCostBones(key);
-      if (price <= 0) {
-        _tg?.showAlert?.("This skin is locked.");
-        return;
-      }
+const price = getCostBones(key);
+if (price <= 0) {
+  _tg?.showAlert?.("This skin is locked.");
+  return;
+}
 
-      const outBuy = await _apiPost("/webapp/skins/buy", { skin: key });
-      if (!outBuy || !outBuy.ok) throw new Error(outBuy?.reason || "buy failed");
+// ✅ retry-safe run_id
+const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
+const outBuy = await _apiPost("/webapp/skins/buy", { skin: key, run_id: rid });
+if (!outBuy || !outBuy.ok) throw new Error(outBuy?.reason || "buy failed");
 
       // refresh state after buy
       const out = await _apiPost("/webapp/skins", {});
