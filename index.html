@@ -1508,32 +1508,30 @@ ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
         /* === BUTTONS / ACTIONS === */
-        const actions = {
-          ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-         ".btn.skins": () =>
-  ensureSkinsLoaded(apiPost, _tg, _dbg)
-    .then(() => window.Skins?.open?.())
-    .catch((e) => { console.warn("skins load/open failed", e); }),
-          ".btn.map": () => {
-            mapBack.style.display = "flex";
-            if (!DATA) loadMapData();
-            loadPlayerState();
-          },
-          ".btn.mission": () => sendAction("mission_open", { level: 1 }),
-          ".btn.inventory": () => window.Inventory?.open?.(),
-          ".btn.char": () => sendAction("char_open"),
-          ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
-          ".btn.pets": () => sendAction("pets_open"),
-          ".btn.equipped": () => window.Equipped?.open?.(),
-          ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-          ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-          ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
-          ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
-          ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-          ".btn.referral": () => window.Referrals?.open?.(),
-          ".btn.howlboard": () => openBoard(),
-        };
-        Object.entries(actions).forEach(([sel, fn]) => {
+const actions = {
+  ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
+  // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
+  ".btn.map": () => {
+    mapBack.style.display = "flex";
+    if (!DATA) loadMapData();
+    loadPlayerState();
+  },
+  ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+  ".btn.inventory": () => window.Inventory?.open?.(),
+  ".btn.char": () => sendAction("char_open"),
+  ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
+  ".btn.pets": () => sendAction("pets_open"),
+  ".btn.equipped": () => window.Equipped?.open?.(),
+  ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+  ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+  ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+  ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
+  ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+  ".btn.referral": () => window.Referrals?.open?.(),
+  ".btn.howlboard": () => openBoard(),
+};
+
+Object.entries(actions).forEach(([sel, fn]) => {
   const el = document.querySelector(sel);
   if (!el) return;
 
@@ -1547,6 +1545,25 @@ ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
         try { dbg('ERR: ' + (err?.message || err)); } catch (_) {}
       });
   });
+});
+
+/* ✅ Skins: delegated click (działa nawet jeśli .btn.skins pojawia się później / jest rerenderowany) */
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.(".btn.skins");
+  if (!btn) return;
+
+  // zapobiegaj podwójnemu fire jeśli kiedyś wróci direct listener
+  if (e.__AH_SKINS_HANDLED) return;
+  e.__AH_SKINS_HANDLED = true;
+
+  e.preventDefault();
+
+  ensureSkinsLoaded(apiPost, _tg, _dbg)
+    .then(() => window.Skins?.open?.())
+    .catch((err) => {
+      console.warn("skins load/open failed", err);
+      try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
+    });
 });
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
 
@@ -1813,6 +1830,7 @@ ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
   </script>
 </body>
 </html>
+
 
 
 
