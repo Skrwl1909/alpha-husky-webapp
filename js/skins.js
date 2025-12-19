@@ -269,25 +269,41 @@ shareBtn?.addEventListener("click", onShare);
     }
   }
 
-  function onShare() {
-  if (!_tg?.shareToStory || !skinCanvas?.toBlob) {
-    _tg?.showAlert?.("Sharing not supported");
-    return;
-  }
+ async function onShare() {
   const key = (_selectedKey || "skin").toLowerCase();
-  skinCanvas.toBlob((blob) => {
-    // ✅ guard: czasem toBlob zwraca null (np. błędy canvas/CORS)
-    if (!blob) {
-      _tg?.showAlert?.("Share failed");
+
+  try {
+    // preferuj _apiPost (masz po fixie init())
+    let res;
+    if (_apiPost) {
+      res = await _apiPost("/webapp/skins/flex", { skinKey: key });
+    } else {
+      // fallback jeśli ktoś uruchomił bez init()
+      const API_BASE = window.API_BASE || "";
+      const initData = (_tg && _tg.initData) || window.__INIT_DATA__ || "";
+      const r = await fetch(API_BASE + "/webapp/skins/flex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: initData, skinKey: key }),
+      });
+      res = await r.json();
+    }
+
+    if (!res?.ok) {
+      const reason = res?.reason || "Failed";
+      if (reason === "COOLDOWN" && res.cooldownLeftSec != null) {
+        _tg?.showAlert?.(`Cooldown: ${res.cooldownLeftSec}s`);
+      } else {
+        _tg?.showAlert?.(reason);
+      }
       return;
     }
 
-    _tg?.shareToStory?.(blob, {
-      text: `Flex my ${key} skin in @The_Alpha_Husky! 🐺`,
-      widgetLink: "https://t.me/Alpha_husky_bot"
-    });
+    _tg?.showAlert?.("Posted to community ✅");
     haptic("medium");
-  }, "image/png");
+  } catch (e) {
+    _tg?.showAlert?.("Flex failed");
+  }
 }
 
   window.Skins = { init, open };
