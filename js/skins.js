@@ -270,21 +270,19 @@ shareBtn?.addEventListener("click", onShare);
   }
 
  async function onShare() {
-  const key = (_selectedKey || "skin").toLowerCase();
+  const key = String(_selectedKey || "").trim().toLowerCase(); // "" = flex active
 
   try {
-    // preferuj _apiPost (masz po fixie init())
     let res;
     if (_apiPost) {
       res = await _apiPost("/webapp/skins/flex", { skinKey: key });
     } else {
-      // fallback jeśli ktoś uruchomił bez init()
       const API_BASE = window.API_BASE || "";
       const initData = (_tg && _tg.initData) || window.__INIT_DATA__ || "";
       const r = await fetch(API_BASE + "/webapp/skins/flex", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ init_data: initData, skinKey: key }),
+        body: JSON.stringify({ skinKey: key, init_data: initData }),
       });
       res = await r.json();
     }
@@ -300,7 +298,7 @@ shareBtn?.addEventListener("click", onShare);
     }
 
     _tg?.showAlert?.("Posted to community ✅");
-    haptic("medium");
+    if (typeof haptic === "function") haptic("medium");
   } catch (e) {
     _tg?.showAlert?.("Flex failed");
   }
