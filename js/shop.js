@@ -333,15 +333,18 @@
     },
 
     async buy(itemKey) {
-      const res = await this._apiPost("/webapp/shop/buy", { itemKey });
-      if (!res || !res.ok) {
-        const msg = res?.message || res?.reason || "Buy failed";
-        this.toast(msg);
-        return;
-      }
-      this.toast(res.message || "Purchased!");
-      await this.refresh();
-    },
+  const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
+  const res = await this._apiPost("/webapp/shop/buy", { itemKey, run_id: rid });
+
+  if (!res || !res.ok) {
+    const msg = res?.message || res?.reason || "Buy failed";
+    this.toast(msg);
+    return;
+  }
+
+  this.toast(res.message || "Purchased!");
+  await this.refresh();
+},
 
     toast(text) {
       const tg = this._tg;
