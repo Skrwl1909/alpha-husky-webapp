@@ -7,6 +7,9 @@
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const noop = () => {};
+  function mkRunId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
 
   function isComplete(q) {
     const req = q.req || q.required || {};
@@ -112,72 +115,104 @@
     return out;
   }
 
-  async function acceptQuest(id) {
-    return postFirstOk(EP.accept, { id });
-  }
-  async function completeQuest(id) {
-    return postFirstOk(EP.complete, { id });
-  }
+ async function acceptQuest(id, run_id) {
+  return postFirstOk(EP.accept, { id, questId: id, run_id });
+}
+async function completeQuest(id, run_id) {
+  return postFirstOk(EP.complete, { id, questId: id, run_id });
+}
 
   function normalizeBoard(payload) {
-    if (!payload) payload = {};
+  if (!payload) payload = {};
 
-    // 1) Nowy format opakowany: { ok, board:{ready,accepted,...}, ... }
-    if (payload.board && (payload.board.ready || payload.board.accepted || payload.board.available || payload.board.done)) {
-      payload = payload.board;
-    }
+  // 0) unwrap { ok:true, data:{...} }
+  if (payload && payload.ok === true && payload.data) payload = payload.data;
 
-    // 2) Nowy format (grupowany bezpośrednio na root)
-    const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
-    if (hasNew) {
-      return {
-        ready: payload.ready || [],
-        accepted: payload.accepted || [],
-        available: payload.available || [],
-        done: payload.done || []
-      };
-    }
+  // 1) Nowy format opakowany: { ok, board:{ready,accepted,...}, ... }
+  if (
+    payload.board &&
+    (payload.board.ready || payload.board.accepted || payload.board.available || payload.board.done)
+  ) {
+    payload = payload.board;
+  }
 
-    // 3) Obsługa daily legacy {normal, raid}
-    if (payload && (payload.normal || payload.raid)) {
-      const out = { ready: [], accepted: [], available: [], done: [] };
-      // Normal daily
-      if (payload.normal) {
-        const q = payload.normal;
-        if (q.claimed || q.done) {
-          out.done.push({ ...q, status: "cooldown" });  // Claimed/done → cooldown
-        } else if (q.availableActions && q.availableActions.length > 0) {
-          out.available.push({ ...q, status: "available", type: "daily" });  // Available → available
-        } else {
-          out.accepted.push({ ...q, status: "accepted", type: "daily" });  // In progress
-        }
-      }
-      // Raid (analogicznie)
-      if (payload.raid) {
-        const q = payload.raid;
-        if (q.claimed || q.done) {
-          out.done.push({ ...q, status: "cooldown" });
-        } else if (q.availableActions && q.availableActions.length > 0) {
-          out.available.push({ ...q, status: "available", type: "daily" });  // Raid jako daily
-        } else {
-          out.accepted.push({ ...q, status: "accepted", type: "daily" });
-        }
-      }
-      return out;
-    }
+  // 2) Nowy format (grupowany bezpośrednio na root)
+  const hasNew = payload && (payload.ready || payload.accepted || payload.available || payload.done);
+  if (hasNew) {
+    return {
+      ready: payload.ready || [],
+      accepted: payload.accepted || [],
+      available: payload.available || [],
+      done: payload.done || [],
+    };
+  }
 
-    // 4) Legacy fallback – active/quests jako accepted/ready
+  // 2b) Format: { quests:[...], board:[...] } (active + mission board)
+  if (payload && (Array.isArray(payload.quests) || Array.isArray(payload.board))) {
     const out = { ready: [], accepted: [], available: [], done: [] };
-    const list = Array.isArray(payload?.active) ? payload.active
-             : Array.isArray(payload?.quests) ? payload.quests
-             : [];
-    for (const q of list) {
+
+    const active = Array.isArray(payload.quests) ? payload.quests : [];
+    for (const q of active) {
       const ready = (q.ready === true) ? true : isComplete(q);
-      if (ready) out.ready.push({ ...q, status: "ready" });
-      else out.accepted.push({ ...q, status: "accepted" });
+      if (ready) out.ready.push({ ...q, status: q.status || "ready" });
+      else out.accepted.push({ ...q, status: q.status || "accepted" });
     }
+
+    const board = Array.isArray(payload.board) ? payload.board : [];
+    for (const q of board) {
+      const s = String(q.status || "available").toLowerCase();
+      if (s === "ready") out.ready.push({ ...q, status: "ready" });
+      else if (s === "accepted") out.accepted.push({ ...q, status: "accepted" });
+      else if (s === "cooldown" || s === "done") out.done.push({ ...q, status: "cooldown" });
+      else out.available.push({ ...q, status: "available" });
+    }
+
     return out;
   }
+
+  // 3) Obsługa daily legacy {normal, raid}
+  if (payload && (payload.normal || payload.raid)) {
+    const out = { ready: [], accepted: [], available: [], done: [] };
+
+    // Normal daily
+    if (payload.normal) {
+      const q = payload.normal;
+      if (q.claimed || q.done) {
+        out.done.push({ ...q, status: "cooldown" }); // Claimed/done → cooldown
+      } else if (q.availableActions && q.availableActions.length > 0) {
+        out.available.push({ ...q, status: "available", type: "daily" }); // Available → available
+      } else {
+        out.accepted.push({ ...q, status: "accepted", type: "daily" }); // In progress
+      }
+    }
+
+    // Raid (analogicznie)
+    if (payload.raid) {
+      const q = payload.raid;
+      if (q.claimed || q.done) {
+        out.done.push({ ...q, status: "cooldown" });
+      } else if (q.availableActions && q.availableActions.length > 0) {
+        out.available.push({ ...q, status: "available", type: "daily" }); // Raid jako daily
+      } else {
+        out.accepted.push({ ...q, status: "accepted", type: "daily" });
+      }
+    }
+
+    return out;
+  }
+
+  // 4) Legacy fallback – active/quests jako accepted/ready
+  const out = { ready: [], accepted: [], available: [], done: [] };
+  const list = Array.isArray(payload?.active) ? payload.active
+             : Array.isArray(payload?.quests) ? payload.quests
+             : [];
+  for (const q of list) {
+    const ready = (q.ready === true) ? true : isComplete(q);
+    if (ready) out.ready.push({ ...q, status: "ready" });
+    else out.accepted.push({ ...q, status: "accepted" });
+  }
+  return out;
+}
 
   // ===== Rendering =====
   const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
@@ -248,105 +283,122 @@
   }
 
   function makeCard(q, actions) {
-    const pct = progressPct(q);
+  const pct = progressPct(q);
 
-    // Meta (sumaryczny progres)
-    const need = (q.reqTotal != null)
-      ? Number(q.reqTotal)
-      : sumVals(q.req || q.required);
-    const have = (q.progressTotal != null)
-      ? Number(q.progressTotal)
-      : sumClamp(q.progress, q.req || q.required);
-    const unit = q.unit || "actions";
-    const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
+  // Meta (sumaryczny progres)
+  const need = (q.reqTotal != null)
+    ? Number(q.reqTotal)
+    : sumVals(q.req || q.required);
+  const have = (q.progressTotal != null)
+    ? Number(q.progressTotal)
+    : sumClamp(q.progress, q.req || q.required);
+  const unit = q.unit || "actions";
+  const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
-    const cat       = questCategory(q);
-    const title     = esc(q.title || q.name || q.id);
-    const typeRaw   = q.type || cat;
-    const type      = esc(typeLabel(typeRaw));
-    const statusRaw = q.status || "accepted";
-    const status    = esc(statusLabel(statusRaw));
+  const cat       = questCategory(q);
+  const title     = esc(q.title || q.name || q.id);
+  const typeRaw   = q.type || cat;
+  const type      = esc(typeLabel(typeRaw));
+  const statusRaw = q.status || "accepted";
+  const status    = esc(statusLabel(statusRaw));
 
-    // NOWE: opis + hint z backendu (quests.py → serialize_active_quests_for_front)
-    const desc   = q.desc || q.description || "";
-    const hint   = q.hint || q.tips || "";
+  // NOWE: opis + hint z backendu
+  const desc = q.desc || q.description || "";
+  const hint = q.hint || q.tips || "";
 
-    const card = document.createElement("div");
-    card.className = "quest";
-    card.setAttribute("data-type", cat || "");
-    card.setAttribute("data-status", statusRaw);
-    card.innerHTML = `
-      <div class="q-head">
-        <div class="q-name-wrapper">
-          <div class="q-name">
-            ${title} <span class="q-type">(${type})</span>
-          </div>
-          ${desc ? `<div class="q-desc">${esc(desc)}</div>` : ""}
+  // (Punkt 5) NOWE: reqLines z backendu (opcjonalne)
+  const reqLines = Array.isArray(q.reqLines) ? q.reqLines : null;
+
+  const card = document.createElement("div");
+  card.className = "quest";
+  card.setAttribute("data-type", cat || "");
+  card.setAttribute("data-status", statusRaw);
+  card.innerHTML = `
+    <div class="q-head">
+      <div class="q-name-wrapper">
+        <div class="q-name">
+          ${title} <span class="q-type">(${type})</span>
         </div>
-        <div class="q-head-right">
-          ${q.step != null && q.steps
-            ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
-            : ""
-          }
-          <span class="q-badge">${status}</span>
-        </div>
+        ${desc ? `<div class="q-desc">${esc(desc)}</div>` : ""}
+      </div>
+      <div class="q-head-right">
+        ${q.step != null && q.steps
+          ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
+          : ""
+        }
+        <span class="q-badge">${status}</span>
+      </div>
+    </div>
+
+    <div class="q-reqs">
+      <div class="q-row-top">
+        <span class="q-req-name">Progress</span>
+        <span class="q-req-val">${pct}%</span>
+      </div>
+      <div class="q-bar">
+        <div class="q-bar-fill" style="width:${pct}%"></div>
       </div>
 
-      <div class="q-reqs">
-        <div class="q-row-top">
-          <span class="q-req-name">Progress</span>
-          <span class="q-req-val">${pct}%</span>
-        </div>
-        <div class="q-bar">
-          <div class="q-bar-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="q-meta">${metaLine}</div>
-        ${hint ? `<div class="q-hint">${esc(hint)}</div>` : ""}
-      </div>
-
-      <div class="q-rew">${rewardBadges(q.reward)}</div>
-      <div class="q-actions"></div>
-    `;
-
-    const act = $(".q-actions", card);
-
-    if (statusRaw === "available") {
-      // Legacy daily → /webapp/daily/action
-      if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
-        const action = q.availableActions.includes("daily_claim")
-          ? "daily_claim"
-          : q.availableActions[0]; // np. daily_raid
-        const isRaid = !!(q.raid || q.isRaid || /raid/i.test(String(q.id || "")));
-        const b = document.createElement("button");
-        b.className = "q-btn q-btn-acc";
-        b.textContent = action === "daily_claim" ? "Claim" : "Do it";
-        b.onclick = () => actions.daily(action, isRaid, b);
-        act.appendChild(b);
-      } else {
-        const b = document.createElement("button");
-        b.className = "q-btn q-btn-acc";
-        b.textContent = "Accept";
-        b.onclick = () => actions.accept(q.id, b);
-        act.appendChild(b);
+      ${
+        reqLines
+          ? `<div class="q-req-lines">
+              ${reqLines.map(r => `
+                <div class="q-req-line">
+                  <span class="q-req-line-name">${esc(r.label || r.key || "Req")}</span>
+                  <span class="q-req-line-val">${esc(r.cur ?? 0)}/${esc(r.need ?? 0)}${r.unit ? " " + esc(r.unit) : ""}</span>
+                </div>
+              `).join("")}
+            </div>`
+          : ""
       }
-    } else if (statusRaw === "ready") {
-      const b = document.createElement("button");
-      b.className = "q-btn";
-      b.textContent = "Claim";
-      b.onclick = () => actions.claim(q.id, b);
-      act.appendChild(b);
-    } else if (statusRaw === "cooldown") {
-      const span = document.createElement("span");
-      span.className = "q-badge";
-      span.title = q.cooldownEndsAt
-        ? new Date(q.cooldownEndsAt).toLocaleString()
-        : "Next reset";
-      span.textContent = "Cooldown " + cooldownText(q.cooldownEndsAt);
-      act.appendChild(span);
-    }
 
-    return card;
+      <div class="q-meta">${metaLine}</div>
+      ${hint ? `<div class="q-hint">${esc(hint)}</div>` : ""}
+    </div>
+
+    <div class="q-rew">${rewardBadges(q.reward)}</div>
+    <div class="q-actions"></div>
+  `;
+
+  const act = $(".q-actions", card);
+
+  if (statusRaw === "available") {
+    // Legacy daily → /webapp/daily/action
+    if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
+      const action = q.availableActions.includes("daily_claim")
+        ? "daily_claim"
+        : q.availableActions[0]; // np. daily_raid
+      const isRaid = !!(q.raid || q.isRaid || /raid/i.test(String(q.id || "")));
+      const b = document.createElement("button");
+      b.className = "q-btn q-btn-acc";
+      b.textContent = action === "daily_claim" ? "Claim" : "Do it";
+      b.onclick = () => actions.daily(action, isRaid, b);
+      act.appendChild(b);
+    } else {
+      const b = document.createElement("button");
+      b.className = "q-btn q-btn-acc";
+      b.textContent = "Accept";
+      b.onclick = () => actions.accept(q.id, b);
+      act.appendChild(b);
+    }
+  } else if (statusRaw === "ready") {
+    const b = document.createElement("button");
+    b.className = "q-btn";
+    b.textContent = "Claim";
+    b.onclick = () => actions.claim(q.id, b);
+    act.appendChild(b);
+  } else if (statusRaw === "cooldown") {
+    const span = document.createElement("span");
+    span.className = "q-badge";
+    span.title = q.cooldownEndsAt
+      ? new Date(q.cooldownEndsAt).toLocaleString()
+      : "Next reset";
+    span.textContent = "Cooldown " + cooldownText(q.cooldownEndsAt);
+    act.appendChild(span);
   }
+
+  return card;
+}
 
   function sumVals(obj) {
     let s = 0; for (const k in (obj||{})) s += (Number(obj[k])||0);
@@ -423,7 +475,7 @@
         try {
           btn.disabled = true;
           setStatus("Accepting…");
-          await acceptQuest(id);
+          await acceptQuest(id, mkRunId("qacc"));
           await refresh();
           toast("Accepted");
         } catch (e) {
@@ -436,7 +488,7 @@
         try {
           btn.disabled = true;
           setStatus("Claiming…");
-          const res = await completeQuest(id);
+          const res = await completeQuest(id, mkRunId("qcmp"));
           await refresh();
           toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
         } catch (e) {
