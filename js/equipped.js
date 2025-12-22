@@ -37,47 +37,67 @@
   }
 
   function ensureEquippedStyles() {
-    if (document.getElementById("equipped-styles")) return;
-    const style = document.createElement("style");
-    style.id = "equipped-styles";
-    style.textContent = `
-      .equip-stage-wrap{
-        position:relative;
-        width:100%;
-        max-width:680px;
-        margin:0 auto;
-        border-radius:22px;
-        overflow:hidden;
-        background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
-        box-shadow:0 14px 40px rgba(0,0,0,.7);
-      }
-      #equip-hotspots{
-        position:absolute;
-        inset:0;
-        pointer-events:auto; /* <-- MUSI BYĆ AUTO */
-      }
-      .equip-hotspot{
-        position:absolute;
-        pointer-events:auto;
-        border:0;
-        padding:0;
-        margin:0;
-        background:transparent;
-        border-radius:18px;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .equip-hotspot:active{
-        box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
-        background:rgba(0,229,255,.10);
-      }
-      .equip-hotspot.is-empty:active{
-        box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
-        background:rgba(255,255,255,.06);
-      }
-    `;
-    document.head.appendChild(style);
-  }
+  if (document.getElementById("equipped-styles")) return;
+  const style = document.createElement("style");
+  style.id = "equipped-styles";
+  style.textContent = `
+    .equip-stage-wrap{
+      position:relative;
+      width:100%;
+      max-width:680px;
+      margin:0 auto;
+      border-radius:22px;
+      overflow:hidden;
+      background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
+      box-shadow:0 14px 40px rgba(0,0,0,.7);
+    }
 
+    /* upewnij się że obraz jest "pod" overlayem */
+    #equipped-character-img{
+      position:relative;
+      z-index:1;
+      display:block;
+      width:100%;
+      height:auto;
+    }
+
+    /* overlay MUSI siedzieć nad PNG */
+    #equip-hotspots{
+      position:absolute;
+      inset:0;
+      pointer-events:auto;
+      z-index:5;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    .equip-hotspot{
+      position:absolute;
+      pointer-events:auto;
+      border:0;
+      padding:0;
+      margin:0;
+      background:transparent;
+      border-radius:18px;
+      -webkit-tap-highlight-color: transparent;
+
+      /* dla ikon jako background */
+      background-repeat:no-repeat;
+      background-position:center;
+      background-size:contain;
+    }
+
+    .equip-hotspot:active{
+      box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
+      background-color: rgba(0,229,255,.10);
+    }
+    .equip-hotspot.is-empty:active{
+      box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
+      background-color: rgba(255,255,255,.06);
+    }
+  `;
+  document.head.appendChild(style);
+}
   // Uniwersalny POST tylko dla Equipped – nie zależy od globalnego apiPost
   async function equippedPost(path, payload) {
     const tg = getTg();
@@ -145,7 +165,64 @@
       console.error("Equipped: loadCharacterImage error", err);
     }
   }
+function _bgCandidates(o) {
+  // jeśli masz już _iconCandidates/_assetOnApp w pliku – użyj ich
+  if (typeof _iconCandidates === "function") return _iconCandidates(o);
 
+  // fallback minimalny (gdybyś nie miał)
+  const raw = o?.icon || o?.img || o?.image || o?.image_path || o?.imageUrl || "";
+  const key = String(o?.item_key || o?.key || o?.itemKey || o?.item || "").trim().toLowerCase();
+  const isGear = !!o?.slot;
+
+  const list = [];
+  if (raw) list.push(raw);
+  if (key) {
+    list.push(isGear ? `/assets/equip/${key}.png` : `/assets/items/${key}.png`);
+    list.push(isGear ? `/assets/equip/${key}.webp` : `/assets/items/${key}.webp`);
+  }
+  list.push(`/assets/items/unknown.png`);
+
+  const base = window.location.origin;
+  const v = window.WEBAPP_VER || "";
+
+  return [...new Set(list.filter(Boolean).map((u) => {
+    let p = String(u).trim();
+    if (/^https?:\/\//i.test(p)) return p;
+    if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
+    let url = base + p;
+    if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
+    return url;
+  }))];
+}
+
+function _setBgWithFallback(el, o) {
+  if (!el) return;
+
+  const urls = _bgCandidates(o);
+  let i = 0;
+
+  const tryOne = () => {
+    const u = urls[i];
+    if (!u) {
+      el.style.backgroundImage = `url('${window.location.origin}/assets/items/unknown.png')`;
+      return;
+    }
+    const im = new Image();
+    im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
+    im.onerror = () => { i++; if (i < urls.length) tryOne(); };
+    im.src = u;
+  };
+
+  // pewniaki, żeby nic nie "wyzerowało" widoczności
+  el.style.setProperty("opacity", "1", "important");
+  el.style.setProperty("visibility", "visible", "important");
+  el.style.backgroundRepeat = "no-repeat";
+  el.style.backgroundPosition = "center";
+  el.style.backgroundSize = "contain";
+
+  tryOne();
+}
+  
   function toPctRatio(r) {
     // r = 0..1
     return (r * 100).toFixed(4) + "%";
@@ -380,67 +457,67 @@
     },
 
     _mountHotspots() {
-      if (!this.state) return;
+  if (!this.state) return;
 
-      const imgEl = document.getElementById("equipped-character-img");
-      const layer = document.getElementById("equip-hotspots");
-      if (!imgEl || !layer) return;
+  const imgEl  = document.getElementById("equipped-character-img");
+  const layer  = document.getElementById("equip-hotspots");
+  if (!imgEl || !layer) return;
 
-      const W = imgEl.naturalWidth || 0;
-      const H = imgEl.naturalHeight || 0;
-      if (!W || !H) return;
+  const W = imgEl.naturalWidth || 0;
+  const H = imgEl.naturalHeight || 0;
+  if (!W || !H) return;
 
-      const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
+  const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
 
-      const slots = this.state.slots || [];
-      const bySlot = {};
-      slots.forEach((s) => (bySlot[s.slot] = s));
+  const slots = this.state.slots || [];
+  const bySlot = {};
+  slots.forEach((s) => (bySlot[s.slot] = s));
 
-      layer.innerHTML = "";
+  layer.innerHTML = "";
 
-      Object.keys(SLOT_COORDS).forEach((slotKey) => {
-        const rect = SLOT_COORDS[slotKey];
-        if (!rect) return;
+  Object.keys(SLOT_COORDS).forEach((slotKey) => {
+    const rect = SLOT_COORDS[slotKey];
+    if (!rect) return;
 
-        const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
-        const [x, y, w, h] = rect;
+    const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
+    const [x, y, w, h] = rect;
 
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
-        btn.setAttribute("data-slot", slotKey);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
+    btn.setAttribute("data-slot", slotKey);
 
-        // POPRAWKA: tu dajemy RATIO (0..1), bez *100 w środku
-        btn.style.left   = toPctRatio(x / W);
-        btn.style.top    = toPctRatio(y / H);
-        btn.style.width  = toPctRatio(w / W);
-        btn.style.height = toPctRatio(h / H);
+    btn.style.left   = toPctRatio(x / W);
+    btn.style.top    = toPctRatio(y / H);
+    btn.style.width  = toPctRatio(w / W);
+    btn.style.height = toPctRatio(h / H);
 
-        if (dbg) {
-          btn.style.outline = s.empty
-            ? "1px dashed rgba(255,255,255,.35)"
-            : "1px solid rgba(0,229,255,.65)";
-          btn.style.background = s.empty
-            ? "rgba(255,255,255,.05)"
-            : "rgba(0,229,255,.08)";
-        }
+    // backplate żeby ikona była czytelna (i żeby było widać że istnieje)
+    btn.style.backgroundColor = s.empty ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.22)";
+    btn.style.borderRadius = "16px";
+    btn.style.overflow = "hidden";
 
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          haptic("light");
+    // ✅ IKONA jako background-image (nie <img>) -> omija problemy z CSS img/opacity
+    _setBgWithFallback(btn, s || {});
+    if (s.empty) btn.style.opacity = "0.35";
 
-          if (s.empty) {
-            showAlert("Empty slot.");
-            return;
-          }
-          this.inspect(slotKey);
-        });
+    if (dbg) {
+      btn.style.outline = s.empty
+        ? "1px dashed rgba(255,255,255,.35)"
+        : "1px solid rgba(0,229,255,.65)";
+    }
 
-        layer.appendChild(btn);
-      });
-    },
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      haptic("light");
+      if (s.empty) return showAlert("Empty slot.");
+      this.inspect(slotKey);
+    });
 
+    layer.appendChild(btn);
+  });
+},
     async inspect(slot) {
       try {
         const res = await equippedPost("/webapp/equipped/inspect", { slot });
