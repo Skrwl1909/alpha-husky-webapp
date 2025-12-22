@@ -78,119 +78,104 @@
     document.head.appendChild(style);
   }
 
-  // Uniwersalny POST tylko dla Equipped – ale zgodny z resztą WebApp (init_data)
-async function equippedPost(path, payload) {
-  const tg = getTg();
-  const initData =
-    (tg && tg.initData) ||
-    window.__INIT_DATA__ ||
-    window.INIT_DATA ||
-    "";
+  // Uniwersalny POST tylko dla Equipped – nie zależy od globalnego apiPost
+  async function equippedPost(path, payload) {
+    const tg = getTg();
+    const initData = (tg && tg.initData) || window.INIT_DATA || "";
 
-  if (!initData) {
-    console.warn("Equipped: NO initData – działa poprawnie tylko wewnątrz Telegram Mini App.");
-    throw new Error("NO_INIT_DATA");
-  }
+    if (!initData) {
+      console.warn("Equipped: NO initData – działa poprawnie tylko wewnątrz Telegram Mini App.");
+      throw new Error("NO_INIT_DATA");
+    }
 
-  // wysyłamy oba klucze: init_data (standard) + initData (kompatybilność)
-  const base = (API_BASE || "");
-  const body1 = Object.assign({}, payload || {}, { init_data: initData, initData });
-
-  let resp = await fetch(base + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body1),
-  });
-
-  let data = null;
-  try { data = await resp.json(); } catch (_) {}
-
-  // retry-safe na race / MISSING / 401
-  if (!resp.ok && (resp.status === 401 || data?.reason === "MISSING" || data?.reason === "NO_INIT_DATA")) {
-    await new Promise(r => setTimeout(r, 120));
-    const body2 = Object.assign({}, payload || {}, { init_data: initData, initData });
-
-    resp = await fetch(base + path, {
+    const resp = await fetch((API_BASE || "") + path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body2),
+      body: JSON.stringify(Object.assign({ initData }, payload || {})),
     });
 
-    try { data = await resp.json(); } catch (_) {}
-  }
-
-  if (!resp.ok) {
-    console.error("Equipped API error", resp.status, data);
-    return data || { ok: false, reason: "http_" + resp.status };
-  }
-  return data;
-}
-
-  // Ładowanie PNG postaci z backendu
-async function loadCharacterPngInto(imgEl, onLoaded) {
-  if (!imgEl) return;
-  const tg = getTg();
-  const initData =
-    (tg && tg.initData) ||
-    window.__INIT_DATA__ ||
-    window.INIT_DATA ||
-    "";
-
-  if (!initData) {
-    console.warn("Equipped: no initData for /api/character-image");
-    return;
-  }
-
-  try {
-    const resp = await fetch((API_BASE || "") + "/api/character-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: initData, initData }),
-    });
+    let data = null;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      console.error("Equipped: JSON parse error", e);
+    }
 
     if (!resp.ok) {
-      console.error("Equipped: character-image resp not ok:", resp.status);
+      console.error("Equipped API error", resp.status, data);
+      return data || { ok: false, reason: "http_" + resp.status };
+    }
+    return data;
+  }
+
+  // Ładowanie PNG postaci z backendu
+  async function loadCharacterPngInto(imgEl, onLoaded) {
+    if (!imgEl) return;
+    const tg = getTg();
+    const initData = (tg && tg.initData) || window.INIT_DATA || "";
+    if (!initData) {
+      console.warn("Equipped: no initData for /api/character-image");
       return;
     }
 
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
+    try {
+      const resp = await fetch((API_BASE || "") + "/api/character-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData }),
+      });
+      if (!resp.ok) {
+        console.error("Equipped: character-image resp not ok:", resp.status);
+        return;
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
 
-    imgEl.onload = () => {
-      try { onLoaded && onLoaded(); } catch (_) {}
-    };
-    imgEl.src = url;
+      imgEl.onload = () => {
+        try { onLoaded && onLoaded(); } catch (_) {}
+      };
 
-    if (window.__EquippedCharImgUrl) URL.revokeObjectURL(window.__EquippedCharImgUrl);
-    window.__EquippedCharImgUrl = url;
-  } catch (err) {
-    console.error("Equipped: loadCharacterImage error", err);
+      imgEl.src = url;
+
+      if (window.__EquippedCharImgUrl) {
+        URL.revokeObjectURL(window.__EquippedCharImgUrl);
+      }
+      window.__EquippedCharImgUrl = url;
+    } catch (err) {
+      console.error("Equipped: loadCharacterImage error", err);
+    }
   }
-}
 
   function toPctRatio(r) {
     // r = 0..1
     return (r * 100).toFixed(4) + "%";
   }
-function resolveIcon(obj) {
-  if (!obj) return "/assets/items/unknown.png";
+function normAsset(p) {
+  if (!p) return "";
+  p = String(p).trim();
+  if (!p) return "";
 
-  const raw =
-    obj.icon ||
-    obj.image ||
-    obj.image_path ||
-    obj.img ||
-    obj.imageUrl ||
-    "";
+  // jeśli absolutny URL i to /assets -> wymuś same-origin (app.alphahusky.win)
+  try {
+    if (/^https?:\/\//i.test(p)) {
+      const u = new URL(p);
+      if (u.pathname.startsWith("/assets/")) {
+        p = u.pathname + (u.search || "");
+      } else {
+        return p;
+      }
+    }
+  } catch (_) {}
 
-  // jeśli backend nie daje ikony, spróbuj po item_key (często masz pliki /assets/equip/<item_key>.png)
-  const key = (obj.item_key || obj.key || obj.itemKey || "").toString().trim().toLowerCase();
-  let p = raw || (key ? `/assets/equip/${key}.png` : "");
+  // względne -> zrób absolutne na app-origin
+  if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
+  let url = window.location.origin + p;
 
-  if (!p) return "/assets/items/unknown.png";
-  // normalizacja: jeśli nie zaczyna się od / ani http, dodaj /
-  if (!/^https?:\/\//i.test(p) && !p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
-  return p;
+  // cache-bust zawsze jako ?v=
+  const v = window.WEBAPP_VER || "";
+  if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
+
+  return url;
 }
   
   window.Equipped = {
