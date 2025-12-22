@@ -341,7 +341,6 @@
 
         const imgEl = document.getElementById("equipped-character-img");
         loadCharacterPngInto(imgEl, () => this._mountHotspots());
-        this._waitAndMountHotspots();
       }
 
       // --- RIGHT: lista slotów ---
@@ -463,61 +462,85 @@
     },
 
     _mountHotspots() {
-      if (!this.state) return;
+  if (!this.state) return;
 
-      const imgEl  = document.getElementById("equipped-character-img");
-      const layer  = document.getElementById("equip-hotspots");
-      if (!imgEl || !layer) return;
+  const imgEl  = document.getElementById("equipped-character-img");
+  const layer  = document.getElementById("equip-hotspots");
+  if (!imgEl || !layer) return;
 
-      const W = imgEl.naturalWidth || 0;
-      const H = imgEl.naturalHeight || 0;
-      if (!W || !H) return;
+  const W = imgEl.naturalWidth || 0;
+  const H = imgEl.naturalHeight || 0;
+  if (!W || !H) return;
 
-      const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
+  const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
 
-      const slots = this.state.slots || [];
-      const bySlot = {};
-      slots.forEach((s) => (bySlot[s.slot] = s));
+  const slots = this.state.slots || [];
+  const bySlot = {};
+  slots.forEach((s) => (bySlot[s.slot] = s));
 
-      layer.innerHTML = "";
+  layer.innerHTML = "";
 
-      Object.keys(SLOT_COORDS).forEach((slotKey) => {
-        const rect = SLOT_COORDS[slotKey];
-        if (!rect) return;
+  Object.keys(SLOT_COORDS).forEach((slotKey) => {
+    const rect = SLOT_COORDS[slotKey];
+    if (!rect) return;
 
-        const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
-        const [x, y, w, h] = rect;
+    const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
+    const [x, y, w, h] = rect;
 
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
-        btn.setAttribute("data-slot", slotKey);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
+    btn.setAttribute("data-slot", slotKey);
 
-        btn.style.left   = toPctRatio(x / W);
-        btn.style.top    = toPctRatio(y / H);
-        btn.style.width  = toPctRatio(w / W);
-        btn.style.height = toPctRatio(h / H);
+    btn.style.left   = toPctRatio(x / W);
+    btn.style.top    = toPctRatio(y / H);
+    btn.style.width  = toPctRatio(w / W);
+    btn.style.height = toPctRatio(h / H);
 
-        if (dbg) {
-          btn.style.outline = s.empty
-            ? "1px dashed rgba(255,255,255,.35)"
-            : "1px solid rgba(0,229,255,.65)";
-          btn.style.background = s.empty
-            ? "rgba(255,255,255,.05)"
-            : "rgba(0,229,255,.08)";
-        }
+    // ✅ ważne: hotspot ma też renderować ikonę
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.style.padding = "0";
+    btn.style.border = "0";
+    btn.style.background = "transparent";
 
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          haptic("light");
-          if (s.empty) return showAlert("Empty slot.");
-          this.inspect(slotKey);
-        });
+    // --- DEBUG overlay (opcjonalnie) ---
+    if (dbg) {
+      btn.style.outline = s.empty
+        ? "1px dashed rgba(255,255,255,.35)"
+        : "1px solid rgba(0,229,255,.65)";
+      btn.style.background = s.empty
+        ? "rgba(255,255,255,.05)"
+        : "rgba(0,229,255,.08)";
+    }
 
-        layer.appendChild(btn);
-      });
-    },
+    // ✅ ICON w środku hotspotu (click przechodzi na btn)
+    const iconImg = document.createElement("img");
+    iconImg.className = "equip-hotspot-icon";
+    iconImg.alt = "";
+    iconImg.style.width = "100%";
+    iconImg.style.height = "100%";
+    iconImg.style.objectFit = "contain";
+    iconImg.style.pointerEvents = "none";
+    iconImg.style.opacity = s.empty ? "0.25" : "1";
+
+    // użyj istniejącej logiki fallbacków (icon/img -> key -> unknown)
+    _setImgWithFallback(iconImg, s || {});
+
+    btn.appendChild(iconImg);
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      haptic("light");
+      if (s.empty) return showAlert("Empty slot.");
+      this.inspect(slotKey);
+    });
+
+    layer.appendChild(btn);
+  });
+},
 
     async inspect(slot) {
       try {
