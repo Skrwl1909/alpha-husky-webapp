@@ -150,7 +150,34 @@
     // r = 0..1
     return (r * 100).toFixed(4) + "%";
   }
+function normAsset(p) {
+  if (!p) return "";
+  p = String(p).trim();
+  if (!p) return "";
 
+  // jeśli absolutny URL i to /assets -> wymuś same-origin (app.alphahusky.win)
+  try {
+    if (/^https?:\/\//i.test(p)) {
+      const u = new URL(p);
+      if (u.pathname.startsWith("/assets/")) {
+        p = u.pathname + (u.search || "");
+      } else {
+        return p;
+      }
+    }
+  } catch (_) {}
+
+  // względne -> zrób absolutne na app-origin
+  if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
+  let url = window.location.origin + p;
+
+  // cache-bust zawsze jako ?v=
+  const v = window.WEBAPP_VER || "";
+  if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
+
+  return url;
+}
+  
   window.Equipped = {
     state: null,
 
@@ -282,11 +309,13 @@
               ? `<div style="font-size:11px;opacity:.7;">${slot.bonusesText}</div>`
               : "";
 
-            const icon = slot.icon
-              ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
-                   <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
-                 </div>`
-              : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
+           const iconUrl = normAsset(slot.icon || slot.img || slot.image || "");
+const icon = iconUrl
+  ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
+       <img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;"
+            onerror="this.style.display='none'">
+     </div>`
+  : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
 
             return `
               <button data-slot="${slot.slot}"
@@ -488,7 +517,7 @@
       card.style.fontFamily = "system-ui";
       card.style.boxShadow = "0 18px 60px rgba(0,0,0,.6)";
 
-      const iconUrl = d.icon || "";
+      const iconUrl = normAsset(d.icon || d.img || d.image || "");
       const stats = d.stats || {};
       const statsLines =
         Object.keys(stats)
