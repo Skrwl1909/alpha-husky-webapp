@@ -507,17 +507,32 @@
   btn.type = "button";
   btn.disabled = _busy;
 
+  // --- mini-fix: normalize slot key ("weapon (0)" -> "weapon") ---
+  function cleanSlotKey(s){
+    return String(s || "")
+      .toLowerCase()
+      .replace(/\(.*?\)/g, "")     // remove "(0)" etc
+      .trim()
+      .split(/\s+/)[0];            // keep first token
+  }
+
+  const btn = el("button", "ah-btn", "Craft");
+  btn.type = "button";
+  btn.disabled = _busy;
+
   btn.addEventListener("click", async () => {
     if (_busy) return;
 
-    const slot = sel.value;
+    const slotRaw = sel.value;
+    const slot = cleanSlotKey(slotRaw);
+
     const count = Math.max(1, Math.min(50, parseInt(inpCount.value || "1", 10)));
     const refine = Math.max(0, Math.min(5, parseInt(inpRef.value || "0", 10)));
 
     // quick client-side check
     const per = (cfg.baseCost || 5) + refine * (cfg.refineCost || 2);
     const total = per * count;
-    const have = shardsHave(slot);
+    const have = shardsHave(slot); // ✅ use cleaned slot
     if (have < total) {
       toast(`Not enough ${slot}_shards.`);
       return;
@@ -527,38 +542,38 @@
     draw();
 
     try {
-  const res = await post("/webapp/forge/craft", {
-    buildingId: _ctx.buildingId,
-    slot,
-    count,
-    refine,
-    run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-  });
+      const res = await post("/webapp/forge/craft", {
+        buildingId: _ctx.buildingId,
+        slot,                 // ✅ send cleaned slot to backend
+        count,
+        refine,
+        run_id: `web_craft_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      });
 
-  // made can be objects after backend patch; keep fallback for keys
-  const made = (res && (res.made || res.result?.made)) || [];
-  const pity = res && (res.result?.pity ?? res.pity);
-  if (pity != null) _pityOverride[slot] = pity;
+      // made can be objects after backend patch; keep fallback for keys
+      const made = (res && (res.made || res.result?.made)) || [];
+      const pity = res && (res.result?.pity ?? res.pity);
+      if (pity != null) _pityOverride[slot] = pity;
 
-  _lastCraft = { slot, made };
+      _lastCraft = { slot, made };
 
-  // ✅ use payload if present (saves 1 request)
-  if (res && res.data) {
-    _state = res.data;
-  } else {
-    await loadState();
-  }
+      // ✅ use payload if present (saves 1 request)
+      if (res && res.data) {
+        _state = res.data;
+      } else {
+        await loadState();
+      }
 
-  // refresh dropdown labels + cost preview
-  try { refreshSlotLabels(); } catch (_) {}
-  try { updateCost(); } catch (_) {}
+      // refresh dropdown labels + cost preview
+      try { refreshSlotLabels(); } catch (_) {}
+      try { updateCost(); } catch (_) {}
 
-  // clear old error box on success
-  const uiErrorEl = document.getElementById("forge-error");
-  if (uiErrorEl) uiErrorEl.textContent = "";
+      // clear old error box on success
+      const uiErrorEl = document.getElementById("forge-error");
+      if (uiErrorEl) uiErrorEl.textContent = "";
 
-  toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
-} catch (e) {
+      toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
+    } catch (e) {
   // ---- ensure UI error box exists ----
   let uiErrorEl = document.getElementById("forge-error");
   if (!uiErrorEl) {
