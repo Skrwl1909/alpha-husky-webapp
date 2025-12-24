@@ -202,16 +202,23 @@ function _setBgWithFallback(el, o) {
   let i = 0;
 
   const tryOne = () => {
-    const u = urls[i];
-    if (!u) {
-      el.style.backgroundImage = `url('${window.location.origin}/assets/items/unknown.png')`;
-      return;
-    }
-    const im = new Image();
-    im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
-    im.onerror = () => { i++; if (i < urls.length) tryOne(); };
-    im.src = u;
-  };
+  const CLOUD = "dnjwvxinh";
+  const CDN = `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto`;
+
+  const u = urls[i];
+  if (!u) {
+    const ph = new Image();
+    ph.onload  = () => { el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
+    ph.onerror = () => { el.style.backgroundImage = `url('${CDN}/items/_unknown.png')`; };
+    ph.src = `${CDN}/items/unknown.png`;
+    return;
+  }
+
+  const im = new Image();
+  im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
+  im.onerror = () => { i++; if (i < urls.length) tryOne(); else el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
+  im.src = u;
+};
 
   // pewniaki, żeby nic nie "wyzerowało" widoczności
   el.style.setProperty("opacity", "1", "important");
