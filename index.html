@@ -275,7 +275,6 @@
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
   </style>
-
   <!-- ⬇⬇⬇ Mission Board (inline CSS) + NOWY CSS DLA DESC -->
   <style id="quests-css">
     .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
@@ -313,8 +312,11 @@
     #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
     #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
 
-    /* NOWY CSS DLA OPISÓW (desc) */
-    .q-name-wrapper { flex: 1; }
+    /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+    /* NOWY CSS DLA OPISÓW (desc) – działa idealnie */
+    .q-name-wrapper { 
+      flex: 1; 
+    }
     .q-desc {
       font-size: 13px;
       color: #a0d8ff;
@@ -328,13 +330,15 @@
       font-size: 12.5px;
       margin-top: 4px;
     }
+    /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
   </style>
-
-  <!-- FAQ styles -->
+  <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
+  /* Floating FAQ button – mocniej widoczny */
 .fab-faq{
   position: fixed;
   left: max(16px, env(safe-area-inset-left));
+  /* podnieś nad przycisk Quests */
   bottom: max(92px, calc(env(safe-area-inset-bottom) + 20px));
   z-index: 1200;
 
@@ -366,16 +370,24 @@
   animation: faqPulse 2.4s ease-in-out infinite;
 }
 
-.fab-faq:hover{ border-color: rgba(0,229,255,1); }
-.fab-faq:active{ transform: translateY(1px); }
+.fab-faq:hover{
+  border-color: rgba(0,229,255,1);
+}
 
-.fab-faq svg{ opacity:.9; }
+.fab-faq:active{
+  transform: translateY(1px);
+}
+
+.fab-faq svg{
+  opacity:.9;
+}
 .faq-icon{
   width: 22px;
   height: 22px;
   flex-shrink: 0;
   filter: drop-shadow(0 0 6px rgba(0,229,255,0.8));
 }
+/* Na bardzo małych ekranach tylko ikonka */
 @media (max-width: 420px){
   .fab-faq span{ display:none; }
   .fab-faq{
@@ -383,11 +395,14 @@
     border-radius:16px;
   }
 }
+
+/* delikatny puls */
 @keyframes faqPulse{
   0%   { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
   50%  { box-shadow: 0 0 22px rgba(0,229,255,0.95); transform: scale(1.05); }
   100% { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
 }
+  /* FAQ modal */
   .faq-modal[hidden]{ display:none; }
   .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
   .faq-sheet{ position:fixed; inset:6% 4% auto 4%; max-height:88vh; background:rgba(10,10,14,.92);
@@ -418,28 +433,24 @@
   .faq-hint{ color:#9aa; font-size:.85rem; }
   </style>
 </head>
-
 <body>
   <div id="dbg">init…</div>
-
-  <div class="app">
-    <div class="bg">
-      <video autoplay muted loop playsinline poster="background2.webp" preload="metadata">
-        <source src="background2.webm" type="video/webm" />
-        <source src="background2.mp4" type="video/mp4" />
-      </video>
-      <div class="poster" style="background-image:url('background2.webp');"></div>
-    </div>
-
-    <div id="app" class="ui">
+<div class="app">
+  <div class="bg">
+    <video autoplay muted loop playsinline poster="background2.webp" preload="metadata">
+      <source src="background2.webm" type="video/webm" />
+      <source src="background2.mp4" type="video/mp4" />
+    </video>
+    <div class="poster" style="background-image:url('background2.webp');"></div>
+  </div>
+  <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
         <div class="badge" id="faction">PACK</div>
       </div>
-
       <div class="grid">
         <div class="hud-layout">
-          <!-- LEWA KOLUMNA -->
+          <!-- LEWA KOLUMNA (utility / progres) -->
           <div class="hud-col hud-left">
             <button class="btn map" aria-label="Open Alpha Map" type="button">
               <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
@@ -448,15 +459,19 @@
             <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
             <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
             <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
-            <button class="btn referral referral-btn" aria-label="Open Referrals" type="button">Referrals</button>
+            <button class="btn referral referral-btn" aria-label="Open Referrals" type="button">
+          Referrals
+        </button>
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
-
           <!-- ŚRODEK – SKIN / HERO -->
           <div class="hero-center">
             <div class="hero-frame" id="heroFrame">
-              <img id="player-skin" src="/assets/skins/lunarhowl_skin.webp" alt="Alpha Husky skin">
+              <img
+                id="player-skin"
+                src="/assets/skins/lunarhowl_skin.webp"
+                alt="Alpha Husky skin">
             </div>
             <div class="hero-caption">
               <span id="heroName">Alpha Husky</span>
@@ -464,15 +479,14 @@
               <span id="heroLevel">Lv.1</span>
             </div>
           </div>
-
-          <!-- PRAWA KOLUMNA -->
+          <!-- PRAWA KOLUMNA (tożsamość / companions) -->
           <div class="hud-col hud-right">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
             <button class="btn char" aria-label="Open Character" type="button">Character</button>
             <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
-            <button class="btn equipped" aria-label="Open Equipped" type="button">Equipped</button>
+            <button class="btn equipped" aria-label="Open Equipped" type="button" onclick="window.Equipped?.open?.()">Equipped</button>
             <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
             <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
           </div>
@@ -480,137 +494,138 @@
         <div class="spacer"></div>
       </div>
 
-      <!-- MAP MODAL -->
-      <div class="map-back" id="mapBack">
-        <div class="map-wrap">
-          <div class="map-card">
-            <div class="map-head">
-              <h2>Regions Map</h2>
-              <div id="unlockProgress" class="progress-pill" style="display:none">
-                <span id="unlockLabel">Moon Lab</span>
-                <span class="progress-bar"><i id="unlockFill"></i></span>
-                <span id="unlockCount">0/5</span>
-              </div>
-              <button class="close-x" id="closeMap" type="button">×</button>
+    <!-- MAP MODAL -->
+    <div class="map-back" id="mapBack">
+      <div class="map-wrap">
+        <div class="map-card">
+          <div class="map-head">
+            <h2>Regions Map</h2>
+            <div id="unlockProgress" class="progress-pill" style="display:none">
+              <span id="unlockLabel">Moon Lab</span>
+              <span class="progress-bar"><i id="unlockFill"></i></span>
+              <span id="unlockCount">0/5</span>
             </div>
-            <div id="map" class="map" data-map-root>
-              <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
-              <div class="pins" id="pins"></div>
-              <canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
-            </div>
+            <button class="close-x" id="closeMap" type="button">×</button>
+          </div>
+          <div id="map" class="map" data-map-root>
+            <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
+<div class="pins" id="pins"></div>
+<canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Locked info -->
-      <div class="locked-back" id="lockedBack">
-        <div class="locked-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-weight:600;" id="lockedTitle">Locked</div>
-            <button class="btn" id="closeLocked" type="button">×</button>
-          </div>
-          <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn linklike" id="lockedShop" type="button">Open Shop</button>
-            <button class="btn linklike" id="lockedForge" type="button">Open Forge</button>
-            <button class="btn primary" id="lockedAsk" type="button">Ask the Bot</button>
-          </div>
+    <!-- Locked info -->
+    <div class="locked-back" id="lockedBack">
+      <div class="locked-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-weight:600;" id="lockedTitle">Locked</div>
+          <button class="btn" id="closeLocked" type="button">×</button>
+        </div>
+        <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn linklike" id="lockedShop" type="button">Open Shop</button>
+          <button class="btn linklike" id="lockedForge" type="button">Open Forge</button>
+          <button class="btn primary" id="lockedAsk" type="button">Ask the Bot</button>
         </div>
       </div>
+    </div>
 
-      <!-- Howlboard modal -->
-      <div class="sheet-back" id="boardBack">
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:700;">Howlboard</div>
-            <button class="btn" id="closeBoard" type="button">×</button>
-          </div>
-          <div class="tabs" style="margin-top:10px;">
-            <button class="tab" data-sort="bones" type="button">Bones</button>
-            <button class="tab" data-sort="level" type="button">Level</button>
-            <button class="tab" data-sort="howls" type="button">Howls</button>
-          </div>
-          <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
+    <!-- Howlboard modal -->
+    <div class="sheet-back" id="boardBack">
+      <div class="sheet-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:700;">Howlboard</div>
+          <button class="btn" id="closeBoard" type="button">×</button>
         </div>
-      </div>
-
-      <!-- Region Sheet modal -->
-      <div class="sheet-back region-sheet" id="regionBack">
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div id="regionTitle" style="font-weight:700;"></div>
-            <button class="btn" id="closeRegion" type="button">×</button>
-          </div>
-          <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-            <button class="btn primary" id="regionGo" type="button">Travel</button>
-            <button class="btn linklike" id="regionLore" type="button">Lore</button>
-          </div>
+        <div class="tabs" style="margin-top:10px;">
+          <button class="tab" data-sort="bones" type="button">Bones</button>
+          <button class="tab" data-sort="level" type="button">Level</button>
+          <button class="tab" data-sort="howls" type="button">Howls</button>
         </div>
+        <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
+    </div>
 
-      <!-- SKINS MODAL -->
-      <div class="sheet-back avatar-sheet" id="avatarBack" style="display:none;">
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:700;">Skin Gallery</div>
-            <button class="btn" id="closeAvatar" type="button">×</button>
-          </div>
+   <!-- Region Sheet modal -->
+<div class="sheet-back region-sheet" id="regionBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div id="regionTitle" style="font-weight:700;"></div>
+      <button class="btn" id="closeRegion" type="button">×</button>
+    </div>
+    <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn primary" id="regionGo" type="button">Travel</button>
+      <button class="btn linklike" id="regionLore" type="button">Lore</button>
+    </div>
+  </div>
+</div>
 
-          <canvas id="skinCanvas" width="400" height="600"
-            style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);">
-          </canvas>
+<!-- SKINS MODAL -->
+<div class="sheet-back avatar-sheet" id="avatarBack" style="display:none;">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;">Skin Gallery</div>
+      <button class="btn" id="closeAvatar" type="button">×</button>
+    </div>
 
-          <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">—</div>
+    <canvas id="skinCanvas" width="400" height="600"
+      style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);">
+    </canvas>
 
-          <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
-            <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
-            <button class="btn" id="shareSkin" type="button">Share Flex</button>
-          </div>
+    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">—</div>
 
-          <div id="skinButtons" class="skins-grid"></div>
-        </div>
+    <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
+      <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
+      <button class="btn" id="shareSkin" type="button">Share Flex</button>
+    </div>
+
+    <!-- Galeria skinów renderowana dynamicznie -->
+    <div id="skinButtons" class="skins-grid"></div>
+  </div>
+</div>
+
+<!-- Building modal (HTTP) -->
+<div class="sheet-back" id="buildingBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div id="buildingTitle" style="font-weight:700;">Building</div>
+      <button class="btn" id="closeBuilding" type="button">×</button>
+    </div>
+    <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
+    <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
+      <div><b>Status:</b> <span id="buildingStatus">—</span></div>
+      <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
+      <div id="buildingRoutesWrap" style="display:none;">
+        <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
+        <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
       </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn" id="buildingRefresh" type="button">Refresh</button>
+      <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
+      <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
+    </div>
+  </div>
+</div>
 
-      <!-- Building modal (HTTP) -->
-      <div class="sheet-back" id="buildingBack">
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div id="buildingTitle" style="font-weight:700;">Building</div>
-            <button class="btn" id="closeBuilding" type="button">×</button>
-          </div>
-          <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
-          <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
-            <div><b>Status:</b> <span id="buildingStatus">—</span></div>
-            <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
-            <div id="buildingRoutesWrap" style="display:none;">
-              <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
-              <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
-            </div>
-          </div>
-          <div class="btn-row" style="margin-top:12px;">
-            <button class="btn" id="buildingRefresh" type="button">Refresh</button>
-            <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
-            <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
-          </div>
-        </div>
-      </div>
+<!-- Quests modal (STARY – fallback Daily) -->
+<div class="sheet-back" id="questsBack">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;">Daily Quests</div>
+      <button class="btn" id="closeQuests" type="button">×</button>
+    </div>
+    <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
+    <p style="opacity:.7; font-size:12px; margin-top:10px;">
+      Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
+    </p>
+  </div>
+</div>
 
-      <!-- Quests modal (STARY – fallback Daily) -->
-      <div class="sheet-back" id="questsBack">
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:700;">Daily Quests</div>
-            <button class="btn" id="closeQuests" type="button">×</button>
-          </div>
-          <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
-          <p style="opacity:.7; font-size:12px; margin-top:10px;">
-            Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
-          </p>
-        </div>
-      </div>
-
-      <!-- NOWY MODAL: Mission Board -->
+<!-- NOWY MODAL: Mission Board -->
       <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
         <div class="q-modal-body">
           <div class="q-modal-head">
@@ -639,44 +654,44 @@
         </div>
       </div>
 
-      <!-- === FAQ MODAL === -->
-      <div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
-        <div class="faq-backdrop" data-close></div>
-        <div class="faq-sheet" role="document">
-          <header class="faq-header">
-            <h2 id="faqTitle">Alpha Husky — FAQ</h2>
-            <button class="faq-close" data-close aria-label="Close FAQ">✕</button>
-          </header>
+<!-- === FAQ MODAL (nowy) === -->
+<div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
+  <div class="faq-backdrop" data-close></div>
+  <div class="faq-sheet" role="document">
+    <header class="faq-header">
+      <h2 id="faqTitle">Alpha Husky — FAQ</h2>
+      <button class="faq-close" data-close aria-label="Close FAQ">✕</button>
+    </header>
 
-          <div class="faq-toolbar">
-            <input id="faqSearch" type="search" placeholder="Search FAQ…" autocomplete="off" />
-            <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
-          </div>
-
-          <div id="faqList" class="faq-list" role="region" aria-live="polite"></div>
-
-          <footer class="faq-footer">
-            <button class="faq-copylink" id="faqCopyLink" type="button" title="Copy link to this FAQ view">Copy link</button>
-            <span class="faq-hint">Tip: type to filter. Tap a question to expand.</span>
-          </footer>
-        </div>
-      </div>
-
-      <button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
-        <img src="images/ui/faq_icon.png?v=1" alt="FAQ" class="faq-icon">
-        <span>FAQ</span>
-      </button>
-
-      <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
-
-      <div class="fallback" id="fallback">
-        <div>
-          <p>Open this page inside Telegram WebApp for full functionality.</p>
-          <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
-        </div>
-      </div>
+    <div class="faq-toolbar">
+      <input id="faqSearch" type="search" placeholder="Search FAQ…" autocomplete="off" />
+      <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
     </div>
+
+    <div id="faqList" class="faq-list" role="region" aria-live="polite"></div>
+
+    <footer class="faq-footer">
+      <button class="faq-copylink" id="faqCopyLink" type="button" title="Copy link to this FAQ view">Copy link</button>
+      <span class="faq-hint">Tip: type to filter. Tap a question to expand.</span>
+    </footer>
   </div>
+</div>
+
+<!-- Floating FAQ button (bottom-left, kontra Quests po prawej) -->
+<button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
+  <img src="images/ui/faq_icon.png?v=1" alt="FAQ" class="faq-icon">
+  <span>FAQ</span>
+</button>
+
+<!-- Floating launcher (📜) -->
+<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
+<div class="fallback" id="fallback">
+  <div>
+    <p>Open this page inside Telegram WebApp for full functionality.</p>
+    <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
+  </div>
+</div>
+</div>
 
   <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -713,33 +728,26 @@
     })(window.WEBAPP_VER);
   </script>
   <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
+  (function(v){
+    var s = document.createElement('script');
+    s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
+    s.async = false;
+    document.head.appendChild(s);
+  })(window.WEBAPP_VER);
+</script>
   <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/skins.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
+  (function(v){
+    var s = document.createElement('script');
+    s.src = 'js/skins.js?v=' + encodeURIComponent(v || 'dev');
+    s.async = false;
+    document.head.appendChild(s);
+  })(window.WEBAPP_VER);
+</script>
 
   <!-- 4) Główny skrypt aplikacji -->
   <script>
     const DEBUG_UI = true;
-    function dbg(msg){
-      try{
-        if(!DEBUG_UI) return;
-        const d=document.getElementById('dbg');
-        d.style.display='block';
-        d.textContent=msg;
-      }catch(_){}
-    }
+    function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
     function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
 
     const start = () => {
@@ -757,10 +765,6 @@
 
         const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         let tg = nativeTg;
-
-        // ✅ FIX: globalne aliasy używane przez moduły
-        window.tg = tg;
-        window.DBG = DEBUG_UI;
 
         const $  = sel => document.querySelector(sel);
         const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -797,17 +801,25 @@
 
         function setPlayerLabel(lbl){
           const name = lbl || 'Alpha Husky';
+
+          // Nick w topbarze
           const el = document.getElementById('player');
           if (el) el.textContent = name;
+
+          // Nick pod centralnym oknem skina (jeśli istnieje)
           const heroName = document.getElementById('heroName');
           if (heroName) heroName.textContent = name;
         }
 
         const unsafeUser = tg?.initDataUnsafe?.user;
         if (unsafeUser) {
-          const fallbackName = unsafeUser.username ? '@' + unsafeUser.username : (unsafeUser.first_name || 'Player');
+          const fallbackName = unsafeUser.username
+            ? '@' + unsafeUser.username
+            : (unsafeUser.first_name || 'Player');
           setPlayerLabel(fallbackName);
         }
+
+        const init_data = window.Telegram?.WebApp?.initData || "";
 
         tg?.MainButton?.setText?.("Quests");
         tg?.MainButton?.onClick?.(() => { (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests(); });
@@ -845,104 +857,111 @@
 
         function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-        async function getInitDataSafe(timeoutMs = 800) {
-          const t0 = Date.now();
-          while (Date.now() - t0 < timeoutMs) {
-            const v = window.Telegram?.WebApp?.initData;
-            if (v && v.length > 20) return v;
-            await sleep(50);
-          }
-          return window.Telegram?.WebApp?.initData || "";
-        }
+async function getInitDataSafe(timeoutMs = 800) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const v = window.Telegram?.WebApp?.initData;
+    if (v && v.length > 20) return v;
+    await sleep(50);
+  }
+  return window.Telegram?.WebApp?.initData || "";
+}
 
-        async function apiPost(path, payload){
-          const init_data = await getInitDataSafe();
-          const headers = { "Content-Type": "application/json" };
-          if (init_data) headers.Authorization = `Bearer ${init_data}`;
+async function apiPost(path, payload){
+  const init_data = await getInitDataSafe();
+  const headers = { "Content-Type": "application/json" };
+  if (init_data) headers.Authorization = `Bearer ${init_data}`;
 
-          const res = await fetch(api(path), {
-            method: "POST",
-            headers,
-            // ✅ init_data LAST so payload can’t override it
-            body: JSON.stringify({ ...(payload||{}), init_data })
-          });
+  const res = await fetch(api(path), {
+    method: "POST",
+    headers,
+    // ✅ init_data LAST so payload can’t override it
+    body: JSON.stringify({ ...(payload||{}), init_data })
+  });
 
-          const data = await res.json().catch(()=> ({}));
-          if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
-          return data;
-        }
+  const data = await res.json().catch(()=> ({}));
+  if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
+  return data;
+}
 
         window.S = window.S || {};
         window.S.apiPost = apiPost;
-
         const _tg  = window.tg || window.Telegram?.WebApp || null;
         const _dbg = !!window.DBG;
-
         // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
-        function loadScriptOnce(src) {
-          return new Promise((resolve, reject) => {
-            const existing = [...document.scripts].find(s => (s.src || "").includes(src));
-            if (existing) return resolve();
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    // jeśli już jest w DOM, nie ładuj drugi raz
+    const existing = [...document.scripts].find(s => (s.src || "").includes(src));
+    if (existing) return resolve();
 
-            const v = encodeURIComponent(String(window.WEBAPP_VER || Date.now()));
-            const full = src + (src.includes("?") ? "&" : "?") + "v=" + v;
+    const v = encodeURIComponent(String(window.WEBAPP_VER || Date.now()));
+    const full = src + (src.includes("?") ? "&" : "?") + "v=" + v;
 
-            const s = document.createElement("script");
-            s.src = full;
-            s.defer = true;
-            s.onload = () => resolve();
-            s.onerror = (e) => reject(e);
-            document.head.appendChild(s);
-          });
-        }
+    const s = document.createElement("script");
+    s.src = full;
+    s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = (e) => reject(e);
+    document.head.appendChild(s);
+  });
+}
 
-        let _skinsLoading = null;
-        async function ensureSkinsLoaded(apiPost, tg, dbg) {
-          if (window.Skins?.open && window.Skins?.init) {
-            try { window.Skins.init({ apiPost, tg, dbg }); } catch (_) {}
-            return;
-          }
-          if (_skinsLoading) return await _skinsLoading;
-          _skinsLoading = (async () => {
-            await loadScriptOnce("js/skins.js");
-            try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-          })();
-          return await _skinsLoading;
-        }
+let _skinsLoading = null;
 
+async function ensureSkinsLoaded(apiPost, tg, dbg) {
+  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() ma _apiPost=null)
+  if (window.Skins?.open && window.Skins?.init) {
+    try { window.Skins.init({ apiPost, tg, dbg }); } catch (_) {}
+    return;
+  }
+
+  if (_skinsLoading) return await _skinsLoading;
+
+  _skinsLoading = (async () => {
+    await loadScriptOnce("js/skins.js");
+    try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch (_) {}
+  })();
+
+  return await _skinsLoading;
+}
         // --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
-        let _adoptLoading = null;
-        async function ensureAdoptLoaded(apiPost, tg, dbg) {
-          if (window.Adopt?.open && window.Adopt?.init) {
-            try { window.Adopt.init({ apiPost, tg, dbg }); } catch (_) {}
-            return;
-          }
-          if (_adoptLoading) return await _adoptLoading;
-          _adoptLoading = (async () => {
-            await loadScriptOnce("js/adopt.js");
-            try { window.Adopt?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-          })();
-          return await _adoptLoading;
-        }
+let _adoptLoading = null;
 
-        // run_id helper (wspólny dla skins/adopt/shop)
-        window.AH_makeRunId = function(prefix, key) {
-          const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
-          const rnd = Math.random().toString(16).slice(2, 8);
-          return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
-        };
+async function ensureAdoptLoaded(apiPost, tg, dbg) {
+  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
+  if (window.Adopt?.open && window.Adopt?.init) {
+    try { window.Adopt.init({ apiPost, tg, dbg }); } catch (_) {}
+    return;
+  }
 
-        // ✅ FIX: init modułów bez crashy + prawidłowy tg
+  if (_adoptLoading) return await _adoptLoading;
+
+  _adoptLoading = (async () => {
+    await loadScriptOnce("js/adopt.js");
+    try { window.Adopt?.init?.({ apiPost, tg, dbg }); } catch (_) {}
+  })();
+
+  return await _adoptLoading;
+}
+
+// run_id helper (wspólny dla skins/adopt/shop)
+window.AH_makeRunId = function(prefix, key) {
+  const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
+  const rnd = Math.random().toString(16).slice(2, 8);
+  return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
+};
+
+        
         window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-        window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-        window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-        window.Shop?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-        window.Forge?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-        window.Referrals?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
+window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
+window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
-        // skins/adopt: init od razu (safe)
-        ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
-        // adopt możesz ładować “on demand”, ale trzymam init bo tak miałeś — działa ok
+// skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
+ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
         ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
@@ -1069,6 +1088,7 @@
           try {
             const out = await apiPost("/webapp/profile", {});
             if (!out) return;
+            // pozwalamy na dwa kształty: { ok, profile:{...} } albo bezpośrednio dane
             const p = out.profile || out;
 
             PROFILE = PROFILE || {};
@@ -1091,21 +1111,25 @@
           }
         }
         window.loadProfile = loadProfile;
-
         async function loadPlayerState(){
           try {
             const state = await apiPost("/webapp/state");
             PLAYER_STATE = state;
             applyStateToMap();
 
+            // 1) Nick z profilu gry
             if (state && state.profile && state.profile.nickname){
               setPlayerLabel(state.profile.nickname);
             }
+            // 2) Fallback – dane z Telegrama
             else if (state && state.user && !state.user.is_bot) {
-              const lbl = state.user.username ? '@' + state.user.username : (state.user.first_name || 'Player');
+              const lbl = state.user.username
+                ? '@' + state.user.username
+                : (state.user.first_name || 'Player');
               setPlayerLabel(lbl);
             }
 
+            // 3) LVL/Bones → topbar + hero HUD
             renderTopbar();
 
             if (mapBack.style.display === "flex" && DATA) {
@@ -1189,19 +1213,18 @@
                   (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
                 if (window.Dojo?.open) return window.Dojo.open();
               }
-
+              
               if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
-                return window.Shop?.open?.();
-              }
-
-              if (
-                b.action === "open_forge" ||
-                b.id === "vault_forge" ||
-                (b.gameplay && b.gameplay.type === "forge")
-              ) {
-                const bid = b.buildingId || b.id || "forge";
-                return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
-              }
+            return window.Shop?.open?.();
+          }
+             if (
+  b.action === "open_forge" ||
+  b.id === "vault_forge" ||
+  (b.gameplay && b.gameplay.type === "forge")
+) {
+  const bid = b.buildingId || b.id || "forge";
+  return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
+}
 
               if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
@@ -1441,6 +1464,7 @@
           }
         }
 
+        /* helper do formatowania nagród z budynków (w tym item shards) */
         function formatBuildingRewards(rewardsRaw) {
           const rw = rewardsRaw || {};
           const lines = [];
@@ -1450,10 +1474,13 @@
           if (rw.bones)      lines.push(`+${rw.bones} Bones`);
           if (rw.fragment)   lines.push(`+1 Map Key Fragment`);
 
+          // item shards z The Chain Gate (opcjonalne pole)
           if (rw.shards && rw.shards.amount) {
             const slot = rw.shards.slot || "item";
             const amt  = rw.shards.amount;
-            const label = (slot + " shards").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+            const label = (slot + " shards")
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards → Helmet Shards
             lines.push(`+${amt} ${label}`);
           }
 
@@ -1477,8 +1504,8 @@
               const R = String(reason).toUpperCase();
               const isNotReady = R.includes("NOT_READY");
               if (isNotReady && i < maxRetries){
-                await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
-                continue;
+              await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
+              continue;
               }
               if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
               bStatus.textContent = "Ready";
@@ -1519,79 +1546,63 @@
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
         /* === BUTTONS / ACTIONS === */
-        const actions = {
-          ".btn.avatar": () => sendAction("avatar_open"),
-          ".btn.map": () => {
-            mapBack.style.display = "flex";
-            if (!DATA) loadMapData();
-            loadPlayerState();
-          },
-          ".btn.mission": () => sendAction("mission_open", { level: 1 }),
-          ".btn.inventory": () => window.Inventory?.open?.(),
-          ".btn.char": () => sendAction("char_open"),
-          ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
-          ".btn.pets": () => sendAction("pets_open"),
-          ".btn.adopt": async () => {
-            await ensureAdoptLoaded(apiPost, _tg, _dbg);
-            if (window.Adopt?.open) return window.Adopt.open();
-            try { _tg?.showAlert?.("Adopt module not ready."); } catch(_){}
-          },
-          ".btn.equipped": () => window.Equipped?.open?.(),
-          ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-          ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-          ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
-          ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
-          ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-          ".btn.referral": () => window.Referrals?.open?.(),
-          ".btn.howlboard": () => openBoard(),
-        };
+const actions = {
+  ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
+  // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
+  ".btn.map": () => {
+    mapBack.style.display = "flex";
+    if (!DATA) loadMapData();
+    loadPlayerState();
+  },
+  ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+  ".btn.inventory": () => window.Inventory?.open?.(),
+  ".btn.char": () => sendAction("char_open"),
+  ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
+  ".btn.pets": () => sendAction("pets_open"),
+  ".btn.equipped": () => window.Equipped?.open?.(),
+  ".btn.keys": () => sendAction("cmd", { name: "keys" }),
+  ".btn.feed": () => sendAction("cmd", { name: "feed" }),
+  ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
+  ".btn.mypets": () => sendAction("cmd", { name: "mypets" }),
+  ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+  ".btn.referral": () => window.Referrals?.open?.(),
+  ".btn.howlboard": () => openBoard(),
+};
 
-        Object.entries(actions).forEach(([sel, fn]) => {
-          const el = document.querySelector(sel);
-          if (!el) return;
-          el.addEventListener("click", (e) => {
-            e.preventDefault();
-            Promise.resolve()
-              .then(() => fn(e))
-              .catch((err) => {
-                console.error(err);
-                try { dbg('ERR: ' + (err?.message || err)); } catch (_) {}
-              });
-          });
-        });
+Object.entries(actions).forEach(([sel, fn]) => {
+  const el = document.querySelector(sel);
+  if (!el) return;
 
-        /* ✅ Skins: delegated click */
-        document.addEventListener("click", (e) => {
-          const btn = e.target.closest?.(".btn.skins");
-          if (!btn) return;
-          if (e.__AH_SKINS_HANDLED) return;
-          e.__AH_SKINS_HANDLED = true;
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
 
-          e.preventDefault();
-          ensureSkinsLoaded(apiPost, _tg, _dbg)
-            .then(() => window.Skins?.open?.())
-            .catch((err) => {
-              console.warn("skins load/open failed", err);
-              try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
-            });
-        });
+    Promise.resolve()
+      .then(() => fn(e))
+      .catch((err) => {
+        console.error(err);
+        try { dbg('ERR: ' + (err?.message || err)); } catch (_) {}
+      });
+  });
+});
 
-        /* ✅ Adopt: delegated click (extra safety) */
-        document.addEventListener("click", (e) => {
-          const btn = e.target.closest?.(".btn.adopt");
-          if (!btn) return;
-          if (e.__AH_ADOPT_HANDLED) return;
-          e.__AH_ADOPT_HANDLED = true;
+/* ✅ Skins: delegated click (działa nawet jeśli .btn.skins pojawia się później / jest rerenderowany) */
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.(".btn.skins");
+  if (!btn) return;
 
-          e.preventDefault();
-          ensureAdoptLoaded(apiPost, _tg, _dbg)
-            .then(() => window.Adopt?.open?.())
-            .catch((err) => {
-              console.warn("adopt load/open failed", err);
-              try { _tg?.showAlert?.("Failed to load Adoption Center."); } catch (_) {}
-            });
-        });
+  // zapobiegaj podwójnemu fire jeśli kiedyś wróci direct listener
+  if (e.__AH_SKINS_HANDLED) return;
+  e.__AH_SKINS_HANDLED = true;
 
+  e.preventDefault();
+
+  ensureSkinsLoaded(apiPost, _tg, _dbg)
+    .then(() => window.Skins?.open?.())
+    .catch((err) => {
+      console.warn("skins load/open failed", err);
+      try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
+    });
+});
         document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
 
         function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
@@ -1603,6 +1614,7 @@
           const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
           console.log("coords:", x, y);
         });
+
 
         /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
@@ -1618,16 +1630,16 @@
           });
         });
 
-        /* Daily fallback */
+        /* Daily fallback (stary modal) */
         const questsBack = document.getElementById("questsBack");
         const questsList = document.getElementById("questsList");
-        document.getElementById("closeQuests")?.addEventListener("click", () => { questsBack.style.display = "none"; });
-
+        document.getElementById("closeQuests")?.addEventListener("click", () => {
+          questsBack.style.display = "none";
+        });
         function openQuests(){
           questsBack.style.display = "flex";
           refreshQuests();
         }
-
         async function refreshQuests(){
           questsList.innerHTML = "";
           try{
@@ -1671,7 +1683,6 @@
             questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
           }
         }
-
         async function triggerDaily(action, raid){
           const unsafe = tg?.initDataUnsafe || {};
           if (unsafe.query_id) {
@@ -1694,7 +1705,6 @@
         const sectionParam = (qs.get("section") || "").toLowerCase();
         const toastParam = qs.get("toast");
         if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
-
         function showSection(name){
           switch(name){
             case "map":
@@ -1709,19 +1719,16 @@
               sendAction("mission_open", { level: 1 });
               break;
             case "inventory":
-              window.Inventory?.open?.();
+              sendAction("cmd", { name: "inventory" });
               break;
             case "shop":
-              window.Shop?.open?.();
+              sendAction("shop_open");
               break;
             case "profile":
               sendAction("cmd", { name: "profile" });
               break;
             case "pets":
               sendAction("pets_open");
-              break;
-            case "adopt":
-              ensureAdoptLoaded(apiPost, _tg, _dbg).then(()=>window.Adopt?.open?.());
               break;
             case "fortress":
               if (window.Fortress?.open) window.Fortress.open();
@@ -1737,11 +1744,9 @@
         if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
-          window.Quests?.open?.();
-        });
-        document.getElementById('qClose')?.addEventListener('click', () => {
-          document.getElementById('qBack').style.display='none';
-        });
+  window.Quests?.open?.(); // ZAWSZE nowy Mission Board z opisami
+});
+        document.getElementById('qClose')?.addEventListener('click', () => { document.getElementById('qBack').style.display='none'; });
 
         dbg('Ready');
       } catch (fatal) {
@@ -1756,12 +1761,40 @@
       start();
     }
   </script>
-
-  <!-- Mission Board -->
   <script src="js/quests.js?v=20251119f" defer></script>
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
+  
+  <!-- NATYCHMIASTOWE INIT – bez czekania na fallback -->
+  <script>
+    // Natychmiastowe init Quests po załadowaniu strony
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.Quests && typeof window.Quests.init === 'function') {
+        const tg = window.Telegram?.WebApp;
+        const apiPost = window.S?.apiPost || (async (path, data) => {
+          const init_data = tg?.initData;
+          const res = await fetch((window.API_BASE || "") + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(init_data ? { Authorization: `Bearer ${init_data}` } : {}) },
+            body: JSON.stringify({ init_data, ...(data || {}) })
+          });
+          return res.json();
+        });
+        window.Quests.init({ apiPost, tg, dbg: console.debug });
+        console.log("Mission Board (z opisami) zainicjowany!");
+      }
+    });
 
-  <!-- FAQ -->
+    // Launcher otwiera ZAWSZE nowy Mission Board
+    document.getElementById('quests-launcher')?.addEventListener('click', () => {
+      if (window.Quests?.open) {
+        window.Quests.open();
+      } else {
+        console.error("Quests.js nie załadowany!");
+      }
+    });
+  </script>
+
+  <!-- FAQ – bez zmian -->
   <script src="js/faq.js?v=20251108" defer></script>
   <script>
     (function () {
@@ -1796,25 +1829,46 @@
   <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
   <script src="js/inventory.js?v=20251205"></script>
   <script src="js/equipped.js?v=20251210"></script>
+  <script src="js/shop.js?v=WEBAPP_VER"></script>
+  <script src="js/forge.js?v=WEBAPP_VER"></script>
 
-  <!-- ✅ FIX: shop/forge z realnym WEBAPP_VER (nie literal WEBAPP_VER) -->
+  <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/shop.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
-  <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/forge.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
+  // === ROUTING Z ?section=... ===
+  const params = new URLSearchParams(location.search);
+  const section = params.get("section");
 
-  <!-- (opcjonalnie) adopt.js nie musi być tu ładowany – loader robi to sam -->
+  if (section === "inventory" && window.Inventory) {
+    setTimeout(() => {
+      window.Inventory.open();
+    }, 100);
+  }
+
+  if (section === "equipped" && window.Equipped) {
+    setTimeout(() => {
+      window.Equipped.open();
+    }, 100);
+  }
+
+  // === NADPISANIE PRZYCISKU INVENTORY NA HUD ===
+  document.querySelectorAll(".btn.inventory").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.Inventory) {
+        window.Inventory.open();
+      } else {
+        Telegram.WebApp.showAlert("Inventory jeszcze się ładuje...");
+      }
+    });
+  });
+
+  // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
+  // ".btn.equipped": () => window.Equipped?.open?.()
+  </script>
 </body>
 </html>
+
+
+
+
