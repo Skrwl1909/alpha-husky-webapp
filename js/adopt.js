@@ -6,7 +6,15 @@
 //   POST /webapp/adopt/buy    { petType, run_id? }
 
 (function(){
-  const S = { apiPost:null, tg:null, dbg:false, _busy:false, _state:null };
+  const S = {
+    apiPost:null,
+    tg:null,
+    dbg:false,
+    _busy:false,
+    _state:null,
+    _mountedBody:null,
+    _mountedBack:null
+  };
 
   function log(...a){ if(S.dbg) console.log("[Adopt]", ...a); }
   function el(tag, cls, txt){
@@ -15,14 +23,14 @@
     if(txt != null) e.textContent = txt;
     return e;
   }
-  function uuid(){
+
+  function fallbackRunId(){
     try { return crypto.randomUUID(); } catch(e){}
     return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,10);
   }
+
   function toast(msg){
-    // use existing toast if present
     if(typeof window.toast === "function"){ window.toast(msg); return; }
-    // tiny fallback
     const t = el("div","ah-toast", String(msg||""));
     ensureStyles();
     document.body.appendChild(t);
@@ -157,38 +165,69 @@
   function closeModal(back){
     try{ back.remove(); }catch(e){}
     lockScroll(false);
+    if (S._mountedBack === back) {
+      S._mountedBack = null;
+      S._mountedBody = null;
+    }
+  }
+
+  function getPetKey(p){
+    return (p && (p.petType || p.type || p.key || p.id)) || "";
   }
 
   function fmtPrice(p){
     if(!p) return "";
-    const tok = Number(p.price_tokens || 0);
-    const bon = Number(p.price || 0);
+    const cost = p.cost || {};
+    const tok =
+      Number(p.price_tokens ?? p.tokens ?? p.tokenCost ?? cost.tokens ?? cost.token ?? 0);
+    const bon =
+      Number(p.price ?? p.price_bones ?? p.bones ?? p.boneCost ?? cost.bones ?? 0);
+
+    if(tok > 0 && bon > 0) return `${bon} Bones + ${tok} Tokens`;
     if(tok > 0) return `${tok} Tokens`;
     if(bon > 0) return `${bon} Bones`;
     return "";
   }
 
+  function getBalances(state){
+    const r = state?.resources || state?.balances || state || {};
+    const bones = Number(r.bones ?? 0);
+    const tokens = Number(r.tokens ?? r.token ?? 0);
+    return { bones, tokens };
+  }
+
+  function getOffers(state){
+    const offers = state?.offers || state?.catalog || {};
+    const token = offers.token || offers.tokens || [];
+    const bones = offers.bones || [];
+    return { token, bones };
+  }
+
+  function setButtonsDisabled(disabled){
+    if(!S._mountedBody) return;
+    const btns = S._mountedBody.querySelectorAll("button.adopt-btn");
+    btns.forEach(b => { b.disabled = !!disabled || b.disabled; });
+  }
+
   function render(state, body){
     body.innerHTML = "";
+
+    const balVal = getBalances(state);
     const bal = el("div","adopt-bal");
-    bal.appendChild(el("div","adopt-chip", `Bones: ${state?.resources?.bones ?? 0}`));
-    bal.appendChild(el("div","adopt-chip", `Tokens: ${state?.resources?.token ?? 0}`));
+    bal.appendChild(el("div","adopt-chip", `Bones: ${balVal.bones}`));
+    bal.appendChild(el("div","adopt-chip", `Tokens: ${balVal.tokens}`));
     body.appendChild(bal);
 
-    const token = state?.offers?.token || [];
-    const bones = state?.offers?.bones || [];
+    const { token, bones } = getOffers(state);
 
     // Exclusive token pets
     const secTok = el("div","adopt-section");
     secTok.appendChild(el("h3","", `Exclusive (Tokens)`));
     const gridTok = el("div","adopt-grid");
     if(!token.length){
-      const empty = el("div","adopt-desc","No token pets available right now (or you already own them).");
-      secTok.appendChild(empty);
+      secTok.appendChild(el("div","adopt-desc","No token pets available right now (or you already own them)."));
     } else {
-      token.forEach(p=>{
-        gridTok.appendChild(petCard(p, "tokens"));
-      });
+      token.forEach(p=> gridTok.appendChild(petCard(p)));
       secTok.appendChild(gridTok);
     }
     body.appendChild(secTok);
@@ -198,42 +237,43 @@
     secBones.appendChild(el("h3","", `Standard (Bones)`));
     const gridBones = el("div","adopt-grid");
     if(!bones.length){
-      const empty = el("div","adopt-desc","No adoptable pets with Bones (or you own them all).");
-      secBones.appendChild(empty);
+      secBones.appendChild(el("div","adopt-desc","No adoptable pets with Bones (or you own them all)."));
     } else {
-      bones.forEach(p=>{
-        gridBones.appendChild(petCard(p, "bones"));
-      });
+      bones.forEach(p=> gridBones.appendChild(petCard(p)));
       secBones.appendChild(gridBones);
     }
     body.appendChild(secBones);
   }
 
-  function petCard(p, pay){
+  function petCard(p){
     const card = el("div","adopt-card");
+
     const imgWrap = el("div","adopt-img");
     if(p.img){
       const img = new Image();
       img.src = p.img;
-      img.alt = p.name || p.type || "";
+      img.alt = p.name || getPetKey(p) || "pet";
       imgWrap.appendChild(img);
     } else {
       imgWrap.appendChild(el("div","adopt-desc","🐾"));
     }
 
     const meta = el("div","adopt-meta");
-    meta.appendChild(el("div","adopt-name", p.name || p.petType || "Pet"));
+    meta.appendChild(el("div","adopt-name", p.name || getPetKey(p) || "Pet"));
     meta.appendChild(el("div","adopt-desc", p.desc || ""));
 
     const actions = el("div","adopt-actions");
     const price = el("div","adopt-price", fmtPrice(p));
-    const btn = el("button","adopt-btn", p.owned ? "Owned" : "Adopt");
+
+    const owned = !!(p.owned || p.isOwned);
+    const btn = el("button","adopt-btn", owned ? "Owned" : "Adopt");
     btn.type="button";
-    btn.disabled = S._busy || !!p.owned;
+    btn.disabled = S._busy || owned;
 
     btn.addEventListener("click", async ()=>{
       if(S._busy) return;
-      await buyPet(p.petType);
+      const key = getPetKey(p);
+      await buyPet(key);
     });
 
     actions.appendChild(price);
@@ -247,34 +287,48 @@
 
   async function loadState(){
     if(!S.apiPost) throw new Error("Adopt not initialized (apiPost missing)");
-    const res = await S.apiPost("/webapp/adopt/state", {});
-    if(!res || !res.ok) throw new Error(res?.reason || "STATE_FAIL");
-    return res.data || res;
+    const out = await S.apiPost("/webapp/adopt/state", {});
+    if(out && out.ok === false) throw new Error(out.reason || "STATE_FAIL");
+    return (out && out.data) ? out.data : out;
+  }
+
+  function humanReason(reason){
+    const R = String(reason || "").toUpperCase();
+    if (R.includes("NOT_ENOUGH_TOKENS")) return "Not enough tokens.";
+    if (R.includes("NOT_ENOUGH_BONES")) return "Not enough bones.";
+    if (R.includes("ALREADY_OWNED")) return "You already own this pet.";
+    if (R.includes("MISSING")) return "Missing init data. Reopen the WebApp.";
+    return reason || "Action failed.";
   }
 
   async function buyPet(petType){
     if(!petType) return;
     S._busy = true;
+    setButtonsDisabled(true);
+
     try{
-      const run_id = uuid();
-      const res = await S.apiPost("/webapp/adopt/buy", { petType, run_id });
-      if(!res || !res.ok){
-        const reason = res?.reason || "BUY_FAIL";
-        toast(reason === "NOT_ENOUGH_TOKENS" ? "Not enough tokens." :
-              reason === "NOT_ENOUGH_BONES" ? "Not enough bones." :
-              reason === "ALREADY_OWNED" ? "You already own this pet." :
-              reason);
+      const run_id =
+        (typeof window.AH_makeRunId === "function")
+          ? window.AH_makeRunId("adopt", petType)
+          : fallbackRunId();
+
+      const out = await S.apiPost("/webapp/adopt/buy", { petType, run_id });
+      if(out && out.ok === false){
+        toast(humanReason(out.reason || "BUY_FAIL"));
         return;
       }
-      toast(`Adopted: ${res.adopted?.name || petType}`);
-      // refresh state
+
+      const data = (out && out.data) ? out.data : out;
+      const adopted = data?.adopted || data?.pet || {};
+      toast(`Adopted: ${adopted?.name || petType}`);
+
       const st = await loadState();
       S._state = st;
-      const modalBody = document.querySelector(".adopt-body");
-      if(modalBody) render(st, modalBody);
+      if (S._mountedBody) render(st, S._mountedBody);
     } catch(e){
+      const reason = e?.data?.reason || e?.message || "Network error.";
       log("buyPet error", e);
-      toast("Network error.");
+      toast(humanReason(reason));
     } finally {
       S._busy = false;
     }
@@ -285,7 +339,11 @@
     document.body.appendChild(back);
     lockScroll(true);
 
+    S._mountedBack = back;
+    S._mountedBody = body;
+
     body.innerHTML = '<div class="adopt-desc">Loading…</div>';
+
     try{
       const st = await loadState();
       S._state = st;
