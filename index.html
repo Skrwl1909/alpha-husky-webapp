@@ -963,6 +963,22 @@ window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 // skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
         ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
+        // --- Adopt: open on button/pin click (delegation-safe) ---
+// Użyj data-action="adopt" na przycisku, albo dopasuj selektor poniżej.
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest('[data-action="adopt"], .btn-adopt, .adopt-btn');
+  if (!btn) return;
+
+  e.preventDefault();
+
+  try {
+    await ensureAdoptLoaded(apiPost, _tg, _dbg);
+    window.Adopt?.open?.();
+  } catch (err) {
+    console.error("[Adopt] open failed", err);
+    window.toast?.("Adopt failed to load");
+  }
+});
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1868,6 +1884,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
