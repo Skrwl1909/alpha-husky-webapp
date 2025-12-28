@@ -5,41 +5,42 @@
 //   POST /webapp/adopt/state
 //   POST /webapp/adopt/buy    { petType, run_id? }
 
-(function(){
+(function () {
   const S = {
-    apiPost:null,
-    tg:null,
-    dbg:false,
-    _busy:false,
-    _state:null,
-    _mountedBody:null,
-    _mountedBack:null
+    apiPost: null,
+    tg: null,
+    dbg: false,
+    _busy: false,
+    _state: null,
+    _mountedBody: null,
+    _mountedBack: null,
+    _escHandler: null,
   };
 
-  function log(...a){ if(S.dbg) console.log("[Adopt]", ...a); }
-  function el(tag, cls, txt){
+  function log(...a) { if (S.dbg) console.log("[Adopt]", ...a); }
+  function el(tag, cls, txt) {
     const e = document.createElement(tag);
-    if(cls) e.className = cls;
-    if(txt != null) e.textContent = txt;
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
     return e;
   }
 
-  function fallbackRunId(){
-    try { return crypto.randomUUID(); } catch(e){}
-    return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,10);
+  function fallbackRunId() {
+    try { return crypto.randomUUID(); } catch (e) {}
+    return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
   }
 
-  function toast(msg){
-    if(typeof window.toast === "function"){ window.toast(msg); return; }
-    const t = el("div","ah-toast", String(msg||""));
+  function toast(msg) {
+    if (typeof window.toast === "function") { window.toast(msg); return; }
+    const t = el("div", "ah-toast", String(msg || ""));
     ensureStyles();
     document.body.appendChild(t);
-    setTimeout(()=>t.classList.add("show"), 10);
-    setTimeout(()=>{ t.classList.remove("show"); setTimeout(()=>t.remove(), 250); }, 2200);
+    setTimeout(() => t.classList.add("show"), 10);
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 2200);
   }
 
-  function ensureStyles(){
-    if(document.getElementById("adopt-styles")) return;
+  function ensureStyles() {
+    if (document.getElementById("adopt-styles")) return;
     const style = document.createElement("style");
     style.id = "adopt-styles";
     style.textContent = `
@@ -129,149 +130,141 @@
     document.head.appendChild(style);
   }
 
-  function lockScroll(on){
-    if(on) document.body.classList.add("adopt-lock");
+  function lockScroll(on) {
+    if (on) document.body.classList.add("adopt-lock");
     else document.body.classList.remove("adopt-lock");
   }
 
-  function buildModal(){
-    ensureStyles();
-    const back = el("div","adopt-backdrop");
-    const modal = el("div","adopt-modal");
-
-    const head = el("div","adopt-head");
-    const left = el("div","");
-    const title = el("div","adopt-title","Adoption Center");
-    const sub = el("div","adopt-sub","Adopt pets with Bones or unlock exclusive token pets.");
-    left.appendChild(title); left.appendChild(sub);
-
-    const close = el("button","adopt-close","×");
-    close.type="button";
-    close.addEventListener("click", ()=>closeModal(back));
-
-    head.appendChild(left);
-    head.appendChild(close);
-
-    const body = el("div","adopt-body");
-    modal.appendChild(head);
-    modal.appendChild(body);
-    back.appendChild(modal);
-
-    back.addEventListener("click", (e)=>{ if(e.target===back) closeModal(back); });
-
-    return { back, body };
-  }
-
-  function closeModal(back){
-    try{ back.remove(); }catch(e){}
+  function closeModal(back) {
+    try { back.remove(); } catch (e) {}
     lockScroll(false);
+
+    if (S._escHandler) {
+      try { document.removeEventListener("keydown", S._escHandler); } catch (e) {}
+      S._escHandler = null;
+    }
+
     if (S._mountedBack === back) {
       S._mountedBack = null;
       S._mountedBody = null;
     }
   }
 
-  function getPetKey(p){
-    return (p && (p.petType || p.type || p.key || p.id)) || "";
+  function buildModal() {
+    ensureStyles();
+
+    // single-instance: jeśli już otwarte, zamknij poprzednie
+    if (S._mountedBack) closeModal(S._mountedBack);
+
+    const back = el("div", "adopt-backdrop");
+    const modal = el("div", "adopt-modal");
+
+    const head = el("div", "adopt-head");
+    const left = el("div", "");
+    const title = el("div", "adopt-title", "Adoption Center");
+    const sub = el("div", "adopt-sub", "Adopt pets with Bones or unlock exclusive token pets.");
+    left.appendChild(title);
+    left.appendChild(sub);
+
+    const close = el("button", "adopt-close", "×");
+    close.type = "button";
+    close.addEventListener("click", () => closeModal(back));
+
+    head.appendChild(left);
+    head.appendChild(close);
+
+    const body = el("div", "adopt-body");
+    modal.appendChild(head);
+    modal.appendChild(body);
+    back.appendChild(modal);
+
+    back.addEventListener("click", (e) => { if (e.target === back) closeModal(back); });
+
+    // Esc zamyka
+    S._escHandler = (e) => {
+      if (e.key === "Escape") closeModal(back);
+    };
+    document.addEventListener("keydown", S._escHandler);
+
+    return { back, body };
   }
 
-  function fmtPrice(p){
-    if(!p) return "";
-    const cost = p.cost || {};
-    const tok =
-      Number(p.price_tokens ?? p.tokens ?? p.tokenCost ?? cost.tokens ?? cost.token ?? 0);
-    const bon =
-      Number(p.price ?? p.price_bones ?? p.bones ?? p.boneCost ?? cost.bones ?? 0);
+  function getPetKey(p) {
+    return (p && (p.petType || p.pet_type || p.type || p.key || p.id)) || "";
+  }
 
-    if(tok > 0 && bon > 0) return `${bon} Bones + ${tok} Tokens`;
-    if(tok > 0) return `${tok} Tokens`;
-    if(bon > 0) return `${bon} Bones`;
+  function fmtPrice(p) {
+    if (!p) return "";
+    const cost = p.cost || {};
+    const tok = Number(p.price_tokens ?? p.tokens ?? p.tokenCost ?? cost.tokens ?? cost.token ?? 0);
+    const bon = Number(p.price ?? p.price_bones ?? p.bones ?? p.boneCost ?? cost.bones ?? 0);
+
+    if (tok > 0 && bon > 0) return `${bon} Bones + ${tok} Tokens`;
+    if (tok > 0) return `${tok} Tokens`;
+    if (bon > 0) return `${bon} Bones`;
     return "";
   }
 
-  function getBalances(state){
+  function getBalances(state) {
     const r = state?.resources || state?.balances || state || {};
     const bones = Number(r.bones ?? 0);
     const tokens = Number(r.tokens ?? r.token ?? 0);
     return { bones, tokens };
   }
 
-  function getOffers(state){
-    const offers = state?.offers || state?.catalog || {};
-    const token = offers.token || offers.tokens || [];
-    const bones = offers.bones || [];
-    return { token, bones };
+  function getOffers(state) {
+    // wspieramy różne schematy payloadu
+    const offers = state?.offers || state?.catalog || state?.adopt || {};
+    const token =
+      offers.token || offers.tokens || offers.tokenPets || offers.exclusive || offers.exclusiveTokens || [];
+    const bones =
+      offers.bones || offers.bonePets || offers.standard || offers.free || [];
+
+    return {
+      token: Array.isArray(token) ? token : [],
+      bones: Array.isArray(bones) ? bones : [],
+    };
   }
 
-  function setButtonsDisabled(disabled){
-    if(!S._mountedBody) return;
+  function setButtonsDisabled(disabled) {
+    if (!S._mountedBody) return;
     const btns = S._mountedBody.querySelectorAll("button.adopt-btn");
-    btns.forEach(b => { b.disabled = !!disabled || b.disabled; });
+    btns.forEach((b) => {
+      const owned = b.dataset.owned === "1";
+      b.disabled = !!disabled || owned;
+    });
   }
 
-  function render(state, body){
-    body.innerHTML = "";
+  function petCard(p) {
+    const card = el("div", "adopt-card");
 
-    const balVal = getBalances(state);
-    const bal = el("div","adopt-bal");
-    bal.appendChild(el("div","adopt-chip", `Bones: ${balVal.bones}`));
-    bal.appendChild(el("div","adopt-chip", `Tokens: ${balVal.tokens}`));
-    body.appendChild(bal);
-
-    const { token, bones } = getOffers(state);
-
-    // Exclusive token pets
-    const secTok = el("div","adopt-section");
-    secTok.appendChild(el("h3","", `Exclusive (Tokens)`));
-    const gridTok = el("div","adopt-grid");
-    if(!token.length){
-      secTok.appendChild(el("div","adopt-desc","No token pets available right now (or you already own them)."));
-    } else {
-      token.forEach(p=> gridTok.appendChild(petCard(p)));
-      secTok.appendChild(gridTok);
-    }
-    body.appendChild(secTok);
-
-    // Bones adoption
-    const secBones = el("div","adopt-section");
-    secBones.appendChild(el("h3","", `Standard (Bones)`));
-    const gridBones = el("div","adopt-grid");
-    if(!bones.length){
-      secBones.appendChild(el("div","adopt-desc","No adoptable pets with Bones (or you own them all)."));
-    } else {
-      bones.forEach(p=> gridBones.appendChild(petCard(p)));
-      secBones.appendChild(gridBones);
-    }
-    body.appendChild(secBones);
-  }
-
-  function petCard(p){
-    const card = el("div","adopt-card");
-
-    const imgWrap = el("div","adopt-img");
-    if(p.img){
+    const imgWrap = el("div", "adopt-img");
+    if (p.img) {
       const img = new Image();
-      img.src = p.img;
       img.alt = p.name || getPetKey(p) || "pet";
+      img.onload = () => {};
+      img.onerror = () => { imgWrap.innerHTML = ""; imgWrap.appendChild(el("div","adopt-desc","🐾")); };
+      img.src = p.img;
       imgWrap.appendChild(img);
     } else {
-      imgWrap.appendChild(el("div","adopt-desc","🐾"));
+      imgWrap.appendChild(el("div", "adopt-desc", "🐾"));
     }
 
-    const meta = el("div","adopt-meta");
-    meta.appendChild(el("div","adopt-name", p.name || getPetKey(p) || "Pet"));
-    meta.appendChild(el("div","adopt-desc", p.desc || ""));
+    const meta = el("div", "adopt-meta");
+    meta.appendChild(el("div", "adopt-name", p.name || getPetKey(p) || "Pet"));
+    meta.appendChild(el("div", "adopt-desc", p.desc || ""));
 
-    const actions = el("div","adopt-actions");
-    const price = el("div","adopt-price", fmtPrice(p));
+    const actions = el("div", "adopt-actions");
+    const price = el("div", "adopt-price", fmtPrice(p));
 
     const owned = !!(p.owned || p.isOwned);
-    const btn = el("button","adopt-btn", owned ? "Owned" : "Adopt");
-    btn.type="button";
+    const btn = el("button", "adopt-btn", owned ? "Owned" : "Adopt");
+    btn.type = "button";
+    btn.dataset.owned = owned ? "1" : "0";
     btn.disabled = S._busy || owned;
 
-    btn.addEventListener("click", async ()=>{
-      if(S._busy) return;
+    btn.addEventListener("click", async () => {
+      if (S._busy) return;
       const key = getPetKey(p);
       await buyPet(key);
     });
@@ -285,35 +278,75 @@
     return card;
   }
 
-  async function loadState(){
-    if(!S.apiPost) throw new Error("Adopt not initialized (apiPost missing)");
+  function render(state, body) {
+    body.innerHTML = "";
+
+    const balVal = getBalances(state);
+    const bal = el("div", "adopt-bal");
+    bal.appendChild(el("div", "adopt-chip", `Bones: ${balVal.bones}`));
+    bal.appendChild(el("div", "adopt-chip", `Tokens: ${balVal.tokens}`));
+    body.appendChild(bal);
+
+    const { token, bones } = getOffers(state);
+
+    const secTok = el("div", "adopt-section");
+    secTok.appendChild(el("h3", "", "Exclusive (Tokens)"));
+    const gridTok = el("div", "adopt-grid");
+    if (!token.length) {
+      secTok.appendChild(el("div", "adopt-desc", "No token pets available right now (or you already own them)."));
+    } else {
+      token.forEach((p) => gridTok.appendChild(petCard(p)));
+      secTok.appendChild(gridTok);
+    }
+    body.appendChild(secTok);
+
+    const secBones = el("div", "adopt-section");
+    secBones.appendChild(el("h3", "", "Standard (Bones)"));
+    const gridBones = el("div", "adopt-grid");
+    if (!bones.length) {
+      secBones.appendChild(el("div", "adopt-desc", "No adoptable pets with Bones (or you own them all)."));
+    } else {
+      bones.forEach((p) => gridBones.appendChild(petCard(p)));
+      secBones.appendChild(gridBones);
+    }
+    body.appendChild(secBones);
+
+    // jeśli jesteśmy w trybie busy, dociśnij disable po renderze
+    if (S._busy) setButtonsDisabled(true);
+  }
+
+  async function loadState() {
+    if (!S.apiPost) throw new Error("Adopt not initialized (apiPost missing)");
     const out = await S.apiPost("/webapp/adopt/state", {});
-    if(out && out.ok === false) throw new Error(out.reason || "STATE_FAIL");
+    if (out && out.ok === false) throw new Error(out.reason || "STATE_FAIL");
     return (out && out.data) ? out.data : out;
   }
 
-  function humanReason(reason){
+  function humanReason(reason) {
     const R = String(reason || "").toUpperCase();
     if (R.includes("NOT_ENOUGH_TOKENS")) return "Not enough tokens.";
     if (R.includes("NOT_ENOUGH_BONES")) return "Not enough bones.";
     if (R.includes("ALREADY_OWNED")) return "You already own this pet.";
+    if (R.includes("UNKNOWN_PET") || R.includes("BAD_PET")) return "Unknown pet.";
     if (R.includes("MISSING")) return "Missing init data. Reopen the WebApp.";
+    if (R.includes("HTTP_401") || R.includes("UNAUTHORIZED")) return "Unauthorized. Reopen the WebApp.";
     return reason || "Action failed.";
   }
 
-  async function buyPet(petType){
-    if(!petType) return;
+  async function buyPet(petType) {
+    if (!petType) return;
+
     S._busy = true;
     setButtonsDisabled(true);
 
-    try{
+    try {
       const run_id =
         (typeof window.AH_makeRunId === "function")
           ? window.AH_makeRunId("adopt", petType)
           : fallbackRunId();
 
       const out = await S.apiPost("/webapp/adopt/buy", { petType, run_id });
-      if(out && out.ok === false){
+      if (out && out.ok === false) {
         toast(humanReason(out.reason || "BUY_FAIL"));
         return;
       }
@@ -325,16 +358,18 @@
       const st = await loadState();
       S._state = st;
       if (S._mountedBody) render(st, S._mountedBody);
-    } catch(e){
+
+    } catch (e) {
       const reason = e?.data?.reason || e?.message || "Network error.";
       log("buyPet error", e);
       toast(humanReason(reason));
     } finally {
       S._busy = false;
+      setButtonsDisabled(false);
     }
   }
 
-  async function open(){
+  async function open() {
     const { back, body } = buildModal();
     document.body.appendChild(back);
     lockScroll(true);
@@ -344,22 +379,22 @@
 
     body.innerHTML = '<div class="adopt-desc">Loading…</div>';
 
-    try{
+    try {
       const st = await loadState();
       S._state = st;
       render(st, body);
-    } catch(e){
+    } catch (e) {
       log("open error", e);
       body.innerHTML = '<div class="adopt-desc">Failed to load adopt state.</div>';
     }
   }
 
-  function init({ apiPost, tg, dbg } = {}){
-    if(apiPost) S.apiPost = apiPost;
-    if(tg) S.tg = tg;
-    if(typeof dbg === "boolean") S.dbg = dbg;
+  function init({ apiPost, tg, dbg } = {}) {
+    if (apiPost) S.apiPost = apiPost;
+    if (tg) S.tg = tg;
+    if (typeof dbg === "boolean") S.dbg = dbg;
     return true;
   }
 
-  window.Adopt = { init, open, _state: ()=>S._state };
+  window.Adopt = { init, open, _state: () => S._state };
 })();
