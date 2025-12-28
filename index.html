@@ -925,6 +925,33 @@ async function ensureSkinsLoaded(apiPost, tg, dbg) {
 
   return await _skinsLoading;
 }
+        // --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
+let _adoptLoading = null;
+
+async function ensureAdoptLoaded(apiPost, tg, dbg) {
+  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
+  if (window.Adopt?.open && window.Adopt?.init) {
+    try { window.Adopt.init({ apiPost, tg, dbg }); } catch (_) {}
+    return;
+  }
+
+  if (_adoptLoading) return await _adoptLoading;
+
+  _adoptLoading = (async () => {
+    await loadScriptOnce("js/adopt.js");
+    try { window.Adopt?.init?.({ apiPost, tg, dbg }); } catch (_) {}
+  })();
+
+  return await _adoptLoading;
+}
+
+// run_id helper (wspólny dla skins/adopt/shop)
+window.AH_makeRunId = function(prefix, key) {
+  const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
+  const rnd = Math.random().toString(16).slice(2, 8);
+  return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
+};
+
         
         window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
@@ -935,6 +962,7 @@ window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
 // skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
+        ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
 
         setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
@@ -1840,6 +1868,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
