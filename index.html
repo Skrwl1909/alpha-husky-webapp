@@ -966,7 +966,7 @@ ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
         // --- Adopt: open on button/pin click (delegation-safe) ---
 // Użyj data-action="adopt" na przycisku, albo dopasuj selektor poniżej.
 document.addEventListener("click", async (e) => {
-  const btn = e.target.closest('[data-action="adopt"], .btn-adopt, .adopt-btn');
+  const btn = e.target.closest('[data-action="adopt"], .btn.adopt, .btn-adopt, .adopt-btn');
   if (!btn) return;
 
   e.preventDefault();
@@ -1884,6 +1884,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
