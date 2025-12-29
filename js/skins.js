@@ -15,66 +15,98 @@
   let _selectedKey = "";
   let _inited = false;
 
- function init({ apiPost, tg, dbg }) {
-  // ✅ zawsze uzupełnij apiPost nawet jeśli init wołany ponownie
-  _apiPost = apiPost || window.S?.apiPost || _apiPost || null;
-  _tg = tg || (window.Telegram && window.Telegram.WebApp) || _tg || null;
-  _dbg = !!dbg;
+  function init({ apiPost, tg, dbg } = {}) {
+    // ✅ always refresh apiPost even on re-init
+    _apiPost = apiPost || window.S?.apiPost || _apiPost || null;
+    _tg = tg || (window.Telegram && window.Telegram.WebApp) || _tg || null;
+    _dbg = !!dbg;
 
-  if (_inited) return;   // ✅ nie dubluj event listenerów
-  _inited = true;
+    if (_inited) return true;   // ✅ don't re-bind
+    _inited = true;
 
-avatarBack = document.getElementById("avatarBack");
-skinCanvas = document.getElementById("skinCanvas");
-skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
-skinDesc = document.getElementById("skinDesc");
-closeAvatar = document.getElementById("closeAvatar");
-equipBtn = document.getElementById("equipSkin");
-shareBtn = document.getElementById("shareSkin");
-skinButtonsWrap = document.getElementById("skinButtons");
+    avatarBack = document.getElementById("avatarBack");
+    skinCanvas = document.getElementById("skinCanvas");
+    skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
+    skinDesc = document.getElementById("skinDesc");
+    closeAvatar = document.getElementById("closeAvatar");
+    equipBtn = document.getElementById("equipSkin");
+    shareBtn = document.getElementById("shareSkin");
+    skinButtonsWrap = document.getElementById("skinButtons");
 
-if (_bound) return;        // ✅ nie dubluj listenerów
-_bound = true;
+    if (_bound) return true;
+    _bound = true;
 
-avatarBack?.addEventListener("click", (e) => {
-  if (e.target === avatarBack) avatarBack.style.display = "none";
-});
-closeAvatar?.addEventListener("click", () => (avatarBack.style.display = "none"));
+    avatarBack?.addEventListener("click", (e) => {
+      if (e.target === avatarBack) avatarBack.style.display = "none";
+    });
+    closeAvatar?.addEventListener("click", () => {
+      if (avatarBack) avatarBack.style.display = "none";
+    });
 
-equipBtn?.addEventListener("click", onPrimaryAction);
-shareBtn?.addEventListener("click", onShare);
+    equipBtn?.addEventListener("click", onPrimaryAction);
+    shareBtn?.addEventListener("click", onShare);
+
+    return true;
   }
 
-  function dbg(msg) {
-    if (_dbg) console.log("[Skins]", msg);
+  function dbg(msg, obj) {
+    if (_dbg) console.log("[Skins]", msg, obj ?? "");
   }
 
   function haptic(kind) {
     try { _tg?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
   }
 
+  function uuid() {
+    try { return crypto.randomUUID(); } catch (_) {}
+    return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function normKey(key) {
+    return (key || "").trim().toLowerCase();
+  }
+
   function isOwned(key) {
-    const k = (key || "").trim().toLowerCase();
+    const k = normKey(key);
     if (!k || k === "default") return true;
     return Array.isArray(_owned) && _owned.includes(k);
   }
 
   function getMeta(key) {
-    const k = (key || "").trim().toLowerCase();
-    return _catalog.find(s => (s.key || "").toLowerCase() === k) || null;
+    const k = normKey(key);
+    return (_catalog || []).find(s => normKey(s.key) === k) || null;
   }
 
-  function getCostBones(key) {
+  // ✅ supports catalog: cost:{bones:..., tokens:...} (also accepts bone/token variants)
+  function getCost(key) {
     const m = getMeta(key);
-    const c = m && m.cost ? m.cost : null;
-    const bones = c && c.bones != null ? Number(c.bones) : 0;
-    return Number.isFinite(bones) ? bones : 0;
+    const c = (m && m.cost) ? m.cost : {};
+
+    const bonesRaw = (c.bones ?? c.bone ?? 0);
+    const tokensRaw = (c.tokens ?? c.token ?? 0);
+
+    const bones = Number(bonesRaw);
+    const tokens = Number(tokensRaw);
+
+    return {
+      bones: Number.isFinite(bones) ? bones : 0,
+      tokens: Number.isFinite(tokens) ? tokens : 0,
+    };
+  }
+
+  function fmtCostLabel(cost) {
+    const b = Number(cost?.bones || 0);
+    const t = Number(cost?.tokens || 0);
+    if (b > 0 && t > 0) return `${b} bones + ${t} tokens`;
+    if (t > 0) return `${t} tokens`;
+    if (b > 0) return `${b} bones`;
+    return "";
   }
 
   function setPrimaryButtonState() {
     if (!equipBtn) return;
 
-    const k = (_selectedKey || "").trim().toLowerCase();
+    const k = normKey(_selectedKey);
     const owned = isOwned(k);
 
     if (!k) {
@@ -94,12 +126,13 @@ shareBtn?.addEventListener("click", onShare);
       equipBtn.textContent = "Equip";
       equipBtn.disabled = false;
     } else {
-      const price = getCostBones(k);
-      if (price > 0) {
-        equipBtn.textContent = `Buy (${price} bones)`;
+      const cost = getCost(k);
+      const label = fmtCostLabel(cost);
+
+      if (label) {
+        equipBtn.textContent = `Buy (${label})`;
         equipBtn.disabled = false;
       } else {
-        // jeśli jeszcze nie masz cen / buy endpointu
         equipBtn.textContent = "Locked";
         equipBtn.disabled = true;
       }
@@ -117,6 +150,7 @@ shareBtn?.addEventListener("click", onShare);
     skinCtx.fillText(text || "Preview", skinCanvas.width / 2, skinCanvas.height / 2);
   }
 
+  // ✅ CORS fallback (some CDN/canvas combos fail with anonymous)
   function renderSkinPreview(imgUrl, name) {
     if (!skinCtx || !skinCanvas) return;
 
@@ -125,23 +159,34 @@ shareBtn?.addEventListener("click", onShare);
       return;
     }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = imgUrl;
+    const tryLoad = (withCors) => new Promise((resolve, reject) => {
+      const img = new Image();
+      if (withCors) img.crossOrigin = "anonymous";
+      img.src = imgUrl;
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+    });
 
-    img.onload = () => {
-      skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
-      const scaleX = skinCanvas.width / img.width;
-      const scaleY = skinCanvas.height / img.height;
-      const scale = Math.min(scaleX, scaleY);
-      const drawW = img.width * scale;
-      const drawH = img.height * scale;
-      const offsetX = (skinCanvas.width - drawW) / 2;
-      const offsetY = (skinCanvas.height - drawH) / 2;
-      skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
-    };
+    (async () => {
+      try {
+        let img;
+        try { img = await tryLoad(true); }
+        catch { img = await tryLoad(false); }
 
-    img.onerror = () => drawPlaceholder("Skin not found");
+        skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+        const scaleX = skinCanvas.width / img.width;
+        const scaleY = skinCanvas.height / img.height;
+        const scale = Math.min(scaleX, scaleY);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const offsetX = (skinCanvas.width - drawW) / 2;
+        const offsetY = (skinCanvas.height - drawH) / 2;
+        skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      } catch (e) {
+        dbg("renderSkinPreview failed", e);
+        drawPlaceholder("Skin not found");
+      }
+    })();
   }
 
   function buildSkinButtons() {
@@ -152,12 +197,13 @@ shareBtn?.addEventListener("click", onShare);
     const all = [{ key: "default", name: "Default", img: "" }, ...(_catalog || [])];
 
     all.forEach((s) => {
-      const key = (s.key || "").toLowerCase();
-      const b = document.createElement("button");
+      const key = normKey(s.key);
       const owned = isOwned(key);
 
-      b.className = "btn skin-btn" +
-        (key === (_selectedKey || "").toLowerCase() ? " active" : "") +
+      const b = document.createElement("button");
+      b.className =
+        "btn skin-btn" +
+        (key === normKey(_selectedKey) ? " active" : "") +
         (!owned ? " locked" : "");
 
       b.type = "button";
@@ -172,12 +218,15 @@ shareBtn?.addEventListener("click", onShare);
 
         // preview + desc
         renderSkinPreview(s.img, s.name || s.key);
+
         if (skinDesc) {
           const ownedNow = isOwned(key);
-          const price = getCostBones(key);
+          const cost = getCost(key);
+          const label = fmtCostLabel(cost);
+
           if (key === "default") skinDesc.textContent = "Default — clean Alpha.";
           else if (ownedNow) skinDesc.textContent = `${s.name || s.key} — owned.`;
-          else if (price > 0) skinDesc.textContent = `${s.name || s.key} — locked. Buy to unlock (${price} bones).`;
+          else if (label) skinDesc.textContent = `${s.name || s.key} — locked. Buy to unlock (${label}).`;
           else skinDesc.textContent = `${s.name || s.key} — locked.`;
         }
 
@@ -189,122 +238,138 @@ shareBtn?.addEventListener("click", onShare);
     });
 
     // select current equipped or first
-    const eq = ((_equipped && _equipped.skin) || "").toLowerCase() || "default";
+    const eq = normKey((_equipped && _equipped.skin) || "") || "default";
     _selectedKey = eq;
 
-    const btn = skinButtonsWrap.querySelector(`[data-skin="${_selectedKey}"]`)
-      || skinButtonsWrap.querySelector(".skin-btn");
+    const btn =
+      skinButtonsWrap.querySelector(`[data-skin="${_selectedKey}"]`) ||
+      skinButtonsWrap.querySelector(".skin-btn");
 
     btn?.click?.();
   }
 
   async function open() {
-  // ✅ guard: jeśli init nie ustawił apiPost (albo loader jeszcze nie zdążył)
-  if (!_apiPost) {
-    console.warn("[Skins] apiPost missing (init not called yet?)");
-    _tg?.showAlert?.("Skins not ready yet.");
-    return;
+    // ✅ guard: init might not have set apiPost yet
+    if (!_apiPost) {
+      console.warn("[Skins] apiPost missing (init not called yet?)");
+      try { _tg?.showAlert?.("Skins not ready yet."); } catch (_) {}
+      return;
+    }
+
+    try {
+      const out = await _apiPost("/webapp/skins", {});
+      if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
+
+      _catalog = Array.isArray(out.skins) ? out.skins : [];
+      _owned = Array.isArray(out.owned) ? out.owned : ["default"];
+      _equipped = (out.equipped && typeof out.equipped === "object")
+        ? out.equipped
+        : { skin: (out.active || "") };
+
+      buildSkinButtons();
+
+      if (avatarBack) avatarBack.style.display = "flex";
+      setPrimaryButtonState();
+    } catch (e) {
+      console.warn(e);
+      try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
+    }
   }
-
-  try {
-    const out = await _apiPost("/webapp/skins", {});
-    if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
-
-    _catalog = Array.isArray(out.skins) ? out.skins : [];
-    _owned = Array.isArray(out.owned) ? out.owned : ["default"];
-    _equipped = (out.equipped && typeof out.equipped === "object")
-      ? out.equipped
-      : { skin: (out.active || "") };
-
-    buildSkinButtons();
-    avatarBack.style.display = "flex";
-    setPrimaryButtonState();
-  } catch (e) {
-    console.warn(e);
-    _tg?.showAlert?.("Failed to load skins.");
-  }
-}
 
   async function onPrimaryAction() {
-    const key = (_selectedKey || "").trim().toLowerCase();
+    const key = normKey(_selectedKey);
     if (!key) return;
+
+    if (!_apiPost) {
+      try { _tg?.showAlert?.("Skins not ready yet."); } catch (_) {}
+      return;
+    }
 
     try {
       // owned -> equip
       if (isOwned(key)) {
         const out = await _apiPost("/webapp/skins/equip", { skin: key === "default" ? "default" : key });
         if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
-        _tg?.showAlert?.("Skin equipped!");
-        avatarBack.style.display = "none";
+
+        try { _tg?.showAlert?.("Skin equipped!"); } catch (_) {}
+        if (avatarBack) avatarBack.style.display = "none";
         try { window.loadProfile?.(); } catch (_) {}
         return;
       }
 
-      // not owned -> buy
-const price = getCostBones(key);
-if (price <= 0) {
-  _tg?.showAlert?.("This skin is locked.");
-  return;
-}
+      // not owned -> buy (bones or tokens or hybrid)
+      const cost = getCost(key);
+      if ((cost.bones <= 0) && (cost.tokens <= 0)) {
+        try { _tg?.showAlert?.("This skin is locked."); } catch (_) {}
+        return;
+      }
 
-// ✅ retry-safe run_id
-const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
-const outBuy = await _apiPost("/webapp/skins/buy", { skin: key, run_id: rid });
-if (!outBuy || !outBuy.ok) throw new Error(outBuy?.reason || "buy failed");
+      const rid = uuid();
+      const outBuy = await _apiPost("/webapp/skins/buy", { skin: key, run_id: rid });
+
+      if (!outBuy || !outBuy.ok) {
+        const r = outBuy?.reason || "buy failed";
+        const msg =
+          (r === "NOT_ENOUGH_TOKENS") ? "Not enough tokens." :
+          (r === "NOT_ENOUGH_BONES") ? "Not enough bones." :
+          (r === "ALREADY_OWNED") ? "Already owned." :
+          r;
+        throw new Error(msg);
+      }
 
       // refresh state after buy
       const out = await _apiPost("/webapp/skins", {});
       if (out && out.ok) {
         _owned = Array.isArray(out.owned) ? out.owned : _owned;
         _equipped = (out.equipped && typeof out.equipped === "object") ? out.equipped : _equipped;
+        _catalog = Array.isArray(out.skins) ? out.skins : _catalog;
       }
 
-      _tg?.showAlert?.("Unlocked! Now equip it.");
+      try { _tg?.showAlert?.("Unlocked! Now equip it."); } catch (_) {}
       buildSkinButtons();
       setPrimaryButtonState();
       haptic("medium");
-
     } catch (e) {
       console.warn(e);
       const msg = (e && e.data && e.data.reason) ? e.data.reason : (e?.message || "Action failed");
-      _tg?.showAlert?.(msg);
+      try { _tg?.showAlert?.(msg); } catch (_) {}
     }
   }
 
- async function onShare() {
-  const key = String(_selectedKey || "").trim().toLowerCase(); // "" = flex active
+  async function onShare() {
+    const key = normKey(_selectedKey); // "" = flex active
 
-  try {
-    let res;
-    if (_apiPost) {
-      res = await _apiPost("/webapp/skins/flex", { skinKey: key });
-    } else {
-      const API_BASE = window.API_BASE || "";
-      const initData = (_tg && _tg.initData) || window.__INIT_DATA__ || "";
-      const r = await fetch(API_BASE + "/webapp/skins/flex", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skinKey: key, init_data: initData }),
-      });
-      res = await r.json();
-    }
-
-    if (!res?.ok) {
-      const reason = res?.reason || "Failed";
-      if (reason === "COOLDOWN" && res.cooldownLeftSec != null) {
-        _tg?.showAlert?.(`Cooldown: ${res.cooldownLeftSec}s`);
+    try {
+      let res;
+      if (_apiPost) {
+        res = await _apiPost("/webapp/skins/flex", { skinKey: key });
       } else {
-        _tg?.showAlert?.(reason);
+        const API_BASE = window.API_BASE || "";
+        const initData = (_tg && _tg.initData) || window.__INIT_DATA__ || "";
+        const r = await fetch(API_BASE + "/webapp/skins/flex", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skinKey: key, init_data: initData }),
+        });
+        res = await r.json();
       }
-      return;
-    }
 
-    _tg?.showAlert?.("Posted to community ✅");
-    if (typeof haptic === "function") haptic("medium");
-  } catch (e) {
-    _tg?.showAlert?.("Flex failed");
+      if (!res?.ok) {
+        const reason = res?.reason || "Failed";
+        if (reason === "COOLDOWN" && res.cooldownLeftSec != null) {
+          try { _tg?.showAlert?.(`Cooldown: ${res.cooldownLeftSec}s`); } catch (_) {}
+        } else {
+          try { _tg?.showAlert?.(reason); } catch (_) {}
+        }
+        return;
+      }
+
+      try { _tg?.showAlert?.("Posted to community ✅"); } catch (_) {}
+      haptic("medium");
+    } catch (e) {
+      try { _tg?.showAlert?.("Flex failed"); } catch (_) {}
+    }
   }
-}
 
   window.Skins = { init, open };
 })();
