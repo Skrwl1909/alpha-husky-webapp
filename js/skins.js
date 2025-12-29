@@ -6,7 +6,7 @@
   let _bound = false;
 
   // DOM
-  let avatarBack, skinCanvas, skinCtx, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
+  let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
 
   // state
   let _catalog = [];
@@ -14,6 +14,10 @@
   let _equipped = { skin: "" };
   let _selectedKey = "";
   let _inited = false;
+
+  // animated webp detection cache + anti-race guard
+  const _animCache = new Map();
+  let _previewSeq = 0;
 
   function init({ apiPost, tg, dbg } = {}) {
     // ✅ always refresh apiPost even on re-init
@@ -27,6 +31,7 @@
     avatarBack = document.getElementById("avatarBack");
     skinCanvas = document.getElementById("skinCanvas");
     skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
+    skinPreviewImg = document.getElementById("skinPreviewImg"); // ✅ new (optional)
     skinDesc = document.getElementById("skinDesc");
     closeAvatar = document.getElementById("closeAvatar");
     equipBtn = document.getElementById("equipSkin");
@@ -37,10 +42,16 @@
     _bound = true;
 
     avatarBack?.addEventListener("click", (e) => {
-      if (e.target === avatarBack) avatarBack.style.display = "none";
+      if (e.target === avatarBack) {
+        _cleanupPreview();
+        avatarBack.style.display = "none";
+      }
     });
     closeAvatar?.addEventListener("click", () => {
-      if (avatarBack) avatarBack.style.display = "none";
+      if (avatarBack) {
+        _cleanupPreview();
+        avatarBack.style.display = "none";
+      }
     });
 
     equipBtn?.addEventListener("click", onPrimaryAction);
@@ -139,7 +150,24 @@
     }
   }
 
+  function _useImgPreview(on) {
+    if (skinPreviewImg) skinPreviewImg.style.display = on ? "block" : "none";
+    if (skinCanvas) skinCanvas.style.display = on ? "none" : "block";
+  }
+
+  function _cleanupPreview() {
+    // stop any running animated preview
+    _previewSeq++;
+    if (skinPreviewImg) skinPreviewImg.src = "";
+    // prefer canvas visible next time
+    _useImgPreview(false);
+  }
+
   function drawPlaceholder(text) {
+    // placeholder is canvas-based, so ensure canvas is visible
+    _useImgPreview(false);
+    if (skinPreviewImg) skinPreviewImg.src = "";
+
     if (!skinCtx || !skinCanvas) return;
     skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
     skinCtx.fillStyle = "rgba(0,0,0,.35)";
@@ -150,14 +178,43 @@
     skinCtx.fillText(text || "Preview", skinCanvas.width / 2, skinCanvas.height / 2);
   }
 
+  async function _isAnimatedWebp(url) {
+    if (!url || !/\.webp(\?|#|$)/i.test(url)) return false;
+    if (_animCache.has(url)) return _animCache.get(url);
+
+    try {
+      const res = await fetch(url, { cache: "force-cache" });
+      const buf = await res.arrayBuffer();
+      const u8 = new Uint8Array(buf);
+
+      // WebP animations typically include "ANIM" and/or "ANMF"
+      for (let i = 0; i < u8.length - 3; i++) {
+        const a = u8[i], b = u8[i + 1], c = u8[i + 2], d = u8[i + 3];
+        // "ANIM"
+        if (a === 65 && b === 78 && c === 73 && d === 77) { _animCache.set(url, true); return true; }
+        // "ANMF"
+        if (a === 65 && b === 78 && c === 77 && d === 70) { _animCache.set(url, true); return true; }
+      }
+    } catch (e) {
+      // If fetch fails (CORS/CDN), we can't reliably detect animation.
+      // Keep default: not animated => canvas path (still works for first frame).
+      dbg("_isAnimatedWebp fetch failed", e);
+    }
+
+    _animCache.set(url, false);
+    return false;
+  }
+
   // ✅ CORS fallback (some CDN/canvas combos fail with anonymous)
   function renderSkinPreview(imgUrl, name) {
-    if (!skinCtx || !skinCanvas) return;
+    if ((!skinCtx || !skinCanvas) && !skinPreviewImg) return;
 
     if (!imgUrl) {
       drawPlaceholder(name || "Default Skin");
       return;
     }
+
+    const seq = ++_previewSeq;
 
     const tryLoad = (withCors) => new Promise((resolve, reject) => {
       const img = new Image();
@@ -169,9 +226,27 @@
 
     (async () => {
       try {
+        // 1) if animated webp => use <img> preview
+        const animated = await _isAnimatedWebp(imgUrl);
+        if (seq !== _previewSeq) return; // user clicked another skin meanwhile
+
+        if (animated && skinPreviewImg) {
+          _useImgPreview(true);
+          skinPreviewImg.src = imgUrl;
+          return;
+        }
+
+        // 2) static => render on canvas (existing behavior)
+        if (skinPreviewImg) skinPreviewImg.src = "";
+        _useImgPreview(false);
+
         let img;
         try { img = await tryLoad(true); }
         catch { img = await tryLoad(false); }
+
+        if (seq !== _previewSeq) return;
+
+        if (!skinCtx || !skinCanvas) return;
 
         skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
         const scaleX = skinCanvas.width / img.width;
@@ -292,7 +367,10 @@
         if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
 
         try { _tg?.showAlert?.("Skin equipped!"); } catch (_) {}
-        if (avatarBack) avatarBack.style.display = "none";
+        if (avatarBack) {
+          _cleanupPreview();
+          avatarBack.style.display = "none";
+        }
         try { window.loadProfile?.(); } catch (_) {}
         return;
       }
