@@ -487,6 +487,12 @@
             <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
             <button class="btn equipped" aria-label="Open Equipped" type="button" onclick="window.Equipped?.open?.()">Equipped</button>
+            <!-- ✅ TU -->
+  <button class="btn whatsnew" id="btnWhatsNew" aria-label="Open What's New" type="button">
+    What’s New
+    <span id="whatsNewDot"
+          style="display:none;width:8px;height:8px;border-radius:99px;margin-left:8px;vertical-align:middle;background:#ff3b30;"></span>
+  </button>
             <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
             <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
           </div>
@@ -889,11 +895,13 @@ async function apiPost(path, payload){
   return data;
 }
 
-        window.S = window.S || {};
-        window.S.apiPost = apiPost;
-        const _tg  = window.tg || window.Telegram?.WebApp || null;
-        const _dbg = !!window.DBG;
-        // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
+window.S = window.S || {};
+window.S.apiPost = apiPost;
+
+const _tg  = window.tg || window.Telegram?.WebApp || null;
+const _dbg = !!window.DBG;
+
+// --- SKINS module loader (cache-bust via WEBAPP_VER) ---
 function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
     // jeśli już jest w DOM, nie ładuj drugi raz
@@ -930,7 +938,8 @@ async function ensureSkinsLoaded(apiPost, tg, dbg) {
 
   return await _skinsLoading;
 }
-        // --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
+
+// --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
 let _adoptLoading = null;
 
 async function ensureAdoptLoaded(apiPost, tg, dbg) {
@@ -950,6 +959,42 @@ async function ensureAdoptLoaded(apiPost, tg, dbg) {
   return await _adoptLoading;
 }
 
+// --- UPDATES / WHAT'S NEW module loader (cache-bust via WEBAPP_VER) ---
+let _updatesLoading = null;
+
+async function ensureUpdatesLoaded(apiPost, tg, dbg) {
+  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
+  if (window.Updates?.open && window.Updates?.init) {
+    try {
+      window.Updates.init({
+        apiPost,
+        tg,
+        dbg,
+        btnEl: document.getElementById("btnWhatsNew"),
+        dotEl: document.getElementById("whatsNewDot"),
+      });
+    } catch (_) {}
+    return;
+  }
+
+  if (_updatesLoading) return await _updatesLoading;
+
+  _updatesLoading = (async () => {
+    await loadScriptOnce("js/updates.js");
+    try {
+      window.Updates?.init?.({
+        apiPost,
+        tg,
+        dbg,
+        btnEl: document.getElementById("btnWhatsNew"),
+        dotEl: document.getElementById("whatsNewDot"),
+      });
+    } catch (_) {}
+  })();
+
+  return await _updatesLoading;
+}
+
 // run_id helper (wspólny dla skins/adopt/shop)
 window.AH_makeRunId = function(prefix, key) {
   const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
@@ -957,18 +1002,19 @@ window.AH_makeRunId = function(prefix, key) {
   return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
 };
 
-        
-        window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
 window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
-// skins: init od razu (bezpiecznie, nawet jeśli skins.js nie jest w HTML)
+// skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML)
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
-        ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
-        // --- Adopt: open on button/pin click (delegation-safe) ---
+ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
+ensureUpdatesLoaded(apiPost, _tg, _dbg).catch(()=>{});
+
+// --- Adopt: open on button/pin click (delegation-safe) ---
 // Użyj data-action="adopt" na przycisku, albo dopasuj selektor poniżej.
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest('[data-action="adopt"], .btn.adopt, .btn-adopt, .adopt-btn');
@@ -982,6 +1028,22 @@ document.addEventListener("click", async (e) => {
   } catch (err) {
     console.error("[Adopt] open failed", err);
     window.toast?.("Adopt failed to load");
+  }
+});
+
+// --- Updates: open on button click (delegation-safe) ---
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest('#btnWhatsNew, .btn.whatsnew, [data-action="whatsnew"], .whatsnew-btn');
+  if (!btn) return;
+
+  e.preventDefault();
+
+  try {
+    await ensureUpdatesLoaded(apiPost, _tg, _dbg);
+    window.Updates?.open?.();
+  } catch (err) {
+    console.error("[Updates] open failed", err);
+    window.toast?.("Updates failed to load");
   }
 });
 
@@ -1852,6 +1914,7 @@ document.addEventListener("click", (e) => {
   <script src="js/equipped.js?v=20251210"></script>
   <script src="js/shop.js?v=WEBAPP_VER"></script>
   <script src="js/forge.js?v=WEBAPP_VER"></script>
+  <script src="/js/updates.js?v=WEBAPP_VER"></script>
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -1889,6 +1952,7 @@ document.addEventListener("click", (e) => {
   </script>
 </body>
 </html>
+
 
 
 
