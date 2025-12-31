@@ -1,7 +1,10 @@
-// js/inventory.js – FINAL – Equipped highlight + robust gear detection + equipped map fallback
+// js/inventory.js — UNEQUIPPED ONLY (clean)
+// Inventory modal shows ONLY items available in inventory (not equipped).
+// Equipped management (UNEQ/UPGRADE) should live in Equipped panel.
+
 window.Inventory = {
   items: [],
-  equipped: {}, // {slot: key}
+  equipped: {}, // unused here now (kept for compatibility)
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
   currentTab: "all",
 
@@ -24,7 +27,6 @@ window.Inventory = {
           <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear">Gear</button>
           <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable">Consumables</button>
           <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility">Utility</button>
-          <button onclick="Inventory.showTab('equipped')" class="tab-btn" data-type="equipped">Equipped</button>
         </div>
 
         <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
@@ -44,19 +46,9 @@ window.Inventory = {
       const res = await apiPost("/webapp/inventory/state", {});
       if (!res?.ok) throw new Error(res?.reason || "No response");
 
+      // slots = UNEQUIPPED ONLY
       this.items = res.slots || [];
-
-      // --- equipped map: backend may not return res.equipped, so build from items
-      this.equipped =
-        res.equipped && typeof res.equipped === "object" ? res.equipped : {};
-
-      if (!Object.keys(this.equipped).length) {
-        for (const it of this.items) {
-          const k = it.key || it.item_key || it.item;
-          const slot = String(it.equippedSlot || it.slot || "").toLowerCase();
-          if (it.equipped && slot && k) this.equipped[slot] = k;
-        }
-      }
+      this.equipped = {}; // no equipped fallback in this view
 
       this.resources = {
         bones: parseInt(res.bones || 0, 10) || 0,
@@ -71,6 +63,11 @@ window.Inventory = {
           Scrap: <b style="color:#8af;">${this.resources.scrap.toLocaleString()}</b> •
           Rune Dust: <b style="color:#f8f;">${this.resources.rune_dust.toLocaleString()}</b>
         `;
+      }
+
+      // safety: if somehow currentTab is invalid (old cache), reset to all
+      if (!["all", "gear", "consumable", "utility"].includes(this.currentTab)) {
+        this.currentTab = "all";
       }
 
       this.showTab(this.currentTab);
@@ -93,7 +90,6 @@ window.Inventory = {
     const s = this._normSlot(it);
     if (this._gearSlots.has(s)) return true;
     const t = this._normType(it);
-    // tolerate backend types like "weapon"/"armor" etc.
     if (this._gearSlots.has(t)) return true;
     if (t === "gear" && s) return true;
     return false;
@@ -112,7 +108,6 @@ window.Inventory = {
       filtered = filtered.filter((item) => {
         if (type === "gear") return this._isGear(item);
         if (type === "consumable") return this._isConsumable(item);
-        if (type === "equipped") return !!item.equipped; // pure signal from payload
         if (type === "utility") return !this._isGear(item) && !this._isConsumable(item);
         return true;
       });
@@ -138,12 +133,8 @@ window.Inventory = {
         const name = item.name || key;
         const rarity = (item.rarity || "common").toLowerCase();
 
-        const slotNorm = this._normSlot(item);
         const isGear = this._isGear(item);
         const isConsumable = this._isConsumable(item);
-
-        // Equipped: trust payload first, then fallback to map
-        const isEquipped = !!item.equipped || (isGear && slotNorm && this.equipped[slotNorm] === key);
 
         const rarityColor =
           {
@@ -161,32 +152,13 @@ window.Inventory = {
 
         const keyEsc = String(key || "").replace(/"/g, "&quot;");
 
-        const equipCardStyle = isEquipped
-          ? "outline:2px solid rgba(0,229,255,.9);box-shadow:0 0 0 3px rgba(0,229,255,.18), 0 18px 40px rgba(0,0,0,.65);"
-          : "";
-
-        const badgeEquipped = isEquipped
-          ? `
-            <div style="position:absolute;top:8px;right:8px;background:rgba(0,229,255,.18);border:1px solid rgba(0,229,255,.8);color:#cfffff;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.05em;">
-              EQUIPPED
-            </div>
-            ${slotNorm ? `
-              <div style="position:absolute;top:42px;right:10px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);color:#fff;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;">
-                ${slotNorm.toUpperCase()}
-              </div>
-            ` : ``}
-          `
-          : "";
-
         return `
-        <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;${equipCardStyle}"
+        <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform='scale(1)'">
           
           <img src="${icon}" width="86" height="86"
                style="border:5px solid ${rarityColor};border-radius:14px;"
                onerror="this.src='/assets/items/unknown.png'">
-
-          ${badgeEquipped}
 
           <div style="margin:10px 0 6px;font-size:14px;font-weight:bold;color:#fff;min-height:40px;">
             ${name}
@@ -206,21 +178,10 @@ window.Inventory = {
               </button>
             ` : ''}
 
-            ${isGear && !isEquipped ? `
+            ${isGear ? `
               <button onclick="event.stopPropagation(); Inventory.equip('${keyEsc}')"
                       style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;">
                 EQUIP
-              </button>
-            ` : ''}
-
-            ${isEquipped ? `
-              <button onclick="event.stopPropagation(); Inventory.unequip('${slotNorm}')"
-                      style="padding:6px 10px;background:#800;color:#fff;border:none;border-radius:10px;font-size:11px;">
-                UNEQ
-              </button>
-              <button onclick="event.stopPropagation(); Inventory.upgrade('${slotNorm}')"
-                      style="padding:6px 10px;background:#e0a;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:11px;">
-                UPGRADE
               </button>
             ` : ''}
 
@@ -268,29 +229,15 @@ window.Inventory = {
     const item = this.findByKey(key);
     if (!item || !this._isGear(item)) return;
 
-    const slot = this._normSlot(item);
-    if (!slot) return;
-
     Telegram.WebApp.HapticFeedback?.impactOccurred?.("light");
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
       const res = await apiPost("/webapp/inventory/equip", { key });
       if (res.ok) {
-        this.equipped[slot] = key;
-
-        // local state: only one equipped per slot
-        (this.items || []).forEach((it) => {
-          const k = it.key || it.item_key || it.item;
-          const s = String(it.slot || it.equippedSlot || "").toLowerCase();
-          if (s === slot) {
-            it.equipped = (k === key);
-            it.equippedSlot = it.equipped ? slot : (it.equippedSlot || null);
-          }
-        });
-
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
-        this.showTab(this.currentTab);
+        if (res.message) Telegram.WebApp.showAlert(res.message);
+        await this.open(); // refresh list + counts
       } else {
         throw new Error(res.reason || "Failed");
       }
@@ -300,7 +247,7 @@ window.Inventory = {
     }
   },
 
-  // === UNEQUIP ===
+  // kept for compatibility (not used by inventory view anymore)
   async unequip(slot) {
     const s = String(slot || "").toLowerCase();
     if (!s) return;
@@ -311,18 +258,9 @@ window.Inventory = {
     try {
       const res = await apiPost("/webapp/inventory/unequip", { slot: s });
       if (res.ok) {
-        delete this.equipped[s];
-
-        (this.items || []).forEach((it) => {
-          const ss = String(it.slot || it.equippedSlot || "").toLowerCase();
-          if (ss === s) {
-            it.equipped = false;
-            it.equippedSlot = null;
-          }
-        });
-
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
-        this.showTab(this.currentTab);
+        if (res.message) Telegram.WebApp.showAlert(res.message);
+        await this.open();
       } else {
         throw new Error(res.reason || "Failed");
       }
@@ -332,7 +270,7 @@ window.Inventory = {
     }
   },
 
-  // === UPGRADE ===
+  // kept for compatibility (upgrade should be in Equipped panel)
   async upgrade(slot) {
     const s = String(slot || "").toLowerCase();
     if (!s) return;
@@ -345,7 +283,7 @@ window.Inventory = {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open(); // refresh resources + level
+        await this.open(); // refresh resources
       } else {
         throw new Error(res.reason || "Not enough materials");
       }
