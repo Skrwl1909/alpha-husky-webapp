@@ -67,7 +67,7 @@
       if (section === "quests" && window.Quests?.open) return window.Quests.open();
     }
 
-    // Fallback #1: if you add a "Testuj w grze" link in updates.json, we open that URL
+    // Fallback #1: if you add a "Try it in-game" link in updates.json, we open that URL
     const test = pickLink(it?.links, (label) => /testuj/i.test(label));
     if (test?.url) return openLink(test.url);
 
@@ -143,7 +143,7 @@
               <div style="opacity:.68;font-size:12px;margin-top:2px;">${date}${status}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-              <button type="button" class="u-test" data-id="${esc(it.id || "")}" style="padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#101a24;color:#fff;cursor:pointer;">Testuj w grze</button>
+              <button type="button" class="u-test" data-id="${esc(it.id || "")}" style="padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#101a24;color:#fff;cursor:pointer;">try it in-game</button>
             </div>
           </div>
 
