@@ -11,25 +11,75 @@
       .replaceAll("'", "&#039;");
   }
 
-  // ---- Assets helpers (repo: /assets/items/*.png) ----
+  // ---- helpers ----
   function imgVer() {
     return window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
   }
 
   function assetKeyFromItem(it) {
-    // Most of your assets look snake/lower in repo
     const k = String(it?.key || "").trim();
     return k ? k.toLowerCase() : "";
   }
 
-  function itemImg(it) {
-    const key = assetKeyFromItem(it);
-    const ver = imgVer();
-    return key ? `/assets/items/${encodeURIComponent(key)}.png${ver}` : `/assets/items/_unknown.png${ver}`;
-  }
-
   function itemImgFallback() {
     return `/assets/items/_unknown.png${imgVer()}`;
+  }
+
+  function n(v) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  function pickNum(...vals) {
+    for (const v of vals) {
+      // allow explicit 0 (some items may be free-by-design)
+      if (v === 0) return 0;
+      const x = n(v);
+      if (x != null) return x;
+    }
+    return null;
+  }
+
+  // Accept many backend schemas: price/price_tokens, price_bones, bones_cost/token_cost, cost{bones,tokens}
+  function getPrices(it) {
+    const c = it?.cost || {};
+    const tokenPrice = pickNum(
+      it.price_tokens, it.priceTokens,
+      it.token_cost, it.tokenCost,
+      c.tokens
+    );
+    const bonePrice = pickNum(
+      it.price, it.price_bones, it.priceBones,
+      it.bones_cost, it.bonesCost,
+      c.bones
+    );
+    return { tokenPrice, bonePrice };
+  }
+
+  // Prefer explicit image url/path from API (Cloudinary), then /assets path, then key-based fallback
+  function itemImg(it) {
+    const ver = imgVer();
+
+    // 1) full url (Cloudinary etc.)
+    const url = it?.image_url || it?.imageUrl || it?.img || it?.image || "";
+    if (url && typeof url === "string" && /^https?:\/\//i.test(url)) return url;
+
+    // 2) explicit absolute path served by your WebApp (/assets/...)
+    const p = it?.image_path || it?.imagePath || "";
+    if (p && typeof p === "string" && p.startsWith("/")) return `${p}${ver}`;
+
+    // 3) try to infer folder
+    const key = assetKeyFromItem(it);
+    if (!key) return itemImgFallback();
+
+    // gear lives under /assets/equip, misc items under /assets/items
+    const folder =
+      (it?.slot && String(it.slot).length) ||
+      (String(it?.type || "").toLowerCase() === "gear")
+        ? "equip"
+        : "items";
+
+    return `/assets/${folder}/${encodeURIComponent(key)}.png${ver}`;
   }
 
   window.Shop = {
@@ -159,8 +209,7 @@
       }
 
       list.innerHTML = items.map(it => {
-        const tokenPrice = (it.price_tokens != null) ? Number(it.price_tokens) : null;
-        const bonePrice  = (it.price != null) ? Number(it.price) : null;
+        const { tokenPrice, bonePrice } = getPrices(it);
 
         const priceStr = (tokenPrice != null)
           ? `${tokenPrice} 🪙`
@@ -172,12 +221,16 @@
 
         const notEnoughToken = (tokenPrice != null && tokenBal < tokenPrice);
         const notEnoughBones = (tokenPrice == null && bonePrice != null && boneBal < bonePrice);
-        const disabled = hitLimit || notEnoughToken || notEnoughBones;
+
+        // disable also if missing price (unless explicitly free)
+        const missingPrice = (tokenPrice == null && bonePrice == null && !it?.free);
+        const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
 
         const sub = [
           it.rarity ? it.rarity : null,
           it.type ? it.type : null,
           (limit > 0) ? `limit ${bought}/${limit}` : null,
+          missingPrice ? "no price set" : null,
           notEnoughToken ? "not enough token" : null,
           notEnoughBones ? "not enough bones" : null
         ].filter(Boolean).join(" • ");
@@ -191,12 +244,12 @@
 
               <div style="display:flex;gap:12px;align-items:flex-start;min-width:0;flex:1;">
                 <img
-                  src="${itemImg(it)}"
+                  src="${escapeHtml(itemImg(it))}"
                   width="52" height="52"
                   loading="lazy" decoding="async"
                   style="width:52px;height:52px;flex:0 0 52px;object-fit:contain;border-radius:12px;
                          background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);"
-                  onerror="this.onerror=null;this.src='${itemImgFallback()}';"
+                  onerror="this.onerror=null;this.src='${escapeHtml(itemImgFallback())}';"
                   alt=""
                 />
                 <div style="min-width:0;">
@@ -213,7 +266,7 @@
                   ${disabled ? "disabled" : ""}
                   style="padding:10px 12px;border-radius:12px;border:0;cursor:pointer;
                          ${disabled ? "opacity:.45;cursor:not-allowed;" : ""}">
-                  Buy
+                  ${missingPrice ? "N/A" : "Buy"}
                 </button>
               </div>
             </div>
@@ -225,7 +278,10 @@
       list.querySelectorAll("button[data-buy]").forEach(btn => {
         btn.onclick = (e) => {
           e.stopPropagation();
-          this.buy(btn.getAttribute("data-buy"));
+          const k = btn.getAttribute("data-buy");
+          // if disabled, ignore
+          if (btn.disabled) return;
+          this.buy(k);
         };
       });
 
@@ -253,8 +309,7 @@
       const tokenBal = Number(r.token ?? 0);
       const boneBal  = Number(r.bones ?? 0);
 
-      const tokenPrice = (it.price_tokens != null) ? Number(it.price_tokens) : null;
-      const bonePrice  = (it.price != null) ? Number(it.price) : null;
+      const { tokenPrice, bonePrice } = getPrices(it);
       const priceStr = (tokenPrice != null) ? `${tokenPrice} 🪙` : `${bonePrice ?? "?"} 🦴`;
 
       const limit = Number.isFinite(it.dailyLimit) ? it.dailyLimit : 0;
@@ -263,7 +318,8 @@
 
       const notEnoughToken = (tokenPrice != null && tokenBal < tokenPrice);
       const notEnoughBones = (tokenPrice == null && bonePrice != null && boneBal < bonePrice);
-      const disabled = hitLimit || notEnoughToken || notEnoughBones;
+      const missingPrice = (tokenPrice == null && bonePrice == null && !it?.free);
+      const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
 
       const sub = [
         it.rarity ? it.rarity : null,
@@ -272,7 +328,8 @@
       ].filter(Boolean).join(" • ");
 
       const reason =
-        hitLimit ? "Daily limit reached."
+        missingPrice ? "No price configured yet."
+        : hitLimit ? "Daily limit reached."
         : notEnoughToken ? "Not enough token."
         : notEnoughBones ? "Not enough bones."
         : "";
@@ -284,12 +341,12 @@
       box.innerHTML = `
         <div style="display:flex;gap:14px;align-items:flex-start;">
           <img
-            src="${itemImg(it)}"
+            src="${escapeHtml(itemImg(it))}"
             width="192" height="192"
             decoding="async"
             style="width:192px;height:192px;flex:0 0 192px;object-fit:contain;border-radius:14px;
                    background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);"
-            onerror="this.onerror=null;this.src='${itemImgFallback()}';"
+            onerror="this.onerror=null;this.src='${escapeHtml(itemImgFallback())}';"
             alt=""
           />
           <div style="min-width:0;flex:1;">
@@ -307,7 +364,7 @@
                 ${disabled ? "disabled" : ""}
                 style="flex:1;padding:12px;border-radius:12px;border:0;cursor:pointer;
                        ${disabled ? "opacity:.45;cursor:not-allowed;" : ""}">
-                Buy
+                ${missingPrice ? "N/A" : "Buy"}
               </button>
               <button id="shop-preview-close" type="button"
                 style="padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
@@ -333,18 +390,18 @@
     },
 
     async buy(itemKey) {
-  const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
-  const res = await this._apiPost("/webapp/shop/buy", { itemKey, run_id: rid });
+      const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
+      const res = await this._apiPost("/webapp/shop/buy", { itemKey, run_id: rid });
 
-  if (!res || !res.ok) {
-    const msg = res?.message || res?.reason || "Buy failed";
-    this.toast(msg);
-    return;
-  }
+      if (!res || !res.ok) {
+        const msg = res?.message || res?.reason || "Buy failed";
+        this.toast(msg);
+        return;
+      }
 
-  this.toast(res.message || "Purchased!");
-  await this.refresh();
-},
+      this.toast(res.message || "Purchased!");
+      await this.refresh();
+    },
 
     toast(text) {
       const tg = this._tg;
