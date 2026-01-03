@@ -7,6 +7,7 @@ window.Inventory = {
   equipped: {}, // unused here now (kept for compatibility)
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
   currentTab: "all",
+  _tgBackHandler: null,
 
   // ---- small utils ----
   _mkRunId(prefix) {
@@ -25,29 +26,77 @@ window.Inventory = {
     }
   },
 
+  _bindBackButtons() {
+    // In-UI back arrow
+    const btn = document.getElementById("invBackBtn");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.goBack();
+      });
+    }
+
+    // Telegram native BackButton (top bar)
+    try {
+      const tg = Telegram?.WebApp;
+      if (!tg?.BackButton) return;
+
+      // cleanup previous
+      if (this._tgBackHandler && tg.BackButton.offClick) {
+        try { tg.BackButton.offClick(this._tgBackHandler); } catch (_) {}
+      }
+
+      this._tgBackHandler = () => this.goBack();
+      if (tg.BackButton.onClick) tg.BackButton.onClick(this._tgBackHandler);
+      if (tg.BackButton.show) tg.BackButton.show();
+    } catch (e) {
+      console.warn("BackButton bind failed:", e);
+    }
+  },
+
+  _hideTelegramBackButton() {
+    try {
+      const tg = Telegram?.WebApp;
+      if (!tg?.BackButton) return;
+      if (this._tgBackHandler && tg.BackButton.offClick) {
+        try { tg.BackButton.offClick(this._tgBackHandler); } catch (_) {}
+      }
+      if (tg.BackButton.hide) tg.BackButton.hide();
+    } catch (_) {}
+  },
+
   // BACK should go to dashboard (not close webapp)
   goBack() {
+    // optional haptic
+    try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
     // restore any hidden UI helpers (best-effort)
     document
       .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
       .forEach((el) => (el.style.display = ""));
+
+    // Hide Telegram BackButton when leaving this view
+    this._hideTelegramBackButton();
 
     // Try known dashboard/map openers (best-effort)
     try {
       if (window.Dashboard?.open) return window.Dashboard.open();
       if (window.Map?.open) return window.Map.open();
       if (typeof window.openDashboard === "function") return window.openDashboard();
-      if (typeof window.loadMap === "function") return window.loadMap(); // some builds use this
-      if (typeof window.loadProfile === "function") return window.loadProfile(); // fallback to main/profile view
+      if (typeof window.loadMap === "function") return window.loadMap();
+      if (typeof window.loadProfile === "function") return window.loadProfile();
     } catch (e) {
       console.warn("Inventory.goBack: dashboard opener failed:", e);
     }
 
-    // Final fallback: reload to initial dashboard state
+    // Final fallback: reload to initial dashboard state (KEEP query string like ?st=...)
     try {
-      location.reload();
+      const url = new URL(window.location.href);
+      url.hash = ""; // drop only hash
+      window.location.href = url.toString();
     } catch (_) {
-      // if even that fails, do nothing
+      try { location.reload(); } catch (_) {}
     }
   },
 
@@ -62,8 +111,8 @@ window.Inventory = {
         
         <!-- Header with BACK arrow -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <button onclick="Inventory.goBack()"
-                  style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,0.10);color:#fff;border:none;font-size:14px;">
+          <button id="invBackBtn" type="button"
+                  style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,0.10);color:#fff;border:none;font-size:14px;cursor:pointer;">
             <span style="font-size:18px;line-height:1;">←</span>
             <span>Back</span>
           </button>
@@ -85,8 +134,8 @@ window.Inventory = {
           <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility">Utility</button>
 
           <!-- Killer button -->
-          <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes"
-                  style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;">
+          <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
+                  style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;cursor:pointer;">
             SALVAGE DUPES
           </button>
         </div>
@@ -96,13 +145,16 @@ window.Inventory = {
         </div>
 
         <div style="text-align:center;margin-top:24px;">
-          <button onclick="Telegram.WebApp.close()"
-                  style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;">
+          <button onclick="Telegram.WebApp.close()" type="button"
+                  style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;cursor:pointer;">
             Close WebApp
           </button>
         </div>
       </div>
     `;
+
+    // IMPORTANT: bind BACK listeners after DOM exists
+    this._bindBackButtons();
 
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
@@ -235,15 +287,15 @@ window.Inventory = {
           <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
 
             ${isConsumable ? `
-              <button onclick="event.stopPropagation(); Inventory.use('${keyEsc}')"
-                      style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;">
+              <button onclick="event.stopPropagation(); Inventory.use('${keyEsc}')" type="button"
+                      style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;">
                 USE
               </button>
             ` : ''}
 
             ${isGear ? `
-              <button onclick="event.stopPropagation(); Inventory.equip('${keyEsc}')"
-                      style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;">
+              <button onclick="event.stopPropagation(); Inventory.equip('${keyEsc}')" type="button"
+                      style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;cursor:pointer;">
                 EQUIP
               </button>
             ` : ''}
@@ -269,7 +321,7 @@ window.Inventory = {
     const apiPost = window.S?.apiPost || window.apiPost;
 
     const keep = 1;
-    const rarityMax = "uncommon"; // MVP killer: clean junk dupes, keep rare+ safe
+    const rarityMax = "uncommon"; // killer MVP: clean junk dupes, keep rare+ safe
 
     Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
 
@@ -277,6 +329,9 @@ window.Inventory = {
       `Salvage duplicate GEAR items?\n\n• Keep ${keep} of each\n• Salvage up to: ${rarityMax}\n\nYou’ll get Scrap + Shards back.`
     );
     if (!ok) return;
+
+    const btn = document.getElementById("btnSalvageDupes");
+    if (btn) btn.disabled = true;
 
     try {
       const res = await apiPost("/webapp/inventory/salvage_dupes", {
@@ -302,11 +357,12 @@ window.Inventory = {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
       this._toast(`Salvaged dupes ✅ ${parts.join(" · ")}`);
 
-      // refresh
-      await this.open();
+      await this.open(); // refresh
     } catch (e) {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
       this._toast("Salvage failed: " + (e?.message || "Error"));
+    } finally {
+      if (btn) btn.disabled = false;
     }
   },
 
