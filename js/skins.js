@@ -1,4 +1,4 @@
-// js/skins.js — Skins modal (owned/equipped + buy/equip) for Alpha Husky WebApp
+// js/skins.js — Skins modal (owned/equipped + buy/equip + earn-only unlocks) for Alpha Husky WebApp
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -14,6 +14,10 @@
   let _equipped = { skin: "" };
   let _selectedKey = "";
   let _inited = false;
+
+  // referral progress (for achievement unlock display)
+  let _refInvites = 0; // rewardedInvites
+  const REF_STATE_PATH = "/webapp/referrals/state";
 
   // animated webp detection cache + anti-race guard
   const _animCache = new Map();
@@ -88,6 +92,58 @@
     return (_catalog || []).find(s => normKey(s.key) === k) || null;
   }
 
+  function getUnlock(key) {
+    const m = getMeta(key);
+    const u = m && m.unlock ? m.unlock : null;
+    if (!u || typeof u !== "object") return null;
+    return u;
+  }
+
+  function isEarnOnlyLocked(key) {
+    const k = normKey(key);
+    if (!k || k === "default") return false;
+    if (isOwned(k)) return false;
+
+    const u = getUnlock(k);
+    // if unlock exists => earn-only (no buy)
+    return !!u;
+  }
+
+  function fmtUnlockShort(u) {
+    if (!u) return "Locked";
+    const kind = String(u.kind || "");
+    const need = Number(u.need || 0);
+
+    if (kind === "referrals" && need > 0) {
+      const have = Number(_refInvites || 0);
+      return `🔒 ${Math.min(have, need)}/${need}`;
+    }
+
+    if (kind === "teamup_weekly" && need > 0) {
+      // progress not available in this file (unless you later add to /webapp/skins payload)
+      return "🔒 Earn";
+    }
+
+    return "🔒";
+  }
+
+  function fmtUnlockDesc(u) {
+    if (!u) return "Locked.";
+    const kind = String(u.kind || "");
+    const need = Number(u.need || 0);
+
+    if (kind === "referrals" && need > 0) {
+      const have = Number(_refInvites || 0);
+      return `Locked. Invite ${need} members via your reflink (${Math.min(have, need)}/${need}).`;
+    }
+
+    if (kind === "teamup_weekly" && need > 0) {
+      return "Locked. Earn it in TeamUp weekly challenge.";
+    }
+
+    return "Locked. Earn-only skin.";
+  }
+
   // ✅ supports catalog: cost:{bones:..., tokens:...} (also accepts bone/token variants)
   function getCost(key) {
     const m = getMeta(key);
@@ -136,17 +192,33 @@
     if (owned) {
       equipBtn.textContent = "Equip";
       equipBtn.disabled = false;
-    } else {
-      const cost = getCost(k);
-      const label = fmtCostLabel(cost);
+      return;
+    }
 
-      if (label) {
-        equipBtn.textContent = `Buy (${label})`;
-        equipBtn.disabled = false;
-      } else {
-        equipBtn.textContent = "Locked";
-        equipBtn.disabled = true;
+    // ✅ earn-only locked (achievement/weeklies/etc.)
+    const unlock = getUnlock(k);
+    if (unlock) {
+      equipBtn.textContent = fmtUnlockShort(unlock).replace("🔒", "Locked");
+      // better label for referrals:
+      if (String(unlock.kind || "") === "referrals") {
+        const need = Number(unlock.need || 0);
+        const have = Number(_refInvites || 0);
+        equipBtn.textContent = `Locked (${Math.min(have, need)}/${need})`;
       }
+      equipBtn.disabled = true;
+      return;
+    }
+
+    // not owned -> buy (bones or tokens or hybrid)
+    const cost = getCost(k);
+    const label = fmtCostLabel(cost);
+
+    if (label) {
+      equipBtn.textContent = `Buy (${label})`;
+      equipBtn.disabled = false;
+    } else {
+      equipBtn.textContent = "Locked";
+      equipBtn.disabled = true;
     }
   }
 
@@ -274,6 +346,7 @@
     all.forEach((s) => {
       const key = normKey(s.key);
       const owned = isOwned(key);
+      const unlock = (s && s.unlock && typeof s.unlock === "object") ? s.unlock : null;
 
       const b = document.createElement("button");
       b.className =
@@ -282,7 +355,15 @@
         (!owned ? " locked" : "");
 
       b.type = "button";
-      b.textContent = (s.name || s.key) + (!owned ? " 🔒" : "");
+
+      // ✅ locked label with progress for referrals skin
+      let suffix = "";
+      if (!owned) {
+        if (unlock) suffix = " " + fmtUnlockShort(unlock);
+        else suffix = " 🔒";
+      }
+
+      b.textContent = (s.name || s.key) + suffix;
       b.dataset.skin = key;
 
       b.addEventListener("click", () => {
@@ -301,6 +382,7 @@
 
           if (key === "default") skinDesc.textContent = "Default — clean Alpha.";
           else if (ownedNow) skinDesc.textContent = `${s.name || s.key} — owned.`;
+          else if (unlock) skinDesc.textContent = `${s.name || s.key} — ${fmtUnlockDesc(unlock)}`;
           else if (label) skinDesc.textContent = `${s.name || s.key} — locked. Buy to unlock (${label}).`;
           else skinDesc.textContent = `${s.name || s.key} — locked.`;
         }
@@ -323,6 +405,30 @@
     btn?.click?.();
   }
 
+  async function _loadReferralProgress() {
+    if (!_apiPost) return;
+
+    try {
+      const r = await _apiPost(REF_STATE_PATH, {});
+      if (!r || !r.ok) return;
+
+      const d = r.data || {};
+      const stats = d.stats || {};
+      const inv = Number(stats.rewardedInvites || 0);
+      _refInvites = Number.isFinite(inv) ? inv : 0;
+
+      // optional: if backend returns refSkin.have, use it
+      if (d.refSkin && typeof d.refSkin === "object") {
+        const have = Number(d.refSkin.have ?? _refInvites);
+        if (Number.isFinite(have)) _refInvites = have;
+      }
+
+      dbg("referrals progress loaded", { rewardedInvites: _refInvites });
+    } catch (e) {
+      dbg("referrals state load failed", e);
+    }
+  }
+
   async function open() {
     // ✅ guard: init might not have set apiPost yet
     if (!_apiPost) {
@@ -332,6 +438,7 @@
     }
 
     try {
+      // 1) load skins state
       const out = await _apiPost("/webapp/skins", {});
       if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
 
@@ -340,6 +447,9 @@
       _equipped = (out.equipped && typeof out.equipped === "object")
         ? out.equipped
         : { skin: (out.active || "") };
+
+      // 2) load referral progress (for achievement lock UI)
+      await _loadReferralProgress();
 
       buildSkinButtons();
 
@@ -361,6 +471,14 @@
     }
 
     try {
+      // ✅ earn-only locked => no buy allowed
+      if (isEarnOnlyLocked(key)) {
+        const u = getUnlock(key);
+        const msg = u ? fmtUnlockDesc(u) : "This skin is locked.";
+        try { _tg?.showAlert?.(msg); } catch (_) {}
+        return;
+      }
+
       // owned -> equip
       if (isOwned(key)) {
         const out = await _apiPost("/webapp/skins/equip", { skin: key === "default" ? "default" : key });
@@ -404,6 +522,7 @@
       }
 
       try { _tg?.showAlert?.("Unlocked! Now equip it."); } catch (_) {}
+      await _loadReferralProgress(); // refresh progress too
       buildSkinButtons();
       setPrimaryButtonState();
       haptic("medium");
