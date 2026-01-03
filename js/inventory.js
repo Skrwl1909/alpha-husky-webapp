@@ -68,7 +68,6 @@ window.Inventory = {
 
   // BACK should go to dashboard (not close webapp)
   goBack() {
-    // optional haptic
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
     // restore any hidden UI helpers (best-effort)
@@ -90,10 +89,16 @@ window.Inventory = {
       console.warn("Inventory.goBack: dashboard opener failed:", e);
     }
 
-    // Final fallback: reload to initial dashboard state (KEEP query string like ?st=...)
+    // ✅ Deterministic fallback: reload WITHOUT "inventory" navigation params
     try {
       const url = new URL(window.location.href);
-      url.hash = ""; // drop only hash
+
+      // keep st/init stuff, drop common navigation params so app lands on default dashboard
+      ["section", "view", "modal", "page", "tab", "panel"].forEach((p) => {
+        if (url.searchParams.has(p)) url.searchParams.delete(p);
+      });
+
+      url.hash = "";
       window.location.href = url.toString();
     } catch (_) {
       try { location.reload(); } catch (_) {}
@@ -106,20 +111,49 @@ window.Inventory = {
       .forEach((el) => (el.style.display = "none"));
 
     const container = document.getElementById("app") || document.body;
+
+    // NOTE: padding-top uses Telegram safe-area variable so header is NOT in "dead zone"
     container.innerHTML = `
-      <div style="padding:20px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;">
-        
-        <!-- Header with BACK arrow -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <button id="invBackBtn" type="button"
-                  style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,0.10);color:#fff;border:none;font-size:14px;cursor:pointer;">
-            <span style="font-size:18px;line-height:1;">←</span>
-            <span>Back</span>
-          </button>
+      <div style="
+        padding:20px;
+        padding-top:calc(20px + var(--tg-safe-area-inset-top, 0px));
+        color:#fff;
+        max-width:680px;
+        margin:0 auto;
+        font-family:system-ui;
+        position:relative;
+      ">
 
-          <div style="font-weight:800;letter-spacing:0.6px;">Inventory</div>
+        <!-- Sticky header BELOW safe-area (clickable) -->
+        <div style="
+          position:sticky;
+          top:calc(var(--tg-safe-area-inset-top, 0px));
+          z-index:9999;
+          background:rgba(0,0,0,0.55);
+          backdrop-filter: blur(6px);
+          border-radius:16px;
+          padding:10px 12px;
+          margin-bottom:12px;
+        ">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <button id="invBackBtn" type="button"
+                    style="
+                      display:flex;align-items:center;gap:10px;
+                      padding:10px 14px;border-radius:14px;
+                      background:rgba(255,255,255,0.10);
+                      color:#fff;border:none;font-size:14px;
+                      cursor:pointer;
+                      pointer-events:auto;
+                      position:relative;
+                      z-index:10000;
+                    ">
+              <span style="font-size:18px;line-height:1;">←</span>
+              <span>Back</span>
+            </button>
 
-          <div style="width:92px;"></div>
+            <div style="font-weight:900;letter-spacing:0.6px;">Inventory</div>
+            <div style="width:92px;"></div>
+          </div>
         </div>
 
         <div id="stats-bar" style="text-align:center;margin:8px 0 16px 0;opacity:0.9;font-size:16px;">
@@ -128,10 +162,10 @@ window.Inventory = {
 
         <!-- Tabs + Salvage -->
         <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-          <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all">All</button>
-          <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear">Gear</button>
-          <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable">Consumables</button>
-          <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility">Utility</button>
+          <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all" type="button">All</button>
+          <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear" type="button">Gear</button>
+          <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable" type="button">Consumables</button>
+          <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility" type="button">Utility</button>
 
           <!-- Killer button -->
           <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
@@ -153,7 +187,7 @@ window.Inventory = {
       </div>
     `;
 
-    // IMPORTANT: bind BACK listeners after DOM exists
+    // bind BACK listeners after DOM exists
     this._bindBackButtons();
 
     try {
@@ -180,7 +214,6 @@ window.Inventory = {
         `;
       }
 
-      // safety: if somehow currentTab is invalid (old cache), reset to all
       if (!["all", "gear", "consumable", "utility"].includes(this.currentTab)) {
         this.currentTab = "all";
       }
@@ -270,7 +303,7 @@ window.Inventory = {
         return `
         <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform='scale(1)'">
-          
+
           <img src="${icon}" width="86" height="86"
                style="border:5px solid ${rarityColor};border-radius:14px;"
                onerror="this.src='/assets/items/unknown.png'">
@@ -279,8 +312,8 @@ window.Inventory = {
             ${name}
           </div>
 
-          ${isGear ? `<div style="font-size:12px;color:#ff8;margin-bottom:4px;">★${level}</div>` : ''}
-          ${statLines ? `<div style="font-size:11px;color:#8f8;margin-bottom:6px;opacity:0.9;">${statLines}</div>` : ''}
+          ${isGear ? `<div style="font-size:12px;color:#ff8;margin-bottom:4px;">★${level}</div>` : ""}
+          ${statLines ? `<div style="font-size:11px;color:#8f8;margin-bottom:6px;opacity:0.9;">${statLines}</div>` : ""}
 
           <div style="font-size:15px;color:#0f8;margin:6px 0;">×${Number(amount || 1).toLocaleString()}</div>
 
@@ -291,14 +324,14 @@ window.Inventory = {
                       style="padding:6px 14px;background:#0f0;color:#000;border:none;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;">
                 USE
               </button>
-            ` : ''}
+            ` : ""}
 
             ${isGear ? `
               <button onclick="event.stopPropagation(); Inventory.equip('${keyEsc}')" type="button"
                       style="padding:6px 12px;background:#08f;color:#fff;border:none;border-radius:10px;font-size:12px;cursor:pointer;">
                 EQUIP
               </button>
-            ` : ''}
+            ` : ""}
 
           </div>
         </div>
@@ -321,7 +354,7 @@ window.Inventory = {
     const apiPost = window.S?.apiPost || window.apiPost;
 
     const keep = 1;
-    const rarityMax = "uncommon"; // killer MVP: clean junk dupes, keep rare+ safe
+    const rarityMax = "uncommon"; // MVP: safe clean, no rare+
 
     Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
 
@@ -379,7 +412,7 @@ window.Inventory = {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open(); // full refresh
+        await this.open();
       } else {
         throw new Error(res.reason || "Failed");
       }
@@ -402,7 +435,7 @@ window.Inventory = {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open(); // refresh list + counts
+        await this.open();
       } else {
         throw new Error(res.reason || "Failed");
       }
@@ -448,7 +481,7 @@ window.Inventory = {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open(); // refresh resources
+        await this.open();
       } else {
         throw new Error(res.reason || "Not enough materials");
       }
