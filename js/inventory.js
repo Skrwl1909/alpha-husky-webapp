@@ -8,6 +8,49 @@ window.Inventory = {
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
   currentTab: "all",
 
+  // ---- small utils ----
+  _mkRunId(prefix) {
+    return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  },
+
+  _toast(msg) {
+    try {
+      if (window.toast) return window.toast(msg);
+      if (window.T?.toast) return window.T.toast(msg);
+    } catch (_) {}
+    try {
+      Telegram?.WebApp?.showAlert?.(String(msg));
+    } catch (_) {
+      console.log("[toast]", msg);
+    }
+  },
+
+  // BACK should go to dashboard (not close webapp)
+  goBack() {
+    // restore any hidden UI helpers (best-effort)
+    document
+      .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+      .forEach((el) => (el.style.display = ""));
+
+    // Try known dashboard/map openers (best-effort)
+    try {
+      if (window.Dashboard?.open) return window.Dashboard.open();
+      if (window.Map?.open) return window.Map.open();
+      if (typeof window.openDashboard === "function") return window.openDashboard();
+      if (typeof window.loadMap === "function") return window.loadMap(); // some builds use this
+      if (typeof window.loadProfile === "function") return window.loadProfile(); // fallback to main/profile view
+    } catch (e) {
+      console.warn("Inventory.goBack: dashboard opener failed:", e);
+    }
+
+    // Final fallback: reload to initial dashboard state
+    try {
+      location.reload();
+    } catch (_) {
+      // if even that fails, do nothing
+    }
+  },
+
   async open() {
     document
       .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
@@ -16,17 +59,36 @@ window.Inventory = {
     const container = document.getElementById("app") || document.body;
     container.innerHTML = `
       <div style="padding:20px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;">
-        <h2 style="text-align:center;margin:0 0 16px 0;">Inventory</h2>
         
-        <div id="stats-bar" style="text-align:center;margin-bottom:20px;opacity:0.9;font-size:16px;">
+        <!-- Header with BACK arrow -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button onclick="Inventory.goBack()"
+                  style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,0.10);color:#fff;border:none;font-size:14px;">
+            <span style="font-size:18px;line-height:1;">←</span>
+            <span>Back</span>
+          </button>
+
+          <div style="font-weight:800;letter-spacing:0.6px;">Inventory</div>
+
+          <div style="width:92px;"></div>
+        </div>
+
+        <div id="stats-bar" style="text-align:center;margin:8px 0 16px 0;opacity:0.9;font-size:16px;">
           loading...
         </div>
 
-        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <!-- Tabs + Salvage -->
+        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
           <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all">All</button>
           <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear">Gear</button>
           <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable">Consumables</button>
           <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility">Utility</button>
+
+          <!-- Killer button -->
+          <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes"
+                  style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;">
+            SALVAGE DUPES
+          </button>
         </div>
 
         <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
@@ -34,8 +96,9 @@ window.Inventory = {
         </div>
 
         <div style="text-align:center;margin-top:24px;">
-          <button onclick="Telegram.WebApp.close()" style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:18px;border:none;">
-            Back to chat
+          <button onclick="Telegram.WebApp.close()"
+                  style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;">
+            Close WebApp
           </button>
         </div>
       </div>
@@ -199,6 +262,52 @@ window.Inventory = {
       const k = it.key || it.item_key || it.item;
       return k === key;
     });
+  },
+
+  // === SALVAGE DUPES (killer) ===
+  async salvageDupes() {
+    const apiPost = window.S?.apiPost || window.apiPost;
+
+    const keep = 1;
+    const rarityMax = "uncommon"; // MVP killer: clean junk dupes, keep rare+ safe
+
+    Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
+
+    const ok = confirm(
+      `Salvage duplicate GEAR items?\n\n• Keep ${keep} of each\n• Salvage up to: ${rarityMax}\n\nYou’ll get Scrap + Shards back.`
+    );
+    if (!ok) return;
+
+    try {
+      const res = await apiPost("/webapp/inventory/salvage_dupes", {
+        keep,
+        rarityMax,
+        run_id: this._mkRunId("w_inv_salvage_dupes"),
+      });
+
+      if (!res?.ok) throw new Error(res?.reason || "Failed");
+
+      if (res.reason === "NO_DUPES") {
+        Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+        this._toast("No dupes to salvage (with current filters).");
+        return;
+      }
+
+      const y = res.yielded || {};
+      const parts = Object.keys(y)
+        .sort()
+        .map((k) => `+${y[k]} ${k}`)
+        .slice(0, 5);
+
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+      this._toast(`Salvaged dupes ✅ ${parts.join(" · ")}`);
+
+      // refresh
+      await this.open();
+    } catch (e) {
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      this._toast("Salvage failed: " + (e?.message || "Error"));
+    }
   },
 
   // === USE ITEM ===
