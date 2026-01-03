@@ -1953,6 +1953,29 @@ document.addEventListener("click", (e) => {
 </body>
 </html>
 
+/* ✅ PATCH: keep HUD inside viewport + safe-area (fix right column overflow) */
+.grid{
+  box-sizing: border-box;
+  padding:
+    24px
+    calc(16px + env(safe-area-inset-right, 0px))
+    24px
+    calc(16px + env(safe-area-inset-left, 0px));
+}
+
+.hud-layout{
+  width: min(
+    520px,
+    calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
+  );
+}
+
+.hud-col.hud-right{ transform: translateX(-10px); }
+
+@media (max-width: 420px){
+  .hud-col.hud-right{ transform: translateX(-16px); }
+}
+
 
 
 
