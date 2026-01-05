@@ -40,39 +40,43 @@
     return null;
   }
 
-  // Accept many backend schemas: price/price_tokens, bones_cost/token_cost, cost{bones,tokens}, also cost{token}
-function getPrices(it) {
-  const c =
-    (it?.cost && typeof it.cost === "object") ? it.cost :
-    (it?.price && typeof it.price === "object") ? it.price :
-    {};
+  // Accept many backend schemas:
+  // - price: number (bones)
+  // - price_tokens / price_bones
+  // - token_cost / bones_cost
+  // - cost{bones,tokens} OR price{bones,tokens} OR costs{...}
+  // - also token vs tokens, bone vs bones
+  function getPrices(it) {
+    const priceObj =
+      (it?.cost && typeof it.cost === "object") ? it.cost :
+      (it?.price && typeof it.price === "object") ? it.price :
+      (it?.costs && typeof it.costs === "object") ? it.costs :
+      {};
 
-  // read both variants: tokens vs token
-  let tokenPrice = pickNum(
-    it.price_tokens, it.priceTokens,
-    it.token_cost, it.tokenCost,
-    c.tokens, c.token
-  );
+    let tokenPrice = pickNum(
+      it.price_tokens, it.priceTokens,
+      it.token_cost, it.tokenCost,
+      it.tokens_cost, it.tokensCost,
+      it.cost_tokens, it.costTokens,
+      priceObj.tokens, priceObj.token
+    );
 
-  let bonePrice = pickNum(
-    (typeof it.price === "number" ? it.price : null),
-    it.price_bones, it.priceBones,
-    it.bones_cost, it.bonesCost,
-    c.bones
-  );
+    let bonePrice = pickNum(
+      (typeof it.price === "number" ? it.price : null),
+      it.price_bones, it.priceBones,
+      it.bones_cost, it.bonesCost,
+      it.cost_bones, it.costBones,
+      priceObj.bones, priceObj.bone
+    );
 
-  // IMPORTANT: many backends send tokenPrice: 0 as "not used"
-  // If tokens==0 but bones>0 and item isn't explicitly free/hybrid, treat tokens as "not set"
-  const bonesPos = (bonePrice != null && Number(bonePrice) > 0);
-  const tokensPos = (tokenPrice != null && Number(tokenPrice) > 0);
+    // Many backends send 0 as "not used" — treat 0 as "unset" unless explicitly free
+    if (!it?.free) {
+      if (tokenPrice === 0) tokenPrice = null;
+      if (bonePrice === 0) bonePrice = null;
+    }
 
-  if (!it?.free) {
-    if (tokenPrice === 0 && bonesPos) tokenPrice = null;
-    if (bonePrice === 0 && tokensPos) bonePrice = null;
+    return { tokenPrice, bonePrice };
   }
-
-  return { tokenPrice, bonePrice };
-}
 
   // Prefer explicit image url/path from API (Cloudinary), then /assets path, then key-based fallback
   function itemImg(it) {
