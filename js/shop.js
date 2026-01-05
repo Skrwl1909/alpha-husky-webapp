@@ -40,21 +40,39 @@
     return null;
   }
 
-  // Accept many backend schemas: price/price_tokens, price_bones, bones_cost/token_cost, cost{bones,tokens}
-  function getPrices(it) {
-    const c = it?.cost || {};
-    const tokenPrice = pickNum(
-      it.price_tokens, it.priceTokens,
-      it.token_cost, it.tokenCost,
-      c.tokens
-    );
-    const bonePrice = pickNum(
-      it.price, it.price_bones, it.priceBones,
-      it.bones_cost, it.bonesCost,
-      c.bones
-    );
-    return { tokenPrice, bonePrice };
+  // Accept many backend schemas: price/price_tokens, bones_cost/token_cost, cost{bones,tokens}, also cost{token}
+function getPrices(it) {
+  const c =
+    (it?.cost && typeof it.cost === "object") ? it.cost :
+    (it?.price && typeof it.price === "object") ? it.price :
+    {};
+
+  // read both variants: tokens vs token
+  let tokenPrice = pickNum(
+    it.price_tokens, it.priceTokens,
+    it.token_cost, it.tokenCost,
+    c.tokens, c.token
+  );
+
+  let bonePrice = pickNum(
+    (typeof it.price === "number" ? it.price : null),
+    it.price_bones, it.priceBones,
+    it.bones_cost, it.bonesCost,
+    c.bones
+  );
+
+  // IMPORTANT: many backends send tokenPrice: 0 as "not used"
+  // If tokens==0 but bones>0 and item isn't explicitly free/hybrid, treat tokens as "not set"
+  const bonesPos = (bonePrice != null && Number(bonePrice) > 0);
+  const tokensPos = (tokenPrice != null && Number(tokenPrice) > 0);
+
+  if (!it?.free) {
+    if (tokenPrice === 0 && bonesPos) tokenPrice = null;
+    if (bonePrice === 0 && tokensPos) bonePrice = null;
   }
+
+  return { tokenPrice, bonePrice };
+}
 
   // Prefer explicit image url/path from API (Cloudinary), then /assets path, then key-based fallback
   function itemImg(it) {
@@ -211,19 +229,24 @@
       list.innerHTML = items.map(it => {
         const { tokenPrice, bonePrice } = getPrices(it);
 
-        const priceStr = (tokenPrice != null)
-          ? `${tokenPrice} 🪙`
-          : `${bonePrice ?? "?"} 🦴`;
+       const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
+        const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
+
+        const priceStr =
+          (hasBoneCost && hasTokenCost) ? `${bonePrice} 🦴 + ${tokenPrice} 🪙`
+          : hasTokenCost ? `${tokenPrice} 🪙`
+          : hasBoneCost ? `${bonePrice} 🦴`
+          : (it?.free ? "FREE" : "?");
 
         const limit = Number.isFinite(it.dailyLimit) ? it.dailyLimit : 0;
         const bought = Number.isFinite(it.boughtToday) ? it.boughtToday : 0;
         const hitLimit = (limit > 0 && bought >= limit);
 
-        const notEnoughToken = (tokenPrice != null && tokenBal < tokenPrice);
-        const notEnoughBones = (tokenPrice == null && bonePrice != null && boneBal < bonePrice);
+        const notEnoughToken = (hasTokenCost && tokenBal < tokenPrice);
+        const notEnoughBones = (hasBoneCost && boneBal < bonePrice);
 
         // disable also if missing price (unless explicitly free)
-        const missingPrice = (tokenPrice == null && bonePrice == null && !it?.free);
+        const missingPrice = (!it?.free && !hasTokenCost && !hasBoneCost);
         const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
 
         const sub = [
@@ -391,7 +414,7 @@
 
     async buy(itemKey) {
       const rid = (crypto?.randomUUID?.() || (String(Date.now()) + ":" + Math.random()));
-      const res = await this._apiPost("/webapp/shop/buy", { itemKey, run_id: rid });
+      const res = await this._apiPost("/webapp/shop/buy", { itemKey, item_key: itemKey, run_id: rid });
 
       if (!res || !res.ok) {
         const msg = res?.message || res?.reason || "Buy failed";
