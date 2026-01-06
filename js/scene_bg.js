@@ -1,94 +1,146 @@
-// js/scene_bg.js — Scene background overlay (Alpha Husky WebApp)
-// Overlay sits between .bg (z=0) and .ui (z=2). Works with your existing video background.
+// js/scene_bg.js — Scene background overlay (VIDEO) for Alpha Husky WebApp
+// Works with your existing .bg video (background2.*). This adds a second video layer (z=1) for scenes.
 
 (function () {
+  const FADE_MS = 220;
+
   function ver() {
     const v = (window.WEBAPP_VER && String(window.WEBAPP_VER).trim()) || "";
     return v ? `?v=${encodeURIComponent(v)}` : "";
   }
 
-  // Root-level scenes (same place as index.html)
+  // Root-level scene assets (same folder as index.html)
   const SCENES = Object.assign(
     {
-      shop: `/shop_scene.webp${ver()}`,
+      shop: {
+        type: "video",
+        src: `/shop_scene.mp4${ver()}`,
+        poster: `/shop_scene.webp${ver()}`, // optional but recommended
+      },
     },
     (window.SCENE_BG || {})
   );
 
-  const FADE_MS = 220;
-
   function ensureLayer() {
-    let layer = document.getElementById("sceneBg");
-    if (layer) return layer;
+    let wrap = document.getElementById("sceneBg");
+    if (wrap) return wrap;
 
-    layer = document.createElement("div");
-    layer.id = "sceneBg";
-    layer.setAttribute("aria-hidden", "true");
+    wrap = document.createElement("div");
+    wrap.id = "sceneBg";
+    wrap.setAttribute("aria-hidden", "true");
 
-    // Insert inside your .app, between .bg and .ui
+    // place between .bg and .ui inside .app
     const app = document.querySelector(".app");
     if (app) {
-      layer.style.position = "absolute";
-      layer.style.inset = "0";
-      layer.style.zIndex = "1";
+      wrap.style.position = "absolute";
+      wrap.style.inset = "0";
+      wrap.style.zIndex = "1";
       const ui = app.querySelector(".ui");
-      app.insertBefore(layer, ui || null);
+      app.insertBefore(wrap, ui || null);
     } else {
-      layer.style.position = "fixed";
-      layer.style.inset = "0";
-      layer.style.zIndex = "1";
-      document.body.prepend(layer);
+      wrap.style.position = "fixed";
+      wrap.style.inset = "0";
+      wrap.style.zIndex = "1";
+      document.body.prepend(wrap);
     }
 
-    layer.style.pointerEvents = "none";
-    layer.style.opacity = "0";
-    layer.style.transition = `opacity ${FADE_MS}ms ease`;
-    layer.style.backgroundPosition = "center";
-    layer.style.backgroundSize = "cover";
-    layer.style.backgroundRepeat = "no-repeat";
-    layer.style.filter = "contrast(1.06) brightness(.92) saturate(1.06)";
+    wrap.style.pointerEvents = "none";
+    wrap.style.opacity = "0";
+    wrap.style.transition = `opacity ${FADE_MS}ms ease`;
+    wrap.style.overflow = "hidden";
 
-    return layer;
+    // video element
+    const vid = document.createElement("video");
+    vid.id = "sceneBgVideo";
+    vid.muted = true;
+    vid.loop = true;
+    vid.playsInline = true;
+    vid.autoplay = false;
+    vid.preload = "auto";
+
+    vid.style.position = "absolute";
+    vid.style.inset = "0";
+    vid.style.width = "100%";
+    vid.style.height = "100%";
+    vid.style.objectFit = "cover";
+    vid.style.filter = "contrast(1.06) brightness(.92) saturate(1.06)";
+
+    wrap.appendChild(vid);
+
+    // subtle vignette overlay
+    const vignette = document.createElement("div");
+    vignette.style.position = "absolute";
+    vignette.style.inset = "0";
+    vignette.style.background =
+      "radial-gradient(ellipse at center, rgba(0,0,0,.08) 0%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.78) 100%)";
+    wrap.appendChild(vignette);
+
+    return wrap;
   }
 
-  const layer = ensureLayer();
+  const wrap = ensureLayer();
+  const vid = document.getElementById("sceneBgVideo");
+
   const stack = [];
   let current = null;
   let busy = false;
 
-  function setBg(url) {
-    layer.style.backgroundImage = url
-      ? `radial-gradient(ellipse at center, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.60) 78%, rgba(0,0,0,0.80) 100%), url("${url}")`
-      : "";
+  function fadeIn() {
+    requestAnimationFrame(() => (wrap.style.opacity = "1"));
+  }
+  function fadeOut() {
+    wrap.style.opacity = "0";
   }
 
-  function preload(url) {
-    return new Promise((resolve) => {
-      if (!url) return resolve(false);
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = url;
-    });
+  async function playSceneVideo(scene) {
+    if (!vid) return;
+
+    // set poster if provided
+    if (scene.poster) vid.setAttribute("poster", scene.poster);
+
+    // set src (reset to force reload when switching)
+    if (vid.src !== scene.src) {
+      try {
+        vid.pause();
+      } catch (_) {}
+      vid.removeAttribute("src");
+      vid.load();
+      vid.src = scene.src;
+      vid.load();
+    }
+
+    // try play (user gesture should exist when opening modal)
+    try {
+      const p = vid.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (_) {}
+  }
+
+  function stopVideo() {
+    if (!vid) return;
+    try { vid.pause(); } catch (_) {}
+    // drop src to free memory (optional but nice)
+    try {
+      vid.removeAttribute("src");
+      vid.load();
+    } catch (_) {}
   }
 
   async function show(key) {
-    const url = SCENES[key];
-    if (!url) return false;
+    const scene = SCENES[key];
+    if (!scene) return false;
     if (current === key) return true;
     if (busy) return false;
     busy = true;
 
-    layer.style.opacity = "0";
+    fadeOut();
     await new Promise((r) => setTimeout(r, 16));
 
-    await preload(url);
-    setBg(url);
+    if (scene.type === "video") {
+      await playSceneVideo(scene);
+    }
 
-    requestAnimationFrame(() => {
-      layer.style.opacity = "1";
-    });
-
+    fadeIn();
     current = key;
     document.body.dataset.scene = key;
 
@@ -100,12 +152,12 @@
     if (busy) return false;
     busy = true;
 
-    layer.style.opacity = "0";
+    fadeOut();
     current = null;
     document.body.dataset.scene = "";
 
     setTimeout(() => {
-      setBg("");
+      stopVideo();
       busy = false;
     }, FADE_MS + 40);
 
