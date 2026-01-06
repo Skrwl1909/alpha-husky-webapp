@@ -120,6 +120,8 @@
     async open() {
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
         .forEach(x => x.style.display = "none");
+      
+      window.SceneBg?.push?.("shop");
 
       // ✅ lock body scroll while Shop is open
       document.body.dataset.prevOverflow = document.body.style.overflow || "";
@@ -174,6 +176,8 @@
 
         document.body.style.overflow = document.body.dataset.prevOverflow || "";
         delete document.body.dataset.prevOverflow;
+
+        window.SceneBg?.pop?.();
 
         if (window.Map?.open) return window.Map.open();
         window.location.reload();
