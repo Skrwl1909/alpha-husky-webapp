@@ -27,32 +27,37 @@ window.Inventory = {
   },
 
   _bindBackButtons() {
-    // In-UI back arrow
-    const btn = document.getElementById("invBackBtn");
-    if (btn) {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.goBack();
-      });
+  // In-UI back arrow (idempotent, no stacking)
+  const btn = document.getElementById("invBackBtn");
+  if (btn) {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.goBack();
+    };
+  }
+
+  // Telegram native BackButton (top bar) — robust bind
+  try {
+    const tg = Telegram?.WebApp;
+    if (!tg) return;
+
+    // cleanup previous
+    if (this._tgBackHandler) {
+      try { tg.BackButton?.offClick?.(this._tgBackHandler); } catch (_) {}
+      try { tg.offEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
     }
 
-    // Telegram native BackButton (top bar)
-    try {
-      const tg = Telegram?.WebApp;
-      if (!tg?.BackButton) return;
+    this._tgBackHandler = () => this.goBack();
 
-      // cleanup previous
-      if (this._tgBackHandler && tg.BackButton.offClick) {
-        try { tg.BackButton.offClick(this._tgBackHandler); } catch (_) {}
-      }
+    // bind both ways (different Telegram builds behave differently)
+    try { tg.BackButton?.onClick?.(this._tgBackHandler); } catch (_) {}
+    try { tg.onEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
 
-      this._tgBackHandler = () => this.goBack();
-      if (tg.BackButton.onClick) tg.BackButton.onClick(this._tgBackHandler);
-      if (tg.BackButton.show) tg.BackButton.show();
-    } catch (e) {
-      console.warn("BackButton bind failed:", e);
-    }
+    try { tg.BackButton?.show?.(); } catch (_) {}
+  } catch (e) {
+    console.warn("BackButton bind failed:", e);
+  }
   },
 
   _hideTelegramBackButton() {
