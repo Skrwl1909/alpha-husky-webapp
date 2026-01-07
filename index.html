@@ -1169,61 +1169,89 @@ document.addEventListener("click", async (e) => {
           if (skin.name) skinImg.alt = skin.name;
         }
 
-        async function loadProfile(){
-          try {
-            const out = await apiPost("/webapp/profile", {});
-            if (!out) return;
-            // pozwalamy na dwa kształty: { ok, profile:{...} } albo bezpośrednio dane
-            const p = out.profile || out;
+       async function loadProfile(){
+  try {
+    const out = await apiPost("/webapp/profile", {});
+    if (!out) return;
+    const p = out.profile || out;
 
-            PROFILE = PROFILE || {};
-            if (typeof p.level === "number") PROFILE.level = p.level;
-            else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
+    PROFILE = PROFILE || {};
+    if (typeof p.level === "number") PROFILE.level = p.level;
+    else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
 
-            if (p.nickname || p.name){
-              PROFILE.nickname = p.nickname || p.name;
-              setPlayerLabel(PROFILE.nickname);
-            }
+    if (p.nickname || p.name){
+      PROFILE.nickname = p.nickname || p.name;
+      setPlayerLabel(PROFILE.nickname);
+    }
 
-            if (p.faction) PROFILE.faction = p.faction;
+    if (p.faction) PROFILE.faction = p.faction;
 
-            PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
-            if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
+    PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
+    if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-            renderTopbar();
-          } catch (e){
-            console.warn("profile load failed", e);
-          }
-        }
-        window.loadProfile = loadProfile;
-        async function loadPlayerState(){
-          try {
-            const state = await apiPost("/webapp/state");
-            PLAYER_STATE = state;
-            applyStateToMap();
+    renderTopbar();
+  } catch (e){
+    console.warn("profile load failed", e);
+  }
+}
+window.loadProfile = loadProfile;
 
-            // 1) Nick z profilu gry
-            if (state && state.profile && state.profile.nickname){
-              setPlayerLabel(state.profile.nickname);
-            }
-            // 2) Fallback – dane z Telegrama
-            else if (state && state.user && !state.user.is_bot) {
-              const lbl = state.user.username
-                ? '@' + state.user.username
-                : (state.user.first_name || 'Player');
-              setPlayerLabel(lbl);
-            }
+// ✅ ONE global HOME
+window.goHome = function goHome() {
+  try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
-            // 3) LVL/Bones → topbar + hero HUD
-            renderTopbar();
+  const mapEl = document.getElementById("map");
+  if (mapEl) {
+    try {
+      document
+        .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+        .forEach((el) => (el.style.display = ""));
 
-            if (mapBack.style.display === "flex" && DATA) {
-              renderMap(); updateUnlockProgress();
-            }
-          } catch (e) {
-            console.warn("state load failed", e);
-          }
-        }
+      try { typeof window.loadPlayerState === "function" && window.loadPlayerState(); } catch (_) {}
+      try { typeof window.renderMap === "function" && window.renderMap(); } catch (_) {}
+      try { typeof window.loadProfile === "function" && window.loadProfile(); } catch (_) {}
+      return;
+    } catch (e) {
+      console.warn("goHome soft failed:", e);
+    }
+  }
+
+  // hard fallback
+  try {
+    const url = new URL(window.location.href);
+    ["section","view","modal","page","tab","panel"].forEach((p) => url.searchParams.delete(p));
+    url.hash = "";
+    window.location.href = url.toString();
+  } catch (_) {
+    location.reload();
+  }
+};
+
+async function loadPlayerState(){
+  try {
+    const state = await apiPost("/webapp/state");
+    PLAYER_STATE = state;
+    applyStateToMap();
+
+    if (state && state.profile && state.profile.nickname){
+      setPlayerLabel(state.profile.nickname);
+    } else if (state && state.user && !state.user.is_bot) {
+      const lbl = state.user.username
+        ? '@' + state.user.username
+        : (state.user.first_name || 'Player');
+      setPlayerLabel(lbl);
+    }
+
+    renderTopbar();
+
+    if (mapBack.style.display === "flex" && DATA) {
+      renderMap(); updateUnlockProgress();
+    }
+  } catch (e) {
+    console.warn("state load failed", e);
+  }
+}
+window.loadPlayerState = loadPlayerState; // ✅ DODAJ TO
 
         function isRegionUnlocked(regionId){
           const reg = DATA && DATA.regions && DATA.regions[regionId];
@@ -1978,6 +2006,7 @@ document.addEventListener("click", (e) => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
