@@ -1196,10 +1196,11 @@ document.addEventListener("click", async (e) => {
 }
 window.loadProfile = loadProfile;
 
-// ✅ ONE global HOME
+// ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
+  // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
   const mapEl = document.getElementById("map");
   if (mapEl) {
     try {
@@ -1207,33 +1208,43 @@ window.goHome = function goHome() {
         .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
         .forEach((el) => (el.style.display = ""));
 
-      try { typeof window.loadPlayerState === "function" && window.loadPlayerState(); } catch (_) {}
-      try { typeof window.renderMap === "function" && window.renderMap(); } catch (_) {}
-      try { typeof window.loadProfile === "function" && window.loadProfile(); } catch (_) {}
+      // Best-effort refresh
+      try { if (typeof window.loadPlayerState === "function") window.loadPlayerState(); } catch (_) {}
+      try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
+      try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
+
       return;
     } catch (e) {
       console.warn("goHome soft failed:", e);
     }
   }
 
-  // hard fallback
+  // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
   try {
-    const url = new URL(window.location.href);
-    ["section","view","modal","page","tab","panel"].forEach((p) => url.searchParams.delete(p));
+    const url = new URL(location.href);
+    const KEEP = new Set(["st", "v", "dbg"]);
+
+    for (const k of Array.from(url.searchParams.keys())) {
+      if (!KEEP.has(k)) url.searchParams.delete(k);
+    }
+
     url.hash = "";
-    window.location.href = url.toString();
-  } catch (_) {
+
+    // replace = cleaner history + more reliable in Telegram webview
+    location.replace(url.toString());
+  } catch (e) {
+    console.warn("goHome hard failed:", e);
     location.reload();
   }
 };
 
-async function loadPlayerState(){
+async function loadPlayerState() {
   try {
     const state = await apiPost("/webapp/state");
     PLAYER_STATE = state;
     applyStateToMap();
 
-    if (state && state.profile && state.profile.nickname){
+    if (state && state.profile && state.profile.nickname) {
       setPlayerLabel(state.profile.nickname);
     } else if (state && state.user && !state.user.is_bot) {
       const lbl = state.user.username
@@ -1245,13 +1256,14 @@ async function loadPlayerState(){
     renderTopbar();
 
     if (mapBack.style.display === "flex" && DATA) {
-      renderMap(); updateUnlockProgress();
+      renderMap();
+      updateUnlockProgress();
     }
   } catch (e) {
     console.warn("state load failed", e);
   }
 }
-window.loadPlayerState = loadPlayerState; // ✅ DODAJ TO
+window.loadPlayerState = loadPlayerState; // ✅ expose globally for goHome()
 
         function isRegionUnlocked(regionId){
           const reg = DATA && DATA.regions && DATA.regions[regionId];
@@ -2006,6 +2018,7 @@ document.addEventListener("click", (e) => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
