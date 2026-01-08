@@ -759,80 +759,135 @@
 </script>
 
   <!-- 4) Główny skrypt aplikacji -->
-  <script>
-    const DEBUG_UI = true;
-    function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
-    function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
+<script>
+  const DEBUG_UI = true;
+  function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
+  function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
 
-    const start = () => {
-      try {
-        dbg('boot…');
+  const start = () => {
+    try {
+      dbg('boot…');
 
-        window.addEventListener('error', e => {
-          dbg('ERR: '+(e?.message||'error'));
-          try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
-          console.error(e);
+      window.addEventListener('error', e => {
+        dbg('ERR: '+(e?.message||'error'));
+        try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
+        console.error(e);
+      });
+
+      const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+      setVh(); window.addEventListener('resize', setVh);
+
+      const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+      let tg = nativeTg;
+
+      const $  = sel => document.querySelector(sel);
+      const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+      if (!tg) {
+        const fb = $("#fallback"); if (fb) fb.style.display = "flex";
+        dbg('Open inside Telegram');
+      }
+
+      tg?.ready?.(); tg?.expand?.();
+
+      // =====================
+      // ✅ NAV HELPERS (global)
+      // (Quests.js i inne moduły mogą wołać window.navClose/navOpen)
+      // =====================
+      window.AH_NAV = window.AH_NAV || { stack: [], inited: false };
+      const AH_NAV = window.AH_NAV;
+
+      function _navId(x){
+        if (!x) return null;
+        if (typeof x === "string") return x.startsWith("#") ? x.slice(1) : x;
+        return x.id || null;
+      }
+
+      function navOpen(x){
+        const id = _navId(x); if(!id) return;
+        const st = AH_NAV.stack;
+        if (st[st.length - 1] !== id) st.push(id);
+        try { tg?.BackButton?.show?.(); } catch (_) {}
+      }
+
+      function navClose(x){
+        const id = _navId(x); if(!id) return;
+        const st = AH_NAV.stack;
+        const i = st.lastIndexOf(id);
+        if (i >= 0) st.splice(i, 1);
+        if (!st.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
+      }
+
+      function navCloseTop(){
+        const id = AH_NAV.stack.pop();
+        if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
+        if (!id) return false;
+
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+        return true;
+      }
+
+      // ✅ expose globally
+      window.navOpen = navOpen;
+      window.navClose = navClose;
+      window.navCloseTop = navCloseTop;
+
+      // ✅ One BackButton handler (close top modal, else close webapp)
+      if (!AH_NAV.inited){
+        AH_NAV.inited = true;
+        try { tg?.BackButton?.hide?.(); } catch (_) {}
+
+        tg?.BackButton?.onClick?.(() => {
+          if (navCloseTop()) return;
+          try { tg?.close?.(); } catch(_) {}
         });
+      }
 
-        const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-        setVh(); window.addEventListener('resize', setVh);
+      // ✅ ONE global HOME — deterministic return to main menu/map
+      window.goHome = function goHome() {
+        try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
-        const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-        let tg = nativeTg;
+        // ✅ Clear nav stack when returning HOME (prevents "ghost" back closes)
+        try { if (window.AH_NAV?.stack) window.AH_NAV.stack.length = 0; } catch (_) {}
 
-        const $  = sel => document.querySelector(sel);
-        const $$ = sel => Array.from(document.querySelectorAll(sel));
+        // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
+        const mapEl = document.getElementById("map");
+        if (mapEl) {
+          try {
+            document
+              .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+              .forEach((el) => (el.style.display = ""));
 
-        if (!tg) {
-          const fb = $("#fallback"); if (fb) fb.style.display = "flex";
-          dbg('Open inside Telegram');
+            // Best-effort refresh
+            try { if (typeof window.loadPlayerState === "function") window.loadPlayerState(); } catch (_) {}
+            try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
+            try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
+
+            return;
+          } catch (e) {
+            console.warn("goHome soft failed:", e);
+          }
         }
 
-        tg?.ready?.(); tg?.expand?.();
-              // ✅ ONE global HOME — deterministic return to main menu/map
-window.goHome = function goHome() {
-  try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
+        // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
+        try {
+          const url = new URL(location.href);
+          const KEEP = new Set(["st", "v", "dbg"]);
 
-  // ✅ Clear nav stack when returning HOME (prevents "ghost" back closes)
-  try { if (window.AH_NAV?.stack) window.AH_NAV.stack.length = 0; } catch (_) {}
+          for (const k of Array.from(url.searchParams.keys())) {
+            if (!KEEP.has(k)) url.searchParams.delete(k);
+          }
 
-  // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
-  const mapEl = document.getElementById("map");
-  if (mapEl) {
-    try {
-      document
-        .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
-        .forEach((el) => (el.style.display = ""));
+          url.hash = "";
 
-      // Best-effort refresh
-      try { if (typeof window.loadPlayerState === "function") window.loadPlayerState(); } catch (_) {}
-      try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
-      try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
-
-      return;
-    } catch (e) {
-      console.warn("goHome soft failed:", e);
-    }
-  }
-
-  // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
-  try {
-    const url = new URL(location.href);
-    const KEEP = new Set(["st", "v", "dbg"]);
-
-    for (const k of Array.from(url.searchParams.keys())) {
-      if (!KEEP.has(k)) url.searchParams.delete(k);
-    }
-
-    url.hash = "";
-
-    // replace = cleaner history + more reliable in Telegram webview
-    location.replace(url.toString());
-  } catch (e) {
-    console.warn("goHome hard failed:", e);
-    location.reload();
-  }
-};
+          // replace = cleaner history + more reliable in Telegram webview
+          location.replace(url.toString());
+        } catch (e) {
+          console.warn("goHome hard failed:", e);
+          location.reload();
+        }
+      };
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
         const hexToRgba = (hex, a) => {
           if(!hex) return `rgba(0,0,0,${a})`;
@@ -2119,6 +2174,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
