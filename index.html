@@ -789,8 +789,52 @@
         }
 
         tg?.ready?.(); tg?.expand?.();
+              // === BackButton routing (ONE handler) ===
+      const AH_NAV = window.AH_NAV || (window.AH_NAV = { stack: [], inited: false });
+      
+      function _navId(x){
+        if (!x) return null;
+        if (typeof x === "string") return x.startsWith("#") ? x.slice(1) : x;
+        return x.id || null;
+      }
+      
+      function navOpen(x){
+        const id = _navId(x); if(!id) return;
+        const st = AH_NAV.stack;
+        if (st[st.length - 1] !== id) st.push(id);
         tg?.BackButton?.show?.();
-        tg?.BackButton?.onClick?.(() => { if (tg.close) try{ tg.close(); }catch(_){}});
+      }
+      
+      function navClose(x){
+        const id = _navId(x); if(!id) return;
+        const st = AH_NAV.stack;
+        const i = st.lastIndexOf(id);
+        if (i >= 0) st.splice(i, 1);
+        if (!st.length) tg?.BackButton?.hide?.();
+      }
+      
+      function navCloseTop(){
+        const id = AH_NAV.stack.pop();
+        if (!AH_NAV.stack.length) tg?.BackButton?.hide?.();
+        if (!id) return false;
+      
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+        return true;
+      }
+      
+      if (!AH_NAV.inited){
+        AH_NAV.inited = true;
+        tg?.BackButton?.hide?.();
+      
+        tg?.BackButton?.onClick?.(() => {
+          // 1) jeśli coś otwarte -> zamknij top modal
+          if (navCloseTop()) return;
+      
+          // 2) jeśli nic nie otwarte -> zamknij WebApp
+          try { tg?.close?.(); } catch(_) {}
+        });
+      }
 
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
         const hexToRgba = (hex, a) => {
@@ -2049,6 +2093,7 @@ document.addEventListener("click", (e) => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
