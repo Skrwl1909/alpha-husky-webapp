@@ -1741,6 +1741,7 @@ const actions = {
   // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
   ".btn.map": () => {
     mapBack.style.display = "flex";
+    navOpen("mapBack"); // ✅ DODAJ
     if (!DATA) loadMapData();
     loadPlayerState();
   },
@@ -1802,7 +1803,7 @@ document.addEventListener("click", (e) => {
       try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
     });
 });
-        document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; });
+        document.getElementById("closeMap")?.addEventListener("click", () => { mapBack.style.display = "none"; navClose("mapBack"); });
 
         function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
 
@@ -1818,8 +1819,14 @@ document.addEventListener("click", (e) => {
         /* === Howlboard === */
         const boardBack = document.getElementById("boardBack");
         const closeBoard = document.getElementById("closeBoard");
-        function openBoard(){ boardBack.style.display = "flex"; }
-        closeBoard?.addEventListener("click", () => boardBack.style.display = "none");
+        function openBoard(){
+          boardBack.style.display = "flex";
+          navOpen("boardBack");
+        }
+        closeBoard?.addEventListener("click", () => {
+          boardBack.style.display = "none";
+          navClose("boardBack");
+        });
         $$(".tab").forEach(t => {
           t.addEventListener("click", () => {
             $$(".tab").forEach(x => x.classList.toggle("active", x===t));
@@ -1945,7 +1952,10 @@ document.addEventListener("click", (e) => {
         document.getElementById('quests-launcher')?.addEventListener('click', () => {
   window.Quests?.open?.(); // ZAWSZE nowy Mission Board z opisami
 });
-        document.getElementById('qClose')?.addEventListener('click', () => { document.getElementById('qBack').style.display='none'; });
+        document.getElementById('qClose')?.addEventListener('click', () => {
+  document.getElementById('qBack').style.display='none';
+  navClose("qBack");
+});
 
         dbg('Ready');
       } catch (fatal) {
@@ -2093,6 +2103,7 @@ document.addEventListener("click", (e) => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
