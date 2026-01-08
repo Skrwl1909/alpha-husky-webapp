@@ -121,17 +121,27 @@
   }
 
   async function loadState() {
-    const list = document.getElementById("mypetsList");
-    if (!list) return;
-    list.innerHTML = "Loading…";
+  const list = document.getElementById("mypetsList");
+  if (!list) return;
+  list.innerHTML = "Loading…";
 
-    const res = await _apiPost("/webapp/pets/state", { run_id: runId("mypets_state") });
-    if (!res || !res.ok) {
-      list.innerHTML = `<div class="petErr">Failed to load pets.</div>`;
-      return null;
-    }
-    return res.pets || null; // { activePetId, pets:{...} }
+  const res = await _apiPost("/webapp/pets/state", { run_id: runId("mypets_state") });
+
+  // ✅ DEBUG (na chwilę)
+  console.log("[MyPets] raw res:", res);
+  console.log(
+    "[MyPets] pets keys:",
+    Object.keys(res?.pets?.pets || {}),
+    "active:",
+    res?.pets?.activePetId
+  );
+
+  if (!res || !res.ok) {
+    list.innerHTML = `<div class="petErr">Failed to load pets.</div>`;
+    return null;
   }
+  return res.pets || null; // { activePetId, pets:{...} }
+}
 
   function toArray(state) {
     const dict = (state && state.pets) ? state.pets : {};
