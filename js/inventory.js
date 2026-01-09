@@ -12,6 +12,7 @@ window.Inventory = {
   // ✅ nav-stack integration
   _navId: "inventory",
   _navRegistered: false,
+  _backLock: false,
 
   // ---- small utils ----
   _mkRunId(prefix) {
@@ -55,18 +56,9 @@ window.Inventory = {
   },
 
   _bindBackButtons() {
-    // In-UI back arrow (idempotent, no stacking)
-    const btn = document.getElementById("invBackBtn");
-    if (btn) {
-      btn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.goBack("ui");
-      };
-    }
-
     // ✅ Prefer global nav stack router (AH_NAV)
     this._navRegistered = false;
+
     try {
       const stack = window.AH_NAV?.stack;
       const top = Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
@@ -77,7 +69,6 @@ window.Inventory = {
       };
 
       if (topId === this._navId) {
-        // already on top
         this._navRegistered = true;
       } else if (typeof window.navOpen === "function") {
         // try common signatures
@@ -104,15 +95,23 @@ window.Inventory = {
     try {
       const tg = Telegram?.WebApp;
       if (!tg?.BackButton) return;
+
       if (this._tgBackHandler && tg.BackButton.offClick) {
         try { tg.BackButton.offClick(this._tgBackHandler); } catch (_) {}
       }
+      try { tg.offEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
+
       if (tg.BackButton.hide) tg.BackButton.hide();
     } catch (_) {}
   },
 
   // BACK should go to dashboard/map (not close webapp)
   goBack(source = "ui") {
+    // prevent double-fire loops (navCloseTop -> onClose -> goBack(nav))
+    if (this._backLock) return;
+    this._backLock = true;
+    setTimeout(() => (this._backLock = false), 500);
+
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
     const fromNav = (source === "nav"); // called by nav stack onClose
@@ -120,23 +119,23 @@ window.Inventory = {
     const top = Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
     const topId = (typeof top === "string") ? top : top?.id;
 
-    // If user clicked in-UI back, keep stack consistent:
-    // pop TOP if it is inventory (navCloseTop will call our onClose -> goBack("nav"))
+    // Keep stack consistent, but NEVER block the real navigation.
     if (!fromNav) {
       try {
         if (topId === this._navId && typeof window.navCloseTop === "function") {
-          return window.navCloseTop();
-        }
-        if (typeof window.navClose === "function") {
-          try { return window.navClose(this._navId); } catch (_) {}
+          try { window.navCloseTop(); } catch (_) {}
+        } else if (typeof window.navClose === "function") {
+          try { window.navClose(this._navId); } catch (_) {}
         }
       } catch (_) {}
     }
 
     // restore any hidden UI helpers (best-effort)
-    document
-      .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
-      .forEach((el) => (el.style.display = ""));
+    try {
+      document
+        .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+        .forEach((el) => (el.style.display = ""));
+    } catch (_) {}
 
     // Hide Telegram BackButton when leaving this view (safe)
     this._hideTelegramBackButton();
@@ -171,13 +170,14 @@ window.Inventory = {
   },
 
   async open() {
-    document
-      .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
-      .forEach((el) => (el.style.display = "none"));
+    try {
+      document
+        .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
+        .forEach((el) => (el.style.display = "none"));
+    } catch (_) {}
 
     const container = document.getElementById("app") || document.body;
 
-    // NOTE: padding-top uses Telegram safe-area variable so header is NOT in "dead zone"
     container.innerHTML = `
       <div style="
         padding:20px;
@@ -201,7 +201,8 @@ window.Inventory = {
           margin-bottom:12px;
         ">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <button id="invBackBtn" type="button"
+            <!-- ✅ Inline onclick (most robust) -->
+            <button id="invBackBtn" type="button" onclick="Inventory.goBack('ui')"
                     style="
                       display:flex;align-items:center;gap:10px;
                       padding:10px 14px;border-radius:14px;
@@ -232,7 +233,6 @@ window.Inventory = {
           <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable" type="button">Consumables</button>
           <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility" type="button">Utility</button>
 
-          <!-- Killer button -->
           <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
                   style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;cursor:pointer;">
             SALVAGE DUPES
@@ -252,7 +252,7 @@ window.Inventory = {
       </div>
     `;
 
-    // bind BACK listeners after DOM exists
+    // register in nav stack + (optional) TG back fallback
     this._bindBackButtons();
 
     try {
