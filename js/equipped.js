@@ -37,67 +37,79 @@
   }
 
   function ensureEquippedStyles() {
-  if (document.getElementById("equipped-styles")) return;
-  const style = document.createElement("style");
-  style.id = "equipped-styles";
-  style.textContent = `
-    .equip-stage-wrap{
-      position:relative;
-      width:100%;
-      max-width:680px;
-      margin:0 auto;
-      border-radius:22px;
-      overflow:hidden;
-      background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
-      box-shadow:0 14px 40px rgba(0,0,0,.7);
-    }
+    if (document.getElementById("equipped-styles")) return;
+    const style = document.createElement("style");
+    style.id = "equipped-styles";
+    style.textContent = `
+      .equip-stage-wrap{
+        position:relative;
+        width:100%;
+        max-width:680px;
+        margin:0 auto;
+        border-radius:22px;
+        overflow:hidden;
+        background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
+        box-shadow:0 14px 40px rgba(0,0,0,.7);
+      }
 
-    /* upewnij się że obraz jest "pod" overlayem */
-    #equipped-character-img{
-      position:relative;
-      z-index:1;
-      display:block;
-      width:100%;
-      height:auto;
-    }
+      /* upewnij się że obraz jest "pod" overlayem */
+      #equipped-character-img{
+        position:relative;
+        z-index:1;
+        display:block;
+        width:100%;
+        height:auto;
+      }
 
-    /* overlay MUSI siedzieć nad PNG */
-    #equip-hotspots{
-      position:absolute;
-      inset:0;
-      pointer-events:auto;
-      z-index:5;
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
+      /* overlay MUSI siedzieć nad PNG */
+      #equip-hotspots{
+        position:absolute;
+        inset:0;
+        pointer-events:auto;
+        z-index:5;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
 
-    .equip-hotspot{
-      position:absolute;
-      pointer-events:auto;
-      border:0;
-      padding:0;
-      margin:0;
-      background:transparent;
-      border-radius:18px;
-      -webkit-tap-highlight-color: transparent;
+      .equip-hotspot{
+        position:absolute;
+        pointer-events:auto;
+        border:0;
+        padding:0;
+        margin:0;
+        background:transparent;
+        border-radius:18px;
+        -webkit-tap-highlight-color: transparent;
 
-      /* dla ikon jako background */
-      background-repeat:no-repeat;
-      background-position:center;
-      background-size:contain;
-    }
+        /* dla ikon jako background */
+        background-repeat:no-repeat;
+        background-position:center;
+        background-size:contain;
+      }
 
-    .equip-hotspot:active{
-      box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
-      background-color: rgba(0,229,255,.10);
-    }
-    .equip-hotspot.is-empty:active{
-      box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
-      background-color: rgba(255,255,255,.06);
-    }
-  `;
-  document.head.appendChild(style);
-}
+      .equip-hotspot:active{
+        box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
+        background-color: rgba(0,229,255,.10);
+      }
+      .equip-hotspot.is-empty:active{
+        box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
+        background-color: rgba(255,255,255,.06);
+      }
+
+      /* ✅ make Equipped page scrollable inside fixed Telegram view */
+      #equipped-root{
+        height: calc(var(--vh, 1vh) * 100);
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        padding-bottom: 28px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // Uniwersalny POST tylko dla Equipped – nie zależy od globalnego apiPost
   async function equippedPost(path, payload) {
     const tg = getTg();
@@ -165,71 +177,72 @@
       console.error("Equipped: loadCharacterImage error", err);
     }
   }
-function _bgCandidates(o) {
-  // jeśli masz już _iconCandidates/_assetOnApp w pliku – użyj ich
-  if (typeof _iconCandidates === "function") return _iconCandidates(o);
 
-  // fallback minimalny (gdybyś nie miał)
-  const raw = o?.icon || o?.img || o?.image || o?.image_path || o?.imageUrl || "";
-  const key = String(o?.item_key || o?.key || o?.itemKey || o?.item || "").trim().toLowerCase();
-  const isGear = !!o?.slot;
+  function _bgCandidates(o) {
+    // jeśli masz już _iconCandidates/_assetOnApp w pliku – użyj ich
+    if (typeof _iconCandidates === "function") return _iconCandidates(o);
 
-  const list = [];
-  if (raw) list.push(raw);
-  if (key) {
-    list.push(isGear ? `/assets/equip/${key}.png` : `/assets/items/${key}.png`);
-    list.push(isGear ? `/assets/equip/${key}.webp` : `/assets/items/${key}.webp`);
-  }
-  list.push(`/assets/items/unknown.png`);
+    // fallback minimalny (gdybyś nie miał)
+    const raw = o?.icon || o?.img || o?.image || o?.image_path || o?.imageUrl || "";
+    const key = String(o?.item_key || o?.key || o?.itemKey || o?.item || "").trim().toLowerCase();
+    const isGear = !!o?.slot;
 
-  const base = window.location.origin;
-  const v = window.WEBAPP_VER || "";
+    const list = [];
+    if (raw) list.push(raw);
+    if (key) {
+      list.push(isGear ? `/assets/equip/${key}.png` : `/assets/items/${key}.png`);
+      list.push(isGear ? `/assets/equip/${key}.webp` : `/assets/items/${key}.webp`);
+    }
+    list.push(`/assets/items/unknown.png`);
 
-  return [...new Set(list.filter(Boolean).map((u) => {
-    let p = String(u).trim();
-    if (/^https?:\/\//i.test(p)) return p;
-    if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
-    let url = base + p;
-    if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
-    return url;
-  }))];
-}
+    const base = window.location.origin;
+    const v = window.WEBAPP_VER || "";
 
-function _setBgWithFallback(el, o) {
-  if (!el) return;
-
-  const urls = _bgCandidates(o);
-  let i = 0;
-
-  const tryOne = () => {
-  const CLOUD = "dnjwvxinh";
-  const CDN = `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto`;
-
-  const u = urls[i];
-  if (!u) {
-    const ph = new Image();
-    ph.onload  = () => { el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
-    ph.onerror = () => { el.style.backgroundImage = `url('${CDN}/items/_unknown.png')`; };
-    ph.src = `${CDN}/items/unknown.png`;
-    return;
+    return [...new Set(list.filter(Boolean).map((u) => {
+      let p = String(u).trim();
+      if (/^https?:\/\//i.test(p)) return p;
+      if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
+      let url = base + p;
+      if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
+      return url;
+    }))];
   }
 
-  const im = new Image();
-  im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
-  im.onerror = () => { i++; if (i < urls.length) tryOne(); else el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
-  im.src = u;
-};
+  function _setBgWithFallback(el, o) {
+    if (!el) return;
 
-  // pewniaki, żeby nic nie "wyzerowało" widoczności
-  el.style.setProperty("opacity", "1", "important");
-  el.style.setProperty("visibility", "visible", "important");
-  el.style.backgroundRepeat = "no-repeat";
-  el.style.backgroundPosition = "center";
-  el.style.backgroundSize = "contain";
+    const urls = _bgCandidates(o);
+    let i = 0;
 
-  tryOne();
-}
-  
+    const tryOne = () => {
+      const CLOUD = "dnjwvxinh";
+      const CDN = `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto`;
+
+      const u = urls[i];
+      if (!u) {
+        const ph = new Image();
+        ph.onload  = () => { el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
+        ph.onerror = () => { el.style.backgroundImage = `url('${CDN}/items/_unknown.png')`; };
+        ph.src = `${CDN}/items/unknown.png`;
+        return;
+      }
+
+      const im = new Image();
+      im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
+      im.onerror = () => { i++; if (i < urls.length) tryOne(); else el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
+      im.src = u;
+    };
+
+    // pewniaki, żeby nic nie "wyzerowało" widoczności
+    el.style.setProperty("opacity", "1", "important");
+    el.style.setProperty("visibility", "visible", "important");
+    el.style.backgroundRepeat = "no-repeat";
+    el.style.backgroundPosition = "center";
+    el.style.backgroundSize = "contain";
+
+    tryOne();
+  }
+
   function toPctRatio(r) {
     // r = 0..1
     return (r * 100).toFixed(4) + "%";
@@ -237,6 +250,18 @@ function _setBgWithFallback(el, o) {
 
   window.Equipped = {
     state: null,
+
+    // internal: restore container styles after Equipped view
+    _containerEl: null,
+    _containerPrev: null,
+
+    _restoreContainer() {
+      const c = this._containerEl;
+      const p = this._containerPrev || {};
+      if (!c) return;
+      try { c.style.height = (p.height != null ? p.height : ""); } catch (_) {}
+      try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
+    },
 
     async open() {
       ensureEquippedStyles();
@@ -246,6 +271,18 @@ function _setBgWithFallback(el, o) {
       });
 
       const container = document.getElementById("app") || document.body;
+
+      // ✅ keep container fixed, but allow inner #equipped-root to scroll
+      try {
+        this._containerEl = container;
+        this._containerPrev = {
+          height: container.style.height,
+          overflow: container.style.overflow,
+        };
+        container.style.height = "calc(var(--vh, 1vh) * 100)";
+        container.style.overflow = "hidden";
+      } catch (_) {}
+
       container.innerHTML = `
         <div id="equipped-root" style="padding:16px 16px 24px;color:#fff;max-width:760px;margin:0 auto;font-family:system-ui;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;">
@@ -253,7 +290,7 @@ function _setBgWithFallback(el, o) {
             <div style="display:flex;gap:8px;">
               <button type="button"
                       style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.Inventory && window.Inventory.open && window.Inventory.open()">
+                      onclick="try{ window.Equipped && window.Equipped._restoreContainer && window.Equipped._restoreContainer(); }catch(_){}; window.Inventory && window.Inventory.open && window.Inventory.open()">
                 Inventory
               </button>
               <button type="button"
@@ -464,67 +501,68 @@ function _setBgWithFallback(el, o) {
     },
 
     _mountHotspots() {
-  if (!this.state) return;
+      if (!this.state) return;
 
-  const imgEl  = document.getElementById("equipped-character-img");
-  const layer  = document.getElementById("equip-hotspots");
-  if (!imgEl || !layer) return;
+      const imgEl  = document.getElementById("equipped-character-img");
+      const layer  = document.getElementById("equip-hotspots");
+      if (!imgEl || !layer) return;
 
-  const W = imgEl.naturalWidth || 0;
-  const H = imgEl.naturalHeight || 0;
-  if (!W || !H) return;
+      const W = imgEl.naturalWidth || 0;
+      const H = imgEl.naturalHeight || 0;
+      if (!W || !H) return;
 
-  const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
+      const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
 
-  const slots = this.state.slots || [];
-  const bySlot = {};
-  slots.forEach((s) => (bySlot[s.slot] = s));
+      const slots = this.state.slots || [];
+      const bySlot = {};
+      slots.forEach((s) => (bySlot[s.slot] = s));
 
-  layer.innerHTML = "";
+      layer.innerHTML = "";
 
-  Object.keys(SLOT_COORDS).forEach((slotKey) => {
-    const rect = SLOT_COORDS[slotKey];
-    if (!rect) return;
+      Object.keys(SLOT_COORDS).forEach((slotKey) => {
+        const rect = SLOT_COORDS[slotKey];
+        if (!rect) return;
 
-    const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
-    const [x, y, w, h] = rect;
+        const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
+        const [x, y, w, h] = rect;
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
-    btn.setAttribute("data-slot", slotKey);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
+        btn.setAttribute("data-slot", slotKey);
 
-    btn.style.left   = toPctRatio(x / W);
-    btn.style.top    = toPctRatio(y / H);
-    btn.style.width  = toPctRatio(w / W);
-    btn.style.height = toPctRatio(h / H);
+        btn.style.left   = toPctRatio(x / W);
+        btn.style.top    = toPctRatio(y / H);
+        btn.style.width  = toPctRatio(w / W);
+        btn.style.height = toPctRatio(h / H);
 
-    // backplate żeby ikona była czytelna (i żeby było widać że istnieje)
-    btn.style.backgroundColor = s.empty ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.22)";
-    btn.style.borderRadius = "16px";
-    btn.style.overflow = "hidden";
+        // backplate żeby ikona była czytelna (i żeby było widać że istnieje)
+        btn.style.backgroundColor = s.empty ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.22)";
+        btn.style.borderRadius = "16px";
+        btn.style.overflow = "hidden";
 
-    // ✅ IKONA jako background-image (nie <img>) -> omija problemy z CSS img/opacity
-    _setBgWithFallback(btn, s || {});
-    if (s.empty) btn.style.opacity = "0.35";
+        // ✅ IKONA jako background-image (nie <img>) -> omija problemy z CSS img/opacity
+        _setBgWithFallback(btn, s || {});
+        if (s.empty) btn.style.opacity = "0.35";
 
-    if (dbg) {
-      btn.style.outline = s.empty
-        ? "1px dashed rgba(255,255,255,.35)"
-        : "1px solid rgba(0,229,255,.65)";
-    }
+        if (dbg) {
+          btn.style.outline = s.empty
+            ? "1px dashed rgba(255,255,255,.35)"
+            : "1px solid rgba(0,229,255,.65)";
+        }
 
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      haptic("light");
-      if (s.empty) return showAlert("Empty slot.");
-      this.inspect(slotKey);
-    });
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          haptic("light");
+          if (s.empty) return showAlert("Empty slot.");
+          this.inspect(slotKey);
+        });
 
-    layer.appendChild(btn);
-  });
-},
+        layer.appendChild(btn);
+      });
+    },
+
     async inspect(slot) {
       try {
         const res = await equippedPost("/webapp/equipped/inspect", { slot });
