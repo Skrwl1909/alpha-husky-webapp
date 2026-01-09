@@ -444,3 +444,125 @@
     }
   };
 })();
+function ensureInspectModalStyles(){
+  if (document.getElementById("ah-inspect-styles")) return;
+  const s = document.createElement("style");
+  s.id = "ah-inspect-styles";
+  s.textContent = `
+    .ah-inspect-back{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px;}
+    .ah-inspect-card{width:min(520px,92vw);max-height:min(80vh,620px);overflow:auto;background:rgba(10,10,25,.98);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.65);color:#fff;padding:14px;font-family:system-ui;}
+    .ah-row{display:flex;gap:12px;align-items:flex-start;}
+    .ah-ico{width:72px;height:72px;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);flex:0 0 auto;display:grid;place-items:center;}
+    .ah-ico img{width:100%;height:100%;object-fit:contain;}
+    .ah-title{font-weight:800;font-size:15px;margin:0;}
+    .ah-sub{font-size:12px;opacity:.82;margin-top:2px;}
+    .ah-desc{font-size:12px;opacity:.9;margin-top:8px;white-space:pre-wrap;}
+    .ah-box{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);}
+    .ah-stat{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+    .ah-delta{font-weight:800;margin-left:8px;}
+    .ah-delta.pos{color:#6dffb5;}
+    .ah-delta.neg{color:#ff7b7b;}
+    .ah-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+    .ah-btn{border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;}
+    .ah-btn.primary{border:0;background:rgba(0,229,255,.18);}
+  `;
+  document.head.appendChild(s);
+}
+
+function _fmtDelta(n){
+  const v = Number(n||0);
+  if (!v) return "";
+  return (v > 0 ? "+" : "") + v;
+}
+
+function openItemInspectModal(data, onBuy){
+  ensureInspectModalStyles();
+
+  let back = document.getElementById("ahInspectBack");
+  if (!back){
+    back = document.createElement("div");
+    back.id = "ahInspectBack";
+    back.className = "ah-inspect-back";
+    back.innerHTML = `<div class="ah-inspect-card" id="ahInspectCard"></div>`;
+    document.body.appendChild(back);
+
+    back.addEventListener("click", (e) => { if (e.target === back) closeItemInspectModal(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && back.style.display === "flex") closeItemInspectModal();
+    });
+  }
+
+  const card = document.getElementById("ahInspectCard");
+  const item = data?.item || {};
+  const eq   = data?.equipped || null;
+  const delta = data?.delta || {};
+
+  const stats = item.stats || {};
+  const eqStats = eq?.stats || {};
+  const keys = Array.from(new Set([...Object.keys(stats), ...Object.keys(eqStats)]));
+
+  const lines = keys.length ? keys.map(k => {
+    const a = Number(stats[k]||0);
+    const b = Number(eqStats[k]||0);
+    const d = (delta[k]!=null) ? Number(delta[k]) : (a-b);
+    const cls = d>0 ? "pos" : (d<0 ? "neg" : "");
+    return `
+      <div class="ah-stat">
+        <span style="opacity:.9">${String(k).toUpperCase()}</span>
+        <span>
+          <span style="opacity:.9">${a}</span>
+          ${eq ? `<span style="opacity:.55"> (eq ${b})</span>` : ``}
+          ${eq ? `<span class="ah-delta ${cls}">${_fmtDelta(d)}</span>` : ``}
+        </span>
+      </div>
+    `;
+  }).join("") : `<div style="opacity:.8;font-size:12px;">No stats.</div>`;
+
+  card.innerHTML = `
+    <div class="ah-row">
+      <div class="ah-ico">${item.icon ? `<img src="${item.icon}">` : `<div style="opacity:.6;font-size:12px;">—</div>`}</div>
+      <div style="flex:1;min-width:0;">
+        <p class="ah-title">${item.name || item.item_key || "Item"}</p>
+        <div class="ah-sub">
+          ${item.rarity ? item.rarity.toUpperCase() : ""}${item.slot ? ` • Slot: ${item.slot}` : ""}
+        </div>
+        ${item.desc ? `<div class="ah-desc">${item.desc}</div>` : ""}
+      </div>
+    </div>
+
+    <div class="ah-box">
+      <div style="font-weight:800;font-size:13px;margin-bottom:6px;">Stats & Compare</div>
+      ${lines}
+      ${item.slot ? `
+        <div style="margin-top:10px;opacity:.85;font-size:12px;">
+          ${eq ? `Equipped now: <b>${eq.name || eq.item_key}</b>` : `No equipped item in this slot.`}
+        </div>
+      ` : `
+        <div style="margin-top:10px;opacity:.75;font-size:12px;">
+          This item has no equip slot (no compare).
+        </div>
+      `}
+    </div>
+
+    <div class="ah-actions">
+      <button class="ah-btn" id="ahInspectClose" type="button">Close</button>
+      ${onBuy ? `<button class="ah-btn primary" id="ahInspectBuy" type="button">Buy</button>` : ``}
+    </div>
+  `;
+
+  document.getElementById("ahInspectClose").onclick = closeItemInspectModal;
+  if (onBuy){
+    const b = document.getElementById("ahInspectBuy");
+    if (b) b.onclick = () => onBuy(item.item_key);
+  }
+
+  back.style.display = "flex";
+  try { window.navOpen?.("ahInspectBack"); } catch(_) {}
+}
+
+function closeItemInspectModal(){
+  const back = document.getElementById("ahInspectBack");
+  if (!back) return;
+  back.style.display = "none";
+  try { window.navClose?.("ahInspectBack"); } catch(_) {}
+}
