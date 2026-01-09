@@ -9,6 +9,10 @@ window.Inventory = {
   currentTab: "all",
   _tgBackHandler: null,
 
+  // ✅ nav-stack integration
+  _navId: "inventory",
+  _navRegistered: false,
+
   // ---- small utils ----
   _mkRunId(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -26,38 +30,74 @@ window.Inventory = {
     }
   },
 
+  // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
+  _bindTelegramBackButtonFallback() {
+    try {
+      const tg = Telegram?.WebApp;
+      if (!tg) return;
+
+      // cleanup previous
+      if (this._tgBackHandler) {
+        try { tg.BackButton?.offClick?.(this._tgBackHandler); } catch (_) {}
+        try { tg.offEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
+      }
+
+      this._tgBackHandler = () => this.goBack("tg");
+
+      // bind both ways (different Telegram builds behave differently)
+      try { tg.BackButton?.onClick?.(this._tgBackHandler); } catch (_) {}
+      try { tg.onEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
+
+      try { tg.BackButton?.show?.(); } catch (_) {}
+    } catch (e) {
+      console.warn("BackButton bind failed (fallback):", e);
+    }
+  },
+
   _bindBackButtons() {
-  // In-UI back arrow (idempotent, no stacking)
-  const btn = document.getElementById("invBackBtn");
-  if (btn) {
-    btn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.goBack();
-    };
-  }
-
-  // Telegram native BackButton (top bar) — robust bind
-  try {
-    const tg = Telegram?.WebApp;
-    if (!tg) return;
-
-    // cleanup previous
-    if (this._tgBackHandler) {
-      try { tg.BackButton?.offClick?.(this._tgBackHandler); } catch (_) {}
-      try { tg.offEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
+    // In-UI back arrow (idempotent, no stacking)
+    const btn = document.getElementById("invBackBtn");
+    if (btn) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.goBack("ui");
+      };
     }
 
-    this._tgBackHandler = () => this.goBack();
+    // ✅ Prefer global nav stack router (AH_NAV)
+    this._navRegistered = false;
+    try {
+      const stack = window.AH_NAV?.stack;
+      const top = Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
+      const topId = (typeof top === "string") ? top : top?.id;
 
-    // bind both ways (different Telegram builds behave differently)
-    try { tg.BackButton?.onClick?.(this._tgBackHandler); } catch (_) {}
-    try { tg.onEvent?.("backButtonClicked", this._tgBackHandler); } catch (_) {}
+      const onClose = () => {
+        try { window.Inventory?.goBack?.("nav"); } catch (_) {}
+      };
 
-    try { tg.BackButton?.show?.(); } catch (_) {}
-  } catch (e) {
-    console.warn("BackButton bind failed:", e);
-  }
+      if (topId === this._navId) {
+        // already on top
+        this._navRegistered = true;
+      } else if (typeof window.navOpen === "function") {
+        // try common signatures
+        try { window.navOpen(this._navId, onClose); this._navRegistered = true; }
+        catch (_) {
+          try { window.navOpen({ id: this._navId, onClose }); this._navRegistered = true; }
+          catch (_) {
+            try { window.navOpen({ id: this._navId, close: onClose }); this._navRegistered = true; }
+            catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Inventory navOpen failed:", e);
+    }
+
+    // Fallback ONLY if nav helpers not present / failed
+    if (!this._navRegistered) {
+      this._bindTelegramBackButtonFallback();
+    }
   },
 
   _hideTelegramBackButton() {
@@ -71,19 +111,44 @@ window.Inventory = {
     } catch (_) {}
   },
 
-  // BACK should go to dashboard (not close webapp)
-  goBack() {
+  // BACK should go to dashboard/map (not close webapp)
+  goBack(source = "ui") {
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+    const fromNav = (source === "nav"); // called by nav stack onClose
+    const stack = window.AH_NAV?.stack;
+    const top = Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
+    const topId = (typeof top === "string") ? top : top?.id;
+
+    // If user clicked in-UI back, keep stack consistent:
+    // pop TOP if it is inventory (navCloseTop will call our onClose -> goBack("nav"))
+    if (!fromNav) {
+      try {
+        if (topId === this._navId && typeof window.navCloseTop === "function") {
+          return window.navCloseTop();
+        }
+        if (typeof window.navClose === "function") {
+          try { return window.navClose(this._navId); } catch (_) {}
+        }
+      } catch (_) {}
+    }
 
     // restore any hidden UI helpers (best-effort)
     document
       .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
       .forEach((el) => (el.style.display = ""));
 
-    // Hide Telegram BackButton when leaving this view
+    // Hide Telegram BackButton when leaving this view (safe)
     this._hideTelegramBackButton();
 
-    // Try known dashboard/map openers (best-effort)
+    // ✅ Deterministic home (your new navigation system)
+    try {
+      if (typeof window.goHome === "function") return window.goHome();
+    } catch (e) {
+      console.warn("Inventory.goBack: goHome failed:", e);
+    }
+
+    // Older fallbacks (keep)
     try {
       if (window.Dashboard?.open) return window.Dashboard.open();
       if (window.Map?.open) return window.Map.open();
@@ -94,15 +159,10 @@ window.Inventory = {
       console.warn("Inventory.goBack: dashboard opener failed:", e);
     }
 
-    // ✅ Deterministic fallback: reload WITHOUT "inventory" navigation params
+    // final fallback: reload without nav params
     try {
       const url = new URL(window.location.href);
-
-      // keep st/init stuff, drop common navigation params so app lands on default dashboard
-      ["section", "view", "modal", "page", "tab", "panel"].forEach((p) => {
-        if (url.searchParams.has(p)) url.searchParams.delete(p);
-      });
-
+      ["section", "view", "modal", "page", "tab", "panel"].forEach((p) => url.searchParams.delete(p));
       url.hash = "";
       window.location.href = url.toString();
     } catch (_) {
