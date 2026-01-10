@@ -370,8 +370,8 @@ window.Inventory = {
              onmouseover="this.style.transform='scale(1.07)'" onmouseout="this.style.transform='scale(1)'">
 
           <img src="${icon}" width="86" height="86"
-               style="border:5px solid ${rarityColor};border-radius:14px;"
-               onerror="this.src='/assets/items/unknown.png'">
+     style="border:5px solid ${rarityColor};border-radius:14px;"
+     onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
 
           <div style="margin:10px 0 6px;font-size:14px;font-weight:bold;color:#fff;min-height:40px;">
             ${name}
