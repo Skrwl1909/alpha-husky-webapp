@@ -1,4 +1,4 @@
-// js/shop.js — Daily Shop inside WebApp (supports token credits) + thumbnails + preview modal
+// js/shop.js — Daily Shop inside WebApp (supports token credits) + thumbnails + INSPECT (compare vs equipped)
 (function () {
   function el(id) { return document.getElementById(id); }
 
@@ -17,7 +17,7 @@
   }
 
   function assetKeyFromItem(it) {
-    const k = String(it?.key || "").trim();
+    const k = String(it?.key || it?.item_key || it?.itemKey || "").trim();
     return k ? k.toLowerCase() : "";
   }
 
@@ -32,8 +32,7 @@
 
   function pickNum(...vals) {
     for (const v of vals) {
-      // allow explicit 0 (some items may be free-by-design)
-      if (v === 0) return 0;
+      if (v === 0) return 0; // allow explicit 0
       const x = n(v);
       if (x != null) return x;
     }
@@ -41,11 +40,6 @@
   }
 
   // Accept many backend schemas:
-  // - price: number (bones)
-  // - price_tokens / price_bones
-  // - token_cost / bones_cost
-  // - cost{bones,tokens} OR price{bones,tokens} OR costs{...}
-  // - also token vs tokens, bone vs bones
   function getPrices(it) {
     const priceObj =
       (it?.cost && typeof it.cost === "object") ? it.cost :
@@ -83,18 +77,17 @@
     const ver = imgVer();
 
     // 1) full url (Cloudinary etc.)
-    const url = it?.image_url || it?.imageUrl || it?.img || it?.image || "";
+    const url = it?.image_url || it?.imageUrl || it?.icon || it?.img || it?.image || "";
     if (url && typeof url === "string" && /^https?:\/\//i.test(url)) return url;
 
     // 2) explicit absolute path served by your WebApp (/assets/...)
     const p = it?.image_path || it?.imagePath || "";
     if (p && typeof p === "string" && p.startsWith("/")) return `${p}${ver}`;
 
-    // 3) try to infer folder
+    // 3) infer folder by "slot/type"
     const key = assetKeyFromItem(it);
     if (!key) return itemImgFallback();
 
-    // gear lives under /assets/equip, misc items under /assets/items
     const folder =
       (it?.slot && String(it.slot).length) ||
       (String(it?.type || "").toLowerCase() === "gear")
@@ -102,6 +95,94 @@
         : "items";
 
     return `/assets/${folder}/${encodeURIComponent(key)}.png${ver}`;
+  }
+
+  function _fmtDelta(num) {
+    const v = Number(num || 0);
+    if (!v) return "";
+    return (v > 0 ? "+" : "") + v;
+  }
+
+  function _deltaClass(v) {
+    const n = Number(v || 0);
+    if (n > 0) return "pos";
+    if (n < 0) return "neg";
+    return "";
+  }
+
+  function _unionKeys(a, b) {
+    const s = new Set();
+    Object.keys(a || {}).forEach(k => s.add(k));
+    Object.keys(b || {}).forEach(k => s.add(k));
+    return Array.from(s);
+  }
+
+  function _priceString(it) {
+    const { tokenPrice, bonePrice } = getPrices(it);
+    const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
+    const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
+
+    if (hasBoneCost && hasTokenCost) return `${bonePrice} 🦴 + ${tokenPrice} 🪙`;
+    if (hasTokenCost) return `${tokenPrice} 🪙`;
+    if (hasBoneCost) return `${bonePrice} 🦴`;
+    return (it?.free ? "FREE" : "?");
+  }
+
+  function _buyDisabledReason(it, resources) {
+    const r = resources || {};
+    const tokenBal = Number(r.token ?? 0);
+    const boneBal  = Number(r.bones ?? 0);
+
+    const { tokenPrice, bonePrice } = getPrices(it);
+    const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
+    const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
+
+    const limit = Number.isFinite(it.dailyLimit) ? it.dailyLimit : 0;
+    const bought = Number.isFinite(it.boughtToday) ? it.boughtToday : 0;
+    const hitLimit = (limit > 0 && bought >= limit);
+
+    const missingPrice = (!it?.free && !hasTokenCost && !hasBoneCost);
+    const notEnoughToken = (hasTokenCost && tokenBal < Number(tokenPrice));
+    const notEnoughBones = (hasBoneCost && boneBal < Number(bonePrice));
+
+    const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
+
+    const reason =
+      missingPrice ? "No price configured yet."
+      : hitLimit ? "Daily limit reached."
+      : notEnoughToken ? "Not enough token."
+      : notEnoughBones ? "Not enough bones."
+      : "";
+
+    return { disabled, reason, missingPrice };
+  }
+
+  // Try multiple endpoints for inspect (backend can evolve without breaking UI)
+  const INSPECT_ENDPOINTS = [
+    "/webapp/item/inspect",
+    "/webapp/shop/inspect",
+  ];
+
+  async function postFirstOk(apiPostFn, paths, payload) {
+    let lastErr = null;
+    for (const p of paths) {
+      try {
+        const out = await apiPostFn(p, payload || {});
+        // if your apiPost returns {ok:false,reason:"not_found"} without 404:
+        if (out && out.ok === false && (out.reason === "not_found" || out.reason === "missing_endpoint")) {
+          lastErr = out;
+          continue;
+        }
+        return out;
+      } catch (e) {
+        lastErr = e;
+        // If apiPost throws with status-like info, try next only for 404
+        const st = e?.status || e?.data?.status || null;
+        if (st === 404) continue;
+        throw e;
+      }
+    }
+    throw lastErr || new Error("Inspect endpoints failed");
   }
 
   window.Shop = {
@@ -120,10 +201,10 @@
     async open() {
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
         .forEach(x => x.style.display = "none");
-      
+
       window.SceneBg?.push?.("shop");
 
-      // ✅ lock body scroll while Shop is open
+      // lock body scroll while Shop is open
       document.body.dataset.prevOverflow = document.body.style.overflow || "";
       document.body.style.overflow = "hidden";
 
@@ -136,7 +217,7 @@
             loading…
           </div>
 
-          <!-- ✅ SCROLL AREA -->
+          <!-- SCROLL AREA -->
           <div id="shop-list"
             style="flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-right:6px;">
           </div>
@@ -149,26 +230,27 @@
           </button>
         </div>
 
-        <!-- ✅ Preview Overlay -->
+        <!-- INSPECT / PREVIEW OVERLAY -->
         <div id="shop-preview-back"
              style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
                     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
                     z-index:9999;align-items:center;justify-content:center;padding:16px;">
           <div id="shop-preview"
-               style="width:min(560px,94vw);background:rgba(18,18,20,.92);
+               style="width:min(560px,94vw);max-height:min(82vh,720px);overflow:auto;
+                      background:rgba(18,18,20,.92);
                       border:1px solid rgba(255,255,255,.14);
                       border-radius:16px;padding:14px;color:#fff;">
           </div>
         </div>
       `;
 
-      // click outside preview -> close
+      // click outside -> close inspect
       const pvBack = el("shop-preview-back");
       if (pvBack) {
         pvBack.onclick = (e) => { if (e.target === pvBack) this.closePreview(); };
       }
 
-      // ✅ close: cleanup + unlock body + return to map
+      // close: cleanup + unlock body + return to map
       el("shop-close").onclick = () => {
         this.closePreview();
         if (this._timer) clearInterval(this._timer);
@@ -202,7 +284,10 @@
       if (this._timer) clearInterval(this._timer);
       this._timer = setInterval(() => {
         if (!this._state) return;
-        this._state.refreshInSec = Math.max(0, (this._state.refreshAt || 0) - Math.floor(Date.now() / 1000));
+        this._state.refreshInSec = Math.max(
+          0,
+          (this._state.refreshAt || 0) - Math.floor(Date.now() / 1000)
+        );
         const meta = el("shop-meta");
         if (meta) meta.textContent = this.metaLine();
         if (this._state.refreshInSec <= 0) this.refresh();
@@ -226,8 +311,6 @@
 
       const items = this._state?.items || [];
       const r = this._state?.resources || {};
-      const tokenBal = Number(r.token ?? 0);
-      const boneBal  = Number(r.bones ?? 0);
 
       if (!items.length) {
         list.innerHTML = `<div style="opacity:.85;text-align:center;">No items today.</div>`;
@@ -235,40 +318,24 @@
       }
 
       list.innerHTML = items.map(it => {
-        const { tokenPrice, bonePrice } = getPrices(it);
+        const priceStr = _priceString(it);
 
-       const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
-        const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
-
-        const priceStr =
-          (hasBoneCost && hasTokenCost) ? `${bonePrice} 🦴 + ${tokenPrice} 🪙`
-          : hasTokenCost ? `${tokenPrice} 🪙`
-          : hasBoneCost ? `${bonePrice} 🦴`
-          : (it?.free ? "FREE" : "?");
+        const { disabled, reason, missingPrice } = _buyDisabledReason(it, r);
 
         const limit = Number.isFinite(it.dailyLimit) ? it.dailyLimit : 0;
         const bought = Number.isFinite(it.boughtToday) ? it.boughtToday : 0;
-        const hitLimit = (limit > 0 && bought >= limit);
-
-        const notEnoughToken = (hasTokenCost && tokenBal < tokenPrice);
-        const notEnoughBones = (hasBoneCost && boneBal < bonePrice);
-
-        // disable also if missing price (unless explicitly free)
-        const missingPrice = (!it?.free && !hasTokenCost && !hasBoneCost);
-        const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
 
         const sub = [
           it.rarity ? it.rarity : null,
           it.type ? it.type : null,
           (limit > 0) ? `limit ${bought}/${limit}` : null,
-          missingPrice ? "no price set" : null,
-          notEnoughToken ? "not enough token" : null,
-          notEnoughBones ? "not enough bones" : null
+          reason ? reason.toLowerCase() : null
         ].filter(Boolean).join(" • ");
 
+        const key = String(it?.key || it?.item_key || "");
         return `
           <div class="shop-card"
-               data-preview="${escapeHtml(it.key)}"
+               data-preview="${escapeHtml(key)}"
                style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
                       border-radius:14px;padding:12px;cursor:pointer;">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
@@ -293,7 +360,7 @@
               <div style="text-align:right;flex:0 0 auto;">
                 <div style="font-weight:700;margin-bottom:8px;">${escapeHtml(priceStr)}</div>
                 <button type="button"
-                  data-buy="${escapeHtml(it.key)}"
+                  data-buy="${escapeHtml(key)}"
                   ${disabled ? "disabled" : ""}
                   style="padding:10px 12px;border-radius:12px;border:0;cursor:pointer;
                          ${disabled ? "opacity:.45;cursor:not-allowed;" : ""}">
@@ -305,18 +372,17 @@
         `;
       }).join("");
 
-      // Buy buttons: stopPropagation so card click doesn't open preview
+      // Buy buttons: stopPropagation so card click doesn't open inspect
       list.querySelectorAll("button[data-buy]").forEach(btn => {
         btn.onclick = (e) => {
           e.stopPropagation();
-          const k = btn.getAttribute("data-buy");
-          // if disabled, ignore
           if (btn.disabled) return;
+          const k = btn.getAttribute("data-buy");
           this.buy(k);
         };
       });
 
-      // Card click -> preview (except Buy)
+      // Card click -> INSPECT (compare)
       list.onclick = (e) => {
         if (e.target.closest("button[data-buy]")) return;
         const card = e.target.closest(".shop-card");
@@ -329,46 +395,31 @@
     closePreview() {
       const back = el("shop-preview-back");
       if (back) back.style.display = "none";
+      try { window.navClose?.("shop-preview-back"); } catch (_) {}
     },
 
-    openPreview(itemKey) {
+    async openPreview(itemKey) {
       const items = this._state?.items || [];
-      const it = items.find(x => String(x?.key) === String(itemKey));
+      const it = items.find(x => String(x?.key || x?.item_key) === String(itemKey));
       if (!it) return;
 
       const r = this._state?.resources || {};
-      const tokenBal = Number(r.token ?? 0);
-      const boneBal  = Number(r.bones ?? 0);
-
-      const { tokenPrice, bonePrice } = getPrices(it);
-      const priceStr = (tokenPrice != null) ? `${tokenPrice} 🪙` : `${bonePrice ?? "?"} 🦴`;
+      const priceStr = _priceString(it);
+      const { disabled, reason, missingPrice } = _buyDisabledReason(it, r);
 
       const limit = Number.isFinite(it.dailyLimit) ? it.dailyLimit : 0;
       const bought = Number.isFinite(it.boughtToday) ? it.boughtToday : 0;
-      const hitLimit = (limit > 0 && bought >= limit);
-
-      const notEnoughToken = (tokenPrice != null && tokenBal < tokenPrice);
-      const notEnoughBones = (tokenPrice == null && bonePrice != null && boneBal < bonePrice);
-      const missingPrice = (tokenPrice == null && bonePrice == null && !it?.free);
-      const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
-
       const sub = [
         it.rarity ? it.rarity : null,
         it.type ? it.type : null,
         (limit > 0) ? `limit ${bought}/${limit}` : null
       ].filter(Boolean).join(" • ");
 
-      const reason =
-        missingPrice ? "No price configured yet."
-        : hitLimit ? "Daily limit reached."
-        : notEnoughToken ? "Not enough token."
-        : notEnoughBones ? "Not enough bones."
-        : "";
-
       const back = el("shop-preview-back");
       const box  = el("shop-preview");
       if (!back || !box) return;
 
+      // Show skeleton instantly
       box.innerHTML = `
         <div style="display:flex;gap:14px;align-items:flex-start;">
           <img
@@ -387,7 +438,7 @@
 
             <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
               <div style="font-weight:800;font-size:16px;">${escapeHtml(priceStr)}</div>
-              <div style="opacity:.85;font-size:12px;">${escapeHtml(reason)}</div>
+              <div style="opacity:.85;font-size:12px;">${escapeHtml(reason || "")}</div>
             </div>
 
             <div style="margin-top:12px;display:flex;gap:10px;">
@@ -395,13 +446,20 @@
                 ${disabled ? "disabled" : ""}
                 style="flex:1;padding:12px;border-radius:12px;border:0;cursor:pointer;
                        ${disabled ? "opacity:.45;cursor:not-allowed;" : ""}">
-                ${missingPrice ? "N/A" : "Buy"}
+                ${missingPrice ? "N/A" : (it?.free ? "Claim" : "Buy")}
               </button>
               <button id="shop-preview-close" type="button"
                 style="padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
                        background:transparent;color:#fff;cursor:pointer;">
                 Close
               </button>
+            </div>
+
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.10);">
+              <div style="font-weight:800;font-size:13px;margin-bottom:6px;">Stats & Compare</div>
+              <div id="shop-inspect-body" style="opacity:.9;font-size:13px;">
+                Loading stats…
+              </div>
             </div>
           </div>
         </div>
@@ -418,6 +476,71 @@
       };
 
       back.style.display = "flex";
+      try { window.navOpen?.("shop-preview-back"); } catch (_) {}
+
+      // Fetch inspect payload (compare vs equipped)
+      const inspectBody = el("shop-inspect-body");
+      try {
+        const payload = {
+          itemKey,
+          item_key: itemKey,
+          key: itemKey,
+          include_compare: true,
+          includeCompare: true
+        };
+
+        const out = await postFirstOk(this._apiPost, INSPECT_ENDPOINTS, payload);
+
+        // Accept both {ok:true,data:{...}} and raw {...}
+        const data = (out && out.ok === true && out.data) ? out.data : out;
+
+        const item = data?.item || data?.shopItem || null;
+        const eq = data?.equipped || data?.equippedItem || null;
+        const delta = data?.delta || {};
+
+        // Stats
+        const itemStats = (item?.stats && typeof item.stats === "object") ? item.stats : (data?.stats || {});
+        const eqStats = (eq?.stats && typeof eq.stats === "object") ? eq.stats : {};
+        const keys = _unionKeys(itemStats, eqStats);
+
+        const lines = keys.length ? keys.map(k => {
+          const a = Number(itemStats[k] || 0);
+          const b = Number(eqStats[k] || 0);
+          const d = (delta[k] != null) ? Number(delta[k]) : (a - b);
+          const cls = _deltaClass(d);
+          return `
+            <div style="display:flex;justify-content:space-between;padding:3px 0;">
+              <span style="opacity:.9">${escapeHtml(String(k).toUpperCase())}</span>
+              <span>
+                <span style="opacity:.95">${escapeHtml(a)}</span>
+                ${eq ? `<span style="opacity:.55"> (eq ${escapeHtml(b)})</span>` : ``}
+                ${eq ? `<span style="font-weight:800;margin-left:8px;" class="${cls}">${escapeHtml(_fmtDelta(d))}</span>` : ``}
+              </span>
+            </div>
+          `;
+        }).join("") : `<div style="opacity:.8;font-size:12px;">No stats.</div>`;
+
+        const eqName = eq ? (eq.name || eq.item_key || eq.key || "Equipped item") : null;
+
+        const extra = `
+          ${eqName ? `<div style="margin-top:10px;opacity:.85;font-size:12px;">Equipped now: <b>${escapeHtml(eqName)}</b></div>`
+                   : `<div style="margin-top:10px;opacity:.75;font-size:12px;">No equipped item in this slot (no compare).</div>`}
+        `;
+
+        if (inspectBody) {
+          inspectBody.innerHTML = `
+            <div style="border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px;background:rgba(0,0,0,.25);">
+              ${lines}
+              ${extra}
+            </div>
+          `;
+        }
+      } catch (e) {
+        if (this._dbg) console.warn("[Shop inspect] failed:", e);
+        if (inspectBody) {
+          inspectBody.innerHTML = `<div style="opacity:.8;font-size:12px;">No inspect data yet (endpoint missing or error).</div>`;
+        }
+      }
     },
 
     async buy(itemKey) {
@@ -444,125 +567,3 @@
     }
   };
 })();
-function ensureInspectModalStyles(){
-  if (document.getElementById("ah-inspect-styles")) return;
-  const s = document.createElement("style");
-  s.id = "ah-inspect-styles";
-  s.textContent = `
-    .ah-inspect-back{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px;}
-    .ah-inspect-card{width:min(520px,92vw);max-height:min(80vh,620px);overflow:auto;background:rgba(10,10,25,.98);border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.65);color:#fff;padding:14px;font-family:system-ui;}
-    .ah-row{display:flex;gap:12px;align-items:flex-start;}
-    .ah-ico{width:72px;height:72px;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);flex:0 0 auto;display:grid;place-items:center;}
-    .ah-ico img{width:100%;height:100%;object-fit:contain;}
-    .ah-title{font-weight:800;font-size:15px;margin:0;}
-    .ah-sub{font-size:12px;opacity:.82;margin-top:2px;}
-    .ah-desc{font-size:12px;opacity:.9;margin-top:8px;white-space:pre-wrap;}
-    .ah-box{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);}
-    .ah-stat{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
-    .ah-delta{font-weight:800;margin-left:8px;}
-    .ah-delta.pos{color:#6dffb5;}
-    .ah-delta.neg{color:#ff7b7b;}
-    .ah-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
-    .ah-btn{border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;}
-    .ah-btn.primary{border:0;background:rgba(0,229,255,.18);}
-  `;
-  document.head.appendChild(s);
-}
-
-function _fmtDelta(n){
-  const v = Number(n||0);
-  if (!v) return "";
-  return (v > 0 ? "+" : "") + v;
-}
-
-function openItemInspectModal(data, onBuy){
-  ensureInspectModalStyles();
-
-  let back = document.getElementById("ahInspectBack");
-  if (!back){
-    back = document.createElement("div");
-    back.id = "ahInspectBack";
-    back.className = "ah-inspect-back";
-    back.innerHTML = `<div class="ah-inspect-card" id="ahInspectCard"></div>`;
-    document.body.appendChild(back);
-
-    back.addEventListener("click", (e) => { if (e.target === back) closeItemInspectModal(); });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && back.style.display === "flex") closeItemInspectModal();
-    });
-  }
-
-  const card = document.getElementById("ahInspectCard");
-  const item = data?.item || {};
-  const eq   = data?.equipped || null;
-  const delta = data?.delta || {};
-
-  const stats = item.stats || {};
-  const eqStats = eq?.stats || {};
-  const keys = Array.from(new Set([...Object.keys(stats), ...Object.keys(eqStats)]));
-
-  const lines = keys.length ? keys.map(k => {
-    const a = Number(stats[k]||0);
-    const b = Number(eqStats[k]||0);
-    const d = (delta[k]!=null) ? Number(delta[k]) : (a-b);
-    const cls = d>0 ? "pos" : (d<0 ? "neg" : "");
-    return `
-      <div class="ah-stat">
-        <span style="opacity:.9">${String(k).toUpperCase()}</span>
-        <span>
-          <span style="opacity:.9">${a}</span>
-          ${eq ? `<span style="opacity:.55"> (eq ${b})</span>` : ``}
-          ${eq ? `<span class="ah-delta ${cls}">${_fmtDelta(d)}</span>` : ``}
-        </span>
-      </div>
-    `;
-  }).join("") : `<div style="opacity:.8;font-size:12px;">No stats.</div>`;
-
-  card.innerHTML = `
-    <div class="ah-row">
-      <div class="ah-ico">${item.icon ? `<img src="${item.icon}">` : `<div style="opacity:.6;font-size:12px;">—</div>`}</div>
-      <div style="flex:1;min-width:0;">
-        <p class="ah-title">${item.name || item.item_key || "Item"}</p>
-        <div class="ah-sub">
-          ${item.rarity ? item.rarity.toUpperCase() : ""}${item.slot ? ` • Slot: ${item.slot}` : ""}
-        </div>
-        ${item.desc ? `<div class="ah-desc">${item.desc}</div>` : ""}
-      </div>
-    </div>
-
-    <div class="ah-box">
-      <div style="font-weight:800;font-size:13px;margin-bottom:6px;">Stats & Compare</div>
-      ${lines}
-      ${item.slot ? `
-        <div style="margin-top:10px;opacity:.85;font-size:12px;">
-          ${eq ? `Equipped now: <b>${eq.name || eq.item_key}</b>` : `No equipped item in this slot.`}
-        </div>
-      ` : `
-        <div style="margin-top:10px;opacity:.75;font-size:12px;">
-          This item has no equip slot (no compare).
-        </div>
-      `}
-    </div>
-
-    <div class="ah-actions">
-      <button class="ah-btn" id="ahInspectClose" type="button">Close</button>
-      ${onBuy ? `<button class="ah-btn primary" id="ahInspectBuy" type="button">Buy</button>` : ``}
-    </div>
-  `;
-
-  document.getElementById("ahInspectClose").onclick = closeItemInspectModal;
-  if (onBuy){
-    const b = document.getElementById("ahInspectBuy");
-    if (b) b.onclick = () => onBuy(item.item_key);
-  }
-
-  back.style.display = "flex";
-  try { window.navOpen?.("ahInspectBack"); } catch(_) {}
-}
-
-function closeItemInspectModal(){
-  const back = document.getElementById("ahInspectBack");
-  if (!back) return;
-  back.style.display = "none";
-  try { window.navClose?.("ahInspectBack"); } catch(_) {}
-}
