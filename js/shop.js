@@ -736,8 +736,18 @@
         return;
       }
 
-      this.toast(res.message || "Purchased!");
-      await this.refresh();
+     const p = res.purchase;
+if (p && typeof p === "object") {
+  const icon = (p.currency === "tokens") ? "🪙" : "🦴";
+  const msg =
+    `✅ Purchased: ${p.name}${p.qty > 1 ? ` x${p.qty}` : ""}\n` +
+    `Cost: ${p.spent} ${icon}`;
+  this.toast(msg);
+} else {
+  this.toast(res.message || "Purchased!");
+}
+
+await this.refresh();
     },
 
     toast(text) {
