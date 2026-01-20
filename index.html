@@ -1300,7 +1300,7 @@ document.addEventListener("click", async (e) => {
           if (skin.name) skinImg.alt = skin.name;
         }
 
-       async function loadProfile(){
+      async function loadProfile(){
   try {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
@@ -1319,6 +1319,24 @@ document.addEventListener("click", async (e) => {
 
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
+
+    // ✅ Active Buffs line (pod nickiem/levelem)
+    try {
+      const elBuffs = document.getElementById("buffsLine");
+      const line = p.buffsLine || "";
+
+      if (elBuffs) {
+        if (line) {
+          elBuffs.style.display = "block";
+          elBuffs.textContent = line;
+        } else {
+          elBuffs.style.display = "none";
+          elBuffs.textContent = "";
+        }
+      }
+    } catch (e) {
+      console.warn("buffsLine render failed", e);
+    }
 
     renderTopbar();
   } catch (e){
@@ -2208,6 +2226,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
