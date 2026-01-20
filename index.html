@@ -1320,18 +1320,28 @@ document.addEventListener("click", async (e) => {
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-    // ✅ Active Buffs line (pod nickiem/levelem)
+    // ✅ Active Buffs (premium)
     try {
       const elBuffs = document.getElementById("buffsLine");
-      const line = p.buffsLine || "";
+
+      // backend powinien zwracać: buffsLine + buffs[]
+      const full = Array.isArray(p.buffs) ? p.buffs : [];
+      let line = p.buffsLine || "";
+
+      // fallback: jeśli dostaliśmy listę, ale brak line
+      if (!line && full.length > 0) {
+        line = `✨ Buffs (${full.length})`;
+      }
 
       if (elBuffs) {
         if (line) {
           elBuffs.style.display = "block";
-          elBuffs.textContent = line;
+          elBuffs.textContent = line;                  // np. "✨ Buffs (2)"
+          elBuffs.dataset.full = JSON.stringify(full); // lista do popupu
         } else {
           elBuffs.style.display = "none";
           elBuffs.textContent = "";
+          elBuffs.dataset.full = "[]";
         }
       }
     } catch (e) {
@@ -1345,6 +1355,33 @@ document.addEventListener("click", async (e) => {
 }
 window.loadProfile = loadProfile;
 
+// ✅ klik w "✨ Buffs (N)" -> popup z listą buffów
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("#buffsLine");
+  if (!el || el.style.display === "none") return;
+
+  let full = [];
+  try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
+
+  if (!Array.isArray(full) || full.length === 0) return;
+
+  const msg = full
+    .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
+    .join("\n");
+
+  try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+  if (Telegram?.WebApp?.showPopup) {
+    Telegram.WebApp.showPopup({
+      title: "Active Buffs",
+      message: msg,
+      buttons: [{ type: "close" }]
+    });
+  } else {
+    alert(msg);
+  }
+});
+window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
@@ -2226,6 +2263,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
