@@ -498,19 +498,23 @@
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
           <!-- ŚRODEK – SKIN / HERO -->
-          <div class="hero-center">
-            <div class="hero-frame" id="heroFrame">
-              <img
-                id="player-skin"
-                src="/assets/skins/lunarhowl_skin.webp"
-                alt="Alpha Husky skin">
-            </div>
-            <div class="hero-caption">
-              <span id="heroName">Alpha Husky</span>
-              <span>·</span>
-              <span id="heroLevel">Lv.1</span>
-            </div>
-          </div>
+<div class="hero-center">
+  <div class="hero-frame" id="heroFrame">
+    <img
+      id="player-skin"
+      src="/assets/skins/lunarhowl_skin.webp"
+      alt="Alpha Husky skin">
+  </div>
+
+  <div class="hero-caption">
+    <span id="heroName">Alpha Husky</span>
+    <span>·</span>
+    <span id="heroLevel">Lv.1</span>
+  </div>
+
+  <!-- ✅ ACTIVE BUFFS (pod nickiem/levelem) -->
+  <div id="buffsLine" class="buffs-line" style="display:none"></div>
+</div>
           <!-- PRAWA KOLUMNA (tożsamość / companions) -->
           <div class="hud-col hud-right">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
@@ -2204,6 +2208,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
