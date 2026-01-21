@@ -108,7 +108,7 @@
   }
     /* Active Buffs line (pod nickiem/levelem) */
 .buffs-line{
-  width: min(78vw, 260px);
+  width: min(46vw, 210px);     /* ✅ match hero-frame, nie ucina prawej strony */
   margin-top: 2px;
   padding: 6px 10px;
   border-radius: 12px;
@@ -131,8 +131,21 @@
   cursor: pointer;
   user-select: none;
   box-shadow: 0 8px 18px rgba(0,0,0,.35);
+
+  box-sizing: border-box;
+  transition: transform .08s ease, opacity .15s ease;
+
+  opacity: .95; /* ✅ polish */
 }
-    /* ✅ tu wklej */
+
+/* ✅ polish */
+.buffs-line:hover{
+  opacity: 1;
+}
+
+/* ważne dla flexa: środek nie wypycha prawej kolumny */
+.hero-center{ min-width: 0; }
+
 .buffs-line:active{
   transform: translateY(1px);
 }
@@ -2263,6 +2276,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
