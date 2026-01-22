@@ -1337,41 +1337,65 @@ document.addEventListener("click", async (e) => {
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
     // ✅ Topbar może się przebudować – ok
-    try { renderTopbar(); } catch (_) {}
+try { renderTopbar(); } catch (_) {}
 
-    // ✅ render buffów: HARD + retry + !important
-    const paintBuffs = () => {
-      const elBuffs = document.getElementById("buffsLine");
-      if (!elBuffs) return false;
+// ✅ helper: zawsze zapewnia, że #buffsLine istnieje w HUD
+function ensureBuffsLineEl() {
+  let el = document.getElementById("buffsLine");
+  if (el) return el;
 
-      const full = Array.isArray(p.buffs) ? p.buffs : [];
-      let line = p.buffsLine || "";
+  // spróbuj znaleźć lewą kolumnę HUD
+  const hudLeft =
+    document.querySelector(".hud-col.hud-left") ||
+    document.querySelector(".hud-left") ||
+    document.querySelector("#hudLeft");
 
-      if (!line && full.length > 0) {
-        line = `✨ Buffs (${full.length})`;
-      }
+  if (!hudLeft) return null;
 
-      if (line) {
-        elBuffs.style.setProperty("display", "block", "important");
-        elBuffs.textContent = line;
-        elBuffs.dataset.full = JSON.stringify(full);
+  el = document.createElement("div");
+  el.id = "buffsLine";
+  el.className = "buffs-line";
+  el.style.display = "none"; // start hidden
+  hudLeft.appendChild(el);
 
-        // debug: na wypadek “jest ale niewidoczne”
-        elBuffs.style.setProperty("color", "rgba(255,255,255,.92)", "important");
-        elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
-      } else {
-        elBuffs.style.setProperty("display", "none", "important");
-        elBuffs.textContent = "";
-        elBuffs.dataset.full = "[]";
-      }
+  return el;
+}
 
-      return true;
-    };
+// ✅ render buffów: HARD + retry + !important
+const paintBuffs = () => {
+  const elBuffs = ensureBuffsLineEl();
+  if (!elBuffs) return false;
 
-    // 1) spróbuj od razu
-    if (!paintBuffs()) {
-      // 2) retry – jeśli topbar/DOM dopiero się układa
-      setTimeout(() => { paintBuffs(); }, 80);
+  const full = Array.isArray(p.buffs) ? p.buffs : [];
+  let line = p.buffsLine || "";
+
+  if (!line && full.length > 0) {
+    line = `✨ Buffs (${full.length})`;
+  }
+
+  if (line) {
+    elBuffs.style.setProperty("display", "block", "important");
+    elBuffs.textContent = line;
+    elBuffs.dataset.full = JSON.stringify(full);
+
+    // debug visibility
+    elBuffs.style.setProperty("color", "rgba(255,255,255,.92)", "important");
+    elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
+    elBuffs.style.setProperty("margin-top", "6px", "important");
+    elBuffs.style.setProperty("font-size", "12px", "important");
+  } else {
+    elBuffs.style.setProperty("display", "none", "important");
+    elBuffs.textContent = "";
+    elBuffs.dataset.full = "[]";
+  }
+
+  return true;
+};
+
+// 1) spróbuj od razu
+if (!paintBuffs()) {
+  // 2) retry – jeśli DOM dopiero się układa po renderTopbar()
+  setTimeout(() => { paintBuffs(); }, 120);
     }
 
   } catch (e) {
@@ -2291,6 +2315,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
