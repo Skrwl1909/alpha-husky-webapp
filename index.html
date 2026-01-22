@@ -1454,6 +1454,9 @@ async function loadPlayerState() {
 
     renderTopbar();
 
+    // ✅ KROK 1: zawsze doładuj profil (w tym buffy)
+    try { await window.loadProfile?.(); } catch (_) {}
+
     if (mapBack.style.display === "flex" && DATA) {
       renderMap();
       updateUnlockProgress();
@@ -1464,20 +1467,20 @@ async function loadPlayerState() {
 }
 window.loadPlayerState = loadPlayerState; // ✅ expose globally for goHome()
 
-        function isRegionUnlocked(regionId){
-          const reg = DATA && DATA.regions && DATA.regions[regionId];
-          if (!reg) return true;
-          if (regionsUnlocked.has(regionId)) return true;
-          const u = reg.unlock || { type: 'free' };
-          if (u.type === 'free') return true;
-          if (u.type === 'key') return !!(u.id && keys.has(u.id));
-          if (u.type === 'fragments'){
-            if (u.combineInto && keys.has(u.combineInto)) return true;
-            const have = fragments[u.item] || 0;
-            return have >= (u.required || Infinity);
-          }
-          return false;
-        }
+function isRegionUnlocked(regionId){
+  const reg = DATA && DATA.regions && DATA.regions[regionId];
+  if (!reg) return true;
+  if (regionsUnlocked.has(regionId)) return true;
+  const u = reg.unlock || { type: 'free' };
+  if (u.type === 'free') return true;
+  if (u.type === 'key') return !!(u.id && keys.has(u.id));
+  if (u.type === 'fragments'){
+    if (u.combineInto && keys.has(u.combineInto)) return true;
+    const have = fragments[u.item] || 0;
+    return have >= (u.required || Infinity);
+  }
+  return false;
+}
 
         const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
@@ -2276,6 +2279,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
