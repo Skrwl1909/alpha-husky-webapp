@@ -1317,7 +1317,6 @@ document.addEventListener("click", async (e) => {
   try {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
-
     const p = out.profile || out;
 
     PROFILE = PROFILE || {};
@@ -1340,7 +1339,7 @@ document.addEventListener("click", async (e) => {
 
       // backend powinien zwracać: buffsLine + buffs[]
       const full = Array.isArray(p.buffs) ? p.buffs : [];
-      let line = String(p.buffsLine || "");
+      let line = p.buffsLine || "";
 
       // fallback: jeśli dostaliśmy listę, ale brak line
       if (!line && full.length > 0) {
@@ -1350,8 +1349,8 @@ document.addEventListener("click", async (e) => {
       if (elBuffs) {
         if (line) {
           elBuffs.style.display = "block";
-          elBuffs.textContent = line;                    // np. "✨ Buffs (2)"
-          elBuffs.dataset.full = JSON.stringify(full);   // lista do popupu
+          elBuffs.textContent = line;                  // np. "✨ Buffs (2)"
+          elBuffs.dataset.full = JSON.stringify(full); // lista do popupu
         } else {
           elBuffs.style.display = "none";
           elBuffs.textContent = "";
@@ -1369,60 +1368,33 @@ document.addEventListener("click", async (e) => {
 }
 window.loadProfile = loadProfile;
 
+// ✅ klik w "✨ Buffs (N)" -> popup z listą buffów
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("#buffsLine");
+  if (!el || el.style.display === "none") return;
 
-// ===================== BUFFS POPUP (Step 3b) =====================
-(function wireBuffsPopup(){
-  if (window.__buffsPopupWired) return;
-  window.__buffsPopupWired = true;
+  let full = [];
+  try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
 
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("#buffsLine");
-    if (!el) return;
+  if (!Array.isArray(full) || full.length === 0) return;
 
-    // jeśli ukryte -> nie klikamy
-    try {
-      if (getComputedStyle(el).display === "none") return;
-    } catch (_) {}
+  const msg = full
+    .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
+    .join("\n");
 
-    let full = [];
-    try { full = JSON.parse(el.dataset.full || "[]") || []; }
-    catch (_) { full = []; }
+  try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-    // jeśli brak buffów -> pokaż krótko (opcjonalnie)
-    if (!Array.isArray(full) || full.length === 0) {
-      try {
-        Telegram?.WebApp?.showPopup?.({
-          title: "Active Buffs",
-          message: "No active buffs.",
-          buttons: [{ type: "close" }]
-        });
-      } catch(_) {}
-      return;
-    }
-
-    // zbijamy do 12 pozycji żeby popup nie był ścianą tekstu
-    const msg = full
-      .slice(0, 12)
-      .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
-      .join("\n");
-
-    const extra = full.length > 12 ? `\n\n+${full.length - 12} more…` : "";
-
-    try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-
-    if (Telegram?.WebApp?.showPopup) {
-      Telegram.WebApp.showPopup({
-        title: "Active Buffs",
-        message: msg + extra,
-        buttons: [{ type: "close" }]
-      });
-    } else {
-      alert("Active Buffs\n\n" + msg + extra);
-    }
-  }, { passive: true });
-})();
-
-
+  if (Telegram?.WebApp?.showPopup) {
+    Telegram.WebApp.showPopup({
+      title: "Active Buffs",
+      message: msg,
+      buttons: [{ type: "close" }]
+    });
+  } else {
+    alert(msg);
+  }
+});
+window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
@@ -1445,25 +1417,6 @@ window.goHome = function goHome() {
       console.warn("goHome soft failed:", e);
     }
   }
-
-  // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
-  try {
-    const url = new URL(location.href);
-    const KEEP = new Set(["st", "v", "dbg"]);
-
-    for (const k of Array.from(url.searchParams.keys())) {
-      if (!KEEP.has(k)) url.searchParams.delete(k);
-    }
-
-    url.hash = "";
-
-    // replace = cleaner history + more reliable in Telegram webview
-    location.replace(url.toString());
-  } catch (e) {
-    console.warn("goHome hard failed:", e);
-    location.reload();
-  }
-};
 
   // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
   try {
@@ -2323,9 +2276,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
-
-
-
 
 
 
