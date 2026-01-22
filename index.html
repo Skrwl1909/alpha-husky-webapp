@@ -1313,17 +1313,20 @@ document.addEventListener("click", async (e) => {
           if (skin.name) skinImg.alt = skin.name;
         }
 
-      async function loadProfile(){
+      async function loadProfile() {
   try {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
-    const p = out.profile || out;
+
+    // ✅ odporny picker na różne wrappery backendu
+    const p = out?.profile || out?.data?.profile || out?.data || out;
 
     PROFILE = PROFILE || {};
+
     if (typeof p.level === "number") PROFILE.level = p.level;
     else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
 
-    if (p.nickname || p.name){
+    if (p.nickname || p.name) {
       PROFILE.nickname = p.nickname || p.name;
       setPlayerLabel(PROFILE.nickname);
     }
@@ -1333,36 +1336,45 @@ document.addEventListener("click", async (e) => {
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-    // ✅ Active Buffs (premium)
-    try {
-      const elBuffs = document.getElementById("buffsLine");
+    // ✅ Topbar może się przebudować – ok
+    try { renderTopbar(); } catch (_) {}
 
-      // backend powinien zwracać: buffsLine + buffs[]
+    // ✅ render buffów: HARD + retry + !important
+    const paintBuffs = () => {
+      const elBuffs = document.getElementById("buffsLine");
+      if (!elBuffs) return false;
+
       const full = Array.isArray(p.buffs) ? p.buffs : [];
       let line = p.buffsLine || "";
 
-      // fallback: jeśli dostaliśmy listę, ale brak line
       if (!line && full.length > 0) {
         line = `✨ Buffs (${full.length})`;
       }
 
-      if (elBuffs) {
-        if (line) {
-          elBuffs.style.display = "block";
-          elBuffs.textContent = line;                  // np. "✨ Buffs (2)"
-          elBuffs.dataset.full = JSON.stringify(full); // lista do popupu
-        } else {
-          elBuffs.style.display = "none";
-          elBuffs.textContent = "";
-          elBuffs.dataset.full = "[]";
-        }
+      if (line) {
+        elBuffs.style.setProperty("display", "block", "important");
+        elBuffs.textContent = line;
+        elBuffs.dataset.full = JSON.stringify(full);
+
+        // debug: na wypadek “jest ale niewidoczne”
+        elBuffs.style.setProperty("color", "rgba(255,255,255,.92)", "important");
+        elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
+      } else {
+        elBuffs.style.setProperty("display", "none", "important");
+        elBuffs.textContent = "";
+        elBuffs.dataset.full = "[]";
       }
-    } catch (e) {
-      console.warn("buffsLine render failed", e);
+
+      return true;
+    };
+
+    // 1) spróbuj od razu
+    if (!paintBuffs()) {
+      // 2) retry – jeśli topbar/DOM dopiero się układa
+      setTimeout(() => { paintBuffs(); }, 80);
     }
 
-    renderTopbar();
-  } catch (e){
+  } catch (e) {
     console.warn("profile load failed", e);
   }
 }
@@ -1454,8 +1466,8 @@ async function loadPlayerState() {
 
     renderTopbar();
 
-    // ✅ KROK 1: zawsze doładuj profil (w tym buffy)
-    try { await window.loadProfile?.(); } catch (_) {}
+    // ✅ HARD CALL (nie przez window.) – ma się odpalić na pewno
+    try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
 
     if (mapBack.style.display === "flex" && DATA) {
       renderMap();
@@ -2279,6 +2291,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
