@@ -1407,7 +1407,7 @@ window.loadProfile = loadProfile;
 // ✅ klik w "✨ Buffs (N)" -> popup z listą buffów
 document.addEventListener("click", (e) => {
   const el = e.target.closest("#buffsLine");
-  if (!el || el.style.display === "none") return;
+  if (!el || getComputedStyle(el).display === "none") return;
 
   let full = [];
   try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
@@ -2315,6 +2315,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
