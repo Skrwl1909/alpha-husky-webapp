@@ -1440,6 +1440,7 @@ async function loadPlayerState() {
     }
 
     renderTopbar();
+    try { window.setActiveBuffs?.("✨ UI TEST BUFF", [{ desc: "UI TEST BUFF" }]); } catch (_) {}
 
     // ✅ KROK 4: jeśli topbar przebudował HUD, odmaluj buffy z buffs.js
     try { window.paintBuffs?.(); } catch (_) {}
@@ -2271,6 +2272,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
