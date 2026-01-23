@@ -759,7 +759,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-01-23a";
+    window.WEBAPP_VER = "2026-01-22a";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -1319,7 +1319,7 @@ document.addEventListener("click", async (e) => {
     if (!out) return;
 
     // ✅ odporny picker na różne wrappery backendu
-    const p = out?.profile || out?.data?.profile || out?.data || out || {};
+    const p = out?.profile || out?.data?.profile || out?.data || out;
 
     PROFILE = PROFILE || {};
 
@@ -1336,78 +1336,67 @@ document.addEventListener("click", async (e) => {
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-    // ✅ Topbar może się przebudować – OK (ale buffy malujemy PO tym)
-    try { renderTopbar(); } catch (_) {}
+    // ✅ Topbar może się przebudować – ok
+try { renderTopbar(); } catch (_) {}
 
-    // ✅ helper: zawsze zapewnia, że #buffsLine istnieje w HUD
-    function ensureBuffsLineEl() {
-      let el = document.getElementById("buffsLine");
-      if (el) return el;
+// ✅ helper: zawsze zapewnia, że #buffsLine istnieje w HUD
+function ensureBuffsLineEl() {
+  let el = document.getElementById("buffsLine");
+  if (el) return el;
 
-      const hudLeft =
-        document.querySelector(".hud-col.hud-left") ||
-        document.querySelector(".hud-left") ||
-        document.querySelector("#hudLeft");
+  // spróbuj znaleźć lewą kolumnę HUD
+  const hudLeft =
+    document.querySelector(".hud-col.hud-left") ||
+    document.querySelector(".hud-left") ||
+    document.querySelector("#hudLeft");
 
-      if (!hudLeft) return null;
+  if (!hudLeft) return null;
 
-      el = document.createElement("div");
-      el.id = "buffsLine";
-      el.className = "buffs-line";
-      el.style.display = "none";
-      hudLeft.appendChild(el);
+  el = document.createElement("div");
+  el.id = "buffsLine";
+  el.className = "buffs-line";
+  el.style.display = "none"; // start hidden
+  hudLeft.appendChild(el);
 
-      return el;
+  return el;
+}
+
+// ✅ render buffów: HARD + retry + !important
+const paintBuffs = () => {
+  const elBuffs = ensureBuffsLineEl();
+  if (!elBuffs) return false;
+
+  const full = Array.isArray(p.buffs) ? p.buffs : [];
+  let line = p.buffsLine || "";
+
+  if (!line && full.length > 0) {
+    line = `✨ Buffs (${full.length})`;
+  }
+
+  if (line) {
+    elBuffs.style.setProperty("display", "block", "important");
+    elBuffs.textContent = line;
+    elBuffs.dataset.full = JSON.stringify(full);
+
+    // debug visibility
+    elBuffs.style.setProperty("color", "rgba(255,255,255,.92)", "important");
+    elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
+    elBuffs.style.setProperty("margin-top", "6px", "important");
+    elBuffs.style.setProperty("font-size", "12px", "important");
+  } else {
+    elBuffs.style.setProperty("display", "none", "important");
+    elBuffs.textContent = "";
+    elBuffs.dataset.full = "[]";
+  }
+
+  return true;
+};
+
+// 1) spróbuj od razu
+if (!paintBuffs()) {
+  // 2) retry – jeśli DOM dopiero się układa po renderTopbar()
+  setTimeout(() => { paintBuffs(); }, 120);
     }
-
-    // ✅ render buffów: HARD + retry + !important
-    const paintBuffs = () => {
-      const elBuffs = ensureBuffsLineEl();
-      if (!elBuffs) return false;
-
-      const full = Array.isArray(p.buffs) ? p.buffs : [];
-      let line = p.buffsLine || "";
-
-      // fallback: jeśli lista przyszła, ale brak line
-      if (!line && full.length > 0) {
-        line = `✨ Buffs (${full.length})`;
-      }
-
-      if (line) {
-        elBuffs.style.setProperty("display", "block", "important");
-        elBuffs.textContent = line;
-        elBuffs.dataset.full = JSON.stringify(full);
-
-        // ✅ wymuszenie widoczności / klik
-        elBuffs.style.setProperty("cursor", "pointer", "important");
-        elBuffs.style.setProperty("pointer-events", "auto", "important");
-
-        // ✅ debug (możesz potem usunąć)
-        elBuffs.style.setProperty("margin-top", "6px", "important");
-        elBuffs.style.setProperty("font-size", "12px", "important");
-        elBuffs.style.setProperty("color", "rgba(255,255,255,.95)", "important");
-        elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
-        elBuffs.style.setProperty("background", "rgba(0,0,0,.35)", "important");
-        elBuffs.style.setProperty("padding", "4px 8px", "important");
-        elBuffs.style.setProperty("border-radius", "12px", "important");
-        elBuffs.style.setProperty("max-width", "240px", "important");
-        elBuffs.style.setProperty("white-space", "nowrap", "important");
-        elBuffs.style.setProperty("overflow", "hidden", "important");
-        elBuffs.style.setProperty("text-overflow", "ellipsis", "important");
-      } else {
-        elBuffs.style.setProperty("display", "none", "important");
-        elBuffs.textContent = "";
-        elBuffs.dataset.full = "[]";
-      }
-
-      return true;
-    };
-
-    // 1) spróbuj od razu
-    paintBuffs();
-
-    // 2) retry — bo coś może jeszcze przebudować HUD zaraz po renderTopbar()
-    setTimeout(() => { paintBuffs(); }, 120);
 
   } catch (e) {
     console.warn("profile load failed", e);
@@ -1415,41 +1404,32 @@ document.addEventListener("click", async (e) => {
 }
 window.loadProfile = loadProfile;
 
+// ✅ klik w "✨ Buffs (N)" -> popup z listą buffów
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("#buffsLine");
+  if (!el || getComputedStyle(el).display === "none") return;
 
-// ✅ klik w "✨ Buffs..." -> popup z listą buffów
-// (guard żeby nie podpiąć listenera kilka razy)
-if (!window.__AH_BUFFS_POPUP_BOUND__) {
-  window.__AH_BUFFS_POPUP_BOUND__ = true;
+  let full = [];
+  try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
 
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("#buffsLine");
-    if (!el) return;
+  if (!Array.isArray(full) || full.length === 0) return;
 
-    // ✅ ważne: sprawdzamy computedStyle, nie el.style.display
-    if (getComputedStyle(el).display === "none") return;
+  const msg = full
+    .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
+    .join("\n");
 
-    let full = [];
-    try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
+  try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-    if (!Array.isArray(full) || full.length === 0) return;
-
-    const msg = full
-      .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
-      .join("\n");
-
-    try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-
-    if (Telegram?.WebApp?.showPopup) {
-      Telegram.WebApp.showPopup({
-        title: "Active Buffs",
-        message: msg,
-        buttons: [{ type: "close" }]
-      });
-    } else {
-      alert(msg);
-    }
-  });
-}
+  if (Telegram?.WebApp?.showPopup) {
+    Telegram.WebApp.showPopup({
+      title: "Active Buffs",
+      message: msg,
+      buttons: [{ type: "close" }]
+    });
+  } else {
+    alert(msg);
+  }
+});
 window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
@@ -1510,19 +1490,15 @@ async function loadPlayerState() {
 
     renderTopbar();
 
+    // ✅ HARD CALL (nie przez window.) – ma się odpalić na pewno
+    try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
+
     if (mapBack.style.display === "flex" && DATA) {
       renderMap();
       updateUnlockProgress();
     }
-
-    // ✅ NA KOŃCU: profil + buffy (ostatni render)
-    try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
-
   } catch (e) {
     console.warn("state load failed", e);
-  }
-}
-window.loadPlayerState = loadPlayerState;
   }
 }
 window.loadPlayerState = loadPlayerState; // ✅ expose globally for goHome()
@@ -2339,8 +2315,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
-
-
 
 
 
