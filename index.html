@@ -602,7 +602,7 @@
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
-    
+
    <!-- Region Sheet modal -->
 <div class="sheet-back region-sheet" id="regionBack">
   <div class="sheet-card">
@@ -1319,7 +1319,7 @@ document.addEventListener("click", async (e) => {
     if (!out) return;
 
     // ✅ odporny picker na różne wrappery backendu
-    const p = out?.profile || out?.data?.profile || out?.data || out || {};
+    const p = out?.profile || out?.data?.profile || out?.data || out;
 
     PROFILE = PROFILE || {};
 
@@ -1336,23 +1336,70 @@ document.addEventListener("click", async (e) => {
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-    // ✅ jeśli renderTopbar() przebudowuje HUD — zostaw, ale buffy odmalujemy po nim
-    try { renderTopbar(); } catch (_) {}
+    // ✅ Topbar może się przebudować – ok
+try { renderTopbar(); } catch (_) {}
 
-    // ✅ BUFFS: single source of truth (global state)
-    window.AH_BUFFS = window.AH_BUFFS || { line: "", full: [] };
-    window.AH_BUFFS.line = p.buffsLine || "";
-    window.AH_BUFFS.full = Array.isArray(p.buffs) ? p.buffs : [];
+// ✅ helper: zawsze zapewnia, że #buffsLine istnieje w HUD
+function ensureBuffsLineEl() {
+  let el = document.getElementById("buffsLine");
+  if (el) return el;
 
-    // ✅ odmaluj buffy teraz + retry (bo topbar/mapa potrafią przebudować DOM)
-    try { paintBuffs(); } catch (_) {}
-    setTimeout(() => { try { paintBuffs(); } catch (_) {} }, 80);
+  // spróbuj znaleźć lewą kolumnę HUD
+  const hudLeft =
+    document.querySelector(".hud-col.hud-left") ||
+    document.querySelector(".hud-left") ||
+    document.querySelector("#hudLeft");
+
+  if (!hudLeft) return null;
+
+  el = document.createElement("div");
+  el.id = "buffsLine";
+  el.className = "buffs-line";
+  el.style.display = "none"; // start hidden
+  hudLeft.appendChild(el);
+
+  return el;
+}
+
+// ✅ render buffów: HARD + retry + !important
+const paintBuffs = () => {
+  const elBuffs = ensureBuffsLineEl();
+  if (!elBuffs) return false;
+
+  const full = Array.isArray(p.buffs) ? p.buffs : [];
+  let line = p.buffsLine || "";
+
+  if (!line && full.length > 0) {
+    line = `✨ Buffs (${full.length})`;
+  }
+
+  if (line) {
+    elBuffs.style.setProperty("display", "block", "important");
+    elBuffs.textContent = line;
+    elBuffs.dataset.full = JSON.stringify(full);
+
+    // debug visibility
+    elBuffs.style.setProperty("color", "rgba(255,255,255,.92)", "important");
+    elBuffs.style.setProperty("text-shadow", "0 0 10px rgba(0,229,255,.35)", "important");
+    elBuffs.style.setProperty("margin-top", "6px", "important");
+    elBuffs.style.setProperty("font-size", "12px", "important");
+  } else {
+    elBuffs.style.setProperty("display", "none", "important");
+    elBuffs.textContent = "";
+    elBuffs.dataset.full = "[]";
+  }
+
+  return true;
+};
+
+// 1) spróbuj od razu
+if (!paintBuffs()) {
+  // 2) retry – jeśli DOM dopiero się układa po renderTopbar()
+  setTimeout(() => { paintBuffs(); }, 120);
+    }
 
   } catch (e) {
     console.warn("profile load failed", e);
-  }
-}
-window.loadProfile = loadProfile;
   }
 }
 window.loadProfile = loadProfile;
@@ -1442,7 +1489,6 @@ async function loadPlayerState() {
     }
 
     renderTopbar();
-    paintBuffs(); // ✅ przywróć buffy jeśli topbar przebudował DOM
 
     // ✅ HARD CALL (nie przez window.) – ma się odpalić na pewno
     try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
@@ -2269,8 +2315,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
-
-
 
 
 
