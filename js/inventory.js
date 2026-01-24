@@ -257,9 +257,7 @@ window.Inventory = {
 
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
-     const res = await apiPost("/webapp/inventory/state", {
-    run_id: this._mkRunId("w_inv_state"),
-  });
+      const res = await apiPost("/webapp/inventory/state", {});
       if (!res?.ok) throw new Error(res?.reason || "No response");
 
       // slots = UNEQUIPPED ONLY
@@ -287,24 +285,13 @@ window.Inventory = {
 
       this.showTab(this.currentTab);
     } catch (err) {
-  console.error("Inventory open error:", err);
-
-  // PATCH A: pokaż prawdziwy reason zamiast wiecznego "loading"
-  const reason =
-    err?.message ||
-    "No response";
-
-  Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
-  Telegram?.WebApp?.showAlert?.("Inventory failed: " + String(reason));
-
-  const grid = document.getElementById("inventory-grid");
-  if (grid) {
-    grid.innerHTML =
-      `<p style="grid-column:1/-1;color:#f66;text-align:center;">
-        Inventory failed: ${String(reason)}
-       </p>`;
-  }
-}
+      console.error("Inventory open error:", err);
+      const grid = document.getElementById("inventory-grid");
+      if (grid) {
+        grid.innerHTML =
+          `<p style="grid-column:1/-1;color:#f66;text-align:center;">Connection error</p>`;
+      }
+    }
   },
 
   // ---- helpers (robust type/slot detection) ----
@@ -478,41 +465,25 @@ window.Inventory = {
   },
 
   // === USE ITEM ===
-  // === USE ITEM ===
-async use(key) {
-  const item = this.findByKey(key);
-  if (!item || this._normType(item) !== "consumable") return;
+  async use(key) {
+    const item = this.findByKey(key);
+    if (!item || this._normType(item) !== "consumable") return;
 
-  Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
-  const apiPost = window.S?.apiPost || window.apiPost;
+    Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
+    const apiPost = window.S?.apiPost || window.apiPost;
 
-  try {
-    const res = await apiPost("/webapp/inventory/use", {
-      key,
-      run_id: this._mkRunId("w_inv_use:" + key),
-    });
-
-    if (res.ok) {
-      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
-
-      const msg =
-        res.toast ||
-        res.message ||
-        res.msg ||
-        res?.data?.toast ||
-        res?.data?.message ||
-        res?.data?.msg;
-
-      if (msg) Telegram.WebApp.showAlert(String(msg));
-      await this.open();
-    } else {
-      throw new Error(res.reason || "Failed");
-    }
-  } catch (e) {
-    Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
-    Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
-  }
-}
+    try {
+      const res = await apiPost("/webapp/inventory/use", { key });
+      if (res.ok) {
+        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
+        if (res.message) Telegram.WebApp.showAlert(res.message);
+        await this.open();
+      } else {
+        throw new Error(res.reason || "Failed");
+      }
+    } catch (e) {
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+      Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
     }
   },
 
