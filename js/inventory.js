@@ -257,7 +257,9 @@ window.Inventory = {
 
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
-      const res = await apiPost("/webapp/inventory/state", {});
+     const res = await apiPost("/webapp/inventory/state", {
+    run_id: this._mkRunId("w_inv_state"),
+  });
       if (!res?.ok) throw new Error(res?.reason || "No response");
 
       // slots = UNEQUIPPED ONLY
@@ -285,13 +287,24 @@ window.Inventory = {
 
       this.showTab(this.currentTab);
     } catch (err) {
-      console.error("Inventory open error:", err);
-      const grid = document.getElementById("inventory-grid");
-      if (grid) {
-        grid.innerHTML =
-          `<p style="grid-column:1/-1;color:#f66;text-align:center;">Connection error</p>`;
-      }
-    }
+  console.error("Inventory open error:", err);
+
+  // PATCH A: pokaż prawdziwy reason zamiast wiecznego "loading"
+  const reason =
+    err?.message ||
+    "No response";
+
+  Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+  Telegram?.WebApp?.showAlert?.("Inventory failed: " + String(reason));
+
+  const grid = document.getElementById("inventory-grid");
+  if (grid) {
+    grid.innerHTML =
+      `<p style="grid-column:1/-1;color:#f66;text-align:center;">
+        Inventory failed: ${String(reason)}
+       </p>`;
+  }
+}
   },
 
   // ---- helpers (robust type/slot detection) ----
