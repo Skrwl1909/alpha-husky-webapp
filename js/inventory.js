@@ -465,25 +465,41 @@ window.Inventory = {
   },
 
   // === USE ITEM ===
-  async use(key) {
-    const item = this.findByKey(key);
-    if (!item || this._normType(item) !== "consumable") return;
+  // === USE ITEM ===
+async use(key) {
+  const item = this.findByKey(key);
+  if (!item || this._normType(item) !== "consumable") return;
 
-    Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
-    const apiPost = window.S?.apiPost || window.apiPost;
+  Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
+  const apiPost = window.S?.apiPost || window.apiPost;
 
-    try {
-      const res = await apiPost("/webapp/inventory/use", { key });
-      if (res.ok) {
-        Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
-        if (res.message) Telegram.WebApp.showAlert(res.message);
-        await this.open();
-      } else {
-        throw new Error(res.reason || "Failed");
-      }
-    } catch (e) {
-      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
-      Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
+  try {
+    const res = await apiPost("/webapp/inventory/use", {
+      key,
+      run_id: this._mkRunId("w_inv_use:" + key),
+    });
+
+    if (res.ok) {
+      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
+
+      const msg =
+        res.toast ||
+        res.message ||
+        res.msg ||
+        res?.data?.toast ||
+        res?.data?.message ||
+        res?.data?.msg;
+
+      if (msg) Telegram.WebApp.showAlert(String(msg));
+      await this.open();
+    } else {
+      throw new Error(res.reason || "Failed");
+    }
+  } catch (e) {
+    Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
+    Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
+  }
+}
     }
   },
 
