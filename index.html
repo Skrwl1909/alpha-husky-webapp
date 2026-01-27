@@ -106,10 +106,20 @@
     }
     .hero-frame{ width:56vw; }
   }
-    /* Active Buffs line (pod nickiem/levelem) */
-.buffs-line{
-  width: min(46vw, 210px);     /* ✅ match hero-frame, nie ucina prawej strony */
-  margin-top: 2px;
+    
+
+  
+  /* Active Buffs line — overlay (NIE wpływa na layout kolumn) */
+#buffsLine.buffs-line{
+  position: fixed;
+  left: 14px;
+  bottom: calc(92px + env(safe-area-inset-bottom)); /* nad dolnym przyciskiem Quests */
+  z-index: 6;
+
+  width: max-content;
+  max-width: min(72vw, 240px);
+
+  margin: 0;
   padding: 6px 10px;
   border-radius: 12px;
 
@@ -123,7 +133,6 @@
 
   text-align: center;
 
-  /* ładne "krótkie" UI */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -133,9 +142,11 @@
   box-shadow: 0 8px 18px rgba(0,0,0,.35);
 
   box-sizing: border-box;
-  transition: transform .08s ease, opacity .15s ease;
+  transition: opacity .15s ease;
+  opacity: .95;
+}
 
-  opacity: .95; /* ✅ polish */
+#buffsLine.buffs-line:hover{ opacity: 1; }
 }
 
 /* ✅ polish */
