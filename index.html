@@ -697,12 +697,15 @@
           </div>
           <div id="qStatus" class="q-status">Ready</div>
           <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
-            <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
-            <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
-            <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
-            <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
-            <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
-          </div>
+  <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
+  <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
+
+  <button class="q-tab" data-tab="legendary" role="tab" aria-selected="false">Legendary Path <span data-count="legendary">0</span></button>
+
+  <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
+  <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
+  <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
+</div>
           <div id="qState" class="q-filters" aria-label="Quest state filters">
             <button class="q-tab q-tab--on" data-state="any">All</button>
             <button class="q-tab" data-state="ready">Ready</button>
@@ -2272,6 +2275,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
