@@ -122,6 +122,9 @@
 async function completeQuest(id, run_id) {
   return postFirstOk(EP.complete, { id, questId: id, run_id });
 }
+  async function claimLegendaryStep(trackId, stepId, run_id) {
+  return postFirstOk(EP.complete, { id: trackId, questId: trackId, stepId, run_id });
+}
 
   function normalizeBoard(payload) {
   if (!payload) payload = {};
@@ -311,6 +314,9 @@ async function completeQuest(id, run_id) {
   // (Punkt 5) NOWE: reqLines z backendu (opcjonalne)
   const reqLines = Array.isArray(q.reqLines) ? q.reqLines : null;
 
+  // === NEW (B5): Legendary track detection ===
+  const hasSteps = Array.isArray(q.steps) && q.steps.length > 0;
+
   const card = document.createElement("div");
   card.className = "quest";
   card.setAttribute("data-type", cat || "");
@@ -324,7 +330,7 @@ async function completeQuest(id, run_id) {
         ${desc ? `<div class="q-desc">${esc(desc)}</div>` : ""}
       </div>
       <div class="q-head-right">
-        ${q.step != null && q.steps
+        ${q.step != null && q.steps && !hasSteps
           ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
           : ""
         }
@@ -364,6 +370,57 @@ async function completeQuest(id, run_id) {
 
   const act = $(".q-actions", card);
 
+  // === NEW (B5): Legendary Track render (3-step card) ===
+  if (hasSteps) {
+    // remove default actions for the track card
+    if (act) act.innerHTML = "";
+
+    const reqs = $(".q-reqs", card);
+    const wrap = document.createElement("div");
+    wrap.className = "q-steps-wrap";
+
+    q.steps.forEach((s) => {
+      const sid = String(s.id || "").trim();
+      const needS = Number(s.need ?? 0) || 0;
+      const curS  = Number(s.cur ?? 0) || 0;
+      const claimed = !!s.claimed;
+      const claimable = !claimed && needS > 0 && curS >= needS;
+
+      const row = document.createElement("div");
+      row.className = "q-step-row";
+      row.innerHTML = `
+        <div class="q-step-left">
+          <div class="q-step-title">${esc(s.label || s.title || sid || "Step")}</div>
+          <div class="q-step-sub">${esc(curS)}/${esc(needS)}${s.unit ? " " + esc(s.unit) : ""}</div>
+          ${s.rewardText ? `<div class="q-step-rew"><span class="q-badge">${esc(s.rewardText)}</span></div>` : ""}
+        </div>
+        <div class="q-step-right"></div>
+      `;
+
+      const right = $(".q-step-right", row);
+
+      if (claimed) {
+        const badge = document.createElement("span");
+        badge.className = "q-badge";
+        badge.textContent = "Claimed";
+        right.appendChild(badge);
+      } else {
+        const btn = document.createElement("button");
+        btn.className = "q-btn q-btn-acc";
+        btn.textContent = claimable ? "Claim" : (curS > 0 ? "In progress" : "Locked");
+        btn.disabled = !claimable;
+        btn.onclick = () => actions.legendaryClaim(q.id, sid, btn);
+        right.appendChild(btn);
+      }
+
+      wrap.appendChild(row);
+    });
+
+    if (reqs) reqs.appendChild(wrap);
+    return card; // important: do not fall through to default actions
+  }
+
+  // === Default behavior for normal quests ===
   if (statusRaw === "available") {
     // Legacy daily → /webapp/daily/action
     if (q.type === "daily" && Array.isArray(q.availableActions) && q.availableActions.length) {
@@ -473,52 +530,71 @@ async function completeQuest(id, run_id) {
     }
 
     const actions = {
-      accept: async (id, btn) => {
-        try {
-          btn.disabled = true;
-          setStatus("Accepting…");
-          await acceptQuest(id, mkRunId("qacc"));
-          await refresh();
-          toast("Accepted");
-        } catch (e) {
-          state.debug(e);
-          toast(e?.message || "Accept failed");
-          btn.disabled = false;
-        } finally { setStatus(""); }
-      },
-      claim: async (id, btn) => {
-        try {
-          btn.disabled = true;
-          setStatus("Claiming…");
-          const res = await completeQuest(id, mkRunId("qcmp"));
-          await refresh();
-          toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
-        } catch (e) {
-          state.debug(e);
-          toast(e?.message || "Claim failed");
-          btn.disabled = false;
-        } finally { setStatus(""); }
-      },
-      // === akcja dla legacy daily (/webapp/daily/action) ===
-      daily: async (action, raid, btn) => {
-        try {
-          if (btn) btn.disabled = true;
-          setStatus("Doing…");
-          const caller = (global.S && global.S.apiPost) ? global.S.apiPost : apiPostRaw;
-          await caller("/webapp/daily/action", { action, raid });
-          await refresh();
-          toast("Done");
-        } catch (e) {
-          state.debug(e);
-          toast(e?.message || "Action failed");
-          if (btn) btn.disabled = false;
-        } finally { setStatus(""); }
-      }
-    };
+  accept: async (id, btn) => {
+    try {
+      btn.disabled = true;
+      setStatus("Accepting…");
+      await acceptQuest(id, mkRunId("qacc"));
+      await refresh();
+      toast("Accepted");
+    } catch (e) {
+      state.debug(e);
+      toast(e?.message || "Accept failed");
+      btn.disabled = false;
+    } finally { setStatus(""); }
+  },
 
-    const frag = document.createDocumentFragment();
-    for (const q of items) frag.appendChild(makeCard(q, actions));
-    state.el.list.appendChild(frag);
+  claim: async (id, btn) => {
+    try {
+      btn.disabled = true;
+      setStatus("Claiming…");
+      const res = await completeQuest(id, mkRunId("qcmp"));
+      await refresh();
+      toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
+    } catch (e) {
+      state.debug(e);
+      toast(e?.message || "Claim failed");
+      btn.disabled = false;
+    } finally { setStatus(""); }
+  },
+
+  // === Legendary Path: claim step (uses /quests/complete + stepId) ===
+  legendaryClaim: async (trackId, stepId, btn) => {
+    try {
+      if (btn) btn.disabled = true;
+      setStatus("Claiming…");
+
+      const res = await claimLegendaryStep(trackId, stepId, mkRunId("lp"));
+      await refresh();
+
+      toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Claimed");
+    } catch (e) {
+      state.debug(e);
+      toast(e?.message || "Claim failed");
+      if (btn) btn.disabled = false;
+    } finally { setStatus(""); }
+  },
+
+  // === akcja dla legacy daily (/webapp/daily/action) ===
+  daily: async (action, raid, btn) => {
+    try {
+      if (btn) btn.disabled = true;
+      setStatus("Doing…");
+      const caller = (global.S && global.S.apiPost) ? global.S.apiPost : apiPostRaw;
+      await caller("/webapp/daily/action", { action, raid });
+      await refresh();
+      toast("Done");
+    } catch (e) {
+      state.debug(e);
+      toast(e?.message || "Action failed");
+      if (btn) btn.disabled = false;
+    } finally { setStatus(""); }
+  }
+};
+
+const frag = document.createDocumentFragment();
+for (const q of items) frag.appendChild(makeCard(q, actions));
+state.el.list.appendChild(frag);
   }
 
   async function refresh() {
