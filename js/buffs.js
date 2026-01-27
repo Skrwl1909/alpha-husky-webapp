@@ -34,35 +34,35 @@
     }
 
     function ensureBuffsLineEl() {
-      let el = document.getElementById("buffsLine");
+  const hudLeft = findHudLeft();
+  if (!hudLeft) return null; // 🔥 zero fallback do body
 
-      const hudLeft = findHudLeft();
-      const target = hudLeft || document.body;
+  let el = document.getElementById("buffsLine");
 
-      if (!el) {
-        el = document.createElement("div");
-        el.id = "buffsLine";
-        el.className = "buffs-line ah-buffs-chip";
-        el.style.display = "none";
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "buffsLine";
+    el.className = "buffs-line ah-buffs-chip";
+    el.style.display = "none";
 
-        el.innerHTML = `
-          <span class="ah-buffs-spark">✨</span>
-          <span class="ah-buffs-label"></span>
-          <span class="ah-buffs-caret">›</span>
-        `;
+    el.innerHTML = `
+      <span class="ah-buffs-spark">✨</span>
+      <span class="ah-buffs-label"></span>
+      <span class="ah-buffs-caret">›</span>
+    `;
 
-        target.appendChild(el);
-        return el;
-      }
+    hudLeft.appendChild(el);
+    return el;
+  }
 
-      // if HUD appears later, move element into HUD
-      if (hudLeft && el.parentElement !== hudLeft) {
-        try { hudLeft.appendChild(el); } catch (_) {}
-      }
+  // jeśli istnieje, ale jest poza HUD → przenieś
+  if (el.parentElement !== hudLeft) {
+    try { hudLeft.appendChild(el); } catch (_) {}
+  }
 
-      if (!el.classList.contains("ah-buffs-chip")) el.classList.add("ah-buffs-chip");
-      return el;
-    }
+  if (!el.classList.contains("ah-buffs-chip")) el.classList.add("ah-buffs-chip");
+  return el;
+}
 
     function bump(el) {
       try {
@@ -140,7 +140,7 @@
 
     function paintBuffs() {
       const el = ensureBuffsLineEl();
-      if (!el) return false;
+if (!el) { setTimeout(paintBuffs, 120); return false; } // retry aż HUD wstanie
 
       const full = Array.isArray(window.AH_BUFFS.full) ? window.AH_BUFFS.full : [];
       const line = buildDisplayLine();
