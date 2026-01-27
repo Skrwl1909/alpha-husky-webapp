@@ -1368,32 +1368,6 @@ document.addEventListener("click", async (e) => {
 }
 window.loadProfile = loadProfile;
 
-// ✅ klik w "✨ Buffs (N)" -> popup z listą buffów
-document.addEventListener("click", (e) => {
-  const el = e.target.closest("#buffsLine");
-  if (!el || getComputedStyle(el).display === "none") return;
-
-  let full = [];
-  try { full = JSON.parse(el.dataset.full || "[]"); } catch (_) { full = []; }
-
-  if (!Array.isArray(full) || full.length === 0) return;
-
-  const msg = full
-    .map(x => `• ${x.text || x.desc || x.key || "Buff"}`)
-    .join("\n");
-
-  try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-
-  if (Telegram?.WebApp?.showPopup) {
-    Telegram.WebApp.showPopup({
-      title: "Active Buffs",
-      message: msg,
-      buttons: [{ type: "close" }]
-    });
-  } else {
-    alert(msg);
-  }
-});
 window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
@@ -2285,6 +2259,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
