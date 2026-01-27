@@ -54,6 +54,7 @@
     if (t === "story") return "Story";
     if (t === "chain") return "Story";      // region / chain jako część Story
     if (t === "repeatable") return "Repeatable";
+    if (t === "legendary" || t === "legendary_path" || t === "legendarypath") return "Legendary Path";
     if (t === "bounty" || t === "bounties") return "Bounty";
     return "Quest";
   }
@@ -217,7 +218,7 @@ async function completeQuest(id, run_id) {
   // ===== Rendering =====
   const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
   // Finalne zakładki w UI – teraz z osobnym "repeatable"
-  const TABS = ["all", "daily", "story", "repeatable", "bounties"];
+  const TABS = ["all", "daily", "legendary", "story", "repeatable", "bounties"];
 
   function mergeBoard(board) {
     const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
@@ -241,6 +242,7 @@ async function completeQuest(id, run_id) {
     if (tab === "daily") return cat === "daily";
     if (tab === "story") return (cat === "story" || cat === "chain");
     if (tab === "repeatable") return cat === "repeatable";
+    if (tab === "legendary") return (cat === "legendary" || cat === "legendary_path" || cat === "legendarypath");
 
     if (tab === "bounties") {
       // tylko eventowe bounty
