@@ -1,4 +1,4 @@
-// js/skins.js — Skins modal (owned/equipped + buy/equip + earn-only unlocks w/ progress) for Alpha Husky WebApp
+// js/skins.js — Skins modal (owned/equipped + buy/equip + earn-only unlocks w/ progress + CODE CLAIM) for Alpha Husky WebApp
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -7,6 +7,9 @@
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
+
+  // claim UI (dynamic)
+  let claimWrap, claimInput, claimBtn;
 
   // state
   let _catalog = [];
@@ -30,12 +33,14 @@
     avatarBack = document.getElementById("avatarBack");
     skinCanvas = document.getElementById("skinCanvas");
     skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
-    skinPreviewImg = document.getElementById("skinPreviewImg"); // optional
+    skinPreviewImg = document.getElementById("skinPreviewImg"); // ✅ needed for animated webp
     skinDesc = document.getElementById("skinDesc");
     closeAvatar = document.getElementById("closeAvatar");
     equipBtn = document.getElementById("equipSkin");
     shareBtn = document.getElementById("shareSkin");
     skinButtonsWrap = document.getElementById("skinButtons");
+
+    ensureClaimUI();
 
     if (_bound) return true;
     _bound = true;
@@ -43,18 +48,33 @@
     avatarBack?.addEventListener("click", (e) => {
       if (e.target === avatarBack) {
         _cleanupPreview();
+        hideClaimUI();
         avatarBack.style.display = "none";
       }
     });
     closeAvatar?.addEventListener("click", () => {
       if (avatarBack) {
         _cleanupPreview();
+        hideClaimUI();
         avatarBack.style.display = "none";
       }
     });
 
     equipBtn?.addEventListener("click", onPrimaryAction);
     shareBtn?.addEventListener("click", onShare);
+
+    claimBtn?.addEventListener("click", () => {
+      const code = String(claimInput?.value || "").trim();
+      claimSkin(code);
+    });
+
+    claimInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const code = String(claimInput?.value || "").trim();
+        claimSkin(code);
+      }
+    });
 
     return true;
   }
@@ -93,6 +113,15 @@
     return (u && typeof u === "object") ? u : null;
   }
 
+  function unlockKind(meta) {
+    const u = getUnlock(meta);
+    return String(u?.kind || "").trim().toLowerCase();
+  }
+
+  function isCodeUnlock(meta) {
+    return unlockKind(meta) === "code" || unlockKind(meta) === "claim" || unlockKind(meta) === "password";
+  }
+
   // prefer backend-provided progress fields
   function unlockHave(meta) {
     const v = Number(meta?.unlockHave);
@@ -113,7 +142,7 @@
   function isEarnOnly(meta) {
     const u = getUnlock(meta);
     if (!u) return false;
-    // earn-only is any unlock skin (weekly/referrals/etc.)
+    // earn-only is any unlock skin (weekly/referrals/code/etc.)
     return true;
   }
 
@@ -170,9 +199,10 @@
     if (!u) return " 🔒";
     if (unlockedNow(meta)) return ""; // unlocked → no lock suffix
 
+    if (isCodeUnlock(meta)) return " 🔑"; // ✅ code-locked indicator
+
     const have = unlockHave(meta);
     const need = unlockNeed(meta);
-
     if (have != null && need != null && need > 0) {
       return ` 🔒 ${Math.min(have, need)}/${need}`;
     }
@@ -182,9 +212,13 @@
   function lockDesc(meta) {
     const u = getUnlock(meta);
     if (!u) return "Locked.";
-    const kind = String(u.kind || "");
+    const kind = String(u.kind || "").trim().toLowerCase();
     const have = unlockHave(meta);
     const need = unlockNeed(meta);
+
+    if (kind === "code" || kind === "claim" || kind === "password") {
+      return "Locked. Enter the code to claim this skin.";
+    }
 
     if (kind === "referrals") {
       if (have != null && need != null && need > 0) {
@@ -224,9 +258,16 @@
 
     const m = getMeta(k);
 
-    // ✅ if effectively owned (perm OR unlockedNow earn-only) -> equip allowed
+    // ✅ if effectively owned -> equip allowed
     if (isEffectivelyOwned(k)) {
       equipBtn.textContent = "Equip";
+      equipBtn.disabled = false;
+      return;
+    }
+
+    // ✅ code-locked -> CLAIM allowed
+    if (m && isCodeUnlock(m)) {
+      equipBtn.textContent = "Claim";
       equipBtn.disabled = false;
       return;
     }
@@ -304,7 +345,7 @@
     return false;
   }
 
-  function renderSkinPreview(imgUrl, name) {
+  function renderSkinPreview(imgUrl, name, fallbackUrl, forceImg) {
     if ((!skinCtx || !skinCanvas) && !skinPreviewImg) return;
 
     if (!imgUrl) {
@@ -313,6 +354,16 @@
     }
 
     const seq = ++_previewSeq;
+
+    // ✅ If animated flagged, force <img> preview (so it actually animates)
+    if (forceImg && skinPreviewImg) {
+      _useImgPreview(true);
+      skinPreviewImg.onerror = () => {
+        if (fallbackUrl && fallbackUrl !== imgUrl) skinPreviewImg.src = fallbackUrl;
+      };
+      skinPreviewImg.src = imgUrl;
+      return;
+    }
 
     const tryLoad = (withCors) => new Promise((resolve, reject) => {
       const img = new Image();
@@ -324,11 +375,15 @@
 
     (async () => {
       try {
+        // auto-detect animated webp to switch to <img>
         const animated = await _isAnimatedWebp(imgUrl);
         if (seq !== _previewSeq) return;
 
         if (animated && skinPreviewImg) {
           _useImgPreview(true);
+          skinPreviewImg.onerror = () => {
+            if (fallbackUrl && fallbackUrl !== imgUrl) skinPreviewImg.src = fallbackUrl;
+          };
           skinPreviewImg.src = imgUrl;
           return;
         }
@@ -352,9 +407,135 @@
         skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
       } catch (e) {
         dbg("renderSkinPreview failed", e);
+
+        // ✅ fallback png if provided
+        if (fallbackUrl && fallbackUrl !== imgUrl) {
+          renderSkinPreview(fallbackUrl, name, null, false);
+          return;
+        }
+
         drawPlaceholder("Skin not found");
       }
     })();
+  }
+
+  function ensureClaimUI() {
+    // try find existing
+    claimWrap = document.getElementById("skinClaimWrap") || null;
+    claimInput = document.getElementById("skinClaimInput") || null;
+    claimBtn = document.getElementById("skinClaimBtn") || null;
+
+    if (claimWrap && claimInput && claimBtn) return;
+
+    // create dynamically near skinDesc
+    const host = skinDesc?.parentElement || avatarBack;
+    if (!host) return;
+
+    claimWrap = document.createElement("div");
+    claimWrap.id = "skinClaimWrap";
+    claimWrap.style.display = "none";
+    claimWrap.style.marginTop = "10px";
+    claimWrap.style.gap = "8px";
+    claimWrap.style.alignItems = "center";
+    claimWrap.style.justifyContent = "center";
+    claimWrap.style.flexWrap = "wrap";
+    claimWrap.style.width = "100%";
+    claimWrap.style.display = "none";
+    claimWrap.style.textAlign = "center";
+
+    // make it flex-ish without relying on CSS
+    claimWrap.style.display = "none";
+    claimWrap.style.padding = "6px 0";
+
+    claimInput = document.createElement("input");
+    claimInput.id = "skinClaimInput";
+    claimInput.type = "text";
+    claimInput.placeholder = "Enter code";
+    claimInput.autocomplete = "off";
+    claimInput.spellcheck = false;
+    claimInput.style.width = "min(320px, 88vw)";
+    claimInput.style.padding = "10px 12px";
+    claimInput.style.borderRadius = "12px";
+    claimInput.style.border = "1px solid rgba(255,255,255,.18)";
+    claimInput.style.background = "rgba(0,0,0,.25)";
+    claimInput.style.color = "#fff";
+    claimInput.style.outline = "none";
+    claimInput.style.marginRight = "8px";
+
+    claimBtn = document.createElement("button");
+    claimBtn.id = "skinClaimBtn";
+    claimBtn.type = "button";
+    claimBtn.className = "btn";
+    claimBtn.textContent = "Claim";
+    claimBtn.style.padding = "10px 14px";
+    claimBtn.style.borderRadius = "12px";
+
+    claimWrap.appendChild(claimInput);
+    claimWrap.appendChild(claimBtn);
+
+    host.appendChild(claimWrap);
+  }
+
+  function showClaimUI(on) {
+    if (!claimWrap) return;
+    claimWrap.style.display = on ? "block" : "none";
+    if (on && claimInput) claimInput.focus();
+  }
+
+  function hideClaimUI() {
+    showClaimUI(false);
+    if (claimInput) claimInput.value = "";
+  }
+
+  async function claimSkin(codeRaw) {
+    const code = String(codeRaw || "").trim();
+    if (!code) {
+      try { _tg?.showAlert?.("Enter the code first."); } catch (_) {}
+      return;
+    }
+    if (!_apiPost) {
+      try { _tg?.showAlert?.("Skins not ready yet."); } catch (_) {}
+      return;
+    }
+
+    try {
+      const rid = uuid();
+      const out = await _apiPost("/webapp/skins/claim", { code, run_id: rid });
+
+      if (!out || !out.ok) {
+        const r = out?.reason || "CLAIM_FAILED";
+        const msg =
+          (r === "BAD_CODE") ? "Wrong code." :
+          (r === "INVALID_TARGET") ? "This code can't be used here." :
+          (r === "EMPTY_CODE") ? "Enter the code first." :
+          r;
+        throw new Error(msg);
+      }
+
+      // refresh state from response (handler returns full state)
+      if (Array.isArray(out.skins)) _catalog = out.skins;
+      if (Array.isArray(out.owned)) _owned = out.owned;
+      if (out.equipped && typeof out.equipped === "object") _equipped = out.equipped;
+
+      try { _tg?.showAlert?.("Claimed ✅"); } catch (_) {}
+      haptic("medium");
+
+      buildSkinButtons();
+      setPrimaryButtonState();
+
+      // close modal + refresh profile
+      if (avatarBack) {
+        _cleanupPreview();
+        hideClaimUI();
+        avatarBack.style.display = "none";
+      }
+      try { window.loadProfile?.(); } catch (_) {}
+
+    } catch (e) {
+      console.warn(e);
+      const msg = (e && e.data && e.data.reason) ? e.data.reason : (e?.message || "Claim failed");
+      try { _tg?.showAlert?.(msg); } catch (_) {}
+    }
   }
 
   function buildSkinButtons() {
@@ -385,13 +566,21 @@
 
         _selectedKey = key;
 
-        renderSkinPreview(s.img, s.name || s.key);
+        // ✅ preview with fallback + forceImg if animated flag is set
+        renderSkinPreview(s.img, s.name || s.key, s.fallback, !!s.animated);
+
+        // Claim UI toggle
+        const meta = (key === "default") ? null : s;
+        const shouldShowClaim = !!meta && isCodeUnlock(meta) && !isEffectivelyOwned(key);
+        showClaimUI(shouldShowClaim);
 
         if (skinDesc) {
           if (key === "default") {
             skinDesc.textContent = "Default — clean Alpha.";
           } else if (isEffectivelyOwned(key)) {
             skinDesc.textContent = `${s.name || s.key} — available.`;
+          } else if (meta && isCodeUnlock(meta)) {
+            skinDesc.textContent = `${s.name || s.key} — ${lockDesc(meta)}`;
           } else if (isEarnOnly(s)) {
             skinDesc.textContent = `${s.name || s.key} — ${lockDesc(s)}`;
           } else {
@@ -428,7 +617,6 @@
     }
 
     try {
-      // backend supports POST and GET, apiPost is POST
       const out = await _apiPost("/webapp/skins", {});
       if (!out || !out.ok) throw new Error(out?.reason || "skins get failed");
 
@@ -468,9 +656,17 @@
         try { _tg?.showAlert?.("Skin equipped!"); } catch (_) {}
         if (avatarBack) {
           _cleanupPreview();
+          hideClaimUI();
           avatarBack.style.display = "none";
         }
         try { window.loadProfile?.(); } catch (_) {}
+        return;
+      }
+
+      // ✅ code-locked -> claim flow
+      if (meta && isCodeUnlock(meta)) {
+        const code = String(claimInput?.value || "").trim() || String(prompt("Enter claim code") || "").trim();
+        await claimSkin(code);
         return;
       }
 
