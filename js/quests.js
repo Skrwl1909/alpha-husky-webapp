@@ -29,11 +29,11 @@
   // ✅ ONE MAIN REWARD per track (shown once on the card, not per step)
   // Replace icon/name with your real "final reward" asset for the whole track.
   const LP_TRACK_REWARD = {
-    "lp_ashclaw": {
-      icon: "v1766522539/equip/ash_collar.png",   // <- działa już teraz (podmienić później na final reward)
-      name: "Final Reward"
-    }
-  };
+  "lp_ashclaw": {
+    icon: "v1769370188/equip/rustfire_seraph_helmet.png",
+    name: "Rustfire Seraph Helmet"
+  }
+};
 
   function _getTrackId(q) {
     return String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
