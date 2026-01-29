@@ -423,6 +423,47 @@
     white-space: nowrap;
   }
 
+   /* === Legendary Path: accordion (collapsed list) === */
+  .quest--lp .q-acc-body{
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: max-height .28s ease, opacity .18s ease, transform .18s ease;
+  }
+
+  .quest--lp.is-open .q-acc-body{
+    max-height: 1400px; /* wystarczająco na 3 kroki + progress */
+    opacity: 1;
+    transform: translateY(0);
+    margin-top: 8px;
+  }
+
+  .q-acc-toggle{
+    border: 1px solid rgba(36,50,68,0.9);
+    background: rgba(15,22,32,0.65);
+    color: #d7e0ea;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .q-acc-toggle:hover{ filter: brightness(1.08); }
+
+  .q-acc-chevron{
+    display: inline-block;
+    transition: transform .18s ease;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .quest--lp.is-open .q-acc-chevron{ transform: rotate(180deg); }
+
   /* === B7: Legendary Path steps (quests.js B5) === */
   .q-steps-wrap{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   .q-step-row{display:flex;justify-content:space-between;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
@@ -432,6 +473,7 @@
   .q-step-rew{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
   .q-step-right{display:flex;align-items:center}
 </style>
+
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
   /* Floating FAQ button – mocniej widoczny */
@@ -2304,6 +2346,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
