@@ -12,7 +12,7 @@
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
 
-  // ===== Cloudinary icons (Legendary Path) =====
+  // ===== Cloudinary (Legendary Path main reward preview) =====
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload/";
 
   // accepts:
@@ -26,33 +26,45 @@
     return CLOUD_BASE + s.replace(/^\/+/, "");
   }
 
-  // ✅ One icon per track (fallback) — set what you already have in Cloudinary
-  const LP_TRACK_ICON = {
-    "lp_ashclaw": "v1766522539/equip/ash_collar.png",
-    // add future tracks here:
-    // "lp_something": "v.../equip/something.png",
+  // ✅ ONE MAIN REWARD per track (shown once on the card, not per step)
+  // Replace icon/name with your real "final reward" asset for the whole track.
+  const LP_TRACK_REWARD = {
+    "lp_ashclaw": {
+      icon: "v1766522539/equip/ash_collar.png",   // <- działa już teraz (podmienić później na final reward)
+      name: "Final Reward"
+    }
   };
 
-  function _trackIconFor(trackId) {
-    const t = String(trackId || "").trim();
-    if (!t) return "";
-    return LP_TRACK_ICON[t] || "";
+  function _getTrackId(q) {
+    return String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
   }
 
-  // backend-compatible: if backend sends step.icon / step.rewardIcon — use it
-  // otherwise fallback to track icon
-  function _stepIconSrc(q, step) {
-    const direct =
-      step?.icon ||
-      step?.rewardIcon ||
-      step?.reward_icon ||
-      step?.rewardImg ||
-      step?.reward_img;
+  function _renderTrackReward(q) {
+    const trackId = _getTrackId(q);
+    const cfg = LP_TRACK_REWARD[trackId];
+    if (!cfg) return "";
 
-    if (direct) return cdn(direct);
+    const iconUrl = cdn(cfg.icon);
+    const name = esc(cfg.name || "Final Reward");
 
-    const trackId = String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
-    return cdn(_trackIconFor(trackId));
+    // ✅ inline size hard-cap (protects against global img{width:100%})
+    const img = iconUrl
+      ? `<img class="q-track-reward-icon"
+              src="${esc(iconUrl)}"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              style="width:22px;height:22px;max-width:22px;max-height:22px;object-fit:cover;border-radius:6px;flex:0 0 22px;"
+              onerror="this.style.display='none'">`
+      : "";
+
+    return `
+      <div class="q-track-reward" data-track-reward="1">
+        <span class="q-track-reward-label">Main reward</span>
+        ${img}
+        <span class="q-track-reward-name">${name}</span>
+      </div>
+    `;
   }
 
   function isComplete(q) {
@@ -410,6 +422,9 @@
 
     const metaLine = `${have}/${need} ${esc(unit)} • ${pct}%`;
 
+    // ✅ show ONE main reward for whole track
+    const trackRewardHtml = hasSteps ? _renderTrackReward(q) : "";
+
     const card = document.createElement("div");
     card.className = "quest";
     card.setAttribute("data-type", cat || "");
@@ -422,6 +437,7 @@
             ${title} <span class="q-type">(${type})</span>
           </div>
           ${desc ? `<div class="q-desc">${esc(desc)}</div>` : ""}
+          ${trackRewardHtml}
         </div>
         <div class="q-head-right">
           ${q.step != null && q.steps && !hasSteps
@@ -478,21 +494,14 @@
         const claimed = !!s.claimed;
         const claimable = !!sid && !claimed && needS > 0 && curS >= needS;
 
-        // ✅ icon next to step title (Cloudinary direct OR track fallback)
-        const iconSrc = _stepIconSrc(q, s);
-        const iconHtml = iconSrc
-          ? `<img class="q-step-icon" src="${esc(iconSrc)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-          : "";
-
         const stepTitle = (s.label || s.title || sid || "Step");
 
         const row = document.createElement("div");
         row.className = "q-step-row";
         row.innerHTML = `
           <div class="q-step-left">
-            <div class="q-step-title">${iconHtml}<span>${esc(stepTitle)}</span></div>
+            <div class="q-step-title"><span>${esc(stepTitle)}</span></div>
             <div class="q-step-sub">${esc(curS)}/${esc(needS)}${s.unit ? " " + esc(s.unit) : ""}</div>
-            ${s.rewardText ? `<div class="q-step-rew"><span class="q-badge">${esc(s.rewardText)}</span></div>` : ""}
           </div>
           <div class="q-step-right"></div>
         `;
