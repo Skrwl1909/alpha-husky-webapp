@@ -12,6 +12,49 @@
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
 
+  // ===== Cloudinary icons (Legendary Path) =====
+  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload/";
+
+  // accepts:
+  // - full URL: https://res.cloudinary.com/.../image/upload/v123/folder/file.png
+  // - path after /upload/: v123/folder/file.png
+  // - plain path: folder/file.png
+  function cdn(src) {
+    const s = String(src || "").trim();
+    if (!s) return "";
+    if (/^https?:\/\//i.test(s)) return s;
+    return CLOUD_BASE + s.replace(/^\/+/, "");
+  }
+
+  // ✅ One icon per track (fallback) — set what you already have in Cloudinary
+  const LP_TRACK_ICON = {
+    "lp_ashclaw": "v1766522539/equip/ash_collar.png",
+    // add future tracks here:
+    // "lp_something": "v.../equip/something.png",
+  };
+
+  function _trackIconFor(trackId) {
+    const t = String(trackId || "").trim();
+    if (!t) return "";
+    return LP_TRACK_ICON[t] || "";
+  }
+
+  // backend-compatible: if backend sends step.icon / step.rewardIcon — use it
+  // otherwise fallback to track icon
+  function _stepIconSrc(q, step) {
+    const direct =
+      step?.icon ||
+      step?.rewardIcon ||
+      step?.reward_icon ||
+      step?.rewardImg ||
+      step?.reward_img;
+
+    if (direct) return cdn(direct);
+
+    const trackId = String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
+    return cdn(_trackIconFor(trackId));
+  }
+
   function isComplete(q) {
     const req = q.req || q.required || {};
     const prg = q.progress || {};
@@ -435,11 +478,19 @@
         const claimed = !!s.claimed;
         const claimable = !!sid && !claimed && needS > 0 && curS >= needS;
 
+        // ✅ icon next to step title (Cloudinary direct OR track fallback)
+        const iconSrc = _stepIconSrc(q, s);
+        const iconHtml = iconSrc
+          ? `<img class="q-step-icon" src="${esc(iconSrc)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          : "";
+
+        const stepTitle = (s.label || s.title || sid || "Step");
+
         const row = document.createElement("div");
         row.className = "q-step-row";
         row.innerHTML = `
           <div class="q-step-left">
-            <div class="q-step-title">${esc(s.label || s.title || sid || "Step")}</div>
+            <div class="q-step-title">${iconHtml}<span>${esc(stepTitle)}</span></div>
             <div class="q-step-sub">${esc(curS)}/${esc(needS)}${s.unit ? " " + esc(s.unit) : ""}</div>
             ${s.rewardText ? `<div class="q-step-rew"><span class="q-badge">${esc(s.rewardText)}</span></div>` : ""}
           </div>
