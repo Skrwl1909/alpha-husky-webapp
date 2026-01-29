@@ -54,7 +54,7 @@
               alt=""
               loading="lazy"
               decoding="async"
-              style="width:22px;height:22px;max-width:22px;max-height:22px;object-fit:cover;border-radius:6px;flex:0 0 22px;"
+              style="width:22px;height:22px;max-width:22px;max-height:22px;object-fit:cover;border-radius:6px;flex:0 0 22px;display:block;"
               onerror="this.style.display='none'">`
       : "";
 
@@ -552,8 +552,8 @@
     } else if (statusRaw === "ready") {
       const b = document.createElement("button");
       b.className = "q-btn";
-      b.textContent = hasSteps ? "Open" : "Claim";
-      b.onclick = () => { if (!hasSteps) actions.claim(q.id, b); };
+      b.textContent = "Claim";
+      b.onclick = () => actions.claim(q.id, b);
       act.appendChild(b);
     } else if (statusRaw === "cooldown") {
       const span = document.createElement("span");
@@ -571,6 +571,7 @@
     tab: "all",
     filter: "any",
     board: null,
+    lpOpen: new Set(), // ✅ 2A: pamięta otwarty LP quest (accordion)
     _wired: false,
     el: {
       back: null,
@@ -606,6 +607,87 @@
       if (global.navCloseTop) { global.navCloseTop(); return; }
     } catch (_) { }
     if (state.el.back) state.el.back.style.display = "none";
+  }
+
+  // ✅ 2B: Legendary Path accordion (collapse details until expanded)
+  function applyLegendaryAccordion(card, qid, defaultCollapsed) {
+    if (!card) return;
+    const id = String(qid || "").trim();
+    if (!id) return;
+
+    const head = $(".q-head", card);
+    const headRight = $(".q-head-right", card);
+    const reqs = $(".q-reqs", card);
+    const rew = $(".q-rew", card);
+    const act = $(".q-actions", card);
+
+    card.classList.add("quest--lp");
+    card.dataset.qid = id;
+
+    // Wrap body (details) so we can collapse everything except the header (+ main reward)
+    let body = $(".q-acc-body", card);
+    if (!body) {
+      body = document.createElement("div");
+      body.className = "q-acc-body";
+      if (head) head.insertAdjacentElement("afterend", body);
+
+      if (reqs) body.appendChild(reqs);
+      if (rew) body.appendChild(rew);
+      if (act) body.appendChild(act);
+    }
+
+    // Toggle button (chevron)
+    let tbtn = $(".q-acc-toggle", card);
+    if (!tbtn && headRight) {
+      tbtn = document.createElement("button");
+      tbtn.type = "button";
+      tbtn.className = "q-acc-toggle";
+      tbtn.setAttribute("aria-label", "Toggle details");
+      tbtn.innerHTML = `<span class="q-acc-chevron">▾</span>`;
+      headRight.prepend(tbtn);
+    }
+
+    function setOpen(open, silent) {
+      card.classList.toggle("is-open", !!open);
+      if (tbtn) tbtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (!silent) {
+        if (open) state.lpOpen.add(id);
+        else state.lpOpen.delete(id);
+      }
+    }
+
+    function closeOthers() {
+      if (!state.el.list) return;
+      $$(".quest--lp.is-open", state.el.list).forEach(el => {
+        if (el === card) return;
+        el.classList.remove("is-open");
+        const bid = el.dataset.qid;
+        if (bid) state.lpOpen.delete(bid);
+        const b = el.querySelector(".q-acc-toggle");
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    const wantOpen = state.lpOpen.has(id) ? true : !defaultCollapsed;
+    setOpen(wantOpen, true);
+
+    const toggle = () => {
+      const open = !card.classList.contains("is-open");
+      if (open) closeOthers();
+      setOpen(open, false);
+    };
+
+    if (tbtn) {
+      tbtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); toggle(); };
+    }
+
+    if (head) {
+      head.style.cursor = "pointer";
+      head.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return; // don't toggle when clicking buttons in header
+        toggle();
+      });
+    }
   }
 
   function renderCounters(board) {
@@ -700,8 +782,21 @@
       }
     };
 
+    // ✅ 2C: when rendering LP tracks, apply accordion (collapsed by default in Legendary tab)
     const frag = document.createDocumentFragment();
-    for (const q of items) frag.appendChild(makeCard(q, actions));
+    for (const q of items) {
+      const card = makeCard(q, actions);
+
+      const stepsArr = Array.isArray(q.steps) ? q.steps : (Array.isArray(q.trackSteps) ? q.trackSteps : null);
+      const hasSteps = Array.isArray(stepsArr) && stepsArr.length > 0;
+      const isLP = matchTab(q, "legendary") && hasSteps;
+
+      if (isLP) {
+        applyLegendaryAccordion(card, String(q.id || ""), state.tab === "legendary");
+      }
+
+      frag.appendChild(card);
+    }
     state.el.list.appendChild(frag);
   }
 
@@ -731,9 +826,17 @@
     state.el.tabs?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.tab) return;
+
+      const nextTab = b.dataset.tab;
+      // optional: when entering Legendary, reset open state so it starts collapsed
+      if (nextTab === "legendary" && state.tab !== "legendary") {
+        try { state.lpOpen.clear(); } catch (_) {}
+      }
+
       $$(".q-tab", state.el.tabs).forEach(x => x.classList.toggle("q-tab--on", x === b));
       $$(".q-tab[role='tab']", state.el.tabs).forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
-      state.tab = b.dataset.tab;
+
+      state.tab = nextTab;
       renderList();
     });
 
