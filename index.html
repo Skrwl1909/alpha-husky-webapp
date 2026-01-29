@@ -350,10 +350,10 @@
   .quest-board{display:grid;grid-template-columns:1fr;gap:10px}
   @media (min-width:720px){.quest-board{grid-template-columns:1fr 1fr}}
   .quest{border:1px solid #243244;border-radius:12px;padding:10px;background:#0e141b}
-  .q-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .q-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:10px}
   .q-name{font-weight:600}
   .q-type{opacity:.7;font-size:12px;margin-left:6px}
-  .q-head-right{display:flex;gap:8px;align-items:center}
+  .q-head-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
   .q-step{font-size:12px;opacity:.8}
   .q-done{font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;padding:2px 6px;border-radius:999px}
   .q-reqs{display:flex;flex-direction:column;gap:8px}
@@ -368,11 +368,9 @@
   #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
   #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
 
-  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
   /* NOWY CSS DLA OPISÓW (desc) – działa idealnie */
-  .q-name-wrapper {
-    flex: 1;
-  }
+  .q-name-wrapper { flex: 1; min-width:0; }
   .q-desc {
     font-size: 13px;
     color: #a0d8ff;
@@ -386,7 +384,44 @@
     font-size: 12.5px;
     margin-top: 4px;
   }
-  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
+
+  /* === Legendary Path: MAIN REWARD (one per track, not per step) === */
+  .q-track-reward{
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(36,50,68,0.9);
+    background: rgba(8, 14, 22, 0.55);
+    backdrop-filter: blur(6px);
+  }
+  .q-track-reward-label{
+    font-size: 12px;
+    opacity: .75;
+    white-space: nowrap;
+  }
+  /* hard cap — nawet jeśli masz globalne img{width:100%} */
+  .q-track-reward img.q-track-reward-icon,
+  .q-track-reward-icon{
+    width: 22px !important;
+    height: 22px !important;
+    max-width: 22px !important;
+    max-height: 22px !important;
+    min-width: 22px !important;
+    min-height: 22px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+    display: block !important;
+    flex: 0 0 22px !important;
+  }
+  .q-track-reward-name{
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
 
   /* === B7: Legendary Path steps (quests.js B5) === */
   .q-steps-wrap{display:flex;flex-direction:column;gap:10px;margin-top:10px}
@@ -396,8 +431,7 @@
   .q-step-sub{opacity:.78;font-size:12px;margin-top:2px}
   .q-step-rew{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
   .q-step-right{display:flex;align-items:center}
-  
-  </style>
+</style>
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
   /* Floating FAQ button – mocniej widoczny */
@@ -785,7 +819,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-01-27b";
+    window.WEBAPP_VER = "2026-01-29a";
   </script>
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -2270,6 +2304,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
