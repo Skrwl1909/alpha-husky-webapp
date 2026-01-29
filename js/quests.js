@@ -68,24 +68,28 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
+  // ✅ Track meta jako doneSteps/totalSteps (nie suma 10+20+5)
   function stepsTotals(stepsArr) {
     const steps = Array.isArray(stepsArr) ? stepsArr : [];
-    let need = 0, have = 0;
+    const total = steps.length;
+    let done = 0;
     for (const s of steps) {
-      const n = Number(s?.need ?? 0) || 0;
-      const c = Number(s?.cur ?? 0) || 0;
-      need += Math.max(0, n);
-      have += Math.min(Math.max(0, c), Math.max(0, n));
+      const need = Number(s?.need ?? 0) || 0;
+      const cur = Number(s?.cur ?? 0) || 0;
+      const claimed = !!s?.claimed;
+      const claimable = !claimed && need > 0 && cur >= need;
+      if (claimed || claimable) done += 1;
     }
-    const pct = need > 0 ? Math.round(100 * have / need) : 0;
-    return { have, need, pct: Math.max(0, Math.min(100, pct)) };
+    const pct = total > 0 ? Math.round(100 * done / total) : 0;
+    return { have: done, need: Math.max(1, total), pct: Math.max(0, Math.min(100, pct)) };
   }
 
   function anyLegendaryStepClaimable(q) {
-    const steps = Array.isArray(q?.steps) ? q.steps : null;
+    const steps = Array.isArray(q?.steps) ? q.steps
+      : (Array.isArray(q?.trackSteps) ? q.trackSteps : null);
     if (!steps || !steps.length) return false;
     return steps.some((s) => {
-      const sid = String(s?.id || "").trim();
+      const sid = String(s?.id || s?.stepId || "").trim();
       const need = Number(s?.need ?? 0) || 0;
       const cur = Number(s?.cur ?? 0) || 0;
       const claimed = !!s?.claimed;
@@ -104,11 +108,20 @@
     if (global.S && typeof global.S.apiPost === "function") {
       return await global.S.apiPost(path, payload || {});
     }
+
+    // ✅ fallback: doklej init_data żeby nie było 401 gdy S.apiPost nie jest ustawione
+    const p = { ...(payload || {}) };
+    if (!("init_data" in p) && !("initData" in p)) {
+      const initData = global.Telegram?.WebApp?.initData || "";
+      if (initData) p.init_data = initData;
+    }
+
     const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload || {})
+      body: JSON.stringify(p)
     });
+
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const err = new Error(data.reason || res.statusText);
@@ -181,7 +194,11 @@
 
       const active = Array.isArray(payload.quests) ? payload.quests : [];
       for (const q of active) {
-        const ready = (q.ready === true) ? true : isComplete(q);
+        // jeśli track ma claimable step, traktuj jak ready (UX)
+        const stepsArr = Array.isArray(q.steps) ? q.steps : (Array.isArray(q.trackSteps) ? q.trackSteps : null);
+        const trackReady = Array.isArray(stepsArr) && stepsArr.length && anyLegendaryStepClaimable({ steps: stepsArr });
+
+        const ready = trackReady ? true : ((q.ready === true) ? true : isComplete(q));
         if (ready) out.ready.push({ ...q, status: q.status || "ready" });
         else out.accepted.push({ ...q, status: q.status || "accepted" });
       }
@@ -299,20 +316,39 @@
     return h > 0 ? `${h}h ${m}m` : (m > 0 ? `${m}m ${s}s` : `${s}s`);
   }
 
+  function sumVals(obj) {
+    let s = 0; for (const k in (obj || {})) s += (Number(obj[k]) || 0);
+    return s;
+  }
+  function sumClamp(progress, req) {
+    let s = 0;
+    const keys = Object.keys(req || {});
+    for (const k of keys) {
+      const need = Number(req[k] || 0);
+      const have = Math.min(Number((progress || {})[k] || 0), need);
+      s += have;
+    }
+    return s;
+  }
+
   function makeCard(q, actions) {
     const cat = questCategory(q);
     const title = esc(q.title || q.name || q.id);
     const typeRaw = q.type || cat;
     const type = esc(typeLabel(typeRaw));
-    const statusRaw = q.status || "accepted";
+
+    // track steps alias
+    const stepsArr = Array.isArray(q.steps) ? q.steps : (Array.isArray(q.trackSteps) ? q.trackSteps : null);
+    const hasSteps = Array.isArray(stepsArr) && stepsArr.length > 0;
+
+    // ✅ UI-ready: jeśli track ma claimable step, pokazuj status Ready
+    let statusRaw = q.status || "accepted";
+    if (hasSteps && anyLegendaryStepClaimable({ steps: stepsArr })) statusRaw = "ready";
     const status = esc(statusLabel(statusRaw));
 
     const desc = q.desc || q.description || "";
     const hint = q.hint || q.tips || "";
     const reqLines = Array.isArray(q.reqLines) ? q.reqLines : null;
-
-    // Legendary track detection
-    const hasSteps = Array.isArray(q.steps) && q.steps.length > 0;
 
     // Meta/progress
     let pct = progressPct(q);
@@ -320,11 +356,11 @@
     let have = (q.progressTotal != null) ? Number(q.progressTotal) : sumClamp(q.progress, q.req || q.required);
     let unit = q.unit || "actions";
 
-    // If legendary steps exist and backend didn't send totals: compute from steps[]
-    if (hasSteps && (!(q.reqTotal != null) || !(q.progressTotal != null))) {
-      const t = stepsTotals(q.steps);
+    // If legendary steps exist and backend didn't send totals: compute doneSteps/totalSteps
+    if (hasSteps && (q.reqTotal == null || q.progressTotal == null)) {
+      const t = stepsTotals(stepsArr);
       have = t.have;
-      need = t.need || 1;
+      need = t.need;
       pct = t.pct;
       unit = q.unit || "steps";
     }
@@ -346,9 +382,9 @@
         </div>
         <div class="q-head-right">
           ${q.step != null && q.steps && !hasSteps
-        ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
-        : ""
-      }
+            ? `<span class="q-step">Step ${Number(q.step) + 1}/${Number(q.steps)}</span>`
+            : ""
+          }
           <span class="q-badge">${status}</span>
         </div>
       </div>
@@ -363,7 +399,7 @@
         </div>
 
         ${reqLines
-        ? `<div class="q-req-lines">
+          ? `<div class="q-req-lines">
               ${reqLines.map(r => `
                 <div class="q-req-line">
                   <span class="q-req-line-name">${esc(r.label || r.key || "Req")}</span>
@@ -371,8 +407,8 @@
                 </div>
               `).join("")}
             </div>`
-        : ""
-      }
+          : ""
+        }
 
         <div class="q-meta">${metaLine}</div>
         ${hint ? `<div class="q-hint">${esc(hint)}</div>` : ""}
@@ -392,8 +428,8 @@
       const wrap = document.createElement("div");
       wrap.className = "q-steps-wrap";
 
-      q.steps.forEach((s) => {
-        const sid = String(s.id || "").trim();
+      stepsArr.forEach((s) => {
+        const sid = String(s.id || s.stepId || "").trim();
         const needS = Number(s.need ?? 0) || 0;
         const curS = Number(s.cur ?? 0) || 0;
         const claimed = !!s.claimed;
@@ -456,8 +492,8 @@
     } else if (statusRaw === "ready") {
       const b = document.createElement("button");
       b.className = "q-btn";
-      b.textContent = "Claim";
-      b.onclick = () => actions.claim(q.id, b);
+      b.textContent = hasSteps ? "Open" : "Claim";
+      b.onclick = () => { if (!hasSteps) actions.claim(q.id, b); };
       act.appendChild(b);
     } else if (statusRaw === "cooldown") {
       const span = document.createElement("span");
@@ -468,21 +504,6 @@
     }
 
     return card;
-  }
-
-  function sumVals(obj) {
-    let s = 0; for (const k in (obj || {})) s += (Number(obj[k]) || 0);
-    return s;
-  }
-  function sumClamp(progress, req) {
-    let s = 0;
-    const keys = Object.keys(req || {});
-    for (const k of keys) {
-      const need = Number(req[k] || 0);
-      const have = Math.min(Number((progress || {})[k] || 0), need);
-      s += have;
-    }
-    return s;
   }
 
   // ===== Controller =====
@@ -532,7 +553,6 @@
 
     const isReadyForTab = (x, tab) => {
       if (!matchTab(x, tab)) return false;
-      // Legendary: show ready count if any step claimable (better UX)
       if (tab === "legendary" && anyLegendaryStepClaimable(x)) return true;
       return x.status === "ready";
     };
@@ -589,7 +609,6 @@
         } finally { setStatus(""); }
       },
 
-      // === Legendary Path: claim a single step (uses /quests/complete + stepId) ===
       legendaryClaim: async (trackId, stepId, btn) => {
         try {
           if (btn) btn.disabled = true;
@@ -605,7 +624,6 @@
         } finally { setStatus(""); }
       },
 
-      // === akcja dla legacy daily (/webapp/daily/action) ===
       daily: async (action, raid, btn) => {
         try {
           if (btn) btn.disabled = true;
@@ -650,7 +668,6 @@
     if (state._wired) return;
     state._wired = true;
 
-    // Tabs (categories)
     state.el.tabs?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.tab) return;
@@ -660,7 +677,6 @@
       renderList();
     });
 
-    // Chips (states)
     state.el.chips?.addEventListener("click", (e) => {
       const b = e.target.closest(".q-tab");
       if (!b || !b.dataset.state) return;
@@ -669,18 +685,13 @@
       renderList();
     });
 
-    // Refresh
     if (state.el.refresh) state.el.refresh.onclick = () => refresh();
-
-    // Close button
     if (state.el.close) state.el.close.onclick = () => closeModal();
 
-    // Click on backdrop closes
     state.el.back?.addEventListener("click", (e) => {
       if (e.target === state.el.back) closeModal();
     });
 
-    // ESC to close
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && state.el.back && state.el.back.style.display === "flex") {
         closeModal();
@@ -698,7 +709,6 @@
       state.tg = tg || null;
       state.debug = typeof dbg === "function" ? dbg : noop;
 
-      // scope wszystko do modala Mission Board (#qBack)
       state.el.back = $("#qBack");
       const root = state.el.back || document;
 
