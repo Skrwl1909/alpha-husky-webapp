@@ -98,14 +98,57 @@
     border:1px solid rgba(255,255,255,.16);
     backdrop-filter:blur(8px);
   }
-  @media (max-width:380px){
-    .hud-layout{ gap:8px; }
-    .hud-col .btn{
-      font-size:12px;
-      padding:6px 8px;
-    }
-    .hero-frame{ width:56vw; }
+  .hero-center .share-row{
+  margin-top: 8px;
+  display: flex;             /* JS pokaże przez style.display="" */
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+
+  position: relative;
+  z-index: 2; /* niżej niż buffsLine (z-index:6) */
+}
+
+.hero-center .btn.share-mini{
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  min-width: 78px;
+
+  background: rgba(0,0,0,.40);
+  border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 20px rgba(0,0,0,.35);
+}
+
+.hero-center .btn.share-mini:hover{
+  box-shadow: 0 12px 24px rgba(0,0,0,.45);
+}
+
+.hero-center .btn.share-mini:active{
+  transform: translateY(1px);
+}
+
+@media (max-width:380px){
+  .hud-layout{ gap:8px; }
+  .hud-col .btn{
+    font-size:12px;
+    padding:6px 8px;
   }
+  .hero-frame{ width:56vw; }
+
+  .hero-center .share-row{
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .hero-center .btn.share-mini{
+    padding: 6px 9px;
+    font-size: 11px;
+    min-width: 72px;
+  }
+}
     
 
   
@@ -2352,6 +2395,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
