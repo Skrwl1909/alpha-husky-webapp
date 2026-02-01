@@ -1,9 +1,46 @@
-// js/arena.js — Pet Arena Replay (minimal)
+// js/arena.js — Pet Arena Replay (minimal) + optional Pixi overlay (dynamic load, zero index.html changes)
 (function () {
   function el(id) { return document.getElementById(id); }
   function esc(s){ return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  // ===================== Pixi dynamic loader (no index.html edits needed) =====================
+  function loadScriptOnce(url, testFn) {
+    return new Promise((resolve, reject) => {
+      try { if (testFn && testFn()) return resolve(true); } catch(_) {}
+
+      // prevent duplicates
+      const already = Array.from(document.scripts || []).some(s => String(s.src || "").includes(url.split("?")[0]));
+      if (already) return resolve(true);
+
+      const s = document.createElement("script");
+      s.src = url;
+      s.async = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => reject(new Error("Failed to load: " + url));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureArenaPixi() {
+    const v = (window.WEBAPP_VER || Date.now());
+    // 1) Pixi
+    if (!window.PIXI) {
+      await loadScriptOnce(
+        "https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js",
+        () => !!window.PIXI
+      );
+    }
+    // 2) Your Pixi overlay module hosted in your app
+    if (!window.ArenaPixi) {
+      await loadScriptOnce(
+        `/js/arena_pixi.js?v=${encodeURIComponent(v)}`,
+        () => !!window.ArenaPixi
+      );
+    }
+    return true;
+  }
 
   window.Arena = {
     _apiPost: null,
@@ -51,28 +88,35 @@
           </div>
 
           <div class="card" style="flex:1;min-height:0;position:relative;overflow:hidden;">
-            <div style="display:flex;gap:10px;align-items:center;">
-              <div style="flex:1;min-width:0">
-                <div id="you-name" style="font-weight:800;"></div>
-                <div class="bar" style="margin-top:6px;"><div id="you-fill" class="fill"></div></div>
-              </div>
-              <div style="flex:1;min-width:0;text-align:right">
-                <div id="foe-name" style="font-weight:800;"></div>
-                <div class="bar" style="margin-top:6px;"><div id="foe-fill" class="fill"></div></div>
-              </div>
-            </div>
+            <!-- PIXI stage (background layer) -->
+            <div id="arenaStage" style="position:absolute;inset:0;z-index:0;"></div>
+            <!-- UI layer (foreground) -->
+            <div id="arenaUi" style="position:relative;z-index:1;height:100%;">
 
-            <div style="position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:space-between;padding:0 16px;">
-              <div id="you-sprite" style="width:42%;height:64%;display:flex;align-items:flex-end;justify-content:center;position:relative;">
-                <div id="you-icon" style="font-size:64px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45));">🐺</div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <div style="flex:1;min-width:0">
+                  <div id="you-name" style="font-weight:800;"></div>
+                  <div class="bar" style="margin-top:6px;"><div id="you-fill" class="fill"></div></div>
+                </div>
+                <div style="flex:1;min-width:0;text-align:right">
+                  <div id="foe-name" style="font-weight:800;"></div>
+                  <div class="bar" style="margin-top:6px;"><div id="foe-fill" class="fill"></div></div>
+                </div>
               </div>
-              <div id="foe-sprite" style="width:42%;height:64%;display:flex;align-items:flex-end;justify-content:center;position:relative;">
-                <div id="foe-icon" style="font-size:64px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45));transform:scaleX(-1);">🐺</div>
-              </div>
-            </div>
 
-            <div id="result" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-              font-weight:900;font-size:42px;opacity:0;transition:opacity .6s; text-shadow:0 10px 30px rgba(0,0,0,.6);">
+              <div style="position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:space-between;padding:0 16px;">
+                <div id="you-sprite" style="width:42%;height:64%;display:flex;align-items:flex-end;justify-content:center;position:relative;">
+                  <div id="you-icon" style="font-size:64px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45));">🐺</div>
+                </div>
+                <div id="foe-sprite" style="width:42%;height:64%;display:flex;align-items:flex-end;justify-content:center;position:relative;">
+                  <div id="foe-icon" style="font-size:64px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45));transform:scaleX(-1);">🐺</div>
+                </div>
+              </div>
+
+              <div id="result" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                font-weight:900;font-size:42px;opacity:0;transition:opacity .6s; text-shadow:0 10px 30px rgba(0,0,0,.6);">
+              </div>
+
             </div>
           </div>
 
@@ -82,14 +126,21 @@
         </div>
       `;
 
+      // optional: load Pixi only for Arena (no index.html changes)
+      try { await ensureArenaPixi(); } catch(e) { if (this._dbg) console.warn("Pixi load failed:", e); }
+
       el("arena-close").onclick = () => {
+        try { window.ArenaPixi?.destroy?.(); } catch(e){}
         document.body.style.overflow = document.body.dataset.prevOverflow || "";
         delete document.body.dataset.prevOverflow;
         if (window.Map?.open) return window.Map.open();
         window.location.reload();
       };
 
-      el("arena-replay").onclick = () => this.open(battleId);
+      el("arena-replay").onclick = () => {
+        try { window.ArenaPixi?.destroy?.(); } catch(e){}
+        this.open(battleId);
+      };
 
       const res = await this._apiPost("/webapp/arena/replay", { battle_id: battleId });
       if (!res?.ok) {
@@ -140,32 +191,59 @@
       const result = el("result");
       result.style.opacity = 0;
 
+      // ---- PIXI overlay (optional) ----
+      const stageEl = el("arenaStage");
+      const usePixi = !!(stageEl && window.PIXI && window.ArenaPixi);
+
+      if (usePixi) {
+        try {
+          // hide DOM emoji; Pixi draws actors underneath
+          youIcon.style.opacity = "0";
+          foeIcon.style.opacity = "0";
+
+          window.ArenaPixi.init(stageEl);
+          // if your arena_pixi.js supports images, it can use you/foe fields to pick sprite URLs
+          await window.ArenaPixi.setActors({ you, foe, flipFoe: true });
+        } catch (e) {
+          if (this._dbg) console.warn("ArenaPixi init failed:", e);
+        }
+      } else {
+        // ensure they are visible in fallback mode
+        youIcon.style.opacity = "1";
+        foeIcon.style.opacity = "1";
+      }
+
       const steps = data.steps || [];
       for (const st of steps) {
         const p = this._stepPerspective(st, youAreP1);
 
-        // animate attack
-        const attacker = p.youAttacked ? youIcon : foeIcon;
-        const target   = p.youAttacked ? foeIcon : youIcon;
+        if (usePixi && window.ArenaPixi?.attack) {
+          try { window.ArenaPixi.attack(p.youAttacked, p.dmg, p.crit); } catch(e){}
+          await sleep(220);
+        } else {
+          // --- DOM fallback (your original animations) ---
+          const attacker = p.youAttacked ? youIcon : foeIcon;
+          const target   = p.youAttacked ? foeIcon : youIcon;
 
-        attacker.classList.add(p.youAttacked ? "atkL" : "atkR");
-        setTimeout(() => attacker.classList.remove(p.youAttacked ? "atkL" : "atkR"), 560);
+          attacker.classList.add(p.youAttacked ? "atkL" : "atkR");
+          setTimeout(() => attacker.classList.remove(p.youAttacked ? "atkL" : "atkR"), 560);
 
-        await sleep(220);
+          await sleep(220);
 
-        target.classList.add("hit");
-        setTimeout(() => target.classList.remove("hit"), 460);
+          target.classList.add("hit");
+          setTimeout(() => target.classList.remove("hit"), 460);
 
-        // dmg pop
-        const dmgEl = document.createElement("div");
-        dmgEl.className = "dmg";
-        dmgEl.textContent = `-${p.dmg}${p.crit ? " CRIT!" : ""}`;
-        dmgEl.style.left = "50%";
-        dmgEl.style.top = "48%";
-        dmgEl.style.transform = "translate(-50%,-50%)";
-        dmgEl.style.color = p.crit ? "#ffd166" : "#ff5d5d";
-        (p.youAttacked ? foeSprite : youSprite).appendChild(dmgEl);
-        setTimeout(() => dmgEl.remove(), 900);
+          // dmg pop
+          const dmgEl = document.createElement("div");
+          dmgEl.className = "dmg";
+          dmgEl.textContent = `-${p.dmg}${p.crit ? " CRIT!" : ""}`;
+          dmgEl.style.left = "50%";
+          dmgEl.style.top = "48%";
+          dmgEl.style.transform = "translate(-50%,-50%)";
+          dmgEl.style.color = p.crit ? "#ffd166" : "#ff5d5d";
+          (p.youAttacked ? foeSprite : youSprite).appendChild(dmgEl);
+          setTimeout(() => dmgEl.remove(), 900);
+        }
 
         // hp update (use step hp values)
         youHp = Math.max(0, Number(p.youHp || youHp));
