@@ -621,6 +621,11 @@
     <span>·</span>
     <span id="heroLevel">Lv.1</span>
   </div>
+  <div class="share-row" id="shareRow" style="display:none">
+  <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
+  <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
+  <button class="btn share-mini" type="button" data-share-style="3">Share III</button>
+</div>
 
   <!-- ✅ ACTIVE BUFFS (pod nickiem/levelem) -->
   <div id="buffsLine" class="buffs-line" style="display:none"></div>
@@ -2286,6 +2291,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="js/forge.js?v=WEBAPP_VER"></script>
   <script src="/js/updates.js?v=WEBAPP_VER"></script>
   <script src="js/mypets.js?v=WEBAPP_VER"></script>
+  <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -2346,6 +2352,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
