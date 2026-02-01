@@ -1197,6 +1197,12 @@ async function apiPost(path, payload){
 
 window.S = window.S || {};
 window.S.apiPost = apiPost;
+      
+window.apiPost = apiPost;
+
+window.AH = window.AH || {};
+window.AH.apiPost = apiPost;
+      
 
 const _tg  = window.tg || window.Telegram?.WebApp || null;
 const _dbg = !!window.DBG;
@@ -2399,6 +2405,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
