@@ -1,81 +1,68 @@
-// public/js/share_levelup.js
-(function () {
-  function safeToast(msg) {
-    try { window.toast?.(msg); return; } catch (_) {}
-    try { Telegram?.WebApp?.showPopup?.({ title: "Alpha Husky", message: msg, buttons: [{ type: "close" }] }); return; } catch (_) {}
-    try { alert(msg); } catch (_) {}
+// js/share_levelup.js
+(function (global) {
+  function toast(msg) {
+    try {
+      if (global.Telegram?.WebApp?.showPopup) {
+        global.Telegram.WebApp.showPopup({
+          title: "Share Card",
+          message: String(msg || ""),
+          buttons: [{ type: "close" }]
+        });
+        return;
+      }
+    } catch (_) {}
+    alert(msg);
   }
 
-  async function copyToClipboard(text) {
+  async function copyText(s) {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(String(s));
       return true;
     } catch (_) {
-      // fallback
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        return true;
-      } catch (e) {
-        return false;
-      }
+      return false;
     }
   }
 
-  async function apiPost(path, body) {
-    // jeśli masz już globalne window.apiPost — użyj go
-    if (typeof window.apiPost === "function") return window.apiPost(path, body);
-
-    // minimalny fallback (gdybyś odpalał standalone)
-    const initData = Telegram?.WebApp?.initData || "";
-    const res = await fetch(path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": initData ? ("Bearer " + initData) : ""
-      },
-      body: JSON.stringify({ ...(body || {}), init_data: initData })
-    });
-    return res.json();
-  }
-
-  async function createLevelUpShareCard(style) {
-    const payload = { style: Number(style || 1) };
-    const r = await apiPost("/webapp/share/levelup", payload);
-    if (!r || !r.ok) throw new Error((r && (r.reason || r.error)) || "SHARE_FAIL");
-    return r; // { ok, style, file, url, abs }
-  }
-
-  async function shareLevelUp(style) {
+  function openLink(url) {
     try {
-      const r = await createLevelUpShareCard(style);
-      const link = r.abs || r.url;
-
-      // 1) skopiuj link
-      const okCopy = await copyToClipboard(link);
-      if (okCopy) safeToast("Share link copied ✅");
-      else safeToast("Couldn’t copy automatically. Link opened.");
-
-      // 2) otwórz preview w nowej karcie (Telegram WebApp też otworzy)
-      try { Telegram?.WebApp?.openLink?.(link); }
-      catch (_) { window.open(link, "_blank"); }
-
-      return r;
-    } catch (e) {
-      safeToast("Share card failed: " + (e?.message || e));
-      throw e;
-    }
+      if (global.Telegram?.WebApp?.openLink) {
+        global.Telegram.WebApp.openLink(url);
+        return;
+      }
+    } catch (_) {}
+    window.open(url, "_blank");
   }
 
-  // public API
-  window.ShareLevelUp = {
-    share: shareLevelUp,
-    create: createLevelUpShareCard
-  };
-})();
+  async function share(style) {
+    const apiPost = global.apiPost || global.AH?.apiPost;
+    if (!apiPost) {
+      toast("apiPost missing (frontend not initialized yet)");
+      return;
+    }
+
+    try { global.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+    const res = await apiPost("/webapp/share/levelup", { style: Number(style || 1) });
+    if (!res || !res.ok) {
+      toast("Share failed: " + (res?.reason || "UNKNOWN"));
+      return;
+    }
+
+    // priorytet: ABS z backendu (pewne)
+    const url = res.abs || (location.origin + (res.url || ""));
+    const copied = await copyText(url);
+
+    toast(copied ? "Link copied ✅" : "Opened ✅ (copy blocked)");
+    openLink(url);
+  }
+
+  // event delegation – działa nawet jak guziki są dodane dynamicznie
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-share-levelup-style]");
+    if (!btn) return;
+    const style = Number(btn.getAttribute("data-share-levelup-style") || "1");
+    share(style);
+  });
+
+  global.ShareLevelUp = { share };
+})(window);
