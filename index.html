@@ -61,46 +61,19 @@
     font-size:13px;
   }
   .hero-center{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-end;
-    gap:6px;
-  }
-  .hero-frame{
-    width:min(46vw, 210px);
-    aspect-ratio:3/4;
-    border-radius:24px;
-    background:
-      radial-gradient(circle at top left, rgba(0,229,255,.2), transparent 60%),
-      radial-gradient(circle at bottom right, rgba(255,176,0,.2), transparent 60%),
-      rgba(0,0,0,.7);
-    border:1px solid rgba(255,255,255,.22);
-    box-shadow:0 18px 40px rgba(0,0,0,.6);
-    overflow:hidden;
-  }
-  .hero-frame img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-  }
-  .hero-caption{
-    font-size:13px;
-    display:flex;
-    gap:6px;
-    align-items:center;
-    justify-content:center;
-    padding:4px 8px;
-    border-radius:999px;
-    background:rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.16);
-    backdrop-filter:blur(8px);
-  }
-  .hero-center .share-row{
-  margin-top: 8px;
-  display: flex;             /* JS pokaże przez style.display="" */
+  flex:1;
+  min-width:0; /* ważne dla flexa: środek nie wypycha prawej kolumny */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+}
+
+/* ✅ SHARE ROW — ma być NAD skinem (czyli odstęp w dół, nie w górę) */
+.hero-center .share-row{
+  margin-bottom: 8px;          /* <-- NAD hero-frame */
+  display: flex;               /* JS pokaże przez style.display="" */
   gap: 8px;
   justify-content: center;
   align-items: center;
@@ -131,6 +104,40 @@
   transform: translateY(1px);
 }
 
+.hero-frame{
+  width:min(46vw, 210px);
+  aspect-ratio:3/4;
+  border-radius:24px;
+  background:
+    radial-gradient(circle at top left, rgba(0,229,255,.2), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(255,176,0,.2), transparent 60%),
+    rgba(0,0,0,.7);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 18px 40px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+
+.hero-frame img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.hero-caption{
+  font-size:13px;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(8px);
+}
+
+/* ✅ MOBILE */
 @media (max-width:380px){
   .hud-layout{ gap:8px; }
   .hud-col .btn{
@@ -141,7 +148,7 @@
 
   .hero-center .share-row{
     gap: 6px;
-    margin-top: 6px;
+    margin-bottom: 6px; /* nadal NAD skinem */
   }
   .hero-center .btn.share-mini{
     padding: 6px 9px;
@@ -149,10 +156,11 @@
     min-width: 72px;
   }
 }
-    
 
-  
-  /* Active Buffs line — overlay (NIE wpływa na layout kolumn) */
+/* =========================
+   Active Buffs line — overlay
+   (NIE wpływa na layout kolumn)
+   ========================= */
 #buffsLine.buffs-line{
   position: fixed;
   left: 14px;
@@ -185,19 +193,15 @@
   box-shadow: 0 8px 18px rgba(0,0,0,.35);
 
   box-sizing: border-box;
-  transition: opacity .15s ease;
+  transition: opacity .15s ease, transform .08s ease;
   opacity: .95;
 }
 
 #buffsLine.buffs-line:hover{ opacity: 1; }
-}
+#buffsLine.buffs-line:active{ transform: translateY(1px); }
 
-/* ✅ polish */
-.buffs-line:hover{
-  opacity: 1;
-}
+.buffs-line:hover{ opacity: 1; }
 
-/* ważne dla flexa: środek nie wypycha prawej kolumny */
 .hero-center{ min-width: 0; }
 
 .buffs-line:active{
@@ -2395,6 +2399,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
