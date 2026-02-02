@@ -1308,19 +1308,27 @@ window.AH_makeRunId = function(prefix, key) {
   return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
 };
 
+/* ===== MODULE INIT (existing) ===== */
 window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
 window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
+
+// NOTE: Arena may be lazy-loaded, but init is still safe if already present
 window.Arena?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-    
-// --- Arena: lazy-load (safe even if not in HTML) ---
+
+/* ===== ARENA: LAZY-LOAD (safe even if not in HTML) ===== */
 async function ensureArenaLoaded(apiPost, tg, dbg) {
-  if (window.Arena?.open) return true;
+  // If Arena already exists (loaded via HTML or earlier), just (re)init and return.
+  if (window.Arena?.open) {
+    window.Arena?.init?.({ apiPost, tg, dbg });
+    return true;
+  }
 
   const v = (window.WEBAPP_VER || Date.now());
+
   await new Promise((resolve, reject) => {
     // prevent duplicates
     const already = Array.from(document.scripts || []).some(s =>
@@ -1340,14 +1348,13 @@ async function ensureArenaLoaded(apiPost, tg, dbg) {
   window.Arena?.init?.({ apiPost, tg, dbg });
   return true;
 }
-      
-// skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML)
+
+/* ===== skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML) ===== */
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
 ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
 ensureUpdatesLoaded(apiPost, _tg, _dbg).catch(()=>{});
 
-// --- Adopt: open on button/pin click (delegation-safe) ---
-// Użyj data-action="adopt" na przycisku, albo dopasuj selektor poniżej.
+/* ===== Adopt: open on button/pin click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest('[data-action="adopt"], .btn.adopt, .btn-adopt, .adopt-btn');
   if (!btn) return;
@@ -1363,9 +1370,11 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+/* ===== Arena: open on button click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".btn.arena");
   if (!btn) return;
+
   e.preventDefault();
 
   try {
@@ -1383,7 +1392,7 @@ document.addEventListener("click", async (e) => {
   try {
     const res = await apiPost("/webapp/arena/last", {});
     battleId = res?.battle_id || res?.data?.battle_id || null;
-  } catch (err) {
+  } catch (_) {
     battleId = null;
   }
 
@@ -1400,11 +1409,15 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
-  window.Arena?.open?.(battleId);
+  try {
+    window.Arena?.open?.(battleId);
+  } catch (err) {
+    console.error("[Arena] open failed", err);
+    window.toast?.("Arena failed to open");
+  }
 });
 
-      
-// --- Updates: open on button click (delegation-safe) ---
+/* ===== Updates: open on button click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest('#btnWhatsNew, .btn.whatsnew, [data-action="whatsnew"], .whatsnew-btn');
   if (!btn) return;
@@ -1420,7 +1433,8 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-        setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
+/* ===== Combat init (existing) ===== */
+setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -2474,6 +2488,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
