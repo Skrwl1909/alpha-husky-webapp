@@ -682,7 +682,7 @@
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
             <button class="btn char" aria-label="Open Character" type="button">Character</button>
-            <button class="btn pets" aria-label="Open Pets" type="button">Pets</button>
+            <button class="btn arena" aria-label="Open Arena" type="button">Arena</button>
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
             <button class="btn equipped" aria-label="Open Equipped" type="button" onclick="window.Equipped?.open?.()">Equipped</button>
             <!-- ✅ TU -->
@@ -1314,7 +1314,33 @@ window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
 window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
+window.Arena?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+    
+// --- Arena: lazy-load (safe even if not in HTML) ---
+async function ensureArenaLoaded(apiPost, tg, dbg) {
+  if (window.Arena?.open) return true;
 
+  const v = (window.WEBAPP_VER || Date.now());
+  await new Promise((resolve, reject) => {
+    // prevent duplicates
+    const already = Array.from(document.scripts || []).some(s =>
+      String(s.src || "").includes("/js/arena.js")
+    );
+    if (already) return resolve(true);
+
+    const s = document.createElement("script");
+    s.src = `/js/arena.js?v=${encodeURIComponent(v)}`;
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("arena.js load failed"));
+    document.head.appendChild(s);
+  });
+
+  // init after load (idempotent in your arena.js)
+  window.Arena?.init?.({ apiPost, tg, dbg });
+  return true;
+}
+      
 // skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML)
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
 ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
@@ -1337,6 +1363,47 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.arena");
+  if (!btn) return;
+  e.preventDefault();
+
+  try {
+    await ensureArenaLoaded(apiPost, _tg, _dbg);
+  } catch (err) {
+    console.error("[Arena] load failed", err);
+    window.toast?.("Arena failed to load");
+    return;
+  }
+
+  // (opcjonalnie) haptic
+  try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch(_) {}
+
+  let battleId = null;
+  try {
+    const res = await apiPost("/webapp/arena/last", {});
+    battleId = res?.battle_id || res?.data?.battle_id || null;
+  } catch (err) {
+    battleId = null;
+  }
+
+  if (!battleId) {
+    try {
+      _tg?.showPopup?.({
+        title: "Arena",
+        message: "No recent arena battles yet.",
+        buttons: [{ type: "close" }]
+      });
+    } catch (_) {
+      alert("No recent arena battles yet.");
+    }
+    return;
+  }
+
+  window.Arena?.open?.(battleId);
+});
+
+      
 // --- Updates: open on button click (delegation-safe) ---
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest('#btnWhatsNew, .btn.whatsnew, [data-action="whatsnew"], .whatsnew-btn');
@@ -2345,6 +2412,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="/js/updates.js?v=WEBAPP_VER"></script>
   <script src="js/mypets.js?v=WEBAPP_VER"></script>
   <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
+  <script src="/js/arena.js?v=WEBAPP_VER"></script>
+
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -2405,6 +2474,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
