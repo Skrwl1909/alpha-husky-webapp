@@ -104,35 +104,72 @@
     } catch (_) {}
     window.open(u, "_blank", "noopener");
   }
+  
+  function postOnX(cardUrl) {
+  // wyciągnij level z UI (np. "Lv.65" / "LV 65" / "Pack - Lv 65")
+  const raw =
+    (document.getElementById("heroLevel")?.textContent || "") ||
+    (document.querySelector("#heroLevel")?.textContent || "");
+
+  const m = String(raw || "").match(/(\d+)/);
+  const lvl = m ? m[1] : "";
+
+  // mocny, krótki copy (bez AI slopu)
+  const text =
+    `LEVEL UP.\n` +
+    `Pack Lv ${lvl || "?"}. 🐺\n` +
+    `No noise — just work.\n\n` +
+    `#AlphaHusky #HOWLitsMade`;
+
+  const intent =
+    "https://x.com/intent/tweet?text=" +
+    encodeURIComponent(text) +
+    "&url=" +
+    encodeURIComponent(cardUrl);
+
+  try {
+    if (global.Telegram?.WebApp?.openLink) {
+      global.Telegram.WebApp.openLink(intent);
+      return;
+    }
+  } catch (_) {}
+
+  window.open(intent, "_blank", "noopener");
+}
 
   function popupResult(url) {
-    const tg = global.Telegram?.WebApp;
-    if (tg?.showPopup) {
-      try {
-        tg.showPopup(
-          {
-            title: "Share Card Ready",
-            message: "Card generated. Open it, save, and share.",
-            buttons: [
-              { id: "open", type: "default", text: "Open card" },
-              { id: "copy", type: "default", text: "Copy link" },
-              { type: "close" }
-            ]
-          },
-          async (btnId) => {
-            if (btnId === "open") openLink(url);
-            if (btnId === "copy") {
-              const ok = await copyText(url);
-              toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
-            }
+  const tg = global.Telegram?.WebApp;
+  if (tg?.showPopup) {
+    try {
+      tg.showPopup(
+        {
+          title: "Share Card Ready",
+          message: "Card generated. Open it, save, and share.",
+          buttons: [
+            { id: "open", type: "default", text: "Open card" },
+            { id: "copy", type: "default", text: "Copy link" },
+            { id: "x", type: "default", text: "Post on X" },
+            { type: "close" }
+          ]
+        },
+        async (btnId) => {
+          if (btnId === "open") openLink(url);
+          if (btnId === "copy") {
+            const ok = await copyText(url);
+            toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
           }
-        );
-        return;
-      } catch (_) {}
-    }
-
-    if (confirm("Share card generated. Open it now?")) openLink(url);
+          if (btnId === "x") {
+            postOnX(url);
+          }
+        }
+      );
+      return;
+    } catch (_) {}
   }
+
+  // fallback (bez Telegram popup)
+  if (confirm("Share card generated. Open it now?")) openLink(url);
+}
 
   async function share(style, btnEl) {
     const apiPost = global.apiPost || global.AH?.apiPost;
