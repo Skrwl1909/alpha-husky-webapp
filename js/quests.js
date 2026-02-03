@@ -29,7 +29,7 @@
   // ✅ ONE MAIN REWARD per track (shown once on the card, not per step)
  // (optional) fallback map — możesz zostawić tylko lp_ashclaw, reszta poleci auto z previewLoot
 const LP_TRACK_REWARD = {
-  "lp_Rustfire": {
+  "lp_ashclaw": {
     icon: "v1769370188/equip/rustfire_seraph_helmet.png",
     name: "Rustfire Seraph Helmet"
   }
