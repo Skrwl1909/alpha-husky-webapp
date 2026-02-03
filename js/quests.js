@@ -30,7 +30,7 @@
  // (optional) fallback map — możesz zostawić tylko lp_ashclaw, reszta poleci auto z previewLoot
 const LP_TRACK_REWARD = {
   "lp_Rustfire": {
-    icon: "/assets/equip/rustfire_seraph_helmet.png",
+    icon: "v1769370188/equip/rustfire_seraph_helmet.png",
     name: "Rustfire Seraph Helmet"
   }
 };
