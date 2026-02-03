@@ -27,45 +27,122 @@
   }
 
   // ✅ ONE MAIN REWARD per track (shown once on the card, not per step)
-  // Replace icon/name with your real "final reward" asset for the whole track.
-  const LP_TRACK_REWARD = {
-  "lp_ashclaw": {
-    icon: "v1769370188/equip/rustfire_seraph_helmet.png",
+ // (optional) fallback map — możesz zostawić tylko lp_ashclaw, reszta poleci auto z previewLoot
+const LP_TRACK_REWARD = {
+  "lp_Rustfire": {
+    icon: "/assets/equip/rustfire_seraph_helmet.png",
     name: "Rustfire Seraph Helmet"
   }
 };
 
-  function _getTrackId(q) {
-    return String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
+function _getTrackId(q) {
+  return String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
+}
+
+function _slug(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function _title(s) {
+  s = String(s || "").replace(/[_\-]+/g, " ").trim();
+  return s ? s.replace(/\b\w/g, m => m.toUpperCase()) : "";
+}
+
+// icon resolver: supports /assets/*, full URLs, and Cloudinary paths
+function _iconSrc(src) {
+  const s = String(src || "").trim();
+  if (!s) return "";
+  if (s.startsWith("/assets/")) return s;
+  return cdn(s); // cdn() already accepts full URLs / cloudinary paths
+}
+
+// pick preview loot: server previewLoot > track loot[0] > first step loot[0]
+function _pickPreviewLoot(q) {
+  if (q && typeof q.previewLoot === "object" && q.previewLoot) return q.previewLoot;
+
+  if (Array.isArray(q?.loot) && q.loot[0] && typeof q.loot[0] === "object") return q.loot[0];
+
+  const steps = Array.isArray(q?.steps) ? q.steps : null;
+  if (steps) {
+    for (const s of steps) {
+      const ll = s?.loot;
+      if (Array.isArray(ll) && ll[0] && typeof ll[0] === "object") return ll[0];
+    }
+  }
+  return null;
+}
+
+function _lootToRewardCfg(loot) {
+  if (!loot || typeof loot !== "object") return null;
+
+  // if backend ever adds explicit icon/name, use it
+  const icon = loot.icon || loot.image || loot.img || "";
+  const name = loot.name || loot.label || "";
+
+  if (icon || name) {
+    return { icon: icon || "", name: name || "Final Reward" };
   }
 
-  function _renderTrackReward(q) {
-    const trackId = _getTrackId(q);
-    const cfg = LP_TRACK_REWARD[trackId];
-    if (!cfg) return "";
+  // gear: derive from set+slot
+  if (String(loot.type || "").toLowerCase() === "gear") {
+    const set = loot.set || loot.set_name || loot.set_id || "";
+    const slot = loot.slot || "";
+    const setSlug = _slug(set);
+    const slotSlug = _slug(slot);
 
-    const iconUrl = cdn(cfg.icon);
-    const name = esc(cfg.name || "Final Reward");
-
-    // ✅ inline size hard-cap (protects against global img{width:100%})
-    const img = iconUrl
-      ? `<img class="q-track-reward-icon"
-              src="${esc(iconUrl)}"
-              alt=""
-              loading="lazy"
-              decoding="async"
-              style="width:22px;height:22px;max-width:22px;max-height:22px;object-fit:cover;border-radius:6px;flex:0 0 22px;display:block;"
-              onerror="this.style.display='none'">`
+    // local assets path (recommended)
+    const localIcon = (setSlug && slotSlug)
+      ? `/assets/equip/${setSlug}_${slotSlug}.png`
       : "";
 
-    return `
-      <div class="q-track-reward" data-track-reward="1">
-        <span class="q-track-reward-label">Main reward</span>
-        ${img}
-        <span class="q-track-reward-name">${name}</span>
-      </div>
-    `;
+    const humanName = (set && slot)
+      ? `${_title(setSlug)} ${_title(slotSlug)}`
+      : "Final Reward";
+
+    return { icon: localIcon, name: humanName };
   }
+
+  return null;
+}
+
+function _renderTrackReward(q) {
+  const trackId = _getTrackId(q);
+
+  // 1) fallback manual config
+  let cfg = LP_TRACK_REWARD[trackId];
+
+  // 2) auto from previewLoot
+  if (!cfg) {
+    const lootPrev = _pickPreviewLoot(q);
+    cfg = _lootToRewardCfg(lootPrev);
+  }
+
+  if (!cfg) return "";
+
+  const iconUrl = _iconSrc(cfg.icon);
+  const name = esc(cfg.name || "Final Reward");
+
+  const img = iconUrl
+    ? `<img class="q-track-reward-icon"
+            src="${esc(iconUrl)}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style="width:22px;height:22px;max-width:22px;max-height:22px;object-fit:cover;border-radius:6px;flex:0 0 22px;display:block;"
+            onerror="this.style.display='none'">`
+    : "";
+
+  return `
+    <div class="q-track-reward" data-track-reward="1">
+      <span class="q-track-reward-label">Main reward</span>
+      ${img}
+      <span class="q-track-reward-name">${name}</span>
+    </div>
+  `;
+}
 
   function isComplete(q) {
     const req = q.req || q.required || {};
