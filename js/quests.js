@@ -15,6 +15,9 @@
   // ===== Cloudinary (Legendary Path main reward preview) =====
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload/";
 
+  // ✅ prefix dla ikon gear (dokładnie jak w lp_ashclaw)
+const LP_EQUIP_PREFIX = "v1769370188/equip/";
+
   // accepts:
   // - full URL: https://res.cloudinary.com/.../image/upload/v123/folder/file.png
   // - path after /upload/: v123/folder/file.png
@@ -745,8 +748,8 @@ function _renderTrackReward(q) {
       });
     }
 
-    const wantOpen = state.lpOpen.has(id) ? true : !defaultCollapsed;
-    setOpen(wantOpen, true);
+    const wantOpen = state.lpOpen.has(id) ? true : false; // ✅ default closed always
+setOpen(wantOpen, true);
 
     const toggle = () => {
       const open = !card.classList.contains("is-open");
@@ -866,11 +869,12 @@ function _renderTrackReward(q) {
 
       const stepsArr = Array.isArray(q.steps) ? q.steps : (Array.isArray(q.trackSteps) ? q.trackSteps : null);
       const hasSteps = Array.isArray(stepsArr) && stepsArr.length > 0;
-      const isLP = matchTab(q, "legendary") && hasSteps;
+      const cat = String(q.cat || q.category || q.type || "").toLowerCase();
+    const isLP = hasSteps && (cat === "legendary" || cat === "legendary_path" || cat === "legendarypath");
 
-      if (isLP) {
-        applyLegendaryAccordion(card, String(q.id || ""), state.tab === "legendary");
-      }
+    if (isLP) {
+      applyLegendaryAccordion(card, String(q.id || ""), true); // ✅ ALWAYS collapsed by default
+    }
 
       frag.appendChild(card);
     }
