@@ -1,4 +1,10 @@
-// js/share_levelup.js — FINAL v2 (force shareRow ABOVE skin + run_id + better popup)
+```js
+// js/share_levelup.js — FINAL v2.1
+// ✅ shareRow forced ABOVE hero-frame
+// ✅ run_id + busy lock + haptics
+// ✅ better popup: Open / Copy / Post on X
+// ✅ apiPost lookup: window.apiPost OR window.S.apiPost OR window.AH.apiPost
+// ✅ supports buttons: data-share-style OR data-share-levelup-style
 (function (global) {
   let _dbg = false;
   const log = (...a) => { if (_dbg) console.log("[ShareLevelUp]", ...a); };
@@ -19,9 +25,16 @@
     alert(t + "\n\n" + m);
   }
 
-  function mkRunId(prefix) {
+  // prefer shared run_id helper if present (you already have AH_makeRunId)
+  function mkRunId(prefix, key) {
+    try {
+      if (typeof global.AH_makeRunId === "function") {
+        return global.AH_makeRunId(prefix || "share", key || "");
+      }
+    } catch (_) {}
+    const uid = String(global.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
     const rnd = Math.random().toString(36).slice(2, 8);
-    return `${prefix}_${Date.now()}_${rnd}`;
+    return `${String(prefix || "share")}:${uid}:${Date.now()}:${rnd}`;
   }
 
   function getRow() {
@@ -50,20 +63,20 @@
     return true;
   }
 
-  // 🔥 this is the fix: move row before hero (above skin)
+  // 🔥 move row before hero (above skin)
   function ensureRowAboveSkin() {
     const row = getRow();
     const hero = getHero();
     if (!row || !hero || !hero.parentNode) return false;
 
-    // if already right above hero => ok
+    // already right above hero => ok
     if (row.parentNode === hero.parentNode && row.nextElementSibling === hero) return true;
 
     try {
       hero.parentNode.insertBefore(row, hero);
-      // tiny spacing polish
-      row.style.marginBottom = row.style.marginBottom || "10px";
-      row.style.justifyContent = row.style.justifyContent || "center";
+      // spacing polish (if CSS already sets margin-bottom, do not override)
+      if (!row.style.marginBottom) row.style.marginBottom = "10px";
+      if (!row.style.justifyContent) row.style.justifyContent = "center";
       return true;
     } catch (e) {
       log("ensureRowAboveSkin failed", e);
@@ -104,75 +117,94 @@
     } catch (_) {}
     window.open(u, "_blank", "noopener");
   }
-  
-  function postOnX(cardUrl) {
-  // wyciągnij level z UI (np. "Lv.65" / "LV 65" / "Pack - Lv 65")
-  const raw =
-    (document.getElementById("heroLevel")?.textContent || "") ||
-    (document.querySelector("#heroLevel")?.textContent || "");
 
-  const m = String(raw || "").match(/(\d+)/);
-  const lvl = m ? m[1] : "";
+  // ✅ X intent helper
+  function buildXIntent(cardUrl) {
+    // pull level from UI: "Lv.65" / "LV 65" / etc.
+    const raw =
+      (document.getElementById("heroLevel")?.textContent || "") ||
+      (document.querySelector("#heroLevel")?.textContent || "");
 
-  // mocny, krótki copy (bez AI slopu)
-  const text =
-    `LEVEL UP.\n` +
-    `Pack Lv ${lvl || "?"}. 🐺\n` +
-    `No noise — just work.\n\n` +
-    `#AlphaHusky #HOWLitsMade`;
+    const m = String(raw || "").match(/(\d+)/);
+    const lvl = m ? m[1] : "";
 
-  const intent =
-    "https://x.com/intent/tweet?text=" +
-    encodeURIComponent(text) +
-    "&url=" +
-    encodeURIComponent(cardUrl);
+    // short, human copy
+    const text =
+      `LEVEL UP.\n` +
+      `Pack Lv ${lvl || "?"}. 🐺\n` +
+      `No noise — just work.\n\n` +
+      `#AlphaHusky #HOWLitsMade`;
 
-  try {
-    if (global.Telegram?.WebApp?.openLink) {
-      global.Telegram.WebApp.openLink(intent);
-      return;
-    }
-  } catch (_) {}
-
-  window.open(intent, "_blank", "noopener");
-}
-
-  function popupResult(url) {
-  const tg = global.Telegram?.WebApp;
-  if (tg?.showPopup) {
-    try {
-      tg.showPopup(
-        {
-          title: "Share Card Ready",
-          message: "Card generated. Open it, save, and share.",
-          buttons: [
-            { id: "open", type: "default", text: "Open card" },
-            { id: "copy", type: "default", text: "Copy link" },
-            { id: "x", type: "default", text: "Post on X" },
-            { type: "close" }
-          ]
-        },
-        async (btnId) => {
-          if (btnId === "open") openLink(url);
-          if (btnId === "copy") {
-            const ok = await copyText(url);
-            toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
-          }
-          if (btnId === "x") {
-            postOnX(url);
-          }
-        }
-      );
-      return;
-    } catch (_) {}
+    const base = "https://x.com/intent/tweet";
+    const p = new URLSearchParams();
+    p.set("text", text);
+    p.set("url", String(cardUrl || ""));
+    return base + "?" + p.toString();
   }
 
-  // fallback (bez Telegram popup)
-  if (confirm("Share card generated. Open it now?")) openLink(url);
-}
+  // optional: best-effort share as file (works only on some devices/webviews)
+  async function tryNativeShareImage(cardUrl, caption) {
+    try {
+      if (!navigator.share) return false;
+      const r = await fetch(cardUrl, { cache: "no-store" });
+      const blob = await r.blob();
+      const file = new File([blob], "alpha_levelup.png", { type: blob.type || "image/png" });
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) return false;
+      await navigator.share({ files: [file], text: String(caption || "") });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function postOnX(cardUrl) {
+    const intent = buildXIntent(cardUrl);
+    // first: try native share image (if allowed), otherwise open intent
+    const caption = "LEVEL UP. 🐺";
+    const ok = await tryNativeShareImage(cardUrl, caption);
+    if (!ok) openLink(intent);
+  }
+
+  function popupResult(url) {
+    const tg = global.Telegram?.WebApp;
+    if (tg?.showPopup) {
+      try {
+        tg.showPopup(
+          {
+            title: "Share Card Ready",
+            message: "Card generated. Open it, save, and share.",
+            buttons: [
+              { id: "open", type: "default", text: "Open card" },
+              { id: "copy", type: "default", text: "Copy link" },
+              { id: "x", type: "default", text: "Post on X" },
+              { type: "close" }
+            ]
+          },
+          async (btnId) => {
+            if (btnId === "open") openLink(url);
+            if (btnId === "copy") {
+              const ok = await copyText(url);
+              toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
+            }
+            if (btnId === "x") {
+              try { await postOnX(url); } catch (_) { openLink(buildXIntent(url)); }
+            }
+          }
+        );
+        return;
+      } catch (_) {}
+    }
+
+    // fallback (no Telegram popup)
+    if (confirm("Share card generated. Open it now?")) openLink(url);
+  }
 
   async function share(style, btnEl) {
-    const apiPost = global.apiPost || global.AH?.apiPost;
+    const apiPost =
+      global.apiPost ||
+      global.S?.apiPost ||
+      global.AH?.apiPost;
+
     if (!apiPost) {
       toast("Share Card", "apiPost missing (frontend not initialized yet)");
       return;
@@ -184,9 +216,11 @@
       btnEl && (btnEl.dataset.busy = "1", btnEl.disabled = true);
       try { global.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
+      const st = Number(style || 1);
+
       const res = await apiPost("/webapp/share/levelup", {
-        style: Number(style || 1),
-        run_id: mkRunId("share")
+        style: st,
+        run_id: mkRunId("share", "style=" + st)
       });
 
       if (!res || res.ok !== true) {
@@ -251,7 +285,10 @@
 
   function hook() {
     // try immediately
-    requestAnimationFrame(() => { showRow(); ensureRowAboveSkin(); });
+    requestAnimationFrame(() => {
+      showRow();
+      ensureRowAboveSkin();
+    });
 
     // if loadProfile appears later
     let tries = 0;
@@ -260,7 +297,9 @@
       if (typeof global.loadProfile === "function") {
         wrapLoadProfile();
         clearInterval(t);
-      } else if (tries > 200) clearInterval(t);
+      } else if (tries > 200) {
+        clearInterval(t);
+      }
     }, 50);
   }
 
@@ -268,3 +307,4 @@
 
   hook();
 })(window);
+```
