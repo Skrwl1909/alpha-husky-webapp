@@ -8,65 +8,91 @@
   // ===================== Cloudinary Pet Sprites (DOM fallback) =====================
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
 
-  function _normPetKey(raw) {
-    let k = String(raw || "").trim();
-    if (!k) return "";
-    k = k.replace(/^pets\//i, "");
-    k = k.replace(/\.(png|webp|jpg|jpeg)$/i, "");
-    // best-effort normalize (safe)
-    k = k.toLowerCase().replace(/[^a-z0-9_]/g, "");
-    return k;
+  function _isLikelyId(raw) {
+  const x = String(raw || "").trim().toLowerCase();
+  if (/^[a-f0-9]{32}$/.test(x)) return true; // md5-like
+  if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(x)) return true; // uuid
+  return false;
+}
+
+function _slugifyBase(raw) {
+  let s = String(raw || "").trim();
+  if (!s) return "";
+  s = s.replace(/^pets\//i, "");
+  s = s.replace(/\.(png|webp|jpg|jpeg)$/i, "");
+  s = s.toLowerCase();
+  s = s.replace(/[^a-z0-9 _-]/g, "");
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+function _cloudPetUrl(key) {
+  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
+}
+
+function petUrlCandidatesFromPlayer(p) {
+  // kluczowe: nie używamy pet_id/petId
+  const raw =
+    p?.pet_key || p?.petKey ||
+    p?.pet_type || p?.petType ||
+    p?.pet_name || p?.petName ||
+    "";
+
+  const base = _slugifyBase(raw);
+  if (!base) return [];
+  if (_isLikelyId(base)) return [];
+
+  const noSpace = base.replace(/\s+/g, "");
+  const under   = base.replace(/\s+/g, "_");
+  const dash    = base.replace(/\s+/g, "-");
+
+  const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
+  return keys.map(_cloudPetUrl);
+}
+
+  function setIconSprite(iconEl, urlOrList, mirror = false) {
+  if (!iconEl) return;
+
+  // clear previous content
+  try {
+    const prevImg = iconEl.querySelector("img");
+    if (prevImg) prevImg.remove();
+  } catch (_) {}
+
+  const list = Array.isArray(urlOrList) ? urlOrList.slice() : (urlOrList ? [urlOrList] : []);
+  if (!list.length) {
+    iconEl.textContent = "🐺";
+    return;
   }
 
-  function petUrlFromPlayer(p) {
-    const key = _normPetKey(
-      p?.pet_key || p?.petKey ||
-      p?.pet_id  || p?.petId  ||
-      p?.pet_type || p?.petType ||
-      ""
-    );
-    if (!key) return "";
-    // Safe for most browsers + easy for <img> (PNG). Resize for speed.
-    return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
-  }
+  iconEl.textContent = "";
 
-  function setIconSprite(iconEl, url, mirror = false) {
-    if (!iconEl) return;
+  const img = document.createElement("img");
+  img.alt = "pet";
+  img.decoding = "async";
+  img.loading = "eager";
+  img.referrerPolicy = "no-referrer";
 
-    // clear previous content
-    try {
-      const prevImg = iconEl.querySelector("img");
-      if (prevImg) prevImg.remove();
-    } catch (_) {}
+  img.style.width = "96px";
+  img.style.height = "96px";
+  img.style.objectFit = "contain";
+  img.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,.45))";
+  if (mirror) img.style.transform = "scaleX(-1)";
 
-    if (!url) {
+  let i = 0;
+  const tryNext = () => {
+    if (i >= list.length) {
+      try { iconEl.innerHTML = ""; } catch (_) {}
       iconEl.textContent = "🐺";
       return;
     }
+    img.src = list[i++];
+  };
 
-    iconEl.textContent = ""; // remove emoji
-
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = "pet";
-    img.decoding = "async";
-    img.loading = "eager";
-    img.referrerPolicy = "no-referrer";
-
-    img.style.width = "96px";
-    img.style.height = "96px";
-    img.style.objectFit = "contain";
-    img.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,.45))";
-    if (mirror) img.style.transform = "scaleX(-1)";
-
-    img.onerror = () => {
-      // fallback back to emoji if missing/404
-      try { iconEl.innerHTML = ""; } catch (_) {}
-      iconEl.textContent = "🐺";
-    };
-
-    iconEl.appendChild(img);
-  }
+  img.onerror = tryNext;
+  iconEl.appendChild(img);
+  tryNext();
+}
 
   // ===================== Pixi dynamic loader (no index.html edits needed) =====================
   function loadScriptOnce(url, testFn) {
@@ -256,8 +282,8 @@
 
       // ✅ DOM fallback sprite swap (safe; Pixi may hide these later)
       try {
-        setIconSprite(youIcon, petUrlFromPlayer(you), false);
-        setIconSprite(foeIcon, petUrlFromPlayer(foe), true);
+        setIconSprite(youIcon, petUrlCandidatesFromPlayer(you), false);
+setIconSprite(foeIcon, petUrlCandidatesFromPlayer(foe), true);
       } catch (_) {}
 
       // ---- PIXI overlay (optional) ----
