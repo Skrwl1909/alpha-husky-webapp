@@ -8,66 +8,97 @@
   // ===================== Cloudinary Pet Sprites (DOM fallback) =====================
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
 
-  function _normPetKey(raw) {
-    let k = String(raw || "").trim();
-    if (!k) return "";
-    k = k.replace(/^pets\//i, "");
-    k = k.replace(/\.(png|webp|jpg|jpeg)$/i, "");
-    // best-effort normalize (safe)
-    k = k.toLowerCase().replace(/[^a-z0-9_]/g, "");
-    return k;
+  // ===================== Cloudinary Pet Sprites (DOM fallback) =====================
+const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+
+function _isLikelyId(s) {
+  const x = String(s || "").trim().toLowerCase();
+  // 32-hex (md5-like) OR UUID
+  if (/^[a-f0-9]{32}$/.test(x)) return true;
+  if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(x)) return true;
+  return false;
+}
+
+function _slugify(raw) {
+  let s = String(raw || "").trim();
+  if (!s) return "";
+  s = s.replace(/^pets\//i, "");
+  s = s.replace(/\.(png|webp|jpg|jpeg)$/i, "");
+  s = s.toLowerCase();
+  // keep letters/digits/spaces/_/-
+  s = s.replace(/[^a-z0-9 _-]/g, "");
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+function petUrlCandidates(p) {
+  // WAŻNE: NIE bierzemy pet_id, bo to instancja (hash) → 404
+  const raw =
+    p?.pet_key || p?.petKey ||
+    p?.pet_type || p?.petType ||
+    p?.pet_name || p?.petName ||
+    "";
+
+  const base = _slugify(raw);
+  if (!base) return [];
+
+  // jeśli to wygląda jak ID (hash/uuid) → odpuść
+  if (_isLikelyId(base)) return [];
+
+  // kandydaci nazw plików (różne konwencje)
+  const noSpace = base.replace(/\s+/g, "");            // "darkhuskypup"
+  const under   = base.replace(/\s+/g, "_");           // "dark_husky_pup"
+  const dash    = base.replace(/\s+/g, "-");           // "dark-husky-pup"
+
+  // unikalne, w kolejności “najbardziej prawdopodobne”
+  const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
+
+  // Cloudinary: bez wersji + transform
+  return keys.map(k => `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(k)}.png`);
+}
+
+function setIconSprite(iconEl, urls, mirror = false) {
+  if (!iconEl) return;
+
+  // wyczyść
+  try {
+    const prevImg = iconEl.querySelector("img");
+    if (prevImg) prevImg.remove();
+  } catch (_) {}
+
+  const list = Array.isArray(urls) ? urls.slice() : (urls ? [urls] : []);
+  if (!list.length) {
+    iconEl.textContent = "🐺";
+    return;
   }
 
-  function petUrlFromPlayer(p) {
-    const key = _normPetKey(
-      p?.pet_key || p?.petKey ||
-      p?.pet_id  || p?.petId  ||
-      p?.pet_type || p?.petType ||
-      ""
-    );
-    if (!key) return "";
-    // Safe for most browsers + easy for <img> (PNG). Resize for speed.
-    return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
-  }
+  iconEl.textContent = ""; // usuń emoji
 
-  function setIconSprite(iconEl, url, mirror = false) {
-    if (!iconEl) return;
+  const img = document.createElement("img");
+  img.alt = "pet";
+  img.decoding = "async";
+  img.loading = "eager";
+  img.referrerPolicy = "no-referrer";
+  img.style.width = "96px";
+  img.style.height = "96px";
+  img.style.objectFit = "contain";
+  img.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,.45))";
+  if (mirror) img.style.transform = "scaleX(-1)";
 
-    // clear previous content
-    try {
-      const prevImg = iconEl.querySelector("img");
-      if (prevImg) prevImg.remove();
-    } catch (_) {}
-
-    if (!url) {
+  let i = 0;
+  const tryNext = () => {
+    if (i >= list.length) {
+      try { iconEl.innerHTML = ""; } catch (_) {}
       iconEl.textContent = "🐺";
       return;
     }
+    img.src = list[i++];
+  };
 
-    iconEl.textContent = ""; // remove emoji
-
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = "pet";
-    img.decoding = "async";
-    img.loading = "eager";
-    img.referrerPolicy = "no-referrer";
-
-    img.style.width = "96px";
-    img.style.height = "96px";
-    img.style.objectFit = "contain";
-    img.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,.45))";
-    if (mirror) img.style.transform = "scaleX(-1)";
-
-    img.onerror = () => {
-      // fallback back to emoji if missing/404
-      try { iconEl.innerHTML = ""; } catch (_) {}
-      iconEl.textContent = "🐺";
-    };
-
-    iconEl.appendChild(img);
-  }
-
+  img.onerror = tryNext;
+  iconEl.appendChild(img);
+  tryNext();
+}
   // ===================== Pixi dynamic loader (no index.html edits needed) =====================
   function loadScriptOnce(url, testFn) {
     return new Promise((resolve, reject) => {
@@ -256,8 +287,8 @@
 
       // ✅ DOM fallback sprite swap (safe; Pixi may hide these later)
       try {
-        setIconSprite(youIcon, petUrlFromPlayer(you), false);
-        setIconSprite(foeIcon, petUrlFromPlayer(foe), true);
+        setIconSprite(youIcon, petUrlCandidates(you), false);
+        setIconSprite(foeIcon, petUrlCandidates(foe), true);
       } catch (_) {}
 
       // ---- PIXI overlay (optional) ----
