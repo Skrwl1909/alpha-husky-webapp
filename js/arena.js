@@ -113,23 +113,25 @@ function petUrlCandidatesFromPlayer(p) {
   }
 
   async function ensureArenaPixi() {
-    const v = (window.WEBAPP_VER || Date.now());
-    // 1) Pixi
-    if (!window.PIXI) {
-      await loadScriptOnce(
-        "https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js",
-        () => !!window.PIXI
-      );
-    }
-    // 2) Your Pixi overlay module hosted in your app
-    if (!window.ArenaPixi) {
-      await loadScriptOnce(
-        `/js/arena_pixi.js?v=${encodeURIComponent(v)}`,
-        () => !!window.ArenaPixi
-      );
-    }
-    return true;
+  const v = (window.WEBAPP_VER || Date.now());
+
+  // 1) Pixi (LOCAL)
+  if (!window.PIXI) {
+    await loadScriptOnce(
+      `/js/pixi.min.js?v=${encodeURIComponent(v)}`,
+      () => !!window.PIXI
+    );
   }
+
+  // 2) Your Pixi overlay module hosted in your app
+  if (!window.ArenaPixi) {
+    await loadScriptOnce(
+      `/js/arena_pixi.js?v=${encodeURIComponent(v)}`,
+      () => !!window.ArenaPixi
+    );
+  }
+  return true;
+}
 
   window.Arena = {
     _apiPost: null,
