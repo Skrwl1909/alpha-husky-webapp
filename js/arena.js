@@ -96,31 +96,36 @@ function petUrlCandidatesFromPlayer(p) {
 
   // ===================== Pixi dynamic loader (no index.html edits needed) =====================
   function loadScriptOnce(url, testFn) {
-    return new Promise((resolve, reject) => {
-      try { if (testFn && testFn()) return resolve(true); } catch(_) {}
+  return new Promise((resolve, reject) => {
+    try { if (testFn && testFn()) return resolve(true); } catch(_) {}
 
-      // prevent duplicates
-      const already = Array.from(document.scripts || []).some(s => String(s.src || "").includes(url.split("?")[0]));
-      if (already) return resolve(true);
+    const base = url.split("?")[0];
 
-      const s = document.createElement("script");
-      s.src = url;
-      s.async = true;
-      s.onload = () => resolve(true);
-      s.onerror = () => reject(new Error("Failed to load: " + url));
-      document.head.appendChild(s);
-    });
-  }
+    // Jeśli skrypt już jest w DOM, ale testFn nadal false, usuń go i wczytaj ponownie
+    const existing = Array.from(document.scripts || []).filter(s =>
+      String(s.src || "").includes(base)
+    );
+    if (existing.length) {
+      existing.forEach(s => { try { s.remove(); } catch(_) {} });
+    }
 
+    const s = document.createElement("script");
+    s.src = url;
+    s.async = true;
+    s.onload = () => resolve(true);
+    s.onerror = () => reject(new Error("Failed to load: " + url));
+    document.head.appendChild(s);
+  });
+}
   async function ensureArenaPixi() {
   const v = (window.WEBAPP_VER || Date.now());
 
   // 1) Pixi (LOCAL)
   if (!window.PIXI) {
     await loadScriptOnce(
-      `/js/pixi.min.js?v=${encodeURIComponent(v)}`,
-      () => !!window.PIXI
-    );
+  `/js/pixi.min.js?v=${encodeURIComponent(v)}`,
+  () => !!window.PIXI
+);
   }
 
   // 2) Your Pixi overlay module hosted in your app
