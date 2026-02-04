@@ -166,37 +166,50 @@
   }
 
   function popupResult(url) {
-    const tg = global.Telegram?.WebApp;
-    if (tg?.showPopup) {
-      try {
-        tg.showPopup(
-          {
-            title: "Share Card Ready",
-            message: "Card generated. Open it, save, and share.",
-            buttons: [
-              { id: "open", type: "default", text: "Open card" },
-              { id: "copy", type: "default", text: "Copy link" },
-              { id: "x", type: "default", text: "Post on X" },
-              { type: "close" }
-            ]
-          },
-          async (btnId) => {
-            if (btnId === "open") openLink(url);
-            if (btnId === "copy") {
-              const ok = await copyText(url);
-              toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
-            }
-            if (btnId === "x") {
-              try { await postOnX(url); } catch (_) { openLink(buildXIntent(url)); }
-            }
-          }
-        );
-        return;
-      } catch (_) {}
-    }
+  const tg = global.Telegram?.WebApp;
 
-    if (confirm("Share card generated. Open it now?")) openLink(url);
+  const caption = "LEVEL UP. 🐺 #AlphaHusky #HOWLitsMade";
+
+  if (tg?.showPopup) {
+    try {
+      tg.showPopup(
+        {
+          title: "Share Card Ready",
+          message: "Tip: If X doesn't attach the image, open the card → save image → add in X.",
+          buttons: [
+            { id: "x", type: "default", text: "Post on X" },
+            { id: "open", type: "default", text: "Open card" },
+            { id: "copy", type: "default", text: "Copy link" },
+            { type: "close" }
+          ]
+        },
+        async (btnId) => {
+          if (btnId === "open") openLink(url);
+
+          if (btnId === "copy") {
+            const ok = await copyText(url);
+            toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
+          }
+
+          if (btnId === "x") {
+            // 1) spróbuj udostępnić obraz jako plik (mobile)
+            const ok = await tryNativeShareImage(url, caption);
+            if (ok) {
+              toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
+              return;
+            }
+            // 2) fallback: X intent (tekst + link)
+            openLink(buildXIntent(url));
+          }
+        }
+      );
+      return;
+    } catch (_) {}
   }
+
+  // fallback bez Telegram popup
+  if (confirm("Share card generated. Open it now?")) openLink(url);
+}
 
   async function share(style, btnEl) {
     const apiPost =
