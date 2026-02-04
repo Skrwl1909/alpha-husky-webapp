@@ -97,12 +97,31 @@
     return !!global.PIXI && !!global.PIXI.Application;
   }
 
-  function petAssetUrl(p) {
-    const key = String(p?.pet_key || p?.petKey || p?.pet_id || p?.petId || "").trim();
-    if (!key) return "";
-    // (fallbacki) — dostosuj jak będziesz miał canonical path
-    return `/assets/pets/${encodeURIComponent(key)}.webp`;
-  }
+  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+
+function _normPetKey(raw) {
+  let k = String(raw || "").trim();
+  if (!k) return "";
+  k = k.replace(/^pets\//i, "");
+  k = k.replace(/\.(png|webp|jpg|jpeg)$/i, "");
+  // jeśli czasem wpada "Dark Husky Pup" → zrób klucz bez spacji
+  k = k.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  return k;
+}
+
+function petAssetUrl(p) {
+  const key = _normPetKey(
+    p?.pet_key || p?.petKey ||
+    p?.pet_id  || p?.petId  ||
+    p?.pet_type || p?.petType ||
+    ""
+  );
+  if (!key) return "";
+
+  // Bezpieczny format dla Pixi: PNG + mały rozmiar
+  // (Cloudinary sam dobierze jakość przez q_auto)
+  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
+}
 
   async function loadTextureSafe(url) {
     if (!url || !hasPixi()) return null;
