@@ -5,6 +5,69 @@
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+  // ===================== Cloudinary Pet Sprites (DOM fallback) =====================
+  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+
+  function _normPetKey(raw) {
+    let k = String(raw || "").trim();
+    if (!k) return "";
+    k = k.replace(/^pets\//i, "");
+    k = k.replace(/\.(png|webp|jpg|jpeg)$/i, "");
+    // best-effort normalize (safe)
+    k = k.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    return k;
+  }
+
+  function petUrlFromPlayer(p) {
+    const key = _normPetKey(
+      p?.pet_key || p?.petKey ||
+      p?.pet_id  || p?.petId  ||
+      p?.pet_type || p?.petType ||
+      ""
+    );
+    if (!key) return "";
+    // Safe for most browsers + easy for <img> (PNG). Resize for speed.
+    return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
+  }
+
+  function setIconSprite(iconEl, url, mirror = false) {
+    if (!iconEl) return;
+
+    // clear previous content
+    try {
+      const prevImg = iconEl.querySelector("img");
+      if (prevImg) prevImg.remove();
+    } catch (_) {}
+
+    if (!url) {
+      iconEl.textContent = "🐺";
+      return;
+    }
+
+    iconEl.textContent = ""; // remove emoji
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "pet";
+    img.decoding = "async";
+    img.loading = "eager";
+    img.referrerPolicy = "no-referrer";
+
+    img.style.width = "96px";
+    img.style.height = "96px";
+    img.style.objectFit = "contain";
+    img.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,.45))";
+    if (mirror) img.style.transform = "scaleX(-1)";
+
+    img.onerror = () => {
+      // fallback back to emoji if missing/404
+      try { iconEl.innerHTML = ""; } catch (_) {}
+      iconEl.textContent = "🐺";
+    };
+
+    iconEl.appendChild(img);
+  }
+
   // ===================== Pixi dynamic loader (no index.html edits needed) =====================
   function loadScriptOnce(url, testFn) {
     return new Promise((resolve, reject) => {
@@ -191,13 +254,19 @@
       const result = el("result");
       result.style.opacity = 0;
 
+      // ✅ DOM fallback sprite swap (safe; Pixi may hide these later)
+      try {
+        setIconSprite(youIcon, petUrlFromPlayer(you), false);
+        setIconSprite(foeIcon, petUrlFromPlayer(foe), true);
+      } catch (_) {}
+
       // ---- PIXI overlay (optional) ----
       const stageEl = el("arenaStage");
       const usePixi = !!(stageEl && window.PIXI && window.ArenaPixi);
 
       if (usePixi) {
         try {
-          // hide DOM emoji; Pixi draws actors underneath
+          // hide DOM emoji/sprites; Pixi draws actors underneath
           youIcon.style.opacity = "0";
           foeIcon.style.opacity = "0";
 
@@ -206,6 +275,8 @@
           await window.ArenaPixi.setActors({ you, foe, flipFoe: true });
         } catch (e) {
           if (this._dbg) console.warn("ArenaPixi init failed:", e);
+          // show DOM again if Pixi fails
+          try { youIcon.style.opacity = "1"; foeIcon.style.opacity = "1"; } catch(_) {}
         }
       } else {
         // ensure they are visible in fallback mode
