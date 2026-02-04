@@ -14,6 +14,7 @@
 
   // ===== Cloudinary (Legendary Path main reward preview) =====
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload/";
+  const LP_CLOUD_VER = "v1769370188"; // <- z Twoich działających ikon
 
   // ✅ prefix dla ikon gear (dokładnie jak w lp_ashclaw)
 const LP_EQUIP_PREFIX = "v1769370188/equip/";
@@ -38,6 +39,27 @@ const LP_TRACK_REWARD = {
   }
 };
 
+  function _lpCfgAuto(q) {
+  const id = String(q?.id || "").toLowerCase();
+  const nm = String(q?.name || "").toLowerCase();
+  const ds = String(q?.desc || "").toLowerCase();
+  const hay = `${id} ${nm} ${ds}`;
+
+  const mk = (slot, label) => ({
+    icon: `${LP_CLOUD_VER}/equip/rustfire_seraph_${slot}.png`,
+    name: label
+  });
+
+  if (hay.includes("ashclaw")) return mk("helmet", "Rustfire Seraph Helmet");
+  if (hay.includes("eternal alpha") || hay.includes("legendary_alpha_final")) return mk("weapon", "Rustfire Seraph Weapon");
+  if (hay.includes("forge") || hay.includes("legendary_forge_final") || hay.includes("smith")) return mk("offhand", "Rustfire Seraph Offhand");
+  if (hay.includes("bond") || hay.includes("true companion") || hay.includes("legendary_pet_final")) return mk("collar", "Rustfire Seraph Collar");
+  if (hay.includes("void") || hay.includes("explorer") || hay.includes("legendary_explorer_final")) return mk("armor", "Rustfire Seraph Armor");
+  if (hay.includes("tycoon") || hay.includes("bone emperor") || hay.includes("legendary_tycoon_final")) return mk("cloak", "Rustfire Seraph Cloak");
+
+  return null;
+}
+  
 function _getTrackId(q) {
   return String(q?.id || q?.trackId || q?.lpTrackId || "").trim();
 }
@@ -114,19 +136,16 @@ function _lootToRewardCfg(loot) {
 function _renderTrackReward(q) {
   const trackId = _getTrackId(q);
 
-  // 1) fallback manual config
-  let cfg = LP_TRACK_REWARD[trackId];
+  // 1) manual map, jeśli jest
+  let cfg = LP_TRACK_REWARD?.[trackId];
 
-  // 2) auto from previewLoot
-  if (!cfg) {
-    const lootPrev = _pickPreviewLoot(q);
-    cfg = _lootToRewardCfg(lootPrev);
-  }
+  // 2) auto fallback po id/name/desc
+  if (!cfg) cfg = _lpCfgAuto(q);
 
   if (!cfg) return "";
 
-  const iconUrl = _iconSrc(cfg.icon);
-  const name = esc(cfg.name || "Final Reward");
+  const iconUrl = cdn(cfg.icon); // cfg.icon = "v.../equip/xxx.png"
+  const name = esc(cfg.name || "Main reward");
 
   const img = iconUrl
     ? `<img class="q-track-reward-icon"
