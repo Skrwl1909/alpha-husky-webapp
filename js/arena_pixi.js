@@ -10,6 +10,8 @@
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
+  const VER = "arena_pixi.js vA-2026-02-05";
+  try { global.__ARENA_PIXI_VER__ = VER; } catch(_){}
 
   function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -460,6 +462,11 @@
       const res = await state.apiPost("/webapp/arena/replay", { battle_id: state.lastBattleId });
       const stub = res?.data || res?.stub || res;
       if (!stub || !Array.isArray(stub.steps)) throw new Error("Bad replay payload");
+      
+      try {
+        global.__ARENA_LAST_STUB__ = stub;
+        global.__ARENA_LAST_BATTLE_ID__ = state.lastBattleId;
+      } catch (_) {}
 
       // debug helper
       try { global.__ARENA_LAST_STUB__ = stub; } catch (_) {}
@@ -485,7 +492,7 @@
     if (apiPost) state.apiPost = apiPost;
     if (tg) state.tg = tg;
     state.dbg = !!dbg;
-    log("init ok", { hasPixi: hasPixi() });
+    log("init ok", { VER, hasPixi: hasPixi() });
   }
 
   global.Arena = { init, open, close };
