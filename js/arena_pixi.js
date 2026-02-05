@@ -1,454 +1,380 @@
 // public/js/arena_pixi.js
+// ArenaPixi — lightweight Pixi stage helper for arena.js
+// Exposes: window.ArenaPixi.init(stageEl), setActors({you,foe,flipFoe}), attack(youAttacked,dmg,crit), destroy()
 (function (global) {
+  const CLOUD_UPLOAD = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+  const CLOUD_TX = "f_png,q_auto,w_256,c_fit";
+
   const state = {
-    apiPost: null,
-    tg: null,
     dbg: false,
-    overlay: null,
-    pixiApp: null,
-    lastBattleId: null,
+    stageEl: null,
+    app: null,
+    root: null,
+    camera: null,
+    bg: null,
+
+    left: null,
+    right: null,
+    leftNode: null,
+    rightNode: null,
+    leftIsYou: true,
   };
 
-  const $ = (sel, root = document) => root.querySelector(sel);
+  function log(...a) { if (state.dbg) console.log("[ArenaPixi]", ...a); }
 
-  function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  function hasPixi() { return !!global.PIXI && !!global.PIXI.Application; }
 
-  function destroyPixi() {
-    try { state.pixiApp?.destroy?.(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
-    state.pixiApp = null;
-  }
-
-  function close() {
-    destroyPixi();
-    try { state.overlay?.remove?.(); } catch (_) {}
-    state.overlay = null;
-
-    // przywróć scroll
-    try { document.documentElement.style.overflow = ""; } catch (_) {}
-    try { document.body.style.overflow = ""; } catch (_) {}
-  }
-
-  function ensureOverlay() {
-    // singleton
-    if (state.overlay && document.body.contains(state.overlay)) return state.overlay;
-
-    const ov = document.createElement("div");
-    ov.id = "arenaOverlay";
-    ov.style.cssText = [
-      "position:fixed", "inset:0", "z-index:9999",
-      "background:rgba(0,0,0,.78)",
-      "backdrop-filter:blur(8px)",
-      "display:flex", "flex-direction:column",
-      "padding:14px", "gap:10px",
-      "font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial"
-    ].join(";");
-
-    ov.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="flex:1">
-          <div style="font-weight:800;font-size:16px;letter-spacing:.3px">Pet Arena Replay</div>
-          <div id="arenaMeta" style="opacity:.8;font-size:12px;margin-top:2px">Loading…</div>
-        </div>
-        <button id="arenaClose"
-          type="button"
-          style="border:0;border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.12);color:#fff;font-weight:700">
-          Close
-        </button>
-      </div>
-
-      <div id="arenaStageWrap"
-        style="flex:1;min-height:280px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.06);position:relative">
-        <div id="arenaFallback"
-          style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);font-weight:700">
-          Loading replay…
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;justify-content:space-between;align-items:center">
-        <button id="arenaReplay"
-          type="button"
-          style="flex:1;border:0;border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.14);color:#fff;font-weight:800">
-          Replay
-        </button>
-        <button id="arenaClose2"
-          type="button"
-          style="border:0;border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.10);color:#fff;font-weight:700">
-          Back
-        </button>
-      </div>
-    `;
-
-    ov.addEventListener("click", (e) => {
-      const id = e.target?.id;
-      if (id === "arenaClose" || id === "arenaClose2") close();
-    });
-
-    // blokuj scroll pod spodem
-    try { document.documentElement.style.overflow = "hidden"; } catch (_) {}
-    try { document.body.style.overflow = "hidden"; } catch (_) {}
-
-    document.body.appendChild(ov);
-    state.overlay = ov;
-    return ov;
-  }
-
-  function hasPixi() {
-    return !!global.PIXI && !!global.PIXI.Application;
-  }
-
-  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
-
-function _normPetKey(raw) {
-  let k = String(raw || "").trim();
-  if (!k) return "";
-  k = k.replace(/^pets\//i, "");
-  k = k.replace(/\.(png|webp|jpg|jpeg)$/i, "");
-  // jeśli czasem wpada "Dark Husky Pup" → zrób klucz bez spacji
-  k = k.toLowerCase().replace(/[^a-z0-9_]/g, "");
-  return k;
-}
-
-function petAssetUrl(p) {
-  const key = _normPetKey(
-    p?.pet_key || p?.petKey ||
-    p?.pet_id  || p?.petId  ||
-    p?.pet_type || p?.petType ||
-    ""
-  );
-  if (!key) return "";
-
-  // Bezpieczny format dla Pixi: PNG + mały rozmiar
-  // (Cloudinary sam dobierze jakość przez q_auto)
-  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
-}
-
-  async function loadTextureSafe(url) {
-    if (!url || !hasPixi()) return null;
+  function destroy() {
     try {
-      // Pixi v7
-      if (global.PIXI.Assets?.load) {
-        return await global.PIXI.Assets.load(url);
+      if (state.app) {
+        try { state.app.ticker.stop(); } catch (_) {}
+        try { state.app.destroy(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
       }
-      // Pixi v6 fallback
-      return global.PIXI.Texture.from(url);
-    } catch (e) {
-      return null;
+    } catch (_) {}
+    state.app = null;
+    state.root = null;
+    state.camera = null;
+    state.bg = null;
+    state.leftNode = null;
+    state.rightNode = null;
+
+    if (state.stageEl) {
+      try { state.stageEl.innerHTML = ""; } catch (_) {}
     }
   }
 
-  function hpBar(app, x, y, w, h) {
-    const gBack = new global.PIXI.Graphics();
-    gBack.beginFill(0x000000, 0.35).drawRoundedRect(x, y, w, h, 6).endFill();
-
-    const gFill = new global.PIXI.Graphics();
-    gFill.beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, w - 4, h - 4, 5).endFill();
-
-    app.stage.addChild(gBack);
-    app.stage.addChild(gFill);
-
-    return {
-      set(ratio) {
-        const rr = Math.max(0, Math.min(1, ratio));
-        const fillW = (w - 4) * rr;
-        gFill.clear().beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, fillW, h - 4, 5).endFill();
-      }
-    };
+  function _isLikelyId(raw) {
+    const x = String(raw || "").trim().toLowerCase();
+    if (/^[a-f0-9]{32}$/.test(x)) return true;
+    if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(x)) return true;
+    return false;
   }
 
-  async function renderReplayPixi(stub) {
-    const wrap = $("#arenaStageWrap", state.overlay);
-    const fallback = $("#arenaFallback", state.overlay);
-    if (fallback) fallback.style.display = "none";
+  function _slugifyBase(raw) {
+    let s = String(raw || "").trim();
+    if (!s) return "";
+    s = s.replace(/^pets\//i, "");
+    s = s.replace(/\.(png|webp|jpg|jpeg)$/i, "");
+    s = s.toLowerCase();
+    s = s.replace(/[^a-z0-9 _-]/g, "");
+    s = s.replace(/\s+/g, " ").trim();
+    return s;
+  }
 
-    // Create pixi app
-    const app = new global.PIXI.Application({
-      resizeTo: wrap,
+  function _cloudUrlFromPath(pathOrUrl) {
+    const s = String(pathOrUrl || "").trim();
+    if (!s) return "";
+    if (s.includes("res.cloudinary.com")) return s; // already full
+    let p = s.replace(/^\/+/, "");
+    // allow people to pass "v123/pets/name.png" OR "pets/name.png"
+    // if they pass "image/upload/..." strip that
+    p = p.replace(/^image\/upload\//, "");
+    // if already starts with transform, keep it
+    if (p.startsWith(CLOUD_TX + "/")) return `${CLOUD_UPLOAD}/${p}`;
+    return `${CLOUD_UPLOAD}/${CLOUD_TX}/${p}`;
+  }
+
+  function petUrlCandidatesFromPlayer(p) {
+    // Prefer direct fields if you have them (best reliability)
+    const direct =
+      p?.pet_asset || p?.petAsset ||
+      p?.pet_sprite || p?.petSprite ||
+      p?.pet_icon || p?.petIcon ||
+      p?.icon || p?.icon_file ||
+      "";
+
+    const directUrl = _cloudUrlFromPath(direct);
+    if (directUrl) return [directUrl];
+
+    // Otherwise build from readable keys (NOT pet_id)
+    const raw =
+      p?.pet_key || p?.petKey ||
+      p?.pet_type || p?.petType ||
+      p?.pet_name || p?.petName ||
+      "";
+
+    const base = _slugifyBase(raw);
+    if (!base) return [];
+    if (_isLikelyId(base)) return []; // avoid 404 spam on ids
+
+    const noSpace = base.replace(/\s+/g, "");
+    const under = base.replace(/\s+/g, "_");
+    const dash = base.replace(/\s+/g, "-");
+
+    const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
+    return keys.map(k => _cloudUrlFromPath(`pets/${k}.png`));
+  }
+
+  async function loadTextureFromUrls(urls) {
+    if (!urls || !urls.length || !hasPixi()) return null;
+    const PIXI = global.PIXI;
+
+    for (const u of urls) {
+      try {
+        if (PIXI.Assets?.load) {
+          const tex = await PIXI.Assets.load(u);
+          if (tex) return tex;
+        } else {
+          const tex = PIXI.Texture.from(u);
+          if (tex) return tex;
+        }
+      } catch (e) {
+        // try next
+      }
+    }
+    return null;
+  }
+
+  function makeFighterNode(labelText) {
+    const PIXI = global.PIXI;
+    const c = new PIXI.Container();
+
+    // placeholder
+    const t = new PIXI.Text("🐺", { fill: 0xffffff, fontSize: 72, fontWeight: "900" });
+    if (t.anchor?.set) t.anchor.set(0.5);
+    t.x = 0; t.y = 0;
+    c.addChild(t);
+
+    const label = new PIXI.Text(String(labelText || ""), { fill: 0xffffff, fontSize: 12, fontWeight: "800", alpha: 0.85 });
+    if (label.anchor?.set) label.anchor.set(0.5, 0);
+    label.x = 0; label.y = 52;
+    c.addChild(label);
+
+    c.__body = t;     // sprite/text
+    c.__label = label;
+
+    return c;
+  }
+
+  function layout() {
+    if (!state.app || !state.stageEl) return;
+    const W = state.stageEl.clientWidth || 360;
+    const H = state.stageEl.clientHeight || 420;
+
+    // bg
+    if (state.bg) {
+      state.bg.clear();
+      state.bg.beginFill(0x000000, 0.22).drawRect(0, 0, W, H).endFill();
+    }
+
+    // positions
+    if (state.leftNode) {
+      state.leftNode.x = Math.floor(W * 0.28);
+      state.leftNode.y = Math.floor(H * 0.62);
+    }
+    if (state.rightNode) {
+      state.rightNode.x = Math.floor(W * 0.72);
+      state.rightNode.y = Math.floor(H * 0.62);
+    }
+  }
+
+  function init(stageEl, opts = {}) {
+    state.dbg = !!opts.dbg;
+    if (!hasPixi()) throw new Error("PIXI missing");
+    if (!stageEl) throw new Error("stageEl missing");
+
+    // idempotent
+    destroy();
+    state.stageEl = stageEl;
+
+    const PIXI = global.PIXI;
+
+    const app = new PIXI.Application({
+      resizeTo: stageEl,
       antialias: true,
       backgroundAlpha: 0,
       resolution: Math.min(2, global.devicePixelRatio || 1),
     });
-    state.pixiApp = app;
-    wrap.appendChild(app.view);
+    state.app = app;
 
-    // background
-    const bg = new global.PIXI.Graphics();
-    bg.beginFill(0x000000, 0.25).drawRect(0, 0, wrap.clientWidth, wrap.clientHeight).endFill();
-    app.stage.addChild(bg);
+    stageEl.innerHTML = "";
+    stageEl.appendChild(app.canvas || app.view);
 
-    // data
-    const youAreP1 = !!stub.you_are_p1;
-    const p1 = stub.p1 || {};
-    const p2 = stub.p2 || {};
-    const left = youAreP1 ? p1 : p2;
-    const right = youAreP1 ? p2 : p1;
+    state.root = new PIXI.Container();
+    state.camera = new PIXI.Container();
+    app.stage.addChild(state.root);
+    state.root.addChild(state.camera);
 
-    const leftName = String(left.name || "YOU");
-    const rightName = String(right.name || "ENEMY");
+    state.bg = new PIXI.Graphics();
+    state.root.addChild(state.bg);
 
-    const leftMax = Math.max(1, parseInt(left.hpMax || 100, 10));
-    const rightMax = Math.max(1, parseInt(right.hpMax || 100, 10));
+    // default fighters
+    state.leftNode = makeFighterNode("");
+    state.rightNode = makeFighterNode("");
+    state.camera.addChild(state.leftNode);
+    state.camera.addChild(state.rightNode);
 
-    let leftHp = leftMax;
-    let rightHp = rightMax;
+    // mirror right by default (so it faces left)
+    state.rightNode.scale.x = -1;
 
-    // names
-    const nameStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 14, fontWeight: "800" });
-    const subStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, fontWeight: "700", alpha: 0.8 });
+    layout();
 
-    const tLeft = new global.PIXI.Text(leftName, nameStyle);
-    const tRight = new global.PIXI.Text(rightName, nameStyle);
-    tLeft.x = 14; tLeft.y = 10;
-    tRight.x = 14; tRight.y = 10;
-    app.stage.addChild(tLeft);
-    app.stage.addChild(tRight);
+    // Resize observer (more reliable than relying on pixi resize only)
+    try {
+      const ro = new ResizeObserver(() => layout());
+      ro.observe(stageEl);
+      app.__ro = ro;
+    } catch (_) {}
 
-    // layout
-    function relayout() {
-      const W = wrap.clientWidth || 360;
-      const H = wrap.clientHeight || 420;
+    log("init ok");
+  }
 
-      // bg
-      bg.clear().beginFill(0x000000, 0.22).drawRect(0, 0, W, H).endFill();
+  async function setActors({ you, foe, flipFoe } = {}) {
+    if (!state.app) throw new Error("ArenaPixi.init(stageEl) first");
+    const PIXI = global.PIXI;
 
-      // names
-      tLeft.x = 14; tLeft.y = 10;
-      tRight.x = W - 14 - tRight.width; tRight.y = 10;
-    }
-    relayout();
-    app.renderer.on("resize", relayout);
+    // decide mirroring
+    state.rightNode.scale.x = (flipFoe ? -1 : 1);
 
-    // hp bars
-    const W = wrap.clientWidth || 360;
-    const leftHpBar = hpBar(app, 14, 34, Math.max(120, Math.floor(W * 0.38)), 14);
-    const rightHpBar = hpBar(app, W - 14 - Math.max(120, Math.floor(W * 0.38)), 34, Math.max(120, Math.floor(W * 0.38)), 14);
+    // labels
+    const youLabel = String(you?.pet_name || you?.pet_type || you?.pet_key || "");
+    const foeLabel = String(foe?.pet_name || foe?.pet_type || foe?.pet_key || "");
 
-    leftHpBar.set(1);
-    rightHpBar.set(1);
+    // left = you, right = foe (arena.js does that)
+    if (state.leftNode?.__label) state.leftNode.__label.text = youLabel;
+    if (state.rightNode?.__label) state.rightNode.__label.text = foeLabel;
 
-    // sprites / fallback emoji
-    async function makeFighter(p, isRight) {
-      const c = new global.PIXI.Container();
-      app.stage.addChild(c);
+    // load textures
+    const youUrls = petUrlCandidatesFromPlayer(you);
+    const foeUrls = petUrlCandidatesFromPlayer(foe);
 
-      const url = petAssetUrl(p);
-      const tex = await loadTextureSafe(url);
+    const youTex = await loadTextureFromUrls(youUrls);
+    const foeTex = await loadTextureFromUrls(foeUrls);
 
-      let obj;
+    // helper to swap body
+    function swapBody(node, tex) {
+      if (!node) return;
+      try { if (node.__body) node.removeChild(node.__body); } catch (_) {}
+
+      let body;
       if (tex) {
-        const sp = new global.PIXI.Sprite(tex);
-        sp.anchor.set(0.5);
-        sp.scale.set(0.55);
-        obj = sp;
+        body = new PIXI.Sprite(tex);
+        if (body.anchor?.set) body.anchor.set(0.5);
+        body.scale.set(0.60);
       } else {
-        const emoji = new global.PIXI.Text("🐾", new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 56 }));
-        emoji.anchor.set?.(0.5);
-        obj = emoji;
+        body = new PIXI.Text("🐺", { fill: 0xffffff, fontSize: 72, fontWeight: "900" });
+        if (body.anchor?.set) body.anchor.set(0.5);
       }
-
-      c.addChild(obj);
-
-      const badge = new global.PIXI.Text(String(p.pet_name || p.pet_type || ""), subStyle);
-      badge.x = -badge.width / 2;
-      badge.y = 52;
-      c.addChild(badge);
-
-      // mirror right
-      if (isRight) c.scale.x = -1;
-
-      return c;
+      node.__body = body;
+      node.addChildAt(body, 0);
     }
 
-    const leftF = await makeFighter(left, false);
-    const rightF = await makeFighter(right, true);
+    swapBody(state.leftNode, youTex);
+    swapBody(state.rightNode, foeTex);
 
-    function placeFighters() {
-      const W2 = wrap.clientWidth || 360;
-      const H2 = wrap.clientHeight || 420;
-      leftF.x = Math.floor(W2 * 0.28);
-      rightF.x = Math.floor(W2 * 0.72);
-      leftF.y = Math.floor(H2 * 0.58);
-      rightF.y = Math.floor(H2 * 0.58);
-    }
-    placeFighters();
-    app.renderer.on("resize", placeFighters);
+    // keep label centered
+    try { if (state.leftNode.__label?.anchor?.set) state.leftNode.__label.anchor.set(0.5, 0); } catch(_) {}
+    try { if (state.rightNode.__label?.anchor?.set) state.rightNode.__label.anchor.set(0.5, 0); } catch(_) {}
 
-    async function punch(node, dx) {
-      const start = node.x;
-      node.x = start + dx;
-      await sleep(90);
-      node.x = start;
-    }
-    async function hitFlash(node) {
-      const sy = node.scale.y;
-      node.scale.y = sy * 0.92;
-      await sleep(70);
-      node.scale.y = sy;
-    }
-    function dmgFloat(x, y, text) {
-      const t = new global.PIXI.Text(text, new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 18, fontWeight: "900" }));
-      t.x = x; t.y = y; t.alpha = 0.95;
-      app.stage.addChild(t);
+    layout();
+    log("setActors", { youUrls, foeUrls, youTex: !!youTex, foeTex: !!foeTex });
+  }
 
-      let life = 0;
-      const dur = 420;
-      const tick = (dt) => {
-        life += (dt * 16.6);
-        t.y -= 0.35 * dt * 2;
-        t.alpha = Math.max(0, 1 - (life / dur));
-        if (life >= dur) {
-          app.ticker.remove(tick);
-          try { t.destroy(); } catch (_) {}
+  function _shake(intensity = 6, ms = 180) {
+    if (!state.camera) return;
+    const start = performance.now();
+    const baseX = state.camera.x || 0;
+    const baseY = state.camera.y || 0;
+
+    return new Promise((resolve) => {
+      const tick = (t) => {
+        const k = Math.min(1, (t - start) / ms);
+        const damp = (1 - k);
+        state.camera.x = baseX + (Math.random() * 2 - 1) * intensity * damp;
+        state.camera.y = baseY + (Math.random() * 2 - 1) * intensity * damp;
+
+        if (k < 1) requestAnimationFrame(tick);
+        else {
+          state.camera.x = baseX;
+          state.camera.y = baseY;
+          resolve();
         }
       };
-      app.ticker.add(tick);
-    }
+      requestAnimationFrame(tick);
+    });
+  }
 
-    // step playback
-    const steps = Array.isArray(stub.steps) ? stub.steps : [];
-    for (let i = 0; i < steps.length; i++) {
-      const s = steps[i] || {};
-      const who = String(s.who || "");
-      const dmg = Math.max(0, parseInt(s.dmg || 0, 10));
-      const glitch = Math.max(0, parseInt(s.glitch || 0, 10));
-      const dotSelf = Math.max(0, parseInt(s.dotSelf || 0, 10));
-      const dodged = !!s.dodged;
-      const crit = !!s.crit;
+  function _floatText(x, y, text, isCrit) {
+    const PIXI = global.PIXI;
+    const t = new PIXI.Text(String(text), {
+      fill: 0xffffff,
+      fontSize: isCrit ? 22 : 18,
+      fontWeight: "900",
+      alpha: 0.98,
+    });
+    t.x = x;
+    t.y = y;
+    state.camera.addChild(t);
 
-      // map: w krokach "player" = p1, "enemy" = p2 (w większości Twoich symulatorów)
-      const attackerIsP1 = (who === "player");
-      const attackerLeft = (attackerIsP1 === youAreP1); // jeśli ty jesteś p1 to p1=left
+    const start = performance.now();
+    const dur = 420;
 
-      const attacker = attackerLeft ? leftF : rightF;
-      const target = attackerLeft ? rightF : leftF;
-
-      // anim
-      await punch(attacker, attackerLeft ? +26 : -26);
-
-      if (dodged) {
-        dmgFloat(target.x - 10, target.y - 90, "DODGE");
-        await sleep(260);
-        continue;
-      }
-
-      const hit = dmg + glitch;
-      if (hit > 0) {
-        await hitFlash(target);
-        dmgFloat(target.x - 10, target.y - 90, (crit ? "CRIT " : "") + "-" + hit);
-      }
-
-      // update HP from step if present (prefer)
-      // w Twoim code są różne aliasy, więc bierzemy kilka
-      const pHp = parseInt(s.pHp ?? s.p_hp ?? s.playerHp ?? s.youHp ?? leftHp, 10);
-      const eHp = parseInt(s.eHp ?? s.e_hp ?? s.enemyHp ?? s.oppHp ?? rightHp, 10);
-
-      // Map left/right back
-      if (youAreP1) {
-        leftHp = isFinite(pHp) ? pHp : leftHp;
-        rightHp = isFinite(eHp) ? eHp : rightHp;
-      } else {
-        // jeśli jesteś p2, to "player" (p1) jest po PRAWEJ w naszej mapie
-        // left = p2 => leftHp to eHp, right = p1 => rightHp to pHp
-        leftHp = isFinite(eHp) ? eHp : leftHp;
-        rightHp = isFinite(pHp) ? pHp : rightHp;
-      }
-
-      // apply dotSelf (tick na aktorze) jeśli step nie podał hp
-      if (!isFinite(pHp) || !isFinite(eHp)) {
-        if (dotSelf > 0) {
-          if (attackerLeft) leftHp -= dotSelf; else rightHp -= dotSelf;
+    return new Promise((resolve) => {
+      const tick = (now) => {
+        const k = Math.min(1, (now - start) / dur);
+        t.y = y - (k * 54);
+        t.alpha = Math.max(0, 1 - k);
+        if (k < 1) requestAnimationFrame(tick);
+        else {
+          try { t.destroy(); } catch (_) {}
+          resolve();
         }
-        if (hit > 0) {
-          if (attackerLeft) rightHp -= hit; else leftHp -= hit;
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  function _lunge(node, dir, ms = 180, dist = 26) {
+    if (!node) return Promise.resolve();
+    const startX = node.x;
+    const targetX = startX + dir * dist;
+    const start = performance.now();
+
+    return new Promise((resolve) => {
+      const tick = (now) => {
+        const k = Math.min(1, (now - start) / ms);
+        // ease in-out
+        const e = k < 0.5 ? (2 * k * k) : (1 - Math.pow(-2 * k + 2, 2) / 2);
+        node.x = startX + (targetX - startX) * e;
+        if (k < 1) requestAnimationFrame(tick);
+        else {
+          // snap back quickly
+          node.x = startX;
+          resolve();
         }
-      }
+      };
+      requestAnimationFrame(tick);
+    });
+  }
 
-      leftHp = Math.max(0, leftHp);
-      rightHp = Math.max(0, rightHp);
+  async function attack(youAttacked, dmg, crit) {
+    if (!state.app || !state.leftNode || !state.rightNode) return;
 
-      leftHpBar.set(leftHp / leftMax);
-      rightHpBar.set(rightHp / rightMax);
+    const attacker = youAttacked ? state.leftNode : state.rightNode;
+    const target = youAttacked ? state.rightNode : state.leftNode;
 
-      await sleep(260);
+    // lunge direction: left -> +, right -> -
+    const dir = youAttacked ? +1 : -1;
+
+    await _lunge(attacker, dir);
+
+    if (dmg > 0) {
+      // small “hit” flash
+      const oldAlpha = target.alpha;
+      target.alpha = 0.75;
+      setTimeout(() => { try { target.alpha = oldAlpha; } catch(_) {} }, 80);
+
+      // floating dmg
+      await _floatText(target.x - 10, target.y - 95, (crit ? "CRIT " : "") + "-" + dmg, !!crit);
+    } else {
+      await _floatText(target.x - 10, target.y - 95, "MISS", false);
+    }
+
+    if (crit) {
+      // camera shake
+      await _shake(7, 180);
     }
   }
 
-  async function renderReplayDom(stub) {
-    // ultra-fallback bez Pixi
-    const meta = $("#arenaMeta", state.overlay);
-    const wrap = $("#arenaStageWrap", state.overlay);
-    const fallback = $("#arenaFallback", state.overlay);
-
-    const youAreP1 = !!stub.you_are_p1;
-    const p1 = stub.p1 || {};
-    const p2 = stub.p2 || {};
-    const left = youAreP1 ? p1 : p2;
-    const right = youAreP1 ? p2 : p1;
-
-    if (fallback) fallback.style.display = "none";
-
-    const box = document.createElement("div");
-    box.style.cssText = "padding:14px;color:#fff";
-    box.innerHTML = `
-      <div style="display:flex;justify-content:space-between;gap:12px">
-        <div><b>${left.name || "YOU"}</b><div style="opacity:.75;font-size:12px">${left.pet_name || left.pet_type || ""}</div></div>
-        <div style="text-align:right"><b>${right.name || "ENEMY"}</b><div style="opacity:.75;font-size:12px">${right.pet_name || right.pet_type || ""}</div></div>
-      </div>
-      <div style="margin-top:12px;opacity:.85;font-size:12px">Replay loaded (DOM fallback).</div>
-    `;
-    wrap.appendChild(box);
-
-    if (meta) meta.textContent = "Replay (fallback)";
-  }
-
-  async function open(battleId) {
-    if (!state.apiPost) throw new Error("Arena.init({apiPost,...}) missing");
-
-    const ov = ensureOverlay();
-    const meta = $("#arenaMeta", ov);
-    const btnReplay = $("#arenaReplay", ov);
-
-    state.lastBattleId = String(battleId || state.lastBattleId || "").trim() || null;
-
-    const doLoad = async () => {
-      if (!state.lastBattleId) throw new Error("No battle_id");
-
-      if (meta) meta.textContent = "Fetching replay…";
-
-      // clear stage
-      destroyPixi();
-      const wrap = $("#arenaStageWrap", ov);
-      if (wrap) wrap.innerHTML = `<div id="arenaFallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);font-weight:700">Loading replay…</div>`;
-
-      const res = await state.apiPost("/webapp/arena/replay", { battle_id: state.lastBattleId });
-      const stub = res?.data || res?.stub || res;
-      if (!stub || !Array.isArray(stub.steps)) throw new Error("Bad replay payload");
-
-      if (meta) meta.textContent = `Battle #${state.lastBattleId} • ${stub?.winner_reason || ""}`.trim();
-
-      // render
-      if (hasPixi()) await renderReplayPixi(stub);
-      else await renderReplayDom(stub);
-    };
-
-    // replay button
-    if (btnReplay && !btnReplay.__bound) {
-      btnReplay.__bound = true;
-      btnReplay.addEventListener("click", async () => {
-        try { state.tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-        try { await doLoad(); } catch (e) { console.error(e); }
-      });
-    }
-
-    await doLoad();
-  }
-
-  function init({ apiPost, tg, dbg } = {}) {
-    if (apiPost) state.apiPost = apiPost;
-    if (tg) state.tg = tg;
-    state.dbg = !!dbg;
-    log("init ok", { hasPixi: hasPixi() });
-  }
-
-  global.Arena = { init, open, close };
+  global.ArenaPixi = { init, setActors, attack, destroy };
 })(window);
