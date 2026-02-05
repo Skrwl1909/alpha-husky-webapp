@@ -1,4 +1,4 @@
-// public/js/arena_pixi.js — FINAL vB-2026-02-05 (pet normalize + cloud url variants + better texture load + mirror fix + HP text)
+// public/js/arena_pixi.js — FINAL vC-2026-02-05 (fix: pet_type is archetype; prefer cleaned pet_name; better loader; hp text)
 (function (global) {
   const state = {
     apiPost: null,
@@ -10,7 +10,7 @@
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
-  const VER = "arena_pixi.js vB-2026-02-05";
+  const VER = "arena_pixi.js vC-2026-02-05";
   try { global.__ARENA_PIXI_VER__ = VER; } catch (_) {}
 
   function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
@@ -111,6 +111,20 @@
     return false;
   }
 
+  function _stripLevelSuffix(raw) {
+    let s = String(raw || "").trim();
+    if (!s) return s;
+
+    // "(Lv 14)" / "(Lvl 14)" / "(Level 14)"
+    s = s.replace(/\s*\(\s*(?:lv|lvl|level)\s*\d+\s*\)\s*$/i, "");
+    // "Lv 14" / "Level 14" at end
+    s = s.replace(/\s*(?:lv|lvl|level)\s*\d+\s*$/i, "");
+    // "[Lv 14]" at end
+    s = s.replace(/\s*\[\s*(?:lv|lvl|level)\s*\d+\s*\]\s*$/i, "");
+
+    return s.trim();
+  }
+
   function _slugify(raw) {
     let k = String(raw || "").trim();
     if (!k) return "";
@@ -132,7 +146,6 @@
     return `${CLOUD_BASE}/${CLOUD_TX}/${p}`;
   }
 
-  // normalize pet object from fighter payloads
   function normalizePetObj(fighter) {
     return (
       fighter?.pet ||
@@ -142,7 +155,7 @@
       fighter?.petState ||
       fighter?.pet_info ||
       fighter?.petInfo ||
-      fighter // fallback
+      fighter
     );
   }
 
@@ -158,7 +171,7 @@
   function petAssetUrls(fighter) {
     const p = normalizePetObj(fighter);
 
-    // 1) Prefer direct / canonical fields if present (check both pet + fighter)
+    // 1) Prefer direct url/path fields if present (pet OR fighter)
     const direct =
       p?.pet_asset || p?.petAsset ||
       p?.pet_icon  || p?.petIcon  ||
@@ -169,38 +182,50 @@
       fighter?.pet_asset || fighter?.petAsset ||
       fighter?.pet_icon  || fighter?.petIcon  ||
       fighter?.pet_sprite || fighter?.petSprite ||
+      fighter?.icon || fighter?.icon_file || fighter?.iconFile ||
       "";
 
     const directUrl = _cloudUrlFromMaybe(direct);
     if (directUrl) return [directUrl];
 
-    // 2) Otherwise infer from stable names/keys (NOT pet_id)
-    const raw =
+    // 2) Infer from stable names/keys:
+    // IMPORTANT: pet_type is archetype ("mystic"/"feral") — do NOT prefer it over name.
+    const rawKey =
       p?.pet_key || p?.petKey ||
-      p?.pet_type || p?.petType ||
+      "";
+
+    const rawName =
       p?.pet_name || p?.petName ||
       p?.name ||
       "";
 
+    const rawType =
+      p?.pet_type || p?.petType ||
+      "";
+
+    const nameClean = _stripLevelSuffix(rawName);
+
+    const raw =
+      rawKey ||
+      nameClean ||
+      rawType ||
+      "";
+
     const base = _slugify(raw);
     if (!base) return [];
-    if (_looksLikeId(base)) return []; // don't spam 404s
+    if (_looksLikeId(base)) return [];
 
     const noSpace = base.replace(/\s+/g, "");
     const under   = base.replace(/\s+/g, "_");
     const dash    = base.replace(/\s+/g, "-");
-
     const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
 
-    // IMPORTANT:
-    // - Cloudinary public_id often works without extension
-    // - Some uploads may be webp; we try both
+    // Cloudinary public_id often works without extension
     const out = [];
     for (const k of keys) {
       const ek = encodeURIComponent(k);
       out.push(`${CLOUD_BASE}/${CLOUD_TX}/pets/${ek}`);       // no extension
-      out.push(`${CLOUD_BASE}/${CLOUD_TX}/pets/${ek}.png`);
-      out.push(`${CLOUD_BASE}/${CLOUD_TX}/pets/${ek}.webp`);
+      out.push(`${CLOUD_BASE}/${CLOUD_TX}/pets/${ek}.png`);  // extension fallback
     }
     return out;
   }
@@ -211,14 +236,12 @@
     for (const url of urls) {
       try {
         let tex = null;
-
         if (global.PIXI.Assets?.load) {
           const r = await global.PIXI.Assets.load(url);
-          tex = r?.texture || r; // Pixi loaders sometimes return { texture }
+          tex = r?.texture || r; // some loaders return {texture}
         } else {
           tex = global.PIXI.Texture.from(url);
         }
-
         if (tex) return tex;
       } catch (e) {
         if (state.dbg) console.warn("[Arena] texture load failed", url, e?.message || e);
@@ -227,11 +250,9 @@
     return null;
   }
 
-  // HP bar (returns refs so we can reposition on resize)
   function hpBar(app, x, y, w, h) {
     const gBack = new global.PIXI.Graphics();
     const gFill = new global.PIXI.Graphics();
-
     app.stage.addChild(gBack);
     app.stage.addChild(gFill);
 
@@ -246,7 +267,6 @@
 
     let _ratio = 1;
     let _x = x, _y = y, _w = w, _h = h;
-
     draw(_ratio, _x, _y, _w, _h);
 
     return {
@@ -257,10 +277,6 @@
       setPos(x2, y2, w2, h2) {
         _x = x2; _y = y2; _w = w2; _h = h2;
         draw(_ratio, _x, _y, _w, _h);
-      },
-      destroy() {
-        try { gBack.destroy(); } catch (_) {}
-        try { gFill.destroy(); } catch (_) {}
       }
     };
   }
@@ -270,7 +286,6 @@
     const fallback = $("#arenaFallback", state.overlay);
     if (fallback) fallback.style.display = "none";
 
-    // Create pixi app
     const app = new global.PIXI.Application({
       resizeTo: wrap,
       antialias: true,
@@ -279,15 +294,12 @@
     });
     state.pixiApp = app;
 
-    // Pixi v8 uses app.canvas; older uses app.view
     wrap.appendChild(app.canvas || app.view);
 
-    // background
     const bg = new global.PIXI.Graphics();
     bg.beginFill(0x000000, 0.25).drawRect(0, 0, wrap.clientWidth, wrap.clientHeight).endFill();
     app.stage.addChild(bg);
 
-    // data
     const youAreP1 = !!stub.you_are_p1;
     const p1 = stub.p1 || {};
     const p2 = stub.p2 || {};
@@ -303,7 +315,6 @@
     let leftHp = leftMax;
     let rightHp = rightMax;
 
-    // names
     const nameStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 14, fontWeight: "800" });
     const subStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, fontWeight: "700", alpha: 0.8 });
 
@@ -314,7 +325,6 @@
     app.stage.addChild(tLeft);
     app.stage.addChild(tRight);
 
-    // HP text
     const hpStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 11, fontWeight: "800", alpha: 0.9 });
     const tHpL = new global.PIXI.Text("", hpStyle);
     const tHpR = new global.PIXI.Text("", hpStyle);
@@ -325,23 +335,28 @@
       tHpL.text = `${leftHp}/${leftMax}`;
       tHpR.text = `${rightHp}/${rightMax}`;
       const W0 = wrap.clientWidth || 360;
-      tHpL.x = 14;
-      tHpL.y = 52;
-      tHpR.x = W0 - 14 - tHpR.width;
-      tHpR.y = 52;
+      tHpL.x = 14; tHpL.y = 52;
+      tHpR.x = W0 - 14 - tHpR.width; tHpR.y = 52;
     }
 
-    // hp bars
     let W = wrap.clientWidth || 360;
     let barW = Math.max(120, Math.floor(W * 0.38));
     const leftHpBar = hpBar(app, 14, 34, barW, 14);
     const rightHpBar = hpBar(app, W - 14 - barW, 34, barW, 14);
-
     leftHpBar.set(1);
     rightHpBar.set(1);
     updateHpText();
 
-    // layout
+    let leftF = null;
+    let rightF = null;
+
+    function placeFighters() {
+      const W2 = wrap.clientWidth || 360;
+      const H2 = wrap.clientHeight || 420;
+      if (leftF) { leftF.x = Math.floor(W2 * 0.28); leftF.y = Math.floor(H2 * 0.58); }
+      if (rightF) { rightF.x = Math.floor(W2 * 0.72); rightF.y = Math.floor(H2 * 0.58); }
+    }
+
     function relayout() {
       const W1 = wrap.clientWidth || 360;
       const H1 = wrap.clientHeight || 420;
@@ -351,7 +366,6 @@
       tLeft.x = 14; tLeft.y = 10;
       tRight.x = W1 - 14 - tRight.width; tRight.y = 10;
 
-      // reposition hp bars on resize
       const bw = Math.max(120, Math.floor(W1 * 0.38));
       leftHpBar.setPos(14, 34, bw, 14);
       rightHpBar.setPos(W1 - 14 - bw, 34, bw, 14);
@@ -359,10 +373,8 @@
       updateHpText();
       placeFighters();
     }
-
     app.renderer.on("resize", relayout);
 
-    // sprites / fallback emoji
     async function makeFighter(fighter, isRight) {
       const c = new global.PIXI.Container();
       app.stage.addChild(c);
@@ -373,9 +385,9 @@
 
       if (state.dbg) {
         log("pet urls", {
-          fighterKeys: Object.keys(fighter || {}).slice(0, 25),
-          petKeys: Object.keys(pObj || {}).slice(0, 25),
           name: pickPetLabel(pObj),
+          pet_type: pObj?.pet_type || pObj?.petType,
+          pet_name: pObj?.pet_name || pObj?.petName || pObj?.name,
           urls,
           ok: !!tex
         });
@@ -400,25 +412,14 @@
       badge.y = 52;
       c.addChild(badge);
 
-      // mirror ONLY sprite/emoji (avoid mirrored text)
-      if (isRight && obj?.scale) {
-        obj.scale.x = -Math.abs(obj.scale.x);
-      }
+      // mirror ONLY the sprite/emoji (avoid mirrored text)
+      if (isRight && obj?.scale) obj.scale.x = -Math.abs(obj.scale.x);
 
       return c;
     }
 
-    const leftF = await makeFighter(left, false);
-    const rightF = await makeFighter(right, true);
-
-    function placeFighters() {
-      const W2 = wrap.clientWidth || 360;
-      const H2 = wrap.clientHeight || 420;
-      leftF.x = Math.floor(W2 * 0.28);
-      rightF.x = Math.floor(W2 * 0.72);
-      leftF.y = Math.floor(H2 * 0.58);
-      rightF.y = Math.floor(H2 * 0.58);
-    }
+    leftF = await makeFighter(left, false);
+    rightF = await makeFighter(right, true);
     placeFighters();
 
     async function punch(node, dx) {
@@ -454,7 +455,6 @@
       app.ticker.add(tick);
     }
 
-    // step playback
     const steps = Array.isArray(stub.steps) ? stub.steps : [];
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i] || {};
@@ -515,7 +515,6 @@
       await sleep(260);
     }
 
-    // final relayout (in case first append changed size)
     try { relayout(); } catch (_) {}
   }
 
@@ -567,15 +566,17 @@
 
       const res = await state.apiPost("/webapp/arena/replay", { battle_id: state.lastBattleId });
       const stub = res?.data || res?.stub || res;
-      if (!stub || !Array.isArray(stub.steps)) throw new Error("Bad replay payload");
 
+      // expose debug always
       try {
         global.__ARENA_LAST_STUB__ = stub;
         global.__ARENA_LAST_BATTLE_ID__ = state.lastBattleId;
       } catch (_) {}
 
-      // debug helper (duplicate ok)
-      try { global.__ARENA_LAST_STUB__ = stub; } catch (_) {}
+      if (!stub || !Array.isArray(stub.steps)) {
+        console.warn("[Arena] Bad replay payload (no steps array)", stub);
+        throw new Error("Bad replay payload");
+      }
 
       if (meta) meta.textContent = `Battle #${state.lastBattleId} • ${stub?.winner_reason || ""}`.trim();
 
