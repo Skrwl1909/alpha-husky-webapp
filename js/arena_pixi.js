@@ -6,22 +6,29 @@
     dbg: false,
     overlay: null,
     pixiApp: null,
+    cleanup: [],
     lastBattleId: null,
-    _ro: null,
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
-  const VER = "arena_pixi.js vI-2026-02-06-pixi8fix";
-  try { global.__ARENA_PIXI_VER__ = VER; } catch (_) {}
+  const VER = "arena_pixi.js vI-2026-02-06-close-stage";
+  try { global.__ARENA_PIXI_VER__ = VER; } catch(_){}
 
   function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  function destroyPixi() {
-    try { state._ro?.disconnect?.(); } catch (_) {}
-    state._ro = null;
+  function _addCleanup(fn) {
+    if (typeof fn === "function") state.cleanup.push(fn);
+  }
+  function _runCleanup() {
+    const arr = state.cleanup.splice(0);
+    for (const fn of arr) { try { fn(); } catch(_){} }
+  }
 
+  function destroyPixi() {
+    _runCleanup();
     try { state.pixiApp?.destroy?.(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
+    try { state.pixiApp?.stage?.removeChildren?.(); } catch (_) {}
     state.pixiApp = null;
   }
 
@@ -100,18 +107,14 @@
     return !!global.PIXI && !!global.PIXI.Application;
   }
 
-  // ===================== Cloudinary Pet Sprites (Pixi) =====================
+  // ===================== Cloudinary Pet Sprites =====================
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX = "f_png,q_auto,w_256,c_fit";
   const PET_FOLDERS = ["pets", "pets/icons"];
-  const PET_VER = String(global.__PET_CLOUD_VER__ || global.__PET_CLOUD_VER__ || "").trim(); // np "v1767699377"
 
-  function _looksLikeId(s) {
-    const x = String(s || "").trim().toLowerCase();
-    if (!x) return false;
-    if (/^[a-f0-9]{32}$/.test(x)) return true;
-    if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(x)) return true;
-    return false;
+  function getPetVer() {
+    const v = String(global.__PET_CLOUD_VER__ || "").trim();
+    return v || ""; // "v176..." albo ""
   }
 
   function _stripLevelSuffix(raw) {
@@ -134,6 +137,13 @@
     return k;
   }
 
+  function _cloudJoin(...parts) {
+    return parts
+      .map(x => String(x || "").replace(/^\/+|\/+$/g, ""))
+      .filter(Boolean)
+      .join("/");
+  }
+
   function _looksLikePathOrUrl(s) {
     const x = String(s || "").trim();
     if (!x) return false;
@@ -150,98 +160,61 @@
     if (s.includes("res.cloudinary.com")) return s;
 
     const p = s.replace(/^\/+/, "").replace(/^image\/upload\//, "");
+    // jeśli już ma transformację, nie dokładamy drugi raz
     if (p.startsWith(CLOUD_TX + "/")) return `${CLOUD_BASE}/${p}`;
     return `${CLOUD_BASE}/${CLOUD_TX}/${p}`;
   }
 
-  function _uniq(arr) {
-    const out = [];
-    const seen = new Set();
-    for (const x of arr || []) {
-      const k = String(x || "").trim();
-      if (!k) continue;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push(k);
-    }
-    return out;
+  function normalizePetObj(fighter) {
+    return fighter?.pet || fighter?.active_pet || fighter?.pet_state || fighter || {};
   }
 
   function petAssetUrls(fighter) {
-    const p = fighter || {};
-    const out = [];
+    const p = normalizePetObj(fighter);
+    const PET_VER = getPetVer();
 
-    // 1) direct fields (ale NIE kończymy tutaj — dodajemy też fallbacki!)
+    // 1) ✅ NAJLEPSZE: pet_img (z backendu, działa jak w Adopt)
+    const directBest = p?.pet_img || p?.img || fighter?.pet_img || fighter?.img || "";
+    const directBestUrl = _cloudUrlFromMaybe(directBest);
+    if (directBestUrl) return [directBestUrl];
+
+    // 2) direct icon/url jeśli wygląda jak ścieżka/url (ale nie łapiemy "feral")
     const direct =
       p?.pet_icon || p?.petIcon ||
       p?.pet_asset || p?.petAsset ||
       p?.pet_sprite || p?.petSprite ||
       p?.icon_file || p?.iconFile ||
-      p?.icon ||
+      p?.icon || p?.image || p?.sprite ||
+      fighter?.pet_icon || fighter?.petIcon ||
       "";
 
     const directUrl = _cloudUrlFromMaybe(direct);
-    if (directUrl) out.push(directUrl);
+    if (directUrl) return [directUrl];
 
-    // 2) fallbacky: key / name / type
-    const rawKey = String(p?.pet_key || p?.petKey || "").trim();
-    const rawName = _stripLevelSuffix(p?.pet_name || p?.petName || p?.name || "");
-    const rawType = String(p?.pet_type || p?.petType || "").trim();
+    // 3) ✅ fallback: z pet_name (bez "(Lv X)") -> public_id bez spacji/kresek
+    const rawName = _stripLevelSuffix(p?.pet_name || p?.petName || fighter?.pet_name || fighter?.petName || "");
+    const base = _slugify(rawName);
+    if (!base) return [];
 
-    const candidates = [rawKey, rawName, rawType].filter(Boolean);
+    const noSpace = base.replace(/[\s_-]+/g, "");      // "dark husky pup" -> "darkhuskypup"
+    const under   = base.replace(/\s+/g, "_");         // "dark_husky_pup"
+    const dash    = base.replace(/\s+/g, "-");         // "dark-husky-pup"
+    const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
 
-    for (const raw of candidates) {
-      const base = _slugify(raw);
-      if (!base) continue;
-      if (_looksLikeId(base)) continue;
+    const out = [];
+    for (const folder of PET_FOLDERS) {
+      for (const k of keys) {
+        const file = `${encodeURIComponent(k)}.png`;
 
-      const noSpace = base.replace(/\s+/g, "");
-      const under = base.replace(/\s+/g, "_");
-      const dash = base.replace(/\s+/g, "-");
-      const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
+        // ✅ wersjonowane najpierw (u Ciebie to działa)
+        if (PET_VER) out.push(`${CLOUD_BASE}/${CLOUD_TX}/${PET_VER}/${folder}/${file}`);
 
-      for (const folder of PET_FOLDERS) {
-        for (const k of keys) {
-          const ek = encodeURIComponent(k);
-
-          // z wersją
-          if (PET_VER) {
-            out.push(`${CLOUD_BASE}/${CLOUD_TX}/${PET_VER}/${folder}/${ek}.png`);
-            out.push(`${CLOUD_BASE}/${CLOUD_TX}/${PET_VER}/${folder}/${ek}`);
-          }
-
-          // bez wersji (czasem Cloudinary mapuje też bez v..)
-          out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${ek}.png`);
-          out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${ek}`);
-        }
+        // opcjonalnie bez wersji jako last-last resort (możesz usunąć jeśli chcesz ciszę w konsoli)
+        out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${file}`);
       }
     }
 
-    return _uniq(out);
-  }
-
-  async function loadTextureViaImage(url) {
-    if (!hasPixi()) return null;
-
-    return new Promise((resolve) => {
-      try {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.decoding = "async";
-        img.onload = () => {
-          try {
-            const tex = global.PIXI.Texture.from(img);
-            resolve(tex || null);
-          } catch (_) {
-            resolve(null);
-          }
-        };
-        img.onerror = () => resolve(null);
-        img.src = url;
-      } catch (_) {
-        resolve(null);
-      }
-    });
+    return out;
   }
 
   async function loadTextureSafeMany(urls) {
@@ -249,16 +222,14 @@
 
     for (const url of urls) {
       try {
-        // 1) spróbuj przez Image (crossOrigin) — najpewniejsze pod WebGL
-        const tex1 = await loadTextureViaImage(url);
-        if (tex1) return tex1;
-
-        // 2) fallback: Assets.load (jeśli ktoś ma inny build pixi)
+        let tex = null;
         if (global.PIXI.Assets?.load) {
           const r = await global.PIXI.Assets.load(url);
-          const tex2 = r?.texture || r;
-          if (tex2) return tex2;
+          tex = r?.texture || r;
+        } else {
+          tex = global.PIXI.Texture.from(url);
         }
+        if (tex) return tex;
       } catch (e) {
         if (state.dbg) console.warn("[Arena] texture load failed", url, e?.message || e);
       }
@@ -266,76 +237,59 @@
     return null;
   }
 
-  // ===================== HP Bars =====================
-  function hpBar(app) {
-    const c = new global.PIXI.Container();
-    const back = new global.PIXI.Graphics();
-    const fill = new global.PIXI.Graphics();
-    c.addChild(back);
-    c.addChild(fill);
-    app.stage.addChild(c);
-
-    let _x = 0, _y = 0, _w = 120, _h = 14, _r = 1;
-
-    function redraw() {
-      back.clear().beginFill(0x000000, 0.35).drawRoundedRect(_x, _y, _w, _h, 6).endFill();
-      const rr = Math.max(0, Math.min(1, _r));
-      const fw = Math.max(0, (_w - 4) * rr);
-      fill.clear().beginFill(0xffffff, 0.65).drawRoundedRect(_x + 2, _y + 2, fw, _h - 4, 5).endFill();
-    }
-
-    return {
-      layout(x, y, w, h) { _x = x; _y = y; _w = w; _h = h; redraw(); },
-      set(ratio) { _r = ratio; redraw(); },
-      destroy() { try { c.destroy({ children: true }); } catch (_) {} }
-    };
-  }
-
-  // ===================== Pixi App creation (v8 + v7) =====================
+  // ===================== Pixi bootstrap (v7 + v8 safe) =====================
   async function createPixiApp(wrap) {
-    const dpi = Math.min(2, global.devicePixelRatio || 1);
+    let app;
 
-    // Pixi v8: new Application(); await app.init(opts)
+    // Pixi v8: new Application(); await app.init(options)
     try {
-      const a = new global.PIXI.Application();
-      if (typeof a.init === "function") {
-        await a.init({
+      app = new global.PIXI.Application();
+      if (typeof app.init === "function") {
+        await app.init({
           resizeTo: wrap,
           antialias: true,
           backgroundAlpha: 0,
-          resolution: dpi,
+          resolution: Math.min(2, global.devicePixelRatio || 1),
         });
-        return a;
+      } else {
+        // Pixi v7 and older: new Application(options)
+        app = new global.PIXI.Application({
+          resizeTo: wrap,
+          antialias: true,
+          backgroundAlpha: 0,
+          resolution: Math.min(2, global.devicePixelRatio || 1),
+        });
       }
     } catch (e) {
-      if (state.dbg) console.warn("[Arena] Pixi v8 init failed", e);
-    }
-
-    // Pixi v7/older: constructor with options
-    try {
-      return new global.PIXI.Application({
+      // fallback hard
+      app = new global.PIXI.Application({
         resizeTo: wrap,
         antialias: true,
         backgroundAlpha: 0,
-        resolution: dpi,
+        resolution: Math.min(2, global.devicePixelRatio || 1),
       });
-    } catch (e) {
-      if (state.dbg) console.warn("[Arena] Pixi v7 ctor failed", e);
-      throw e;
     }
+
+    return app;
   }
 
-  function getCanvasEl(app) {
-    // v8
-    try {
-      if (app?.canvas) return app.canvas;
-    } catch (_) {}
-    // v7
-    if (app?.view) return app.view;
-    // renderer fallback
-    if (app?.renderer?.view) return app.renderer.view;
-    if (app?.renderer?.canvas) return app.renderer.canvas;
-    return null;
+  function hpBar(app, x, y, w, h) {
+    const gBack = new global.PIXI.Graphics();
+    gBack.beginFill(0x000000, 0.35).drawRoundedRect(x, y, w, h, 6).endFill();
+
+    const gFill = new global.PIXI.Graphics();
+    gFill.beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, w - 4, h - 4, 5).endFill();
+
+    app.stage.addChild(gBack);
+    app.stage.addChild(gFill);
+
+    return {
+      set(ratio) {
+        const rr = Math.max(0, Math.min(1, ratio));
+        const fillW = (w - 4) * rr;
+        gFill.clear().beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, fillW, h - 4, 5).endFill();
+      }
+    };
   }
 
   async function renderReplayPixi(stub) {
@@ -343,20 +297,15 @@
     const fallback = $("#arenaFallback", state.overlay);
     if (fallback) fallback.style.display = "none";
 
-    // Create Pixi app safely (v8 compatible)
+    // Create pixi app (v7/v8 safe)
     const app = await createPixiApp(wrap);
     state.pixiApp = app;
 
-    const canvas = getCanvasEl(app);
-    if (!canvas) throw new Error("PIXI_NO_CANVAS");
+    // Attach canvas
+    const canvasEl = app.canvas || app.view;
+    if (!canvasEl) throw new Error("Pixi canvas missing (init failed?)");
+    wrap.appendChild(canvasEl);
 
-    wrap.appendChild(canvas);
-
-    // background
-    const bg = new global.PIXI.Graphics();
-    app.stage.addChild(bg);
-
-    // data
     const youAreP1 = !!stub.you_are_p1;
     const p1 = stub.p1 || {};
     const p2 = stub.p2 || {};
@@ -372,57 +321,16 @@
     let leftHp = leftMax;
     let rightHp = rightMax;
 
-    // names
+    const bg = new global.PIXI.Graphics();
+    app.stage.addChild(bg);
+
     const nameStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 14, fontWeight: "800" });
-    const subStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, fontWeight: "700", alpha: 0.8 });
+    const subStyle  = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, fontWeight: "700", alpha: 0.8 });
 
     const tLeft = new global.PIXI.Text(leftName, nameStyle);
     const tRight = new global.PIXI.Text(rightName, nameStyle);
     app.stage.addChild(tLeft);
     app.stage.addChild(tRight);
-
-    // hp bars
-    const leftHpBar = hpBar(app);
-    const rightHpBar = hpBar(app);
-    leftHpBar.set(1);
-    rightHpBar.set(1);
-
-    // fighters
-    async function makeFighter(p, isRight) {
-      const c = new global.PIXI.Container();
-      app.stage.addChild(c);
-
-      const urls = petAssetUrls(p);
-      const tex = await loadTextureSafeMany(urls);
-
-      if (state.dbg) log("pet urls", { label: String(p?.pet_name || p?.pet_type || ""), urls: urls.slice(0, 10), ok: !!tex });
-
-      let obj;
-      if (tex) {
-        const sp = new global.PIXI.Sprite(tex);
-        sp.anchor?.set?.(0.5);
-        sp.scale.set(0.60);
-        if (isRight) sp.scale.x = -Math.abs(sp.scale.x); // mirror sprite only
-        obj = sp;
-      } else {
-        const emoji = new global.PIXI.Text("🐾", new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 56, fontWeight: "900" }));
-        emoji.anchor?.set?.(0.5);
-        obj = emoji;
-      }
-
-      c.addChild(obj);
-
-      const badgeTxt = String(p.pet_name || p.pet_type || "");
-      const badge = new global.PIXI.Text(badgeTxt, subStyle);
-      badge.anchor?.set?.(0.5);
-      badge.y = 60;
-      c.addChild(badge);
-
-      return c;
-    }
-
-    const leftF = await makeFighter(left, false);
-    const rightF = await makeFighter(right, true);
 
     function relayout() {
       const W = wrap.clientWidth || 360;
@@ -433,23 +341,76 @@
       tLeft.x = 14; tLeft.y = 10;
       tRight.x = W - 14 - tRight.width; tRight.y = 10;
 
-      const barW = Math.max(120, Math.floor(W * 0.38));
-      leftHpBar.layout(14, 34, barW, 14);
-      rightHpBar.layout(W - 14 - barW, 34, barW, 14);
+      // hp bars re-rendered separately (we rebuild each replay anyway)
+    }
 
+    relayout();
+    const onResize = () => { try { relayout(); placeFighters(); } catch(_){} };
+    global.addEventListener("resize", onResize);
+    _addCleanup(() => global.removeEventListener("resize", onResize));
+
+    const W0 = wrap.clientWidth || 360;
+    const barW = Math.max(120, Math.floor(W0 * 0.38));
+    const leftHpBar = hpBar(app, 14, 34, barW, 14);
+    const rightHpBar = hpBar(app, W0 - 14 - barW, 34, barW, 14);
+    leftHpBar.set(1);
+    rightHpBar.set(1);
+
+    async function makeFighter(fighter, isRight) {
+      const c = new global.PIXI.Container();
+      app.stage.addChild(c);
+
+      const urls = petAssetUrls(fighter);
+      const tex = await loadTextureSafeMany(urls);
+
+      if (state.dbg) log("pet urls", {
+        name: fighter?.pet_name || fighter?.petName || fighter?.pet_img || fighter?.pet_icon || "",
+        urls: urls.slice(0, 6),
+        ok: !!tex
+      });
+
+      let obj;
+      if (tex) {
+        const sp = new global.PIXI.Sprite(tex);
+        if (sp.anchor?.set) sp.anchor.set(0.5);
+        sp.scale.set(0.60);
+
+        // ✅ mirror tylko sprite (żeby tekst nie był odwrócony)
+        if (isRight) sp.scale.x = -Math.abs(sp.scale.x);
+
+        obj = sp;
+      } else {
+        const emoji = new global.PIXI.Text("🐾", new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 56, fontWeight: "900" }));
+        if (emoji.anchor?.set) emoji.anchor.set(0.5);
+        obj = emoji;
+      }
+
+      c.addChild(obj);
+
+      const badgeText = String(fighter.pet_name || fighter.petName || "");
+      const badge = new global.PIXI.Text(badgeText, subStyle);
+      badge.x = -badge.width / 2;
+      badge.y = 52;
+      c.addChild(badge);
+
+      return c;
+    }
+
+    const leftF = await makeFighter(left, false);
+    const rightF = await makeFighter(right, true);
+
+    function placeFighters() {
+      const W = wrap.clientWidth || 360;
+      const H = wrap.clientHeight || 420;
       leftF.x = Math.floor(W * 0.28);
       rightF.x = Math.floor(W * 0.72);
       leftF.y = Math.floor(H * 0.58);
       rightF.y = Math.floor(H * 0.58);
+
+      // move hp bars on resize (simple: just redraw by recreating? keep minimal)
+      // (Good enough for now, stage is mobile fixed anyway)
     }
-
-    // Observe wrap size (bardziej stabilne niż renderer.on('resize') dla różnych buildów)
-    try {
-      state._ro = new ResizeObserver(() => relayout());
-      state._ro.observe(wrap);
-    } catch (_) {}
-
-    relayout();
+    placeFighters();
 
     async function punch(node, dx) {
       const start = node.x;
@@ -457,14 +418,12 @@
       await sleep(90);
       node.x = start;
     }
-
     async function hitFlash(node) {
       const sy = node.scale.y;
       node.scale.y = sy * 0.92;
       await sleep(70);
       node.scale.y = sy;
     }
-
     function dmgFloat(x, y, text) {
       const t = new global.PIXI.Text(text, new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 18, fontWeight: "900" }));
       t.x = x; t.y = y; t.alpha = 0.95;
@@ -484,7 +443,6 @@
       app.ticker.add(tick);
     }
 
-    // playback steps
     const steps = Array.isArray(stub.steps) ? stub.steps : [];
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i] || {};
@@ -499,7 +457,7 @@
       const attackerLeft = (attackerIsP1 === youAreP1);
 
       const attacker = attackerLeft ? leftF : rightF;
-      const target = attackerLeft ? rightF : leftF;
+      const target   = attackerLeft ? rightF : leftF;
 
       await punch(attacker, attackerLeft ? +26 : -26);
 
@@ -519,10 +477,10 @@
       const eHp = parseInt(s.eHp ?? s.e_hp ?? s.enemyHp ?? s.oppHp ?? rightHp, 10);
 
       if (youAreP1) {
-        leftHp = isFinite(pHp) ? pHp : leftHp;
+        leftHp  = isFinite(pHp) ? pHp : leftHp;
         rightHp = isFinite(eHp) ? eHp : rightHp;
       } else {
-        leftHp = isFinite(eHp) ? eHp : leftHp;
+        leftHp  = isFinite(eHp) ? eHp : leftHp;
         rightHp = isFinite(pHp) ? pHp : rightHp;
       }
 
@@ -545,18 +503,18 @@
     }
   }
 
-  async function renderReplayDom(stub, reason) {
+  async function renderReplayDom(stub) {
     const meta = $("#arenaMeta", state.overlay);
     const wrap = $("#arenaStageWrap", state.overlay);
     const fallback = $("#arenaFallback", state.overlay);
-
-    if (fallback) fallback.style.display = "none";
 
     const youAreP1 = !!stub.you_are_p1;
     const p1 = stub.p1 || {};
     const p2 = stub.p2 || {};
     const left = youAreP1 ? p1 : p2;
     const right = youAreP1 ? p2 : p1;
+
+    if (fallback) fallback.style.display = "none";
 
     const box = document.createElement("div");
     box.style.cssText = "padding:14px;color:#fff";
@@ -565,10 +523,7 @@
         <div><b>${left.name || "YOU"}</b><div style="opacity:.75;font-size:12px">${left.pet_name || left.pet_type || ""}</div></div>
         <div style="text-align:right"><b>${right.name || "ENEMY"}</b><div style="opacity:.75;font-size:12px">${right.pet_name || right.pet_type || ""}</div></div>
       </div>
-      <div style="margin-top:12px;opacity:.85;font-size:12px">
-        Replay loaded (DOM fallback).
-        ${reason ? `<div style="margin-top:6px;opacity:.75">Pixi reason: ${String(reason)}</div>` : ``}
-      </div>
+      <div style="margin-top:12px;opacity:.85;font-size:12px">Replay loaded (DOM fallback).</div>
     `;
     wrap.appendChild(box);
 
@@ -586,6 +541,7 @@
 
     const doLoad = async () => {
       if (!state.lastBattleId) throw new Error("No battle_id");
+
       if (meta) meta.textContent = "Fetching replay…";
 
       destroyPixi();
@@ -593,7 +549,8 @@
       if (wrap) wrap.innerHTML =
         `<div id="arenaFallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);font-weight:700">Loading replay…</div>`;
 
-      const res = await state.apiPost("/webapp/arena/replay", { battle_id: state.lastBattleId });
+      // dbg flag dla backendu (żebyś widział pet_img w _dbg_pet)
+      const res = await state.apiPost("/webapp/arena/replay", { battle_id: state.lastBattleId, dbg: !!state.dbg });
       const stub = res?.data || res?.stub || res;
       if (!stub || !Array.isArray(stub.steps)) throw new Error("Bad replay payload");
 
@@ -604,16 +561,8 @@
 
       if (meta) meta.textContent = `Battle #${state.lastBattleId} • ${stub?.winner_reason || ""}`.trim();
 
-      if (hasPixi()) {
-        try {
-          await renderReplayPixi(stub);
-        } catch (e) {
-          console.error("[Arena] Pixi render failed:", e);
-          await renderReplayDom(stub, e?.message || e);
-        }
-      } else {
-        await renderReplayDom(stub, "NO_PIXI");
-      }
+      if (hasPixi()) await renderReplayPixi(stub);
+      else await renderReplayDom(stub);
     };
 
     if (btnReplay && !btnReplay.__bound) {
@@ -631,7 +580,13 @@
     if (apiPost) state.apiPost = apiPost;
     if (tg) state.tg = tg;
     state.dbg = !!dbg;
-    log("init ok", { VER, hasPixi: hasPixi(), PET_VER, PET_FOLDERS });
+
+    log("init ok", {
+      VER,
+      hasPixi: hasPixi(),
+      PET_VER: String(global.__PET_CLOUD_VER__ || "").trim(),
+      PET_FOLDERS
+    });
   }
 
   global.Arena = { init, open, close };
