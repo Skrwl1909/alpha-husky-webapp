@@ -139,6 +139,7 @@
   function _cloudUrlFromMaybe(x) {
     const s = String(x || "").trim();
     if (!s) return "";
+     if (/^https?:\/\//i.test(s)) return s;
     if (! _looksLikePathOrUrl(s)) return ""; // <- kluczowy guard (nie łapie emoji)
     if (s.includes("res.cloudinary.com")) return s;
     const p = s.replace(/^\/+/, "").replace(/^image\/upload\//, "");
