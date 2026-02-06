@@ -10,8 +10,8 @@
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
-  const VER = "arena_pixi.js vE-2026-02-06";
-  try { global.__ARENA_PIXI_VER__ = VER; } catch(_){}
+  const VER = "arena_pixi.js vE-2026-02-06a";
+  try { global.__ARENA_PIXI_VER__ = VER; } catch (_) {}
 
   function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -99,6 +99,20 @@
   // ===================== Cloudinary Pet Sprites (Pixi) =====================
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX = "f_png,q_auto,w_256,c_fit";
+
+  // Twoje pety realnie siedzą pod /v1767699377/pets/<slug>.png
+  // Spróbujemy: najpierw versioned, potem versionless (działa też gdy zmienisz wersję w przyszłości).
+  const DEFAULT_PET_VER = "v1767699377";
+  function _normVer(v) {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    if (s.startsWith("v")) return s;
+    if (/^\d+$/.test(s)) return "v" + s;
+    return s.replace(/^\/+/, "").split("/")[0];
+  }
+  const PET_VER = _normVer(global.CLOUD_PETS_VER || global.PETS_VER || DEFAULT_PET_VER);
+  const PET_VER_PREFIXES = Array.from(new Set([PET_VER, ""].filter(Boolean)));
+
   const PET_FOLDERS = ["pets", "pets/icons"]; // dopisz jeśli masz inny folder
 
   function _looksLikeId(s) {
@@ -141,16 +155,21 @@
   function _cloudUrlFromMaybe(x) {
     const s = String(x || "").trim();
     if (!s) return "";
-
-    // ✅ pozwól na absolutne URL-e (np. backend proxy /webapp/img?u=...)
-    if (/^https?:\/\//i.test(s)) return s;
-
-    if (! _looksLikePathOrUrl(s)) return "";
+    if (!_looksLikePathOrUrl(s)) return "";
     if (s.includes("res.cloudinary.com")) return s;
-
     const p = s.replace(/^\/+/, "").replace(/^image\/upload\//, "");
     if (p.startsWith(CLOUD_TX + "/")) return `${CLOUD_BASE}/${p}`;
     return `${CLOUD_BASE}/${CLOUD_TX}/${p}`;
+  }
+
+  // wykryj "zły direct URL" typu .../pets/<uuid>.png (u Ciebie 404)
+  function _isBadUuidPetUrl(url) {
+    const u = String(url || "").trim();
+    if (!u) return false;
+    const m = u.match(/\/pets\/([^/?#]+)\.?/i);
+    if (!m) return false;
+    const tail = (m[1] || "").split(".")[0];
+    return _looksLikeId(tail);
   }
 
   function normalizePetObj(fighter) {
@@ -158,96 +177,99 @@
   }
 
   function pickPetLabel(p) {
-    return String(p?.pet_name || p?.petName || p?.pet_key || p?.petKey || p?.pet_type || p?.petType || p?.name || "");
-  }
-
-  function _buildInferredUrls(p) {
-    // infer from stable names/keys (NOT pure id)
-    const rawKey =
-      (p?.pet_key || p?.petKey || "").trim();
-
-    const rawName =
-      _stripLevelSuffix(p?.pet_name || p?.petName || p?.name || "");
-
-    const rawType =
-      String(p?.pet_type || p?.petType || "").trim();
-
-    // jeśli pet_key wygląda na uuid/md5 → IGNORE jako źródło nazwy assetu
-    const chosen = (rawKey && !_looksLikeId(rawKey)) ? rawKey : (rawName || rawType);
-    const base = _slugify(chosen);
-    if (!base) return [];
-
-    const noSpace = base.replace(/\s+/g, "");
-    const under   = base.replace(/\s+/g, "_");
-    const dash    = base.replace(/\s+/g, "-");
-    const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
-
-    const out = [];
-    for (const folder of PET_FOLDERS) {
-      for (const k of keys) {
-        const ek = encodeURIComponent(k);
-        out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${ek}`);
-        out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${ek}.png`);
-      }
-    }
-
-    // extra last-last resort: archetype icon
-    if (rawType) {
-      const t = encodeURIComponent(_slugify(rawType).replace(/\s+/g, "_"));
-      for (const folder of PET_FOLDERS) {
-        out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${t}.png`);
-      }
-    }
-
-    return out;
+    return String(
+      p?.pet_name || p?.petName ||
+      p?.pet_key  || p?.petKey  ||
+      p?.pet_type || p?.petType ||
+      p?.name || ""
+    );
   }
 
   function petAssetUrls(fighter) {
     const p = normalizePetObj(fighter);
 
-    // 1) direct url/path (z backendu)
+    // 1) direct z backendu (ale ignoruj jeśli wygląda na UUID pod /pets/)
     const direct =
       p?.pet_icon || p?.petIcon ||
       p?.pet_asset || p?.petAsset ||
       p?.pet_sprite || p?.petSprite ||
-      p?.icon || p?.icon_file || p?.iconFile ||
-      p?.pet_img || p?.petImg ||
+      p?.icon_file || p?.iconFile ||
       fighter?.pet_icon || fighter?.petIcon ||
       "";
 
     const directUrl = _cloudUrlFromMaybe(direct);
+    if (directUrl && !_isBadUuidPetUrl(directUrl)) {
+      return [directUrl];
+    }
 
-    // 2) inferred fallbacks (z pet_name/pet_type)
-    const inferred = _buildInferredUrls(p);
+    // 2) stabilny klucz (jeśli to nie UUID)
+    const rawKey = String(p?.pet_key || p?.petKey || fighter?.pet_key || fighter?.petKey || "").trim();
+    const keyOk = rawKey && !_looksLikeId(rawKey);
 
-    // ✅ KLUCZ: nie kończ na directUrl — dodaj fallbacki po 404/CORS
-    const urls = [];
-    if (directUrl) urls.push(directUrl);
-    for (const u of inferred) urls.push(u);
+    // 3) nazwa bez "(Lv X)" — to jest u Ciebie kluczowe
+    const rawName = _stripLevelSuffix(
+      p?.pet_name || p?.petName || fighter?.pet_name || fighter?.petName || p?.name || ""
+    );
+
+    // 4) archetyp (mystic/feral) — last resort
+    const rawType = String(p?.pet_type || p?.petType || fighter?.pet_type || fighter?.petType || "").trim();
+
+    const raw = (keyOk ? rawKey : "") || rawName || rawType;
+    const base = _slugify(raw);
+    if (!base) return [];
+
+    // Twoje pliki są typu: darkhuskypup.png => potrzebujemy noSpace przede wszystkim
+    const noSpace = base.replace(/\s+/g, "");
+    const under = base.replace(/\s+/g, "_");
+    const dash = base.replace(/\s+/g, "-");
+    const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean))).filter(k => !_looksLikeId(k));
+
+    const out = [];
+    for (const ver of PET_VER_PREFIXES) {
+      const verPart = ver ? (ver + "/") : "";
+      for (const folder of PET_FOLDERS) {
+        for (const k of keys) {
+          const ek = encodeURIComponent(k);
+          // transform + version + folder + file
+          out.push(`${CLOUD_BASE}/${CLOUD_TX}/${verPart}${folder}/${ek}.png`);
+          out.push(`${CLOUD_BASE}/${CLOUD_TX}/${verPart}${folder}/${ek}`);
+          // no-transform też jako fallback (czasem transform może nie być whitelisted)
+          out.push(`${CLOUD_BASE}/${verPart}${folder}/${ek}.png`);
+        }
+      }
+    }
 
     // de-dupe
-    return Array.from(new Set(urls.filter(Boolean)));
+    const seen = new Set();
+    return out.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
   }
 
-  function loadTextureViaImage(url) {
-    return new Promise((resolve, reject) => {
-      try {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          try {
-            const tex = global.PIXI.Texture.from(img);
-            resolve(tex);
-          } catch (e) {
-            reject(e);
-          }
-        };
-        img.onerror = () => reject(new Error("IMG_LOAD_FAIL"));
-        img.src = url;
-      } catch (e) {
-        reject(e);
-      }
+  async function _loadTextureOne(url) {
+    const PIXI = global.PIXI;
+    if (!PIXI) throw new Error("NO_PIXI");
+
+    // Pixi Assets (v7/v8)
+    if (PIXI.Assets?.load) {
+      const r = await PIXI.Assets.load(url);
+      return r?.texture || r;
+    }
+
+    // Texture.fromURL (często dostępne)
+    if (PIXI.Texture?.fromURL) {
+      return await PIXI.Texture.fromURL(url);
+    }
+
+    // Manual Image loader (pewniak)
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error("IMG_LOAD_FAIL"));
+      im.src = url;
     });
+
+    // Texture.from(image)
+    return PIXI.Texture.from(img);
   }
 
   async function loadTextureSafeMany(urls) {
@@ -255,13 +277,7 @@
 
     for (const url of urls) {
       try {
-        let tex = null;
-        if (global.PIXI.Assets?.load) {
-          const r = await global.PIXI.Assets.load(url);
-          tex = r?.texture || r;
-        } else {
-          tex = await loadTextureViaImage(url);
-        }
+        const tex = await _loadTextureOne(url);
         if (tex) return tex;
       } catch (e) {
         if (state.dbg) console.warn("[Arena] texture load failed", url, e?.message || e);
@@ -271,20 +287,32 @@
   }
 
   function hpBar(app, x, y, w, h) {
+    const cont = new global.PIXI.Container();
+    app.stage.addChild(cont);
+
     const gBack = new global.PIXI.Graphics();
-    gBack.beginFill(0x000000, 0.35).drawRoundedRect(x, y, w, h, 6).endFill();
-
     const gFill = new global.PIXI.Graphics();
-    gFill.beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, w - 4, h - 4, 5).endFill();
+    cont.addChild(gBack);
+    cont.addChild(gFill);
 
-    app.stage.addChild(gBack);
-    app.stage.addChild(gFill);
+    function redraw(xx, yy, ww, hh, ratio) {
+      gBack.clear().beginFill(0x000000, 0.35).drawRoundedRect(xx, yy, ww, hh, 6).endFill();
+      const rr = Math.max(0, Math.min(1, ratio));
+      const fillW = Math.max(0, (ww - 4) * rr);
+      gFill.clear().beginFill(0xffffff, 0.65).drawRoundedRect(xx + 2, yy + 2, fillW, hh - 4, 5).endFill();
+    }
+
+    let _x = x, _y = y, _w = w, _h = h, _r = 1;
+    redraw(_x, _y, _w, _h, _r);
 
     return {
       set(ratio) {
-        const rr = Math.max(0, Math.min(1, ratio));
-        const fillW = (w - 4) * rr;
-        gFill.clear().beginFill(0xffffff, 0.65).drawRoundedRect(x + 2, y + 2, fillW, h - 4, 5).endFill();
+        _r = ratio;
+        redraw(_x, _y, _w, _h, _r);
+      },
+      setPos(xx, yy, ww, hh) {
+        _x = xx; _y = yy; _w = ww; _h = hh;
+        redraw(_x, _y, _w, _h, _r);
       }
     };
   }
@@ -301,11 +329,9 @@
       resolution: Math.min(2, global.devicePixelRatio || 1),
     });
     state.pixiApp = app;
-
     wrap.appendChild(app.canvas || app.view);
 
     const bg = new global.PIXI.Graphics();
-    bg.beginFill(0x000000, 0.25).drawRect(0, 0, wrap.clientWidth, wrap.clientHeight).endFill();
     app.stage.addChild(bg);
 
     const youAreP1 = !!stub.you_are_p1;
@@ -325,52 +351,49 @@
 
     const nameStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 14, fontWeight: "800" });
     const subStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, fontWeight: "700", alpha: 0.8 });
-    const hpTextStyle = new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 11, fontWeight: "800", alpha: 0.85 });
 
     const tLeft = new global.PIXI.Text(leftName, nameStyle);
     const tRight = new global.PIXI.Text(rightName, nameStyle);
     app.stage.addChild(tLeft);
     app.stage.addChild(tRight);
 
-    function relayout() {
-      const W = wrap.clientWidth || 360;
-      const H = wrap.clientHeight || 420;
-      bg.clear().beginFill(0x000000, 0.22).drawRect(0, 0, W, H).endFill();
-      tLeft.x = 14; tLeft.y = 10;
-      tRight.x = W - 14 - tRight.width; tRight.y = 10;
-
-      // move hp texts too
-      hpLeftText.x = 14;
-      hpRightText.x = W - 14 - hpRightText.width;
-    }
-
-    // hp bars
-    const W0 = wrap.clientWidth || 360;
-    const barW = Math.max(120, Math.floor(W0 * 0.38));
-    const leftHpBar = hpBar(app, 14, 34, barW, 14);
-    const rightHpBar = hpBar(app, W0 - 14 - barW, 34, barW, 14);
-
-    const hpLeftText = new global.PIXI.Text(`${leftHp}/${leftMax}`, hpTextStyle);
-    const hpRightText = new global.PIXI.Text(`${rightHp}/${rightMax}`, hpTextStyle);
-    hpLeftText.x = 14; hpLeftText.y = 52;
-    hpRightText.x = (W0 - 14 - hpRightText.width); hpRightText.y = 52;
-    app.stage.addChild(hpLeftText);
-    app.stage.addChild(hpRightText);
-
+    // hp bars (will be positioned in relayout)
+    const leftHpBar = hpBar(app, 14, 34, 160, 14);
+    const rightHpBar = hpBar(app, 14, 34, 160, 14);
     leftHpBar.set(1);
     rightHpBar.set(1);
 
+    function relayout() {
+      const W = wrap.clientWidth || 360;
+      const H = wrap.clientHeight || 420;
+
+      bg.clear().beginFill(0x000000, 0.22).drawRect(0, 0, W, H).endFill();
+
+      tLeft.x = 14; tLeft.y = 10;
+      tRight.x = W - 14 - tRight.width; tRight.y = 10;
+
+      const barW = Math.max(120, Math.floor(W * 0.38));
+      leftHpBar.setPos(14, 34, barW, 14);
+      rightHpBar.setPos(W - 14 - barW, 34, barW, 14);
+    }
     relayout();
     app.renderer.on("resize", relayout);
 
-    async function makeFighter(fighterObj, isRight) {
+    async function makeFighter(p, isRight) {
       const c = new global.PIXI.Container();
       app.stage.addChild(c);
 
-      const urls = petAssetUrls(fighterObj);
+      const urls = petAssetUrls(p);
       const tex = await loadTextureSafeMany(urls);
 
-      if (state.dbg) log("pet urls", { label: pickPetLabel(normalizePetObj(fighterObj)), urls, ok: !!tex });
+      if (state.dbg) {
+        log("pet urls", {
+          label: pickPetLabel(p),
+          urls: urls.slice(0, 8),
+          total: urls.length,
+          ok: !!tex
+        });
+      }
 
       let obj;
       if (tex) {
@@ -386,12 +409,13 @@
 
       c.addChild(obj);
 
-      const badge = new global.PIXI.Text(pickPetLabel(normalizePetObj(fighterObj)), subStyle);
+      const badgeText = _stripLevelSuffix(String(p.pet_name || p.pet_type || p.pet_key || ""));
+      const badge = new global.PIXI.Text(badgeText, subStyle);
       badge.x = -badge.width / 2;
       badge.y = 52;
       c.addChild(badge);
 
-      if (isRight) c.scale.x = -1; // mirror right (badge też się odbije — jak chcesz, to potem rozdzielimy)
+      if (isRight) c.scale.x = -1;
       return c;
     }
 
@@ -415,12 +439,14 @@
       await sleep(90);
       node.x = start;
     }
+
     async function hitFlash(node) {
       const sy = node.scale.y;
       node.scale.y = sy * 0.92;
       await sleep(70);
       node.scale.y = sy;
     }
+
     function dmgFloat(x, y, text) {
       const t = new global.PIXI.Text(text, new global.PIXI.TextStyle({ fill: 0xffffff, fontSize: 18, fontWeight: "900" }));
       t.x = x; t.y = y; t.alpha = 0.95;
@@ -495,11 +521,6 @@
 
       leftHpBar.set(leftHp / leftMax);
       rightHpBar.set(rightHp / rightMax);
-
-      hpLeftText.text = `${leftHp}/${leftMax}`;
-      hpRightText.text = `${rightHp}/${rightMax}`;
-      // popraw pozycję prawego (bo szerokość się zmienia)
-      hpRightText.x = (wrap.clientWidth || 360) - 14 - hpRightText.width;
 
       await sleep(260);
     }
@@ -581,7 +602,7 @@
     if (apiPost) state.apiPost = apiPost;
     if (tg) state.tg = tg;
     state.dbg = !!dbg;
-    log("init ok", { VER, hasPixi: hasPixi() });
+    log("init ok", { VER, hasPixi: hasPixi(), PET_VER, PET_FOLDERS });
   }
 
   global.Arena = { init, open, close };
