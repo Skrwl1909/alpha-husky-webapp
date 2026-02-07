@@ -11,7 +11,7 @@
   };
 
   const $ = (sel, root = document) => root.querySelector(sel);
-  const VER = "arena_pixi.js vI-2026-02-06-close-stage";
+  const VER = "arena_pixi.js vI-2026-02-07-petimg-first-uuid-guard";
   try { global.__ARENA_PIXI_VER__ = VER; } catch(_){}
 
   function log(...a) { if (state.dbg) console.log("[Arena]", ...a); }
@@ -112,6 +112,10 @@
   const CLOUD_TX = "f_png,q_auto,w_256,c_fit";
   const PET_FOLDERS = ["pets", "pets/icons"];
 
+  // ✅ UUID guard (do odcinania pets/<uuid>.png)
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const looksLikeUUID = (s) => UUID_RE.test(String(s || "").trim());
+
   function getPetVer() {
     const v = String(global.__PET_CLOUD_VER__ || "").trim();
     return v || ""; // "v176..." albo ""
@@ -147,6 +151,7 @@
   function _looksLikePathOrUrl(s) {
     const x = String(s || "").trim();
     if (!x) return false;
+    if (looksLikeUUID(x)) return false; // ✅ nigdy nie traktuj UUID jako ścieżki
     if (x.includes("res.cloudinary.com")) return true;
     if (x.includes("/") || x.includes(".")) return true;
     if (/^v\d+\/.+/.test(x)) return true;
@@ -173,12 +178,14 @@
     const p = normalizePetObj(fighter);
     const PET_VER = getPetVer();
 
-    // 1) ✅ NAJLEPSZE: pet_img (z backendu, działa jak w Adopt)
-    const directBest = p?.pet_img || p?.img || fighter?.pet_img || fighter?.img || "";
+    // 1) ✅ NAJLEPSZE: pet_img/pet_icon (z backendu)
+    const directBest =
+      p?.pet_img || p?.pet_icon || p?.img ||
+      fighter?.pet_img || fighter?.pet_icon || fighter?.img || "";
     const directBestUrl = _cloudUrlFromMaybe(directBest);
     if (directBestUrl) return [directBestUrl];
 
-    // 2) direct icon/url jeśli wygląda jak ścieżka/url (ale nie łapiemy "feral")
+    // 2) direct icon/url jeśli wygląda jak ścieżka/url (ale nie łapiemy UUID)
     const direct =
       p?.pet_icon || p?.petIcon ||
       p?.pet_asset || p?.petAsset ||
@@ -209,7 +216,7 @@
         // ✅ wersjonowane najpierw (u Ciebie to działa)
         if (PET_VER) out.push(`${CLOUD_BASE}/${CLOUD_TX}/${PET_VER}/${folder}/${file}`);
 
-        // opcjonalnie bez wersji jako last-last resort (możesz usunąć jeśli chcesz ciszę w konsoli)
+        // opcjonalnie bez wersji jako last-last resort
         out.push(`${CLOUD_BASE}/${CLOUD_TX}/${folder}/${file}`);
       }
     }
@@ -340,8 +347,6 @@
 
       tLeft.x = 14; tLeft.y = 10;
       tRight.x = W - 14 - tRight.width; tRight.y = 10;
-
-      // hp bars re-rendered separately (we rebuild each replay anyway)
     }
 
     relayout();
@@ -406,9 +411,6 @@
       rightF.x = Math.floor(W * 0.72);
       leftF.y = Math.floor(H * 0.58);
       rightF.y = Math.floor(H * 0.58);
-
-      // move hp bars on resize (simple: just redraw by recreating? keep minimal)
-      // (Good enough for now, stage is mobile fixed anyway)
     }
     placeFighters();
 
