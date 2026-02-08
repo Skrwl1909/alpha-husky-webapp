@@ -18,6 +18,10 @@
 function _slugifyBase(raw) {
   let s = String(raw || "").trim();
   if (!s) return "";
+
+  // ✅ mapuj grecką alfę → zwykłe "a" (bo masz np. Dark Husky α)
+  s = s.replace(/[αΑ]/g, "a");
+
   s = s.replace(/^pets\//i, "");
   s = s.replace(/\.(png|webp|jpg|jpeg)$/i, "");
   s = s.toLowerCase();
@@ -26,34 +30,45 @@ function _slugifyBase(raw) {
   return s;
 }
 
-function _cloudPetUrl(key) {
+function _cloudPetUrl(key, folder = "pets") {
   const ver = String(window.__PET_CLOUD_VER__ || "").trim(); // "v176..." albo ""
   const mid = ver ? (ver.replace(/^\/?/, "").replace(/\/?$/, "") + "/") : "";
-  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/${mid}pets/${encodeURIComponent(key)}.png`;
+  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/${mid}${folder}/${encodeURIComponent(key)}.png`;
 }
 
 function petUrlCandidatesFromPlayer(p) {
-  // ✅ prefer explicit backend URLs first (pet_img/pet_icon)
-  const best = (p?.pet_img || p?.pet_icon || p?.petImg || p?.petIcon || "").toString().trim();
-  if (best) return [best];
+  const out = [];
 
-  // kluczowe: nie używamy pet_id/petId
+  // ✅ 1) Najpierw backendowe URL-e (pet_img/pet_icon). Ale NIE rób return — dopnij fallbacki.
+  const best = String(p?.pet_img || p?.pet_icon || p?.petImg || p?.petIcon || "").trim();
+  if (best) out.push(best);
+
+  // ✅ 2) Kluczowe: NIE używamy pet_key/petId/UUID jako źródła ścieżki.
+  // Preferuj public_id / type / name.
   const raw =
-    p?.pet_key || p?.petKey ||
+    p?.pet_public_id || p?.petPublicId ||
     p?.pet_type || p?.petType ||
     p?.pet_name || p?.petName ||
     "";
 
   const base = _slugifyBase(raw);
-  if (!base) return [];
-  if (_isLikelyId(base)) return [];
+  if (!base) return Array.from(new Set(out.filter(Boolean)));
+  if (_isLikelyId(base)) return Array.from(new Set(out.filter(Boolean)));
 
+  // Generujemy kilka wariantów nazwy (żeby złapać: darkhusky_alpha / darkhuskypup / dark-husky-pup)
   const noSpace = base.replace(/\s+/g, "");
   const under   = base.replace(/\s+/g, "_");
   const dash    = base.replace(/\s+/g, "-");
 
-  const keys = Array.from(new Set([noSpace, under, dash].filter(Boolean)));
-  return keys.map(_cloudPetUrl);
+  const keys = Array.from(new Set([base, noSpace, under, dash].filter(Boolean)));
+
+  for (const k of keys) {
+    out.push(_cloudPetUrl(k, "pets"));
+    out.push(_cloudPetUrl(k, "pets/icons")); // jeśli kiedyś użyjesz iconów
+  }
+
+  // dedupe
+  return Array.from(new Set(out.filter(Boolean)));
 }
 
   function setIconSprite(iconEl, urlOrList, mirror = false) {
