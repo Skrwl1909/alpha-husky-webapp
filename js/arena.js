@@ -38,15 +38,25 @@ function _cloudPetUrl(key, folder = "pets") {
 
 function petUrlCandidatesFromPlayer(p) {
   const out = [];
+  const obj = p?.pet || p?.active_pet || p?.pet_state || p || {};
 
-  // ✅ 1) Najpierw backendowe URL-e (pet_img/pet_icon). Ale NIE rób return — dopnij fallbacki.
-  const best = String(p?.pet_img || p?.pet_icon || p?.petImg || p?.petIcon || "").trim();
-  if (best) out.push(best);
+  // ✅ 1) Najpierw backendowe URL-e (najpewniejsze)
+  const direct = [
+    obj.pet_img, obj.pet_icon, obj.petImg, obj.petIcon,
+    obj.img, obj.icon, obj.image,
+    p?.pet_img, p?.pet_icon, p?.petImg, p?.petIcon,
+  ];
+  for (const u of direct) {
+    const s = String(u || "").trim();
+    if (s && /^https?:\/\//i.test(s)) out.push(s);
+  }
 
-  // ✅ 2) Kluczowe: NIE używamy pet_key/petId/UUID jako źródła ścieżki.
-  // Preferuj public_id / type / name.
+  // ✅ 2) Potem pet_public_id (to powinien być CANON: darkhuskypup / darkhusky_alpha)
   const raw =
+    obj.pet_public_id || obj.petPublicId ||
     p?.pet_public_id || p?.petPublicId ||
+    obj.pet_type || obj.petType ||
+    obj.pet_name || obj.petName ||
     p?.pet_type || p?.petType ||
     p?.pet_name || p?.petName ||
     "";
@@ -55,21 +65,24 @@ function petUrlCandidatesFromPlayer(p) {
   if (!base) return Array.from(new Set(out.filter(Boolean)));
   if (_isLikelyId(base)) return Array.from(new Set(out.filter(Boolean)));
 
-  // Generujemy kilka wariantów nazwy (żeby złapać: darkhusky_alpha / darkhuskypup / dark-husky-pup)
+  // Warianty nazwy (obsłuży: darkhusky_alpha, darkhuskypup, dark husky pup)
+  const joinNo  = base.replace(/[\s-]+/g, ""); // usuwa spacje i "-"
   const noSpace = base.replace(/\s+/g, "");
   const under   = base.replace(/\s+/g, "_");
   const dash    = base.replace(/\s+/g, "-");
 
-  const keys = Array.from(new Set([base, noSpace, under, dash].filter(Boolean)));
+  const keys = Array.from(new Set([base, joinNo, noSpace, under, dash].filter(Boolean)));
 
   for (const k of keys) {
     out.push(_cloudPetUrl(k, "pets"));
-    out.push(_cloudPetUrl(k, "pets/icons")); // jeśli kiedyś użyjesz iconów
+    out.push(_cloudPetUrl(k, "pets/icons"));
   }
 
-  // dedupe
   return Array.from(new Set(out.filter(Boolean)));
 }
+
+// DEBUG export (zostaw na chwilę)
+try { window.__petUrlCandidatesFromPlayer = petUrlCandidatesFromPlayer; } catch(_) {}
 
   function setIconSprite(iconEl, urlOrList, mirror = false) {
   if (!iconEl) return;
