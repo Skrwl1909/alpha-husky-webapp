@@ -27,10 +27,16 @@ function _slugifyBase(raw) {
 }
 
 function _cloudPetUrl(key) {
-  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/pets/${encodeURIComponent(key)}.png`;
+  const ver = String(window.__PET_CLOUD_VER__ || "").trim(); // "v176..." albo ""
+  const mid = ver ? (ver.replace(/^\/?/, "").replace(/\/?$/, "") + "/") : "";
+  return `${CLOUD_BASE}/f_png,q_auto,w_256,c_fit/${mid}pets/${encodeURIComponent(key)}.png`;
 }
 
 function petUrlCandidatesFromPlayer(p) {
+  // ✅ prefer explicit backend URLs first (pet_img/pet_icon)
+  const best = (p?.pet_img || p?.pet_icon || p?.petImg || p?.petIcon || "").toString().trim();
+  if (best) return [best];
+
   // kluczowe: nie używamy pet_id/petId
   const raw =
     p?.pet_key || p?.petKey ||
