@@ -1,330 +1,330 @@
-// public/js/arena_pixi.js — FINAL (ArenaPixi API for arena.js)
-// Pixi v8-safe, prefers pet_img/pet_icon, ignores UUID, app.canvas/view safe
+// /js/arena_pixi.js — Renderer-only for arena.js (Pixi v8 safe)
+// Exports: window.ArenaPixi (does NOT touch window.Arena)
 (function (global) {
-  const VER = "arena_pixi.js v2-2026-02-07-arenapixi-api";
-  try { global.__ARENA_PIXI_VER__ = VER; } catch (_) {}
+  const S = {
+    app: null,
+    mount: null,
+    ro: null,
+    dbg: false,
+    you: null,
+    foe: null,
+    youSp: null,
+    foeSp: null,
+    fx: null,
+  };
 
-  let _dbg = false;
-  let _app = null;
-  let _mount = null;
-  let _ro = null;
-
-  let _youNode = null;
-  let _foeNode = null;
-
-  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
-  const CLOUD_TX = "f_png,q_auto,w_256,c_fit";
+  const log = (...a) => { if (S.dbg) console.log("[ArenaPixi]", ...a); };
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const looksLikeUUID = (s) => UUID_RE.test(String(s || "").trim());
+  const looksLikeUUID = (x) => UUID_RE.test(String(x || "").trim());
 
-  const log = (...a) => { if (_dbg) console.log("[ArenaPixi]", ...a); };
+  const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+  const TX = "f_png,q_auto,w_256,c_fit";
 
-  function petVer() {
-    return String(global.__PET_CLOUD_VER__ || global.PETS_VER || "").trim(); // "v176..." albo ""
+  function _getPetVer() {
+    // ustawiasz to globalnie albo w index: window.__PET_CLOUD_VER__ = "v176..."
+    return String(global.__PET_CLOUD_VER__ || "").trim();
   }
 
-  function stripLevelSuffix(raw) {
-    let s = String(raw || "").trim();
-    if (!s) return "";
-    s = s.replace(/\s*\(\s*(?:lv|lvl|level)\s*\d+\s*\)\s*$/i, "");
-    s = s.replace(/\s*(?:lv|lvl|level)\s*\d+\s*$/i, "");
-    s = s.replace(/\s*\[\s*(?:lv|lvl|level)\s*\d+\s*\]\s*$/i, "");
-    return s.trim();
-  }
-
-  // "Dark Husky Pup" -> "darkhuskypup"
-  function slugifyPublicId(name) {
-    const base = String(name || "")
+  function _slugifyName(raw) {
+    return String(raw || "")
       .toLowerCase()
       .replace(/\.(png|webp|jpg|jpeg)$/i, "")
-      .replace(/[^a-z0-9 _-]/g, "")
-      .replace(/\s+/g, " ")
+      .replace(/[^a-z0-9]+/g, "")
       .trim();
-    if (!base) return "";
-    return base.replace(/[\s_-]+/g, "");
   }
 
-  function cloudUrlFromPublicId(pid) {
-    if (!pid) return "";
-    const ver = petVer();
-    const path = (ver ? `${ver}/` : "") + `pets/${encodeURIComponent(pid)}.png`;
-    return `${CLOUD_BASE}/${CLOUD_TX}/${path}`;
+  function _cloudUrlFromSlug(slug) {
+    if (!slug) return "";
+    const ver = _getPetVer();
+    const mid = ver ? (ver.replace(/^\/?/, "").replace(/\/?$/, "") + "/") : "";
+    return `${CLOUD_BASE}/${TX}/${mid}pets/${encodeURIComponent(slug)}.png`;
   }
 
-  function cloudUrlFromMaybePathOrUrl(x) {
-    const s = String(x || "").trim();
-    if (!s) return "";
-    if (s.includes("res.cloudinary.com")) return s;
-
-    // allow passing "v176.../pets/xx.png" or "pets/xx.png"
-    const p = s.replace(/^\/+/, "").replace(/^image\/upload\//, "");
-    if (!p) return "";
-    if (p.startsWith(CLOUD_TX + "/")) return `${CLOUD_BASE}/${p}`;
-    return `${CLOUD_BASE}/${CLOUD_TX}/${p}`;
+  function normalizeFighter(f) {
+    return f?.pet || f?.active_pet || f?.pet_state || f || {};
   }
 
-  function pickUrlFromFighter(f) {
-    if (!f || typeof f !== "object") return "";
+  function pickPetUrl(fighter) {
+    const p = normalizeFighter(fighter);
 
-    // 1) BEST: backend-enriched
-    const best = [
-      f.pet_img, f.pet_icon,
-      f.petImg, f.petIcon,
-      f.img, f.icon, f.image, f.avatar
-    ];
-    for (const u of best) {
-      if (typeof u === "string" && u.trim()) return u.trim();
+    // 1) prefer backend-provided URLs
+    const cands = [
+      p.pet_img, p.pet_icon, p.petImg, p.petIcon,
+      fighter?.pet_img, fighter?.pet_icon, fighter?.petImg, fighter?.petIcon
+    ].filter(Boolean);
+
+    for (const u of cands) {
+      const s = String(u || "").trim();
+      if (s.startsWith("http")) return s;
+      // tolerate cloudinary paths like "v176.../pets/x.png"
+      if (s.includes("/") || s.includes(".")) return `${CLOUD_BASE}/${TX}/${s.replace(/^\/+/, "").replace(/^image\/upload\//, "")}`;
     }
 
-    // 2) NEVER build from UUID pet_key
-    const rawKey = String(f.pet_key || f.petKey || "").trim();
-    if (rawKey) {
-      if (!looksLikeUUID(rawKey)) {
-        // if someone stored "v.../pets/x.png" or "pets/x.png"
-        const fromPath = cloudUrlFromMaybePathOrUrl(rawKey);
-        if (fromPath) return fromPath;
-      }
-      // uuid -> ignore
+    // 2) NEVER build from UUID key
+    const rawKey = String(p.pet_key || p.petKey || "").trim();
+    if (rawKey && looksLikeUUID(rawKey)) {
+      const nm = p.pet_name || p.petName || p.name || "";
+      const slug = _slugifyName(nm);
+      return _cloudUrlFromSlug(slug);
     }
 
-    // 3) fallback: from pet_name only
-    const nm = stripLevelSuffix(f.pet_name || f.petName || f.name || "");
-    const pid = slugifyPublicId(nm);
-    return cloudUrlFromPublicId(pid);
+    // 3) fallback from name
+    const nm = p.pet_name || p.petName || p.name || "";
+    const slug = _slugifyName(nm);
+    return _cloudUrlFromSlug(slug);
   }
 
-  async function loadTexture(url) {
+  async function _loadTexture(url) {
     const PIXI = global.PIXI;
     if (!PIXI || !url) return null;
-
-    // try Pixi Assets
     try {
-      if (PIXI.Assets && typeof PIXI.Assets.load === "function") {
+      if (PIXI.Assets?.load) {
         const r = await PIXI.Assets.load(url);
         return r?.texture || r || null;
       }
       return PIXI.Texture.from(url);
     } catch (e) {
-      log("Assets.load failed:", url, e);
-    }
-
-    // manual Image fallback (CORS edge cases)
-    try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.decoding = "async";
-      await new Promise((res, rej) => {
-        img.onload = () => res(true);
-        img.onerror = () => rej(new Error("IMG_LOAD_FAIL"));
-        img.src = url;
-      });
-      const bt = PIXI.BaseTexture.from(img);
-      return new PIXI.Texture(bt);
-    } catch (e2) {
-      log("Image fallback failed:", url, e2);
+      log("texture load failed", url, e?.message || e);
       return null;
     }
   }
 
-  function getSize(el) {
+  async function _makeSprite(fighter) {
+    const PIXI = global.PIXI;
+    const url = pickPetUrl(fighter);
+    log("pick url", url);
+
+    const tex = await _loadTexture(url);
+    if (!tex) {
+      // fallback placeholder
+      const t = new PIXI.Text("🐺", { fill: 0xffffff, fontSize: 64, fontWeight: "900" });
+      t.anchor?.set?.(0.5);
+      return t;
+    }
+
+    const sp = new PIXI.Sprite(tex);
+    sp.anchor?.set?.(0.5);
+    return sp;
+  }
+
+  function _size(el) {
     const r = el.getBoundingClientRect();
-    const w = Math.max(64, Math.floor(r.width || 0));
-    const h = Math.max(64, Math.floor(r.height || 0));
+    const w = Math.max(1, Math.floor(r.width || 0));
+    const h = Math.max(1, Math.floor(r.height || 0));
     return { w, h };
   }
 
-  async function ensureApp(mountEl) {
+  function _layout() {
+    if (!S.app || !S.mount) return;
+    const { w, h } = _size(S.mount);
+    if (!w || !h) return;
+
+    try { S.app.renderer?.resize?.(w, h); } catch (_) {}
+
+    const max = Math.min(w, h) * 0.40;
+    const y = h * 0.58;
+
+    if (S.youSp) {
+      S.youSp._baseX = w * 0.28;
+      S.youSp._baseY = y;
+      S.youSp.x = S.youSp._baseX;
+      S.youSp.y = S.youSp._baseY;
+      _fit(S.youSp, max);
+    }
+
+    if (S.foeSp) {
+      S.foeSp._baseX = w * 0.72;
+      S.foeSp._baseY = y;
+      S.foeSp.x = S.foeSp._baseX;
+      S.foeSp.y = S.foeSp._baseY;
+      _fit(S.foeSp, max);
+    }
+  }
+
+  function _fit(node, maxSize) {
+    if (!node?.getBounds) return;
+    const b = node.getBounds();
+    const bw = Math.max(1, b.width);
+    const bh = Math.max(1, b.height);
+    const s = Math.min(maxSize / bw, maxSize / bh);
+    node.scale?.set?.(s);
+  }
+
+  async function init(arg) {
     const PIXI = global.PIXI;
-    if (!PIXI) throw new Error("PIXI missing on window");
+    if (!PIXI) throw new Error("PIXI not loaded");
 
-    _mount = mountEl;
-    if (_app) return _app;
+    // accept init(stageEl) OR init({mount,dbg})
+    let mount = arg;
+    let dbg = false;
+    if (arg && typeof arg === "object" && !(arg instanceof Element)) {
+      mount = arg.mount || arg.el || arg.stage || null;
+      dbg = !!arg.dbg;
+    }
+    if (typeof mount === "string") mount = document.querySelector(mount);
 
-    let app = new PIXI.Application();
-    const { w, h } = getSize(mountEl);
+    if (!mount) throw new Error("ArenaPixi.init: mount missing");
+
+    S.dbg = dbg || S.dbg;
+
+    // destroy old
+    destroy();
+
+    S.mount = mount;
+
+    // Pixi v8 init
+    const app = new PIXI.Application();
+    const { w, h } = _size(mount);
+    const initW = Math.max(64, w);
+    const initH = Math.max(64, h);
 
     if (typeof app.init === "function") {
       await app.init({
-        width: w,
-        height: h,
+        width: initW,
+        height: initH,
         backgroundAlpha: 0,
         antialias: true,
         resolution: Math.min(2, global.devicePixelRatio || 1),
         autoDensity: true,
       });
     } else {
-      app = new PIXI.Application({
-        width: w,
-        height: h,
-        backgroundAlpha: 0,
-        antialias: true,
-        resolution: Math.min(2, global.devicePixelRatio || 1),
-        autoDensity: true,
-      });
+      // v7 fallback
+      app.renderer = app.renderer || {};
     }
 
     const view = app.canvas || app.view;
-    if (!view) throw new Error("Pixi has no canvas/view (init not done?)");
+    if (!view) throw new Error("ArenaPixi: app has no canvas/view");
 
     view.style.width = "100%";
     view.style.height = "100%";
     view.style.display = "block";
 
-    mountEl.innerHTML = "";
-    mountEl.appendChild(view);
+    mount.innerHTML = "";
+    mount.appendChild(view);
 
-    _app = app;
+    S.app = app;
 
-    // keep renderer synced with modal/layout
-    try {
-      _ro = new ResizeObserver(() => {
-        try { resizeToMount(); } catch (_) {}
-      });
-      _ro.observe(mountEl);
-    } catch (_) {}
+    S.fx = new PIXI.Container();
+    app.stage.addChild(S.fx);
 
-    requestAnimationFrame(() => {
-      try { resizeToMount(); } catch (_) {}
-    });
+    S.ro = new ResizeObserver(() => _layout());
+    S.ro.observe(mount);
+    requestAnimationFrame(() => _layout());
 
-    return app;
+    log("init ok");
   }
 
-  function resizeToMount() {
-    if (!_app || !_mount) return;
-    const { w, h } = getSize(_mount);
-    try { _app.renderer?.resize?.(w, h); } catch (_) {}
-  }
-
-  function clearStage() {
-    if (!_app) return;
-    try { _app.stage.removeChildren(); } catch (_) {}
-    _youNode = null;
-    _foeNode = null;
-  }
-
-  function fit(node, maxSize) {
-    if (!node) return;
-    const b = node.getBounds();
-    const bw = Math.max(1, b.width);
-    const bh = Math.max(1, b.height);
-    const s = Math.min(maxSize / bw, maxSize / bh);
-    node.scale.set(s);
-  }
-
-  async function setActors({ you, foe, flipFoe } = {}) {
-    if (!_mount) throw new Error("ArenaPixi.init(mountEl) not called");
-
-    const app = await ensureApp(_mount);
-    clearStage();
-
+  async function setActors({ you, foe, flipFoe = true } = {}) {
     const PIXI = global.PIXI;
+    if (!S.app) throw new Error("ArenaPixi not inited");
 
-    const urlYou = pickUrlFromFighter(you || {});
-    const urlFoe = pickUrlFromFighter(foe || {});
-    log("actors urls", { urlYou, urlFoe });
+    S.you = you || {};
+    S.foe = foe || {};
 
-    const texYou = await loadTexture(urlYou);
-    const texFoe = await loadTexture(urlFoe);
+    // clear stage
+    S.app.stage.removeChildren();
+    S.fx = new PIXI.Container();
+    S.app.stage.addChild(S.fx);
 
-    const makeNode = (tex, label) => {
-      if (tex) {
-        const sp = new PIXI.Sprite(tex);
-        sp.anchor?.set?.(0.5);
-        return sp;
+    // make sprites
+    S.youSp = await _makeSprite(S.you);
+    S.foeSp = await _makeSprite(S.foe);
+
+    // mirror foe
+    if (flipFoe && S.foeSp?.scale) {
+      S.foeSp.scale.x = -Math.abs(S.foeSp.scale.x || 1);
+    }
+
+    S.app.stage.addChild(S.youSp, S.foeSp, S.fx);
+
+    _layout();
+    log("actors set");
+  }
+
+  function _floatText(x, y, txt, isCrit) {
+    const PIXI = global.PIXI;
+    if (!S.fx) return;
+    const t = new PIXI.Text(txt, {
+      fill: 0xffffff,
+      fontSize: isCrit ? 22 : 18,
+      fontWeight: "900"
+    });
+    t.x = x;
+    t.y = y;
+    t.alpha = 1;
+    S.fx.addChild(t);
+
+    let life = 0;
+    const dur = 420;
+    const tick = (dt) => {
+      life += dt * 16.6;
+      t.y -= 0.35 * dt * 2;
+      t.alpha = Math.max(0, 1 - (life / dur));
+      if (life >= dur) {
+        S.app.ticker.remove(tick);
+        try { t.destroy(); } catch (_) {}
       }
-      const t = new PIXI.Text(label || "🐾", { fill: 0xffffff, fontSize: 54, fontWeight: "900" });
-      t.anchor?.set?.(0.5);
-      return t;
     };
+    S.app.ticker.add(tick);
+  }
 
-    _youNode = makeNode(texYou, "YOU");
-    _foeNode = makeNode(texFoe, "FOE");
-
-    const W = app.renderer.width;
-    const H = app.renderer.height;
-    const max = Math.min(W, H) * 0.55;
-
-    fit(_youNode, max);
-    fit(_foeNode, max);
-
-    _youNode.x = W * 0.25; _youNode.y = H * 0.62;
-    _foeNode.x = W * 0.75; _foeNode.y = H * 0.62;
-
-    if (flipFoe && _foeNode.scale) _foeNode.scale.x = -Math.abs(_foeNode.scale.x);
-
-    app.stage.addChild(_youNode, _foeNode);
+  function _shakeCrit() {
+    if (!S.app) return;
+    const st = S.app.stage;
+    const baseX = st.x, baseY = st.y;
+    let i = 0;
+    const tick = () => {
+      i++;
+      st.x = baseX + (i % 2 ? 2 : -2);
+      st.y = baseY + (i % 2 ? -2 : 2);
+      if (i > 10) {
+        st.x = baseX; st.y = baseY;
+        S.app.ticker.remove(tick);
+      }
+    };
+    S.app.ticker.add(tick);
   }
 
   function attack(youAttacked, dmg, crit) {
-    if (!_app || !_youNode || !_foeNode) return;
+    if (!S.app || !S.youSp || !S.foeSp) return;
 
-    const attacker = youAttacked ? _youNode : _foeNode;
-    const target = youAttacked ? _foeNode : _youNode;
+    const a = youAttacked ? S.youSp : S.foeSp;
+    const t = youAttacked ? S.foeSp : S.youSp;
 
     const dir = youAttacked ? +1 : -1;
+    const ax0 = a._baseX ?? a.x;
+    const tx0 = t._baseX ?? t.x;
 
-    const startX = attacker.x;
-    attacker.x = startX + dir * 20;
-    setTimeout(() => { attacker.x = startX; }, 90);
+    // quick punch
+    a.x = ax0 + dir * 26;
+    setTimeout(() => { try { a.x = ax0; } catch(_){} }, 90);
 
-    const sy = target.scale.y;
-    target.scale.y = sy * 0.92;
-    setTimeout(() => { target.scale.y = sy; }, 80);
+    // hit flash
+    const oldA = t.alpha;
+    t.alpha = 0.65;
+    setTimeout(() => { try { t.alpha = oldA; } catch(_){} }, 80);
 
-    // floating dmg
-    try {
-      const PIXI = global.PIXI;
-      const t = new PIXI.Text((crit ? "CRIT " : "") + "-" + (dmg || 0), {
-        fill: 0xffffff,
-        fontSize: 18,
-        fontWeight: "900",
-      });
-      t.anchor?.set?.(0.5);
-      t.x = target.x;
-      t.y = target.y - 90;
-      t.alpha = 0.95;
-      _app.stage.addChild(t);
+    // dmg float
+    const hit = Math.max(0, Number(dmg || 0));
+    if (hit > 0) _floatText(tx0 - 10, (t._baseY ?? t.y) - 90, (crit ? "CRIT " : "") + "-" + hit, !!crit);
 
-      let life = 0;
-      const dur = 420;
-      const tick = (dt) => {
-        life += dt * 16.6;
-        t.y -= 0.6 * dt * 2;
-        t.alpha = Math.max(0, 1 - (life / dur));
-        if (life >= dur) {
-          _app.ticker.remove(tick);
-          try { t.destroy(); } catch (_) {}
-        }
-      };
-      _app.ticker.add(tick);
-    } catch (_) {}
-  }
-
-  function init(mountOrOpts) {
-    // supports init(mountEl) OR init({mount, dbg})
-    if (mountOrOpts && mountOrOpts.nodeType === 1) {
-      _mount = mountOrOpts;
-      return;
-    }
-    const o = mountOrOpts || {};
-    _mount = o.mount || _mount;
-    _dbg = !!o.dbg;
+    if (crit) _shakeCrit();
   }
 
   function destroy() {
-    try { if (_ro && _mount) _ro.unobserve(_mount); } catch (_) {}
-    _ro = null;
-    _mount = null;
+    try { if (S.ro && S.mount) S.ro.unobserve(S.mount); } catch (_) {}
+    S.ro = null;
 
-    if (_app) {
-      try { _app.destroy(true); } catch (_) {}
+    if (S.app) {
+      try { S.app.destroy(true); } catch (_) {}
     }
-    _app = null;
-    _youNode = null;
-    _foeNode = null;
+    S.app = null;
+    S.mount = null;
+    S.youSp = null;
+    S.foeSp = null;
+    S.fx = null;
   }
 
-  global.ArenaPixi = { init, setActors, attack, destroy, _ver: VER, _pickUrl: pickUrlFromFighter };
+  global.ArenaPixi = { init, setActors, attack, destroy, _pickPetUrl: pickPetUrl };
 })(window);
