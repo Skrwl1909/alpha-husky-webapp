@@ -820,6 +820,27 @@
   </div>
 </div>
 
+    <!-- MISSIONS MODAL -->
+<div class="sheet-back" id="missionsBack" style="display:none;">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:700;">Missions</div>
+      <button class="btn" id="closeMissions" type="button">×</button>
+    </div>
+
+    <div id="missionsRoot" style="margin-top:12px; display:grid; gap:10px;"></div>
+
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn" id="missionsRefresh" type="button">Refresh</button>
+      <button class="btn primary" id="missionsResolve" type="button" style="display:none;">Resolve</button>
+    </div>
+
+    <p style="opacity:.7; font-size:12px; margin-top:10px;">
+      Missions are backend-driven. If backend is offline you'll see an error here.
+    </p>
+  </div>
+</div>
+
 <!-- Quests modal (STARY – fallback Daily) -->
 <div class="sheet-back" id="questsBack">
   <div class="sheet-card">
@@ -913,7 +934,7 @@
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-02-07a";
+    window.WEBAPP_VER = "2026-02-09a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
 
@@ -1313,6 +1334,7 @@ window.AH_makeRunId = function(prefix, key) {
 window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });    
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
 window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
@@ -2424,6 +2446,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="js/scene_bg.js?v=WEBAPP_VER"></script>
   <script src="js/shop.js?v=WEBAPP_VER"></script>
   <script src="js/forge.js?v=WEBAPP_VER"></script>
+  <script src="js/missions.js?v=WEBAPP_VER"></script>
   <script src="/js/updates.js?v=WEBAPP_VER"></script>
   <script src="js/mypets.js?v=WEBAPP_VER"></script>
   <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
@@ -2489,6 +2512,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 @media (max-width: 420px){
   .hud-col.hud-right{ transform: translateX(-16px); }
 }
+
 
 
 
