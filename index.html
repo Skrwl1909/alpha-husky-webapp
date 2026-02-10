@@ -753,6 +753,24 @@
     .quest:active{ animation:none; }
     .q-btn:active{ animation:none; }
   }
+  /* =========================
+   SCROLL FIX (NA SAM KONIEC #quests-css)
+   ========================= */
+.q-modal-body{
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 86vh !important;
+  -webkit-overflow-scrolling: touch;  /* iOS inertia */
+  overscroll-behavior: contain;       /* nie “przewija” tła */
+  touch-action: pan-y;                /* mobile swipe = scroll */
+}
+
+/* jeśli q-bg był flex-itemem i mieszał — to go unieruchamiamy */
+.q-modal .q-bg{
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+}
 </style>
 
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
@@ -2746,6 +2764,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
