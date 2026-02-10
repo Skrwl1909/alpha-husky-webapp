@@ -408,8 +408,84 @@
   </style>
   <!-- ⬇⬇⬇ Mission Board (inline CSS) + NOWY CSS DLA DESC -->
 <style id="quests-css">
-  .q-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
-  .q-modal-body{background:#0b0f14;border:1px solid #243244;border-radius:14px;width:min(720px,92vw);max-height:86vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.4);padding:16px}
+  /* =========================
+     PATCH 2.1 — Mission Board background + dust overlay
+     ========================= */
+  :root{
+    --board-bg:   url("mission_board.webp");
+    --board-dust: url("dust.png");
+  }
+
+  /* Modal shell (zostaje) */
+  .q-modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.5);
+    z-index:9999;
+  }
+
+  /* ✅ zamiast jednolitego tła: warstwowy board + dust */
+  .q-modal-body{
+    position: relative;
+    width:min(720px,92vw);
+    max-height:86vh;
+    overflow:auto;
+
+    border:1px solid rgba(36,50,68,.95);
+    border-radius:14px;
+    padding:16px;
+
+    /* Board background */
+    background:
+      radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+      radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+      linear-gradient(to bottom, rgba(6,10,14,.60), rgba(6,10,14,.86)),
+      var(--board-bg);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  }
+
+  /* Dust overlay (nie klikalny, tylko wizual) */
+  .q-modal-body::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    border-radius:14px;
+    background: var(--board-dust);
+    background-size: cover;
+    background-position: center;
+    opacity: .22;               /* intensywność dust */
+    mix-blend-mode: screen;     /* ładnie na ciemnym */
+  }
+
+  /* Żeby content był NAD kurzem */
+  .q-modal-body > *{
+    position: relative;
+    z-index: 1;
+  }
+
+  /* lekki blur “szyby” na head/status, żeby czytelność nie spadła */
+  .q-modal-head,
+  .q-status{
+    background: rgba(5,8,12,.35);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    padding: 10px 10px;
+    backdrop-filter: blur(6px);
+  }
+  .q-modal-head{ margin-bottom: 8px; }
+  .q-status{ margin: 0 2px 10px 2px; }
+
+  /* =========================
+     Twoje obecne style (bez zmian funkcjonalnych)
+     ========================= */
   .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .q-title{margin:0;font-size:18px}
   .q-head-actions{display:flex;gap:6px}
@@ -498,7 +574,7 @@
     white-space: nowrap;
   }
 
-   /* === Legendary Path: accordion (collapsed list) === */
+  /* === Legendary Path: accordion (collapsed list) === */
   .quest--lp .q-acc-body{
     max-height: 0;
     overflow: hidden;
@@ -547,6 +623,205 @@
   .q-step-sub{opacity:.78;font-size:12px;margin-top:2px}
   .q-step-rew{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
   .q-step-right{display:flex;align-items:center}
+  /* =========================
+   GAME UI POLISH (no extra assets)
+   Wklej NA KONIEC #quests-css
+   ========================= */
+:root{
+  --ui-cyan: rgba(0,229,255,.85);
+  --ui-amber: rgba(255,176,0,.75);
+  --ui-edge: rgba(255,255,255,.14);
+  --ui-panel: rgba(8, 12, 18, .58);
+}
+
+/* Modal: “glass + console” */
+.q-modal{ backdrop-filter: blur(3px); }
+
+/* Dodatkowa warstwa: scanlines + grain + vignette */
+.q-modal-body{ position: relative; overflow: hidden; } /* overflow hidden = overlay nie wyjdzie poza rounded */
+.q-modal-body::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:14px;
+
+  /* 1) vignette 2) scanlines 3) grain-ish noise */
+  background:
+    radial-gradient(circle at 50% 40%, rgba(0,0,0,.05), rgba(0,0,0,.55) 78%, rgba(0,0,0,.75) 100%),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.035),
+      rgba(255,255,255,.035) 1px,
+      rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0) 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.012),
+      rgba(255,255,255,.012) 2px,
+      rgba(0,0,0,0) 5px,
+      rgba(0,0,0,0) 9px
+    );
+
+  opacity:.28;
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+  /* ✅ TO DODAJESZ DOKŁADNIE TUTAJ */
+.q-modal-body > *{
+  position: relative;
+  z-index: 1;
+}
+
+/* Neon edge + inner shadow “device frame” */
+.q-modal-body{
+  box-shadow:
+    0 18px 48px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 0 0 1px rgba(0,229,255,.06);
+}
+.q-modal-body{
+  outline: 1px solid rgba(0,229,255,.10);
+  outline-offset: 0px;
+}
+
+/* Head/status: trochę bardziej “HUD” */
+.q-modal-head, .q-status{
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Buttons: bardziej “game” */
+.q-btn{
+  background:
+    radial-gradient(circle at 20% 10%, rgba(0,229,255,.12), transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
+    rgba(15,22,32,.78);
+  border-color: rgba(255,255,255,.10);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+.q-btn:hover{
+  filter: brightness(1.08);
+  box-shadow:
+    0 12px 24px rgba(0,0,0,.34),
+    0 0 0 1px rgba(0,229,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+.q-btn:active{ transform: translateY(1px); }
+
+/* Tabs: “chip glow” */
+.q-tab{
+  border-color: rgba(255,255,255,.10);
+  background: rgba(12,18,26,.75);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.q-tab--on{
+  background:
+    linear-gradient(180deg, rgba(0,229,255,.10), rgba(0,0,0,0)),
+    rgba(16,28,40,.78);
+  border-color: rgba(0,229,255,.22);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,.22),
+    0 0 0 1px rgba(0,229,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Quest cards: glass panel + hover lift */
+.quest{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0,229,255,.06), transparent 55%),
+    radial-gradient(circle at 85% 88%, rgba(255,176,0,.05), transparent 60%),
+    rgba(10,14,20,.62);
+  border-color: rgba(255,255,255,.10);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.quest:hover{
+  transform: translateY(-2px);
+  border-color: rgba(0,229,255,.18);
+  box-shadow:
+    0 18px 38px rgba(0,0,0,.42),
+    0 0 0 1px rgba(0,229,255,.08),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Progress bar: “sheen” */
+.q-bar{
+  position: relative;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.q-bar-fill{
+  position: relative;
+  background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.85));
+}
+.q-bar-fill::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
+  transform: translateX(-40%);
+  opacity:.55;
+  animation: qSheen 1.8s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes qSheen{
+  0%{ transform: translateX(-55%); }
+  100%{ transform: translateX(55%); }
+}
+
+/* Badges/rewards: bardziej “loot” */
+.q-badge{
+  background: rgba(0,0,0,.25);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.q-done{
+  box-shadow: 0 8px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Respect accessibility */
+@media (prefers-reduced-motion: reduce){
+  .quest, .q-btn{ transition: none; }
+  .q-bar-fill::after{ animation: none; }
+}
+ /* “micro shake” tylko przy kliknięciu (nie lata na hover) */
+.quest{ will-change: transform; }
+.quest:active{
+  animation: qMicroShake .18s ease-in-out 1;
+}
+
+/* opcjonalnie: lekki “thud” na przyciskach też */
+.q-btn:active{
+  animation: qBtnThud .16s ease-in-out 1;
+}
+
+@keyframes qMicroShake{
+  0%   { transform: translateY(-2px) translateX(0); }
+  20%  { transform: translateY(-2px) translateX(-1px); }
+  40%  { transform: translateY(-2px) translateX(1px); }
+  60%  { transform: translateY(-2px) translateX(-1px); }
+  80%  { transform: translateY(-2px) translateX(1px); }
+  100% { transform: translateY(-2px) translateX(0); }
+}
+
+@keyframes qBtnThud{
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(1px); }
+  100% { transform: translateY(0); }
+}
+
+/* szanuj reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .quest:active{ animation: none; }
+  .q-btn:active{ animation: none; }
+} 
 </style>
 
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
@@ -2540,6 +2815,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
