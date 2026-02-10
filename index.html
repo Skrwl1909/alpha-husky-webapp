@@ -32,37 +32,58 @@
   .bg video { filter: contrast(1.08) brightness(.9); }
 
   /* fallback poster */
-  .bg .poster {
-    display:none;
-    background-image: url("background2.webp");
-    background-position:center;
-    background-size:cover;
-  }
+.bg .poster {
+  display:none;
+  background-image: url("background2.webp");
+  background-position:center;
+  background-size:cover;
+}
 
-  .ui { position: absolute; inset: 0; z-index: 2; }
-  .grid { position:absolute; inset:0; display:grid; place-items:end center; padding: 24px 16px; }
-  .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-  /* === HUD: boczne kolumny + centralny skin === */
-  .hud-layout{
-  width: 100%;
-  max-width: 520px;
+.ui { position: absolute; inset: 0; z-index: 2; }
+
+/* ✅ PATCH 1A: keep HUD inside viewport + safe-area (fix right column overflow) */
+.grid{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:end center;
+  box-sizing: border-box;
+  padding:
+    24px
+    calc(16px + env(safe-area-inset-right, 0px))
+    24px
+    calc(16px + env(safe-area-inset-left, 0px));
+}
+
+.row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+/* === HUD: boczne kolumny + centralny skin === */
+.hud-layout{
+  width: min(
+    520px,
+    calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
+  );
   margin: 0 auto;                 /* centrowanie całości w poziomie */
   display: flex;
   justify-content: center;        /* zamiast space-between */
   align-items: flex-end;
   gap: 16px;                      /* stały, równy odstęp lewo–środek–prawo */
-  }
-  .hud-col{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  .hud-col .btn{
-    min-width:0;
-    padding:8px 10px;
-    font-size:13px;
-  }
-  .hero-center{
+}
+.hud-col{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.hud-col .btn{
+  min-width:0;
+  padding:8px 10px;
+  font-size:13px;
+}
+
+/* ✅ PATCH 1A: lekkie “dociągnięcie” prawej kolumny do środka (żeby nie wychodziła poza ekran) */
+.hud-col.hud-right{ transform: translateX(-10px); }
+
+.hero-center{
   flex:1;
   min-width:0; /* ważne dla flexa: środek nie wypycha prawej kolumny */
   display:flex;
@@ -146,6 +167,10 @@
     font-size:12px;
     padding:6px 8px;
   }
+
+  /* ✅ PATCH 1A: mocniej na ultra wąskich ekranach */
+  .hud-col.hud-right{ transform: translateX(-16px); }
+
   .hero-frame{ width:56vw; }
 
   .hero-center .share-row{
@@ -209,6 +234,7 @@
 .buffs-line:active{
   transform: translateY(1px);
 }
+
   .btn {
     appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
     background:var(--glass); border:1px solid var(--stroke);
@@ -822,12 +848,16 @@
   </div>
 </div>
 
-    <!-- MISSIONS MODAL -->
-<div class="sheet-back" id="missionsBack" style="display:none;">
+    <!-- =========================
+     PATCH 2 — MODALS (robust)
+     ========================= -->
+
+<!-- MISSIONS MODAL -->
+<div class="sheet-back" id="missionsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Missions">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Missions</div>
-      <button class="btn" id="closeMissions" type="button">×</button>
+      <button class="btn" id="closeMissions" type="button" aria-label="Close missions">×</button>
     </div>
 
     <div id="missionsRoot" style="margin-top:12px; display:grid; gap:10px;"></div>
@@ -844,13 +874,15 @@
 </div>
 
 <!-- Quests modal (STARY – fallback Daily) -->
-<div class="sheet-back" id="questsBack">
+<div class="sheet-back" id="questsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Daily Quests (fallback)">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Daily Quests</div>
-      <button class="btn" id="closeQuests" type="button">×</button>
+      <button class="btn" id="closeQuests" type="button" aria-label="Close daily quests">×</button>
     </div>
+
     <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
+
     <p style="opacity:.7; font-size:12px; margin-top:10px;">
       Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
     </p>
@@ -858,37 +890,53 @@
 </div>
 
 <!-- NOWY MODAL: Mission Board -->
-      <div id="qBack" class="q-modal" role="dialog" aria-modal="true" aria-label="Mission Board">
+<div id="qBack" class="q-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Mission Board">
   <div class="q-bg" aria-hidden="true"></div>
+
   <div class="q-modal-body">
-          <div class="q-modal-head">
-            <h3 class="q-title">Mission Board</h3>
-            <div class="q-head-actions">
-              <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh">↻</button>
-              <button class="q-btn" id="qClose" type="button" title="Close">×</button>
-            </div>
-          </div>
-          <div id="qStatus" class="q-status">Ready</div>
-          <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
-  <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true">All <span data-count="all">0</span></button>
-  <button class="q-tab" data-tab="daily" role="tab" aria-selected="false">Daily <span data-count="daily">0</span></button>
+    <div class="q-modal-head">
+      <h3 class="q-title">Mission Board</h3>
 
-  <button class="q-tab" data-tab="legendary" role="tab" aria-selected="false">Legendary Path <span data-count="legendary">0</span></button>
-
-  <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false">Repeatable <span data-count="repeatable">0</span></button>
-  <button class="q-tab" data-tab="story" role="tab" aria-selected="false">Story <span data-count="story">0</span></button>
-  <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false">Bounties <span data-count="bounties">0</span></button>
-</div>
-          <div id="qState" class="q-filters" aria-label="Quest state filters">
-            <button class="q-tab q-tab--on" data-state="any">All</button>
-            <button class="q-tab" data-state="ready">Ready</button>
-            <button class="q-tab" data-state="accepted">Accepted</button>
-            <button class="q-tab" data-state="available">Available</button>
-            <button class="q-tab" data-state="cooldown">Cooldown</button>
-          </div>
-          <div id="qList" class="quest-board"></div>
-        </div>
+      <div class="q-head-actions">
+        <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
+        <button class="q-btn" id="qClose" type="button" title="Close" aria-label="Close">×</button>
       </div>
+    </div>
+
+    <div id="qStatus" class="q-status">Ready</div>
+
+    <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
+      <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true" type="button">
+        All <span data-count="all">0</span>
+      </button>
+      <button class="q-tab" data-tab="daily" role="tab" aria-selected="false" type="button">
+        Daily <span data-count="daily">0</span>
+      </button>
+      <button class="q-tab" data-tab="legendary" role="tab" aria-selected="false" type="button">
+        Legendary Path <span data-count="legendary">0</span>
+      </button>
+      <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false" type="button">
+        Repeatable <span data-count="repeatable">0</span>
+      </button>
+      <button class="q-tab" data-tab="story" role="tab" aria-selected="false" type="button">
+        Story <span data-count="story">0</span>
+      </button>
+      <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false" type="button">
+        Bounties <span data-count="bounties">0</span>
+      </button>
+    </div>
+
+    <div id="qState" class="q-filters" aria-label="Quest state filters">
+      <button class="q-tab q-tab--on" data-state="any" type="button">All</button>
+      <button class="q-tab" data-state="ready" type="button">Ready</button>
+      <button class="q-tab" data-state="accepted" type="button">Accepted</button>
+      <button class="q-tab" data-state="available" type="button">Available</button>
+      <button class="q-tab" data-state="cooldown" type="button">Cooldown</button>
+    </div>
+
+    <div id="qList" class="quest-board"></div>
+  </div>
+</div>
 
 <!-- === FAQ MODAL (nowy) === -->
 <div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
@@ -2492,33 +2540,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
-
-/* ✅ PATCH: keep HUD inside viewport + safe-area (fix right column overflow) */
-.grid{
-  box-sizing: border-box;
-  padding:
-    24px
-    calc(16px + env(safe-area-inset-right, 0px))
-    24px
-    calc(16px + env(safe-area-inset-left, 0px));
-}
-
-.hud-layout{
-  width: min(
-    520px,
-    calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
-  );
-}
-
-.hud-col.hud-right{ transform: translateX(-10px); }
-
-@media (max-width: 420px){
-  .hud-col.hud-right{ transform: translateX(-16px); }
-}
-
-
-
-
 
 
 
