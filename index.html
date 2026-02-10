@@ -406,138 +406,281 @@
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
   </style>
-  <!-- ⬇⬇⬇ Mission Board (inline CSS) + NOWY CSS DLA DESC -->
+ <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
 <style id="quests-css">
-  /* =========================
-     PATCH 2.1 — Mission Board background + dust overlay
-     ========================= */
   :root{
+    /* assets */
     --board-bg:   url("mission_board.webp");
     --board-dust: url("dust.png");
+
+    /* ui accents */
+    --ui-cyan: rgba(0,229,255,.85);
+    --ui-amber: rgba(255,176,0,.75);
+    --ui-edge: rgba(255,255,255,.14);
+    --ui-panel: rgba(8, 12, 18, .58);
   }
 
-  /* Modal shell (zostaje) */
+  /* Modal shell */
   .q-modal{
     position:fixed;
     inset:0;
     display:none;
     align-items:center;
     justify-content:center;
-    background:rgba(0,0,0,.5);
+    background:rgba(0,0,0,.52);
     z-index:9999;
+    backdrop-filter: blur(3px);
   }
 
-  /* ✅ zamiast jednolitego tła: warstwowy board + dust */
+  /* ✅ ważne: q-bg nie może być flex-itemem */
+  .q-modal .q-bg{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+  }
+
+  /* Board container */
   .q-modal-body{
     position: relative;
+    z-index: 1;
+
     width:min(720px,92vw);
     max-height:86vh;
-    overflow:auto;
+    overflow:auto;              /* ✅ scroll działa */
 
     border:1px solid rgba(36,50,68,.95);
     border-radius:14px;
     padding:16px;
 
-    /* Board background */
     background:
       radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
       radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
       linear-gradient(to bottom, rgba(6,10,14,.60), rgba(6,10,14,.86)),
       var(--board-bg);
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
+    background-position:center;
+    background-size:cover;
+    background-repeat:no-repeat;
 
-    box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    box-shadow:
+      0 18px 48px rgba(0,0,0,.62),
+      inset 0 1px 0 rgba(255,255,255,.08),
+      inset 0 0 0 1px rgba(0,229,255,.06);
+    outline: 1px solid rgba(0,229,255,.10);
+    outline-offset: 0px;
   }
 
-  /* Dust overlay (nie klikalny, tylko wizual) */
+  /* Scanlines + vignette */
+  .q-modal-body::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    border-radius:14px;
+    z-index:0;
+
+    background:
+      radial-gradient(circle at 50% 40%, rgba(0,0,0,.05), rgba(0,0,0,.55) 78%, rgba(0,0,0,.75) 100%),
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.035),
+        rgba(255,255,255,.035) 1px,
+        rgba(0,0,0,0) 3px,
+        rgba(0,0,0,0) 6px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,.012),
+        rgba(255,255,255,.012) 2px,
+        rgba(0,0,0,0) 5px,
+        rgba(0,0,0,0) 9px
+      );
+
+    opacity:.28;
+    mix-blend-mode: overlay;
+  }
+
+  /* Dust overlay */
   .q-modal-body::after{
     content:"";
     position:absolute;
     inset:0;
     pointer-events:none;
     border-radius:14px;
+    z-index:0;
+
     background: var(--board-dust);
     background-size: cover;
     background-position: center;
-    opacity: .22;               /* intensywność dust */
-    mix-blend-mode: screen;     /* ładnie na ciemnym */
+    opacity: .22;
+    mix-blend-mode: screen;
   }
 
-  /* Żeby content był NAD kurzem */
+  /* ✅ content zawsze nad overlayami */
   .q-modal-body > *{
     position: relative;
     z-index: 1;
   }
 
-  /* lekki blur “szyby” na head/status, żeby czytelność nie spadła */
+  /* Head/status: HUD readability */
   .q-modal-head,
   .q-status{
     background: rgba(5,8,12,.35);
-    border: 1px solid rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
     border-radius: 12px;
     padding: 10px 10px;
     backdrop-filter: blur(6px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
   }
-  .q-modal-head{ margin-bottom: 8px; }
-  .q-status{ margin: 0 2px 10px 2px; }
-
-  /* =========================
-     Twoje obecne style (bez zmian funkcjonalnych)
-     ========================= */
   .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .q-title{margin:0;font-size:18px}
   .q-head-actions{display:flex;gap:6px}
-  .q-btn{border:1px solid #2a3b4d;background:#14202c;color:#d9e3ec;border-radius:10px;padding:6px 10px;cursor:pointer}
-  .q-btn:hover{filter:brightness(1.1)}
-  .q-btn-ghost{background:transparent;border-color:#2a3b4d}
-  .q-btn-acc{background:#1e2937;border-color:#3a516a}
-  .q-status{font-size:12px;opacity:.9;margin:0 2px 10px 2px}
+  .q-status{font-size:12px;opacity:.92;margin:0 2px 10px 2px}
   .q-loader,.q-empty{padding:16px;opacity:.85}
+
+  /* Buttons: game feel */
+  .q-btn{
+    border:1px solid rgba(255,255,255,.10);
+    color:#d9e3ec;
+    border-radius:10px;
+    padding:6px 10px;
+    cursor:pointer;
+
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,229,255,.12), transparent 55%),
+      radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
+      rgba(15,22,32,.78);
+
+    box-shadow:
+      0 10px 20px rgba(0,0,0,.28),
+      inset 0 1px 0 rgba(255,255,255,.06);
+
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  }
+  .q-btn:hover{
+    filter:brightness(1.08);
+    box-shadow:
+      0 12px 24px rgba(0,0,0,.34),
+      0 0 0 1px rgba(0,229,255,.10),
+      inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .q-btn-ghost{background:transparent;border-color:#2a3b4d}
+  .q-btn:active{ transform: translateY(1px); }
+
+  /* Tabs */
   .q-filters{display:flex;gap:6px;margin:6px 2px 10px 2px;flex-wrap:wrap}
-  .q-tab{border:1px solid #243244;background:#0f1620;color:#d7e0ea;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
-  .q-tab--on{background:#172433}
+  .q-tab{
+    border:1px solid rgba(255,255,255,.10);
+    background: rgba(12,18,26,.75);
+    color:#d7e0ea;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    cursor:pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .q-tab--on{
+    background:
+      linear-gradient(180deg, rgba(0,229,255,.10), rgba(0,0,0,0)),
+      rgba(16,28,40,.78);
+    border-color: rgba(0,229,255,.22);
+    box-shadow:
+      0 8px 16px rgba(0,0,0,.22),
+      0 0 0 1px rgba(0,229,255,.10),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
+  /* Board layout */
   .quest-board{display:grid;grid-template-columns:1fr;gap:10px}
   @media (min-width:720px){.quest-board{grid-template-columns:1fr 1fr}}
-  .quest{border:1px solid #243244;border-radius:12px;padding:10px;background:#0e141b}
+
+  /* Quest cards */
+  .quest{
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:10px;
+
+    background:
+      radial-gradient(circle at 18% 12%, rgba(0,229,255,.06), transparent 55%),
+      radial-gradient(circle at 85% 88%, rgba(255,176,0,.05), transparent 60%),
+      rgba(10,14,20,.62);
+
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      inset 0 1px 0 rgba(255,255,255,.05);
+
+    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+    will-change: transform;
+  }
+  .quest:hover{
+    transform: translateY(-2px);
+    border-color: rgba(0,229,255,.18);
+    box-shadow:
+      0 18px 38px rgba(0,0,0,.42),
+      0 0 0 1px rgba(0,229,255,.08),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
   .q-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:10px}
   .q-name{font-weight:600}
   .q-type{opacity:.7;font-size:12px;margin-left:6px}
   .q-head-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
   .q-step{font-size:12px;opacity:.8}
-  .q-done{font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;padding:2px 6px;border-radius:999px}
+  .q-done{
+    font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;
+    padding:2px 6px;border-radius:999px;
+    box-shadow: 0 8px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
   .q-reqs{display:flex;flex-direction:column;gap:8px}
   .q-row-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:4px}
   .q-req-name{opacity:.9}
   .q-req-val{opacity:.7}
-  .q-bar{height:6px;border-radius:999px;background:#16202a;overflow:hidden}
-  .q-bar-fill{height:100%;background:#2b8bd9}
+
+  /* Progress bar sheen */
+  .q-bar{
+    height:6px;border-radius:999px;background:#16202a;overflow:hidden;
+    position:relative;border:1px solid rgba(255,255,255,.06);
+  }
+  .q-bar-fill{
+    height:100%;
+    position:relative;
+    background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.85));
+  }
+  .q-bar-fill::after{
+    content:"";
+    position:absolute;inset:0;
+    background: linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
+    transform: translateX(-55%);
+    opacity:.55;
+    animation: qSheen 1.8s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes qSheen{ 0%{transform:translateX(-55%)} 100%{transform:translateX(55%)} }
+
   .q-rew{margin-top:8px}
-  .q-badge{display:inline-block;border:1px solid #2a3b4d;border-radius:999px;padding:2px 8px;margin:2px;font-size:11px;opacity:.95}
+  .q-badge{
+    display:inline-block;border:1px solid rgba(255,255,255,.10);
+    border-radius:999px;padding:2px 8px;margin:2px;font-size:11px;opacity:.95;
+    background: rgba(0,0,0,.25);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  }
   .q-actions{margin-top:10px;display:flex;gap:8px}
-  #quests-launcher.q-launcher{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+
+  /* Desc (opisy) */
+  .q-name-wrapper { flex: 1; min-width:0; }
+  .q-desc{font-size:13px;color:#a0d8ff;margin-top:5px;line-height:1.35;opacity:.92}
+  .q-hint{font-style:italic;color:#88c0ff;font-size:12.5px;margin-top:4px}
+
+  /* Launcher */
+  #quests-launcher.q-launcher{
+    position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;
+    border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;
+    box-shadow:0 6px 18px rgba(0,0,0,.35)
+  }
   #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
 
-  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
-  /* NOWY CSS DLA OPISÓW (desc) – działa idealnie */
-  .q-name-wrapper { flex: 1; min-width:0; }
-  .q-desc {
-    font-size: 13px;
-    color: #a0d8ff;
-    margin-top: 5px;
-    line-height: 1.35;
-    opacity: 0.92;
-  }
-  .q-hint {
-    font-style: italic;
-    color: #88c0ff;
-    font-size: 12.5px;
-    margin-top: 4px;
-  }
-  /* ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←← */
-
-  /* === Legendary Path: MAIN REWARD (one per track, not per step) === */
+  /* Legendary Path: MAIN REWARD */
   .q-track-reward{
     margin-top: 8px;
     display: inline-flex;
@@ -549,73 +692,34 @@
     background: rgba(8, 14, 22, 0.55);
     backdrop-filter: blur(6px);
   }
-  .q-track-reward-label{
-    font-size: 12px;
-    opacity: .75;
-    white-space: nowrap;
-  }
-  /* hard cap — nawet jeśli masz globalne img{width:100%} */
+  .q-track-reward-label{font-size:12px;opacity:.75;white-space:nowrap}
   .q-track-reward img.q-track-reward-icon,
   .q-track-reward-icon{
-    width: 22px !important;
-    height: 22px !important;
-    max-width: 22px !important;
-    max-height: 22px !important;
-    min-width: 22px !important;
-    min-height: 22px !important;
-    object-fit: cover !important;
-    border-radius: 6px !important;
-    display: block !important;
-    flex: 0 0 22px !important;
+    width:22px !important;height:22px !important;max-width:22px !important;max-height:22px !important;
+    min-width:22px !important;min-height:22px !important;object-fit:cover !important;border-radius:6px !important;
+    display:block !important;flex:0 0 22px !important;
   }
-  .q-track-reward-name{
-    font-weight: 700;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
+  .q-track-reward-name{font-weight:700;line-height:1.1;white-space:nowrap}
 
-  /* === Legendary Path: accordion (collapsed list) === */
+  /* Legendary Path: accordion */
   .quest--lp .q-acc-body{
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-2px);
-    transition: max-height .28s ease, opacity .18s ease, transform .18s ease;
+    max-height:0;overflow:hidden;opacity:0;transform:translateY(-2px);
+    transition:max-height .28s ease, opacity .18s ease, transform .18s ease;
   }
-
-  .quest--lp.is-open .q-acc-body{
-    max-height: 1400px; /* wystarczająco na 3 kroki + progress */
-    opacity: 1;
-    transform: translateY(0);
-    margin-top: 8px;
-  }
-
+  .quest--lp.is-open .q-acc-body{max-height:1400px;opacity:1;transform:translateY(0);margin-top:8px}
   .q-acc-toggle{
-    border: 1px solid rgba(36,50,68,0.9);
+    border:1px solid rgba(36,50,68,0.9);
     background: rgba(15,22,32,0.65);
-    color: #d7e0ea;
-    width: 28px;
-    height: 28px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    cursor: pointer;
+    color:#d7e0ea;
+    width:28px;height:28px;border-radius:10px;
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:0;cursor:pointer;
   }
+  .q-acc-toggle:hover{filter:brightness(1.08)}
+  .q-acc-chevron{display:inline-block;transition:transform .18s ease;font-size:16px;line-height:1}
+  .quest--lp.is-open .q-acc-chevron{transform:rotate(180deg)}
 
-  .q-acc-toggle:hover{ filter: brightness(1.08); }
-
-  .q-acc-chevron{
-    display: inline-block;
-    transition: transform .18s ease;
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  .quest--lp.is-open .q-acc-chevron{ transform: rotate(180deg); }
-
-  /* === B7: Legendary Path steps (quests.js B5) === */
+  /* B7 steps */
   .q-steps-wrap{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   .q-step-row{display:flex;justify-content:space-between;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
   .q-step-left{min-width:0}
@@ -623,205 +727,32 @@
   .q-step-sub{opacity:.78;font-size:12px;margin-top:2px}
   .q-step-rew{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
   .q-step-right{display:flex;align-items:center}
-  /* =========================
-   GAME UI POLISH (no extra assets)
-   Wklej NA KONIEC #quests-css
-   ========================= */
-:root{
-  --ui-cyan: rgba(0,229,255,.85);
-  --ui-amber: rgba(255,176,0,.75);
-  --ui-edge: rgba(255,255,255,.14);
-  --ui-panel: rgba(8, 12, 18, .58);
-}
 
-/* Modal: “glass + console” */
-.q-modal{ backdrop-filter: blur(3px); }
+  /* micro shake + thud */
+  .quest:active{ animation: qMicroShake .18s ease-in-out 1; }
+  .q-btn:active{ animation: qBtnThud .16s ease-in-out 1; }
 
-/* Dodatkowa warstwa: scanlines + grain + vignette */
-.q-modal-body{ position: relative; overflow: hidden; } /* overflow hidden = overlay nie wyjdzie poza rounded */
-.q-modal-body::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  border-radius:14px;
+  @keyframes qMicroShake{
+    0%{transform:translateY(-2px) translateX(0)}
+    20%{transform:translateY(-2px) translateX(-1px)}
+    40%{transform:translateY(-2px) translateX(1px)}
+    60%{transform:translateY(-2px) translateX(-1px)}
+    80%{transform:translateY(-2px) translateX(1px)}
+    100%{transform:translateY(-2px) translateX(0)}
+  }
+  @keyframes qBtnThud{
+    0%{transform:translateY(0)}
+    50%{transform:translateY(1px)}
+    100%{transform:translateY(0)}
+  }
 
-  /* 1) vignette 2) scanlines 3) grain-ish noise */
-  background:
-    radial-gradient(circle at 50% 40%, rgba(0,0,0,.05), rgba(0,0,0,.55) 78%, rgba(0,0,0,.75) 100%),
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.035),
-      rgba(255,255,255,.035) 1px,
-      rgba(0,0,0,0) 3px,
-      rgba(0,0,0,0) 6px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,.012),
-      rgba(255,255,255,.012) 2px,
-      rgba(0,0,0,0) 5px,
-      rgba(0,0,0,0) 9px
-    );
-
-  opacity:.28;
-  mix-blend-mode: overlay;
-  z-index: 0;
-}
-  /* ✅ TO DODAJESZ DOKŁADNIE TUTAJ */
-.q-modal-body > *{
-  position: relative;
-  z-index: 1;
-}
-
-/* Neon edge + inner shadow “device frame” */
-.q-modal-body{
-  box-shadow:
-    0 18px 48px rgba(0,0,0,.62),
-    inset 0 1px 0 rgba(255,255,255,.08),
-    inset 0 0 0 1px rgba(0,229,255,.06);
-}
-.q-modal-body{
-  outline: 1px solid rgba(0,229,255,.10);
-  outline-offset: 0px;
-}
-
-/* Head/status: trochę bardziej “HUD” */
-.q-modal-head, .q-status{
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* Buttons: bardziej “game” */
-.q-btn{
-  background:
-    radial-gradient(circle at 20% 10%, rgba(0,229,255,.12), transparent 55%),
-    radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
-    rgba(15,22,32,.78);
-  border-color: rgba(255,255,255,.10);
-  box-shadow:
-    0 10px 20px rgba(0,0,0,.28),
-    inset 0 1px 0 rgba(255,255,255,.06);
-  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
-}
-.q-btn:hover{
-  filter: brightness(1.08);
-  box-shadow:
-    0 12px 24px rgba(0,0,0,.34),
-    0 0 0 1px rgba(0,229,255,.10),
-    inset 0 1px 0 rgba(255,255,255,.08);
-}
-.q-btn:active{ transform: translateY(1px); }
-
-/* Tabs: “chip glow” */
-.q-tab{
-  border-color: rgba(255,255,255,.10);
-  background: rgba(12,18,26,.75);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-}
-.q-tab--on{
-  background:
-    linear-gradient(180deg, rgba(0,229,255,.10), rgba(0,0,0,0)),
-    rgba(16,28,40,.78);
-  border-color: rgba(0,229,255,.22);
-  box-shadow:
-    0 8px 16px rgba(0,0,0,.22),
-    0 0 0 1px rgba(0,229,255,.10),
-    inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* Quest cards: glass panel + hover lift */
-.quest{
-  background:
-    radial-gradient(circle at 18% 12%, rgba(0,229,255,.06), transparent 55%),
-    radial-gradient(circle at 85% 88%, rgba(255,176,0,.05), transparent 60%),
-    rgba(10,14,20,.62);
-  border-color: rgba(255,255,255,.10);
-  backdrop-filter: blur(8px);
-  box-shadow:
-    0 14px 30px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.05);
-  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
-}
-.quest:hover{
-  transform: translateY(-2px);
-  border-color: rgba(0,229,255,.18);
-  box-shadow:
-    0 18px 38px rgba(0,0,0,.42),
-    0 0 0 1px rgba(0,229,255,.08),
-    inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* Progress bar: “sheen” */
-.q-bar{
-  position: relative;
-  border: 1px solid rgba(255,255,255,.06);
-}
-.q-bar-fill{
-  position: relative;
-  background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.85));
-}
-.q-bar-fill::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
-  transform: translateX(-40%);
-  opacity:.55;
-  animation: qSheen 1.8s ease-in-out infinite;
-  pointer-events:none;
-}
-@keyframes qSheen{
-  0%{ transform: translateX(-55%); }
-  100%{ transform: translateX(55%); }
-}
-
-/* Badges/rewards: bardziej “loot” */
-.q-badge{
-  background: rgba(0,0,0,.25);
-  border-color: rgba(255,255,255,.10);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-}
-.q-done{
-  box-shadow: 0 8px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* Respect accessibility */
-@media (prefers-reduced-motion: reduce){
-  .quest, .q-btn{ transition: none; }
-  .q-bar-fill::after{ animation: none; }
-}
- /* “micro shake” tylko przy kliknięciu (nie lata na hover) */
-.quest{ will-change: transform; }
-.quest:active{
-  animation: qMicroShake .18s ease-in-out 1;
-}
-
-/* opcjonalnie: lekki “thud” na przyciskach też */
-.q-btn:active{
-  animation: qBtnThud .16s ease-in-out 1;
-}
-
-@keyframes qMicroShake{
-  0%   { transform: translateY(-2px) translateX(0); }
-  20%  { transform: translateY(-2px) translateX(-1px); }
-  40%  { transform: translateY(-2px) translateX(1px); }
-  60%  { transform: translateY(-2px) translateX(-1px); }
-  80%  { transform: translateY(-2px) translateX(1px); }
-  100% { transform: translateY(-2px) translateX(0); }
-}
-
-@keyframes qBtnThud{
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(1px); }
-  100% { transform: translateY(0); }
-}
-
-/* szanuj reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .quest:active{ animation: none; }
-  .q-btn:active{ animation: none; }
-} 
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .quest, .q-btn{ transition:none; }
+    .q-bar-fill::after{ animation:none; }
+    .quest:active{ animation:none; }
+    .q-btn:active{ animation:none; }
+  }
 </style>
 
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
@@ -2815,6 +2746,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
