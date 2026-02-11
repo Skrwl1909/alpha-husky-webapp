@@ -179,79 +179,78 @@ window.Inventory = {
     const container = document.getElementById("app") || document.body;
 
     container.innerHTML = `
-      <div style="
-        padding:20px;
-        padding-top:calc(20px + var(--tg-safe-area-inset-top, 0px));
-        color:#fff;
-        max-width:680px;
-        margin:0 auto;
-        font-family:system-ui;
-        position:relative;
-      ">
+  <div class="inv-root" style="
+    padding:20px;
+    padding-top:calc(20px + var(--tg-safe-area-inset-top, 0px));
+    color:#fff;
+    max-width:680px;
+    margin:0 auto;
+    font-family:system-ui;
+    position:relative;
+  ">
 
-        <!-- Sticky header BELOW safe-area (clickable) -->
-        <div style="
-          position:sticky;
-          top:calc(var(--tg-safe-area-inset-top, 0px));
-          z-index:9999;
-          background:rgba(0,0,0,0.55);
-          backdrop-filter: blur(6px);
-          border-radius:16px;
-          padding:10px 12px;
-          margin-bottom:12px;
-        ">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <!-- ✅ Inline onclick (most robust) -->
-            <button id="invBackBtn" type="button" onclick="Inventory.goBack('ui')"
-                    style="
-                      display:flex;align-items:center;gap:10px;
-                      padding:10px 14px;border-radius:14px;
-                      background:rgba(255,255,255,0.10);
-                      color:#fff;border:none;font-size:14px;
-                      cursor:pointer;
-                      pointer-events:auto;
-                      position:relative;
-                      z-index:10000;
-                    ">
-              <span style="font-size:18px;line-height:1;">←</span>
-              <span>Back</span>
-            </button>
+    <!-- Sticky header BELOW safe-area (clickable) -->
+    <div style="
+      position:sticky;
+      top:calc(var(--tg-safe-area-inset-top, 0px));
+      z-index:9999;
+      background:rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      border-radius:16px;
+      padding:10px 12px;
+      margin-bottom:12px;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <!-- ✅ Inline onclick (most robust) -->
+        <button id="invBackBtn" type="button" onclick="Inventory.goBack('ui')"
+                style="
+                  display:flex;align-items:center;gap:10px;
+                  padding:10px 14px;border-radius:14px;
+                  background:rgba(255,255,255,0.10);
+                  color:#fff;border:none;font-size:14px;
+                  cursor:pointer;
+                  pointer-events:auto;
+                  position:relative;
+                  z-index:10000;
+                ">
+          <span style="font-size:18px;line-height:1;">←</span>
+          <span>Back</span>
+        </button>
 
-            <div style="font-weight:900;letter-spacing:0.6px;">Inventory</div>
-            <div style="width:92px;"></div>
-          </div>
-        </div>
-
-        <div id="stats-bar" style="text-align:center;margin:8px 0 16px 0;opacity:0.9;font-size:16px;">
-          loading...
-        </div>
-
-        <!-- Tabs + Salvage -->
-        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-          <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all" type="button">All</button>
-          <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear" type="button">Gear</button>
-          <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable" type="button">Consumables</button>
-          <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility" type="button">Utility</button>
-
-          <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
-                  style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;cursor:pointer;">
-            SALVAGE DUPES
-          </button>
-        </div>
-
-        <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
-          <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
-        </div>
-
-        <div style="text-align:center;margin-top:24px;">
-          <button onclick="Telegram.WebApp.close()" type="button"
-                  style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;cursor:pointer;">
-            Close WebApp
-          </button>
-        </div>
+        <div style="font-weight:900;letter-spacing:0.6px;">Inventory</div>
+        <div style="width:92px;"></div>
       </div>
-    `;
+    </div>
 
+    <div id="stats-bar" style="text-align:center;margin:8px 0 16px 0;opacity:0.9;font-size:16px;">
+      loading...
+    </div>
+
+    <!-- Tabs + Salvage -->
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all" type="button">All</button>
+      <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear" type="button">Gear</button>
+      <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable" type="button">Consumables</button>
+      <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility" type="button">Utility</button>
+
+      <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
+              style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;cursor:pointer;">
+        SALVAGE DUPES
+      </button>
+    </div>
+
+    <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
+      <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <button onclick="Telegram.WebApp.close()" type="button"
+              style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;cursor:pointer;">
+        Close WebApp
+      </button>
+    </div>
+  </div>
+`;
     // register in nav stack + (optional) TG back fallback
     this._bindBackButtons();
 
