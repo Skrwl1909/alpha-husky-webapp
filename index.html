@@ -15,6 +15,7 @@
   <link rel="preload" as="image" href="shop_scene.webp">
   <link rel="preload" as="image" href="mission_board.webp">
   <link rel="preload" as="image" href="dust.png">
+  <link rel="preload" as="image" href="inventory_bg.png">
 
   <style>
   /* Telegram theme + bezpieczne fallbacki */
@@ -763,6 +764,9 @@
   -webkit-overflow-scrolling: touch;  /* iOS inertia */
   overscroll-behavior: contain;       /* nie “przewija” tła */
   touch-action: pan-y;                /* mobile swipe = scroll */
+  .q-modal-body{
+  min-height: 0 !important;
+}
 }
 
 /* jeśli q-bg był flex-itemem i mieszał — to go unieruchamiamy */
@@ -772,6 +776,84 @@
   pointer-events: none !important;
 }
 </style>
+  <style id="inventory-css">
+  :root{
+    --inv-bg: url("inventory_bg.png"); /* wrzuć plik obok index.html albo zmień ścieżkę */
+    --inv-dust: url("dust.png");       /* jeśli masz dust.png (jak w Mission Board) */
+  }
+
+  /* Root Inventory ekranu (dodamy klasę w inventory.js) */
+  .inv-root{
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden; /* trzyma overlay w ramach */
+    background: var(--inv-bg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* Vignette + scanlines (delikatne) */
+  .inv-root::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(0,0,0,.05), rgba(0,0,0,.62) 78%, rgba(0,0,0,.78) 100%),
+      repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.030),
+        rgba(255,255,255,.030) 1px,
+        rgba(0,0,0,0) 3px,
+        rgba(0,0,0,0) 6px
+      );
+    opacity:.24;
+    mix-blend-mode: overlay;
+    z-index: 0;
+  }
+
+  /* Dust overlay */
+  .inv-root::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background: var(--inv-dust);
+    background-size: cover;
+    background-position: center;
+    opacity: .16;            /* reguluj */
+    mix-blend-mode: screen;
+    z-index: 0;
+  }
+
+  /* Content nad overlay */
+  .inv-root > *{
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Panel grid — bardziej “game glass”, a nie czarna płyta */
+  #inventory-grid{
+    background: rgba(0,0,0,.22) !important; /* nadpisze inline */
+    border: 1px solid rgba(255,255,255,.10) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  }
+
+  /* Mikro polish dla tabów jeśli chcesz */
+  .tab-btn{
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.28);
+    color: #d7e0ea;
+    backdrop-filter: blur(8px);
+  }
+  .tab-btn.active{
+    border-color: rgba(0,229,255,.22);
+    box-shadow: 0 0 0 1px rgba(0,229,255,.10);
+  }
+</style>
+
 
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
   <style id="faq-styles">
@@ -2764,6 +2846,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
