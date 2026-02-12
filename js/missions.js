@@ -3,7 +3,8 @@
 //   POST /webapp/missions/state  { run_id }
 //   POST /webapp/missions/action { action:"refresh_offers"|"start"|"resolve", tier?, offerId?, run_id }
 //
-// UI degrades gracefully if endpoint returns 404 (shows "backend offline").
+// Backend payload (yours):
+// { ok:true, result:{...}, state:{ offers:[{offerId,id,tier,label,tierTime,title,desc,durationSec,lootRolls,reward:{xp,bones}}], active:{status}, lastResolve:{...} } }
 
 (function () {
   const esc = (s) => String(s ?? "")
@@ -28,95 +29,24 @@
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
-  // =========================
-  // PATCH: hard visibility + works with missionsBack/missionsRoot
-  // =========================
-  function injectStylesOnce() {
-    if (document.getElementById("ah-missions-style")) return;
-    const st = document.createElement("style");
-    st.id = "ah-missions-style";
-    st.textContent = `
-      /* Missions hard-visibility fallback */
-      #missionsBack, #missionsModal { color: #fff; }
-      #missionsRoot { color:#fff; }
-      .ah-card { background: rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; }
-      .ah-title { font-weight:700; font-size:16px; }
-      .ah-muted { opacity:.8; font-size:13px; }
-      .ah-row { display:flex; align-items:center; }
-      .ah-btn { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12); color:#fff; border-radius:12px; padding:10px 12px; font-weight:700; }
-      .ah-btn.ghost { background: transparent; }
-      .ah-list { display:flex; flex-direction:column; gap:8px; }
-      .ah-item { background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
-      .ah-icon-btn { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12); color:#fff; border-radius:10px; padding:8px 10px; }
-      button[disabled] { opacity:.45; pointer-events:none; }
-    `;
-    document.head.appendChild(st);
-  }
-
   function ensureModal() {
-    injectStylesOnce();
-
-    // Prefer your existing HTML IDs (missionsBack + missionsRoot)
+    // Prefer your existing sheet from index.html:
+    // <div id="missionsBack"> ... <div id="missionsRoot"> ... </div>
     _modal = el("missionsBack") || el("missionsModal");
     _root  = el("missionsRoot");
 
-    // Close button if exists
-    const closeBtn = el("closeMissions") || (_modal ? _modal.querySelector?.('[data-act="close"]') : null);
+    if (_modal && !_root) console.warn("[Missions] missions backdrop exists but #missionsRoot missing");
 
     if (_modal && _root) {
-      // hook close
-      if (closeBtn && !closeBtn.__ah_bound) {
-        closeBtn.__ah_bound = true;
-        closeBtn.addEventListener("click", (e) => { e.preventDefault(); close(); });
-      }
-
-      // backdrop click closes (only if click directly on backdrop)
-      if (!_modal.__ah_backdrop_bound) {
-        _modal.__ah_backdrop_bound = true;
-        _modal.addEventListener("click", (e) => {
-          if (e.target === _modal) close();
-        });
-      }
-
-      // hook your existing buttons if present
-      const btnRefresh = el("missionsRefresh");
-      const btnResolve = el("missionsResolve");
-
-      if (btnRefresh && !btnRefresh.__ah_bound) {
-        btnRefresh.__ah_bound = true;
-        btnRefresh.addEventListener("click", (e) => { e.preventDefault(); doRefresh(); });
-      }
-      if (btnResolve && !btnResolve.__ah_bound) {
-        btnResolve.__ah_bound = true;
-        btnResolve.addEventListener("click", (e) => { e.preventDefault(); doResolve(); });
-      }
-
-      // delegated actions inside modal (start/refresh/resolve/close)
-      if (!_modal.__ah_actions_bound) {
-        _modal.__ah_actions_bound = true;
-        _modal.addEventListener("click", (e) => {
-          const btn = e.target?.closest?.("button[data-act]");
-          if (!btn) return;
-
-          const act = btn.dataset.act;
-          if (act === "refresh") doRefresh();
-          if (act === "start") doStart(btn.dataset.tier || "", btn.dataset.offer || "");
-          if (act === "resolve") doResolve();
-          if (act === "close") close();
-        });
-      }
-
-      // make sure it's on top
       try {
         _modal.style.position = _modal.style.position || "fixed";
         _modal.style.inset = _modal.style.inset || "0";
         _modal.style.zIndex = _modal.style.zIndex || "999999";
       } catch (_) {}
-
       return;
     }
 
-    // Fallback: create minimal modal if missing in HTML
+    // Fallback: create minimal modal
     const wrap = document.createElement("div");
     wrap.innerHTML = `
       <div id="missionsModal" style="
@@ -135,7 +65,9 @@
         ">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <div style="font-weight:700;">Missions</div>
-            <button type="button" data-act="close" class="ah-icon-btn">✕</button>
+            <button type="button" data-act="close" style="
+              border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer;
+            ">✕</button>
           </div>
           <div style="margin-top:12px;" id="missionsRoot"></div>
         </div>
@@ -146,8 +78,8 @@
     _modal = el("missionsModal");
     _root  = el("missionsRoot");
 
+    _modal.addEventListener("click", (e) => { if (e.target === _modal) close(); });
     _modal.addEventListener("click", (e) => {
-      if (e.target === _modal) close();
       const btn = e.target?.closest?.("button[data-act]");
       if (!btn) return;
       const act = btn.dataset.act;
@@ -160,19 +92,12 @@
 
   function open() {
     ensureModal();
+    log("open(): modal=", _modal?.id, "root=", !!_root);
 
-    console.log("[Missions] open(): modal=", _modal?.id, "root=", !!_root);
-
-    if (!_modal || !_root) {
-      console.warn("[Missions] open(): missing modal/root");
-      return false;
-    }
-
-    // If you use nav stack with missionsBack
-    if (_modal.id === "missionsBack") {
+    if (_modal && _modal.id === "missionsBack") {
       _modal.style.display = "flex";
       try { window.navOpen?.("missionsBack"); } catch (_) {}
-    } else {
+    } else if (_modal) {
       _modal.style.display = "flex";
     }
 
@@ -183,7 +108,7 @@
   }
 
   function close() {
-    if (!_modal) return;
+    if (!_modal) return true;
 
     if (_modal.id === "missionsBack") {
       try { window.navClose?.("missionsBack"); } catch (_) {}
@@ -193,6 +118,7 @@
     }
 
     stopTick();
+    return true;
   }
 
   function startTick() {
@@ -202,7 +128,7 @@
       const a = payload?.active;
       if (!a) return;
 
-      // local countdown tick without refetch spam
+      // local countdown (only if backend gave leftSec)
       if (a.status === "RUNNING" && typeof a.leftSec === "number") {
         a.leftSec = Math.max(0, a.leftSec - 1);
         if (a.leftSec === 0) a.status = "READY";
@@ -243,7 +169,7 @@
     if (!_apiPost) throw new Error("Missions: apiPost missing");
     const res = await _apiPost(path, body);
 
-    // If backend returns ok:false, show as UI error (useful during tests)
+    // If your server ever returns ok:false
     if (res && typeof res === "object" && res.ok === false) {
       const reason = res.reason || res.error || "NOT_OK";
       throw new Error(String(reason));
@@ -251,11 +177,18 @@
     return res;
   }
 
+  // ✅ IMPORTANT: your backend returns payload under `state`
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
-    if (res.data && typeof res.data === "object") return res.data;       // { ok:true, data:{...} }
+
+    // your shape: { ok:true, result:{...}, state:{...} }
+    if (res.state && typeof res.state === "object") return res.state;
+
+    // common alternatives
+    if (res.data && typeof res.data === "object") return res.data;
     if (res.payload && typeof res.payload === "object") return res.payload;
-    return res; // fallback
+
+    return res;
   }
 
   async function loadState() {
@@ -287,7 +220,7 @@
       const res = await api("/webapp/missions/action", {
         action: "start",
         tier,
-        offerId,
+        offerId, // backend expects offerId (your state uses offerId)
         run_id: rid("m:start"),
       });
       _state = res;
@@ -317,21 +250,35 @@
     return `${m}m ${String(s).padStart(2, "0")}s`;
   }
 
+  function fmtDur(sec) {
+    sec = Math.max(0, Number(sec || 0));
+    if (!sec) return "—";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+
+    if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+    if (m >= 2) return `${m}m`;
+    return `${m}m ${String(s).padStart(2, "0")}s`;
+  }
+
   function paintActive(a) {
     const box = el("missionsActiveBox");
     if (!box) return;
 
-    const status = a.status || "NONE";
-    let line = "";
-    if (status === "RUNNING") line = `Ready in <b>${fmtLeft(a.leftSec)}</b>`;
-    if (status === "READY") line = `<b>Ready</b> — resolve now`;
-    if (status === "DONE") line = `<b>Done</b>`;
-    if (status === "NONE") line = `No active mission`;
+    const status = String(a.status || "NONE").toUpperCase();
+
+    let title = a.title || a.name || "Mission";
+    let line = "No active mission";
+
+    if (status === "RUNNING") line = `Ready in <b>${fmtLeft(a.leftSec ?? a.left_sec ?? 0)}</b>`;
+    if (status === "READY")   line = `<b>Ready</b> — resolve now`;
+    if (status === "DONE")    line = `<b>Done</b>`;
 
     box.innerHTML = `
       <div class="ah-row" style="justify-content:space-between; gap:10px;">
         <div>
-          <div class="ah-title">${esc(a.title || "Mission")}</div>
+          <div class="ah-title">${esc(title)}</div>
           <div class="ah-muted" style="margin-top:4px;">${line}</div>
           ${a.readyAt ? `<div class="ah-muted" style="margin-top:2px;">Ready at: ${esc(a.readyAt)}</div>` : ""}
         </div>
@@ -344,17 +291,17 @@
   }
 
   function render() {
-    if (!_root) return;
-
     const payload = normalizePayload(_state);
     if (!payload || typeof payload !== "object") {
-      renderError("Bad payload", JSON.stringify(_state).slice(0, 800));
+      renderError("Bad payload", JSON.stringify(_state).slice(0, 900));
       return;
     }
 
     const offers = Array.isArray(payload.offers) ? payload.offers : [];
     const active = payload.active || { status: "NONE" };
     const last = payload.lastResolve || null;
+
+    if (!_root) return;
 
     _root.innerHTML = `
       <div class="ah-card" id="missionsActiveBox"></div>
@@ -386,46 +333,62 @@
   function renderOffer(o, active) {
     const tier = String(o?.tier || "");
     const label = String(o?.label || tier || "Tier");
-    const dur = o?.durationLabel || (o?.durationSec ? `${Math.round(o.durationSec / 60)}m` : "—");
+    const title = String(o?.title || "");
+    const desc  = String(o?.desc || "");
 
-    const rp = o?.rewardPreview || {};
-    const xp = rp.xp ?? "?";
-    const bones = rp.bones ?? "?";
-    const rolls = (rp.rolls ?? rp.loot_rolls ?? "?");
+    const dur = fmtDur(o?.durationSec);
+    const tierTime = String(o?.tierTime || "");
+    const durTxt = tierTime ? `${dur} (${tierTime})` : dur;
 
-    const disabled = (active?.status && active.status !== "NONE") ? "disabled" : "";
+    const xp = o?.reward?.xp ?? "?";
+    const bones = o?.reward?.bones ?? "?";
+    const rolls = o?.lootRolls ?? o?.loot_rolls ?? "?";
+
+    const offerId = String(o?.offerId || o?.id || "");
+    const disabled = (active?.status && String(active.status).toUpperCase() !== "NONE") ? "disabled" : "";
 
     return `
       <div class="ah-item">
         <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-          <div>
-            <div class="ah-title">${esc(label)} <span class="ah-muted">(${esc(dur)})</span></div>
-            <div class="ah-muted" style="margin-top:4px;">
+          <div style="min-width:0;">
+            <div class="ah-title">${esc(label)} <span class="ah-muted">(${esc(durTxt)})</span></div>
+            ${title ? `<div class="ah-muted" style="margin-top:6px;"><b>${esc(title)}</b></div>` : ""}
+            ${desc ? `<div class="ah-muted" style="margin-top:4px;">${esc(desc)}</div>` : ""}
+            <div class="ah-muted" style="margin-top:6px;">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
             </div>
           </div>
-          <button type="button" class="ah-btn" data-act="start" data-tier="${esc(tier)}" data-offer="${esc(o?.id || "")}" ${disabled}>Start</button>
+          <button type="button" class="ah-btn"
+            data-act="start"
+            data-tier="${esc(tier)}"
+            data-offer="${esc(offerId)}"
+            ${disabled}
+          >Start</button>
         </div>
       </div>
     `;
   }
 
   function renderLast(last) {
-    const victory = last.victory ? "✅ Victory" : "❌ Defeat";
-    const moon = last.moonstone ? " · 🌙 Moonstone Orb" : "";
-    const drops = Array.isArray(last.fullDrops) ? last.fullDrops : [];
+    const res = String(last?.result || "").toLowerCase();
+    const badge = (res === "victory") ? "✅ Victory" : (res ? "❌ Defeat" : "—");
+
+    const name = last?.name ? ` · <b>${esc(last.name)}</b>` : "";
+    const when = last?.ts ? ` · <span class="ah-muted">${esc(new Date(last.ts * 1000).toLocaleString())}</span>` : "";
+
+    const rewardMsg = String(last?.rewardMsg || "");
+    const lootMsg = String(last?.lootMsg || "");
+    const tokenMsg = String(last?.tokenLootMsg || "");
+
+    const summary = [rewardMsg, lootMsg, tokenMsg].filter(Boolean).join("");
+
     return `
       <div class="ah-card" style="margin-top:10px;">
         <div class="ah-title">Last Resolve</div>
         <div class="ah-muted" style="margin-top:6px;">
-          ${esc(victory)} · Tier: <b>${esc(last.tier || "?")}</b> · XP: <b>${esc(last.xp ?? 0)}</b> · Bones: <b>${esc(last.bones ?? 0)}</b>${moon}
+          ${badge}${name}${when}
         </div>
-        ${last.summary ? `<div class="ah-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(last.summary)}</div>` : ""}
-        ${drops.length ? `
-          <div class="ah-muted" style="margin-top:8px;">
-            Full drops: ${drops.map(d => `<b>${esc(d.name || d.key || "item")}</b>`).join(", ")}
-          </div>` : ""
-        }
+        ${summary ? `<div class="ah-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(summary)}</div>` : ""}
       </div>
     `;
   }
