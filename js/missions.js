@@ -3,10 +3,9 @@
 //   POST /webapp/missions/state  { run_id }
 //   POST /webapp/missions/action { action:"refresh_offers"|"start"|"resolve", tier?, offerId?, run_id }
 //
-// UI will degrade gracefully if endpoint returns 404 (shows "backend offline").
+// UI degrades gracefully if endpoint returns 404 (shows "backend offline").
 
 (function () {
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const esc = (s) => String(s ?? "")
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
@@ -34,7 +33,6 @@
     _root = el("missionsRoot");
     if (_modal && _root) return;
 
-    // Create minimal modal if missing
     const wrap = document.createElement("div");
     wrap.innerHTML = `
       <div id="missionsModal" class="ah-modal-backdrop" style="display:none;">
@@ -57,8 +55,7 @@
       const t = e.target;
       if (t?.dataset?.act === "close") close();
       if (t === _modal) close(); // click outside
-    });
-    _modal.addEventListener("click", (e) => {
+
       const btn = e.target?.closest?.("button[data-act]");
       if (!btn) return;
 
@@ -87,9 +84,10 @@
   function startTick() {
     stopTick();
     _tick = setInterval(() => {
-      if (!_state?.data?.active) return;
-      // local countdown tick without refetch spam
-      const a = _state.data.active;
+      const payload = normalizePayload(_state);
+      const a = payload?.active;
+      if (!a) return;
+
       if (a.status === "RUNNING" && typeof a.leftSec === "number") {
         a.leftSec = Math.max(0, a.leftSec - 1);
         if (a.leftSec === 0) a.status = "READY";
@@ -126,13 +124,23 @@
 
   async function api(path, body) {
     if (!_apiPost) throw new Error("Missions: apiPost missing");
-    try {
-      return await _apiPost(path, body);
-    } catch (e) {
-      // apiPost throws on non-2xx; show something useful
-      const msg = (e && (e.message || String(e))) || "Request failed";
-      throw new Error(msg);
+    const res = await _apiPost(path, body);
+    // jeśli backend zwraca ok:false, pokaż to jako błąd UI (czytelne w testach)
+    if (res && typeof res === "object" && res.ok === false) {
+      const reason = res.reason || res.error || "NOT_OK";
+      throw new Error(String(reason));
     }
+    return res;
+  }
+
+  function normalizePayload(res) {
+    if (!res || typeof res !== "object") return null;
+    // najczęstsze: { ok:true, data:{...} }
+    if (res.data && typeof res.data === "object") return res.data;
+    // czasem: { ok:true, payload:{...} }
+    if (res.payload && typeof res.payload === "object") return res.payload;
+    // fallback: sam obiekt
+    return res;
   }
 
   async function loadState() {
@@ -142,9 +150,7 @@
       _state = res;
       render();
     } catch (e) {
-      const msg = String(e?.message || e || "");
-      // If endpoint not deployed, apiPost usually throws; we show "backend offline"
-      renderError("Missions backend offline (404?)", msg);
+      renderError("Missions backend offline (404?)", String(e?.message || e || ""));
     }
   }
 
@@ -152,7 +158,7 @@
     try {
       const res = await api("/webapp/missions/action", {
         action: "refresh_offers",
-        run_id: rid("m:refresh")
+        run_id: rid("m:refresh"),
       });
       _state = res;
       render();
@@ -167,7 +173,7 @@
         action: "start",
         tier,
         offerId,
-        run_id: rid("m:start")
+        run_id: rid("m:start"),
       });
       _state = res;
       render();
@@ -180,7 +186,7 @@
     try {
       const res = await api("/webapp/missions/action", {
         action: "resolve",
-        run_id: rid("m:resolve")
+        run_id: rid("m:resolve"),
       });
       _state = res;
       render();
@@ -199,6 +205,7 @@
   function paintActive(a) {
     const box = el("missionsActiveBox");
     if (!box) return;
+
     const status = a.status || "NONE";
     let line = "";
     if (status === "RUNNING") line = `Ready in <b>${fmtLeft(a.leftSec)}</b>`;
@@ -222,11 +229,9 @@
   }
 
   function render() {
-    const data = _state?.data || _state?.data?.data || _state?.data || _state; // be forgiving
-    // expected: { ok:true, data:{ offers, active, lastResolve } }
-    const payload = (_state && _state.data) ? _state.data : (data && data.data ? data.data : data);
+    const payload = normalizePayload(_state);
     if (!payload || typeof payload !== "object") {
-      renderError("Bad payload", JSON.stringify(_state).slice(0, 600));
+      renderError("Bad payload", JSON.stringify(_state).slice(0, 800));
       return;
     }
 
@@ -263,9 +268,14 @@
 
   function renderOffer(o, active) {
     const tier = String(o?.tier || "");
-    const label = String(o?.label || tier);
-    const dur = o?.durationLabel || (o?.durationSec ? `${Math.round(o.durationSec / 60)}m` : "");
+    const label = String(o?.label || tier || "Tier");
+    const dur = o?.durationLabel || (o?.durationSec ? `${Math.round(o.durationSec / 60)}m` : "—");
+
     const rp = o?.rewardPreview || {};
+    const xp = rp.xp ?? "?";
+    const bones = rp.bones ?? "?";
+    const rolls = (rp.rolls ?? rp.loot_rolls ?? "?");
+
     const disabled = (active?.status && active.status !== "NONE") ? "disabled" : "";
 
     return `
@@ -274,10 +284,10 @@
           <div>
             <div class="ah-title">${esc(label)} <span class="ah-muted">(${esc(dur)})</span></div>
             <div class="ah-muted" style="margin-top:4px;">
-              XP: <b>${esc(rp.xp || "?")}</b> · Bones: <b>${esc(rp.bones || "?")}</b> · Rolls: <b>${esc(rp.rolls ?? "?")}</b>
+              XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
             </div>
           </div>
-          <button type="button" class="ah-btn" data-act="start" data-tier="${esc(tier)}" data-offer="${esc(o.id || "")}" ${disabled}>Start</button>
+          <button type="button" class="ah-btn" data-act="start" data-tier="${esc(tier)}" data-offer="${esc(o?.id || "")}" ${disabled}>Start</button>
         </div>
       </div>
     `;
@@ -285,7 +295,7 @@
 
   function renderLast(last) {
     const victory = last.victory ? "✅ Victory" : "❌ Defeat";
-    const moon = last.moonstone ? " · 🌑 Moonstone Orb" : "";
+    const moon = last.moonstone ? " · 🌙 Moonstone Orb" : "";
     const drops = Array.isArray(last.fullDrops) ? last.fullDrops : [];
     return `
       <div class="ah-card" style="margin-top:10px;">
@@ -310,10 +320,5 @@
     log("init ok");
   }
 
-  window.Missions = {
-    init,
-    open,
-    close,
-    reload: loadState,
-  };
+  window.Missions = { init, open, close, reload: loadState };
 })();
