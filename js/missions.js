@@ -28,37 +28,66 @@
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
-  function ensureModal() {
-    _modal = el("missionsModal");
-    _root = el("missionsRoot");
-    if (_modal && _root) return;
+ function ensureModal() {
+    // ✅ Preferuj istniejący sheet z index.html:
+    // <div id="missionsBack"> ... <div id="missionsRoot"> ... </div>
+    _modal = el("missionsBack") || el("missionsModal");
+    _root  = el("missionsRoot");
 
+    // Jeśli masz missionsBack ale nie masz missionsRoot, to nie ma gdzie renderować
+    if (_modal && !_root) {
+      console.warn("[Missions] missions backdrop exists but #missionsRoot missing");
+    }
+
+    if (_modal && _root) {
+      // twarde style żeby było NA WIERZCHU i widoczne nawet bez CSS
+      try {
+        _modal.style.position = _modal.style.position || "fixed";
+        _modal.style.inset = _modal.style.inset || "0";
+        _modal.style.zIndex = _modal.style.zIndex || "999999";
+      } catch (_) {}
+      return;
+    }
+
+    // Fallback: jeśli nie masz sheet w index.html, tworzymy minimalny modal
     const wrap = document.createElement("div");
     wrap.innerHTML = `
-      <div id="missionsModal" class="ah-modal-backdrop" style="display:none;">
-        <div class="ah-modal">
-          <div class="ah-modal-head">
-            <div class="ah-modal-title">Missions</div>
-            <button type="button" class="ah-icon-btn" data-act="close" aria-label="Close">✕</button>
+      <div id="missionsModal" style="
+        display:none; position:fixed; inset:0; z-index:999999;
+        background:rgba(0,0,0,.65); align-items:center; justify-content:center;
+      ">
+        <div style="
+          width:min(560px, calc(100vw - 24px));
+          max-height:calc(100vh - 24px);
+          overflow:auto;
+          background:rgba(20,20,24,.96);
+          border:1px solid rgba(255,255,255,.10);
+          border-radius:16px;
+          box-shadow:0 20px 70px rgba(0,0,0,.55);
+          padding:14px;
+        ">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div style="font-weight:700;">Missions</div>
+            <button type="button" data-act="close" style="
+              border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer;
+            ">✕</button>
           </div>
-          <div class="ah-modal-body">
-            <div id="missionsRoot"></div>
-          </div>
+          <div style="margin-top:12px;" id="missionsRoot"></div>
         </div>
       </div>
     `;
     document.body.appendChild(wrap.firstElementChild);
+
     _modal = el("missionsModal");
-    _root = el("missionsRoot");
+    _root  = el("missionsRoot");
 
     _modal.addEventListener("click", (e) => {
-      const t = e.target;
-      if (t?.dataset?.act === "close") close();
-      if (t === _modal) close(); // click outside
+      if (e.target === _modal) close();
+    });
 
+    _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act]");
       if (!btn) return;
-
       const act = btn.dataset.act;
       if (act === "refresh") doRefresh();
       if (act === "start") doStart(btn.dataset.tier || "", btn.dataset.offer || "");
@@ -69,7 +98,17 @@
 
   function open() {
     ensureModal();
-    _modal.style.display = "block";
+
+    console.log("[Missions] open(): modal=", _modal?.id, "root=", !!_root);
+
+    // ✅ Jeśli masz swój sheet missionsBack + nav stack → użyj tego
+    if (_modal && _modal.id === "missionsBack") {
+      _modal.style.display = "flex";
+      try { window.navOpen?.("missionsBack"); } catch (_) {}
+    } else if (_modal) {
+      _modal.style.display = "flex"; // dla fallback modala
+    }
+
     renderLoading("Loading missions…");
     loadState();
     startTick();
@@ -77,7 +116,14 @@
 
   function close() {
     if (!_modal) return;
-    _modal.style.display = "none";
+
+    if (_modal.id === "missionsBack") {
+      try { window.navClose?.("missionsBack"); } catch (_) {}
+      _modal.style.display = "none";
+    } else {
+      _modal.style.display = "none";
+    }
+
     stopTick();
   }
 
