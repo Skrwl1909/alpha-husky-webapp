@@ -2504,7 +2504,6 @@ const actions = {
     if (!DATA) loadMapData();
     loadPlayerState();
   },
-  ".btn.mission": () => (window.Missions?.open?.() || window.openMissions?.()),
   ".btn.inventory": () => window.Inventory?.open?.(),
   ".btn.char": () => sendAction("char_open"),
   ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
@@ -2561,6 +2560,25 @@ document.addEventListener("click", (e) => {
     });
 });
 
+  /* ✅ Missions: delegated click (bo przycisk bywa rerenderowany) */
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.(".btn.mission, [data-action='missions'], [data-action='mission']");
+  if (!btn) return;
+
+  e.preventDefault();
+
+  // (opcjonalnie) jeśli masz nav stack i panel boczny – domknij
+  try { window.navCloseTop?.(); } catch (_) {}
+
+  try {
+    const opened = (window.Missions?.open?.() || (typeof window.openMissions === "function" && window.openMissions()));
+    if (!opened) console.warn("[Missions] open() not available yet");
+  } catch (err) {
+    console.error("[Missions] open failed", err);
+    try { window.tg?.showAlert?.("Missions failed to open"); } catch (_) {}
+  }
+});    
+      
 /* === MAP close === */
 document.getElementById("closeMap")?.addEventListener("click", () => {
   mapBack.style.display = "none";
@@ -2862,6 +2880,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
