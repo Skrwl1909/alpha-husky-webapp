@@ -28,28 +28,95 @@
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
- function ensureModal() {
-    // ✅ Preferuj istniejący sheet z index.html:
-    // <div id="missionsBack"> ... <div id="missionsRoot"> ... </div>
+  // =========================
+  // PATCH: hard visibility + works with missionsBack/missionsRoot
+  // =========================
+  function injectStylesOnce() {
+    if (document.getElementById("ah-missions-style")) return;
+    const st = document.createElement("style");
+    st.id = "ah-missions-style";
+    st.textContent = `
+      /* Missions hard-visibility fallback */
+      #missionsBack, #missionsModal { color: #fff; }
+      #missionsRoot { color:#fff; }
+      .ah-card { background: rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; }
+      .ah-title { font-weight:700; font-size:16px; }
+      .ah-muted { opacity:.8; font-size:13px; }
+      .ah-row { display:flex; align-items:center; }
+      .ah-btn { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12); color:#fff; border-radius:12px; padding:10px 12px; font-weight:700; }
+      .ah-btn.ghost { background: transparent; }
+      .ah-list { display:flex; flex-direction:column; gap:8px; }
+      .ah-item { background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
+      .ah-icon-btn { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12); color:#fff; border-radius:10px; padding:8px 10px; }
+      button[disabled] { opacity:.45; pointer-events:none; }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function ensureModal() {
+    injectStylesOnce();
+
+    // Prefer your existing HTML IDs (missionsBack + missionsRoot)
     _modal = el("missionsBack") || el("missionsModal");
     _root  = el("missionsRoot");
 
-    // Jeśli masz missionsBack ale nie masz missionsRoot, to nie ma gdzie renderować
-    if (_modal && !_root) {
-      console.warn("[Missions] missions backdrop exists but #missionsRoot missing");
-    }
+    // Close button if exists
+    const closeBtn = el("closeMissions") || (_modal ? _modal.querySelector?.('[data-act="close"]') : null);
 
     if (_modal && _root) {
-      // twarde style żeby było NA WIERZCHU i widoczne nawet bez CSS
+      // hook close
+      if (closeBtn && !closeBtn.__ah_bound) {
+        closeBtn.__ah_bound = true;
+        closeBtn.addEventListener("click", (e) => { e.preventDefault(); close(); });
+      }
+
+      // backdrop click closes (only if click directly on backdrop)
+      if (!_modal.__ah_backdrop_bound) {
+        _modal.__ah_backdrop_bound = true;
+        _modal.addEventListener("click", (e) => {
+          if (e.target === _modal) close();
+        });
+      }
+
+      // hook your existing buttons if present
+      const btnRefresh = el("missionsRefresh");
+      const btnResolve = el("missionsResolve");
+
+      if (btnRefresh && !btnRefresh.__ah_bound) {
+        btnRefresh.__ah_bound = true;
+        btnRefresh.addEventListener("click", (e) => { e.preventDefault(); doRefresh(); });
+      }
+      if (btnResolve && !btnResolve.__ah_bound) {
+        btnResolve.__ah_bound = true;
+        btnResolve.addEventListener("click", (e) => { e.preventDefault(); doResolve(); });
+      }
+
+      // delegated actions inside modal (start/refresh/resolve/close)
+      if (!_modal.__ah_actions_bound) {
+        _modal.__ah_actions_bound = true;
+        _modal.addEventListener("click", (e) => {
+          const btn = e.target?.closest?.("button[data-act]");
+          if (!btn) return;
+
+          const act = btn.dataset.act;
+          if (act === "refresh") doRefresh();
+          if (act === "start") doStart(btn.dataset.tier || "", btn.dataset.offer || "");
+          if (act === "resolve") doResolve();
+          if (act === "close") close();
+        });
+      }
+
+      // make sure it's on top
       try {
         _modal.style.position = _modal.style.position || "fixed";
         _modal.style.inset = _modal.style.inset || "0";
         _modal.style.zIndex = _modal.style.zIndex || "999999";
       } catch (_) {}
+
       return;
     }
 
-    // Fallback: jeśli nie masz sheet w index.html, tworzymy minimalny modal
+    // Fallback: create minimal modal if missing in HTML
     const wrap = document.createElement("div");
     wrap.innerHTML = `
       <div id="missionsModal" style="
@@ -68,9 +135,7 @@
         ">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <div style="font-weight:700;">Missions</div>
-            <button type="button" data-act="close" style="
-              border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer;
-            ">✕</button>
+            <button type="button" data-act="close" class="ah-icon-btn">✕</button>
           </div>
           <div style="margin-top:12px;" id="missionsRoot"></div>
         </div>
@@ -83,9 +148,6 @@
 
     _modal.addEventListener("click", (e) => {
       if (e.target === _modal) close();
-    });
-
-    _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act]");
       if (!btn) return;
       const act = btn.dataset.act;
@@ -101,17 +163,23 @@
 
     console.log("[Missions] open(): modal=", _modal?.id, "root=", !!_root);
 
-    // ✅ Jeśli masz swój sheet missionsBack + nav stack → użyj tego
-    if (_modal && _modal.id === "missionsBack") {
+    if (!_modal || !_root) {
+      console.warn("[Missions] open(): missing modal/root");
+      return false;
+    }
+
+    // If you use nav stack with missionsBack
+    if (_modal.id === "missionsBack") {
       _modal.style.display = "flex";
       try { window.navOpen?.("missionsBack"); } catch (_) {}
-    } else if (_modal) {
-      _modal.style.display = "flex"; // dla fallback modala
+    } else {
+      _modal.style.display = "flex";
     }
 
     renderLoading("Loading missions…");
     loadState();
     startTick();
+    return true;
   }
 
   function close() {
@@ -134,6 +202,7 @@
       const a = payload?.active;
       if (!a) return;
 
+      // local countdown tick without refetch spam
       if (a.status === "RUNNING" && typeof a.leftSec === "number") {
         a.leftSec = Math.max(0, a.leftSec - 1);
         if (a.leftSec === 0) a.status = "READY";
@@ -148,6 +217,7 @@
   }
 
   function renderLoading(msg) {
+    if (!_root) return;
     _root.innerHTML = `
       <div class="ah-card">
         <div class="ah-muted">${esc(msg)}</div>
@@ -156,6 +226,7 @@
   }
 
   function renderError(title, detail) {
+    if (!_root) return;
     _root.innerHTML = `
       <div class="ah-card">
         <div class="ah-title">${esc(title)}</div>
@@ -171,7 +242,8 @@
   async function api(path, body) {
     if (!_apiPost) throw new Error("Missions: apiPost missing");
     const res = await _apiPost(path, body);
-    // jeśli backend zwraca ok:false, pokaż to jako błąd UI (czytelne w testach)
+
+    // If backend returns ok:false, show as UI error (useful during tests)
     if (res && typeof res === "object" && res.ok === false) {
       const reason = res.reason || res.error || "NOT_OK";
       throw new Error(String(reason));
@@ -181,12 +253,9 @@
 
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
-    // najczęstsze: { ok:true, data:{...} }
-    if (res.data && typeof res.data === "object") return res.data;
-    // czasem: { ok:true, payload:{...} }
+    if (res.data && typeof res.data === "object") return res.data;       // { ok:true, data:{...} }
     if (res.payload && typeof res.payload === "object") return res.payload;
-    // fallback: sam obiekt
-    return res;
+    return res; // fallback
   }
 
   async function loadState() {
@@ -275,6 +344,8 @@
   }
 
   function render() {
+    if (!_root) return;
+
     const payload = normalizePayload(_state);
     if (!payload || typeof payload !== "object") {
       renderError("Bad payload", JSON.stringify(_state).slice(0, 800));
@@ -305,7 +376,7 @@
       ${last ? renderLast(last) : ""}
 
       <div class="ah-muted" style="margin-top:10px; text-align:center;">
-        Missions UI ready. Backend routes must be live (no 404) for actions to work.
+        Missions are backend-driven. If backend is offline you'll see an error here.
       </div>
     `;
 
