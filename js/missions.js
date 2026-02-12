@@ -35,8 +35,8 @@
     st.id = "missions-ui-css";
     st.textContent = `
       :root{
-        --missions-bg: url("mission_bg.png");
-        --missions-wait-bg: url("mission_waiting_bg.png");
+        --missions-bg: url("mission_bg.webp");
+        --missions-wait-bg: url("mission_waiting_bg.webp");
         --missions-dust: url("dust.png");
         --m-cyan: rgba(0,229,255,.85);
         --m-amber: rgba(255,176,0,.75);
