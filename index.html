@@ -2589,27 +2589,22 @@ document.addEventListener("click", (e) => {
     });
 });
 
-  /* ✅ Missions: delegated click (bo przycisk bywa rerenderowany) */
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest?.(".btn.mission, [data-action='missions'], [data-action='mission']");
+ document.addEventListener("click", async (e) => {
+  const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='mission'], [data-action='missions']");
   if (!btn) return;
 
   e.preventDefault();
+  console.log("[Missions] open requested");
 
-  // (opcjonalnie) jeśli masz nav stack/panel
   try { window.navCloseTop?.(); } catch (_) {}
 
   try {
     await ensureMissionsLoaded(apiPost, _tg, _dbg);
-
     if (window.Missions?.open) return window.Missions.open();
     if (typeof window.openMissions === "function") return window.openMissions();
-
-    console.warn("[Missions] open() not available after load");
-    try { window.tg?.showAlert?.("Missions module not ready"); } catch (_) {}
+    console.warn("[Missions] open() missing after load");
   } catch (err) {
     console.error("[Missions] load/open failed", err);
-    try { window.tg?.showAlert?.("Missions failed to load"); } catch (_) {}
   }
 });    
       
@@ -2914,6 +2909,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
