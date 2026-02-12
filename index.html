@@ -2504,7 +2504,7 @@ const actions = {
     if (!DATA) loadMapData();
     loadPlayerState();
   },
-  ".btn.mission": () => sendAction("mission_open", { level: 1 }),
+  ".btn.mission": () => (window.Missions?.open?.() || window.openMissions?.()),
   ".btn.inventory": () => window.Inventory?.open?.(),
   ".btn.char": () => sendAction("char_open"),
   ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
@@ -2862,6 +2862,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
