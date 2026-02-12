@@ -1813,6 +1813,35 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+   /* ===== MISSIONS: LAZY-LOAD (safe even if not in HTML) ===== */
+async function ensureMissionsLoaded(apiPost, tg, dbg) {
+  // jeśli już jest, tylko (re)init
+  if (window.Missions?.open) {
+    window.Missions?.init?.({ apiPost, tg, dbg });
+    return true;
+  }
+
+  const v = (window.WEBAPP_VER || Date.now());
+
+  await new Promise((resolve, reject) => {
+    // nie duplikuj
+    const already = Array.from(document.scripts || []).some(s =>
+      String(s.src || "").includes("/js/missions.js")
+    );
+    if (already) return resolve(true);
+
+    const s = document.createElement("script");
+    s.src = `/js/missions.js?v=${encodeURIComponent(v)}`;
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("missions.js load failed (404?)"));
+    document.head.appendChild(s);
+  });
+
+  window.Missions?.init?.({ apiPost, tg, dbg });
+  return !!window.Missions?.open;
+}   
+      
 /* ===== Updates: open on button click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest('#btnWhatsNew, .btn.whatsnew, [data-action="whatsnew"], .whatsnew-btn');
@@ -2880,6 +2909,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
