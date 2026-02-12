@@ -1815,32 +1815,83 @@ document.addEventListener("click", async (e) => {
 
    /* ===== MISSIONS: LAZY-LOAD (safe even if not in HTML) ===== */
 async function ensureMissionsLoaded(apiPost, tg, dbg) {
+  console.log("[Missions] ensureMissionsLoaded() start", {
+    hasMissions: !!window.Missions,
+    hasOpen: !!window.Missions?.open,
+    ver: window.WEBAPP_VER
+  });
+
   // jeśli już jest, tylko (re)init
   if (window.Missions?.open) {
     window.Missions?.init?.({ apiPost, tg, dbg });
+    console.log("[Missions] already loaded ✅");
     return true;
   }
 
   const v = (window.WEBAPP_VER || Date.now());
+  const src = `/js/missions.js?v=${encodeURIComponent(v)}`;
 
-  await new Promise((resolve, reject) => {
-    // nie duplikuj
-    const already = Array.from(document.scripts || []).some(s =>
-      String(s.src || "").includes("/js/missions.js")
-    );
-    if (already) return resolve(true);
+  // jeśli skrypt już jest w DOM, ale obiekt nie powstał (np. error w missions.js)
+  const already = Array.from(document.scripts || []).some(s =>
+    String(s.src || "").includes("/js/missions.js")
+  );
 
-    const s = document.createElement("script");
-    s.src = `/js/missions.js?v=${encodeURIComponent(v)}`;
-    s.async = true;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("missions.js load failed (404?)"));
-    document.head.appendChild(s);
-  });
+  if (!already) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
 
+      const to = setTimeout(() => {
+        reject(new Error("missions.js load timeout (8s)"));
+      }, 8000);
+
+      s.onload = () => {
+        clearTimeout(to);
+        console.log("[Missions] missions.js loaded ✅", src);
+        resolve(true);
+      };
+
+      s.onerror = () => {
+        clearTimeout(to);
+        reject(new Error("missions.js load failed (404?) " + src));
+      };
+
+      document.head.appendChild(s);
+    });
+  } else {
+    console.log("[Missions] script tag already present (no re-inject)");
+  }
+
+  // init after load
   window.Missions?.init?.({ apiPost, tg, dbg });
-  return !!window.Missions?.open;
-}   
+
+  const ok = !!window.Missions?.open;
+  console.log("[Missions] after load, has open =", ok);
+
+  if (!ok) throw new Error("missions.js loaded but window.Missions.open is still missing (check console errors inside missions.js)");
+  return true;
+}
+
+/* ✅ Missions: delegated click (bo przycisk bywa rerenderowany) */
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='missions'], [data-action='mission']");
+  if (!btn) return;
+
+  e.preventDefault();
+  console.log("[Missions] open requested");
+
+  try { window.navCloseTop?.(); } catch (_) {}
+
+  try {
+    await ensureMissionsLoaded(apiPost, _tg, _dbg);
+    console.log("[Missions] calling open()");
+    window.Missions.open();
+  } catch (err) {
+    console.error("[Missions] load/open failed", err);
+    try { window.tg?.showAlert?.("Missions failed to load/open"); } catch (_) {}
+  }
+}, true); // <- capture, żeby nic nie zjadło clicka   
       
 /* ===== Updates: open on button click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
@@ -2909,6 +2960,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
