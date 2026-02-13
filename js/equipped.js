@@ -57,6 +57,10 @@
         overflow:hidden;
         background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
         box-shadow:0 14px 40px rgba(0,0,0,.7);
+
+        /* ✅ kontrola rozmiaru ikon (HOTSPOT) */
+        --equip-icon-inset: 1px;     /* było 6px -> zmniejszało */
+        --equip-icon-zoom: 122%;     /* lekki zoom, żeby padding w assetach nie zmniejszał */
       }
 
       /* upewnij się że obraz jest "pod" overlayem */
@@ -93,7 +97,7 @@
       }
 
       .equip-hotspot:active{
-        box-shadow:0 0 0 2px rgba(0,229,255,.75) inset, 0 0 18px rgba(0,229,255,.25);
+        box-shadow:0 0 0 2px rgba(0,229,255,.78) inset, 0 0 22px rgba(0,229,255,.30);
         background-color: rgba(0,229,255,.10);
       }
       .equip-hotspot.is-empty:active{
@@ -121,62 +125,63 @@
       /* Hotspot -> icon layer (background) */
       .equip-hotspot .equip-icon{
         position:absolute;
-        inset:6px; /* było 10px -> zmniejszało ikonę */
+        inset: var(--equip-icon-inset);
         pointer-events:none;
         background-repeat:no-repeat;
         background-position:center;
-        background-size:contain;
+        background-size: var(--equip-icon-zoom);
 
+        /* delikatny baseline (w razie braku rarity) */
         filter:
-          drop-shadow(0 0 6px rgba(0,255,255,.18))
-          drop-shadow(0 0 14px rgba(0,255,255,.08));
+          drop-shadow(0 0 8px rgba(0,255,255,.20))
+          drop-shadow(0 0 18px rgba(0,255,255,.10));
         will-change: filter;
       }
 
-      /* rarity ladder (hotspot) */
+      /* rarity ladder (hotspot) — mocniejszy baseline */
       .equip-hotspot[data-rarity="common"] .equip-icon{
-        filter: drop-shadow(0 0 5px rgba(255,255,255,.12)) drop-shadow(0 0 12px rgba(255,255,255,.06));
+        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
       }
       .equip-hotspot[data-rarity="uncommon"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(120,255,120,.22)) drop-shadow(0 0 14px rgba(120,255,120,.10));
+        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
       }
       .equip-hotspot[data-rarity="rare"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(90,170,255,.22)) drop-shadow(0 0 14px rgba(90,170,255,.10));
+        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
       }
       .equip-hotspot[data-rarity="epic"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(190,120,255,.22)) drop-shadow(0 0 14px rgba(190,120,255,.10));
+        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
       }
       .equip-hotspot[data-rarity="legendary"] .equip-icon{
-        filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
+        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
       }
 
-      /* ✅ boost zachowuje kolor rzadkości (hotspot) */
+      /* ✅ boost zachowuje kolor rzadkości (hotspot) — MOCNIEJSZY */
       .equip-hotspot.is-selected[data-rarity="common"] .equip-icon,
       .equip-hotspot.is-equipped[data-rarity="common"] .equip-icon{
-        filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 0 16px rgba(255,255,255,.08));
+        filter: drop-shadow(0 0 10px rgba(255,255,255,.28)) drop-shadow(0 0 26px rgba(255,255,255,.14));
       }
       .equip-hotspot.is-selected[data-rarity="uncommon"] .equip-icon,
       .equip-hotspot.is-equipped[data-rarity="uncommon"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(120,255,120,.32)) drop-shadow(0 0 18px rgba(120,255,120,.14));
+        filter: drop-shadow(0 0 12px rgba(120,255,120,.42)) drop-shadow(0 0 30px rgba(120,255,120,.20));
       }
       .equip-hotspot.is-selected[data-rarity="rare"] .equip-icon,
       .equip-hotspot.is-equipped[data-rarity="rare"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(90,170,255,.32)) drop-shadow(0 0 18px rgba(90,170,255,.14));
+        filter: drop-shadow(0 0 12px rgba(90,170,255,.42)) drop-shadow(0 0 30px rgba(90,170,255,.20));
       }
       .equip-hotspot.is-selected[data-rarity="epic"] .equip-icon,
       .equip-hotspot.is-equipped[data-rarity="epic"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(190,120,255,.32)) drop-shadow(0 0 18px rgba(190,120,255,.14));
+        filter: drop-shadow(0 0 12px rgba(190,120,255,.42)) drop-shadow(0 0 30px rgba(190,120,255,.20));
       }
       .equip-hotspot.is-selected[data-rarity="legendary"] .equip-icon,
       .equip-hotspot.is-equipped[data-rarity="legendary"] .equip-icon{
-        filter: drop-shadow(0 0 9px rgba(255,190,90,.34)) drop-shadow(0 0 20px rgba(255,190,90,.16));
+        filter: drop-shadow(0 0 14px rgba(255,190,90,.46)) drop-shadow(0 0 34px rgba(255,190,90,.22));
       }
 
       /* === Icon boxes (lista + inspect) === */
       .equip-icon-box{
         background: rgba(0,0,0,.40);
         display:block;
-        overflow: visible !important; /* 🔥 KLUCZ: NIE UCINAJ GLOW */
+        overflow: visible !important; /* 🔥 KLUCZ: NIE UCINA GLOW */
         flex-shrink:0;
       }
       .equip-icon-box img{
@@ -184,19 +189,23 @@
         height:100%;
         object-fit:contain;
         display:block;
+
+        /* ✅ lekki zoom, żeby padding w plikach nie zmniejszał ikon */
+        transform: scale(1.08);
+        transform-origin: center;
       }
 
-      /* Lista slotów — 32px */
+      /* Lista slotów — było 32px, dajemy większe */
       .equip-icon-box.sm{
-        width:32px;
-        height:32px;
-        border-radius:8px;
+        width:38px;
+        height:38px;
+        border-radius:10px;
       }
       .equip-icon-box.sm img{
-        border-radius:8px;
+        border-radius:10px;
       }
 
-      /* Inspect — 72px */
+      /* Inspect — 72px (zostaje) */
       .equip-icon-box.lg{
         width:72px;
         height:72px;
@@ -206,45 +215,62 @@
         border-radius:14px;
       }
 
-      /* Lista slotów — glow na <img> */
+      /* Lista slotów — baseline glow (mocniejszy) */
       .equip-slot-btn img.item-icon{
         filter:
-          drop-shadow(0 0 6px rgba(0,255,255,.18))
-          drop-shadow(0 0 14px rgba(0,255,255,.08));
+          drop-shadow(0 0 8px rgba(0,255,255,.20))
+          drop-shadow(0 0 18px rgba(0,255,255,.10));
         will-change: filter;
       }
 
       .equip-slot-btn[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 5px rgba(255,255,255,.12)) drop-shadow(0 0 12px rgba(255,255,255,.06));
+        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
       }
       .equip-slot-btn[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(120,255,120,.22)) drop-shadow(0 0 14px rgba(120,255,120,.10));
+        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
       }
       .equip-slot-btn[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(90,170,255,.22)) drop-shadow(0 0 14px rgba(90,170,255,.10));
+        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
       }
       .equip-slot-btn[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(190,120,255,.22)) drop-shadow(0 0 14px rgba(190,120,255,.10));
+        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
       }
       .equip-slot-btn[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
+        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
       }
 
-      /* ✅ boost zachowuje kolor rzadkości (lista) */
+      /* ✅ boost per rarity (lista) — MOCNIEJSZY */
       .equip-slot-btn.is-selected[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 0 16px rgba(255,255,255,.08));
+        filter: drop-shadow(0 0 10px rgba(255,255,255,.28)) drop-shadow(0 0 26px rgba(255,255,255,.14));
       }
       .equip-slot-btn.is-selected[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(120,255,120,.32)) drop-shadow(0 0 18px rgba(120,255,120,.14));
+        filter: drop-shadow(0 0 12px rgba(120,255,120,.42)) drop-shadow(0 0 30px rgba(120,255,120,.20));
       }
       .equip-slot-btn.is-selected[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(90,170,255,.32)) drop-shadow(0 0 18px rgba(90,170,255,.14));
+        filter: drop-shadow(0 0 12px rgba(90,170,255,.42)) drop-shadow(0 0 30px rgba(90,170,255,.20));
       }
       .equip-slot-btn.is-selected[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(190,120,255,.32)) drop-shadow(0 0 18px rgba(190,120,255,.14));
+        filter: drop-shadow(0 0 12px rgba(190,120,255,.42)) drop-shadow(0 0 30px rgba(190,120,255,.20));
       }
       .equip-slot-btn.is-selected[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 9px rgba(255,190,90,.34)) drop-shadow(0 0 20px rgba(255,190,90,.16));
+        filter: drop-shadow(0 0 14px rgba(255,190,90,.46)) drop-shadow(0 0 34px rgba(255,190,90,.22));
+      }
+
+      /* Inspect — też per rarity (dostaje data-rarity na boxie) */
+      .equip-icon-box[data-rarity="common"] img.item-icon{
+        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
+      }
+      .equip-icon-box[data-rarity="uncommon"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
+      }
+      .equip-icon-box[data-rarity="rare"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
+      }
+      .equip-icon-box[data-rarity="epic"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
+      }
+      .equip-icon-box[data-rarity="legendary"] img.item-icon{
+        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
       }
     `;
     document.head.appendChild(style);
@@ -319,10 +345,8 @@
   }
 
   function _bgCandidates(o) {
-    // jeśli masz już _iconCandidates/_assetOnApp w pliku – użyj ich
     if (typeof _iconCandidates === "function") return _iconCandidates(o);
 
-    // fallback minimalny (gdybyś nie miał)
     const raw = o?.icon || o?.img || o?.image || o?.image_path || o?.imageUrl || "";
     const key = String(o?.item_key || o?.key || o?.itemKey || o?.item || "").trim().toLowerCase();
     const isGear = !!o?.slot;
@@ -373,7 +397,6 @@
       im.src = u;
     };
 
-    // pewniaki, żeby nic nie "wyzerowało" widoczności
     el.style.setProperty("opacity", "1", "important");
     el.style.setProperty("visibility", "visible", "important");
     el.style.backgroundRepeat = "no-repeat";
@@ -782,13 +805,14 @@
         "<div style='font-size:13px;opacity:.8;'>No bonuses</div>";
 
       const starInfo = d.star_cap ? ` / ${d.star_cap}★ cap` : "";
+      const rarityKey = _normRarity(d.rarity);
 
       card.innerHTML = `
         <div style="display:flex;gap:12px;">
           ${
             iconUrl
               ? `
-          <div class="equip-icon-box lg">
+          <div class="equip-icon-box lg" data-rarity="${rarityKey}">
             <img src="${iconUrl}" class="item-icon">
           </div>`
               : ""
