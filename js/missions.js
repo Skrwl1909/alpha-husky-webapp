@@ -22,7 +22,7 @@
   let _dbg = false;
 
   let _modal = null; // #missionsBack or #missionsModal
-  let _root = null;  // #missionsRoot
+  let _root = null;  // #missionsRoot (IMPORTANT: always query inside modal)
   let _tick = null;
   let _state = null;
 
@@ -254,7 +254,8 @@
     ensureStyles();
 
     _modal = el("missionsBack") || el("missionsModal");
-    _root  = el("missionsRoot");
+    // ✅ PATCH A: always find missionsRoot INSIDE modal (avoid duplicate IDs in DOM)
+    _root  = _modal ? _modal.querySelector("#missionsRoot") : null;
 
     if (_modal && _root) {
       bindOnceModalClicks();
@@ -277,7 +278,7 @@
     document.body.appendChild(wrap.firstElementChild);
 
     _modal = el("missionsModal");
-    _root  = el("missionsRoot");
+    _root  = _modal ? _modal.querySelector("#missionsRoot") : null;
     bindOnceModalClicks();
   }
 
@@ -346,8 +347,28 @@
   // =========================
   let _legacyAnchor = null;
 
+  // ✅ PATCH B helper: some backends keep active mission in user_missions list
+  function _pickActiveFromList(list) {
+    if (!Array.isArray(list)) return null;
+    return list.find(m => {
+      const st = String(m?.state || m?.status || "").toLowerCase();
+      return st === "in_progress" || st === "running" || st === "active" || st === "completed" || st === "ready";
+    }) || null;
+  }
+
   function getActive(payload) {
-    const am = payload?.active_mission || payload?.activeMission || payload?.active || null;
+    // ✅ PATCH B: broaden where we look for active mission
+    const am =
+      payload?.active_mission ||
+      payload?.activeMission ||
+      payload?.active ||
+      payload?.current_mission ||
+      payload?.currentMission ||
+      payload?.mission ||
+      payload?.current ||
+      _pickActiveFromList(payload?.user_missions || payload?.userMissions || payload?.missions) ||
+      null;
+
     if (!am || typeof am !== "object") return { status: "NONE" };
 
     const title = am.title || am.name || am.label || "Mission";
@@ -358,7 +379,8 @@
       Number(am.ends_ts || am.ready_at_ts || am.ready_at || am.endsTs || 0) ||
       (started && dur ? (started + dur) : 0);
 
-    const stRaw = String(am.status || "").toUpperCase();
+    // ✅ PATCH B: state is often used instead of status
+    const stRaw = String(am.status || am.state || "").toUpperCase();
 
     if (ends) {
       const now = _nowSec();
@@ -589,6 +611,31 @@
     if (row) row.style.display = "none";
   }
 
+  // ✅ PATCH C helper: optimistic WAITING immediately after start (avoid backend delay blink)
+  function _optimisticStart(tier, offerId) {
+    const payload = normalizePayload(_state) || {};
+    const offers = Array.isArray(payload.offers) ? payload.offers : [];
+    const o = offers.find(x => String(x?.offerId || x?.id || x?.offer_id || "") === String(offerId));
+
+    const durSec = Number(o?.durationSec || o?.duration_sec || 0) || 60;
+    const started = Math.floor(_nowSec());
+    const title = String(o?.title || o?.label || tier || "Mission");
+
+    const next = {
+      ...payload,
+      active_mission: {
+        title,
+        started_ts: started,
+        duration_sec: durSec,
+        ends_ts: started + durSec,
+        status: "RUNNING",
+      }
+    };
+
+    _state = next;
+    render();
+  }
+
   // Main render (2 modes like Shakes & Fidget)
   function render() {
     if (!_root) return;
@@ -689,6 +736,13 @@
     try {
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
+
+      // ✅ small debug surface
+      try {
+        window.__AH_MISSIONS_STATE = res;
+        log("state keys:", Object.keys(normalizePayload(res) || {}));
+      } catch (_) {}
+
       render();
     } catch (e) {
       renderError("Missions backend error", String(e?.message || e || ""));
@@ -716,7 +770,12 @@
       });
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-      await loadState();
+
+      // ✅ PATCH C: show waiting immediately, then fetch real state shortly after
+      _optimisticStart(tier, offerId);
+      setTimeout(() => { loadState(); }, 400);
+      return;
+
     } catch (e) {
       const msg = String(e?.message || e || "");
 
