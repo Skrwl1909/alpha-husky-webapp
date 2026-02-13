@@ -118,14 +118,16 @@
          - glow controlled by UI: data-rarity + is-selected/is-equipped
          ========================================================= */
 
-      /* Hotspot -> icon layer (background) */
+      /* ✅ Hotspot -> icon layer (background) */
       .equip-hotspot .equip-icon{
         position:absolute;
-        inset:6px; /* było 10px -> zmniejszało ikonę */
+        inset:0;                 /* ✅ większa ikona (nie ucina) */
         pointer-events:none;
         background-repeat:no-repeat;
         background-position:center;
-        background-size:contain;
+
+        /* ✅ “padding” bez zmniejszania kontenera */
+        background-size: 96% 96%;
 
         filter:
           drop-shadow(0 0 6px rgba(0,255,255,.18))
@@ -353,7 +355,13 @@
     el.style.setProperty("visibility", "visible", "important");
     el.style.backgroundRepeat = "no-repeat";
     el.style.backgroundPosition = "center";
-    el.style.backgroundSize = "contain";
+
+    // ✅ ważne: jeśli to hotspot icon layer -> większe
+    if (el.classList && el.classList.contains("equip-icon")) {
+      el.style.backgroundSize = "96% 96%";
+    } else {
+      el.style.backgroundSize = "contain";
+    }
 
     tryOne();
   }
