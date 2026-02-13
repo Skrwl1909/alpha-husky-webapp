@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/assets/items/:path*",
+      "destination": "https://res.cloudinary.com/dnjwvxinh/image/upload/items/:path*"
+    },
+    {
+      "source": "/assets/equip/:path*",
+      "destination": "https://res.cloudinary.com/dnjwvxinh/image/upload/equip/:path*"
+    },
+    {
+      "source": "/assets/pets/:path*",
+      "destination": "https://res.cloudinary.com/dnjwvxinh/image/upload/pets/:path*"
+    },
+    {
+      "source": "/assets/skins/:path*",
+      "destination": "https://res.cloudinary.com/dnjwvxinh/image/upload/skins/:path*"
+    }
+  ]
+}
