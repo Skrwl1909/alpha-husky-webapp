@@ -1,233 +1,233 @@
-// /js/faq.js — complete, fixed, ready to paste
+// /js/faq.js — AAA FAQ (UI-aligned) — full file, ready to paste
 (function () {
   // ---------- tiny helpers ----------
   const $  = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-    // ---------- CONTENT (Twoje) ----------
+  // ---------- CONTENT (AAA / Alpha Husky — aligned to your current UI) ----------
   const CONTENT = [
     { key:"quickstart", title:"Quick Start", items:[
       { q:"🐺 What is Alpha Husky?",
-        a:"A lean, post-apocalyptic, tribal-tech Telegram mini-game and brand. We ship first, talk later. Play via the Telegram WebApp on top of Telegram chat." },
-      { q:"🧭 How do I start?",
-        a:"Open the Alpha Husky bot, tap Open WebApp, set your Profile, then explore the map. Run a Mission, test the Dojo, or challenge the Moon Lab fortress to earn Bones and materials." },
-      { q:"🔁 Core loop in one line",
-        a:"Missions/Dojo → earn materials → Forge shards → upgrade gear (and pets) → push deeper content (Moon Lab, quests, regions) → repeat. Momentum must be maintained." },
-      { q:"🎮 Is this a P2E or trading game?",
-        a:"No. Alpha Husky is first and foremost a game + universe. The token side is being prepared carefully; there is no promise of financial return and no paid hype meta." },
+        a:"A Telegram-native RPG loop: WebApp UI + bot core. Post-apocalyptic tribal-tech world, real progression, real economy tuning — built live with the Pack." },
+
+      { q:"🧭 How do I start (fast)?",
+        a:"Open the official bot → tap Open WebApp → set Profile → run Missions → craft gear in Forge → equip + upgrade → push Moon Lab / Quests." },
+
+      { q:"🧱 The core loop (one line)",
+        a:"Missions → materials/shards → Forge → equip/upgrade → stronger runs (Moon Lab / Quests / events) → repeat." },
+
+      { q:"🎮 Is this P2E or a trading game?",
+        a:"No. It’s a game first. No promises of profit, no guaranteed returns, no paid hype meta. Token utility (if/when) ships as utility — not a promise." },
     ]},
 
-    { key:"webapp", title:"WebApp & UI", items:[
-      { q:"📱 How do I open the game?",
-        a:"Go to the official Alpha Husky bot on Telegram and tap the bottom button (Open / Open Game). The dashboard, map, quests and most interactions live inside the WebApp." },
-      { q:"🕹️ What do the main buttons do?",
-        a:"Left column: Alpha Map, Missions, Inventory, Shop, Howlboard, Profile. Center: your hero card (skin + level). Right: Avatar, Skins, Character, Pets, Equipped, Feed, MyPets. At the bottom-left you’ll find the glowing FAQ button, and on the right the 📜 Quests launcher." },
-      { q:"🎥 Why is there a video background?",
-        a:"The video/animated background is just for vibe. If your device is slow or saving battery, the WebView may show only the static background instead – that’s normal. Gameplay is not affected." },
-      { q:"🌗 UI too bright / dark?",
-        a:"The WebApp reads your Telegram theme (dark / light) and colors. If something looks off, try switching Telegram to dark theme and reopen the game." },
+    { key:"ui", title:"WebApp UI (Where to click)", items:[
+      { q:"📱 Where is the game played?",
+        a:"Inside the Telegram WebApp. The bot still exists for commands and some flows, but the map + most interactions live in the WebApp." },
+
+      { q:"🧭 Main navigation (your layout)",
+        a:"Left rail: Map, Missions, Inventory, Shop, Howlboard, Profile.\nCenter: your hero card (skin + level).\nRight rail: Avatar/Skins, Character, Pets/MyPets, Equipped, Feed.\nBottom-left: the FAQ button.\nBottom-right: 📜 Quests launcher (Mission Board)." },
+
+      { q:"📜 Mission Board button (Quests)",
+        a:"That 📜 launcher is Quests (Mission Board). Accept tasks → progress by playing → claim rewards. It’s NOT the same as Missions." },
+
+      { q:"🎥 Background video / animated vibe",
+        a:"The background is for atmosphere. On some devices the WebView may show a static background (battery/performance) — gameplay is unaffected." },
+
+      { q:"🌗 Too bright / too dark?",
+        a:"The WebApp reads Telegram theme. If contrast looks off, switch Telegram to Dark theme and reopen the WebApp from the bot button." },
     ]},
 
-    { key:"commands", title:"Commands", items:[
-      { q:"📊 /stats",
-        a:"Shows your totals (base + pet + gear + sets view) and HP/XP bars. Internally we compute everything from a single pipeline so all modes (Missions, Moon Lab, Dojo) match." },
-      { q:"🛠️ /mystats",
-        a:"Interactive stat upgrades (+1 per tap) using your unspent points. Totals and HP are recalculated immediately." },
-      { q:"🦴 /feed",
-        a:"Feed your husky (standard cooldown). The 'Turbo Bone' (double_feed) item lets you eat twice in a row with no cooldown for a limited number of uses." },
-      { q:"🏷️ /setprofile or /setnick",
-        a:"Use the appropriate shop unlock, then adjust your nickname/color/glow. Some cosmetics and titles may be season- or item-gated." },
+    { key:"glossary", title:"Glossary (Read once)", items:[
+      { q:"✅ Missions vs Mission Board (Quests)",
+        a:"Missions = expeditions (start → wait → resolve loot).\nMission Board = Quests (accept → progress → claim rewards).\nTwo different systems." },
 
-      { q:"📜 All player commands (core)",
-        a:
-`• /start — start the game / onboarding
-• /setprofile — set up your displayed nickname
-• /stats — view your full stats & HP
-• /mystats — spend unspent stat points
-• /mission — start or check your solo missions
-• /inventory — view your items (gear, boxes…)
-• /materials — view Bones, Scrap, Rune Dust, Shards
-• /shop — browse and buy items
-• /feed — feed Alpha Husky and earn Bones
-• /howlboard — view the top of the Pack
-• /equip — equip an item to your character
-• /equipped — view your equipped gear
-• /pets — manage your pets
-• /achievements — check unlocked achievements
-• /daily — claim your daily presence / Bones (if enabled)
-• /huskyhelp — show a list of available commands (if enabled on this season)
+      { q:"🧾 Ledger (why we mention it)",
+        a:"Ledger is our economy truth layer. Bones/material changes are tracked in an append-only log. It reduces desyncs and supports Season 0 tracking." },
 
-Forge / inventory helpers:
-• /lock — lock an item type (protect from auto-salvage/dupe)
-• /unlock — unlock a previously locked item type
-• /locks — list your locked item types
-• /salvage — dismantle a chosen item into Scrap/Dust
-• /bulk_dismantle — bulk salvage by filter (e.g. rarity=common,uncommon keep=0)
-• /craft — craft gear from shards: /craft <slot> [count] [refine N]
+      { q:"🦴 Bones / 🔧 Scrap / 🧪 Rune Dust",
+        a:"Bones = main soft currency.\nScrap = crafting/upgrades.\nRune Dust = advanced upgrade paths and higher-tier systems (where enabled)." },
 
-Tips:
-• Example bulk: /bulk_dismantle rarity=common,uncommon keep=0
-• Example craft: /craft weapon 5 refine 2
-• Some commands are beta/seasonal; if the bot says \"not available\", it’s normal.` },
+      { q:"🔷 Shards",
+        a:"Slot fragments (weapon/armor/helmet/ring/offhand/cloak/collar/gloves/fangs, etc.). Craft real gear from shards in Forge → Shards." },
     ]},
 
-    { key:"map", title:"Map & Activities", items:[
-      { q:"🗺️ What can I do on the map?",
-        a:"Use the Alpha Map to access regions and buildings: Missions (solo/coop), Moon Lab Fortress (boss ladder), Dojo (training DPS timer), Mission Board (daily quests), Chain Gate (AFK runs), Shop/Forge huts and occasional event nodes." },
-      { q:"⏳ Why cooldowns?",
-        a:"Some activities (e.g., Moon Lab, AFK Chain Gate) use cooldowns to pace attempts, reward consistency instead of spam, and keep the in-game economy stable." },
-      { q:"🔒 Why is a region or building locked?",
-        a:"Regions can require key shards, milestones or story progress. If something is locked, the sheet will explain what you’re missing and often link you to Missions or Forge to fix it." },
+    { key:"missions", title:"Missions (Expeditions)", items:[
+      { q:"🧭 What are Missions?",
+        a:"Timed expeditions. Start one, wait for the timer, then resolve for Bones + materials + shard rolls (and occasional special drops/events)." },
+
+      { q:"⏳ Why can’t I resolve yet?",
+        a:"Because the timer isn’t finished. If you tap Resolve early, you should see remaining time / a ‘Ready at’ moment." },
+
+      { q:"🏆 What affects mission results?",
+        a:"Your totals (level + spent stats + gear + pet). A balanced upgraded set beats a single over-invested item." },
+
+      { q:"🧠 Best early progress advice",
+        a:"Run Missions daily, craft missing slots first, then upgrade ★ steadily. Salvage smart. Keep momentum." },
     ]},
 
-    { key:"afk", title:"AFK Chain Gate", items:[
-      { q:"⛓️ What is the Chain Gate?",
-        a:"An AFK expedition building on the map. You send your husky out for a longer run (e.g. 2–10h) and claim stable materials when the timer completes. Good for progress on busy days." },
-      { q:"🕒 Does AFK use energy or cost?",
-        a:"AFK routes have their own timers and may have entry costs or recommended power in future. The idea is: less clicking, but not strictly \"free\" — it plugs into the same economy as active Missions." },
-      { q:"⚙️ Didn’t get my AFK reward?",
-        a:"Make sure the timer finished, then use the Claim button in the WebApp. If it still looks wrong, take a screenshot and drop it in the Den — we’ll check logs and fix if needed." },
-    ]},
+    { key:"questboard", title:"Mission Board (Quests)", items:[
+      { q:"📜 What is Mission Board?",
+        a:"Quest system: accept tasks, progress by playing, then claim rewards. It’s the structure layer that nudges you into Missions/Dojo/Moon Lab loops." },
 
-    { key:"materials", title:"Materials & Ledger", items:[
-      { q:"🧪 Material types",
-        a:"• Bones (soft currency, ledger-based)\n• Scrap (crafting / upgrades)\n• Rune Dust (mainly from ★3+ or salvage)\n• Slot Shards (weapon/armor/helmet/ring/offhand/cloak/collar/gloves/fangs…)\n• Universal / Region Key Shards (for map unlocks and gates)." },
-      { q:"📦 How to get them?",
-        a:"Solo Missions, co-op content, Daily Quests, event rewards and boxes. Mystery/Premium/Legendary boxes grant multiple rolls for Bones/Scrap/Rune Dust/Shards; drops are written to the ledger first, then mirrored into your user data." },
-      { q:"🧾 What is the ledger?",
-        a:"An append-only log that tracks every change to your Bones/materials. It’s the single source of truth for Season 0 and the future token snapshot. Admin tools can re-check balances from the ledger at any time." },
-      { q:"📊 Where to check balances?",
-        a:"Open the WebApp (Materials view) or use /materials if enabled — values reflect the latest ledger-applied snapshot." }
-    ]},
+      { q:"🔁 Why do quests rotate?",
+        a:"To prevent one-button farming and keep the economy healthy. Some quests are daily, some repeatable, some story/event-gated." },
 
-    { key:"forge", title:"Forge & Shards", items:[
-      { q:"🔷 What are Shards?",
-        a:"Slot-specific fragments (weapon, armor, helmet, ring, offhand, cloak, collar, gloves, fangs, rune…). Use Forge → Shards in the WebApp or /craft in the bot to convert them into real gear." },
-      { q:"⚖️ How fair is crafting?",
-        a:"Crafting uses controlled RNG (e.g. 80/20 with pity every few attempts) plus optional refine bonus. Costs use Bones/Scrap and Rune Dust (from ★3) to keep progression fair and avoid hard pay-to-win edges." },
-      { q:"⭐ Stars, reforge, fuse?",
-        a:"Upgrades raise ★ up to 5. Reforge and Fuse exist with reasonable daily limits to prevent abuse and keep high-end items rare. ★5 milestones are tracked for telemetry and future rewards." },
-      { q:"🧹 Salvage, locks & auto-dupe",
-        a:"/salvage and /bulk_dismantle convert junk into Scrap/Dust. /lock and /locks protect your favorite item types from being auto-salvaged or auto-duped. Extra copies can become materials via auto-dupe systems, respecting your locks." },
-    ]},
-
-    { key:"stats", title:"Stats, HP & Leveling", items:[
-      { q:"📈 Where do my stats come from?",
-        a:"We use a single source of truth: base stats from your level + stats from equipped gear + pet bonuses → combined totals → combat. The same totals power Missions, Moon Lab, Dojo and more." },
-      { q:"❤️ How is HP calculated?",
-        a:"HP = 50 + 12×VIT (after base+gear+pet totals). This unified rule fixed the old inconsistencies between modes and makes survivability fully tied to your build." },
-      { q:"🆙 Leveling & XP",
-        a:"Level XP requirement grows linearly: need(lvl) = 100 + 25×(lvl−1). You gain XP from missions, quests and some events. Spend unspent stat points via /mystats to shape your build." },
-      { q:"🎯 What do stats roughly do?",
-        a:"In short: strength and agility lean into damage; vitality drives HP; luck influences crits and some rolls. Exact formulas may evolve, but the overall roles stay consistent." },
+      { q:"⚠️ Quest progress didn’t update",
+        a:"First: close and reopen the WebApp to refresh state. If still wrong, report it with: your @handle, quest name, what you did, and a screenshot." },
     ]},
 
     { key:"moonlab", title:"Moon Lab (Fortress)", items:[
       { q:"🌕 What is Moon Lab?",
-        a:"A boss-ladder fortress with increasing difficulty. Each run pushes as far as you can; floors cleared and encounters defeated feed into rewards, quests and future achievements." },
-      { q:"⏳ Attempts & cooldowns",
-        a:"Moon Lab uses win/lose cooldowns per run. This is to prevent brute-force spam and make each attempt feel meaningful. Cooldowns and rewards can be tuned over time based on data." },
-      { q:"🛠️ 1-HP bug status",
-        a:"Fixed. Moon Lab now reads the same stat→HP pipeline as Missions (base + gear + pet, HP = 50 + 12×VIT). If you ever see something weird again, ping us with a screenshot." },
+        a:"Boss ladder mode. You push floors/encounters with increasing difficulty. It’s your ‘can my build actually fight?’ checkpoint." },
+
+      { q:"⏳ Why does Moon Lab have cooldowns?",
+        a:"To pace attempts and protect the economy. It’s meant to be meaningful, not spam-clickable." },
+
+      { q:"🎯 What should I do before pushing Moon Lab?",
+        a:"Craft a full set, upgrade key pieces, bring a real pet, and invest in survivability if you get deleted (build matters)." },
     ]},
 
     { key:"dojo", title:"Dojo (Training)", items:[
-      { q:"🥋 What does Dojo do?",
-        a:"A timed DPS test (usually 30/60s). It lets you benchmark different builds without risking mission rewards — some quests/events hook into its milestones and crit stats." },
+      { q:"🥋 What is Dojo?",
+        a:"A timed DPS lab (often 30/60s). Test builds, compare upgrades, chase personal bests. It’s for benchmarking, not farming." },
+
       { q:"💸 Does Dojo cost anything?",
-        a:"By design, Dojo is more of a lab than an income source. Some modes may have small costs or cooldowns, but the primary goal is testing and bragging rights, not farming." },
+        a:"Dojo is designed as a test mode first. Costs/cooldowns (if present) are tuned to stop it becoming a farm." },
     ]},
 
-    { key:"shop", title:"Daily Shop", items:[
-      { q:"🔄 How does it rotate?",
-        a:"The shop auto-rotates roughly every 24h. Daily pool: several gear pieces plus up to a few consumables shown separately. UI shows time to next refresh once the timer logic is fully live." },
-      { q:"💰 How do prices work?",
-        a:"Items can cost Bones or, later, $HUSKY. Purchases are validated and written to the ledger first, then mirrored to your user data. Some items are limited per day to prevent pure farm abuse." },
-      { q:"🗝️ Faction locks?",
-        a:"Some offers may be faction- or progress-gated. If you don’t see an item someone else posted, you might be in a different region, faction or season state." }
+    { key:"inventory", title:"Inventory, Equipped & Gear", items:[
+      { q:"🎒 Inventory vs Equipped (why people get confused)",
+        a:"Inventory holds what you own. Equipped is what you wear right now. If you can’t find an item, check both panels." },
+
+      { q:"🧩 Equip / Unequip",
+        a:"Equipping updates your totals immediately. If the UI looks stale, refresh the panel or reopen the WebApp." },
+
+      { q:"⭐ Stars (★) and upgrades",
+        a:"Stars are item power upgrades. The game is tuned around slowly pushing ★ across your set — not gambling for perfection." },
+
+      { q:"🧹 Salvage & duplicates",
+        a:"Extra copies can be converted into materials. Locks protect the item types you never want auto-touched." },
     ]},
 
-    { key:"quests", title:"Daily Quests & Progress", items:[
-      { q:"📜 How do Daily Quests work?",
-        a:"Open the Mission Board (📜 button or map building), accept tasks, play to progress, then claim rewards. There is daily rotation; each quest shows its requirements and current progress/state." },
-      { q:"🎯 Types of quests",
-        a:"You’ll see daily, repeatable and story quests: some just ask you to show up, some to spend Bones, clear missions, win Dojo runs or beat Moon Lab floors." },
-      { q:"⚠️ Progress not updating?",
-        a:"Sometimes UI lags behind. Close and reopen the WebApp to refresh state. If it still looks wrong, share your username, quest name and what you did in the Den — we’ll check logs and fix it." },
+    { key:"forge", title:"Forge → Shards", items:[
+      { q:"🔷 What does ‘Forge → Shards’ do?",
+        a:"Turns shards into real gear. Shards are slot-specific, so you craft exactly what you need (weapon/armor/etc.)." },
+
+      { q:"🎲 Is crafting pure RNG?",
+        a:"It’s controlled RNG with tuning and safety rails (depending on current build). The goal is progress — not casino pain." },
+
+      { q:"🧠 Best crafting strategy",
+        a:"Fill missing slots first, then upgrade. A complete upgraded set scales better than endless single-slot crafting." },
     ]},
 
-    { key:"pets", title:"Pets", items:[
+    { key:"materials", title:"Materials & Economy", items:[
+      { q:"🧪 What materials exist?",
+        a:"Bones (currency), Scrap (craft/upgrade), Rune Dust (advanced), Slot Shards (crafting fragments), plus seasonal/key shards for gates (when enabled)." },
+
+      { q:"📦 How do I get them?",
+        a:"Mostly from Missions, quests, Moon Lab, boxes and events. Rewards are ledger-tracked, then reflected into your UI state." },
+
+      { q:"🧾 Why ledger-first?",
+        a:"Because it’s safer for a live MVP: fewer desyncs, easier audits, clearer Season 0 tracking." },
+    ]},
+
+    { key:"pets", title:"Pets & Arena", items:[
       { q:"🐾 Do pets matter?",
-        a:"Yes. Pets provide stats and unique bonuses on top of your gear. They level through play and can change how your build feels in both Missions and Moon Lab." },
-      { q:"📈 How do pets grow?",
-        a:"Pets gain levels from activity and, in future, from dedicated systems like Adoption Center and pet-focused quests. Higher level = better stats and sometimes new traits." },
-      { q:"🏠 Adoption Center?",
-        a:"The idea is to have a separate Adoption Center for new pets instead of stuffing everything into the shop. Rollout is done in phases, so if you don’t see it yet, it’s still in progress." },
+        a:"Yes. Pets add real stats and can change how your build feels. They’re not just cosmetics." },
 
-      { q:"🧬 Do pets have real stats now?",
-        a:"Yes. Every pet in Alpha Husky now has a proper stat profile (strength, agility, luck, vitality, defense) instead of just “vibes”. That includes adoptable pets, evolutions and exclusive/event pets, so Pet Arena and future systems can treat them as real fighters." },
+      { q:"🏠 Adoption Center",
+        a:"Separate pet acquisition flow (not just shop spam). If you don’t see it yet, it’s phased rollout." },
 
-      { q:"⚔️ What are Feral / Trickster / Mystic archetypes and RPS?",
-        a:"Each pet belongs to one of three archetypes used in Pet Arena: Feral (brutal/tanky beasts), Trickster (fast and sneaky, crit/evade energy) and Mystic (aura, ice, glitch, weird magic). Arena uses a light rock–paper–scissors layer: Feral has an edge over Trickster, Trickster over Mystic, and Mystic over Feral. It’s a small stat bias, not an auto-win — your build, level and RNG still matter a lot." },
+      { q:"⚔️ Pet Arena archetypes (Feral / Trickster / Mystic)",
+        a:"Arena uses a light rock-paper-scissors bias: Feral > Trickster, Trickster > Mystic, Mystic > Feral. Small edge, not an auto-win." },
+
+      { q:"🎞️ Arena replay looks weird / placeholder",
+        a:"Sometimes visuals lag behind updates. Reopen the WebApp. If still broken, report with screenshot + your @handle." },
     ]},
 
-    { key:"referrals", title:"Referrals & Friends", items:[
-      { q:"🤝 Can I invite friends?",
-        a:"Yes. Alpha Husky is designed to be more fun with a Pack. The referral system tracks who brought who in and may grant Bones, badges or future rewards for honest invites." },
-      { q:"🔗 Where is my referral link?",
-        a:"Once fully live, you’ll be able to grab it from a bot command (e.g. /referrals) or a WebApp section. We’ll announce when referrals are considered stable enough for grinding." },
-      { q:"⚠️ Any referral rules?",
-        a:"No botting, no fake accounts, no spam. The goal is to reward real Pack-building, not empty numbers." },
+    { key:"profile", title:"Profile, Skins & Cosmetics", items:[
+      { q:"🎭 What are skins?",
+        a:"Cosmetic avatar looks. They change vibe, not raw power. Some are earned, some seasonal, some special." },
+
+      { q:"🏷️ Nickname / profile customization",
+        a:"Set your displayed identity via Profile tools/unlocks. If something is gated, it’s intentional (season, item, progression)." },
+
+      { q:"🖼️ Character / Equipped visuals",
+        a:"Your character panel shows your current look + equipped slots. If icons look off after an update, reopen the WebApp (Telegram caching happens)." },
     ]},
 
-    { key:"season", title:"Season 0, Purge & OGs", items:[
-      { q:"📆 What is Season 0?",
-        a:"A long pre-launch season where we test systems, gather data and reward the earliest Howlers. Bones and activity are tracked via the ledger for a future snapshot." },
-      { q:"🧼 What is the Purge?",
-        a:"A planned reset that will clean broken progress/economy before full launch. OG identity, badges and key contributions are preserved; exploit-heavy or fake progress is not." },
-      { q:"🏅 What stays after Purge?",
-        a:"Your OG status, meaningful badges and recognized contributions. Exact mapping (e.g. Season 0 points → future perks) will be documented before anything goes live." },
+    { key:"share", title:"Share Cards", items:[
+      { q:"🖼️ What are Level Up Share Cards?",
+        a:"Shareable images generated from your live profile (Style I/II/III). Pure social proof: show progress without editing screenshots." },
+
+      { q:"📤 How do I use them?",
+        a:"Open your profile/hero area and tap Share I/II/III after profile loads. If it fails once, reopen the WebApp and try again." },
     ]},
 
-    { key:"token", title:"Token & TGE", items:[
+    { key:"pack", title:"Pack & Community", items:[
+      { q:"🐺 Why ‘Pack’ matters here",
+        a:"Alpha Husky is built with the community. Feedback turns into patches, and real testers get recognized over time." },
+
+      { q:"🤝 Referrals (simple rules)",
+        a:"Invite real people. No bots, no fake accounts, no spam. If you try to game it, you’ll just burn your own rep." },
+    ]},
+
+    { key:"season0", title:"Season 0 & Resets", items:[
+      { q:"🧪 What is Season 0?",
+        a:"The live test season. We ship systems, gather data, fix exploits, tune economy, and track activity fairly. It’s foundations — not hype." },
+
+      { q:"🧼 What is a ‘Purge’ / reset?",
+        a:"A planned cleanup before full launch to remove broken progress/economy artifacts. Real OG identity and contributions are the priority." },
+
+      { q:"🏅 What will be preserved?",
+        a:"OG status + legit badges/contribution recognition + whatever mapping we document publicly before any reset. Honest testers won’t get rugged." },
+    ]},
+
+    { key:"token", title:"Token (Status & Philosophy)", items:[
       { q:"🪙 Is the token live?",
-        a:"Not yet. We ship gameplay, economy and infra first. Planned total supply is 25M with ~10M locked treasury. No stealth launch, no random \"soon\" listings." },
-      { q:"🚀 What does TGE mean here?",
-        a:"TGE (token generation event) will happen only once utility, sinks/sources and allocations are locked and documented. There will be clear info, no surprise drops, and no promises of price action." },
-      { q:"🎯 How does the game connect to the token?",
-        a:"Season 0 ledger and in-game actions are designed to feed into future rewards and utility, not to become a speculative farm. Details will be shared gradually and publicly, in Den and docs." },
+        a:"Not yet. Token steps happen only after gameplay sinks/sources and stability are solid. No stealth launch. No ‘trust me bro’." },
+
+      { q:"🎯 How will token connect to the game?",
+        a:"As utility (optional sinks, access, cosmetics/events), not as a promised return. Details are shared only when locked and documented." },
     ]},
 
-    { key:"project", title:"Project Vision & Lore", items:[
-      { q:"🌑 Why Alpha Husky?",
-        a:"It’s a mix of post-apocalyptic tribal-tech worldbuilding, a Telegram-native game, and a long-term brand. Less \"farm this pump now\", more \"build a place the Pack actually cares about\"." },
-      { q:"📖 Is there a story?",
-        a:"Yes. Characters like Alpha, Shadow Agent, Blood-Moon Whisper and others live in a shared universe. Lore drops through posts, in-game events and special locations like Moon Lab or Broken Contracts." },
-      { q:"🧱 What is the build philosophy?",
-        a:"Brick by brick. No paid hype, no shortcuts. We ship, test with the Pack, adjust, then ship again. The WebApp + bot you’re using is the same thing we play and break ourselves." },
+    { key:"trouble", title:"Troubleshooting", items:[
+      { q:"🔄 After an update, things look outdated",
+        a:"Close the WebApp completely and reopen from the bot button. Telegram can cache old UI state." },
+
+      { q:"🧠 UI looks broken / missing buttons / cut off bottom",
+        a:"Reopen the WebApp. If it persists, screenshot the exact sheet (Missions / Quests / Shop / Inventory) and send it — we fix UI from real device reports." },
+
+      { q:"🧾 Numbers look wrong (Bones/materials)",
+        a:"Refresh/reopen first. If still wrong, report: your @handle, what you did (buy/craft/resolve), and a screenshot. Ledger lets us audit exactly what happened." },
+
+      { q:"🖼️ Icons/images not loading",
+        a:"If something shows placeholder: reopen the WebApp from the bot. If it’s still broken, report with a screenshot and what item it was (name/slot). Image paths can be fixed fast when we know exactly what failed." },
+
+      { q:"📱 Performance tips",
+        a:"Close other heavy apps, disable battery saver, and reopen from the official bot. Animated backgrounds may downgrade to static on low-power devices." },
     ]},
 
-    { key:"safety", title:"Safety, OG & Terms", items:[
+    { key:"safety", title:"Safety & Support", items:[
       { q:"🔒 Security basics",
-        a:"We will never DM you for private keys or seed phrases. Only use the official Alpha Husky bot/WebApp link. Treat anything else as fake until verified in the Den." },
-      { q:"🛡️ OG & contribution",
-        a:"Early players, testers and helpers are tracked via ledger, badges and internal notes. The idea is to recognize real work and loyalty over loud hype." },
-      { q:"📄 Terms / Privacy",
-        a:"Alpha Husky is an experimental MVP/Beta. Nothing here is financial advice or a guarantee. We use gameplay telemetry (anonymized where possible) to balance systems. A public Terms/Privacy doc will be linked here once finalized." },
-      { q:"🐺 Need help or found a bug?",
-        a:"Best channel is the Alpha Den: share your Telegram @, what you did, what you expected, and a screenshot if possible. We debug in the open and fold fixes back into the game." },
+        a:"We will never DM you for seed phrases or private keys. Only trust the official bot/WebApp link from the community." },
+
+      { q:"🐞 How to report a bug (fast, actionable)",
+        a:"Send: (1) your Telegram @handle, (2) step-by-step clicks, (3) expected vs actual, (4) screenshot/video, (5) approximate time. If it’s UI, mention device (iOS/Android/Desktop)." },
+
+      { q:"📄 Beta disclaimer",
+        a:"This is a live MVP/Beta. Systems tune, numbers change, bugs happen. We patch fast and ship — that’s the deal." },
     ]},
   ];
 
+  // export content
+  const FAQ_CONTENT = CONTENT;
+  window.FAQ_CONTENT = FAQ_CONTENT;
 
-  // Udostępnij globalnie (renderer tego oczekuje)
-  window.FAQ_CONTENT = CONTENT;
-
-  // Opcjonalny refresh jeśli masz taki hook
+  // optional refresh hook
   if (window.FAQ && typeof window.FAQ.refresh === "function") {
     try { window.FAQ.refresh(); } catch {}
   }
-
 
   // ---------- style injection: high z-index + accordion fix ----------
   (function injectStyles(){
@@ -235,13 +235,13 @@ Tips:
     const css = `
       #faqModal{ position:fixed; inset:0; z-index:2147483651; display:none; background:transparent; }
       #faqModal.open{ display:block; }
-      /* klik działa w arkuszu, backdrop zamyka */
+      /* click works inside sheet, backdrop closes */
       #faqModal .faq-sheet{ pointer-events:auto; }
       #faqModal .faq-backdrop{ pointer-events:auto; }
-      /* akordeon */
+      /* accordion */
       .faq-item .faq-a{ display:none; }
       .faq-item[open] .faq-a{ display:block; }
-      /* brak globalnych blurów nad treścią FAQ */
+      /* avoid global blurs over FAQ */
       #faqModal, #faqModal *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
     `;
     const st = document.createElement("style");
@@ -259,20 +259,23 @@ Tips:
     s.appendChild(p); return s;
   }
   function renderAnswer(a){
-    return a.replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\b\/[a-zA-Z_]+/g, m=>`<kbd>${m}</kbd>`);
+    return String(a || "")
+      .replace(/`([^`]+)`/g,"<code>$1</code>")
+      .replace(/\b\/[a-zA-Z_]+/g, m=>`<kbd>${m}</kbd>`)
+      .replace(/\n/g,"<br>");
   }
 
   // ---------- FAQ controller ----------
   const FAQ = {
     state:{ section:null, query:"" },
-    content: FAQ_CONTENT,
+    content: window.FAQ_CONTENT || FAQ_CONTENT,
     apiPost:null, tg:null, dbg:null,
     _escHandler:null,
 
     init({ apiPost, tg, dbg } = {}){
       this.apiPost = apiPost; this.tg = tg; this.dbg = dbg;
 
-      // opcjonalne zasilenie z backendu
+      // optional remote content (if you ever add it)
       fetch('/webapp/faq', { method:'GET' })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(json => {
@@ -282,13 +285,13 @@ Tips:
         })
         .catch(()=>{/* fallback local */});
 
-      // Openers
+      // openers
       ['btnFaq','fabFaq'].forEach(id=>{
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e)=>{ e.preventDefault(); this.open(); });
       });
 
-      // Close (backdrop lub przycisk)
+      // close (backdrop or close button)
       const modal = $('#faqModal');
       modal?.addEventListener('click', e => {
         if (e.target.closest('.faq-close') || e.target.hasAttribute('data-close')){
@@ -296,16 +299,16 @@ Tips:
         }
       });
 
-      // Search
+      // search
       $('#faqSearch')?.addEventListener('input', e => {
         this.state.query = e.target.value.trim();
         this.renderList();
       });
 
-      // Tabs
+      // tabs
       this.renderTabs();
 
-      // Deep links
+      // deep links
       const p = new URLSearchParams(location.search);
       if (p.get('section') === 'faq' || p.get('faq')){
         this.state.section = p.get('faq') || null;
@@ -324,7 +327,7 @@ Tips:
       const m = $('#faqModal'); if (!m) return;
       m.classList.add('open');
       m.removeAttribute('hidden');
-      this.apiPost?.('/webapp/telemetry', { event:'faq_open' });
+      try { this.apiPost?.('/webapp/telemetry', { event:'faq_open' }); } catch {}
       $('#faqSearch')?.focus({ preventScroll:true });
       this.renderTabs(); this.renderList();
       this._escHandler = (e)=>{ if (e.key === 'Escape') this.close(); };
@@ -344,7 +347,8 @@ Tips:
       this.content.forEach((sec, idx)=>{
         const b=document.createElement('button');
         b.type='button';
-        b.className='faq-tab'; b.setAttribute('role','tab');
+        b.className='faq-tab';
+        b.setAttribute('role','tab');
         const isSelected = (this.state.section ? this.state.section===sec.key : idx===0);
         b.setAttribute('aria-selected', isSelected ? 'true':'false');
         b.textContent=sec.title || sec.key;
@@ -368,23 +372,41 @@ Tips:
       const q = (this.state.query||"").toLowerCase();
 
       sec.items
-        .filter(it => !q || it.q.toLowerCase().includes(q) || it.a.toLowerCase().includes(q))
+        .filter(it => !q || it.q.toLowerCase().includes(q) || String(it.a||"").toLowerCase().includes(q))
         .forEach((it,i)=>{
-          const item=document.createElement('section'); item.className='faq-item'; item.id=`${sec.key}-${i}`;
+          const item=document.createElement('section');
+          item.className='faq-item';
+          item.id=`${sec.key}-${i}`;
 
           const btn=document.createElement('button');
           btn.type='button';
-          btn.className='faq-q'; btn.setAttribute('aria-expanded','false');
-          const title=document.createElement('span'); title.textContent=it.q; btn.appendChild(title); btn.appendChild(chevron());
+          btn.className='faq-q';
+          btn.setAttribute('aria-expanded','false');
+
+          const title=document.createElement('span');
+          title.textContent=it.q;
+
+          btn.appendChild(title);
+          btn.appendChild(chevron());
+
           btn.addEventListener('click', (e)=>{
             e.preventDefault();
             const open=item.hasAttribute('open');
             $$('.faq-item',wrap).forEach(n=>n.removeAttribute('open'));
-            if (!open){ item.setAttribute('open',''); btn.setAttribute('aria-expanded','true'); }
+            $$('.faq-q',wrap).forEach(n=>n.setAttribute('aria-expanded','false'));
+            if (!open){
+              item.setAttribute('open','');
+              btn.setAttribute('aria-expanded','true');
+            }
           });
 
-          const body=document.createElement('div'); body.className='faq-a'; body.innerHTML=renderAnswer(it.a);
-          item.appendChild(btn); item.appendChild(body); wrap.appendChild(item);
+          const body=document.createElement('div');
+          body.className='faq-a';
+          body.innerHTML=renderAnswer(it.a);
+
+          item.appendChild(btn);
+          item.appendChild(body);
+          wrap.appendChild(item);
         });
     },
 
@@ -392,6 +414,12 @@ Tips:
       if ($('#faqModal')?.classList.contains('open')) {
         this.renderTabs(); this.renderList();
       }
+    },
+
+    refresh(){
+      // optional external refresh hook
+      this.renderTabs();
+      this.renderList();
     }
   };
 
