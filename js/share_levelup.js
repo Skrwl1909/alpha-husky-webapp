@@ -1,8 +1,9 @@
-// js/share_levelup.js — FINAL v2.3 (front-only AAA preview overlay)
+// js/share_levelup.js — FINAL v2.4 (front-only AAA preview overlay)
 // ✅ shareRow forced ABOVE hero-frame (even if DOM loads late / UI rerenders)
 // ✅ run_id + busy lock + haptics
-// ✅ NEW: in-app Preview Modal (overlays Nick + clean LVL, masks template placeholders like '---')
-// ✅ popup: Open / Copy / Post on X (from preview modal)
+// ✅ NEW: Preview Modal overlays Nick + Faction logo (in circle) + clean LVL (moved lower)
+// ✅ NEW: Save image button (helps X attach image)
+// ✅ popup: Open / Save / Copy / Post on X
 // ✅ apiPost lookup: window.apiPost OR window.S.apiPost OR window.AH.apiPost
 // ✅ supports buttons: data-share-style OR data-share-levelup-style
 (function (global) {
@@ -63,7 +64,6 @@
     row.style.display = "flex";
     row.style.visibility = "visible";
     row.style.pointerEvents = "auto";
-
     return true;
   }
 
@@ -78,7 +78,6 @@
 
     try {
       hero.parentNode.insertBefore(row, hero);
-      // spacing polish (if CSS already sets margin-bottom, do not override)
       if (!row.style.marginBottom) row.style.marginBottom = "10px";
       if (!row.style.justifyContent) row.style.justifyContent = "center";
       return true;
@@ -122,15 +121,9 @@
     window.open(u, "_blank", "noopener");
   }
 
-  // ✅ X intent helper
+  // ✅ X intent helper (text+link)
   function buildXIntent(cardUrl) {
-    const raw =
-      (document.getElementById("heroLevel")?.textContent || "") ||
-      (document.querySelector("#heroLevel")?.textContent || "");
-
-    const m = String(raw || "").match(/(\d+)/);
-    const lvl = m ? m[1] : "";
-
+    const lvl = getLevelFromUI();
     const text =
       `LEVEL UP.\n` +
       `Pack Lv ${lvl || "?"}. 🐺\n` +
@@ -159,21 +152,37 @@
     }
   }
 
-  async function postOnX(cardUrl) {
-    const intent = buildXIntent(cardUrl);
-    const caption = "LEVEL UP. 🐺";
-    const ok = await tryNativeShareImage(cardUrl, caption);
-    if (!ok) openLink(intent);
+  // save image helper (best-effort)
+  async function saveImage(cardUrl) {
+    try {
+      const r = await fetch(cardUrl, { cache: "no-store" });
+      const blob = await r.blob();
+      const objUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "alpha_levelup.png";
+      a.rel = "noopener";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(() => URL.revokeObjectURL(objUrl), 30_000);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // ----------------------------
-  // NEW: Preview modal with overlays (nick + clean LVL)
+  // NEW: Preview modal with overlays (Nick + Faction logo in circle + LVL below circle)
   // ----------------------------
   function openPreview(cardUrl) {
     const url = String(cardUrl || "");
-
     const nick = getNickFromUI();
     const lvl = getLevelFromUI();
+    const factionLogo = getFactionLogoFromUI();
 
     // remove previous if exists
     const old = document.getElementById("sharePreviewModal");
@@ -204,43 +213,81 @@
       border-bottom:1px solid rgba(140,190,255,.12);
     `;
     top.innerHTML = `
-      <div style="font-weight:800; letter-spacing:.2px;">Share Card Preview</div>
+      <div style="font-weight:900; letter-spacing:.2px;">Share Card Preview</div>
       <button id="spClose" type="button"
         style="background:transparent;border:0;color:rgba(255,255,255,.85);
                font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;">✕</button>
     `;
 
     // TUNABLE overlay anchors (percent of image)
-    // Adjust later if needed: top/left/width/height
+    // Name bar zone (top-left)
     const NAME_LEFT = "8.5%";
-    const NAME_TOP = "6.7%";
-    const NAME_W = "46%";
-    const NAME_H = "5.5%";
+    const NAME_TOP  = "6.7%";
+    const NAME_W    = "46%";
+    const NAME_H    = "5.7%";
 
-    const LVL_RIGHT = "8.8%";
-    const LVL_TOP = "12.2%";
-    const LVL_W = "25%";
-    const LVL_H = "10%";
+    // Faction logo circle (top-right)
+    const FAC_RIGHT = "4.8%";
+    const FAC_TOP   = "4.2%";
+    const FAC_SIZE  = "9.6%"; // width, height uses aspect-ratio
+
+    // Level badge (moved lower under circle)
+    const LVL_RIGHT = "6.2%";
+    const LVL_TOP   = "14.8%";
+    const LVL_W     = "22%";
+    const LVL_H     = "8.8%";
 
     const stage = document.createElement("div");
-    stage.style.cssText = `position:relative; background:#05070b;`;
+    stage.style.cssText = `position:relative; background:#05070b; font-size:0;`;
     stage.innerHTML = `
       <img id="spImg" src="${escapeHtml(url)}" style="display:block;width:100%;height:auto;" />
+
+      <!-- Mask strip to reduce double-text on name bar (subtle) -->
+      <div style="
+        position:absolute; left:${NAME_LEFT}; top:${NAME_TOP};
+        width:${NAME_W}; height:${NAME_H};
+        border-radius:10px;
+        background:rgba(0,0,0,.22);
+        box-shadow:0 0 0 1px rgba(140,190,255,.12) inset;
+      "></div>
 
       <!-- Nick overlay (inside name bar zone) -->
       <div style="
         position:absolute; left:${NAME_LEFT}; top:${NAME_TOP};
         width:${NAME_W}; height:${NAME_H};
         display:flex; align-items:center;
-        padding:0 10px;
+        padding:0 12px;
         color:#f2f8ff;
-        font-weight:900;
-        text-shadow:0 2px 8px rgba(0,0,0,.65), 0 0 18px rgba(120,190,255,.28);
+        font-weight:950;
+        text-shadow:0 2px 8px rgba(0,0,0,.65), 0 0 18px rgba(120,190,255,.25);
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
         font-size:clamp(14px,2.2vw,26px);
+        letter-spacing:.2px;
       ">${escapeHtml(nick)}</div>
 
-      <!-- Level overlay (covers ugly placeholders like '---') -->
+      ${
+        factionLogo
+          ? `
+      <!-- Faction logo in the circle -->
+      <div style="
+        position:absolute; right:${FAC_RIGHT}; top:${FAC_TOP};
+        width:${FAC_SIZE};
+        aspect-ratio:1/1;
+        border-radius:999px;
+        overflow:hidden;
+        border:1px solid rgba(140,190,255,.22);
+        background:rgba(6,10,16,.55);
+        box-shadow:0 0 18px rgba(120,190,255,.18), 0 10px 26px rgba(0,0,0,.35);
+        display:flex; align-items:center; justify-content:center;
+      ">
+        <img src="${escapeHtml(factionLogo)}" alt="Faction"
+          style="width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));" />
+      </div>
+      `
+          : ""
+      }
+
+      <!-- Level badge (below circle) -->
       <div style="
         position:absolute; right:${LVL_RIGHT}; top:${LVL_TOP};
         width:${LVL_W}; height:${LVL_H};
@@ -261,7 +308,7 @@
         <div style="
           font-weight:1000;
           color:#f2f8ff;
-          text-shadow:0 2px 10px rgba(0,0,0,.72), 0 0 18px rgba(120,190,255,.22);
+          text-shadow:0 2px 10px rgba(0,0,0,.72), 0 0 18px rgba(120,190,255,.18);
           font-size:clamp(22px,4.2vw,54px);
           line-height:1;
         ">${escapeHtml(lvl)}</div>
@@ -275,6 +322,7 @@
     `;
     actions.innerHTML = `
       <button id="spOpen" type="button" style="${btnCss(false)}">Open card</button>
+      <button id="spSave" type="button" style="${btnCss(false)}">Save image</button>
       <button id="spCopy" type="button" style="${btnCss(false)}">Copy link</button>
       <button id="spX" type="button" style="${btnCss(true)}">Post on X</button>
     `;
@@ -291,21 +339,37 @@
 
     // actions
     q("#spOpen", wrap)?.addEventListener("click", () => openLink(url));
+
+    q("#spSave", wrap)?.addEventListener("click", async () => {
+      const ok = await saveImage(url);
+      if (ok) {
+        toast("Share Card", "Saved / download triggered ✅ If it didn't save: Open card → long-press image → Save.");
+        return;
+      }
+      toast("Share Card", "Save blocked here. Use: Open card → long-press image → Save.");
+      openLink(url);
+    });
+
     q("#spCopy", wrap)?.addEventListener("click", async () => {
       const ok = await copyText(url);
       toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
     });
+
     q("#spX", wrap)?.addEventListener("click", async () => {
       const caption = "LEVEL UP. 🐺 #AlphaHusky #HOWLitsMade";
+
+      // 1) best case: share as file -> pick X/Twitter
       const ok = await tryNativeShareImage(url, caption);
       if (ok) {
         toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
         return;
       }
+
+      // 2) fallback: open X intent + tell user how to attach image
+      toast("Share Card", "X in Telegram often can't attach images. Use Save image → open X → attach it manually.");
       openLink(buildXIntent(url));
     });
 
-    // helpers (scoped)
     function q(sel, root) { return (root || document).querySelector(sel); }
 
     function btnCss(primary) {
@@ -347,7 +411,6 @@
       const t = document.querySelector(sel)?.textContent;
       if (t && String(t).trim()) return String(t).trim();
     }
-    // fallback: telegram user first name
     const tgName = global.Telegram?.WebApp?.initDataUnsafe?.user?.first_name;
     return String(tgName || "Alpha").trim();
   }
@@ -360,6 +423,28 @@
 
     const m = String(raw || "").match(/(\d+)/);
     return m ? m[1] : "?";
+  }
+
+  function getFactionLogoFromUI() {
+    // Try a bunch of likely selectors (safe no-crash)
+    const imgSelectors = [
+      "#factionLogo img",
+      "#faction-logo img",
+      ".faction-logo img",
+      ".factionLogo img",
+      "img#factionLogo",
+      "img#faction-logo",
+      "[data-faction-logo] img",
+      "img[data-faction-logo]",
+      ".hero-faction img",
+      ".factionBadge img"
+    ];
+    for (const sel of imgSelectors) {
+      const el = document.querySelector(sel);
+      const src = el?.getAttribute?.("src") || el?.src;
+      if (src && String(src).trim()) return String(src).trim();
+    }
+    return "";
   }
 
   // ✅ UPDATED: use preview modal instead of popup-only
@@ -402,6 +487,7 @@
                 toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
                 return;
               }
+              toast("Share Card", "X may not attach images here. Open card → save image → attach in X.");
               openLink(buildXIntent(url));
             }
           }
@@ -502,14 +588,9 @@
     let tries = 0;
     const t = setInterval(() => {
       tries++;
-
       const okShow = showRow();
       const okPlace = ensureRowAboveSkin();
-
-      // stop when stable OR after ~10s
-      if ((okShow && okPlace) || tries > 80) {
-        clearInterval(t);
-      }
+      if ((okShow && okPlace) || tries > 80) clearInterval(t);
     }, 125);
   }
 
@@ -517,7 +598,6 @@
   function startObserver() {
     try {
       const obs = new MutationObserver(() => {
-        // don’t spam; just re-ensure
         showRow();
         ensureRowAboveSkin();
       });
@@ -526,10 +606,8 @@
   }
 
   function hook() {
-    // allow turning debug on via global flag
     _dbg = !!global.DBG_SHARE_LEVELUP || !!global.DBG;
 
-    // on DOM ready
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
         showRow();
@@ -544,7 +622,6 @@
       startObserver();
     }
 
-    // if loadProfile appears later
     let tries = 0;
     const t = setInterval(() => {
       tries++;
