@@ -1,11 +1,13 @@
-// js/missions.js — WebApp Missions UI (backend-first, icons later)
+// js/missions.js — WebApp Missions (EXPEDITIONS) UI
 // Contract:
 //   POST /webapp/missions/state  { run_id }
 //   POST /webapp/missions/action { action:"refresh_offers"|"start"|"resolve", tier?, offerId?, run_id }
 
 (function () {
   const esc = (s) => String(s ?? "")
-    .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 
   function rid(prefix = "missions") {
     try { return `${prefix}:${crypto.randomUUID()}`; } catch {
@@ -19,266 +21,112 @@
   let _tg = null;
   let _dbg = false;
 
-  let _modal = null;
-  let _root = null;
+  let _modal = null; // #missionsBack or #missionsModal
+  let _root = null;  // #missionsRoot
   let _tick = null;
   let _state = null;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
   // =========================
-  // UI styles + backgrounds (self-contained)
+  // Styles (ONLY inside missions content; do NOT override overlay)
   // =========================
   function ensureStyles() {
     if (document.getElementById("missions-ui-css")) return;
     const st = document.createElement("style");
     st.id = "missions-ui-css";
     st.textContent = `
-      :root{
-        --missions-bg: url("mission_bg.webp");
-        --missions-wait-bg: url("mission_waiting_bg.webp");
-        --missions-dust: url("dust.png");
-        --m-cyan: rgba(0,229,255,.85);
-        --m-amber: rgba(255,176,0,.75);
-        --m-edge: rgba(255,255,255,.12);
-        --m-panel: rgba(8, 12, 18, .55);
-      }
+      /* Keep missions content readable even if global styles change */
+      #missionsRoot{ display:block !important; }
 
-      /* =========================
-         FIX: overlay stacking + sizing + scroll
-         ========================= */
-      #missionsBack, #missionsModal{
-        position: fixed !important;
-        inset: 0 !important;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 12px;
-        box-sizing: border-box;
-        background: rgba(0,0,0,.62);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        z-index: 2147483000 !important; /* zawsze nad bottom dock (QUESTS etc.) */
-      }
-
-      /* panel w środku (nie zakładamy klas — bierzemy pierwsze dziecko) */
-      #missionsBack > * , #missionsModal > *{
-        width: min(560px, calc(100vw - 24px));
-        max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;   /* scroll ma być wewnątrz root */
-        min-height: 0;
-      }
-
-      /* jeśli masz typowe wrappery */
-      #missionsBack .ah-modal,
-      #missionsBack .ah-sheet,
-      #missionsBack .sheet,
-      #missionsModal .ah-modal{
-        width: min(560px, calc(100vw - 24px));
-        max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
+      #missionsRoot .m-stage{
         display:flex;
         flex-direction:column;
-        overflow:hidden;
-        min-height:0;
-      }
-
-      /* KLUCZ: missionsRoot ma być scrollowalny */
-      #missionsRoot{
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        min-height: 0;
-        padding-bottom: calc(120px + env(safe-area-inset-bottom)); /* żeby Resolve/Start nie były ucięte */
-        touch-action: pan-y;
-      }
-
-      /* Stage wrapper inside missionsRoot */
-      #missionsRoot .m-stage{
-        position: relative;
-        border: 1px solid rgba(36,50,68,.95);
-        border-radius: 16px;
-        padding: 14px;
-        background:
-          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-          linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
-          var(--missions-bg);
-        background-position: center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        box-shadow:
-          0 18px 48px rgba(0,0,0,.62),
-          inset 0 1px 0 rgba(255,255,255,.08),
-          inset 0 0 0 1px rgba(0,229,255,.06);
-        outline: 1px solid rgba(0,229,255,.08);
-        outline-offset: 0px;
-        overflow: hidden;
-      }
-
-      /* Scanlines + vignette */
-      #missionsRoot .m-stage::before{
-        content:"";
-        position:absolute;
-        inset:0;
-        pointer-events:none;
-        z-index:0;
-        background:
-          radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.56) 78%, rgba(0,0,0,.74) 100%),
-          repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,.030),
-            rgba(255,255,255,.030) 1px,
-            rgba(0,0,0,0) 3px,
-            rgba(0,0,0,0) 6px
-          ),
-          repeating-linear-gradient(
-            90deg,
-            rgba(255,255,255,.012),
-            rgba(255,255,255,.012) 2px,
-            rgba(0,0,0,0) 5px,
-            rgba(0,0,0,0) 9px
-          );
-        opacity:.28;
-        mix-blend-mode: overlay;
-      }
-
-      /* Dust overlay (optional) */
-      #missionsRoot .m-stage::after{
-        content:"";
-        position:absolute;
-        inset:0;
-        pointer-events:none;
-        z-index:0;
-        background: var(--missions-dust);
-        background-size: cover;
-        background-position: center;
-        opacity: .18;
-        mix-blend-mode: screen;
-      }
-
-      /* Content above overlays */
-      #missionsRoot .m-stage > *{
-        position: relative;
-        z-index: 1;
-      }
-
-      /* Make cards feel like "game glass" */
-      #missionsRoot .m-card{
-        background: rgba(0,0,0,.20);
-        border: 1px solid rgba(255,255,255,.10);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 18px 40px rgba(0,0,0,.32);
-      }
-
-      /* Active waiting window (uses mission_waiting_bg.png) */
-      #missionsRoot .m-wait{
-        position: relative;
-        border-radius: 16px;
-        padding: 12px;
-        border: 1px solid rgba(255,255,255,.10);
-        background:
-          radial-gradient(circle at 18% 12%, rgba(0,229,255,.08), transparent 55%),
-          radial-gradient(circle at 85% 88%, rgba(255,176,0,.07), transparent 60%),
-          linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.68)),
-          var(--missions-wait-bg);
-        background-position: center;
-        background-size: cover;
-        background-repeat: no-repeat;
-        box-shadow:
-          0 16px 34px rgba(0,0,0,.42),
-          inset 0 1px 0 rgba(255,255,255,.07);
-        overflow: hidden;
-      }
-
-      #missionsRoot .m-wait::before{
-        content:"";
-        position:absolute; inset:0;
-        pointer-events:none;
-        background:
-          radial-gradient(circle at 50% 35%, rgba(0,0,0,.02), rgba(0,0,0,.55) 78%, rgba(0,0,0,.78) 100%),
-          repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,.028),
-            rgba(255,255,255,.028) 1px,
-            rgba(0,0,0,0) 3px,
-            rgba(0,0,0,0) 6px
-          );
-        opacity:.26;
-        mix-blend-mode: overlay;
-      }
-      #missionsRoot .m-wait > *{ position: relative; z-index: 1; }
-
-      #missionsRoot .m-wait-top{
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
         gap:10px;
       }
-      #missionsRoot .m-wait-eta{ font-weight:800; opacity:.92; margin-top:4px; }
-      #missionsRoot .m-wait-meta{ font-size:12px; opacity:.78; margin-top:6px; }
 
-      /* Progress bar (S&F vibe) */
+      #missionsRoot .m-card{
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(12,14,18,.78);
+        color: rgba(255,255,255,.92);
+        box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      }
+
+      #missionsRoot .m-title{
+        font-weight: 800;
+        letter-spacing: .2px;
+      }
+      #missionsRoot .m-muted{
+        opacity: .78;
+        font-size: 12.5px;
+        line-height: 1.35;
+      }
+
+      #missionsRoot .m-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+      }
+
       #missionsRoot .m-bar{
         height:10px;
         border-radius:999px;
         overflow:hidden;
-        background:rgba(255,255,255,.08);
-        border:1px solid rgba(255,255,255,.10);
-        position:relative;
-        margin:10px 0 8px;
+        background: rgba(255,255,255,.10);
+        border: 1px solid rgba(255,255,255,.10);
+        margin-top:10px;
       }
       #missionsRoot .m-bar-fill{
         height:100%;
         width:0%;
         background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.92));
-        position:relative;
         transition: width .25s linear;
       }
-      #missionsRoot .m-bar-fill::after{
-        content:"";
-        position:absolute; inset:0;
-        background: linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
-        transform: translateX(-55%);
-        opacity:.55;
-        animation: mSheen 1.8s ease-in-out infinite;
-        pointer-events:none;
-      }
-      @keyframes mSheen{ 0%{transform:translateX(-55%)} 100%{transform:translateX(55%)} }
 
-      @media (prefers-reduced-motion: reduce){
-        #missionsRoot .m-bar-fill::after{ animation:none; }
-      }
-
-      /* Offer rows */
       #missionsRoot .m-offer{
         border: 1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.18);
+        background: rgba(0,0,0,.16);
         border-radius: 14px;
         padding: 12px;
       }
       #missionsRoot .m-offer + .m-offer{ margin-top: 10px; }
       #missionsRoot .m-offer:hover{
         border-color: rgba(0,229,255,.18);
-        box-shadow: 0 12px 26px rgba(0,0,0,.32);
+        box-shadow: 0 12px 26px rgba(0,0,0,.30);
+      }
+
+      #missionsRoot .m-hr{
+        height:1px;
+        background: rgba(255,255,255,.08);
+        margin:10px 0;
+      }
+
+      /* Make disabled Start look intentional */
+      #missionsRoot button[disabled]{
+        opacity:.55;
+        cursor:not-allowed;
       }
     `;
     document.head.appendChild(st);
   }
 
   // =========================
-  // Click binding
+  // Modal wiring
   // =========================
   function bindOnceModalClicks() {
     if (!_modal) return;
     if (_modal.__AH_MISSIONS_BOUND) return;
     _modal.__AH_MISSIONS_BOUND = 1;
 
+    // Close on backdrop click
     _modal.addEventListener("click", (e) => {
-      if (e.target === _modal && (_modal.id === "missionsModal" || _modal.id === "missionsBack")) close();
+      if (e.target === _modal) close();
     });
 
+    // Delegation for dynamic buttons rendered into missionsRoot
     _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act], [data-act]");
       if (!btn) return;
@@ -291,11 +139,31 @@
       if (act === "close")   return void close();
     });
 
+    // Static buttons from index.html (if present)
     const closeBtn = el("closeMissions");
     if (closeBtn && !closeBtn.__AH_MISSIONS_BOUND) {
       closeBtn.__AH_MISSIONS_BOUND = 1;
       closeBtn.addEventListener("click", (e) => { e.preventDefault(); close(); });
     }
+
+    const refreshBtn = el("missionsRefresh");
+    if (refreshBtn && !refreshBtn.__AH_MISSIONS_BOUND) {
+      refreshBtn.__AH_MISSIONS_BOUND = 1;
+      refreshBtn.addEventListener("click", (e) => { e.preventDefault(); doRefresh(); });
+    }
+
+    const resolveBtn = el("missionsResolve");
+    if (resolveBtn && !resolveBtn.__AH_MISSIONS_BOUND) {
+      resolveBtn.__AH_MISSIONS_BOUND = 1;
+      resolveBtn.addEventListener("click", (e) => { e.preventDefault(); doResolve(); });
+    }
+
+    // ESC to close (desktop)
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (_modal && (_modal.style.display === "flex" || _modal.classList.contains("is-open"))) close();
+      }
+    });
   }
 
   function ensureModal() {
@@ -305,40 +173,20 @@
     _root  = el("missionsRoot");
 
     if (_modal && _root) {
-      try {
-        _modal.style.position = "fixed";
-        _modal.style.inset = "0";
-        _modal.style.zIndex = "2147483000";
-      } catch (_) {}
       bindOnceModalClicks();
       return;
     }
 
+    // Fallback modal if index doesn't have it
     const wrap = document.createElement("div");
     wrap.innerHTML = `
-      <div id="missionsModal">
-        <div style="
-          width:min(560px, calc(100vw - 24px));
-          max-height:calc(100vh - 24px - env(safe-area-inset-bottom));
-          overflow:hidden;
-          background:rgba(20,20,24,.96);
-          border:1px solid rgba(255,255,255,.10);
-          border-radius:16px;
-          box-shadow:0 20px 70px rgba(0,0,0,.55);
-          padding:14px;
-          display:flex;
-          flex-direction:column;
-          min-height:0;
-        ">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <div style="font-weight:700;">Missions</div>
-            <button type="button" data-act="close" style="
-              border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer;
-            ">✕</button>
+      <div id="missionsModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.72); z-index:999999;">
+        <div style="width:min(560px, 100%); max-height:calc(100vh - 24px); overflow:hidden; background:rgba(14,16,18,.92); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 18px 60px rgba(0,0,0,.65); display:flex; flex-direction:column; min-height:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 12px 0 12px;">
+            <div style="font-weight:800;color:#fff;">Missions</div>
+            <button type="button" class="btn" data-act="close">×</button>
           </div>
-          <div style="margin-top:12px; min-height:0; overflow:hidden;">
-            <div id="missionsRoot"></div>
-          </div>
+          <div id="missionsRoot" style="padding:12px; overflow:auto; min-height:0;"></div>
         </div>
       </div>
     `;
@@ -349,16 +197,22 @@
     bindOnceModalClicks();
   }
 
+  // =========================
+  // Open/Close (adds required classes)
+  // =========================
   function open() {
     ensureModal();
     log("open(): modal=", _modal?.id, "root=", !!_root);
 
-    if (_modal && _modal.id === "missionsBack") {
-      _modal.style.display = "flex";
-      try { window.navOpen?.("missionsBack"); } catch (_) {}
-    } else if (_modal) {
-      _modal.style.display = "flex";
-    }
+    if (!_modal) return false;
+
+    // Show modal
+    _modal.style.display = "flex";
+    _modal.classList.add("is-open");
+    document.body.classList.add("missions-open");
+
+    // Optional: integrate with your nav stack router
+    try { window.navOpen?.(_modal.id); } catch (_) {}
 
     renderLoading("Loading missions…");
     loadState();
@@ -369,22 +223,22 @@
   function close() {
     if (!_modal) return;
 
-    if (_modal.id === "missionsBack") {
-      try { window.navClose?.("missionsBack"); } catch (_) {}
-      _modal.style.display = "none";
-    } else {
-      _modal.style.display = "none";
-    }
+    try { window.navClose?.(_modal.id); } catch (_) {}
+
+    _modal.classList.remove("is-open");
+    _modal.style.display = "none";
+    document.body.classList.remove("missions-open");
+
     stopTick();
   }
 
   // =========================
-  // Server-clock sync + active parsing
+  // Server clock sync
   // =========================
   let _serverOffsetSec = 0;
 
   function _syncServerClock(payload) {
-    const nowTs = Number(payload?.now_ts || 0);
+    const nowTs = Number(payload?.now_ts || payload?.nowTs || 0);
     if (!nowTs) return;
     const clientNow = Date.now() / 1000;
     _serverOffsetSec = nowTs - clientNow;
@@ -399,8 +253,8 @@
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
-    if (h > 0) return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-    return `${m}:${String(s).padStart(2,"0")}`;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${m}:${String(s).padStart(2, "0")}`;
   }
 
   function _fmtClock(ts) {
@@ -410,6 +264,9 @@
     } catch (_) { return ""; }
   }
 
+  // =========================
+  // Active parsing (robust)
+  // =========================
   let _legacyAnchor = null;
 
   function getActive(payload) {
@@ -426,6 +283,7 @@
 
     const stRaw = String(am.status || "").toUpperCase();
 
+    // If backend provided ends_ts (best path)
     if (ends) {
       const now = _nowSec();
       const total = dur || Math.max(1, ends - (started || ends));
@@ -440,14 +298,14 @@
         remaining,
         total,
         pct,
-        readyAt: am.readyAt || _fmtClock(ends),
+        readyAt: am.readyAt || am.ready_at_label || _fmtClock(ends),
       };
     }
 
+    // Legacy left-sec path
     const rawLeft = (am.leftSec ?? am.left_sec);
     const left = (typeof rawLeft === "number") ? rawLeft : Number(rawLeft || 0);
 
-    // ACTIVE traktuj jak RUNNING, COMPLETED/READY jak READY
     let status = stRaw;
     if (!status) status = (left > 0 ? "RUNNING" : "READY");
     if (status === "ACTIVE") status = "RUNNING";
@@ -472,13 +330,15 @@
     return { status: "NONE" };
   }
 
+  // =========================
+  // Tick
+  // =========================
   function startTick() {
     stopTick();
     _tick = setInterval(() => {
       const payload = normalizePayload(_state);
       if (!payload) return;
-      const a = getActive(payload);
-      paintActive(a);
+      paintActive(getActive(payload));
     }, 1000);
   }
 
@@ -487,12 +347,60 @@
     _tick = null;
   }
 
+  // =========================
+  // API
+  // =========================
+  async function api(path, body) {
+    if (!_apiPost) throw new Error("Missions: apiPost missing");
+    const res = await _apiPost(path, body);
+
+    // If apiPost returns {ok:false,...}
+    if (res && typeof res === "object" && res.ok === false) {
+      const reason = res.reason || res.error || "NOT_OK";
+      throw new Error(String(reason));
+    }
+
+    return res;
+  }
+
+  // ✅ Always return the STATE object (not wrapper)
+  function normalizePayload(res) {
+    if (!res || typeof res !== "object") return null;
+
+    // direct state
+    if (res.state && typeof res.state === "object") return res.state;
+
+    // nested data.state
+    if (res.data && typeof res.data === "object") {
+      if (res.data.state && typeof res.data.state === "object") return res.data.state;
+      return res.data;
+    }
+
+    // payload.state
+    if (res.payload && typeof res.payload === "object") {
+      if (res.payload.state && typeof res.payload.state === "object") return res.payload.state;
+      return res.payload;
+    }
+
+    // some servers return {result:{state}}
+    if (res.result && typeof res.result === "object") {
+      if (res.result.state && typeof res.result.state === "object") return res.result.state;
+      return res.result;
+    }
+
+    // already state-shaped
+    return res;
+  }
+
+  // =========================
+  // Rendering
+  // =========================
   function renderLoading(msg) {
     if (!_root) return;
     _root.innerHTML = `
       <div class="m-stage">
-        <div class="ah-card m-card">
-          <div class="ah-muted">${esc(msg)}</div>
+        <div class="m-card">
+          <div class="m-muted">${esc(msg)}</div>
         </div>
       </div>
     `;
@@ -502,37 +410,202 @@
     if (!_root) return;
     _root.innerHTML = `
       <div class="m-stage">
-        <div class="ah-card m-card">
-          <div class="ah-title">${esc(title)}</div>
-          <div class="ah-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(detail || "")}</div>
+        <div class="m-card">
+          <div class="m-title">${esc(title)}</div>
+          <div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(detail || "")}</div>
           <div style="margin-top:12px; display:flex; gap:8px;">
-            <button type="button" class="ah-btn" data-act="refresh">Retry</button>
-            <button type="button" class="ah-btn ghost" data-act="close">Close</button>
+            <button type="button" class="btn" data-act="refresh">Retry</button>
+            <button type="button" class="btn" data-act="close">Close</button>
           </div>
         </div>
       </div>
     `;
   }
 
-  async function api(path, body) {
-    if (!_apiPost) throw new Error("Missions: apiPost missing");
-    const res = await _apiPost(path, body);
-    if (res && typeof res === "object" && res.ok === false) {
-      const reason = res.reason || res.error || "NOT_OK";
-      throw new Error(String(reason));
+  function paintActive(a) {
+    const box = el("missionsActiveBox");
+    if (!box) return;
+
+    const status = a?.status || "NONE";
+    const staticResolve = el("missionsResolve");
+
+    // Default: hide static resolve
+    if (staticResolve) staticResolve.style.display = "none";
+
+    if (status === "NONE") {
+      box.innerHTML = `
+        <div class="m-row">
+          <div style="min-width:0;">
+            <div class="m-title">No active mission</div>
+            <div class="m-muted" style="margin-top:6px;">Pick an offer below to start.</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:140px;">
+            <button type="button" class="btn" data-act="refresh">Refresh</button>
+          </div>
+        </div>
+      `;
+      return;
     }
-    return res;
+
+    const remaining = Number(a.remaining || 0);
+    const pct = Math.round((Number(a.pct || 0)) * 100);
+
+    if (status === "READY") {
+      if (staticResolve) staticResolve.style.display = "";
+    }
+
+    box.innerHTML = `
+      <div class="m-row">
+        <div style="min-width:0;">
+          <div class="m-title">${esc(a.title || "Mission")}</div>
+          <div class="m-muted" style="margin-top:6px;">
+            ${
+              status === "RUNNING"
+                ? `Ready in <b>${esc(_fmtTime(remaining))}</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}`
+                : `<b>Ready</b> — resolve now`
+            }
+          </div>
+
+          <div class="m-bar">
+            <div class="m-bar-fill" style="width:${pct}%"></div>
+          </div>
+
+          <div class="m-muted" style="margin-top:6px;">
+            Progress: <b>${esc(pct)}%</b>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; min-width:140px;">
+          <button type="button" class="btn" data-act="refresh">Refresh</button>
+          <button type="button" class="btn primary" data-act="resolve" style="${status === "READY" ? "" : "display:none"}">Resolve</button>
+        </div>
+      </div>
+    `;
   }
 
-  // ✅ support: {ok:true, state:{...}} and {ok:true, data:{...}}
-  function normalizePayload(res) {
-    if (!res || typeof res !== "object") return null;
-    if (res.state && typeof res.state === "object") return res.state;
-    if (res.data && typeof res.data === "object") return res.data;
-    if (res.payload && typeof res.payload === "object") return res.payload;
-    return res;
+  function renderOffer(o, active) {
+    const tier  = String(o?.tier || "");
+    const label = String(o?.label || tier || "Tier");
+    const title = String(o?.title || "");
+    const desc  = String(o?.desc || "");
+
+    const durSec = Number(o?.durationSec || o?.duration_sec || 0);
+    const dur =
+      o?.durationLabel ||
+      (durSec ? `${Math.max(1, Math.round(durSec / 60))}m` : "") ||
+      (o?.tierTime ? `${o.tierTime}` : "—");
+
+    const reward = o?.reward || o?.rewardPreview || {};
+    const xp = (reward.xp ?? o?.xp ?? "?");
+    const bones = (reward.bones ?? o?.bones ?? "?");
+    const rolls = (o?.lootRolls ?? o?.loot_rolls ?? reward.rolls ?? reward.loot_rolls ?? "?");
+
+    const offerId = String(o?.offerId || o?.id || o?.offer_id || "");
+
+    const hasActive = !!(active?.status && active.status !== "NONE");
+    const disabled = hasActive ? "disabled" : "";
+
+    return `
+      <div class="m-offer">
+        <div class="m-row">
+          <div style="min-width:0;">
+            <div class="m-title">${esc(label)} <span class="m-muted">(${esc(dur)})</span></div>
+            ${title ? `<div class="m-muted" style="margin-top:6px;"><b>${esc(title)}</b></div>` : ""}
+            ${desc ? `<div class="m-muted" style="margin-top:4px;">${esc(desc)}</div>` : ""}
+            <div class="m-muted" style="margin-top:8px;">
+              XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
+              ${hasActive ? ` · Resolve active mission first` : ""}
+            </div>
+          </div>
+
+          <button type="button" class="btn primary"
+            data-act="start"
+            data-tier="${esc(tier)}"
+            data-offer="${esc(offerId)}"
+            ${disabled}
+          >Start</button>
+        </div>
+      </div>
+    `;
   }
 
+  function renderLast(last) {
+    const result = String(last?.result || "");
+    const victory = (result === "victory" || last?.victory) ? "✅ Victory" : "❌ Defeat";
+    const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
+
+    const rewardMsg = String(last?.rewardMsg || last?.reward_msg || "");
+    const lootMsg = String(last?.lootMsg || last?.loot_msg || "");
+    const tokenLootMsg = String(last?.tokenLootMsg || last?.token_loot_msg || "");
+
+    return `
+      <div class="m-card">
+        <div class="m-title">Last Resolve</div>
+        <div class="m-muted" style="margin-top:8px;">
+          ${esc(victory)} ${ts ? `· <b>${esc(ts)}</b>` : ""}
+        </div>
+        ${rewardMsg ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(rewardMsg)}</div>` : ""}
+        ${lootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(lootMsg)}</div>` : ""}
+        ${tokenLootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(tokenLootMsg)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function render() {
+    if (!_root) return;
+
+    const payload = normalizePayload(_state);
+    if (!payload || typeof payload !== "object") {
+      renderError("Bad payload", JSON.stringify(_state).slice(0, 900));
+      return;
+    }
+
+    _syncServerClock(payload);
+
+    const offers = Array.isArray(payload.offers) ? payload.offers : [];
+    const active = getActive(payload);
+    const last   = payload.lastResolve || payload.last_resolve || null;
+
+    _root.innerHTML = `
+      <div class="m-stage">
+
+        <div class="m-card" id="missionsActiveBox"></div>
+
+        <div class="m-card">
+          <div class="m-row">
+            <div style="min-width:0;">
+              <div class="m-title">Offers</div>
+              <div class="m-muted" style="margin-top:6px;">Pick a tier. Start → wait → resolve.</div>
+            </div>
+            <button type="button" class="btn" data-act="refresh">Refresh</button>
+          </div>
+
+          <div class="m-hr"></div>
+
+          <div>
+            ${
+              offers.length
+                ? offers.map(o => renderOffer(o, active)).join("")
+                : `<div class="m-muted">No offers yet. Tap Refresh.</div>`
+            }
+          </div>
+        </div>
+
+        ${last ? renderLast(last) : ""}
+
+        <div class="m-muted" style="text-align:center; opacity:.85;">
+          Missions are backend-driven. If backend is offline you’ll see an error here.
+        </div>
+
+      </div>
+    `;
+
+    paintActive(active);
+  }
+
+  // =========================
+  // State fetch + actions
+  // =========================
   async function loadState() {
     renderLoading("Loading missions…");
     try {
@@ -540,7 +613,7 @@
       _state = res;
       render();
     } catch (e) {
-      renderError("Missions backend offline (404?)", String(e?.message || e || ""));
+      renderError("Missions backend error", String(e?.message || e || ""));
     }
   }
 
@@ -559,6 +632,7 @@
 
   async function doStart(tier, offerId) {
     try {
+      // tolerate backend expecting offerId / offer_id / id
       const body = {
         action: "start",
         tier,
@@ -570,6 +644,8 @@
       const res = await api("/webapp/missions/action", body);
       _state = res;
       render();
+
+      try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     } catch (e) {
       renderError("Start failed", String(e?.message || e || ""));
     }
@@ -583,208 +659,22 @@
       });
       _state = res;
       render();
+
+      try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
     }
   }
 
   // =========================
-  // Active panel (waiting window + bar)
+  // Public API
   // =========================
-  function paintActive(a) {
-    const box = el("missionsActiveBox");
-    if (!box) return;
-
-    const status = a?.status || "NONE";
-
-    if (status === "NONE") {
-      box.innerHTML = `
-        <div class="ah-row" style="justify-content:space-between; gap:10px;">
-          <div>
-            <div class="ah-title">No active mission</div>
-            <div class="ah-muted" style="margin-top:4px;">Pick an offer to start.</div>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:8px; min-width:140px;">
-            <button type="button" class="ah-btn ghost" data-act="refresh">Refresh</button>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    if (!el("mWaitEta") || !el("mBarFill")) {
-      box.innerHTML = `
-        <div class="m-wait">
-          <div class="m-wait-top">
-            <div style="min-width:0;">
-              <div class="ah-title">${esc(a.title || "Mission")}</div>
-              <div id="mWaitEta" class="m-wait-eta">—</div>
-            </div>
-
-            <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch; min-width:140px;">
-              <button type="button" class="ah-btn ghost" data-act="refresh">Refresh</button>
-              <button id="mResolveBtn" type="button" class="ah-btn" data-act="resolve" style="display:none">Resolve</button>
-            </div>
-          </div>
-
-          <div class="m-bar">
-            <div id="mBarFill" class="m-bar-fill" style="width:0%"></div>
-          </div>
-
-          <div id="mWaitMeta" class="m-wait-meta"></div>
-        </div>
-      `;
-    }
-
-    const etaEl = el("mWaitEta");
-    const fillEl = el("mBarFill");
-    const metaEl = el("mWaitMeta");
-    const resolveBtn = el("mResolveBtn");
-
-    const remaining = Number(a.remaining || 0);
-    const pct = Math.round((Number(a.pct || 0)) * 100);
-
-    if (fillEl) fillEl.style.width = `${pct}%`;
-
-    if (etaEl) {
-      etaEl.innerHTML =
-        status === "RUNNING"
-          ? `Ready in <b>${_fmtTime(remaining)}</b>`
-          : `<b>Ready</b> — resolve now`;
-    }
-
-    if (metaEl) {
-      metaEl.textContent =
-        status === "RUNNING"
-          ? `Progress: ${pct}% · Ready at: ${a.readyAt || "—"}`
-          : `Tap Resolve to claim rewards.`;
-    }
-
-    if (resolveBtn) {
-      resolveBtn.style.display = (status === "READY") ? "" : "none";
-    }
-  }
-
-  function renderOffer(o, active) {
-    const tier  = String(o?.tier || "");
-    const label = String(o?.label || tier || "Tier");
-    const title = String(o?.title || "");
-    const desc  = String(o?.desc || "");
-
-    const durSec = Number(o?.durationSec || 0);
-    const dur =
-      o?.durationLabel ||
-      (durSec ? `${Math.max(1, Math.round(durSec / 60))}m` : "") ||
-      (o?.tierTime ? `${o.tierTime}` : "—");
-
-    const reward = o?.reward || o?.rewardPreview || {};
-    const xp = (reward.xp ?? "?");
-    const bones = (reward.bones ?? "?");
-    const rolls = (o?.lootRolls ?? o?.loot_rolls ?? o?.lootRolls ?? reward.rolls ?? reward.loot_rolls ?? "?");
-
-    const offerId = String(o?.offerId || o?.id || "");
-
-    const hasActive = !!(active?.status && active.status !== "NONE");
-    const disabled = hasActive ? "disabled" : "";
-
-    return `
-      <div class="m-offer">
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-          <div style="min-width:0;">
-            <div class="ah-title">${esc(label)} <span class="ah-muted">(${esc(dur)})</span></div>
-            ${title ? `<div class="ah-muted" style="margin-top:4px;"><b>${esc(title)}</b></div>` : ""}
-            ${desc ? `<div class="ah-muted" style="margin-top:2px;">${esc(desc)}</div>` : ""}
-            <div class="ah-muted" style="margin-top:6px;">
-              XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
-              ${hasActive ? ` · <span class="ah-muted">Resolve active mission first</span>` : ""}
-            </div>
-          </div>
-          <button type="button" class="ah-btn"
-            data-act="start"
-            data-tier="${esc(tier)}"
-            data-offer="${esc(offerId)}"
-            ${disabled}
-          >Start</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderLast(last) {
-    const result = String(last?.result || "");
-    const victory = (result === "victory" || last?.victory) ? "✅ Victory" : "❌ Defeat";
-    const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
-
-    const rewardMsg = String(last?.rewardMsg || "");
-    const lootMsg = String(last?.lootMsg || "");
-    const tokenLootMsg = String(last?.tokenLootMsg || "");
-
-    return `
-      <div class="ah-card m-card" style="margin-top:10px;">
-        <div class="ah-title">Last Resolve</div>
-        <div class="ah-muted" style="margin-top:6px;">
-          ${esc(victory)} ${ts ? `· <b>${esc(ts)}</b>` : ""}
-        </div>
-        ${rewardMsg ? `<div class="ah-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(rewardMsg)}</div>` : ""}
-        ${lootMsg ? `<div class="ah-muted" style="margin-top:4px; white-space:pre-wrap;">${esc(lootMsg)}</div>` : ""}
-        ${tokenLootMsg ? `<div class="ah-muted" style="margin-top:4px; white-space:pre-wrap;">${esc(tokenLootMsg)}</div>` : ""}
-      </div>
-    `;
-  }
-
-  function render() {
-    if (!_root) return;
-
-    const payload = normalizePayload(_state);
-    if (!payload || typeof payload !== "object") {
-      renderError("Bad payload", JSON.stringify(_state).slice(0, 900));
-      return;
-    }
-
-    _syncServerClock(payload);
-
-    const offers = Array.isArray(payload.offers) ? payload.offers : [];
-    const active = getActive(payload);
-    const last   = payload.lastResolve || null;
-
-    _root.innerHTML = `
-      <div class="m-stage">
-        <div class="ah-card m-card" id="missionsActiveBox"></div>
-
-        <div class="ah-card m-card" style="margin-top:10px;">
-          <div class="ah-row" style="justify-content:space-between; gap:10px;">
-            <div>
-              <div class="ah-title">Offers</div>
-              <div class="ah-muted" style="margin-top:4px;">Pick a tier — stability first, icons next.</div>
-            </div>
-            <button type="button" class="ah-btn ghost" data-act="refresh">Refresh</button>
-          </div>
-
-          <div style="margin-top:10px;">
-            ${
-              offers.length
-                ? offers.map(o => renderOffer(o, active)).join("")
-                : `<div class="ah-muted">No offers yet. Tap Refresh.</div>`
-            }
-          </div>
-        </div>
-
-        ${last ? renderLast(last) : ""}
-
-        <div class="ah-muted" style="margin-top:10px; text-align:center; opacity:.85;">
-          Missions are backend-driven. If backend is offline you'll see an error here.
-        </div>
-      </div>
-    `;
-
-    paintActive(active);
-  }
-
   function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     ensureStyles();
+    ensureModal();
     log("init ok");
   }
 
