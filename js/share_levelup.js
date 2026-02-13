@@ -1,7 +1,8 @@
-// js/share_levelup.js — FINAL v2.2
+// js/share_levelup.js — FINAL v2.3 (front-only AAA preview overlay)
 // ✅ shareRow forced ABOVE hero-frame (even if DOM loads late / UI rerenders)
 // ✅ run_id + busy lock + haptics
-// ✅ popup: Open / Copy / Post on X
+// ✅ NEW: in-app Preview Modal (overlays Nick + clean LVL, masks template placeholders like '---')
+// ✅ popup: Open / Copy / Post on X (from preview modal)
 // ✅ apiPost lookup: window.apiPost OR window.S.apiPost OR window.AH.apiPost
 // ✅ supports buttons: data-share-style OR data-share-levelup-style
 (function (global) {
@@ -165,51 +166,252 @@
     if (!ok) openLink(intent);
   }
 
-  function popupResult(url) {
-  const tg = global.Telegram?.WebApp;
+  // ----------------------------
+  // NEW: Preview modal with overlays (nick + clean LVL)
+  // ----------------------------
+  function openPreview(cardUrl) {
+    const url = String(cardUrl || "");
 
-  const caption = "LEVEL UP. 🐺 #AlphaHusky #HOWLitsMade";
+    const nick = getNickFromUI();
+    const lvl = getLevelFromUI();
 
-  if (tg?.showPopup) {
-    try {
-      tg.showPopup(
-        {
-          title: "Share Card Ready",
-          message: "Tip: If X doesn't attach the image, open the card → save image → add in X.",
-          buttons: [
-            { id: "x", type: "default", text: "Post on X" },
-            { id: "open", type: "default", text: "Open card" },
-            { id: "copy", type: "default", text: "Copy link" },
-            { type: "close" }
-          ]
-        },
-        async (btnId) => {
-          if (btnId === "open") openLink(url);
+    // remove previous if exists
+    const old = document.getElementById("sharePreviewModal");
+    if (old) old.remove();
 
-          if (btnId === "copy") {
-            const ok = await copyText(url);
-            toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
-          }
+    const wrap = document.createElement("div");
+    wrap.id = "sharePreviewModal";
+    wrap.style.cssText = `
+      position:fixed; inset:0; z-index:2147483652;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.72); padding:16px;
+    `;
 
-          if (btnId === "x") {
-            // 1) spróbuj udostępnić obraz jako plik (mobile)
-            const ok = await tryNativeShareImage(url, caption);
-            if (ok) {
-              toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
-              return;
-            }
-            // 2) fallback: X intent (tekst + link)
-            openLink(buildXIntent(url));
-          }
-        }
-      );
-      return;
-    } catch (_) {}
+    const sheet = document.createElement("div");
+    sheet.style.cssText = `
+      width:min(92vw, 760px);
+      border-radius:18px;
+      background:rgba(10,14,22,.95);
+      box-shadow:0 18px 70px rgba(0,0,0,.6);
+      overflow:hidden;
+      border:1px solid rgba(140,190,255,.18);
+    `;
+
+    const top = document.createElement("div");
+    top.style.cssText = `
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 14px; gap:10px;
+      border-bottom:1px solid rgba(140,190,255,.12);
+    `;
+    top.innerHTML = `
+      <div style="font-weight:800; letter-spacing:.2px;">Share Card Preview</div>
+      <button id="spClose" type="button"
+        style="background:transparent;border:0;color:rgba(255,255,255,.85);
+               font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;">✕</button>
+    `;
+
+    // TUNABLE overlay anchors (percent of image)
+    // Adjust later if needed: top/left/width/height
+    const NAME_LEFT = "8.5%";
+    const NAME_TOP = "6.7%";
+    const NAME_W = "46%";
+    const NAME_H = "5.5%";
+
+    const LVL_RIGHT = "8.8%";
+    const LVL_TOP = "12.2%";
+    const LVL_W = "25%";
+    const LVL_H = "10%";
+
+    const stage = document.createElement("div");
+    stage.style.cssText = `position:relative; background:#05070b;`;
+    stage.innerHTML = `
+      <img id="spImg" src="${escapeHtml(url)}" style="display:block;width:100%;height:auto;" />
+
+      <!-- Nick overlay (inside name bar zone) -->
+      <div style="
+        position:absolute; left:${NAME_LEFT}; top:${NAME_TOP};
+        width:${NAME_W}; height:${NAME_H};
+        display:flex; align-items:center;
+        padding:0 10px;
+        color:#f2f8ff;
+        font-weight:900;
+        text-shadow:0 2px 8px rgba(0,0,0,.65), 0 0 18px rgba(120,190,255,.28);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        font-size:clamp(14px,2.2vw,26px);
+      ">${escapeHtml(nick)}</div>
+
+      <!-- Level overlay (covers ugly placeholders like '---') -->
+      <div style="
+        position:absolute; right:${LVL_RIGHT}; top:${LVL_TOP};
+        width:${LVL_W}; height:${LVL_H};
+        display:flex; align-items:center; justify-content:flex-end;
+        padding:10px 12px; gap:10px;
+        border-radius:12px;
+        background:rgba(6,10,16,.72);
+        border:1px solid rgba(140,190,255,.22);
+        backdrop-filter: blur(6px);
+        box-shadow:0 8px 22px rgba(0,0,0,.35);
+      ">
+        <div style="
+          font-weight:950; letter-spacing:.3px;
+          color:rgba(210,235,255,.92);
+          text-shadow:0 2px 8px rgba(0,0,0,.65);
+          font-size:clamp(12px,1.6vw,18px);
+        ">LVL</div>
+        <div style="
+          font-weight:1000;
+          color:#f2f8ff;
+          text-shadow:0 2px 10px rgba(0,0,0,.72), 0 0 18px rgba(120,190,255,.22);
+          font-size:clamp(22px,4.2vw,54px);
+          line-height:1;
+        ">${escapeHtml(lvl)}</div>
+      </div>
+    `;
+
+    const actions = document.createElement("div");
+    actions.style.cssText = `
+      display:flex; gap:10px; padding:12px 14px; flex-wrap:wrap;
+      border-top:1px solid rgba(140,190,255,.12);
+    `;
+    actions.innerHTML = `
+      <button id="spOpen" type="button" style="${btnCss(false)}">Open card</button>
+      <button id="spCopy" type="button" style="${btnCss(false)}">Copy link</button>
+      <button id="spX" type="button" style="${btnCss(true)}">Post on X</button>
+    `;
+
+    sheet.appendChild(top);
+    sheet.appendChild(stage);
+    sheet.appendChild(actions);
+    wrap.appendChild(sheet);
+    document.body.appendChild(wrap);
+
+    // close
+    q("#spClose", wrap)?.addEventListener("click", () => wrap.remove());
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) wrap.remove(); });
+
+    // actions
+    q("#spOpen", wrap)?.addEventListener("click", () => openLink(url));
+    q("#spCopy", wrap)?.addEventListener("click", async () => {
+      const ok = await copyText(url);
+      toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
+    });
+    q("#spX", wrap)?.addEventListener("click", async () => {
+      const caption = "LEVEL UP. 🐺 #AlphaHusky #HOWLitsMade";
+      const ok = await tryNativeShareImage(url, caption);
+      if (ok) {
+        toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
+        return;
+      }
+      openLink(buildXIntent(url));
+    });
+
+    // helpers (scoped)
+    function q(sel, root) { return (root || document).querySelector(sel); }
+
+    function btnCss(primary) {
+      return `
+        appearance:none;
+        border:1px solid ${primary ? "rgba(255,90,90,.35)" : "rgba(140,190,255,.22)"};
+        background:${primary ? "rgba(255,60,60,.18)" : "rgba(10,16,26,.65)"};
+        color:rgba(255,255,255,.92);
+        padding:10px 12px;
+        border-radius:12px;
+        cursor:pointer;
+        font-weight:900;
+        letter-spacing:.2px;
+      `;
+    }
   }
 
-  // fallback bez Telegram popup
-  if (confirm("Share card generated. Open it now?")) openLink(url);
-}
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function getNickFromUI() {
+    const candidates = [
+      "#heroName",
+      "#heroNick",
+      "#profileNick",
+      "#profileName",
+      "[data-hero-name]",
+      "[data-profile-nick]",
+      ".hero-name",
+      ".profile-nick"
+    ];
+    for (const sel of candidates) {
+      const t = document.querySelector(sel)?.textContent;
+      if (t && String(t).trim()) return String(t).trim();
+    }
+    // fallback: telegram user first name
+    const tgName = global.Telegram?.WebApp?.initDataUnsafe?.user?.first_name;
+    return String(tgName || "Alpha").trim();
+  }
+
+  function getLevelFromUI() {
+    const raw =
+      (document.getElementById("heroLevel")?.textContent || "") ||
+      (document.querySelector("#heroLevel")?.textContent || "") ||
+      (document.querySelector("[data-hero-level]")?.textContent || "");
+
+    const m = String(raw || "").match(/(\d+)/);
+    return m ? m[1] : "?";
+  }
+
+  // ✅ UPDATED: use preview modal instead of popup-only
+  function popupResult(url) {
+    try {
+      openPreview(url);
+      return;
+    } catch (e) {
+      log("openPreview failed, fallback popup", e);
+    }
+
+    // fallback (old behavior)
+    const tg = global.Telegram?.WebApp;
+    const caption = "LEVEL UP. 🐺 #AlphaHusky #HOWLitsMade";
+
+    if (tg?.showPopup) {
+      try {
+        tg.showPopup(
+          {
+            title: "Share Card Ready",
+            message: "Tip: If X doesn't attach the image, open the card → save image → add in X.",
+            buttons: [
+              { id: "x", type: "default", text: "Post on X" },
+              { id: "open", type: "default", text: "Open card" },
+              { id: "copy", type: "default", text: "Copy link" },
+              { type: "close" }
+            ]
+          },
+          async (btnId) => {
+            if (btnId === "open") openLink(url);
+
+            if (btnId === "copy") {
+              const ok = await copyText(url);
+              toast("Share Card", ok ? "Link copied ✅" : "Copy blocked on this device.");
+            }
+
+            if (btnId === "x") {
+              const ok = await tryNativeShareImage(url, caption);
+              if (ok) {
+                toast("Share Card", "Share sheet opened ✅ Choose X / Twitter.");
+                return;
+              }
+              openLink(buildXIntent(url));
+            }
+          }
+        );
+        return;
+      } catch (_) {}
+    }
+
+    if (confirm("Share card generated. Open it now?")) openLink(url);
+  }
 
   async function share(style, btnEl) {
     const apiPost =
