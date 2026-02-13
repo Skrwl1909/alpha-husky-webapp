@@ -118,16 +118,14 @@
          - glow controlled by UI: data-rarity + is-selected/is-equipped
          ========================================================= */
 
-      /* ✅ Hotspot -> icon layer (background) */
+      /* Hotspot -> icon layer (background) */
       .equip-hotspot .equip-icon{
         position:absolute;
-        inset:0;                 /* ✅ większa ikona (nie ucina) */
+        inset:6px; /* było 10px -> zmniejszało ikonę */
         pointer-events:none;
         background-repeat:no-repeat;
         background-position:center;
-
-        /* ✅ “padding” bez zmniejszania kontenera */
-        background-size: 96% 96%;
+        background-size:contain;
 
         filter:
           drop-shadow(0 0 6px rgba(0,255,255,.18))
@@ -152,12 +150,26 @@
         filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
       }
 
-      /* stronger only for selected/equipped (hotspot) */
-      .equip-hotspot.is-selected .equip-icon,
-      .equip-hotspot.is-equipped .equip-icon{
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.32))
-          drop-shadow(0 0 18px rgba(0,255,255,.14));
+      /* ✅ boost zachowuje kolor rzadkości (hotspot) */
+      .equip-hotspot.is-selected[data-rarity="common"] .equip-icon,
+      .equip-hotspot.is-equipped[data-rarity="common"] .equip-icon{
+        filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 0 16px rgba(255,255,255,.08));
+      }
+      .equip-hotspot.is-selected[data-rarity="uncommon"] .equip-icon,
+      .equip-hotspot.is-equipped[data-rarity="uncommon"] .equip-icon{
+        filter: drop-shadow(0 0 8px rgba(120,255,120,.32)) drop-shadow(0 0 18px rgba(120,255,120,.14));
+      }
+      .equip-hotspot.is-selected[data-rarity="rare"] .equip-icon,
+      .equip-hotspot.is-equipped[data-rarity="rare"] .equip-icon{
+        filter: drop-shadow(0 0 8px rgba(90,170,255,.32)) drop-shadow(0 0 18px rgba(90,170,255,.14));
+      }
+      .equip-hotspot.is-selected[data-rarity="epic"] .equip-icon,
+      .equip-hotspot.is-equipped[data-rarity="epic"] .equip-icon{
+        filter: drop-shadow(0 0 8px rgba(190,120,255,.32)) drop-shadow(0 0 18px rgba(190,120,255,.14));
+      }
+      .equip-hotspot.is-selected[data-rarity="legendary"] .equip-icon,
+      .equip-hotspot.is-equipped[data-rarity="legendary"] .equip-icon{
+        filter: drop-shadow(0 0 9px rgba(255,190,90,.34)) drop-shadow(0 0 20px rgba(255,190,90,.16));
       }
 
       /* === Icon boxes (lista + inspect) === */
@@ -218,10 +230,21 @@
         filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
       }
 
-      .equip-slot-btn.is-selected img.item-icon{
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.32))
-          drop-shadow(0 0 18px rgba(0,255,255,.14));
+      /* ✅ boost zachowuje kolor rzadkości (lista) */
+      .equip-slot-btn.is-selected[data-rarity="common"] img.item-icon{
+        filter: drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 0 16px rgba(255,255,255,.08));
+      }
+      .equip-slot-btn.is-selected[data-rarity="uncommon"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(120,255,120,.32)) drop-shadow(0 0 18px rgba(120,255,120,.14));
+      }
+      .equip-slot-btn.is-selected[data-rarity="rare"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(90,170,255,.32)) drop-shadow(0 0 18px rgba(90,170,255,.14));
+      }
+      .equip-slot-btn.is-selected[data-rarity="epic"] img.item-icon{
+        filter: drop-shadow(0 0 8px rgba(190,120,255,.32)) drop-shadow(0 0 18px rgba(190,120,255,.14));
+      }
+      .equip-slot-btn.is-selected[data-rarity="legendary"] img.item-icon{
+        filter: drop-shadow(0 0 9px rgba(255,190,90,.34)) drop-shadow(0 0 20px rgba(255,190,90,.16));
       }
     `;
     document.head.appendChild(style);
@@ -355,13 +378,7 @@
     el.style.setProperty("visibility", "visible", "important");
     el.style.backgroundRepeat = "no-repeat";
     el.style.backgroundPosition = "center";
-
-    // ✅ ważne: jeśli to hotspot icon layer -> większe
-    if (el.classList && el.classList.contains("equip-icon")) {
-      el.style.backgroundSize = "96% 96%";
-    } else {
-      el.style.backgroundSize = "contain";
-    }
+    el.style.backgroundSize = "contain";
 
     tryOne();
   }
