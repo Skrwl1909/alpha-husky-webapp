@@ -36,13 +36,6 @@
     else alert(msg);
   }
 
-  function _normRarity(r) {
-    r = String(r || "").toLowerCase().trim();
-    if (!r) return "common";
-    if (["common", "uncommon", "rare", "epic", "legendary"].includes(r)) return r;
-    return "common";
-  }
-
   function ensureEquippedStyles() {
     if (document.getElementById("equipped-styles")) return;
     const style = document.createElement("style");
@@ -88,7 +81,7 @@
         border-radius:18px;
         -webkit-tap-highlight-color: transparent;
 
-        /* dla ikon jako background (zostaje, ale ikona idzie do childa .equip-icon) */
+        /* dla ikon jako background */
         background-repeat:no-repeat;
         background-position:center;
         background-size:contain;
@@ -112,83 +105,6 @@
         overscroll-behavior: contain;
         touch-action: pan-y;
         padding-bottom: 28px;
-      }
-
-      /* =========================================================
-         ✅ Equipment Glow (UI-only)
-         - Master icons stay clean (no baked glow)
-         - Glow controlled by UI: data-rarity + is-selected/is-equipped
-         ========================================================= */
-
-      /* Hotspot -> icon layer */
-      .equip-hotspot .equip-icon{
-        position:absolute;
-        inset:10px;
-        pointer-events:none;
-        background-repeat:no-repeat;
-        background-position:center;
-        background-size:contain;
-
-        /* soft default glow */
-        filter:
-          drop-shadow(0 0 6px rgba(0,255,255,.18))
-          drop-shadow(0 0 14px rgba(0,255,255,.08));
-        will-change: filter;
-      }
-
-      /* rarity ladder (hotspot) */
-      .equip-hotspot[data-rarity="common"] .equip-icon{
-        filter: drop-shadow(0 0 5px rgba(255,255,255,.12)) drop-shadow(0 0 12px rgba(255,255,255,.06));
-      }
-      .equip-hotspot[data-rarity="uncommon"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(120,255,120,.22)) drop-shadow(0 0 14px rgba(120,255,120,.10));
-      }
-      .equip-hotspot[data-rarity="rare"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(90,170,255,.22)) drop-shadow(0 0 14px rgba(90,170,255,.10));
-      }
-      .equip-hotspot[data-rarity="epic"] .equip-icon{
-        filter: drop-shadow(0 0 6px rgba(190,120,255,.22)) drop-shadow(0 0 14px rgba(190,120,255,.10));
-      }
-      .equip-hotspot[data-rarity="legendary"] .equip-icon{
-        filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
-      }
-
-      /* stronger only for selected/equipped (hotspot) */
-      .equip-hotspot.is-selected .equip-icon,
-      .equip-hotspot.is-equipped .equip-icon{
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.32))
-          drop-shadow(0 0 18px rgba(0,255,255,.14));
-      }
-
-      /* Lista slotów (po prawej) — glow na <img> */
-      .equip-slot-btn img.item-icon{
-        filter:
-          drop-shadow(0 0 6px rgba(0,255,255,.18))
-          drop-shadow(0 0 14px rgba(0,255,255,.08));
-        will-change: filter;
-      }
-
-      .equip-slot-btn[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 5px rgba(255,255,255,.12)) drop-shadow(0 0 12px rgba(255,255,255,.06));
-      }
-      .equip-slot-btn[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(120,255,120,.22)) drop-shadow(0 0 14px rgba(120,255,120,.10));
-      }
-      .equip-slot-btn[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(90,170,255,.22)) drop-shadow(0 0 14px rgba(90,170,255,.10));
-      }
-      .equip-slot-btn[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 6px rgba(190,120,255,.22)) drop-shadow(0 0 14px rgba(190,120,255,.10));
-      }
-      .equip-slot-btn[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 7px rgba(255,190,90,.24)) drop-shadow(0 0 16px rgba(255,190,90,.11));
-      }
-
-      .equip-slot-btn.is-selected img.item-icon{
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.32))
-          drop-shadow(0 0 18px rgba(0,255,255,.14));
       }
     `;
     document.head.appendChild(style);
@@ -347,19 +263,6 @@
       try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
     },
 
-    _selectSlot(slotKey) {
-      try {
-        document.querySelectorAll("#equip-hotspots .equip-hotspot.is-selected").forEach((el) => el.classList.remove("is-selected"));
-        document.querySelectorAll("#equip-slots .equip-slot-btn.is-selected").forEach((el) => el.classList.remove("is-selected"));
-
-        const hs = document.querySelector(`#equip-hotspots .equip-hotspot[data-slot="${slotKey}"]`);
-        if (hs) hs.classList.add("is-selected");
-
-        const lb = document.querySelector(`#equip-slots .equip-slot-btn[data-slot="${slotKey}"]`);
-        if (lb) lb.classList.add("is-selected");
-      } catch (_) {}
-    },
-
     async open() {
       ensureEquippedStyles();
 
@@ -494,7 +397,6 @@
             const isEmpty = !!slot.empty;
             const label = slot.label || slot.slot || "Slot";
             const itemName = isEmpty ? "Empty" : (slot.name || slot.item_key || "Unknown");
-            const rarityKey = _normRarity(slot.rarity);
             const rarity = slot.rarity ? `<span style="opacity:.8;">(${slot.rarity})</span>` : "";
             const subtitle = isEmpty ? "Empty slot" : (slot.level ? `Lv ${slot.level}` : "");
             const bonuses = slot.bonusesText
@@ -503,13 +405,12 @@
 
             const icon = slot.icon
               ? `<div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
-                   <img src="${slot.icon}" class="item-icon" style="width:100%;height:100%;object-fit:contain;">
+                   <img src="${slot.icon}" style="width:100%;height:100%;object-fit:contain;">
                  </div>`
               : `<div style="width:32px;height:32px;border-radius:8px;border:1px dashed rgba(255,255,255,.15);flex-shrink:0;"></div>`;
 
             return `
               <button data-slot="${slot.slot}"
-                      data-rarity="${rarityKey}"
                       class="equip-slot-btn"
                       type="button"
                       style="
@@ -558,8 +459,6 @@
 
           btn.onclick = () => {
             haptic("light");
-            this._selectSlot(slotKey);
-
             if (slotState.empty) {
               showAlert("Empty slot.");
               return;
@@ -642,15 +541,9 @@
         btn.style.borderRadius = "16px";
         btn.style.overflow = "hidden";
 
-        // rarity dla glow
-        btn.dataset.rarity = _normRarity(s.rarity);
-
-        // ✅ IKONA jako osobna warstwa (glow tylko na ikonie)
-        const icon = document.createElement("div");
-        icon.className = "equip-icon";
-        _setBgWithFallback(icon, s || {});
-        if (s.empty) icon.style.opacity = "0.35";
-        btn.appendChild(icon);
+        // ✅ IKONA jako background-image (nie <img>) -> omija problemy z CSS img/opacity
+        _setBgWithFallback(btn, s || {});
+        if (s.empty) btn.style.opacity = "0.35";
 
         if (dbg) {
           btn.style.outline = s.empty
@@ -662,9 +555,6 @@
           e.preventDefault();
           e.stopPropagation();
           haptic("light");
-
-          this._selectSlot(slotKey);
-
           if (s.empty) return showAlert("Empty slot.");
           this.inspect(slotKey);
         });
@@ -736,7 +626,7 @@
             iconUrl
               ? `
           <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.4);flex-shrink:0;">
-            <img src="${iconUrl}" class="item-icon" style="width:100%;height:100%;object-fit:contain;">
+            <img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;">
           </div>`
               : ""
           }
