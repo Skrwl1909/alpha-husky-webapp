@@ -21,19 +21,15 @@
   let _tg = null;
   let _dbg = false;
 
-  let _modal = null; // #missionsBack (index) or fallback #missionsModal
+  let _modal = null; // #missionsBack or #missionsModal
   let _root = null;  // #missionsRoot
   let _tick = null;
   let _state = null;
 
-  // optimistic waiting after clicking Start
-  let _optimisticUntil = 0;
-  let _optimisticTitle = "Starting…";
-
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
   // =========================
-  // Styles (only inside Missions content)
+  // Styles (S&F vibe inside Missions content; DO NOT override global modals)
   // =========================
   function ensureStyles() {
     if (document.getElementById("missions-ui-css")) return;
@@ -42,7 +38,7 @@
     st.id = "missions-ui-css";
     st.textContent = `
       :root{
-        /* change if assets are elsewhere relative to index.html */
+        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
         --missions-bg: url("mission_bg.webp");
         --missions-wait-bg: url("mission_waiting_bg.webp");
         --missions-dust: url("dust.png");
@@ -50,7 +46,7 @@
 
       #missionsRoot{ display:block !important; }
 
-      /* Base stage */
+      /* Base stage (offers screen) */
       #missionsRoot .m-stage{
         position:relative;
         border:1px solid rgba(36,50,68,.95);
@@ -72,7 +68,7 @@
         overflow:hidden;
       }
 
-      /* WAITING mode */
+      /* WAITING mode = whole screen switches background */
       #missionsRoot .m-stage.m-stage-wait{
         background:
           radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
@@ -156,7 +152,9 @@
       }
       #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
-      /* Shakes & Fidget WAITING */
+      /* =========================
+         Shakes & Fidget WAITING UI
+         ========================= */
       #missionsRoot .m-wait-center{
         min-height: 360px;
         display:flex;
@@ -215,10 +213,12 @@
     if (_modal.__AH_MISSIONS_BOUND) return;
     _modal.__AH_MISSIONS_BOUND = 1;
 
+    // click backdrop closes
     _modal.addEventListener("click", (e) => {
       if (e.target === _modal) close();
     });
 
+    // delegated actions inside missionsRoot
     _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act], [data-act]");
       if (!btn) return;
@@ -261,7 +261,7 @@
       return;
     }
 
-    // fallback (shouldn't happen in your setup)
+    // fallback modal (shouldn't happen in your setup)
     const wrap = document.createElement("div");
     wrap.innerHTML = `
       <div id="missionsModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.72); z-index:999999;">
@@ -281,6 +281,9 @@
     bindOnceModalClicks();
   }
 
+  // =========================
+  // Open/Close (classes cooperate with your index missions-hotfix)
+  // =========================
   function open() {
     ensureModal();
     if (!_modal) return false;
@@ -314,7 +317,7 @@
   let _serverOffsetSec = 0;
 
   function _syncServerClock(payload) {
-    const nowTs = Number(payload?.now_ts || payload?.nowTs || payload?.serverNowTs || 0);
+    const nowTs = Number(payload?.now_ts || payload?.nowTs || 0);
     if (!nowTs) return;
     const clientNow = Date.now() / 1000;
     _serverOffsetSec = nowTs - clientNow;
@@ -338,182 +341,80 @@
     } catch (_) { return ""; }
   }
 
-  function _parseDurationSec(v) {
-    if (typeof v === "number" && isFinite(v)) return Math.max(0, Math.floor(v));
-    const s = String(v ?? "").trim().toLowerCase();
-    if (!s) return 0;
-
-    // "hh:mm:ss" or "mm:ss"
-    if (s.includes(":")) {
-      const parts = s.split(":").map(x => Number(x));
-      if (parts.some(n => !isFinite(n))) return 0;
-      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-      if (parts.length === 2) return parts[0] * 60 + parts[1];
-      return 0;
-    }
-
-    // "28m", "1h", "1h 20m", "90s"
-    let total = 0;
-    const re = /(\d+)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)/g;
-    let m;
-    while ((m = re.exec(s))) {
-      const num = Number(m[1]);
-      const u = m[2];
-      if (!isFinite(num)) continue;
-      if (u.startsWith("h")) total += num * 3600;
-      else if (u.startsWith("m")) total += num * 60;
-      else total += num;
-    }
-    if (total > 0) return total;
-
-    // "28" -> treat as seconds (safe)
-    if (/^\d+$/.test(s)) return Number(s);
-    return 0;
-  }
-
-  function _upper(x) { return String(x ?? "").trim().toUpperCase(); }
-
-  function _asObjOrFirst(x) {
-    if (!x) return null;
-    if (Array.isArray(x)) {
-      const first = x.find(v => v && typeof v === "object");
-      return first || null;
-    }
-    return (typeof x === "object") ? x : null;
-  }
-
   // =========================
-  // Active mission parsing (robust)
+  // Active parsing
   // =========================
   let _legacyAnchor = null;
 
   function getActive(payload) {
-    const raw =
-      payload?.active_mission ||
-      payload?.activeMission ||
-      payload?.active ||
-      payload?.missionActive ||
-      null;
+    const am = payload?.active_mission || payload?.activeMission || payload?.active || null;
+    if (!am || typeof am !== "object") return { status: "NONE" };
 
-    const am = _asObjOrFirst(raw);
-    if (!am) return { status: "NONE" };
+    const title = am.title || am.name || am.label || "Mission";
 
-    const title = am.title || am.name || am.label || am.missionName || "Mission";
-
-    // status can be in: status/state/phase
-    const stRaw = _upper(am.status || am.state || am.phase || am.stage || "");
-
-    // map to RUNNING/READY when possible
-    let status = "";
-    if (["IN_PROGRESS","INPROGRESS","RUNNING","ACTIVE","STARTED","IN_PROGRESS_MISSION"].includes(stRaw)) status = "RUNNING";
-    if (["DONE","COMPLETED","READY","FINISHED","RESOLVABLE"].includes(stRaw)) status = "READY";
-
-    // timestamps / duration (duration may be "28m" string)
-    const started = Number(
-      am.started_ts ?? am.start_ts ?? am.start_time ?? am.startTime ?? am.startedAt ?? 0
-    ) || 0;
-
-    const dur = _parseDurationSec(am.duration_sec ?? am.durationSec ?? am.duration ?? am.duration_label ?? 0);
-
+    const started = Number(am.started_ts || am.start_ts || am.start_time || am.startTime || 0);
+    const dur = Number(am.duration_sec || am.duration || am.durationSec || 0);
     const ends =
-      Number(am.ends_ts ?? am.endsTs ?? am.ready_at_ts ?? am.readyAtTs ?? am.ready_at ?? am.readyAt ?? am.end_time ?? 0) ||
+      Number(am.ends_ts || am.ready_at_ts || am.ready_at || am.endsTs || 0) ||
       (started && dur ? (started + dur) : 0);
 
-    // remaining can be in many keys
-    const remKey =
-      am.leftSec ?? am.left_sec ??
-      am.remainingSec ?? am.remaining_sec ??
-      am.etaSec ?? am.eta_sec ??
-      am.cooldownLeftSec ?? am.cooldown_left_sec ??
-      am.time_left ?? am.timeLeft ?? null;
+    const stRaw = String(am.status || "").toUpperCase();
 
-    const remFromKey = (remKey === null || remKey === undefined) ? null : Number(remKey);
-
-    // if we have ends -> compute remaining + pct
     if (ends) {
       const now = _nowSec();
       const total = dur || Math.max(1, ends - (started || ends));
       const remaining = Math.max(0, Math.ceil(ends - now));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-
-      const st = remaining > 0 ? "RUNNING" : "READY";
       return {
-        status: st,
+        status: remaining > 0 ? "RUNNING" : "READY",
         title,
         started_ts: started,
-        duration_sec: total,
+        duration_sec: dur || total,
         ends_ts: ends,
         remaining,
         total,
         pct,
-        readyAt: am.readyAtLabel || am.ready_at_label || am.readyAt || _fmtClock(ends),
-        _raw: am,
+        readyAt: am.readyAt || am.ready_at_label || _fmtClock(ends),
       };
     }
 
-    // if we have remaining seconds from key -> compute running/ready + pct using legacy anchor
-    if (isFinite(remFromKey) && remFromKey !== null) {
-      if (!status) status = (remFromKey > 0 ? "RUNNING" : "READY");
+    const rawLeft = (am.leftSec ?? am.left_sec);
+    const left = (typeof rawLeft === "number") ? rawLeft : Number(rawLeft || 0);
 
-      if (status === "RUNNING") {
-        const now = _nowSec();
-        if (!_legacyAnchor || _legacyAnchor.left !== remFromKey || _legacyAnchor.title !== title) {
-          _legacyAnchor = { left: remFromKey, at: now, title };
-        }
-        const elapsed = Math.max(0, now - _legacyAnchor.at);
-        const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
-        const total = Math.max(1, dur || _legacyAnchor.left || 1);
-        const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-        return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "", _raw: am };
+    let status = stRaw;
+    if (!status) status = (left > 0 ? "RUNNING" : "READY");
+    if (status === "ACTIVE") status = "RUNNING";
+    if (status === "COMPLETED") status = "READY";
+
+    if (status === "RUNNING") {
+      const now = _nowSec();
+      if (!_legacyAnchor || _legacyAnchor.left !== left || _legacyAnchor.title !== title) {
+        _legacyAnchor = { left, at: now, title };
       }
-
-      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", _raw: am };
+      const elapsed = Math.max(0, now - _legacyAnchor.at);
+      const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
+      const total = Math.max(1, Number(am.duration_sec || am.duration || _legacyAnchor.left || 1));
+      const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
+      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "" };
     }
 
-    // last resort: if active object exists, treat as running even if fields are weird
-    if (!status) {
-      if (started || stRaw) status = (stRaw === "COMPLETED" ? "READY" : "RUNNING");
-      else status = "RUNNING";
+    if (status === "READY") {
+      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "" };
     }
 
-    // we can't compute remaining -> mark unknown
-    return {
-      status,
-      title,
-      remaining: null,
-      total: dur || null,
-      pct: 0,
-      readyAt: am.readyAt || "",
-      _raw: am,
-    };
+    return { status: "NONE" };
   }
 
   // =========================
-  // Tick (updates waiting)
+  // Tick (only when running/ready)
   // =========================
   function startTick() {
     stopTick();
     _tick = setInterval(() => {
       const payload = normalizePayload(_state);
       if (!payload) return;
-
       const a = getActive(payload);
-      if (a.status === "NONE") {
-        // optimistic still active?
-        if (Date.now() / 1000 < _optimisticUntil) {
-          paintWaiting({
-            status: "RUNNING",
-            title: _optimisticTitle,
-            remaining: null,
-            total: null,
-            pct: 0,
-            readyAt: "",
-          });
-        } else {
-          stopTick();
-        }
-        return;
-      }
+      if (a.status === "NONE") return;
       paintWaiting(a);
     }, 1000);
   }
@@ -524,11 +425,12 @@
   }
 
   // =========================
-  // API + normalize
+  // API + payload normalize
   // =========================
   async function api(path, body) {
     if (!_apiPost) throw new Error("Missions: apiPost missing");
     const res = await _apiPost(path, body);
+
     if (res && typeof res === "object" && res.ok === false) {
       const reason = res.reason || res.error || "NOT_OK";
       throw new Error(String(reason));
@@ -538,15 +440,29 @@
 
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
+
     if (res.state && typeof res.state === "object") return res.state;
-    if (res.data && typeof res.data === "object") return (res.data.state && typeof res.data.state === "object") ? res.data.state : res.data;
-    if (res.payload && typeof res.payload === "object") return (res.payload.state && typeof res.payload.state === "object") ? res.payload.state : res.payload;
-    if (res.result && typeof res.result === "object") return (res.result.state && typeof res.result.state === "object") ? res.result.state : res.result;
+
+    if (res.data && typeof res.data === "object") {
+      if (res.data.state && typeof res.data.state === "object") return res.data.state;
+      return res.data;
+    }
+
+    if (res.payload && typeof res.payload === "object") {
+      if (res.payload.state && typeof res.payload.state === "object") return res.payload.state;
+      return res.payload;
+    }
+
+    if (res.result && typeof res.result === "object") {
+      if (res.result.state && typeof res.result.state === "object") return res.result.state;
+      return res.result;
+    }
+
     return res;
   }
 
   // =========================
-  // UI primitives
+  // Rendering
   // =========================
   function renderLoading(msg) {
     if (!_root) return;
@@ -583,7 +499,7 @@
     const desc  = String(o?.desc || "");
 
     const durSec = Number(o?.durationSec || o?.duration_sec || 0);
-    const durLabel =
+    const dur =
       o?.durationLabel ||
       (durSec ? `${Math.max(1, Math.round(durSec / 60))}m` : "") ||
       (o?.tierTime ? `${o.tierTime}` : "—");
@@ -602,7 +518,7 @@
       <div class="m-offer">
         <div class="m-row">
           <div style="min-width:0;">
-            <div class="m-title">${esc(label)} <span class="m-muted">(${esc(durLabel)})</span></div>
+            <div class="m-title">${esc(label)} <span class="m-muted">(${esc(dur)})</span></div>
             ${title ? `<div class="m-muted" style="margin-top:6px;"><b>${esc(title)}</b></div>` : ""}
             ${desc ? `<div class="m-muted" style="margin-top:4px;">${esc(desc)}</div>` : ""}
             <div class="m-muted" style="margin-top:8px;">
@@ -643,61 +559,37 @@
     `;
   }
 
-  function renderWaitingStage(title) {
-    if (!_root) return;
-    _root.innerHTML = `
-      <div class="m-stage m-stage-wait">
-        <div class="m-wait-center">
-          <div class="m-muted">${esc(title || "Mission")}</div>
-          <div id="mClock" class="m-clock">—</div>
-          <div id="mClockSub" class="m-clock-sub">Syncing…</div>
-
-          <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
-
-          <div class="m-actions">
-            <button type="button" class="btn" data-act="refresh">Refresh</button>
-            <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
-            <button type="button" class="btn" data-act="close">Close</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // hide bottom btn-row from index (S&F feel)
-    const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
-    if (row) row.style.display = "none";
-  }
-
+  // WAITING renderer (center clock + bar)
   function paintWaiting(a) {
     const clockEl = el("mClock");
     const subEl = el("mClockSub");
     const fillEl = el("mFill");
     const resolveBtn = el("mResolveBtn");
+
     if (!clockEl || !subEl || !fillEl) return;
 
     const status = a?.status || "NONE";
-    const remaining = (a.remaining === null || a.remaining === undefined) ? null : Number(a.remaining);
+    const remaining = Number(a.remaining || 0);
     const pct = Math.round((Number(a.pct || 0)) * 100);
 
-    fillEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    fillEl.style.width = `${pct}%`;
 
     if (status === "RUNNING") {
-      clockEl.textContent = (remaining === null) ? "—" : _fmtTime(remaining);
-      subEl.innerHTML =
-        (remaining === null)
-          ? `Syncing timer… ${a.readyAt ? `· Ready at <b>${esc(a.readyAt)}</b>` : ""}`
-          : `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}`;
+      clockEl.textContent = _fmtTime(remaining);
+      subEl.innerHTML = `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}`;
       if (resolveBtn) resolveBtn.style.display = "none";
     } else {
       clockEl.textContent = "READY";
       subEl.textContent = "Tap Resolve to claim rewards.";
       if (resolveBtn) resolveBtn.style.display = "";
     }
+
+    // hide bottom btn-row from index for S&F feel
+    const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
+    if (row) row.style.display = "none";
   }
 
-  // =========================
-  // Main render (2 modes)
-  // =========================
+  // Main render (2 modes like Shakes & Fidget)
   function render() {
     if (!_root) return;
 
@@ -709,31 +601,39 @@
 
     _syncServerClock(payload);
 
+    const offers = Array.isArray(payload.offers) ? payload.offers : [];
     const active = getActive(payload);
+    const last   = payload.lastResolve || payload.last_resolve || null;
 
-    // If backend has active object but we still got NONE, force waiting anyway
-    const rawActiveExists = !!(
-      payload.active_mission || payload.activeMission || payload.active || payload.missionActive
-    );
+    // ✅ MODE: ACTIVE => full waiting screen (no offers)
+    if (active.status && active.status !== "NONE") {
+      _root.innerHTML = `
+        <div class="m-stage m-stage-wait">
+          <div class="m-wait-center">
+            <div class="m-muted">${esc(active.title || "Mission")}</div>
+            <div id="mClock" class="m-clock">—</div>
+            <div id="mClockSub" class="m-clock-sub">—</div>
 
-    // MODE: WAITING
-    if ((active.status && active.status !== "NONE") || rawActiveExists) {
-      renderWaitingStage(active.title || _optimisticTitle || "Mission");
-      paintWaiting(active.status === "NONE"
-        ? { status: "RUNNING", title: active.title || _optimisticTitle, remaining: null, total: null, pct: 0, readyAt: "" }
-        : active
-      );
+            <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
+
+            <div class="m-actions">
+              <button type="button" class="btn" data-act="refresh">Refresh</button>
+              <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
+              <button type="button" class="btn" data-act="close">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      paintWaiting(active);
       startTick();
       return;
     }
 
-    // MODE: OFFERS
+    // ✅ MODE: NONE => offers list (and last resolve)
     stopTick();
 
-    const offers = Array.isArray(payload.offers) ? payload.offers : [];
-    const last = payload.lastResolve || payload.last_resolve || null;
-
-    // show bottom btn-row again
+    // show bottom btn-row (optional)
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
     if (row) row.style.display = "";
 
@@ -756,7 +656,7 @@
           <div class="m-row">
             <div style="min-width:0;">
               <div class="m-title">Offers</div>
-              <div class="m-muted" style="margin-top:6px;">Start → Wait → Resolve (Shakes & Fidget style).</div>
+              <div class="m-muted" style="margin-top:6px;">Pick a tier — Start → Wait → Resolve.</div>
             </div>
             <button type="button" class="btn" data-act="refresh">Refresh</button>
           </div>
@@ -782,14 +682,13 @@
   }
 
   // =========================
-  // Actions
+  // Actions (always reload full state after mutation)
   // =========================
   async function loadState() {
     renderLoading("Loading missions…");
     try {
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
-      _optimisticUntil = 0;
       render();
     } catch (e) {
       renderError("Missions backend error", String(e?.message || e || ""));
@@ -806,13 +705,6 @@
   }
 
   async function doStart(tier, offerId) {
-    // ✅ instant switch to waiting (S&F feel)
-    _optimisticTitle = "Starting…";
-    _optimisticUntil = (Date.now() / 1000) + 12; // 12s window
-    renderWaitingStage(_optimisticTitle);
-    paintWaiting({ status: "RUNNING", title: _optimisticTitle, remaining: null, total: null, pct: 0, readyAt: "" });
-    startTick();
-
     try {
       await api("/webapp/missions/action", {
         action: "start",
@@ -828,7 +720,7 @@
     } catch (e) {
       const msg = String(e?.message || e || "");
 
-      // ✅ If backend says ACTIVE => don't show error, just reload & show waiting
+      // ✅ If backend says ACTIVE — don't show error, just reload and show WAITING
       if (msg.toUpperCase() === "ACTIVE") {
         await loadState();
         return;
