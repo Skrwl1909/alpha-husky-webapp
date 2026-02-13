@@ -44,6 +44,56 @@
         --m-panel: rgba(8, 12, 18, .55);
       }
 
+      /* =========================
+         FIX: overlay stacking + sizing + scroll
+         ========================= */
+      #missionsBack, #missionsModal{
+        position: fixed !important;
+        inset: 0 !important;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        box-sizing: border-box;
+        background: rgba(0,0,0,.62);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 2147483000 !important; /* zawsze nad bottom dock (QUESTS etc.) */
+      }
+
+      /* panel w środku (nie zakładamy klas — bierzemy pierwsze dziecko) */
+      #missionsBack > * , #missionsModal > *{
+        width: min(560px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;   /* scroll ma być wewnątrz root */
+        min-height: 0;
+      }
+
+      /* jeśli masz typowe wrappery */
+      #missionsBack .ah-modal,
+      #missionsBack .ah-sheet,
+      #missionsBack .sheet,
+      #missionsModal .ah-modal{
+        width: min(560px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px - env(safe-area-inset-bottom));
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        min-height:0;
+      }
+
+      /* KLUCZ: missionsRoot ma być scrollowalny */
+      #missionsRoot{
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        min-height: 0;
+        padding-bottom: calc(120px + env(safe-area-inset-bottom)); /* żeby Resolve/Start nie były ucięte */
+        touch-action: pan-y;
+      }
+
       /* Stage wrapper inside missionsRoot */
       #missionsRoot .m-stage{
         position: relative;
@@ -166,7 +216,6 @@
         align-items:flex-start;
         gap:10px;
       }
-      #missionsRoot .m-wait-title{ font-weight:900; letter-spacing:.3px; }
       #missionsRoot .m-wait-eta{ font-weight:800; opacity:.92; margin-top:4px; }
       #missionsRoot .m-wait-meta{ font-size:12px; opacity:.78; margin-top:6px; }
 
@@ -202,7 +251,7 @@
         #missionsRoot .m-bar-fill::after{ animation:none; }
       }
 
-      /* Small polish for offer rows */
+      /* Offer rows */
       #missionsRoot .m-offer{
         border: 1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.18);
@@ -226,12 +275,10 @@
     if (_modal.__AH_MISSIONS_BOUND) return;
     _modal.__AH_MISSIONS_BOUND = 1;
 
-    // close by overlay click
     _modal.addEventListener("click", (e) => {
       if (e.target === _modal && (_modal.id === "missionsModal" || _modal.id === "missionsBack")) close();
     });
 
-    // event delegation
     _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act], [data-act]");
       if (!btn) return;
@@ -254,36 +301,34 @@
   function ensureModal() {
     ensureStyles();
 
-    // Prefer existing sheet from index.html:
     _modal = el("missionsBack") || el("missionsModal");
     _root  = el("missionsRoot");
 
     if (_modal && _root) {
       try {
-        _modal.style.position = _modal.style.position || "fixed";
-        _modal.style.inset = _modal.style.inset || "0";
-        _modal.style.zIndex = _modal.style.zIndex || "999999";
+        _modal.style.position = "fixed";
+        _modal.style.inset = "0";
+        _modal.style.zIndex = "2147483000";
       } catch (_) {}
       bindOnceModalClicks();
       return;
     }
 
-    // Fallback minimal modal
     const wrap = document.createElement("div");
     wrap.innerHTML = `
-      <div id="missionsModal" style="
-        display:none; position:fixed; inset:0; z-index:999999;
-        background:rgba(0,0,0,.65); align-items:center; justify-content:center;
-      ">
+      <div id="missionsModal">
         <div style="
           width:min(560px, calc(100vw - 24px));
-          max-height:calc(100vh - 24px);
-          overflow:auto;
+          max-height:calc(100vh - 24px - env(safe-area-inset-bottom));
+          overflow:hidden;
           background:rgba(20,20,24,.96);
           border:1px solid rgba(255,255,255,.10);
           border-radius:16px;
           box-shadow:0 20px 70px rgba(0,0,0,.55);
           padding:14px;
+          display:flex;
+          flex-direction:column;
+          min-height:0;
         ">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <div style="font-weight:700;">Missions</div>
@@ -291,7 +336,9 @@
               border:0; background:transparent; color:#fff; font-size:18px; cursor:pointer;
             ">✕</button>
           </div>
-          <div style="margin-top:12px;" id="missionsRoot"></div>
+          <div style="margin-top:12px; min-height:0; overflow:hidden;">
+            <div id="missionsRoot"></div>
+          </div>
         </div>
       </div>
     `;
@@ -332,7 +379,7 @@
   }
 
   // =========================
-  // Server-clock sync (anti-drift) + active mission parsing
+  // Server-clock sync + active parsing
   // =========================
   let _serverOffsetSec = 0;
 
@@ -363,11 +410,9 @@
     } catch (_) { return ""; }
   }
 
-  // Legacy fallback cache (if backend returns only leftSec without timestamps)
   let _legacyAnchor = null;
 
   function getActive(payload) {
-    // prefer canonical from backend
     const am = payload?.active_mission || payload?.activeMission || payload?.active || null;
     if (!am || typeof am !== "object") return { status: "NONE" };
 
@@ -379,13 +424,13 @@
       Number(am.ends_ts || am.ready_at_ts || am.ready_at || 0) ||
       (started && dur ? (started + dur) : 0);
 
-    // Best: timestamp mode
+    const stRaw = String(am.status || "").toUpperCase();
+
     if (ends) {
       const now = _nowSec();
       const total = dur || Math.max(1, ends - (started || ends));
       const remaining = Math.max(0, Math.ceil(ends - now));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-
       return {
         status: remaining > 0 ? "RUNNING" : "READY",
         title,
@@ -399,12 +444,15 @@
       };
     }
 
-    // Fallback: leftSec/status
     const rawLeft = (am.leftSec ?? am.left_sec);
     const left = (typeof rawLeft === "number") ? rawLeft : Number(rawLeft || 0);
-    const status = String(am.status || (left > 0 ? "RUNNING" : "READY")).toUpperCase();
 
-    // Anchor to count down locally without mutating state
+    // ACTIVE traktuj jak RUNNING, COMPLETED/READY jak READY
+    let status = stRaw;
+    if (!status) status = (left > 0 ? "RUNNING" : "READY");
+    if (status === "ACTIVE") status = "RUNNING";
+    if (status === "COMPLETED") status = "READY";
+
     if (status === "RUNNING") {
       const now = _nowSec();
       if (!_legacyAnchor || _legacyAnchor.left !== left || _legacyAnchor.title !== title) {
@@ -417,12 +465,13 @@
       return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "" };
     }
 
-    return { status: (status === "READY" ? "READY" : "NONE"), title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "" };
+    if (status === "READY") {
+      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "" };
+    }
+
+    return { status: "NONE" };
   }
 
-  // =========================
-  // Ticker (repaints; does NOT mutate state)
-  // =========================
   function startTick() {
     stopTick();
     _tick = setInterval(() => {
@@ -475,7 +524,7 @@
     return res;
   }
 
-  // ✅ support: {ok:true, data:{...}} and {ok:true, state:{...}}
+  // ✅ support: {ok:true, state:{...}} and {ok:true, data:{...}}
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
     if (res.state && typeof res.state === "object") return res.state;
@@ -510,7 +559,6 @@
 
   async function doStart(tier, offerId) {
     try {
-      // ✅ send aliases to avoid backend mismatch
       const body = {
         action: "start",
         tier,
@@ -564,7 +612,6 @@
       return;
     }
 
-    // Create waiting DOM once (then only update text/width)
     if (!el("mWaitEta") || !el("mBarFill")) {
       box.innerHTML = `
         <div class="m-wait">
@@ -615,18 +662,9 @@
 
     if (resolveBtn) {
       resolveBtn.style.display = (status === "READY") ? "" : "none";
-
-      if (status === "READY" && !resolveBtn.__pinged) {
-        resolveBtn.__pinged = true;
-        try { Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success"); } catch(_) {}
-      }
-      if (status !== "READY") resolveBtn.__pinged = false;
     }
   }
 
-  // =========================
-  // Offers + Last Resolve
-  // =========================
   function renderOffer(o, active) {
     const tier  = String(o?.tier || "");
     const label = String(o?.label || tier || "Tier");
@@ -634,9 +672,10 @@
     const desc  = String(o?.desc || "");
 
     const durSec = Number(o?.durationSec || 0);
-    const dur = o?.durationLabel
-      || (durSec ? `${Math.max(1, Math.round(durSec / 60))}m` : "")
-      || (o?.tierTime ? `${o.tierTime}` : "—");
+    const dur =
+      o?.durationLabel ||
+      (durSec ? `${Math.max(1, Math.round(durSec / 60))}m` : "") ||
+      (o?.tierTime ? `${o.tierTime}` : "—");
 
     const reward = o?.reward || o?.rewardPreview || {};
     const xp = (reward.xp ?? "?");
@@ -702,7 +741,6 @@
       return;
     }
 
-    // ✅ sync clock once per fresh state (avoid drift)
     _syncServerClock(payload);
 
     const offers = Array.isArray(payload.offers) ? payload.offers : [];
