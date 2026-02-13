@@ -22,14 +22,14 @@
   let _dbg = false;
 
   let _modal = null; // #missionsBack or #missionsModal
-  let _root = null;  // #missionsRoot (IMPORTANT: always query inside modal)
+  let _root = null;  // #missionsRoot (always inside modal)
   let _tick = null;
   let _state = null;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
   // =========================
-  // Styles (S&F vibe inside Missions content; DO NOT override global modals)
+  // Styles
   // =========================
   function ensureStyles() {
     if (document.getElementById("missions-ui-css")) return;
@@ -38,7 +38,6 @@
     st.id = "missions-ui-css";
     st.textContent = `
       :root{
-        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
         --missions-bg: url("mission_bg.webp");
         --missions-wait-bg: url("mission_waiting_bg.webp");
         --missions-dust: url("dust.png");
@@ -46,7 +45,6 @@
 
       #missionsRoot{ display:block !important; }
 
-      /* Base stage (offers screen) */
       #missionsRoot .m-stage{
         position:relative;
         border:1px solid rgba(36,50,68,.95);
@@ -68,7 +66,6 @@
         overflow:hidden;
       }
 
-      /* WAITING mode = whole screen switches background */
       #missionsRoot .m-stage.m-stage-wait{
         background:
           radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
@@ -138,7 +135,6 @@
         margin:10px 0;
       }
 
-      /* Offers */
       #missionsRoot .m-offer{
         border:1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.18);
@@ -152,9 +148,6 @@
       }
       #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
-      /* =========================
-         Shakes & Fidget WAITING UI
-         ========================= */
       #missionsRoot .m-wait-center{
         min-height: 360px;
         display:flex;
@@ -206,19 +199,17 @@
   }
 
   // =========================
-  // Modal wiring (index-first)
+  // Modal wiring
   // =========================
   function bindOnceModalClicks() {
     if (!_modal) return;
     if (_modal.__AH_MISSIONS_BOUND) return;
     _modal.__AH_MISSIONS_BOUND = 1;
 
-    // click backdrop closes
     _modal.addEventListener("click", (e) => {
       if (e.target === _modal) close();
     });
 
-    // delegated actions inside missionsRoot
     _modal.addEventListener("click", (e) => {
       const btn = e.target?.closest?.("button[data-act], [data-act]");
       if (!btn) return;
@@ -254,7 +245,6 @@
     ensureStyles();
 
     _modal = el("missionsBack") || el("missionsModal");
-    // ✅ PATCH A: always find missionsRoot INSIDE modal (avoid duplicate IDs in DOM)
     _root  = _modal ? _modal.querySelector("#missionsRoot") : null;
 
     if (_modal && _root) {
@@ -262,7 +252,6 @@
       return;
     }
 
-    // fallback modal (shouldn't happen in your setup)
     const wrap = document.createElement("div");
     wrap.innerHTML = `
       <div id="missionsModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.72); z-index:999999;">
@@ -282,9 +271,6 @@
     bindOnceModalClicks();
   }
 
-  // =========================
-  // Open/Close (classes cooperate with your index missions-hotfix)
-  // =========================
   function open() {
     ensureModal();
     if (!_modal) return false;
@@ -347,7 +333,6 @@
   // =========================
   let _legacyAnchor = null;
 
-  // ✅ PATCH B helper: some backends keep active mission in user_missions list
   function _pickActiveFromList(list) {
     if (!Array.isArray(list)) return null;
     return list.find(m => {
@@ -357,7 +342,6 @@
   }
 
   function getActive(payload) {
-    // ✅ PATCH B: broaden where we look for active mission
     const am =
       payload?.active_mission ||
       payload?.activeMission ||
@@ -379,7 +363,6 @@
       Number(am.ends_ts || am.ready_at_ts || am.ready_at || am.endsTs || 0) ||
       (started && dur ? (started + dur) : 0);
 
-    // ✅ PATCH B: state is often used instead of status
     const stRaw = String(am.status || am.state || "").toUpperCase();
 
     if (ends) {
@@ -428,7 +411,7 @@
   }
 
   // =========================
-  // Tick (only when running/ready)
+  // Tick
   // =========================
   function startTick() {
     stopTick();
@@ -447,7 +430,7 @@
   }
 
   // =========================
-  // API + payload normalize
+  // API
   // =========================
   async function api(path, body) {
     if (!_apiPost) throw new Error("Missions: apiPost missing");
@@ -460,26 +443,67 @@
     return res;
   }
 
+  // ✅ PATCH: normalize must NOT drop fields that are next to "state"
+  function _mergeExtras(base, src, skipSet) {
+    if (!src || typeof src !== "object") return base;
+    for (const k of Object.keys(src)) {
+      if (skipSet && skipSet.has(k)) continue;
+      if (base[k] === undefined) base[k] = src[k];
+    }
+    return base;
+  }
+
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
 
-    if (res.state && typeof res.state === "object") return res.state;
+    // { ok, state:{...}, active_mission:{...}, now_ts:... }
+    if (res.state && typeof res.state === "object") {
+      const base = { ...res.state };
+      _mergeExtras(base, res, new Set(["state", "ok"]));
+      return base;
+    }
 
+    // { ok, data:{ state:{...}, active_mission:{...} } }
     if (res.data && typeof res.data === "object") {
-      if (res.data.state && typeof res.data.state === "object") return res.data.state;
-      return res.data;
+      const d = res.data;
+      if (d.state && typeof d.state === "object") {
+        const base = { ...d.state };
+        _mergeExtras(base, d, new Set(["state", "ok"]));
+        _mergeExtras(base, res, new Set(["data", "ok"]));
+        return base;
+      }
+      const base = { ...d };
+      _mergeExtras(base, res, new Set(["data", "ok"]));
+      return base;
     }
 
     if (res.payload && typeof res.payload === "object") {
-      if (res.payload.state && typeof res.payload.state === "object") return res.payload.state;
-      return res.payload;
+      const p = res.payload;
+      if (p.state && typeof p.state === "object") {
+        const base = { ...p.state };
+        _mergeExtras(base, p, new Set(["state", "ok"]));
+        _mergeExtras(base, res, new Set(["payload", "ok"]));
+        return base;
+      }
+      const base = { ...p };
+      _mergeExtras(base, res, new Set(["payload", "ok"]));
+      return base;
     }
 
     if (res.result && typeof res.result === "object") {
-      if (res.result.state && typeof res.result.state === "object") return res.result.state;
-      return res.result;
+      const r = res.result;
+      if (r.state && typeof r.state === "object") {
+        const base = { ...r.state };
+        _mergeExtras(base, r, new Set(["state", "ok"]));
+        _mergeExtras(base, res, new Set(["result", "ok"]));
+        return base;
+      }
+      const base = { ...r };
+      _mergeExtras(base, res, new Set(["result", "ok"]));
+      return base;
     }
 
+    // fallback: raw object as state
     return res;
   }
 
@@ -581,7 +605,6 @@
     `;
   }
 
-  // WAITING renderer (center clock + bar)
   function paintWaiting(a) {
     const clockEl = el("mClock");
     const subEl = el("mClockSub");
@@ -606,12 +629,10 @@
       if (resolveBtn) resolveBtn.style.display = "";
     }
 
-    // hide bottom btn-row from index for S&F feel
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
     if (row) row.style.display = "none";
   }
 
-  // ✅ PATCH C helper: optimistic WAITING immediately after start (avoid backend delay blink)
   function _optimisticStart(tier, offerId) {
     const payload = normalizePayload(_state) || {};
     const offers = Array.isArray(payload.offers) ? payload.offers : [];
@@ -621,7 +642,7 @@
     const started = Math.floor(_nowSec());
     const title = String(o?.title || o?.label || tier || "Mission");
 
-    const next = {
+    _state = {
       ...payload,
       active_mission: {
         title,
@@ -631,12 +652,9 @@
         status: "RUNNING",
       }
     };
-
-    _state = next;
     render();
   }
 
-  // Main render (2 modes like Shakes & Fidget)
   function render() {
     if (!_root) return;
 
@@ -652,7 +670,6 @@
     const active = getActive(payload);
     const last   = payload.lastResolve || payload.last_resolve || null;
 
-    // ✅ MODE: ACTIVE => full waiting screen (no offers)
     if (active.status && active.status !== "NONE") {
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -677,10 +694,8 @@
       return;
     }
 
-    // ✅ MODE: NONE => offers list (and last resolve)
     stopTick();
 
-    // show bottom btn-row (optional)
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
     if (row) row.style.display = "";
 
@@ -729,7 +744,7 @@
   }
 
   // =========================
-  // Actions (always reload full state after mutation)
+  // Actions
   // =========================
   async function loadState() {
     renderLoading("Loading missions…");
@@ -737,11 +752,8 @@
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
 
-      // ✅ small debug surface
-      try {
-        window.__AH_MISSIONS_STATE = res;
-        log("state keys:", Object.keys(normalizePayload(res) || {}));
-      } catch (_) {}
+      // debug snapshot
+      try { window.__AH_MISSIONS_STATE = res; } catch (_) {}
 
       render();
     } catch (e) {
@@ -760,7 +772,7 @@
 
   async function doStart(tier, offerId) {
     try {
-      await api("/webapp/missions/action", {
+      const startRes = await api("/webapp/missions/action", {
         action: "start",
         tier,
         offerId,
@@ -771,20 +783,30 @@
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-      // ✅ PATCH C: show waiting immediately, then fetch real state shortly after
+      // ✅ If backend returns useful state on start — use it immediately
+      if (startRes && typeof startRes === "object") {
+        _state = startRes;
+        const p = normalizePayload(_state);
+        const a = p ? getActive(p) : { status: "NONE" };
+        if (a.status && a.status !== "NONE") {
+          render();
+          // sync once more shortly
+          setTimeout(() => { loadState(); }, 600);
+          return;
+        }
+      }
+
+      // ✅ Otherwise: optimistic WAIT + then sync state
       _optimisticStart(tier, offerId);
-      setTimeout(() => { loadState(); }, 400);
+      setTimeout(() => { loadState(); }, 600);
       return;
 
     } catch (e) {
       const msg = String(e?.message || e || "");
-
-      // ✅ If backend says ACTIVE — don't show error, just reload and show WAITING
       if (msg.toUpperCase() === "ACTIVE") {
         await loadState();
         return;
       }
-
       renderError("Start failed", msg);
     }
   }
