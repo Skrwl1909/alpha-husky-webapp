@@ -744,7 +744,8 @@
       startedClientSec: started,
       durationSec: durSec,
       title,
-      untilMs: Date.now() + 8000, // ✅ 8s window to wait for backend confirmation
+      // ✅ keep optimistic timer until mission would be ready (+30s buffer)
+      untilMs: Date.now() + (durSec * 1000) + 30000,
     };
 
     render(); // renders WAITING via pending
