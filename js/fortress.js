@@ -98,15 +98,13 @@
 #fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
   filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
 
-/* --- PIXI stage --- */
+/* --- Pixi stage (Fortress battle) --- */
 .fx-stage{
-  position:relative;
-  width:100%;
-  height:clamp(220px, 34vh, 360px);
+  height:260px;
   border-radius:14px;
   overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
   background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));
+  border:1px solid rgba(255,255,255,.10);
 }
 .fx-stage canvas{
   width:100% !important;
@@ -642,41 +640,6 @@ function closeModal(){
     return '█'.repeat(fill)+'░'.repeat(W-fill);
   }
 
-  function getPlayerAvatarUrl(data){
-  // 1) jeśli kiedyś backend doda w payloadzie — bierzemy to pierwsze
-  const direct =
-    data?.player?.avatar || data?.playerAvatar ||
-    data?.player?.img || data?.playerImg ||
-    '';
-  if (direct) return String(direct).trim();
-
-  // 2) spróbuj z cache profilu jeśli go trzymasz globalnie
-  const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
-  const cand1 = [
-    p?.characterPng, p?.character, p?.heroImg, p?.heroPng, p?.avatar, p?.avatarPng
-  ].filter(Boolean);
-  if (cand1[0]) return String(cand1[0]).trim();
-
-  // 3) spróbuj wyciągnąć z DOM (hero-frame / profile / equipped)
-  const img =
-    document.querySelector('#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img') ||
-    document.querySelector('#equippedRoot img, #equippedModal img');
-  if (img?.src) return String(img.src).trim();
-
-  return '';
-}
-
-function pixiTextureFromUrl(PIXI, url){
-  try{
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
-    return PIXI.Texture.from(img);
-  }catch(_){
-    return PIXI.Texture.from(url);
-  }
-}
-  
   function renderFortressBattle(data){
   injectCss();
   ensureDamageParticles();
@@ -761,56 +724,22 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     bg.beginFill(0x0b0d12, 0.55).drawRoundedRect(0,0,w,h,14).endFill();
     app.stage.addChild(bg);
 
-    // player (left) — ✅ avatar z aktualnego profilu
-playerG = new PIXI.Container();
+    // player (left)
+    playerG = new PIXI.Container();
+    const pCircle = new PIXI.Graphics();
+    pCircle.beginFill(0x3b82f6, 0.20).drawCircle(0,0,34).endFill();
+    const pCore = new PIXI.Graphics();
+    pCore.beginFill(0xffffff, 0.10).drawCircle(0,0,18).endFill();
+    playerG.addChild(pCircle, pCore);
 
-const pUrl = getPlayerAvatarUrl(data);
-const radius = 34;
+    const pTxt = new PIXI.Text('YOU', { fontFamily:'system-ui', fontSize:12, fill:0xffffff, alpha:0.85 });
+    pTxt.anchor.set(0.5, 0);
+    pTxt.x = 0; pTxt.y = 42;
+    playerG.addChild(pTxt);
 
-// delikatne tło / ring
-const ring = new PIXI.Graphics();
-ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
-const bg = new PIXI.Graphics();
-bg.beginFill(0x3b82f6, 0.10).drawCircle(0, 0, radius + 6).endFill();
-playerG.addChild(bg, ring);
-
-// jeśli mamy URL avatara → sprite + maska koła
-if (pUrl){
-  const tex = pixiTextureFromUrl(PIXI, pUrl);
-  const spr = new PIXI.Sprite(tex);
-  spr.anchor.set(0.5);
-
-  const mask = new PIXI.Graphics();
-  mask.beginFill(0xffffff).drawCircle(0, 0, radius).endFill();
-  spr.mask = mask;
-
-  playerG.addChild(mask, spr);
-
-  const fit = () => {
-    // próbujemy dobrać skalę po załadowaniu tekstury
-    const w0 = spr.texture?.width  || spr.texture?.orig?.width  || spr.width  || 1;
-    const h0 = spr.texture?.height || spr.texture?.orig?.height || spr.height || 1;
-    const s = (radius * 2) / Math.max(1, w0, h0);
-    spr.scale.set(s);
-  };
-
-  if (spr.texture?.baseTexture?.valid) fit();
-  else spr.texture?.baseTexture?.once?.('loaded', fit);
-} else {
-  // fallback: kółko jeśli nie znaleźliśmy avatara
-  const core = new PIXI.Graphics();
-  core.beginFill(0xffffff, 0.10).drawCircle(0,0,18).endFill();
-  playerG.addChild(core);
-}
-
-const pTxt = new PIXI.Text('YOU', { fontFamily:'system-ui', fontSize:12, fill:0xffffff, alpha:0.85 });
-pTxt.anchor.set(0.5, 0);
-pTxt.x = 0; pTxt.y = 42;
-playerG.addChild(pTxt);
-
-playerG.x = Math.round(w * 0.22);
-playerG.y = Math.round(h * 0.55);
-app.stage.addChild(playerG);
+    playerG.x = Math.round(w * 0.22);
+    playerG.y = Math.round(h * 0.55);
+    app.stage.addChild(playerG);
 
     // boss (right)
     const bossUrl = (data?.boss?.sprite || data?.bossSprite || 'images/bosses/core_custodian.png');
