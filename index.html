@@ -1412,6 +1412,23 @@ body.missions-open{
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
   <script>
+  (function(v){
+    var s = document.createElement('script');
+    s.src = 'js/pixi.min.js?v=' + encodeURIComponent(v || 'dev');
+    s.async = false;
+    document.head.appendChild(s);
+  })(window.WEBAPP_VER);
+</script>
+
+<script>
+  (function(v){
+    var s = document.createElement('script');
+    s.src = 'js/fortress_pixi.js?v=' + encodeURIComponent(v || 'dev');
+    s.async = false;
+    document.head.appendChild(s);
+  })(window.WEBAPP_VER);
+</script>
+  <script>
     (function(v){
       var s = document.createElement('script');
       s.src = 'js/combat.js?v=' + encodeURIComponent(v || 'dev');
@@ -3075,6 +3092,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
