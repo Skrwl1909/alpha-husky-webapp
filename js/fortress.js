@@ -67,8 +67,8 @@
 
   // --- DOM CSS
   function injectCss(){
-    if (document.getElementById('fortress-css')) return;
-    const css = `
+  if (document.getElementById('fortress-css')) return;
+  const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
 #fortress-modal .card{position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
@@ -97,6 +97,21 @@
   background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));overflow:hidden}
 #fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
   filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
+
+/* --- Pixi stage (Fortress battle) --- */
+.fx-stage{
+  height:260px;
+  border-radius:14px;
+  overflow:hidden;
+  background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));
+  border:1px solid rgba(255,255,255,.10);
+}
+.fx-stage canvas{
+  width:100% !important;
+  height:100% !important;
+  display:block;
+}
+
 /* --- Animacje UI w walce --- */
 @keyframes damageFloat {
   0% { opacity: 1; transform: translateY(0) scale(1); }
@@ -114,7 +129,7 @@
 }
 @keyframes critBurst {
   0% { opacity: 1; transform: scale(0); }
-  50% { opacity: 1; transform: scale(1.2); }
+  50% { opacity: 1; transform: scale(1.2) }
   100% { opacity: 0; transform: scale(1.5); }
 }
 .damage-number {
@@ -147,14 +162,15 @@
   .fx-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(12,14,18,.96) 30%);padding-bottom:6px}
   .fx-btn{padding:12px 14px}
 }
-    `;
-    const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
-  }
-  function closeModal(){
-    const m = document.getElementById('fortress-modal');
-    if (m) m.remove();
-    try { S.tg?.MainButton?.show?.(); } catch(_){}
-  }
+  `;
+  const s = el('style'); s.id='fortress-css'; s.textContent = css; document.head.appendChild(s);
+}
+
+function closeModal(){
+  const m = document.getElementById('fortress-modal');
+  if (m) m.remove();
+  try { S.tg?.MainButton?.show?.(); } catch(_){}
+}
 
   // ---------- deps / fallback ----------
   async function defaultApiPost(path, payload){
@@ -625,117 +641,276 @@
   }
 
   function renderFortressBattle(data){
-    injectCss();
-    ensureDamageParticles();
-    closeModal();
+  injectCss();
+  ensureDamageParticles();
+  closeModal();
 
-    const cont = el('div','fortress-battle');
-    cont.innerHTML = `
-      <div class="fx-head" style="margin-bottom:6px">
-        <div>
-          <div class="fx-sub">Moon Lab — Fortress</div>
-          <div class="fx-title">L${data.level ?? data.lvl ?? '?'} · ${data.boss?.name||data.bossName||'Boss'}</div>
-        </div>
-        <button class="fx-x" id="fb-x" type="button">×</button>
+  const cont = el('div','fortress-battle');
+  cont.innerHTML = `
+    <div class="fx-head" style="margin-bottom:6px">
+      <div>
+        <div class="fx-sub">Moon Lab — Fortress</div>
+        <div class="fx-title">L${data.level ?? data.lvl ?? '?'} · ${data.boss?.name||data.bossName||'Boss'}</div>
       </div>
-      <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
-YOU [${hpbar(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1)}] ${data.player?.hpMax ?? 0}/${data.player?.hpMax ?? 0}
+      <button class="fx-x" id="fb-x" type="button">×</button>
+    </div>
+
+    <!-- ✅ PIXI STAGE -->
+    <div class="fx-stage" id="fb-stage"></div>
+
+    <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+YOU  [${hpbar(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1)}] ${data.player?.hpMax ?? 0}/${data.player?.hpMax ?? 0}
 BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax ?? 0}/${data.boss?.hpMax ?? 0}
-      </pre>
-      <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
-      <div class="fx-actions">
-        <div class="fx-actions-left">
-          <button class="fx-btn" id="fb-close" type="button">Close</button>
-          <button class="fx-btn" id="fb-refresh" type="button">Refresh</button>
-        </div>
-        <div class="fx-actions-right"></div>
+    </pre>
+
+    <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
+
+    <div class="fx-actions">
+      <div class="fx-actions-left">
+        <button class="fx-btn" id="fb-close" type="button">Close</button>
+        <button class="fx-btn" id="fb-refresh" type="button">Refresh</button>
       </div>
-    `;
-    const wrap = el('div'); wrap.id='fortress-modal';
-    const card = el('div','card'); card.style.padding='12px';
-    const mask = el('div','mask'); mask.id='fb-mask';
-    card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
-    document.body.appendChild(wrap);
+      <div class="fx-actions-right"></div>
+    </div>
+  `;
 
-    global.Combat.container = card;
-    try { S.tg?.MainButton?.hide?.(); } catch(_){}
+  const wrap = el('div'); wrap.id='fortress-modal';
+  const card = el('div','card'); card.style.padding='12px';
+  const mask = el('div','mask'); mask.id='fb-mask';
+  card.appendChild(cont); wrap.appendChild(mask); wrap.appendChild(card);
+  document.body.appendChild(wrap);
 
-    wrap.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) { if (e.target.id==='fb-mask') closeModal(); return; }
-      if (btn.id==='fb-x' || btn.id==='fb-close') closeModal();
-      if (btn.id==='fb-refresh') (async () => {
-        try{
-          let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
-          if (st && st.data) st = st.data;
-          closeModal();
-          const cd = Math.max(0, (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0)|0);
-          toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
-        }catch(_){ toast('Error refreshing.'); }
-      })();
+  // -------------------------
+  // ✅ PIXI MOUNT (optional)
+  // -------------------------
+  const stageHost = $('#fb-stage', cont);
+  if (stageHost){
+    stageHost.style.position = 'relative'; // dla DOM damage numbers
+  }
+
+  let app = null;
+  let bossSpr = null;
+  let playerG = null;
+  let bossShakeT = 0;
+  let playerShakeT = 0;
+
+  function mountPixi(){
+    if (!stageHost) return;
+    const PIXI = globalThis.PIXI;
+    if (!PIXI || !PIXI.Application) return;
+
+    const w = Math.max(240, stageHost.clientWidth  || 360);
+    const h = Math.max(180, stageHost.clientHeight || 260);
+
+    app = new PIXI.Application({
+      width: w,
+      height: h,
+      backgroundAlpha: 0,
+      antialias: true,
+      resolution: (window.devicePixelRatio || 1),
+      autoDensity: true
     });
 
-    const logEl = $('#fb-log', cont);
-    const boardEl = $('#fb-board', cont);
-    const portrait = cont.querySelector('.fx-portrait img') || boardEl;
+    const view = app.view || app.canvas;
+    if (view){
+      view.style.width = '100%';
+      view.style.height = '100%';
+      view.style.display = 'block';
+      stageHost.appendChild(view);
+    }
 
-    let pHp = data.player?.hpMax ?? 0, bHp = data.boss?.hpMax ?? 0, i=0;
-    function step(){
-      if (i >= (data.steps?.length||0)){
-        const lines = [];
-        lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
-        const mats = [];
-        if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.rewards.materials.scrap}`);
-        if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
-        if (mats.length) lines.push('Rewards: '+mats.join(', '));
-        if (data.rewards?.rare) lines.push('💎 Rare drop!');
-        if (data.rewards?.firstClear?.length) lines.push('🌟 First clear: '+data.rewards.firstClear.join(', '));
-        if (data.next?.level) lines.push(`Next: L${data.next.level}`);
-        logEl.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join('<br>')}</div>`);
-        return;
-      }
-      const s = data.steps[i++];
-      let targetEl = portrait;
-      if (s.actor === 'boss') targetEl = boardEl;
+    // soft background
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0x0b0d12, 0.55).drawRoundedRect(0,0,w,h,14).endFill();
+    app.stage.addChild(bg);
 
-      if (s.actor==='you'){
-        bHp = s.b_hp ?? bHp;
-        const youTxt = s.dodge
-          ? 'shoot… boss <b>DODGED</b>!'
-          : ('hit for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
-        logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${youTxt}</div>`);
+    // player (left)
+    playerG = new PIXI.Container();
+    const pCircle = new PIXI.Graphics();
+    pCircle.beginFill(0x3b82f6, 0.20).drawCircle(0,0,34).endFill();
+    const pCore = new PIXI.Graphics();
+    pCore.beginFill(0xffffff, 0.10).drawCircle(0,0,18).endFill();
+    playerG.addChild(pCircle, pCore);
+
+    const pTxt = new PIXI.Text('YOU', { fontFamily:'system-ui', fontSize:12, fill:0xffffff, alpha:0.85 });
+    pTxt.anchor.set(0.5, 0);
+    pTxt.x = 0; pTxt.y = 42;
+    playerG.addChild(pTxt);
+
+    playerG.x = Math.round(w * 0.22);
+    playerG.y = Math.round(h * 0.55);
+    app.stage.addChild(playerG);
+
+    // boss (right)
+    const bossUrl = (data?.boss?.sprite || data?.bossSprite || 'images/bosses/core_custodian.png');
+    bossSpr = PIXI.Sprite.from(bossUrl);
+    bossSpr.anchor.set(0.5, 0.5);
+    bossSpr.x = Math.round(w * 0.74);
+    bossSpr.y = Math.round(h * 0.52);
+
+    // fit sprite into area
+    const maxW = w * 0.42;
+    const maxH = h * 0.70;
+    const sx = maxW / Math.max(1, bossSpr.width);
+    const sy = maxH / Math.max(1, bossSpr.height);
+    const s  = Math.min(1, sx, sy);
+    bossSpr.scale.set(s);
+
+    app.stage.addChild(bossSpr);
+
+    const bTxt = new PIXI.Text((data?.boss?.name || 'BOSS'), { fontFamily:'system-ui', fontSize:12, fill:0xffffff, alpha:0.85 });
+    bTxt.anchor.set(0.5, 0);
+    bTxt.x = bossSpr.x; bTxt.y = bossSpr.y + (maxH * 0.40);
+    app.stage.addChild(bTxt);
+
+    // shake ticker
+    app.ticker.add(() => {
+      if (!app || !bossSpr || !playerG) return;
+
+      if (bossShakeT > 0){
+        bossShakeT--;
+        bossSpr.x += (Math.random()*6 - 3);
+        bossSpr.y += (Math.random()*6 - 3);
       } else {
-        pHp = s.p_hp ?? pHp;
-        const bossTxt = s.dodge
-          ? 'attacks… you <b>DODGE</b>!'
-          : ('hits for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
-        logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${bossTxt}</div>`);
+        bossSpr.x = Math.round((app.renderer.width) * 0.74);
+        bossSpr.y = Math.round((app.renderer.height) * 0.52);
       }
 
-      boardEl.textContent =
-`YOU [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
+      if (playerShakeT > 0){
+        playerShakeT--;
+        playerG.x += (Math.random()*6 - 3);
+        playerG.y += (Math.random()*6 - 3);
+      } else {
+        playerG.x = Math.round((app.renderer.width) * 0.22);
+        playerG.y = Math.round((app.renderer.height) * 0.55);
+      }
+    });
+
+    // resize
+    const onResize = () => {
+      if (!app || !stageHost) return;
+      const nw = Math.max(240, stageHost.clientWidth  || 360);
+      const nh = Math.max(180, stageHost.clientHeight || 260);
+      try { app.renderer.resize(nw, nh); } catch(_){}
+      // nie przebudowuję całej sceny — tylko reset pozycji bazowych (ticker i tak dopina)
+    };
+    window.addEventListener('resize', onResize);
+    app.__onResize = onResize;
+  }
+
+  function destroyPixi(){
+    try{
+      if (app?.__onResize) window.removeEventListener('resize', app.__onResize);
+      if (app){
+        const view = app.view || app.canvas;
+        app.destroy(true, { children:true, texture:true, baseTexture:true });
+        if (view && view.parentNode) view.parentNode.removeChild(view);
+      }
+    }catch(_){}
+    app = null; bossSpr = null; playerG = null;
+  }
+
+  // DOM particles nad stage
+  globalThis.Combat.container = stageHost || card;
+
+  // mount pixi (jeśli PIXI jest dostępne)
+  try { mountPixi(); } catch(_){}
+
+  try { S.tg?.MainButton?.hide?.(); } catch(_){}
+
+  // -------------------------
+  // EVENTS (close / refresh)
+  // -------------------------
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) { if (e.target.id==='fb-mask') { destroyPixi(); closeModal(); } return; }
+
+    if (btn.id==='fb-x' || btn.id==='fb-close'){
+      destroyPixi();
+      closeModal();
+      return;
+    }
+
+    if (btn.id==='fb-refresh') (async () => {
+      try{
+        let st = await S.apiPost('/webapp/building/state', { buildingId: BID });
+        if (st && st.data) st = st.data;
+        destroyPixi();
+        closeModal();
+        const cd = Math.max(0, (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0)|0);
+        toast(cd>0 ? `Cooldown: ${fmtLeft(cd)}` : 'Ready');
+      }catch(_){ toast('Error refreshing.'); }
+    })();
+  });
+
+  const logEl = $('#fb-log', cont);
+  const boardEl = $('#fb-board', cont);
+
+  // dmg positions (relative to stageHost)
+  function dmgPos(actor){
+    const host = stageHost;
+    if (!host) return { x: 140, y: 80 };
+    const w = host.clientWidth || 360;
+    const h = host.clientHeight || 260;
+    // actor==='you' => hit boss (right), else boss hits player (left)
+    return actor === 'you'
+      ? { x: Math.round(w * 0.74), y: Math.round(h * 0.40) }
+      : { x: Math.round(w * 0.22), y: Math.round(h * 0.48) };
+  }
+
+  let pHp = data.player?.hpMax ?? 0, bHp = data.boss?.hpMax ?? 0, i=0;
+  function step(){
+    if (i >= (data.steps?.length||0)){
+      const lines = [];
+      lines.push(data.winner==='you' ? '✅ Victory!' : '❌ Defeat!');
+      const mats = [];
+      if (data.rewards?.materials?.scrap) mats.push(`Scrap ×${data.rewards.materials.scrap}`);
+      if (data.rewards?.materials?.rune_dust) mats.push(`Rune Dust ×${data.rewards.materials.rune_dust}`);
+      if (mats.length) lines.push('Rewards: '+mats.join(', '));
+      if (data.rewards?.rare) lines.push('💎 Rare drop!');
+      if (data.rewards?.firstClear?.length) lines.push('🌟 First clear: '+data.rewards.firstClear.join(', '));
+      if (data.next?.level) lines.push(`Next: L${data.next.level}`);
+      logEl.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join('<br>')}</div>`);
+      return;
+    }
+
+    const s = data.steps[i++];
+
+    if (s.actor==='you'){
+      bHp = s.b_hp ?? bHp;
+      const youTxt = s.dodge
+        ? 'shoot… boss <b>DODGED</b>!'
+        : ('hit for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
+      logEl.insertAdjacentHTML('beforeend', `<div>▶ You ${youTxt}</div>`);
+      if (!s.dodge && s.dmg > 0) bossShakeT = 8;
+    } else {
+      pHp = s.p_hp ?? pHp;
+      const bossTxt = s.dodge
+        ? 'attacks… you <b>DODGE</b>!'
+        : ('hits for <b>' + s.dmg + '</b>' + (s.crit ? ' <i>(CRIT)</i>' : '') + '.');
+      logEl.insertAdjacentHTML('beforeend', `<div>◀ Boss ${bossTxt}</div>`);
+      if (!s.dodge && s.dmg > 0) playerShakeT = 8;
+    }
+
+    boardEl.textContent =
+`YOU  [${hpbar(pHp, data.player?.hpMax ?? 1)}] ${pHp}/${data.player?.hpMax ?? 0}
 BOSS [${hpbar(bHp, data.boss?.hpMax ?? 1)}] ${bHp}/${data.boss?.hpMax ?? 0}`;
 
-      logEl.scrollTop = logEl.scrollHeight;
+    logEl.scrollTop = logEl.scrollHeight;
 
-      if (s.dmg > 0) {
-        const rect = targetEl.getBoundingClientRect();
-        const containerRect = card.getBoundingClientRect();
-        global.Combat.createDamageNumber(
-          rect.left - containerRect.left + rect.width / 2,
-          rect.top - containerRect.top + rect.height / 2,
-          s.dmg,
-          s.crit
-        );
-      }
-      if (targetEl) {
-        targetEl.classList.add('attack-shake', 'hit-impact');
-        setTimeout(() => targetEl.classList.remove('attack-shake', 'hit-impact'), 300);
-      }
-      setTimeout(step, 500);
+    // ✅ damage numbers (DOM) over stage
+    if (!s.dodge && s.dmg > 0) {
+      const pos = dmgPos(s.actor);
+      try{
+        globalThis.Combat.createDamageNumber(pos.x, pos.y, s.dmg, s.crit);
+      }catch(_){}
     }
-    setTimeout(step, 350);
+
+    setTimeout(step, 500);
   }
+
+  setTimeout(step, 350);
+}
 
   // ---------- API ----------
   function init(deps){
