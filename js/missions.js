@@ -16,20 +16,24 @@
   }
 
   const el = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
 
   let _modal = null; // #missionsBack or #missionsModal
-  let _root = null;  // #missionsRoot (always inside modal)
+  let _root = null;  // #missionsRoot
   let _tick = null;
   let _state = null;
+
+  // ✅ start sync guard (prevents "blink back to offers")
+  let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs }
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
   // =========================
-  // Styles
+  // Styles (S&F vibe inside Missions content; + full-screen for #missionsBack)
   // =========================
   function ensureStyles() {
     if (document.getElementById("missions-ui-css")) return;
@@ -38,6 +42,7 @@
     st.id = "missions-ui-css";
     st.textContent = `
       :root{
+        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
         --missions-bg: url("mission_bg.webp");
         --missions-wait-bg: url("mission_waiting_bg.webp");
         --missions-dust: url("dust.png");
@@ -45,6 +50,25 @@
 
       #missionsRoot{ display:block !important; }
 
+      /* ✅ Make Missions a FULL screen sheet if you're using #missionsBack */
+      #missionsBack{
+        align-items:stretch !important;
+        justify-content:stretch !important;
+        padding:0 !important;
+      }
+      #missionsBack > *{
+        width:100% !important;
+        height:100% !important;
+        max-height:100vh !important;
+        border-radius:0 !important;
+      }
+      #missionsBack #missionsRoot{
+        overflow-y:auto !important;
+        -webkit-overflow-scrolling:touch;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+      }
+
+      /* Base stage (offers screen) */
       #missionsRoot .m-stage{
         position:relative;
         border:1px solid rgba(36,50,68,.95);
@@ -66,6 +90,7 @@
         overflow:hidden;
       }
 
+      /* WAITING mode = whole screen switches background */
       #missionsRoot .m-stage.m-stage-wait{
         background:
           radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
@@ -135,6 +160,7 @@
         margin:10px 0;
       }
 
+      /* Offers */
       #missionsRoot .m-offer{
         border:1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.18);
@@ -148,6 +174,7 @@
       }
       #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
+      /* WAITING UI */
       #missionsRoot .m-wait-center{
         min-height: 360px;
         display:flex;
@@ -220,6 +247,7 @@
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "resolve") return void doResolve();
       if (act === "close")   return void close();
+      if (act === "back_to_offers") { _pendingStart = null; stopTick(); return void loadState(); }
     });
 
     const closeBtn = el("closeMissions");
@@ -245,7 +273,7 @@
     ensureStyles();
 
     _modal = el("missionsBack") || el("missionsModal");
-    _root  = _modal ? _modal.querySelector("#missionsRoot") : null;
+    _root  = el("missionsRoot");
 
     if (_modal && _root) {
       bindOnceModalClicks();
@@ -267,7 +295,7 @@
     document.body.appendChild(wrap.firstElementChild);
 
     _modal = el("missionsModal");
-    _root  = _modal ? _modal.querySelector("#missionsRoot") : null;
+    _root  = el("missionsRoot");
     bindOnceModalClicks();
   }
 
@@ -410,6 +438,32 @@
     return { status: "NONE" };
   }
 
+  function _activeFromPending() {
+    if (!_pendingStart) return { status: "NONE" };
+    const now = _nowSec();
+    const started = Number(_pendingStart.startedClientSec || now);
+    const dur = Math.max(1, Number(_pendingStart.durationSec || 60));
+    const ends = started + dur;
+    const remaining = Math.max(0, Math.ceil(ends - now));
+    const pct = Math.min(1, Math.max(0, 1 - (remaining / dur)));
+    return {
+      status: remaining > 0 ? "RUNNING" : "READY",
+      title: _pendingStart.title || "Mission",
+      started_ts: started,
+      duration_sec: dur,
+      ends_ts: ends,
+      remaining,
+      total: dur,
+      pct,
+      readyAt: _fmtClock(ends),
+      __pending: true,
+    };
+  }
+
+  function _pendingValid() {
+    return !!(_pendingStart && Date.now() < Number(_pendingStart.untilMs || 0));
+  }
+
   // =========================
   // Tick
   // =========================
@@ -417,8 +471,8 @@
     stopTick();
     _tick = setInterval(() => {
       const payload = normalizePayload(_state);
-      if (!payload) return;
-      const a = getActive(payload);
+      const real = payload ? getActive(payload) : { status: "NONE" };
+      const a = (real.status === "NONE" && _pendingValid()) ? _activeFromPending() : real;
       if (a.status === "NONE") return;
       paintWaiting(a);
     }, 1000);
@@ -430,7 +484,7 @@
   }
 
   // =========================
-  // API
+  // API + normalize (keeps extras)
   // =========================
   async function api(path, body) {
     if (!_apiPost) throw new Error("Missions: apiPost missing");
@@ -443,7 +497,6 @@
     return res;
   }
 
-  // ✅ PATCH: normalize must NOT drop fields that are next to "state"
   function _mergeExtras(base, src, skipSet) {
     if (!src || typeof src !== "object") return base;
     for (const k of Object.keys(src)) {
@@ -456,14 +509,12 @@
   function normalizePayload(res) {
     if (!res || typeof res !== "object") return null;
 
-    // { ok, state:{...}, active_mission:{...}, now_ts:... }
     if (res.state && typeof res.state === "object") {
       const base = { ...res.state };
       _mergeExtras(base, res, new Set(["state", "ok"]));
       return base;
     }
 
-    // { ok, data:{ state:{...}, active_mission:{...} } }
     if (res.data && typeof res.data === "object") {
       const d = res.data;
       if (d.state && typeof d.state === "object") {
@@ -503,7 +554,6 @@
       return base;
     }
 
-    // fallback: raw object as state
     return res;
   }
 
@@ -621,7 +671,8 @@
 
     if (status === "RUNNING") {
       clockEl.textContent = _fmtTime(remaining);
-      subEl.innerHTML = `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}`;
+      const syncing = a.__pending ? ` · <span style="opacity:.9">Syncing…</span>` : "";
+      subEl.innerHTML = `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}${syncing}`;
       if (resolveBtn) resolveBtn.style.display = "none";
     } else {
       clockEl.textContent = "READY";
@@ -642,17 +693,16 @@
     const started = Math.floor(_nowSec());
     const title = String(o?.title || o?.label || tier || "Mission");
 
-    _state = {
-      ...payload,
-      active_mission: {
-        title,
-        started_ts: started,
-        duration_sec: durSec,
-        ends_ts: started + durSec,
-        status: "RUNNING",
-      }
+    _pendingStart = {
+      tier,
+      offerId,
+      startedClientSec: started,
+      durationSec: durSec,
+      title,
+      untilMs: Date.now() + 8000, // ✅ 8s window to wait for backend confirmation
     };
-    render();
+
+    render(); // renders WAITING via pending
   }
 
   function render() {
@@ -667,8 +717,10 @@
     _syncServerClock(payload);
 
     const offers = Array.isArray(payload.offers) ? payload.offers : [];
-    const active = getActive(payload);
-    const last   = payload.lastResolve || payload.last_resolve || null;
+    const realActive = getActive(payload);
+    const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive;
+
+    const last = payload.lastResolve || payload.last_resolve || null;
 
     if (active.status && active.status !== "NONE") {
       _root.innerHTML = `
@@ -683,6 +735,7 @@
             <div class="m-actions">
               <button type="button" class="btn" data-act="refresh">Refresh</button>
               <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
+              ${active.__pending ? `<button type="button" class="btn" data-act="back_to_offers">Back</button>` : ``}
               <button type="button" class="btn" data-act="close">Close</button>
             </div>
           </div>
@@ -728,7 +781,7 @@
           <div>
             ${
               offers.length
-                ? offers.map(o => renderOffer(o, active)).join("")
+                ? offers.map(o => renderOffer(o, realActive)).join("")
                 : `<div class="m-muted">No offers yet. Tap Refresh.</div>`
             }
           </div>
@@ -744,6 +797,35 @@
   }
 
   // =========================
+  // Sync after start (poll state until backend confirms active)
+  // =========================
+  async function _syncAfterStart(maxMs = 6500, intervalMs = 450) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < maxMs) {
+      try {
+        const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
+        _state = res;
+
+        // debug snapshots
+        try {
+          window.__AH_MISSIONS_RAW = res;
+          window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+        } catch (_) {}
+
+        const p = normalizePayload(res);
+        const a = p ? getActive(p) : { status: "NONE" };
+        if (a.status && a.status !== "NONE") {
+          _pendingStart = null;
+          render();
+          return true;
+        }
+      } catch (_) {}
+      await sleep(intervalMs);
+    }
+    return false;
+  }
+
+  // =========================
   // Actions
   // =========================
   async function loadState() {
@@ -752,8 +834,15 @@
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
 
-      // debug snapshot
-      try { window.__AH_MISSIONS_STATE = res; } catch (_) {}
+      // debug snapshots
+      try {
+        window.__AH_MISSIONS_RAW = res;
+        window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+      } catch (_) {}
+
+      const p = normalizePayload(_state);
+      const a = p ? getActive(p) : { status: "NONE" };
+      if (a.status && a.status !== "NONE") _pendingStart = null;
 
       render();
     } catch (e) {
@@ -783,22 +872,26 @@
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-      // ✅ If backend returns useful state on start — use it immediately
+      // optimistic wait immediately (prevents blink)
+      _optimisticStart(tier, offerId);
+
+      // if backend returned state with active, great — but still poll to confirm
       if (startRes && typeof startRes === "object") {
         _state = startRes;
-        const p = normalizePayload(_state);
-        const a = p ? getActive(p) : { status: "NONE" };
-        if (a.status && a.status !== "NONE") {
-          render();
-          // sync once more shortly
-          setTimeout(() => { loadState(); }, 600);
-          return;
-        }
+        try {
+          window.__AH_MISSIONS_RAW = startRes;
+          window.__AH_MISSIONS_PAYLOAD = normalizePayload(startRes);
+        } catch (_) {}
+        render();
       }
 
-      // ✅ Otherwise: optimistic WAIT + then sync state
-      _optimisticStart(tier, offerId);
-      setTimeout(() => { loadState(); }, 600);
+      // poll state until backend confirms active (or timeout)
+      const ok = await _syncAfterStart();
+      if (!ok) {
+        // if backend never confirms, keep user informed but don't hard-fail
+        // (Back button is available on pending screen)
+        log("start: backend did not confirm active within window");
+      }
       return;
 
     } catch (e) {
@@ -807,6 +900,7 @@
         await loadState();
         return;
       }
+      _pendingStart = null;
       renderError("Start failed", msg);
     }
   }
@@ -815,6 +909,7 @@
     try {
       await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      _pendingStart = null;
       await loadState();
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
