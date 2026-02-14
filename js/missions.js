@@ -26,6 +26,7 @@
   let _root = null;  // #missionsRoot
   let _tick = null;
   let _state = null;
+  const STICKY_GRACE_SEC = 30; // ile sekund po end_ts dalej trzymamy ekran, zanim spadnie do offers
 
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs }
@@ -556,7 +557,74 @@
 
     return res;
   }
+  function _setStickyFromOffer(offerId, tier) {
+    const payload = normalizePayload(_state) || {};
+    const offers = Array.isArray(payload.offers) ? payload.offers : [];
 
+    const byId = offers.find(o => String(o?.offerId || o?.id || o?.offer_id || "") === String(offerId));
+    const byTier = offers.find(o => String(o?.tier || "") === String(tier));
+    const o = byId || byTier;
+
+    const durSec = Number(o?.durationSec || o?.duration_sec || o?.duration || 0);
+    const title = String(o?.title || o?.name || o?.label || "Mission");
+
+    if (durSec > 0) {
+      const started = _nowSec();
+      const ends = started + durSec;
+      _sticky = { title, started_ts: started, duration_sec: durSec, ends_ts: ends };
+    } else {
+      // jeśli brak duration — nie ustawiamy sticka, bo nie umiemy policzyć timera
+      _sticky = null;
+    }
+  }
+
+  function _applySticky(active) {
+    const now = _nowSec();
+
+    // jeśli backend mówi RUNNING/READY -> uaktualnij sticky
+    if (active && active.status && active.status !== "NONE") {
+      if (active.ends_ts && active.duration_sec) {
+        _sticky = {
+          title: String(active.title || "Mission"),
+          started_ts: Number(active.started_ts || (active.ends_ts - active.duration_sec) || now),
+          duration_sec: Number(active.duration_sec),
+          ends_ts: Number(active.ends_ts)
+        };
+      } else if (_sticky) {
+        // keep existing sticky if backend missing ends_ts
+      }
+      return active;
+    }
+
+    // jeśli backend chwilowo nie zwraca active, ale mamy sticky i czas jeszcze nie minął -> dalej pokazuj WAITING
+    if (_sticky && _sticky.ends_ts) {
+      const remaining = Math.max(0, Math.ceil(_sticky.ends_ts - now));
+      const total = Math.max(1, Number(_sticky.duration_sec || 1));
+      const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
+
+      // trzymamy ekran do end_ts + grace
+      if (now <= (_sticky.ends_ts + STICKY_GRACE_SEC)) {
+        return {
+          status: remaining > 0 ? "RUNNING" : "READY",
+          title: _sticky.title || "Mission",
+          started_ts: _sticky.started_ts,
+          duration_sec: total,
+          ends_ts: _sticky.ends_ts,
+          remaining,
+          total,
+          pct,
+          readyAt: _fmtClock(_sticky.ends_ts),
+        };
+      }
+    }
+
+    return { status: "NONE" };
+  }
+
+  function _clearSticky() {
+    _sticky = null;
+  }
+  
   // =========================
   // Rendering
   // =========================
@@ -852,6 +920,17 @@
 
   async function doRefresh() {
     try {
+      // ✅ jeśli misja RUNNING/READY (albo sticky trzyma ekran) -> NIE rób refresh_offers
+      const payload = normalizePayload(_state) || {};
+      let a = getActive(payload);
+      a = _applySticky(a);
+
+      if (a.status && a.status !== "NONE") {
+        await loadState(); // tylko resync
+        return;
+      }
+
+      // ✅ jeśli NIE ma aktywnej misji -> dopiero wtedy refresh ofert
       await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
       await loadState();
     } catch (e) {
@@ -872,10 +951,11 @@
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-      // optimistic wait immediately (prevents blink)
+      // ✅ optimistic wait immediately (prevents blink)
+      // (Twoja funkcja robi pending + render waiting od razu)
       _optimisticStart(tier, offerId);
 
-      // if backend returned state with active, great — but still poll to confirm
+      // ✅ jeśli backend zwrócił state, renderuj od razu
       if (startRes && typeof startRes === "object") {
         _state = startRes;
         try {
@@ -885,21 +965,23 @@
         render();
       }
 
-      // poll state until backend confirms active (or timeout)
+      // ✅ poll state until backend confirms active (or timeout)
       const ok = await _syncAfterStart();
       if (!ok) {
-        // if backend never confirms, keep user informed but don't hard-fail
-        // (Back button is available on pending screen)
         log("start: backend did not confirm active within window");
+        // nie hard-fail — zostawiamy ekran waiting + Back/Close
       }
       return;
 
     } catch (e) {
       const msg = String(e?.message || e || "");
+
+      // ✅ If backend says ACTIVE — don't show error, just reload and show WAITING
       if (msg.toUpperCase() === "ACTIVE") {
         await loadState();
         return;
       }
+
       _pendingStart = null;
       renderError("Start failed", msg);
     }
@@ -909,24 +991,32 @@
     try {
       await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+
+      // ✅ po resolve czyścimy pending (żeby UI nie trzymał starego WAITING)
       _pendingStart = null;
+
       await loadState();
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
     }
   }
 
-  // =========================
-  // Public API
-  // =========================
   function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     ensureStyles();
     ensureModal();
+
+    if (!document.__AH_MISSIONS_VIS) {
+      document.__AH_MISSIONS_VIS = 1;
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && _modal && _modal.style.display === "flex") {
+          loadState();
+          try { startTick(); } catch (_) {}
+        }
+      });
+    }
+
     log("init ok");
   }
-
-  window.Missions = { init, open, close, reload: loadState };
-})();
