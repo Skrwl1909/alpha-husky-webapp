@@ -36,194 +36,239 @@
   // Styles (S&F vibe inside Missions content; + full-screen for #missionsBack)
   // =========================
   function ensureStyles() {
-    if (document.getElementById("missions-ui-css")) return;
+  if (document.getElementById("missions-ui-css")) return;
 
-    const st = document.createElement("style");
-    st.id = "missions-ui-css";
-    st.textContent = `
-      :root{
-        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
-        --missions-bg: url("mission_bg.webp");
-        --missions-wait-bg: url("mission_waiting_bg.webp");
-        --missions-dust: url("dust.png");
-      }
+  const st = document.createElement("style");
+  st.id = "missions-ui-css";
+  st.textContent = `
+    :root{
+      /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
+      --missions-bg: url("mission_bg.webp");
+      --missions-wait-bg: url("mission_waiting_bg.webp");
+      --missions-dust: url("dust.png");
+    }
 
-      #missionsRoot{ display:block !important; }
+    #missionsRoot{ display:block !important; }
 
-      /* ✅ Make Missions a FULL screen sheet if you're using #missionsBack */
-      #missionsBack{
-        align-items:stretch !important;
-        justify-content:stretch !important;
-        padding:0 !important;
-      }
-      #missionsBack > *{
-        width:100% !important;
-        height:100% !important;
-        max-height:100vh !important;
-        border-radius:0 !important;
-      }
-      #missionsBack #missionsRoot{
-        overflow-y:auto !important;
-        -webkit-overflow-scrolling:touch;
-        padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
-      }
+    /* ✅ FULL SCREEN sheet — Missions feels like its own screen (not a popup) */
+    #missionsBack{
+      position:fixed !important;
+      inset:0 !important;
+      z-index: 99999999 !important;
+      display:none; /* JS sets display:flex */
+      align-items:stretch !important;
+      justify-content:stretch !important;
+      padding:0 !important;
 
-      /* Base stage (offers screen) */
-      #missionsRoot .m-stage{
-        position:relative;
-        border:1px solid rgba(36,50,68,.95);
-        border-radius:16px;
-        padding:14px;
-        background:
-          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-          linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
-          var(--missions-bg);
-        background-position:center;
-        background-size:cover;
-        background-repeat:no-repeat;
-        box-shadow:
-          0 18px 48px rgba(0,0,0,.62),
-          inset 0 1px 0 rgba(255,255,255,.08),
-          inset 0 0 0 1px rgba(0,229,255,.06);
-        outline:1px solid rgba(0,229,255,.08);
-        overflow:hidden;
-      }
+      /* full-screen background */
+      background:
+        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+        linear-gradient(to bottom, rgba(6,10,14,.88), rgba(6,10,14,.94)),
+        var(--missions-bg);
+      background-position:center;
+      background-size:cover;
+      background-repeat:no-repeat;
+    }
+    #missionsBack.is-open{ display:flex !important; }
 
-      /* WAITING mode = whole screen switches background */
-      #missionsRoot .m-stage.m-stage-wait{
-        background:
-          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-          linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
-          var(--missions-wait-bg);
-        background-position:center;
-        background-size:cover;
-        background-repeat:no-repeat;
-      }
+    /* wipe ALL typical modal wrappers inside missionsBack */
+    #missionsBack > *,
+    #missionsBack .modal,
+    #missionsBack .panel,
+    #missionsBack .sheet,
+    #missionsBack .modal-panel,
+    #missionsBack #missionsModal{
+      width:100% !important;
+      height:100% !important;
+      max-width:none !important;
+      max-height:none !important;
+      margin:0 !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      background: transparent !important;
+      border:0 !important;
 
-      #missionsRoot .m-stage::before{
-        content:"";
-        position:absolute; inset:0;
-        pointer-events:none;
-        z-index:0;
-        background:
-          radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.56) 78%, rgba(0,0,0,.74) 100%),
-          repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,.030),
-            rgba(255,255,255,.030) 1px,
-            rgba(0,0,0,0) 3px,
-            rgba(0,0,0,0) 6px
-          );
-        opacity:.28;
-        mix-blend-mode: overlay;
-      }
+      display:flex !important;
+      flex-direction:column !important;
+      min-height:0 !important;
+    }
 
-      #missionsRoot .m-stage::after{
-        content:"";
-        position:absolute; inset:0;
-        pointer-events:none;
-        z-index:0;
-        background: var(--missions-dust);
-        background-size: cover;
-        background-position: center;
-        opacity: .18;
-        mix-blend-mode: screen;
-      }
+    /* content scroll area */
+    #missionsBack #missionsRoot{
+      flex: 1 1 auto !important;
+      min-height:0 !important;
+      overflow-y:auto !important;
+      -webkit-overflow-scrolling:touch;
+      padding: 14px 14px calc(18px + env(safe-area-inset-bottom)) 14px !important;
+    }
 
-      #missionsRoot .m-stage > *{ position:relative; z-index:1; }
+    /* if you have a bottom button row from index, keep it sticky */
+    #missionsBack .btn-row{
+      position:sticky !important;
+      bottom:0 !important;
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) 14px !important;
+      background: rgba(0,0,0,.22) !important;
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,.08) !important;
+    }
 
-      #missionsRoot .m-card{
-        border: 1px solid rgba(255,255,255,.10);
-        border-radius: 14px;
-        padding: 12px;
-        background: rgba(0,0,0,.20);
-        color: rgba(255,255,255,.92);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 16px 34px rgba(0,0,0,.32);
-      }
+    /* Base stage (offers screen) */
+    #missionsRoot .m-stage{
+      position:relative;
+      border:1px solid rgba(36,50,68,.95);
+      border-radius:16px;
+      padding:14px;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+        linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
+        var(--missions-bg);
+      background-position:center;
+      background-size:cover;
+      background-repeat:no-repeat;
+      box-shadow:
+        0 18px 48px rgba(0,0,0,.62),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 0 0 1px rgba(0,229,255,.06);
+      outline:1px solid rgba(0,229,255,.08);
+      overflow:hidden;
+    }
 
-      #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
-      #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
+    /* WAITING mode = whole screen switches background */
+    #missionsRoot .m-stage.m-stage-wait{
+      background:
+        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+        linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
+        var(--missions-wait-bg);
+      background-position:center;
+      background-size:cover;
+      background-repeat:no-repeat;
+    }
 
-      #missionsRoot .m-row{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:10px;
-      }
+    #missionsRoot .m-stage::before{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      z-index:0;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.56) 78%, rgba(0,0,0,.74) 100%),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.030),
+          rgba(255,255,255,.030) 1px,
+          rgba(0,0,0,0) 3px,
+          rgba(0,0,0,0) 6px
+        );
+      opacity:.28;
+      mix-blend-mode: overlay;
+    }
 
-      #missionsRoot .m-hr{
-        height:1px;
-        background: rgba(255,255,255,.08);
-        margin:10px 0;
-      }
+    #missionsRoot .m-stage::after{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      z-index:0;
+      background: var(--missions-dust);
+      background-size: cover;
+      background-position: center;
+      opacity: .18;
+      mix-blend-mode: screen;
+    }
 
-      /* Offers */
-      #missionsRoot .m-offer{
-        border:1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.18);
-        border-radius:14px;
-        padding:12px;
-      }
-      #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
-      #missionsRoot .m-offer:hover{
-        border-color: rgba(0,229,255,.18);
-        box-shadow: 0 12px 26px rgba(0,0,0,.30);
-      }
-      #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
+    #missionsRoot .m-stage > *{ position:relative; z-index:1; }
 
-      /* WAITING UI */
-      #missionsRoot .m-wait-center{
-        min-height: 360px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        text-align:center;
-        gap:10px;
-        padding:18px;
-      }
+    #missionsRoot .m-card{
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(0,0,0,.20);
+      color: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 34px rgba(0,0,0,.32);
+    }
 
-      #missionsRoot .m-clock{
-        font-size: 52px;
-        font-weight: 950;
-        letter-spacing: 1px;
-        text-shadow: 0 10px 26px rgba(0,0,0,.60);
-      }
+    #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
+    #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
 
-      #missionsRoot .m-clock-sub{
-        font-size: 12.5px;
-        opacity: .86;
-      }
+    #missionsRoot .m-row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
 
-      #missionsRoot .m-bar{
-        height:10px;
-        border-radius:999px;
-        overflow:hidden;
-        background: rgba(255,255,255,.10);
-        border: 1px solid rgba(255,255,255,.10);
-        width: min(520px, 92%);
-        margin-top: 10px;
-      }
-      #missionsRoot .m-bar-fill{
-        height:100%;
-        width:0%;
-        background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.92));
-        transition: width .25s linear;
-      }
+    #missionsRoot .m-hr{
+      height:1px;
+      background: rgba(255,255,255,.08);
+      margin:10px 0;
+    }
 
-      #missionsRoot .m-actions{
-        display:flex;
-        gap:10px;
-        flex-wrap:wrap;
-        justify-content:center;
-        margin-top: 10px;
-      }
-    `;
-    document.head.appendChild(st);
-  }
+    /* Offers */
+    #missionsRoot .m-offer{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:12px;
+    }
+    #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
+    #missionsRoot .m-offer:hover{
+      border-color: rgba(0,229,255,.18);
+      box-shadow: 0 12px 26px rgba(0,0,0,.30);
+    }
+    #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
+
+    /* WAITING UI */
+    #missionsRoot .m-wait-center{
+      min-height: 360px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      gap:10px;
+      padding:18px;
+    }
+
+    #missionsRoot .m-clock{
+      font-size: 52px;
+      font-weight: 950;
+      letter-spacing: 1px;
+      text-shadow: 0 10px 26px rgba(0,0,0,.60);
+    }
+
+    #missionsRoot .m-clock-sub{
+      font-size: 12.5px;
+      opacity: .86;
+    }
+
+    #missionsRoot .m-bar{
+      height:10px;
+      border-radius:999px;
+      overflow:hidden;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      width: min(520px, 92%);
+      margin-top: 10px;
+    }
+    #missionsRoot .m-bar-fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.92));
+      transition: width .25s linear;
+    }
+
+    #missionsRoot .m-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top: 10px;
+    }
+  `;
+  document.head.appendChild(st);
+}
 
   // =========================
   // Modal wiring
