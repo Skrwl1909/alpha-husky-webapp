@@ -682,13 +682,6 @@ function pixiTextureFromUrl(PIXI, url){
   ensureDamageParticles();
   closeModal();
 
-  // ✅ HP normalize (real hp / max)
-  const pHp  = (data?.player?.hp ?? data?.playerHp ?? data?.stats?.playerHpLeft ?? data?.player?.hpMax ?? 0) | 0;
-  const pMax = (data?.player?.hpMax ?? data?.playerHpMax ?? data?.stats?.playerHpMax ?? Math.max(1, pHp)) | 0;
-
-  const bHp  = (data?.boss?.hp ?? data?.bossHp ?? data?.stats?.enemyHpLeft ?? data?.boss?.hpMax ?? 0) | 0;
-  const bMax = (data?.boss?.hpMax ?? data?.bossHpMax ?? data?.stats?.enemyHpMax ?? Math.max(1, bHp)) | 0;
-
   const cont = el('div','fortress-battle');
   cont.innerHTML = `
     <div class="fx-head" style="margin-bottom:6px">
@@ -699,16 +692,15 @@ function pixiTextureFromUrl(PIXI, url){
       <button class="fx-x" id="fb-x" type="button">×</button>
     </div>
 
-    <!-- ✅ scrollable main body -->
-    <div class="fb-main">
-      <!-- ✅ PIXI STAGE -->
-      <div class="fx-stage" id="fb-stage"></div>
+    <!-- ✅ PIXI STAGE -->
+    <div class="fx-stage" id="fb-stage"></div>
 
-      <pre id="fb-board">YOU  [${hpbar(pHp, pMax)}] ${pHp}/${pMax}
-BOSS [${hpbar(bHp, bMax)}] ${bHp}/${bMax}</pre>
+    <pre id="fb-board" style="background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+YOU  [${hpbar(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1)}] ${data.player?.hpMax ?? 0}/${data.player?.hpMax ?? 0}
+BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax ?? 0}/${data.boss?.hpMax ?? 0}
+    </pre>
 
-      <div id="fb-log"></div>
-    </div>
+    <div id="fb-log" style="max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px"></div>
 
     <div class="fx-actions">
       <div class="fx-actions-left">
