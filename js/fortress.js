@@ -71,97 +71,92 @@
   const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
-#fortress-modal .card{position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
+
+/* ✅ card jako flex-col + min-height:0 żeby scroll działał */
+#fortress-modal .card{
+  position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;
+  background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:12px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  min-height:0;
+}
+
 .fx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .fx-title{font-weight:800;letter-spacing:.2px}
 .fx-sub{opacity:.8;font-weight:600}
 .fx-badge{font:600 12px system-ui;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
-.fx-body{display:grid;gap:10px}
-.fx-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.fx-col{display:grid;gap:8px}
-.fx-kv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.fx-chip{padding:6px 10px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.06);font-weight:700}
-.fx-prog{display:grid;gap:6px}
-.fx-bar{position:relative;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
-.fx-bar>i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
-/* --- nowy pasek akcji --- */
-.fx-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* ✅ środek modala jest scrollowalny */
+.fb-main{
+  display:flex;flex-direction:column;gap:10px;
+  overflow:auto;
+  flex:1;
+  min-height:0;
+  padding-bottom:8px;
+}
+
+/* ✅ stage ma zawsze wysokość (koniec “pustego okna”) */
+#fb-stage{
+  position:relative;
+  height:clamp(200px, 34vh, 360px);
+  border-radius:14px;
+  overflow:hidden;
+  background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.07), rgba(0,0,0,0));
+  border:1px solid rgba(255,255,255,.10);
+}
+
+#fb-board{
+  margin:0;
+  background:rgba(255,255,255,.06);
+  padding:8px;
+  border-radius:10px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* ✅ log już nie “ucięty” – bierze tyle miejsca ile trzeba + scroll */
+#fb-log{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  overflow:auto;
+  min-height:120px;
+  max-height:none;
+  padding-right:2px;
+}
+
+.fx-actions{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);
+  position:sticky;bottom:0;
+  background:linear-gradient(180deg,rgba(12,14,18,0),rgba(12,14,18,.96) 35%);
+  padding-bottom:6px;
+}
 .fx-actions-left,.fx-actions-right{display:flex;gap:8px;flex-wrap:wrap}
 .fx-btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
 .fx-btn.primary{background:rgba(16,185,129,.18);min-width:120px}
 .fx-btn[disabled]{opacity:.55;cursor:not-allowed;filter:grayscale(.1)}
 .fx-x{background:transparent;border:none;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
 .fx-note{opacity:.75;font-size:12px}
-/* --- Fortress enemy portrait --- */
-.fx-portrait{position:relative;display:grid;place-items:center;min-height:220px;border-radius:14px;
-  background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));overflow:hidden}
-#fx-enemy{max-width:min(46vh,440px);max-height:min(46vh,440px);object-fit:contain;
-  filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
-
-/* --- PIXI stage --- */
-.fx-stage{
-  position:relative;
-  width:100%;
-  height:clamp(220px, 34vh, 360px);
-  border-radius:14px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-  background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.06), rgba(0,0,0,0));
-}
-.fx-stage canvas{
-  width:100% !important;
-  height:100% !important;
-  display:block;
-}
 
 /* --- Animacje UI w walce --- */
-@keyframes damageFloat {
-  0% { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-30px) scale(1.2); }
+@keyframes damageFloat { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-30px) scale(1.2)} }
+@keyframes screenShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-2px,2px)} 50%{transform:translate(2px,-2px)} 75%{transform:translate(-1px,1px)} }
+@keyframes hitFlash { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.5) saturate(1.2)} }
+@keyframes critBurst { 0%{opacity:1;transform:scale(0)} 50%{opacity:1;transform:scale(1.2)} 100%{opacity:0;transform:scale(1.5)} }
+
+.damage-number{
+  position:absolute;font-weight:bold;font-size:18px;color:#ffcc00;pointer-events:none;z-index:10;
+  animation:damageFloat 800ms ease-out forwards;text-shadow:1px 1px 2px rgba(0,0,0,0.8);
 }
-@keyframes screenShake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-2px, 2px); }
-  50% { transform: translate(2px, -2px); }
-  75% { transform: translate(-1px, 1px); }
-}
-@keyframes hitFlash {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.5) saturate(1.2); }
-}
-@keyframes critBurst {
-  0% { opacity: 1; transform: scale(0); }
-  50% { opacity: 1; transform: scale(1.2) }
-  100% { opacity: 0; transform: scale(1.5); }
-}
-.damage-number {
-  position: absolute;
-  font-weight: bold;
-  font-size: 18px;
-  color: #ffcc00;
-  pointer-events: none;
-  z-index: 10;
-  animation: damageFloat 800ms ease-out forwards;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-}
-.damage-number.crit-damage {
-  color: #ff4444;
-  font-size: 20px;
-  animation: damageFloat 1000ms ease-out forwards;
-}
-.damage-number.crit-damage::after {
-  content: ' CRIT!';
-  color: #ffff00;
-}
-.attack-shake { animation: screenShake 200ms ease-in-out; }
-.hit-impact  { animation: hitFlash 300ms ease-out; }
-.particle-burst {
-  position: absolute; width: 4px; height: 4px; background: #ffff00; border-radius: 50%;
-  pointer-events: none; z-index: 10; animation: critBurst 600ms ease-out forwards;
-}
+.damage-number.crit-damage{color:#ff4444;font-size:20px;animation:damageFloat 1000ms ease-out forwards}
+.damage-number.crit-damage::after{content:' CRIT!';color:#ffff00}
+.attack-shake{animation:screenShake 200ms ease-in-out}
+.hit-impact{animation:hitFlash 300ms ease-out}
+.particle-burst{position:absolute;width:4px;height:4px;background:#ffff00;border-radius:50%;pointer-events:none;z-index:10;animation:critBurst 600ms ease-out forwards}
+
 @media (max-width:480px){
   .fx-title{font-size:15px}
-  .fx-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,rgba(12,14,18,.96) 30%);padding-bottom:6px}
   .fx-btn{padding:12px 14px}
 }
   `;
@@ -173,6 +168,7 @@ function closeModal(){
   if (m) m.remove();
   try { S.tg?.MainButton?.show?.(); } catch(_){}
 }
+
 
   // ---------- deps / fallback ----------
   async function defaultApiPost(path, payload){
