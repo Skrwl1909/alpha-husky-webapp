@@ -2162,18 +2162,17 @@ setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
   const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
   const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
 
-  const fac = document.getElementById('faction');
-  if (fac) {
-    const base = (PROFILE && PROFILE.faction)
-      ? PROFILE.faction
-      : (fac.dataset.base || fac.textContent || 'PACK');
-    if (!fac.dataset.base) fac.dataset.base = base;
-    fac.textContent = `${base} • Lv ${lvl} • ${bones}🦴`;
-  }
+  const tagEl = document.getElementById('factionTag');
+  const metaEl = document.getElementById('factionMeta');
+
+  const base = (PROFILE && PROFILE.faction) ? PROFILE.faction : 'PACK';
+
+  if (tagEl) tagEl.textContent = base;
+  if (metaEl) metaEl.textContent = `Lv ${lvl} • ${bones}🦴`;
 
   const heroLevel = document.getElementById('heroLevel');
   if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
-}
+        }
 
 function applyProfileSkin(skin){
   const skinImg = document.getElementById('player-skin');
@@ -3150,6 +3149,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
