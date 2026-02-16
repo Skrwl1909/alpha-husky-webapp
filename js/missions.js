@@ -18,6 +18,20 @@
   const el = (id) => document.getElementById(id);
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+  // ===========
+  // Assets (Cloudinary mapping for /assets/*)
+  // ===========
+  const CLOUD_BASE = (window.CLOUDINARY_BASE || "https://res.cloudinary.com/dnjwvxinh/image/upload/");
+
+  function assetUrl(p) {
+    p = String(p || "");
+    if (!p) return "";
+    if (p.startsWith("http://") || p.startsWith("https://")) return p;
+    if (p.startsWith("data:")) return p;
+    if (p.startsWith("/assets/")) return CLOUD_BASE + p.slice("/assets/".length);
+    return p;
+  }
+
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
@@ -28,7 +42,7 @@
   let _state = null;
 
   // ✅ start sync guard (prevents "blink back to offers")
-  let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs }
+  let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
@@ -36,239 +50,343 @@
   // Styles (S&F vibe inside Missions content; + full-screen for #missionsBack)
   // =========================
   function ensureStyles() {
-  if (document.getElementById("missions-ui-css")) return;
+    if (document.getElementById("missions-ui-css")) return;
 
-  const st = document.createElement("style");
-  st.id = "missions-ui-css";
-  st.textContent = `
-    :root{
-      /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
-      --missions-bg: url("mission_bg.webp");
-      --missions-wait-bg: url("mission_waiting_bg.webp");
-      --missions-dust: url("dust.png");
-    }
+    const st = document.createElement("style");
+    st.id = "missions-ui-css";
+    st.textContent = `
+      :root{
+        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
+        --missions-bg: url("mission_bg.webp");
+        --missions-wait-bg: url("mission_waiting_bg.webp");
+        --missions-dust: url("dust.png");
+      }
 
-    #missionsRoot{ display:block !important; }
+      #missionsRoot{ display:block !important; }
 
-    /* ✅ FULL SCREEN sheet — Missions feels like its own screen (not a popup) */
-    #missionsBack{
-      position:fixed !important;
-      inset:0 !important;
-      z-index: 99999999 !important;
-      display:none; /* JS sets display:flex */
-      align-items:stretch !important;
-      justify-content:stretch !important;
-      padding:0 !important;
+      /* ✅ FULL SCREEN sheet — Missions feels like its own screen (not a popup) */
+      #missionsBack{
+        position:fixed !important;
+        inset:0 !important;
+        z-index: 99999999 !important;
+        display:none; /* JS sets display:flex */
+        align-items:stretch !important;
+        justify-content:stretch !important;
+        padding:0 !important;
 
-      /* full-screen background */
-      background:
-        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-        linear-gradient(to bottom, rgba(6,10,14,.88), rgba(6,10,14,.94)),
-        var(--missions-bg);
-      background-position:center;
-      background-size:cover;
-      background-repeat:no-repeat;
-    }
-    #missionsBack.is-open{ display:flex !important; }
+        /* full-screen background */
+        background:
+          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.88), rgba(6,10,14,.94)),
+          var(--missions-bg);
+        background-position:center;
+        background-size:cover;
+        background-repeat:no-repeat;
+      }
+      #missionsBack.is-open{ display:flex !important; }
 
-    /* wipe ALL typical modal wrappers inside missionsBack */
-    #missionsBack > *,
-    #missionsBack .modal,
-    #missionsBack .panel,
-    #missionsBack .sheet,
-    #missionsBack .modal-panel,
-    #missionsBack #missionsModal{
-      width:100% !important;
-      height:100% !important;
-      max-width:none !important;
-      max-height:none !important;
-      margin:0 !important;
-      border-radius:0 !important;
-      box-shadow:none !important;
-      background: transparent !important;
-      border:0 !important;
+      /* wipe ALL typical modal wrappers inside missionsBack */
+      #missionsBack > *,
+      #missionsBack .modal,
+      #missionsBack .panel,
+      #missionsBack .sheet,
+      #missionsBack .modal-panel,
+      #missionsBack #missionsModal{
+        width:100% !important;
+        height:100% !important;
+        max-width:none !important;
+        max-height:none !important;
+        margin:0 !important;
+        border-radius:0 !important;
+        box-shadow:none !important;
+        background: transparent !important;
+        border:0 !important;
 
-      display:flex !important;
-      flex-direction:column !important;
-      min-height:0 !important;
-    }
+        display:flex !important;
+        flex-direction:column !important;
+        min-height:0 !important;
+      }
 
-    /* content scroll area */
-    #missionsBack #missionsRoot{
-      flex: 1 1 auto !important;
-      min-height:0 !important;
-      overflow-y:auto !important;
-      -webkit-overflow-scrolling:touch;
-      padding: 14px 14px calc(18px + env(safe-area-inset-bottom)) 14px !important;
-    }
+      /* content scroll area */
+      #missionsBack #missionsRoot{
+        flex: 1 1 auto !important;
+        min-height:0 !important;
+        overflow-y:auto !important;
+        -webkit-overflow-scrolling:touch;
+        padding: 14px 14px calc(18px + env(safe-area-inset-bottom)) 14px !important;
+      }
 
-    /* if you have a bottom button row from index, keep it sticky */
-    #missionsBack .btn-row{
-      position:sticky !important;
-      bottom:0 !important;
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) 14px !important;
-      background: rgba(0,0,0,.22) !important;
-      backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(255,255,255,.08) !important;
-    }
+      /* if you have a bottom button row from index, keep it sticky */
+      #missionsBack .btn-row{
+        position:sticky !important;
+        bottom:0 !important;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) 14px !important;
+        background: rgba(0,0,0,.22) !important;
+        backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(255,255,255,.08) !important;
+      }
 
-    /* Base stage (offers screen) */
-    #missionsRoot .m-stage{
-      position:relative;
-      border:1px solid rgba(36,50,68,.95);
-      border-radius:16px;
-      padding:14px;
-      background:
-        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-        linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
-        var(--missions-bg);
-      background-position:center;
-      background-size:cover;
-      background-repeat:no-repeat;
-      box-shadow:
-        0 18px 48px rgba(0,0,0,.62),
-        inset 0 1px 0 rgba(255,255,255,.08),
-        inset 0 0 0 1px rgba(0,229,255,.06);
-      outline:1px solid rgba(0,229,255,.08);
-      overflow:hidden;
-    }
+      /* Base stage (offers screen) */
+      #missionsRoot .m-stage{
+        position:relative;
+        border:1px solid rgba(36,50,68,.95);
+        border-radius:16px;
+        padding:14px;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
+          var(--missions-bg);
+        background-position:center;
+        background-size:cover;
+        background-repeat:no-repeat;
+        box-shadow:
+          0 18px 48px rgba(0,0,0,.62),
+          inset 0 1px 0 rgba(255,255,255,.08),
+          inset 0 0 0 1px rgba(0,229,255,.06);
+        outline:1px solid rgba(0,229,255,.08);
+        overflow:hidden;
+      }
 
-    /* WAITING mode = whole screen switches background */
-    #missionsRoot .m-stage.m-stage-wait{
-      background:
-        radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-        radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-        linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
-        var(--missions-wait-bg);
-      background-position:center;
-      background-size:cover;
-      background-repeat:no-repeat;
-    }
+      /* WAITING mode = whole screen switches background */
+      #missionsRoot .m-stage.m-stage-wait{
+        background:
+          radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.55), rgba(6,10,14,.86)),
+          var(--missions-wait-bg);
+        background-position:center;
+        background-size:cover;
+        background-repeat:no-repeat;
+      }
 
-    #missionsRoot .m-stage::before{
-      content:"";
-      position:absolute; inset:0;
-      pointer-events:none;
-      z-index:0;
-      background:
-        radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.56) 78%, rgba(0,0,0,.74) 100%),
-        repeating-linear-gradient(
-          to bottom,
-          rgba(255,255,255,.030),
-          rgba(255,255,255,.030) 1px,
-          rgba(0,0,0,0) 3px,
-          rgba(0,0,0,0) 6px
-        );
-      opacity:.28;
-      mix-blend-mode: overlay;
-    }
+      #missionsRoot .m-stage::before{
+        content:"";
+        position:absolute; inset:0;
+        pointer-events:none;
+        z-index:0;
+        background:
+          radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.56) 78%, rgba(0,0,0,.74) 100%),
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,.030),
+            rgba(255,255,255,.030) 1px,
+            rgba(0,0,0,0) 3px,
+            rgba(0,0,0,0) 6px
+          );
+        opacity:.28;
+        mix-blend-mode: overlay;
+      }
 
-    #missionsRoot .m-stage::after{
-      content:"";
-      position:absolute; inset:0;
-      pointer-events:none;
-      z-index:0;
-      background: var(--missions-dust);
-      background-size: cover;
-      background-position: center;
-      opacity: .18;
-      mix-blend-mode: screen;
-    }
+      #missionsRoot .m-stage::after{
+        content:"";
+        position:absolute; inset:0;
+        pointer-events:none;
+        z-index:0;
+        background: var(--missions-dust);
+        background-size: cover;
+        background-position: center;
+        opacity: .18;
+        mix-blend-mode: screen;
+      }
 
-    #missionsRoot .m-stage > *{ position:relative; z-index:1; }
+      #missionsRoot .m-stage > *{ position:relative; z-index:1; }
 
-    #missionsRoot .m-card{
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      padding: 12px;
-      background: rgba(0,0,0,.20);
-      color: rgba(255,255,255,.92);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 16px 34px rgba(0,0,0,.32);
-    }
+      #missionsRoot .m-card{
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(0,0,0,.20);
+        color: rgba(255,255,255,.92);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 16px 34px rgba(0,0,0,.32);
+      }
 
-    #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
-    #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
+      #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
+      #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
 
-    #missionsRoot .m-row{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-    }
+      #missionsRoot .m-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+      }
 
-    #missionsRoot .m-hr{
-      height:1px;
-      background: rgba(255,255,255,.08);
-      margin:10px 0;
-    }
+      #missionsRoot .m-hr{
+        height:1px;
+        background: rgba(255,255,255,.08);
+        margin:10px 0;
+      }
 
-    /* Offers */
-    #missionsRoot .m-offer{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.18);
-      border-radius:14px;
-      padding:12px;
-    }
-    #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
-    #missionsRoot .m-offer:hover{
-      border-color: rgba(0,229,255,.18);
-      box-shadow: 0 12px 26px rgba(0,0,0,.30);
-    }
-    #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
+      /* Offers */
+      #missionsRoot .m-offer{
+        border:1px solid rgba(255,255,255,.10);
+        background: rgba(0,0,0,.18);
+        border-radius:14px;
+        padding:12px;
+      }
+      #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
+      #missionsRoot .m-offer:hover{
+        border-color: rgba(0,229,255,.18);
+        box-shadow: 0 12px 26px rgba(0,0,0,.30);
+      }
+      #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
-    /* WAITING UI */
-    #missionsRoot .m-wait-center{
-      min-height: 360px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      gap:10px;
-      padding:18px;
-    }
+      /* WAITING UI */
+      #missionsRoot .m-wait-center{
+        min-height: 360px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        gap:10px;
+        padding:18px;
+      }
 
-    #missionsRoot .m-clock{
-      font-size: 52px;
-      font-weight: 950;
-      letter-spacing: 1px;
-      text-shadow: 0 10px 26px rgba(0,0,0,.60);
-    }
+      #missionsRoot .m-clock{
+        font-size: 52px;
+        font-weight: 950;
+        letter-spacing: 1px;
+        text-shadow: 0 10px 26px rgba(0,0,0,.60);
+      }
 
-    #missionsRoot .m-clock-sub{
-      font-size: 12.5px;
-      opacity: .86;
-    }
+      #missionsRoot .m-clock-sub{
+        font-size: 12.5px;
+        opacity: .86;
+      }
 
-    #missionsRoot .m-bar{
-      height:10px;
-      border-radius:999px;
-      overflow:hidden;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.10);
-      width: min(520px, 92%);
-      margin-top: 10px;
-    }
-    #missionsRoot .m-bar-fill{
-      height:100%;
-      width:0%;
-      background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.92));
-      transition: width .25s linear;
-    }
+      #missionsRoot .m-bar{
+        height:10px;
+        border-radius:999px;
+        overflow:hidden;
+        background: rgba(255,255,255,.10);
+        border: 1px solid rgba(255,255,255,.10);
+        width: min(520px, 92%);
+        margin-top: 10px;
+      }
+      #missionsRoot .m-bar-fill{
+        height:100%;
+        width:0%;
+        background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.92));
+        transition: width .25s linear;
+      }
 
-    #missionsRoot .m-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:center;
-      margin-top: 10px;
-    }
-  `;
-  document.head.appendChild(st);
-}
+      /* ✅ Possible rare drop card */
+      #missionsRoot .m-rare{
+        width: min(520px, 92%);
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(0,0,0,.24);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 16px 34px rgba(0,0,0,.32);
+        padding: 10px 10px;
+        margin-top: 10px;
+        text-align:left;
+        position:relative;
+        overflow:hidden;
+      }
+      #missionsRoot .m-rare::before{
+        content:"";
+        position:absolute; inset:0;
+        pointer-events:none;
+        background:
+          radial-gradient(circle at 22% 18%, rgba(255,255,255,.10), transparent 55%),
+          radial-gradient(circle at 92% 88%, rgba(0,229,255,.10), transparent 58%);
+        opacity:.55;
+        mix-blend-mode: overlay;
+      }
+      #missionsRoot .m-rare > *{ position:relative; z-index:1; }
+
+      #missionsRoot .m-rare-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom: 8px;
+      }
+      #missionsRoot .m-rare-tag{
+        font-size: 11px;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+        opacity: .86;
+      }
+      #missionsRoot .m-rare-chance{
+        font-size: 11px;
+        opacity: .82;
+        white-space:nowrap;
+      }
+
+      #missionsRoot .m-rare-row{
+        display:flex;
+        gap:10px;
+        align-items:center;
+        min-width:0;
+      }
+      #missionsRoot .m-rare-ico{
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.06);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        flex: 0 0 auto;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      }
+      #missionsRoot .m-rare-ico img{
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transform: translateZ(0);
+        filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+      }
+      #missionsRoot .m-rare-ico .m-rare-fallback{
+        font-weight: 950;
+        opacity: .9;
+        font-size: 18px;
+      }
+
+      #missionsRoot .m-rare-meta{
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+      }
+      #missionsRoot .m-rare-name{
+        font-weight: 900;
+        letter-spacing: .15px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      #missionsRoot .m-rare-sub{
+        font-size: 12px;
+        opacity: .84;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      /* rarity accents (subtle) */
+      #missionsRoot .m-rare[data-rarity="uncommon"]{ border-color: rgba(120,255,120,.18); box-shadow: 0 16px 34px rgba(0,0,0,.32), inset 0 0 0 1px rgba(120,255,120,.06); }
+      #missionsRoot .m-rare[data-rarity="rare"]{ border-color: rgba(80,180,255,.18); box-shadow: 0 16px 34px rgba(0,0,0,.32), inset 0 0 0 1px rgba(80,180,255,.06); }
+      #missionsRoot .m-rare[data-rarity="epic"]{ border-color: rgba(200,120,255,.18); box-shadow: 0 16px 34px rgba(0,0,0,.32), inset 0 0 0 1px rgba(200,120,255,.06); }
+      #missionsRoot .m-rare[data-rarity="legendary"]{ border-color: rgba(255,200,90,.18); box-shadow: 0 16px 34px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,200,90,.06); }
+
+      #missionsRoot .m-actions{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        justify-content:center;
+        margin-top: 10px;
+      }
+    `;
+    document.head.appendChild(st);
+  }
 
   // =========================
   // Modal wiring
@@ -402,20 +520,215 @@
   }
 
   // =========================
-  // Active parsing
+  // Rare Drop extraction (robust)
+  // =========================
+  function _normRarity(r) {
+    r = String(r || "").toLowerCase().trim();
+    if (!r) return "";
+    if (r === "leg" || r === "legend") return "legendary";
+    if (r === "epi") return "epic";
+    return r;
+  }
+
+  function _chanceToPct(v) {
+    if (v == null) return null;
+
+    if (typeof v === "string") {
+      const s = v.trim();
+
+      const frac = s.match(/(\d+)\s*\/\s*(\d+)/);
+      if (frac) {
+        const a = Number(frac[1]), b = Number(frac[2]);
+        if (Number.isFinite(a) && Number.isFinite(b) && b > 0) return (a * 100) / b;
+      }
+
+      const m = s.match(/([\d.]+)/);
+      if (!m) return null;
+      const n = Number(m[1]);
+      if (!Number.isFinite(n)) return null;
+
+      if (s.includes("%")) return n;
+      if (n <= 1) return n * 100;
+      return n;
+    }
+
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) return null;
+      if (v <= 1) return v * 100;
+      return v;
+    }
+
+    return null;
+  }
+
+  function _fmtPct(pct) {
+    if (pct == null || !Number.isFinite(pct)) return "";
+    if (pct < 1) return `${pct.toFixed(2)}%`;
+    if (pct < 10) return `${pct.toFixed(1)}%`;
+    return `${Math.round(pct)}%`;
+  }
+
+  function _guessIconFromKey(key, slot) {
+    key = String(key || "");
+    slot = String(slot || "");
+    if (!key) return "";
+
+    if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("/")) return key;
+
+    const ext = key.includes(".") ? "" : ".png";
+    const base = key.replace(/^equip\//, "").replace(/^items\//, "");
+
+    const isEquip =
+      !!slot ||
+      /weapon|armor|cloak|collar|helmet|ring|offhand|badge|pet|rune|gloves|fangs/i.test(base);
+
+    const folder = isEquip ? "equip" : "items";
+    return `/assets/${folder}/${base}${ext}`;
+  }
+
+  function _extractRareDrop(fromObj) {
+    if (!fromObj || typeof fromObj !== "object") return null;
+
+    const direct =
+      fromObj.possibleRareDrop || fromObj.possible_rare_drop ||
+      fromObj.rareDropPreview  || fromObj.rare_drop_preview ||
+      fromObj.rareDrop         || fromObj.rare_drop ||
+      fromObj.rareItem         || fromObj.rare_item ||
+      fromObj.possibleDrop     || fromObj.possible_drop ||
+      null;
+
+    let obj = null;
+    if (direct && typeof direct === "object") obj = direct;
+    else obj = fromObj;
+
+    const has =
+      obj &&
+      (obj.name || obj.title || obj.label ||
+       obj.item_key || obj.itemKey || obj.key || obj.id ||
+       obj.icon || obj.iconUrl || obj.icon_url || obj.img || obj.image || obj.url ||
+       obj.rarity || obj.quality || obj.tier ||
+       obj.chance || obj.pct || obj.chancePct || obj.percent || obj.odds);
+
+    if (!has) return null;
+
+    const name = String(obj.name || obj.title || obj.label || obj.item_name || obj.itemName || obj.key || obj.item_key || obj.itemKey || "Rare Drop");
+    const rarity = _normRarity(obj.rarity || obj.quality || obj.tier || obj.r || "");
+    const chancePct = _chanceToPct(obj.chance ?? obj.chancePct ?? obj.pct ?? obj.percent ?? obj.odds ?? obj.prob ?? obj.probability);
+    const key = String(obj.item_key || obj.itemKey || obj.key || obj.id || "");
+    const slot = String(obj.slot || obj.item_slot || obj.itemSlot || "");
+    const note = String(obj.note || obj.hint || obj.desc || obj.description || "");
+
+    const iconRaw = String(obj.iconUrl || obj.icon_url || obj.icon || obj.img || obj.image || obj.url || "");
+    const icon = iconRaw || _guessIconFromKey(key, slot);
+
+    return {
+      name,
+      rarity,
+      chancePct,
+      key,
+      slot,
+      note,
+      iconUrl: assetUrl(icon),
+      _raw: obj
+    };
+  }
+
+  function renderRareDropCard(rare) {
+    if (!rare) return "";
+    const rarity = _normRarity(rare.rarity);
+    const chance = rare.chancePct != null ? _fmtPct(rare.chancePct) : "";
+    const subParts = [];
+    if (rarity) subParts.push(rarity.toUpperCase());
+    if (rare.slot) subParts.push(String(rare.slot).toUpperCase());
+    if (rare.note) subParts.push(rare.note);
+
+    const sub = subParts.filter(Boolean).join(" · ");
+    const img = rare.iconUrl ? `
+      <img src="${esc(rare.iconUrl)}" alt="${esc(rare.name)}" loading="lazy" decoding="async"
+        onerror="this.remove(); this.parentNode && this.parentNode.insertAdjacentHTML('beforeend','<div class=&quot;m-rare-fallback&quot;>★</div>');" />
+    ` : `<div class="m-rare-fallback">★</div>`;
+
+    return `
+      <div class="m-rare" data-rarity="${esc(rarity || "")}">
+        <div class="m-rare-top">
+          <div class="m-rare-tag">Possible rare drop</div>
+          <div class="m-rare-chance">${chance ? `Chance <b>${esc(chance)}</b>` : `<span style="opacity:.8">Rare</span>`}</div>
+        </div>
+        <div class="m-rare-row">
+          <div class="m-rare-ico">${img}</div>
+          <div class="m-rare-meta">
+            <div class="m-rare-name">${esc(rare.name || "Rare Drop")}</div>
+            <div class="m-rare-sub">${esc(sub || "Keep an eye on the loot…")}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================
+  // Active parsing (improved)
   // =========================
   let _legacyAnchor = null;
 
-  function _pickActiveFromList(list) {
-    if (!Array.isArray(list)) return null;
-    return list.find(m => {
-      const st = String(m?.state || m?.status || "").toLowerCase();
-      return st === "in_progress" || st === "running" || st === "active" || st === "completed" || st === "ready";
-    }) || null;
+  function _missionTimeInfo(m) {
+    const started = Number(m?.started_ts || m?.start_ts || m?.start_time || m?.startTime || 0);
+    const dur = Number(m?.duration_sec || m?.duration || m?.durationSec || 0);
+    const ends =
+      Number(m?.ends_ts || m?.ready_at_ts || m?.ready_at || m?.endsTs || 0) ||
+      (started && dur ? (started + dur) : 0);
+
+    const now = _nowSec();
+    let remaining = 0;
+
+    if (ends) remaining = ends - now;
+    else {
+      const rawLeft = (m?.leftSec ?? m?.left_sec);
+      remaining = (typeof rawLeft === "number") ? rawLeft : Number(rawLeft || 0);
+    }
+
+    remaining = Number.isFinite(remaining) ? remaining : 0;
+
+    const st = String(m?.state || m?.status || "").toLowerCase();
+    const isRunning = (remaining > 1) || (st === "in_progress" || st === "running" || st === "active");
+    const isReady = (remaining <= 1) && (st === "completed" || st === "ready" || st === "done" || st === "");
+
+    return {
+      started,
+      dur,
+      ends,
+      remaining,
+      isRunning,
+      isReady,
+      sortTs: ends || started || 0
+    };
   }
 
-  function getActive(payload) {
-    const am =
+  function _pickActiveFromList(list) {
+    if (!Array.isArray(list) || !list.length) return null;
+
+    let best = null;
+    let bestScore = -1;
+    let bestTs = -1;
+
+    for (const m of list) {
+      if (!m || typeof m !== "object") continue;
+      const t = _missionTimeInfo(m);
+
+      // score: RUNNING (30) > READY (10) > ignore (0)
+      const score = t.isRunning ? 30 : (t.isReady ? 10 : 0);
+      if (score <= 0) continue;
+
+      if (score > bestScore || (score === bestScore && t.sortTs > bestTs)) {
+        best = m;
+        bestScore = score;
+        bestTs = t.sortTs;
+      }
+    }
+    return best || null;
+  }
+
+  function _primaryActive(payload) {
+    return (
       payload?.active_mission ||
       payload?.activeMission ||
       payload?.active ||
@@ -423,8 +736,26 @@
       payload?.currentMission ||
       payload?.mission ||
       payload?.current ||
-      _pickActiveFromList(payload?.user_missions || payload?.userMissions || payload?.missions) ||
-      null;
+      null
+    );
+  }
+
+  function getActive(payload) {
+    const list =
+      payload?.user_missions || payload?.userMissions || payload?.missions || null;
+
+    const primary = _primaryActive(payload);
+    const listPick = _pickActiveFromList(list);
+
+    // if primary exists but looks READY while list has RUNNING → trust list
+    let am = primary && typeof primary === "object" ? primary : null;
+    if (!am && listPick) am = listPick;
+
+    if (am && listPick && am !== listPick) {
+      const pInfo = _missionTimeInfo(am);
+      const lInfo = _missionTimeInfo(listPick);
+      if (pInfo.isReady && lInfo.isRunning) am = listPick;
+    }
 
     if (!am || typeof am !== "object") return { status: "NONE" };
 
@@ -453,6 +784,7 @@
         total,
         pct,
         readyAt: am.readyAt || am.ready_at_label || _fmtClock(ends),
+        __raw: am
       };
     }
 
@@ -473,11 +805,11 @@
       const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
       const total = Math.max(1, Number(am.duration_sec || am.duration || _legacyAnchor.left || 1));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "" };
+      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "", __raw: am };
     }
 
     if (status === "READY") {
-      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "" };
+      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", __raw: am };
     }
 
     return { status: "NONE" };
@@ -502,6 +834,7 @@
       pct,
       readyAt: _fmtClock(ends),
       __pending: true,
+      __raw: null
     };
   }
 
@@ -738,12 +1071,16 @@
     const started = Math.floor(_nowSec());
     const title = String(o?.title || o?.label || tier || "Mission");
 
+    // ✅ rare drop can come from offer (recommended)
+    const rareDrop = _extractRareDrop(o);
+
     _pendingStart = {
       tier,
       offerId,
       startedClientSec: started,
       durationSec: durSec,
       title,
+      rareDrop,
       // ✅ keep optimistic timer until mission would be ready (+30s buffer)
       untilMs: Date.now() + (durSec * 1000) + 30000,
     };
@@ -769,6 +1106,13 @@
     const last = payload.lastResolve || payload.last_resolve || null;
 
     if (active.status && active.status !== "NONE") {
+      // ✅ rare drop source order: pending.offer → active raw mission → payload (fallback)
+      const rare =
+        (active.__pending ? (_pendingStart?.rareDrop || null) : null) ||
+        _extractRareDrop(active.__raw) ||
+        _extractRareDrop(_primaryActive(payload)) ||
+        null;
+
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
           <div class="m-wait-center">
@@ -777,6 +1121,8 @@
             <div id="mClockSub" class="m-clock-sub">—</div>
 
             <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
+
+            ${rare ? renderRareDropCard(rare) : ""}
 
             <div class="m-actions">
               <button type="button" class="btn" data-act="refresh">Refresh</button>
@@ -934,8 +1280,6 @@
       // poll state until backend confirms active (or timeout)
       const ok = await _syncAfterStart();
       if (!ok) {
-        // if backend never confirms, keep user informed but don't hard-fail
-        // (Back button is available on pending screen)
         log("start: backend did not confirm active within window");
       }
       return;
