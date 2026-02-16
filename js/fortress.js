@@ -96,9 +96,9 @@
   }
 
   // ---------- CSS ----------
-function injectCss() {
-  if (document.getElementById("fortress-css")) return;
-  const css = `
+  function injectCss() {
+    if (document.getElementById("fortress-css")) return;
+    const css = `
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
 
@@ -157,24 +157,11 @@ function injectCss() {
   background:radial-gradient(60% 60% at 50% 60%, rgba(255,255,255,.07), rgba(0,0,0,0));
   border:1px solid rgba(255,255,255,.10);
 }
+#fb-stage canvas{display:block;width:100%;height:100%}
 
-/* ✅ PATCH 1: Layering — canvas pod spodem, fallback DOM nad nim */
-#fb-stage canvas{
-  position:absolute;
-  inset:0;
-  z-index:1;
-  display:block;
-  width:100%;
-  height:100%;
-}
+/* DOM fallback kiedy PIXI brak */
 #fb-stage .fb-fallback{
-  position:absolute;
-  inset:0;
-  z-index:2;
-}
-
-/* DOM fallback kiedy PIXI brak (albo gdy tekstury się nie wczytają) */
-#fb-stage .fb-fallback{
+  position:absolute;inset:0;
   display:flex;align-items:center;justify-content:space-between;
   padding:16px;gap:10px;
   pointer-events:none;
@@ -198,24 +185,26 @@ function injectCss() {
 }
 #fb-stage .fb-name{font:800 13px system-ui;opacity:.92;text-align:center}
 
-/* --- Log / board / actions (battle modal) --- */
+/* board + log */
 #fb-board{
   margin:0;
   background:rgba(255,255,255,.06);
   padding:8px;
   border-radius:10px;
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  white-space:pre;
 }
 #fb-log{
   display:flex;
   flex-direction:column;
   gap:4px;
   overflow:auto;
-  min-height:120px;
+  min-height:140px;
   max-height:none;
   padding-right:2px;
 }
 
+/* --- nowy pasek akcji --- */
 .fx-actions{
   display:flex;align-items:center;justify-content:space-between;gap:8px;
   margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);
@@ -250,12 +239,12 @@ function injectCss() {
   .fx-title{font-size:15px}
   .fx-btn{padding:12px 14px}
 }
-`;
-  const s = el("style");
-  s.id = "fortress-css";
-  s.textContent = css;
-  document.head.appendChild(s);
-}
+    `;
+    const s = el("style");
+    s.id = "fortress-css";
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
 
   function cleanupPixiGlobal() {
     try {
@@ -847,117 +836,72 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     `;
 
     const wrap = el("div");
-wrap.id = "fortress-modal";
-const card = el("div", "card");
-card.style.padding = "12px";
-const mask = el("div", "mask");
-mask.id = "fb-mask";
-card.appendChild(cont);
-wrap.appendChild(mask);
-wrap.appendChild(card);
-document.body.appendChild(wrap);
+    wrap.id = "fortress-modal";
+    const card = el("div", "card");
+    card.style.padding = "12px";
+    const mask = el("div", "mask");
+    mask.id = "fb-mask";
+    card.appendChild(cont);
+    wrap.appendChild(mask);
+    wrap.appendChild(card);
+    document.body.appendChild(wrap);
 
-const stageHost = $("#fb-stage", cont);
-if (stageHost) stageHost.style.position = "relative";
+    const stageHost = $("#fb-stage", cont);
+    if (stageHost) stageHost.style.position = "relative";
 
-// ✅ PATCH 2: ensure battle modal has a scroll container + stage min height is respected
-// (wrap everything except header/actions into .fb-main if not present)
-(function ensureBattleScrollContainer(){
-  if (!card) return;
-  // if you already render <div class="fb-main"> in HTML, this will no-op
-  const existing = card.querySelector(".fb-main");
-  if (existing) return;
+    // DOM fallback setup (always)
+    const youImg = $("#fb-you-img", cont);
+    const bossImg = $("#fb-boss-img", cont);
+    const bossNameEl = $("#fb-boss-name", cont);
 
-  // In battle modal, `cont` is the root inside card. We want:
-  //   header stays on top,
-  //   .fb-main scrolls (stage + board + log),
-  //   actions stick at bottom via CSS (position:sticky)
-  // We'll move stage + board + log into a new .fb-main wrapper.
-
-  const stage = $("#fb-stage", cont);
-  const board = $("#fb-board", cont);
-  const log = $("#fb-log", cont);
-
-  // header = first .fx-head inside cont
-  const head = cont.querySelector(".fx-head");
-  // actions = .fx-actions inside cont
-  const actions = cont.querySelector(".fx-actions");
-
-  // create fb-main
-  const main = el("div", "fb-main");
-
-  // move nodes safely (keep order)
-  if (stage) main.appendChild(stage);
-  if (board) main.appendChild(board);
-  if (log) main.appendChild(log);
-
-  // reinsert main before actions (or at end)
-  if (actions && actions.parentNode === cont) {
-    cont.insertBefore(main, actions);
-  } else {
-    cont.appendChild(main);
-  }
-
-  // ensure stage has some height even before PIXI mounts
-  if (stage) {
-    stage.style.minHeight = "200px";
-  }
-})();
-
-// DOM fallback setup (always)
-const youImg = $("#fb-you-img", cont);
-const bossImg = $("#fb-boss-img", cont);
-const bossNameEl = $("#fb-boss-name", cont);
-
-const pUrl = getPlayerAvatarUrl(data);
-if (youImg) {
-  youImg.src = pUrl || "";
-  youImg.style.visibility = pUrl ? "visible" : "hidden";
-}
-
-const bossName = data?.boss?.name || data?.bossName || "Boss";
-const bUrl = data?.boss?.sprite || data?.bossSprite || "images/bosses/core_custodian.png";
-if (bossImg) bossImg.src = bUrl;
-if (bossNameEl) bossNameEl.textContent = String(bossName || "Boss");
-
-let app = null;
-let bossSpr = null;
-let playerG = null;
-let bossShakeT = 0;
-let playerShakeT = 0;
-
-async function makePixiApp(PIXI, w, h) {
-  const dpr = window.devicePixelRatio || 1;
-  // try v8
-  try {
-    let a = new PIXI.Application();
-    if (typeof a.init === "function") {
-      await a.init({
-        width: w,
-        height: h,
-        backgroundAlpha: 0,
-        antialias: true,
-        resolution: dpr,
-        autoDensity: true,
-      });
-      return a;
+    const pUrl = getPlayerAvatarUrl(data);
+    if (youImg) {
+      youImg.src = pUrl || "";
+      youImg.style.visibility = pUrl ? "visible" : "hidden";
     }
-    // old: recreate with options
-    try { a.destroy?.(true); } catch (_) {}
-  } catch (_) {}
-  // try old ctor signature
-  try {
-    return new PIXI.Application({
-      width: w,
-      height: h,
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: dpr,
-      autoDensity: true,
-    });
-  } catch (_) {}
-  return null;
-}
+
+    const bUrl = data?.boss?.sprite || data?.bossSprite || "images/bosses/core_custodian.png";
+    if (bossImg) bossImg.src = bUrl;
+    if (bossNameEl) bossNameEl.textContent = String(bossName || "Boss");
+
+    let app = null;
+    let bossSpr = null;
+    let playerG = null;
+    let bossShakeT = 0;
+    let playerShakeT = 0;
+
+    async function makePixiApp(PIXI, w, h) {
+      const dpr = window.devicePixelRatio || 1;
+      // try v8
+      try {
+        let a = new PIXI.Application();
+        if (typeof a.init === "function") {
+          await a.init({
+            width: w,
+            height: h,
+            backgroundAlpha: 0,
+            antialias: true,
+            resolution: dpr,
+            autoDensity: true,
+          });
+          return a;
+        }
+        // old: recreate with options
+        try { a.destroy?.(true); } catch (_) {}
+      } catch (_) {}
+      // try old ctor signature
+      try {
+        return new PIXI.Application({
+          width: w,
+          height: h,
+          backgroundAlpha: 0,
+          antialias: true,
+          resolution: dpr,
+          autoDensity: true,
+        });
+      } catch (_) {}
+      return null;
+    }
 
     async function mountPixi() {
       if (!stageHost) return;
