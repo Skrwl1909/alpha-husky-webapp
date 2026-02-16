@@ -959,169 +959,115 @@ async function makePixiApp(PIXI, w, h) {
   return null;
 }
 
-    // ✅ PATCH 3 — PIXI mount (v8+old compatible) + hides fallback + avatar+boss sprites
-// Wklej w miejsce Twojego obecnego mountPixi() (albo podmień całą funkcję).
-async function mountPixi() {
-  if (!stageHost) return;
-  if (app) return; // ✅ guard
-  const PIXI = globalThis.PIXI;
-  if (!PIXI || !PIXI.Application) return;
+    async function mountPixi() {
+      if (!stageHost) return;
+      if (app) return; // ✅ guard
+      const PIXI = globalThis.PIXI;
+      if (!PIXI || !PIXI.Application) return;
 
-  const w = Math.max(240, stageHost.clientWidth || 360);
-  const h = Math.max(180, stageHost.clientHeight || 260);
+      const w = Math.max(240, stageHost.clientWidth || 360);
+      const h = Math.max(180, stageHost.clientHeight || 260);
 
-  app = await makePixiApp(PIXI, w, h);
-  if (!app) return;
+      app = await makePixiApp(PIXI, w, h);
+      if (!app) return;
 
-  const view = app.view || app.canvas;
-  if (view) {
-    view.style.width = "100%";
-    view.style.height = "100%";
-    view.style.display = "block";
-    stageHost.appendChild(view);
-  }
+      const view = app.view || app.canvas;
+      if (view) {
+        view.style.width = "100%";
+        view.style.height = "100%";
+        view.style.display = "block";
+        stageHost.appendChild(view);
+      }
 
-  // hide DOM fallback when pixi is mounted
-  const fb = $("#fb-fallback", cont);
-  if (fb) fb.style.display = "none";
+      // hide fallback when pixi is mounted
+      const fb = $("#fb-fallback", cont);
+      if (fb) fb.style.display = "none";
 
-  // ---- tiny gfx helpers (safe across PIXI versions)
-  function _gfxRoundedRect(PIXI, w, h, r, color, alpha) {
-    const g = new PIXI.Graphics();
-    // v7/v6
-    if (typeof g.beginFill === "function") {
-      g.beginFill(color, alpha);
-      g.drawRoundedRect(0, 0, w, h, r);
-      g.endFill();
-      return g;
-    }
-    // v8
-    if (typeof g.roundRect === "function" && typeof g.fill === "function") {
-      g.roundRect(0, 0, w, h, r);
-      g.fill({ color, alpha });
-      return g;
-    }
-    return g;
-  }
+      // bg panel
+      const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
+      app.stage.addChild(bgPanel);
 
-  function _gfxCircle(PIXI, radius, color, alpha) {
-    const g = new PIXI.Graphics();
-    // v7/v6
-    if (typeof g.beginFill === "function") {
-      g.beginFill(color, alpha);
-      g.drawCircle(0, 0, radius);
-      g.endFill();
-      return g;
-    }
-    // v8
-    if (typeof g.circle === "function" && typeof g.fill === "function") {
-      g.circle(0, 0, radius);
-      g.fill({ color, alpha });
-      return g;
-    }
-    return g;
-  }
+      // player (left) with avatar mask
+      playerG = new PIXI.Container();
 
-  // bg panel
-  const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
-  app.stage.addChild(bgPanel);
+      const radius = 34;
+      const pBg = _gfxCircle(PIXI, radius + 6, 0x3b82f6, 0.10);
+      const ring = new PIXI.Graphics();
+      if (typeof ring.lineStyle === "function") {
+        ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
+      }
+      playerG.addChild(pBg, ring);
 
-  // player (left) with avatar mask
-  playerG = new PIXI.Container();
+      if (pUrl) {
+        const tex = pixiTextureFromUrl(PIXI, pUrl);
+        const spr = new PIXI.Sprite(tex);
+        spr.anchor?.set?.(0.5);
 
-  const radius = 34;
-  const pBg = _gfxCircle(PIXI, radius + 6, 0x3b82f6, 0.10);
+        const m = new PIXI.Graphics();
+        if (typeof m.beginFill === "function") {
+          m.beginFill(0xffffff, 1);
+          m.drawCircle(0, 0, radius);
+          m.endFill();
+        } else if (typeof m.circle === "function" && typeof m.fill === "function") {
+          m.circle(0, 0, radius);
+          m.fill({ color: 0xffffff, alpha: 1 });
+        }
+        spr.mask = m;
+        playerG.addChild(m, spr);
 
-  const ring = new PIXI.Graphics();
-  if (typeof ring.lineStyle === "function") {
-    ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
-  } else if (typeof ring.stroke === "function" && typeof ring.circle === "function") {
-    // pixi v8 style (optional)
-    ring.circle(0, 0, radius + 2);
-    ring.stroke({ width: 2, color: 0xffffff, alpha: 0.12 });
-  }
-  playerG.addChild(pBg, ring);
+        const fit = () => {
+          const w0 = spr.texture?.width || spr.texture?.orig?.width || spr.width || 1;
+          const h0 = spr.texture?.height || spr.texture?.orig?.height || spr.height || 1;
+          const s = (radius * 2) / Math.max(1, w0, h0);
+          spr.scale?.set?.(s);
+        };
 
-  if (pUrl) {
-    const tex = pixiTextureFromUrl(PIXI, pUrl);
-    const spr = new PIXI.Sprite(tex);
-    spr.anchor?.set?.(0.5);
+        if (spr.texture?.baseTexture?.valid) fit();
+        else spr.texture?.baseTexture?.once?.("loaded", fit);
+      } else {
+        const core = _gfxCircle(PIXI, 18, 0xffffff, 0.10);
+        playerG.addChild(core);
+      }
 
-    const m = new PIXI.Graphics();
-    if (typeof m.beginFill === "function") {
-      m.beginFill(0xffffff, 1);
-      m.drawCircle(0, 0, radius);
-      m.endFill();
-    } else if (typeof m.circle === "function" && typeof m.fill === "function") {
-      m.circle(0, 0, radius);
-      m.fill({ color: 0xffffff, alpha: 1 });
-    }
-    spr.mask = m;
-    playerG.addChild(m, spr);
+      const pTxt = new PIXI.Text("YOU", { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
+      pTxt.anchor?.set?.(0.5, 0);
+      pTxt.x = 0;
+      pTxt.y = 42;
+      playerG.addChild(pTxt);
 
-    const fit = () => {
-      const w0 = spr.texture?.width || spr.texture?.orig?.width || spr.width || 1;
-      const h0 = spr.texture?.height || spr.texture?.orig?.height || spr.height || 1;
-      const s = (radius * 2) / Math.max(1, w0, h0);
-      spr.scale?.set?.(s);
-    };
+      playerG.x = Math.round(w * 0.22);
+      playerG.y = Math.round(h * 0.55);
+      app.stage.addChild(playerG);
 
-    if (spr.texture?.baseTexture?.valid) fit();
-    else spr.texture?.baseTexture?.once?.("loaded", fit);
-  } else {
-    const core = _gfxCircle(PIXI, 18, 0xffffff, 0.10);
-    playerG.addChild(core);
-  }
+      // boss (right)
+      const bossUrl = bUrl;
+      bossSpr = PIXI.Sprite.from(bossUrl);
+      bossSpr.anchor?.set?.(0.5, 0.5);
+      bossSpr.x = Math.round(w * 0.74);
+      bossSpr.y = Math.round(h * 0.52);
 
-  const pTxt = new PIXI.Text("YOU", {
-    fontFamily: "system-ui",
-    fontSize: 12,
-    fill: 0xffffff,
-    alpha: 0.85,
-  });
-  pTxt.anchor?.set?.(0.5, 0);
-  pTxt.x = 0;
-  pTxt.y = 42;
-  playerG.addChild(pTxt);
+      const maxW = w * 0.42;
+      const maxH = h * 0.70;
 
-  playerG.x = Math.round(w * 0.22);
-  playerG.y = Math.round(h * 0.55);
-  app.stage.addChild(playerG);
+      // fit after texture valid
+      const fitBoss = () => {
+        const bw = bossSpr.texture?.width || bossSpr.width || 1;
+        const bh = bossSpr.texture?.height || bossSpr.height || 1;
+        const sx = maxW / Math.max(1, bw);
+        const sy = maxH / Math.max(1, bh);
+        const s = Math.min(1, sx, sy);
+        bossSpr.scale?.set?.(s);
+      };
+      if (bossSpr.texture?.baseTexture?.valid) fitBoss();
+      else bossSpr.texture?.baseTexture?.once?.("loaded", fitBoss);
 
-  // boss (right)
-  const bossUrl = bUrl;
-  bossSpr = PIXI.Sprite.from(bossUrl);
-  bossSpr.anchor?.set?.(0.5, 0.5);
-  bossSpr.x = Math.round(w * 0.74);
-  bossSpr.y = Math.round(h * 0.52);
+      app.stage.addChild(bossSpr);
 
-  const maxW = w * 0.42;
-  const maxH = h * 0.70;
-
-  const fitBoss = () => {
-    const bw = bossSpr.texture?.width || bossSpr.texture?.orig?.width || bossSpr.width || 1;
-    const bh = bossSpr.texture?.height || bossSpr.texture?.orig?.height || bossSpr.height || 1;
-    const sx = maxW / Math.max(1, bw);
-    const sy = maxH / Math.max(1, bh);
-    const s = Math.min(1, sx, sy);
-    bossSpr.scale?.set?.(s);
-  };
-
-  if (bossSpr.texture?.baseTexture?.valid) fitBoss();
-  else bossSpr.texture?.baseTexture?.once?.("loaded", fitBoss);
-
-  app.stage.addChild(bossSpr);
-
-  const bTxt = new PIXI.Text(String(bossName || "BOSS"), {
-    fontFamily: "system-ui",
-    fontSize: 12,
-    fill: 0xffffff,
-    alpha: 0.85,
-  });
-  bTxt.anchor?.set?.(0.5, 0);
-  bTxt.x = bossSpr.x;
-  bTxt.y = bossSpr.y + maxH * 0.40;
-  app.stage.addChild(bTxt);
+      const bTxt = new PIXI.Text(String(bossName || "BOSS"), { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
+      bTxt.anchor?.set?.(0.5, 0);
+      bTxt.x = bossSpr.x;
+      bTxt.y = bossSpr.y + maxH * 0.40;
+      app.stage.addChild(bTxt);
 
       // shake ticker
       app.ticker?.add?.(() => {
