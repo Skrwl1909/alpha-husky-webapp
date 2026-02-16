@@ -2154,39 +2154,64 @@ setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
         }
 
         function renderTopbar(){
-          const s = PLAYER_STATE && PLAYER_STATE.stats;
-          const lvlFromState = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
-          const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
-          const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
+  const s = PLAYER_STATE && PLAYER_STATE.stats;
+  const lvlFromState = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
+  const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
+  const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
 
-          const fac = document.getElementById('faction');
-          if (fac) {
-            const base = (PROFILE && PROFILE.faction)
-              ? PROFILE.faction
-              : (fac.dataset.base || fac.textContent || 'PACK');
-            if (!fac.dataset.base) fac.dataset.base = base;
-            fac.textContent = `${base} • Lv ${lvl} • ${bones}🦴`;
-          }
+  const fac = document.getElementById('faction');
+  if (fac) {
+    const base = (PROFILE && PROFILE.faction)
+      ? PROFILE.faction
+      : (fac.dataset.base || fac.textContent || 'PACK');
+    if (!fac.dataset.base) fac.dataset.base = base;
+    fac.textContent = `${base} • Lv ${lvl} • ${bones}🦴`;
+  }
 
-          const heroLevel = document.getElementById('heroLevel');
-          if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
-        }
+  const heroLevel = document.getElementById('heroLevel');
+  if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
+}
 
-        function applyProfileSkin(skin){
-          const skinImg = document.getElementById('player-skin');
-          if (!skinImg || !skin) return;
+function applyProfileSkin(skin){
+  const skinImg = document.getElementById('player-skin');
+  if (!skinImg || !skin) return;
 
-          if (typeof skin === 'string') {
-            skinImg.src = skin;
-            skinImg.alt = 'Active skin';
-            return;
-          }
+  if (typeof skin === 'string') {
+    skinImg.src = skin;
+    skinImg.alt = 'Active skin';
+    return;
+  }
 
-          if (skin.img) skinImg.src = skin.img;
-          if (skin.name) skinImg.alt = skin.name;
-        }
+  if (skin.img) skinImg.src = skin.img;
+  if (skin.name) skinImg.alt = skin.name;
+}
 
-      async function loadProfile() {
+/* ✅ FRAME HELPERS — wklej tutaj (między applyProfileSkin a loadProfile) */
+function setHeroFrame(frameUrl){
+  const el = document.getElementById("player-frame");
+  if(!el) return;
+
+  if(frameUrl){
+    el.src = frameUrl;
+    el.style.display = "block";
+  }else{
+    el.removeAttribute("src");
+    el.style.display = "none";
+  }
+}
+
+function pickFrameUrl(p){
+  return (
+    p?.frameUrl ||
+    p?.frame_url ||
+    p?.cosmetics?.frameUrl ||
+    p?.cosmetics?.frame_url ||
+    p?.cosmetics?.frame ||
+    null
+  );
+}
+
+async function loadProfile() {
   try {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
@@ -2208,6 +2233,9 @@ setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
+
+    /* ✅ FRAME — dynamic (z profilu) */
+    setHeroFrame(pickFrameUrl(p));
 
     // ✅ Topbar może się przebudować – ok
     try { renderTopbar(); } catch (_) {}
@@ -3116,6 +3144,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
