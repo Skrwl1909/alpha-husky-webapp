@@ -338,18 +338,19 @@
         box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
       }
       #missionsRoot .m-rare-ico img{
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        transform: translateZ(0);
-        filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
-      }
-      #missionsRoot .m-rare-ico .m-rare-fallback{
-        font-weight: 950;
-        opacity: .9;
-        font-size: 18px;
-      }
-
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: translateZ(0);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+  }
+  #missionsRoot .m-rare-ico .m-rare-fallback{
+    font-weight: 950;
+    opacity: .95;
+    font-size: 20px;
+    color: rgba(255,255,255,.92);
+    text-shadow: 0 10px 22px rgba(0,0,0,.55);
+  }
       #missionsRoot .m-rare-meta{
         min-width:0;
         display:flex;
@@ -587,51 +588,90 @@
   }
 
   function _extractRareDrop(fromObj) {
-    if (!fromObj || typeof fromObj !== "object") return null;
+  if (!fromObj || typeof fromObj !== "object") return null;
 
-    const direct =
-      fromObj.possibleRareDrop || fromObj.possible_rare_drop ||
-      fromObj.rareDropPreview  || fromObj.rare_drop_preview ||
-      fromObj.rareDrop         || fromObj.rare_drop ||
-      fromObj.rareItem         || fromObj.rare_item ||
-      fromObj.possibleDrop     || fromObj.possible_drop ||
-      null;
+  // 1) Prefer nested object (ONLY if explicitly provided)
+  const nested =
+    fromObj.possibleRareDrop || fromObj.possible_rare_drop ||
+    fromObj.rareDropPreview  || fromObj.rare_drop_preview ||
+    fromObj.rareDrop         || fromObj.rare_drop ||
+    fromObj.rareItem         || fromObj.rare_item ||
+    fromObj.possibleDrop     || fromObj.possible_drop ||
+    null;
 
-    let obj = null;
-    if (direct && typeof direct === "object") obj = direct;
-    else obj = fromObj;
-
-    const has =
-      obj &&
-      (obj.name || obj.title || obj.label ||
-       obj.item_key || obj.itemKey || obj.key || obj.id ||
-       obj.icon || obj.iconUrl || obj.icon_url || obj.img || obj.image || obj.url ||
-       obj.rarity || obj.quality || obj.tier ||
-       obj.chance || obj.pct || obj.chancePct || obj.percent || obj.odds);
-
-    if (!has) return null;
-
-    const name = String(obj.name || obj.title || obj.label || obj.item_name || obj.itemName || obj.key || obj.item_key || obj.itemKey || "Rare Drop");
-    const rarity = _normRarity(obj.rarity || obj.quality || obj.tier || obj.r || "");
-    const chancePct = _chanceToPct(obj.chance ?? obj.chancePct ?? obj.pct ?? obj.percent ?? obj.odds ?? obj.prob ?? obj.probability);
-    const key = String(obj.item_key || obj.itemKey || obj.key || obj.id || "");
-    const slot = String(obj.slot || obj.item_slot || obj.itemSlot || "");
-    const note = String(obj.note || obj.hint || obj.desc || obj.description || "");
-
-    const iconRaw = String(obj.iconUrl || obj.icon_url || obj.icon || obj.img || obj.image || obj.url || "");
-    const icon = iconRaw || _guessIconFromKey(key, slot);
-
-    return {
-      name,
-      rarity,
-      chancePct,
-      key,
-      slot,
-      note,
-      iconUrl: assetUrl(icon),
-      _raw: obj
-    };
+  if (nested && typeof nested === "object") {
+    return _normalizeRareDropObj(nested);
   }
+
+  // 2) Allow FLAT fields, but ONLY if they look like real drop metadata
+  const flatKey =
+    fromObj.rare_item_key || fromObj.rareItemKey ||
+    fromObj.rare_drop_key || fromObj.rareDropKey ||
+    fromObj.rare_key      || fromObj.rareKey ||
+    "";
+
+  const flatIcon =
+    fromObj.rare_icon_url || fromObj.rareIconUrl ||
+    fromObj.rare_icon     || fromObj.rareIcon ||
+    fromObj.rare_img      || fromObj.rareImg ||
+    "";
+
+  const flatChance =
+    fromObj.rare_chance || fromObj.rareChance ||
+    fromObj.rare_drop_chance || fromObj.rareDropChance ||
+    fromObj.rare_pct || fromObj.rarePct ||
+    fromObj.rare_percent || fromObj.rarePercent ||
+    null;
+
+  const flatRarity =
+    fromObj.rare_rarity || fromObj.rareRarity ||
+    fromObj.rare_quality || fromObj.rareQuality ||
+    "";
+
+  // ✅ IMPORTANT: if no key/icon/chance/rarity => DO NOT RENDER
+  const hasAnySignal = !!(flatKey || flatIcon || flatChance != null || flatRarity);
+  if (!hasAnySignal) return null;
+
+  return _normalizeRareDropObj({
+    item_key: flatKey,
+    icon: flatIcon,
+    chance: flatChance,
+    rarity: flatRarity,
+    name: fromObj.rare_name || fromObj.rareName || "",
+    slot: fromObj.rare_slot || fromObj.rareSlot || "",
+    note: fromObj.rare_note || fromObj.rareNote || "",
+  });
+}
+
+// helper: requires real identity (key or icon). No more "title as item"
+function _normalizeRareDropObj(obj) {
+  if (!obj || typeof obj !== "object") return null;
+
+  const key = String(obj.item_key || obj.itemKey || obj.key || obj.id || "");
+  const iconRaw = String(obj.iconUrl || obj.icon_url || obj.icon || obj.img || obj.image || obj.url || "");
+
+  // ✅ HARD GUARD: if neither key nor icon → not a real drop preview
+  if (!key && !iconRaw) return null;
+
+  const name = String(obj.name || obj.title || obj.label || obj.item_name || obj.itemName || key || "Rare Drop");
+  const rarity = _normRarity(obj.rarity || obj.quality || obj.tier || obj.r || "");
+  const chancePct = _chanceToPct(obj.chance ?? obj.chancePct ?? obj.pct ?? obj.percent ?? obj.odds ?? obj.prob ?? obj.probability);
+  const slot = String(obj.slot || obj.item_slot || obj.itemSlot || "");
+  const note = String(obj.note || obj.hint || obj.desc || obj.description || "");
+
+  const icon = iconRaw || _guessIconFromKey(key, slot);
+
+  return {
+    name,
+    rarity,
+    chancePct,
+    key,
+    slot,
+    note,
+    iconUrl: assetUrl(icon),
+    _raw: obj
+  };
+}
 
   function renderRareDropCard(rare) {
     if (!rare) return "";
