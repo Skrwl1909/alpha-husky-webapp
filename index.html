@@ -1104,7 +1104,10 @@ body.missions-open{
   <div id="app" class="ui">
       <div class="topbar">
         <div id="player">Alpha Husky</div>
-        <div class="badge" id="faction">PACK</div>
+        <div class="badge faction-pill" id="faction">
+  <span id="factionTag" class="tag-badge tag-pack">PACK</span>
+  <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
+        </div>
       </div>
       <div class="grid">
         <div class="hud-layout">
@@ -3147,6 +3150,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
