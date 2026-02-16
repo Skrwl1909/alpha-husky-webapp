@@ -1,4 +1,4 @@
-// js/missions.js — WebApp Missions (EXPEDITIONS) UI (AAA vibe)
+// js/missions.js — WebApp Missions (EXPEDITIONS) UI
 // Contract:
 //   POST /webapp/missions/state  { run_id }
 //   POST /webapp/missions/action { action:"refresh_offers"|"start"|"resolve", tier?, offerId?, run_id }
@@ -27,69 +27,20 @@
   let _tick = null;
   let _state = null;
 
-  let _busy = false;
-
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs }
 
-  // ✅ Rewards screen after resolve (AAA)
-  let _reveal = null; // { title, text, ts }
+  // ✅ claim flash: show rewards screen right after resolve
+  let _claimFlash = null; // { atMs, last }
+  let _justResolvedAt = 0;
 
-  // ✅ lifecycle handler guard
-  let _lifeBound = false;
+  // ✅ cache: helps timer come back after leaving Missions
+  const _CACHE_KEY = "ah_missions_active_v1";
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
   // =========================
-  // Time normalization helpers (sec vs ms resilience)
-  // =========================
-  function _sec(x) {
-    const n = Number(x || 0);
-    if (!n) return 0;
-    if (n > 2e10) return Math.floor(n / 1000);
-    return n;
-  }
-  function _nowRealSec() { return Date.now() / 1000; }
-
-  // =========================
-  // Pending persistence (fix: timer missing after reopen / focus)
-  // =========================
-  const _PKEY = "ah_missions_pending_v1";
-
-  function _savePending() {
-    try {
-      if (!_pendingStart) { sessionStorage.removeItem(_PKEY); return; }
-      sessionStorage.setItem(_PKEY, JSON.stringify(_pendingStart));
-    } catch (_) {}
-  }
-
-  function _loadPending() {
-    try {
-      const raw = sessionStorage.getItem(_PKEY);
-      if (!raw) return;
-      const obj = JSON.parse(raw);
-      if (!obj || typeof obj !== "object") return;
-
-      const untilMs = Number(obj.untilMs || 0);
-      if (!untilMs || Date.now() > untilMs) {
-        sessionStorage.removeItem(_PKEY);
-        return;
-      }
-      _pendingStart = obj;
-    } catch (_) {}
-  }
-
-  function _clearPending() {
-    _pendingStart = null;
-    try { sessionStorage.removeItem(_PKEY); } catch (_) {}
-  }
-
-  function _pendingValid() {
-    return !!(_pendingStart && Date.now() < Number(_pendingStart.untilMs || 0));
-  }
-
-  // =========================
-  // Styles (FULL SCREEN + AAA mission cards + reward screen + drop preview)
+  // Styles — FULL SCREEN + AAA vibe
   // =========================
   function ensureStyles() {
     if (document.getElementById("missions-ui-css")) return;
@@ -98,7 +49,7 @@
     st.id = "missions-ui-css";
     st.textContent = `
       :root{
-        /* ✅ ZMIEŃ jeśli pliki są w innym folderze względem index.html */
+        /* ✅ adjust if your assets are elsewhere */
         --missions-bg: url("mission_bg.webp");
         --missions-wait-bg: url("mission_waiting_bg.webp");
         --missions-dust: url("dust.png");
@@ -106,12 +57,12 @@
 
       #missionsRoot{ display:block !important; }
 
-      /* ✅ FULL SCREEN sheet */
+      /* ✅ FULL SCREEN sheet — Missions feels like its own screen (not a popup) */
       #missionsBack{
         position:fixed !important;
         inset:0 !important;
         z-index: 99999999 !important;
-        display:none;
+        display:none; /* JS sets display:flex */
         align-items:stretch !important;
         justify-content:stretch !important;
         padding:0 !important;
@@ -127,16 +78,13 @@
       }
       #missionsBack.is-open{ display:flex !important; }
 
-      /* wipe common wrappers so background shows through */
+      /* wipe wrappers */
       #missionsBack > *,
       #missionsBack .modal,
       #missionsBack .panel,
       #missionsBack .sheet,
       #missionsBack .modal-panel,
-      #missionsBack #missionsModal,
-      #missionsBack [class*="modal"],
-      #missionsBack [class*="panel"],
-      #missionsBack [class*="sheet"]{
+      #missionsBack #missionsModal{
         width:100% !important;
         height:100% !important;
         max-width:none !important;
@@ -152,64 +100,59 @@
         min-height:0 !important;
       }
 
-      /* content scroll area */
+      /* content scroll */
       #missionsBack #missionsRoot{
         flex: 1 1 auto !important;
         min-height:0 !important;
         overflow-y:auto !important;
         -webkit-overflow-scrolling:touch;
-        padding: 12px 12px calc(18px + env(safe-area-inset-bottom)) 12px !important;
+        padding: 14px 14px calc(22px + env(safe-area-inset-bottom)) 14px !important;
       }
 
-      /* optional sticky bottom row from index */
+      /* sticky bottom row if exists in index */
       #missionsBack .btn-row{
         position:sticky !important;
         bottom:0 !important;
-        padding: 12px 12px calc(12px + env(safe-area-inset-bottom)) 12px !important;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) 14px !important;
         background: rgba(0,0,0,.22) !important;
         backdrop-filter: blur(12px);
         border-top: 1px solid rgba(255,255,255,.08) !important;
+        z-index: 50;
       }
 
-      /* =========================
-         AAA topbar
-         ========================= */
+      /* Topbar */
       #missionsRoot .m-topbar{
         position: sticky;
         top: 0;
-        z-index: 6;
+        z-index: 60;
         display:flex;
         align-items:center;
         justify-content:space-between;
-        gap:12px;
+        gap:10px;
         padding: 10px 10px;
-        margin-bottom: 10px;
         border-radius: 14px;
-        border: 1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.22);
+        border: 1px solid rgba(255,255,255,.10);
         backdrop-filter: blur(12px);
-        box-shadow: 0 12px 28px rgba(0,0,0,.30);
+        box-shadow: 0 14px 38px rgba(0,0,0,.35);
+        margin-bottom: 10px;
       }
-      #missionsRoot .m-topbar-title{
+      #missionsRoot .m-topbar .m-top-left{ min-width:0; }
+      #missionsRoot .m-topbar .m-top-title{
         font-weight: 950;
         letter-spacing: .8px;
         text-transform: uppercase;
-        font-size: 13px;
+        font-size: 12px;
         opacity: .92;
       }
-      #missionsRoot .m-topbar-sub{
+      #missionsRoot .m-topbar .m-top-sub{
+        font-size: 12.5px;
+        opacity: .78;
         margin-top: 2px;
-        font-size: 12px;
-        opacity: .72;
       }
-      #missionsRoot .m-topbar-actions{
-        display:flex;
-        gap:8px;
-        flex-wrap:wrap;
-        justify-content:flex-end;
-      }
+      #missionsRoot .m-topbar .m-top-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 
-      /* Base stage */
+      /* Stage wrapper */
       #missionsRoot .m-stage{
         position:relative;
         border:1px solid rgba(36,50,68,.95);
@@ -231,6 +174,7 @@
         overflow:hidden;
       }
 
+      /* WAITING background */
       #missionsRoot .m-stage.m-stage-wait{
         background:
           radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
@@ -259,7 +203,6 @@
         opacity:.28;
         mix-blend-mode: overlay;
       }
-
       #missionsRoot .m-stage::after{
         content:"";
         position:absolute; inset:0;
@@ -271,9 +214,9 @@
         opacity: .18;
         mix-blend-mode: screen;
       }
-
       #missionsRoot .m-stage > *{ position:relative; z-index:1; }
 
+      /* Cards */
       #missionsRoot .m-card{
         border: 1px solid rgba(255,255,255,.10);
         border-radius: 14px;
@@ -283,16 +226,8 @@
         backdrop-filter: blur(10px);
         box-shadow: 0 16px 34px rgba(0,0,0,.32);
       }
-
-      #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
+      #missionsRoot .m-title{ font-weight:950; letter-spacing:.2px; }
       #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
-
-      #missionsRoot .m-row{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:10px;
-      }
 
       #missionsRoot .m-hr{
         height:1px;
@@ -300,171 +235,55 @@
         margin:10px 0;
       }
 
-      /* =========================
-         AAA Mission Cards (Offers)
-         ========================= */
+      /* Offer cards (AAA) */
       #missionsRoot .m-offers{
         display:flex;
         flex-direction:column;
         gap:10px;
       }
-
-      #missionsRoot .m-mcard{
+      #missionsRoot .m-offer{
         border:1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.18);
-        border-radius: 16px;
-        padding: 12px;
-        box-shadow: 0 16px 34px rgba(0,0,0,.22);
-        overflow:hidden;
-        position:relative;
-      }
-      #missionsRoot .m-mcard:hover{
-        border-color: rgba(0,229,255,.18);
-        box-shadow: 0 18px 42px rgba(0,0,0,.28);
-      }
-      #missionsRoot .m-mcard::before{
-        content:"";
-        position:absolute; inset:0;
-        pointer-events:none;
-        opacity:.14;
-        background:
-          radial-gradient(circle at 20% 15%, rgba(0,229,255,.24), transparent 50%),
-          radial-gradient(circle at 85% 90%, rgba(255,176,0,.18), transparent 55%);
-      }
-
-      #missionsRoot .m-mcard > *{ position:relative; z-index:1; }
-
-      #missionsRoot .m-mhead{
+        border-radius:14px;
+        padding:12px;
         display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:10px;
+        gap:12px;
+        align-items:stretch;
       }
-
-      #missionsRoot .m-badge{
+      #missionsRoot .m-offer:hover{
+        border-color: rgba(0,229,255,.18);
+        box-shadow: 0 12px 26px rgba(0,0,0,.30);
+      }
+      #missionsRoot .m-offer-left{ flex: 1 1 auto; min-width:0; }
+      #missionsRoot .m-offer-right{ flex: 0 0 auto; display:flex; align-items:center; }
+      #missionsRoot .m-tag{
         display:inline-flex;
+        gap:6px;
         align-items:center;
-        gap:8px;
-        padding: 6px 10px;
+        padding: 4px 8px;
         border-radius: 999px;
-        border:1px solid rgba(255,255,255,.12);
-        background: rgba(0,0,0,.22);
-        font-weight: 950;
-        letter-spacing: .6px;
-        text-transform: uppercase;
-        font-size: 11px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(0,0,0,.20);
+        font-size: 11.5px;
         opacity: .92;
       }
-      #missionsRoot .m-pill{
-        display:inline-flex;
-        align-items:center;
-        padding: 6px 10px;
-        border-radius: 999px;
-        border:1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.18);
-        font-size: 11.5px;
-        opacity: .86;
-      }
-
-      #missionsRoot .m-mtitle{
-        margin-top: 10px;
-        font-weight: 950;
-        letter-spacing: .2px;
-        font-size: 14px;
-      }
-
-      #missionsRoot .m-mdesc{
-        margin-top: 6px;
-        opacity: .80;
-        font-size: 12.5px;
-        line-height: 1.35;
-      }
-
-      #missionsRoot .m-chips{
-        margin-top: 10px;
-        display:flex;
-        flex-wrap:wrap;
-        gap:8px;
-      }
+      #missionsRoot .m-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
       #missionsRoot .m-chip{
         display:inline-flex;
-        align-items:center;
         gap:6px;
-        padding: 7px 10px;
+        align-items:center;
+        padding: 5px 10px;
         border-radius: 999px;
-        border:1px solid rgba(255,255,255,.10);
-        background: rgba(0,0,0,.18);
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(0,0,0,.22);
         font-size: 12px;
         opacity: .92;
-        white-space:nowrap;
       }
-      #missionsRoot .m-chip b{ font-weight: 950; }
+      #missionsRoot .m-chip b{ opacity: 1; }
 
-      #missionsRoot .m-foot{
-        margin-top: 12px;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:10px;
-      }
+      #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
-      /* Drop preview (future S&F style) */
-      #missionsRoot .m-drop{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        padding: 10px;
-        border-radius: 14px;
-        border: 1px dashed rgba(255,255,255,.16);
-        background: rgba(0,0,0,.16);
-        margin-top: 10px;
-      }
-      #missionsRoot .m-drop-thumb{
-        width:44px;
-        height:44px;
-        border-radius: 12px;
-        border:1px solid rgba(255,255,255,.12);
-        background: rgba(0,0,0,.22);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        overflow:hidden;
-        flex: 0 0 auto;
-      }
-      #missionsRoot .m-drop-thumb img{
-        width:100%;
-        height:100%;
-        object-fit:contain;
-        display:block;
-      }
-      #missionsRoot .m-drop-meta{
-        min-width:0;
-        flex:1 1 auto;
-      }
-      #missionsRoot .m-drop-name{
-        font-weight: 950;
-        font-size: 12.5px;
-        letter-spacing:.2px;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-      }
-      #missionsRoot .m-drop-sub{
-        margin-top:2px;
-        opacity:.78;
-        font-size: 12px;
-      }
-
-      /* rarity glow hooks (safe even if not used yet) */
-      #missionsRoot .m-drop-thumb[data-rarity="common"]{ box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 0 14px rgba(255,255,255,.06); }
-      #missionsRoot .m-drop-thumb[data-rarity="uncommon"]{ box-shadow: 0 0 0 1px rgba(120,255,120,.18), 0 0 16px rgba(120,255,120,.12); }
-      #missionsRoot .m-drop-thumb[data-rarity="rare"]{ box-shadow: 0 0 0 1px rgba(0,229,255,.18), 0 0 18px rgba(0,229,255,.12); }
-      #missionsRoot .m-drop-thumb[data-rarity="epic"]{ box-shadow: 0 0 0 1px rgba(200,120,255,.18), 0 0 18px rgba(200,120,255,.12); }
-      #missionsRoot .m-drop-thumb[data-rarity="legendary"]{ box-shadow: 0 0 0 1px rgba(255,176,0,.22), 0 0 20px rgba(255,176,0,.14); }
-
-      /* =========================
-         WAITING UI
-         ========================= */
+      /* WAITING center */
       #missionsRoot .m-wait-center{
         min-height: 360px;
         display:flex;
@@ -475,14 +294,13 @@
         gap:10px;
         padding:18px;
       }
-
       #missionsRoot .m-clock{
-        font-size: 52px;
-        font-weight: 950;
+        font-size: 56px;
+        font-weight: 1000;
         letter-spacing: 1px;
         text-shadow: 0 10px 26px rgba(0,0,0,.60);
+        margin-top: 2px;
       }
-
       #missionsRoot .m-clock-sub{
         font-size: 12.5px;
         opacity: .86;
@@ -494,7 +312,7 @@
         overflow:hidden;
         background: rgba(255,255,255,.10);
         border: 1px solid rgba(255,255,255,.10);
-        width: min(520px, 92%);
+        width: min(560px, 94%);
         margin-top: 10px;
       }
       #missionsRoot .m-bar-fill{
@@ -509,59 +327,65 @@
         gap:10px;
         flex-wrap:wrap;
         justify-content:center;
-        margin-top: 10px;
+        margin-top: 12px;
       }
 
-      #missionsRoot .m-claim{
-        font-weight: 950 !important;
-        letter-spacing: .3px;
-        padding: 12px 16px !important;
-        transform: translateZ(0);
-      }
-
-      /* =========================
-         Rewards Reveal Screen
-         ========================= */
-      #missionsRoot .m-reveal{
+      /* Rare drop card under progress bar */
+      #missionsRoot .m-drop{
         display:flex;
-        flex-direction:column;
-        gap:10px;
-      }
-      #missionsRoot .m-reveal-title{
-        font-weight: 950;
-        letter-spacing: .5px;
-        text-transform: uppercase;
-        font-size: 13px;
-        opacity: .92;
-      }
-      #missionsRoot .m-reveal-hero{
-        border-radius: 16px;
-        border: 1px solid rgba(255,255,255,.10);
+        gap:12px;
+        align-items:center;
+        border-radius: 14px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255,255,255,.12);
         background: rgba(0,0,0,.22);
-        padding: 14px;
-        box-shadow: 0 18px 48px rgba(0,0,0,.28);
         backdrop-filter: blur(10px);
+        box-shadow: 0 16px 34px rgba(0,0,0,.22);
       }
-      #missionsRoot .m-reveal-hero h3{
-        margin:0;
+      #missionsRoot .m-drop-thumb{
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(0,0,0,.18);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        flex: 0 0 auto;
+      }
+      #missionsRoot .m-drop-thumb img{
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+        image-rendering: auto;
+      }
+      #missionsRoot .m-drop-meta{ min-width:0; text-align:left; }
+      #missionsRoot .m-drop-name{ font-weight: 950; font-size: 12px; letter-spacing:.6px; text-transform: uppercase; opacity:.92; }
+      #missionsRoot .m-drop-sub{ font-size: 12.5px; opacity:.82; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+      /* Claim screen */
+      #missionsRoot .m-claim-title{
+        font-weight: 1000;
         font-size: 18px;
         letter-spacing: .2px;
       }
-      #missionsRoot .m-reveal-hero p{
-        margin:8px 0 0 0;
-        opacity:.80;
+      #missionsRoot .m-claim-lines{
+        margin-top: 10px;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      #missionsRoot .m-line{
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(0,0,0,.18);
+        text-align:left;
         white-space:pre-wrap;
         font-size: 12.8px;
-        line-height: 1.35;
+        opacity: .92;
       }
-
-      @media (max-width: 420px){
-        #missionsRoot .m-row{ flex-direction:column; align-items:stretch; }
-        #missionsRoot .m-mcard .btn.primary{ width:100%; }
-        #missionsRoot .m-actions .btn{ flex: 1 1 auto; }
-      }
-
-      #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
     `;
     document.head.appendChild(st);
   }
@@ -584,13 +408,13 @@
       const act = btn.dataset.act;
       if (!act) return;
 
+      if (act === "sync")    return void loadState();
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "resolve") return void doResolve();
       if (act === "close")   return void close();
-      if (act === "back_to_offers") { _clearPending(); stopTick(); _reveal = null; return void loadState(); }
-      if (act === "reveal_continue") { _reveal = null; return void render(); }
-      if (act === "reveal_runagain") { _reveal = null; return void doRefresh(); }
+      if (act === "back_to_offers") { _pendingStart = null; stopTick(); _claimFlash = null; return void loadState(); }
+      if (act === "to_offers") { _claimFlash = null; _pendingStart = null; stopTick(); return void loadState(); }
     });
 
     const closeBtn = el("closeMissions");
@@ -628,7 +452,7 @@
       <div id="missionsModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.72); z-index:999999;">
         <div style="width:min(560px, 100%); max-height:calc(100vh - 24px); overflow:hidden; background:rgba(14,16,18,.92); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 18px 60px rgba(0,0,0,.65); display:flex; flex-direction:column; min-height:0;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 12px 0 12px;">
-            <div style="font-weight:900;color:#fff;">Missions</div>
+            <div style="font-weight:900;color:#fff;">EXPEDITIONS</div>
             <button type="button" class="btn" data-act="close">×</button>
           </div>
           <div id="missionsRoot" style="padding:12px; overflow:auto; min-height:0;"></div>
@@ -642,19 +466,9 @@
     bindOnceModalClicks();
   }
 
-  function _setBusy(on) {
-    _busy = !!on;
-    try {
-      if (_root) _root.style.pointerEvents = on ? "none" : "";
-      if (_root) _root.style.opacity = on ? "0.92" : "";
-    } catch (_) {}
-  }
-
   function open() {
     ensureModal();
     if (!_modal) return false;
-
-    _loadPending();
 
     _modal.style.display = "flex";
     _modal.classList.add("is-open");
@@ -662,13 +476,7 @@
 
     try { window.navOpen?.(_modal.id); } catch (_) {}
 
-    if (_pendingValid()) {
-      _state = _state || { offers: [], now_ts: Math.floor(_nowRealSec()) };
-      render();
-    } else {
-      renderLoading("Loading missions…");
-    }
-
+    renderLoading("Loading expeditions…");
     loadState();
     return true;
   }
@@ -691,14 +499,13 @@
   let _serverOffsetSec = 0;
 
   function _syncServerClock(payload) {
-    const nowTsRaw = payload?.now_ts ?? payload?.nowTs ?? 0;
-    const nowTs = _sec(nowTsRaw);
+    const nowTs = Number(payload?.now_ts || payload?.nowTs || 0);
     if (!nowTs) return;
-    const clientNow = _nowRealSec();
+    const clientNow = Date.now() / 1000;
     _serverOffsetSec = nowTs - clientNow;
   }
 
-  function _nowSec() { return _nowRealSec() + _serverOffsetSec; }
+  function _nowSec() { return (Date.now() / 1000) + _serverOffsetSec; }
 
   function _fmtTime(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -709,38 +516,61 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
-  function _fmtClock(tsSec) {
+  function _fmtClock(ts) {
     try {
-      const d = new Date(Number(tsSec) * 1000);
+      const d = new Date(Number(ts) * 1000);
       return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
     } catch (_) { return ""; }
   }
 
   // =========================
-  // Active parsing (robust)
+  // Cache helpers (timer comes back after leaving missions)
+  // =========================
+  function _cacheSaveActive(a) {
+    try {
+      if (!a || !a.status || a.status === "NONE") return;
+      const payload = {
+        title: a.title || "Mission",
+        started_ts: Number(a.started_ts || 0),
+        ends_ts: Number(a.ends_ts || 0),
+        duration_sec: Number(a.duration_sec || a.total || 0),
+        saved_at: Date.now()
+      };
+      if (!payload.ends_ts) return;
+      sessionStorage.setItem(_CACHE_KEY, JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  function _cacheClearActive() {
+    try { sessionStorage.removeItem(_CACHE_KEY); } catch (_) {}
+  }
+
+  function _cacheLoadActive() {
+    try {
+      const raw = sessionStorage.getItem(_CACHE_KEY);
+      if (!raw) return null;
+      const j = JSON.parse(raw);
+      const ends = Number(j?.ends_ts || 0);
+      if (!ends) return null;
+      const now = _nowSec();
+      const remaining = Math.max(0, Math.ceil(ends - now));
+      const dur = Math.max(1, Number(j?.duration_sec || 1));
+      const pct = Math.min(1, Math.max(0, 1 - (remaining / dur)));
+      if (remaining <= 0) return { status: "READY", title: j.title || "Mission", remaining: 0, total: dur, pct: 1, readyAt: _fmtClock(ends), ends_ts: ends, duration_sec: dur, started_ts: Number(j?.started_ts || 0), __cached: true };
+      return { status: "RUNNING", title: j.title || "Mission", remaining, total: dur, pct, readyAt: _fmtClock(ends), ends_ts: ends, duration_sec: dur, started_ts: Number(j?.started_ts || 0), __cached: true };
+    } catch (_) { return null; }
+  }
+
+  // =========================
+  // Active parsing
   // =========================
   let _legacyAnchor = null;
-
-  function _normStatus(st) {
-    const s = String(st || "").trim().toLowerCase();
-    if (!s) return "";
-    if (s === "active") return "running";
-    if (s === "in_progress") return "running";
-    if (s === "started") return "running";
-    if (s === "waiting") return "running";
-    if (s === "complete") return "ready";
-    if (s === "completed") return "ready";
-    if (s === "done") return "ready";
-    if (s === "ready") return "ready";
-    if (s === "running") return "running";
-    return s;
-  }
 
   function _pickActiveFromList(list) {
     if (!Array.isArray(list)) return null;
     return list.find(m => {
-      const st = _normStatus(m?.state || m?.status);
-      return st === "running" || st === "ready";
+      const st = String(m?.state || m?.status || "").toLowerCase();
+      return st === "in_progress" || st === "running" || st === "active" || st === "completed" || st === "ready";
     }) || null;
   }
 
@@ -760,20 +590,13 @@
 
     const title = am.title || am.name || am.label || "Mission";
 
-    const started = _sec(am.started_ts || am.start_ts || am.start_time || am.startTime || am.startedAt || am.started_at || 0);
-    const dur = Number(am.duration_sec || am.duration || am.durationSec || am.duration_s || 0);
+    const started = Number(am.started_ts || am.start_ts || am.start_time || am.startTime || 0);
+    const dur = Number(am.duration_sec || am.duration || am.durationSec || 0);
+    const ends =
+      Number(am.ends_ts || am.ready_at_ts || am.ready_at || am.endsTs || 0) ||
+      (started && dur ? (started + dur) : 0);
 
-    let ends = _sec(
-      am.ends_ts || am.endsTs ||
-      am.ready_at_ts || am.readyAtTs ||
-      am.ready_at || am.readyAt ||
-      am.finish_ts || am.finishTs ||
-      0
-    );
-
-    if (!ends && started && dur) ends = started + dur;
-
-    const stRaw = _normStatus(am.status || am.state);
+    const stRaw = String(am.status || am.state || "").toUpperCase();
 
     if (ends) {
       const now = _nowSec();
@@ -789,20 +612,17 @@
         remaining,
         total,
         pct,
-        readyAt: am.ready_at_label || am.readyAtLabel || _fmtClock(ends),
+        readyAt: am.readyAt || am.ready_at_label || _fmtClock(ends),
       };
     }
 
-    const rawLeft =
-      (am.leftSec ?? am.left_sec ?? am.remaining ?? am.remaining_sec ?? am.time_left ?? am.timeLeft ?? 0);
-    const left = Number(rawLeft || 0);
+    const rawLeft = (am.leftSec ?? am.left_sec);
+    const left = (typeof rawLeft === "number") ? rawLeft : Number(rawLeft || 0);
 
     let status = stRaw;
-    if (!status) status = (left > 0 ? "running" : "ready");
-
-    if (status === "running") status = "RUNNING";
-    else if (status === "ready") status = "READY";
-    else status = String(status || "").toUpperCase();
+    if (!status) status = (left > 0 ? "RUNNING" : "READY");
+    if (status === "ACTIVE") status = "RUNNING";
+    if (status === "COMPLETED") status = "READY";
 
     if (status === "RUNNING") {
       const now = _nowSec();
@@ -811,13 +631,13 @@
       }
       const elapsed = Math.max(0, now - _legacyAnchor.at);
       const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
-      const total = Math.max(1, dur || _legacyAnchor.left || 1);
+      const total = Math.max(1, Number(am.duration_sec || am.duration || _legacyAnchor.left || 1));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: "" };
+      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "" };
     }
 
     if (status === "READY") {
-      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: "" };
+      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "" };
     }
 
     return { status: "NONE" };
@@ -825,15 +645,12 @@
 
   function _activeFromPending() {
     if (!_pendingStart) return { status: "NONE" };
-
     const now = _nowSec();
     const started = Number(_pendingStart.startedClientSec || now);
     const dur = Math.max(1, Number(_pendingStart.durationSec || 60));
     const ends = started + dur;
-
     const remaining = Math.max(0, Math.ceil(ends - now));
     const pct = Math.min(1, Math.max(0, 1 - (remaining / dur)));
-
     return {
       status: remaining > 0 ? "RUNNING" : "READY",
       title: _pendingStart.title || "Mission",
@@ -848,15 +665,37 @@
     };
   }
 
+  function _pendingValid() {
+    return !!(_pendingStart && Date.now() < Number(_pendingStart.untilMs || 0));
+  }
+
+  // ✅ key fix: if backend still returns old READY, don't kill pending timer
+  function _preferPendingOverReal(realActive) {
+    if (!_pendingValid()) return false;
+    if (!realActive || realActive.status === "NONE") return true;
+    if (realActive.status === "RUNNING") return false;
+
+    // if stale READY is still around (common right after resolve/start), prefer pending
+    if (realActive.status === "READY") {
+      const pendStarted = Number(_pendingStart?.startedClientSec || 0);
+      const realEnds = Number(realActive?.ends_ts || 0);
+      if (!realEnds) return true;
+      if (pendStarted && realEnds <= (pendStarted + 2)) return true;
+      // also: right after resolve, backend may briefly still say READY
+      if (Date.now() - _justResolvedAt < 3500) return true;
+    }
+    return false;
+  }
+
   // =========================
-  // Tick + lifecycle resync
+  // Tick
   // =========================
   function startTick() {
     stopTick();
     _tick = setInterval(() => {
       const payload = normalizePayload(_state);
       const real = payload ? getActive(payload) : { status: "NONE" };
-      const a = (real.status === "NONE" && _pendingValid()) ? _activeFromPending() : real;
+      const a = _preferPendingOverReal(real) ? _activeFromPending() : real;
       if (a.status === "NONE") return;
       paintWaiting(a);
     }, 1000);
@@ -865,26 +704,6 @@
   function stopTick() {
     if (_tick) clearInterval(_tick);
     _tick = null;
-  }
-
-  function _bindLifecycle() {
-    if (_lifeBound) return;
-    _lifeBound = true;
-
-    const resync = async () => {
-      try {
-        if (!_modal || !_modal.classList.contains("is-open")) return;
-        // don't kill reveal screen, just keep state fresh behind
-        await loadState({ silent: true });
-        if (!_reveal) render();
-      } catch (_) {}
-    };
-
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) resync();
-    });
-
-    window.addEventListener("focus", () => { resync(); });
   }
 
   // =========================
@@ -962,17 +781,101 @@
   }
 
   // =========================
+  // Drop preview (rare drop)
+  // =========================
+  function _pickDropPreview(o) {
+    if (!o || typeof o !== "object") return null;
+
+    const d =
+      o.dropPreview || o.drop_preview ||
+      o.rareDrop || o.rare_drop ||
+      o.drop || o.item_drop || null;
+
+    const icon =
+      (d && (d.icon || d.img || d.image || d.url)) ||
+      o.dropIcon || o.drop_icon ||
+      o.itemIcon || o.item_icon || "";
+
+    const name =
+      (d && (d.name || d.title || d.label)) ||
+      o.dropName || o.drop_name ||
+      o.itemName || o.item_name || "";
+
+    const rarity =
+      (d && (d.rarity || d.tier)) ||
+      o.dropRarity || o.drop_rarity || "";
+
+    const chance =
+      (d && (d.chance || d.rate)) ||
+      o.dropChance || o.drop_chance || "";
+
+    if (!icon && !name) return null;
+
+    let iconUrl = String(icon || "");
+    if (iconUrl && !iconUrl.startsWith("http") && !iconUrl.startsWith("/")) {
+      // best-effort fallback — you can later swap to /assets/equip if needed
+      iconUrl = `/assets/items/${iconUrl}`;
+    }
+
+    return { icon: iconUrl, name, rarity, chance };
+  }
+
+  function _getWaitDrop(active, payload) {
+    if (active?.__pending && _pendingStart?.offerId) {
+      const offers = Array.isArray(payload?.offers) ? payload.offers : [];
+      const o = offers.find(x => String(x?.offerId || x?.id || x?.offer_id || "") === String(_pendingStart.offerId));
+      const d = _pickDropPreview(o);
+      if (d) return d;
+    }
+
+    const am =
+      payload?.active_mission || payload?.activeMission || payload?.active ||
+      payload?.current_mission || payload?.currentMission || payload?.mission || payload?.current ||
+      null;
+
+    const d2 = _pickDropPreview(am);
+    if (d2) return d2;
+
+    const ao = payload?.active_offer || payload?.activeOffer || payload?.current_offer || payload?.currentOffer || null;
+    const d3 = _pickDropPreview(ao);
+    if (d3) return d3;
+
+    return null;
+  }
+
+  function _renderWaitDrop(drop) {
+    if (!drop) return "";
+    const name = drop.name || "Rare drop";
+    const chance = drop.chance ? ` · ${drop.chance}` : "";
+    return `
+      <div class="m-drop" style="width:min(640px,100%); margin-top:12px;">
+        <div class="m-drop-thumb" data-rarity="${esc(drop.rarity || "")}">
+          ${drop.icon ? `
+            <img src="${esc(drop.icon)}" alt="" loading="lazy"
+              onerror="this.style.display='none'; this.parentNode.style.opacity='.55';"
+            />
+          ` : ``}
+        </div>
+        <div class="m-drop-meta">
+          <div class="m-drop-name">Possible rare drop</div>
+          <div class="m-drop-sub">${esc(name)}${esc(chance)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================
   // Rendering helpers
   // =========================
   function _topbar(sub) {
     return `
       <div class="m-topbar">
-        <div>
-          <div class="m-topbar-title">EXPEDITIONS</div>
-          <div class="m-topbar-sub">${esc(sub || "")}</div>
+        <div class="m-top-left" style="min-width:0;">
+          <div class="m-top-title">EXPEDITIONS</div>
+          <div class="m-top-sub">${esc(sub || "")}</div>
         </div>
-        <div class="m-topbar-actions">
-          <button type="button" class="btn" data-act="refresh">Sync</button>
+        <div class="m-top-actions">
+          <button type="button" class="btn" data-act="sync">Sync</button>
           <button type="button" class="btn" data-act="close">Close</button>
         </div>
       </div>
@@ -994,13 +897,13 @@
   function renderError(title, detail) {
     if (!_root) return;
     _root.innerHTML = `
-      ${_topbar("Backend issue")}
+      ${_topbar("Error")}
       <div class="m-stage">
         <div class="m-card">
           <div class="m-title">${esc(title)}</div>
           <div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(detail || "")}</div>
           <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" class="btn" data-act="refresh">Retry</button>
+            <button type="button" class="btn" data-act="sync">Sync</button>
             <button type="button" class="btn" data-act="close">Close</button>
           </div>
         </div>
@@ -1009,43 +912,10 @@
     stopTick();
   }
 
-  function _pickDropPreview(o) {
-    // Allow multiple backend shapes
-    const dp =
-      o?.drop ||
-      o?.dropPreview ||
-      o?.rareDrop ||
-      o?.rare_drop ||
-      o?.preview_item ||
-      o?.previewItem ||
-      null;
-
-    if (dp && typeof dp === "object") {
-      const icon = dp.icon || dp.icon_url || dp.url || dp.img || dp.image || "";
-      const name = dp.name || dp.title || dp.label || "";
-      const rarity = String(dp.rarity || dp.r || "").toLowerCase();
-      const chance = dp.chance || dp.odds || dp.p || "";
-      if (icon) return { icon, name, rarity, chance };
-    }
-
-    // Try flat fields
-    const icon =
-      o?.dropIcon || o?.drop_icon || o?.itemIcon || o?.item_icon || o?.previewIcon || o?.preview_icon || "";
-    if (icon) {
-      return {
-        icon,
-        name: o?.dropName || o?.drop_name || o?.itemName || o?.item_name || "Rare drop",
-        rarity: String(o?.dropRarity || o?.drop_rarity || "").toLowerCase(),
-        chance: o?.dropChance || o?.drop_chance || "",
-      };
-    }
-    return null;
-  }
-
-  function renderOffer(o, active) {
+  function renderOffer(o, realActive) {
     const tier  = String(o?.tier || "");
     const label = String(o?.label || tier || "Tier");
-    const title = String(o?.title || label || "Expedition");
+    const title = String(o?.title || "");
     const desc  = String(o?.desc || "");
 
     const durSec = Number(o?.durationSec || o?.duration_sec || 0);
@@ -1061,46 +931,40 @@
 
     const offerId = String(o?.offerId || o?.id || o?.offer_id || "");
 
-    const hasActive = !!(active?.status && active.status !== "NONE");
-    const disabled = (hasActive || _busy) ? "disabled" : "";
+    const hasActive = !!(realActive?.status && realActive.status !== "NONE");
+    const disabled = hasActive ? "disabled" : "";
 
     const drop = _pickDropPreview(o);
+    const dropMini = drop ? `
+      <div class="m-tag" title="Possible rare drop" style="margin-top:8px;">
+        <span style="opacity:.9;">✦</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px;">
+          ${esc(drop.name || "Rare drop")}
+        </span>
+      </div>
+    ` : ``;
 
     return `
-      <div class="m-mcard">
-        <div class="m-mhead">
-          <span class="m-badge">${esc(label)}</span>
-          <span class="m-pill">${esc(dur)}</span>
-        </div>
-
-        <div class="m-mtitle">${esc(title)}</div>
-        ${desc ? `<div class="m-mdesc">${esc(desc)}</div>` : ``}
-
-        <div class="m-chips">
-          <span class="m-chip">XP <b>${esc(xp)}</b></span>
-          <span class="m-chip">Bones <b>${esc(bones)}</b></span>
-          <span class="m-chip">Rolls <b>${esc(rolls)}</b></span>
-        </div>
-
-        ${
-          drop ? `
-          <div class="m-drop">
-            <div class="m-drop-thumb" data-rarity="${esc(drop.rarity || "")}">
-              <img src="${esc(drop.icon)}" alt="" loading="lazy"
-                onerror="this.style.display='none'; this.parentNode.style.opacity='.55';"
-              />
-            </div>
-            <div class="m-drop-meta">
-              <div class="m-drop-name">${esc(drop.name || "Rare drop")}</div>
-              <div class="m-drop-sub">${esc(drop.chance ? `Chance: ${drop.chance}` : "Rare drop preview")}</div>
-            </div>
+      <div class="m-offer">
+        <div class="m-offer-left">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="m-tag"><b>${esc(label)}</b></span>
+            <span class="m-tag">⏱ ${esc(dur)}</span>
           </div>
-          ` : ``
-        }
 
-        <div class="m-foot">
-          <div class="m-muted">${esc(hasActive ? "Finish current run to start next." : "Start → Wait → Claim")}</div>
+          ${title ? `<div class="m-title" style="margin-top:8px;">${esc(title)}</div>` : ""}
+          ${desc ? `<div class="m-muted" style="margin-top:6px;">${esc(desc)}</div>` : ""}
 
+          <div class="m-chips">
+            <span class="m-chip">XP <b>${esc(xp)}</b></span>
+            <span class="m-chip">Bones <b>${esc(bones)}</b></span>
+            <span class="m-chip">Rolls <b>${esc(rolls)}</b></span>
+          </div>
+
+          ${dropMini}
+        </div>
+
+        <div class="m-offer-right">
           <button type="button" class="btn primary"
             data-act="start"
             data-tier="${esc(tier)}"
@@ -1115,7 +979,7 @@
   function renderLast(last) {
     const result = String(last?.result || "");
     const victory = (result === "victory" || last?.victory) ? "✅ Victory" : "❌ Defeat";
-    const ts = last?.ts ? new Date(_sec(last.ts) * 1000).toLocaleString() : "";
+    const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
 
     const rewardMsg = String(last?.rewardMsg || last?.reward_msg || "");
     const lootMsg = String(last?.lootMsg || last?.loot_msg || "");
@@ -1134,11 +998,44 @@
     `;
   }
 
+  function _renderClaim(last) {
+    const lines = [];
+    const rewardMsg = String(last?.rewardMsg || last?.reward_msg || "");
+    const lootMsg = String(last?.lootMsg || last?.loot_msg || "");
+    const tokenLootMsg = String(last?.tokenLootMsg || last?.token_loot_msg || "");
+
+    if (rewardMsg) lines.push(rewardMsg);
+    if (lootMsg) lines.push(lootMsg);
+    if (tokenLootMsg) lines.push(tokenLootMsg);
+
+    const safeLines = lines.length ? lines : ["Rewards synced."];
+
+    return `
+      ${_topbar("Rewards claimed")}
+      <div class="m-stage">
+        <div class="m-card">
+          <div class="m-claim-title">CLAIMED ✅</div>
+          <div class="m-muted" style="margin-top:6px;">Run completed. Your loot:</div>
+
+          <div class="m-claim-lines">
+            ${safeLines.map(t => `<div class="m-line">${esc(t)}</div>`).join("")}
+          </div>
+
+          <div class="m-actions" style="margin-top:14px;">
+            <button type="button" class="btn primary" data-act="to_offers">New run</button>
+            <button type="button" class="btn" data-act="close">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function paintWaiting(a) {
     const clockEl = el("mClock");
     const subEl = el("mClockSub");
     const fillEl = el("mFill");
     const resolveBtn = el("mResolveBtn");
+
     if (!clockEl || !subEl || !fillEl) return;
 
     const status = a?.status || "NONE";
@@ -1149,7 +1046,7 @@
 
     if (status === "RUNNING") {
       clockEl.textContent = _fmtTime(remaining);
-      const syncing = a.__pending ? ` · <span style="opacity:.9">Syncing…</span>` : "";
+      const syncing = (a.__pending || a.__cached) ? ` · <span style="opacity:.9">Syncing…</span>` : "";
       subEl.innerHTML = `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}${syncing}`;
       if (resolveBtn) resolveBtn.style.display = "none";
     } else {
@@ -1177,46 +1074,22 @@
       startedClientSec: started,
       durationSec: durSec,
       title,
-      // keep optimistic timer until mission would be ready (+90s buffer)
-      untilMs: Date.now() + (durSec * 1000) + 90000,
+      // ✅ keep optimistic timer until mission would be ready (+30s buffer)
+      untilMs: Date.now() + (durSec * 1000) + 30000,
     };
 
-    _savePending();
     render();
-  }
-
-  function _renderReveal(payload) {
-    const last = payload?.lastResolve || payload?.last_resolve || null;
-    const msg = String(_reveal?.text || "").trim();
-    const fallback = last ? _extractResolveText({ state: payload }) : "";
-
-    const shown = msg || fallback || "Rewards logged. (No reward message returned yet — backend can enrich this later.)";
-
-    return `
-      ${_topbar("Rewards secured")}
-      <div class="m-stage">
-        <div class="m-reveal">
-          <div class="m-reveal-title">Claim result</div>
-
-          <div class="m-reveal-hero">
-            <h3>${esc(_reveal?.title || "Rewards")}</h3>
-            <p>${esc(shown)}</p>
-          </div>
-
-          ${last ? renderLast(last) : ""}
-
-          <div class="m-actions" style="margin-top:6px;">
-            <button type="button" class="btn primary m-claim" data-act="reveal_continue">Continue</button>
-            <button type="button" class="btn" data-act="reveal_runagain">Run again</button>
-            <button type="button" class="btn" data-act="close">Close</button>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   function render() {
     if (!_root) return;
+
+    // claim screen has priority
+    if (_claimFlash && (Date.now() - _claimFlash.atMs < 25000) && _claimFlash.last) {
+      _root.innerHTML = _renderClaim(_claimFlash.last);
+      stopTick();
+      return;
+    }
 
     const payload = normalizePayload(_state);
     if (!payload || typeof payload !== "object") {
@@ -1227,23 +1100,28 @@
     _syncServerClock(payload);
 
     const offers = Array.isArray(payload.offers) ? payload.offers : [];
+
     const realActive = getActive(payload);
-    const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive;
 
-    // If backend confirms active/ready, clear pending
-    if (realActive.status !== "NONE") _clearPending();
+    // prefer pending over stale READY
+    let active = _preferPendingOverReal(realActive) ? _activeFromPending() : realActive;
 
-    // ✅ REVEAL SCREEN OVERRIDE
-    if (_reveal) {
-      stopTick();
-      _root.innerHTML = _renderReveal(payload);
-      return;
+    // if backend says NONE but we have cache, keep timer alive
+    if (active.status === "NONE" && !_pendingValid()) {
+      const cached = _cacheLoadActive();
+      if (cached && cached.status !== "NONE") active = cached;
     }
+
+    // save cache when we have ends_ts
+    if (active && active.status !== "NONE") _cacheSaveActive(active);
+    else _cacheClearActive();
 
     const last = payload.lastResolve || payload.last_resolve || null;
 
-    // ACTIVE/WAITING
+    // WAITING view
     if (active.status && active.status !== "NONE") {
+      const waitDropHtml = _renderWaitDrop(_getWaitDrop(active, payload));
+
       _root.innerHTML = `
         ${_topbar(active.status === "READY" ? "Ready to claim" : "In progress")}
         <div class="m-stage m-stage-wait">
@@ -1254,14 +1132,16 @@
 
             <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
 
+            ${waitDropHtml}
+
             <div class="m-actions">
-              <button type="button" class="btn" data-act="refresh">Sync</button>
-              <button id="mResolveBtn" type="button" class="btn primary m-claim" data-act="resolve" style="display:none">CLAIM REWARDS</button>
+              <button type="button" class="btn" data-act="sync">Sync</button>
+              <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">CLAIM REWARDS</button>
               ${active.__pending ? `<button type="button" class="btn" data-act="back_to_offers">Back</button>` : ``}
               <button type="button" class="btn" data-act="close">Close</button>
             </div>
 
-            ${last ? `<div style="width: min(640px, 100%); margin-top: 12px;">${renderLast(last)}</div>` : ``}
+            ${last ? `<div style="width:min(640px,100%); margin-top:14px;">${renderLast(last)}</div>` : ``}
           </div>
         </div>
       `;
@@ -1271,7 +1151,6 @@
       return;
     }
 
-    // OFFERS
     stopTick();
 
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
@@ -1281,26 +1160,17 @@
       ${_topbar("Pick a run")}
       <div class="m-stage">
         <div class="m-card">
-          <div class="m-row">
-            <div style="min-width:0;">
-              <div class="m-title">No active expedition</div>
-              <div class="m-muted" style="margin-top:6px;">Choose a mission card to deploy.</div>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn" data-act="refresh">Refresh</button>
-              <button type="button" class="btn" data-act="close">Close</button>
-            </div>
+          <div class="m-title">No active expedition</div>
+          <div class="m-muted" style="margin-top:6px;">Pick a tier — Start → Wait → Claim.</div>
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn" data-act="refresh">Refresh offers</button>
+            <button type="button" class="btn" data-act="close">Close</button>
           </div>
         </div>
 
         <div class="m-card" style="margin-top:10px;">
-          <div class="m-row">
-            <div style="min-width:0;">
-              <div class="m-title">Mission Cards</div>
-              <div class="m-muted" style="margin-top:6px;">Start → Wait → Claim. Simple loop.</div>
-            </div>
-            <button type="button" class="btn" data-act="refresh">Refresh</button>
-          </div>
+          <div class="m-title">Offers</div>
+          <div class="m-muted" style="margin-top:6px;">Choose your run.</div>
 
           <div class="m-hr"></div>
 
@@ -1308,7 +1178,7 @@
             ${
               offers.length
                 ? offers.map(o => renderOffer(o, realActive)).join("")
-                : `<div class="m-muted">No offers yet. Tap Refresh.</div>`
+                : `<div class="m-muted">No offers yet. Tap “Refresh offers”.</div>`
             }
           </div>
         </div>
@@ -1316,16 +1186,16 @@
         ${last ? renderLast(last) : ""}
 
         <div class="m-muted" style="text-align:center; opacity:.85; margin-top:10px;">
-          Expeditions are backend-driven. If backend is offline you’ll see an error here.
+          Missions are backend-driven. If backend is offline you’ll see an error here.
         </div>
       </div>
     `;
   }
 
   // =========================
-  // Sync after start (poll state until backend confirms active)
+  // Sync after start — confirm RUNNING (not just READY)
   // =========================
-  async function _syncAfterStart(maxMs = 6500, intervalMs = 450) {
+  async function _syncAfterStart(maxMs = 7500, intervalMs = 450) {
     const t0 = Date.now();
     while (Date.now() - t0 < maxMs) {
       try {
@@ -1339,11 +1209,15 @@
 
         const p = normalizePayload(res);
         const a = p ? getActive(p) : { status: "NONE" };
-        if (a.status && a.status !== "NONE") {
-          _clearPending();
+
+        // ✅ only accept RUNNING as "start confirmed"
+        if (a.status === "RUNNING") {
+          _pendingStart = null;
           render();
           return true;
         }
+
+        // if backend still says READY/NONE during this window, keep pending alive
       } catch (_) {}
       await sleep(intervalMs);
     }
@@ -1353,10 +1227,8 @@
   // =========================
   // Actions
   // =========================
-  async function loadState(opts = {}) {
-    const silent = !!opts.silent;
-    if (!silent) renderLoading("Loading missions…");
-
+  async function loadState() {
+    renderLoading("Loading expeditions…");
     try {
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
@@ -1366,28 +1238,19 @@
         window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
       } catch (_) {}
 
+      // hydrate claim flash last from payload
       const p = normalizePayload(_state);
-      const a = p ? getActive(p) : { status: "NONE" };
-      if (a.status && a.status !== "NONE") _clearPending();
+      const last = p?.lastResolve || p?.last_resolve || null;
+      if (_claimFlash && !_claimFlash.last && last) _claimFlash.last = last;
 
-      if (!silent) render();
-      return true;
+      render();
     } catch (e) {
-      if (!silent) renderError("Missions backend error", String(e?.message || e || ""));
-      return false;
+      renderError("Missions backend error", String(e?.message || e || ""));
     }
   }
 
   async function doRefresh() {
-    // If we’re waiting/pending, refresh = sync state (not rotate offers)
     try {
-      const p = normalizePayload(_state);
-      const real = p ? getActive(p) : { status: "NONE" };
-      if (real.status !== "NONE" || _pendingValid()) {
-        await loadState();
-        return;
-      }
-
       await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
       await loadState();
     } catch (e) {
@@ -1396,13 +1259,6 @@
   }
 
   async function doStart(tier, offerId) {
-    if (_busy) return;
-    if (!offerId) {
-      renderError("Start failed", "Missing offerId (UI dataset).");
-      return;
-    }
-
-    _setBusy(true);
     try {
       const startRes = await api("/webapp/missions/action", {
         action: "start",
@@ -1415,9 +1271,10 @@
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-      // optimistic wait immediately
+      // optimistic wait immediately (prevents blink)
       _optimisticStart(tier, offerId);
 
+      // accept returned object but do NOT let stale READY kill pending
       if (startRes && typeof startRes === "object") {
         _state = startRes;
         try {
@@ -1427,84 +1284,50 @@
         render();
       }
 
-      await _syncAfterStart();
+      const ok = await _syncAfterStart();
+      if (!ok) log("start: backend did not confirm RUNNING within window");
       return;
 
     } catch (e) {
       const msg = String(e?.message || e || "");
       if (msg.toUpperCase() === "ACTIVE") {
+        // user still has an active/ready run
         await loadState();
         return;
       }
-      _clearPending();
+      _pendingStart = null;
       renderError("Start failed", msg);
-    } finally {
-      _setBusy(false);
     }
   }
 
-  function _extractResolveText(res) {
-    try {
-      if (!res || typeof res !== "object") return "";
-      const p = normalizePayload(res) || res;
-
-      const direct =
-        res.rewardMsg || res.reward_msg ||
-        res.lootMsg || res.loot_msg ||
-        res.tokenLootMsg || res.token_loot_msg ||
-        "";
-
-      const last = p.lastResolve || p.last_resolve || null;
-      const parts = [];
-      if (last) {
-        const r = String(last.rewardMsg || last.reward_msg || "");
-        const l = String(last.lootMsg || last.loot_msg || "");
-        const t = String(last.tokenLootMsg || last.token_loot_msg || "");
-        if (r) parts.push(r);
-        if (l) parts.push(l);
-        if (t) parts.push(t);
-      }
-
-      const joined = parts.filter(Boolean).join("\n");
-      return joined || String(direct || "");
-    } catch (_) { return ""; }
-  }
-
   async function doResolve() {
-    if (_busy) return;
-
-    _setBusy(true);
     try {
-      const res = await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
+      // show claim syncing immediately
+      _claimFlash = { atMs: Date.now(), last: null };
+      _justResolvedAt = Date.now();
 
+      const res = await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
 
-      const txt = _extractResolveText(res);
+      _pendingStart = null;
+      _cacheClearActive();
 
-      // ✅ show AAA rewards screen
-      _reveal = {
-        title: "REWARDS SECURED",
-        text: txt || "Rewards recorded. (Backend message missing — we’ll enrich this next.)",
-        ts: Date.now(),
-      };
-
-      _clearPending();
-
-      // refresh state behind (silent), but keep reveal on screen
-      await loadState({ silent: true });
-      render();
-      return;
-
-    } catch (e) {
-      const msg = String(e?.message || e || "");
-      const up = msg.toUpperCase();
-      if (up.includes("TOO_EARLY") || up.includes("NOT_READY") || up.includes("EARLY")) {
-        await loadState();
-        return;
+      // if backend returned payload with lastResolve, show instantly
+      if (res && typeof res === "object") {
+        _state = res;
+        const p = normalizePayload(res);
+        const last = p?.lastResolve || p?.last_resolve || null;
+        if (last) _claimFlash.last = last;
       }
-      renderError("Resolve failed", msg);
-    } finally {
-      _setBusy(false);
+
+      // refresh state to ensure offers + lastResolve are synced
+      await loadState();
+
+      // if still stuck on READY after resolve, keep claim screen but user can Sync
+      return;
+    } catch (e) {
+      _claimFlash = null;
+      renderError("Resolve failed", String(e?.message || e || ""));
     }
   }
 
@@ -1519,9 +1342,12 @@
     ensureStyles();
     ensureModal();
 
-    // ✅ point C: lifecycle resync + load pending
-    _loadPending();
-    _bindLifecycle();
+    // ✅ Point C: if Missions modal already open (hot reload), rebind + resync
+    try {
+      if (_modal?.classList?.contains("is-open")) {
+        loadState();
+      }
+    } catch (_) {}
 
     log("init ok");
   }
