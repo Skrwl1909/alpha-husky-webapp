@@ -1913,6 +1913,113 @@ body.missions-open{
         });
       }
 
+      // =====================
+      // ✅ HOME NAV WIRING (BottomNav + Hub/Char/Share)
+      // =====================
+      (function(){
+        const $ = (sel, root=document) => root.querySelector(sel);
+
+        const hubBack   = $('#hubBack');
+        const charBack  = $('#charBack');
+        const shareBack = $('#shareBack');
+
+        function show(el){
+          if(!el) return;
+          el.style.display = 'flex';
+          document.body.classList.add('ah-sheet-open');
+          window.navOpen?.(el);
+        }
+        function hide(el){
+          if(!el) return;
+          el.style.display = 'none';
+          document.body.classList.remove('ah-sheet-open');
+          window.navClose?.(el);
+        }
+
+        // Close buttons (X)
+        document.addEventListener('click', (e)=>{
+          const c = e.target.closest('[data-close]');
+          if(!c) return;
+          const id = c.getAttribute('data-close');
+          hide(document.getElementById(id));
+        });
+
+        // Tap backdrop closes sheet
+        [hubBack,charBack,shareBack].forEach(el=>{
+          if(!el) return;
+          el.addEventListener('click', (e)=>{ if(e.target === el) hide(el); });
+        });
+
+        async function openSkins(){
+          // jeśli masz lazy loader:
+          try { await window.ensureSkinsLoaded?.(); } catch(_){}
+          if (window.Skins?.open) return window.Skins.open();
+
+          // fallback: stary przycisk
+          const legacy = document.querySelector('.btn.skins');
+          if (legacy) legacy.click();
+        }
+
+        const actionMap = {
+          // bottom nav
+          map:       ()=>document.querySelector('.btn.map')?.click(),
+          missions:  ()=>window.Missions?.open?.() || document.querySelector('.btn.mission')?.click(),
+          quests:    ()=>document.getElementById('quests-launcher')?.click(),
+          inventory: ()=>window.Inventory?.open?.() || document.querySelector('.btn.inventory')?.click(),
+          hub:       ()=>show(hubBack),
+
+          // hub tiles
+          shop:      ()=>window.Shop?.open?.() || document.querySelector('.btn.shop')?.click(),
+          adopt:     ()=>window.Adopt?.open?.() || document.querySelector('.btn.adopt')?.click(),
+          arena:     ()=>window.Arena?.open?.() || document.querySelector('.btn.arena')?.click(),
+          referrals: ()=>window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click(),
+          howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
+          profile:   ()=>document.querySelector('.btn.profile')?.click(),
+          whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
+          feed:      ()=>document.querySelector('.btn.feed')?.click(),
+          share:     ()=>show(shareBack),
+
+          // character sheet actions
+          equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
+          skins:     ()=>openSkins(),
+          avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
+          pets:      ()=>document.querySelector('.btn.mypets')?.click(),
+        };
+
+        // BottomNav click
+        $('#ahBottomNav')?.addEventListener('click', (e)=>{
+          const b = e.target.closest('.ah-navbtn');
+          if(!b) return;
+          const key = b.getAttribute('data-go');
+          actionMap[key]?.();
+        });
+
+        // Hub/Character tile click (delegacja)
+        document.addEventListener('click', (e)=>{
+          const el = e.target.closest('.ah-tile,.ah-action');
+          if(!el) return;
+          const a = el.getAttribute('data-action');
+          if(!a) return;
+          actionMap[a]?.();
+        });
+
+        // Tap hero-frame => Character sheet
+        $('#heroFrame')?.addEventListener('click', ()=>show(charBack));
+
+        // Share styles -> reuse existing share flow
+        shareBack?.addEventListener('click', (e)=>{
+          const b = e.target.closest('[data-share-style]');
+          if(!b) return;
+          const style = Number(b.getAttribute('data-share-style') || 1);
+
+          // jeśli masz API w share_levelup.js:
+          if (window.ShareLevelUp?.open) return window.ShareLevelUp.open(style);
+
+          // fallback: klik w stare mini-buttony jeśli jeszcze istnieją
+          document.querySelector(`#shareRow .btn.share-mini[data-share-style="${style}"]`)?.click();
+        });
+      })();
+
       // ✅ ONE global HOME — deterministic return to main menu/map
       window.goHome = function goHome() {
         try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
@@ -3506,6 +3613,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
