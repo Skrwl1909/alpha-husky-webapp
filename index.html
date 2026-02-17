@@ -52,9 +52,9 @@
   place-items:end center;
   box-sizing: border-box;
   padding:
-    24px
+    calc(24px + env(safe-area-inset-top, 0px))
     calc(16px + env(safe-area-inset-right, 0px))
-    24px
+    calc(24px + 78px + env(safe-area-inset-bottom, 0px)) /* ✅ + miejsce na bottom nav */
     calc(16px + env(safe-area-inset-left, 0px));
 }
 
@@ -182,6 +182,25 @@
   border:1px solid rgba(255,255,255,.16);
   backdrop-filter:blur(8px);
 }
+    
+
+/* ✅ HOME REBUILD PATCH (KROK A)
+   - chowamy legacy kolumny (zostają w DOM dla fallback click)
+   - chowamy shareRow (share idzie do Hub/Share sheet)
+   - hero centrowany z większym luzem na ramkę
+*/
+#homeLegacyLeft, #homeLegacyRight{
+  display:none !important;
+}
+
+#shareRow{
+  display:none !important;
+}
+
+.hud-layout{
+  justify-content:center !important;
+  gap: 0 !important;
+}
 
 /* ✅ MOBILE */
 @media (max-width:380px){
@@ -214,7 +233,7 @@
 #buffsLine.buffs-line{
   position: fixed;
   left: 14px;
-  bottom: calc(92px + env(safe-area-inset-bottom)); /* nad dolnym przyciskiem Quests */
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* ✅ nad navem */
   z-index: 6;
 
   width: max-content;
@@ -936,14 +955,150 @@ body.missions-open{
   touch-action: pan-y;
   min-height: 0 !important;
 }
-}
 
 /* jeśli q-bg był flex-itemem i mieszał — to go unieruchamiamy */
 .q-modal .q-bg{
   position: absolute !important;
   inset: 0 !important;
   pointer-events: none !important;
-}
+}  
+</style>
+
+  <!-- ✅ Bottom Nav + Sheets (oddzielny blok, nie w quests-css) -->
+<style id="home-nav-css">
+  .ah-bottomnav{
+    position: fixed;
+    left: 12px; right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    height: 64px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    z-index: 8000; /* poniżej quests(9999) i missions(999999) */
+  }
+
+  .ah-navbtn{
+    appearance:none;
+    border:none;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(10,12,16,.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(255,255,255,.92);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    font: 800 12px system-ui, sans-serif;
+    letter-spacing:.2px;
+    position: relative;
+    cursor:pointer;
+  }
+  .ah-navbtn:active{ transform: translateY(1px); }
+  .ah-navbtn .ah-ico{ font-size: 18px; opacity: .95; line-height:1; }
+  .ah-navbtn .ah-lbl{ font-size: 11px; opacity: .85; line-height:1; }
+
+  .ah-primary{
+    transform: translateY(-6px);
+    border: 1px solid rgba(255,255,255,.16);
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,229,255,.10), transparent 60%),
+      radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
+      rgba(12,14,18,.62);
+  }
+
+  .ah-badge{
+    position:absolute;
+    top: 10px; right: 12px;
+    width: 8px; height: 8px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.85);
+    box-shadow: 0 0 10px rgba(255,255,255,.25);
+  }
+
+  /* Sheets */
+  .ah-back{
+    position: fixed;
+    inset: 0;
+    z-index: 8500;
+    background: rgba(0,0,0,.55);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .ah-panel{
+    width: min(520px, 100%);
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(10,12,16,.70);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    overflow:hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  }
+
+  .ah-panel-hd{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 14px 14px 10px;
+  }
+  .ah-title{
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: .4px;
+    color: rgba(255,255,255,.92);
+  }
+  .ah-x{
+    width: 36px; height: 36px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.30);
+    color: rgba(255,255,255,.9);
+    cursor:pointer;
+  }
+
+  .ah-grid{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px 14px 14px;
+  }
+  .ah-tile{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.25);
+    color: rgba(255,255,255,.92);
+    cursor:pointer;
+  }
+  .ah-tile span{ font-size: 18px; }
+  .ah-tile b{ font-size: 13px; letter-spacing:.2px; }
+
+  .ah-actions{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    padding: 0 14px 14px;
+  }
+  .ah-action{
+    height: 46px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.25);
+    color: rgba(255,255,255,.92);
+    font-weight: 900;
+    letter-spacing: .2px;
+    cursor:pointer;
+  }
 </style>
   <style id="inventory-css">
   :root{
@@ -1146,7 +1301,7 @@ body.missions-open{
       <div class="grid">
         <div class="hud-layout">
           <!-- LEWA KOLUMNA (utility / progres) -->
-          <div class="hud-col hud-left">
+          <div class="hud-col hud-left" id="homeLegacyLeft">
             <button class="btn map" aria-label="Open Alpha Map" type="button">
               <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
               <span>Alpha Map</span>
@@ -1188,7 +1343,7 @@ body.missions-open{
   <div id="buffsLine" class="buffs-line" style="display:none"></div>
 </div>
           <!-- PRAWA KOLUMNA (tożsamość / companions) -->
-          <div class="hud-col hud-right">
+          <div class="hud-col hud-right" id="homeLegacyRight">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
             <button class="btn char" aria-label="Open Character" type="button">Character</button>
@@ -1207,6 +1362,85 @@ body.missions-open{
         </div>
         <div class="spacer"></div>
       </div>
+    <!-- ✅ Bottom Nav -->
+<nav id="ahBottomNav" class="ah-bottomnav" aria-label="Primary">
+  <button class="ah-navbtn" data-go="map" aria-label="Map" type="button">
+    <span class="ah-ico">🗺️</span><span class="ah-lbl">Map</span>
+  </button>
+
+  <button class="ah-navbtn" data-go="missions" aria-label="Missions" type="button">
+    <span class="ah-ico">⚔️</span><span class="ah-lbl">Missions</span>
+  </button>
+
+  <button class="ah-navbtn ah-primary" data-go="quests" aria-label="Quests" type="button">
+    <span class="ah-ico">📜</span><span class="ah-lbl">Quests</span>
+    <span class="ah-badge" data-badge="quests" hidden></span>
+  </button>
+
+  <button class="ah-navbtn" data-go="inventory" aria-label="Inventory" type="button">
+    <span class="ah-ico">🎒</span><span class="ah-lbl">Inventory</span>
+  </button>
+
+  <button class="ah-navbtn" data-go="hub" aria-label="Hub" type="button">
+    <span class="ah-ico">☰</span><span class="ah-lbl">Hub</span>
+    <span class="ah-badge" data-badge="hub" hidden></span>
+  </button>
+</nav>
+
+<!-- ✅ Hub Sheet -->
+<div id="hubBack" class="ah-back" style="display:none">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Hub">
+    <div class="ah-panel-hd">
+      <div class="ah-title">Hub</div>
+      <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
+    </div>
+
+    <div class="ah-grid">
+      <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
+      <button class="ah-tile" data-action="adopt" type="button"><span>🐾</span><b>Adopt</b></button>
+      <button class="ah-tile" data-action="arena" type="button"><span>🏆</span><b>Arena</b></button>
+      <button class="ah-tile" data-action="referrals" type="button"><span>🤝</span><b>Referrals</b></button>
+      <button class="ah-tile" data-action="howlboard" type="button"><span>📣</span><b>Howlboard</b></button>
+      <button class="ah-tile" data-action="profile" type="button"><span>👤</span><b>Profile</b></button>
+      <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
+      <button class="ah-tile" data-action="feed" type="button"><span>🧾</span><b>Feed</b></button>
+      <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Character Sheet (tap hero-frame) -->
+<div id="charBack" class="ah-back" style="display:none">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Character">
+    <div class="ah-panel-hd">
+      <div class="ah-title">Character</div>
+      <button class="ah-x" data-close="charBack" aria-label="Close" type="button">✕</button>
+    </div>
+
+    <div class="ah-actions">
+      <button class="ah-action" data-action="equipped" type="button">Equipped</button>
+      <button class="ah-action" data-action="skins" type="button">Skins</button>
+      <button class="ah-action" data-action="avatar" type="button">Avatar</button>
+      <button class="ah-action" data-action="pets" type="button">Pets</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Share Sheet -->
+<div id="shareBack" class="ah-back" style="display:none">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Share">
+    <div class="ah-panel-hd">
+      <div class="ah-title">Share</div>
+      <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="ah-actions">
+      <button class="ah-action" data-share-style="1" type="button">Share Style I</button>
+      <button class="ah-action" data-share-style="2" type="button">Share Style II</button>
+      <button class="ah-action" data-share-style="3" type="button">Share Style III</button>
+    </div>
+  </div>
+</div>
+
 
     <!-- MAP MODAL -->
     <div class="map-back" id="mapBack">
@@ -3209,6 +3443,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
