@@ -968,61 +968,118 @@ body.missions-open{
 }  
 </style>
 
-  <!-- ✅ Bottom Nav + Sheets (oddzielny blok, nie w quests-css) -->
+  <!-- ✅ Bottom Nav + Sheets -->
 <style id="home-nav-css">
+  /* =========================
+     ✅ Bottom Nav — V2 (premium)
+     ========================= */
+  :root{
+    --ah-cyan: rgba(0,229,255,.85);
+    --ah-amber: rgba(255,176,0,.78);
+    --ah-stroke: rgba(255,255,255,.10);
+    --ah-panel: rgba(10,12,16,.62);
+  }
+
   .ah-bottomnav{
     position: fixed;
-    left: 12px; right: 12px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
-    height: 64px;
+    left: 14px; right: 14px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    height: 74px;
+
+    padding: 10px;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    gap: 8px;
+
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(0,229,255,.10), transparent 55%),
+      radial-gradient(circle at 85% 120%, rgba(255,176,0,.10), transparent 55%),
+      rgba(0,0,0,.35);
+    border: 1px solid var(--ah-stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    box-shadow:
+      0 18px 46px rgba(0,0,0,.65),
+      inset 0 1px 0 rgba(255,255,255,.06);
+
     z-index: 8000; /* poniżej quests(9999) i missions(999999) */
   }
 
   .ah-navbtn{
     appearance:none;
-    border:none;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(10,12,16,.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(0,0,0,.20);
     color: rgba(255,255,255,.92);
+    border-radius: 18px;
+
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:4px;
-    font: 800 12px system-ui, sans-serif;
-    letter-spacing:.2px;
-    position: relative;
-    cursor:pointer;
-  }
-  .ah-navbtn:active{ transform: translateY(1px); }
-  .ah-navbtn .ah-ico{ font-size: 18px; opacity: .95; line-height:1; }
-  .ah-navbtn .ah-lbl{ font-size: 11px; opacity: .85; line-height:1; }
+    gap: 4px;
 
-  .ah-primary{
-    transform: translateY(-6px);
-    border: 1px solid rgba(255,255,255,.16);
-    background:
-      radial-gradient(circle at 20% 10%, rgba(0,229,255,.10), transparent 60%),
-      radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
-      rgba(12,14,18,.62);
+    cursor:pointer;
+    transition: transform .08s ease, filter .12s ease, border-color .12s ease, background .12s ease;
+    user-select:none;
+    position: relative; /* dla badge */
   }
+
+  .ah-navbtn:active{ transform: translateY(1px); }
+
+  .ah-navbtn .ah-ico{
+    font-size: 18px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.55));
+  }
+
+  .ah-navbtn .ah-lbl{
+    font-size: 10.5px;
+    line-height: 1;
+    opacity: .82;
+    letter-spacing: .2px;
+    font-weight: 800;
+  }
+
+  /* “selected” state */
+  .ah-navbtn.is-active{
+    border-color: rgba(0,229,255,.22);
+    background:
+      radial-gradient(circle at 30% 10%, rgba(0,229,255,.10), transparent 55%),
+      rgba(0,0,0,.24);
+    filter: brightness(1.06);
+  }
+
+  /* Primary (Quests) */
+  .ah-navbtn.ah-primary{
+    transform: translateY(-6px);
+    border-color: rgba(255,255,255,.14);
+    background:
+      radial-gradient(circle at 25% 15%, rgba(0,229,255,.12), transparent 58%),
+      radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 58%),
+      rgba(0,0,0,.22);
+    box-shadow: 0 10px 24px rgba(0,0,0,.45);
+  }
+  .ah-navbtn.ah-primary:active{ transform: translateY(-5px); }
 
   .ah-badge{
     position:absolute;
     top: 10px; right: 12px;
     width: 8px; height: 8px;
     border-radius: 99px;
-    background: rgba(255,255,255,.85);
-    box-shadow: 0 0 10px rgba(255,255,255,.25);
+    background: rgba(255,255,255,.90);
+    box-shadow: 0 0 12px rgba(255,255,255,.25);
   }
 
-  /* Sheets */
+  @media (max-width: 360px){
+    .ah-bottomnav{ height: 70px; padding: 9px; }
+    .ah-navbtn .ah-lbl{ font-size: 10px; }
+  }
+
+  /* =========================
+     Sheets (zostają jak były)
+     ========================= */
   .ah-back{
     position: fixed;
     inset: 0;
@@ -1103,6 +1160,7 @@ body.missions-open{
     letter-spacing: .2px;
     cursor:pointer;
   }
+</style>
 </style>
   <style id="inventory-css">
   :root{
@@ -3448,6 +3506,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
