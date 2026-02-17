@@ -2201,12 +2201,14 @@ setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
   const base = (PROFILE && PROFILE.faction) ? PROFILE.faction : 'PACK';
 
-  if (tagEl) tagEl.textContent = base;
+  /* ✅ B) TAG: zamiast nadpisywać textContent base, użyj tier tagów */
+  setTopTag(PROFILE?.tag, base);
+
   if (metaEl) metaEl.textContent = `Lv ${lvl} • ${bones}🦴`;
 
   const heroLevel = document.getElementById('heroLevel');
   if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
-        }
+}
 
 function applyProfileSkin(skin){
   const skinImg = document.getElementById('player-skin');
@@ -2247,6 +2249,29 @@ function pickFrameUrl(p){
   );
 }
 
+function setTopTag(tagKey, baseText="PACK"){
+  const tagEl = document.getElementById("factionTag");
+  if(!tagEl) return;
+
+  tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron");
+
+  const t = String(tagKey || "").toLowerCase();
+
+  if(t === "supporter"){
+    tagEl.textContent = "SUPPORTER";
+    tagEl.classList.add("tag-supporter");
+  }else if(t === "founder"){
+    tagEl.textContent = "FOUNDER";
+    tagEl.classList.add("tag-founder");
+  }else if(t === "patron"){
+    tagEl.textContent = "PATRON";
+    tagEl.classList.add("tag-patron");
+  }else{
+    tagEl.textContent = String(baseText || "PACK");
+    tagEl.classList.add("tag-pack");
+  }
+}
+
 async function loadProfile() {
   try {
     const out = await apiPost("/webapp/profile", {});
@@ -2267,14 +2292,17 @@ async function loadProfile() {
 
     if (p.faction) PROFILE.faction = p.faction;
 
+    /* ✅ A) TAG: pobierz tier tag z profilu */
+    PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
+
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
     /* ✅ FRAME — dynamic (z profilu) */
     setHeroFrame(
-  pickFrameUrl(p) ||
-  "https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/v1771250188/frames/frame_supporter.webp"
-);
+      pickFrameUrl(p) ||
+      "https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/v1771250188/frames/frame_supporter.webp"
+    );
 
     // ✅ Topbar może się przebudować – ok
     try { renderTopbar(); } catch (_) {}
@@ -2291,8 +2319,6 @@ async function loadProfile() {
     console.warn("profile load failed", e);
   }
 }
-window.loadProfile = loadProfile;
-
 window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
@@ -3183,6 +3209,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
