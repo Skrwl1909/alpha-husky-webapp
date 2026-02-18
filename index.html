@@ -1999,14 +1999,32 @@ body.missions-open{
         });
 
         async function openSkins(){
-          // jeśli masz lazy loader:
-          try { await window.ensureSkinsLoaded?.(); } catch(_){}
-          if (window.Skins?.open) return window.Skins.open();
+  // 1) schowaj Character sheet żeby nie zasłaniał modala Skins
+  const charBack = document.getElementById("charBack");
+  if (charBack && charBack.style.display !== "none"){
+    charBack.style.display = "none";
+    try { window.navClose?.(charBack); } catch(_) {}
+  }
 
-          // fallback: stary przycisk
-          const legacy = document.querySelector('.btn.skins');
-          if (legacy) legacy.click();
-        }
+  // (opcjonalnie) jeśli Hub też bywa otwarty
+  const hubBack = document.getElementById("hubBack");
+  if (hubBack && hubBack.style.display !== "none"){
+    hubBack.style.display = "none";
+    try { window.navClose?.(hubBack); } catch(_) {}
+  }
+
+  // 2) lazy-load (jeśli masz)
+  try { await window.ensureSkinsLoaded?.(); } catch(_) {}
+
+  // 3) zawsze init (u Ciebie init ma guard _inited, więc jest bezpieczne)
+  try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch(e){ console.warn("Skins.init err", e); }
+
+  // 4) open
+  if (window.Skins?.open) return window.Skins.open();
+
+  // fallback: stary przycisk
+  document.querySelector('.btn.skins')?.click();
+}
 
         const actionMap = {
           // bottom nav
@@ -2029,7 +2047,7 @@ body.missions-open{
 
           // character sheet actions
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
-          skins:     ()=>openSkins(),
+          skins: () => { void openSkins(); },
           avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
           pets:      ()=>document.querySelector('.btn.mypets')?.click(),
         };
@@ -3661,6 +3679,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
