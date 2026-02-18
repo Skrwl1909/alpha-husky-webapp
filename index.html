@@ -130,52 +130,89 @@
   transform: translateY(1px);
 }
 
-/* ✅ HERO FRAME (skin + frame overlay) — FINAL */
+/* =========================
+   ✅ HERO FRAME — stable overlay (skin never escapes, frame never clipped)
+   + ✅ dim/blur hero when any modal/sheet is open (ah-modal-open)
+   ========================= */
+
 .hero-frame{
   width:min(46vw, 210px);
   aspect-ratio:3/4;
-  border-radius:24px;
-  background:
-    radial-gradient(circle at top left, rgba(0,229,255,.2), transparent 60%),
-    radial-gradient(circle at bottom right, rgba(255,176,0,.2), transparent 60%),
-    rgba(0,0,0,.7);
-  border:1px solid rgba(255,255,255,.22);
-  box-shadow:0 18px 40px rgba(0,0,0,.6);
-  overflow:hidden;
-  position: relative;
 
-  /* ✅ tuning: powiększa ramkę, gdy asset ma “puste marginesy” */
-  --frame-scale: 1.74; /* spróbuj też: 1.24 / 1.34 */
+  position: relative;
+  border-radius: 24px;
+
+  /* tło karty */
+  background:
+    radial-gradient(circle at top left, rgba(0,229,255,.18), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(255,176,0,.16), transparent 60%),
+    rgba(0,0,0,.72);
+
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 18px 40px rgba(0,0,0,.60);
+
+  /* ✅ ważne: ramka może “wyjść” poza boxa */
+  overflow: visible;
+  isolation: isolate;
+
+  /* 🎛️ TUNING (dotykasz tylko tego) */
+  --frame-bleed: 12px;   /* ile ramka może wyjść poza kadr */
+  --frame-scale: 1.10;   /* dopasowanie “większa/mniejsza” */
+  --frame-x: 0px;        /* mikro przesunięcie */
+  --frame-y: 0px;        /* mikro przesunięcie */
 }
 
-/* ✅ Avatar (skin) wypełnia kadr */
+/* ✅ SKIN zawsze w środku i nigdy nie “ucieknie” */
 .hero-frame .hero-skin{
   position: relative;
   z-index: 1;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
-  border-radius:inherit;
+
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+
+  border-radius: inherit;
+
+  /* klucz: klipuje skina nawet gdy overflow jest visible */
+  clip-path: inset(0 round 24px);
 }
 
-/* ✅ Frame overlay: skalujemy (zamiast bleed), żeby ramka siadła “na zewnątrz” */
+/* ✅ delikatne “sklejenie” skina z UI (ciemniej na dole) */
+.hero-frame::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height: 34%;
+  border-radius: inherit;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.42) 100%);
+  z-index: 2;
+  pointer-events:none;
+  clip-path: inset(0 round 24px);
+}
+
+/* ✅ RAMKA — pełna, nieucięta, na wierzchu */
 .hero-frame .hero-frame-overlay{
   position:absolute;
-  inset: 0;
-  width:100%;
-  height:100%;
-  object-fit:contain;
+  inset: calc(-1 * var(--frame-bleed));
+  width: calc(100% + (2 * var(--frame-bleed)));
+  height: calc(100% + (2 * var(--frame-bleed)));
+
   display:block;
+  object-fit: contain;
   pointer-events:none;
+  z-index: 3;
 
-  z-index: 10;
-  transform: scale(var(--frame-scale)) translateZ(0);
   transform-origin: center;
-
+  transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 
+/* ✅ When any sheet/modal is open (stack not empty) — fade hero to avoid “ghost frame” */
+html.ah-modal-open #heroFrame{
+  opacity: .08;
+  filter: blur(8px) saturate(.8);
+}
 .hero-caption{
   font-size:13px;
   display:flex;
@@ -1879,6 +1916,8 @@ body.missions-open{
         const st = AH_NAV.stack;
         if (st[st.length - 1] !== id) st.push(id);
         try { tg?.BackButton?.show?.(); } catch (_) {}
+
+        document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
       }
 
       function navClose(x){
@@ -1887,17 +1926,24 @@ body.missions-open{
         const i = st.lastIndexOf(id);
         if (i >= 0) st.splice(i, 1);
         if (!st.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
+
+        document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
+
       }
 
       function navCloseTop(){
-        const id = AH_NAV.stack.pop();
-        if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
-        if (!id) return false;
+  const id = AH_NAV.stack.pop();
+  if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
 
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
-        return true;
-      }
+  // ✅ keep hero dim/blur in sync with stack
+  document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
+
+  if (!id) return false;
+
+  const el = document.getElementById(id);
+  if (el) el.style.display = "none";
+  return true;
+}
 
       // ✅ expose globally
       window.navOpen = navOpen;
@@ -3615,3 +3661,4 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
