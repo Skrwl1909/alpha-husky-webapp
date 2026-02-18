@@ -1,8 +1,13 @@
 // js/fortress.js
 // Alpha Husky — Moon Lab (Fortress) UI
-// Użycie: window.Fortress.init({ apiPost, tg, dbg }); → window.Fortress.open();
+// Usage: window.Fortress.init({ apiPost, tg, dbg }); → window.Fortress.open();
 (function (global) {
   const BID = "moonlab_fortress";
+
+  // Cloudinary fallback (align with fortress.py BOSS_SPRITES_BASE)
+  const BOSS_CLOUD_BASE =
+    "https://res.cloudinary.com/dnjwvxinh/image/upload/v1771238762/bosses";
+  const BOSS_FALLBACK = `${BOSS_CLOUD_BASE}/core_custodian.png`;
 
   const S = {
     apiPost: null,
@@ -47,7 +52,16 @@
     }
   }
 
-  // Bezpieczny fallback dla animowanych liczb obrażeń
+  // run_id helper (idempotency-friendly)
+  function rid(prefix = "fortress") {
+    try {
+      return `${prefix}:${crypto.randomUUID()}`;
+    } catch (_) {
+      return `${prefix}:${Date.now()}:${Math.floor(Math.random() * 1e6)}`;
+    }
+  }
+
+  // Safe fallback for damage particles
   function ensureDamageParticles() {
     if (!global.Combat) global.Combat = {};
     if (typeof global.Combat.createDamageNumber !== "function") {
@@ -65,23 +79,31 @@
     }
   }
 
-  // === helper: ustaw sprite bossa; przyjmuje klucz/nazwę/URL ===
+  // slug -> cloudinary boss url
+  function bossUrlFromKeyOrName(keyOrName) {
+    const raw = String(keyOrName || "").trim();
+    if (!raw) return BOSS_FALLBACK;
+
+    const looksLikeUrl =
+      /^https?:\/\//i.test(raw) || /\/.+\.(png|webp|jpg|jpeg|gif)$/i.test(raw);
+
+    if (looksLikeUrl) return raw;
+
+    const slug = raw
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+    return slug ? `${BOSS_CLOUD_BASE}/${slug}.png` : BOSS_FALLBACK;
+  }
+
+  // Set enemy portrait in the "open" modal (accepts key/name/url)
   function setEnemySprite(spriteOrNameOrKey) {
     const img = $("#fx-enemy");
     if (!img) return;
     const v = global.WEBAPP_VER || "dev";
-    let src = spriteOrNameOrKey || "";
-    const looksLikeUrl =
-      /^https?:\/\//i.test(src) || /\/.+\.(png|webp|jpg|jpeg|gif)$/i.test(src);
-    if (!looksLikeUrl) {
-      const slug = String(src || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_|_$/g, "");
-      if (slug) src = `images/bosses/${slug}.png`;
-    }
-    if (!src) src = "images/bosses/core_custodian.png";
-    img.src = src + (src.includes("?") ? `&v=${encodeURIComponent(v)}` : `?v=${encodeURIComponent(v)}`);
+    const base = bossUrlFromKeyOrName(spriteOrNameOrKey);
+    img.src = base + (base.includes("?") ? `&v=${encodeURIComponent(v)}` : `?v=${encodeURIComponent(v)}`);
   }
 
   // ---------- CSS (PATCH 1) ----------
@@ -219,8 +241,20 @@
     document.head.appendChild(s);
   }
 
+  // live ticker for cooldown label
+  let _ticker = null;
+  function stopTicker() {
+    if (_ticker) {
+      clearInterval(_ticker);
+      _ticker = null;
+    }
+  }
+
   function closeModal() {
-    // ✅ zawsze sprzątnij PIXI zanim usuniesz modal
+    // stop any cooldown ticker
+    stopTicker();
+
+    // ✅ always cleanup PIXI/battle timers BEFORE removing modal
     try {
       globalThis.__FORTRESS_PIXI_CLEANUP__?.();
     } catch (_) {}
@@ -263,12 +297,11 @@
     if (!S.dbg) S.dbg = (..._args) => {};
   }
 
-  // ---------- fortress payload normalizer (pod fortress.py) ----------
+  // ---------- payload normalizer (aligned with fortress.py) ----------
   function normalizeFortressPayload(raw) {
     if (!raw) return null;
     const t = raw && raw.ok !== undefined && raw.data ? raw.data : raw;
 
-    // steps z fortress.py: {att:'P'|'E', dmg, crit, dodge, p_hp, b_hp}
     const stepsIn = Array.isArray(t.steps) ? t.steps : [];
     const steps = stepsIn.map((s) => {
       const att = s.actor || s.att || s.who;
@@ -295,9 +328,10 @@
     const bossHpMax = Number(t?.boss?.hpMax ?? t.enemyHpMax ?? t.stats?.enemyHpMax) || 1;
     const playerHpMax = Number(t?.player?.hpMax ?? t.playerHpMax ?? t.stats?.playerHpMax) || 1;
 
-    // rewards w fortress.py: rewards:{scrap,rune_dust} + firstClear na root
     const matsSrc = t.rewards || {};
-    const firstClear = Array.isArray(t.firstClear) ? t.firstClear : (Array.isArray(matsSrc.firstClear) ? matsSrc.firstClear : []);
+    const firstClear = Array.isArray(t.firstClear)
+      ? t.firstClear
+      : (Array.isArray(matsSrc.firstClear) ? matsSrc.firstClear : []);
 
     return {
       mode: "fortress",
@@ -310,6 +344,7 @@
         materials: {
           scrap: Number(matsSrc.scrap || 0),
           rune_dust: Number(matsSrc.rune_dust || 0),
+          universal_key_shards: Number(matsSrc.universal_key_shards || 0),
         },
         rare: !!t.rare,
         firstClear,
@@ -362,7 +397,7 @@
           </div>
 
           <div class="fx-portrait">
-            <img id="fx-enemy" alt="Enemy" src="images/bosses/core_custodian.png">
+            <img id="fx-enemy" alt="Enemy" src="${BOSS_FALLBACK}">
           </div>
 
           <div class="fx-actions">
@@ -408,15 +443,6 @@
     refresh();
   }
 
-  // live ticker
-  let ticker = null;
-  function stopTicker() {
-    if (ticker) {
-      clearInterval(ticker);
-      ticker = null;
-    }
-  }
-
   function setBadge(txt) {
     const b = $("#fx-badge");
     if (!b) return;
@@ -430,12 +456,6 @@
   async function refresh() {
     ensureDeps();
     stopTicker();
-
-    if (document.getElementById("fortress-modal") && !document.querySelector("#fx-lvl")) {
-      closeModal();
-      open();
-      return;
-    }
 
     try {
       let st = await S.apiPost("/webapp/building/state", { buildingId: BID });
@@ -460,8 +480,10 @@
 
       setText("#fx-next", (bossLabel || lvl) ? [bossLabel, lvl ? `(L${lvl})` : ""].filter(Boolean).join(" ") : "—");
 
-      const spriteRaw = st.bossSprite || st.sprite || nx.sprite || st.nextSprite || null;
-      setEnemySprite(spriteRaw || bossKey || bossLabel);
+      // ✅ prefer sprite from backend (Cloudinary URL)
+      const spriteRaw =
+        st.bossSprite || st.sprite || nx.sprite || st.nextSprite || st.boss?.sprite || null;
+      setEnemySprite(spriteRaw || bossKey || bossLabel || BOSS_FALLBACK);
 
       const attemptsLeft = st.attemptsLeft ?? st.attack?.attemptsLeft;
       const atEl = $("#fx-attempts");
@@ -510,7 +532,7 @@
         btn.disabled = true;
         btn.textContent = "Start";
         let left = cd;
-        ticker = setInterval(() => {
+        _ticker = setInterval(() => {
           left = Math.max(0, left - 1);
           setText("#fx-cd", fmtLeft(left));
           if (!document.getElementById("fortress-modal")) {
@@ -547,7 +569,11 @@
     try {
       S.tg?.HapticFeedback?.impactOccurred?.("light");
 
-      const out = await S.apiPost("/webapp/building/start", { buildingId: BID });
+      // ✅ send run_id to backend (idempotency)
+      const out = await S.apiPost("/webapp/building/start", {
+        buildingId: BID,
+        run_id: rid("fx"),
+      });
       const res = out?.data || out;
 
       const payload = normalizeFortressPayload(res);
@@ -557,7 +583,6 @@
         return;
       }
 
-      // fallback
       await refresh();
     } catch (e) {
       const reason = e?.response?.data?.reason || e?.data?.reason || e?.message || "Start failed";
@@ -616,7 +641,7 @@
     }
   }
 
-  // ---------- battle renderer (PATCH 2 + 3 + fix redeclare) ----------
+  // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
   function renderFortressBattle(data) {
     // ✅ kill previous PIXI if still alive
     try {
@@ -630,16 +655,17 @@
     ensureDamageParticles();
     closeModal();
 
-    const bossLabel = String(data?.boss?.name || data?.bossName || "Boss");
-    const bUrl = String(data?.boss?.sprite || data?.bossSprite || "images/bosses/core_custodian.png");
-    const pUrl = getPlayerAvatarUrl(data);
+    // ✅ ALL locals stay inside this function (no "already declared" collisions)
+    const bossLabelTxt = String(data?.boss?.name || data?.bossName || "Boss");
+    const bossSpriteUrl = bossUrlFromKeyOrName(data?.boss?.sprite || data?.bossSprite || BOSS_FALLBACK);
+    const playerAvatarUrl = getPlayerAvatarUrl(data);
 
     const cont = el("div", "fortress-battle");
     cont.innerHTML = `
       <div class="fx-head" style="margin-bottom:6px">
         <div>
           <div class="fx-sub">Moon Lab — Fortress</div>
-          <div class="fx-title">L${data.level ?? data.lvl ?? "?"} · ${bossLabel}</div>
+          <div class="fx-title">L${data.level ?? data.lvl ?? "?"} · ${bossLabelTxt}</div>
         </div>
         <button class="fx-x" id="fb-x" type="button">×</button>
       </div>
@@ -654,7 +680,7 @@
             </div>
             <div class="fb-side">
               <img class="fb-boss" id="fb-boss-img" alt="Boss">
-              <div class="fb-name" id="fb-boss-name">${bossLabel}</div>
+              <div class="fb-name" id="fb-boss-name"></div>
             </div>
           </div>
         </div>
@@ -689,28 +715,40 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     if (stageHost) stageHost.style.position = "relative";
 
     // DOM fallback setup (always)
-    const youImg = $("#fb-you-img", cont);
-    const bossImg = $("#fb-boss-img", cont);
+    const youImgEl = $("#fb-you-img", cont);
+    const bossImgEl = $("#fb-boss-img", cont);
     const bossNameEl = $("#fb-boss-name", cont);
 
-    if (youImg) {
-      youImg.src = pUrl || "";
-      youImg.style.visibility = pUrl ? "visible" : "hidden";
+    if (youImgEl) {
+      youImgEl.src = playerAvatarUrl || "";
+      youImgEl.style.visibility = playerAvatarUrl ? "visible" : "hidden";
     }
-    if (bossImg) bossImg.src = bUrl;
-    if (bossNameEl) bossNameEl.textContent = bossLabel;
+    if (bossImgEl) bossImgEl.src = bossSpriteUrl;
+    if (bossNameEl) bossNameEl.textContent = bossLabelTxt;
 
-    let app = null;
-    let bossSpr = null;
-    let playerG = null;
-    let bossShakeT = 0;
-    let playerShakeT = 0;
+    // locals for PIXI
+    let pixiApp = null;
+    let pixiBossSprite = null;
+    let pixiPlayerGroup = null;
+    let bossShakeFrames = 0;
+    let playerShakeFrames = 0;
 
-    // PIXI v8/v7 Application init helper (PATCH 2)
+    // local battle timer handle (so nothing runs after close)
+    let battleTimer = null;
+    function stopBattleTimer() {
+      if (battleTimer) {
+        clearTimeout(battleTimer);
+        battleTimer = null;
+      }
+    }
+
+    // PIXI v8/v7 Application init helper (PATCH 3)
     async function makePixiApp(PIXI, w, h) {
       const dpr = window.devicePixelRatio || 1;
+
+      // Pixi v8 style: new Application(); await app.init(...)
       try {
-        let a = new PIXI.Application();
+        const a = new PIXI.Application();
         if (typeof a.init === "function") {
           await a.init({
             width: w,
@@ -722,11 +760,10 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
           });
           return a;
         }
-        try {
-          a.destroy?.(true);
-        } catch (_) {}
+        try { a.destroy?.(); } catch (_) {}
       } catch (_) {}
 
+      // Pixi v7 style: new Application(opts)
       try {
         return new PIXI.Application({
           width: w,
@@ -737,6 +774,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
           autoDensity: true,
         });
       } catch (_) {}
+
       return null;
     }
 
@@ -769,20 +807,20 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       return g;
     }
 
-    // mount pixi (PATCH 3)
     async function mountPixi() {
       if (!stageHost) return;
-      if (app) return; // ✅ guard
+      if (pixiApp) return; // ✅ guard
+
       const PIXI = globalThis.PIXI;
       if (!PIXI || !PIXI.Application) return;
 
       const w = Math.max(240, stageHost.clientWidth || 360);
       const h = Math.max(180, stageHost.clientHeight || 260);
 
-      app = await makePixiApp(PIXI, w, h);
-      if (!app) return;
+      pixiApp = await makePixiApp(PIXI, w, h);
+      if (!pixiApp) return;
 
-      const view = app.view || app.canvas;
+      const view = pixiApp.view || pixiApp.canvas;
       if (view) {
         view.style.width = "100%";
         view.style.height = "100%";
@@ -796,33 +834,34 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 
       // bg panel
       const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
-      app.stage.addChild(bgPanel);
+      pixiApp.stage.addChild(bgPanel);
 
       // player (left)
-      playerG = new PIXI.Container();
+      pixiPlayerGroup = new PIXI.Container();
 
       const radius = 34;
       const pBg = _gfxCircle(PIXI, radius + 6, 0x3b82f6, 0.10);
+
       const ring = new PIXI.Graphics();
       if (typeof ring.lineStyle === "function") ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
-      playerG.addChild(pBg, ring);
+      pixiPlayerGroup.addChild(pBg, ring);
 
-      if (pUrl) {
-        const tex = pixiTextureFromUrl(PIXI, pUrl);
+      if (playerAvatarUrl) {
+        const tex = pixiTextureFromUrl(PIXI, playerAvatarUrl);
         const spr = new PIXI.Sprite(tex);
         spr.anchor?.set?.(0.5);
 
-        const m = new PIXI.Graphics();
-        if (typeof m.beginFill === "function") {
-          m.beginFill(0xffffff, 1);
-          m.drawCircle(0, 0, radius);
-          m.endFill();
-        } else if (typeof m.circle === "function" && typeof m.fill === "function") {
-          m.circle(0, 0, radius);
-          m.fill({ color: 0xffffff, alpha: 1 });
+        const maskG = new PIXI.Graphics();
+        if (typeof maskG.beginFill === "function") {
+          maskG.beginFill(0xffffff, 1);
+          maskG.drawCircle(0, 0, radius);
+          maskG.endFill();
+        } else if (typeof maskG.circle === "function" && typeof maskG.fill === "function") {
+          maskG.circle(0, 0, radius);
+          maskG.fill({ color: 0xffffff, alpha: 1 });
         }
-        spr.mask = m;
-        playerG.addChild(m, spr);
+        spr.mask = maskG;
+        pixiPlayerGroup.addChild(maskG, spr);
 
         const fit = () => {
           const w0 = spr.texture?.width || spr.texture?.orig?.width || spr.width || 1;
@@ -833,137 +872,147 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         if (spr.texture?.baseTexture?.valid) fit();
         else spr.texture?.baseTexture?.once?.("loaded", fit);
       } else {
-        const core = _gfxCircle(PIXI, 18, 0xffffff, 0.10);
-        playerG.addChild(core);
+        pixiPlayerGroup.addChild(_gfxCircle(PIXI, 18, 0xffffff, 0.10));
       }
 
       const pTxt = new PIXI.Text("YOU", { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
       pTxt.anchor?.set?.(0.5, 0);
       pTxt.x = 0;
       pTxt.y = 42;
-      playerG.addChild(pTxt);
+      pixiPlayerGroup.addChild(pTxt);
 
-      playerG.x = Math.round(w * 0.22);
-      playerG.y = Math.round(h * 0.55);
-      app.stage.addChild(playerG);
+      pixiPlayerGroup.x = Math.round(w * 0.22);
+      pixiPlayerGroup.y = Math.round(h * 0.55);
+      pixiApp.stage.addChild(pixiPlayerGroup);
 
-      // boss (right)
-      bossSpr = PIXI.Sprite.from(bUrl);
-      bossSpr.anchor?.set?.(0.5, 0.5);
-      bossSpr.x = Math.round(w * 0.74);
-      bossSpr.y = Math.round(h * 0.52);
+      // boss (right) — ✅ use Cloudinary URL from backend
+      pixiBossSprite = PIXI.Sprite.from(bossSpriteUrl);
+      pixiBossSprite.anchor?.set?.(0.5, 0.5);
+      pixiBossSprite.x = Math.round(w * 0.74);
+      pixiBossSprite.y = Math.round(h * 0.52);
 
       const maxW = w * 0.42;
       const maxH = h * 0.70;
 
       const fitBoss = () => {
-        const bw = bossSpr.texture?.width || bossSpr.width || 1;
-        const bh = bossSpr.texture?.height || bossSpr.height || 1;
+        const bw = pixiBossSprite.texture?.width || pixiBossSprite.width || 1;
+        const bh = pixiBossSprite.texture?.height || pixiBossSprite.height || 1;
         const sx = maxW / Math.max(1, bw);
         const sy = maxH / Math.max(1, bh);
         const s = Math.min(1, sx, sy);
-        bossSpr.scale?.set?.(s);
+        pixiBossSprite.scale?.set?.(s);
       };
-      if (bossSpr.texture?.baseTexture?.valid) fitBoss();
-      else bossSpr.texture?.baseTexture?.once?.("loaded", fitBoss);
+      if (pixiBossSprite.texture?.baseTexture?.valid) fitBoss();
+      else pixiBossSprite.texture?.baseTexture?.once?.("loaded", fitBoss);
 
-      app.stage.addChild(bossSpr);
+      pixiApp.stage.addChild(pixiBossSprite);
 
-      const bTxt = new PIXI.Text(bossLabel, { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
+      const bTxt = new PIXI.Text(bossLabelTxt, { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
       bTxt.anchor?.set?.(0.5, 0);
-      bTxt.x = bossSpr.x;
-      bTxt.y = bossSpr.y + maxH * 0.40;
-      app.stage.addChild(bTxt);
+      bTxt.x = pixiBossSprite.x;
+      bTxt.y = pixiBossSprite.y + maxH * 0.40;
+      pixiApp.stage.addChild(bTxt);
 
       // ticker shake
-      app.ticker.add(() => {
-        if (!app || !bossSpr || !playerG) return;
+      pixiApp.ticker.add(() => {
+        if (!pixiApp || !pixiBossSprite || !pixiPlayerGroup) return;
 
-        if (bossShakeT > 0) {
-          bossShakeT--;
-          bossSpr.x += Math.random() * 6 - 3;
-          bossSpr.y += Math.random() * 6 - 3;
+        if (bossShakeFrames > 0) {
+          bossShakeFrames--;
+          pixiBossSprite.x += Math.random() * 6 - 3;
+          pixiBossSprite.y += Math.random() * 6 - 3;
         } else {
-          bossSpr.x = Math.round(app.renderer.width * 0.74);
-          bossSpr.y = Math.round(app.renderer.height * 0.52);
+          pixiBossSprite.x = Math.round(pixiApp.renderer.width * 0.74);
+          pixiBossSprite.y = Math.round(pixiApp.renderer.height * 0.52);
         }
 
-        if (playerShakeT > 0) {
-          playerShakeT--;
-          playerG.x += Math.random() * 6 - 3;
-          playerG.y += Math.random() * 6 - 3;
+        if (playerShakeFrames > 0) {
+          playerShakeFrames--;
+          pixiPlayerGroup.x += Math.random() * 6 - 3;
+          pixiPlayerGroup.y += Math.random() * 6 - 3;
         } else {
-          playerG.x = Math.round(app.renderer.width * 0.22);
-          playerG.y = Math.round(app.renderer.height * 0.55);
+          pixiPlayerGroup.x = Math.round(pixiApp.renderer.width * 0.22);
+          pixiPlayerGroup.y = Math.round(pixiApp.renderer.height * 0.55);
         }
       });
 
       // resize listener
       const onResize = () => {
-        if (!app || !stageHost) return;
+        if (!pixiApp || !stageHost) return;
         const nw = Math.max(240, stageHost.clientWidth || 360);
         const nh = Math.max(180, stageHost.clientHeight || 260);
         try {
-          app.renderer.resize(nw, nh);
+          pixiApp.renderer.resize(nw, nh);
         } catch (_) {}
       };
       window.addEventListener("resize", onResize);
-      app.__onResize = onResize;
+      pixiApp.__onResize = onResize;
     }
 
-    function destroyPixi() {
+    function destroyPixiHard() {
       try {
-        if (app?.__onResize) window.removeEventListener("resize", app.__onResize);
-        if (app) {
-          const view = app.view || app.canvas;
-          app.destroy(true, { children: true, texture: true, baseTexture: true });
+        if (pixiApp?.__onResize) window.removeEventListener("resize", pixiApp.__onResize);
+      } catch (_) {}
+
+      try {
+        if (pixiApp) {
+          const view = pixiApp.view || pixiApp.canvas;
+
+          // v8 preferred
+          try {
+            pixiApp.destroy?.({ removeView: false, children: true, texture: true, baseTexture: true });
+          } catch (_) {
+            // v7 fallback
+            try {
+              pixiApp.destroy?.(true, { children: true, texture: true, baseTexture: true });
+            } catch (_) {}
+          }
+
           if (view && view.parentNode) view.parentNode.removeChild(view);
         }
       } catch (_) {}
-      app = null;
-      bossSpr = null;
-      playerG = null;
+
+      pixiApp = null;
+      pixiBossSprite = null;
+      pixiPlayerGroup = null;
+    }
+
+    function destroyAll() {
+      stopBattleTimer();
+      destroyPixiHard();
       try {
-        globalThis.__FORTRESS_PIXI_CLEANUP__ = null;
+        globalThis.Combat.container = null;
       } catch (_) {}
     }
 
-    // DOM particles nad stage
-    globalThis.Combat.container = stageHost || card;
-
-    // mount pixi (jeśli dostępne)
-    (async () => {
-      try {
-        await mountPixi();
-      } catch (_) {}
-    })();
-
-    // expose cleanup hook
+    // expose cleanup hook (PATCH 3)
     try {
       globalThis.__FORTRESS_PIXI_CLEANUP__ = () => {
-        try {
-          destroyPixi();
-        } catch (_) {}
+        try { destroyAll(); } catch (_) {}
       };
     } catch (_) {}
+
+    // DOM particles over stage
+    globalThis.Combat.container = stageHost || card;
+
+    // mount pixi (if available)
+    (async () => {
+      try { await mountPixi(); } catch (_) {}
+    })();
 
     try {
       S.tg?.MainButton?.hide?.();
     } catch (_) {}
 
-    // events
+    // events (no double-cleanup: closeModal() already triggers __FORTRESS_PIXI_CLEANUP__)
     wrap.addEventListener("click", (e) => {
       const btn = e.target.closest("button");
       if (!btn) {
-        if (e.target.id === "fb-mask") {
-          destroyPixi();
-          closeModal();
-        }
+        if (e.target.id === "fb-mask") closeModal();
         return;
       }
 
       if (btn.id === "fb-x" || btn.id === "fb-close") {
-        destroyPixi();
         closeModal();
         return;
       }
@@ -973,13 +1022,13 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
           try {
             let st = await S.apiPost("/webapp/building/state", { buildingId: BID });
             if (st && st.data) st = st.data;
-            destroyPixi();
-            closeModal();
+
             const cd = Math.max(
               0,
               (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0) | 0
             );
             toast(cd > 0 ? `Cooldown: ${fmtLeft(cd)}` : "Ready");
+            closeModal();
           } catch (_) {
             toast("Error refreshing.");
           }
@@ -1000,6 +1049,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         : { x: Math.round(w * 0.22), y: Math.round(h * 0.48) };
     }
 
+    // local HP trackers (no top-level redeclare risk)
     let pHpNow = data.player?.hpMax ?? 0;
     let bHpNow = data.boss?.hpMax ?? 0;
     let idx = 0;
@@ -1014,6 +1064,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         const mats = [];
         if (matsSrc.scrap) mats.push(`Scrap ×${matsSrc.scrap}`);
         if (matsSrc.rune_dust) mats.push(`Rune Dust ×${matsSrc.rune_dust}`);
+        if (matsSrc.universal_key_shards) mats.push(`Shards ×${matsSrc.universal_key_shards}`);
         if (mats.length) lines.push("Rewards: " + mats.join(", "));
 
         if (data.rewards?.rare) lines.push("💎 Rare drop!");
@@ -1028,8 +1079,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       }
 
       const s0 = steps[idx++] || {};
-      const actor =
-        s0.actor ? s0.actor : (s0.att === "P" ? "you" : "boss");
+      const actor = s0.actor ? s0.actor : (s0.att === "P" ? "you" : "boss");
 
       const dmg = Number(s0.dmg || 0);
       const crit = !!s0.crit;
@@ -1041,14 +1091,14 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
           ? "shoot… boss <b>DODGED</b>!"
           : "hit for <b>" + dmg + "</b>" + (crit ? " <i>(CRIT)</i>" : "") + ".";
         logEl?.insertAdjacentHTML("beforeend", `<div>▶ You ${youTxt}</div>`);
-        if (!dodge && dmg > 0) bossShakeT = 8;
+        if (!dodge && dmg > 0) bossShakeFrames = 8;
       } else {
         pHpNow = s0.p_hp ?? pHpNow;
         const bossTxt = dodge
           ? "attacks… you <b>DODGE</b>!"
           : "hits for <b>" + dmg + "</b>" + (crit ? " <i>(CRIT)</i>" : "") + ".";
         logEl?.insertAdjacentHTML("beforeend", `<div>◀ Boss ${bossTxt}</div>`);
-        if (!dodge && dmg > 0) playerShakeT = 8;
+        if (!dodge && dmg > 0) playerShakeFrames = 8;
       }
 
       if (boardEl) {
@@ -1066,10 +1116,10 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
         } catch (_) {}
       }
 
-      setTimeout(step, 500);
+      battleTimer = setTimeout(step, 500);
     }
 
-    setTimeout(step, 350);
+    battleTimer = setTimeout(step, 350);
   }
 
   // ---------- API ----------
