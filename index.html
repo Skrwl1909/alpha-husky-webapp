@@ -130,6 +130,7 @@
   transform: translateY(1px);
 }
 
+/* ✅ HERO FRAME (skin + frame overlay) — FINAL */
 .hero-frame{
   width:min(46vw, 210px);
   aspect-ratio:3/4;
@@ -141,14 +142,13 @@
   border:1px solid rgba(255,255,255,.22);
   box-shadow:0 18px 40px rgba(0,0,0,.6);
   overflow:hidden;
-  position: relative; /* potrzebne dla absolutnego overlay */
+  position: relative;
 
-  /* ✅ strojenie dopasowania ramki (0/6/10/14px) */
-  --frame-bleed: 10px;
+  /* ✅ tuning: powiększa ramkę, gdy asset ma “puste marginesy” */
+  --frame-scale: 1.28; /* spróbuj też: 1.24 / 1.34 */
 }
 
-/* ❌ usuń globalne .hero-frame img (psuło overlay) */
-/* ✅ Avatar (skin) ma wypełniać kadr */
+/* ✅ Avatar (skin) wypełnia kadr */
 .hero-frame .hero-skin{
   position: relative;
   z-index: 1;
@@ -159,18 +159,20 @@
   border-radius:inherit;
 }
 
-/* ✅ Ramka ma “siąść” idealnie: contain + bleed */
+/* ✅ Frame overlay: skalujemy (zamiast bleed), żeby ramka siadła “na zewnątrz” */
 .hero-frame .hero-frame-overlay{
   position:absolute;
-  inset: calc(-1 * var(--frame-bleed));
-  width: calc(100% + (2 * var(--frame-bleed)));
-  height: calc(100% + (2 * var(--frame-bleed)));
-  object-fit:contain;      /* ważne: nie ucinać */
+  inset: 0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
   display:block;
   pointer-events:none;
-  z-index:3;
-  border-radius:inherit;
-  transform: translateZ(0);
+
+  z-index: 10;
+  transform: scale(var(--frame-scale)) translateZ(0);
+  transform-origin: center;
+
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 
@@ -3613,6 +3615,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
