@@ -272,6 +272,71 @@
       .equip-icon-box[data-rarity="legendary"] img.item-icon{
         filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
       }
+      /* ===== OVERRIDE: EPIC/LEGENDARY RICH GLOW (slot ring + halo) ===== */
+
+.equip-hotspot{ overflow: visible !important; }
+
+/* ring + halo na slocie (działa nawet jak ikona jest ciemna) */
+.equip-hotspot::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius: inherit;
+  pointer-events:none;
+  opacity:0;           /* domyślnie OFF */
+  filter: blur(6px);
+  transition: opacity .12s ease;
+}
+
+/* EPIC */
+.equip-hotspot[data-rarity="epic"]{
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.10) inset,
+    0 0 18px rgba(190,120,255,.22),
+    0 0 34px rgba(190,120,255,.14);
+}
+.equip-hotspot[data-rarity="epic"]::after{
+  opacity:.55;
+  background:
+    radial-gradient(closest-side, rgba(190,120,255,.45), transparent 68%),
+    radial-gradient(closest-side, rgba(255,255,255,.10), transparent 72%);
+}
+
+/* LEGENDARY (gold + white halo) */
+.equip-hotspot[data-rarity="legendary"]{
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.12) inset,
+    0 0 20px rgba(255,190,90,.26),
+    0 0 44px rgba(255,190,90,.16),
+    0 0 14px rgba(255,255,255,.08);
+}
+.equip-hotspot[data-rarity="legendary"]::after{
+  opacity:.70;
+  background:
+    radial-gradient(closest-side, rgba(255,190,90,.52), transparent 66%),
+    radial-gradient(closest-side, rgba(255,255,255,.16), transparent 74%);
+}
+
+/* mocniej na samej ikonie (bo u Ciebie to background-image na .equip-icon) */
+.equip-hotspot[data-rarity="epic"] .equip-icon{
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,.10))
+    drop-shadow(0 0 16px rgba(190,120,255,.55))
+    drop-shadow(0 0 36px rgba(190,120,255,.22));
+}
+.equip-hotspot[data-rarity="legendary"] .equip-icon{
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,.18))
+    drop-shadow(0 0 18px rgba(255,190,90,.70))
+    drop-shadow(0 0 44px rgba(255,190,90,.28));
+}
+
+/* selected/equipped = jeszcze mocniej */
+.equip-hotspot.is-selected[data-rarity="epic"]::after,
+.equip-hotspot.is-equipped[data-rarity="epic"]::after{ opacity:.85; }
+
+.equip-hotspot.is-selected[data-rarity="legendary"]::after,
+.equip-hotspot.is-equipped[data-rarity="legendary"]::after{ opacity:1; }
     `;
     document.head.appendChild(style);
   }
