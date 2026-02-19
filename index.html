@@ -1393,11 +1393,17 @@ body.missions-open{
   </div>
   <div id="app" class="ui">
       <div class="topbar">
-        <div id="player">Alpha Husky</div>
-        <div class="badge faction-pill" id="faction">
-  <span id="factionTag" class="tag-badge tag-pack">PACK</span>
-  <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
-        </div>
+  <div id="player">Alpha Husky</div>
+
+  <div class="badge faction-pill" id="faction">
+    <span id="factionTag" class="tag-badge tag-pack">PACK</span>
+    <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
+  </div>
+
+  <!-- ✅ TON CONNECT placeholder (tu renderuje się button) -->
+  <div id="ton-connect" class="ton-connect"></div>
+  <div id="ton-wallet-status" class="ton-wallet-status"></div>
+      </div>
       </div>
       <div class="grid">
         <div class="hud-layout">
@@ -3680,6 +3686,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
