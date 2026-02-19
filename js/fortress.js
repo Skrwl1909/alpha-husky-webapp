@@ -887,149 +887,167 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
   }
 
   async function mountPixi() {
-    if (!stageHost) return;
-    if (pixiApp) return; // ✅ guard
+  if (!stageHost) return;
+  if (pixiApp) return; // ✅ guard
 
-    const PIXI = globalThis.PIXI;
-    if (!PIXI || !PIXI.Application) return;
+  const PIXI = globalThis.PIXI;
+  if (!PIXI || !PIXI.Application) return;
 
-    const w = Math.max(240, stageHost.clientWidth || 360);
-    const h = Math.max(180, stageHost.clientHeight || 260);
+  const w = Math.max(240, stageHost.clientWidth || 360);
+  const h = Math.max(180, stageHost.clientHeight || 260);
 
-    pixiApp = await makePixiApp(PIXI, w, h);
-    if (!pixiApp) return;
+  pixiApp = await makePixiApp(PIXI, w, h);
+  if (!pixiApp) return;
 
-    const view = pixiApp.view || pixiApp.canvas;
-    if (view) {
-      view.style.width = "100%";
-      view.style.height = "100%";
-      view.style.display = "block";
-      stageHost.appendChild(view);
-    }
-
-    // ✅ IMPORTANT: do NOT hide fallback on mount
-    // hideFallback() happens only when boss texture really loads
-
-    const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
-    pixiApp.stage.addChild(bgPanel);
-
-    // player (left)
-    pixiPlayerGroup = new PIXI.Container();
-
-    const radius = 34;
-    const pBg = _gfxCircle(PIXI, radius + 6, 0x3b82f6, 0.10);
-    const ring = new PIXI.Graphics();
-    if (typeof ring.lineStyle === "function") ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
-    pixiPlayerGroup.addChild(pBg, ring);
-
-    if (playerAvatarUrl) {
-      const pTex = pixiTextureFromUrl(PIXI, playerAvatarUrl);
-      const spr = new PIXI.Sprite(pTex);
-      spr.anchor?.set?.(0.5);
-
-      const m = new PIXI.Graphics();
-      if (typeof m.beginFill === "function") {
-        m.beginFill(0xffffff, 1);
-        m.drawCircle(0, 0, radius);
-        m.endFill();
-      } else if (typeof m.circle === "function" && typeof m.fill === "function") {
-        m.circle(0, 0, radius);
-        m.fill({ color: 0xffffff, alpha: 1 });
-      }
-      spr.mask = m;
-      pixiPlayerGroup.addChild(m, spr);
-
-      const fit = () => {
-        const w0 = spr.texture?.width || spr.texture?.orig?.width || spr.width || 1;
-        const h0 = spr.texture?.height || spr.texture?.orig?.height || spr.height || 1;
-        const s = (radius * 2) / Math.max(1, w0, h0);
-        spr.scale?.set?.(s);
-      };
-      if (spr.texture?.baseTexture?.valid) fit();
-      else spr.texture?.baseTexture?.once?.("loaded", fit);
-    } else {
-      const core = _gfxCircle(PIXI, 18, 0xffffff, 0.10);
-      pixiPlayerGroup.addChild(core);
-    }
-
-    const pTxt = new PIXI.Text("YOU", { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
-    pTxt.anchor?.set?.(0.5, 0);
-    pTxt.x = 0;
-    pTxt.y = 42;
-    pixiPlayerGroup.addChild(pTxt);
-
-    pixiPlayerGroup.x = Math.round(w * 0.22);
-    pixiPlayerGroup.y = Math.round(h * 0.55);
-    pixiApp.stage.addChild(pixiPlayerGroup);
-
-    // boss (right) — CORS loader + hide fallback only after load
-    const maxW = w * 0.42;
-    const maxH = h * 0.70;
-
-    const bTex = texFromUrlCORS(
-      PIXI,
-      bossSpriteUrl,
-      () => { hideFallback(); },         // ✅ boss loaded
-      () => { showFallback(); }          // ✅ boss failed => keep fallback
-    );
-
-    pixiBossSprite = new PIXI.Sprite(bTex || PIXI.Texture.from(BOSS_FALLBACK_URL));
-    pixiBossSprite.anchor?.set?.(0.5, 0.5);
-    pixiBossSprite.x = Math.round(w * 0.74);
-    pixiBossSprite.y = Math.round(h * 0.52);
-
-    const fitBoss = () => {
-      const bw = pixiBossSprite.texture?.width || pixiBossSprite.width || 1;
-      const bh = pixiBossSprite.texture?.height || pixiBossSprite.height || 1;
-      const sx = maxW / Math.max(1, bw);
-      const sy = maxH / Math.max(1, bh);
-      const s = Math.min(1, sx, sy);
-      pixiBossSprite.scale?.set?.(s);
-    };
-    if (pixiBossSprite.texture?.baseTexture?.valid) fitBoss();
-    else pixiBossSprite.texture?.baseTexture?.once?.("loaded", fitBoss);
-
-    pixiApp.stage.addChild(pixiBossSprite);
-
-    const bTxt = new PIXI.Text(bossLabelTxt, { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
-    bTxt.anchor?.set?.(0.5, 0);
-    bTxt.x = pixiBossSprite.x;
-    bTxt.y = pixiBossSprite.y + maxH * 0.40;
-    pixiApp.stage.addChild(bTxt);
-
-    // ticker shake
-    pixiApp.ticker.add(() => {
-      if (!pixiApp || !pixiBossSprite || !pixiPlayerGroup) return;
-
-      if (bossShakeFrames > 0) {
-        bossShakeFrames--;
-        pixiBossSprite.x += Math.random() * 6 - 3;
-        pixiBossSprite.y += Math.random() * 6 - 3;
-      } else {
-        pixiBossSprite.x = Math.round(pixiApp.renderer.width * 0.74);
-        pixiBossSprite.y = Math.round(pixiApp.renderer.height * 0.52);
-      }
-
-      if (playerShakeFrames > 0) {
-        playerShakeFrames--;
-        pixiPlayerGroup.x += Math.random() * 6 - 3;
-        pixiPlayerGroup.y += Math.random() * 6 - 3;
-      } else {
-        pixiPlayerGroup.x = Math.round(pixiApp.renderer.width * 0.22);
-        pixiPlayerGroup.y = Math.round(pixiApp.renderer.height * 0.55);
-      }
-    });
-
-    // resize listener
-    const onResize = () => {
-      if (!pixiApp || !stageHost) return;
-      const nw = Math.max(240, stageHost.clientWidth || 360);
-      const nh = Math.max(180, stageHost.clientHeight || 260);
-      try { pixiApp.renderer.resize(nw, nh); } catch (_) {}
-    };
-    window.addEventListener("resize", onResize);
-    pixiApp.__onResize = onResize;
+  const view = pixiApp.view || pixiApp.canvas;
+  if (view) {
+    view.style.width = "100%";
+    view.style.height = "100%";
+    view.style.display = "block";
+    stageHost.appendChild(view);
   }
+
+  // ✅ IMPORTANT: do NOT hide fallback on mount
+  // hideFallback() happens only when boss texture really loads (with real size)
+
+  const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
+  pixiApp.stage.addChild(bgPanel);
+
+  // player (left)
+  pixiPlayerGroup = new PIXI.Container();
+
+  const radius = 34;
+  const pBg = _gfxCircle(PIXI, radius + 6, 0x3b82f6, 0.10);
+  const ring = new PIXI.Graphics();
+  if (typeof ring.lineStyle === "function") ring.lineStyle(2, 0xffffff, 0.12).drawCircle(0, 0, radius + 2);
+  pixiPlayerGroup.addChild(pBg, ring);
+
+  if (playerAvatarUrl) {
+    const pTex = pixiTextureFromUrl(PIXI, playerAvatarUrl);
+    const spr = new PIXI.Sprite(pTex);
+    spr.anchor?.set?.(0.5);
+
+    const m = new PIXI.Graphics();
+    if (typeof m.beginFill === "function") {
+      m.beginFill(0xffffff, 1);
+      m.drawCircle(0, 0, radius);
+      m.endFill();
+    } else if (typeof m.circle === "function" && typeof m.fill === "function") {
+      m.circle(0, 0, radius);
+      m.fill({ color: 0xffffff, alpha: 1 });
+    }
+    spr.mask = m;
+    pixiPlayerGroup.addChild(m, spr);
+
+    const fit = () => {
+      const w0 = spr.texture?.width || spr.texture?.orig?.width || spr.width || 1;
+      const h0 = spr.texture?.height || spr.texture?.orig?.height || spr.height || 1;
+      const s = (radius * 2) / Math.max(1, w0, h0);
+      spr.scale?.set?.(s);
+    };
+    if (spr.texture?.baseTexture?.valid) fit();
+    else spr.texture?.baseTexture?.once?.("loaded", fit);
+  } else {
+    const core = _gfxCircle(PIXI, 18, 0xffffff, 0.10);
+    pixiPlayerGroup.addChild(core);
+  }
+
+  const pTxt = new PIXI.Text("YOU", { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
+  pTxt.anchor?.set?.(0.5, 0);
+  pTxt.x = 0;
+  pTxt.y = 42;
+  pixiPlayerGroup.addChild(pTxt);
+
+  pixiPlayerGroup.x = Math.round(w * 0.22);
+  pixiPlayerGroup.y = Math.round(h * 0.55);
+  pixiApp.stage.addChild(pixiPlayerGroup);
+
+  // =========================
+  // ✅ boss block (POINT 2) — Pixi v8 safe: scale from Image.naturalWidth/Height
+  // =========================
+  const maxW = w * 0.42;
+  const maxH = h * 0.70;
+
+  // start with something visible (fallback texture)
+  pixiBossSprite = new PIXI.Sprite(PIXI.Texture.from(BOSS_FALLBACK_URL));
+  pixiBossSprite.anchor?.set?.(0.5, 0.5);
+  pixiBossSprite.x = Math.round(w * 0.74);
+  pixiBossSprite.y = Math.round(h * 0.52);
+  pixiApp.stage.addChild(pixiBossSprite);
+
+  // load real boss image via HTMLImageElement (CORS-safe)
+  const bossImg = new Image();
+  bossImg.crossOrigin = "anonymous";
+  bossImg.decoding = "async";
+  bossImg.loading = "eager";
+
+  bossImg.onload = () => {
+    // swap texture to the real one
+    try {
+      pixiBossSprite.texture = PIXI.Texture.from(bossImg);
+    } catch (_) {}
+
+    // scale using REAL pixel size
+    const bw = bossImg.naturalWidth || bossImg.width || 1;
+    const bh = bossImg.naturalHeight || bossImg.height || 1;
+
+    const sx = maxW / Math.max(1, bw);
+    const sy = maxH / Math.max(1, bh);
+    const s = Math.min(1, sx, sy);
+
+    try { pixiBossSprite.scale?.set?.(Math.max(0.01, s)); } catch (_) {}
+
+    // ✅ only now hide fallback (boss is definitely visible)
+    hideFallback();
+  };
+
+  bossImg.onerror = () => {
+    // keep fallback visible + keep fallback sprite on canvas
+    showFallback();
+    try { pixiBossSprite.texture = PIXI.Texture.from(BOSS_FALLBACK_URL); } catch (_) {}
+  };
+
+  bossImg.src = String(bossSpriteUrl || BOSS_FALLBACK_URL);
+
+  const bTxt = new PIXI.Text(bossLabelTxt, { fontFamily: "system-ui", fontSize: 12, fill: 0xffffff, alpha: 0.85 });
+  bTxt.anchor?.set?.(0.5, 0);
+  bTxt.x = pixiBossSprite.x;
+  bTxt.y = pixiBossSprite.y + maxH * 0.40;
+  pixiApp.stage.addChild(bTxt);
+
+  // ticker shake
+  pixiApp.ticker.add(() => {
+    if (!pixiApp || !pixiBossSprite || !pixiPlayerGroup) return;
+
+    if (bossShakeFrames > 0) {
+      bossShakeFrames--;
+      pixiBossSprite.x += Math.random() * 6 - 3;
+      pixiBossSprite.y += Math.random() * 6 - 3;
+    } else {
+      pixiBossSprite.x = Math.round(pixiApp.renderer.width * 0.74);
+      pixiBossSprite.y = Math.round(pixiApp.renderer.height * 0.52);
+    }
+
+    if (playerShakeFrames > 0) {
+      playerShakeFrames--;
+      pixiPlayerGroup.x += Math.random() * 6 - 3;
+      pixiPlayerGroup.y += Math.random() * 6 - 3;
+    } else {
+      pixiPlayerGroup.x = Math.round(pixiApp.renderer.width * 0.22);
+      pixiPlayerGroup.y = Math.round(pixiApp.renderer.height * 0.55);
+    }
+  });
+
+  // resize listener
+  const onResize = () => {
+    if (!pixiApp || !stageHost) return;
+    const nw = Math.max(240, stageHost.clientWidth || 360);
+    const nh = Math.max(180, stageHost.clientHeight || 260);
+    try { pixiApp.renderer.resize(nw, nh); } catch (_) {}
+  };
+  window.addEventListener("resize", onResize);
+  pixiApp.__onResize = onResize;
+}
 
   function destroyPixi() {
     try {
