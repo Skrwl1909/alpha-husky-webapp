@@ -2273,6 +2273,19 @@ function loadScriptOnce(src) {
     document.head.appendChild(s);
   });
 }
+      // ✅ TON Wallet (load + init) — Wklej tutaj
+loadScriptOnce("js/tonwallet.js").then(() => {
+  if (!window.TON_CONNECT_UI?.TonConnectUI) {
+    console.warn("[TON] TonConnect UI CDN missing?");
+    return;
+  }
+  window.TonWallet?.init?.({
+    apiPost,
+    tg: _tg,
+    dbg: _dbg,
+    manifestUrl: location.origin + "/tonconnect-manifest.json"
+  });
+}).catch(console.warn);
 
 let _skinsLoading = null;
 
@@ -3686,6 +3699,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
