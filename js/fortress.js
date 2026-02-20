@@ -656,45 +656,6 @@ function normalizeFortressPayload(raw) {
   return url;
 }
 
-function _cleanUrl(u) {
-  const s = String(u || "").trim();
-  return s && s !== "null" && s !== "undefined" ? s : "";
-}
-
-function _looksLikeSkinUrl(u) {
-  const s = String(u || "");
-  // skiny / character composited często są ciężkie (i bywają animowane)
-  return /\/skins\//i.test(s) || /bloodmoon_/i.test(s);
-}
-
-function _cloudinaryForcePngFit(url, size = 256) {
-  const u = _cleanUrl(url);
-  if (!u) return "";
-
-  // tylko cloudinary: dorzucamy transform + wymuszamy .png na końcu
-  if (u.includes("res.cloudinary.com") && u.includes("/image/upload/")) {
-    const tr = `f_png,w_${size},h_${size},c_fit,q_auto`;
-    const parts = u.split("/image/upload/");
-    let rest = parts[1] || "";
-
-    // jeśli zaczyna się od v123... to wstawiamy transform przed wersją
-    if (!rest.startsWith("f_") && !rest.startsWith("w_") && !rest.startsWith("c_")) {
-      rest = rest.replace(/^(v\d+\/)/, `${tr}/$1`);
-      if (!rest.startsWith(tr)) rest = `${tr}/${parts[1] || ""}`;
-    }
-
-    let out = `${parts[0]}/image/upload/${rest}`;
-    // wymuś rozszerzenie png (żeby przeglądarka/engine nie wariował na webp)
-    out = out.replace(/\.(webp|gif)(\?.*)?$/i, ".png$2");
-    return out;
-  }
-
-  // poza cloudinary: jeśli to webp/gif – nie ładujemy do PIXI
-  if (/\.(webp|gif)(\?.*)?$/i.test(u)) return "";
-  return u;
-}
-
-// Ogólny helper (może zwrócić character/skin — OK do DOM, nie do PIXI)
 function getPlayerAvatarUrl(data) {
   const direct =
     data?.player?.avatar ||
@@ -702,49 +663,88 @@ function getPlayerAvatarUrl(data) {
     data?.player?.img ||
     data?.playerImg ||
     "";
-  if (direct) return _cleanUrl(direct);
+  if (direct) return cloudThumb(direct, 256);
 
   const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
-  const cand1 = [p?.characterPng, p?.character, p?.heroImg, p?.heroPng, p?.avatar, p?.avatarPng].filter(Boolean);
-  if (cand1[0]) return _cleanUrl(cand1[0]);
 
+  // prefer avatar over character/skin
+  const cand = [
+    p?.avatarPng, p?.avatar, p?.avatarUrl, p?.profileAvatar,
+    p?.characterPng, p?.character, p?.heroImg, p?.heroPng,
+  ].filter(Boolean);
+
+  if (cand[0]) return cloudThumb(cand[0], 256);
+
+  // DOM fallback (hero frame / equipped)
   const img =
     document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
     document.querySelector("#equippedRoot img, #equippedModal img");
-  if (img?.src) return _cleanUrl(img.src);
+
+  if (img?.src) return cloudThumb(img.src, 256);
+
+  // last resort: Telegram user photo (if available)
+  const tgPhoto = window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url;
+  if (tgPhoto) return String(tgPhoto);
+
   return "";
 }
 
-// Do walki: preferuj AVATAR, a nie skin/character.
-// Zwraca URL “safe dla PIXI” (png 256) albo "" (wtedy zostaje ring/DOM fallback).
 function getPlayerBattleAvatarUrl(data) {
-  // 1) jeśli backend kiedyś poda stricte battle avatar:
+  // 1) backend strict battle avatar
   const direct =
     data?.player?.battleAvatar ||
     data?.playerBattleAvatar ||
     data?.player?.avatar ||
     data?.playerAvatar ||
     "";
-  const d = _cleanUrl(direct);
-  if (d && !_looksLikeSkinUrl(d)) return _cloudinaryForcePngFit(d, 256);
+  if (direct) return cloudThumb(direct, 256);
 
-  // 2) profil z webapp — preferuj avatar fields
+  // 2) profile — avatar first
   const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
-  const prof = _cleanUrl(
-    p?.avatarPng || p?.avatar || p?.avatarUrl || p?.profileAvatar || ""
-  );
-  if (prof && !_looksLikeSkinUrl(prof)) return _cloudinaryForcePngFit(prof, 256);
 
-  // 3) DOM — szukaj czegoś co wygląda jak avatar (avatars), nie skins
-  const imgs = Array.from(document.querySelectorAll("img"));
-  const domAvatar = imgs
-    .map((im) => _cleanUrl(im?.src))
-    .find((src) => src && /\/avatars\//i.test(src) && !_looksLikeSkinUrl(src));
-  if (domAvatar) return _cloudinaryForcePngFit(domAvatar, 256);
+  const candidates = [
+    p?.avatarPng,
+    p?.avatar,
+    p?.avatarUrl,
+    p?.profileAvatar,
+    // only if no avatar:
+    p?.characterPng,
+    p?.character,
+    p?.heroImg,
+    p?.heroPng,
+  ].filter(Boolean);
 
-  // 4) last resort: NIE zwracaj skina/char do PIXI (bo rozwala WebGL)
+  if (candidates[0]) return cloudThumb(candidates[0], 256);
+
+  // 3) DOM fallback (super important)
+  const img =
+    document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
+    document.querySelector("#equippedRoot img, #equippedModal img");
+
+  if (img?.src) return cloudThumb(img.src, 256);
+
+  // last resort: Telegram user photo
+  const tgPhoto = window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url;
+  if (tgPhoto) return String(tgPhoto);
+
   return "";
 }
+
+function pixiTextureFromUrl(PIXI, url) {
+  // use the same safe thumb rule
+  const safe = cloudThumb(url, 256);
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = safe;
+    return PIXI.Texture.from(img);
+  } catch (_) {
+    return PIXI.Texture.from(safe);
+  }
+}
+
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
 function renderFortressBattle(data) {
