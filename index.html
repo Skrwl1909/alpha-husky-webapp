@@ -362,12 +362,54 @@ html.ah-modal-open #heroFrame{
     color: var(--tg-theme-button-text-color, #fff);
     border: 1px solid rgba(255,255,255,.18);
   }
-  .topbar {
-    position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center;
-    padding: calc(8px + env(safe-area-inset-top)) 12px 8px; border-radius:14px;
-    background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25)); border:1px solid var(--stroke);
-    color:#cfe7ff; font:500 14px system-ui, sans-serif;
-  }
+  .topbar{
+  position:absolute;
+  top:12px; left:12px; right:12px;
+
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:nowrap;
+
+  /* ✅ zamiast space-between (bo masz 4 elementy w środku) */
+  justify-content:flex-start;
+
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
+  border:1px solid var(--stroke);
+
+  color:#cfe7ff;
+  font:500 14px system-ui, sans-serif;
+
+  /* ✅ topbar nie blokuje klików pod spodem (hero frame) */
+  pointer-events:none;
+}
+
+/* ✅ dzieci topbara nadal klikalne */
+.topbar > *{ pointer-events:auto; }
+
+/* ✅ player po lewej, reszta po prawej */
+#player{ margin-right:auto; min-width:0; }
+    /* ✅ TonConnect nie rozpycha topbara */
+#ton-connect{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  max-width:170px;
+  overflow:hidden;
+}
+
+/* status chowamy (na mobile tylko przeszkadza) */
+#ton-wallet-status{ display:none; }
+    #ton-connect button,
+#ton-connect [data-tc-connect-button],
+#ton-connect .tc-button{
+  max-width:170px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
   .spacer { height: max(12px, env(safe-area-inset-bottom)); }
     /* === TOPBAR TAG PILL (PACK / SUPPORTER etc.) === */
@@ -3699,6 +3741,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
