@@ -654,7 +654,31 @@ function normalizeFortressPayload(raw) {
     if (img?.src) return String(img.src).trim();
     return "";
   }
+  function getPlayerBattleAvatarUrl(data) {
+  // 1) jeśli backend kiedyś poda stricte battle avatar:
+  const direct =
+    data?.player?.battleAvatar ||
+    data?.playerBattleAvatar ||
+    "";
+  if (direct) return String(direct).trim();
 
+  // 2) profil z webapp — preferuj AVATAR, nie skin/character png
+  const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
+
+  const candidates = [
+    p?.avatarPng,
+    p?.avatar,
+    p?.avatarUrl,
+    p?.profileAvatar,
+    // dopiero potem character (często ciężki / ze skinem)
+    p?.characterPng,
+    p?.character,
+    p?.heroImg,
+    p?.heroPng,
+  ].filter(Boolean);
+
+  return candidates[0] ? String(candidates[0]).trim() : "";
+}
   function pixiTextureFromUrl(PIXI, url) {
     try {
       const img = new Image();
@@ -689,7 +713,7 @@ function renderFortressBattle(data) {
       ? bossUrlFromKeyOrName(rawBossSprite)
       : String(rawBossSprite || BOSS_FALLBACK_URL);
 
-  const playerAvatarUrl = getPlayerAvatarUrl(data);
+  const playerAvatarUrl = getPlayerBattleAvatarUrl(data);
   console.log("[Fortress] playerAvatarUrl =", playerAvatarUrl);
 
   const cont = el("div", "fortress-battle");
