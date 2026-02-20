@@ -768,10 +768,8 @@ function renderFortressBattle(data) {
       ? bossUrlFromKeyOrName(rawBossSprite)
       : String(rawBossSprite || BOSS_FALLBACK_URL);
 
-  const playerAvatarUrlPixi = getPlayerBattleAvatarUrl(data);
-const playerAvatarUrlDom = playerAvatarUrlPixi || getPlayerAvatarUrl(data);
-console.log("[Fortress] playerAvatarUrlPixi =", playerAvatarUrlPixi);
-console.log("[Fortress] playerAvatarUrlDom =", playerAvatarUrlDom);
+  const playerAvatarUrl = getPlayerBattleAvatarUrl(data);
+  console.log("[Fortress] playerAvatarUrl =", playerAvatarUrl);
 
   const cont = el("div", "fortress-battle");
   cont.innerHTML = `
