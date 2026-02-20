@@ -2304,9 +2304,12 @@ body.missions-open{
 
         const init_data = window.Telegram?.WebApp?.initData || "";
 
-        tg?.MainButton?.setText?.("Quests");
-        tg?.MainButton?.onClick?.(() => { (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests(); });
-        tg?.MainButton?.show?.();
+        // ✅ Telegram MainButton OFF — używamy własnego bottom-nav / launchera
+try{
+  tg?.MainButton?.offClick?.();   // jeśli była podpięta akcja
+  tg?.MainButton?.hide?.();
+  tg?.MainButton?.setText?.("");
+}catch(_){}
 
         const DEV_DEBUG = false;
         let _busy = false;
@@ -3857,6 +3860,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
