@@ -635,34 +635,71 @@ function normalizeFortressPayload(raw) {
     return "█".repeat(fill) + "░".repeat(W - fill);
   }
 
-  function getPlayerAvatarUrl(data) {
-    const direct =
-      data?.player?.avatar ||
-      data?.playerAvatar ||
-      data?.player?.img ||
-      data?.playerImg ||
-      "";
-    if (direct) return String(direct).trim();
+  function cloudThumb(url, size = 256) {
+  url = String(url || "").trim();
+  if (!url) return "";
 
-    const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
-    const cand1 = [p?.characterPng, p?.character, p?.heroImg, p?.heroPng, p?.avatar, p?.avatarPng].filter(Boolean);
-    if (cand1[0]) return String(cand1[0]).trim();
+  // strip query
+  const q = url.indexOf("?");
+  if (q >= 0) url = url.slice(0, q);
 
-    const img =
-      document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
-      document.querySelector("#equippedRoot img, #equippedModal img");
-    if (img?.src) return String(img.src).trim();
-    return "";
+  // Cloudinary transform to safe PNG thumb
+  if (url.includes("/image/upload/")) {
+    const trans = `f_png,w_${size},h_${size},c_fit,q_auto`;
+    // avoid double-inject
+    if (url.includes(`/image/upload/${trans}/`)) return url;
+    // if already has transforms, we still prepend ours (Cloudinary will apply both; ours makes it png+small)
+    return url.replace("/image/upload/", `/image/upload/${trans}/`);
   }
-  function getPlayerBattleAvatarUrl(data) {
-  // 1) jeśli backend kiedyś poda stricte battle avatar:
+
+  // non-cloudinary: return as-is
+  return url;
+}
+
+function getPlayerAvatarUrl(data) {
+  const direct =
+    data?.player?.avatar ||
+    data?.playerAvatar ||
+    data?.player?.img ||
+    data?.playerImg ||
+    "";
+  if (direct) return cloudThumb(direct, 256);
+
+  const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
+
+  // prefer avatar over character/skin
+  const cand = [
+    p?.avatarPng, p?.avatar, p?.avatarUrl, p?.profileAvatar,
+    p?.characterPng, p?.character, p?.heroImg, p?.heroPng,
+  ].filter(Boolean);
+
+  if (cand[0]) return cloudThumb(cand[0], 256);
+
+  // DOM fallback (hero frame / equipped)
+  const img =
+    document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
+    document.querySelector("#equippedRoot img, #equippedModal img");
+
+  if (img?.src) return cloudThumb(img.src, 256);
+
+  // last resort: Telegram user photo (if available)
+  const tgPhoto = window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url;
+  if (tgPhoto) return String(tgPhoto);
+
+  return "";
+}
+
+function getPlayerBattleAvatarUrl(data) {
+  // 1) backend strict battle avatar
   const direct =
     data?.player?.battleAvatar ||
     data?.playerBattleAvatar ||
+    data?.player?.avatar ||
+    data?.playerAvatar ||
     "";
-  if (direct) return String(direct).trim();
+  if (direct) return cloudThumb(direct, 256);
 
-  // 2) profil z webapp — preferuj AVATAR, nie skin/character png
+  // 2) profile — avatar first
   const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
 
   const candidates = [
@@ -670,25 +707,43 @@ function normalizeFortressPayload(raw) {
     p?.avatar,
     p?.avatarUrl,
     p?.profileAvatar,
-    // dopiero potem character (często ciężki / ze skinem)
+    // only if no avatar:
     p?.characterPng,
     p?.character,
     p?.heroImg,
     p?.heroPng,
   ].filter(Boolean);
 
-  return candidates[0] ? String(candidates[0]).trim() : "";
+  if (candidates[0]) return cloudThumb(candidates[0], 256);
+
+  // 3) DOM fallback (super important)
+  const img =
+    document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
+    document.querySelector("#equippedRoot img, #equippedModal img");
+
+  if (img?.src) return cloudThumb(img.src, 256);
+
+  // last resort: Telegram user photo
+  const tgPhoto = window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url;
+  if (tgPhoto) return String(tgPhoto);
+
+  return "";
 }
-  function pixiTextureFromUrl(PIXI, url) {
-    try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = url;
-      return PIXI.Texture.from(img);
-    } catch (_) {
-      return PIXI.Texture.from(url);
-    }
+
+function pixiTextureFromUrl(PIXI, url) {
+  // use the same safe thumb rule
+  const safe = cloudThumb(url, 256);
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = safe;
+    return PIXI.Texture.from(img);
+  } catch (_) {
+    return PIXI.Texture.from(safe);
   }
+}
 
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
