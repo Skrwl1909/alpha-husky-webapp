@@ -362,16 +362,18 @@ html.ah-modal-open #heroFrame{
     color: var(--tg-theme-button-text-color, #fff);
     border: 1px solid rgba(255,255,255,.18);
   }
-  .topbar{
+  /* =========================
+   TOPBAR (fixed + compact)
+   ========================= */
+
+.topbar{
   position:absolute;
   top:12px; left:12px; right:12px;
 
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:10px;
   flex-wrap:nowrap;
-
-  /* ✅ zamiast space-between (bo masz 4 elementy w środku) */
   justify-content:flex-start;
 
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
@@ -389,26 +391,95 @@ html.ah-modal-open #heroFrame{
 /* ✅ dzieci topbara nadal klikalne */
 .topbar > *{ pointer-events:auto; }
 
-/* ✅ player po lewej, reszta po prawej */
-#player{ margin-right:auto; min-width:0; }
-    /* ✅ TonConnect nie rozpycha topbara */
+/* ✅ player po lewej, reszta w prawo */
+#player{
+  margin-right:auto;
+  min-width:0;
+  max-width: 32vw;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* =========================
+   FACTION PILL (TAG + META)
+   ========================= */
+#faction.faction-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  /* ✅ pozwól się lekko ścisnąć, ale nie znikaj */
+  flex: 0 1 auto;
+  min-width:0;
+}
+
+#faction .tag-badge{
+  display:inline-flex;
+  align-items:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255,255,255,.18);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.35);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+#faction .faction-meta{
+  font-size: 12px;
+  opacity: .92;
+  white-space: nowrap;
+
+  /* ✅ jak brakuje miejsca, tnij meta, ale NIE tnij taga */
+  max-width: 120px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* tag colors */
+#faction .tag-pack{ border-color: rgba(255,255,255,.18); }
+#faction .tag-supporter{ background: rgba(0,229,255,.14); border-color: rgba(0,229,255,.32); }
+#faction .tag-founder{ background: rgba(255,176,0,.14); border-color: rgba(255,176,0,.34); }
+#faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
+
+/* =========================
+   TON CONNECT (small)
+   ========================= */
 #ton-connect{
   flex:0 0 auto;
   display:flex;
   align-items:center;
-  max-width:170px;
+
+  /* ✅ twardo ograniczamy szerokość, żeby TAG miał miejsce */
+  max-width: 118px;
   overflow:hidden;
 }
 
 /* status chowamy (na mobile tylko przeszkadza) */
 #ton-wallet-status{ display:none; }
-    #ton-connect button,
+
+/* TonConnect button — kompakt */
+#ton-connect button,
 #ton-connect [data-tc-connect-button],
 #ton-connect .tc-button{
-  max-width:170px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  height: 30px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+
+  min-width: 0 !important;
+  max-width: 118px !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
 }
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
   .spacer { height: max(12px, env(safe-area-inset-bottom)); }
@@ -3740,6 +3811,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
