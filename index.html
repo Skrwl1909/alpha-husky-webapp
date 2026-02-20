@@ -3823,43 +3823,10 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
   // ".btn.equipped": () => window.Equipped?.open?.()
-  </script>
-  <!-- ====================== TON CLICK DEBUG (temporary) ====================== -->
-<script>
-(function(){
-  const dbg = document.getElementById('dbg');
-  const fmt = (el) => {
-    if (!el) return 'null';
-    const id = el.id ? '#'+el.id : '';
-    const cls = el.className ? '.'+String(el.className).trim().replace(/\s+/g,'.') : '';
-    return `<${el.tagName.toLowerCase()}>${id}${cls}`;
-  };
-  const log = (msg) => {
-    console.log('[TONDBG]', msg);
-    if (dbg) dbg.textContent = 'TONDBG: ' + msg;
-  };
-
-  function probeTonCenter(){
-    const ton = document.getElementById('ton-connect');
-    if (!ton) return log('no #ton-connect');
-    const r = ton.getBoundingClientRect();
-    const x = r.left + r.width/2;
-    const y = r.top  + r.height/2;
-    const topEl = document.elementFromPoint(x, y);
-    log('center hit = ' + fmt(topEl) + ' | ton=' + fmt(ton));
-  }
-
-  setTimeout(probeTonCenter, 600);
-  setTimeout(probeTonCenter, 1600);
-
-  document.addEventListener('pointerdown', (e) => {
-    const topEl = document.elementFromPoint(e.clientX, e.clientY);
-    log('tap hit = ' + fmt(topEl));
-  }, true);
-})();
 </script>
 </body>
 </html>
+
 
 
 
