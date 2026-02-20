@@ -156,6 +156,17 @@
         else clickLegacy(".btn.profile") || clickLegacy("button.btn.profile");
         break;
 
+        case "support":
+        // prefer moduł Support (support.js), potem fallback na legacy button
+        if (typeof window.Support?.open === "function") window.Support.open();
+        else if (typeof window.openSupport === "function") window.openSupport();
+        else if (clickLegacy(".btn.support") || clickLegacy("button.btn.support")) {}
+        else {
+          const tg = window.Telegram?.WebApp;
+          tg?.showAlert?.("Support is loading…");
+        }
+        break;
+
       case "whatsnew":
         if (typeof window.WhatsNew?.open === "function") window.WhatsNew.open();
         else clickLegacy("#btnWhatsNew") || clickLegacy(".btn.whatsnew");
@@ -312,6 +323,7 @@
     openMissions: () => openMissions(),
     openMap: () => openMap(),
     openInventory: () => openInventory(),
+    openSupport: () => routeAction("support"),
     closeAll: () => closeAllBacks(),
   };
 })();
