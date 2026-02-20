@@ -369,7 +369,6 @@ html.ah-modal-open #heroFrame{
 .topbar{
   position:absolute;
   top:12px; left:12px; right:12px;
-
   display:flex;
   align-items:center;
   gap:10px;
@@ -378,18 +377,31 @@ html.ah-modal-open #heroFrame{
 
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
   border-radius:14px;
-  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
-  border:1px solid var(--stroke);
 
+  /* background jako pseudo-element, żeby nie “zjadać” klików na dziwnych webview */
+  background: transparent;
+  border:1px solid var(--stroke);
   color:#cfe7ff;
   font:500 14px system-ui, sans-serif;
 
-  /* ✅ topbar nie blokuje klików pod spodem (hero frame) */
+  z-index: 10;          /* pewne, że jest nad resztą */
+  pointer-events:auto;  /* ✅ TON CONNECT znowu klikalny */
+}
+
+/* tło topbara */
+.topbar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
   pointer-events:none;
 }
 
-/* ✅ dzieci topbara nadal klikalne */
-.topbar > *{ pointer-events:auto; }
+.topbar > *{
+  position:relative;
+  z-index:1;
+}
 
 /* ✅ player po lewej, reszta w prawo */
 #player{
@@ -3811,6 +3823,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
 </body>
 </html>
+
 
 
 
