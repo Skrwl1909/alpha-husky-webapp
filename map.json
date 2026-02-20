@@ -34,7 +34,21 @@
       "desc": "Unstable, experimental lands of high risk and higher reward.",
       "unlock": { "type": "free" },
       "lockedReason": null
-    }
+    },
+    "shadow_layers": {
+  "id": "shadow_layers",
+  "name": "Shadow Layers",
+  "desc": "Corrupted underchain crawling with high-level threats and phantom signals.",
+  "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 8 },
+  "lockedReason": "The path is scrambled. Collect more fragments to stabilize a route."
+},
+"edge_chain": {
+  "id": "edge_chain",
+  "name": "Edge of the Chain",
+  "desc": "Reality frays. The void answers.",
+  "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 12 },
+  "lockedReason": "You’re not ready. The edge only opens when the Chain recognizes you."
+}
   },
   "fortress": {
     "enemies": {
@@ -75,6 +89,61 @@
       },
       "tags": ["loot", "chance"]
     },
+    {
+  "id": "phantom_nodes",
+  "name": "Phantom Nodes",
+  "region": "shadow_layers",
+  "x": 58,
+  "y": 34,
+  "icon": "images/map/building/phantom_nodes.png",
+  "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
+  "action": "coming_soon",
+  "buildingId": "phantom_nodes",
+  "labelOffset": { "x": -40, "y": 34 },
+  "uiHint": { "owner": "inner_howl", "state": "new" },
+  "tags": ["control","lore","future-pvp"]
+},
+{
+  "id": "blood_moon_tower",
+  "name": "Blood-Moon Tower",
+  "region": "shadow_layers",
+  "x": 66,
+  "y": 40,
+  "icon": "images/map/building/blood_moon_tower.png",
+  "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
+  "action": "coming_soon",
+  "buildingId": "blood_moon_tower",
+  "labelOffset": { "x": -55, "y": 34 },
+  "uiHint": { "owner": "rogue_byte" },
+  "tags": ["raid","lore"]
+},
+{
+  "id": "edge_of_chain",
+  "name": "Edge of the Chain",
+  "region": "edge_chain",
+  "x": 78,
+  "y": 18,
+  "icon": "images/map/building/edge_of_chain.png",
+  "desc": "Where the code frays and stars flicker like dying nodes.",
+  "action": "open_region",
+  "buildingId": "edge_of_chain",
+  "labelOffset": { "x": -40, "y": 34 },
+  "tags": ["act-gate","lore"]
+},
+{
+  "id": "oracle_void_doorway",
+  "name": "The Oracle’s Void Doorway",
+  "region": "edge_chain",
+  "x": 84,
+  "y": 12,
+  "icon": "images/map/building/void_doorway.png",
+  "desc": "A doorway not coded, not mapped. Just… waiting.",
+  "action": "coming_soon",
+  "buildingId": "oracle_void_doorway",
+  "labelOffset": { "x": -70, "y": 34 },
+  "uiHint": { "owner": "echo_wardens", "state": "new" },
+  "tags": ["story","oracle","rewrite"]
+}
     {
   "id": "alpha_network_hq",
   "name": "Alpha Network HQ",
