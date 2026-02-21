@@ -3090,6 +3090,10 @@ function isRegionUnlocked(regionId){
             const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
             const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
 
+const isActive = (ACTIVE_PIN_ID === b.id);
+btn.classList.toggle('active', isActive);
+chip.style.display = isActive ? 'block' : 'none';
+
             if (!unlocked){
               const lock = document.createElement('span');
               lock.className = 'lock-badge';
@@ -3856,6 +3860,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
