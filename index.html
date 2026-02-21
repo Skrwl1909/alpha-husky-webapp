@@ -3100,6 +3100,12 @@ function isRegionUnlocked(regionId){
             btn.addEventListener('click', () => {
               createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
               if (!unlocked) return openLocked(b);
+              // ✅ tap 1 = focus (pokaż label), tap 2 = wykonaj akcję
+          if (ACTIVE_PIN_ID !== b.id) {
+            ACTIVE_PIN_ID = b.id;
+            renderPins();
+            return;
+          }
 
               if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
@@ -3850,6 +3856,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
