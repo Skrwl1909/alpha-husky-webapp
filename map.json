@@ -143,7 +143,7 @@
   "labelOffset": { "x": -70, "y": 34 },
   "uiHint": { "owner": "echo_wardens", "state": "new" },
   "tags": ["story","oracle","rewrite"]
-}
+},
     {
   "id": "alpha_network_hq",
   "name": "Alpha Network HQ",
