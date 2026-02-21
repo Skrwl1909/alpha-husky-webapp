@@ -379,7 +379,7 @@
       "unlock": { "type": "visit_node", "node": "phantom_nodes" }
     }
   ]
-  }'
+  },
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
     "path": {
