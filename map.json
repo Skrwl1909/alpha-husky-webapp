@@ -348,6 +348,38 @@
   { "id":"p7", "from":"broken_contracts", "to":"alpha_network_hq",
     "points":[[46,55],[60,58],[74,60]] }
 ],
+  "lore": {
+  "chain": [
+    {
+      "id": "chain_intro_01",
+      "title": "Static Log — The Chain",
+      "text": "The primal wilderness of code. Every path starts with a mistake.",
+      "unlock": { "type": "free" }
+    }
+  ],
+  "edge_chain": [
+    {
+      "id": "p6_oracle_01",
+      "title": "Part 6 — The Oracle of Rugs",
+      "text": "A doorway. Not coded. Not mapped. Just… waiting.",
+      "unlock": { "type": "visit_node", "node": "edge_of_chain" }
+    },
+    {
+      "id": "p6_oracle_02",
+      "title": "$REWRITE",
+      "text": "The Chain cannot be flipped. It must be rewritten.",
+      "unlock": { "type": "visit_node", "node": "oracle_void_doorway" }
+    }
+  ],
+  "shadow_layers": [
+    {
+      "id": "p7_hash_01",
+      "title": "Part 7 — The Betrayal Hash",
+      "text": "hash: 0xD1V1D3_ME",
+      "unlock": { "type": "visit_node", "node": "phantom_nodes" }
+    }
+  ]
+  }'
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
     "path": {
