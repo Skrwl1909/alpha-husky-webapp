@@ -3076,74 +3076,98 @@ function isRegionUnlocked(regionId){
         }
 
         function renderPins(){
-          if (!DATA) return;
-          pinsEl.innerHTML = '';
-          for (const b of (DATA.nodes || [])){
-            const unlocked = isRegionUnlocked(b.region);
-            const btn = document.createElement('button');
-            btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
-            btn.style.left = b.x + '%';
-            btn.style.top  = b.y + '%';
-            btn.title = b.name + (unlocked ? '' : ' (locked)');
+  if (!DATA) return;
+  pinsEl.innerHTML = '';
 
-            const ring = document.createElement('span'); ring.className = 'ping'; btn.appendChild(ring);
-            const img = document.createElement('img'); img.src = b.icon; img.alt = b.name; btn.appendChild(img);
-            const chip = document.createElement('div'); chip.className = 'chip'; chip.textContent = b.name; btn.appendChild(chip);
+  for (const b of (DATA.nodes || [])){
+    const unlocked = isRegionUnlocked(b.region);
 
-const isActive = (ACTIVE_PIN_ID === b.id);
-btn.classList.toggle('active', isActive);
-chip.style.display = isActive ? 'block' : 'none';
+    const btn = document.createElement('button');
+    btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
+    btn.style.left = b.x + '%';
+    btn.style.top  = b.y + '%';
+    btn.title = b.name + (unlocked ? '' : ' (locked)');
 
-            if (!unlocked){
-              const lock = document.createElement('span');
-              lock.className = 'lock-badge';
-              lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
-              btn.appendChild(lock);
-            }
+    const ring = document.createElement('span');
+    ring.className = 'ping';
+    btn.appendChild(ring);
 
-            btn.addEventListener('click', () => {
-              createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
-              if (!unlocked) return openLocked(b);
-              // ✅ tap 1 = focus (pokaż label), tap 2 = wykonaj akcję
-          if (ACTIVE_PIN_ID !== b.id) {
-            ACTIVE_PIN_ID = b.id;
-            renderPins();
-            return;
-          }
+    const img = document.createElement('img');
+    img.src = b.icon;
+    img.alt = b.name;
+    img.onerror = () => { img.style.display = 'none'; btn.classList.add('no-icon'); };
+    btn.appendChild(img);
 
-              if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = b.name;
+    btn.appendChild(chip);
 
-              if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-                return window.Fortress.open();
-              }
+    // ✅ focus: active class + show only 1 chip
+    const isActive = (ACTIVE_PIN_ID === b.id);
+    btn.classList.toggle('active', isActive);
+    chip.style.display = isActive ? 'block' : 'none';
 
-              if ((b.id === 'testnet_wastes') ||
-                  (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-                if (window.Dojo?.open) return window.Dojo.open();
-              }
-              
-              if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
-            return window.Shop?.open?.();
-          }
-             if (
-  b.action === "open_forge" ||
-  b.id === "vault_forge" ||
-  (b.gameplay && b.gameplay.type === "forge")
-) {
-  const bid = b.buildingId || b.id || "forge";
-  return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
-}
+    if (!unlocked){
+      const lock = document.createElement('span');
+      lock.className = 'lock-badge';
+      lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
+      btn.appendChild(lock);
+    }
 
-              if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+    btn.addEventListener('click', () => {
+      createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
+      if (!unlocked) return openLocked(b);
 
-              const reg = DATA && DATA.regions && DATA.regions[b.region];
-              if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-              return openRegion(b.region);
-            });
+      // ✅ tap 1 = focus, tap 2 = action
+      if (ACTIVE_PIN_ID !== b.id) {
+        ACTIVE_PIN_ID = b.id;
+        renderPins();
+        return;
+      }
 
-            pinsEl.appendChild(btn);
-          }
-          resolveLabelCollisions();
+      // ✅ lore-only pins
+      if (b.action === "coming_soon") {
+        const bid = b.buildingId || b.id;
+        return openBuilding(bid, b.name, b.desc);
+      }
+
+      if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
+
+      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
+        return window.Fortress.open();
+      }
+
+      if ((b.id === 'testnet_wastes') ||
+          (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
+        if (window.Dojo?.open) return window.Dojo.open();
+      }
+
+      if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
+        return window.Shop?.open?.();
+      }
+
+      if (
+        b.action === "open_forge" ||
+        b.id === "vault_forge" ||
+        (b.gameplay && b.gameplay.type === "forge")
+      ) {
+        const bid = b.buildingId || b.id || "forge";
+        return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
+      }
+
+      if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+
+      const reg = DATA && DATA.regions && DATA.regions[b.region];
+      if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
+      return openRegion(b.region);
+    });
+
+    pinsEl.appendChild(btn);
+  }
+
+  // przy focus mode kolizje są mniej ważne, ale może zostać
+  resolveLabelCollisions();
         }
 
         const canvas = document.getElementById('particlesCanvas');
@@ -3860,6 +3884,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
