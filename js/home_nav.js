@@ -124,6 +124,11 @@
       openShareSheet();
       return;
     }
+    if (A === "support") {
+  closeBack("hubBack");
+  openBack("supportBack");
+  return;
+    }
 
     switch (A) {
       case "shop":
