@@ -267,6 +267,7 @@
     wireBackdropClose("hubBack");
     wireBackdropClose("charBack");
     wireBackdropClose("shareBack");
+    wireBackdropClose("supportBack");
 
     wireCloseButtons();
     wireShareButtons();
