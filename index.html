@@ -1749,6 +1749,34 @@ body.missions-open{
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
       </div>
     </div>
+    <!-- ✅ Support Sheet -->
+<div id="supportBack" class="ah-back" style="display:none">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support">
+    <div class="ah-panel-hd">
+      <div class="ah-title">Support</div>
+      <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
+    </div>
+
+    <div class="ah-actions" style="gap:10px">
+      <button class="ah-action" type="button" data-support-tier="supporter">
+        ⭐ Supporter — frame + tag
+      </button>
+      <button class="ah-action" type="button" data-support-tier="patron">
+        💎 Patron — frame + tag
+      </button>
+
+      <!-- Founder raczej admin/self-claim z backendu -->
+      <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
+        🔥 Founder (admin)
+      </button>
+    </div>
+
+    <div style="opacity:.85;font-size:12px;line-height:1.35;margin-top:10px">
+      Purchase will unlock a topbar tag + frame (Supporter / Patron).  
+      Payment will be handled via Telegram (Stars) once backend is wired.
+    </div>
+  </div>
+</div>
 
    <!-- Region Sheet modal -->
 <div class="sheet-back region-sheet" id="regionBack">
@@ -3898,6 +3926,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
