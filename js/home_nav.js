@@ -16,7 +16,7 @@
   }
 
   function anyOurSheetOpen() {
-    return ["hubBack", "charBack", "shareBack"].some((id) => {
+    return ["hubBack", "charBack", "shareBack", "supportBack"].some((id) => {
       const el = document.getElementById(id);
       return el && el.style.display !== "none" && el.dataset.open === "1";
     });
