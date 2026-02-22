@@ -2280,6 +2280,7 @@ function closeFaqModal(){
           referrals: ()=>window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click(),
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
           profile:   ()=>document.querySelector('.btn.profile')?.click(),
+          faq: () => openFaqModal(),
           whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
           feed:      ()=>document.querySelector('.btn.feed')?.click(),
           share:     ()=>show(shareBack),
@@ -3972,6 +3973,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
