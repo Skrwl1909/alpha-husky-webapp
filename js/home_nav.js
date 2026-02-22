@@ -51,7 +51,7 @@
   }
 
   function closeAllBacks() {
-    ["hubBack", "charBack", "shareBack"].forEach(closeBack);
+    ["hubBack", "charBack", "shareBack", "supportBack"].forEach(closeBack);
     setBodyLock(false);
   }
 
