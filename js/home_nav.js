@@ -7,7 +7,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  const IS_OUR_SHEET = (id) => id === "hubBack" || id === "charBack" || id === "shareBack";
+  const IS_OUR_SHEET = (id) => id === "hubBack" || id === "charBack" || id === "shareBack" || id === "supportBack";
 
   function setBodyLock(on) {
     document.body.classList.toggle("ah-sheet-open", !!on);
