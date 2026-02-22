@@ -3949,6 +3949,50 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
   <script src="/js/arena.js?v=WEBAPP_VER"></script>
   <script src="/js/home_nav.js?v=WEBAPP_VER"></script>
+  
+  <!-- SUPPORT (Stars) -->
+  <script src="/js/support.js?v=WEBAPP_VER"></script>
+  <script>
+    (function () {
+      function getApiPost(tg){
+        return window.apiPost || window.S?.apiPost || window.AH?.apiPost || (async (path, data) => {
+          const init_data = tg?.initData || "";
+          const url = (window.API_BASE || "") + path;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
+            },
+            body: JSON.stringify({ init_data, ...(data || {}) })
+          });
+          return res.json();
+        });
+      }
+
+      function tryInitSupport(){
+        if (!window.Support || window.__supportInited) return;
+
+        const tg = window.Telegram?.WebApp || null;
+        const apiPost = getApiPost(tg);
+
+        window.Support.init({
+          tg,
+          apiPost,
+          dbg: !!window.DBG
+        });
+
+        window.__supportInited = true;
+        console.log("Support initialized ✅");
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", tryInitSupport, { once: true });
+      } else {
+        tryInitSupport();
+      }
+    })();
+  </script>
 
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
@@ -3987,6 +4031,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
