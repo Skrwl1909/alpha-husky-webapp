@@ -122,6 +122,40 @@
   display:flex;flex-direction:column;
   min-height:0;
 }
+/* ✅ KLUCZ: battle layout musi być flex-column, żeby fb-main dostało ograniczoną wysokość */
+#fortress-modal .fortress-battle{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+/* --- Battle modal main scroll container --- */
+.fb-main{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden; /* ✅ scroll tylko w logu */
+  padding-bottom:8px;
+}
+
+/* ✅ log ma własny scroll (TG WebView safe) */
+#fb-log{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+
+  padding-right:2px;
+}
 
 .fx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .fx-title{font-weight:800;letter-spacing:.2px}
