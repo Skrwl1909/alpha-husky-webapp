@@ -1525,6 +1525,9 @@ body.missions-open{
   .faq-footer{ display:flex; justify-content:space-between; align-items:center; padding:.6rem 1rem; border-top:1px solid rgba(255,255,255,.08); }
   .faq-copylink{ border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#eaeaea; padding:.4rem .6rem; border-radius:10px; cursor:pointer; }
   .faq-hint{ color:#9aa; font-size:.85rem; }
+    /* hide legacy floating buttons in Telegram WebApp */
+body.is-tg #fabFaq{ display:none !important; }
+body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
 </head>
 <body>
@@ -3983,6 +3986,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
