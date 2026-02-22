@@ -2220,36 +2220,46 @@ body.missions-open{
   document.querySelector('.btn.skins')?.click();
 }
         function openFaqModal(){
-  // schowaj character sheet
+  // 1) schowaj character sheet
   const charBack = document.getElementById("charBack");
   if (charBack && charBack.style.display !== "none"){
     charBack.style.display = "none";
     try { window.navClose?.(charBack); } catch(_) {}
   }
 
-  // schowaj hub
+  // 2) schowaj hub
   const hubBack = document.getElementById("hubBack");
   if (hubBack && hubBack.style.display !== "none"){
     hubBack.style.display = "none";
     try { window.navClose?.(hubBack); } catch(_) {}
   }
 
+  // 3) pokaż FAQ modal (hard show)
   const m = document.getElementById("faqModal");
-  if (!m) return;
+  if (!m) { console.warn("FAQ: missing #faqModal"); return; }
+
   m.hidden = false;
+  m.removeAttribute("hidden");   // na wypadek gdyby atrybut został
+  m.style.display = "flex";      // na wypadek konfliktu CSS (display:none)
+  m.style.zIndex = "100000";     // nad hub/nav/innymi modalami
+
   document.body.classList.add("ah-modal-open");
 
-  // focus w search (nice UX)
+  // 4) focus w search (nice UX)
   try { document.getElementById("faqSearch")?.focus?.(); } catch(_) {}
 }
 
 function closeFaqModal(){
   const m = document.getElementById("faqModal");
   if (!m) return;
+
   m.hidden = true;
+  m.setAttribute("hidden", "");  // spójnie z HTML
+  m.style.display = "";          // wróć do CSS
+  m.style.zIndex = "";           // wróć do CSS
+
   document.body.classList.remove("ah-modal-open");
 }
-
 // close handlers (backdrop + X + ESC)
 (function wireFaqModal(){
   const m = document.getElementById("faqModal");
@@ -3973,6 +3983,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
