@@ -2219,6 +2219,51 @@ body.missions-open{
   // fallback: stary przycisk
   document.querySelector('.btn.skins')?.click();
 }
+        function openFaqModal(){
+  // schowaj character sheet
+  const charBack = document.getElementById("charBack");
+  if (charBack && charBack.style.display !== "none"){
+    charBack.style.display = "none";
+    try { window.navClose?.(charBack); } catch(_) {}
+  }
+
+  // schowaj hub
+  const hubBack = document.getElementById("hubBack");
+  if (hubBack && hubBack.style.display !== "none"){
+    hubBack.style.display = "none";
+    try { window.navClose?.(hubBack); } catch(_) {}
+  }
+
+  const m = document.getElementById("faqModal");
+  if (!m) return;
+  m.hidden = false;
+  document.body.classList.add("ah-modal-open");
+
+  // focus w search (nice UX)
+  try { document.getElementById("faqSearch")?.focus?.(); } catch(_) {}
+}
+
+function closeFaqModal(){
+  const m = document.getElementById("faqModal");
+  if (!m) return;
+  m.hidden = true;
+  document.body.classList.remove("ah-modal-open");
+}
+
+// close handlers (backdrop + X + ESC)
+(function wireFaqModal(){
+  const m = document.getElementById("faqModal");
+  if (!m) return;
+
+  m.addEventListener("click", (e)=>{
+    const t = e.target;
+    if (t && t.matches("[data-close]")) closeFaqModal();
+  });
+
+  document.addEventListener("keydown", (e)=>{
+    if (e.key === "Escape" && !m.hidden) closeFaqModal();
+  });
+})();
 
         const actionMap = {
           // bottom nav
@@ -3927,6 +3972,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
