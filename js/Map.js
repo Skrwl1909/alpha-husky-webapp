@@ -77,49 +77,77 @@
       pinEl.appendChild(badge);
     }
   }
+  const CODE = { rogue_byte:"RB", echo_wardens:"EW", pack_burners:"PB", inner_howl:"IH" };
+const CLS  = { rogue_byte:"f-rb", echo_wardens:"f-ew", pack_burners:"f-pb", inner_howl:"f-ih" };
+const iconUrl = (owner) => `images/ui/factions/${owner}_color.svg`;
 
-  function setLeader(pinEl, factionKey, { contested = false } = {}) {
-    ensureLevel1(pinEl);
+function esc(s){
+  return String(s || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
 
-    pinEl.classList.remove("f-rb", "f-ew", "f-pb", "f-ih", "is-contested");
-    if (contested) pinEl.classList.add("is-contested");
+  function setLeader(pinEl, owner, opts) {
+  ensureCss();
 
-    const f = FACTIONS[factionKey];
-    const badge = pinEl.querySelector(".pin-badge");
-    if (!f) {
-      if (badge) badge.textContent = "";
-      return;
-    }
-    pinEl.classList.add(f.cls);
-    if (badge) badge.textContent = f.code;
+  const chip = pinEl.querySelector(".chip");
+  if (!chip) return;
+
+  const name = pinEl.dataset.nodeName || chip.textContent || "";
+  const contested = !!(opts && opts.contested);
+
+  // ✅ contested hook (puls z CSS)
+  pinEl.classList.toggle("is-contested", contested);
+
+  // no owner → sama nazwa
+  if (!owner) {
+    chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
+    return;
+  }
+
+  const code = CODE[owner] || "";
+  const cls  = CLS[owner] || "";
+
+  chip.innerHTML = `
+    <span class="chip-faction ${cls}">
+      <img src="${iconUrl(owner)}" alt="${esc(owner)}" style="width:12px;height:12px;display:block" />
+    </span>
+    <span class="chip-name">
+      ${esc(name)}${code ? ` • ${code}` : ""}${contested ? ` <span class="chip-warn">⚠</span>` : ""}
+    </span>
+  `;
+
+  // fallback gdy brakuje pliku
+  const img = chip.querySelector("img");
+  if (img) img.onerror = () => { img.style.display = "none"; };
   }
 
   // Call this during pin creation
   function decoratePin(pinEl, node) {
-    ensureCss();
-    ensureLevel1(pinEl);
+  ensureCss();
+  ensureLevel1(pinEl);
 
-    // link pin -> node id (useful later for backend state)
-    if (node?.id) pinEl.dataset.nodeId = node.id;
-    if (node?.buildingId) pinEl.dataset.buildingId = node.buildingId;
+  if (node?.id) pinEl.dataset.nodeId = node.id;
+  if (node?.buildingId) pinEl.dataset.buildingId = node.buildingId;
 
-    // Level 1 uses map.json uiHint as preview/placeholder:
-    const owner = node?.uiHint?.owner || null;
-    const st = (node?.uiHint?.state || "").toLowerCase();
-    const contested = st === "contested" || st === "war" || st === "hot";
-    setLeader(pinEl, owner, { contested });
+  // ✅ żeby setLeader znał nazwę bez dostępu do `node`
+  if (node?.name) pinEl.dataset.nodeName = node.name;
+
+  const owner = node?.uiHint?.owner || null;
+  const st = (node?.uiHint?.state || "").toLowerCase();
+  const contested = st === "contested" || st === "war" || st === "hot";
+  setLeader(pinEl, owner, { contested });
   }
-
   // Later: apply real leaders from backend state (optional)
   // leadersMap: { [nodeId]: { leaderFaction, contested } }
   function applyLeaders(leadersMap) {
-    if (!leadersMap) return;
-    document.querySelectorAll(".map-pin[data-node-id]").forEach((pin) => {
-      const id = pin.dataset.nodeId;
-      const info = leadersMap[id];
-      if (!info) return;
-      setLeader(pin, info.leaderFaction || null, { contested: !!info.contested });
-    });
+  if (!leadersMap) return;
+  document.querySelectorAll(".hotspot[data-node-id]").forEach((pin) => {
+    const id = pin.dataset.nodeId;
+    const info = leadersMap[id];
+    if (!info) return;
+    setLeader(pin, info.leaderFaction || null, { contested: !!info.contested });
+  });
   }
 
   function init() {
