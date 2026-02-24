@@ -4,52 +4,57 @@
   let _apiPost = null, _tg = null, _dbg = false;
   let _leadersMap = null;
 
-   // --- faction memory (front-only) ---
-  let _faction = (localStorage.getItem("ah_faction") || "").toLowerCase();
+// --- faction memory (front-only) ---
+let _faction = "";
+try { _faction = (localStorage.getItem("ah_faction") || "").toLowerCase(); } catch(_) {}
 
-  function fmtSec(sec){
-    sec = Math.max(0, parseInt(sec || 0, 10) || 0);
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${String(s).padStart(2,"0")}`;
-  }
+function setFaction(f){
+  _faction = String(f || "").toLowerCase();
+  try { localStorage.setItem("ah_faction", _faction); } catch(_) {}
+}
 
-  function tgPickFaction(){
-    return new Promise((resolve) => {
-      const tg = _tg || window.Telegram?.WebApp || null;
+function fmtSec(sec){
+  sec = Math.max(0, parseInt(sec || 0, 10) || 0);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
 
-      // Telegram popup
-      if (tg?.showPopup) {
-        tg.showPopup({
-          title: "Choose faction",
-          message: "Pick your faction for Influence actions.",
-          buttons: [
-            { id:"rb", text:"RB", type:"default" },
-            { id:"ew", text:"EW", type:"default" },
-            { id:"pb", text:"PB", type:"default" },
-            { id:"ih", text:"IH", type:"default" },
-            { id:"x",  text:"Cancel", type:"destructive" },
-          ]
-        }, (id) => resolve((id || "").toLowerCase()));
-        return;
-      }
+function tgPickFaction(){
+  return new Promise((resolve) => {
+    const tg = _tg || window.Telegram?.WebApp || null;
 
-      // fallback prompt
-      const v = (window.prompt("Choose faction: rb / ew / pb / ih", "rb") || "").trim().toLowerCase();
-      resolve(v);
-    });
-  }
+    // Telegram popup
+    if (tg?.showPopup) {
+      tg.showPopup({
+        title: "Choose faction",
+        message: "Pick your faction for Influence actions.",
+        buttons: [
+          { id:"rb", text:"RB", type:"default" },
+          { id:"ew", text:"EW", type:"default" },
+          { id:"pb", text:"PB", type:"default" },
+          { id:"ih", text:"IH", type:"default" },
+          { id:"x",  text:"Cancel", type:"destructive" },
+        ]
+      }, (id) => resolve((id || "").toLowerCase()));
+      return;
+    }
 
-  async function ensureFaction(){
-    if (_faction && ["rb","ew","pb","ih"].includes(_faction)) return _faction;
+    // fallback prompt
+    const v = (window.prompt("Choose faction: rb / ew / pb / ih", "rb") || "").trim().toLowerCase();
+    resolve(v);
+  });
+}
 
-    const f = await tgPickFaction();
-    if (!["rb","ew","pb","ih"].includes(f)) return "";
+async function ensureFaction(){
+  if (["rb","ew","pb","ih"].includes(_faction)) return _faction;
 
-    _faction = f;
-    try { localStorage.setItem("ah_faction", _faction); } catch(_){}
-    return _faction;
-  }
+  const picked = await tgPickFaction();
+  if (!["rb","ew","pb","ih"].includes(picked)) return "";
+
+  setFaction(picked);
+  return _faction;
+}
   
   function rid(prefix="inf") {
     return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
