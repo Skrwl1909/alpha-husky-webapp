@@ -187,53 +187,103 @@
   }
 
   async function refreshLeaders(applyToMap = true) {
-    if (!_apiPost) return;
-    try {
-      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
-      const ok = r?.ok !== false;
-      const leaders = r?.leadersMap || r?.data?.leadersMap || null;
-      if (ok && leaders) {
-        _leadersMap = leaders;
-        if (applyToMap) {
-          try { window.AHMap?.applyLeaders?.(leaders); } catch(_) {}
-        }
+  if (!_apiPost) return;
+  try {
+    const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
+    const ok = r?.ok !== false;
+    const leaders =
+      r?.leadersMap ||
+      r?.leaders_map ||
+      r?.data?.leadersMap ||
+      r?.data?.leaders_map ||
+      null;
+
+    if (ok && leaders) {
+      _leadersMap = leaders;
+
+      if (applyToMap) {
+        try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
+        // ✅ ensure UI refresh even if applyLeaders doesn't re-render pins
+        try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
       }
-    } catch (e) {
-      if (_dbg) console.warn("refreshLeaders failed", e);
     }
+  } catch (e) {
+    if (_dbg) console.warn("refreshLeaders failed", e);
   }
+}
 
-  async function doPatrol(nodeId) {
-    if (!_apiPost) return;
-    const btn = document.getElementById("infPatrolBtn");
-    if (btn) btn.disabled = true;
+async function doPatrol(nodeId) {
+  if (!_apiPost) return;
+  const btn = document.getElementById("infPatrolBtn");
+  if (btn) btn.disabled = true;
 
-    try {
-      const r = await _apiPost("/webapp/influence/action", {
-        nodeId,
-        action: "patrol",
-        run_id: rid("patrol")
-      });
+  try {
+    const r = await _apiPost("/webapp/influence/action", {
+      nodeId,
+      action: "patrol",
+      run_id: rid("patrol"),
+    });
 
-      if (!r?.ok) {
-        if (r?.reason === "COOLDOWN") {
-          toast(`Cooldown: ${r.cooldownLeftSec}s`);
-        } else {
-          toast(r?.reason || "Patrol failed");
-        }
-        return;
+    if (!r?.ok) {
+      if (r?.reason === "COOLDOWN") {
+        toast(`Cooldown: ${r.cooldownLeftSec}s`);
+      } else {
+        toast(r?.reason || "Patrol failed");
       }
-
-      toast(`+${r.gain} influence`);
-      if (r?.leadersMap) {
-        _leadersMap = r.leadersMap;
-        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch(_) {}
-        paintLeader(nodeId);
-      }
-    } finally {
-      if (btn) btn.disabled = false;
+      return;
     }
+
+    toast(`+${r.gain} influence`);
+
+    const leaders = r?.leadersMap || r?.leaders_map || null;
+    if (leaders) {
+      _leadersMap = leaders;
+      try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
+      try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+      try { paintLeader(nodeId); } catch (_) {}
+    }
+  } finally {
+    if (btn) btn.disabled = false;
   }
+}
+
+async function doDonate(nodeId) {
+  if (!_apiPost) return;
+
+  const asset = (document.getElementById("infAsset")?.value || "scrap").trim();
+  const amount = parseInt(document.getElementById("infAmount")?.value || "0", 10) || 0;
+  if (amount <= 0) return toast("Bad amount");
+
+  const btn = document.getElementById("infDonateBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    const r = await _apiPost("/webapp/influence/action", {
+      nodeId,
+      action: "donate",
+      asset,
+      amount,
+      run_id: rid("donate"),
+    });
+
+    if (!r?.ok) {
+      toast(r?.reason || "Donate failed");
+      return;
+    }
+
+    toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
+
+    const leaders = r?.leadersMap || r?.leaders_map || null;
+    if (leaders) {
+      _leadersMap = leaders;
+      try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
+      try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+      try { paintLeader(nodeId); } catch (_) {}
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
   async function doDonate(nodeId) {
     if (!_apiPost) return;
