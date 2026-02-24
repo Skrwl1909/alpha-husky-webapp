@@ -2709,6 +2709,7 @@ window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });     
  
       // ✅ PATCH A — auto-open missions when ?section=missions
 (function autoOpenSection() {
@@ -4053,6 +4054,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="/js/arena.js?v=WEBAPP_VER"></script>
   <!-- MAP (Level 1: faction ring + badge) -->
 <script src="js/map.js?v=WEBAPP_VER"></script>
+<script src="js/influence.js?v=WEBAPP_VER"></script>
 <script>
   (function () {
     function tryInitMap() {
@@ -4152,6 +4154,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
