@@ -3360,7 +3360,7 @@ function isRegionUnlocked(regionId){
     // ✅ CHIP musi być w DOM zanim decoratePin odpali
     const chip = document.createElement('div');
     chip.className = 'chip';
-    chip.textContent = b.name || '';            // ✅ fallback treści (żeby nie było pustej pigułki)
+    chip.textContent = b.name || ''; // fallback treści
     btn.appendChild(chip);
 
     // ✅ focus: active class + show only 1 chip
@@ -3386,8 +3386,6 @@ function isRegionUnlocked(regionId){
       e.stopPropagation();
 
       const id = String(b.id || "");
-      const bid_dbg = String(b.buildingId || b.id || "");
-const tap = (String(ACTIVE_PIN_ID || "") !== id) ? 1 : 2;
 
       // (opcjonalnie) burst / wibracja jeśli masz
       try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
@@ -3400,32 +3398,22 @@ const tap = (String(ACTIVE_PIN_ID || "") !== id) ? 1 : 2;
       }
 
       // ✅ TAP 2 = action
-const bid = String(b.buildingId || b.id || "");
+      const bid = String(b.buildingId || b.id || "");
 
-// ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower (always open)
-if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
-  const title = (b.name || bid).replaceAll("_", " ");
-  return window.Influence?.open?.(bid, title);
-}
+      // ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower (always open, even if locked)
+      if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
+        const title = (b.name || bid).replaceAll("_", " ");
+        if (window.Influence?.open) return window.Influence.open(bid, title);
+        console.warn("[Influence] module not ready");
+        return openBuilding(bid, b.name, b.desc); // fallback
+      }
 
-if (!unlocked) return openLocked(b);
+      if (!unlocked) return openLocked(b);
 
       // ✅ lore-only pins
-if (b.action === "coming_soon") {
-  const bid = String(b.buildingId || b.id || "");
-  console.log("[PIN]", { id: b.id, buildingId: b.buildingId, action: b.action, bid });
-
-  // ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower
-  if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
-    const title = (b.name || bid).replaceAll("_", " ");
-    if (window.Influence?.open) return window.Influence.open(bid, title);
-    console.warn("[Influence] module not ready");
-    // fallback (gdyby module nie był załadowany)
-    return openBuilding(bid, b.name, b.desc);
-  }
-
-  return openBuilding(bid, b.name, b.desc);
-}
+      if (b.action === "coming_soon") {
+        return openBuilding(bid, b.name, b.desc);
+      }
 
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
@@ -3447,8 +3435,8 @@ if (b.action === "coming_soon") {
         b.id === "vault_forge" ||
         (b.gameplay && b.gameplay.type === "forge")
       ) {
-        const bid = b.buildingId || b.id || "forge";
-        return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
+        const forgeBid = b.buildingId || b.id || "forge";
+        return window.Forge?.open?.({ buildingId: forgeBid, name: b.name, desc: b.desc });
       }
 
       if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
@@ -3461,8 +3449,7 @@ if (b.action === "coming_soon") {
     pinsEl.appendChild(btn);
   }
 
-  // jak masz anti-collision i chcesz — możesz odkomentować
-  // resolveLabelCollisions();
+  // resolveLabelCollisions(); // jeśli używasz anti-collision
         }
 
         const canvas = document.getElementById('particlesCanvas');
@@ -4242,6 +4229,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
