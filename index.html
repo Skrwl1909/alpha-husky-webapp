@@ -754,44 +754,7 @@ html.ah-modal-open #heroFrame{
 .chip::before{
   left: 50% !important;
 }
-    /* ===== INFLUENCE: leader badge + contested ===== */
-.hotspot .leader-badge{
-  position:absolute;
-  left:-6px;
-  top:-6px;
-  z-index: 60; /* wyżej niż chip (50) */
-  min-width: 26px;
-  height: 18px;
-  padding: 0 6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .5px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(0,0,0,.55);
-  color: rgba(255,255,255,.92);
-  box-shadow: 0 8px 18px rgba(0,0,0,.35);
-  pointer-events:none;
-}
-
-/* Contested indicator */
-.hotspot.is-contested .leader-badge{
-  box-shadow: 0 0 0 2px rgba(255,190,90,.18), 0 10px 22px rgba(0,0,0,.45);
-}
-.hotspot.is-contested::after{
-  content:"⚠";
-  position:absolute;
-  right:-6px;
-  top:-6px;
-  z-index: 60;
-  font-size: 12px;
-  opacity: .95;
-  pointer-events:none;
-}
-
+    
 /* brak ikonki -> nie pokazuj broken-image */
 .hotspot.no-icon img{ display:none; }
     /* ===== AAA polish for leader ring/badge (map.js) ===== */
@@ -820,6 +783,44 @@ html.ah-modal-open #heroFrame{
 .map-pin.f-ew .pin-ring{ box-shadow:0 0 16px rgba(255,200,70,.38); }
 .map-pin.f-pb .pin-ring{ box-shadow:0 0 16px rgba(255,140,40,.38); }
 .map-pin.f-ih .pin-ring{ box-shadow:0 0 16px rgba(60,220,255,.34); }
+    /* ===== FINAL AAA: influence visuals (map.js pin-badge/pin-ring) ===== */
+.hotspot{ transition: transform .12s ease, filter .12s ease; }
+
+/* chip glass pill */
+.hotspot .chip{
+  background: rgba(8,10,14,.52);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 12px 30px rgba(0,0,0,.45);
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+/* badge readability */
+.map-pin .pin-badge{
+  text-shadow: 0 1px 0 rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.35);
+  box-shadow: 0 10px 26px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* contested: warning near badge */
+.map-pin.is-contested::after{
+  content:"⚠";
+  position:absolute;
+  right:-8px;
+  top:-8px;
+  z-index: 10;
+  font-size: 12px;
+  opacity: .95;
+  pointer-events:none;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.6));
+}
+
+/* press feedback */
+.hotspot:active{
+  transform: translate(-50%,-50%) scale(0.98);
+  filter: brightness(1.08);
+}
   </style>
     <style id="missions-hotfix">
 
@@ -4241,6 +4242,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
