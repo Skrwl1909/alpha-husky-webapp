@@ -3268,7 +3268,7 @@ chip.className = 'chip';
     // ✅ focus: active class + show only 1 chip
     const isActive = (ACTIVE_PIN_ID === b.id);
     btn.classList.toggle('active', isActive);
-    chip.style.display = isActive ? 'block' : 'none';
+    chip.style.display = isActive ? 'flex' : 'none';
 
     if (!unlocked){
       const lock = document.createElement('span');
@@ -4111,6 +4111,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
