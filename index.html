@@ -3212,6 +3212,9 @@ async function loadPlayerState() {
     if (mapBack.style.display === "flex" && DATA) {
       renderMap();
       updateUnlockProgress();
+
+      // ✅ INFLUENCE: dociągnij leaders i nałóż na mapę
+      try { await window.Influence?.refreshLeaders?.(true); } catch (e) { console.warn("leaders load failed", e); }
     }
 
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
@@ -4154,6 +4157,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
