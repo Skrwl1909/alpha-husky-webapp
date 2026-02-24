@@ -3264,37 +3264,6 @@ function isRegionUnlocked(regionId){
     const chip = document.createElement('div');
 chip.className = 'chip';
 
-// name
-const nameEl = document.createElement('span');
-nameEl.className = 'chip-name';
-nameEl.textContent = b.name;
-
-// faction + contested
-const owner = b?.uiHint?.owner;
-const st = (b?.uiHint?.state || "").toLowerCase();
-
-// ✅ tu ustawiamy classę dla pulsu contested
-btn.classList.toggle('is-contested', st === 'contested');
-
-// badge (SVG) jeśli jest owner
-if (owner && window.FACTION_META?.[owner]) {
-  const badge = document.createElement('span');
-  badge.className = `chip-faction ${window.FACTION_META[owner].cls}`;
-  badge.innerHTML = (window.FACTION_ICON_SVG?.[owner] || "");
-  chip.appendChild(badge);
-}
-
-chip.appendChild(nameEl);
-
-// contested marker
-if (st === "contested") {
-  const warn = document.createElement('span');
-  warn.className = 'chip-warn';
-  warn.textContent = '⚠';
-  chip.appendChild(warn);
-}
-
-btn.appendChild(chip);
 
     // ✅ focus: active class + show only 1 chip
     const isActive = (ACTIVE_PIN_ID === b.id);
@@ -4142,6 +4111,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
