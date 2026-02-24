@@ -3274,6 +3274,11 @@ function isRegionUnlocked(regionId){
     btn.style.top  = b.y + '%';
     btn.title = b.name + (unlocked ? '' : ' (locked)');
 
+    // ✅ dataset (map.js może to czytać)
+    btn.dataset.nodeId = String(b.id || '');
+    btn.dataset.nodeName = String(b.name || '');
+    if (b.buildingId) btn.dataset.buildingId = String(b.buildingId);
+
     const ring = document.createElement('span');
     ring.className = 'ping';
     btn.appendChild(ring);
@@ -3284,9 +3289,10 @@ function isRegionUnlocked(regionId){
     img.onerror = () => { img.style.display = 'none'; btn.classList.add('no-icon'); };
     btn.appendChild(img);
 
-    // ✅ CHIP MUSI BYĆ W DOM zanim decoratePin odpali
+    // ✅ CHIP musi być w DOM zanim decoratePin odpali
     const chip = document.createElement('div');
     chip.className = 'chip';
+    chip.textContent = b.name || '';            // ✅ fallback treści (żeby nie było pustej pigułki)
     btn.appendChild(chip);
 
     // ✅ focus: active class + show only 1 chip
@@ -3326,6 +3332,7 @@ function isRegionUnlocked(regionId){
       // ✅ TAP 2 = action
       if (!unlocked) return openLocked(b);
 
+      // ✅ lore-only pins
       if (b.action === "coming_soon") {
         const bid = b.buildingId || b.id;
         return openBuilding(bid, b.name, b.desc);
@@ -3365,7 +3372,8 @@ function isRegionUnlocked(regionId){
     pinsEl.appendChild(btn);
   }
 
-  // resolveLabelCollisions(); // zostaw wyłączone w focus-mode
+  // jak masz anti-collision i chcesz — możesz odkomentować
+  // resolveLabelCollisions();
         }
 
         const canvas = document.getElementById('particlesCanvas');
@@ -4144,6 +4152,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
