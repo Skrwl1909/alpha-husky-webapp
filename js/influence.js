@@ -261,19 +261,28 @@
 
 async function doPatrol(nodeId) {
   if (!_apiPost) return;
+
   const btn = document.getElementById("infPatrolBtn");
   if (btn) btn.disabled = true;
 
   try {
+    const faction = await ensureFaction();
+    if (!faction) return toast("Faction required.");
+
     const r = await _apiPost("/webapp/influence/action", {
       nodeId,
       action: "patrol",
+      faction,                 // ✅ FIX: required by backend
       run_id: rid("patrol"),
     });
 
     if (!r?.ok) {
       if (r?.reason === "COOLDOWN") {
-        toast(`Cooldown: ${r.cooldownLeftSec}s`);
+        toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
+      } else if (r?.reason === "NO_FACTION") {
+        _faction = "";
+        try { localStorage.removeItem("ah_faction"); } catch(_){}
+        toast("Pick faction again.");
       } else {
         toast(r?.reason || "Patrol failed");
       }
@@ -293,7 +302,6 @@ async function doPatrol(nodeId) {
     if (btn) btn.disabled = false;
   }
 }
-
 async function doDonate(nodeId) {
   if (!_apiPost) return;
 
@@ -305,16 +313,26 @@ async function doDonate(nodeId) {
   if (btn) btn.disabled = true;
 
   try {
+    const faction = await ensureFaction();
+    if (!faction) return toast("Faction required.");
+
     const r = await _apiPost("/webapp/influence/action", {
       nodeId,
       action: "donate",
+      faction,                 // ✅ FIX
       asset,
       amount,
       run_id: rid("donate"),
     });
 
     if (!r?.ok) {
-      toast(r?.reason || "Donate failed");
+      if (r?.reason === "NO_FACTION") {
+        _faction = "";
+        try { localStorage.removeItem("ah_faction"); } catch(_){}
+        toast("Pick faction again.");
+      } else {
+        toast(r?.reason || "Donate failed");
+      }
       return;
     }
 
@@ -331,41 +349,6 @@ async function doDonate(nodeId) {
     if (btn) btn.disabled = false;
   }
 }
-
-  async function doDonate(nodeId) {
-    if (!_apiPost) return;
-
-    const asset = (document.getElementById("infAsset")?.value || "scrap").trim();
-    const amount = parseInt(document.getElementById("infAmount")?.value || "0", 10) || 0;
-    if (amount <= 0) return toast("Bad amount");
-
-    const btn = document.getElementById("infDonateBtn");
-    if (btn) btn.disabled = true;
-
-    try {
-      const r = await _apiPost("/webapp/influence/action", {
-        nodeId,
-        action: "donate",
-        asset,
-        amount,
-        run_id: rid("donate")
-      });
-
-      if (!r?.ok) {
-        toast(r?.reason || "Donate failed");
-        return;
-      }
-
-      toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
-      if (r?.leadersMap) {
-        _leadersMap = r.leadersMap;
-        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch(_) {}
-        paintLeader(nodeId);
-      }
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  }
 
   Influence.init = function ({ apiPost, tg, dbg }) {
     _apiPost = apiPost;
