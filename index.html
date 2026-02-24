@@ -2171,7 +2171,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   s.src = 'js/map.js?v=' + encodeURIComponent(v || 'dev');
   s.async = false;
   s.onload = function(){
-    try { window.Map?.init?.(); } catch(e){}
+    try { window.AHMap?.init?.(); } catch(e){}
   };
   document.head.appendChild(s);
 })(window.WEBAPP_VER);
@@ -4215,6 +4215,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
