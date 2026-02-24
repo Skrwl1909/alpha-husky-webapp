@@ -3268,8 +3268,7 @@ chip.className = 'chip';
     // ✅ focus: active class + show only 1 chip
     const isActive = (ACTIVE_PIN_ID === b.id);
     btn.classList.toggle('active', isActive);
-    chip.style.display = isActive ? 'flex' : 'none';
-
+    
     if (!unlocked){
       const lock = document.createElement('span');
       lock.className = 'lock-badge';
@@ -3280,7 +3279,7 @@ chip.className = 'chip';
     btn.classList.toggle('is-locked', !unlocked);
     window.Map?.decoratePin?.(btn, b);
     btn.addEventListener('click', () => {
-  createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
+  try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
 
   // ✅ tap 1 = focus (ZAWSZE, nawet jak locked)
   if (ACTIVE_PIN_ID !== b.id) {
@@ -4111,6 +4110,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
