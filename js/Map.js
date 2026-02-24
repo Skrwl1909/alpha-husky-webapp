@@ -93,7 +93,7 @@ function esc(s){
   const chip = pinEl.querySelector(".chip");
   if (!chip) return;
 
-  const name = pinEl.dataset.nodeName || chip.textContent || "";
+  const name = pinEl.dataset.nodeName || "";
   const contested = !!(opts && opts.contested);
 
   // ✅ contested hook (puls z CSS)
