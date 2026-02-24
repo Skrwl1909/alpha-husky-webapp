@@ -3279,55 +3279,55 @@ chip.className = 'chip';
     // ✅ DODAJ TO
     btn.classList.toggle('is-locked', !unlocked);
     window.Map?.decoratePin?.(btn, b);
-    
     btn.addEventListener('click', () => {
-      createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
-      if (!unlocked) return openLocked(b);
+  createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked);
 
-      // ✅ tap 1 = focus, tap 2 = action
-      if (ACTIVE_PIN_ID !== b.id) {
-        ACTIVE_PIN_ID = b.id;
-        renderPins();
-        return;
-      }
+  // ✅ tap 1 = focus (ZAWSZE, nawet jak locked)
+  if (ACTIVE_PIN_ID !== b.id) {
+    ACTIVE_PIN_ID = b.id;
+    renderPins();
+    return;
+  }
 
-      // ✅ lore-only pins
-      if (b.action === "coming_soon") {
-        const bid = b.buildingId || b.id;
-        return openBuilding(bid, b.name, b.desc);
-      }
+  // ✅ tap 2 = action
+  if (!unlocked) return openLocked(b);
 
-      if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
+  // ✅ lore-only pins
+  if (b.action === "coming_soon") {
+    const bid = b.buildingId || b.id;
+    return openBuilding(bid, b.name, b.desc);
+  }
 
-      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-        return window.Fortress.open();
-      }
+  if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-      if ((b.id === 'testnet_wastes') ||
-          (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-        if (window.Dojo?.open) return window.Dojo.open();
-      }
+  if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
+    return window.Fortress.open();
+  }
 
-      if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
-        return window.Shop?.open?.();
-      }
+  if ((b.id === 'testnet_wastes') ||
+      (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
+    if (window.Dojo?.open) return window.Dojo.open();
+  }
 
-      if (
-        b.action === "open_forge" ||
-        b.id === "vault_forge" ||
-        (b.gameplay && b.gameplay.type === "forge")
-      ) {
-        const bid = b.buildingId || b.id || "forge";
-        return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
-      }
+  if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
+    return window.Shop?.open?.();
+  }
 
-      if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+  if (
+    b.action === "open_forge" ||
+    b.id === "vault_forge" ||
+    (b.gameplay && b.gameplay.type === "forge")
+  ) {
+    const bid = b.buildingId || b.id || "forge";
+    return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
+  }
 
-      const reg = DATA && DATA.regions && DATA.regions[b.region];
-      if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-      return openRegion(b.region);
-    });
+  if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
+  const reg = DATA && DATA.regions && DATA.regions[b.region];
+  if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
+  return openRegion(b.region);
+});
     pinsEl.appendChild(btn);
   }
 
@@ -4111,6 +4111,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
