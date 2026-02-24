@@ -100,9 +100,9 @@
   "action": "coming_soon",
   "buildingId": "phantom_nodes",
   "labelOffset": { "x": -70, "y": 34 },
-  "uiHint": { "owner": "inner_howl", "state": "new" },
+  "uiHint": { "owner": "inner_howl", "state": "contested" },
   "tags": ["control","lore","future-pvp"]
-    },
+},
 {
   "id": "blood_moon_tower",
   "name": "Blood-Moon Tower",
@@ -114,7 +114,7 @@
   "action": "coming_soon",
   "buildingId": "blood_moon_tower",
   "labelOffset": { "x": -90, "y": 34 },
-  "uiHint": { "owner": "rogue_byte" },
+  "uiHint": { "owner": "rogue_byte", "state": "contested" },
   "tags": ["raid","lore"]
 },
 {
