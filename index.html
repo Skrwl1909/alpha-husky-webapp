@@ -3300,20 +3300,23 @@ chip.className = 'chip';
     // ✅ DODAJ TO
     btn.classList.toggle('is-locked', !unlocked);
     window.Map?.decoratePin?.(btn, b);
-    btn.addEventListener('click', () => {
-  try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
+    btn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-  // ✅ tap 1 = focus (ZAWSZE, nawet jak locked)
-  if (ACTIVE_PIN_ID !== b.id) {
-    ACTIVE_PIN_ID = b.id;
+  const id = String(b.id || "");
+
+  // ✅ TAP 1 = focus ZAWSZE
+  if (String(ACTIVE_PIN_ID || "") !== id) {
+    ACTIVE_PIN_ID = id;          // zapisuj jako string
     renderPins();
     return;
   }
 
-  // ✅ tap 2 = action
+  // ✅ TAP 2 = action
   if (!unlocked) return openLocked(b);
 
-  // ✅ lore-only pins
+  // reszta Twoich akcji...
   if (b.action === "coming_soon") {
     const bid = b.buildingId || b.id;
     return openBuilding(bid, b.name, b.desc);
@@ -4132,6 +4135,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
