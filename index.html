@@ -717,8 +717,8 @@ html.ah-modal-open #heroFrame{
 
     /* ===== MAP: FOCUS LABEL MODE (1 chip at a time) ===== */
 .hotspot .chip{ display:none; }
-.hotspot.active .chip{ display:block; }
-
+.hotspot.active .chip{ display:flex; }
+    
 .hotspot.active{
   transform:translate(-50%,-50%) scale(1.06);
   z-index:4;
@@ -4110,6 +4110,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
