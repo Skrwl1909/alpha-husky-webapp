@@ -726,11 +726,33 @@ html.ah-modal-open #heroFrame{
 
 /* chip stabilnie pod pinem + ellipsis */
 .chip{
-  top: 100%;
-  margin-top: 8px;
   max-width: 58vw;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+    /* ===== CHIP FIX (must be positioned) ===== */
+.hotspot{ 
+  overflow: visible !important; 
+}
+
+.hotspot .chip{
+  position: absolute !important;
+  left: 50% !important;
+  top: calc(100% + 8px) !important;
+  transform: translateX(-50%) !important;
+
+  z-index: 50 !important;
+  pointer-events: none !important;
+
+  max-width: 58vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* arrow will now anchor correctly */
+.chip::before{
+  left: 50% !important;
 }
 
 /* brak ikonki -> nie pokazuj broken-image */
@@ -4110,6 +4132,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
