@@ -156,10 +156,10 @@ function esc(s){
     ensureCss();
   }
 
-  window.Map = {
-    init,
-    decoratePin,
-    setLeader,
-    applyLeaders,
-  };
+  window.AHMap = {
+  init,
+  decoratePin,
+  setLeader,
+  applyLeaders,
+};
 })();
