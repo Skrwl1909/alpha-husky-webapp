@@ -3268,6 +3268,7 @@ function isRegionUnlocked(regionId){
     const unlocked = isRegionUnlocked(b.region);
 
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
     btn.style.left = b.x + '%';
     btn.style.top  = b.y + '%';
@@ -3283,81 +3284,89 @@ function isRegionUnlocked(regionId){
     img.onerror = () => { img.style.display = 'none'; btn.classList.add('no-icon'); };
     btn.appendChild(img);
 
+    // ✅ CHIP MUSI BYĆ W DOM zanim decoratePin odpali
     const chip = document.createElement('div');
-chip.className = 'chip';
-
+    chip.className = 'chip';
+    btn.appendChild(chip);
 
     // ✅ focus: active class + show only 1 chip
-    const isActive = (ACTIVE_PIN_ID === b.id);
+    const isActive = String(ACTIVE_PIN_ID || "") === String(b.id || "");
     btn.classList.toggle('active', isActive);
-    
+    chip.style.display = isActive ? 'flex' : 'none';
+
     if (!unlocked){
       const lock = document.createElement('span');
       lock.className = 'lock-badge';
       lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
       btn.appendChild(lock);
     }
-    // ✅ DODAJ TO
+
+    // ✅ locked class (pod CSS)
     btn.classList.toggle('is-locked', !unlocked);
-    window.AHMap?.decoratePin?.(btn, b);
+
+    // ✅ dekoruj (frakcja / contested / itd.)
+    try { window.AHMap?.decoratePin?.(btn, b); } catch(e){ console.warn('decoratePin error', e); }
+
     btn.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
 
-  const id = String(b.id || "");
+      const id = String(b.id || "");
 
-  // ✅ TAP 1 = focus ZAWSZE
-  if (String(ACTIVE_PIN_ID || "") !== id) {
-    ACTIVE_PIN_ID = id;          // zapisuj jako string
-    renderPins();
-    return;
-  }
+      // (opcjonalnie) burst / wibracja jeśli masz
+      try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
 
-  // ✅ TAP 2 = action
-  if (!unlocked) return openLocked(b);
+      // ✅ TAP 1 = focus ZAWSZE (nawet locked)
+      if (String(ACTIVE_PIN_ID || "") !== id) {
+        ACTIVE_PIN_ID = id;   // zapisuj jako string
+        renderPins();
+        return;
+      }
 
-  // reszta Twoich akcji...
-  if (b.action === "coming_soon") {
-    const bid = b.buildingId || b.id;
-    return openBuilding(bid, b.name, b.desc);
-  }
+      // ✅ TAP 2 = action
+      if (!unlocked) return openLocked(b);
 
-  if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
+      if (b.action === "coming_soon") {
+        const bid = b.buildingId || b.id;
+        return openBuilding(bid, b.name, b.desc);
+      }
 
-  if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-    return window.Fortress.open();
-  }
+      if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-  if ((b.id === 'testnet_wastes') ||
-      (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-    if (window.Dojo?.open) return window.Dojo.open();
-  }
+      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
+        return window.Fortress.open();
+      }
 
-  if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
-    return window.Shop?.open?.();
-  }
+      if ((b.id === 'testnet_wastes') ||
+          (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
+        if (window.Dojo?.open) return window.Dojo.open();
+      }
 
-  if (
-    b.action === "open_forge" ||
-    b.id === "vault_forge" ||
-    (b.gameplay && b.gameplay.type === "forge")
-  ) {
-    const bid = b.buildingId || b.id || "forge";
-    return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
-  }
+      if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
+        return window.Shop?.open?.();
+      }
 
-  if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+      if (
+        b.action === "open_forge" ||
+        b.id === "vault_forge" ||
+        (b.gameplay && b.gameplay.type === "forge")
+      ) {
+        const bid = b.buildingId || b.id || "forge";
+        return window.Forge?.open?.({ buildingId: bid, name: b.name, desc: b.desc });
+      }
 
-  const reg = DATA && DATA.regions && DATA.regions[b.region];
-  if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-  return openRegion(b.region);
-});
+      if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
+
+      const reg = DATA && DATA.regions && DATA.regions[b.region];
+      if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
+      return openRegion(b.region);
+    });
+
     pinsEl.appendChild(btn);
   }
 
-  // przy focus mode kolizje są mniej ważne, ale może zostać
-  //resolveLabelCollisions();
-       }
+  // resolveLabelCollisions(); // zostaw wyłączone w focus-mode
+        }
 
         const canvas = document.getElementById('particlesCanvas');
         const ctx = canvas ? canvas.getContext('2d') : null;
@@ -4135,6 +4144,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
