@@ -3324,7 +3324,6 @@ function isRegionUnlocked(regionId){
       const id = String(b.id || "");
       const bid_dbg = String(b.buildingId || b.id || "");
 const tap = (String(ACTIVE_PIN_ID || "") !== id) ? 1 : 2;
-console.warn("[PIN]", { tap, id, bid: bid_dbg, action: b.action, unlocked, name: b.name });
 
       // (opcjonalnie) burst / wibracja jeśli masz
       try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
@@ -3339,8 +3338,8 @@ console.warn("[PIN]", { tap, id, bid: bid_dbg, action: b.action, unlocked, name:
       // ✅ TAP 2 = action
 const bid = String(b.buildingId || b.id || "");
 
-// ✅ INFLUENCE PILOT: allow even when locked (MVP)
-if (!unlocked && (bid === "phantom_nodes" || bid === "blood_moon_tower")) {
+// ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower (always open)
+if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
   const title = (b.name || bid).replaceAll("_", " ");
   return window.Influence?.open?.(bid, title);
 }
@@ -4179,6 +4178,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
