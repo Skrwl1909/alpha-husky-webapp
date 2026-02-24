@@ -3339,6 +3339,7 @@ function isRegionUnlocked(regionId){
       // ✅ lore-only pins
 if (b.action === "coming_soon") {
   const bid = String(b.buildingId || b.id || "");
+  console.log("[PIN]", { id: b.id, buildingId: b.buildingId, action: b.action, bid });
 
   // ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower
   if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
@@ -4167,6 +4168,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
