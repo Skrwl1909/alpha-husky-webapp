@@ -3322,6 +3322,9 @@ function isRegionUnlocked(regionId){
       e.stopPropagation();
 
       const id = String(b.id || "");
+      const bid_dbg = String(b.buildingId || b.id || "");
+const tap = (String(ACTIVE_PIN_ID || "") !== id) ? 1 : 2;
+console.warn("[PIN]", { tap, id, bid: bid_dbg, action: b.action, unlocked, name: b.name });
 
       // (opcjonalnie) burst / wibracja jeśli masz
       try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
@@ -4168,6 +4171,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
