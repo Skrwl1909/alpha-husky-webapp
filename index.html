@@ -794,6 +794,32 @@ html.ah-modal-open #heroFrame{
 
 /* brak ikonki -> nie pokazuj broken-image */
 .hotspot.no-icon img{ display:none; }
+    /* ===== AAA polish for leader ring/badge (map.js) ===== */
+.map-pin .pin-badge{
+  width: 26px;
+  height: 26px;
+  top: -11px;
+  right: -11px;
+  font-size: 11px;
+  letter-spacing: .4px;
+  background: rgba(8,10,14,.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 10px 26px rgba(0,0,0,.55);
+}
+
+.map-pin .pin-ring{
+  border-width: 2px;
+  opacity: .95;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.45));
+}
+
+/* optional: make leader pins slightly “stronger” */
+.map-pin.f-rb .pin-ring{ box-shadow:0 0 16px rgba(255,70,70,.40); }
+.map-pin.f-ew .pin-ring{ box-shadow:0 0 16px rgba(255,200,70,.38); }
+.map-pin.f-pb .pin-ring{ box-shadow:0 0 16px rgba(255,140,40,.38); }
+.map-pin.f-ih .pin-ring{ box-shadow:0 0 16px rgba(60,220,255,.34); }
   </style>
     <style id="missions-hotfix">
 
@@ -4215,6 +4241,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
