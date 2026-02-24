@@ -3337,7 +3337,15 @@ console.warn("[PIN]", { tap, id, bid: bid_dbg, action: b.action, unlocked, name:
       }
 
       // ✅ TAP 2 = action
-      if (!unlocked) return openLocked(b);
+const bid = String(b.buildingId || b.id || "");
+
+// ✅ INFLUENCE PILOT: allow even when locked (MVP)
+if (!unlocked && (bid === "phantom_nodes" || bid === "blood_moon_tower")) {
+  const title = (b.name || bid).replaceAll("_", " ");
+  return window.Influence?.open?.(bid, title);
+}
+
+if (!unlocked) return openLocked(b);
 
       // ✅ lore-only pins
 if (b.action === "coming_soon") {
@@ -4171,6 +4179,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
