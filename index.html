@@ -1678,68 +1678,52 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
-<!-- ==================== TELEGRAM ANALYTICS SDK (CLEAN) ==================== -->
+<!-- TELEGRAM ANALYTICS -->
 <script>
   function initAnalytics() {
-    console.log("🔄 [Analytics] initAnalytics()");
-
-    // Telegram ready (opcjonalne, ale OK)
-    if (window.Telegram?.WebApp?.ready) {
-      try { window.Telegram.WebApp.ready(); } catch(_) {}
-    }
-
     const ta = window.telegramAnalytics;
     if (!ta?.init) {
-      console.error("❌ [Analytics] telegramAnalytics missing");
+      console.error("❌ telegramAnalytics missing");
       return;
     }
 
-    try {
-      ta.init({
-        token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
-        appName: "the_alpha_husky"
-      });
-      console.log("✅ [Analytics] telegramAnalytics.init OK");
-    } catch (e) {
-      console.error("❌ [Analytics] init threw", e);
-      return;
-    }
+    ta.init({
+      token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
+      appName: "the_alpha_husky"
+    });
 
-    // ✅ PEWNY test (nie używa trackEvent)
-    setTimeout(taForceOneEvent, 800);
+    console.log("✅ telegramAnalytics.init OK");
+
+    // 👇 po init odpalamy pewny event app-init
+    setTimeout(taForceAppInit, 800);
   }
 
-  async function taForceOneEvent(){
+  async function taForceAppInit(){
     const uid = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-    if (!uid) {
-      console.warn("⚠️ [Analytics] No TG user id — odpal w Telegram WebApp");
-      return;
-    }
+    if (!uid) { console.warn("[TA] no uid"); return; }
 
     const sid = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
     const body = [{
-      event_name: "custom-event",
+      event_name: "app-init",
       session_id: sid,
       user_id: uid,
       app_name: "the_alpha_husky",
       client_timestamp: String(Date.now()),
-      custom_data: { name: "app_started", origin: location.origin }
+      platform: window.Telegram?.WebApp?.platform || "web",
+      url_referer: location.href,
+      locale: navigator.language
     }];
 
-    try {
-      const r = await fetch("https://tganalytics.xyz/events", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "TGA-Auth-Token": "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI="
-        },
-        body: JSON.stringify(body)
-      });
+    const r = await fetch("https://tganalytics.xyz/events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "TGA-Auth-Token": "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI="
+      },
+      body: JSON.stringify(body)
+    });
 
-      console.log("📡 [Analytics] /events:", r.status, await r.text());
-    } catch (e) {
-      console.error("❌ [Analytics] /events fetch failed", e);
-    }
+    console.log("[TA] app-init:", r.status, await r.text());
   }
 </script>
 
@@ -1749,7 +1733,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   onload="initAnalytics()"
   type="text/javascript">
 </script>
-<!-- ==================== TELEGRAM ANALYTICS SDK END ==================== -->
+<!-- /TELEGRAM ANALYTICS -->
 </head>
 <body>
   <div id="dbg">init…</div>
@@ -4301,6 +4285,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
