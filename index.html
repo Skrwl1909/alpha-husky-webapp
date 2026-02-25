@@ -715,111 +715,144 @@ html.ah-modal-open #heroFrame{
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
-    /* ===== MAP: FOCUS LABEL MODE (1 chip at a time) ===== */
-.hotspot .chip{ display:none; }
-.hotspot.active .chip{ display:flex; }
-    
-.hotspot.active{
-  transform:translate(-50%,-50%) scale(1.06);
-  z-index:4;
+    /* ==================== MAP RYWALIZACJA FRAKCYJNA v2 ==================== */
+
+/* Podstawowy pin */
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease;
+  z-index: 3;
 }
 
-/* chip stabilnie pod pinem + ellipsis */
-.chip{
-  max-width: 58vw;
+/* Hover + active */
+.map-pin:hover { transform: translate(-50%, -50%) scale(1.08); }
+.map-pin:active { transform: translate(-50%, -50%) scale(0.96); }
+
+/* ===== BADGE FRAKCJI (duży, czytelny) ===== */
+.map-pin .pin-badge {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,.8);
+  box-shadow: 0 4px 12px rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.25);
+  border: 2px solid rgba(255,255,255,.3);
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+/* Kolory frakcji */
+.map-pin.f-rb .pin-badge { background: #c62828; }   /* Rogue Byte - czerwony */
+.map-pin.f-ew .pin-badge { background: #f9a825; }   /* Echo Wardens - żółty */
+.map-pin.f-pb .pin-badge { background: #8e24aa; }   /* Pack Burners - fiolet */
+.map-pin.f-ih .pin-badge { background: #0277bd; }   /* Inner Howl - niebieski */
+
+/* Glow dla lidera */
+.map-pin.is-leader .pin-badge {
+  box-shadow: 0 0 18px currentColor, 0 4px 12px rgba(0,0,0,.6);
+  animation: leaderPulse 2s infinite;
+}
+
+/* ===== INFLUENCE BAR (pasek pod budynkiem) ===== */
+.map-pin .influence-bar {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 68px;
+  height: 6px;
+  background: rgba(255,255,255,.12);
+  border-radius: 999px;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-    /* ===== CHIP FIX (must be positioned) ===== */
-.hotspot{ 
-  overflow: visible !important; 
+  border: 1px solid rgba(255,255,255,.15);
 }
 
-.hotspot .chip{
-  position: absolute !important;
-  left: 50% !important;
-  top: calc(100% + 8px) !important;
-  transform: translateX(-50%) !important;
-
-  z-index: 50 !important;
-  pointer-events: none !important;
-
-  max-width: 58vw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* arrow will now anchor correctly */
-.chip::before{
-  left: 50% !important;
-}
-    
-/* brak ikonki -> nie pokazuj broken-image */
-.hotspot.no-icon img{ display:none; }
-    /* ===== AAA polish for leader ring/badge (map.js) ===== */
-.map-pin .pin-badge{
-  width: 26px;
-  height: 26px;
-  top: -11px;
-  right: -11px;
-  font-size: 11px;
-  letter-spacing: .4px;
-  background: rgba(8,10,14,.62);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,.22);
-  box-shadow: 0 10px 26px rgba(0,0,0,.55);
-}
-
-.map-pin .pin-ring{
-  border-width: 2px;
-  opacity: .95;
-  filter: drop-shadow(0 10px 22px rgba(0,0,0,.45));
-}
-
-/* optional: make leader pins slightly “stronger” */
-.map-pin.f-rb .pin-ring{ box-shadow:0 0 16px rgba(255,70,70,.40); }
-.map-pin.f-ew .pin-ring{ box-shadow:0 0 16px rgba(255,200,70,.38); }
-.map-pin.f-pb .pin-ring{ box-shadow:0 0 16px rgba(255,140,40,.38); }
-.map-pin.f-ih .pin-ring{ box-shadow:0 0 16px rgba(60,220,255,.34); }
-    /* ===== FINAL AAA: influence visuals (map.js pin-badge/pin-ring) ===== */
-.hotspot{ transition: transform .12s ease, filter .12s ease; }
-
-/* chip glass pill */
-.hotspot .chip{
-  background: rgba(8,10,14,.52);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 12px 30px rgba(0,0,0,.45);
-  padding: 8px 12px;
+.map-pin .influence-fill {
+  height: 100%;
+  width: 0%;
+  transition: width .4s ease;
   border-radius: 999px;
 }
 
-/* badge readability */
-.map-pin .pin-badge{
-  text-shadow: 0 1px 0 rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.35);
-  box-shadow: 0 10px 26px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.10);
+/* Kolory wypełnień */
+.map-pin.f-rb .influence-fill { background: linear-gradient(90deg, #ff5252, #c62828); }
+.map-pin.f-ew .influence-fill { background: linear-gradient(90deg, #ffd600, #f9a825); }
+.map-pin.f-pb .influence-fill { background: linear-gradient(90deg, #ba68c8, #8e24aa); }
+.map-pin.f-ih .influence-fill { background: linear-gradient(90deg, #40c4ff, #0277bd); }
+
+/* ===== TIMER (Ends in XXm) ===== */
+.map-pin .timer {
+  position: absolute;
+  bottom: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  white-space: nowrap;
+  background: rgba(0,0,0,.65);
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
 }
 
-/* contested: warning near badge */
-.map-pin.is-contested::after{
-  content:"⚠";
-  position:absolute;
-  right:-8px;
-  top:-8px;
-  z-index: 10;
-  font-size: 12px;
-  opacity: .95;
-  pointer-events:none;
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,.6));
+.map-pin .timer.low { color: #ff5252; animation: timerPulse 1.2s infinite; }
+
+/* ===== CONTESTED RING ===== */
+.map-pin.is-contested::after {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border: 3px solid #ff9800;
+  border-radius: 50%;
+  opacity: 0.75;
+  animation: contestedRing 1.8s linear infinite;
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* press feedback */
-.hotspot:active{
-  transform: translate(-50%,-50%) scale(0.98);
-  filter: brightness(1.08);
+/* ===== BONUS ICON (ikona aktualnego bonusu) ===== */
+.map-pin .bonus-icon {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.7));
+  z-index: 11;
+}
+
+/* Animacje */
+@keyframes leaderPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes contestedRing {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Dodatkowe efekty */
+.map-pin.is-leader {
+  filter: brightness(1.12) saturate(1.15);
 }
   </style>
     <style id="missions-hotfix">
@@ -4285,6 +4318,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
