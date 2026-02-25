@@ -1678,61 +1678,78 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
- <!-- ==================== TELEGRAM ANALYTICS SDK (POLLING VERSION) ==================== -->
-  <script
-    async
-    src="https://tganalytics.xyz/index.js"
-    onload="startAnalyticsInit()"
-    type="text/javascript">
-  </script>
+<!-- ==================== TELEGRAM ANALYTICS SDK (CLEAN) ==================== -->
+<script>
+  function initAnalytics() {
+    console.log("🔄 [Analytics] initAnalytics()");
 
-  <script>
-    function startAnalyticsInit() {
-      console.log("🔄 [Analytics] Script loaded – waiting for Telegram WebApp...");
-
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.ready();
-        console.log("✅ [Analytics] Telegram.WebApp.ready() called");
-      }
-
-      // Czekamy aż SDK będzie w pełni gotowy (trackEvent istnieje)
-      waitForAnalyticsReady();
+    // Telegram ready (opcjonalne, ale OK)
+    if (window.Telegram?.WebApp?.ready) {
+      try { window.Telegram.WebApp.ready(); } catch(_) {}
     }
 
-    function waitForAnalyticsReady(attempts = 0) {
-      if (typeof window.telegramAnalytics?.trackEvent === "function") {
-        console.log("✅ [Analytics] trackEvent is now available – initializing");
-        initAnalytics();
-        return;
-      }
-
-      if (attempts > 25) {  // max ~5 sekund
-        console.warn("⚠️ [Analytics] trackEvent never became available");
-        return;
-      }
-
-      setTimeout(() => waitForAnalyticsReady(attempts + 1), 200);
+    const ta = window.telegramAnalytics;
+    if (!ta?.init) {
+      console.error("❌ [Analytics] telegramAnalytics missing");
+      return;
     }
 
-    function initAnalytics() {
-      window.telegramAnalytics.init({
+    try {
+      ta.init({
         token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
         appName: "the_alpha_husky"
       });
-
-      console.log("✅ [Analytics] init() called successfully");
-
-      // Testowy event po pełnej gotowości
-      setTimeout(() => {
-        window.telegramAnalytics.trackEvent("app_started", {
-          version: "1.0",
-          source: "web_telegram"
-        });
-        console.log("🚀 [Analytics] Test event 'app_started' SENT");
-      }, 300);
+      console.log("✅ [Analytics] telegramAnalytics.init OK");
+    } catch (e) {
+      console.error("❌ [Analytics] init threw", e);
+      return;
     }
-  </script>
-  <!-- ==================== TELEGRAM ANALYTICS SDK END ==================== -->
+
+    // ✅ PEWNY test (nie używa trackEvent)
+    setTimeout(taForceOneEvent, 800);
+  }
+
+  async function taForceOneEvent(){
+    const uid = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    if (!uid) {
+      console.warn("⚠️ [Analytics] No TG user id — odpal w Telegram WebApp");
+      return;
+    }
+
+    const sid = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    const body = [{
+      event_name: "custom-event",
+      session_id: sid,
+      user_id: uid,
+      app_name: "the_alpha_husky",
+      client_timestamp: String(Date.now()),
+      custom_data: { name: "app_started", origin: location.origin }
+    }];
+
+    try {
+      const r = await fetch("https://tganalytics.xyz/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "TGA-Auth-Token": "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI="
+        },
+        body: JSON.stringify(body)
+      });
+
+      console.log("📡 [Analytics] /events:", r.status, await r.text());
+    } catch (e) {
+      console.error("❌ [Analytics] /events fetch failed", e);
+    }
+  }
+</script>
+
+<script
+  async
+  src="https://tganalytics.xyz/index.js"
+  onload="initAnalytics()"
+  type="text/javascript">
+</script>
+<!-- ==================== TELEGRAM ANALYTICS SDK END ==================== -->
 </head>
 <body>
   <div id="dbg">init…</div>
@@ -4284,6 +4301,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
