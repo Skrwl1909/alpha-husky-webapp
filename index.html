@@ -1678,37 +1678,58 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
- <!-- TELEGRAM ANALYTICS SDK -->
+ <!-- ==================== TELEGRAM ANALYTICS SDK (DEBUG VERSION) ==================== -->
   <script
     async
     src="https://tganalytics.xyz/index.js"
-    onload="initAnalytics()"
+    onload="startAnalyticsInit()"
     type="text/javascript">
   </script>
 
   <script>
+    function startAnalyticsInit() {
+      console.log("🔄 [Analytics] Script loaded – waiting for Telegram WebApp...");
+
+      // Czekamy aż Telegram WebApp będzie gotowy
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        console.log("✅ [Analytics] Telegram.WebApp.ready() called");
+      }
+
+      // Dajemy Telegramowi czas na inicjalizację
+      setTimeout(initAnalytics, 800);
+    }
+
     function initAnalytics() {
       if (typeof window.telegramAnalytics === "undefined") {
-        console.error("❌ Telegram Analytics SDK failed to load");
+        console.error("❌ [Analytics] SDK not found in window");
         return;
       }
+
+      console.log("🚀 [Analytics] Starting init...");
 
       window.telegramAnalytics.init({
         token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
         appName: "the_alpha_husky"
       });
 
-      console.log("✅ Telegram Analytics SDK initialized");
+      console.log("✅ [Analytics] init() called");
 
-      // Opóźniony testowy event (najważniejsze!)
+      // Test event z dłuższym opóźnieniem
       setTimeout(() => {
         if (typeof window.telegramAnalytics?.trackEvent === "function") {
-          window.telegramAnalytics.trackEvent("app_started");
-          console.log("✅ Test event 'app_started' sent");
+          window.telegramAnalytics.trackEvent("app_started", {
+            version: "1.0",
+            timestamp: Date.now()
+          });
+          console.log("🚀 [Analytics] Test event 'app_started' SENT");
+        } else {
+          console.warn("⚠️ [Analytics] trackEvent still not available");
         }
-      }, 300); // 300ms wystarczy
+      }, 1200);
     }
   </script>
+  <!-- ==================== TELEGRAM ANALYTICS SDK END ==================== -->
 </head>
 <body>
   <div id="dbg">init…</div>
@@ -4260,6 +4281,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
