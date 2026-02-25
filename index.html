@@ -1678,7 +1678,7 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
- <!-- ==================== TELEGRAM ANALYTICS SDK (DEBUG VERSION) ==================== -->
+ <!-- ==================== TELEGRAM ANALYTICS SDK (POLLING VERSION) ==================== -->
   <script
     async
     src="https://tganalytics.xyz/index.js"
@@ -1690,43 +1690,46 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     function startAnalyticsInit() {
       console.log("🔄 [Analytics] Script loaded – waiting for Telegram WebApp...");
 
-      // Czekamy aż Telegram WebApp będzie gotowy
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
         console.log("✅ [Analytics] Telegram.WebApp.ready() called");
       }
 
-      // Dajemy Telegramowi czas na inicjalizację
-      setTimeout(initAnalytics, 800);
+      // Czekamy aż SDK będzie w pełni gotowy (trackEvent istnieje)
+      waitForAnalyticsReady();
     }
 
-    function initAnalytics() {
-      if (typeof window.telegramAnalytics === "undefined") {
-        console.error("❌ [Analytics] SDK not found in window");
+    function waitForAnalyticsReady(attempts = 0) {
+      if (typeof window.telegramAnalytics?.trackEvent === "function") {
+        console.log("✅ [Analytics] trackEvent is now available – initializing");
+        initAnalytics();
         return;
       }
 
-      console.log("🚀 [Analytics] Starting init...");
+      if (attempts > 25) {  // max ~5 sekund
+        console.warn("⚠️ [Analytics] trackEvent never became available");
+        return;
+      }
 
+      setTimeout(() => waitForAnalyticsReady(attempts + 1), 200);
+    }
+
+    function initAnalytics() {
       window.telegramAnalytics.init({
         token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
         appName: "the_alpha_husky"
       });
 
-      console.log("✅ [Analytics] init() called");
+      console.log("✅ [Analytics] init() called successfully");
 
-      // Test event z dłuższym opóźnieniem
+      // Testowy event po pełnej gotowości
       setTimeout(() => {
-        if (typeof window.telegramAnalytics?.trackEvent === "function") {
-          window.telegramAnalytics.trackEvent("app_started", {
-            version: "1.0",
-            timestamp: Date.now()
-          });
-          console.log("🚀 [Analytics] Test event 'app_started' SENT");
-        } else {
-          console.warn("⚠️ [Analytics] trackEvent still not available");
-        }
-      }, 1200);
+        window.telegramAnalytics.trackEvent("app_started", {
+          version: "1.0",
+          source: "web_telegram"
+        });
+        console.log("🚀 [Analytics] Test event 'app_started' SENT");
+      }, 300);
     }
   </script>
   <!-- ==================== TELEGRAM ANALYTICS SDK END ==================== -->
@@ -4281,6 +4284,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
