@@ -1313,17 +1313,21 @@ function _normalizeRareDropObj(obj) {
         run_id: rid("m:start"),
       });
       
-      // ANALYTICS: rozpoczęcie misji
-      track("mission_started", {
-        tier: tier,
-        offerId: offerId,
-        title: String(o?.title || tier || "Unknown Mission")
-      });
-
-      try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-
       // optimistic wait immediately (prevents blink)
-      _optimisticStart(tier, offerId);
+_optimisticStart(tier, offerId);
+
+// ANALYTICS: rozpoczęcie misji (nie może psuć startu)
+try {
+  track("mission_started", {
+    tier,
+    offerId,
+    title: String(_pendingStart?.title || tier || "Unknown Mission")
+  });
+} catch (err) {
+  console.warn("[missions] track mission_started failed", err);
+}
+
+try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
       // if backend returned state with active, great — but still poll to confirm
       if (startRes && typeof startRes === "object") {
