@@ -1678,6 +1678,32 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
+  <!-- TELEGRAM ANALYTICS SDK -->
+<script
+  async
+  src="https://tganalytics.xyz/index.js"
+  onload="initAnalytics()"
+  type="text/javascript">
+</script>
+
+<script>
+  function initAnalytics() {
+    if (typeof window.telegramAnalytics === "undefined") {
+      console.error("❌ Telegram Analytics SDK failed to load");
+      return;
+    }
+
+    window.telegramAnalytics.init({
+      token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",     // ← wklej dokładnie swój SDK Auth Key
+      appName: "the_alpha_husky"        // ← nazwa aplikacji z @DataChief_bot
+    });
+
+    console.log("✅ Telegram Analytics SDK initialized successfully");
+
+    // Testowy event – możesz usunąć po sprawdzeniu
+    window.telegramAnalytics.trackEvent("app_started");
+  }
+</script>
 </head>
 <body>
   <div id="dbg">init…</div>
@@ -4229,6 +4255,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
