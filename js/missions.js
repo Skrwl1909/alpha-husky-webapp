@@ -46,6 +46,14 @@
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
+  // === TELEGRAM ANALYTICS HELPER (bezpieczny) ===
+  function track(eventName, data = {}) {
+    if (typeof window.telegramAnalytics?.trackEvent === "function") {
+      window.telegramAnalytics.trackEvent(eventName, data);
+    }
+    // else { quietly ignore - SDK jeszcze się ładuje }
+  }
+
   // =========================
   // Styles (S&F vibe inside Missions content; + full-screen for #missionsBack)
   // =========================
