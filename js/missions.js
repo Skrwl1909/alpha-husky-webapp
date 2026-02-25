@@ -35,6 +35,13 @@
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
+  
+  // === TELEGRAM ANALYTICS HELPER ===
+  function track(eventName, data = {}) {
+    if (typeof window.telegramAnalytics !== "undefined") {
+      window.telegramAnalytics.trackEvent(eventName, data);
+    }
+  }
 
   let _modal = null; // #missionsBack or #missionsModal
   let _root = null;  // #missionsRoot
@@ -466,6 +473,9 @@
   function open() {
     ensureModal();
     if (!_modal) return false;
+    
+    // ← ANALYTICS: otwarcie misji
+    track("missions_opened");
 
     _modal.style.display = "flex";
     _modal.classList.add("is-open");
@@ -1285,6 +1295,9 @@ function _normalizeRareDropObj(obj) {
   async function doRefresh() {
     try {
       await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
+      
+      // ← ANALYTICS: odświeżenie ofert
+      track("missions_refreshed");
       await loadState();
     } catch (e) {
       renderError("Refresh failed", String(e?.message || e || ""));
@@ -1300,6 +1313,13 @@ function _normalizeRareDropObj(obj) {
         id: offerId,
         offer_id: offerId,
         run_id: rid("m:start"),
+      });
+      
+      // ← ANALYTICS: start misji
+      track("mission_started", {
+        tier: tier,
+        offerId: offerId,
+        title: String(o?.title || tier || "Unknown")
       });
 
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
@@ -1338,6 +1358,13 @@ function _normalizeRareDropObj(obj) {
   async function doResolve() {
     try {
       await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
+      
+      // ← ANALYTICS: ukończenie misji
+      track("mission_resolved", {
+        success: true,
+        title: _state?.active_mission?.title || "Mission"
+      });
+      
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
       _pendingStart = null;
       await loadState();
