@@ -4651,7 +4651,51 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="js/mypets.js?v=WEBAPP_VER"></script>
   <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
   <script src="/js/arena.js?v=WEBAPP_VER"></script>
-  <script src="js/factions.js?v=WEBAPP_VER"></script>
+ <script src="js/factions.js?v=WEBAPP_VER"></script>
+<script>
+(function () {
+  function getApiPost(tg){
+    return window.apiPost || window.S?.apiPost || window.AH?.apiPost || (async (path, data) => {
+      const init_data = tg?.initData || "";
+      const url = (window.API_BASE || "") + path;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
+        },
+        body: JSON.stringify({ init_data, ...(data || {}) })
+      });
+      return res.json();
+    });
+  }
+
+  function tryInitFactions(){
+    if (!window.Factions || window.__factionsInited) return;
+
+    const tg = window.Telegram?.WebApp || null;
+    const apiPost = getApiPost(tg);
+
+    try {
+      window.Factions.init({
+        tg,
+        apiPost,
+        dbg: !!window.DBG
+      });
+      window.__factionsInited = true;
+      console.log("✅ Factions module initialized");
+    } catch (e) {
+      console.warn("❌ Factions.init failed", e);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tryInitFactions, { once:true });
+  } else {
+    tryInitFactions();
+  }
+})();
+</script>
  <script src="js/influence.js?v=WEBAPP_VER"></script>
   <!-- MAP (Level 1: faction ring + badge) -->
 <script src="js/map.js?v=WEBAPP_VER"></script>
@@ -4754,6 +4798,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
