@@ -3637,7 +3637,7 @@ async function loadProfile() {
 }
 window.loadProfile = loadProfile;
 
-      /* ✅ Faction badge renderer (Topbar) — define once, used by loadPlayerState() */
+     /* ✅ Faction badge renderer (Topbar) — self-heal (re-inject if topbar rebuilds) */
 (function(){
   const BASE = "/images/factions/";
   const VER  = (window.WEBAPP_VER ? ("?v=" + window.WEBAPP_VER) : "");
@@ -3652,7 +3652,9 @@ window.loadProfile = loadProfile;
   function normFactionKey(k){
     k = String(k || "").toLowerCase().trim();
     if (!k) return "";
+    // short keys
     if (k === "rb" || k === "ew" || k === "pb" || k === "ih") return k;
+    // slug / names from backend
     if (k.includes("rogue")) return "rb";
     if (k.includes("echo"))  return "ew";
     if (k.includes("pack"))  return "pb";
@@ -3660,25 +3662,63 @@ window.loadProfile = loadProfile;
     return "";
   }
 
+  function ensureBadgeDOM(){
+    const pill = document.getElementById("faction");
+    if (!pill) return { el:null, img:null };
+
+    let el = document.getElementById("factionBadge");
+    let img = document.getElementById("factionBadgeImg");
+
+    // if renderTopbar removed it, re-inject
+    if (!el){
+      el = document.createElement("span");
+      el.id = "factionBadge";
+      el.className = "fac-badge";
+      el.style.display = "none";
+
+      img = document.createElement("img");
+      img.id = "factionBadgeImg";
+      img.alt = "Faction";
+      el.appendChild(img);
+
+      pill.insertBefore(el, pill.firstChild);
+    } else if (!img){
+      img = el.querySelector("img");
+      if (!img){
+        img = document.createElement("img");
+        img.id = "factionBadgeImg";
+        img.alt = "Faction";
+        el.appendChild(img);
+      }
+    }
+
+    // click -> later: open faction sheet
+    if (!el.__fac_click){
+      el.__fac_click = true;
+      el.addEventListener("click", ()=>{
+        if (window.Factions?.open) return window.Factions.open();
+        if (window.Faction?.open) return window.Faction.open();
+        if (window.tgPickFaction) return window.tgPickFaction();
+      });
+    }
+
+    return { el, img };
+  }
+
   window.renderFactionBadge = function renderFactionBadge(){
-    const el  = document.getElementById("factionBadge");
-    const img = document.getElementById("factionBadgeImg");
+    const { el, img } = ensureBadgeDOM();
     if (!el || !img) return;
 
     const st = window.PLAYER_STATE || {};
     const p  = st.profile || st.player || {};
-
-    const raw =
-      p.faction || p.faction_key || p.factionKey ||
-      st.faction || st.faction_key || "";
+    const raw = p.faction || p.faction_key || p.factionKey || st.faction || st.faction_key || "";
 
     let k = normFactionKey(raw);
-
     if (!k) {
       try { k = normFactionKey(localStorage.getItem("ah_faction") || ""); } catch(_){}
     }
 
-    if (!k || !FILE_40[k]) {
+    if (!k || !FILE_40[k]){
       el.style.display = "none";
       el.className = "fac-badge";
       return;
@@ -4713,6 +4753,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
