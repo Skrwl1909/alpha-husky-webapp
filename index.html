@@ -1711,6 +1711,30 @@ body.missions-open{
 body.is-tg #fabFaq{ display:none !important; }
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
+  <style id="onboarding-css">
+  #obBack{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.62); z-index:2000000; padding:16px; }
+  #obBack[hidden]{ display:none !important; }
+
+  .ob-modal{ width:min(520px, 100%); background:#0d0f14; border:1px solid rgba(255,255,255,.10);
+    border-radius:18px; box-shadow:0 20px 70px rgba(0,0,0,.6); overflow:hidden; }
+  .ob-hd{ display:flex; align-items:center; gap:10px; padding:14px 14px 10px; }
+  .ob-title{ font-weight:900; font-size:18px; letter-spacing:.2px; }
+  .ob-x{ margin-left:auto; background:transparent; border:0; color:#fff; font-size:18px; opacity:.8; }
+
+  .ob-bd{ padding:12px 14px 10px; }
+  .ob-ft{ display:flex; gap:10px; align-items:center; padding:12px 14px 14px; }
+
+  .ob-btn{ border:0; border-radius:14px; padding:12px 14px; font-weight:900; }
+  .ob-btn.ghost{ background:rgba(255,255,255,.08); color:#fff; }
+  .ob-btn.primary{ background:#fff; color:#000; }
+
+  .ob-card{ border:1px solid rgba(255,255,255,.10); border-radius:16px; padding:12px; }
+  .ob-step{ opacity:.9; font-size:12px; letter-spacing:.4px; text-transform:uppercase; }
+  .ob-head{ font-size:16px; font-weight:900; margin-top:6px; }
+  .ob-p{ opacity:.86; margin-top:6px; line-height:1.25; }
+  .ob-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+</style>
 <!-- TELEGRAM ANALYTICS -->
 <script>
   function initAnalytics() {
@@ -4318,6 +4342,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
