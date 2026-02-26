@@ -1735,6 +1735,42 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   .ob-p{ opacity:.86; margin-top:6px; line-height:1.25; }
   .ob-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
 </style>
+  <style id="faction-badge-css">
+  /* ✅ Faction badge (Topbar) */
+  .fac-badge{
+    width:20px; height:20px;
+    border-radius:999px;
+    display:inline-grid;
+    place-items:center;
+    margin-right:8px;
+
+    background: rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    position: relative;
+  }
+  .fac-badge::after{
+    content:"";
+    position:absolute; inset:-6px;
+    border-radius:999px;
+    background: radial-gradient(circle, currentColor 0%, transparent 62%);
+    opacity:.22;
+    pointer-events:none;
+  }
+  .fac-badge img{
+    width:12px; height:12px;
+    display:block;
+    opacity:.95;
+  }
+
+  .fac-badge.f-rb{ color:#ff5252; }
+  .fac-badge.f-ew{ color:#ffd600; }
+  .fac-badge.f-pb{ color:#ba68c8; }
+  .fac-badge.f-ih{ color:#40c4ff; }
+    </style>
 <!-- TELEGRAM ANALYTICS -->
 <script>
   function initAnalytics() {
@@ -1790,42 +1826,6 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   onload="initAnalytics()"
   type="text/javascript">
 </script>
-  <style id="faction-badge-css">
-  /* ✅ Faction badge (Topbar) */
-  .fac-badge{
-    width:20px; height:20px;
-    border-radius:999px;
-    display:inline-grid;
-    place-items:center;
-    margin-right:8px;
-
-    background: rgba(0,0,0,.45);
-    border: 1px solid rgba(255,255,255,.14);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    box-shadow: 0 8px 18px rgba(0,0,0,.35);
-    position: relative;
-  }
-  .fac-badge::after{
-    content:"";
-    position:absolute; inset:-6px;
-    border-radius:999px;
-    background: radial-gradient(circle, currentColor 0%, transparent 62%);
-    opacity:.22;
-    pointer-events:none;
-  }
-  .fac-badge img{
-    width:12px; height:12px;
-    display:block;
-    opacity:.95;
-  }
-
-  .fac-badge.f-rb{ color:#ff5252; }
-  .fac-badge.f-ew{ color:#ffd600; }
-  .fac-badge.f-pb{ color:#ba68c8; }
-  .fac-badge.f-ih{ color:#40c4ff; }
-</style>
 <!-- /TELEGRAM ANALYTICS -->
 </head>
 <body>
@@ -4658,6 +4658,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
