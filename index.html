@@ -1803,13 +1803,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="poster" style="background-image:url('background2.webp');"></div>
   </div>
   <div id="app" class="ui">
-      <div class="topbar">
-  <div id="player">Alpha Husky</div>
+  <div class="topbar">
+    <div id="player">Alpha Husky</div>
 
-  <div class="badge faction-pill" id="faction">
-    <span id="factionTag" class="tag-badge tag-pack">PACK</span>
-    <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
-  </div>
+    <div class="badge faction-pill" id="faction">
+      <!-- ✅ Faction badge (AAA crest) -->
+      <span id="factionBadge" class="fac-badge" style="display:none">
+        <img id="factionBadgeImg" alt="Faction" />
+      </span>
+
+      <span id="factionTag" class="tag-badge tag-pack">PACK</span>
+      <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
+    </div>
 
   <!-- ✅ TON CONNECT placeholder (tu renderuje się button) -->
   <div id="ton-connect" class="ton-connect"></div>
@@ -4617,6 +4622,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
