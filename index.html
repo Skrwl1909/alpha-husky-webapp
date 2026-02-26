@@ -1,8575 +1,4289 @@
 <!doctype html>
-
 <html lang="en">
-
 <head>
-
   <base href="https://app.alphahusky.win/">
-
   <meta charset="utf-8" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
   <title>Alpha Husky Dashboard</title>
-
   <meta name="color-scheme" content="dark light" />
 
-
-
   <!-- background2: video + fallback -->
-
   <link rel="preload" as="image" href="background2.webp">
-
   <link rel="preload" as="video" href="background2.webm" type="video/webm">
-
   <link rel="preload" as="video" href="background2.mp4" type="video/mp4">
-
   <link rel="preload" as="video" href="shop_scene.mp4" type="video/mp4">
-
   <link rel="preload" as="image" href="shop_scene.webp">
-
   <link rel="preload" as="image" href="mission_bg.webp">
-
   <link rel="preload" as="image" href="mission_waiting_bg.webp">
-
   <link rel="preload" as="image" href="mission_board.webp">
-
   <link rel="prefetch" href="/dust.png" as="image">
-
   <link rel="preload" as="image" href="inventory_bg.png">
 
-
-
   <style>
-
   /* Telegram theme + bezpieczne fallbacki */
-
   :root { color-scheme: var(--tg-color-scheme, dark); }
-
   :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: var(--tg-theme-text-color, #fff); --ring: rgba(255,255,255,.12); }
-
   * { box-sizing: border-box; }
-
   html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
-
   a { color: var(--tg-theme-link-color, #aef); }
-
   /* twarde nadpisanie „black” */
-
   .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
-
   .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
-
   .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
-
   .bg { position: absolute; inset: 0; z-index: 0; }
-
   .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-
   .bg video { filter: contrast(1.08) brightness(.9); }
 
-
-
   /* fallback poster */
-
 .bg .poster {
-
   display:none;
-
   background-image: url("background2.webp");
-
   background-position:center;
-
   background-size:cover;
-
 }
-
-
 
 .ui { position: absolute; inset: 0; z-index: 2; }
 
-
-
 /* ✅ PATCH 1A: keep HUD inside viewport + safe-area (fix right column overflow) */
-
 .grid{
-
   position:absolute;
-
   inset:0;
-
   display:grid;
-
   place-items:end center;
-
   box-sizing: border-box;
-
   padding:
-
     calc(24px + env(safe-area-inset-top, 0px))
-
     calc(16px + env(safe-area-inset-right, 0px))
-
     calc(24px + 78px + env(safe-area-inset-bottom, 0px)) /* ✅ + miejsce na bottom nav */
-
     calc(16px + env(safe-area-inset-left, 0px));
-
 }
-
-
 
 .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
 
-
-
 /* === HUD: boczne kolumny + centralny skin === */
-
 .hud-layout{
-
   width: min(
-
     520px,
-
     calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
-
   );
-
   margin: 0 auto;                 /* centrowanie całości w poziomie */
-
   display: flex;
-
   justify-content: center;        /* zamiast space-between */
-
   align-items: flex-end;
-
   gap: 16px;                      /* stały, równy odstęp lewo–środek–prawo */
-
 }
-
 .hud-col{
-
   display:flex;
-
   flex-direction:column;
-
   gap:8px;
-
 }
-
 .hud-col .btn{
-
   min-width:0;
-
   padding:8px 10px;
-
   font-size:13px;
-
 }
-
-
 
 /* ✅ PATCH 1A: lekkie “dociągnięcie” prawej kolumny do środka (żeby nie wychodziła poza ekran) */
-
 .hud-col.hud-right{ transform: translateX(-10px); }
 
-
-
 .hero-center{
-
   flex:1;
-
   min-width:0; /* ważne dla flexa: środek nie wypycha prawej kolumny */
-
   display:flex;
-
   flex-direction:column;
-
   align-items:center;
-
   justify-content:flex-end;
-
   gap:6px;
-
 }
-
-
 
 /* ✅ SHARE ROW — ma być NAD skinem (czyli odstęp w dół, nie w górę) */
-
 .hero-center .share-row{
-
   margin-bottom: 8px;          /* <-- NAD hero-frame */
-
   display: flex;               /* JS pokaże przez style.display="" */
-
   gap: 8px;
-
   justify-content: center;
-
   align-items: center;
-
   flex-wrap: wrap;
 
-
-
   position: relative;
-
   z-index: 2; /* niżej niż buffsLine (z-index:6) */
-
 }
-
-
 
 .hero-center .btn.share-mini{
-
   padding: 7px 10px;
-
   border-radius: 999px;
-
   font-size: 12px;
-
   line-height: 1;
-
   min-width: 78px;
 
-
-
   background: rgba(0,0,0,.40);
-
   border: 1px solid rgba(255,255,255,.14);
-
   backdrop-filter: blur(8px);
-
   box-shadow: 0 10px 20px rgba(0,0,0,.35);
-
 }
-
-
 
 .hero-center .btn.share-mini:hover{
-
   box-shadow: 0 12px 24px rgba(0,0,0,.45);
-
 }
-
-
 
 .hero-center .btn.share-mini:active{
-
   transform: translateY(1px);
-
 }
-
-
 
 /* =========================
-
    ✅ HERO FRAME — stable overlay (skin never escapes, frame never clipped)
-
    + ✅ dim/blur hero when any modal/sheet is open (ah-modal-open)
-
    ========================= */
 
-
-
 .hero-frame{
-
   width:min(46vw, 210px);
-
   aspect-ratio:3/4;
 
-
-
   position: relative;
-
   border-radius: 24px;
 
-
-
   /* tło karty */
-
   background:
-
     radial-gradient(circle at top left, rgba(0,229,255,.18), transparent 60%),
-
     radial-gradient(circle at bottom right, rgba(255,176,0,.16), transparent 60%),
-
     rgba(0,0,0,.72);
 
-
-
   border:1px solid rgba(255,255,255,.18);
-
   box-shadow:0 18px 40px rgba(0,0,0,.60);
 
-
-
   /* ✅ ważne: ramka może “wyjść” poza boxa */
-
   overflow: visible;
-
   isolation: isolate;
 
-
-
   /* 🎛️ TUNING (dotykasz tylko tego) */
-
   --frame-bleed: 12px;   /* ile ramka może wyjść poza kadr */
-
   --frame-scale: 1.65;   /* dopasowanie “większa/mniejsza” */
-
   --frame-x: 0px;        /* mikro przesunięcie */
-
   --frame-y: 0px;        /* mikro przesunięcie */
-
 }
-
-
 
 /* ✅ SKIN zawsze w środku i nigdy nie “ucieknie” */
-
 .hero-frame .hero-skin{
-
   position: relative;
-
   z-index: 1;
 
-
-
   width: 100%;
-
   height: 100%;
-
   display: block;
-
   object-fit: cover;
 
-
-
   border-radius: inherit;
-
-
 
   /* klucz: klipuje skina nawet gdy overflow jest visible */
-
   clip-path: inset(0 round 24px);
-
 }
-
-
 
 /* ✅ delikatne “sklejenie” skina z UI (ciemniej na dole) */
-
 .hero-frame::after{
-
   content:"";
-
   position:absolute;
-
   left:0; right:0; bottom:0;
-
   height: 34%;
-
   border-radius: inherit;
-
   background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.42) 100%);
-
   z-index: 2;
-
   pointer-events:none;
-
   clip-path: inset(0 round 24px);
-
 }
-
-
 
 /* ✅ RAMKA — pełna, nieucięta, na wierzchu */
-
 .hero-frame .hero-frame-overlay{
-
   position:absolute;
-
   inset: calc(-1 * var(--frame-bleed));
-
   width: calc(100% + (2 * var(--frame-bleed)));
-
   height: calc(100% + (2 * var(--frame-bleed)));
 
-
-
   display:block;
-
   object-fit: contain;
-
   pointer-events:none;
-
   z-index: 3;
 
-
-
   transform-origin: center;
-
   transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
-
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
-
 }
-
-
 
 /* ✅ When any sheet/modal is open (stack not empty) — fade hero to avoid “ghost frame” */
-
 html.ah-modal-open #heroFrame{
-
   opacity: .08;
-
   filter: blur(8px) saturate(.8);
-
 }
-
 .hero-caption{
-
   font-size:13px;
-
   display:flex;
-
   gap:6px;
-
   align-items:center;
-
   justify-content:center;
-
   padding:4px 8px;
-
   border-radius:999px;
-
   background:rgba(0,0,0,.55);
-
   border:1px solid rgba(255,255,255,.16);
-
   backdrop-filter:blur(8px);
-
 }
-
     
 
-
-
 /* ✅ HOME REBUILD PATCH (KROK A)
-
    - chowamy legacy kolumny (zostają w DOM dla fallback click)
-
    - chowamy shareRow (share idzie do Hub/Share sheet)
-
    - hero centrowany z większym luzem na ramkę
-
 */
-
 #homeLegacyLeft, #homeLegacyRight{
-
   display:none !important;
-
 }
-
-
 
 #shareRow{
-
   display:none !important;
-
 }
-
-
 
 .hud-layout{
-
   justify-content:center !important;
-
   gap: 0 !important;
-
 }
 
-
-
 /* ✅ MOBILE */
-
 @media (max-width:380px){
-
   .hud-layout{ gap:8px; }
-
   .hud-col .btn{
-
     font-size:12px;
-
     padding:6px 8px;
-
   }
 
-
-
   /* ✅ PATCH 1A: mocniej na ultra wąskich ekranach */
-
   .hud-col.hud-right{ transform: translateX(-16px); }
-
-
 
   .hero-frame{ width:56vw; }
 
-
-
   .hero-center .share-row{
-
     gap: 6px;
-
     margin-bottom: 6px; /* nadal NAD skinem */
-
   }
-
   .hero-center .btn.share-mini{
-
     padding: 6px 9px;
-
     font-size: 11px;
-
     min-width: 72px;
-
   }
-
 }
 
-
-
 /* =========================
-
    Active Buffs line — overlay
-
    (NIE wpływa na layout kolumn)
-
    ========================= */
-
 #buffsLine.buffs-line{
-
   position: fixed;
-
   left: 14px;
-
   bottom: calc(86px + env(safe-area-inset-bottom)); /* ✅ nad navem */
-
   z-index: 6;
 
-
-
   width: max-content;
-
   max-width: min(72vw, 240px);
 
-
-
   margin: 0;
-
   padding: 6px 10px;
-
   border-radius: 12px;
 
-
-
   font-size: 12px;
-
   line-height: 1.2;
-
   color: #d9f2ff;
 
-
-
   background: rgba(0,0,0,.35);
-
   border: 1px solid rgba(255,255,255,.10);
-
   backdrop-filter: blur(8px);
-
-
 
   text-align: center;
 
-
-
   white-space: nowrap;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
 
-
-
   cursor: pointer;
-
   user-select: none;
-
   box-shadow: 0 8px 18px rgba(0,0,0,.35);
 
-
-
   box-sizing: border-box;
-
   transition: opacity .15s ease, transform .08s ease;
-
   opacity: .95;
-
 }
 
-
-
 #buffsLine.buffs-line:hover{ opacity: 1; }
-
 #buffsLine.buffs-line:active{ transform: translateY(1px); }
-
-
 
 .buffs-line:hover{ opacity: 1; }
 
-
-
 .hero-center{ min-width: 0; }
 
-
-
 .buffs-line:active{
-
   transform: translateY(1px);
-
 }
-
-
 
   .btn {
-
     appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
-
     background:var(--glass); border:1px solid var(--stroke);
-
     font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
-
     display: flex; /* Umożliwia column layout w .btn.map */
-
     align-items: center;
-
     justify-content: center;
-
   }
-
   .btn:active { transform: translateY(1px); }
-
   .btn.linklike { text-decoration:none; }
-
   /* Ogólny styl dla ikon w buttonach */
-
   .btn-icon {
-
     width: 28px;
-
     height: 28px;
-
     margin-bottom: 4px;
-
     display: block;
-
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-
     transition: filter 0.2s ease;
-
   }
-
   /* Specyficznie dla Map – mroczny vibe, mniejszy rozmiar */
-
   .btn.map {
-
     flex-direction: column;
-
     align-items: center;
-
     padding: 8px 12px;
-
     background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(20,20,40,0.9));
-
     border: 1px solid rgba(139, 69, 19, 0.6);
-
     min-width: 70px;
-
     height: auto;
-
     font-size: 14px;
-
   }
-
   .btn.map:hover .btn-icon {
-
     filter: drop-shadow(0 2px 8px rgba(255, 0, 0, 0.4)) brightness(1.1);
-
   }
-
   .btn.map:hover {
-
     transform: scale(1.02);
-
     box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
-
   }
-
   .btn.primary {
-
     background: var(--tg-theme-button-color, rgba(16,185,129,.18));
-
     color: var(--tg-theme-button-text-color, #fff);
-
     border: 1px solid rgba(255,255,255,.18);
-
   }
-
   /* =========================
-
    TOPBAR (fixed + compact)
-
    ========================= */
-
-
 
 .topbar{
-
   position:absolute;
-
   top:12px; left:12px; right:12px;
-
   display:flex;
-
   align-items:center;
-
   gap:10px;
-
   flex-wrap:nowrap;
-
   justify-content:flex-start;
 
-
-
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-
   border-radius:14px;
-
-
 
   /* background jako pseudo-element, żeby nie “zjadać” klików na dziwnych webview */
-
   background: transparent;
-
   border:1px solid var(--stroke);
-
   color:#cfe7ff;
-
   font:500 14px system-ui, sans-serif;
 
-
-
   z-index: 10;          /* pewne, że jest nad resztą */
-
   pointer-events:auto;  /* ✅ TON CONNECT znowu klikalny */
-
 }
-
-
 
 /* tło topbara */
-
 .topbar::before{
-
   content:"";
-
   position:absolute;
-
   inset:0;
-
   border-radius:14px;
-
   background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
-
   pointer-events:none;
-
 }
-
-
 
 .topbar > *{
-
   position:relative;
-
   z-index:1;
-
 }
-
-
 
 /* ✅ player po lewej, reszta w prawo */
-
 #player{
-
   margin-right:auto;
-
   min-width:0;
-
   max-width: 32vw;
-
   overflow:hidden;
-
   text-overflow:ellipsis;
-
   white-space:nowrap;
-
 }
 
-
-
 /* =========================
-
    FACTION PILL (TAG + META)
-
    ========================= */
-
 #faction.faction-pill{
-
   display:flex;
-
   align-items:center;
-
   gap:8px;
-
-
 
   /* ✅ pozwól się lekko ścisnąć, ale nie znikaj */
-
   flex: 0 1 auto;
-
   min-width:0;
-
 }
-
-
 
 #faction .tag-badge{
-
   display:inline-flex;
-
   align-items:center;
-
   padding: 6px 10px;
-
   border-radius: 999px;
-
   font-weight: 800;
-
   font-size: 12px;
-
   letter-spacing: .08em;
-
   text-transform: uppercase;
 
-
-
   background: rgba(0,0,0,.45);
-
   border: 1px solid rgba(255,255,255,.18);
-
   backdrop-filter: blur(8px);
-
   box-shadow: 0 10px 22px rgba(0,0,0,.35);
-
   white-space: nowrap;
-
   flex: 0 0 auto;
-
 }
 
-
-
 #faction .faction-meta{
-
   font-size: 12px;
-
   opacity: .92;
-
   white-space: nowrap;
-
-
 
   /* ✅ jak brakuje miejsca, tnij meta, ale NIE tnij taga */
-
   max-width: 120px;
-
   overflow:hidden;
-
   text-overflow:ellipsis;
-
 }
-
-
 
 /* tag colors */
-
 #faction .tag-pack{ border-color: rgba(255,255,255,.18); }
-
 #faction .tag-supporter{ background: rgba(0,229,255,.14); border-color: rgba(0,229,255,.32); }
-
 #faction .tag-founder{ background: rgba(255,176,0,.14); border-color: rgba(255,176,0,.34); }
-
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
-
-
 
 /* =========================
-
    TON CONNECT (small)
-
    ========================= */
-
 #ton-connect{
-
   flex:0 0 auto;
-
   display:flex;
-
   align-items:center;
-
-
 
   /* ✅ twardo ograniczamy szerokość, żeby TAG miał miejsce */
-
   max-width: 118px;
-
   overflow:hidden;
-
 }
-
-
 
 /* status chowamy (na mobile tylko przeszkadza) */
-
 #ton-wallet-status{ display:none; }
 
-
-
 /* TonConnect button — kompakt */
-
 #ton-connect button,
-
 #ton-connect [data-tc-connect-button],
-
 #ton-connect .tc-button{
-
   height: 30px !important;
-
   padding: 6px 10px !important;
-
   border-radius: 999px !important;
-
   font-size: 12px !important;
-
   line-height: 1 !important;
 
-
-
   min-width: 0 !important;
-
   max-width: 118px !important;
-
   overflow:hidden !important;
-
   text-overflow:ellipsis !important;
-
   white-space:nowrap !important;
-
 }
-
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
-
   .spacer { height: max(12px, env(safe-area-inset-bottom)); }
-
     /* === TOPBAR TAG PILL (PACK / SUPPORTER etc.) === */
-
 #faction.faction-pill{
-
   display:flex;
-
   align-items:center;
-
   gap:8px;
-
 }
-
-
 
 #faction .faction-meta{
-
   font-size: 12px;
-
   opacity: .92;
-
   white-space: nowrap;
-
 }
-
-
 
 #faction .tag-badge{
-
   display:inline-flex;
-
   align-items:center;
-
   padding: 6px 10px;
-
   border-radius: 999px;
-
   font-weight: 800;
-
   font-size: 12px;
-
   letter-spacing: .08em;
-
   text-transform: uppercase;
 
-
-
   background: rgba(0,0,0,.45);
-
   border: 1px solid rgba(255,255,255,.18);
-
   backdrop-filter: blur(8px);
-
   box-shadow: 0 10px 22px rgba(0,0,0,.35);
-
   white-space: nowrap;
-
 }
 
-
-
 #faction .tag-pack{ border-color: rgba(255,255,255,.18); }
-
 #faction .tag-supporter{ background: rgba(0,229,255,.14); border-color: rgba(0,229,255,.32); }
-
 #faction .tag-founder{ background: rgba(255,176,0,.14); border-color: rgba(255,176,0,.34); }
-
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
-
   @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
-
   .fallback {
-
     position: absolute; inset: 0; display:none; z-index: 3;
-
     background: rgba(0,0,0,.8); color:#fff; font: 500 16px system-ui, sans-serif;
-
     align-items:center; justify-content:center; text-align:center; padding:24px;
-
   }
-
   .fallback a { color:#aef; text-decoration:underline; }
-
-
 
 .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
 
-
-
 /* PATCH: większy modal + flex layout */
-
 .map-wrap { width:min(96vw, 1200px); padding:12px; }
 
-
-
 .map-card {
-
   background:rgba(12,14,18,.82);
-
   border:1px solid var(--ring);
-
   border-radius:16px;
-
   padding:12px;
-
   box-shadow:0 10px 30px rgba(0,0,0,.5);
-
   max-height: 88dvh;
-
   display:flex;
-
   flex-direction:column;
-
 }
-
-
 
 .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; flex:0 0 auto; }
-
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
-
 .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
-
-
     /* =========================================================
-
      ✅ Equipment Icon Glow (UI-only)
-
      - Master icons stay clean (no baked glow)
-
      - Glow is controlled by UI via classes + data-rarity
-
      ========================================================= */
 
-
-
   /* default / fallback */
-
   .equip-slot img.item-icon{
-
     display:block;
-
     width:100%;
-
     height:100%;
-
     object-fit:contain;
 
-
-
     /* soft cyan glow (safe default) */
-
     filter:
-
       drop-shadow(0 0 6px rgba(0,255,255,.18))
-
       drop-shadow(0 0 14px rgba(0,255,255,.08));
 
-
-
     will-change: filter;
-
   }
-
-
 
   /* stronger only for selected/equipped */
-
   .equip-slot.is-selected img.item-icon,
-
   .equip-slot.is-equipped img.item-icon{
-
     filter:
-
       drop-shadow(0 0 8px rgba(0,255,255,.32))
-
       drop-shadow(0 0 18px rgba(0,255,255,.14));
-
   }
-
-
 
   /* rarity ladder */
-
   .equip-slot[data-rarity="common"] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 5px rgba(255,255,255,.12))
-
       drop-shadow(0 0 12px rgba(255,255,255,.06));
-
   }
-
   .equip-slot[data-rarity="uncommon"] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 6px rgba(120,255,120,.22))
-
       drop-shadow(0 0 14px rgba(120,255,120,.10));
-
   }
-
   .equip-slot[data-rarity="rare"] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 6px rgba(90,170,255,.22))
-
       drop-shadow(0 0 14px rgba(90,170,255,.10));
-
   }
-
   .equip-slot[data-rarity="epic"] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 6px rgba(190,120,255,.22))
-
       drop-shadow(0 0 14px rgba(190,120,255,.10));
-
   }
-
   .equip-slot[data-rarity="legendary"] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 7px rgba(255,190,90,.24))
-
       drop-shadow(0 0 16px rgba(255,190,90,.11));
-
   }
-
-
 
   /* selected/equipped keeps rarity feel but adds a touch of “active” */
-
   .equip-slot.is-selected[data-rarity] img.item-icon,
-
   .equip-slot.is-equipped[data-rarity] img.item-icon{
-
     filter:
-
       drop-shadow(0 0 9px rgba(255,255,255,.08))
-
       drop-shadow(0 0 9px rgba(0,255,255,.26))
-
       drop-shadow(0 0 18px rgba(0,255,255,.12));
-
   }
 
-
-
 /* PATCH: zamiast aspect-ratio -> realna wysokość mapy */
-
 .map{
-
   position:relative;
-
   width:100%;
-
   flex: 1 1 auto;
-
   height: min(66dvh, 620px);
-
   aspect-ratio: auto;
-
   background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
-
   border-radius:16px;
-
   overflow:hidden;
-
   box-shadow:0 0 0 1px var(--ring) inset;
-
 }
 
-
-
 .map::after{ content:""; position:absolute; inset:0; z-index:2;
-
   background: url("images/map/overlays/fog.png") center/cover no-repeat,
-
               linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-
   pointer-events:none; }
 
-
-
 .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
-
 .paths-layer svg{ width:100%; height:100%; }
-
-
 
 .pins{ position:absolute; inset:0; z-index:3; }
 
-
-
 .hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
-
   padding:0; background:none; border:none; cursor:pointer;
-
   z-index:3; transition: transform .12s ease, filter .12s ease; }
-
-
 
 .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
 
-
-
 .hotspot::before{ content:""; position:absolute; left:50%; top:50%;
-
   width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
-
   transform: translate(-50%, calc(-50% + 20px));
-
   background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-
   opacity:.9; filter: blur(.2px); pointer-events:none; }
 
-
-
 .hotspot img{ width: clamp(40px, 3.6vw, 72px);
-
   filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
 
-
-
 .hotspot.unlocked img{
-
   filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
-
           drop-shadow(-2px 0 6px rgba(0,229,255,.22))
-
           drop-shadow( 2px 0 6px rgba(155,77,255,.22));
-
 }
-
   .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
-
   .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
-
     transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
-
   .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
-
   .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
-
   @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
-
   .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
-
     font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
-
     background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
-
     backdrop-filter: blur(3px); }
-
   .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
-
     transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
-
   .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
-
     background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
-
     display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
-
     box-shadow: 0 2px 6px rgba(0,0,0,.5); }
-
   .lock-badge img{ width:14px; height:14px; opacity:.9 }
-
   .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
-
   .path.locked{ stroke:rgba(255,255,255,.16); }
-
   .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
-
   .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-
   .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
-
   .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
-
   .tab.active{ outline:2px solid rgba(255,255,255,.18); }
-
   /* progress + region sheet width */
-
   .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
-
     background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
-
     font:600 12px system-ui}
-
   .progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
-
     background:rgba(255,255,255,.1);overflow:hidden}
-
   .progress-bar>i{display:block;height:100%;width:0%;
-
     background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
-
   .region-sheet .sheet-card{width:min(92vw,520px)}
-
   .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-
   /* DEBUG banner (pojedynczy) */
-
   #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
-
     background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
-
   /* Avatar/Skins modal */
-
   .avatar-sheet .sheet-card {
-
     width: min(92vw, 520px);
-
     max-height: 80vh;
-
     overflow: auto;
-
   }
-
   .avatar-sheet canvas {
-
     max-width: 100%;
-
     height: auto;
-
   }
-
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
-
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
-
-
     /* ===== MAP: FOCUS LABEL MODE (1 chip at a time) ===== */
-
 .hotspot .chip{ display:none; }
-
 .hotspot.active .chip{ display:flex; }
-
     
-
 .hotspot.active{
-
   transform:translate(-50%,-50%) scale(1.06);
-
   z-index:4;
-
 }
-
-
 
 /* chip stabilnie pod pinem + ellipsis */
-
 .chip{
-
   max-width: 58vw;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
-
 }
-
     /* ===== CHIP FIX (must be positioned) ===== */
-
 .hotspot{ 
-
   overflow: visible !important; 
-
 }
-
-
 
 .hotspot .chip{
-
   position: absolute !important;
-
   left: 50% !important;
-
   top: calc(100% + 8px) !important;
-
   transform: translateX(-50%) !important;
 
-
-
   z-index: 50 !important;
-
   pointer-events: none !important;
 
-
-
   max-width: 58vw;
-
   white-space: nowrap;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
-
 }
-
-
 
 /* arrow will now anchor correctly */
-
 .chip::before{
-
   left: 50% !important;
-
 }
-
     
-
 /* brak ikonki -> nie pokazuj broken-image */
-
 .hotspot.no-icon img{ display:none; }
-
     /* ===== AAA polish for leader ring/badge (map.js) ===== */
-
 .map-pin .pin-badge{
-
   width: 26px;
-
   height: 26px;
-
   top: -11px;
-
   right: -11px;
-
   font-size: 11px;
-
   letter-spacing: .4px;
-
   background: rgba(8,10,14,.62);
-
   backdrop-filter: blur(10px);
-
   -webkit-backdrop-filter: blur(10px);
-
   border: 1px solid rgba(255,255,255,.22);
-
   box-shadow: 0 10px 26px rgba(0,0,0,.55);
-
 }
-
-
 
 .map-pin .pin-ring{
-
   border-width: 2px;
-
   opacity: .95;
-
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.45));
-
 }
-
-
 
 /* optional: make leader pins slightly “stronger” */
-
 .map-pin.f-rb .pin-ring{ box-shadow:0 0 16px rgba(255,70,70,.40); }
-
 .map-pin.f-ew .pin-ring{ box-shadow:0 0 16px rgba(255,200,70,.38); }
-
 .map-pin.f-pb .pin-ring{ box-shadow:0 0 16px rgba(255,140,40,.38); }
-
 .map-pin.f-ih .pin-ring{ box-shadow:0 0 16px rgba(60,220,255,.34); }
-
     /* ===== FINAL AAA: influence visuals (map.js pin-badge/pin-ring) ===== */
-
 .hotspot{ transition: transform .12s ease, filter .12s ease; }
 
-
-
 /* chip glass pill */
-
 .hotspot .chip{
-
   background: rgba(8,10,14,.52);
-
   backdrop-filter: blur(10px);
-
   -webkit-backdrop-filter: blur(10px);
-
   border: 1px solid rgba(255,255,255,.14);
-
   box-shadow: 0 12px 30px rgba(0,0,0,.45);
-
   padding: 8px 12px;
-
   border-radius: 999px;
-
 }
-
-
 
 /* badge readability */
-
 .map-pin .pin-badge{
-
   text-shadow: 0 1px 0 rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.35);
-
   box-shadow: 0 10px 26px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.10);
-
 }
-
-
 
 /* contested: warning near badge */
-
 .map-pin.is-contested::after{
-
   content:"⚠";
-
   position:absolute;
-
   right:-8px;
-
   top:-8px;
-
   z-index: 10;
-
   font-size: 12px;
-
   opacity: .95;
-
   pointer-events:none;
-
   filter: drop-shadow(0 6px 14px rgba(0,0,0,.6));
-
 }
-
-
 
 /* press feedback */
-
 .hotspot:active{
-
   transform: translate(-50%,-50%) scale(0.98);
-
   filter: brightness(1.08);
-
 }
-
   </style>
-
     <style id="missions-hotfix">
 
-
-
 #missionsBack{
-
   position: fixed !important;
-
   inset: 0 !important;
-
   display: none;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 12px;
-
   background: rgba(0,0,0,.78);
-
   z-index: 999999 !important;   /* wyżej niż bottom bar, map, itd */
-
   pointer-events: auto;
-
 }
-
-
 
 #missionsBack.is-open{ display:flex !important; }
 
-
-
 /* Tylko karta missions (nie ruszamy innych sheetów) */
-
 #missionsBack .sheet-card{
-
   width: min(560px, 100%) !important;
-
   max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-
   display: flex !important;
-
   flex-direction: column !important;
-
   min-height: 0 !important;      /* KLUCZ dla scrolla */
-
   overflow: hidden !important;
-
-
 
   border-radius: 16px;
-
   border: 1px solid rgba(255,255,255,.10);
-
   background: rgba(14,16,18,.92) !important;
-
   color: rgba(255,255,255,.92) !important;
-
   box-shadow: 0 18px 60px rgba(0,0,0,.65);
-
 }
-
-
 
 /* Scroll container (lista ofert/active) */
-
 #missionsRoot{
-
   flex: 1 1 auto;
-
   min-height: 0 !important;      /* KLUCZ */
-
   overflow-y: auto !important;
-
   -webkit-overflow-scrolling: touch;
-
   overscroll-behavior: contain;
-
   padding: 12px 14px calc(14px + 84px + env(safe-area-inset-bottom)) !important;
-
 }
-
-
 
 /* Lock scroll tła (opcjonalnie, ale polecam) */
-
 body.missions-open{
-
   overflow: hidden !important;
-
   touch-action: none;
-
 }
-
     
-
   </style>
-
  <!-- ⬇⬇⬇ Mission Board (inline CSS) -->
-
 <style id="quests-css">
-
   :root{
-
     /* assets */
-
     --board-bg:   url("mission_board.webp");
-
     --board-dust: url("dust.png");
 
-
-
     /* ui accents */
-
     --ui-cyan: rgba(0,229,255,.85);
-
     --ui-amber: rgba(255,176,0,.75);
-
     --ui-edge: rgba(255,255,255,.14);
-
     --ui-panel: rgba(8, 12, 18, .58);
-
   }
-
-
 
   /* Modal shell */
-
   .q-modal{
-
     position:fixed;
-
     inset:0;
-
     display:none;
-
     align-items:center;
-
     justify-content:center;
-
     background:rgba(0,0,0,.52);
-
     z-index:9999;
-
     backdrop-filter: blur(3px);
-
   }
-
-
 
   /* ✅ ważne: q-bg nie może być flex-itemem */
-
   .q-modal .q-bg{
-
     position:absolute;
-
     inset:0;
-
     pointer-events:none;
-
   }
-
-
 
   /* Board container */
-
   .q-modal-body{
-
     position: relative;
-
     z-index: 1;
-
-
 
     width:min(720px,92vw);
-
     max-height:86vh;
-
     overflow:auto;              /* ✅ scroll działa */
 
-
-
     border:1px solid rgba(36,50,68,.95);
-
     border-radius:14px;
-
     padding:16px;
 
-
-
     background:
-
       radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
-
       radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-
       linear-gradient(to bottom, rgba(6,10,14,.60), rgba(6,10,14,.86)),
-
       var(--board-bg);
-
     background-position:center;
-
     background-size:cover;
-
     background-repeat:no-repeat;
 
-
-
     box-shadow:
-
       0 18px 48px rgba(0,0,0,.62),
-
       inset 0 1px 0 rgba(255,255,255,.08),
-
       inset 0 0 0 1px rgba(0,229,255,.06);
-
     outline: 1px solid rgba(0,229,255,.10);
-
     outline-offset: 0px;
-
   }
-
-
 
   /* Scanlines + vignette */
-
   .q-modal-body::before{
-
     content:"";
-
     position:absolute;
-
     inset:0;
-
     pointer-events:none;
-
     border-radius:14px;
-
     z-index:0;
 
-
-
     background:
-
       radial-gradient(circle at 50% 40%, rgba(0,0,0,.05), rgba(0,0,0,.55) 78%, rgba(0,0,0,.75) 100%),
-
       repeating-linear-gradient(
-
         to bottom,
-
         rgba(255,255,255,.035),
-
         rgba(255,255,255,.035) 1px,
-
         rgba(0,0,0,0) 3px,
-
         rgba(0,0,0,0) 6px
-
       ),
-
       repeating-linear-gradient(
-
         90deg,
-
         rgba(255,255,255,.012),
-
         rgba(255,255,255,.012) 2px,
-
         rgba(0,0,0,0) 5px,
-
         rgba(0,0,0,0) 9px
-
       );
 
-
-
     opacity:.28;
-
     mix-blend-mode: overlay;
-
   }
-
-
 
   /* Dust overlay */
-
   .q-modal-body::after{
-
     content:"";
-
     position:absolute;
-
     inset:0;
-
     pointer-events:none;
-
     border-radius:14px;
-
     z-index:0;
 
-
-
     background: var(--board-dust);
-
     background-size: cover;
-
     background-position: center;
-
     opacity: .22;
-
     mix-blend-mode: screen;
-
   }
-
-
 
   /* ✅ content zawsze nad overlayami */
-
   .q-modal-body > *{
-
     position: relative;
-
     z-index: 1;
-
   }
-
-
 
   /* Head/status: HUD readability */
-
   .q-modal-head,
-
   .q-status{
-
     background: rgba(5,8,12,.35);
-
     border: 1px solid rgba(255,255,255,.08);
-
     border-radius: 12px;
-
     padding: 10px 10px;
-
     backdrop-filter: blur(6px);
-
     box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-
   }
-
   .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-
   .q-title{margin:0;font-size:18px}
-
   .q-head-actions{display:flex;gap:6px}
-
   .q-status{font-size:12px;opacity:.92;margin:0 2px 10px 2px}
-
   .q-loader,.q-empty{padding:16px;opacity:.85}
 
-
-
   /* Buttons: game feel */
-
   .q-btn{
-
     border:1px solid rgba(255,255,255,.10);
-
     color:#d9e3ec;
-
     border-radius:10px;
-
     padding:6px 10px;
-
     cursor:pointer;
 
-
-
     background:
-
       radial-gradient(circle at 20% 10%, rgba(0,229,255,.12), transparent 55%),
-
       radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
-
       rgba(15,22,32,.78);
 
-
-
     box-shadow:
-
       0 10px 20px rgba(0,0,0,.28),
-
       inset 0 1px 0 rgba(255,255,255,.06);
-
-
 
     transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
-
   }
-
   .q-btn:hover{
-
     filter:brightness(1.08);
-
     box-shadow:
-
       0 12px 24px rgba(0,0,0,.34),
-
       0 0 0 1px rgba(0,229,255,.10),
-
       inset 0 1px 0 rgba(255,255,255,.08);
-
   }
-
   .q-btn-ghost{background:transparent;border-color:#2a3b4d}
-
   .q-btn:active{ transform: translateY(1px); }
 
-
-
   /* Tabs */
-
   .q-filters{display:flex;gap:6px;margin:6px 2px 10px 2px;flex-wrap:wrap}
-
   .q-tab{
-
     border:1px solid rgba(255,255,255,.10);
-
     background: rgba(12,18,26,.75);
-
     color:#d7e0ea;
-
     border-radius:999px;
-
     padding:4px 10px;
-
     font-size:12px;
-
     cursor:pointer;
-
     box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-
   }
-
   .q-tab--on{
-
     background:
-
       linear-gradient(180deg, rgba(0,229,255,.10), rgba(0,0,0,0)),
-
       rgba(16,28,40,.78);
-
     border-color: rgba(0,229,255,.22);
-
     box-shadow:
-
       0 8px 16px rgba(0,0,0,.22),
-
       0 0 0 1px rgba(0,229,255,.10),
-
       inset 0 1px 0 rgba(255,255,255,.06);
-
   }
-
-
 
   /* Board layout */
-
   .quest-board{display:grid;grid-template-columns:1fr;gap:10px}
-
   @media (min-width:720px){.quest-board{grid-template-columns:1fr 1fr}}
 
-
-
   /* Quest cards */
-
   .quest{
-
     border:1px solid rgba(255,255,255,.10);
-
     border-radius:12px;
-
     padding:10px;
 
-
-
     background:
-
       radial-gradient(circle at 18% 12%, rgba(0,229,255,.06), transparent 55%),
-
       radial-gradient(circle at 85% 88%, rgba(255,176,0,.05), transparent 60%),
-
       rgba(10,14,20,.62);
 
-
-
     backdrop-filter: blur(8px);
-
     box-shadow:
-
       0 14px 30px rgba(0,0,0,.35),
-
       inset 0 1px 0 rgba(255,255,255,.05);
 
-
-
     transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
-
     will-change: transform;
-
   }
-
   .quest:hover{
-
     transform: translateY(-2px);
-
     border-color: rgba(0,229,255,.18);
-
     box-shadow:
-
       0 18px 38px rgba(0,0,0,.42),
-
       0 0 0 1px rgba(0,229,255,.08),
-
       inset 0 1px 0 rgba(255,255,255,.06);
-
   }
-
-
 
   .q-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:10px}
-
   .q-name{font-weight:600}
-
   .q-type{opacity:.7;font-size:12px;margin-left:6px}
-
   .q-head-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
-
   .q-step{font-size:12px;opacity:.8}
-
   .q-done{
-
     font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;
-
     padding:2px 6px;border-radius:999px;
-
     box-shadow: 0 8px 18px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
-
   }
-
-
 
   .q-reqs{display:flex;flex-direction:column;gap:8px}
-
   .q-row-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:4px}
-
   .q-req-name{opacity:.9}
-
   .q-req-val{opacity:.7}
 
-
-
   /* Progress bar sheen */
-
   .q-bar{
-
     height:6px;border-radius:999px;background:#16202a;overflow:hidden;
-
     position:relative;border:1px solid rgba(255,255,255,.06);
-
   }
-
   .q-bar-fill{
-
     height:100%;
-
     position:relative;
-
     background: linear-gradient(90deg, rgba(0,229,255,.65), rgba(43,139,217,.85));
-
   }
-
   .q-bar-fill::after{
-
     content:"";
-
     position:absolute;inset:0;
-
     background: linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
-
     transform: translateX(-55%);
-
     opacity:.55;
-
     animation: qSheen 1.8s ease-in-out infinite;
-
     pointer-events:none;
-
   }
-
   @keyframes qSheen{ 0%{transform:translateX(-55%)} 100%{transform:translateX(55%)} }
 
-
-
   .q-rew{margin-top:8px}
-
   .q-badge{
-
     display:inline-block;border:1px solid rgba(255,255,255,.10);
-
     border-radius:999px;padding:2px 8px;margin:2px;font-size:11px;opacity:.95;
-
     background: rgba(0,0,0,.25);
-
     box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-
   }
-
   .q-actions{margin-top:10px;display:flex;gap:8px}
 
-
-
   /* Desc (opisy) */
-
   .q-name-wrapper { flex: 1; min-width:0; }
-
   .q-desc{font-size:13px;color:#a0d8ff;margin-top:5px;line-height:1.35;opacity:.92}
-
   .q-hint{font-style:italic;color:#88c0ff;font-size:12.5px;margin-top:4px}
 
-
-
   /* Launcher */
-
   #quests-launcher.q-launcher{
-
     position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:999px;
-
     border:1px solid #2a3b4d;background:#0f1620;color:#e5eef7;font-size:20px;cursor:pointer;z-index:9999;
-
     box-shadow:0 6px 18px rgba(0,0,0,.35)
-
   }
-
   #quests-launcher.q-launcher:hover{filter:brightness(1.08)}
 
-
-
   /* Legendary Path: MAIN REWARD */
-
   .q-track-reward{
-
     margin-top: 8px;
-
     display: inline-flex;
-
     align-items: center;
-
     gap: 10px;
-
     padding: 8px 10px;
-
     border-radius: 12px;
-
     border: 1px solid rgba(36,50,68,0.9);
-
     background: rgba(8, 14, 22, 0.55);
-
     backdrop-filter: blur(6px);
-
   }
-
   .q-track-reward-label{font-size:12px;opacity:.75;white-space:nowrap}
-
   .q-track-reward img.q-track-reward-icon,
-
   .q-track-reward-icon{
-
     width:22px !important;height:22px !important;max-width:22px !important;max-height:22px !important;
-
     min-width:22px !important;min-height:22px !important;object-fit:cover !important;border-radius:6px !important;
-
     display:block !important;flex:0 0 22px !important;
-
   }
-
   .q-track-reward-name{font-weight:700;line-height:1.1;white-space:nowrap}
 
-
-
   /* Legendary Path: accordion */
-
   .quest--lp .q-acc-body{
-
     max-height:0;overflow:hidden;opacity:0;transform:translateY(-2px);
-
     transition:max-height .28s ease, opacity .18s ease, transform .18s ease;
-
   }
-
   .quest--lp.is-open .q-acc-body{max-height:1400px;opacity:1;transform:translateY(0);margin-top:8px}
-
   .q-acc-toggle{
-
     border:1px solid rgba(36,50,68,0.9);
-
     background: rgba(15,22,32,0.65);
-
     color:#d7e0ea;
-
     width:28px;height:28px;border-radius:10px;
-
     display:inline-flex;align-items:center;justify-content:center;
-
     padding:0;cursor:pointer;
-
   }
-
   .q-acc-toggle:hover{filter:brightness(1.08)}
-
   .q-acc-chevron{display:inline-block;transition:transform .18s ease;font-size:16px;line-height:1}
-
   .quest--lp.is-open .q-acc-chevron{transform:rotate(180deg)}
 
-
-
   /* B7 steps */
-
   .q-steps-wrap{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-
   .q-step-row{display:flex;justify-content:space-between;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
-
   .q-step-left{min-width:0}
-
   .q-step-title{font-weight:800;font-size:13px}
-
   .q-step-sub{opacity:.78;font-size:12px;margin-top:2px}
-
   .q-step-rew{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
-
   .q-step-right{display:flex;align-items:center}
 
-
-
   /* micro shake + thud */
-
   .quest:active{ animation: qMicroShake .18s ease-in-out 1; }
-
   .q-btn:active{ animation: qBtnThud .16s ease-in-out 1; }
 
-
-
   @keyframes qMicroShake{
-
     0%{transform:translateY(-2px) translateX(0)}
-
     20%{transform:translateY(-2px) translateX(-1px)}
-
     40%{transform:translateY(-2px) translateX(1px)}
-
     60%{transform:translateY(-2px) translateX(-1px)}
-
     80%{transform:translateY(-2px) translateX(1px)}
-
     100%{transform:translateY(-2px) translateX(0)}
-
   }
-
   @keyframes qBtnThud{
-
     0%{transform:translateY(0)}
-
     50%{transform:translateY(1px)}
-
     100%{transform:translateY(0)}
-
   }
-
-
 
   /* reduced motion */
-
   @media (prefers-reduced-motion: reduce){
-
     .quest, .q-btn{ transition:none; }
-
     .q-bar-fill::after{ animation:none; }
-
     .quest:active{ animation:none; }
-
     .q-btn:active{ animation:none; }
-
   }
-
   /* =========================
-
    SCROLL FIX (NA SAM KONIEC #quests-css)
-
    ========================= */
-
 .q-modal-body{
-
   overflow-y: auto !important;
-
   overflow-x: hidden !important;
-
   max-height: 86vh !important;
-
   -webkit-overflow-scrolling: touch;
-
   overscroll-behavior: contain;
-
   touch-action: pan-y;
-
   min-height: 0 !important;
-
 }
 
-
-
 /* jeśli q-bg był flex-itemem i mieszał — to go unieruchamiamy */
-
 .q-modal .q-bg{
-
   position: absolute !important;
-
   inset: 0 !important;
-
   pointer-events: none !important;
-
 }  
-
 </style>
-
   </style>
 
-
-
 <!-- MAP CHIP (premium) -->
-
 <style id="map-chip-css">
-
   /* === Premium chip (glass + subtle glow) === */
-
   .chip{
-
     display:flex;
-
     align-items:center;
-
     gap:8px;
-
     padding:6px 10px;
-
     border-radius:999px;
-
     background: rgba(0,0,0,.55);
-
     border:1px solid rgba(255,255,255,.14);
-
     backdrop-filter: blur(8px);
-
     -webkit-backdrop-filter: blur(8px);
-
     box-shadow: 0 6px 18px rgba(0,0,0,.25);
-
   }
-
-
 
   .hotspot.active .chip{
-
     background: rgba(0,0,0,.68);
-
     border-color: rgba(255,255,255,.22);
-
     box-shadow: 0 10px 26px rgba(0,0,0,.35);
-
   }
-
-
 
   .chip .chip-name{
-
     font-weight:800;
-
     font-size:12px;
-
     letter-spacing:.2px;
-
     text-shadow: 0 1px 10px rgba(0,0,0,.35);
-
   }
-
-
 
   /* Badge base */
-
   .chip .chip-faction{
-
     width:18px;
-
     height:18px;
-
     border-radius:999px;
-
     display:grid;
-
     place-items:center;
-
     background: rgba(0,0,0,.65);
-
     border:1px solid rgba(255,255,255,.18);
-
     flex:0 0 auto;
-
   }
-
-
 
   .chip .chip-faction svg{
-
     width:12px;
-
     height:12px;
-
     display:block;
-
     opacity:.95;
-
   }
-
-
 
   .chip .chip-warn{
-
     margin-left:2px;
-
     font-size:12px;
-
     opacity:.9;
-
     filter: drop-shadow(0 0 10px rgba(255,255,255,.12));
-
   }
-
-
 
   /* Faction color + gentle glow on badge */
-
   .chip .chip-faction.f-rb{ color:rgba(255,90,90,1); border-color:rgba(255,90,90,.35); box-shadow:0 0 12px rgba(255,90,90,.22); }
-
   .chip .chip-faction.f-ew{ color:rgba(255,210,90,1); border-color:rgba(255,210,90,.35); box-shadow:0 0 12px rgba(255,210,90,.18); }
-
   .chip .chip-faction.f-pb{ color:rgba(255,160,70,1); border-color:rgba(255,160,70,.35); box-shadow:0 0 12px rgba(255,160,70,.18); }
-
   .chip .chip-faction.f-ih{ color:rgba(90,235,255,1); border-color:rgba(90,235,255,.35); box-shadow:0 0 12px rgba(90,235,255,.16); }
-
 </style>
 
-
-
   <!-- ✅ Bottom Nav + Sheets -->
-
 <style id="home-nav-css">
-
   /* =========================
-
      ✅ Bottom Nav — V2 (premium)
-
      ========================= */
-
   :root{
-
     --ah-cyan: rgba(0,229,255,.85);
-
     --ah-amber: rgba(255,176,0,.78);
-
     --ah-stroke: rgba(255,255,255,.10);
-
     --ah-panel: rgba(10,12,16,.62);
-
   }
-
-
 
   .ah-bottomnav{
-
     position: fixed;
-
     left: 14px; right: 14px;
-
     bottom: calc(12px + env(safe-area-inset-bottom));
-
     height: 74px;
 
-
-
     padding: 10px;
-
     display: grid;
-
     grid-template-columns: repeat(5, 1fr);
-
     gap: 8px;
 
-
-
     border-radius: 22px;
-
     background:
-
       radial-gradient(circle at 20% 0%, rgba(0,229,255,.10), transparent 55%),
-
       radial-gradient(circle at 85% 120%, rgba(255,176,0,.10), transparent 55%),
-
       rgba(0,0,0,.35);
-
     border: 1px solid var(--ah-stroke);
-
     backdrop-filter: blur(14px);
-
     -webkit-backdrop-filter: blur(14px);
 
-
-
     box-shadow:
-
       0 18px 46px rgba(0,0,0,.65),
-
       inset 0 1px 0 rgba(255,255,255,.06);
 
-
-
     z-index: 8000; /* poniżej quests(9999) i missions(999999) */
-
   }
-
-
 
   .ah-navbtn{
-
     appearance:none;
-
     border: 1px solid rgba(255,255,255,.08);
-
     background: rgba(0,0,0,.20);
-
     color: rgba(255,255,255,.92);
-
     border-radius: 18px;
 
-
-
     display:flex;
-
     flex-direction:column;
-
     align-items:center;
-
     justify-content:center;
-
     gap: 4px;
 
-
-
     cursor:pointer;
-
     transition: transform .08s ease, filter .12s ease, border-color .12s ease, background .12s ease;
-
     user-select:none;
-
     position: relative; /* dla badge */
-
   }
-
-
 
   .ah-navbtn:active{ transform: translateY(1px); }
 
-
-
   .ah-navbtn .ah-ico{
-
     font-size: 18px;
-
     line-height: 1;
-
     filter: drop-shadow(0 4px 10px rgba(0,0,0,.55));
-
   }
-
-
 
   .ah-navbtn .ah-lbl{
-
     font-size: 10.5px;
-
     line-height: 1;
-
     opacity: .82;
-
     letter-spacing: .2px;
-
     font-weight: 800;
-
   }
-
-
 
   /* “selected” state */
-
   .ah-navbtn.is-active{
-
     border-color: rgba(0,229,255,.22);
-
     background:
-
       radial-gradient(circle at 30% 10%, rgba(0,229,255,.10), transparent 55%),
-
       rgba(0,0,0,.24);
-
     filter: brightness(1.06);
-
   }
-
-
 
   /* Primary (Quests) */
-
   .ah-navbtn.ah-primary{
-
     transform: translateY(-6px);
-
     border-color: rgba(255,255,255,.14);
-
     background:
-
       radial-gradient(circle at 25% 15%, rgba(0,229,255,.12), transparent 58%),
-
       radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 58%),
-
       rgba(0,0,0,.22);
-
     box-shadow: 0 10px 24px rgba(0,0,0,.45);
-
   }
-
   .ah-navbtn.ah-primary:active{ transform: translateY(-5px); }
 
-
-
   .ah-badge{
-
     position:absolute;
-
     top: 10px; right: 12px;
-
     width: 8px; height: 8px;
-
     border-radius: 99px;
-
     background: rgba(255,255,255,.90);
-
     box-shadow: 0 0 12px rgba(255,255,255,.25);
-
   }
-
-
 
   @media (max-width: 360px){
-
     .ah-bottomnav{ height: 70px; padding: 9px; }
-
     .ah-navbtn .ah-lbl{ font-size: 10px; }
-
   }
-
-
 
   /* =========================
-
      Sheets (zostają jak były)
-
      ========================= */
-
   .ah-back{
-
     position: fixed;
-
     inset: 0;
-
     z-index: 8500;
-
     background: rgba(0,0,0,.55);
-
     display:flex;
-
     align-items:flex-end;
-
     justify-content:center;
-
     padding: 12px;
-
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
-
   }
-
-
 
   .ah-panel{
-
     width: min(520px, 100%);
-
     border-radius: 22px;
-
     border: 1px solid rgba(255,255,255,.10);
-
     background: rgba(10,12,16,.70);
-
     backdrop-filter: blur(14px);
-
     -webkit-backdrop-filter: blur(14px);
-
     overflow:hidden;
-
     box-shadow: 0 12px 40px rgba(0,0,0,.55);
-
   }
-
-
 
   .ah-panel-hd{
-
     display:flex;
-
     align-items:center;
-
     justify-content:space-between;
-
     padding: 14px 14px 10px;
-
   }
-
   .ah-title{
-
     font-size: 14px;
-
     font-weight: 900;
-
     letter-spacing: .4px;
-
     color: rgba(255,255,255,.92);
-
   }
-
   .ah-x{
-
     width: 36px; height: 36px;
-
     border-radius: 14px;
-
     border: 1px solid rgba(255,255,255,.10);
-
     background: rgba(0,0,0,.30);
-
     color: rgba(255,255,255,.9);
-
     cursor:pointer;
-
   }
-
-
 
   .ah-grid{
-
     display:grid;
-
     grid-template-columns: repeat(2, minmax(0, 1fr));
-
     gap: 10px;
-
     padding: 12px 14px 14px;
-
   }
-
   .ah-tile{
-
     display:flex;
-
     align-items:center;
-
     gap: 10px;
-
     padding: 14px 12px;
-
     border-radius: 18px;
-
     border: 1px solid rgba(255,255,255,.10);
-
     background: rgba(0,0,0,.25);
-
     color: rgba(255,255,255,.92);
-
     cursor:pointer;
-
   }
-
   .ah-tile span{ font-size: 18px; }
-
   .ah-tile b{ font-size: 13px; letter-spacing:.2px; }
 
-
-
   .ah-actions{
-
     display:flex;
-
     flex-direction:column;
-
     gap: 10px;
-
     padding: 0 14px 14px;
-
   }
-
   .ah-action{
-
     height: 46px;
-
     border-radius: 18px;
-
     border: 1px solid rgba(255,255,255,.10);
-
     background: rgba(0,0,0,.25);
-
     color: rgba(255,255,255,.92);
-
     font-weight: 900;
-
     letter-spacing: .2px;
-
     cursor:pointer;
-
   }
-
 </style>
-
 </style>
-
   <style id="inventory-css">
-
   :root{
-
     --inv-bg: url("inventory_bg.png"); /* wrzuć plik obok index.html albo zmień ścieżkę */
-
     --inv-dust: url("dust.png");       /* jeśli masz dust.png (jak w Mission Board) */
-
   }
-
-
 
   /* Root Inventory ekranu (dodamy klasę w inventory.js) */
-
   .inv-root{
-
     position: relative;
-
     min-height: 100vh;
-
     overflow: hidden; /* trzyma overlay w ramach */
-
     background: var(--inv-bg);
-
     background-size: cover;
-
     background-position: center;
-
     background-repeat: no-repeat;
-
   }
-
-
 
   /* Vignette + scanlines (delikatne) */
-
   .inv-root::before{
-
     content:"";
-
     position:absolute;
-
     inset:0;
-
     pointer-events:none;
-
     background:
-
       radial-gradient(circle at 50% 35%, rgba(0,0,0,.05), rgba(0,0,0,.62) 78%, rgba(0,0,0,.78) 100%),
-
       repeating-linear-gradient(
-
         to bottom,
-
         rgba(255,255,255,.030),
-
         rgba(255,255,255,.030) 1px,
-
         rgba(0,0,0,0) 3px,
-
         rgba(0,0,0,0) 6px
-
       );
-
     opacity:.24;
-
     mix-blend-mode: overlay;
-
     z-index: 0;
-
   }
-
-
 
   /* Dust overlay */
-
   .inv-root::after{
-
     content:"";
-
     position:absolute;
-
     inset:0;
-
     pointer-events:none;
-
     background: var(--inv-dust);
-
     background-size: cover;
-
     background-position: center;
-
     opacity: .16;            /* reguluj */
-
     mix-blend-mode: screen;
-
     z-index: 0;
-
   }
-
-
 
   /* Content nad overlay */
-
   .inv-root > *{
-
     position: relative;
-
     z-index: 1;
-
   }
-
-
 
   /* Panel grid — bardziej “game glass”, a nie czarna płyta */
-
   #inventory-grid{
-
     background: rgba(0,0,0,.22) !important; /* nadpisze inline */
-
     border: 1px solid rgba(255,255,255,.10) !important;
-
     backdrop-filter: blur(10px);
-
     box-shadow: 0 18px 40px rgba(0,0,0,.35);
-
   }
-
-
 
   /* Mikro polish dla tabów jeśli chcesz */
-
   .tab-btn{
-
     border: 1px solid rgba(255,255,255,.10);
-
     background: rgba(0,0,0,.28);
-
     color: #d7e0ea;
-
     backdrop-filter: blur(8px);
-
   }
-
   .tab-btn.active{
-
     border-color: rgba(0,229,255,.22);
-
     box-shadow: 0 0 0 1px rgba(0,229,255,.10);
-
   }
-
 </style>
-
-
-
 
 
   <!-- FAQ styles (inline, jeśli brak osobnego CSS) -->
-
   <style id="faq-styles">
-
   /* Floating FAQ button – mocniej widoczny */
-
 .fab-faq{
-
   position: fixed;
-
   left: max(16px, env(safe-area-inset-left));
-
   /* podnieś nad przycisk Quests */
-
   bottom: max(48px, calc(env(safe-area-inset-bottom) + 20px));
-
   z-index: 1200;
 
-
-
   display: inline-flex;
-
   align-items: center;
-
   gap: .45rem;
 
-
-
   padding: .6rem .9rem;
-
   border-radius: 999px;
 
-
-
   border: 1px solid rgba(0,229,255,0.85);
-
   background:
-
     radial-gradient(circle at 30% 30%,
-
       rgba(0,229,255,0.9),
-
       rgba(0,0,0,0.96));
-
   backdrop-filter: blur(6px);
 
-
-
   color: #ffffff;
-
   cursor: pointer;
-
   user-select: none;
 
-
-
   box-shadow:
-
     0 0 16px rgba(0,229,255,0.85),
-
     0 0 28px rgba(0,0,0,0.9);
 
-
-
   font-weight: 600;
-
   font-size: .9rem;
 
-
-
   animation: faqPulse 2.4s ease-in-out infinite;
-
 }
-
-
 
 .fab-faq:hover{
-
   border-color: rgba(0,229,255,1);
-
 }
-
-
 
 .fab-faq:active{
-
   transform: translateY(1px);
-
 }
-
-
 
 .fab-faq svg{
-
   opacity:.9;
-
 }
-
 .faq-icon{
-
   width: 22px;
-
   height: 22px;
-
   flex-shrink: 0;
-
   filter: drop-shadow(0 0 6px rgba(0,229,255,0.8));
-
 }
-
 /* Na bardzo małych ekranach tylko ikonka */
-
 @media (max-width: 420px){
-
   .fab-faq span{ display:none; }
-
   .fab-faq{
-
     padding:.6rem;
-
     border-radius:16px;
-
   }
-
 }
-
-
 
 /* delikatny puls */
-
 @keyframes faqPulse{
-
   0%   { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
-
   50%  { box-shadow: 0 0 22px rgba(0,229,255,0.95); transform: scale(1.05); }
-
   100% { box-shadow: 0 0 10px rgba(0,229,255,0.4); transform: scale(1); }
-
 }
-
   /* FAQ modal */
-
   .faq-modal[hidden]{ display:none; }
-
   .faq-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); }
-
   .faq-sheet{ position:fixed; inset:6% 4% auto 4%; max-height:88vh; background:rgba(10,10,14,.92);
-
     border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.6); color:#eaeaea; }
-
   @media (min-width:800px){ .faq-sheet{ inset:8% 12% auto 12%; } }
-
   .faq-header{ display:flex; align-items:center; justify-content:space-between; padding:.9rem 1rem; border-bottom:1px solid rgba(255,255,255,.08); }
-
   .faq-header h2{ margin:0; font-size:1.05rem; letter-spacing:.2px; }
-
   .faq-close{ border:0; background:transparent; color:#aaa; font-size:1.1rem; cursor:pointer; }
-
   .faq-close:hover{ color:#fff; }
-
   .faq-toolbar{ display:flex; gap:.6rem; padding:.7rem 1rem; border-bottom:1px solid rgba(255,255,255,.06); flex-wrap:wrap; }
-
   #faqSearch{ flex:1 1 220px; padding:.55rem .7rem; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.35); color:#eaeaea; }
-
   #faqSearch::placeholder{ color:#9aa; }
-
   .faq-tabs{ display:flex; gap:.4rem; overflow:auto; scrollbar-width:none; }
-
   .faq-tabs::-webkit-scrollbar{ display:none; }
-
   .faq-tab{ padding:.45rem .65rem; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); border-radius:999px; font-size:.85rem; cursor:pointer; white-space:nowrap; }
-
   .faq-tab[aria-selected="true"]{ border-color:#00E5FF; box-shadow:0 0 0 1px rgba(0,229,255,.25) inset; }
-
   .faq-list{ padding:.4rem 1rem 1rem; max-height:58vh; overflow:auto; }
-
   .faq-item{ border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(0,0,0,.25); margin:.5rem 0; overflow:hidden; }
-
   .faq-q{ width:100%; text-align:left; padding:.7rem .9rem; background:transparent; color:#eaeaea; border:0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-
   .faq-q span{ font-weight:600; font-size:.95rem; }
-
   .faq-q svg{ opacity:.7; transition: transform .18s ease; }
-
   .faq-item[open] .faq-q svg{ transform:rotate(180deg); }
-
   .faq-a{ padding:.5rem .9rem 1rem; color:#cfd5db; line-height:1.45; border-top:1px solid rgba(255,255,255,.06); }
-
   .faq-a p{ margin:.45rem 0; }
-
   .faq-a code, .faq-a kbd{ background:rgba(255,255,255,.06); padding:.08rem .35rem; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
-
   .faq-footer{ display:flex; justify-content:space-between; align-items:center; padding:.6rem 1rem; border-top:1px solid rgba(255,255,255,.08); }
-
   .faq-copylink{ border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.25); color:#eaeaea; padding:.4rem .6rem; border-radius:10px; cursor:pointer; }
-
   .faq-hint{ color:#9aa; font-size:.85rem; }
-
     /* hide legacy floating buttons in Telegram WebApp */
-
 body.is-tg #fabFaq{ display:none !important; }
-
 body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
-
   </style>
-
 <!-- TELEGRAM ANALYTICS -->
-
 <script>
-
   function initAnalytics() {
-
     const ta = window.telegramAnalytics;
-
     if (!ta?.init) {
-
       console.error("❌ telegramAnalytics missing");
-
       return;
-
     }
 
-
-
     ta.init({
-
       token: "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI=",
-
       appName: "the_alpha_husky"
-
     });
-
-
 
     console.log("✅ telegramAnalytics.init OK");
 
-
-
     // 👇 po init odpalamy pewny event app-init
-
     setTimeout(taForceAppInit, 800);
-
   }
-
-
 
   async function taForceAppInit(){
-
     const uid = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-
     if (!uid) { console.warn("[TA] no uid"); return; }
 
-
-
     const sid = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
-
     const body = [{
-
       event_name: "app-init",
-
       session_id: sid,
-
       user_id: uid,
-
       app_name: "the_alpha_husky",
-
       client_timestamp: String(Date.now()),
-
       platform: window.Telegram?.WebApp?.platform || "web",
-
       url_referer: location.href,
-
       locale: navigator.language
-
     }];
 
-
-
     const r = await fetch("https://tganalytics.xyz/events", {
-
       method: "POST",
-
       headers: {
-
         "Content-Type": "application/json",
-
         "TGA-Auth-Token": "eyJhcHBfbmFtZSI6InRoZV9hbHBoYV9odXNreSIsImFwcF91cmwiOiJodHRwczovL3QubWUvQWxwaGFfaHVza3lfYm90IiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vYXBwLmFscGhhaHVza3kud2luIn0=!V59oqc9ERUsUarFcUuk00srfPBXlFk1gQ3VLD497ZHI="
-
       },
-
       body: JSON.stringify(body)
-
     });
 
-
-
     console.log("[TA] app-init:", r.status, await r.text());
-
   }
-
 </script>
-
-
 
 <script
-
   async
-
   src="https://tganalytics.xyz/index.js"
-
   onload="initAnalytics()"
-
   type="text/javascript">
-
 </script>
-
 <!-- /TELEGRAM ANALYTICS -->
-
 </head>
-
 <body>
-
   <div id="dbg">init…</div>
-
 <div class="app">
-
   <div class="bg">
-
     <video autoplay muted loop playsinline poster="background2.webp" preload="metadata">
-
       <source src="background2.webm" type="video/webm" />
-
       <source src="background2.mp4" type="video/mp4" />
-
     </video>
-
     <div class="poster" style="background-image:url('background2.webp');"></div>
-
   </div>
-
   <div id="app" class="ui">
-
       <div class="topbar">
-
   <div id="player">Alpha Husky</div>
 
-
-
   <div class="badge faction-pill" id="faction">
-
     <span id="factionTag" class="tag-badge tag-pack">PACK</span>
-
     <span id="factionMeta" class="faction-meta">Lv 1 • 0🦴</span>
-
   </div>
-
-
 
   <!-- ✅ TON CONNECT placeholder (tu renderuje się button) -->
-
   <div id="ton-connect" class="ton-connect"></div>
-
   <div id="ton-wallet-status" class="ton-wallet-status"></div>
-
       </div>
-
       <div class="grid">
-
         <div class="hud-layout">
-
           <!-- LEWA KOLUMNA (utility / progres) -->
-
           <div class="hud-col hud-left" id="homeLegacyLeft">
-
             <button class="btn map" aria-label="Open Alpha Map" type="button">
-
               <img src="images/ui/map-icon.png" alt="Alpha Map" class="btn-icon">
-
               <span>Alpha Map</span>
-
             </button>
-
             <button class="btn mission" aria-label="Open Missions" type="button">Mission</button>
-
             <button class="btn inventory" aria-label="Open Inventory" type="button">Inventory</button>
-
             <button class="btn shop" aria-label="Open Shop" type="button">Shop</button>
-
             <button class="btn referral referral-btn" aria-label="Open Referrals" type="button">
-
           Referrals
-
         </button>
-
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
-
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
-
           </div>
-
           <!-- ŚRODEK – SKIN / HERO -->
-
 <div class="hero-center">
-
   <div class="hero-frame" id="heroFrame">
-
     <img
-
       id="player-skin"
-
       class="hero-skin"
-
       src="/assets/skins/lunarhowl_skin.webp"
-
       alt="Alpha Husky skin">
 
-
-
     <!-- ✅ FRAME OVERLAY (ramka na wierzchu) -->
-
   <img id="player-frame" class="hero-frame-overlay" src="" alt="" style="display:none">
-
   </div>
-
-
 
   <div class="hero-caption">
-
     <span id="heroName">Alpha Husky</span>
-
     <span>·</span>
-
     <span id="heroLevel">Lv.1</span>
-
   </div>
-
   <div class="share-row" id="shareRow" style="display:none">
-
   <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
-
   <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
-
   <button class="btn share-mini" type="button" data-share-style="3">Share III</button>
-
 </div>
-
-
 
   <!-- ✅ ACTIVE BUFFS (pod nickiem/levelem) -->
-
   <div id="buffsLine" class="buffs-line" style="display:none"></div>
-
 </div>
-
           <!-- PRAWA KOLUMNA (tożsamość / companions) -->
-
           <div class="hud-col hud-right" id="homeLegacyRight">
-
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
-
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
-
             <button class="btn char" aria-label="Open Character" type="button">Character</button>
-
             <button class="btn arena" aria-label="Open Arena" type="button">Arena</button>
-
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
-
             <button class="btn equipped" aria-label="Open Equipped" type="button" onclick="window.Equipped?.open?.()">Equipped</button>
-
             <!-- ✅ TU -->
-
   <button class="btn whatsnew" id="btnWhatsNew" aria-label="Open What's New" type="button">
-
     What’s New
-
     <span id="whatsNewDot"
-
           style="display:none;width:8px;height:8px;border-radius:99px;margin-left:8px;vertical-align:middle;background:#ff3b30;"></span>
-
   </button>
-
             <button class="btn feed" aria-label="Open Feed" type="button">Feed</button>
-
             <button class="btn mypets" aria-label="Open MyPets" type="button">MyPets</button>
-
           </div>
-
         </div>
-
         <div class="spacer"></div>
-
       </div>
-
     <!-- ✅ Bottom Nav -->
-
 <nav id="ahBottomNav" class="ah-bottomnav" aria-label="Primary">
-
   <button class="ah-navbtn" data-go="map" aria-label="Map" type="button">
-
     <span class="ah-ico">🗺️</span><span class="ah-lbl">Map</span>
-
   </button>
-
-
 
   <button class="ah-navbtn" data-go="missions" aria-label="Missions" type="button">
-
     <span class="ah-ico">⚔️</span><span class="ah-lbl">Missions</span>
-
   </button>
-
-
 
   <button class="ah-navbtn ah-primary" data-go="quests" aria-label="Quests" type="button">
-
     <span class="ah-ico">📜</span><span class="ah-lbl">Quests</span>
-
     <span class="ah-badge" data-badge="quests" hidden></span>
-
   </button>
-
-
 
   <button class="ah-navbtn" data-go="inventory" aria-label="Inventory" type="button">
-
     <span class="ah-ico">🎒</span><span class="ah-lbl">Inventory</span>
-
   </button>
-
-
 
   <button class="ah-navbtn" data-go="hub" aria-label="Hub" type="button">
-
     <span class="ah-ico">☰</span><span class="ah-lbl">Hub</span>
-
     <span class="ah-badge" data-badge="hub" hidden></span>
-
   </button>
-
 </nav>
 
-
-
 <!-- ✅ Hub Sheet -->
-
 <div id="hubBack" class="ah-back" style="display:none">
-
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Hub">
-
     <div class="ah-panel-hd">
-
       <div class="ah-title">Hub</div>
-
       <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
-
     </div>
-
-
 
     <div class="ah-grid">
-
       <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
-
       <!-- ✅ NEW: Support -->
-
       <button class="ah-tile" data-action="support" type="button"><span>💎</span><b>Support</b></button>
-
       <button class="ah-tile" data-action="faq" type="button"><span>❓</span><b>FAQ</b></button>
-
       <button class="ah-tile" data-action="adopt" type="button"><span>🐾</span><b>Adopt</b></button>
-
       <button class="ah-tile" data-action="arena" type="button"><span>🏆</span><b>Arena</b></button>
-
       <button class="ah-tile" data-action="referrals" type="button"><span>🤝</span><b>Referrals</b></button>
-
       <button class="ah-tile" data-action="howlboard" type="button"><span>📣</span><b>Howlboard</b></button>
-
       <button class="ah-tile" data-action="profile" type="button"><span>👤</span><b>Profile</b></button>
-
       <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
-
       <button class="ah-tile" data-action="feed" type="button"><span>🧾</span><b>Feed</b></button>
-
       <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
-
     </div>
-
   </div>
-
 </div>
-
-
 
 <!-- ✅ Character Sheet (tap hero-frame) -->
-
 <div id="charBack" class="ah-back" style="display:none">
-
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Character">
-
     <div class="ah-panel-hd">
-
       <div class="ah-title">Character</div>
-
       <button class="ah-x" data-close="charBack" aria-label="Close" type="button">✕</button>
-
     </div>
-
-
 
     <div class="ah-actions">
-
       <button class="ah-action" data-action="equipped" type="button">Equipped</button>
-
       <button class="ah-action" data-action="skins" type="button">Skins</button>
-
       <button class="ah-action" data-action="avatar" type="button">Avatar</button>
-
       <button class="ah-action" data-action="pets" type="button">Pets</button>
-
     </div>
-
   </div>
-
 </div>
-
-
 
 <!-- ✅ Share Sheet -->
-
 <div id="shareBack" class="ah-back" style="display:none">
-
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Share">
-
     <div class="ah-panel-hd">
-
       <div class="ah-title">Share</div>
-
       <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">✕</button>
-
     </div>
-
     <div class="ah-actions">
-
       <button class="ah-action" data-share-style="1" type="button">Share Style I</button>
-
       <button class="ah-action" data-share-style="2" type="button">Share Style II</button>
-
       <button class="ah-action" data-share-style="3" type="button">Share Style III</button>
-
     </div>
-
   </div>
-
 </div>
-
-
-
 
 
     <!-- MAP MODAL -->
-
     <div class="map-back" id="mapBack">
-
       <div class="map-wrap">
-
         <div class="map-card">
-
           <div class="map-head">
-
             <h2>Regions Map</h2>
-
             <div id="unlockProgress" class="progress-pill" style="display:none">
-
               <span id="unlockLabel">Moon Lab</span>
-
               <span class="progress-bar"><i id="unlockFill"></i></span>
-
               <span id="unlockCount">0/5</span>
-
             </div>
-
             <button class="close-x" id="closeMap" type="button">×</button>
-
           </div>
-
           <div id="map" class="map" data-map-root>
-
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
-
 <div class="pins" id="pins"></div>
-
 <canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
-
-
 
     <!-- Locked info -->
-
     <div class="locked-back" id="lockedBack">
-
       <div class="locked-card">
-
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-
           <div style="font-weight:600;" id="lockedTitle">Locked</div>
-
           <button class="btn" id="closeLocked" type="button">×</button>
-
         </div>
-
         <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
-
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-
           <button class="btn linklike" id="lockedShop" type="button">Open Shop</button>
-
           <button class="btn linklike" id="lockedForge" type="button">Open Forge</button>
-
           <button class="btn primary" id="lockedAsk" type="button">Ask the Bot</button>
-
         </div>
-
       </div>
-
     </div>
-
-
 
     <!-- Howlboard modal -->
-
     <div class="sheet-back" id="boardBack">
-
       <div class="sheet-card">
-
         <div style="display:flex;justify-content:space-between;align-items:center;">
-
           <div style="font-weight:700;">Howlboard</div>
-
           <button class="btn" id="closeBoard" type="button">×</button>
-
         </div>
-
         <div class="tabs" style="margin-top:10px;">
-
           <button class="tab" data-sort="bones" type="button">Bones</button>
-
           <button class="tab" data-sort="level" type="button">Level</button>
-
           <button class="tab" data-sort="howls" type="button">Howls</button>
-
         </div>
-
         <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
-
       </div>
-
     </div>
-
     <!-- ✅ Support Sheet -->
-
 <div id="supportBack" class="ah-back" style="display:none">
-
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support">
-
     <div class="ah-panel-hd">
-
       <div class="ah-title">Support</div>
-
       <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
-
     </div>
-
-
 
     <div class="ah-actions" style="gap:10px">
-
       <button class="ah-action" type="button" data-support-tier="supporter">
-
         ⭐ Supporter — frame + tag
-
       </button>
-
       <button class="ah-action" type="button" data-support-tier="patron">
-
         💎 Patron — frame + tag
-
       </button>
-
-
 
       <!-- Founder raczej admin/self-claim z backendu -->
-
       <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
-
         🔥 Founder (admin)
-
       </button>
-
     </div>
-
-
 
     <div style="opacity:.85;font-size:12px;line-height:1.35;margin-top:10px">
-
       Purchase will unlock a topbar tag + frame (Supporter / Patron).  
-
       Payment will be handled via Telegram (Stars) once backend is wired.
-
     </div>
-
   </div>
-
 </div>
-
-
 
    <!-- Region Sheet modal -->
-
 <div class="sheet-back region-sheet" id="regionBack">
-
   <div class="sheet-card">
-
     <div style="display:flex;justify-content:space-between;align-items:center;">
-
       <div id="regionTitle" style="font-weight:700;"></div>
-
       <button class="btn" id="closeRegion" type="button">×</button>
-
     </div>
-
     <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
-
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-
       <button class="btn primary" id="regionGo" type="button">Travel</button>
-
       <button class="btn linklike" id="regionLore" type="button">Lore</button>
-
     </div>
-
   </div>
-
 </div>
 
-
-
 <!-- SKINS MODAL -->
-
 <div class="sheet-back avatar-sheet" id="avatarBack" style="display:none;">
-
   <div class="sheet-card">
-
     <div style="display:flex;justify-content:space-between;align-items:center;">
-
       <div style="font-weight:700;">Skin Gallery</div>
-
       <button class="btn" id="closeAvatar" type="button">×</button>
-
     </div>
-
     <img id="skinPreviewImg"
-
      alt="Skin preview"
-
      style="display:none; width:400px; height:600px; object-fit:contain;
-
             margin:20px auto; border:1px solid var(--ring); border-radius:8px;
-
             background:rgba(0,0,0,.5);" />
 
-
-
     <canvas id="skinCanvas" width="400" height="600"
-
       style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);">
-
     </canvas>
-
-
 
     <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">—</div>
 
-
-
     <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
-
       <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
-
       <button class="btn" id="shareSkin" type="button">Share Flex</button>
-
     </div>
-
-
 
     <!-- Galeria skinów renderowana dynamicznie -->
-
     <div id="skinButtons" class="skins-grid"></div>
-
   </div>
-
 </div>
-
-
 
 <!-- Building modal (HTTP) -->
-
 <div class="sheet-back" id="buildingBack">
-
   <div class="sheet-card">
-
     <div style="display:flex;justify-content:space-between;align-items:center;">
-
       <div id="buildingTitle" style="font-weight:700;">Building</div>
-
       <button class="btn" id="closeBuilding" type="button">×</button>
-
     </div>
-
     <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
-
     <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
-
       <div><b>Status:</b> <span id="buildingStatus">—</span></div>
-
       <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
-
       <div id="buildingRoutesWrap" style="display:none;">
-
         <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
-
         <select id="buildingRoute" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:rgba(255,255,255,.05);color:#fff"></select>
-
       </div>
-
     </div>
-
     <div class="btn-row" style="margin-top:12px;">
-
       <button class="btn" id="buildingRefresh" type="button">Refresh</button>
-
       <button class="btn primary" id="buildingStartBtn" type="button">Start</button>
-
       <button class="btn" id="buildingResolveBtn" style="display:none;" type="button">Resolve</button>
-
     </div>
-
   </div>
-
 </div>
 
-
-
     <!-- =========================
-
      PATCH 2 — MODALS (robust)
-
      ========================= -->
 
-
-
 <!-- MISSIONS MODAL -->
-
 <div class="sheet-back" id="missionsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Missions">
-
   <div class="sheet-card">
-
     <div style="display:flex;justify-content:space-between;align-items:center;">
-
       <div style="font-weight:700;">Missions</div>
-
       <button class="btn" id="closeMissions" type="button" aria-label="Close missions">×</button>
-
     </div>
-
-
 
     <div id="missionsRoot" style="margin-top:12px; display:grid; gap:10px;"></div>
 
-
-
     <div class="btn-row" style="margin-top:12px;">
-
       <button class="btn" id="missionsRefresh" type="button">Refresh</button>
-
       <button class="btn primary" id="missionsResolve" type="button" style="display:none;">Resolve</button>
-
     </div>
-
-
 
     <p style="opacity:.7; font-size:12px; margin-top:10px;">
-
       Missions are backend-driven. If backend is offline you'll see an error here.
-
     </p>
-
   </div>
-
 </div>
 
-
-
 <!-- Quests modal (STARY – fallback Daily) -->
-
 <div class="sheet-back" id="questsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Daily Quests (fallback)">
-
   <div class="sheet-card">
-
     <div style="display:flex;justify-content:space-between;align-items:center;">
-
       <div style="font-weight:700;">Daily Quests</div>
-
       <button class="btn" id="closeQuests" type="button" aria-label="Close daily quests">×</button>
-
     </div>
-
-
 
     <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
 
-
-
     <p style="opacity:.7; font-size:12px; margin-top:10px;">
-
       Quests resetują się codziennie. Kliknięcia wykonują te same akcje, co w bocie.
-
     </p>
-
   </div>
-
 </div>
 
-
-
 <!-- NOWY MODAL: Mission Board -->
-
 <div id="qBack" class="q-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Mission Board">
-
   <div class="q-bg" aria-hidden="true"></div>
 
-
-
   <div class="q-modal-body">
-
     <div class="q-modal-head">
-
       <h3 class="q-title">Mission Board</h3>
 
-
-
       <div class="q-head-actions">
-
         <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
-
         <button class="q-btn" id="qClose" type="button" title="Close" aria-label="Close">×</button>
-
       </div>
-
     </div>
-
-
 
     <div id="qStatus" class="q-status">Ready</div>
 
-
-
     <div id="qTabs" class="q-filters" role="tablist" aria-label="Quest categories">
-
       <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true" type="button">
-
         All <span data-count="all">0</span>
-
       </button>
-
       <button class="q-tab" data-tab="daily" role="tab" aria-selected="false" type="button">
-
         Daily <span data-count="daily">0</span>
-
       </button>
-
       <button class="q-tab" data-tab="legendary" role="tab" aria-selected="false" type="button">
-
         Legendary Path <span data-count="legendary">0</span>
-
       </button>
-
       <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false" type="button">
-
         Repeatable <span data-count="repeatable">0</span>
-
       </button>
-
       <button class="q-tab" data-tab="story" role="tab" aria-selected="false" type="button">
-
         Story <span data-count="story">0</span>
-
       </button>
-
       <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false" type="button">
-
         Bounties <span data-count="bounties">0</span>
-
       </button>
-
     </div>
-
-
 
     <div id="qState" class="q-filters" aria-label="Quest state filters">
-
       <button class="q-tab q-tab--on" data-state="any" type="button">All</button>
-
       <button class="q-tab" data-state="ready" type="button">Ready</button>
-
       <button class="q-tab" data-state="accepted" type="button">Accepted</button>
-
       <button class="q-tab" data-state="available" type="button">Available</button>
-
       <button class="q-tab" data-state="cooldown" type="button">Cooldown</button>
-
     </div>
-
-
 
     <div id="qList" class="quest-board"></div>
-
   </div>
-
 </div>
 
-
-
 <!-- === FAQ MODAL (nowy) === -->
-
 <div id="faqModal" class="faq-modal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" hidden>
-
   <div class="faq-backdrop" data-close></div>
-
   <div class="faq-sheet" role="document">
-
     <header class="faq-header">
-
       <h2 id="faqTitle">Alpha Husky — FAQ</h2>
-
       <button class="faq-close" data-close aria-label="Close FAQ">✕</button>
-
     </header>
 
-
-
     <div class="faq-toolbar">
-
       <input id="faqSearch" type="search" placeholder="Search FAQ…" autocomplete="off" />
-
       <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
-
     </div>
-
-
 
     <div id="faqList" class="faq-list" role="region" aria-live="polite"></div>
 
-
-
     <footer class="faq-footer">
-
       <button class="faq-copylink" id="faqCopyLink" type="button" title="Copy link to this FAQ view">Copy link</button>
-
       <span class="faq-hint">Tip: type to filter. Tap a question to expand.</span>
-
     </footer>
-
   </div>
-
 </div>
-
-
 
 <!-- Floating FAQ button (bottom-left, kontra Quests po prawej) -->
-
 <button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
-
   <img src="images/ui/faq_icon.png?v=1" alt="FAQ" class="faq-icon">
-
   <span>FAQ</span>
-
 </button>
 
-
-
 <!-- Floating launcher (📜) -->
-
 <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
-
 <div class="fallback" id="fallback">
-
   <div>
-
     <p>Open this page inside Telegram WebApp for full functionality.</p>
-
     <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
-
   </div>
-
 </div>
-
 </div>
-
-
 
   <!-- 1) SDK Telegrama -->
-
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <script src="/js/buffs.js?v=WEBAPP_VER"></script>
-
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
 
-
-
-
   <!-- 2) Globalny endpoint API i wersja -->
-
   <script>
-
     window.API_BASE = "https://api.alphahusky.win";
-
     window.WEBAPP_VER = "2026-02-25a";
-
     window.__PET_CLOUD_VER__ = "v1767699377";
-
   </script>
-
-
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
-
   <script>
-
   (function(v){
-
     var s = document.createElement('script');
-
     s.src = 'js/pixi.min.js?v=' + encodeURIComponent(v || 'dev');
-
     s.async = false;
-
     document.head.appendChild(s);
-
   })(window.WEBAPP_VER);
-
 </script>
-
-
 
 <script>
-
   (function(v){
-
     var s = document.createElement('script');
-
     s.src = 'js/fortress_pixi.js?v=' + encodeURIComponent(v || 'dev');
-
     s.async = false;
-
     document.head.appendChild(s);
-
   })(window.WEBAPP_VER);
-
 </script>
-
   <script>
-
     (function(v){
-
       var s = document.createElement('script');
-
       s.src = 'js/combat.js?v=' + encodeURIComponent(v || 'dev');
-
       s.async = false;
-
       document.head.appendChild(s);
-
     })(window.WEBAPP_VER);
-
   </script>
-
   <script>
-
     (function(v){
-
       var s = document.createElement('script');
-
       s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
-
       s.async = false;
-
       document.head.appendChild(s);
-
     })(window.WEBAPP_VER);
-
   </script>
-
   <script>
-
     (function(v){
-
       var s=document.createElement('script');
-
       s.src='js/dojo.js?v='+encodeURIComponent(v||'dev');
-
       s.defer=true;
-
       document.head.appendChild(s);
-
     })(window.WEBAPP_VER);
-
   </script>
-
   
-
   <script>
-
   (function(v){
-
     var s = document.createElement('script');
-
     s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
-
     s.async = false;
-
     document.head.appendChild(s);
-
   })(window.WEBAPP_VER);
-
 </script>
-
   <script>
-
 (function(v){
-
   var s = document.createElement('script');
-
   s.src = 'js/map.js?v=' + encodeURIComponent(v || 'dev');
-
   s.async = false;
-
   s.onload = function(){
-
     try { window.AHMap?.init?.(); } catch(e){}
-
   };
-
   document.head.appendChild(s);
-
 })(window.WEBAPP_VER);
-
   </script>
-
   <script>
-
   (function(v){
-
     var s = document.createElement('script');
-
     s.src = 'js/skins.js?v=' + encodeURIComponent(v || 'dev');
-
     s.async = false;
-
     document.head.appendChild(s);
-
   })(window.WEBAPP_VER);
-
 </script>
-
-
 
   <!-- 4) Główny skrypt aplikacji -->
-
 <script>
-
   const DEBUG_UI = true;
-
   function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
-
   function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
 
-
-
   const start = () => {
-
     try {
-
       dbg('boot…');
 
-
-
       window.addEventListener('error', e => {
-
         dbg('ERR: '+(e?.message||'error'));
-
         try { window.Telegram?.WebApp?.showAlert?.("JS error: " + e.message); } catch(_) {}
-
         console.error(e);
-
       });
 
-
-
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-
       setVh(); window.addEventListener('resize', setVh);
 
-
-
       const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
       let tg = nativeTg;
 
-
-
       const $  = sel => document.querySelector(sel);
-
       const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-
-
       if (!tg) {
-
         const fb = $("#fallback"); if (fb) fb.style.display = "flex";
-
         dbg('Open inside Telegram');
-
       }
-
-
 
       tg?.ready?.(); tg?.expand?.();
 
-
-
       // =====================
-
       // ✅ NAV HELPERS (global)
-
       // (Quests.js i inne moduły mogą wołać window.navClose/navOpen)
-
       // =====================
-
       window.AH_NAV = window.AH_NAV || { stack: [], inited: false };
-
       const AH_NAV = window.AH_NAV;
 
-
-
       function _navId(x){
-
         if (!x) return null;
-
         if (typeof x === "string") return x.startsWith("#") ? x.slice(1) : x;
-
         return x.id || null;
-
       }
-
-
 
       function navOpen(x){
-
         const id = _navId(x); if(!id) return;
-
         const st = AH_NAV.stack;
-
         if (st[st.length - 1] !== id) st.push(id);
-
         try { tg?.BackButton?.show?.(); } catch (_) {}
 
-
-
         document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
-
       }
-
-
 
       function navClose(x){
-
         const id = _navId(x); if(!id) return;
-
         const st = AH_NAV.stack;
-
         const i = st.lastIndexOf(id);
-
         if (i >= 0) st.splice(i, 1);
-
         if (!st.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
-
-
 
         document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
 
-
-
       }
 
-
-
       function navCloseTop(){
-
   const id = AH_NAV.stack.pop();
-
   if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
 
-
-
   // ✅ keep hero dim/blur in sync with stack
-
   document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
-
-
 
   if (!id) return false;
 
-
-
   const el = document.getElementById(id);
-
   if (el) el.style.display = "none";
-
   return true;
-
 }
-
-
 
       // ✅ expose globally
-
       window.navOpen = navOpen;
-
       window.navClose = navClose;
-
       window.navCloseTop = navCloseTop;
 
-
-
       // ✅ One BackButton handler (close top modal, else close webapp)
-
       if (!AH_NAV.inited){
-
         AH_NAV.inited = true;
-
         try { tg?.BackButton?.hide?.(); } catch (_) {}
 
-
-
         tg?.BackButton?.onClick?.(() => {
-
           if (navCloseTop()) return;
-
           try { tg?.close?.(); } catch(_) {}
-
         });
-
       }
 
-
-
       // =====================
-
       // ✅ HOME NAV WIRING (BottomNav + Hub/Char/Share)
-
       // =====================
-
       (function(){
-
         const $ = (sel, root=document) => root.querySelector(sel);
 
-
-
         const hubBack   = $('#hubBack');
-
         const charBack  = $('#charBack');
-
         const shareBack = $('#shareBack');
 
-
-
         function show(el){
-
           if(!el) return;
-
           el.style.display = 'flex';
-
           document.body.classList.add('ah-sheet-open');
-
           window.navOpen?.(el);
-
         }
-
         function hide(el){
-
           if(!el) return;
-
           el.style.display = 'none';
-
           document.body.classList.remove('ah-sheet-open');
-
           window.navClose?.(el);
-
         }
-
-
 
         // Close buttons (X)
-
         document.addEventListener('click', (e)=>{
-
           const c = e.target.closest('[data-close]');
-
           if(!c) return;
-
           const id = c.getAttribute('data-close');
-
           hide(document.getElementById(id));
-
         });
-
-
 
         // Tap backdrop closes sheet
-
         [hubBack,charBack,shareBack].forEach(el=>{
-
           if(!el) return;
-
           el.addEventListener('click', (e)=>{ if(e.target === el) hide(el); });
-
         });
 
-
-
         async function openSkins(){
-
   // 1) schowaj Character sheet żeby nie zasłaniał modala Skins
-
   const charBack = document.getElementById("charBack");
-
   if (charBack && charBack.style.display !== "none"){
-
     charBack.style.display = "none";
-
     try { window.navClose?.(charBack); } catch(_) {}
-
   }
-
-
 
   // (opcjonalnie) jeśli Hub też bywa otwarty
-
   const hubBack = document.getElementById("hubBack");
-
   if (hubBack && hubBack.style.display !== "none"){
-
     hubBack.style.display = "none";
-
     try { window.navClose?.(hubBack); } catch(_) {}
-
   }
-
-
 
   // 2) lazy-load (jeśli masz)
-
   try { await window.ensureSkinsLoaded?.(); } catch(_) {}
 
-
-
   // 3) zawsze init (u Ciebie init ma guard _inited, więc jest bezpieczne)
-
   try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch(e){ console.warn("Skins.init err", e); }
 
-
-
   // 4) open
-
   if (window.Skins?.open) return window.Skins.open();
 
-
-
   // fallback: stary przycisk
-
   document.querySelector('.btn.skins')?.click();
-
 }
-
         function openFaqModal(){
-
   // 1) schowaj character sheet
-
   const charBack = document.getElementById("charBack");
-
   if (charBack && charBack.style.display !== "none"){
-
     charBack.style.display = "none";
-
     try { window.navClose?.(charBack); } catch(_) {}
-
   }
-
-
 
   // 2) schowaj hub
-
   const hubBack = document.getElementById("hubBack");
-
   if (hubBack && hubBack.style.display !== "none"){
-
     hubBack.style.display = "none";
-
     try { window.navClose?.(hubBack); } catch(_) {}
-
   }
 
-
-
   // 3) pokaż FAQ modal (hard show)
-
   const m = document.getElementById("faqModal");
-
   if (!m) { console.warn("FAQ: missing #faqModal"); return; }
 
-
-
   m.hidden = false;
-
   m.removeAttribute("hidden");   // na wypadek gdyby atrybut został
-
   m.style.display = "flex";      // na wypadek konfliktu CSS (display:none)
-
   m.style.zIndex = "100000";     // nad hub/nav/innymi modalami
-
-
 
   document.body.classList.add("ah-modal-open");
 
-
-
   // 4) focus w search (nice UX)
-
   try { document.getElementById("faqSearch")?.focus?.(); } catch(_) {}
-
 }
-
-
 
 function closeFaqModal(){
-
   const m = document.getElementById("faqModal");
-
   if (!m) return;
-
-
 
   m.hidden = true;
-
   m.setAttribute("hidden", "");  // spójnie z HTML
-
   m.style.display = "";          // wróć do CSS
-
   m.style.zIndex = "";           // wróć do CSS
 
-
-
   document.body.classList.remove("ah-modal-open");
-
 }
-
 // close handlers (backdrop + X + ESC)
-
 (function wireFaqModal(){
-
   const m = document.getElementById("faqModal");
-
   if (!m) return;
 
-
-
   m.addEventListener("click", (e)=>{
-
     const t = e.target;
-
     if (e.target?.closest?.("[data-close]")) closeFaqModal();
-
   });
-
-
 
   document.addEventListener("keydown", (e)=>{
-
     if (e.key === "Escape" && !m.hidden) closeFaqModal();
-
   });
-
 })();
-
         try { if (window.Telegram?.WebApp) document.body.classList.add("is-tg"); } catch(_) {}
 
-
-
         const actionMap = {
-
           // bottom nav
-
           map:       ()=>document.querySelector('.btn.map')?.click(),
-
           missions:  ()=>window.Missions?.open?.() || document.querySelector('.btn.mission')?.click(),
-
           quests:    ()=>document.getElementById('quests-launcher')?.click(),
-
           inventory: ()=>window.Inventory?.open?.() || document.querySelector('.btn.inventory')?.click(),
-
           hub:       ()=>show(hubBack),
 
-
-
           // hub tiles
-
           shop:      ()=>window.Shop?.open?.() || document.querySelector('.btn.shop')?.click(),
-
           adopt:     ()=>window.Adopt?.open?.() || document.querySelector('.btn.adopt')?.click(),
-
           arena:     ()=>window.Arena?.open?.() || document.querySelector('.btn.arena')?.click(),
-
           referrals: ()=>window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click(),
-
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
-
           profile:   ()=>document.querySelector('.btn.profile')?.click(),
-
           faq: () => openFaqModal(),
-
           whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
-
           feed:      ()=>document.querySelector('.btn.feed')?.click(),
-
           share:     ()=>show(shareBack),
 
-
-
           // character sheet actions
-
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
-
           skins: () => { void openSkins(); },
-
           avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
-
           pets:      ()=>document.querySelector('.btn.mypets')?.click(),
-
         };
 
-
-
         // BottomNav click
-
         $('#ahBottomNav')?.addEventListener('click', (e)=>{
-
           const b = e.target.closest('.ah-navbtn');
-
           if(!b) return;
-
           const key = b.getAttribute('data-go');
-
           actionMap[key]?.();
-
         });
-
-
 
         // Hub/Character tile click (delegacja)
-
         document.addEventListener('click', (e)=>{
-
           const el = e.target.closest('.ah-tile,.ah-action');
-
           if(!el) return;
-
           const a = el.getAttribute('data-action');
-
           if(!a) return;
-
           actionMap[a]?.();
-
         });
-
-
 
         // Tap hero-frame => Character sheet
-
         $('#heroFrame')?.addEventListener('click', ()=>show(charBack));
 
-
-
         // Share styles -> reuse existing share flow
-
         shareBack?.addEventListener('click', (e)=>{
-
           const b = e.target.closest('[data-share-style]');
-
           if(!b) return;
-
           const style = Number(b.getAttribute('data-share-style') || 1);
 
-
-
           // jeśli masz API w share_levelup.js:
-
           if (window.ShareLevelUp?.open) return window.ShareLevelUp.open(style);
 
-
-
           // fallback: klik w stare mini-buttony jeśli jeszcze istnieją
-
           document.querySelector(`#shareRow .btn.share-mini[data-share-style="${style}"]`)?.click();
-
         });
-
       })();
 
-
-
       // ✅ ONE global HOME — deterministic return to main menu/map
-
       window.goHome = function goHome() {
-
         try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
-
-
         // ✅ Clear nav stack when returning HOME (prevents "ghost" back closes)
-
         try { if (window.AH_NAV?.stack) window.AH_NAV.stack.length = 0; } catch (_) {}
 
-
-
         // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
-
         const mapEl = document.getElementById("map");
-
         if (mapEl) {
-
           try {
-
             document
-
               .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
-
               .forEach((el) => (el.style.display = ""));
 
-
-
             // Best-effort refresh
-
             try { if (typeof window.loadPlayerState === "function") window.loadPlayerState(); } catch (_) {}
-
             try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
-
             try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
 
-
-
             return;
-
           } catch (e) {
-
             console.warn("goHome soft failed:", e);
-
           }
-
         }
 
-
-
         // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
-
         try {
-
           const url = new URL(location.href);
-
           const KEEP = new Set(["st", "v", "dbg"]);
 
-
-
           for (const k of Array.from(url.searchParams.keys())) {
-
             if (!KEEP.has(k)) url.searchParams.delete(k);
-
           }
-
-
 
           url.hash = "";
 
-
-
           // replace = cleaner history + more reliable in Telegram webview
-
           location.replace(url.toString());
-
         } catch (e) {
-
           console.warn("goHome hard failed:", e);
-
           location.reload();
-
         }
-
       };
-
         const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
-
         const hexToRgba = (hex, a) => {
-
           if(!hex) return `rgba(0,0,0,${a})`;
-
           const h = (''+hex).replace('#',''); const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h.slice(0,6);
-
           const n = parseInt(full,16); const r=(n>>16)&255, g=(n>>8)&255, b=n&255; return `rgba(${r},${g},${b},${a})`;
-
         };
-
         const p = tg?.themeParams || {};
-
         try{
-
           setVar('--glass', p.secondary_bg_color ? hexToRgba(p.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-
           setVar('--stroke', p.hint_color ? hexToRgba(p.hint_color, 0.22) : 'rgba(255,255,255,.18)');
-
           if (p.text_color) setVar('--txt', p.text_color);
-
         }catch(_){}
-
         tg?.onEvent?.('themeChanged', () => {
-
           const p2 = tg?.themeParams || {};
-
           try{
-
             setVar('--glass', p2.secondary_bg_color ? hexToRgba(p2.secondary_bg_color, 0.45) : 'rgba(0,0,0,.45)');
-
             setVar('--stroke', p2.hint_color ? hexToRgba(p2.hint_color, 0.22) : 'rgba(255,255,255,.18)');
-
             if (p2.text_color) setVar('--txt', p2.text_color);
-
           }catch(_){}
-
         });
 
-
-
         function setPlayerLabel(lbl){
-
           const name = lbl || 'Alpha Husky';
 
-
-
           // Nick w topbarze
-
           const el = document.getElementById('player');
-
           if (el) el.textContent = name;
 
-
-
           // Nick pod centralnym oknem skina (jeśli istnieje)
-
           const heroName = document.getElementById('heroName');
-
           if (heroName) heroName.textContent = name;
-
         }
-
-
 
         const unsafeUser = tg?.initDataUnsafe?.user;
-
         if (unsafeUser) {
-
           const fallbackName = unsafeUser.username
-
             ? '@' + unsafeUser.username
-
             : (unsafeUser.first_name || 'Player');
-
           setPlayerLabel(fallbackName);
-
         }
-
-
 
         const init_data = window.Telegram?.WebApp?.initData || "";
 
-
-
         // ✅ Telegram MainButton OFF — używamy własnego bottom-nav / launchera
-
 try{
-
   tg?.MainButton?.offClick?.();   // jeśli była podpięta akcja
-
   tg?.MainButton?.hide?.();
-
   tg?.MainButton?.setText?.("");
-
 }catch(_){}
 
-
-
         const DEV_DEBUG = false;
-
         let _busy = false;
 
-
-
         async function sendAction(action, payload = {}) {
-
           const unsafe = tg?.initDataUnsafe || {};
-
           const hasQuery = !!unsafe.query_id;
 
-
-
           if (hasQuery) {
-
             try {
-
               const res = await apiPost("/webapp/action", { action, payload });
-
               if (res.ok) { try { tg?.close?.(); } catch(_){} }
-
               else { tg?.showAlert?.(res.reason || "Action failed."); }
-
             } catch (e) {
-
               tg?.showAlert?.("Network error (inline). Try again.");
-
               console.error(e);
-
             }
-
           } else {
-
             try {
-
               if (_busy) return;
-
               _busy = true; setTimeout(() => (_busy = false), 300);
-
               tg?.HapticFeedback?.impactOccurred?.("light");
-
               const data = { action, payload: { userId: (tg?.initDataUnsafe?.user?.id), ...payload } };
-
               if (DEV_DEBUG && tg?.showAlert) tg.showAlert(action + "\n" + JSON.stringify(payload));
-
               tg?.sendData?.(JSON.stringify(data));
-
             } catch (err) {
-
               tg?.showAlert?.("Send failed. Try again."); console.error(err);
-
             }
-
           }
-
         }
-
-
 
         function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-
-
 async function getInitDataSafe(timeoutMs = 800) {
-
   const t0 = Date.now();
-
   while (Date.now() - t0 < timeoutMs) {
-
     const v = window.Telegram?.WebApp?.initData;
-
     if (v && v.length > 20) return v;
-
     await sleep(50);
-
   }
-
   return window.Telegram?.WebApp?.initData || "";
-
 }
-
-
 
 async function apiPost(path, payload){
-
   const init_data = await getInitDataSafe();
-
   const headers = { "Content-Type": "application/json" };
-
   if (init_data) headers.Authorization = `Bearer ${init_data}`;
 
-
-
   const res = await fetch(api(path), {
-
     method: "POST",
-
     headers,
-
     // ✅ init_data LAST so payload can’t override it
-
     body: JSON.stringify({ ...(payload||{}), init_data })
-
   });
-
-
 
   const data = await res.json().catch(()=> ({}));
-
   if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
-
   return data;
-
 }
-
-
 
 window.S = window.S || {};
-
 window.S.apiPost = apiPost;
-
       
-
 window.apiPost = apiPost;
 
-
-
 window.AH = window.AH || {};
-
 window.AH.apiPost = apiPost;
-
       
 
-
-
 const _tg  = window.tg || window.Telegram?.WebApp || null;
-
 const _dbg = !!window.DBG;
 
-
-
 // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
-
 function loadScriptOnce(src) {
-
   return new Promise((resolve, reject) => {
-
     // jeśli już jest w DOM, nie ładuj drugi raz
-
     const existing = [...document.scripts].find(s => (s.src || "").includes(src));
-
     if (existing) return resolve();
 
-
-
     const v = encodeURIComponent(String(window.WEBAPP_VER || Date.now()));
-
     const full = src + (src.includes("?") ? "&" : "?") + "v=" + v;
 
-
-
     const s = document.createElement("script");
-
     s.src = full;
-
     s.defer = true;
-
     s.onload = () => resolve();
-
     s.onerror = (e) => reject(e);
-
     document.head.appendChild(s);
-
   });
-
 }
-
       // ✅ TON Wallet (load + init) — Wklej tutaj
-
 loadScriptOnce("js/tonwallet.js").then(() => {
-
   if (!window.TON_CONNECT_UI?.TonConnectUI) {
-
     console.warn("[TON] TonConnect UI CDN missing?");
-
     return;
-
   }
-
   window.TonWallet?.init?.({
-
     apiPost,
-
     tg: _tg,
-
     dbg: _dbg,
-
     manifestUrl: location.origin + "/tonconnect-manifest.json"
-
   });
-
 }).catch(console.warn);
-
-
 
 let _skinsLoading = null;
 
-
-
 async function ensureSkinsLoaded(apiPost, tg, dbg) {
-
   // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() ma _apiPost=null)
-
   if (window.Skins?.open && window.Skins?.init) {
-
     try { window.Skins.init({ apiPost, tg, dbg }); } catch (_) {}
-
     return;
-
   }
-
-
 
   if (_skinsLoading) return await _skinsLoading;
 
-
-
   _skinsLoading = (async () => {
-
     await loadScriptOnce("js/skins.js");
-
     try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-
   })();
 
-
-
   return await _skinsLoading;
-
 }
 
-
-
 // --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
-
 let _adoptLoading = null;
 
-
-
 async function ensureAdoptLoaded(apiPost, tg, dbg) {
-
   // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-
   if (window.Adopt?.open && window.Adopt?.init) {
-
     try { window.Adopt.init({ apiPost, tg, dbg }); } catch (_) {}
-
     return;
-
   }
-
-
 
   if (_adoptLoading) return await _adoptLoading;
 
-
-
   _adoptLoading = (async () => {
-
     await loadScriptOnce("js/adopt.js");
-
     try { window.Adopt?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-
   })();
 
-
-
   return await _adoptLoading;
-
 }
 
-
-
 // --- UPDATES / WHAT'S NEW module loader (cache-bust via WEBAPP_VER) ---
-
 let _updatesLoading = null;
 
-
-
 async function ensureUpdatesLoaded(apiPost, tg, dbg) {
-
   // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-
   if (window.Updates?.open && window.Updates?.init) {
-
     try {
-
       window.Updates.init({
-
         apiPost,
-
         tg,
-
         dbg,
-
         btnEl: document.getElementById("btnWhatsNew"),
-
         dotEl: document.getElementById("whatsNewDot"),
-
       });
-
     } catch (_) {}
-
     return;
-
   }
-
-
 
   if (_updatesLoading) return await _updatesLoading;
 
-
-
   _updatesLoading = (async () => {
-
     await loadScriptOnce("js/updates.js");
-
     try {
-
       window.Updates?.init?.({
-
         apiPost,
-
         tg,
-
         dbg,
-
         btnEl: document.getElementById("btnWhatsNew"),
-
         dotEl: document.getElementById("whatsNewDot"),
-
       });
-
     } catch (_) {}
-
   })();
 
-
-
   return await _updatesLoading;
-
 }
-
-
 
 // run_id helper (wspólny dla skins/adopt/shop)
-
 window.AH_makeRunId = function(prefix, key) {
-
   const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
-
   const rnd = Math.random().toString(16).slice(2, 8);
-
   return `${prefix}:${uid}:${String(key || "").slice(0, 64)}:${Date.now()}:${rnd}`;
-
 };
 
-
-
 /* ===== MODULE INIT (existing) ===== */
-
 window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-
 window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-
 window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });     
-
  
-
       // ✅ PATCH A — auto-open missions when ?section=missions
-
 (function autoOpenSection() {
-
   const sp = new URLSearchParams(location.search);
-
   let sec = (sp.get("section") || "").toLowerCase();
-
   if (sec === "mission") sec = "missions";
 
-
-
   if (sec === "missions") {
-
     setTimeout(() => {
-
       if (window.Missions?.open) return window.Missions.open();
-
       if (typeof window.openMissions === "function") return window.openMissions();
-
       console.warn("[Missions] module not ready / not loaded");
-
     }, 250);
-
   }
-
 })();
-
       
-
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
-
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
-
 window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
 
-
-
 // NOTE: Arena may be lazy-loaded, but init is still safe if already present
-
 window.Arena?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 
-
-
 /* ===== ARENA: LAZY-LOAD (safe even if not in HTML) ===== */
-
 async function ensureArenaLoaded(apiPost, tg, dbg) {
-
   // If Arena already exists (loaded via HTML or earlier), just (re)init and return.
-
   if (window.Arena?.open) {
-
     window.Arena?.init?.({ apiPost, tg, dbg });
-
     return true;
-
   }
 
-
-
   const v = (window.WEBAPP_VER || Date.now());
-
-
 
   await new Promise((resolve, reject) => {
-
     // prevent duplicates
-
     const already = Array.from(document.scripts || []).some(s =>
-
       String(s.src || "").includes("/js/arena.js")
-
     );
-
     if (already) return resolve(true);
 
-
-
     const s = document.createElement("script");
-
     s.src = `/js/arena.js?v=${encodeURIComponent(v)}`;
-
     s.async = true;
-
     s.onload = resolve;
-
     s.onerror = () => reject(new Error("arena.js load failed"));
-
     document.head.appendChild(s);
-
   });
-
-
 
   // init after load (idempotent in your arena.js)
-
   window.Arena?.init?.({ apiPost, tg, dbg });
-
   return true;
-
 }
-
-
 
 /* ===== skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML) ===== */
-
 ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
-
 ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
-
 ensureUpdatesLoaded(apiPost, _tg, _dbg).catch(()=>{});
 
-
-
 /* ===== Adopt: open on button/pin click (delegation-safe) ===== */
-
 document.addEventListener("click", async (e) => {
-
   const btn = e.target.closest('[data-action="adopt"], .btn.adopt, .btn-adopt, .adopt-btn');
-
   if (!btn) return;
-
-
 
   e.preventDefault();
 
-
-
   try {
-
     await ensureAdoptLoaded(apiPost, _tg, _dbg);
-
     window.Adopt?.open?.();
-
   } catch (err) {
-
     console.error("[Adopt] open failed", err);
-
     window.toast?.("Adopt failed to load");
-
   }
-
 });
-
-
 
 /* ===== Arena: open on button click (delegation-safe) ===== */
-
 document.addEventListener("click", async (e) => {
-
   const btn = e.target.closest(".btn.arena");
-
   if (!btn) return;
-
-
 
   e.preventDefault();
 
-
-
   try {
-
     await ensureArenaLoaded(apiPost, _tg, _dbg);
-
   } catch (err) {
-
     console.error("[Arena] load failed", err);
-
     window.toast?.("Arena failed to load");
-
     return;
-
   }
-
-
 
   // (opcjonalnie) haptic
-
   try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch(_) {}
 
-
-
   let battleId = null;
-
   try {
-
     const res = await apiPost("/webapp/arena/last", {});
-
     battleId = res?.battle_id || res?.data?.battle_id || null;
-
   } catch (_) {
-
     battleId = null;
-
   }
-
-
 
   if (!battleId) {
-
     try {
-
       _tg?.showPopup?.({
-
         title: "Arena",
-
         message: "No recent arena battles yet.",
-
         buttons: [{ type: "close" }]
-
       });
-
     } catch (_) {
-
       alert("No recent arena battles yet.");
-
     }
-
     return;
-
   }
-
-
 
   try {
-
     window.Arena?.open?.(battleId);
-
   } catch (err) {
-
     console.error("[Arena] open failed", err);
-
     window.toast?.("Arena failed to open");
-
   }
-
 });
 
-
-
    /* ===== MISSIONS: LAZY-LOAD (safe even if not in HTML) ===== */
-
 async function ensureMissionsLoaded(apiPost, tg, dbg) {
-
   console.log("[Missions] ensureMissionsLoaded() start", {
-
     hasMissions: !!window.Missions,
-
     hasOpen: !!window.Missions?.open,
-
     ver: window.WEBAPP_VER
-
   });
 
-
-
   // jeśli już jest, tylko (re)init
-
   if (window.Missions?.open) {
-
     window.Missions?.init?.({ apiPost, tg, dbg });
-
     console.log("[Missions] already loaded ✅");
-
     return true;
-
   }
-
-
 
   const v = (window.WEBAPP_VER || Date.now());
-
   const src = `/js/missions.js?v=${encodeURIComponent(v)}`;
 
-
-
   // jeśli skrypt już jest w DOM, ale obiekt nie powstał (np. error w missions.js)
-
   const already = Array.from(document.scripts || []).some(s =>
-
     String(s.src || "").includes("/js/missions.js")
-
   );
 
-
-
   if (!already) {
-
     await new Promise((resolve, reject) => {
-
       const s = document.createElement("script");
-
       s.src = src;
-
       s.async = true;
 
-
-
       const to = setTimeout(() => {
-
         reject(new Error("missions.js load timeout (8s)"));
-
       }, 8000);
 
-
-
       s.onload = () => {
-
         clearTimeout(to);
-
         console.log("[Missions] missions.js loaded ✅", src);
-
         resolve(true);
-
       };
-
-
 
       s.onerror = () => {
-
         clearTimeout(to);
-
         reject(new Error("missions.js load failed (404?) " + src));
-
       };
 
-
-
       document.head.appendChild(s);
-
     });
-
   } else {
-
     console.log("[Missions] script tag already present (no re-inject)");
-
   }
 
-
-
   // init after load
-
   window.Missions?.init?.({ apiPost, tg, dbg });
 
-
-
   const ok = !!window.Missions?.open;
-
   console.log("[Missions] after load, has open =", ok);
 
-
-
   if (!ok) throw new Error("missions.js loaded but window.Missions.open is still missing (check console errors inside missions.js)");
-
   return true;
-
 }
 
-
-
 /* ✅ Missions: delegated click (bo przycisk bywa rerenderowany) */
-
 document.addEventListener("click", async (e) => {
-
   const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='missions'], [data-action='mission']");
-
   if (!btn) return;
 
-
-
   e.preventDefault();
-
   console.log("[Missions] open requested");
-
-
 
   try { window.navCloseTop?.(); } catch (_) {}
 
-
-
   try {
-
     await ensureMissionsLoaded(apiPost, _tg, _dbg);
-
     console.log("[Missions] calling open()");
-
     window.Missions.open();
-
   } catch (err) {
-
     console.error("[Missions] load/open failed", err);
-
     try { window.tg?.showAlert?.("Missions failed to load/open"); } catch (_) {}
-
   }
-
 }, true); // <- capture, żeby nic nie zjadło clicka   
-
       
-
 /* ===== Updates: open on button click (delegation-safe) ===== */
-
 document.addEventListener("click", async (e) => {
-
   const btn = e.target.closest('#btnWhatsNew, .btn.whatsnew, [data-action="whatsnew"], .whatsnew-btn');
-
   if (!btn) return;
-
-
 
   e.preventDefault();
 
-
-
   try {
-
     await ensureUpdatesLoaded(apiPost, _tg, _dbg);
-
     window.Updates?.open?.();
-
   } catch (err) {
-
     console.error("[Updates] open failed", err);
-
     window.toast?.("Updates failed to load");
-
   }
-
 });
 
-
-
 /* ===== Combat init (existing) ===== */
-
 setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
-
-
         /* ===== MAP / STATE ===== */
-
         const mapBack = document.getElementById("mapBack");
-
         const mapRoot = document.getElementById("map");
-
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapRoot);
-
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapRoot);
-
         let DATA = null;
-
         const VIEW_W = 1000, VIEW_H = 562;
-
         let regionsUnlocked = new Set();
-
         let keys = new Set();
-
         let fragments = {};
-
         let PLAYER_STATE = null;
-
         let PROFILE = null;
-
         let ACTIVE_PIN_ID = null;
 
-
-
         function createPathsLayer(root){
-
           const layer = document.createElement("div");
-
           layer.className = "paths-layer";
-
           const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-
           svg.setAttribute("id","pathsSVG");
-
           svg.setAttribute("viewBox","0 0 1000 562");
-
           svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-
           layer.appendChild(svg); root.appendChild(layer); return svg;
-
         }
-
         function createPinsLayer(root){
-
           const layer = document.createElement("div");
-
           layer.className = "pins"; layer.id = "pins";
-
           root.appendChild(layer); return layer;
-
         }
-
-
 
         function resolveLabelCollisions(){
-
           const chips = Array.prototype.slice.call(document.querySelectorAll('.pins .chip'));
-
           chips.sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-
           for (let i=1;i<chips.length;i++){
-
             const prev = chips[i-1].getBoundingClientRect();
-
             const cur = chips[i].getBoundingClientRect();
-
             const overlap = (prev.bottom + 6) - cur.top;
-
             if (overlap > 0) {
-
               const current = chips[i].style.transform || "translateX(-50%)";
-
               chips[i].style.transform = current + ` translateY(${overlap}px)`;
-
             }
-
           }
-
           const mapRect = mapRoot.getBoundingClientRect();
-
           chips.forEach(ch => {
-
             const r = ch.getBoundingClientRect();
-
             const leftOverflow = mapRect.left + 8 - r.left;
-
             const rightOverflow = r.right - (mapRect.right - 8);
-
             if (leftOverflow > 0) ch.style.marginLeft = (leftOverflow)+"px";
-
             if (rightOverflow > 0) ch.style.marginLeft = (-rightOverflow)+"px";
-
           });
-
         }
-
-
 
         async function loadMapData(){
-
           try{
-
             const v = window.WEBAPP_VER || 'dev';
-
             DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
-
           }catch(e){
-
             console.error('map.json load error', e);
-
             DATA = null;
-
           }
-
           regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
-
           keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
-
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
-
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
-
           window.DATA = DATA;
-
           renderMap();
-
         }
-
-
 
         function applyStateToMap(){
-
           if (!PLAYER_STATE) return;
-
           if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
-
           if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
-
         }
-
-
 
         function updateUnlockProgress(){
-
           const el = document.getElementById('unlockProgress');
-
           const cfg = DATA && DATA.ui && DATA.ui.unlockTarget;
-
           if (!el || !cfg) { if (el) el.style.display = 'none'; return; }
-
           const have = (fragments[cfg.item] || 0), need = cfg.required || 0;
-
           const fill = Math.max(0, Math.min(100, Math.round((have / Math.max(1,need)) * 100)));
-
           const regName = (DATA && DATA.regions && DATA.regions[cfg.region] && DATA.regions[cfg.region].name) || 'Region';
-
           document.getElementById('unlockLabel').textContent = regName;
-
           document.getElementById('unlockFill').style.width = fill + '%';
-
           document.getElementById('unlockCount').textContent = `${have}/${need}`;
-
           el.style.display = 'flex';
-
         }
 
-
-
         function renderTopbar(){
-
   const s = PLAYER_STATE && PLAYER_STATE.stats;
-
   const lvlFromState = (s && typeof s === 'object' && (s.level ?? 1)) || 1;
-
   const lvl = (PROFILE && typeof PROFILE.level === 'number') ? PROFILE.level : lvlFromState;
-
   const bones = s && typeof s === 'object' ? (s.bones ?? 0) : 0;
 
-
-
   const tagEl = document.getElementById('factionTag');
-
   const metaEl = document.getElementById('factionMeta');
-
-
 
   const base = (PROFILE && PROFILE.faction) ? PROFILE.faction : 'PACK';
 
-
-
   /* ✅ B) TAG: zamiast nadpisywać textContent base, użyj tier tagów */
-
   setTopTag(PROFILE?.tag, base);
-
-
 
   if (metaEl) metaEl.textContent = `Lv ${lvl} • ${bones}🦴`;
 
-
-
   const heroLevel = document.getElementById('heroLevel');
-
   if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
-
 }
-
-
 
 function applyProfileSkin(skin){
-
   const skinImg = document.getElementById('player-skin');
-
   if (!skinImg || !skin) return;
 
-
-
   if (typeof skin === 'string') {
-
     skinImg.src = skin;
-
     skinImg.alt = 'Active skin';
-
     return;
-
   }
-
-
 
   if (skin.img) skinImg.src = skin.img;
-
   if (skin.name) skinImg.alt = skin.name;
-
 }
-
-
 
 /* ✅ FRAME HELPERS — wklej tutaj (między applyProfileSkin a loadProfile) */
-
 function setHeroFrame(frameUrl){
-
   const el = document.getElementById("player-frame");
-
   if(!el) return;
 
-
-
   if(frameUrl){
-
     el.src = frameUrl;
-
     el.style.display = "block";
-
   }else{
-
     el.removeAttribute("src");
-
     el.style.display = "none";
-
   }
-
 }
-
-
 
 function pickFrameUrl(p){
-
   return (
-
     p?.frameUrl ||
-
     p?.frame_url ||
-
     p?.cosmetics?.frameUrl ||
-
     p?.cosmetics?.frame_url ||
-
     p?.cosmetics?.frame ||
-
     null
-
   );
-
 }
 
-
-
 function setTopTag(tagKey, baseText="PACK"){
-
   const tagEl = document.getElementById("factionTag");
-
   if(!tagEl) return;
-
-
 
   tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron");
 
-
-
   const t = String(tagKey || "").toLowerCase();
 
-
-
   if(t === "supporter"){
-
     tagEl.textContent = "SUPPORTER";
-
     tagEl.classList.add("tag-supporter");
-
   }else if(t === "founder"){
-
     tagEl.textContent = "FOUNDER";
-
     tagEl.classList.add("tag-founder");
-
   }else if(t === "patron"){
-
     tagEl.textContent = "PATRON";
-
     tagEl.classList.add("tag-patron");
-
   }else{
-
     tagEl.textContent = String(baseText || "PACK");
-
     tagEl.classList.add("tag-pack");
-
   }
-
 }
 
-
-
 async function loadProfile() {
-
   try {
-
     const out = await apiPost("/webapp/profile", {});
-
     if (!out) return;
 
-
-
     // ✅ odporny picker na różne wrappery backendu
-
     const p = out?.profile || out?.data?.profile || out?.data || out || {};
-
-
 
     PROFILE = PROFILE || {};
 
-
-
     if (typeof p.level === "number") PROFILE.level = p.level;
-
     else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
 
-
-
     if (p.nickname || p.name) {
-
       PROFILE.nickname = p.nickname || p.name;
-
       setPlayerLabel(PROFILE.nickname);
-
     }
-
-
 
     if (p.faction) PROFILE.faction = p.faction;
 
-
-
     /* ✅ A) TAG: pobierz tier tag z profilu */
-
     PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
 
-
-
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
-
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
-
-
     /* ✅ FRAME — dynamic (z profilu) */
-
     setHeroFrame(
-
       pickFrameUrl(p) ||
-
       "https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/v1771250188/frames/frame_supporter.webp"
-
     );
 
-
-
     // ✅ Topbar może się przebudować – ok
-
     try { renderTopbar(); } catch (_) {}
 
-
-
     // ✅ KROK 3: buffy z backendu -> buffs.js
-
     try {
-
       window.setActiveBuffs?.(
-
         p.buffsLine || "",
-
         Array.isArray(p.buffs) ? p.buffs : []
-
       );
-
     } catch (_) {}
 
-
-
   } catch (e) {
-
     console.warn("profile load failed", e);
-
   }
-
 }
-
 window.loadProfile = loadProfile;
-
 // ✅ ONE global HOME — deterministic return to main menu/map
-
 window.goHome = function goHome() {
-
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
-
-
   // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
-
   const mapEl = document.getElementById("map");
-
   if (mapEl) {
-
     try {
-
       document
-
         .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
-
         .forEach((el) => (el.style.display = ""));
 
-
-
       // Best-effort refresh
-
       try { if (typeof window.loadPlayerState === "function") window.loadPlayerState(); } catch (_) {}
-
       try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
-
       try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
 
-
-
       return;
-
     } catch (e) {
-
       console.warn("goHome soft failed:", e);
-
     }
-
   }
 
-
-
   // 2) Hard return: keep only stable params (st/v/dbg), drop everything else
-
   try {
-
     const url = new URL(location.href);
-
     const KEEP = new Set(["st", "v", "dbg"]);
 
-
-
     for (const k of Array.from(url.searchParams.keys())) {
-
       if (!KEEP.has(k)) url.searchParams.delete(k);
-
     }
-
-
 
     url.hash = "";
 
-
-
     // replace = cleaner history + more reliable in Telegram webview
-
     location.replace(url.toString());
-
   } catch (e) {
-
     console.warn("goHome hard failed:", e);
-
     location.reload();
-
   }
-
 };
 
-
-
 async function loadPlayerState() {
-
   try {
-
     const state = await apiPost("/webapp/state");
-
     PLAYER_STATE = state;
-
     applyStateToMap();
 
-
-
     if (state && state.profile && state.profile.nickname) {
-
       setPlayerLabel(state.profile.nickname);
-
     } else if (state && state.user && !state.user.is_bot) {
-
       const lbl = state.user.username
-
         ? '@' + state.user.username
-
         : (state.user.first_name || 'Player');
-
       setPlayerLabel(lbl);
-
     }
-
-
 
     renderTopbar();
-
     try { window.setActiveBuffs?.("✨ UI TEST BUFF", [{ desc: "UI TEST BUFF" }]); } catch (_) {}
 
-
-
     // ✅ KROK 4: jeśli topbar przebudował HUD, odmaluj buffy z buffs.js
-
     try { window.paintBuffs?.(); } catch (_) {}
 
-
-
     if (mapBack.style.display === "flex" && DATA) {
-
       renderMap();
-
       updateUnlockProgress();
 
-
-
       // ✅ INFLUENCE: dociągnij leaders i nałóż na mapę
-
       try { await window.Influence?.refreshLeaders?.(true); } catch (e) { console.warn("leaders load failed", e); }
-
     }
 
-
-
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
-
     try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
 
-
-
   } catch (e) {
-
     console.warn("state load failed", e);
-
   }
-
 }
-
 window.loadPlayerState = loadPlayerState; // ✅ expose globally for goHome()
 
 
-
-
-
 function isRegionUnlocked(regionId){
-
   const reg = DATA && DATA.regions && DATA.regions[regionId];
-
   if (!reg) return true;
-
   if (regionsUnlocked.has(regionId)) return true;
-
   const u = reg.unlock || { type: 'free' };
-
   if (u.type === 'free') return true;
-
   if (u.type === 'key') return !!(u.id && keys.has(u.id));
-
   if (u.type === 'fragments'){
-
     if (u.combineInto && keys.has(u.combineInto)) return true;
-
     const have = fragments[u.item] || 0;
-
     return have >= (u.required || Infinity);
-
   }
-
   return false;
-
 }
-
-
 
         const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
 
-
-
         function drawPaths(){
-
           if (!DATA) return;
-
           pathsSVG.innerHTML = '';
-
           for (const p of (DATA.paths || [])){
-
             const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
-
             const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
-
             if (!locked && p.emphasis){
-
               const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-
               glow.setAttribute('points', ptsStr);
-
               glow.setAttribute('class', 'path glow');
-
               pathsSVG.appendChild(glow);
-
             }
-
             const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-
             poly.setAttribute('points', ptsStr);
-
             poly.setAttribute('class', 'path' + (locked ? ' locked' : ''));
-
             poly.setAttribute('data-id', p.id);
-
             pathsSVG.appendChild(poly);
-
           }
-
         }
 
-
-
         function renderPins(){
-
   if (!DATA) return;
-
   pinsEl.innerHTML = '';
 
-
-
   for (const b of (DATA.nodes || [])){
-
     const unlocked = isRegionUnlocked(b.region);
 
-
-
     const btn = document.createElement('button');
-
     btn.type = 'button';
-
     btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
-
     btn.style.left = b.x + '%';
-
     btn.style.top  = b.y + '%';
-
     btn.title = b.name + (unlocked ? '' : ' (locked)');
 
-
-
     // ✅ dataset (map.js może to czytać)
-
     btn.dataset.nodeId = String(b.id || '');
-
     btn.dataset.nodeName = String(b.name || '');
-
     if (b.buildingId) btn.dataset.buildingId = String(b.buildingId);
 
-
-
     const ring = document.createElement('span');
-
     ring.className = 'ping';
-
     btn.appendChild(ring);
 
-
-
     const img = document.createElement('img');
-
     img.src = b.icon;
-
     img.alt = b.name;
-
     img.onerror = () => { img.style.display = 'none'; btn.classList.add('no-icon'); };
-
     btn.appendChild(img);
 
-
-
     // ✅ CHIP musi być w DOM zanim decoratePin odpali
-
     const chip = document.createElement('div');
-
     chip.className = 'chip';
-
     chip.textContent = b.name || ''; // fallback treści
-
     btn.appendChild(chip);
 
-
-
     // ✅ focus: active class + show only 1 chip
-
     const isActive = String(ACTIVE_PIN_ID || "") === String(b.id || "");
-
     btn.classList.toggle('active', isActive);
-
     chip.style.display = isActive ? 'flex' : 'none';
 
-
-
     if (!unlocked){
-
       const lock = document.createElement('span');
-
       lock.className = 'lock-badge';
-
       lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
-
       btn.appendChild(lock);
-
     }
 
-
-
     // ✅ locked class (pod CSS)
-
     btn.classList.toggle('is-locked', !unlocked);
 
-
-
     // ✅ dekoruj (frakcja / contested / itd.)
-
     try { window.AHMap?.decoratePin?.(btn, b); } catch(e){ console.warn('decoratePin error', e); }
 
-
-
     btn.addEventListener('click', (e) => {
-
       e.preventDefault();
-
       e.stopPropagation();
-
-
 
       const id = String(b.id || "");
 
-
-
       // (opcjonalnie) burst / wibracja jeśli masz
-
       try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
 
-
-
       // ✅ TAP 1 = focus ZAWSZE (nawet locked)
-
       if (String(ACTIVE_PIN_ID || "") !== id) {
-
         ACTIVE_PIN_ID = id;   // zapisuj jako string
-
         renderPins();
-
         return;
-
       }
-
-
 
       // ✅ TAP 2 = action
-
       const bid = String(b.buildingId || b.id || "");
 
-
-
       // ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower (always open, even if locked)
-
       if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
-
         const title = (b.name || bid).replaceAll("_", " ");
-
         if (window.Influence?.open) return window.Influence.open(bid, title);
-
         console.warn("[Influence] module not ready");
-
         return openBuilding(bid, b.name, b.desc); // fallback
-
       }
-
-
 
       if (!unlocked) return openLocked(b);
 
-
-
       // ✅ lore-only pins
-
       if (b.action === "coming_soon") {
-
         return openBuilding(bid, b.name, b.desc);
-
       }
-
-
 
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-
-
       if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-
         return window.Fortress.open();
-
       }
-
-
 
       if ((b.id === 'testnet_wastes') ||
-
           (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-
         if (window.Dojo?.open) return window.Dojo.open();
-
       }
-
-
 
       if (b.id === "alpha_network_hq" || b.buildingId === "alpha_network_hq_shop" || b.action === "shop_open") {
-
         return window.Shop?.open?.();
-
       }
-
-
 
       if (
-
         b.action === "open_forge" ||
-
         b.id === "vault_forge" ||
-
         (b.gameplay && b.gameplay.type === "forge")
-
       ) {
-
         const forgeBid = b.buildingId || b.id || "forge";
-
         return window.Forge?.open?.({ buildingId: forgeBid, name: b.name, desc: b.desc });
-
       }
-
-
 
       if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
 
-
-
       const reg = DATA && DATA.regions && DATA.regions[b.region];
-
       if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-
       return openRegion(b.region);
-
     });
 
-
-
     pinsEl.appendChild(btn);
-
   }
 
-
-
   // resolveLabelCollisions(); // jeśli używasz anti-collision
-
         }
-
-
 
         const canvas = document.getElementById('particlesCanvas');
-
         const ctx = canvas ? canvas.getContext('2d') : null;
 
-
-
         function createBurst(xPercent, yPercent, isUnlocked = true) {
-
           if (!ctx) return;
-
           canvas.style.display = 'block';
-
           canvas.style.opacity = '1';
-
           const x = (xPercent / 100) * VIEW_W;
-
           const y = (yPercent / 100) * VIEW_H;
-
           const particles = [];
-
           const numParticles = 12;
-
           const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
 
-
-
           for (let i = 0; i < numParticles; i++) {
-
             particles.push({
-
               x, y,
-
               vx: (Math.random() - 0.5) * 8,
-
               vy: (Math.random() - 0.5) * 8,
-
               size: Math.random() * 3 + 1,
-
               color: colors[Math.floor(Math.random() * colors.length)],
-
               life: 1,
-
               decay: Math.random() * 0.02 + 0.01
-
             });
-
           }
-
-
 
           let animId;
-
           function animate() {
-
             ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-
             let alive = 0;
-
             for (let i = 0; i < particles.length; i++){
-
               const p = particles[i];
-
               if (!p) continue;
-
               p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= p.decay;
-
               if (p.life > 0) {
-
                 alive++;
-
                 ctx.save();
-
                 ctx.globalAlpha = p.life;
-
                 ctx.fillStyle = p.color;
-
                 ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-
                 ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill();
-
                 ctx.restore();
-
               } else {
-
                 particles.splice(i,1); i--;
-
               }
-
             }
-
             if (alive > 0) {
-
               animId = requestAnimationFrame(animate);
-
             } else {
-
               canvas.style.opacity = '0';
-
               setTimeout(() => { canvas.style.display = 'none'; }, 200);
-
               if (animId) cancelAnimationFrame(animId);
-
             }
-
           }
-
           animate();
-
           try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
-
         }
-
-
 
         function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
 
-
-
         const lockedBack = $("#lockedBack");
-
         const lockedTitle = $("#lockedTitle");
-
         const lockedDesc = $("#lockedDesc");
-
         const lockedForge = $("#lockedForge");
-
         const lockedShop = $("#lockedShop");
-
         const lockedAsk = $("#lockedAsk");
-
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
 
-
-
         function openLocked(b){
-
           const reg = DATA && DATA.regions && DATA.regions[b.region];
-
           const u = (reg && reg.unlock) || {};
-
           const reason = reg && reg.lockedReason;
-
           lockedTitle.textContent = `Locked: ${b.name}`;
-
           let forgeRecipe = null;
 
-
-
           if (u.type === 'fragments'){
-
             const cur = fragments[u.item] || 0;
-
             const need = u.required || 0;
-
             const label = (u.item || '').replace(/key_/g,'').replace(/_/g,' ');
-
             lockedDesc.innerHTML = reason || `Collect <b>${need} ${label}</b> (<b>${cur}</b> / ${need}) to unlock. Craft into a key in <b>Forge</b> if required.`;
-
             forgeRecipe = (u.combineInto || u.item) || null;
-
           } else if (u.type === 'key'){
-
             const label = (u.id || 'region key').replace(/key_/g,'').replace(/_/g,' ');
-
             lockedDesc.innerHTML = reason || `Requires <b>${label}</b> to unlock.`;
-
             forgeRecipe = u.id || null;
-
           } else {
-
             lockedDesc.textContent = reason || 'Complete requirements to unlock.';
-
           }
 
-
-
           lockedShop.onclick = (e) => { e?.preventDefault?.(); sendAction('shop_open', { tab: 'boosts' }); };
-
           lockedForge.onclick = (e) => { e?.preventDefault?.(); sendAction('forge_open', { recipe: forgeRecipe }); };
-
           lockedAsk.onclick = (e) => { e?.preventDefault?.(); sendAction('unlock_region', { region: b.region }); };
-
           lockedBack.style.display = 'flex';
-
         }
-
-
 
         const regionBack  = document.getElementById('regionBack');
-
         const regionTitle = document.getElementById('regionTitle');
-
         const regionDesc  = document.getElementById('regionDesc');
-
         const btnRegionGo = document.getElementById('regionGo');
-
         const btnRegionLo = document.getElementById('regionLore');
-
         document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
 
-
-
         function openRegionSheet(node, reg){
-
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
-
           regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
-
           btnRegionGo.onclick = () => {
-
             regionBack.style.display='none';
-
             if (node?.id === 'testnet_wastes' && window.Dojo?.open) { window.Dojo.open(); return; }
-
             sendAction('region_open', { region: node.region, nodeId: node.id });
-
           };
-
           btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open', { region: node.region }); };
-
           regionBack.style.display = 'flex';
-
         }
 
-
-
         const bBack   = $("#buildingBack");
-
         const bTitle  = $("#buildingTitle");
-
         const bDesc   = $("#buildingDesc");
-
         const bStatus = $("#buildingStatus");
-
         const bTimerW = $("#buildingTimerWrap");
-
         const bTimer  = $("#buildingTimer");
-
         const bRoutesW= $("#buildingRoutesWrap");
-
         const bRoute  = $("#buildingRoute");
-
         const bBtnRef = $("#buildingRefresh");
-
         const bBtnStart=$("#buildingStartBtn");
-
         const bBtnRes = $("#buildingResolveBtn");
-
-
 
         $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
 
-
-
         const AUTO_RESOLVE_ON_READY = true;
-
         const READY_GRACE_MS = 2000;
-
         const RETRY_INTERVAL_MS = 1200;
-
         const MAX_RESOLVE_RETRIES = 5;
 
-
-
         let CURRENT_BID = null;
-
         let ticker = null;
-
         function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
-
         function startBuildingTicker(endTs){
-
           stopBuildingTicker();
-
           const tick = () => {
-
             const left = Math.ceil(endTs - Date.now()/1000);
-
             bTimer.textContent = formatLeft(Math.max(0,left));
-
             if (left <= 0) {
-
               stopBuildingTicker();
-
               verifyReadyAndMaybeResolve();
-
             }
-
           };
-
           tick();
-
           ticker = setInterval(tick, 1000);
-
         }
-
         function formatLeft(sec){
-
           const m = Math.floor(sec/60), s = sec%60;
-
           return (m>0? m+"m ":"") + s + "s";
-
         }
-
-
 
         async function openBuilding(bid, name, desc){
-
           CURRENT_BID = bid;
-
           bTitle.textContent = name || "Building";
-
           bDesc.textContent = desc || "";
-
           bBack.style.display = 'flex';
-
           await loadBuildingState();
-
         }
-
-
 
         async function loadBuildingState(){
-
           if (!CURRENT_BID) return;
-
           try{
-
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
-
             bTitle.textContent = st.name || bTitle.textContent;
-
             bDesc.textContent  = st.desc || bDesc.textContent;
 
-
-
             bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
-
             bRoute.innerHTML = '';
-
             if (st.routes && st.routes.length){
-
               for (const r of st.routes){
-
                 const opt = document.createElement('option');
-
                 opt.value = r.id; opt.textContent = r.label || r.id;
-
                 bRoute.appendChild(opt);
-
               }
-
             }
-
-
 
             if (st.active){
-
               const left = Math.max(0, Math.floor(st.timeLeftSec || 0));
-
               bStatus.textContent = "Active";
-
               bBtnStart.style.display = "none";
-
               bBtnRes.style.display = "none";
-
               bTimerW.style.display = "block";
-
               if (left > 0){
-
                 startBuildingTicker(Math.floor(Date.now()/1000) + left);
-
               } else {
-
                 verifyReadyAndMaybeResolve();
-
               }
-
             } else {
-
               bStatus.textContent = "Idle";
-
               bBtnStart.style.display = "inline-block";
-
               bBtnRes.style.display = "none";
-
               bTimerW.style.display = "none";
-
               stopBuildingTicker();
-
             }
-
           }catch(e){
-
             console.warn(e); dbg('building/state fail');
-
             try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
-
           }
-
         }
-
-
 
         async function verifyReadyAndMaybeResolve(){
-
           bStatus.textContent = "Finalizing…";
-
           bBtnRes.style.display = "none";
-
           bTimerW.style.display = "none";
-
           try{
-
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
-
             if (st.active && (st.timeLeftSec||0) > 0){
-
               bStatus.textContent = "Active";
-
               bBtnStart.style.display = "none";
-
               bBtnRes.style.display = "none";
-
               bTimerW.style.display = "block";
-
               startBuildingTicker(Math.floor(Date.now()/1000) + st.timeLeftSec);
-
               return;
-
             }
-
           }catch(_){}
 
-
-
           if (AUTO_RESOLVE_ON_READY){
-
             setTimeout(() => resolveRun(MAX_RESOLVE_RETRIES, /*silentRetries=*/true), READY_GRACE_MS);
-
           } else {
-
             bStatus.textContent = "Ready";
-
             bBtnRes.style.display = "inline-block";
-
           }
-
         }
-
-
 
         /* helper do formatowania nagród z budynków (w tym item shards) */
-
         function formatBuildingRewards(rewardsRaw) {
-
           const rw = rewardsRaw || {};
-
           const lines = [];
 
-
-
           if (rw.scrap)      lines.push(`+${rw.scrap} Scrap`);
-
           if (rw.rune_dust)  lines.push(`+${rw.rune_dust} Rune Dust`);
-
           if (rw.bones)      lines.push(`+${rw.bones} Bones`);
-
           if (rw.fragment)   lines.push(`+1 Map Key Fragment`);
 
-
-
           // item shards z The Chain Gate (opcjonalne pole)
-
           if (rw.shards && rw.shards.amount) {
-
             const slot = rw.shards.slot || "item";
-
             const amt  = rw.shards.amount;
-
             const label = (slot + " shards")
-
               .replace(/_/g, " ")
-
               .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards → Helmet Shards
-
             lines.push(`+${amt} ${label}`);
-
           }
-
-
 
           return lines;
-
         }
-
-
 
         async function resolveRun(maxRetries=0, silentRetries=false){
-
           if (!CURRENT_BID) return false;
-
           for (let i=0; i<=maxRetries; i++){
-
             try{
-
               const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
-
               const rw = out?.rewards || {};
-
               const lines = formatBuildingRewards(rw);
-
               try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
-
               tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
-
               await loadPlayerState();
-
               await loadBuildingState();
-
               return true;
-
             }catch(e){
-
               const reason = (e && e.data && e.data.reason) || e?.message || "";
-
               const R = String(reason).toUpperCase();
-
               const isNotReady = R.includes("NOT_READY");
-
               if (isNotReady && i < maxRetries){
-
               await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
-
               continue;
-
               }
-
               if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
-
               bStatus.textContent = "Ready";
-
               bBtnRes.style.display = "inline-block";
-
               return false;
-
             }
-
           }
-
           bStatus.textContent = "Ready";
-
           bBtnRes.style.display = "inline-block";
-
           return false;
-
         }
 
-
-
         bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
-
         bBtnStart && bBtnStart.addEventListener("click", async () => {
-
           if (!CURRENT_BID) return;
-
           try{
-
             const route = bRoute && bRoute.value || "";
-
             const out = await apiPost("/webapp/building/start", { buildingId: CURRENT_BID, route });
-
             if (out && out.endsAt){
-
               bStatus.textContent = "Active";
-
               bBtnStart.style.display = "none";
-
               bBtnRes.style.display = "none";
-
               bTimerW.style.display = "block";
-
               startBuildingTicker(out.endsAt);
-
             } else if (out && out.minutes){
-
               const ends = Math.floor(Date.now()/1000) + (out.minutes*60);
-
               bStatus.textContent = "Active";
-
               bBtnStart.style.display = "none";
-
               bBtnRes.style.display = "none";
-
               bTimerW.style.display = "block";
-
               startBuildingTicker(ends);
-
             }
-
           }catch(e){
-
             const msg = (e && e.data && e.data.reason) || "Start failed";
-
             try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
-
           }
-
         });
-
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
-
-
         // --- MYPETS module loader ---
-
         let _mypetsLoading = null;
 
-
-
         async function ensureMyPetsLoaded(apiPost, tg, dbg) {
-
           // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-
           if (window.MyPets?.open && window.MyPets?.init) {
-
             try { window.MyPets.init({ apiPost, tg, dbg }); } catch (_) {}
-
             return;
-
           }
-
-
 
           if (_mypetsLoading) return await _mypetsLoading;
 
-
-
           _mypetsLoading = (async () => {
-
             await loadScriptOnce("js/mypets.js");
-
             try { window.MyPets?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-
           })();
 
-
-
           return await _mypetsLoading;
-
         }
 
-
-
         /* === BUTTONS / ACTIONS === */
-
 const actions = {
-
   ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
-
   // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
-
   ".btn.map": () => {
-
     mapBack.style.display = "flex";
-
     navOpen("mapBack");
-
     if (!DATA) loadMapData();
-
     loadPlayerState();
-
   },
-
   ".btn.inventory": () => window.Inventory?.open?.(),
-
   ".btn.char": () => sendAction("char_open"),
-
   ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
-
   ".btn.pets": () => sendAction("pets_open"),
-
   ".btn.equipped": () => window.Equipped?.open?.(),
-
   ".btn.keys": () => sendAction("cmd", { name: "keys" }),
-
   ".btn.feed": () => sendAction("cmd", { name: "feed" }),
-
   ".btn.mystats": () => sendAction("cmd", { name: "mystats" }),
 
-
-
   ".btn.mypets": () => {
-
     return ensureMyPetsLoaded(apiPost, _tg, _dbg)
-
       .then(() => window.MyPets?.open?.())
-
       .catch((err) => {
-
         console.warn("[MyPets] load/open failed", err);
-
         try { _tg?.showAlert?.("Failed to load MyPets."); } catch (_) {}
-
       });
-
   },
 
-
-
   ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-
   ".btn.referral": () => window.Referrals?.open?.(),
-
   ".btn.howlboard": () => openBoard(),
-
 };
 
-
-
 Object.entries(actions).forEach(([sel, fn]) => {
-
   const el = document.querySelector(sel);
-
   if (!el) return;
 
-
-
   el.addEventListener("click", (e) => {
-
     e.preventDefault();
-
     Promise.resolve()
-
       .then(() => fn(e))
-
       .catch((err) => {
-
         console.error(err);
-
         try { dbg('ERR: ' + (err?.message || err)); } catch (_) {}
-
       });
-
   });
-
 });
-
-
 
 /* ✅ Skins: delegated click */
-
 document.addEventListener("click", (e) => {
-
   const btn = e.target.closest?.(".btn.skins");
-
   if (!btn) return;
-
-
 
   if (e.__AH_SKINS_HANDLED) return;
-
   e.__AH_SKINS_HANDLED = true;
 
-
-
   e.preventDefault();
-
-
 
   ensureSkinsLoaded(apiPost, _tg, _dbg)
-
     .then(() => window.Skins?.open?.())
-
     .catch((err) => {
-
       console.warn("skins load/open failed", err);
-
       try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
-
     });
-
 });
 
-
-
  document.addEventListener("click", async (e) => {
-
   const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='mission'], [data-action='missions']");
-
   if (!btn) return;
 
-
-
   e.preventDefault();
-
   console.log("[Missions] open requested");
-
-
 
   try { window.navCloseTop?.(); } catch (_) {}
 
-
-
   try {
-
     await ensureMissionsLoaded(apiPost, _tg, _dbg);
-
     if (window.Missions?.open) return window.Missions.open();
-
     if (typeof window.openMissions === "function") return window.openMissions();
-
     console.warn("[Missions] open() missing after load");
-
   } catch (err) {
-
     console.error("[Missions] load/open failed", err);
-
   }
-
 });    
-
       
-
 /* === MAP close === */
-
 document.getElementById("closeMap")?.addEventListener("click", () => {
-
   mapBack.style.display = "none";
-
   navClose("mapBack");
-
 });
-
-
 
 function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
 
-
-
 mapRoot?.addEventListener("click", (e) => {
-
   if (e.target !== mapRoot) return;
-
   const r = mapRoot.getBoundingClientRect();
-
   const x = ((e.clientX - r.left)/r.width*100).toFixed(1);
-
   const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
-
   console.log("coords:", x, y);
-
 });
-
-
 
 /* === Howlboard === */
-
 const boardBack = document.getElementById("boardBack");
-
 const closeBoard = document.getElementById("closeBoard");
-
 function openBoard(){
-
   boardBack.style.display = "flex";
-
   navOpen("boardBack");
-
 }
-
 closeBoard?.addEventListener("click", () => {
-
   boardBack.style.display = "none";
-
   navClose("boardBack");
-
 });
-
 $$(".tab").forEach(t => {
-
   t.addEventListener("click", () => {
-
     $$(".tab").forEach(x => x.classList.toggle("active", x===t));
-
     const sort = t.getAttribute("data-sort");
-
     sendAction("cmd", { name: "howlboard", args: [sort] });
 
-
-
     // ✅ close + pop from nav stack
-
     boardBack.style.display = "none";
-
     navClose("boardBack");
-
   });
-
 });
-
-
 
 /* Daily fallback (stary modal) */
-
 const questsBack = document.getElementById("questsBack");
-
 const questsList = document.getElementById("questsList");
 
-
-
 document.getElementById("closeQuests")?.addEventListener("click", () => {
-
   questsBack.style.display = "none";
-
   navClose("questsBack"); // ✅
-
 });
-
-
 
 function openQuests(){
-
   questsBack.style.display = "flex";
-
   navOpen("questsBack"); // ✅
-
   refreshQuests();
-
 }
-
-
 
 async function refreshQuests(){
-
   questsList.innerHTML = "";
-
   try{
-
     const s = await apiPost("/webapp/daily/state");
-
     if (!s.ok) throw new Error(s.error || "state failed");
-
     const rows = [];
-
     function card(label, q, raid){
-
       const wrap = document.createElement("div");
-
       wrap.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--ring);border-radius:12px;background:rgba(0,0,0,.4)";
-
       wrap.innerHTML = `
-
         <div>
-
           <div style="font-weight:700">${label}</div>
-
           <div style="opacity:.85">${q ? q.desc : "—"}</div>
-
           <div style="opacity:.7;font-size:12px;margin-top:4px;">Reward: ${q ? q.rewardText : "-"}</div>
-
         </div>
-
         <div class="qa"></div>
-
       `;
-
       const act = wrap.querySelector(".qa");
-
       if (!q){
-
         act.innerHTML = `<span style="opacity:.6">No quest</span>`;
-
         return wrap;
-
       }
-
       if (q.availableActions.length === 0){
-
         act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed ✅" : (q.done ? "Completed ✅" : "")}</span>`;
-
       } else {
-
         q.availableActions.forEach(a => {
-
           const b = document.createElement("button");
-
           b.className = "btn";
-
           b.textContent = a === "daily_claim" ? "Claim" : (a === "daily_raid" ? "RAID" : "Do it");
-
           b.addEventListener("click", () => triggerDaily(a, !!raid));
-
           act.appendChild(b);
-
         });
-
       }
-
       return wrap;
-
     }
-
     if (s.normal) rows.push(card("Daily", s.normal, false));
-
     if (s.raid)   rows.push(card("Raid",  s.raid,   true));
-
     rows.forEach(r => questsList.appendChild(r));
-
   }catch(e){
-
     console.warn(e);
-
     questsList.innerHTML = `<div style="opacity:.8">Failed to load daily state.</div>`;
-
   }
-
 }
-
-
 
 async function triggerDaily(action, raid){
-
   const unsafe = tg?.initDataUnsafe || {};
-
   if (unsafe.query_id) {
-
     try {
-
       const ans = await apiPost("/webapp/daily/action", { action, raid });
-
       if (!ans.ok) throw new Error(ans.error || "Action failed");
-
       if (ans.message) tg?.showAlert?.(ans.message);
-
     } catch (e) {
-
       console.warn(e);
-
       tg?.showAlert?.("Action failed. Try again.");
-
     }
-
   } else {
-
     tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } } ));
-
   }
-
   refreshQuests();
-
 }
-
-
 
 /* Routing z URL */
-
 const qs = new URLSearchParams(location.search);
-
 const sectionParam = (qs.get("section") || "").toLowerCase();
-
 const toastParam = qs.get("toast");
-
 if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
 
-
-
 function showSection(name){
-
   switch(name){
-
     case "map":
-
       mapBack.style.display = "flex";
-
       navOpen("mapBack"); // ✅
-
       if (!DATA) loadMapData();
-
       loadPlayerState();
-
       break;
-
     case "quests":
-
       (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
-
       // ✅ ensure qBack is tracked if new quests opens it
-
       try { if (document.getElementById("qBack")?.style?.display === "flex") navOpen("qBack"); } catch(_) {}
-
       break;
-
     case "mission":
-
       sendAction("mission_open", { level: 1 });
-
       break;
-
     case "inventory":
-
       sendAction("cmd", { name: "inventory" });
-
       break;
-
     case "shop":
-
       sendAction("shop_open");
-
       break;
-
     case "profile":
-
       sendAction("cmd", { name: "profile" });
-
       break;
-
     case "pets":
-
       sendAction("pets_open");
-
       break;
-
     case "fortress":
-
       if (window.Fortress?.open) window.Fortress.open();
-
       else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
-
       break;
-
     default:
-
       break;
-
   }
-
 }
 
-
-
 loadPlayerState();
-
 loadProfile();
-
 if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
-
-
 document.getElementById('quests-launcher')?.addEventListener('click', () => {
-
   window.Quests?.open?.();
-
   // ✅ track mission board container
-
   try { document.getElementById('qBack').style.display='flex'; } catch(_) {}
-
   navOpen("qBack");
-
 });
-
-
 
 document.getElementById('qClose')?.addEventListener('click', () => {
-
   document.getElementById('qBack').style.display='none';
-
   navClose("qBack");
-
 });
 
-
-
         dbg('Ready');
-
       } catch (fatal) {
-
         dbg('FATAL: '+(fatal && fatal.message ? fatal.message : 'error'));
-
         console.error('FATAL', fatal);
-
       }
-
     };
 
-
-
     if (document.readyState === 'loading') {
-
       document.addEventListener('DOMContentLoaded', start, { once: true });
-
     } else {
-
       start();
-
     }
-
   </script>
-
   <script src="js/quests.js?v=20251119f" defer></script>
-
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
-
   
-
   <!-- NATYCHMIASTOWE INIT – bez czekania na fallback -->
-
   <script>
-
     // Natychmiastowe init Quests po załadowaniu strony
-
     document.addEventListener('DOMContentLoaded', () => {
-
       if (window.Quests && typeof window.Quests.init === 'function') {
-
         const tg = window.Telegram?.WebApp;
-
         const apiPost = window.S?.apiPost || (async (path, data) => {
-
           const init_data = tg?.initData;
-
           const res = await fetch((window.API_BASE || "") + path, {
-
             method: "POST",
-
             headers: { "Content-Type": "application/json", ...(init_data ? { Authorization: `Bearer ${init_data}` } : {}) },
-
             body: JSON.stringify({ init_data, ...(data || {}) })
-
           });
-
           return res.json();
-
         });
-
         window.Quests.init({ apiPost, tg, dbg: console.debug });
-
         console.log("Mission Board (z opisami) zainicjowany!");
-
       }
-
     });
-
-
 
     // Launcher otwiera ZAWSZE nowy Mission Board
-
     document.getElementById('quests-launcher')?.addEventListener('click', () => {
-
       if (window.Quests?.open) {
-
         window.Quests.open();
-
       } else {
-
         console.error("Quests.js nie załadowany!");
-
       }
-
     });
-
   </script>
-
-
 
   <!-- FAQ – bez zmian -->
-
   <script src="js/faq.js?v=20251108" defer></script>
-
   <script>
-
     (function () {
-
       const tg = window.Telegram && window.Telegram.WebApp;
-
       const apiPost = (window.S && window.S.apiPost) || (async (path, data) => {
-
         const init_data = tg && tg.initData;
-
         const url = (window.API_BASE || "") + path;
-
         const res = await fetch(url, {
-
           method: "POST",
-
           headers: {
-
             "Content-Type": "application/json",
-
             ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-
           },
-
           body: JSON.stringify({ init_data, ...(data || {}) })
-
         });
-
         return res.json();
-
       });
-
       function tryInitFAQ(){
-
         if (window.FAQ && !window.__faqInited) {
-
           window.FAQ.init({ apiPost, tg, dbg: console.debug });
-
           window.__faqInited = true;
-
         }
-
       }
-
       if (document.readyState === 'loading') {
-
         document.addEventListener('DOMContentLoaded', tryInitFAQ, { once:true });
-
       } else {
-
         tryInitFAQ();
-
       }
-
     })();
-
   </script>
-
-
 
   <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
-
   <script src="js/inventory.js?v=20251205"></script>
-
   <script src="js/equipped.js?v=20251210"></script>
-
   <script src="js/scene_bg.js?v=WEBAPP_VER"></script>
-
   <script src="js/shop.js?v=WEBAPP_VER"></script>
-
   <script src="js/forge.js?v=WEBAPP_VER"></script>
-
   <script src="js/missions.js?v=WEBAPP_VER"></script>
-
   <script src="/js/updates.js?v=WEBAPP_VER"></script>
-
   <script src="js/mypets.js?v=WEBAPP_VER"></script>
-
   <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
-
   <script src="/js/arena.js?v=WEBAPP_VER"></script>
-
   <!-- MAP (Level 1: faction ring + badge) -->
-
 <script src="js/map.js?v=WEBAPP_VER"></script>
-
 <script src="js/influence.js?v=WEBAPP_VER"></script>
-
 <script>
-
   (function () {
-
     function tryInitMap() {
-
       if (window.Map && typeof window.Map.init === "function" && !window.__mapInited) {
-
         window.Map.init();
-
         window.__mapInited = true;
-
         console.log("Map module initialized");
-
       }
-
     }
-
     if (document.readyState === 'loading') {
-
       document.addEventListener('DOMContentLoaded', tryInitMap, { once:true });
-
     } else {
-
       tryInitMap();
-
     }
-
   })();
-
 </script>
-
   <script src="/js/home_nav.js?v=WEBAPP_VER"></script>
-
   
-
   <!-- SUPPORT (Stars) -->
-
   <script src="/js/support.js?v=WEBAPP_VER"></script>
-
   <script>
-
     (function () {
-
       function getApiPost(tg){
-
         return window.apiPost || window.S?.apiPost || window.AH?.apiPost || (async (path, data) => {
-
           const init_data = tg?.initData || "";
-
           const url = (window.API_BASE || "") + path;
-
           const res = await fetch(url, {
-
             method: "POST",
-
             headers: {
-
               "Content-Type": "application/json",
-
               ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-
             },
-
             body: JSON.stringify({ init_data, ...(data || {}) })
-
           });
-
           return res.json();
-
         });
-
       }
-
-
 
       function tryInitSupport(){
-
         if (!window.Support || window.__supportInited) return;
 
-
-
         const tg = window.Telegram?.WebApp || null;
-
         const apiPost = getApiPost(tg);
 
-
-
         window.Support.init({
-
           tg,
-
           apiPost,
-
           dbg: !!window.DBG
-
         });
 
-
-
         window.__supportInited = true;
-
         console.log("Support initialized ✅");
-
       }
-
-
 
       if (document.readyState === "loading") {
-
         document.addEventListener("DOMContentLoaded", tryInitSupport, { once: true });
-
       } else {
-
         tryInitSupport();
-
       }
-
     })();
-
   </script>
-
-
-
 
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
-
   <script>
-
   // === ROUTING Z ?section=... ===
-
   const params = new URLSearchParams(location.search);
-
   const section = params.get("section");
 
-
-
   if (section === "inventory" && window.Inventory) {
-
     setTimeout(() => {
-
       window.Inventory.open();
-
     }, 100);
-
   }
-
-
 
   if (section === "equipped" && window.Equipped) {
-
     setTimeout(() => {
-
       window.Equipped.open();
-
     }, 100);
-
   }
 
-
-
   // === NADPISANIE PRZYCISKU INVENTORY NA HUD ===
-
   document.querySelectorAll(".btn.inventory").forEach(btn => {
-
     btn.addEventListener("click", e => {
-
       e.preventDefault();
-
       e.stopPropagation();
-
       if (window.Inventory) {
-
         window.Inventory.open();
-
       } else {
-
         Telegram.WebApp.showAlert("Inventory jeszcze się ładuje...");
-
       }
-
     });
-
   });
 
-
-
   // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
-
   // ".btn.equipped": () => window.Equipped?.open?.()
-
 </script>
-
 </body>
-
 </html>
 
 
@@ -8637,70 +4351,3 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
