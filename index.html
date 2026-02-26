@@ -3636,6 +3636,60 @@ async function loadProfile() {
   }
 }
 window.loadProfile = loadProfile;
+
+      /* ✅ Faction badge renderer (Topbar) — define once, used by loadPlayerState() */
+(function(){
+  const BASE = "/images/factions/";
+  const VER  = (window.WEBAPP_VER ? ("?v=" + window.WEBAPP_VER) : "");
+
+  const FILE_40 = {
+    rb: "rogue_byte_40.webp",
+    ew: "echo_wardens_40.webp",
+    pb: "pack_burners_40.webp",
+    ih: "inner_howl_40.webp",
+  };
+
+  function normFactionKey(k){
+    k = String(k || "").toLowerCase().trim();
+    if (!k) return "";
+    if (k === "rb" || k === "ew" || k === "pb" || k === "ih") return k;
+    if (k.includes("rogue")) return "rb";
+    if (k.includes("echo"))  return "ew";
+    if (k.includes("pack"))  return "pb";
+    if (k.includes("inner")) return "ih";
+    return "";
+  }
+
+  window.renderFactionBadge = function renderFactionBadge(){
+    const el  = document.getElementById("factionBadge");
+    const img = document.getElementById("factionBadgeImg");
+    if (!el || !img) return;
+
+    const st = window.PLAYER_STATE || {};
+    const p  = st.profile || st.player || {};
+
+    const raw =
+      p.faction || p.faction_key || p.factionKey ||
+      st.faction || st.faction_key || "";
+
+    let k = normFactionKey(raw);
+
+    if (!k) {
+      try { k = normFactionKey(localStorage.getItem("ah_faction") || ""); } catch(_){}
+    }
+
+    if (!k || !FILE_40[k]) {
+      el.style.display = "none";
+      el.className = "fac-badge";
+      return;
+    }
+
+    el.style.display = "inline-grid";
+    el.className = "fac-badge f-" + k;
+    img.src = BASE + FILE_40[k] + VER;
+  };
+})();
+      
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
@@ -3709,6 +3763,7 @@ async function loadPlayerState() {
 
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
     try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
+    try { window.renderFactionBadge?.(); } catch (_) {}
 
     // ✅ Onboarding (V0 smart) — pokaż raz po pełnym załadowaniu UI
     try { window.maybeOpenOnboarding?.(); } catch (_) {}
@@ -4658,6 +4713,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
