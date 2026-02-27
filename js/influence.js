@@ -4,85 +4,145 @@
   let _apiPost = null, _tg = null, _dbg = false;
   let _leadersMap = null;
 
-// --- faction memory (front-only) ---
-let _faction = "";
-try { _faction = (localStorage.getItem("ah_faction") || "").toLowerCase(); } catch(_) {}
+  // -------------------------
+  // Faction memory (cache only)
+  // -------------------------
+  const VALID_FACTIONS = new Set(["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"]);
 
-function setFaction(f){
-  _faction = String(f || "").toLowerCase();
-  try { localStorage.setItem("ah_faction", _faction); } catch(_) {}
-}
+  let _faction = "";
+  try { _faction = (localStorage.getItem("ah_faction") || "").toLowerCase(); } catch (_) {}
 
-function fmtSec(sec){
-  sec = Math.max(0, parseInt(sec || 0, 10) || 0);
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2,"0")}`;
-}
-function tgPickFaction(){
-  return new Promise((resolve) => {
-    const tg = _tg || window.Telegram?.WebApp || null;
+  function setFaction(f) {
+    _faction = String(f || "").toLowerCase();
+    try { localStorage.setItem("ah_faction", _faction); } catch (_) {}
+  }
 
-    // fallback: jeśli brak TG popup, zwróć zapisane / pusty
-    if (!tg?.showPopup) return resolve(_faction || "");
+  function clearFactionCache() {
+    _faction = "";
+    try { localStorage.removeItem("ah_faction"); } catch (_) {}
+  }
 
-    const pick = (key) => { setFaction(key); resolve(key); };
+  function fmtSec(sec) {
+    sec = Math.max(0, parseInt(sec || 0, 10) || 0);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
 
-    const popup1 = () => tg.showPopup({
-      title: "Choose faction",
-      message: "Pick your side.",
-      buttons: [
-        { id: "rb", type: "default", text: "Rogue Byte" },
-        { id: "ew", type: "default", text: "Echo Wardens" },
-        { id: "more", type: "default", text: "More…" },
-      ]
-    }, (btnId) => {
-      if (btnId === "rb") return pick("rogue_byte");
-      if (btnId === "ew") return pick("echo_wardens");
-      if (btnId === "more") return popup2();
-      return resolve(_faction || ""); // close
+  // -------------------------
+  // TG picker (max 3 buttons)
+  // returns FULL faction keys
+  // -------------------------
+  function tgPickFaction() {
+    return new Promise((resolve) => {
+      const tg = _tg || window.Telegram?.WebApp || null;
+
+      // fallback: jeśli brak TG popup, zwróć zapisane / pusty
+      if (!tg?.showPopup) return resolve(_faction || "");
+
+      const pick = (key) => { setFaction(key); resolve(key); };
+
+      const popup1 = () => tg.showPopup({
+        title: "Choose faction",
+        message: "Pick your side.",
+        buttons: [
+          { id: "rb", type: "default", text: "Rogue Byte" },
+          { id: "ew", type: "default", text: "Echo Wardens" },
+          { id: "more", type: "default", text: "More…" },
+        ]
+      }, (btnId) => {
+        if (btnId === "rb") return pick("rogue_byte");
+        if (btnId === "ew") return pick("echo_wardens");
+        if (btnId === "more") return popup2();
+        return resolve(_faction || ""); // close
+      });
+
+      const popup2 = () => tg.showPopup({
+        title: "Choose faction",
+        message: "More factions:",
+        buttons: [
+          { id: "pb", type: "default", text: "Pack Burners" },
+          { id: "ih", type: "default", text: "Inner Howl" },
+          { id: "back", type: "default", text: "← Back" },
+        ]
+      }, (btnId) => {
+        if (btnId === "pb") return pick("pack_burners");
+        if (btnId === "ih") return pick("inner_howl");
+        if (btnId === "back") return popup1();
+        return resolve(_faction || "");
+      });
+
+      popup1();
     });
+  }
 
-    const popup2 = () => tg.showPopup({
-      title: "Choose faction",
-      message: "More factions:",
-      buttons: [
-        { id: "pb", type: "default", text: "Pack Burners" },
-        { id: "ih", type: "default", text: "Inner Howl" },
-        { id: "back", type: "default", text: "← Back" },
-      ]
-    }, (btnId) => {
-      if (btnId === "pb") return pick("pack_burners");
-      if (btnId === "ih") return pick("inner_howl");
-      if (btnId === "back") return popup1();
-      return resolve(_faction || "");
-    });
+  // -------------------------
+  // Backend truth → cache
+  // -------------------------
+  async function fetchFactionFromBackend() {
+    if (!_apiPost) return "";
+    try {
+      const r = await _apiPost("/webapp/faction/state", { run_id: rid("fstate") });
+      const f =
+        r?.faction ||
+        r?.data?.faction ||
+        r?.data?.key ||
+        r?.data?.factionKey ||
+        "";
 
-    popup1();
-  });
-}
+      const key = String(f || "").toLowerCase();
+      if (VALID_FACTIONS.has(key)) {
+        setFaction(key);
+        window.currentUserFaction = key;
+        return key;
+      }
+      return "";
+    } catch (e) {
+      if (_dbg) console.warn("fetchFactionFromBackend failed", e);
+      return "";
+    }
+  }
 
+  // -------------------------
+  // Ensure faction (truth first)
+  // -------------------------
+  async function ensureFaction() {
+    // 1) backend truth first (prevents loops)
+    const fromApi = await fetchFactionFromBackend();
+    if (VALID_FACTIONS.has(fromApi)) return fromApi;
 
-async function ensureFaction(){
-  if (["rb","ew","pb","ih"].includes(_faction)) return _faction;
+    // 2) fallback: cached value
+    if (VALID_FACTIONS.has(_faction)) return _faction;
 
-  const picked = await tgPickFaction();
-  if (!["rb","ew","pb","ih"].includes(picked)) return "";
+    // 3) ask user
+    const picked = await tgPickFaction();
+    if (!VALID_FACTIONS.has(picked)) return "";
 
-  setFaction(picked);
-  return _faction;
-}
-  
-  function rid(prefix="inf") {
-    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+    setFaction(picked);
+    window.currentUserFaction = picked;
+
+    // OPTIONAL: if you want picker to actually JOIN via backend in the future:
+    // await _apiPost("/webapp/faction/join", { faction: picked, run_id: rid("fjoin") });
+
+    return picked;
+  }
+
+  // -------------------------
+  // misc helpers
+  // -------------------------
+  function rid(prefix = "inf") {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
   function toast(msg) {
-    try { window.toast?.(msg); return; } catch(_){}
-    try { _tg?.showPopup?.({ message: String(msg) }); return; } catch(_){}
+    try { window.toast?.(msg); return; } catch (_) {}
+    try { _tg?.showPopup?.({ message: String(msg) }); return; } catch (_) {}
     console.log("[toast]", msg);
   }
 
+  // -------------------------
+  // Modal UI
+  // -------------------------
   function ensureModal() {
     if (document.getElementById("influenceModal")) return;
 
@@ -206,7 +266,7 @@ async function ensureFaction(){
     });
   }
 
-  function open(nodeId, title="") {
+  function open(nodeId, title = "") {
     ensureModal();
     const m = document.getElementById("influenceModal");
     if (!m) return;
@@ -252,125 +312,127 @@ async function ensureFaction(){
     contEl.style.display = info.contested ? "inline-flex" : "none";
 
     const s = info.scores || {};
-    foot.textContent = `RB ${s.rogue_byte||0} · EW ${s.echo_wardens||0} · PB ${s.pack_burners||0} · IH ${s.inner_howl||0}`;
+    foot.textContent = `RB ${s.rogue_byte || 0} · EW ${s.echo_wardens || 0} · PB ${s.pack_burners || 0} · IH ${s.inner_howl || 0}`;
   }
 
   async function refreshLeaders(applyToMap = true) {
-  if (!_apiPost) return;
-  try {
-    const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
-    const ok = r?.ok !== false;
-    const leaders =
-      r?.leadersMap ||
-      r?.leaders_map ||
-      r?.data?.leadersMap ||
-      r?.data?.leaders_map ||
-      null;
+    if (!_apiPost) return;
+    try {
+      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
+      const ok = r?.ok !== false;
+      const leaders =
+        r?.leadersMap ||
+        r?.leaders_map ||
+        r?.data?.leadersMap ||
+        r?.data?.leaders_map ||
+        null;
 
-    if (ok && leaders) {
-      _leadersMap = leaders;
+      if (ok && leaders) {
+        _leadersMap = leaders;
 
-      if (applyToMap) {
-        try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
-        // ✅ ensure UI refresh even if applyLeaders doesn't re-render pins
+        if (applyToMap) {
+          try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
+          try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+        }
+      }
+    } catch (e) {
+      if (_dbg) console.warn("refreshLeaders failed", e);
+    }
+  }
+
+  async function doPatrol(nodeId) {
+    if (!_apiPost) return;
+
+    const btn = document.getElementById("infPatrolBtn");
+    if (btn) btn.disabled = true;
+
+    try {
+      const faction = await ensureFaction();
+      if (!faction) return toast("Faction required.");
+
+      const r = await _apiPost("/webapp/influence/action", {
+        nodeId,
+        action: "patrol",
+        faction,
+        run_id: rid("patrol"),
+      });
+
+      if (!r?.ok) {
+        if (r?.reason === "COOLDOWN") {
+          toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
+        } else if (r?.reason === "NO_UID") {
+          toast("Open the app from Telegram (auth missing).");
+        } else if (r?.reason === "NO_FACTION") {
+          clearFactionCache();
+          toast("Pick faction again.");
+        } else {
+          toast(r?.reason || "Patrol failed");
+        }
+        return;
+      }
+
+      toast(`+${r.gain} influence`);
+
+      const leaders = r?.leadersMap || r?.leaders_map || null;
+      if (leaders) {
+        _leadersMap = leaders;
+        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
         try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+        try { paintLeader(nodeId); } catch (_) {}
       }
+    } finally {
+      if (btn) btn.disabled = false;
     }
-  } catch (e) {
-    if (_dbg) console.warn("refreshLeaders failed", e);
   }
-}
 
-async function doPatrol(nodeId) {
-  if (!_apiPost) return;
+  async function doDonate(nodeId) {
+    if (!_apiPost) return;
 
-  const btn = document.getElementById("infPatrolBtn");
-  if (btn) btn.disabled = true;
+    const asset = (document.getElementById("infAsset")?.value || "scrap").trim();
+    const amount = parseInt(document.getElementById("infAmount")?.value || "0", 10) || 0;
+    if (amount <= 0) return toast("Bad amount");
 
-  try {
-    const faction = await ensureFaction();
-    if (!faction) return toast("Faction required.");
+    const btn = document.getElementById("infDonateBtn");
+    if (btn) btn.disabled = true;
 
-    const r = await _apiPost("/webapp/influence/action", {
-      nodeId,
-      action: "patrol",
-      faction,                 // ✅ FIX: required by backend
-      run_id: rid("patrol"),
-    });
+    try {
+      const faction = await ensureFaction();
+      if (!faction) return toast("Faction required.");
 
-    if (!r?.ok) {
-      if (r?.reason === "COOLDOWN") {
-        toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
-      } else if (r?.reason === "NO_FACTION") {
-        _faction = "";
-        try { localStorage.removeItem("ah_faction"); } catch(_){}
-        toast("Pick faction again.");
-      } else {
-        toast(r?.reason || "Patrol failed");
+      const r = await _apiPost("/webapp/influence/action", {
+        nodeId,
+        action: "donate",
+        faction,
+        asset,
+        amount,
+        run_id: rid("donate"),
+      });
+
+      if (!r?.ok) {
+        if (r?.reason === "NO_UID") {
+          toast("Open the app from Telegram (auth missing).");
+        } else if (r?.reason === "NO_FACTION") {
+          clearFactionCache();
+          toast("Pick faction again.");
+        } else {
+          toast(r?.reason || "Donate failed");
+        }
+        return;
       }
-      return;
-    }
 
-    toast(`+${r.gain} influence`);
+      toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
 
-    const leaders = r?.leadersMap || r?.leaders_map || null;
-    if (leaders) {
-      _leadersMap = leaders;
-      try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
-      try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-      try { paintLeader(nodeId); } catch (_) {}
-    }
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-async function doDonate(nodeId) {
-  if (!_apiPost) return;
-
-  const asset = (document.getElementById("infAsset")?.value || "scrap").trim();
-  const amount = parseInt(document.getElementById("infAmount")?.value || "0", 10) || 0;
-  if (amount <= 0) return toast("Bad amount");
-
-  const btn = document.getElementById("infDonateBtn");
-  if (btn) btn.disabled = true;
-
-  try {
-    const faction = await ensureFaction();
-    if (!faction) return toast("Faction required.");
-
-    const r = await _apiPost("/webapp/influence/action", {
-      nodeId,
-      action: "donate",
-      faction,                 // ✅ FIX
-      asset,
-      amount,
-      run_id: rid("donate"),
-    });
-
-    if (!r?.ok) {
-      if (r?.reason === "NO_FACTION") {
-        _faction = "";
-        try { localStorage.removeItem("ah_faction"); } catch(_){}
-        toast("Pick faction again.");
-      } else {
-        toast(r?.reason || "Donate failed");
+      const leaders = r?.leadersMap || r?.leaders_map || null;
+      if (leaders) {
+        _leadersMap = leaders;
+        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
+        try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+        try { paintLeader(nodeId); } catch (_) {}
       }
-      return;
+    } finally {
+      if (btn) btn.disabled = false;
     }
-
-    toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
-
-    const leaders = r?.leadersMap || r?.leaders_map || null;
-    if (leaders) {
-      _leadersMap = leaders;
-      try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
-      try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-      try { paintLeader(nodeId); } catch (_) {}
-    }
-  } finally {
-    if (btn) btn.disabled = false;
   }
-}
 
   Influence.init = function ({ apiPost, tg, dbg }) {
     _apiPost = apiPost;
