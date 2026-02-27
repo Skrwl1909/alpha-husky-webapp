@@ -19,32 +19,49 @@ function fmtSec(sec){
   const s = sec % 60;
   return `${m}:${String(s).padStart(2,"0")}`;
 }
-
 function tgPickFaction(){
   return new Promise((resolve) => {
     const tg = _tg || window.Telegram?.WebApp || null;
 
-    // Telegram popup
-    if (tg?.showPopup) {
-      tg.showPopup({
-        title: "Choose faction",
-        message: "Pick your faction for Influence actions.",
-        buttons: [
-          { id:"rb", text:"RB", type:"default" },
-          { id:"ew", text:"EW", type:"default" },
-          { id:"pb", text:"PB", type:"default" },
-          { id:"ih", text:"IH", type:"default" },
-          { id:"x",  text:"Cancel", type:"destructive" },
-        ]
-      }, (id) => resolve((id || "").toLowerCase()));
-      return;
-    }
+    // fallback: jeśli brak TG popup, zwróć zapisane / pusty
+    if (!tg?.showPopup) return resolve(_faction || "");
 
-    // fallback prompt
-    const v = (window.prompt("Choose faction: rb / ew / pb / ih", "rb") || "").trim().toLowerCase();
-    resolve(v);
+    const pick = (key) => { setFaction(key); resolve(key); };
+
+    const popup1 = () => tg.showPopup({
+      title: "Choose faction",
+      message: "Pick your side.",
+      buttons: [
+        { id: "rb", type: "default", text: "Rogue Byte" },
+        { id: "ew", type: "default", text: "Echo Wardens" },
+        { id: "more", type: "default", text: "More…" },
+      ]
+    }, (btnId) => {
+      if (btnId === "rb") return pick("rogue_byte");
+      if (btnId === "ew") return pick("echo_wardens");
+      if (btnId === "more") return popup2();
+      return resolve(_faction || ""); // close
+    });
+
+    const popup2 = () => tg.showPopup({
+      title: "Choose faction",
+      message: "More factions:",
+      buttons: [
+        { id: "pb", type: "default", text: "Pack Burners" },
+        { id: "ih", type: "default", text: "Inner Howl" },
+        { id: "back", type: "default", text: "← Back" },
+      ]
+    }, (btnId) => {
+      if (btnId === "pb") return pick("pack_burners");
+      if (btnId === "ih") return pick("inner_howl");
+      if (btnId === "back") return popup1();
+      return resolve(_faction || "");
+    });
+
+    popup1();
   });
 }
+
 
 async function ensureFaction(){
   if (["rb","ew","pb","ih"].includes(_faction)) return _faction;
