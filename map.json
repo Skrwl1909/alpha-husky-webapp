@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "meta": { "name": "Alpha Husky Overworld", "viewBox": [1600, 900] },
   "assets": {
     "icons": "images/map/building",
@@ -144,19 +144,19 @@
   "uiHint": { "owner": "echo_wardens", "state": "new" },
   "tags": ["story","oracle","rewrite"]
 },
-    {
+   {
   "id": "alpha_network_hq",
-  "name": "Alpha Network HQ",
+  "name": "Faction HQ",
   "region": "chain",
   "x": 18,
   "y": 43,
   "icon": "images/map/building/alpha_network_hq.webp",
-  "desc": "Hidden command hub & safe-zone shop for the Pack.",
-  "action": "building_enter",
-  "buildingId": "alpha_network_hq_shop",
+  "desc": "Your faction’s command hub. Donate to the treasury and upgrade HQ together.",
+  "action": "open_faction_hq",
+  "buildingId": "faction_hq",
   "labelOffset": { "x": 12, "y": 30 },
-  "gameplay": { "type": "shop" },
-  "tags": ["shop", "safe", "utility"]
+  "gameplay": { "type": "faction_hq" },
+  "tags": ["hq", "faction", "safe", "community"]
 },
     {
       "id": "chain_gate",
