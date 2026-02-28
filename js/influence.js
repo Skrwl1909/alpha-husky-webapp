@@ -1,5 +1,4 @@
-```js
-// js/influence.js — Influence MVP+ (Patrol + Donate) for map nodes
+// js/influence.js — Influence MVP (Patrol + Donate) for map nodes
 (function () {
   const Influence = {};
   let _apiPost = null, _tg = null, _dbg = false;
@@ -28,80 +27,6 @@
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
-  }
-
-  // -------------------------
-  // misc helpers
-  // -------------------------
-  function rid(prefix = "inf") {
-    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  // always-visible DOM toast (no silent failures)
-  function toast(msg){
-    const s = String(msg ?? "");
-    console.log("[toast]", s);
-
-    let el = document.getElementById("ahToast");
-    if (!el){
-      el = document.createElement("div");
-      el.id = "ahToast";
-      el.style.cssText = `
-        position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
-        z-index:99999999; max-width:min(92vw,520px);
-        background:rgba(0,0,0,.84); color:#fff; padding:10px 12px;
-        border:1px solid rgba(255,255,255,.14); border-radius:12px;
-        font:13px/1.3 system-ui; opacity:0; transition:opacity .15s ease;
-        pointer-events:none; text-align:center;
-      `;
-      document.body.appendChild(el);
-    }
-
-    el.textContent = s;
-    el.style.opacity = "1";
-
-    clearTimeout(window.__ahToastT);
-    window.__ahToastT = setTimeout(()=>{ el.style.opacity = "0"; }, 2300);
-
-    try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch(_){}
-  }
-
-  // status line + cooldown ticker
-  let _cooldownTimer = null;
-
-  function setStatus(text){
-    const el = document.getElementById("infStatus");
-    if (el) el.textContent = String(text || "");
-  }
-
-  function clearCooldownTicker(){
-    if (_cooldownTimer) clearInterval(_cooldownTimer);
-    _cooldownTimer = null;
-  }
-
-  function startCooldownTicker(leftSec){
-    clearCooldownTicker();
-    let sec = Math.max(0, parseInt(leftSec || 0, 10) || 0);
-    if (!sec) return;
-
-    const tick = () => {
-      setStatus(`Cooldown: ${fmtSec(sec)} left`);
-      sec -= 1;
-      if (sec < 0) {
-        clearCooldownTicker();
-        setStatus("Ready ✅");
-      }
-    };
-
-    tick();
-    _cooldownTimer = setInterval(tick, 1000);
-  }
-
-  function setBusy(isBusy){
-    const p = document.getElementById("infPatrolBtn");
-    const d = document.getElementById("infDonateBtn");
-    if (p) p.disabled = !!isBusy;
-    if (d) d.disabled = !!isBusy;
   }
 
   // -------------------------
@@ -158,11 +83,6 @@
     if (!_apiPost) return "";
     try {
       const r = await _apiPost("/webapp/faction/state", { run_id: rid("fstate") });
-      if (_dbg) console.log("[Influence] faction/state", r);
-
-      // auth problem: don't trigger picker loops
-      if (r?.ok === false && String(r?.reason || "") === "NO_UID") return "";
-
       const f =
         r?.faction ||
         r?.data?.faction ||
@@ -205,6 +125,19 @@
     // await _apiPost("/webapp/faction/join", { faction: picked, run_id: rid("fjoin") });
 
     return picked;
+  }
+
+  // -------------------------
+  // misc helpers
+  // -------------------------
+  function rid(prefix = "inf") {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function toast(msg) {
+    try { window.toast?.(msg); return; } catch (_) {}
+    try { _tg?.showPopup?.({ message: String(msg) }); return; } catch (_) {}
+    console.log("[toast]", msg);
   }
 
   // -------------------------
@@ -259,8 +192,6 @@
             ">⚠ contested</div>
           </div>
         </div>
-
-        <div id="infStatus" style="margin-top:8px;font-size:12px;opacity:.8;"></div>
 
         <div style="display:flex; gap:10px; margin-top:12px;">
           <button id="infPatrolBtn" style="
@@ -340,9 +271,6 @@
     const m = document.getElementById("influenceModal");
     if (!m) return;
 
-    clearCooldownTicker();
-    setStatus("");
-
     m.dataset.nodeId = nodeId;
 
     document.getElementById("infTitle").textContent = title || nodeId;
@@ -355,9 +283,6 @@
 
     m.style.display = "flex";
     document.body.classList.add("ah-modal-open");
-
-    // background refresh = mniej "ciszy"
-    refreshLeaders(true).then(() => paintLeader(nodeId)).catch(()=>{});
   }
 
   function close() {
@@ -365,8 +290,6 @@
     if (!m) return;
     m.style.display = "none";
     document.body.classList.remove("ah-modal-open");
-    clearCooldownTicker();
-    setStatus("");
   }
 
   function paintLeader(nodeId) {
@@ -420,12 +343,12 @@
   async function doPatrol(nodeId) {
     if (!_apiPost) return;
 
-    setBusy(true);
-    setStatus("Patrolling…");
+    const btn = document.getElementById("infPatrolBtn");
+    if (btn) btn.disabled = true;
 
     try {
       const faction = await ensureFaction();
-      if (!faction) { toast("Faction required."); setStatus("Pick a faction to continue."); return; }
+      if (!faction) return toast("Faction required.");
 
       const r = await _apiPost("/webapp/influence/action", {
         nodeId,
@@ -434,28 +357,21 @@
         run_id: rid("patrol"),
       });
 
-      console.log("[Influence] patrol res", r);
-
       if (!r?.ok) {
         if (r?.reason === "COOLDOWN") {
           toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
-          startCooldownTicker(r.cooldownLeftSec);
         } else if (r?.reason === "NO_UID") {
-          toast("Auth missing (open from Telegram).");
-          setStatus("Auth missing.");
+          toast("Open the app from Telegram (auth missing).");
         } else if (r?.reason === "NO_FACTION") {
           clearFactionCache();
           toast("Pick faction again.");
-          setStatus("Faction missing — pick again.");
         } else {
           toast(r?.reason || "Patrol failed");
-          setStatus(r?.reason || "Patrol failed");
         }
         return;
       }
 
       toast(`+${r.gain} influence`);
-      setStatus(`Patrol complete ✅ (+${r.gain})`);
 
       const leaders = r?.leadersMap || r?.leaders_map || null;
       if (leaders) {
@@ -463,15 +379,9 @@
         try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
         try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
         try { paintLeader(nodeId); } catch (_) {}
-      } else {
-        await refreshLeaders(true);
-        paintLeader(nodeId);
       }
-
-      if (r?.cooldownLeftSec) startCooldownTicker(r.cooldownLeftSec);
-
     } finally {
-      setBusy(false);
+      if (btn) btn.disabled = false;
     }
   }
 
@@ -480,14 +390,14 @@
 
     const asset = (document.getElementById("infAsset")?.value || "scrap").trim();
     const amount = parseInt(document.getElementById("infAmount")?.value || "0", 10) || 0;
-    if (amount <= 0) { toast("Bad amount"); return; }
+    if (amount <= 0) return toast("Bad amount");
 
-    setBusy(true);
-    setStatus("Donating…");
+    const btn = document.getElementById("infDonateBtn");
+    if (btn) btn.disabled = true;
 
     try {
       const faction = await ensureFaction();
-      if (!faction) { toast("Faction required."); setStatus("Pick a faction to continue."); return; }
+      if (!faction) return toast("Faction required.");
 
       const r = await _apiPost("/webapp/influence/action", {
         nodeId,
@@ -498,28 +408,19 @@
         run_id: rid("donate"),
       });
 
-      console.log("[Influence] donate res", r);
-
       if (!r?.ok) {
-        if (r?.reason === "COOLDOWN") {
-          toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
-          startCooldownTicker(r.cooldownLeftSec);
-        } else if (r?.reason === "NO_UID") {
-          toast("Auth missing (open from Telegram).");
-          setStatus("Auth missing.");
+        if (r?.reason === "NO_UID") {
+          toast("Open the app from Telegram (auth missing).");
         } else if (r?.reason === "NO_FACTION") {
           clearFactionCache();
           toast("Pick faction again.");
-          setStatus("Faction missing — pick again.");
         } else {
           toast(r?.reason || "Donate failed");
-          setStatus(r?.reason || "Donate failed");
         }
         return;
       }
 
       toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
-      setStatus(`Donate complete ✅ (+${r.gain})`);
 
       const leaders = r?.leadersMap || r?.leaders_map || null;
       if (leaders) {
@@ -527,22 +428,16 @@
         try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
         try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
         try { paintLeader(nodeId); } catch (_) {}
-      } else {
-        await refreshLeaders(true);
-        paintLeader(nodeId);
       }
-
-      if (r?.cooldownLeftSec) startCooldownTicker(r.cooldownLeftSec);
-
     } finally {
-      setBusy(false);
+      if (btn) btn.disabled = false;
     }
   }
 
   Influence.init = function ({ apiPost, tg, dbg }) {
     _apiPost = apiPost;
     _tg = tg;
-    _dbg = !!dbg; // ustaw window.DBG=true żeby widzieć logi
+    _dbg = !!dbg;
     ensureModal();
   };
 
@@ -552,4 +447,3 @@
 
   window.Influence = Influence;
 })();
-```
