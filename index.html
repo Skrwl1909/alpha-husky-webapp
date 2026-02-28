@@ -4335,79 +4335,114 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     });
   </script>
 
-  <!-- FAQ – bez zmian -->
-  <script src="js/faq.js?v=20251108" defer></script>
-  <script>
-    (function () {
-      const tg = window.Telegram && window.Telegram.WebApp;
-      const apiPost = (window.S && window.S.apiPost) || (async (path, data) => {
-        const init_data = tg && tg.initData;
-        const url = (window.API_BASE || "") + path;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-          },
-          body: JSON.stringify({ init_data, ...(data || {}) })
-        });
-        return res.json();
-      });
-      function tryInitFAQ(){
-        if (window.FAQ && !window.__faqInited) {
-          window.FAQ.init({ apiPost, tg, dbg: console.debug });
-          window.__faqInited = true;
-        }
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryInitFAQ, { once:true });
-      } else {
-        tryInitFAQ();
-      }
-    })();
-  </script>
-
-  <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
-  <script src="js/inventory.js?v=20251205"></script>
-  <script src="js/equipped.js?v=20251210"></script>
-  <script src="js/scene_bg.js?v=WEBAPP_VER"></script>
-  <script src="js/shop.js?v=WEBAPP_VER"></script>
-  <script src="js/forge.js?v=WEBAPP_VER"></script>
-  <script src="js/missions.js?v=WEBAPP_VER"></script>
-  <script src="/js/updates.js?v=WEBAPP_VER"></script>
-  <script src="js/mypets.js?v=WEBAPP_VER"></script>
-  <script src="js/onboarding.js?v=WEBAPP_VER"></script>
-  <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
-  <script src="/js/arena.js?v=WEBAPP_VER"></script>
- <script src="js/factions.js?v=WEBAPP_VER"></script>
+  <!-- BOOT AUTH (MUSI BYĆ PRZED WSZYSTKIMI INITAMI MODUŁÓW) -->
 <script>
-(function () {
-  function getApiPost(tg){
-    return window.apiPost || window.S?.apiPost || window.AH?.apiPost || (async (path, data) => {
-      const init_data = tg?.initData || "";
-      const url = (window.API_BASE || "") + path;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-        },
-        body: JSON.stringify({ init_data, ...(data || {}) })
-      });
-      return res.json();
-    });
+(function bootAuth(){
+  const tg = window.Telegram?.WebApp || null;
+  try { tg?.ready?.(); } catch(_){}
+
+  // capture initData ASAP (ratuje gdy TG "gubi" initData po modalach / mapie)
+  const cur = String(tg?.initData || "");
+  if (cur && cur.length > 20) {
+    window.__AH_INIT_DATA_LAST = cur;
+    try { sessionStorage.setItem("ah_init_data", cur); } catch(_){}
+  } else {
+    window.__AH_INIT_DATA_LAST = window.__AH_INIT_DATA_LAST || (sessionStorage.getItem("ah_init_data") || "");
   }
 
+  window.getInitDataSafe = async function(ms=1200){
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms){
+      const s = String(tg?.initData || window.__AH_INIT_DATA_LAST || "");
+      if (s && s.length > 20) {
+        window.__AH_INIT_DATA_LAST = s;
+        try { sessionStorage.setItem("ah_init_data", s); } catch(_){}
+        return s;
+      }
+      await new Promise(r => setTimeout(r, 60));
+    }
+    return String(tg?.initData || window.__AH_INIT_DATA_LAST || "");
+  };
+
+  // SINGLE source of truth apiPost
+  window.apiPost = window.apiPost || (async (path, data) => {
+    const init_data = await window.getInitDataSafe(1200);
+
+    if (!init_data || init_data.length < 20) {
+      console.warn("[apiPost] NO_UID client-side:", path);
+      return { ok:false, reason:"NO_UID" };
+    }
+
+    const url = (window.API_BASE || "") + path;
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${init_data}`
+      },
+      body: JSON.stringify({ ...(data || {}), init_data }) // init_data LAST
+    });
+
+    const txt = await res.text();
+    let json = null;
+    try { json = txt ? JSON.parse(txt) : null; } catch(_) { json = { ok:false, raw: txt }; }
+
+    if (!res.ok) console.warn("[apiPost] HTTP", res.status, path, json, { initDataLen: init_data.length });
+    return json;
+  });
+
+  console.log("[BOOT] initLen=", cur.length, "lastLen=", (window.__AH_INIT_DATA_LAST||"").length, "uid=", tg?.initDataUnsafe?.user?.id);
+})();
+</script>
+
+<!-- FAQ -->
+<script src="js/faq.js?v=20251108" defer></script>
+<script>
+(function () {
+  const tg = window.Telegram?.WebApp || null;
+
+  function tryInitFAQ(){
+    if (window.FAQ && !window.__faqInited) {
+      window.FAQ.init({ apiPost: window.apiPost, tg, dbg: console.debug });
+      window.__faqInited = true;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInitFAQ, { once:true });
+  } else {
+    tryInitFAQ();
+  }
+})();
+</script>
+
+<!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
+<script src="js/inventory.js?v=20251205"></script>
+<script src="js/equipped.js?v=20251210"></script>
+<script src="js/scene_bg.js?v=WEBAPP_VER"></script>
+<script src="js/shop.js?v=WEBAPP_VER"></script>
+<script src="js/forge.js?v=WEBAPP_VER"></script>
+<script src="js/missions.js?v=WEBAPP_VER"></script>
+<script src="/js/updates.js?v=WEBAPP_VER"></script>
+<script src="js/mypets.js?v=WEBAPP_VER"></script>
+<script src="js/onboarding.js?v=WEBAPP_VER"></script>
+<script src="js/share_levelup.js?v=WEBAPP_VER"></script>
+<script src="/js/arena.js?v=WEBAPP_VER"></script>
+
+<!-- FACTIONS -->
+<script src="js/factions.js?v=WEBAPP_VER"></script>
+<script>
+(function () {
   function tryInitFactions(){
     if (!window.Factions || window.__factionsInited) return;
 
     const tg = window.Telegram?.WebApp || null;
-    const apiPost = getApiPost(tg);
 
     try {
       window.Factions.init({
         tg,
-        apiPost,
+        apiPost: window.apiPost,
         dbg: !!window.DBG
       });
       window.__factionsInited = true;
@@ -4424,55 +4459,18 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   }
 })();
 </script>
- <script>
+
+<!-- INFLUENCE (loader + twardy cache-bust) -->
+<script>
 (function loadInfluence(){
   const tg = window.Telegram?.WebApp || null;
 
-  // 1) FORCE single source of truth apiPost (always sends init_data + Authorization)
-  function makeApiPost(tg){
-    return async (path, data) => {
-      let init_data = tg?.initData || "";
-      if (!init_data) init_data = (window.__AH_INIT_DATA_LAST || "");
-      if (init_data) window.__AH_INIT_DATA_LAST = init_data;
-
-      const url = (window.API_BASE || "") + path;
-
-      const headers = { "Content-Type": "application/json" };
-      if (init_data) headers.Authorization = `Bearer ${init_data}`;
-
-      // init_data MUST be last
-      const body = { ...(data || {}), init_data };
-
-      const res = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-
-      const txt = await res.text();
-      let json = null;
-      try { json = txt ? JSON.parse(txt) : null; } catch(_) { json = { ok:false, raw: txt }; }
-
-      if (!res.ok) console.warn("[apiPost] HTTP", res.status, path, json, {
-        initDataLen: init_data ? init_data.length : 0
-      });
-
-      return json;
-    };
-  }
-
-  // set it globally BEFORE loading influence.js
-  window.apiPost = window.apiPost || makeApiPost(tg);
-
-  // 2) Load influence with hard cache-bust
   const v = String(window.WEBAPP_VER || "20260228a");
   const s = document.createElement("script");
   s.src = "/js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
 
   s.onload = () => {
     console.log("[Influence] script loaded:", s.src);
-
-    // init if module supports it (safe)
     try {
       window.Influence?.init?.({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
       console.log("[Influence] init OK");
@@ -4485,69 +4483,57 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   document.head.appendChild(s);
 })();
 </script>
-  <!-- MAP (Level 1: faction ring + badge) -->
+
+<!-- MAP (Level 1: faction ring + badge) -->
 <script src="js/map.js?v=WEBAPP_VER"></script>
 <script>
-  (function () {
-    function tryInitMap() {
-      if (window.Map && typeof window.Map.init === "function" && !window.__mapInited) {
-        window.Map.init();
-        window.__mapInited = true;
-        console.log("Map module initialized");
-      }
+(function () {
+  function tryInitMap() {
+    if (window.Map && typeof window.Map.init === "function" && !window.__mapInited) {
+      window.Map.init();
+      window.__mapInited = true;
+      console.log("Map module initialized");
     }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', tryInitMap, { once:true });
-    } else {
-      tryInitMap();
-    }
-  })();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInitMap, { once:true });
+  } else {
+    tryInitMap();
+  }
+})();
 </script>
-  <script src="/js/home_nav.js?v=WEBAPP_VER"></script>
-  
-  <!-- SUPPORT (Stars) -->
-  <script src="/js/support.js?v=WEBAPP_VER"></script>
-  <script>
-    (function () {
-      function getApiPost(tg){
-        return window.apiPost || window.S?.apiPost || window.AH?.apiPost || (async (path, data) => {
-          const init_data = tg?.initData || "";
-          const url = (window.API_BASE || "") + path;
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(init_data ? { Authorization: `Bearer ${init_data}` } : {})
-            },
-            body: JSON.stringify({ init_data, ...(data || {}) })
-          });
-          return res.json();
-        });
-      }
 
-      function tryInitSupport(){
-        if (!window.Support || window.__supportInited) return;
+<script src="/js/home_nav.js?v=WEBAPP_VER"></script>
 
-        const tg = window.Telegram?.WebApp || null;
-        const apiPost = getApiPost(tg);
+<!-- SUPPORT (Stars) -->
+<script src="/js/support.js?v=WEBAPP_VER"></script>
+<script>
+(function () {
+  function tryInitSupport(){
+    if (!window.Support || window.__supportInited) return;
 
-        window.Support.init({
-          tg,
-          apiPost,
-          dbg: !!window.DBG
-        });
+    const tg = window.Telegram?.WebApp || null;
 
-        window.__supportInited = true;
-        console.log("Support initialized ✅");
-      }
+    try {
+      window.Support.init({
+        tg,
+        apiPost: window.apiPost,
+        dbg: !!window.DBG
+      });
+      window.__supportInited = true;
+      console.log("Support initialized ✅");
+    } catch (e) {
+      console.warn("Support init failed ❌", e);
+    }
+  }
 
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", tryInitSupport, { once: true });
-      } else {
-        tryInitSupport();
-      }
-    })();
-  </script>
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tryInitSupport, { once: true });
+  } else {
+    tryInitSupport();
+  }
+})();
+</script>
 
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
@@ -4586,6 +4572,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
