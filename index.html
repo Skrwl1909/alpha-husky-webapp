@@ -855,33 +855,32 @@ html.ah-modal-open #heroFrame{
   filter: brightness(1.12) saturate(1.15);
 }
 
- /* === SKIN GALLERY UPGRADE v4 – FIX BADGE NAD RAMKĄ + PEŁNY PREVIEW (28.02.2026) === */
+ /* === SKIN GALLERY UPGRADE v5 – GALERIA PRZYWRÓCONA + ZERO DZIURY (28.02.2026) === */
 #skinPreviewImg, #skinCanvas {
     position: relative !important;
     width: 100% !important;
     max-width: 310px !important;
     height: auto !important;
-    max-height: 460px !important;           /* trochę więcej, żeby głowa się zmieściła */
-    margin: 20px auto 30px !important;
+    max-height: 460px !important;
+    margin: 12px auto 18px !important;           /* mocno ściśnięte */
     border-radius: 18px !important;
     box-shadow: 0 0 50px rgba(255, 45, 45, 0.7) !important;
     transition: all 0.35s ease !important;
     border: 3px solid rgba(255,255,255,0.12) !important;
     display: block !important;
-    object-fit: contain !important;         /* najważniejsze – nie tnie */
+    object-fit: contain !important;
 }
 
 #skinPreviewImg:hover, #skinCanvas:hover {
     box-shadow: 0 0 70px rgba(255, 70, 70, 0.9) !important;
-    transform: scale(1.015);
 }
 
-/* Czerwony badge EQUIPPED – teraz na pewno wewnątrz ramki */
+/* EQUIPPED badge – zawsze w rogu */
 .avatar-sheet #skinPreviewImg::after,
 .avatar-sheet #skinCanvas::after {
     content: "EQUIPPED";
     position: absolute;
-    top: 22px;                              /* przesunięty niżej */
+    top: 18px;
     right: 16px;
     background: linear-gradient(#ff1e1e, #ff5555);
     color: white;
@@ -893,13 +892,33 @@ html.ah-modal-open #heroFrame{
     z-index: 10;
 }
 
-/* Małe karty – bez zmian */
+/* === PRZYWRACANIE I ŚCIŚNIĘCIE GALERII MAŁYCH SKÓREK === */
 #skinButtons.skins-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)) !important;
-    gap: 14px !important;
-    padding: 10px 5px 20px !important;
-    margin-top: 10px;
+    visibility: visible !important;
+    opacity: 1 !important;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important;
+    gap: 12px !important;
+    padding: 15px 8px 25px !important;
+    margin-top: 8px !important;
+}
+
+#skinButtons.skins-grid > * {
+    background: rgba(25, 25, 40, 0.95) !important;
+    border: 2px solid transparent !important;
+    border-radius: 14px !important;
+    padding: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+#skinButtons.skins-grid > *:hover {
+    border-color: #ff3366 !important;
+    transform: translateY(-4px) !important;
+}
+
+/* opcjonalnie czyścimy blade napisy Alpha Lv.86 */
+#avatarBack .sheet-card > div:not(#skinButtons):not(.btn-row) {
+    opacity: 0.15 !important;   /* przyciemnimy, jeśli nadal widać */
 }
   </style>
     <style id="missions-hotfix">
@@ -4655,6 +4674,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
