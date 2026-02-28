@@ -855,34 +855,34 @@ html.ah-modal-open #heroFrame{
   filter: brightness(1.12) saturate(1.15);
 }
 
-    /* === SKIN GALLERY UPGRADE v2 – dodane 28.02.2026 – ZERO ryzyka === */
-#ski/* === SKIN GALLERY UPGRADE v3 – FIX ZA DUŻY PREVIEW (28.02.2026) === */
+ /* === SKIN GALLERY UPGRADE v4 – FIX BADGE NAD RAMKĄ + PEŁNY PREVIEW (28.02.2026) === */
 #skinPreviewImg, #skinCanvas {
-    position: relative !important;           /* ważne dla badge */
+    position: relative !important;
     width: 100% !important;
-    max-width: 320px !important;
+    max-width: 310px !important;
     height: auto !important;
-    max-height: 440px !important;
-    margin: 15px auto 25px !important;
+    max-height: 460px !important;           /* trochę więcej, żeby głowa się zmieściła */
+    margin: 20px auto 30px !important;
     border-radius: 18px !important;
     box-shadow: 0 0 50px rgba(255, 45, 45, 0.7) !important;
     transition: all 0.35s ease !important;
     border: 3px solid rgba(255,255,255,0.12) !important;
     display: block !important;
+    object-fit: contain !important;         /* najważniejsze – nie tnie */
 }
 
 #skinPreviewImg:hover, #skinCanvas:hover {
     box-shadow: 0 0 70px rgba(255, 70, 70, 0.9) !important;
-    transform: scale(1.02);
+    transform: scale(1.015);
 }
 
-/* Czerwony "EQUIPPED" badge */
+/* Czerwony badge EQUIPPED – teraz na pewno wewnątrz ramki */
 .avatar-sheet #skinPreviewImg::after,
 .avatar-sheet #skinCanvas::after {
     content: "EQUIPPED";
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 22px;                              /* przesunięty niżej */
+    right: 16px;
     background: linear-gradient(#ff1e1e, #ff5555);
     color: white;
     font-size: 11px;
@@ -893,7 +893,7 @@ html.ah-modal-open #heroFrame{
     z-index: 10;
 }
 
-/* Małe karty – jeszcze lepszy grid */
+/* Małe karty – bez zmian */
 #skinButtons.skins-grid {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)) !important;
@@ -4655,6 +4655,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
