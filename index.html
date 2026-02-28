@@ -4424,7 +4424,33 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   }
 })();
 </script>
- <script src="js/influence.js?v=WEBAPP_VER"></script>
+ <script>
+(function loadInfluence(){
+  const v = String(window.WEBAPP_VER || "dev");
+  const s = document.createElement("script");
+  s.src = "js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+
+  s.onload = () => {
+    console.log("[Influence] script loaded:", s.src);
+
+    // opcjonalnie (polecam na czas debug): inicjalizuj Influence tym samym apiPost/tg
+    try {
+      if (!window.__influenceInited && window.Influence?.init) {
+        const tg = window.Telegram?.WebApp || null;
+        const apiPost = (window.apiPost || window.S?.apiPost || window.AH?.apiPost);
+        window.Influence.init({ tg, apiPost, dbg: !!window.DBG });
+        window.__influenceInited = true;
+        console.log("[Influence] module initialized");
+      }
+    } catch (e) {
+      console.warn("[Influence] init failed", e);
+    }
+  };
+
+  s.onerror = () => console.warn("[Influence] FAILED to load:", s.src);
+  document.head.appendChild(s);
+})();
+</script>
   <!-- MAP (Level 1: faction ring + badge) -->
 <script src="js/map.js?v=WEBAPP_VER"></script>
 <script>
@@ -4526,6 +4552,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
