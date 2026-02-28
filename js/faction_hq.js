@@ -143,6 +143,12 @@
     const bones = tre.bones || 0;
     const scrap = tre.scrap || 0;
     const feed = Array.isArray(d.feed) ? d.feed : [];
+    const curLevel = parseInt(d.level || 1, 10) || 1;
+    const nextLevel = curLevel + 1;
+    const nextCost = d.nextUpgradeCost || {};
+    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
+    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
+    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
 
     _root.innerHTML = `
       <div style="text-align:center; margin-bottom:10px;">
@@ -162,6 +168,29 @@
         </div>
         <div class="hq-row" style="margin-top:6px;">
           <div>🔩 Scrap</div><div><b>${scrap}</b></div>
+        </div>
+      </div>
+       <div class="hq-card">
+        <div class="hq-row">
+          <div><b>Upgrade HQ</b></div>
+          <div class="hq-mini">community build</div>
+        </div>
+
+        <div class="hq-mini" style="margin-top:8px;">
+          Next level: <b>${nextLevel}</b><br/>
+          Cost: <b>${needBones}</b> 🦴 + <b>${needScrap}</b> 🔩<br/>
+          <span class="hq-mini" style="opacity:.85;">
+            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
+          </span>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            Upgrade to Level ${nextLevel}
+          </button>
+          ${canUpgrade ? "" : `<div class="hq-mini" style="margin-top:8px; opacity:.8;">
+            Not enough in treasury yet — donate to push it over the line.
+          </div>`}
         </div>
       </div>
 
@@ -196,15 +225,26 @@
 
         <div class="hq-feed">
           ${feed.length ? feed.map((x)=>{
-            const amt = x.amount || 0;
-            const asset = x.asset || "";
-            const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
-            const who = (x.uid ? String(x.uid).slice(-4) : "????");
-            return `<div class="hq-feed-item">
-              <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
-              <span class="hq-mini">from …${who} • ${fmtTs(x.t)}</span>
-            </div>`;
-          }).join("") : `<div class="hq-feed-item hq-mini">No donations yet.</div>`}
+  const who = (x.uid ? String(x.uid).slice(-4) : "????");
+  const t = fmtTs(x.t);
+
+  if (x.type === "upgrade") {
+    const lvl = x.level || "?";
+    return `<div class="hq-feed-item">
+      <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${lvl})</span><br/>
+      <span class="hq-mini">by …${who} • ${t}</span>
+    </div>`;
+  }
+
+  // default donate
+  const amt = x.amount || 0;
+  const asset = x.asset || "";
+  const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
+  return `<div class="hq-feed-item">
+    <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
+    <span class="hq-mini">from …${who} • ${t}</span>
+  </div>`;
+}).join("") : `<div class="hq-feed-item hq-mini">No activity yet.</div>`}
         </div>
       </div>
 
@@ -234,6 +274,31 @@
     if (n <= 0) return alert("Enter amount.");
     return _donate(asset, n);
   }
+  async function _upgrade(){
+  if (!_apiPost) return;
+
+  const run_id = String(Date.now()) + ":" + Math.random().toString(16).slice(2);
+
+  try{
+    const r = await _apiPost("/webapp/faction/hq/upgrade", { run_id });
+
+    if (r && r.ok){
+      if (_tg?.HapticFeedback?.notificationOccurred) _tg.HapticFeedback.notificationOccurred("success");
+      await render();
+      return;
+    }
+
+    if (r && r.reason === "INSUFFICIENT") {
+      const c = r.cost || {};
+      alert(`Not enough in treasury.\nNeed: ${c.bones||0} bones + ${c.scrap||0} scrap`);
+      return;
+    }
+
+    alert((r && r.reason) ? `Upgrade failed: ${r.reason}` : "Upgrade failed.");
+  }catch(e){
+    alert("Upgrade failed.");
+  }
+}
 
   function init({ apiPost, tg, dbg } = {}){
     _apiPost = apiPost || _apiPost;
@@ -242,5 +307,5 @@
     log("init ok");
   }
 
-  window.FactionHQ = { init, open, close, _donate, _donateCustom };
+  window.FactionHQ = { init, open, close, _donate, _donateCustom, _upgrade };
 })();
