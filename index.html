@@ -4470,6 +4470,32 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
 
+<!-- FACTION HQ (loader + init) -->
+<script>
+(function loadFactionHQ(){
+  const tg = window.Telegram?.WebApp || null;
+
+  const v = String(window.WEBAPP_VER || "hq");
+  const s = document.createElement("script");
+  s.src = "/js/faction_hq.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+
+  s.onload = () => {
+    try {
+      if (!window.__factionHQInited && window.FactionHQ?.init) {
+        window.FactionHQ.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+        window.__factionHQInited = true;
+        console.log("✅ FactionHQ initialized");
+      }
+    } catch (e) {
+      console.warn("❌ FactionHQ.init failed", e);
+    }
+  };
+
+  s.onerror = () => console.warn("[FactionHQ] FAILED to load:", s.src);
+  document.head.appendChild(s);
+})();
+</script>
+  
 <!-- INFLUENCE (loader + twardy cache-bust) -->
 <script>
 (function loadInfluence(){
@@ -4582,6 +4608,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
