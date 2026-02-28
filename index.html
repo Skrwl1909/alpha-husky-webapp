@@ -4426,22 +4426,56 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
  <script>
 (function loadInfluence(){
-  const v = String(window.WEBAPP_VER || "dev");
+  const tg = window.Telegram?.WebApp || null;
+
+  // 1) FORCE single source of truth apiPost (always sends init_data + Authorization)
+  function makeApiPost(tg){
+    return async (path, data) => {
+      let init_data = tg?.initData || "";
+      if (!init_data) init_data = (window.__AH_INIT_DATA_LAST || "");
+      if (init_data) window.__AH_INIT_DATA_LAST = init_data;
+
+      const url = (window.API_BASE || "") + path;
+
+      const headers = { "Content-Type": "application/json" };
+      if (init_data) headers.Authorization = `Bearer ${init_data}`;
+
+      // init_data MUST be last
+      const body = { ...(data || {}), init_data };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      const txt = await res.text();
+      let json = null;
+      try { json = txt ? JSON.parse(txt) : null; } catch(_) { json = { ok:false, raw: txt }; }
+
+      if (!res.ok) console.warn("[apiPost] HTTP", res.status, path, json, {
+        initDataLen: init_data ? init_data.length : 0
+      });
+
+      return json;
+    };
+  }
+
+  // set it globally BEFORE loading influence.js
+  window.apiPost = window.apiPost || makeApiPost(tg);
+
+  // 2) Load influence with hard cache-bust
+  const v = String(window.WEBAPP_VER || "20260228a");
   const s = document.createElement("script");
-  s.src = "js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+  s.src = "/js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
 
   s.onload = () => {
     console.log("[Influence] script loaded:", s.src);
 
-    // opcjonalnie (polecam na czas debug): inicjalizuj Influence tym samym apiPost/tg
+    // init if module supports it (safe)
     try {
-      if (!window.__influenceInited && window.Influence?.init) {
-        const tg = window.Telegram?.WebApp || null;
-        const apiPost = (window.apiPost || window.S?.apiPost || window.AH?.apiPost);
-        window.Influence.init({ tg, apiPost, dbg: !!window.DBG });
-        window.__influenceInited = true;
-        console.log("[Influence] module initialized");
-      }
+      window.Influence?.init?.({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+      console.log("[Influence] init OK");
     } catch (e) {
       console.warn("[Influence] init failed", e);
     }
@@ -4552,6 +4586,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
