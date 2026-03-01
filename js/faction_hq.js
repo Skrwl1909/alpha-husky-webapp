@@ -1,191 +1,138 @@
-// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — warroom backgrounds + HQ backdrop
+// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — PREMIUM WARROOM EDITION
 (function(){
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
 
   let _back = null;   // #factionHQBack
-  let _modal = null;  // #factionHQModal (container for card)
-  let _root = null;   // #factionHQRoot (card content)
+  let _modal = null;  // #factionHQModal
+  let _root = null;   // #factionHQRoot
 
   function log(...a){ if(_dbg) console.log("[FactionHQ]", ...a); }
 
-  // ---------------------------
-  // Background mapping (warroom set)
-  // ---------------------------
+  // ====================== BACKGROUND MAPPING ======================
   function _normFactionKey(f){
     f = String(f || "").toLowerCase().trim();
-    if (!f) return "";
-
-    // short keys
-    if (f === "rb" || f === "ew" || f === "pb" || f === "ih") return f;
-
-    // common slugs / names
+    if (!f) return "ew";
+    if (["rb","ew","pb","ih"].includes(f)) return f;
     if (f.includes("rogue")) return "rb";
     if (f.includes("echo"))  return "ew";
     if (f.includes("pack") || f.includes("burn")) return "pb";
-
-    // your legacy naming in code: inner_howl = IH
     if (f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
-
-    return f;
+    return "ew";
   }
 
   function _hqBgUrlForFaction(faction){
     const k = _normFactionKey(faction);
     const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
     const map = {
-      rb: `./hq_warroom_rb.webp${v}`,
-      ew: `./hq_warroom_ew.webp${v}`,
-      pb: `./hq_warroom_pb.webp${v}`,
-      ih: `./hq_warroom_ih.webp${v}`,
+      rb: `/hq_warroom_rb.webp${v}`,
+      ew: `/hq_warroom_ew.webp${v}`,
+      pb: `/hq_warroom_pb.webp${v}`,
+      ih: `/hq_warroom_ih.webp${v}`,
     };
-    return map[k] || map.rb;
+    return map[k] || map.ew;
   }
 
   function applyHqBg(faction){
     const url = _hqBgUrlForFaction(faction);
-    document.documentElement.style.setProperty("--hq-bg-url", `url("${url}")`);
+    const card = document.getElementById("factionHQRoot");
+    if (card) {
+      card.style.background = `linear-gradient(rgba(8,10,18,0.88), rgba(8,10,18,0.96)), url("${url}") center/cover no-repeat`;
+      card.style.backgroundAttachment = "fixed";
+    }
   }
 
   function _prefetchBgs(){
     try{
       const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
-      ["rb","ew","pb","ih"].forEach(k => { const i = new Image(); i.src = `./hq_warroom_${k}.webp${v}`; });
+      ["rb","ew","pb","ih"].forEach(k => {
+        const i = new Image(); i.src = `/hq_warroom_\( {k}.webp \){v}`;
+      });
     }catch(_){}
   }
 
-  // ---------------------------
-  // UI styles (includes safe fallback for backdrop)
-  // ---------------------------
+  // ====================== ANIMACJE + STYLES ======================
   function ensureStyles(){
     if (document.getElementById("faction-hq-ui-css")) return;
 
     const st = document.createElement("style");
     st.id = "faction-hq-ui-css";
     st.textContent = `
-      /* Backdrop wrapper (fallback if you didn't add CSS in index) */
-      #factionHQBack{
-        position:fixed; inset:0;
-        z-index:999990; /* below missionsBack=999999 */
-        display:none;
-        pointer-events:auto;
-      }
+      @keyframes holoPulse { 0%,100%{opacity:0.88; transform:scale(1);} 50%{opacity:1; transform:scale(1.035);} }
+      @keyframes scanline { 0%{background-position:0 0;} 100%{background-position:0 420px;} }
+      @keyframes fogDrift { 0%{background-position:0 0;} 100%{background-position:110px 140px;} }
+
+      #factionHQBack{ position:fixed; inset:0; z-index:999990; display:none; pointer-events:auto; }
       #factionHQBack.is-open{ display:block !important; }
 
-      /* Centered modal content area */
-      #factionHQModal{
-        position:absolute; inset:0;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:12px;
-        z-index:1;
-      }
-
-      /* HQ card */
       #factionHQRoot{
-        width:min(560px, 100%);
-        max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-        overflow:auto;
-        -webkit-overflow-scrolling: touch;
-
+        width:min(560px,100%);
+        max-height:calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        overflow:auto; -webkit-overflow-scrolling:touch;
         background:rgba(12,12,18,0.92);
         border:1px solid rgba(255,255,255,0.12);
         border-radius:20px;
         padding:22px 18px;
-        color:rgba(255,255,255,0.92);
-        box-shadow: 0 18px 60px rgba(0,0,0,.65);
+        color:#fff;
+        box-shadow:0 20px 70px rgba(0,0,0,.75);
+        position:relative;
+      }
+
+      /* === WARROOM OVERLAY === */
+      #factionHQRoot::after{
+        content:"";
+        position:absolute; inset:0; pointer-events:none; z-index:2;
+        background: 
+          radial-gradient(circle at 50% 35%, rgba(255,180,60,0.16) 0%, transparent 70%),
+          linear-gradient(transparent 50%, rgba(255,255,255,0.035) 50%);
+        background-size:200% 200%, 100% 4px;
+        animation: holoPulse 8s ease-in-out infinite, scanline 7s linear infinite, fogDrift 42s linear infinite;
+        border-radius:20px;
       }
 
       .hq-card{
         background:rgba(255,255,255,0.06);
         border:1px solid rgba(255,255,255,0.14);
-        border-radius:16px;
-        padding:16px;
-        margin:12px 0;
+        border-radius:16px; padding:16px; margin:12px 0;
       }
       .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
       .hq-btn{
-        width:100%;
-        padding:14px;
-        border-radius:12px;
-        font-weight:800;
-        font-size:15px;
-        border:0;
-        background:rgba(255,255,255,0.12);
-        color:#fff;
+        width:100%; padding:14px; border-radius:12px;
+        font-weight:800; font-size:15px; border:0;
+        background:rgba(255,255,255,0.12); color:#fff;
       }
-      .hq-btn[disabled]{ opacity:.45; filter:saturate(.6); }
       .hq-btn.primary{ background:#2b8cff; }
-      .hq-btn.danger{ background:#f44336; }
+      .hq-btn:disabled{ opacity:.45; }
       .hq-mini{ opacity:.85; font-size:13px; }
-      .hq-input{
-        width:100%;
-        padding:12px 12px;
-        border-radius:12px;
-        border:1px solid rgba(255,255,255,0.16);
-        background:rgba(0,0,0,0.25);
-        color:#fff;
-        outline:none;
-        font-weight:700;
-      }
-      .hq-feed{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
       .hq-feed-item{
-        padding:10px 12px;
-        border-radius:12px;
+        padding:10px 12px; border-radius:12px;
         background:rgba(255,255,255,0.06);
         border:1px solid rgba(255,255,255,0.10);
         font-size:13px;
-        opacity:.95;
       }
       .hq-pill{
-        display:inline-flex;
-        padding:4px 10px;
-        border-radius:999px;
-        background:rgba(255,255,255,0.10);
-        font-size:12px;
-        font-weight:900;
-        letter-spacing:.4px;
+        display:inline-flex; padding:4px 10px; border-radius:999px;
+        background:rgba(255,255,255,0.10); font-size:12px; font-weight:900;
       }
-
-      /* optional: lock background scroll */
       body.hq-open{ overflow:hidden !important; touch-action:none; }
     `;
     document.head.appendChild(st);
   }
 
-  // ---------------------------
-  // DOM bootstrap (re-uses #factionHQBack if present, else injects)
-  // ---------------------------
+  // ====================== MODAL ======================
   function ensureModal(){
     ensureStyles();
-
-    _back = document.getElementById("factionHQBack");
+    _back  = document.getElementById("factionHQBack");
     _modal = document.getElementById("factionHQModal");
 
     if (!_back){
-      // fallback injection if user didn't add HTML in index
       _back = document.createElement("div");
       _back.id = "factionHQBack";
       _back.style.display = "none";
-      _back.innerHTML = `<div class="hq-bg"></div><div id="factionHQModal"></div>`;
+      _back.innerHTML = `<div id="factionHQModal"></div>`;
       document.body.appendChild(_back);
       _modal = document.getElementById("factionHQModal");
-    } else {
-      // ensure modal exists inside back
-      if (!_modal){
-        const m = document.createElement("div");
-        m.id = "factionHQModal";
-        _back.appendChild(m);
-        _modal = m;
-      }
-      // ensure bg layer exists (nice if you forgot)
-      if (!_back.querySelector(".hq-bg")){
-        const bg = document.createElement("div");
-        bg.className = "hq-bg";
-        _back.insertBefore(bg, _back.firstChild);
-      }
     }
 
     _root = document.getElementById("factionHQRoot");
@@ -195,307 +142,135 @@
       _modal.appendChild(_root);
     }
 
-    // Click outside card closes
-    if (!_back.__hq_click){
-      _back.__hq_click = true;
-      _back.addEventListener("click", (e) => {
-        if (e.target === _back) return close();
-        if (e.target && e.target.classList && e.target.classList.contains("hq-bg")) return close();
-      });
-    }
-
-    // Esc closes (desktop)
-    if (!window.__hqEscBound){
-      window.__hqEscBound = true;
-      window.addEventListener("keydown", (e)=>{ if (e.key === "Escape") close(); });
-    }
+    _back.onclick = e => { if (e.target === _back) close(); };
   }
 
-  function fmtTs(t){
-    try{
-      const d = new Date((t||0)*1000);
-      return d.toLocaleString();
-    }catch(_){ return ""; }
-  }
-
-  function niceFactionName(key){
-    const m = {
-      rogue_byte: "Rogue Byte",
-      echo_wardens: "Echo Wardens",
-      pack_burners: "Pack Burners",
-      inner_howl: "Iron Howlers",   // <- IH w twoim kodzie było jako inner_howl
-      iron_howlers: "Iron Howlers",
-    };
-    return m[key] || key || "—";
-  }
-
-  function _rid(prefix="hq"){
-    try{
-      const u = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-      const uid = u ? String(u) : "0";
-      const r = (crypto?.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random().toString(16).slice(2)));
-      return `${prefix}:${uid}:${r}`;
-    }catch(_){
-      return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
-    }
-  }
-
-  // ---------------------------
-  // Public open/close
-  // ---------------------------
-  async function open(){
-    ensureModal();
-
-    // best-effort faction from profile/localStorage
-    const faction =
-      window.PROFILE?.faction ||
-      window.PLAYER_STATE?.profile?.faction ||
-      (()=>{ try{ return localStorage.getItem("ah_faction") || ""; }catch(_){ return ""; }})();
-
-    applyHqBg(faction);
-
-    _back.classList.add("is-open");
-    document.body.classList.add("hq-open");
-    await render();
-  }
-
-  function close(){
-    if (_back) _back.classList.remove("is-open");
-    document.body.classList.remove("hq-open");
-  }
-
-  // ---------------------------
-  // Render / state
-  // ---------------------------
+  // ====================== RENDER (z warroomem) ======================
   async function render(){
-    if (!_apiPost){
-      _root.innerHTML = `<div class="hq-card">API not ready.</div>
-        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
-      return;
-    }
-
-    _root.innerHTML = `<div class="hq-card">Loading HQ…</div>`;
+    if (!_apiPost) return;
+    _root.innerHTML = `<div class="hq-card" style="text-align:center;padding:40px;">Loading Warroom...</div>`;
 
     let res;
-    try{
-      res = await _apiPost("/webapp/faction/hq/state", {});
-    }catch(e){
-      _root.innerHTML = `<div class="hq-card">HQ load failed.</div>
-        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
-      return;
-    }
+    try{ res = await _apiPost("/webapp/faction/hq/state", {}); }catch(e){}
 
-    if (!res || !res.ok){
-      const reason = (res && res.reason) || "NO_FACTION";
-      if (reason === "NO_FACTION"){
-        _root.innerHTML = `
-          <div style="text-align:center; margin-bottom:10px;">
-            <h2 style="margin:0 0 6px;">Faction HQ</h2>
-            <div class="hq-mini">Join a faction to access HQ.</div>
-          </div>
-          <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
-          <div style="height:10px"></div>
-          <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
-        `;
-        return;
-      }
-
-      _root.innerHTML = `
-        <div class="hq-card">HQ error: <b>${String(reason)}</b></div>
-        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
-      `;
+    if (!res?.ok){
+      _root.innerHTML = `<div class="hq-card">No faction yet.<br><button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button></div>`;
       return;
     }
 
     const d = res.data || {};
     const fk = d.faction || "";
-
-    // Update bg using authoritative fk from backend
     applyHqBg(fk);
-    try{ if(fk) localStorage.setItem("ah_faction", String(fk).toLowerCase()); }catch(_){}
 
     const tre = d.treasury || {};
-    const bones = tre.bones || 0;
-    const scrap = tre.scrap || 0;
-    const feed = Array.isArray(d.feed) ? d.feed : [];
-    const curLevel = parseInt(d.level || 1, 10) || 1;
-    const nextLevel = curLevel + 1;
     const nextCost = d.nextUpgradeCost || {};
-    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
-    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
-    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+    const canUpgrade = (tre.bones || 0) >= (nextCost.bones || 0) && (tre.scrap || 0) >= (nextCost.scrap || 0);
 
     _root.innerHTML = `
-      <div style="text-align:center; margin-bottom:10px;">
-        <div class="hq-pill">HQ</div>
-        <h2 style="margin:8px 0 6px;">${niceFactionName(fk)}</h2>
-        <div class="hq-mini">Level ${d.level || 1} • Members ${d.membersCount ?? "—"}</div>
+      <div style="text-align:center;margin-bottom:12px;">
+        <div class="hq-pill" style="background:rgba(255,140,0,0.2);color:#ffcc00;">WARROOM</div>
+        <h2 style="margin:8px 0 4px;font-size:22px;">${niceFactionName(fk)}</h2>
+        <div style="font-size:15px;opacity:0.85;">Level ${d.level || 1} • ${d.membersCount || 0} members</div>
       </div>
 
       <div class="hq-card">
-        <div class="hq-row">
-          <div><b>Treasury</b></div>
-          <div class="hq-mini">shared vault</div>
-        </div>
-        <div style="height:10px"></div>
-        <div class="hq-row">
-          <div>🦴 Bones</div><div><b>${bones}</b></div>
-        </div>
-        <div class="hq-row" style="margin-top:6px;">
-          <div>🔩 Scrap</div><div><b>${scrap}</b></div>
+        <div class="hq-row"><b>TREASURY VAULT</b><span class="hq-mini">shared</span></div>
+        <div style="margin:12px 0;font-size:22px;font-weight:800;">
+          🦴 <b>\( {tre.bones || 0}</b>  🔩 <b> \){tre.scrap || 0}</b>
         </div>
       </div>
 
       <div class="hq-card">
-        <div class="hq-row">
-          <div><b>Upgrade HQ</b></div>
-          <div class="hq-mini">community build</div>
+        <div class="hq-row"><b>UPGRADE HQ</b><span class="hq-mini">community goal</span></div>
+        <div style="margin:10px 0 12px;font-size:14px;">
+          Next: Level ${d.level + 1 || 2}<br>
+          Cost: <b>\( {nextCost.bones || 0}</b> 🦴 + <b> \){nextCost.scrap || 0}</b> 🔩
         </div>
+        <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? '' : 'disabled'}>
+          ${canUpgrade ? 'UPGRADE TO LEVEL ' + (d.level + 1) : 'NOT ENOUGH RESOURCES'}
+        </button>
+      </div>
 
-        <div class="hq-mini" style="margin-top:8px;">
-          Next level: <b>${nextLevel}</b><br/>
-          Cost: <b>${needBones}</b> 🦴 + <b>${needScrap}</b> 🔩<br/>
-          <span class="hq-mini" style="opacity:.85;">
-            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
-          </span>
-        </div>
-
-        <div style="margin-top:10px;">
-          <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
-            Upgrade to Level ${nextLevel}
-          </button>
-          ${canUpgrade ? "" : `<div class="hq-mini" style="margin-top:8px; opacity:.8;">
-            Not enough in treasury yet — donate to push it over the line.
-          </div>`}
+      <div class="hq-card">
+        <b>DONATE</b>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <button class="hq-btn" onclick="FactionHQ._donate('bones',25)">25 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('bones',100)">100 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap',10)">10 🔩</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap',50)">50 🔩</button>
         </div>
       </div>
 
       <div class="hq-card">
-        <b>Donate</b>
-        <div class="hq-mini" style="margin-top:6px;">Fuel upgrades later. For now: it’s the signal.</div>
-
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 🦴</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 🦴</button>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 🔩</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 🔩</button>
-        </div>
-
-        <div style="margin-top:10px;">
-          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
-          <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="hq-btn" onclick="FactionHQ._donateCustom('bones')">Custom 🦴</button>
-            <button class="hq-btn" onclick="FactionHQ._donateCustom('scrap')">Custom 🔩</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="hq-card">
-        <div class="hq-row">
-          <b>Recent activity</b>
-          <button class="hq-btn" style="width:auto; padding:10px 12px;" onclick="FactionHQ.open()">Refresh</button>
-        </div>
-
-        <div class="hq-feed">
-          ${feed.length ? feed.map((x)=>{
-            const who = (x.uid ? String(x.uid).slice(-4) : "????");
+        <b>RECENT ACTIVITY</b>
+        <div class="hq-feed" style="margin-top:10px;max-height:220px;overflow:auto;">
+          ${Array.isArray(d.feed) && d.feed.length ? d.feed.map(x => {
             const t = fmtTs(x.t);
-
-            if (x.type === "upgrade") {
-              const lvl = x.level || "?";
-              return `<div class="hq-feed-item">
-                <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${lvl})</span><br/>
-                <span class="hq-mini">by …${who} • ${t}</span>
-              </div>`;
-            }
-
-            const amt = x.amount || 0;
-            const asset = x.asset || "";
-            const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
-            return `<div class="hq-feed-item">
-              <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
-              <span class="hq-mini">from …${who} • ${t}</span>
-            </div>`;
-          }).join("") : `<div class="hq-feed-item hq-mini">No activity yet.</div>`}
+            if (x.type === "upgrade") return `<div class="hq-feed-item">⬆️ HQ upgraded to Lv${x.level} <span style="opacity:0.6">• ${t}</span></div>`;
+            return `<div class="hq-feed-item">💰 ${x.amount} ${x.asset} donated <span style="opacity:0.6">• ${t}</span></div>`;
+          }).join("") : `<div class="hq-feed-item" style="opacity:0.6">No activity yet</div>`}
         </div>
       </div>
 
-      <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      <button class="hq-btn" onclick="FactionHQ.close()" style="margin-top:10px;">CLOSE WARROOM</button>
     `;
   }
 
-  // ---------------------------
-  // Actions
-  // ---------------------------
+  // ====================== ACTIONS ======================
   async function _donate(asset, amount){
-    if (!_apiPost) return;
-    const run_id = _rid("hq:donate");
-
+    const run_id = "hq:donate:" + Date.now();
     try{
-      const r = await _apiPost("/webapp/faction/hq/donate", { asset, amount, run_id });
-      if (r && r.ok){
-        try{ _tg?.HapticFeedback?.impactOccurred?.("light"); }catch(_){}
-        await render();
-        return;
-      }
-      alert((r && r.reason) ? `Donate failed: ${r.reason}` : "Donate failed.");
-    }catch(e){
-      alert("Donate failed.");
-    }
-  }
-
-  async function _donateCustom(asset){
-    const el = document.getElementById("hqCustomAmt");
-    const n = parseInt((el && el.value) || "0", 10) || 0;
-    if (n <= 0) return alert("Enter amount.");
-    return _donate(asset, n);
+      const r = await _apiPost("/webapp/faction/hq/donate", {asset, amount, run_id});
+      if (r?.ok){
+        toast(`+${amount} ${asset} donated`, "success");
+        render();
+      } else toast(r?.reason || "Donate failed", "error");
+    } catch(e){ toast("Connection error", "error"); }
   }
 
   async function _upgrade(){
-    if (!_apiPost) return;
-
-    const run_id = _rid("hq:upgrade");
-
+    const run_id = "hq:upgrade:" + Date.now();
     try{
-      const r = await _apiPost("/webapp/faction/hq/upgrade", { run_id });
-
-      if (r && r.ok){
-        try{ _tg?.HapticFeedback?.notificationOccurred?.("success"); }catch(_){}
-        await render();
-        return;
-      }
-
-      if (r && r.reason === "INSUFFICIENT") {
-        const c = r.cost || {};
-        alert(`Not enough in treasury.\nNeed: ${c.bones||0} bones + ${c.scrap||0} scrap`);
-        return;
-      }
-
-      alert((r && r.reason) ? `Upgrade failed: ${r.reason}` : "Upgrade failed.");
-    }catch(e){
-      alert("Upgrade failed.");
-    }
+      const r = await _apiPost("/webapp/faction/hq/upgrade", {run_id});
+      if (r?.ok){
+        toast(`HQ upgraded to Level ${r.newLevel}!`, "success");
+        render();
+      } else toast(r?.reason || "Upgrade failed", "error");
+    } catch(e){ toast("Connection error", "error"); }
   }
 
-  // ---------------------------
-  // Init
-  // ---------------------------
+  function niceFactionName(key){
+    const m = { rogue_byte:"Rogue Byte", echo_wardens:"Echo Wardens", pack_burners:"Pack Burners", inner_howl:"Inner Howl" };
+    return m[key] || key || "—";
+  }
+
+  function fmtTs(t){
+    try { return new Date((t||0)*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch(_){ return ""; }
+  }
+
+  function toast(msg, type = "info"){
+    let el = document.getElementById("hqToast");
+    if (!el){
+      el = document.createElement("div");
+      el.id = "hqToast";
+      el.style.cssText = `position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:99999999; padding:12px 18px; border-radius:14px; font:14px/1.4 system-ui; color:#fff; opacity:0; transition:all .25s;`;
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.background = type === "success" ? "rgba(80,200,120,.95)" : "rgba(30,30,40,.95)";
+    el.style.opacity = "1";
+    clearTimeout(window.__hqToastT);
+    window.__hqToastT = setTimeout(() => el.style.opacity = "0", 2800);
+  }
+
+  // ====================== INIT ======================
   function init({ apiPost, tg, dbg } = {}){
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     log("init ok");
-
-    // preload HQ backgrounds (prevents blink)
     _prefetchBgs();
   }
 
-  window.FactionHQ = {
-    init, open, close,
-    _donate, _donateCustom, _upgrade,
-    applyHqBg
-  };
+  window.FactionHQ = { init, open, close, render, _donate, _upgrade, applyHqBg };
 })();
