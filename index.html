@@ -920,6 +920,45 @@ html.ah-modal-open #heroFrame{
 #avatarBack .sheet-card > div:not(#skinButtons):not(.btn-row) {
     opacity: 0.15 !important;   /* przyciemnimy, jeśli nadal widać */
 }
+    <style id="factionhq-css">
+/* === FACTION HQ BACKDROP === */
+#factionHQBack{
+  position: fixed;
+  inset: 0;
+  z-index: 999990;   /* poniżej missionsBack (999999), ale nad resztą UI */
+  display: none;     /* JS otwiera */
+  pointer-events: auto;
+}
+
+#factionHQBack.is-open{ display:block !important; }
+
+#factionHQBack .hq-bg{
+  position:absolute;
+  inset:0;
+  background: #07080c;
+  background-image: var(--hq-bg-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* czytelność UI na tle */
+#factionHQBack .hq-bg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.18), rgba(0,0,0,.78)),
+    linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.85));
+}
+
+/* jeśli masz modal-kartę w HQ */
+#factionHQModal{
+  position: relative;
+  z-index: 1;
+}
+</style>
   </style>
     <style id="missions-hotfix">
 
@@ -4680,6 +4719,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
