@@ -1,73 +1,214 @@
-// js/faction_hq.js — Faction HQ (Alpha Husky WebApp)
+// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — warroom backgrounds + HQ backdrop
 (function(){
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
-  let _modal = null;
-  let _root = null;
+
+  let _back = null;   // #factionHQBack
+  let _modal = null;  // #factionHQModal (container for card)
+  let _root = null;   // #factionHQRoot (card content)
 
   function log(...a){ if(_dbg) console.log("[FactionHQ]", ...a); }
 
+  // ---------------------------
+  // Background mapping (warroom set)
+  // ---------------------------
+  function _normFactionKey(f){
+    f = String(f || "").toLowerCase().trim();
+    if (!f) return "";
+
+    // short keys
+    if (f === "rb" || f === "ew" || f === "pb" || f === "ih") return f;
+
+    // common slugs / names
+    if (f.includes("rogue")) return "rb";
+    if (f.includes("echo"))  return "ew";
+    if (f.includes("pack") || f.includes("burn")) return "pb";
+
+    // your legacy naming in code: inner_howl = IH
+    if (f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
+
+    return f;
+  }
+
+  function _hqBgUrlForFaction(faction){
+    const k = _normFactionKey(faction);
+    const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
+    const map = {
+      rb: `./hq_warroom_rb.webp${v}`,
+      ew: `./hq_warroom_ew.webp${v}`,
+      pb: `./hq_warroom_pb.webp${v}`,
+      ih: `./hq_warroom_ih.webp${v}`,
+    };
+    return map[k] || map.rb;
+  }
+
+  function applyHqBg(faction){
+    const url = _hqBgUrlForFaction(faction);
+    document.documentElement.style.setProperty("--hq-bg-url", `url("${url}")`);
+  }
+
+  function _prefetchBgs(){
+    try{
+      const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
+      ["rb","ew","pb","ih"].forEach(k => { const i = new Image(); i.src = `./hq_warroom_${k}.webp${v}`; });
+    }catch(_){}
+  }
+
+  // ---------------------------
+  // UI styles (includes safe fallback for backdrop)
+  // ---------------------------
   function ensureStyles(){
-    if (document.getElementById("faction-hq-css")) return;
+    if (document.getElementById("faction-hq-ui-css")) return;
+
     const st = document.createElement("style");
-    st.id = "faction-hq-css";
+    st.id = "faction-hq-ui-css";
     st.textContent = `
-      #factionHqModal{
-        position:fixed; inset:0; display:none;
-        align-items:center; justify-content:center;
-        background:rgba(0,0,0,0.92); z-index:99999999;
+      /* Backdrop wrapper (fallback if you didn't add CSS in index) */
+      #factionHQBack{
+        position:fixed; inset:0;
+        z-index:999990; /* below missionsBack=999999 */
+        display:none;
+        pointer-events:auto;
       }
-      #factionHqRoot{
-        width:min(560px, 94vw); max-height:90vh; overflow:auto;
-        background:rgba(12,12,18,0.98);
+      #factionHQBack.is-open{ display:block !important; }
+
+      /* Centered modal content area */
+      #factionHQModal{
+        position:absolute; inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:12px;
+        z-index:1;
+      }
+
+      /* HQ card */
+      #factionHQRoot{
+        width:min(560px, 100%);
+        max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        overflow:auto;
+        -webkit-overflow-scrolling: touch;
+
+        background:rgba(12,12,18,0.92);
         border:1px solid rgba(255,255,255,0.12);
-        border-radius:20px; padding:22px 18px; color:#eaeaea;
+        border-radius:20px;
+        padding:22px 18px;
+        color:rgba(255,255,255,0.92);
+        box-shadow: 0 18px 60px rgba(0,0,0,.65);
       }
+
       .hq-card{
         background:rgba(255,255,255,0.06);
         border:1px solid rgba(255,255,255,0.14);
-        border-radius:16px; padding:16px; margin:12px 0;
+        border-radius:16px;
+        padding:16px;
+        margin:12px 0;
       }
       .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
       .hq-btn{
-        width:100%; padding:14px; border-radius:12px;
-        font-weight:800; font-size:15px; border:0;
-        background:rgba(255,255,255,0.12); color:#fff;
+        width:100%;
+        padding:14px;
+        border-radius:12px;
+        font-weight:800;
+        font-size:15px;
+        border:0;
+        background:rgba(255,255,255,0.12);
+        color:#fff;
       }
+      .hq-btn[disabled]{ opacity:.45; filter:saturate(.6); }
       .hq-btn.primary{ background:#2b8cff; }
       .hq-btn.danger{ background:#f44336; }
-      .hq-mini{ opacity:.8; font-size:13px; }
+      .hq-mini{ opacity:.85; font-size:13px; }
       .hq-input{
-        width:100%; padding:12px 12px; border-radius:12px;
+        width:100%;
+        padding:12px 12px;
+        border-radius:12px;
         border:1px solid rgba(255,255,255,0.16);
-        background:rgba(0,0,0,0.25); color:#fff;
-        outline:none; font-weight:700;
+        background:rgba(0,0,0,0.25);
+        color:#fff;
+        outline:none;
+        font-weight:700;
       }
       .hq-feed{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
       .hq-feed-item{
-        padding:10px 12px; border-radius:12px;
+        padding:10px 12px;
+        border-radius:12px;
         background:rgba(255,255,255,0.06);
         border:1px solid rgba(255,255,255,0.10);
-        font-size:13px; opacity:.95;
+        font-size:13px;
+        opacity:.95;
       }
       .hq-pill{
-        display:inline-flex; padding:4px 10px; border-radius:999px;
-        background:rgba(255,255,255,0.10); font-size:12px; font-weight:900;
+        display:inline-flex;
+        padding:4px 10px;
+        border-radius:999px;
+        background:rgba(255,255,255,0.10);
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.4px;
       }
+
+      /* optional: lock background scroll */
+      body.hq-open{ overflow:hidden !important; touch-action:none; }
     `;
     document.head.appendChild(st);
   }
 
+  // ---------------------------
+  // DOM bootstrap (re-uses #factionHQBack if present, else injects)
+  // ---------------------------
   function ensureModal(){
     ensureStyles();
-    if (_modal) return;
-    const wrap = document.createElement("div");
-    wrap.innerHTML = `<div id="factionHqModal"><div id="factionHqRoot"></div></div>`;
-    document.body.appendChild(wrap.firstElementChild);
-    _modal = document.getElementById("factionHqModal");
-    _root  = document.getElementById("factionHqRoot");
-    _modal.addEventListener("click", (e)=>{ if(e.target === _modal) close(); });
+
+    _back = document.getElementById("factionHQBack");
+    _modal = document.getElementById("factionHQModal");
+
+    if (!_back){
+      // fallback injection if user didn't add HTML in index
+      _back = document.createElement("div");
+      _back.id = "factionHQBack";
+      _back.style.display = "none";
+      _back.innerHTML = `<div class="hq-bg"></div><div id="factionHQModal"></div>`;
+      document.body.appendChild(_back);
+      _modal = document.getElementById("factionHQModal");
+    } else {
+      // ensure modal exists inside back
+      if (!_modal){
+        const m = document.createElement("div");
+        m.id = "factionHQModal";
+        _back.appendChild(m);
+        _modal = m;
+      }
+      // ensure bg layer exists (nice if you forgot)
+      if (!_back.querySelector(".hq-bg")){
+        const bg = document.createElement("div");
+        bg.className = "hq-bg";
+        _back.insertBefore(bg, _back.firstChild);
+      }
+    }
+
+    _root = document.getElementById("factionHQRoot");
+    if (!_root){
+      _root = document.createElement("div");
+      _root.id = "factionHQRoot";
+      _modal.appendChild(_root);
+    }
+
+    // Click outside card closes
+    if (!_back.__hq_click){
+      _back.__hq_click = true;
+      _back.addEventListener("click", (e) => {
+        if (e.target === _back) return close();
+        if (e.target && e.target.classList && e.target.classList.contains("hq-bg")) return close();
+      });
+    }
+
+    // Esc closes (desktop)
+    if (!window.__hqEscBound){
+      window.__hqEscBound = true;
+      window.addEventListener("keydown", (e)=>{ if (e.key === "Escape") close(); });
+    }
   }
 
   function fmtTs(t){
@@ -82,21 +223,50 @@
       rogue_byte: "Rogue Byte",
       echo_wardens: "Echo Wardens",
       pack_burners: "Pack Burners",
-      inner_howl: "Inner Howl"
+      inner_howl: "Iron Howlers",   // <- IH w twoim kodzie było jako inner_howl
+      iron_howlers: "Iron Howlers",
     };
     return m[key] || key || "—";
   }
 
+  function _rid(prefix="hq"){
+    try{
+      const u = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      const uid = u ? String(u) : "0";
+      const r = (crypto?.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random().toString(16).slice(2)));
+      return `${prefix}:${uid}:${r}`;
+    }catch(_){
+      return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    }
+  }
+
+  // ---------------------------
+  // Public open/close
+  // ---------------------------
   async function open(){
     ensureModal();
-    _modal.style.display = "flex";
+
+    // best-effort faction from profile/localStorage
+    const faction =
+      window.PROFILE?.faction ||
+      window.PLAYER_STATE?.profile?.faction ||
+      (()=>{ try{ return localStorage.getItem("ah_faction") || ""; }catch(_){ return ""; }})();
+
+    applyHqBg(faction);
+
+    _back.classList.add("is-open");
+    document.body.classList.add("hq-open");
     await render();
   }
 
   function close(){
-    if (_modal) _modal.style.display = "none";
+    if (_back) _back.classList.remove("is-open");
+    document.body.classList.remove("hq-open");
   }
 
+  // ---------------------------
+  // Render / state
+  // ---------------------------
   async function render(){
     if (!_apiPost){
       _root.innerHTML = `<div class="hq-card">API not ready.</div>
@@ -139,6 +309,11 @@
 
     const d = res.data || {};
     const fk = d.faction || "";
+
+    // Update bg using authoritative fk from backend
+    applyHqBg(fk);
+    try{ if(fk) localStorage.setItem("ah_faction", String(fk).toLowerCase()); }catch(_){}
+
     const tre = d.treasury || {};
     const bones = tre.bones || 0;
     const scrap = tre.scrap || 0;
@@ -170,7 +345,8 @@
           <div>🔩 Scrap</div><div><b>${scrap}</b></div>
         </div>
       </div>
-       <div class="hq-card">
+
+      <div class="hq-card">
         <div class="hq-row">
           <div><b>Upgrade HQ</b></div>
           <div class="hq-mini">community build</div>
@@ -225,26 +401,25 @@
 
         <div class="hq-feed">
           ${feed.length ? feed.map((x)=>{
-  const who = (x.uid ? String(x.uid).slice(-4) : "????");
-  const t = fmtTs(x.t);
+            const who = (x.uid ? String(x.uid).slice(-4) : "????");
+            const t = fmtTs(x.t);
 
-  if (x.type === "upgrade") {
-    const lvl = x.level || "?";
-    return `<div class="hq-feed-item">
-      <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${lvl})</span><br/>
-      <span class="hq-mini">by …${who} • ${t}</span>
-    </div>`;
-  }
+            if (x.type === "upgrade") {
+              const lvl = x.level || "?";
+              return `<div class="hq-feed-item">
+                <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${lvl})</span><br/>
+                <span class="hq-mini">by …${who} • ${t}</span>
+              </div>`;
+            }
 
-  // default donate
-  const amt = x.amount || 0;
-  const asset = x.asset || "";
-  const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
-  return `<div class="hq-feed-item">
-    <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
-    <span class="hq-mini">from …${who} • ${t}</span>
-  </div>`;
-}).join("") : `<div class="hq-feed-item hq-mini">No activity yet.</div>`}
+            const amt = x.amount || 0;
+            const asset = x.asset || "";
+            const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
+            return `<div class="hq-feed-item">
+              <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
+              <span class="hq-mini">from …${who} • ${t}</span>
+            </div>`;
+          }).join("") : `<div class="hq-feed-item hq-mini">No activity yet.</div>`}
         </div>
       </div>
 
@@ -252,13 +427,17 @@
     `;
   }
 
+  // ---------------------------
+  // Actions
+  // ---------------------------
   async function _donate(asset, amount){
     if (!_apiPost) return;
-    const run_id = String(Date.now()) + ":" + Math.random().toString(16).slice(2);
+    const run_id = _rid("hq:donate");
+
     try{
       const r = await _apiPost("/webapp/faction/hq/donate", { asset, amount, run_id });
       if (r && r.ok){
-        if (_tg?.HapticFeedback?.impactOccurred) _tg.HapticFeedback.impactOccurred("light");
+        try{ _tg?.HapticFeedback?.impactOccurred?.("light"); }catch(_){}
         await render();
         return;
       }
@@ -274,38 +453,49 @@
     if (n <= 0) return alert("Enter amount.");
     return _donate(asset, n);
   }
+
   async function _upgrade(){
-  if (!_apiPost) return;
+    if (!_apiPost) return;
 
-  const run_id = String(Date.now()) + ":" + Math.random().toString(16).slice(2);
+    const run_id = _rid("hq:upgrade");
 
-  try{
-    const r = await _apiPost("/webapp/faction/hq/upgrade", { run_id });
+    try{
+      const r = await _apiPost("/webapp/faction/hq/upgrade", { run_id });
 
-    if (r && r.ok){
-      if (_tg?.HapticFeedback?.notificationOccurred) _tg.HapticFeedback.notificationOccurred("success");
-      await render();
-      return;
+      if (r && r.ok){
+        try{ _tg?.HapticFeedback?.notificationOccurred?.("success"); }catch(_){}
+        await render();
+        return;
+      }
+
+      if (r && r.reason === "INSUFFICIENT") {
+        const c = r.cost || {};
+        alert(`Not enough in treasury.\nNeed: ${c.bones||0} bones + ${c.scrap||0} scrap`);
+        return;
+      }
+
+      alert((r && r.reason) ? `Upgrade failed: ${r.reason}` : "Upgrade failed.");
+    }catch(e){
+      alert("Upgrade failed.");
     }
-
-    if (r && r.reason === "INSUFFICIENT") {
-      const c = r.cost || {};
-      alert(`Not enough in treasury.\nNeed: ${c.bones||0} bones + ${c.scrap||0} scrap`);
-      return;
-    }
-
-    alert((r && r.reason) ? `Upgrade failed: ${r.reason}` : "Upgrade failed.");
-  }catch(e){
-    alert("Upgrade failed.");
   }
-}
 
+  // ---------------------------
+  // Init
+  // ---------------------------
   function init({ apiPost, tg, dbg } = {}){
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     log("init ok");
+
+    // preload HQ backgrounds (prevents blink)
+    _prefetchBgs();
   }
 
-  window.FactionHQ = { init, open, close, _donate, _donateCustom, _upgrade };
+  window.FactionHQ = {
+    init, open, close,
+    _donate, _donateCustom, _upgrade,
+    applyHqBg
+  };
 })();
