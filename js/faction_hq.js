@@ -110,25 +110,37 @@
       }
 
       /* HQ card */
-      #factionHQRoot{
-        width:min(560px, 100%);
-        max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-        overflow:auto;
-        -webkit-overflow-scrolling: touch;
+     #factionHQRoot{
+  width:min(560px, 100%);
+  max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
 
-        background:rgba(12,12,18,0.92);
-        border:1px solid rgba(255,255,255,0.12);
-        border-radius:20px;
-        padding:22px 18px;
-        color:rgba(255,255,255,0.92);
-        box-shadow: 0 18px 60px rgba(0,0,0,.65);
-      }
+  /* ✅ GLASS — przepuszcza tło */
+  background: rgba(10, 12, 18, 0.58);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 22px;
+  padding: 22px 18px;
+  color: rgba(255,255,255,0.92);
+
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
 
       .hq-card{
-        background:rgba(255,255,255,0.06);
-        border:1px solid rgba(255,255,255,0.14);
-        border-radius:16px; padding:16px; margin:12px 0;
-      }
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 12px 0;
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
       .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
       .hq-btn{
         width:100%; padding:14px; border-radius:12px;
@@ -305,29 +317,46 @@
     const fk = d.faction || "";
 
     // ✅ authoritative bg + cache
-    applyHqBg(fk);
-    try{
-      if (fk) localStorage.setItem("ah_faction", String(fk).toLowerCase());
-      window.Influence?.setFaction?.(String(fk).toLowerCase());
-      window.renderFactionBadge?.();
-    }catch(_){}
+applyHqBg(fk);
 
-    const tre = d.treasury || {};
-    const bones = tre.bones || 0;
-    const scrap = tre.scrap || 0;
-    const feed = Array.isArray(d.feed) ? d.feed : [];
+/* ✅ subtle faction ring (makes HQ feel “alive” without screaming) */
+try{
+  const k = String(fk || "").toLowerCase();
+  const ringMap = {
+    rogue_byte:   "rgba(255,50,70,.22)",   // RB red
+    echo_wardens: "rgba(255,210,80,.22)",  // EW yellow
+    pack_burners: "rgba(255,130,40,.22)",  // PB fiery orange
+    inner_howl:   "rgba(60,220,255,.22)",  // IH cyan
+  };
+  const ring = ringMap[k] || "rgba(255,255,255,.10)";
+  _root.style.boxShadow =
+    `0 18px 60px rgba(0,0,0,.55),
+     inset 0 1px 0 rgba(255,255,255,.08),
+     0 0 0 1px ${ring}`;
+}catch(_){}
 
-    const curLevel = parseInt(d.level || 1, 10) || 1;
-    const nextLevel = curLevel + 1;
-    const nextCost = d.nextUpgradeCost || {};
-    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
-    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
-    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+try{
+  if (fk) localStorage.setItem("ah_faction", String(fk).toLowerCase());
+  window.Influence?.setFaction?.(String(fk).toLowerCase());
+  window.renderFactionBadge?.();
+}catch(_){}
 
-    const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;">
-      uid …${_uidTail()} • fk <b>${String(fk||"")}</b>
-    </div>` : "";
+const tre = d.treasury || {};
+const bones = tre.bones || 0;
+const scrap = tre.scrap || 0;
+const feed = Array.isArray(d.feed) ? d.feed : [];
 
+const curLevel = parseInt(d.level || 1, 10) || 1;
+const nextLevel = curLevel + 1;
+const nextCost = d.nextUpgradeCost || {};
+const needBones = parseInt(nextCost.bones || 0, 10) || 0;
+const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
+const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+
+const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;">
+  uid …${_uidTail()} • fk <b>${String(fk||"")}</b>
+</div>` : "";
+    
     _root.innerHTML = `
       <div style="text-align:center; margin-bottom:10px;">
         <div class="hq-pill">HQ</div>
