@@ -967,6 +967,71 @@ html.ah-modal-open #heroFrame{
     rgba(0,0,0,.82) 100%);
   z-index: 0;
 }
+    /* ==================== FRONT WOJENNY FRAKCJI – FAZA 1 (bezpieczna) ==================== */
+
+/* Nowa warstwa tylko na front (nad zwykłymi ścieżkami, pod pinami) */
+.front-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 1. Terytorialne overlaye (duży, półprzezroczysty glow frakcji pod nodami) */
+.territory-glow {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+
+/* Kolory terytoriów (dokładnie jak w Twoich klasach) */
+.territory-glow.f-rb { background: #ff3366; }
+.territory-glow.f-ew { background: #ffdd33; }
+.territory-glow.f-pb { background: #c84cff; }
+.territory-glow.f-ih { background: #00ddff; }
+
+/* 2. Grube neonowe linie frontu (nad istniejącymi .path) */
+.front-path {
+  stroke: #ffaa00;
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 22px #ff3300) drop-shadow(0 0 8px #ff6600);
+  animation: frontPulse 2.4s ease-in-out infinite;
+  opacity: 0.82;
+}
+
+@keyframes frontPulse {
+  0%, 100% { opacity: 0.75; stroke-width: 10; }
+  50% { opacity: 0.98; stroke-width: 13.5; }
+}
+
+/* 3. Efekt pęknięć / cracków na froncie (jak uszkodzona powierzchnia księżyca) */
+.front-crack {
+  stroke: #ff2200;
+  stroke-width: 2.8;
+  stroke-dasharray: 8 12;
+  animation: crackAnim 1.8s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes crackAnim {
+  to { stroke-dashoffset: -40; }
+}
+
+/* Bonus: mocniejszy contested ring (już masz, tylko podkręcamy) */
+.map-pin.is-contested::after {
+  inset: -22px;
+  border-width: 4px;
+  border-color: #ff9800;
+  animation-duration: 1.4s;
+}
 
 /* === HQ PANEL: glass + ring === */
 /* użyj tego na swoim głównym kontenerze treści (najczęściej #factionHQRoot lub #factionHQModal) */
@@ -4809,6 +4874,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
