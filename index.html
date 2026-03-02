@@ -940,9 +940,12 @@ html.ah-modal-open #heroFrame{
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+
+  /* lekki “cinematic” polish */
+  filter: saturate(1.05) contrast(1.05);
 }
 
-/* czytelność UI na tle */
+/* czytelność UI na tle (Twoje) */
 #factionHQBack .hq-bg::after{
   content:"";
   position:absolute;
@@ -953,10 +956,97 @@ html.ah-modal-open #heroFrame{
     linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.85));
 }
 
-/* jeśli masz modal-kartę w HQ */
+/* dodatkowa winieta / głębia (możesz użyć jako osobny div .hq-vignette albo zostawić tylko to) */
+#factionHQBack .hq-vignette{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,.08) 0%,
+    rgba(0,0,0,.55) 72%,
+    rgba(0,0,0,.82) 100%);
+  z-index: 0;
+}
+
+/* === HQ PANEL: glass + ring === */
+/* użyj tego na swoim głównym kontenerze treści (najczęściej #factionHQRoot lub #factionHQModal) */
+#factionHQRoot,
 #factionHQModal{
   position: relative;
   z-index: 1;
+  border-radius: 20px;
+  overflow: hidden;
+
+  background: rgba(12,12,18,.55);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 50px rgba(0,0,0,.55);
+}
+
+/* fallback gdy brak backdrop-filter */
+@supports not ((backdrop-filter: blur(1px))){
+  #factionHQRoot,
+  #factionHQModal{
+    background: rgba(12,12,18,.82);
+  }
+}
+
+/* delikatny “inner rim” */
+#factionHQRoot::before,
+#factionHQModal::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius: 20px;
+  padding: 1px;
+
+  background: linear-gradient(135deg,
+    rgba(255,255,255,.14),
+    rgba(255,255,255,0));
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  opacity:.9;
+}
+
+/* subtelny ring w kolorze frakcji */
+#factionHQRoot::after,
+#factionHQModal::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  border-radius: 22px;
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.10),
+    0 0 34px rgba(var(--hq-accent-rgb, 0,229,255), .18);
+
+  opacity:.95;
+}
+
+/* Akcent per frakcja — ustawiane przez JS przez data-faction="..." */
+#factionHQRoot[data-faction="rogue_byte"],
+#factionHQModal[data-faction="rogue_byte"]   { --hq-accent-rgb: 0,229,255; }
+
+#factionHQRoot[data-faction="echo_wardens"],
+#factionHQModal[data-faction="echo_wardens"] { --hq-accent-rgb: 170,120,255; }
+
+#factionHQRoot[data-faction="pack_burners"],
+#factionHQModal[data-faction="pack_burners"] { --hq-accent-rgb: 255,110,80; }
+
+#factionHQRoot[data-faction="inner_howl"],
+#factionHQModal[data-faction="inner_howl"]   { --hq-accent-rgb: 180,255,120; }
+
+/* mały bonus: bezpieczne paddingi na mobile (jeśli panel jest full-screen sheetem) */
+#factionHQRoot,
+#factionHQModal{
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
 }
 </style>
   </style>
@@ -4719,6 +4809,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
