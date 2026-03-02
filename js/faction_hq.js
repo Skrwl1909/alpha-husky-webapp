@@ -1,5 +1,5 @@
 // js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — warroom backgrounds + HQ backdrop
-(function(){
+(function () {
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
@@ -8,224 +8,35 @@
   let _modal = null;  // #factionHQModal
   let _root = null;   // #factionHQRoot
 
-  function log(...a){ if(_dbg) console.log("[FactionHQ]", ...a); }
+  function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
   // ---------------------------
-  // BG mapping
+  // Faction normalization
   // ---------------------------
-  function _normFactionKey(f){
+  function _normFactionKey(f) {
     f = String(f || "").toLowerCase().trim();
     if (!f) return "";
     if (f === "rb" || f === "ew" || f === "pb" || f === "ih") return f;
-    if (f.includes("rogue")) return "rb";
-    if (f.includes("echo"))  return "ew";
-    if (f.includes("pack") || f.includes("burn")) return "pb";
-    if (f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih"; // inner_howl -> IH
+
+    // canonical keys
+    if (f === "rogue_byte" || f === "roguebyte" || f.includes("rogue")) return "rb";
+    if (f === "echo_wardens" || f === "echowardens" || f.includes("echo")) return "ew";
+    if (f === "pack_burners" || f === "packburners" || f.includes("pack") || f.includes("burn")) return "pb";
+    if (f === "inner_howl" || f === "iron_howlers" || f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
+
     return f;
   }
 
-  function _hqBgUrlForFaction(faction){
-    const k = _normFactionKey(faction);
-    const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
-    // ✅ ABSOLUTE PATHS (pewne na Vercel/Telegram WebView)
-    const map = {
-      rb: `/hq_warroom_rb.webp${v}`,
-      ew: `/hq_warroom_ew.webp${v}`,
-      pb: `/hq_warroom_pb.webp${v}`,
-      ih: `/hq_warroom_ih.webp${v}`,
-    };
-    return map[k] || map.rb;
+  function _canonFaction(f) {
+    const k = _normFactionKey(f);
+    if (k === "rb") return "rogue_byte";
+    if (k === "ew") return "echo_wardens";
+    if (k === "pb") return "pack_burners";
+    if (k === "ih") return "inner_howl";
+    return "";
   }
 
-  function applyHqBg(faction){
-    const url = _hqBgUrlForFaction(faction);
-    document.documentElement.style.setProperty("--hq-bg-url", `url("${url}")`);
-  }
-
-  function _prefetchBgs(){
-    try{
-      const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
-      ["rb","ew","pb","ih"].forEach(k => { const i=new Image(); i.src = `/hq_warroom_${k}.webp${v}`; });
-    }catch(_){}
-  }
-
-  // ---------------------------
-  // UID helper (debug)
-  // ---------------------------
-  function _uid(){
-    try { return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ""); } catch(_) { return ""; }
-  }
-  function _uidTail(){
-    const u = _uid();
-    return u ? u.slice(-5) : "?????";
-  }
-
-  // ---------------------------
-  // Styles (SELF-CONTAINED — ensures bg actually shows)
-  // ---------------------------
-  function ensureStyles(){
-    if (document.getElementById("faction-hq-ui-css")) return;
-
-    const st = document.createElement("style");
-    st.id = "faction-hq-ui-css";
-    st.textContent = `
-      /* Backdrop wrapper */
-      #factionHQBack{
-        position:fixed; inset:0;
-        z-index:999990; /* below missionsBack=999999 */
-        display:none;
-        pointer-events:auto;
-      }
-      #factionHQBack.is-open{ display:block !important; }
-
-      /* Background image layer */
-      #factionHQBack .hq-bg{
-        position:absolute; inset:0;
-        z-index:0;
-        background: #07080c;
-        background-image: var(--hq-bg-url);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        transform: translateZ(0);
-      }
-      /* readability overlay */
-      #factionHQBack .hq-bg::after{
-        content:"";
-        position:absolute; inset:0;
-        pointer-events:none;
-        background:
-          radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.18), rgba(0,0,0,.78)),
-          linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.85));
-      }
-
-      /* Modal container */
-      #factionHQModal{
-        position:absolute; inset:0;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:12px;
-        z-index:1;
-      }
-
-      /* HQ card */
-     #factionHQRoot{
-  width:min(560px, 100%);
-  max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow:auto;
-  -webkit-overflow-scrolling: touch;
-
-  /* ✅ GLASS — przepuszcza tło */
-  background: rgba(10, 12, 18, 0.58);
-  backdrop-filter: blur(10px) saturate(1.15);
-  -webkit-backdrop-filter: blur(10px) saturate(1.15);
-
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 22px;
-  padding: 22px 18px;
-  color: rgba(255,255,255,0.92);
-
-  box-shadow:
-    0 18px 60px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
-      .hq-card{
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 16px;
-  padding: 16px;
-  margin: 12px 0;
-
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-      .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
-      .hq-btn{
-        width:100%; padding:14px; border-radius:12px;
-        font-weight:800; font-size:15px; border:0;
-        background:rgba(255,255,255,0.12); color:#fff;
-      }
-      .hq-btn[disabled]{ opacity:.45; filter:saturate(.6); }
-      .hq-btn.primary{ background:#2b8cff; }
-      .hq-mini{ opacity:.85; font-size:13px; }
-      .hq-input{
-        width:100%; padding:12px 12px; border-radius:12px;
-        border:1px solid rgba(255,255,255,0.16);
-        background:rgba(0,0,0,0.25); color:#fff;
-        outline:none; font-weight:700;
-      }
-      .hq-feed{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
-      .hq-feed-item{
-        padding:10px 12px; border-radius:12px;
-        background:rgba(255,255,255,0.06);
-        border:1px solid rgba(255,255,255,0.10);
-        font-size:13px; opacity:.95;
-      }
-      .hq-pill{
-        display:inline-flex; padding:4px 10px; border-radius:999px;
-        background:rgba(255,255,255,0.10); font-size:12px; font-weight:900;
-        letter-spacing:.4px;
-      }
-
-      body.hq-open{ overflow:hidden !important; touch-action:none; }
-    `;
-    document.head.appendChild(st);
-  }
-
-  // ---------------------------
-  // DOM
-  // ---------------------------
-  function ensureModal(){
-    ensureStyles();
-
-    _back  = document.getElementById("factionHQBack");
-    _modal = document.getElementById("factionHQModal");
-
-    // fallback injection if HTML not present
-    if (!_back){
-      _back = document.createElement("div");
-      _back.id = "factionHQBack";
-      _back.style.display = "none";
-      _back.innerHTML = `<div class="hq-bg"></div><div id="factionHQModal"></div>`;
-      document.body.appendChild(_back);
-      _modal = document.getElementById("factionHQModal");
-    } else {
-      if (!_back.querySelector(".hq-bg")){
-        const bg = document.createElement("div");
-        bg.className = "hq-bg";
-        _back.insertBefore(bg, _back.firstChild);
-      }
-      if (!_modal){
-        const m = document.createElement("div");
-        m.id = "factionHQModal";
-        _back.appendChild(m);
-        _modal = m;
-      }
-    }
-
-    _root = document.getElementById("factionHQRoot");
-    if (!_root){
-      _root = document.createElement("div");
-      _root.id = "factionHQRoot";
-      _modal.appendChild(_root);
-    }
-
-    if (!_back.__hq_click){
-      _back.__hq_click = true;
-      _back.addEventListener("click", (e) => {
-        if (e.target === _back) return close();
-        if (e.target && e.target.classList && e.target.classList.contains("hq-bg")) return close();
-      });
-    }
-  }
-
-  function fmtTs(t){
-    try{ return new Date((t||0)*1000).toLocaleString(); }catch(_){ return ""; }
-  }
-
-  function niceFactionName(key){
+  function niceFactionName(key) {
     const m = {
       rogue_byte: "Rogue Byte",
       echo_wardens: "Echo Wardens",
@@ -236,12 +47,174 @@
     return m[key] || key || "—";
   }
 
-  function _rid(prefix="hq"){
-    try{
+  // ---------------------------
+  // BG mapping
+  // ---------------------------
+  function _hqBgUrlForFaction(faction) {
+    const k = _normFactionKey(faction);
+    const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
+    const map = {
+      rb: `/hq_warroom_rb.webp${v}`,
+      ew: `/hq_warroom_ew.webp${v}`,
+      pb: `/hq_warroom_pb.webp${v}`,
+      ih: `/hq_warroom_ih.webp${v}`,
+    };
+    return map[k] || map.rb;
+  }
+
+  function applyHqBg(faction) {
+    const url = _hqBgUrlForFaction(faction);
+    document.documentElement.style.setProperty("--hq-bg-url", `url("${url}")`);
+  }
+
+  function applyHQTheme(faction) {
+    const canon = _canonFaction(faction);
+    try {
+      if (_root) _root.setAttribute("data-faction", canon || "");
+      if (_modal) _modal.setAttribute("data-faction", canon || "");
+    } catch (_) { }
+  }
+
+  function _prefetchBgs() {
+    try {
+      const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
+      ["rb", "ew", "pb", "ih"].forEach(k => { const i = new Image(); i.src = `/hq_warroom_${k}.webp${v}`; });
+    } catch (_) { }
+  }
+
+  // ---------------------------
+  // UID helper (debug)
+  // ---------------------------
+  function _uid() {
+    try { return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ""); }
+    catch (_) { return ""; }
+  }
+  function _uidTail() {
+    const u = _uid();
+    return u ? u.slice(-5) : "?????";
+  }
+
+  // ---------------------------
+  // Fallback styles (ONLY if index.html doesn't provide them)
+  // ---------------------------
+  function ensureStyles() {
+    // Jeśli masz już CSS w index.html (style#factionhq-css) — NIE nadpisujemy
+    if (document.getElementById("factionhq-css")) return;
+    if (document.getElementById("faction-hq-ui-css")) return;
+
+    const st = document.createElement("style");
+    st.id = "faction-hq-ui-css";
+    st.textContent = `
+      #factionHQBack{ position:fixed; inset:0; z-index:999990; display:none; pointer-events:auto; }
+      #factionHQBack.is-open{ display:block !important; }
+      #factionHQBack .hq-bg{ position:absolute; inset:0; background:#07080c; background-image:var(--hq-bg-url);
+        background-size:cover; background-position:center; background-repeat:no-repeat; }
+      #factionHQBack .hq-bg::after{ content:""; position:absolute; inset:0; pointer-events:none;
+        background: radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.18), rgba(0,0,0,.78)),
+                    linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.85)); }
+      #factionHQBack .hq-vignette{ position:absolute; inset:0; pointer-events:none; z-index:0;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,.08) 0%, rgba(0,0,0,.55) 72%, rgba(0,0,0,.82) 100%); }
+      #factionHQModal{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:12px; z-index:1; }
+      #factionHQRoot{ width:min(560px,100%); max-height:calc(100vh - 24px); overflow:auto; -webkit-overflow-scrolling:touch;
+        background:rgba(10,12,18,.70); border:1px solid rgba(255,255,255,.14); border-radius:22px; padding:22px 18px; color:rgba(255,255,255,.92);
+        box-shadow:0 18px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08); }
+      .hq-card{ background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.10); border-radius:16px; padding:16px; margin:12px 0; }
+      .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
+      .hq-btn{ width:100%; padding:14px; border-radius:12px; font-weight:800; font-size:15px; border:0; background:rgba(255,255,255,0.12); color:#fff; }
+      .hq-btn[disabled]{ opacity:.45; filter:saturate(.6); }
+      .hq-btn.primary{ background:#2b8cff; }
+      .hq-mini{ opacity:.85; font-size:13px; }
+      .hq-input{ width:100%; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.16);
+        background:rgba(0,0,0,0.25); color:#fff; outline:none; font-weight:700; }
+      .hq-feed{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+      .hq-feed-item{ padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); font-size:13px; opacity:.95; }
+      .hq-pill{ display:inline-flex; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.10); font-size:12px; font-weight:900; letter-spacing:.4px; }
+      body.hq-open{ overflow:hidden !important; touch-action:none; }
+    `;
+    document.head.appendChild(st);
+  }
+
+  // ---------------------------
+  // Vignette (insert once, correct layer order)
+  // ---------------------------
+  function ensureHQVignette() {
+    if (!_back) return;
+    const bg = _back.querySelector(".hq-bg");
+    if (!bg) return;
+
+    if (!_back.querySelector(".hq-vignette")) {
+      const v = document.createElement("div");
+      v.className = "hq-vignette";
+      // wstaw nad .hq-bg, ale pod modalem
+      bg.insertAdjacentElement("afterend", v);
+    }
+  }
+
+  // ---------------------------
+  // DOM
+  // ---------------------------
+  function ensureModal() {
+    ensureStyles();
+
+    _back = document.getElementById("factionHQBack");
+    _modal = document.getElementById("factionHQModal");
+
+    // fallback injection if HTML not present
+    if (!_back) {
+      _back = document.createElement("div");
+      _back.id = "factionHQBack";
+      _back.style.display = "none";
+      _back.innerHTML = `<div class="hq-bg"></div><div class="hq-vignette"></div><div id="factionHQModal"></div>`;
+      document.body.appendChild(_back);
+      _modal = document.getElementById("factionHQModal");
+    } else {
+      if (!_back.querySelector(".hq-bg")) {
+        const bg = document.createElement("div");
+        bg.className = "hq-bg";
+        _back.insertBefore(bg, _back.firstChild);
+      }
+      if (!_back.querySelector(".hq-vignette")) {
+        ensureHQVignette();
+      }
+      if (!_modal) {
+        const m = document.createElement("div");
+        m.id = "factionHQModal";
+        _back.appendChild(m);
+        _modal = m;
+      }
+    }
+
+    _root = document.getElementById("factionHQRoot");
+    if (!_root) {
+      _root = document.createElement("div");
+      _root.id = "factionHQRoot";
+      _modal.appendChild(_root);
+    }
+
+    // make sure vignette exists even if index markup changes
+    ensureHQVignette();
+
+    if (!_back.__hq_click) {
+      _back.__hq_click = true;
+      _back.addEventListener("click", (e) => {
+        if (e.target === _back) return close();
+        if (e.target?.classList?.contains("hq-bg")) return close();
+        if (e.target?.classList?.contains("hq-vignette")) return close();
+      });
+    }
+  }
+
+  function fmtTs(t) {
+    try { return new Date((t || 0) * 1000).toLocaleString(); }
+    catch (_) { return ""; }
+  }
+
+  function _rid(prefix = "hq") {
+    try {
       const uid = _uid() || "0";
       const r = (crypto?.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random().toString(16).slice(2)));
       return `${prefix}:${uid}:${r}`;
-    }catch(_){
+    } catch (_) {
       return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
     }
   }
@@ -249,15 +222,19 @@
   // ---------------------------
   // open/close
   // ---------------------------
-  async function open(){
+  async function open() {
     ensureModal();
 
-    const faction =
+    // szybki “pre-bg” zanim backend odpowie (cache only)
+    let cached =
       window.PROFILE?.faction ||
       window.PLAYER_STATE?.profile?.faction ||
-      (()=>{ try{ return localStorage.getItem("ah_faction") || ""; }catch(_){ return ""; }})();
+      (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
 
-    applyHqBg(faction);
+    cached = _canonFaction(cached) || cached;
+
+    applyHqBg(cached);
+    applyHQTheme(cached);
 
     _back.classList.add("is-open");
     document.body.classList.add("hq-open");
@@ -265,7 +242,7 @@
     await render();
   }
 
-  function close(){
+  function close() {
     if (_back) _back.classList.remove("is-open");
     document.body.classList.remove("hq-open");
   }
@@ -273,8 +250,19 @@
   // ---------------------------
   // Render
   // ---------------------------
-  async function render(){
-    if (!_apiPost){
+  function _normStatePayload(res) {
+    // wspieramy obie struktury:
+    // A) {ok:true, data:{...}}
+    // B) {ok:true, faction:"...", hq:{...}, ...}
+    if (!res || typeof res !== "object") return { ok: false, reason: "NO_RESPONSE" };
+    if (res.data && typeof res.data === "object") {
+      return { ok: !!res.ok, reason: res.reason, data: res.data, _raw: res };
+    }
+    return { ok: !!res.ok, reason: res.reason, data: res, _raw: res };
+  }
+
+  async function render() {
+    if (!_apiPost) {
       _root.innerHTML = `<div class="hq-card">API not ready.</div>
         <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
       return;
@@ -282,19 +270,22 @@
 
     _root.innerHTML = `<div class="hq-card">Loading HQ…</div>`;
 
-    let res;
-    try{
-      res = await _apiPost("/webapp/faction/hq/state", {});
-      log("state:", res);
-    }catch(e){
+    let raw;
+    try {
+      raw = await _apiPost("/webapp/faction/hq/state", _dbg ? { dbg: true } : {});
+      log("state raw:", raw);
+    } catch (e) {
       _root.innerHTML = `<div class="hq-card">HQ load failed.</div>
         <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
       return;
     }
 
-    if (!res || !res.ok){
-      const reason = (res && res.reason) || "NO_FACTION";
-      if (reason === "NO_FACTION"){
+    const res = _normStatePayload(raw);
+    const d = res.data || {};
+
+    if (!res.ok) {
+      const reason = res.reason || "NO_FACTION";
+      if (reason === "NO_FACTION") {
         _root.innerHTML = `
           <div style="text-align:center; margin-bottom:10px;">
             <h2 style="margin:0 0 6px;">Faction HQ</h2>
@@ -313,50 +304,37 @@
       return;
     }
 
-    const d = res.data || {};
-    const fk = d.faction || "";
+    // faction from payload
+    const fkRaw = d.faction || res._raw?.faction || "";
+    const fk = _canonFaction(fkRaw) || String(fkRaw || "").toLowerCase();
 
-    // ✅ authoritative bg + cache
-applyHqBg(fk);
+    // ✅ authoritative bg + ring theme
+    applyHqBg(fk);
+    applyHQTheme(fk);
 
-/* ✅ subtle faction ring (makes HQ feel “alive” without screaming) */
-try{
-  const k = String(fk || "").toLowerCase();
-  const ringMap = {
-    rogue_byte:   "rgba(255,50,70,.22)",   // RB red
-    echo_wardens: "rgba(255,210,80,.22)",  // EW yellow
-    pack_burners: "rgba(255,130,40,.22)",  // PB fiery orange
-    inner_howl:   "rgba(60,220,255,.22)",  // IH cyan
-  };
-  const ring = ringMap[k] || "rgba(255,255,255,.10)";
-  _root.style.boxShadow =
-    `0 18px 60px rgba(0,0,0,.55),
-     inset 0 1px 0 rgba(255,255,255,.08),
-     0 0 0 1px ${ring}`;
-}catch(_){}
+    // cache + notify other modules
+    try {
+      if (fk) localStorage.setItem("ah_faction", fk);
+      window.Influence?.setFaction?.(fk);
+      window.renderFactionBadge?.();
+    } catch (_) { }
 
-try{
-  if (fk) localStorage.setItem("ah_faction", String(fk).toLowerCase());
-  window.Influence?.setFaction?.(String(fk).toLowerCase());
-  window.renderFactionBadge?.();
-}catch(_){}
+    const tre = d.treasury || {};
+    const bones = tre.bones || 0;
+    const scrap = tre.scrap || 0;
+    const feed = Array.isArray(d.feed) ? d.feed : [];
 
-const tre = d.treasury || {};
-const bones = tre.bones || 0;
-const scrap = tre.scrap || 0;
-const feed = Array.isArray(d.feed) ? d.feed : [];
+    const curLevel = parseInt(d.level || 1, 10) || 1;
+    const nextLevel = curLevel + 1;
+    const nextCost = d.nextUpgradeCost || {};
+    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
+    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
+    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
 
-const curLevel = parseInt(d.level || 1, 10) || 1;
-const nextLevel = curLevel + 1;
-const nextCost = d.nextUpgradeCost || {};
-const needBones = parseInt(nextCost.bones || 0, 10) || 0;
-const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
-const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+    const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;">
+      uid …${_uidTail()} • faction <b>${String(fk || "")}</b>
+    </div>` : "";
 
-const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;">
-  uid …${_uidTail()} • fk <b>${String(fk||"")}</b>
-</div>` : "";
-    
     _root.innerHTML = `
       <div style="text-align:center; margin-bottom:10px;">
         <div class="hq-pill">HQ</div>
@@ -433,7 +411,7 @@ const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;
         </div>
 
         <div class="hq-feed">
-          ${feed.length ? feed.map((x)=>{
+          ${feed.length ? feed.map((x) => {
             const who = (x.uid ? String(x.uid).slice(-4) : "????");
             const t = fmtTs(x.t);
 
@@ -463,56 +441,56 @@ const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;
   // ---------------------------
   // Actions
   // ---------------------------
-  async function _donate(asset, amount){
+  async function _donate(asset, amount) {
     if (!_apiPost) return;
     const run_id = _rid("hq:donate");
 
-    try{
+    try {
       const r = await _apiPost("/webapp/faction/hq/donate", { asset, amount, run_id });
-      if (r && r.ok){
-        try{ _tg?.HapticFeedback?.impactOccurred?.("light"); }catch(_){}
+      if (r && r.ok) {
+        try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) { }
         await render();
         return;
       }
       alert((r && r.reason) ? `Donate failed: ${r.reason}` : "Donate failed.");
-    }catch(e){
+    } catch (e) {
       alert("Donate failed.");
     }
   }
 
-  async function _donateCustom(asset){
+  async function _donateCustom(asset) {
     const el = document.getElementById("hqCustomAmt");
     const n = parseInt((el && el.value) || "0", 10) || 0;
     if (n <= 0) return alert("Enter amount.");
     return _donate(asset, n);
   }
 
-  async function _upgrade(){
+  async function _upgrade() {
     if (!_apiPost) return;
     const run_id = _rid("hq:upgrade");
 
-    try{
+    try {
       const r = await _apiPost("/webapp/faction/hq/upgrade", { run_id });
 
-      if (r && r.ok){
-        try{ _tg?.HapticFeedback?.notificationOccurred?.("success"); }catch(_){}
+      if (r && r.ok) {
+        try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) { }
         await render();
         return;
       }
 
       if (r && r.reason === "INSUFFICIENT") {
         const c = r.cost || {};
-        alert(`Not enough in treasury.\nNeed: ${c.bones||0} bones + ${c.scrap||0} scrap`);
+        alert(`Not enough in treasury.\nNeed: ${c.bones || 0} bones + ${c.scrap || 0} scrap`);
         return;
       }
 
       alert((r && r.reason) ? `Upgrade failed: ${r.reason}` : "Upgrade failed.");
-    }catch(e){
+    } catch (e) {
       alert("Upgrade failed.");
     }
   }
 
-  function init({ apiPost, tg, dbg } = {}){
+  function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
