@@ -4831,6 +4831,38 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
 
+  <script>
+(function bootLeaders(){
+  let tries = 0;
+  function tick(){
+    const I = window.Influence;
+    const M = window.AHMap || window.Map;
+    const apiOk = (typeof window.apiPost === "function");
+    const can = !!(I?.refreshLeaders && M?.applyLeaders);
+
+    // ważne: piny muszą już istnieć w DOM
+    const pinsReady = !!document.querySelector(".hotspot[data-node-id], .hotspot[data-nodeid]");
+
+    if (apiOk && can && pinsReady) {
+      try {
+        I.refreshLeaders(true);
+        console.log("✅ [Leaders] boot refresh done");
+      } catch (e) {
+        console.warn("❌ [Leaders] boot refresh failed", e);
+      }
+      return;
+    }
+
+    if (++tries > 160) {
+      console.warn("⚠️ [Leaders] boot timeout", { apiOk, can, pinsReady });
+      return;
+    }
+    setTimeout(tick, 50);
+  }
+  tick();
+})();
+</script>
+  
 <script src="/js/home_nav.js?v=WEBAPP_VER"></script>
 
 <!-- SUPPORT (Stars) -->
@@ -4900,6 +4932,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
