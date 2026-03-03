@@ -189,45 +189,44 @@
     } catch (_) {}
   }
 
-  function ensureModal() {
-    let existing = document.getElementById("influenceModal");
+  function ensureModal(force = false) {
+  const existing = document.getElementById("influenceModal");
+  if (existing) {
+    // 🔥 jeśli cokolwiek było stare/połamane — wywalamy i stawiamy od nowa
+    if (force) {
+      try { existing.remove(); } catch (_) {}
+    } else {
+      // jeśli nie force: upewnij się że siedzi w body i ma overlay style
+      try { if (existing.parentElement !== document.body) document.body.appendChild(existing); } catch (_) {}
+      try {
+        existing.style.cssText = `
+          position: fixed; inset: 0; display: none;
+          align-items: center; justify-content: center;
+          background: rgba(0,0,0,.55);
+          z-index: 999999;
+        `;
+      } catch (_) {}
 
-    // If stale/partial modal exists in HTML, remove it (prevents cropped weird popups)
-    if (existing) {
-      const ok =
-        !!existing.querySelector("#influenceCard") &&
-        !!existing.querySelector("#infPatrolBtn") &&
-        !!existing.querySelector("#infDonateBtn") &&
-        !!existing.querySelector("#infDonateToggle");
-
-      if (!ok) {
-        try { existing.remove(); } catch (_) {}
-        existing = null;
-      } else {
-        _ensureModalMountedToBody(existing);
-        // Make sure listeners exist once
-        if (!existing.__infBound) {
-          existing.__infBound = true;
-          existing.addEventListener("click", (e) => {
-            if (e.target === existing) close();
-            const t = e.target;
-            if (t && t.matches && t.matches("[data-close]")) close();
-            if (t && t.classList && t.classList.contains("infAmt")) {
-              const v = parseInt(t.getAttribute("data-v") || "0", 10);
-              const inp = document.getElementById("infAmount");
-              if (inp) inp.value = String(v);
-            }
-          });
-
-          document.getElementById("infDonateToggle")?.addEventListener("click", () => {
-            const box = document.getElementById("infDonateBox");
-            if (!box) return;
-            box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
-          });
+      // 🔁 rebind zawsze (nadpisuje stare)
+      existing.onclick = (e) => {
+        if (e.target === existing) close();
+        const t = e.target;
+        if (t?.matches?.("[data-close]")) close();
+        if (t?.classList?.contains("infAmt")) {
+          const v = parseInt(t.getAttribute("data-v") || "0", 10);
+          const inp = document.getElementById("infAmount");
+          if (inp) inp.value = String(v);
         }
-        return;
-      }
+      };
+      const tog = document.getElementById("infDonateToggle");
+      if (tog) tog.onclick = () => {
+        const box = document.getElementById("infDonateBox");
+        if (!box) return;
+        box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
+      };
+      return;
     }
+  }
 
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
