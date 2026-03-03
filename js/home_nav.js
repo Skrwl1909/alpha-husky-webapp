@@ -7,7 +7,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  const IS_OUR_SHEET = (id) => id === "hubBack" || id === "charBack" || id === "shareBack" || id === "supportBack";
+  const IS_OUR_SHEET = (id) => id === "hubBack" || id === "charBack" || id === "shareBack" || id === "supportBack" || id === "statsBack";
 
   function setBodyLock(on) {
     document.body.classList.toggle("ah-sheet-open", !!on);
@@ -16,7 +16,7 @@
   }
 
   function anyOurSheetOpen() {
-    return ["hubBack", "charBack", "shareBack", "supportBack"].some((id) => {
+    return ["hubBack", "charBack", "shareBack", "supportBack", "statsBack"].some((id) => {
       const el = document.getElementById(id);
       return el && el.style.display !== "none" && el.dataset.open === "1";
     });
@@ -51,7 +51,7 @@
   }
 
   function closeAllBacks() {
-    ["hubBack", "charBack", "shareBack", "supportBack"].forEach(closeBack);
+    ["hubBack", "charBack", "shareBack", "supportBack", "statsBack"].forEach(closeBack);
     setBodyLock(false);
   }
 
@@ -129,6 +129,12 @@
   openBack("supportBack");
   return;
     }
+    if (A === "stats") {
+  closeBack("charBack");
+  openBack("statsBack");
+  try { window.Stats?.refresh?.(); } catch(_) {}
+  return;
+}
 
     switch (A) {
       case "shop":
@@ -273,6 +279,7 @@
     wireBackdropClose("charBack");
     wireBackdropClose("shareBack");
     wireBackdropClose("supportBack");
+    wireBackdropClose("statsBack");
 
     wireCloseButtons();
     wireShareButtons();
