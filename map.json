@@ -107,7 +107,7 @@
   "id": "blood_moon_tower",
   "name": "Blood-Moon Tower",
   "region": "shadow_layers",
-  "x": 48,
+  "x": 80,
   "y": 37,
   "icon": "images/map/building/blood_moon_tower.png",
   "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
