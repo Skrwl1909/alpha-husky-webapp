@@ -231,10 +231,15 @@
     ensureCss();
   }
 
-  window.AHMap = {
+  const API = {
     init,
     decoratePin,
     setLeader,
     applyLeaders,
   };
+
+  window.AHMap = API;
+
+  // compat: some older code may use window.Map
+  window.Map = window.Map || API;
 })();
