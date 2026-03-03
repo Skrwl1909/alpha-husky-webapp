@@ -194,20 +194,36 @@
     setLeader(pinEl, owner, { contested });
   }
 
-  // leadersMap can be keyed by nodeId OR buildingId
   function applyLeaders(leadersMap) {
-    if (!leadersMap) return;
+  if (!leadersMap) return;
 
-    document.querySelectorAll(".hotspot[data-node-id], .hotspot[data-nodeid]").forEach((pin) => {
-      const nodeId = pin.dataset.nodeId || pin.getAttribute("data-node-id") || "";
-      const buildingId = pin.dataset.buildingId || pin.getAttribute("data-building-id") || "";
-      const info = leadersMap[buildingId] || leadersMap[nodeId];
-      if (!info) return;
+  // łap wszystkie piny, niezależnie od klasy
+  const pins = document.querySelectorAll(
+    ".hotspot[data-node-id], .hotspot[data-nodeid], .map-pin[data-node-id], .map-pin[data-nodeid], [data-node-id], [data-nodeid]"
+  );
 
-      const ex = _extractLeader(info);
-      setLeader(pin, ex.owner || null, { contested: !!ex.contested });
-    });
-  }
+  pins.forEach((pin) => {
+    const nodeId =
+      pin.dataset.nodeId ||
+      pin.dataset.nodeid ||
+      pin.getAttribute("data-node-id") ||
+      pin.getAttribute("data-nodeid") ||
+      "";
+
+    const buildingId =
+      pin.dataset.buildingId ||
+      pin.dataset.buildingid ||
+      pin.getAttribute("data-building-id") ||
+      pin.getAttribute("data-buildingid") ||
+      "";
+
+    const info = (buildingId && leadersMap[buildingId]) || (nodeId && leadersMap[nodeId]) || null;
+    if (!info) return;
+
+    const ex = _extractLeader(info);
+    setLeader(pin, ex.owner || null, { contested: !!ex.contested });
+  });
+}
 
   function init() {
     if (_inited) return;
