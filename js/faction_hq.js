@@ -22,7 +22,7 @@
     if (f === "rogue_byte" || f === "roguebyte" || f.includes("rogue")) return "rb";
     if (f === "echo_wardens" || f === "echowardens" || f.includes("echo")) return "ew";
     if (f === "pack_burners" || f === "packburners" || f.includes("pack") || f.includes("burn")) return "pb";
-    if (f === "inner_howl" || f === "iron_howlers" || f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
+    if (f === "inner_howl" || f === "Inner Howlers" || f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
 
     return f;
   }
