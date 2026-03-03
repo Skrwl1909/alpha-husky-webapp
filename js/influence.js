@@ -192,34 +192,7 @@
   // Modal UI
   // -------------------------
   function ensureModal() {
-    function ensureModal() {
-  const existing = document.getElementById("influenceModal");
-
-  // If someone left an old/incomplete modal in HTML, remove it.
-  if (existing) {
-    const ok =
-      existing.querySelector("#influenceCard") &&
-      existing.querySelector("#infPatrolBtn") &&
-      existing.querySelector("#infDonateBtn");
-
-    if (!ok) {
-      try { existing.remove(); } catch (_) {}
-    } else {
-      // If it exists but is mounted inside another container, move to <body>
-      try { if (existing.parentElement !== document.body) document.body.appendChild(existing); } catch (_) {}
-
-      // Re-apply base overlay style in case CSS/parent broke it
-      try {
-        existing.style.cssText = `
-          position: fixed; inset: 0; display: none;
-          align-items: center; justify-content: center;
-          background: rgba(0,0,0,.55);
-          z-index: 999999;
-        `;
-      } catch (_) {}
-      return;
-    }
-  }
+    if (document.getElementById("influenceModal")) return;
 
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
