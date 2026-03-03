@@ -82,7 +82,7 @@
 
   const CODE = { rogue_byte:"RB", echo_wardens:"EW", pack_burners:"PB", inner_howl:"IH" };
   const CLS  = { rogue_byte:"f-rb", echo_wardens:"f-ew", pack_burners:"f-pb", inner_howl:"f-ih" };
-  const iconUrl = (owner) => `images/ui/factions/${owner}_color.svg`;
+  const iconUrl = (owner) => `/images/ui/factions/${owner}_color.svg`;
 
   function esc(s){
     return String(s || "").replace(/[&<>"']/g, m => ({
