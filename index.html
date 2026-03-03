@@ -4830,19 +4830,36 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>
 (function loadInfluence(){
   const tg = window.Telegram?.WebApp || null;
-
-  const v = String(window.WEBAPP_VER || "20260228a");
+  const v = String(window.WEBAPP_VER || "2026-03-03b");
   const s = document.createElement("script");
   s.src = "/js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
 
+  function waitApiPost(cb){
+    const t0 = Date.now();
+    (function tick(){
+      if (typeof window.apiPost === "function") return cb();
+      if (Date.now() - t0 > 6000) return console.warn("[Influence] apiPost not ready");
+      setTimeout(tick, 50);
+    })();
+  }
+
   s.onload = () => {
     console.log("[Influence] script loaded:", s.src);
-    try {
-      window.Influence?.init?.({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
-      console.log("[Influence] init OK");
-    } catch (e) {
-      console.warn("[Influence] init failed", e);
+
+    // ✅ if syntax error happened, Influence won't exist
+    if (!window.Influence || typeof window.Influence.init !== "function") {
+      console.warn("❌ [Influence] module missing after load (syntax error?)");
+      return;
     }
+
+    waitApiPost(() => {
+      try {
+        window.Influence.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+        console.log("✅ [Influence] init OK");
+      } catch (e) {
+        console.warn("❌ [Influence] init failed", e);
+      }
+    });
   };
 
   s.onerror = () => console.warn("[Influence] FAILED to load:", s.src);
@@ -4989,6 +5006,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
