@@ -1,4 +1,8 @@
 // js/influence.js — Influence MVP (Patrol + Donate) for map nodes
+// - truth-first faction (backend -> cache -> TG picker)
+// - robust error reasons (HTTP_401 / NOT_ENOUGH / TOO_SMALL / DONATE_CAP_HIT / COOLDOWN)
+// - always applies leadersMap if returned
+// - exports setFaction/ensureFaction for HQ integration
 (function () {
   const Influence = {};
   let _apiPost = null, _tg = null, _dbg = false;
@@ -27,6 +31,23 @@
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  // -------------------------
+  // Run id
+  // -------------------------
+  function rid(prefix = "inf") {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  // -------------------------
+  // Toast helper
+  // -------------------------
+  function toast(msg) {
+    const m = String(msg || "");
+    try { window.toast?.(m); return; } catch (_) {}
+    try { (_tg || window.Telegram?.WebApp)?.showPopup?.({ message: m }); return; } catch (_) {}
+    console.log("[toast]", m);
   }
 
   // -------------------------
@@ -121,23 +142,50 @@
     setFaction(picked);
     window.currentUserFaction = picked;
 
-    // OPTIONAL: if you want picker to actually JOIN via backend in the future:
-    // await _apiPost("/webapp/faction/join", { faction: picked, run_id: rid("fjoin") });
+    // Optional future: persist join to backend
+    // try { await _apiPost("/webapp/faction/join", { faction: picked, run_id: rid("fjoin") }); } catch(_) {}
 
     return picked;
   }
 
   // -------------------------
-  // misc helpers
+  // Error decode
   // -------------------------
-  function rid(prefix = "inf") {
-    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  function explainFail(r) {
+    const reason = String(r?.reason || "FAILED");
+
+    if (reason === "COOLDOWN") return `Cooldown: ${fmtSec(r.cooldownLeftSec)} left`;
+    if (reason === "HTTP_401" || reason === "NO_UID") return "Open the app from Telegram (auth missing).";
+    if (reason === "NO_FACTION") { clearFactionCache(); return "Pick faction again."; }
+
+    if (reason === "NOT_ENOUGH") {
+      const have = (r?.have ?? "?");
+      const need = (r?.need ?? "?");
+      return `Not enough (have ${have} need ${need})`;
+    }
+    if (reason === "TOO_SMALL") return "Amount too small for conversion.";
+    if (reason === "DONATE_CAP_HIT") return `Donate capped. Refunded ${r?.refunded ?? 0}.`;
+    if (reason === "BAD_NODE") return "This node isn’t active yet.";
+    if (reason === "BAD_ASSET") return "Bad asset type.";
+    if (reason === "BAD_ACTION") return "Bad action.";
+
+    return reason;
   }
 
-  function toast(msg) {
-    try { window.toast?.(msg); return; } catch (_) {}
-    try { _tg?.showPopup?.({ message: String(msg) }); return; } catch (_) {}
-    console.log("[toast]", msg);
+  function applyLeadersFromResponse(r, nodeId) {
+    const leaders =
+      r?.leadersMap ||
+      r?.leaders_map ||
+      r?.data?.leadersMap ||
+      r?.data?.leaders_map ||
+      null;
+
+    if (!leaders) return;
+    _leadersMap = leaders;
+
+    try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
+    try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+    try { if (nodeId) paintLeader(nodeId); } catch (_) {}
   }
 
   // -------------------------
@@ -169,7 +217,7 @@
             <div id="infTitle" style="font-weight:700;font-size:16px;line-height:1.2;">Influence</div>
             <div id="infSub" style="opacity:.75;font-size:12px;margin-top:2px;"></div>
           </div>
-          <button data-close style="
+          <button data-close type="button" style="
             border:0;background:rgba(255,255,255,.08);color:#fff;
             border-radius:10px;padding:8px 10px;cursor:pointer
           ">✕</button>
@@ -194,7 +242,7 @@
         </div>
 
         <div style="display:flex; gap:10px; margin-top:12px;">
-          <button id="infPatrolBtn" style="
+          <button id="infPatrolBtn" type="button" style="
             flex:1; border:0; cursor:pointer;
             border-radius:12px; padding:12px 12px;
             background: rgba(120,255,220,.12);
@@ -202,7 +250,7 @@
             color:#eafff8; font-weight:700;
           ">Patrol</button>
 
-          <button id="infDonateToggle" style="
+          <button id="infDonateToggle" type="button" style="
             flex:1; border:0; cursor:pointer;
             border-radius:12px; padding:12px 12px;
             background: rgba(170,140,255,.12);
@@ -228,12 +276,12 @@
           </div>
 
           <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="infAmt" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
-            <button class="infAmt" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
-            <button class="infAmt" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
+            <button class="infAmt" type="button" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
+            <button class="infAmt" type="button" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
+            <button class="infAmt" type="button" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
           </div>
 
-          <button id="infDonateBtn" style="
+          <button id="infDonateBtn" type="button" style="
             width:100%; margin-top:10px; border:0; cursor:pointer;
             border-radius:12px; padding:12px 12px;
             background: rgba(255,210,120,.12);
@@ -249,7 +297,9 @@
     wrap.addEventListener("click", (e) => {
       if (e.target === wrap) close();
       const t = e.target;
+
       if (t && t.matches("[data-close]")) close();
+
       if (t && t.classList && t.classList.contains("infAmt")) {
         const v = parseInt(t.getAttribute("data-v") || "0", 10);
         const inp = document.getElementById("infAmount");
@@ -266,6 +316,31 @@
     });
   }
 
+  async function refreshLeaders(applyToMap = true) {
+    if (!_apiPost) return;
+    try {
+      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
+      const ok = r?.ok !== false;
+      const leaders =
+        r?.leadersMap ||
+        r?.leaders_map ||
+        r?.data?.leadersMap ||
+        r?.data?.leaders_map ||
+        null;
+
+      if (ok && leaders) {
+        _leadersMap = leaders;
+
+        if (applyToMap) {
+          try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
+          try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+        }
+      }
+    } catch (e) {
+      if (_dbg) console.warn("refreshLeaders failed", e);
+    }
+  }
+
   function open(nodeId, title = "") {
     ensureModal();
     const m = document.getElementById("influenceModal");
@@ -273,13 +348,21 @@
 
     m.dataset.nodeId = nodeId;
 
-    document.getElementById("infTitle").textContent = title || nodeId;
-    document.getElementById("infSub").textContent = nodeId;
+    const titleEl = document.getElementById("infTitle");
+    const subEl = document.getElementById("infSub");
+    if (titleEl) titleEl.textContent = title || nodeId;
+    if (subEl) subEl.textContent = nodeId;
 
-    paintLeader(nodeId);
+    // Make sure we have fresh leaders when opening
+    (async () => {
+      await refreshLeaders(false);
+      paintLeader(nodeId);
+    })();
 
-    document.getElementById("infPatrolBtn").onclick = () => doPatrol(nodeId);
-    document.getElementById("infDonateBtn").onclick = () => doDonate(nodeId);
+    const patrolBtn = document.getElementById("infPatrolBtn");
+    const donateBtn = document.getElementById("infDonateBtn");
+    if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
+    if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
 
     m.style.display = "flex";
     document.body.classList.add("ah-modal-open");
@@ -315,31 +398,6 @@
     foot.textContent = `RB ${s.rogue_byte || 0} · EW ${s.echo_wardens || 0} · PB ${s.pack_burners || 0} · IH ${s.inner_howl || 0}`;
   }
 
-  async function refreshLeaders(applyToMap = true) {
-    if (!_apiPost) return;
-    try {
-      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
-      const ok = r?.ok !== false;
-      const leaders =
-        r?.leadersMap ||
-        r?.leaders_map ||
-        r?.data?.leadersMap ||
-        r?.data?.leaders_map ||
-        null;
-
-      if (ok && leaders) {
-        _leadersMap = leaders;
-
-        if (applyToMap) {
-          try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
-          try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-        }
-      }
-    } catch (e) {
-      if (_dbg) console.warn("refreshLeaders failed", e);
-    }
-  }
-
   async function doPatrol(nodeId) {
     if (!_apiPost) return;
 
@@ -358,28 +416,15 @@
       });
 
       if (!r?.ok) {
-        if (r?.reason === "COOLDOWN") {
-          toast(`Cooldown: ${fmtSec(r.cooldownLeftSec)} left`);
-        } else if (r?.reason === "NO_UID") {
-          toast("Open the app from Telegram (auth missing).");
-        } else if (r?.reason === "NO_FACTION") {
-          clearFactionCache();
-          toast("Pick faction again.");
-        } else {
-          toast(r?.reason || "Patrol failed");
-        }
+        toast(explainFail(r));
+        applyLeadersFromResponse(r, nodeId);
         return;
       }
 
-      toast(`+${r.gain} influence`);
+      const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
+      toast(`+${r.gain} influence${hq}`);
 
-      const leaders = r?.leadersMap || r?.leaders_map || null;
-      if (leaders) {
-        _leadersMap = leaders;
-        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
-        try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-        try { paintLeader(nodeId); } catch (_) {}
-      }
+      applyLeadersFromResponse(r, nodeId);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -409,41 +454,46 @@
       });
 
       if (!r?.ok) {
-        if (r?.reason === "NO_UID") {
-          toast("Open the app from Telegram (auth missing).");
-        } else if (r?.reason === "NO_FACTION") {
-          clearFactionCache();
-          toast("Pick faction again.");
-        } else {
-          toast(r?.reason || "Donate failed");
-        }
+        toast(explainFail(r));
+        applyLeadersFromResponse(r, nodeId);
         return;
       }
 
-      toast(`Donated ${amount} ${asset} → +${r.gain} influence`);
+      const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
+      toast(`Donated ${amount} ${asset} → +${r.gain} influence${hq}`);
 
-      const leaders = r?.leadersMap || r?.leaders_map || null;
-      if (leaders) {
-        _leadersMap = leaders;
-        try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
-        try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-        try { paintLeader(nodeId); } catch (_) {}
-      }
+      applyLeadersFromResponse(r, nodeId);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
 
+  // -------------------------
+  // Public API
+  // -------------------------
   Influence.init = function ({ apiPost, tg, dbg }) {
     _apiPost = apiPost;
-    _tg = tg;
+    _tg = tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
+
+    // Debug: verify cache-bust/deploy
+    if (_dbg) console.log("[INFLUENCE] loaded v=", window.WEBAPP_VER, new Date().toISOString());
+
     ensureModal();
+    // Start sync (best-effort)
+    refreshLeaders(true);
+    fetchFactionFromBackend();
   };
 
   Influence.open = open;
   Influence.close = close;
   Influence.refreshLeaders = refreshLeaders;
+
+  // for HQ / other modules
+  Influence.setFaction = setFaction;
+  Influence.clearFactionCache = clearFactionCache;
+  Influence.ensureFaction = ensureFaction;
+  Influence.getFaction = () => _faction;
 
   window.Influence = Influence;
 })();
