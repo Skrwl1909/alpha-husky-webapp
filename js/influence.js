@@ -165,6 +165,7 @@
 
     if (!leaders) return;
     _leadersMap = leaders;
+    window.__AH_LEADERS_MAP = leaders;
 
     try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
     try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
@@ -419,6 +420,7 @@
 
       if (leaders) {
         _leadersMap = leaders;
+        window.__AH_LEADERS_MAP = leaders;
 
         if (applyToMap) {
           try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
