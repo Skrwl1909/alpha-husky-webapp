@@ -2227,8 +2227,28 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-action" data-action="equipped" type="button">Equipped</button>
       <button class="ah-action" data-action="skins" type="button">Skins</button>
       <button class="ah-action" data-action="avatar" type="button">Avatar</button>
+
+      <!-- ✅ NEW: Stats -->
+      <button class="ah-action" data-action="stats" type="button">Stats</button>
+
       <button class="ah-action" data-action="pets" type="button">Pets</button>
     </div>
+  </div>
+</div>
+
+<!-- ✅ NEW: Stats Sheet -->
+<div id="statsBack" class="ah-back" style="display:none">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Stats">
+    <div class="ah-panel-hd">
+      <div class="ah-title">Stats</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="btnStatsRefresh" class="ah-action" type="button" style="padding:6px 10px;">Refresh</button>
+        <button class="ah-x" data-close="statsBack" aria-label="Close" type="button">✕</button>
+      </div>
+    </div>
+
+    <!-- ważne: root pod render z stats.js -->
+    <div id="statsRoot" class="ah-stats-root"></div>
   </div>
 </div>
 
@@ -4704,6 +4724,43 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
 <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
+  <!-- STATS (loader + init, cache-bust) -->
+<script>
+(function loadStats(){
+  const tg = window.Telegram?.WebApp || null;
+
+  const v = String(window.WEBAPP_VER || "stats");
+  const s = document.createElement("script");
+  s.src = "/js/stats.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+
+  function waitApiPost(cb){
+    const t0 = Date.now();
+    (function tick(){
+      if (typeof window.apiPost === "function") return cb();
+      if (Date.now() - t0 > 6000) return console.warn("[Stats] apiPost not ready");
+      setTimeout(tick, 50);
+    })();
+  }
+
+  s.onload = () => {
+    console.log("[Stats] script loaded:", s.src);
+    waitApiPost(() => {
+      try {
+        if (!window.__statsInited && window.Stats?.init) {
+          window.Stats.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.__statsInited = true;
+          console.log("✅ Stats initialized");
+        }
+      } catch (e) {
+        console.warn("❌ Stats.init failed", e);
+      }
+    });
+  };
+
+  s.onerror = () => console.warn("[Stats] FAILED to load:", s.src);
+  document.head.appendChild(s);
+})();
+</script>
 <script src="/js/arena.js?v=WEBAPP_VER"></script>
 
 <!-- FACTIONS (loader + init, cache-bust) -->
@@ -4932,6 +4989,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
