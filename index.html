@@ -4706,33 +4706,40 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
 <script src="/js/arena.js?v=WEBAPP_VER"></script>
 
-<!-- FACTIONS -->
-<script src="js/factions.js?v=WEBAPP_VER"></script>
+<!-- FACTIONS (loader + init, cache-bust) -->
 <script>
-(function () {
-  function tryInitFactions(){
-    if (!window.Factions || window.__factionsInited) return;
+(function loadFactions(){
+  const tg = window.Telegram?.WebApp || null;
+  const v = String(window.WEBAPP_VER || "factions");
+  const s = document.createElement("script");
+  s.src = "/js/factions.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
 
-    const tg = window.Telegram?.WebApp || null;
-
-    try {
-      window.Factions.init({
-        tg,
-        apiPost: window.apiPost,
-        dbg: !!window.DBG
-      });
-      window.__factionsInited = true;
-      console.log("✅ Factions module initialized");
-    } catch (e) {
-      console.warn("❌ Factions.init failed", e);
-    }
+  function waitApiPost(cb){
+    const t0 = Date.now();
+    (function tick(){
+      if (typeof window.apiPost === "function") return cb();
+      if (Date.now() - t0 > 6000) return console.warn("[Factions] apiPost not ready");
+      setTimeout(tick, 50);
+    })();
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tryInitFactions, { once:true });
-  } else {
-    tryInitFactions();
-  }
+  s.onload = () => {
+    console.log("[Factions] script loaded:", s.src);
+    waitApiPost(() => {
+      try {
+        if (!window.__factionsInited && window.Factions?.init) {
+          window.Factions.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.__factionsInited = true;
+          console.log("✅ Factions module initialized");
+        }
+      } catch (e) {
+        console.warn("❌ Factions.init failed", e);
+      }
+    });
+  };
+
+  s.onerror = () => console.warn("[Factions] FAILED to load:", s.src);
+  document.head.appendChild(s);
 })();
 </script>
 
@@ -4786,22 +4793,41 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
 
-<!-- MAP (Level 1: faction ring + badge) -->
-<script src="js/map.js?v=WEBAPP_VER"></script>
+<!-- MAP (loader + init, cache-bust) -->
 <script>
-(function () {
-  function tryInitMap() {
-    if (window.Map && typeof window.Map.init === "function" && !window.__mapInited) {
-      window.Map.init();
-      window.__mapInited = true;
-      console.log("Map module initialized");
+(function loadMap(){
+  const v = String(window.WEBAPP_VER || "map");
+  const s = document.createElement("script");
+  s.src = "/js/map.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+
+  s.onload = () => {
+    console.log("[Map] script loaded:", s.src);
+
+    try {
+      // compat: jeśli map.js eksportuje AHMap, aliasujemy do Map
+      if (!window.Map && window.AHMap) window.Map = window.AHMap;
+      if (!window.AHMap && window.Map) window.AHMap = window.Map;
+
+      if (!window.__mapInited) {
+        const M = window.AHMap || window.Map;
+        if (M && typeof M.init === "function") {
+          M.init();
+          window.__mapInited = true;
+          console.log("✅ Map initialized");
+        } else {
+          console.warn("[Map] init missing (AHMap/Map not found)");
+        }
+      }
+
+      // force a leaders refresh so the UI visibly changes
+      try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
+    } catch (e) {
+      console.warn("❌ Map init failed", e);
     }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', tryInitMap, { once:true });
-  } else {
-    tryInitMap();
-  }
+  };
+
+  s.onerror = () => console.warn("[Map] FAILED to load:", s.src);
+  document.head.appendChild(s);
 })();
 </script>
 
@@ -4874,6 +4900,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
