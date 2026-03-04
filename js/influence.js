@@ -179,46 +179,47 @@
   // -------------------------
   // Modal UI (root-mounted)
   // -------------------------
-  function ensureModal(force = false) {
-    ensureOverlayCss();
+ function ensureModal(force = false) {
+  ensureOverlayCss();
 
-    const existing = document.getElementById("influenceModal");
-    if (existing) {
-      if (force) {
-        try { existing.remove(); } catch (_) {}
-      } else {
-        try {
-          if (existing.parentElement !== document.documentElement) {
-            document.documentElement.appendChild(existing);
-          }
-        } catch (_) {}
-
-        // rebind always
-        existing.onclick = (e) => {
-          if (e.target === existing) close();
-          const t = e.target;
-          if (t?.matches?.("[data-close]")) close();
-          if (t?.classList?.contains("infAmt")) {
-            const v = parseInt(t.getAttribute("data-v") || "0", 10);
-            const inp = document.getElementById("infAmount");
-            if (inp) inp.value = String(v);
-          }
-        };
-
-        const tog = document.getElementById("infDonateToggle");
-        if (tog) {
-          tog.onclick = () => {
-            const box = document.getElementById("infDonateBox");
-            if (!box) return;
-            box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
-          };
+  const existing = document.getElementById("influenceModal");
+  if (existing) {
+    if (force) {
+      try { existing.remove(); } catch (_) {}
+    } else {
+      // move to <html> (prevents clipping)
+      try {
+        if (existing.parentElement !== document.documentElement) {
+          document.documentElement.appendChild(existing);
         }
-        return;
-      }
-    }
+      } catch (_) {}
 
-    const wrap = document.createElement("div");
-    wrap.id = "influenceModal";
+      // rebind always
+      existing.onclick = (e) => {
+        if (e.target === existing) close();
+        const t = e.target;
+        if (t?.matches?.("[data-close]")) close();
+        if (t?.classList?.contains("infAmt")) {
+          const v = parseInt(t.getAttribute("data-v") || "0", 10);
+          const inp = document.getElementById("infAmount");
+          if (inp) inp.value = String(v);
+        }
+      };
+
+      const tog = document.getElementById("infDonateToggle");
+      if (tog) {
+        tog.onclick = () => {
+          const box = document.getElementById("infDonateBox");
+          if (!box) return;
+          box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
+        };
+      }
+      return;
+    }
+  }
+
+  const wrap = document.createElement("div");
+  wrap.id = "influenceModal";
     wrap.className = ""; // overlay handled by CSS
 
     wrap.innerHTML = `
