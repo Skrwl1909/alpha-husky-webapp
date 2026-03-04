@@ -197,21 +197,44 @@
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
     wrap.style.cssText = `
-      position: fixed; inset: 0; display: none;
-      align-items: center; justify-content: center;
-      background: rgba(0,0,0,.55);
-      z-index: 999999;
-    `;
+  position: fixed;
+  left: 0; top: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: none;
+
+  /* ważne: na małych ekranach startujemy od góry + padding */
+  align-items: flex-start;
+  justify-content: center;
+
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 12px)
+    10px
+    calc(env(safe-area-inset-bottom, 0px) + 16px)
+    10px;
+
+  box-sizing: border-box;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  background: rgba(0,0,0,.55);
+  z-index: 2147483647;
+`;
 
     wrap.innerHTML = `
       <div id="influenceCard" style="
-        width: min(92vw, 420px);
-        background: rgba(18,18,22,.98);
-        border: 1px solid rgba(255,255,255,.10);
-        border-radius: 16px;
-        box-shadow: 0 18px 60px rgba(0,0,0,.55);
-        padding: 14px 14px 12px;
-      ">
+  width: min(92vw, 420px);
+  background: rgba(18,18,22,.98);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  padding: 14px 14px 12px;
+
+  /* ważne: karta nie może wyjść poza ekran */
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <div>
             <div id="infTitle" style="font-weight:700;font-size:16px;line-height:1.2;">Influence</div>
