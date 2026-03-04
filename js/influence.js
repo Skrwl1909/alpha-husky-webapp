@@ -187,6 +187,24 @@
     try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
     try { if (nodeId) paintLeader(nodeId); } catch (_) {}
   }
+  
+  function _ensureModalHost() {
+  let h = document.getElementById("ahModalHost");
+  if (h) return h;
+
+  h = document.createElement("div");
+  h.id = "ahModalHost";
+  h.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    display: none;
+    background: transparent;
+  `;
+  // ważne: nie body — tylko documentElement (ucieczka spod transformów)
+  (document.documentElement || document.body).appendChild(h);
+  return h;
+}
 
   // -------------------------
   // Modal UI
@@ -347,7 +365,7 @@
   }
 });
 
-    document.body.appendChild(wrap);
+    _ensureModalHost().appendChild(wrap);
 
     document.getElementById("infDonateToggle")?.addEventListener("click", () => {
       const box = document.getElementById("infDonateBox");
