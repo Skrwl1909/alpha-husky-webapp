@@ -121,14 +121,27 @@
   "id": "edge_of_chain",
   "name": "Edge of the Chain",
   "region": "edge_chain",
-  "x": 74,
-  "y": 22,
+  "x": 20,
+  "y": 23,
   "icon": "images/map/building/edge_of_chain.png",
   "desc": "Where the code frays and stars flicker like dying nodes.",
   "action": "open_region",
   "buildingId": "edge_of_chain",
-  "labelOffset": { "x": -95, "y": 34 },
-  "tags": ["act-gate","lore"]
+  "labelOffset": { "x": -98, "y": 32 },
+
+  "factionControl": true,
+  "raidEnabled": true,
+  "maxDefenders": 4,
+
+  "uiHint": {
+    "type": "factionControl",
+    "showInfluenceBar": true,
+    "showTimer": true,
+    "showBonusIcon": true,
+    "showContestedRing": true
+  },
+
+  "tags": ["act-gate", "lore", "raid-target"]
 },
 {
   "id": "oracle_void_doorway",
