@@ -2,7 +2,7 @@
 // - truth-first faction (backend -> cache -> TG picker)
 // - robust error reasons (HTTP_401 / NOT_ENOUGH / TOO_SMALL / DONATE_CAP_HIT / COOLDOWN)
 // - always applies leadersMap if returned
-// - hardens modal mount (fixes "weird cropped popup" caused by stale #influenceModal in DOM)
+// - exports setFaction/ensureFaction for HQ integration
 (function () {
   const Influence = {};
   let _apiPost = null, _tg = null, _dbg = false;
@@ -26,8 +26,6 @@
     try { localStorage.removeItem("ah_faction"); } catch (_) {}
   }
 
-  function getFaction() { return _faction; }
-
   function fmtSec(sec) {
     sec = Math.max(0, parseInt(sec || 0, 10) || 0);
     const m = Math.floor(sec / 60);
@@ -35,10 +33,16 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
+  // -------------------------
+  // Run id
+  // -------------------------
   function rid(prefix = "inf") {
     return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  // -------------------------
+  // Toast helper
+  // -------------------------
   function toast(msg) {
     const m = String(msg || "");
     try { window.toast?.(m); return; } catch (_) {}
@@ -48,28 +52,16 @@
 
   // -------------------------
   // TG picker (max 3 buttons)
+  // returns FULL faction keys
   // -------------------------
   function tgPickFaction() {
     return new Promise((resolve) => {
       const tg = _tg || window.Telegram?.WebApp || null;
+
+      // fallback: jeśli brak TG popup, zwróć zapisane / pusty
       if (!tg?.showPopup) return resolve(_faction || "");
 
       const pick = (key) => { setFaction(key); resolve(key); };
-
-      const popup2 = () => tg.showPopup({
-        title: "Choose faction",
-        message: "More factions:",
-        buttons: [
-          { id: "pb", type: "default", text: "Pack Burners" },
-          { id: "ih", type: "default", text: "Inner Howl" },
-          { id: "back", type: "default", text: "← Back" },
-        ]
-      }, (btnId) => {
-        if (btnId === "pb") return pick("pack_burners");
-        if (btnId === "ih") return pick("inner_howl");
-        if (btnId === "back") return popup1();
-        return resolve(_faction || "");
-      });
 
       const popup1 = () => tg.showPopup({
         title: "Choose faction",
@@ -83,6 +75,21 @@
         if (btnId === "rb") return pick("rogue_byte");
         if (btnId === "ew") return pick("echo_wardens");
         if (btnId === "more") return popup2();
+        return resolve(_faction || ""); // close
+      });
+
+      const popup2 = () => tg.showPopup({
+        title: "Choose faction",
+        message: "More factions:",
+        buttons: [
+          { id: "pb", type: "default", text: "Pack Burners" },
+          { id: "ih", type: "default", text: "Inner Howl" },
+          { id: "back", type: "default", text: "← Back" },
+        ]
+      }, (btnId) => {
+        if (btnId === "pb") return pick("pack_burners");
+        if (btnId === "ih") return pick("inner_howl");
+        if (btnId === "back") return popup1();
         return resolve(_faction || "");
       });
 
@@ -117,22 +124,32 @@
     }
   }
 
+  // -------------------------
+  // Ensure faction (truth first)
+  // -------------------------
   async function ensureFaction() {
+    // 1) backend truth first (prevents loops)
     const fromApi = await fetchFactionFromBackend();
     if (VALID_FACTIONS.has(fromApi)) return fromApi;
 
+    // 2) fallback: cached value
     if (VALID_FACTIONS.has(_faction)) return _faction;
 
+    // 3) ask user
     const picked = await tgPickFaction();
     if (!VALID_FACTIONS.has(picked)) return "";
 
     setFaction(picked);
     window.currentUserFaction = picked;
+
+    // Optional future: persist join to backend
+    // try { await _apiPost("/webapp/faction/join", { faction: picked, run_id: rid("fjoin") }); } catch(_) {}
+
     return picked;
   }
 
   // -------------------------
-  // Error decode + apply leaders
+  // Error decode
   // -------------------------
   function explainFail(r) {
     const reason = String(r?.reason || "FAILED");
@@ -172,61 +189,10 @@
   }
 
   // -------------------------
-  // Modal UI (hardened mount)
+  // Modal UI
   // -------------------------
-  function _ensureModalMountedToBody(existing) {
-    try {
-      if (existing.parentElement !== document.body) document.body.appendChild(existing);
-    } catch (_) {}
-    try {
-      existing.style.cssText = `
-        position: fixed; inset: 0; display: none;
-        align-items: center; justify-content: center;
-        background: rgba(0,0,0,.55);
-        z-index: 999999;
-      `;
-    } catch (_) {}
-  }
-
   function ensureModal() {
-    let existing = document.getElementById("influenceModal");
-
-    // If stale/partial modal exists in HTML, remove it (prevents cropped weird popups)
-    if (existing) {
-      const ok =
-        !!existing.querySelector("#influenceCard") &&
-        !!existing.querySelector("#infPatrolBtn") &&
-        !!existing.querySelector("#infDonateBtn") &&
-        !!existing.querySelector("#infDonateToggle");
-
-      if (!ok) {
-        try { existing.remove(); } catch (_) {}
-        existing = null;
-      } else {
-        _ensureModalMountedToBody(existing);
-        // Make sure listeners exist once
-        if (!existing.__infBound) {
-          existing.__infBound = true;
-          existing.addEventListener("click", (e) => {
-            if (e.target === existing) close();
-            const t = e.target;
-            if (t && t.matches && t.matches("[data-close]")) close();
-            if (t && t.classList && t.classList.contains("infAmt")) {
-              const v = parseInt(t.getAttribute("data-v") || "0", 10);
-              const inp = document.getElementById("infAmount");
-              if (inp) inp.value = String(v);
-            }
-          });
-
-          document.getElementById("infDonateToggle")?.addEventListener("click", () => {
-            const box = document.getElementById("infDonateBox");
-            if (!box) return;
-            box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
-          });
-        }
-        return;
-      }
-    }
+    if (document.getElementById("influenceModal")) return;
 
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
@@ -310,8 +276,8 @@
           </div>
 
           <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="infAmt" type="button" data-v="10"  style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
-            <button class="infAmt" type="button" data-v="50"  style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
+            <button class="infAmt" type="button" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
+            <button class="infAmt" type="button" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
             <button class="infAmt" type="button" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
           </div>
 
@@ -332,7 +298,7 @@
       if (e.target === wrap) close();
       const t = e.target;
 
-      if (t && t.matches && t.matches("[data-close]")) close();
+      if (t && t.matches("[data-close]")) close();
 
       if (t && t.classList && t.classList.contains("infAmt")) {
         const v = parseInt(t.getAttribute("data-v") || "0", 10);
@@ -350,6 +316,31 @@
     });
   }
 
+  async function refreshLeaders(applyToMap = true) {
+    if (!_apiPost) return;
+    try {
+      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
+      const ok = r?.ok !== false;
+      const leaders =
+        r?.leadersMap ||
+        r?.leaders_map ||
+        r?.data?.leadersMap ||
+        r?.data?.leaders_map ||
+        null;
+
+      if (ok && leaders) {
+        _leadersMap = leaders;
+
+        if (applyToMap) {
+          try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
+          try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
+        }
+      }
+    } catch (e) {
+      if (_dbg) console.warn("refreshLeaders failed", e);
+    }
+  }
+
   function open(nodeId, title = "") {
     ensureModal();
     const m = document.getElementById("influenceModal");
@@ -362,6 +353,7 @@
     if (titleEl) titleEl.textContent = title || nodeId;
     if (subEl) subEl.textContent = nodeId;
 
+    // Make sure we have fresh leaders when opening
     (async () => {
       await refreshLeaders(false);
       paintLeader(nodeId);
@@ -404,30 +396,6 @@
 
     const s = info.scores || {};
     foot.textContent = `RB ${s.rogue_byte || 0} · EW ${s.echo_wardens || 0} · PB ${s.pack_burners || 0} · IH ${s.inner_howl || 0}`;
-  }
-
-  async function refreshLeaders(applyToMap = true) {
-    if (!_apiPost) return;
-    try {
-      const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
-      const leaders =
-        r?.leadersMap ||
-        r?.leaders_map ||
-        r?.data?.leadersMap ||
-        r?.data?.leaders_map ||
-        null;
-
-      if (leaders) {
-        _leadersMap = leaders;
-
-        if (applyToMap) {
-          try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
-          try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
-        }
-      }
-    } catch (e) {
-      if (_dbg) console.warn("refreshLeaders failed", e);
-    }
   }
 
   async function doPatrol(nodeId) {
@@ -508,9 +476,11 @@
     _tg = tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
 
+    // Debug: verify cache-bust/deploy
     if (_dbg) console.log("[INFLUENCE] loaded v=", window.WEBAPP_VER, new Date().toISOString());
 
     ensureModal();
+    // Start sync (best-effort)
     refreshLeaders(true);
     fetchFactionFromBackend();
   };
@@ -519,10 +489,11 @@
   Influence.close = close;
   Influence.refreshLeaders = refreshLeaders;
 
+  // for HQ / other modules
   Influence.setFaction = setFaction;
   Influence.clearFactionCache = clearFactionCache;
   Influence.ensureFaction = ensureFaction;
-  Influence.getFaction = getFaction;
+  Influence.getFaction = () => _faction;
 
   window.Influence = Influence;
 })();
