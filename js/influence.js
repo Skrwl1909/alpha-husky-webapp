@@ -41,31 +41,36 @@
   // Overlay CSS (hard)
   // -------------------------
   const INF_CSS_ID = "ah-influence-overlay-css";
-  function ensureOverlayCss() {
-    if (document.getElementById(INF_CSS_ID)) return;
-    const st = document.createElement("style");
-    st.id = INF_CSS_ID;
-    st.textContent = `
-      #influenceModal{
-        position:fixed !important;
-        left:0 !important; top:0 !important;
-        width:100vw !important; height:100vh !important;
-        inset:auto !important;
-        display:none !important;
-        align-items:center !important; justify-content:center !important;
-        background:rgba(0,0,0,.55) !important;
-        z-index:2147483647 !important;
-        pointer-events:auto !important;
-        transform:none !important;
-      }
-      #influenceModal.is-open{ display:flex !important; }
-      #influenceCard{
-        max-height:calc(100vh - 24px) !important;
-        overflow:auto !important;
-        -webkit-overflow-scrolling:touch !important;
-      }
-    `;
-    document.head.appendChild(st);
+function ensureOverlayCss() {
+  if (document.getElementById(INF_CSS_ID)) return;
+  const st = document.createElement("style");
+  st.id = INF_CSS_ID;
+  st.textContent = `
+    #influenceModal{
+      position:fixed !important;
+      left:0 !important; top:0 !important;
+      width:100vw !important; height:100vh !important;
+      inset:auto !important;
+      display:none !important;
+      align-items:center !important; justify-content:center !important;
+      background:rgba(0,0,0,.55) !important;
+      z-index:2147483647 !important;
+      transform:none !important;
+
+      /* ✅ critical: never block map taps when closed */
+      pointer-events:none !important;
+    }
+    #influenceModal.is-open{
+      display:flex !important;
+      pointer-events:auto !important;
+    }
+    #influenceCard{
+      max-height:calc(100vh - 24px) !important;
+      overflow:auto !important;
+      -webkit-overflow-scrolling:touch !important;
+    }
+  `;
+  document.head.appendChild(st);
   }
 
   // -------------------------
