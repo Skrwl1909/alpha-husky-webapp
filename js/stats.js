@@ -82,11 +82,16 @@
       : "";
 
     root.innerHTML = `
-      <div class="card">
-        <div class="row">
-          <div class="k">Level</div>
-          <div class="v">${esc(stats.level)}</div>
-        </div>
+  <div class="card">
+    <div class="row">
+      <div class="k">Level</div>
+      <div class="v">${esc(stats.level)}</div>
+    </div>
+
+    <div class="row">
+      <div class="k">Source</div>
+      <div class="v">${esc(stats._src || stats._source || stats.src || "")}</div>
+    </div>
 
         <div class="row">
           <div class="k">HP</div>
