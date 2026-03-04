@@ -1,9 +1,16 @@
 // js/influence.js — Influence MVP (Patrol + Donate) for map nodes
+// - truth-first faction (backend -> cache -> TG picker)
+// - robust error reasons (HTTP_401 / NOT_ENOUGH / TOO_SMALL / DONATE_CAP_HIT / COOLDOWN)
+// - always applies leadersMap if returned
+// - hardens modal mount (fixes "weird cropped popup" caused by stale #influenceModal in DOM)
 (function () {
   const Influence = {};
   let _apiPost = null, _tg = null, _dbg = false;
   let _leadersMap = null;
 
+  // -------------------------
+  // Faction memory (cache only)
+  // -------------------------
   const VALID_FACTIONS = new Set(["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"]);
 
   let _faction = "";
@@ -13,10 +20,12 @@
     _faction = String(f || "").toLowerCase();
     try { localStorage.setItem("ah_faction", _faction); } catch (_) {}
   }
+
   function clearFactionCache() {
     _faction = "";
     try { localStorage.removeItem("ah_faction"); } catch (_) {}
   }
+
   function getFaction() { return _faction; }
 
   function fmtSec(sec) {
@@ -35,42 +44,6 @@
     try { window.toast?.(m); return; } catch (_) {}
     try { (_tg || window.Telegram?.WebApp)?.showPopup?.({ message: m }); return; } catch (_) {}
     console.log("[toast]", m);
-  }
-
-  // -------------------------
-  // Overlay CSS (hard)
-  // -------------------------
-  const INF_CSS_ID = "ah-influence-overlay-css";
-function ensureOverlayCss() {
-  if (document.getElementById(INF_CSS_ID)) return;
-  const st = document.createElement("style");
-  st.id = INF_CSS_ID;
-  st.textContent = `
-    #influenceModal{
-      position:fixed !important;
-      left:0 !important; top:0 !important;
-      width:100vw !important; height:100vh !important;
-      inset:auto !important;
-      display:none !important;
-      align-items:center !important; justify-content:center !important;
-      background:rgba(0,0,0,.55) !important;
-      z-index:2147483647 !important;
-      transform:none !important;
-
-      /* ✅ critical: never block map taps when closed */
-      pointer-events:none !important;
-    }
-    #influenceModal.is-open{
-      display:flex !important;
-      pointer-events:auto !important;
-    }
-    #influenceCard{
-      max-height:calc(100vh - 24px) !important;
-      overflow:auto !important;
-      -webkit-overflow-scrolling:touch !important;
-    }
-  `;
-  document.head.appendChild(st);
   }
 
   // -------------------------
@@ -124,7 +97,13 @@ function ensureOverlayCss() {
     if (!_apiPost) return "";
     try {
       const r = await _apiPost("/webapp/faction/state", { run_id: rid("fstate") });
-      const f = r?.faction || r?.data?.faction || r?.data?.key || r?.data?.factionKey || "";
+      const f =
+        r?.faction ||
+        r?.data?.faction ||
+        r?.data?.key ||
+        r?.data?.factionKey ||
+        "";
+
       const key = String(f || "").toLowerCase();
       if (VALID_FACTIONS.has(key)) {
         setFaction(key);
@@ -157,75 +136,106 @@ function ensureOverlayCss() {
   // -------------------------
   function explainFail(r) {
     const reason = String(r?.reason || "FAILED");
+
     if (reason === "COOLDOWN") return `Cooldown: ${fmtSec(r.cooldownLeftSec)} left`;
     if (reason === "HTTP_401" || reason === "NO_UID") return "Open the app from Telegram (auth missing).";
     if (reason === "NO_FACTION") { clearFactionCache(); return "Pick faction again."; }
 
-    if (reason === "NOT_ENOUGH") return `Not enough (have ${r?.have ?? "?"} need ${r?.need ?? "?"})`;
+    if (reason === "NOT_ENOUGH") {
+      const have = (r?.have ?? "?");
+      const need = (r?.need ?? "?");
+      return `Not enough (have ${have} need ${need})`;
+    }
     if (reason === "TOO_SMALL") return "Amount too small for conversion.";
     if (reason === "DONATE_CAP_HIT") return `Donate capped. Refunded ${r?.refunded ?? 0}.`;
     if (reason === "BAD_NODE") return "This node isn’t active yet.";
     if (reason === "BAD_ASSET") return "Bad asset type.";
     if (reason === "BAD_ACTION") return "Bad action.";
+
     return reason;
   }
 
   function applyLeadersFromResponse(r, nodeId) {
-    const leaders = r?.leadersMap || r?.leaders_map || r?.data?.leadersMap || r?.data?.leaders_map || null;
+    const leaders =
+      r?.leadersMap ||
+      r?.leaders_map ||
+      r?.data?.leadersMap ||
+      r?.data?.leaders_map ||
+      null;
+
     if (!leaders) return;
     _leadersMap = leaders;
-    window.__AH_LEADERS_MAP = leaders;
 
-    try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
+    try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
     try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
     try { if (nodeId) paintLeader(nodeId); } catch (_) {}
   }
 
   // -------------------------
-  // Modal UI (root-mounted)
+  // Modal UI (hardened mount)
   // -------------------------
- function ensureModal(force = false) {
-  ensureOverlayCss();
-
-  const existing = document.getElementById("influenceModal");
-  if (existing) {
-    if (force) {
-      try { existing.remove(); } catch (_) {}
-    } else {
-      // move to <html> (prevents clipping)
-      try {
-        if (existing.parentElement !== document.documentElement) {
-          document.documentElement.appendChild(existing);
-        }
-      } catch (_) {}
-
-      // rebind always
-      existing.onclick = (e) => {
-        if (e.target === existing) close();
-        const t = e.target;
-        if (t?.matches?.("[data-close]")) close();
-        if (t?.classList?.contains("infAmt")) {
-          const v = parseInt(t.getAttribute("data-v") || "0", 10);
-          const inp = document.getElementById("infAmount");
-          if (inp) inp.value = String(v);
-        }
-      };
-
-      const tog = document.getElementById("infDonateToggle");
-      if (tog) {
-        tog.onclick = () => {
-          const box = document.getElementById("infDonateBox");
-          if (!box) return;
-          box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
-        };
-      }
-      return;
-    }
+  function _ensureModalMountedToBody(existing) {
+    try {
+      if (existing.parentElement !== document.body) document.body.appendChild(existing);
+    } catch (_) {}
+    try {
+      existing.style.cssText = `
+        position: fixed; inset: 0; display: none;
+        align-items: center; justify-content: center;
+        background: rgba(0,0,0,.55);
+        z-index: 999999;
+      `;
+    } catch (_) {}
   }
 
-  const wrap = document.createElement("div");
-  wrap.id = "influenceModal";
-    wrap.className = ""; // overlay handled by CSS
+  function ensureModal() {
+    let existing = document.getElementById("influenceModal");
+
+    // If stale/partial modal exists in HTML, remove it (prevents cropped weird popups)
+    if (existing) {
+      const ok =
+        !!existing.querySelector("#influenceCard") &&
+        !!existing.querySelector("#infPatrolBtn") &&
+        !!existing.querySelector("#infDonateBtn") &&
+        !!existing.querySelector("#infDonateToggle");
+
+      if (!ok) {
+        try { existing.remove(); } catch (_) {}
+        existing = null;
+      } else {
+        _ensureModalMountedToBody(existing);
+        // Make sure listeners exist once
+        if (!existing.__infBound) {
+          existing.__infBound = true;
+          existing.addEventListener("click", (e) => {
+            if (e.target === existing) close();
+            const t = e.target;
+            if (t && t.matches && t.matches("[data-close]")) close();
+            if (t && t.classList && t.classList.contains("infAmt")) {
+              const v = parseInt(t.getAttribute("data-v") || "0", 10);
+              const inp = document.getElementById("infAmount");
+              if (inp) inp.value = String(v);
+            }
+          });
+
+          document.getElementById("infDonateToggle")?.addEventListener("click", () => {
+            const box = document.getElementById("infDonateBox");
+            if (!box) return;
+            box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+          });
+        }
+        return;
+      }
+    }
+
+    const wrap = document.createElement("div");
+    wrap.id = "influenceModal";
+    wrap.style.cssText = `
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55);
+      z-index: 999999;
+    `;
 
     wrap.innerHTML = `
       <div id="influenceCard" style="
@@ -318,27 +328,26 @@ function ensureOverlayCss() {
       </div>
     `;
 
-    wrap.onclick = (e) => {
+    wrap.addEventListener("click", (e) => {
       if (e.target === wrap) close();
       const t = e.target;
-      if (t?.matches?.("[data-close]")) close();
-      if (t?.classList?.contains("infAmt")) {
+
+      if (t && t.matches && t.matches("[data-close]")) close();
+
+      if (t && t.classList && t.classList.contains("infAmt")) {
         const v = parseInt(t.getAttribute("data-v") || "0", 10);
         const inp = document.getElementById("infAmount");
         if (inp) inp.value = String(v);
       }
-    };
+    });
 
-    document.documentElement.appendChild(wrap);
+    document.body.appendChild(wrap);
 
-    const tog = document.getElementById("infDonateToggle");
-    if (tog) {
-      tog.onclick = () => {
-        const box = document.getElementById("infDonateBox");
-        if (!box) return;
-        box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
-      };
-    }
+    document.getElementById("infDonateToggle")?.addEventListener("click", () => {
+      const box = document.getElementById("infDonateBox");
+      if (!box) return;
+      box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+    });
   }
 
   function open(nodeId, title = "") {
@@ -363,14 +372,14 @@ function ensureOverlayCss() {
     if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
     if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
 
-    m.classList.add("is-open");
+    m.style.display = "flex";
     document.body.classList.add("ah-modal-open");
   }
 
   function close() {
     const m = document.getElementById("influenceModal");
     if (!m) return;
-    m.classList.remove("is-open");
+    m.style.display = "none";
     document.body.classList.remove("ah-modal-open");
   }
 
@@ -379,6 +388,7 @@ function ensureOverlayCss() {
     const leaderEl = document.getElementById("infLeader");
     const contEl = document.getElementById("infContested");
     const foot = document.getElementById("infFoot");
+
     if (!leaderEl || !contEl || !foot) return;
 
     if (!info) {
@@ -400,10 +410,16 @@ function ensureOverlayCss() {
     if (!_apiPost) return;
     try {
       const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
-      const leaders = r?.leadersMap || r?.leaders_map || r?.data?.leadersMap || r?.data?.leaders_map || null;
+      const leaders =
+        r?.leadersMap ||
+        r?.leaders_map ||
+        r?.data?.leadersMap ||
+        r?.data?.leaders_map ||
+        null;
+
       if (leaders) {
         _leadersMap = leaders;
-        window.__AH_LEADERS_MAP = leaders;
+
         if (applyToMap) {
           try { window.AHMap?.applyLeaders?.(leaders); } catch (_) {}
           try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
@@ -439,6 +455,7 @@ function ensureOverlayCss() {
 
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`+${r.gain} influence${hq}`);
+
       applyLeadersFromResponse(r, nodeId);
     } finally {
       if (btn) btn.disabled = false;
@@ -476,6 +493,7 @@ function ensureOverlayCss() {
 
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`Donated ${amount} ${asset} → +${r.gain} influence${hq}`);
+
       applyLeadersFromResponse(r, nodeId);
     } finally {
       if (btn) btn.disabled = false;
@@ -490,9 +508,9 @@ function ensureOverlayCss() {
     _tg = tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
 
-    // force rebuild to kill stale DOM
-    ensureModal(true);
+    if (_dbg) console.log("[INFLUENCE] loaded v=", window.WEBAPP_VER, new Date().toISOString());
 
+    ensureModal();
     refreshLeaders(true);
     fetchFactionFromBackend();
   };
