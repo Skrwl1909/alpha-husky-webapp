@@ -386,12 +386,19 @@
   const m = document.getElementById("influenceModal");
   if (!m) return;
 
+  const host = _ensureModalHost();
+  host.style.display = "block";
+
   m.dataset.nodeId = nodeId;
 
   const titleEl = document.getElementById("infTitle");
   const subEl = document.getElementById("infSub");
   if (titleEl) titleEl.textContent = title || nodeId;
   if (subEl) subEl.textContent = nodeId;
+
+  // (opcjonalnie) zawsze startuj ze schowanym donate box
+  const donateBox = document.getElementById("infDonateBox");
+  if (donateBox) donateBox.style.display = "none";
 
   // Make sure we have fresh leaders when opening
   (async () => {
@@ -404,16 +411,18 @@
   if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
   if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
 
-  // reset scroll so modal never opens "off-frame"
-  try {
-    m.scrollTop = 0;
-    m.scrollLeft = 0;
-    const card = document.getElementById("influenceCard");
-    if (card) card.scrollTop = 0;
-  } catch (_) {}
-
   m.style.display = "flex";
   document.body.classList.add("ah-modal-open");
+
+  // reset scroll AFTER display (żeby nie otwierał się "urywek donate")
+  requestAnimationFrame(() => {
+    try {
+      m.scrollTop = 0;
+      m.scrollLeft = 0;
+      const card = document.getElementById("influenceCard");
+      if (card) card.scrollTop = 0;
+    } catch (_) {}
+  });
 }
 
 function close() {
@@ -423,12 +432,24 @@ function close() {
   m.style.display = "none";
   document.body.classList.remove("ah-modal-open");
 
-  // reset scroll after close (prevents next open from being offset)
+  // reset scroll after close
   try {
     m.scrollTop = 0;
     m.scrollLeft = 0;
     const card = document.getElementById("influenceCard");
     if (card) card.scrollTop = 0;
+  } catch (_) {}
+
+  // jeśli nic nie jest otwarte w hoście — chowamy host (nie blokuje mapy)
+  try {
+    const host = document.getElementById("ahModalHost");
+    if (host) {
+      const anyOpen = Array.from(host.children).some(el => {
+        const d = (el && el.style && el.style.display) || "";
+        return d && d !== "none";
+      });
+      host.style.display = anyOpen ? "block" : "none";
+    }
   } catch (_) {}
 }
 
