@@ -188,6 +188,24 @@
     try { if (nodeId) paintLeader(nodeId); } catch (_) {}
   }
 
+  function getPortalRoot(){
+  let p = document.getElementById("ahPortalRoot");
+  if (p) return p;
+
+  p = document.createElement("div");
+  p.id = "ahPortalRoot";
+  p.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    pointer-events: none; /* portal nie blokuje klików */
+    transform: none;
+  `;
+
+  (document.documentElement || document.body).appendChild(p);
+  return p;
+}
+  
   // -------------------------
   // Modal UI
   // -------------------------
@@ -347,7 +365,7 @@
   }
 });
 
-    document.body.appendChild(wrap);
+    getPortalRoot().appendChild(wrap);
 
     document.getElementById("infDonateToggle")?.addEventListener("click", () => {
       const box = document.getElementById("infDonateBox");
