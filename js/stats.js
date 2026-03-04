@@ -41,105 +41,140 @@
   }
 
   function render(stats, mystats){
-    const root = qs("statsRoot");
-    if (!root) return;
+  const root = qs("statsRoot");
+  if (!root) return;
 
-    const t = stats?.totals || {};
-    const base = stats?.base || {};
-    const petS = stats?.petStats || {};
-    const gear = stats?.gear || {};
-    const pet = stats?.pet || {};
-    const sets = stats?.sets || [];
-    const unspent = (mystats && mystats.unspentPoints) ?? null;
+  const t = stats?.totals || {};
+  const base = stats?.base || {};
+  const petS = stats?.petStats || {};
+  const gear = stats?.gear || {};
+  const pet = stats?.pet || {};
+  const sets = stats?.sets || [];
+  const unspent = (mystats && mystats.unspentPoints) ?? null;
 
-    const hpPct = pct(stats?.hpCur, stats?.hpMax);
-    const xpPct = pct(stats?.xpCur, stats?.xpNeed);
-    const petXpPct = pct(pet?.xpCur, pet?.xpNeed);
+  const hpPct = pct(stats?.hpCur, stats?.hpMax);
+  const xpPct = pct(stats?.xpCur, stats?.xpNeed);
+  const petXpPct = pct(pet?.xpCur, pet?.xpNeed);
 
-    const rows = ["strength","agility","defense","vitality","intelligence","luck"].map((k)=>{
-      const total = Number(t[k]||0);
-      const b = Number(base[k]||0), p = Number(petS[k]||0), g = Number(gear[k]||0);
-      return `
-        <div class="srow">
-          <span>${esc(statLabel(k))}</span>
-          <b>${esc(total)}</b>
-          <em>${esc(`${b}+${p}+${g}`)}</em>
-        </div>`;
-    }).join("");
+  const rows = ["strength","agility","defense","vitality","intelligence","luck"].map((k)=>{
+    const total = Number(t[k]||0);
+    const b = Number(base[k]||0), p = Number(petS[k]||0), g = Number(gear[k]||0);
+    return `
+      <div class="srow">
+        <span>${esc(statLabel(k))}</span>
+        <b>${esc(total)}</b>
+        <em>${esc(`${b}+${p}+${g}`)}</em>
+      </div>`;
+  }).join("");
 
-    const setsHtml = sets.length
-      ? sets.map(s=>{
-          const bonus = s.bonus || {};
-          const bonusLines = Object.keys(bonus).filter(k=>Number(bonus[k]||0)).map(k=>{
-            return `<div class="miniRow"><span>${esc(statLabel(k))}</span><b>+${esc(bonus[k])}</b></div>`;
-          }).join("");
-          return `
-            <div class="card">
-              <div class="h">${esc(s.name)} <span class="muted">(${esc(s.count)}/${esc(s.totalParts)})</span></div>
-              ${bonusLines || `<div class="muted">No bonus data</div>`}
-            </div>`;
-        }).join("")
-      : "";
+  const setsHtml = sets.length
+    ? sets.map(s=>{
+        const bonus = s.bonus || {};
+        const bonusLines = Object.keys(bonus).filter(k=>Number(bonus[k]||0)).map(k=>{
+          return `<div class="miniRow"><span>${esc(statLabel(k))}</span><b>+${esc(bonus[k])}</b></div>`;
+        }).join("");
+        return `
+          <div class="card">
+            <div class="h">${esc(s.name)} <span class="muted">(${esc(s.count)}/${esc(s.totalParts)})</span></div>
+            ${bonusLines || `<div class="muted">No bonus data</div>`}
+          </div>`;
+      }).join("")
+    : "";
 
-    root.innerHTML = `
-  <div class="card">
+  // ✅ DEBUG rows (only if backend provided _dbg)
+  const dbg = stats?._dbg || null;
+  const dbgDataFile = dbg?.dataFile ? String(dbg.dataFile).split("/").slice(-2).join("/") : "";
+  const dbgCwd = dbg?.cwd ? String(dbg.cwd).split("/").slice(-2).join("/") : "";
+  const dbgSrc = dbg?.src || stats?._src || "";
+
+  const dbgRows = dbg ? `
     <div class="row">
-      <div class="k">Level</div>
-      <div class="v">${esc(stats.level)}</div>
+      <div class="k">DBG file</div>
+      <div class="v" style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${esc(dbgDataFile)}
+      </div>
     </div>
-
     <div class="row">
-      <div class="k">Source</div>
-      <div class="v">${esc(stats._src || stats._source || stats.src || "")}</div>
+      <div class="k">DBG cwd</div>
+      <div class="v" style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${esc(dbgCwd)}
+      </div>
     </div>
+    <div class="row">
+      <div class="k">DBG lvl/xp</div>
+      <div class="v">${esc(dbg?.level ?? "")} / ${esc(dbg?.xp ?? "")}</div>
+    </div>
+    <div class="row">
+      <div class="k">DBG has</div>
+      <div class="v">${esc(`stats:${dbg?.has_stats ? "1" : "0"} eq:${dbg?.has_equipped ? "1" : "0"}`)}</div>
+    </div>
+    <div class="row">
+      <div class="k">DBG src</div>
+      <div class="v">${esc(dbgSrc)}</div>
+    </div>
+  ` : ``;
 
-        <div class="row">
-          <div class="k">HP</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(stats.hpCur)} / ${esc(stats.hpMax)}</span>
-              <div class="pbar" aria-label="HP"><div class="pfill" style="width:${hpPct.toFixed(1)}%"></div></div>
-              <span class="ppct">${hpPct.toFixed(0)}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="k">XP</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(stats.xpCur)} / ${esc(stats.xpNeed)}</span>
-              <div class="pbar" aria-label="XP"><div class="pfill" style="width:${xpPct.toFixed(1)}%"></div></div>
-              <span class="ppct">${xpPct.toFixed(0)}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="k">Pet</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(pet.name||"None")} <span class="muted">lvl ${esc(pet.level||0)}</span></span>
-              <div class="pbar" aria-label="Pet XP"><div class="pfill" style="width:${petXpPct.toFixed(1)}%"></div></div>
-              <span class="ppct">${petXpPct.toFixed(0)}%</span>
-            </div>
-          </div>
-        </div>
-
-        ${unspent !== null
-          ? `<div class="row"><div class="k">Unspent</div><div class="v"><b>${esc(unspent)}</b></div></div>`
-          : ``}
+  root.innerHTML = `
+    <div class="card">
+      <div class="row">
+        <div class="k">Level</div>
+        <div class="v">${esc(stats.level)}</div>
       </div>
 
-      <div class="card">
-        <div class="h">Totals</div>
-        <div class="grid">${rows}</div>
-        <div class="muted tiny">format: total (base + pet + gear)</div>
+      <div class="row">
+        <div class="k">Source</div>
+        <div class="v">${esc(stats._src || stats._source || stats.src || "")}</div>
       </div>
 
-      ${setsHtml}
-    `;
-  }
+      ${dbgRows}
+
+      <div class="row">
+        <div class="k">HP</div>
+        <div class="v">
+          <div class="vline">
+            <span>${esc(stats.hpCur)} / ${esc(stats.hpMax)}</span>
+            <div class="pbar" aria-label="HP"><div class="pfill" style="width:${hpPct.toFixed(1)}%"></div></div>
+            <span class="ppct">${hpPct.toFixed(0)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="k">XP</div>
+        <div class="v">
+          <div class="vline">
+            <span>${esc(stats.xpCur)} / ${esc(stats.xpNeed)}</span>
+            <div class="pbar" aria-label="XP"><div class="pfill" style="width:${xpPct.toFixed(1)}%"></div></div>
+            <span class="ppct">${xpPct.toFixed(0)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="k">Pet</div>
+        <div class="v">
+          <div class="vline">
+            <span>${esc(pet.name||"None")} <span class="muted">lvl ${esc(pet.level||0)}</span></span>
+            <div class="pbar" aria-label="Pet XP"><div class="pfill" style="width:${petXpPct.toFixed(1)}%"></div></div>
+            <span class="ppct">${petXpPct.toFixed(0)}%</span>
+          </div>
+        </div>
+      </div>
+
+      ${unspent !== null
+        ? `<div class="row"><div class="k">Unspent</div><div class="v"><b>${esc(unspent)}</b></div></div>`
+        : ``}
+    </div>
+
+    <div class="card">
+      <div class="h">Totals</div>
+      <div class="grid">${rows}</div>
+      <div class="muted tiny">format: total (base + pet + gear)</div>
+    </div>
+
+    ${setsHtml}
+  `;
+ }
 
   async function load(){
     const root = qs("statsRoot");
@@ -158,6 +193,7 @@
 
     try {
       statsRes = await _apiPost("/webapp/stats/state", { t: Date.now() });
+      if (_dbg) console.log("[Stats] statsRes =", statsRes);
     } catch (e) {
       if (root) root.innerHTML = `<div class="muted">Failed to load stats.</div>`;
       try { _tg?.showAlert?.("Stats load failed"); } catch(_) {}
@@ -171,6 +207,7 @@
     }
 
     const stats = (statsRes && statsRes.ok && statsRes.data) ? statsRes.data : null;
+    if (_dbg) console.log("[Stats] statsRes =", statsRes);
     const mystats = (myRes && myRes.ok && myRes.data) ? myRes.data : null;
 
     if (!stats) {
