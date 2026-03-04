@@ -327,6 +327,16 @@
     </div>
   `;
 
+  // ✅ direct bind close (card stops bubbling)
+  const _closeBtn = wrap.querySelector("[data-close]");
+  if (_closeBtn) {
+    _closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    });
+  }
+
   // click handling
   wrap.addEventListener("click", (e) => {
     const t = e.target;
