@@ -318,17 +318,34 @@
     `;
 
     wrap.addEventListener("click", (e) => {
-      if (e.target === wrap) close();
-      const t = e.target;
+  const t = e.target;
 
-      if (t && t.matches("[data-close]")) close();
+  // close button
+  if (t && t.matches("[data-close]")) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    return;
+  }
 
-      if (t && t.classList && t.classList.contains("infAmt")) {
-        const v = parseInt(t.getAttribute("data-v") || "0", 10);
-        const inp = document.getElementById("infAmount");
-        if (inp) inp.value = String(v);
-      }
-    });
+  // click on backdrop only
+  if (t === wrap) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    return;
+  }
+
+  // quick amount buttons
+  if (t && t.classList && t.classList.contains("infAmt")) {
+    e.preventDefault();
+    e.stopPropagation();
+    const v = parseInt(t.getAttribute("data-v") || "0", 10);
+    const inp = document.getElementById("infAmount");
+    if (inp) inp.value = String(v);
+    return;
+  }
+});
 
     document.body.appendChild(wrap);
 
@@ -365,38 +382,55 @@
   }
 
   function open(nodeId, title = "") {
-    ensureModal();
-    const m = document.getElementById("influenceModal");
-    if (!m) return;
+  ensureModal();
+  const m = document.getElementById("influenceModal");
+  if (!m) return;
 
-    m.dataset.nodeId = nodeId;
+  m.dataset.nodeId = nodeId;
 
-    const titleEl = document.getElementById("infTitle");
-    const subEl = document.getElementById("infSub");
-    if (titleEl) titleEl.textContent = title || nodeId;
-    if (subEl) subEl.textContent = nodeId;
+  const titleEl = document.getElementById("infTitle");
+  const subEl = document.getElementById("infSub");
+  if (titleEl) titleEl.textContent = title || nodeId;
+  if (subEl) subEl.textContent = nodeId;
 
-    // Make sure we have fresh leaders when opening
-    (async () => {
-      await refreshLeaders(false);
-      paintLeader(nodeId);
-    })();
+  // Make sure we have fresh leaders when opening
+  (async () => {
+    await refreshLeaders(false);
+    paintLeader(nodeId);
+  })();
 
-    const patrolBtn = document.getElementById("infPatrolBtn");
-    const donateBtn = document.getElementById("infDonateBtn");
-    if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
-    if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
+  const patrolBtn = document.getElementById("infPatrolBtn");
+  const donateBtn = document.getElementById("infDonateBtn");
+  if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
+  if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
 
-    m.style.display = "flex";
-    document.body.classList.add("ah-modal-open");
-  }
+  // reset scroll so modal never opens "off-frame"
+  try {
+    m.scrollTop = 0;
+    m.scrollLeft = 0;
+    const card = document.getElementById("influenceCard");
+    if (card) card.scrollTop = 0;
+  } catch (_) {}
 
-  function close() {
-    const m = document.getElementById("influenceModal");
-    if (!m) return;
-    m.style.display = "none";
-    document.body.classList.remove("ah-modal-open");
-  }
+  m.style.display = "flex";
+  document.body.classList.add("ah-modal-open");
+}
+
+function close() {
+  const m = document.getElementById("influenceModal");
+  if (!m) return;
+
+  m.style.display = "none";
+  document.body.classList.remove("ah-modal-open");
+
+  // reset scroll after close (prevents next open from being offset)
+  try {
+    m.scrollTop = 0;
+    m.scrollLeft = 0;
+    const card = document.getElementById("influenceCard");
+    if (card) card.scrollTop = 0;
+  } catch (_) {}
+}
 
   function paintLeader(nodeId) {
     const info = _leadersMap?.[nodeId];
