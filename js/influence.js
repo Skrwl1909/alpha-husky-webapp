@@ -45,7 +45,33 @@
     try { (_tg || window.Telegram?.WebApp)?.showPopup?.({ message: m }); return; } catch (_) {}
     console.log("[toast]", m);
   }
-
+const INF_CSS_ID = "ah-influence-overlay-css";
+function ensureOverlayCss() {
+  if (document.getElementById(INF_CSS_ID)) return;
+  const st = document.createElement("style");
+  st.id = INF_CSS_ID;
+  st.textContent = `
+    #influenceModal{
+      position:fixed !important;
+      inset:0 !important;
+      left:0 !important; top:0 !important;
+      width:100vw !important; height:100vh !important;
+      display:none !important;
+      align-items:center !important; justify-content:center !important;
+      background:rgba(0,0,0,.55) !important;
+      z-index:2147483647 !important;
+      pointer-events:auto !important;
+      transform:none !important;
+    }
+    #influenceModal.is-open{ display:flex !important; }
+    #influenceCard{
+      max-height:calc(100vh - 24px) !important;
+      overflow:auto !important;
+      -webkit-overflow-scrolling:touch !important;
+    }
+  `;
+  document.head.appendChild(st);
+}
   // -------------------------
   // TG picker (max 3 buttons)
   // -------------------------
@@ -175,35 +201,50 @@
   // -------------------------
   // Modal UI (hardened mount)
   // -------------------------
-  function _ensureModalMountedToBody(existing) {
-    try {
-      if (existing.parentElement !== document.body) document.body.appendChild(existing);
-    } catch (_) {}
-    try {
-      existing.style.cssText = `
-        position: fixed; inset: 0; display: none;
-        align-items: center; justify-content: center;
-        background: rgba(0,0,0,.55);
-        z-index: 999999;
-      `;
-    } catch (_) {}
+  function _ensureModalMountedToRoot(existing) {
+  try {
+    if (existing.parentElement !== document.documentElement) {
+      document.documentElement.appendChild(existing);
+    }
+  } catch (_) {}
+  try {
+    // base style (CSS !important below will harden it further)
+    existing.style.cssText = `
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+      display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55);
+      z-index: 2147483647;
+      transform: none;
+    `;
+  } catch (_) {}
   }
 
-  function ensureModal(force = false) {
+ function ensureModal(force = false) {
+  ensureOverlayCss(); // ✅ add once (define helper above)
+
   const existing = document.getElementById("influenceModal");
   if (existing) {
     // 🔥 jeśli cokolwiek było stare/połamane — wywalamy i stawiamy od nowa
     if (force) {
       try { existing.remove(); } catch (_) {}
     } else {
-      // jeśli nie force: upewnij się że siedzi w body i ma overlay style
-      try { if (existing.parentElement !== document.body) document.body.appendChild(existing); } catch (_) {}
+      // ✅ move to <html> to avoid fixed being clipped by transformed parents
+      try {
+        if (existing.parentElement !== document.documentElement) {
+          document.documentElement.appendChild(existing);
+        }
+      } catch (_) {}
+
+      // ✅ base style (CSS !important will harden)
       try {
         existing.style.cssText = `
-          position: fixed; inset: 0; display: none;
+          position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+          display: none;
           align-items: center; justify-content: center;
           background: rgba(0,0,0,.55);
-          z-index: 999999;
+          z-index: 2147483647;
+          transform: none;
         `;
       } catch (_) {}
 
@@ -218,15 +259,16 @@
           if (inp) inp.value = String(v);
         }
       };
+
       const tog = document.getElementById("infDonateToggle");
       if (tog) tog.onclick = () => {
         const box = document.getElementById("infDonateBox");
         if (!box) return;
         box.style.display = (!box.style.display || box.style.display === "none") ? "block" : "none";
       };
+
       return;
     }
-  }
 
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
@@ -341,7 +383,7 @@
       }
     });
 
-    document.body.appendChild(wrap);
+    document.documentElement.appendChild(wrap);
 
     document.getElementById("infDonateToggle")?.addEventListener("click", () => {
       const box = document.getElementById("infDonateBox");
