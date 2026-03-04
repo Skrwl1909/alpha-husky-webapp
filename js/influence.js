@@ -188,7 +188,7 @@
     try { if (nodeId) paintLeader(nodeId); } catch (_) {}
   }
   
-  function _ensureModalHost() {
+  function _modalHost() {
   let h = document.getElementById("ahModalHost");
   if (h) return h;
 
@@ -198,10 +198,8 @@
     position: fixed;
     inset: 0;
     z-index: 2147483647;
-    display: none;
-    background: transparent;
+    display: none; /* pokazujemy tylko gdy modal otwarty */
   `;
-  // ważne: nie body — tylko documentElement (ucieczka spod transformów)
   (document.documentElement || document.body).appendChild(h);
   return h;
 }
@@ -210,169 +208,153 @@
   // Modal UI
   // -------------------------
   function ensureModal() {
-    if (document.getElementById("influenceModal")) return;
+  if (document.getElementById("influenceModal")) return;
 
-    const wrap = document.createElement("div");
-    wrap.id = "influenceModal";
-    wrap.style.cssText = `
-  position: fixed;
-  left: 0; top: 0;
-  width: 100vw;
-  height: 100dvh;
-  display: none;
+  const wrap = document.createElement("div");
+  wrap.id = "influenceModal";
+  wrap.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: none;
 
-  /* ważne: na małych ekranach startujemy od góry + padding */
-  align-items: flex-start;
-  justify-content: center;
+    align-items: center;
+    justify-content: center;
 
-  padding:
-    calc(env(safe-area-inset-top, 0px) + 12px)
-    10px
-    calc(env(safe-area-inset-bottom, 0px) + 16px)
-    10px;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 12px)
+      10px
+      calc(env(safe-area-inset-bottom, 0px) + 16px)
+      10px;
 
-  box-sizing: border-box;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+    overflow: hidden; /* ważne: overlay nie scrolluje */
+    background: rgba(0,0,0,.55);
+    z-index: 2147483647;
+  `;
 
-  background: rgba(0,0,0,.55);
-  z-index: 2147483647;
-`;
+  wrap.innerHTML = `
+    <div id="influenceCard" style="
+      width: min(92vw, 420px);
+      background: rgba(18,18,22,.98);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      padding: 14px 14px 12px;
 
-    wrap.innerHTML = `
-      <div id="influenceCard" style="
-  width: min(92vw, 420px);
-  background: rgba(18,18,22,.98);
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  box-shadow: 0 18px 60px rgba(0,0,0,.55);
-  padding: 14px 14px 12px;
+      max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div id="infTitle" style="font-weight:700;font-size:16px;line-height:1.2;">Influence</div>
+          <div id="infSub" style="opacity:.75;font-size:12px;margin-top:2px;"></div>
+        </div>
+        <button data-close type="button" style="
+          border:0;background:rgba(255,255,255,.08);color:#fff;
+          border-radius:10px;padding:8px 10px;cursor:pointer
+        ">✕</button>
+      </div>
 
-  /* ważne: karta nie może wyjść poza ekran */
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-">
+      <div id="infLeaderLine" style="margin-top:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06);">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <div>
-            <div id="infTitle" style="font-weight:700;font-size:16px;line-height:1.2;">Influence</div>
-            <div id="infSub" style="opacity:.75;font-size:12px;margin-top:2px;"></div>
+            <div style="font-size:12px;opacity:.75;">Current leader</div>
+            <div id="infLeader" style="font-weight:700;margin-top:2px;">—</div>
           </div>
-          <button data-close type="button" style="
-            border:0;background:rgba(255,255,255,.08);color:#fff;
-            border-radius:10px;padding:8px 10px;cursor:pointer
-          ">✕</button>
+          <div id="infContested" style="
+            display:none;
+            font-size:12px;
+            padding:6px 10px;
+            border-radius:999px;
+            background:rgba(255,170,0,.15);
+            border:1px solid rgba(255,170,0,.25);
+            color:#ffb84d;
+          ">⚠ contested</div>
         </div>
-
-        <div id="infLeaderLine" style="margin-top:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06);">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div>
-              <div style="font-size:12px;opacity:.75;">Current leader</div>
-              <div id="infLeader" style="font-weight:700;margin-top:2px;">—</div>
-            </div>
-            <div id="infContested" style="
-              display:none;
-              font-size:12px;
-              padding:6px 10px;
-              border-radius:999px;
-              background:rgba(255,170,0,.15);
-              border:1px solid rgba(255,170,0,.25);
-              color:#ffb84d;
-            ">⚠ contested</div>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button id="infPatrolBtn" type="button" style="
-            flex:1; border:0; cursor:pointer;
-            border-radius:12px; padding:12px 12px;
-            background: rgba(120,255,220,.12);
-            border: 1px solid rgba(120,255,220,.22);
-            color:#eafff8; font-weight:700;
-          ">Patrol</button>
-
-          <button id="infDonateToggle" type="button" style="
-            flex:1; border:0; cursor:pointer;
-            border-radius:12px; padding:12px 12px;
-            background: rgba(170,140,255,.12);
-            border: 1px solid rgba(170,140,255,.22);
-            color:#f5f0ff; font-weight:700;
-          ">Donate</button>
-        </div>
-
-        <div id="infDonateBox" style="display:none; margin-top:12px;">
-          <div style="display:flex; gap:8px; align-items:center;">
-            <select id="infAsset" style="
-              flex:1; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
-            ">
-              <option value="scrap">scrap</option>
-              <option value="rune_dust">rune_dust</option>
-              <option value="bones">bones</option>
-            </select>
-            <input id="infAmount" type="number" min="1" step="1" value="10" style="
-              width:120px; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
-            "/>
-          </div>
-
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="infAmt" type="button" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
-            <button class="infAmt" type="button" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
-            <button class="infAmt" type="button" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
-          </div>
-
-          <button id="infDonateBtn" type="button" style="
-            width:100%; margin-top:10px; border:0; cursor:pointer;
-            border-radius:12px; padding:12px 12px;
-            background: rgba(255,210,120,.12);
-            border: 1px solid rgba(255,210,120,.22);
-            color:#fff6e8; font-weight:800;
-          ">Confirm donate</button>
-        </div>
-
-        <div id="infFoot" style="margin-top:10px; font-size:12px; opacity:.65;"></div>
       </div>
-    `;
 
-    wrap.addEventListener("click", (e) => {
-  const t = e.target;
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="infPatrolBtn" type="button" style="
+          flex:1; border:0; cursor:pointer;
+          border-radius:12px; padding:12px 12px;
+          background: rgba(120,255,220,.12);
+          border: 1px solid rgba(120,255,220,.22);
+          color:#eafff8; font-weight:700;
+        ">Patrol</button>
 
-  // close button
-  if (t && t.matches("[data-close]")) {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-    return;
-  }
+        <button id="infDonateToggle" type="button" style="
+          flex:1; border:0; cursor:pointer;
+          border-radius:12px; padding:12px 12px;
+          background: rgba(170,140,255,.12);
+          border: 1px solid rgba(170,140,255,.22);
+          color:#f5f0ff; font-weight:700;
+        ">Donate</button>
+      </div>
 
-  // click on backdrop only
-  if (t === wrap) {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-    return;
-  }
+      <div id="infDonateBox" style="display:none; margin-top:12px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="infAsset" style="
+            flex:1; padding:10px 10px; border-radius:12px;
+            background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
+          ">
+            <option value="scrap">scrap</option>
+            <option value="rune_dust">rune_dust</option>
+            <option value="bones">bones</option>
+          </select>
+          <input id="infAmount" type="number" min="1" step="1" value="10" style="
+            width:120px; padding:10px 10px; border-radius:12px;
+            background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
+          "/>
+        </div>
 
-  // quick amount buttons
-  if (t && t.classList && t.classList.contains("infAmt")) {
-    e.preventDefault();
-    e.stopPropagation();
-    const v = parseInt(t.getAttribute("data-v") || "0", 10);
-    const inp = document.getElementById("infAmount");
-    if (inp) inp.value = String(v);
-    return;
-  }
-});
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="infAmt" type="button" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
+          <button class="infAmt" type="button" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
+          <button class="infAmt" type="button" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
+        </div>
 
-    _ensureModalHost().appendChild(wrap);
+        <button id="infDonateBtn" type="button" style="
+          width:100%; margin-top:10px; border:0; cursor:pointer;
+          border-radius:12px; padding:12px 12px;
+          background: rgba(255,210,120,.12);
+          border: 1px solid rgba(255,210,120,.22);
+          color:#fff6e8; font-weight:800;
+        ">Confirm donate</button>
+      </div>
 
-    document.getElementById("infDonateToggle")?.addEventListener("click", () => {
-      const box = document.getElementById("infDonateBox");
-      if (!box) return;
-      box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
-    });
-  }
+      <div id="infFoot" style="margin-top:10px; font-size:12px; opacity:.65;"></div>
+    </div>
+  `;
+
+  // click handling
+  wrap.addEventListener("click", (e) => {
+    const t = e.target;
+
+    if (t && t.matches("[data-close]")) { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (t === wrap) { e.preventDefault(); e.stopPropagation(); close(); return; }
+
+    if (t && t.classList && t.classList.contains("infAmt")) {
+      e.preventDefault(); e.stopPropagation();
+      const v = parseInt(t.getAttribute("data-v") || "0", 10);
+      const inp = document.getElementById("infAmount");
+      if (inp) inp.value = String(v);
+      return;
+    }
+  });
+
+  // blokuj przebicie klików z karty
+  const card = wrap.querySelector("#influenceCard");
+  if (card) card.addEventListener("click", (e) => e.stopPropagation());
+
+  _modalHost().appendChild(wrap);
+
+  document.getElementById("infDonateToggle")?.addEventListener("click", () => {
+    const box = document.getElementById("infDonateBox");
+    if (!box) return;
+    box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+  });
+}
 
   async function refreshLeaders(applyToMap = true) {
     if (!_apiPost) return;
@@ -404,8 +386,10 @@
   const m = document.getElementById("influenceModal");
   if (!m) return;
 
-  const host = _ensureModalHost();
-  host.style.display = "block";
+  // pokaż host (ucieczka spod transformów mapy)
+  _modalHost().style.display = "block";
+
+  try { (_tg || window.Telegram?.WebApp)?.expand?.(); } catch (_) {}
 
   m.dataset.nodeId = nodeId;
 
@@ -414,11 +398,10 @@
   if (titleEl) titleEl.textContent = title || nodeId;
   if (subEl) subEl.textContent = nodeId;
 
-  // (opcjonalnie) zawsze startuj ze schowanym donate box
+  // zamknij donate box przy starcie
   const donateBox = document.getElementById("infDonateBox");
   if (donateBox) donateBox.style.display = "none";
 
-  // Make sure we have fresh leaders when opening
   (async () => {
     await refreshLeaders(false);
     paintLeader(nodeId);
@@ -432,11 +415,9 @@
   m.style.display = "flex";
   document.body.classList.add("ah-modal-open");
 
-  // reset scroll AFTER display (żeby nie otwierał się "urywek donate")
+  // reset scroll na karcie (overlay nie scrolluje)
   requestAnimationFrame(() => {
     try {
-      m.scrollTop = 0;
-      m.scrollLeft = 0;
       const card = document.getElementById("influenceCard");
       if (card) card.scrollTop = 0;
     } catch (_) {}
@@ -450,25 +431,13 @@ function close() {
   m.style.display = "none";
   document.body.classList.remove("ah-modal-open");
 
-  // reset scroll after close
   try {
-    m.scrollTop = 0;
-    m.scrollLeft = 0;
     const card = document.getElementById("influenceCard");
     if (card) card.scrollTop = 0;
   } catch (_) {}
 
-  // jeśli nic nie jest otwarte w hoście — chowamy host (nie blokuje mapy)
-  try {
-    const host = document.getElementById("ahModalHost");
-    if (host) {
-      const anyOpen = Array.from(host.children).some(el => {
-        const d = (el && el.style && el.style.display) || "";
-        return d && d !== "none";
-      });
-      host.style.display = anyOpen ? "block" : "none";
-    }
-  } catch (_) {}
+  // schowaj host całkiem (nie blokuje mapy po close)
+  _modalHost().style.display = "none";
 }
 
   function paintLeader(nodeId) {
