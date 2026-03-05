@@ -715,10 +715,10 @@ html.ah-modal-open #heroFrame{
   .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
   .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
-    /* ==================== MAP RYWALIZACJA FRAKCYJNA v2 ==================== */
+   /* ==================== MAP RYWALIZACJA FRAKCYJNA v2 (SCOPED) ==================== */
+/* WAŻNE: scope do #pins, żeby przypadkowe klasy .map-pin na modalach NIE psuły layoutu */
 
-/* Podstawowy pin */
-.map-pin {
+#pins .map-pin {
   position: absolute;
   transform: translate(-50%, -50%);
   cursor: pointer;
@@ -727,11 +727,11 @@ html.ah-modal-open #heroFrame{
 }
 
 /* Hover + active */
-.map-pin:hover { transform: translate(-50%, -50%) scale(1.08); }
-.map-pin:active { transform: translate(-50%, -50%) scale(0.96); }
+#pins .map-pin:hover { transform: translate(-50%, -50%) scale(1.08); }
+#pins .map-pin:active { transform: translate(-50%, -50%) scale(0.96); }
 
 /* ===== BADGE FRAKCJI (duży, czytelny) ===== */
-.map-pin .pin-badge {
+#pins .map-pin .pin-badge {
   position: absolute;
   top: -14px;
   right: -14px;
@@ -752,19 +752,19 @@ html.ah-modal-open #heroFrame{
 }
 
 /* Kolory frakcji */
-.map-pin.f-rb .pin-badge { background: #c62828; }   /* Rogue Byte - czerwony */
-.map-pin.f-ew .pin-badge { background: #f9a825; }   /* Echo Wardens - żółty */
-.map-pin.f-pb .pin-badge { background: #8e24aa; }   /* Pack Burners - fiolet */
-.map-pin.f-ih .pin-badge { background: #0277bd; }   /* Inner Howl - niebieski */
+#pins .map-pin.f-rb .pin-badge { background: #c62828; }   /* Rogue Byte */
+#pins .map-pin.f-ew .pin-badge { background: #f9a825; }   /* Echo Wardens */
+#pins .map-pin.f-pb .pin-badge { background: #8e24aa; }   /* Pack Burners */
+#pins .map-pin.f-ih .pin-badge { background: #0277bd; }   /* Inner Howl */
 
 /* Glow dla lidera */
-.map-pin.is-leader .pin-badge {
+#pins .map-pin.is-leader .pin-badge {
   box-shadow: 0 0 18px currentColor, 0 4px 12px rgba(0,0,0,.6);
   animation: leaderPulse 2s infinite;
 }
 
-/* ===== INFLUENCE BAR (pasek pod budynkiem) ===== */
-.map-pin .influence-bar {
+/* ===== INFLUENCE BAR ===== */
+#pins .map-pin .influence-bar {
   position: absolute;
   bottom: -8px;
   left: 50%;
@@ -777,7 +777,7 @@ html.ah-modal-open #heroFrame{
   border: 1px solid rgba(255,255,255,.15);
 }
 
-.map-pin .influence-fill {
+#pins .map-pin .influence-fill {
   height: 100%;
   width: 0%;
   transition: width .4s ease;
@@ -785,13 +785,13 @@ html.ah-modal-open #heroFrame{
 }
 
 /* Kolory wypełnień */
-.map-pin.f-rb .influence-fill { background: linear-gradient(90deg, #ff5252, #c62828); }
-.map-pin.f-ew .influence-fill { background: linear-gradient(90deg, #ffd600, #f9a825); }
-.map-pin.f-pb .influence-fill { background: linear-gradient(90deg, #ba68c8, #8e24aa); }
-.map-pin.f-ih .influence-fill { background: linear-gradient(90deg, #40c4ff, #0277bd); }
+#pins .map-pin.f-rb .influence-fill { background: linear-gradient(90deg, #ff5252, #c62828); }
+#pins .map-pin.f-ew .influence-fill { background: linear-gradient(90deg, #ffd600, #f9a825); }
+#pins .map-pin.f-pb .influence-fill { background: linear-gradient(90deg, #ba68c8, #8e24aa); }
+#pins .map-pin.f-ih .influence-fill { background: linear-gradient(90deg, #40c4ff, #0277bd); }
 
-/* ===== TIMER (Ends in XXm) ===== */
-.map-pin .timer {
+/* ===== TIMER ===== */
+#pins .map-pin .timer {
   position: absolute;
   bottom: -26px;
   left: 50%;
@@ -806,11 +806,10 @@ html.ah-modal-open #heroFrame{
   border-radius: 999px;
   letter-spacing: 0.3px;
 }
-
-.map-pin .timer.low { color: #ff5252; animation: timerPulse 1.2s infinite; }
+#pins .map-pin .timer.low { color: #ff5252; animation: timerPulse 1.2s infinite; }
 
 /* ===== CONTESTED RING ===== */
-.map-pin.is-contested::after {
+#pins .map-pin.is-contested::after {
   content: '';
   position: absolute;
   inset: -18px;
@@ -822,8 +821,8 @@ html.ah-modal-open #heroFrame{
   z-index: 2;
 }
 
-/* ===== BONUS ICON (ikona aktualnego bonusu) ===== */
-.map-pin .bonus-icon {
+/* ===== BONUS ICON ===== */
+#pins .map-pin .bonus-icon {
   position: absolute;
   top: -18px;
   left: 50%;
@@ -839,21 +838,23 @@ html.ah-modal-open #heroFrame{
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
 }
-
 @keyframes contestedRing {
   0% { transform: scale(0.6); opacity: 0.9; }
   100% { transform: scale(1.6); opacity: 0; }
 }
-
 @keyframes timerPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
 
 /* Dodatkowe efekty */
-.map-pin.is-leader {
-  filter: brightness(1.12) saturate(1.15);
-}
+#pins .map-pin.is-leader { filter: brightness(1.12) saturate(1.15); }
+
+/* ==================== SAFETY NET (opcjonalne, ale polecam) ==================== */
+/* Jeśli jakiś bug nadal dopnie .map-pin do overlay, to i tak overlay będzie stabilny */
+#influenceModal { transform: none !important; }
+#influenceModal.map-pin { position: fixed !important; inset: 0 !important; transform: none !important; }
+    
 
  /* === SKIN GALLERY UPGRADE v5 – GALERIA PRZYWRÓCONA + ZERO DZIURY (28.02.2026) === */
 #skinPreviewImg, #skinCanvas {
@@ -5314,6 +5315,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
