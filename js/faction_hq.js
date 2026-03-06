@@ -66,17 +66,65 @@
   const url = _hqBgUrlForFaction(faction);
   const cssUrl = `url("${url}")`;
 
-  // zostaw var dla kompatybilności
+  const back = document.getElementById("factionHQBack");
+  if (!back) return;
+
+  // ustaw var lokalnie i globalnie
+  back.style.setProperty("--hq-bg-url", cssUrl);
   document.documentElement.style.setProperty("--hq-bg-url", cssUrl);
 
-  // ale wymuś też tło bezpośrednio na elemencie HQ
-  const bg = document.querySelector("#factionHQBack .hq-bg");
-  if (bg) {
-    bg.style.backgroundImage = cssUrl;
-    bg.style.backgroundSize = "cover";
-    bg.style.backgroundPosition = "center";
-    bg.style.backgroundRepeat = "no-repeat";
-    bg.style.backgroundColor = "#07080c";
+  let bg = back.querySelector(".hq-bg");
+
+  // self-heal: jeśli .hq-bg nie istnieje, twórz ją
+  if (!bg) {
+    bg = document.createElement("div");
+    bg.className = "hq-bg";
+    back.insertBefore(bg, back.firstChild);
+  }
+
+  // twarde wymuszenie tła
+  bg.style.setProperty("position", "absolute", "important");
+  bg.style.setProperty("inset", "0", "important");
+  bg.style.setProperty("display", "block", "important");
+  bg.style.setProperty("visibility", "visible", "important");
+  bg.style.setProperty("opacity", "1", "important");
+  bg.style.setProperty("z-index", "0", "important");
+  bg.style.setProperty("background-color", "#07080c", "important");
+  bg.style.setProperty("background-image", cssUrl, "important");
+  bg.style.setProperty("background-size", "cover", "important");
+  bg.style.setProperty("background-position", "center center", "important");
+  bg.style.setProperty("background-repeat", "no-repeat", "important");
+  bg.style.setProperty("filter", "none", "important");
+  bg.style.setProperty("transform", "none", "important");
+
+  // porządek warstw
+  back.style.setProperty("position", "fixed", "important");
+  back.style.setProperty("inset", "0", "important");
+  back.style.setProperty("overflow", "hidden", "important");
+  back.style.setProperty("background", "transparent", "important");
+
+  const modal = document.getElementById("factionHQModal");
+  if (modal) {
+    modal.style.setProperty("position", "absolute", "important");
+    modal.style.setProperty("inset", "0", "important");
+    modal.style.setProperty("z-index", "2", "important");
+    modal.style.setProperty("background", "transparent", "important");
+  }
+
+  if (_dbg) {
+    const cs = getComputedStyle(bg);
+    const rect = bg.getBoundingClientRect();
+    console.log("[FactionHQ][BG_FORCE]", {
+      faction,
+      norm: _normFactionKey(faction),
+      url,
+      bgExists: !!bg,
+      bgImage: cs.backgroundImage,
+      display: cs.display,
+      visibility: cs.visibility,
+      opacity: cs.opacity,
+      rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y }
+    });
   }
   }
   function applyHQTheme(faction) {
@@ -185,9 +233,13 @@
   bg.className = "hq-bg";
   bg.style.position = "absolute";
   bg.style.inset = "0";
+  bg.style.display = "block";
+  bg.style.visibility = "visible";
+  bg.style.opacity = "1";
+  bg.style.zIndex = "0";
   bg.style.backgroundColor = "#07080c";
   bg.style.backgroundSize = "cover";
-  bg.style.backgroundPosition = "center";
+  bg.style.backgroundPosition = "center center";
   bg.style.backgroundRepeat = "no-repeat";
   _back.insertBefore(bg, _back.firstChild);
       }
@@ -240,24 +292,24 @@
   // ---------------------------
   // open/close
   // ---------------------------
-  async function open() {
-    ensureModal();
+async function open() {
+  ensureModal();
 
-    // szybki “pre-bg” zanim backend odpowie (cache only)
-    let cached =
-      window.PROFILE?.faction ||
-      window.PLAYER_STATE?.profile?.faction ||
-      (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
+  // najpierw pokaż warstwy
+  _back.classList.add("is-open");
+  document.body.classList.add("hq-open");
 
-    cached = _canonFaction(cached) || cached;
+  let cached =
+    window.PROFILE?.faction ||
+    window.PLAYER_STATE?.profile?.faction ||
+    (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
 
-    applyHqBg(cached);
-    applyHQTheme(cached);
+  cached = _canonFaction(cached) || cached;
 
-    _back.classList.add("is-open");
-    document.body.classList.add("hq-open");
+  applyHqBg(cached);
+  applyHQTheme(cached);
 
-    await render();
+  await render();
   }
 
   function close() {
