@@ -63,10 +63,22 @@
   }
 
   function applyHqBg(faction) {
-    const url = _hqBgUrlForFaction(faction);
-    document.documentElement.style.setProperty("--hq-bg-url", `url("${url}")`);
-  }
+  const url = _hqBgUrlForFaction(faction);
+  const cssUrl = `url("${url}")`;
 
+  // zostaw var dla kompatybilności
+  document.documentElement.style.setProperty("--hq-bg-url", cssUrl);
+
+  // ale wymuś też tło bezpośrednio na elemencie HQ
+  const bg = document.querySelector("#factionHQBack .hq-bg");
+  if (bg) {
+    bg.style.backgroundImage = cssUrl;
+    bg.style.backgroundSize = "cover";
+    bg.style.backgroundPosition = "center";
+    bg.style.backgroundRepeat = "no-repeat";
+    bg.style.backgroundColor = "#07080c";
+  }
+  }
   function applyHQTheme(faction) {
     const canon = _canonFaction(faction);
     try {
