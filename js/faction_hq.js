@@ -181,9 +181,15 @@
       _modal = document.getElementById("factionHQModal");
     } else {
       if (!_back.querySelector(".hq-bg")) {
-        const bg = document.createElement("div");
-        bg.className = "hq-bg";
-        _back.insertBefore(bg, _back.firstChild);
+  const bg = document.createElement("div");
+  bg.className = "hq-bg";
+  bg.style.position = "absolute";
+  bg.style.inset = "0";
+  bg.style.backgroundColor = "#07080c";
+  bg.style.backgroundSize = "cover";
+  bg.style.backgroundPosition = "center";
+  bg.style.backgroundRepeat = "no-repeat";
+  _back.insertBefore(bg, _back.firstChild);
       }
       if (!_back.querySelector(".hq-vignette")) {
         ensureHQVignette();
