@@ -1094,42 +1094,285 @@ html.ah-modal-open #heroFrame{
   inset:-2px;
   pointer-events:none;
   border-radius: 22px;
+<style id="factionhq-css">
+/* =========================
+   FACTION HQ BACKDROP
+   ========================= */
+#factionHQBack{
+  position: fixed;
+  inset: 0;
+  z-index: 999990;
+  display: none;
+  pointer-events: auto;
+  overflow: hidden;
+  background: transparent;
+}
+
+#factionHQBack.is-open{
+  display: block !important;
+}
+
+#factionHQBack .hq-bg{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+
+  background: #07080c;
+  background-image: var(--hq-bg-url);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+
+  /* lekki polish, ale bez rozmycia */
+  filter: saturate(1.02) contrast(1.03) brightness(.98);
+  transform: none;
+}
+
+/* Na razie wyłączone — to one wcześniej za bardzo zabijały background */
+#factionHQBack .hq-bg::after{
+  display: none !important;
+}
+
+#factionHQBack .hq-vignette{
+  display: none !important;
+}
+
+/* =========================
+   FRONT WOJENNY FRAKCJI – FAZA 1
+   ========================= */
+.front-layer{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.territory-glow{
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+
+.territory-glow.f-rb{ background: #ff3366; }
+.territory-glow.f-ew{ background: #ffdd33; }
+.territory-glow.f-pb{ background: #c84cff; }
+.territory-glow.f-ih{ background: #00ddff; }
+
+.front-path{
+  stroke: #ffaa00;
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 22px #ff3300) drop-shadow(0 0 8px #ff6600);
+  animation: frontPulse 2.4s ease-in-out infinite;
+  opacity: 0.82;
+}
+
+@keyframes frontPulse{
+  0%, 100%{ opacity: 0.75; stroke-width: 10; }
+  50%{ opacity: 0.98; stroke-width: 13.5; }
+}
+
+.front-crack{
+  stroke: #ff2200;
+  stroke-width: 2.8;
+  stroke-dasharray: 8 12;
+  animation: crackAnim 1.8s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes crackAnim{
+  to{ stroke-dashoffset: -40; }
+}
+
+.map-pin.is-contested::after{
+  inset: -22px;
+  border-width: 4px;
+  border-color: #ff9800;
+  animation-duration: 1.4s;
+}
+
+/* =========================
+   HQ MODAL + PANEL
+   ========================= */
+#factionHQModal{
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#factionHQRoot{
+  position: relative;
+  z-index: 3;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  border-radius: 20px;
+  overflow: hidden;
+
+  /* lekki glass, bez mocnego blur */
+  background: rgba(12,12,18,.42);
+  backdrop-filter: blur(1px) saturate(1.06);
+  -webkit-backdrop-filter: blur(1px) saturate(1.06);
+
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 50px rgba(0,0,0,.48);
+
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+/* fallback gdy brak backdrop-filter */
+@supports not ((backdrop-filter: blur(1px))){
+  #factionHQRoot{
+    background: rgba(12,12,18,.62);
+  }
+}
+
+/* delikatny inner rim tylko na panelu */
+#factionHQRoot::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:20px;
+  padding:1px;
+
+  background: linear-gradient(135deg,
+    rgba(255,255,255,.14),
+    rgba(255,255,255,0));
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  opacity:.9;
+}
+
+/* subtelny ring frakcji tylko na panelu */
+#factionHQRoot::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  border-radius:22px;
 
   box-shadow:
     0 0 0 1px rgba(255,255,255,.10),
-    0 0 34px rgba(var(--hq-accent-rgb, 0,229,255), .18);
+    0 0 26px rgba(var(--hq-accent-rgb, 0,229,255), .14);
 
   opacity:.95;
 }
 
-/* Akcent per frakcja — ustawiane przez JS przez data-faction="..." */
-#factionHQRoot[data-faction="rogue_byte"],
-#factionHQModal[data-faction="rogue_byte"]   { --hq-accent-rgb: 0,229,255; }
+/* Akcent per frakcja */
+#factionHQRoot[data-faction="rogue_byte"]   { --hq-accent-rgb: 0,229,255; }
+#factionHQRoot[data-faction="echo_wardens"] { --hq-accent-rgb: 170,120,255; }
+#factionHQRoot[data-faction="pack_burners"] { --hq-accent-rgb: 255,110,80; }
+#factionHQRoot[data-faction="inner_howl"]   { --hq-accent-rgb: 180,255,120; }
 
-#factionHQRoot[data-faction="echo_wardens"],
-#factionHQModal[data-faction="echo_wardens"] { --hq-accent-rgb: 170,120,255; }
-
-#factionHQRoot[data-faction="pack_burners"],
-#factionHQModal[data-faction="pack_burners"] { --hq-accent-rgb: 255,110,80; }
-
-#factionHQRoot[data-faction="inner_howl"],
-#factionHQModal[data-faction="inner_howl"]   { --hq-accent-rgb: 180,255,120; }
-
-/* mały bonus: bezpieczne paddingi na mobile (jeśli panel jest full-screen sheetem) */
-#factionHQRoot,
-#factionHQModal{
-  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+/* =========================
+   HQ INNER UI
+   ========================= */
+.hq-card{
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 12px 0;
 }
-</style>
-  </style>
-  <style id="factionhq-debug-override">
-  #factionHQBack .hq-bg::after{
-    display:none !important;
-  }
 
-  #factionHQBack .hq-vignette{
-    display:none !important;
-  }
+.hq-row{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hq-btn{
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 15px;
+  border: 0;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.hq-btn[disabled]{
+  opacity: .45;
+  filter: saturate(.6);
+}
+
+.hq-btn.primary{
+  background: #2b8cff;
+}
+
+.hq-mini{
+  opacity: .85;
+  font-size: 13px;
+}
+
+.hq-input{
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  outline: none;
+  font-weight: 700;
+}
+
+.hq-feed{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hq-feed-item{
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 13px;
+  opacity: .95;
+}
+
+.hq-pill{
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .4px;
+}
+
+body.hq-open{
+  overflow: hidden !important;
+  touch-action: none;
+}
   </style>
     <style id="missions-hotfix">
 
@@ -5330,6 +5573,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
