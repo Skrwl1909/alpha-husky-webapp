@@ -628,17 +628,24 @@ html.ah-modal-open #heroFrame{
   width:100%;
   flex: 1 1 auto;
   height: min(66dvh, 620px);
-  aspect-ratio: auto;
   background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
   border-radius:16px;
   overflow:hidden;
   box-shadow:0 0 0 1px var(--ring) inset;
+  isolation:isolate;
 }
 
-.map::after{ content:""; position:absolute; inset:0; z-index:2;
-  background: url("images/map/overlays/fog.png") center/cover no-repeat,
-              linear-gradient(0deg, rgba(0,0,0,.55), transparent);
-  pointer-events:none; }
+.map::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:
+    url("images/map/overlays/fog.png") center/cover no-repeat,
+    linear-gradient(0deg, rgba(0,0,0,.24), transparent);
+  opacity:.50;
+    }
 
 .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
 .paths-layer svg{ width:100%; height:100%; }
@@ -5315,6 +5322,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
