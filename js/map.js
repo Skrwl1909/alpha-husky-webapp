@@ -1,6 +1,5 @@
-// js/map.js — Alpha Husky Map module (Faction leader UI + backend leadersMap)
-// Works with map.json nodes[].uiHint.owner + uiHint.state
-// Also supports backend leadersMap from /webapp/map/leaders and /webapp/influence/action
+// js/map.js — Alpha Husky Map module (live faction control + leadersMap truth)
+// Live faction nodes MUST resolve leader from backend scores, not from map.json uiHint.owner
 (function () {
   let _inited = false;
 
@@ -11,7 +10,23 @@
     inner_howl:   { cls: "f-ih", code: "IH" },
   };
 
+  const CODE = {
+    rogue_byte: "RB",
+    echo_wardens: "EW",
+    pack_burners: "PB",
+    inner_howl: "IH",
+  };
+
+  const CLS = {
+    rogue_byte: "f-rb",
+    echo_wardens: "f-ew",
+    pack_burners: "f-pb",
+    inner_howl: "f-ih",
+  };
+
+  const FACTION_KEYS = ["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"];
   const CSS_ID = "ah-map-level1-css";
+
   function ensureCss() {
     if (document.getElementById(CSS_ID)) return;
     const s = document.createElement("style");
@@ -32,7 +47,7 @@
   top:-10px; right:-10px;
   width:22px; height:22px;
   border-radius:999px;
-  display:none; /* show only when leader exists */
+  display:none;
   place-items:center;
   font-size:10px; font-weight:800;
   background:rgba(0,0,0,.72);
@@ -40,12 +55,10 @@
   pointer-events:none;
   z-index:3;
 }
-/* keep icon above ring */
 .map-pin .pin-icon, .map-pin > img{
   position:relative;
   z-index:2;
 }
-/* faction colors */
 .map-pin.f-rb .pin-ring{ border-color: rgba(255,70,70,.95); box-shadow:0 0 14px rgba(255,70,70,.35); }
 .map-pin.f-ew .pin-ring{ border-color: rgba(255,200,70,.95); box-shadow:0 0 14px rgba(255,200,70,.32); }
 .map-pin.f-pb .pin-ring{ border-color: rgba(255,140,40,.95); box-shadow:0 0 14px rgba(255,140,40,.32); }
@@ -56,9 +69,13 @@
 .map-pin.f-pb .pin-badge{ color: rgba(255,160,70,1); border-color: rgba(255,160,70,.35); }
 .map-pin.f-ih .pin-badge{ color: rgba(90,235,255,1); border-color: rgba(90,235,255,.35); }
 
-/* optional contested pulse */
+.map-pin.is-controlled .pin-ring{ opacity: 1; }
 .map-pin.is-contested .pin-ring{ animation: ahPinPulse 1.6s ease-in-out infinite; }
-@keyframes ahPinPulse{ 0%,100%{transform:scale(1);opacity:.85;} 50%{transform:scale(1.08);opacity:1;} }
+
+@keyframes ahPinPulse{
+  0%,100%{ transform:scale(1); opacity:.85; }
+  50%{ transform:scale(1.08); opacity:1; }
+}
 `;
     document.head.appendChild(s);
   }
@@ -80,53 +97,179 @@
     }
   }
 
-  const CODE = { rogue_byte:"RB", echo_wardens:"EW", pack_burners:"PB", inner_howl:"IH" };
-  const CLS  = { rogue_byte:"f-rb", echo_wardens:"f-ew", pack_burners:"f-pb", inner_howl:"f-ih" };
-  const iconUrl = (owner) => `/images/ui/factions/${owner}_color.svg`;
+  function iconUrl(owner) {
+    return `/images/ui/factions/${owner}_color.svg`;
+  }
 
-  function esc(s){
+  function esc(s) {
     return String(s || "").replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
     }[m]));
   }
 
-  function _clearFactionClasses(pinEl){
-    pinEl.classList.remove("f-rb","f-ew","f-pb","f-ih");
+  function _normFactionKey(raw) {
+    const s = String(raw || "").toLowerCase().trim();
+    if (!s) return "";
+    if (FACTIONS[s]) return s;
+    if (s === "rb" || s.includes("rogue")) return "rogue_byte";
+    if (s === "ew" || s.includes("echo")) return "echo_wardens";
+    if (s === "pb" || s.includes("pack") || s.includes("burn")) return "pack_burners";
+    if (s === "ih" || s.includes("inner") || s.includes("iron") || s.includes("howl")) return "inner_howl";
+    return "";
   }
 
-  // Front can receive leadersMap in various shapes; be tolerant
-  function _extractLeader(info){
-    // returns { owner, contested, top1, top2 }
-    const factions = ["rogue_byte","echo_wardens","pack_burners","inner_howl"];
+  function _clearFactionClasses(pinEl) {
+    if (!pinEl) return;
+    pinEl.classList.remove("f-rb", "f-ew", "f-pb", "f-ih", "is-contested", "is-controlled");
+  }
 
-    if (!info) return { owner:"", contested:false, top1:0, top2:0 };
+  function _pinNodeId(pinEl) {
+    return (
+      pinEl?.dataset?.nodeId ||
+      pinEl?.dataset?.nodeid ||
+      pinEl?.getAttribute?.("data-node-id") ||
+      pinEl?.getAttribute?.("data-nodeid") ||
+      ""
+    );
+  }
 
-    // if backend returns string
-    if (typeof info === "string") return { owner: info, contested:false, top1:0, top2:0 };
+  function _pinBuildingId(pinEl) {
+    return (
+      pinEl?.dataset?.buildingId ||
+      pinEl?.dataset?.buildingid ||
+      pinEl?.getAttribute?.("data-building-id") ||
+      pinEl?.getAttribute?.("data-buildingid") ||
+      ""
+    );
+  }
 
-    // common keys
-    const owner =
-      info.leaderFaction || info.leader_faction ||
-      info.leaderKey || info.leader_key ||
-      info.leader || info.faction || info.factionKey || info.topFaction || "";
+  function _isLiveFactionNodeFromNode(node) {
+    if (!node || typeof node !== "object") return false;
+    return !!(
+      node.factionControl ||
+      node?.uiHint?.type === "factionControl"
+    );
+  }
 
-    const contested =
-      !!(info.contested || info.isContested || info.is_contested || info.warn || info.warning);
+  function _isLiveFactionNodeFromPin(pinEl) {
+    if (!pinEl) return false;
+    const v = String(pinEl.dataset.liveFactionNode || "").toLowerCase();
+    return v === "1" || v === "true" || v === "yes";
+  }
 
-    // also allow map like { rogue_byte:1200, echo_wardens:900, ... }
-    let top1 = 0, top2 = 0, topOwner = "";
-    for (const k of factions){
-      const v = info[k];
-      const n = (typeof v === "number") ? v : (typeof v === "string" && v.trim() !== "" ? Number(v) : NaN);
-      if (!Number.isFinite(n)) continue;
-      if (n >= top1) { top2 = top1; top1 = n; topOwner = k; }
-      else if (n > top2) { top2 = n; }
+  function _extractScores(info) {
+    const out = {};
+    const src = (info && typeof info === "object") ? info : {};
+
+    const scoreObj =
+      (src.scores && typeof src.scores === "object") ? src.scores :
+      (src.scoreMap && typeof src.scoreMap === "object") ? src.scoreMap :
+      (src.factions && typeof src.factions === "object") ? src.factions :
+      null;
+
+    for (const fk of FACTION_KEYS) {
+      let raw = null;
+
+      if (scoreObj && fk in scoreObj) raw = scoreObj[fk];
+      else if (fk in src) raw = src[fk];
+      else raw = null;
+
+      const n = (typeof raw === "number")
+        ? raw
+        : (typeof raw === "string" && raw.trim() !== "" ? Number(raw) : NaN);
+
+      out[fk] = Number.isFinite(n) ? n : 0;
     }
 
-    const finalOwner = owner || topOwner || "";
-    const finalContested = contested || (top1 > 0 && ((top1 - top2) / top1) < 0.12);
+    return out;
+  }
 
-    return { owner: finalOwner, contested: finalContested, top1, top2 };
+  function _resolveTopFaction(scores) {
+    let topOwner = "";
+    let top1 = 0;
+    let top2 = 0;
+
+    for (const fk of FACTION_KEYS) {
+      const n = Number(scores?.[fk] || 0);
+      if (n >= top1) {
+        top2 = top1;
+        top1 = n;
+        topOwner = fk;
+      } else if (n > top2) {
+        top2 = n;
+      }
+    }
+
+    return { owner: topOwner, top1, top2 };
+  }
+
+  function _isContested(info, top1, top2) {
+    const explicit = !!(
+      info?.contested ||
+      info?.isContested ||
+      info?.is_contested ||
+      info?.warn ||
+      info?.warning
+    );
+
+    if (explicit) return true;
+    if (!(top1 > 0) || !(top2 > 0)) return false;
+
+    return ((top1 - top2) / top1) < 0.12;
+  }
+
+  function resolveNodeLeader(nodeOrMeta, info) {
+    const liveNode = !!(
+      nodeOrMeta?.liveFactionNode ||
+      nodeOrMeta?.factionControl ||
+      nodeOrMeta?.uiHint?.type === "factionControl"
+    );
+
+    const safeInfo = (info && typeof info === "object") ? info : {};
+    const scores = _extractScores(safeInfo);
+
+    // LIVE faction nodes: leader truth comes from scores only
+    if (liveNode) {
+      const top = _resolveTopFaction(scores);
+      return {
+        owner: top.owner || "",
+        contested: _isContested(safeInfo, top.top1, top.top2),
+        top1: top.top1,
+        top2: top.top2,
+        scores,
+        source: "scores"
+      };
+    }
+
+    // Static / legacy fallback for non-live nodes
+    const ownerRaw =
+      safeInfo.leaderFaction ||
+      safeInfo.leader_faction ||
+      safeInfo.leaderKey ||
+      safeInfo.leader_key ||
+      safeInfo.leader ||
+      safeInfo.faction ||
+      safeInfo.factionKey ||
+      safeInfo.topFaction ||
+      nodeOrMeta?.hintOwner ||
+      "";
+
+    const owner = _normFactionKey(ownerRaw);
+    const top = _resolveTopFaction(scores);
+
+    return {
+      owner: owner || top.owner || "",
+      contested: _isContested(safeInfo, top.top1, top.top2) ||
+        String(nodeOrMeta?.hintState || "").toLowerCase() === "contested",
+      top1: top.top1,
+      top2: top.top2,
+      scores,
+      source: owner ? "owner" : (top.owner ? "scores-fallback" : "none")
+    };
   }
 
   function setLeader(pinEl, owner, opts) {
@@ -135,32 +278,40 @@
 
     const name = pinEl.dataset.nodeName || "";
     const contested = !!(opts && opts.contested);
-
-    // contested hook (puls z CSS)
-    pinEl.classList.toggle("is-contested", contested);
-
-    const badge = pinEl.querySelector(".pin-badge");
+    const source = String(opts?.source || "");
 
     _clearFactionClasses(pinEl);
 
-    // no owner → hide ring/badge; chip shows name only
+    const badge = pinEl.querySelector(".pin-badge");
+    const chip = pinEl.querySelector(".chip");
+
+    pinEl.dataset.liveLeader = owner || "";
+    pinEl.dataset.leaderSource = source || "";
+
     if (!owner) {
-      if (badge) { badge.textContent = ""; badge.style.display = "none"; }
-      const chip = pinEl.querySelector(".chip");
-      if (chip) chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
+      if (badge) {
+        badge.textContent = "";
+        badge.style.display = "none";
+      }
+      if (chip) {
+        chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
+      }
+      if (contested) pinEl.classList.add("is-contested");
       return;
     }
 
     const code = CODE[owner] || "";
-    const cls  = CLS[owner] || "";
+    const cls = CLS[owner] || "";
+
     if (cls) pinEl.classList.add(cls);
+    pinEl.classList.add("is-controlled");
+    if (contested) pinEl.classList.add("is-contested");
 
     if (badge) {
       badge.textContent = code || "";
       badge.style.display = "grid";
     }
 
-    const chip = pinEl.querySelector(".chip");
     if (chip) {
       chip.innerHTML = `
         <span class="chip-faction ${cls}">
@@ -171,7 +322,6 @@
         </span>
       `;
 
-      // fallback gdy brakuje pliku
       const img = chip.querySelector("img");
       if (img) img.onerror = () => { img.style.display = "none"; };
     }
@@ -184,46 +334,69 @@
 
     if (node?.id) pinEl.dataset.nodeId = node.id;
     if (node?.buildingId) pinEl.dataset.buildingId = node.buildingId;
-
-    // żeby setLeader znał nazwę bez dostępu do `node`
     if (node?.name) pinEl.dataset.nodeName = node.name;
 
-    const owner = node?.uiHint?.owner || null;
-    const st = (node?.uiHint?.state || "").toLowerCase();
+    const liveFactionNode = _isLiveFactionNodeFromNode(node);
+    pinEl.dataset.liveFactionNode = liveFactionNode ? "1" : "0";
+
+    // keep static hints only as fallback metadata for non-live nodes
+    if (node?.uiHint?.owner) pinEl.dataset.hintOwner = node.uiHint.owner;
+    if (node?.uiHint?.state) pinEl.dataset.hintState = String(node.uiHint.state).toLowerCase();
+
+    // For LIVE faction nodes do NOT trust uiHint.owner
+    if (liveFactionNode) {
+      const contested = String(node?.uiHint?.state || "").toLowerCase() === "contested";
+      setLeader(pinEl, null, { contested, source: "decorate-live" });
+      return;
+    }
+
+    const owner = _normFactionKey(node?.uiHint?.owner || "");
+    const st = String(node?.uiHint?.state || "").toLowerCase();
     const contested = st === "contested" || st === "war" || st === "hot";
-    setLeader(pinEl, owner, { contested });
+    setLeader(pinEl, owner || null, { contested, source: "decorate-hint" });
   }
 
   function applyLeaders(leadersMap) {
-  if (!leadersMap) return;
+    if (!leadersMap) return;
 
-  // łap wszystkie piny, niezależnie od klasy
-  const pins = document.querySelectorAll(
-    ".hotspot[data-node-id], .hotspot[data-nodeid], .map-pin[data-node-id], .map-pin[data-nodeid], [data-node-id], [data-nodeid]"
-  );
+    const pins = document.querySelectorAll(
+      ".hotspot[data-node-id], .hotspot[data-nodeid], .map-pin[data-node-id], .map-pin[data-nodeid], [data-node-id], [data-nodeid]"
+    );
 
-  pins.forEach((pin) => {
-    const nodeId =
-      pin.dataset.nodeId ||
-      pin.dataset.nodeid ||
-      pin.getAttribute("data-node-id") ||
-      pin.getAttribute("data-nodeid") ||
-      "";
+    pins.forEach((pin) => {
+      const nodeId = _pinNodeId(pin);
+      const buildingId = _pinBuildingId(pin);
 
-    const buildingId =
-      pin.dataset.buildingId ||
-      pin.dataset.buildingid ||
-      pin.getAttribute("data-building-id") ||
-      pin.getAttribute("data-buildingid") ||
-      "";
+      const info =
+        (buildingId && leadersMap[buildingId]) ||
+        (nodeId && leadersMap[nodeId]) ||
+        null;
 
-    const info = (buildingId && leadersMap[buildingId]) || (nodeId && leadersMap[nodeId]) || null;
-    if (!info) return;
+      if (!info) return;
 
-    const ex = _extractLeader(info);
-    setLeader(pin, ex.owner || null, { contested: !!ex.contested });
-  });
-}
+      const meta = {
+        liveFactionNode: _isLiveFactionNodeFromPin(pin),
+        hintOwner: pin.dataset.hintOwner || "",
+        hintState: pin.dataset.hintState || ""
+      };
+
+      const ex = resolveNodeLeader(meta, info);
+      setLeader(pin, ex.owner || null, {
+        contested: !!ex.contested,
+        source: ex.source || "scores"
+      });
+
+      // helpful debug while stabilizing map truth
+      console.log("[AHMap][PIN]", {
+        nodeId,
+        buildingId,
+        leader: ex.owner,
+        contested: ex.contested,
+        source: ex.source,
+        scores: ex.scores
+      });
+    });
+  }
 
   function init() {
     if (_inited) return;
@@ -236,10 +409,9 @@
     decoratePin,
     setLeader,
     applyLeaders,
+    resolveNodeLeader,
   };
 
   window.AHMap = API;
-
-  // compat: some older code may use window.Map
   window.Map = window.Map || API;
 })();
