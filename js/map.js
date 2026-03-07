@@ -1,7 +1,12 @@
-// js/map.js — Alpha Husky Map module (live faction control + leadersMap truth)
-// Live faction nodes MUST resolve leader from backend scores, not from map.json uiHint.owner
+// js/map.js — Alpha Husky Map module (LIVE faction control truth-first)
+// - live faction nodes resolve leader ONLY from backend leadersMap scores
+// - non-live / locked nodes NEVER show faction leader badge
+// - cached leadersMap is re-applied after pin rerenders / focus changes
 (function () {
   let _inited = false;
+  let _lastLeadersMap = null;
+  let _observer = null;
+  let _reapplyQueued = false;
 
   const FACTIONS = {
     rogue_byte:   { cls: "f-rb", code: "RB" },
@@ -9,6 +14,8 @@
     pack_burners: { cls: "f-pb", code: "PB" },
     inner_howl:   { cls: "f-ih", code: "IH" },
   };
+
+  const FACTION_KEYS = ["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"];
 
   const CODE = {
     rogue_byte: "RB",
@@ -24,7 +31,6 @@
     inner_howl: "f-ih",
   };
 
-  const FACTION_KEYS = ["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"];
   const CSS_ID = "ah-map-level1-css";
 
   function ensureCss() {
@@ -59,6 +65,8 @@
   position:relative;
   z-index:2;
 }
+
+/* faction colors */
 .map-pin.f-rb .pin-ring{ border-color: rgba(255,70,70,.95); box-shadow:0 0 14px rgba(255,70,70,.35); }
 .map-pin.f-ew .pin-ring{ border-color: rgba(255,200,70,.95); box-shadow:0 0 14px rgba(255,200,70,.32); }
 .map-pin.f-pb .pin-ring{ border-color: rgba(255,140,40,.95); box-shadow:0 0 14px rgba(255,140,40,.32); }
@@ -80,6 +88,16 @@
     document.head.appendChild(s);
   }
 
+  function esc(s){
+    return String(s || "").replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
+
+  function iconUrl(owner) {
+    return `/images/ui/factions/${owner}_color.svg`;
+  }
+
   function ensureLevel1(pinEl) {
     if (!pinEl) return;
     pinEl.classList.add("map-pin");
@@ -97,18 +115,9 @@
     }
   }
 
-  function iconUrl(owner) {
-    return `/images/ui/factions/${owner}_color.svg`;
-  }
-
-  function esc(s) {
-    return String(s || "").replace(/[&<>"']/g, m => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    }[m]));
+  function _clearFactionClasses(pinEl) {
+    if (!pinEl) return;
+    pinEl.classList.remove("f-rb", "f-ew", "f-pb", "f-ih", "is-contested", "is-controlled");
   }
 
   function _normFactionKey(raw) {
@@ -122,17 +131,18 @@
     return "";
   }
 
-  function _clearFactionClasses(pinEl) {
-    if (!pinEl) return;
-    pinEl.classList.remove("f-rb", "f-ew", "f-pb", "f-ih", "is-contested", "is-controlled");
+  function _getPinsSelector() {
+    const scoped = document.getElementById("pins");
+    if (scoped) {
+      return '#pins .map-pin[data-node-id], #pins .hotspot[data-node-id], #pins .map-pin[data-building-id], #pins .hotspot[data-building-id]';
+    }
+    return '.map-pin[data-node-id], .hotspot[data-node-id], .map-pin[data-building-id], .hotspot[data-building-id]';
   }
 
   function _pinNodeId(pinEl) {
     return (
       pinEl?.dataset?.nodeId ||
-      pinEl?.dataset?.nodeid ||
       pinEl?.getAttribute?.("data-node-id") ||
-      pinEl?.getAttribute?.("data-nodeid") ||
       ""
     );
   }
@@ -140,9 +150,7 @@
   function _pinBuildingId(pinEl) {
     return (
       pinEl?.dataset?.buildingId ||
-      pinEl?.dataset?.buildingid ||
       pinEl?.getAttribute?.("data-building-id") ||
-      pinEl?.getAttribute?.("data-buildingid") ||
       ""
     );
   }
@@ -162,21 +170,18 @@
   }
 
   function _extractScores(info) {
-    const out = {};
     const src = (info && typeof info === "object") ? info : {};
-
     const scoreObj =
       (src.scores && typeof src.scores === "object") ? src.scores :
       (src.scoreMap && typeof src.scoreMap === "object") ? src.scoreMap :
       (src.factions && typeof src.factions === "object") ? src.factions :
       null;
 
+    const out = {};
     for (const fk of FACTION_KEYS) {
       let raw = null;
-
       if (scoreObj && fk in scoreObj) raw = scoreObj[fk];
       else if (fk in src) raw = src[fk];
-      else raw = null;
 
       const n = (typeof raw === "number")
         ? raw
@@ -184,12 +189,11 @@
 
       out[fk] = Number.isFinite(n) ? n : 0;
     }
-
     return out;
   }
 
   function _resolveTopFaction(scores) {
-    let topOwner = "";
+    let owner = "";
     let top1 = 0;
     let top2 = 0;
 
@@ -198,13 +202,12 @@
       if (n >= top1) {
         top2 = top1;
         top1 = n;
-        topOwner = fk;
+        owner = fk;
       } else if (n > top2) {
         top2 = n;
       }
     }
-
-    return { owner: topOwner, top1, top2 };
+    return { owner, top1, top2 };
   }
 
   function _isContested(info, top1, top2) {
@@ -222,17 +225,12 @@
     return ((top1 - top2) / top1) < 0.12;
   }
 
-  function resolveNodeLeader(nodeOrMeta, info) {
-    const liveNode = !!(
-      nodeOrMeta?.liveFactionNode ||
-      nodeOrMeta?.factionControl ||
-      nodeOrMeta?.uiHint?.type === "factionControl"
-    );
-
+  function resolveNodeLeader(meta, info) {
+    const liveNode = !!meta?.liveFactionNode;
     const safeInfo = (info && typeof info === "object") ? info : {};
     const scores = _extractScores(safeInfo);
 
-    // LIVE faction nodes: leader truth comes from scores only
+    // LIVE nodes: truth only from scores
     if (liveNode) {
       const top = _resolveTopFaction(scores);
       return {
@@ -245,30 +243,14 @@
       };
     }
 
-    // Static / legacy fallback for non-live nodes
-    const ownerRaw =
-      safeInfo.leaderFaction ||
-      safeInfo.leader_faction ||
-      safeInfo.leaderKey ||
-      safeInfo.leader_key ||
-      safeInfo.leader ||
-      safeInfo.faction ||
-      safeInfo.factionKey ||
-      safeInfo.topFaction ||
-      nodeOrMeta?.hintOwner ||
-      "";
-
-    const owner = _normFactionKey(ownerRaw);
-    const top = _resolveTopFaction(scores);
-
+    // non-live nodes never show leader UI now
     return {
-      owner: owner || top.owner || "",
-      contested: _isContested(safeInfo, top.top1, top.top2) ||
-        String(nodeOrMeta?.hintState || "").toLowerCase() === "contested",
-      top1: top.top1,
-      top2: top.top2,
-      scores,
-      source: owner ? "owner" : (top.owner ? "scores-fallback" : "none")
+      owner: "",
+      contested: false,
+      top1: 0,
+      top2: 0,
+      scores: {},
+      source: "non-live"
     };
   }
 
@@ -277,7 +259,7 @@
     ensureLevel1(pinEl);
 
     const name = pinEl.dataset.nodeName || "";
-    const contested = !!(opts && opts.contested);
+    const contested = !!opts?.contested;
     const source = String(opts?.source || "");
 
     _clearFactionClasses(pinEl);
@@ -321,13 +303,15 @@
           ${esc(name)}${code ? ` • ${code}` : ""}${contested ? ` <span class="chip-warn">⚠</span>` : ""}
         </span>
       `;
-
       const img = chip.querySelector("img");
       if (img) img.onerror = () => { img.style.display = "none"; };
     }
   }
 
-  // Call this during pin creation
+  function _clearLeader(pinEl) {
+    setLeader(pinEl, null, { contested: false, source: "clear" });
+  }
+
   function decoratePin(pinEl, node) {
     ensureCss();
     ensureLevel1(pinEl);
@@ -339,57 +323,61 @@
     const liveFactionNode = _isLiveFactionNodeFromNode(node);
     pinEl.dataset.liveFactionNode = liveFactionNode ? "1" : "0";
 
-    // keep static hints only as fallback metadata for non-live nodes
-    if (node?.uiHint?.owner) pinEl.dataset.hintOwner = node.uiHint.owner;
-    if (node?.uiHint?.state) pinEl.dataset.hintState = String(node.uiHint.state).toLowerCase();
-
-    // For LIVE faction nodes do NOT trust uiHint.owner
+    // for live nodes do NOT trust map.json owner
     if (liveFactionNode) {
-      const contested = String(node?.uiHint?.state || "").toLowerCase() === "contested";
-      setLeader(pinEl, null, { contested, source: "decorate-live" });
+      _clearLeader(pinEl);
       return;
     }
 
-    const owner = _normFactionKey(node?.uiHint?.owner || "");
-    const st = String(node?.uiHint?.state || "").toLowerCase();
-    const contested = st === "contested" || st === "war" || st === "hot";
-    setLeader(pinEl, owner || null, { contested, source: "decorate-hint" });
+    // non-live nodes: no leader badge at all
+    _clearLeader(pinEl);
+  }
+
+  function _findLeaderInfoForPin(pinEl, leadersMap) {
+    const nodeId = _pinNodeId(pinEl);
+    const buildingId = _pinBuildingId(pinEl);
+
+    return (
+      (buildingId && leadersMap?.[buildingId]) ||
+      (nodeId && leadersMap?.[nodeId]) ||
+      null
+    );
   }
 
   function applyLeaders(leadersMap) {
     if (!leadersMap) return;
+    _lastLeadersMap = leadersMap;
 
-    const pins = document.querySelectorAll(
-      ".hotspot[data-node-id], .hotspot[data-nodeid], .map-pin[data-node-id], .map-pin[data-nodeid], [data-node-id], [data-nodeid]"
-    );
+    const pins = document.querySelectorAll(_getPinsSelector());
 
     pins.forEach((pin) => {
-      const nodeId = _pinNodeId(pin);
-      const buildingId = _pinBuildingId(pin);
+      ensureLevel1(pin);
 
-      const info =
-        (buildingId && leadersMap[buildingId]) ||
-        (nodeId && leadersMap[nodeId]) ||
-        null;
+      // hard gate: badges only for live faction nodes
+      if (!_isLiveFactionNodeFromPin(pin)) {
+        _clearLeader(pin);
+        return;
+      }
 
-      if (!info) return;
+      const info = _findLeaderInfoForPin(pin, leadersMap);
+      if (!info) {
+        _clearLeader(pin);
+        return;
+      }
 
-      const meta = {
-        liveFactionNode: _isLiveFactionNodeFromPin(pin),
-        hintOwner: pin.dataset.hintOwner || "",
-        hintState: pin.dataset.hintState || ""
-      };
+      const ex = resolveNodeLeader(
+        { liveFactionNode: true },
+        info
+      );
 
-      const ex = resolveNodeLeader(meta, info);
       setLeader(pin, ex.owner || null, {
         contested: !!ex.contested,
         source: ex.source || "scores"
       });
 
-      // helpful debug while stabilizing map truth
       console.log("[AHMap][PIN]", {
-        nodeId,
-        buildingId,
+        nodeId: _pinNodeId(pin),
+        buildingId: _pinBuildingId(pin),
         leader: ex.owner,
         contested: ex.contested,
         source: ex.source,
@@ -398,10 +386,51 @@
     });
   }
 
+  function _scheduleReapply() {
+    if (_reapplyQueued) return;
+    _reapplyQueued = true;
+
+    requestAnimationFrame(() => {
+      _reapplyQueued = false;
+      if (_lastLeadersMap) applyLeaders(_lastLeadersMap);
+    });
+  }
+
+  function _ensureObserver() {
+    if (_observer) return;
+
+    const root = document.getElementById("pins") || document.body;
+    if (!root) return;
+
+    _observer = new MutationObserver(() => {
+      _scheduleReapply();
+    });
+
+    _observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "data-node-id", "data-building-id"]
+    });
+  }
+
+  function _bindReapplyHooks() {
+    // po kliknięciu / focusie na mapie UI czasem przebudowuje piny
+    document.addEventListener("click", () => {
+      setTimeout(_scheduleReapply, 50);
+    }, true);
+
+    document.addEventListener("touchend", () => {
+      setTimeout(_scheduleReapply, 50);
+    }, true);
+  }
+
   function init() {
     if (_inited) return;
     _inited = true;
     ensureCss();
+    _ensureObserver();
+    _bindReapplyHooks();
   }
 
   const API = {
@@ -410,6 +439,7 @@
     setLeader,
     applyLeaders,
     resolveNodeLeader,
+    reapplyLastLeaders: () => { if (_lastLeadersMap) applyLeaders(_lastLeadersMap); }
   };
 
   window.AHMap = API;
