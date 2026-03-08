@@ -5418,7 +5418,30 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   console.log("[BOOT] initLen=", cur.length, "lastLen=", (window.__AH_INIT_DATA_LAST||"").length, "uid=", tg?.initDataUnsafe?.user?.id);
 })();
 </script>
+<script>
+(function () {
+  const tg = window.Telegram?.WebApp || null;
 
+  function tryInitSiege(){
+    if (window.Siege && !window.__siegeInited && typeof window.apiPost === "function") {
+      window.Siege.init({
+        apiPost: window.apiPost,
+        tg,
+        dbg: !!window.DBG
+      });
+      window.__siegeInited = true;
+      console.log("✅ Siege initialized");
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInitSiege, { once:true });
+  } else {
+    tryInitSiege();
+  }
+})();
+</script>
+  
 <!-- FAQ -->
 <script src="js/faq.js?v=20251108" defer></script>
 <script>
@@ -5733,6 +5756,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
