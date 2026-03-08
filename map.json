@@ -140,7 +140,7 @@
   "y": 23,
   "icon": "images/map/building/edge_of_chain.png",
   "desc": "Where the code frays and stars flicker like dying nodes.",
-  "action": "open_region",
+  "action": "open_siege",
   "buildingId": "edge_of_chain",
   "labelOffset": { "x": -98, "y": 32 },
 
