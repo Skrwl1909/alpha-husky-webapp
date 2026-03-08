@@ -1,6 +1,6 @@
 // js/stats.js — Stats modal (WebApp)
-// Source of truth: backend /webapp/stats/state + /webapp/mystats/state
-// Clean UI: no DBG/source rows, only real player stats from backend.
+// Layout polish version: cleaner hero panel, stat cards, gear summary, active sets
+// Source of truth stays on backend: /webapp/stats/state + /webapp/mystats/state
 (function () {
   const Stats = {};
   let _apiPost = null, _tg = null, _dbg = false;
@@ -43,6 +43,18 @@
     return map[k] || String(k || "").toUpperCase();
   }
 
+  function statFullName(k){
+    const map = {
+      strength: "Strength",
+      agility: "Agility",
+      defense: "Defense",
+      vitality: "Vitality",
+      intelligence: "Intelligence",
+      luck: "Luck"
+    };
+    return map[k] || String(k || "");
+  }
+
   function show(){
     const b = qs("statsBack");
     if (!b) return;
@@ -67,10 +79,6 @@
   }
 
   function normalizeSet(s){
-    // Supports:
-    // 1) [name, count, bonus]
-    // 2) [name, count, bonus, totalParts]
-    // 3) { name, count, bonus, totalParts }
     if (Array.isArray(s)) {
       return {
         name: s[0] ?? "Set",
@@ -102,13 +110,406 @@
     return null;
   }
 
+  function ensureStyles(){
+    if (document.getElementById("ah-stats-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "ah-stats-styles";
+    style.textContent = `
+      #statsRoot { color: #e9edf6; }
+
+      .ahs-wrap{
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+        padding:2px 2px 8px;
+      }
+
+      .ahs-card{
+        position:relative;
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:16px;
+        background:
+          linear-gradient(180deg, rgba(17,20,28,.96), rgba(10,12,18,.94));
+        box-shadow:
+          0 8px 24px rgba(0,0,0,.24),
+          inset 0 1px 0 rgba(255,255,255,.04);
+        overflow:hidden;
+      }
+
+      .ahs-card::before{
+        content:"";
+        position:absolute;
+        inset:0 0 auto 0;
+        height:1px;
+        background:linear-gradient(90deg, transparent, rgba(120,180,255,.25), transparent);
+        pointer-events:none;
+      }
+
+      .ahs-pad{ padding:14px; }
+      .ahs-section-title{
+        font-size:13px;
+        font-weight:800;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#9fb6d9;
+        margin-bottom:10px;
+      }
+
+      .ahs-hero-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:12px;
+      }
+
+      .ahs-title{
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+      }
+
+      .ahs-title-main{
+        font-size:16px;
+        font-weight:900;
+        line-height:1.1;
+        color:#f3f7ff;
+      }
+
+      .ahs-title-sub{
+        font-size:12px;
+        color:rgba(220,230,255,.62);
+      }
+
+      .ahs-badges{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+      }
+
+      .ahs-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:28px;
+        padding:0 10px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:800;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.04);
+        color:#eaf1ff;
+      }
+
+      .ahs-badge.-level{
+        background:linear-gradient(180deg, rgba(55,95,160,.34), rgba(30,54,92,.28));
+        border-color:rgba(120,170,255,.28);
+      }
+
+      .ahs-badge.-unspent{
+        background:linear-gradient(180deg, rgba(130,92,24,.42), rgba(78,53,12,.34));
+        border-color:rgba(255,200,100,.28);
+        color:#ffe8b8;
+      }
+
+      .ahs-grid-3{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:10px;
+      }
+
+      .ahs-mini{
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;
+        background:rgba(255,255,255,.03);
+        padding:10px 10px 9px;
+      }
+
+      .ahs-mini-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin-bottom:6px;
+      }
+
+      .ahs-mini-label{
+        font-size:12px;
+        font-weight:800;
+        color:#c7d7f2;
+      }
+
+      .ahs-mini-value{
+        font-size:12px;
+        font-weight:800;
+        color:#f4f7ff;
+      }
+
+      .ahs-bar{
+        position:relative;
+        height:9px;
+        border-radius:999px;
+        overflow:hidden;
+        background:rgba(255,255,255,.06);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,.35);
+      }
+
+      .ahs-bar-fill{
+        position:absolute;
+        inset:0 auto 0 0;
+        border-radius:999px;
+      }
+
+      .ahs-bar-fill.-hp{
+        background:linear-gradient(90deg, #8f3036, #e45d67);
+      }
+
+      .ahs-bar-fill.-xp{
+        background:linear-gradient(90deg, #2d578f, #59a1ff);
+      }
+
+      .ahs-bar-fill.-pet{
+        background:linear-gradient(90deg, #5a3a8f, #a774ff);
+      }
+
+      .ahs-mini-foot{
+        margin-top:6px;
+        font-size:11px;
+        color:rgba(228,235,248,.58);
+        display:flex;
+        justify-content:flex-end;
+      }
+
+      .ahs-stats-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+      }
+
+      .ahs-stat{
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
+        padding:11px 11px 10px;
+      }
+
+      .ahs-stat-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:8px;
+        margin-bottom:8px;
+      }
+
+      .ahs-stat-code{
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.06em;
+        color:#eef4ff;
+      }
+
+      .ahs-stat-name{
+        font-size:11px;
+        color:rgba(220,230,255,.56);
+        margin-top:2px;
+      }
+
+      .ahs-stat-total{
+        font-size:22px;
+        font-weight:900;
+        line-height:1;
+        color:#f7fbff;
+      }
+
+      .ahs-stat-break{
+        display:grid;
+        grid-template-columns:repeat(3, 1fr);
+        gap:6px;
+      }
+
+      .ahs-chip{
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.035);
+        padding:6px 6px 5px;
+        text-align:center;
+      }
+
+      .ahs-chip-label{
+        display:block;
+        font-size:10px;
+        text-transform:uppercase;
+        letter-spacing:.06em;
+        color:rgba(215,225,245,.48);
+        margin-bottom:3px;
+      }
+
+      .ahs-chip-value{
+        display:block;
+        font-size:12px;
+        font-weight:800;
+        color:#eaf2ff;
+      }
+
+      .ahs-list{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+
+      .ahs-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        padding:10px 12px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:12px;
+        background:rgba(255,255,255,.03);
+      }
+
+      .ahs-row-left{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+      }
+
+      .ahs-row-title{
+        font-size:13px;
+        font-weight:800;
+        color:#edf4ff;
+      }
+
+      .ahs-row-sub{
+        font-size:11px;
+        color:rgba(220,230,255,.5);
+      }
+
+      .ahs-row-value{
+        font-size:14px;
+        font-weight:900;
+        color:#f4f7ff;
+      }
+
+      .ahs-sets{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+
+      .ahs-set{
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;
+        background:rgba(255,255,255,.03);
+        padding:12px;
+      }
+
+      .ahs-set-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin-bottom:8px;
+      }
+
+      .ahs-set-name{
+        font-size:13px;
+        font-weight:900;
+        color:#f0f5ff;
+      }
+
+      .ahs-set-count{
+        font-size:11px;
+        font-weight:800;
+        color:#a8bddf;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        border-radius:999px;
+        padding:4px 8px;
+      }
+
+      .ahs-set-bonuses{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+      }
+
+      .ahs-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        min-height:28px;
+        padding:0 9px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        color:#e9f1ff;
+        font-size:12px;
+        font-weight:800;
+      }
+
+      .ahs-empty{
+        font-size:12px;
+        color:rgba(220,230,255,.52);
+        padding:2px 0;
+      }
+
+      .ahs-note{
+        margin-top:10px;
+        font-size:11px;
+        color:rgba(255,235,190,.72);
+      }
+
+      .ahs-error{
+        padding:14px;
+      }
+
+      @media (min-width: 430px){
+        .ahs-grid-3{
+          grid-template-columns:repeat(3, 1fr);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function renderError(msg){
+    ensureStyles();
     const root = qs("statsRoot");
     if (!root) return;
-    root.innerHTML = `<div class="card"><div class="muted">${esc(msg || "Failed to load stats.")}</div></div>`;
+    root.innerHTML = `
+      <div class="ahs-wrap">
+        <div class="ahs-card">
+          <div class="ahs-error">
+            <div class="ahs-section-title">Stats</div>
+            <div class="ahs-empty">${esc(msg || "Failed to load stats.")}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderBarBlock(label, cur, max, cls, percent, foot){
+    return `
+      <div class="ahs-mini">
+        <div class="ahs-mini-top">
+          <div class="ahs-mini-label">${esc(label)}</div>
+          <div class="ahs-mini-value">${esc(cur)} / ${esc(max)}</div>
+        </div>
+        <div class="ahs-bar">
+          <div class="ahs-bar-fill ${cls}" style="width:${percent.toFixed(1)}%"></div>
+        </div>
+        <div class="ahs-mini-foot">${foot}</div>
+      </div>
+    `;
   }
 
   function render(stats, mystats){
+    ensureStyles();
+
     const root = qs("statsRoot");
     if (!root) return;
 
@@ -119,7 +520,7 @@
     const pet = (stats && typeof stats.pet === "object") ? stats.pet : {};
     const rawSets = Array.isArray(stats?.sets) ? stats.sets : [];
     const sets = rawSets.map(normalizeSet);
-    const unspent = mystats && mystats.unspentPoints != null ? n(mystats.unspentPoints, 0) : null;
+    const unspent = mystats && mystats.unspentPoints != null ? n(mystats.unspentPoints, 0) : 0;
 
     const hpCur = n(stats?.hpCur, 0);
     const hpMax = n(stats?.hpMax, 0);
@@ -138,107 +539,143 @@
 
     const statKeys = ["strength","agility","defense","vitality","intelligence","luck"];
 
-    const rows = statKeys.map((k) => {
+    const statCards = statKeys.map((k) => {
       const total = n(t[k], 0);
       const b = n(base[k], 0);
       const p = n(petS[k], 0);
       const g = n(gear[k], 0);
 
       return `
-        <div class="srow">
-          <span>${esc(statLabel(k))}</span>
-          <b>${esc(total)}</b>
-          <em>${esc(`${b}+${p}+${g}`)}</em>
+        <div class="ahs-stat" data-stat-key="${esc(k)}">
+          <div class="ahs-stat-head">
+            <div>
+              <div class="ahs-stat-code">${esc(statLabel(k))}</div>
+              <div class="ahs-stat-name">${esc(statFullName(k))}</div>
+            </div>
+            <div class="ahs-stat-total">${esc(total)}</div>
+          </div>
+
+          <div class="ahs-stat-break">
+            <div class="ahs-chip">
+              <span class="ahs-chip-label">Base</span>
+              <span class="ahs-chip-value">${esc(b)}</span>
+            </div>
+            <div class="ahs-chip">
+              <span class="ahs-chip-label">Pet</span>
+              <span class="ahs-chip-value">${esc(p)}</span>
+            </div>
+            <div class="ahs-chip">
+              <span class="ahs-chip-label">Gear</span>
+              <span class="ahs-chip-value">${esc(g)}</span>
+            </div>
+          </div>
         </div>
       `;
     }).join("");
 
-    const setsHtml = sets.length
+    const gearRows = statKeys
+      .map((k) => ({ key:k, val:n(gear[k], 0) }))
+      .filter((x) => x.val !== 0)
+      .sort((a, b) => Math.abs(b.val) - Math.abs(a.val))
+      .map((x) => `
+        <div class="ahs-row">
+          <div class="ahs-row-left">
+            <div class="ahs-row-title">${esc(statLabel(x.key))}</div>
+            <div class="ahs-row-sub">${esc(statFullName(x.key))}</div>
+          </div>
+          <div class="ahs-row-value">+${esc(x.val)}</div>
+        </div>
+      `)
+      .join("");
+
+    const gearHtml = gearRows
       ? `
-        <div class="card">
-          <div class="h">Active Sets</div>
-          ${sets.map((s) => {
-            const bonus = s.bonus || {};
-            const bonusLines = Object.keys(bonus)
-              .filter((k) => n(bonus[k], 0) !== 0)
-              .map((k) => {
-                return `<div class="miniRow"><span>${esc(statLabel(k))}</span><b>+${esc(n(bonus[k], 0))}</b></div>`;
-              })
-              .join("");
-
-            const progress = s.totalParts > 0
-              ? `<span class="muted">(${esc(s.count)}/${esc(s.totalParts)})</span>`
-              : `<span class="muted">(${esc(s.count)})</span>`;
-
-            return `
-              <div class="card">
-                <div class="h">${esc(s.name)} ${progress}</div>
-                ${bonusLines || `<div class="muted">No active bonus</div>`}
-              </div>
-            `;
-          }).join("")}
+        <div class="ahs-card">
+          <div class="ahs-pad">
+            <div class="ahs-section-title">Equipment Bonuses</div>
+            <div class="ahs-list">${gearRows}</div>
+          </div>
         </div>
       `
       : "";
 
+    const setsHtml = sets.length
+      ? `
+        <div class="ahs-card">
+          <div class="ahs-pad">
+            <div class="ahs-section-title">Active Sets</div>
+            <div class="ahs-sets">
+              ${sets.map((s) => {
+                const bonus = s.bonus || {};
+                const bonusLines = Object.keys(bonus)
+                  .filter((k) => n(bonus[k], 0) !== 0)
+                  .map((k) => `<span class="ahs-pill">${esc(statLabel(k))} +${esc(n(bonus[k], 0))}</span>`)
+                  .join("");
+
+                const progress = s.totalParts > 0
+                  ? `${n(s.count, 0)}/${n(s.totalParts, 0)}`
+                  : `${n(s.count, 0)}`;
+
+                return `
+                  <div class="ahs-set">
+                    <div class="ahs-set-head">
+                      <div class="ahs-set-name">${esc(s.name)}</div>
+                      <div class="ahs-set-count">${esc(progress)}</div>
+                    </div>
+                    <div class="ahs-set-bonuses">
+                      ${bonusLines || `<div class="ahs-empty">No active bonus</div>`}
+                    </div>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        </div>
+      `
+      : "";
+
+    const petFooter = petName !== "None"
+      ? `lvl ${esc(petLevel)} • ${petXpPct.toFixed(0)}%`
+      : `No active pet`;
+
     root.innerHTML = `
-      <div class="card">
-        <div class="row">
-          <div class="k">Level</div>
-          <div class="v">${esc(level)}</div>
+      <div class="ahs-wrap">
+        <div class="ahs-card">
+          <div class="ahs-pad">
+            <div class="ahs-hero-top">
+              <div class="ahs-title">
+                <div class="ahs-title-main">Character Stats</div>
+                <div class="ahs-title-sub">Live totals from backend</div>
+              </div>
+
+              <div class="ahs-badges">
+                <div class="ahs-badge -level">Lvl ${esc(level)}</div>
+                <div class="ahs-badge -unspent">Unspent ${esc(unspent)}</div>
+              </div>
+            </div>
+
+            <div class="ahs-grid-3">
+              ${renderBarBlock("HP", hpCur, hpMax, "-hp", hpPct, `${hpPct.toFixed(0)}%`)}
+              ${renderBarBlock("XP", xpCur, xpNeed, "-xp", xpPct, `${xpPct.toFixed(0)}%`)}
+              ${renderBarBlock("Pet", petXpCur, petXpNeed, "-pet", petXpPct, `${esc(petName)} ${esc(petName !== "None" ? `• lvl ${petLevel}` : "")}`.trim())}
+            </div>
+
+            ${unspent > 0 ? `<div class="ahs-note">${esc(unspent)} stat point${unspent === 1 ? "" : "s"} ready to spend.</div>` : ``}
+          </div>
         </div>
 
-        <div class="row">
-          <div class="k">HP</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(hpCur)} / ${esc(hpMax)}</span>
-              <div class="pbar" aria-label="HP">
-                <div class="pfill" style="width:${hpPct.toFixed(1)}%"></div>
-              </div>
-              <span class="ppct">${hpPct.toFixed(0)}%</span>
+        <div class="ahs-card">
+          <div class="ahs-pad">
+            <div class="ahs-section-title">Attributes</div>
+            <div class="ahs-stats-grid">
+              ${statCards}
             </div>
           </div>
         </div>
 
-        <div class="row">
-          <div class="k">XP</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(xpCur)} / ${esc(xpNeed)}</span>
-              <div class="pbar" aria-label="XP">
-                <div class="pfill" style="width:${xpPct.toFixed(1)}%"></div>
-              </div>
-              <span class="ppct">${xpPct.toFixed(0)}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="k">Pet</div>
-          <div class="v">
-            <div class="vline">
-              <span>${esc(petName)} <span class="muted">lvl ${esc(petLevel)}</span></span>
-              <div class="pbar" aria-label="Pet XP">
-                <div class="pfill" style="width:${petXpPct.toFixed(1)}%"></div>
-              </div>
-              <span class="ppct">${petXpPct.toFixed(0)}%</span>
-            </div>
-          </div>
-        </div>
-
-        ${unspent !== null
-          ? `<div class="row"><div class="k">Unspent</div><div class="v"><b>${esc(unspent)}</b></div></div>`
-          : ``}
+        ${gearHtml}
+        ${setsHtml}
       </div>
-
-      <div class="card">
-        <div class="h">Totals</div>
-        <div class="grid">${rows}</div>
-        <div class="muted tiny">format: total (base + pet + gear)</div>
-      </div>
-
-      ${setsHtml}
     `;
   }
 
@@ -246,9 +683,20 @@
     if (_loading) return;
     _loading = true;
 
+    ensureStyles();
+
     const root = qs("statsRoot");
     if (root) {
-      root.innerHTML = `<div class="card"><div class="muted">Loading…</div></div>`;
+      root.innerHTML = `
+        <div class="ahs-wrap">
+          <div class="ahs-card">
+            <div class="ahs-pad">
+              <div class="ahs-section-title">Stats</div>
+              <div class="ahs-empty">Loading…</div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
@@ -261,12 +709,9 @@
       return;
     }
 
-    let statsRes = null;
-    let myRes = null;
-
     try {
-      statsRes = await _apiPost("/webapp/stats/state", { t: Date.now() });
-      myRes = await _apiPost("/webapp/mystats/state", { t: Date.now() }).catch(() => null);
+      const statsRes = await _apiPost("/webapp/stats/state", { t: Date.now() });
+      const myRes = await _apiPost("/webapp/mystats/state", { t: Date.now() }).catch(() => null);
 
       if (_dbg) {
         console.log("[Stats] statsRes =", statsRes);
@@ -283,7 +728,6 @@
         } else {
           renderError(reason);
         }
-        _loading = false;
         return;
       }
 
@@ -293,9 +737,9 @@
       if (_dbg) console.error("[Stats] load failed", e);
       renderError("Failed to load stats.");
       try { _tg?.showAlert?.("Stats load failed"); } catch (_) {}
+    } finally {
+      _loading = false;
     }
-
-    _loading = false;
   }
 
   Stats.refresh = load;
@@ -303,6 +747,8 @@
   Stats.close = function(){ hide(); };
 
   Stats.init = function({ apiPost, tg, dbg } = {}){
+    ensureStyles();
+
     _apiPost = apiPost || _apiPost || window.apiPost || window.S?.apiPost || null;
     _tg = tg || _tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
