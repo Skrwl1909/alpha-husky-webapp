@@ -375,14 +375,14 @@
         source: ex.source || "scores"
       });
 
-      console.log("[AHMap][PIN]", {
-        nodeId: _pinNodeId(pin),
-        buildingId: _pinBuildingId(pin),
-        leader: ex.owner,
-        contested: ex.contested,
-        source: ex.source,
-        scores: ex.scores
-      });
+    //  console.log("[AHMap][PIN]", {
+    //    nodeId: _pinNodeId(pin),
+   //     buildingId: _pinBuildingId(pin),
+   //     leader: ex.owner,
+   //     contested: ex.contested,
+   //     source: ex.source,
+   //     scores: ex.scores
+   //   });
     });
   }
 
