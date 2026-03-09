@@ -304,6 +304,34 @@
         margin-bottom:8px;
       }
 
+      .ahs-stat-right{
+        display:flex;
+        align-items:flex-start;
+        gap:8px;
+      }
+
+      .ahs-plus{
+        width:28px;
+        height:28px;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.10);
+        background:linear-gradient(180deg, rgba(120,170,255,.18), rgba(70,110,180,.14));
+        color:#eef4ff;
+        font-size:18px;
+        font-weight:900;
+        line-height:1;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        cursor:pointer;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      }
+
+      .ahs-plus:disabled{
+        opacity:.38;
+        cursor:default;
+      }
+
       .ahs-stat-code{
         font-size:12px;
         font-weight:900;
