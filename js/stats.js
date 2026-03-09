@@ -567,6 +567,8 @@
 
     const statKeys = ["strength","agility","defense","vitality","intelligence","luck"];
 
+    const canSpend = unspent > 0;
+
     const statCards = statKeys.map((k) => {
       const total = n(t[k], 0);
       const b = n(base[k], 0);
@@ -580,7 +582,17 @@
               <div class="ahs-stat-code">${esc(statLabel(k))}</div>
               <div class="ahs-stat-name">${esc(statFullName(k))}</div>
             </div>
-            <div class="ahs-stat-total">${esc(total)}</div>
+
+            <div class="ahs-stat-right">
+              <div class="ahs-stat-total">${esc(total)}</div>
+              <button
+                type="button"
+                class="ahs-plus"
+                data-stat="${esc(k)}"
+                ${canSpend ? "" : "disabled"}
+                title="${canSpend ? `Add 1 ${statFullName(k)}` : "No unspent points"}"
+              >+</button>
+            </div>
           </div>
 
           <div class="ahs-stat-break">
