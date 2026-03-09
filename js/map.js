@@ -1,5 +1,5 @@
-// js/map.js — Alpha Husky Map module (LIVE faction control truth-first)
-// - live faction nodes resolve leader ONLY from backend leadersMap scores
+// js/map.js — Alpha Husky Map module (LIVE faction control + live siege state truth-first)
+// - live faction nodes resolve owner/status only from backend leadersMap
 // - non-live / locked nodes NEVER show faction leader badge
 // - cached leadersMap is re-applied after pin rerenders / focus changes
 (function () {
@@ -38,7 +38,7 @@
     const s = document.createElement("style");
     s.id = CSS_ID;
     s.textContent = `
-/* === Map Level 1: faction leader ring + badge === */
+/* === Map Level 1: faction leader ring + badge + siege state === */
 .map-pin{ position:absolute; }
 .map-pin .pin-ring{
   position:absolute;
@@ -51,15 +51,18 @@
 .map-pin .pin-badge{
   position:absolute;
   top:-10px; right:-10px;
-  width:22px; height:22px;
+  min-width:22px; height:22px;
+  padding:0 6px;
   border-radius:999px;
   display:none;
   place-items:center;
   font-size:10px; font-weight:800;
+  letter-spacing:.02em;
   background:rgba(0,0,0,.72);
   border:1px solid rgba(255,255,255,.18);
   pointer-events:none;
   z-index:3;
+  white-space:nowrap;
 }
 .map-pin .pin-icon, .map-pin > img{
   position:relative;
@@ -77,11 +80,65 @@
 .map-pin.f-pb .pin-badge{ color: rgba(255,160,70,1); border-color: rgba(255,160,70,.35); }
 .map-pin.f-ih .pin-badge{ color: rgba(90,235,255,1); border-color: rgba(90,235,255,.35); }
 
-.map-pin.is-controlled .pin-ring{ opacity: 1; }
+.map-pin.is-controlled .pin-ring{ opacity:1; }
 .map-pin.is-contested .pin-ring{ animation: ahPinPulse 1.6s ease-in-out infinite; }
+
+/* siege states */
+.map-pin.siege-forming .pin-ring{
+  border-color: rgba(255,170,70,.96) !important;
+  box-shadow: 0 0 0 2px rgba(255,170,70,.22), 0 0 18px rgba(255,140,40,.35) !important;
+  animation: ahSiegePulse 1.2s ease-in-out infinite;
+}
+.map-pin.siege-running .pin-ring{
+  border-color: rgba(255,75,75,.98) !important;
+  box-shadow: 0 0 0 2px rgba(255,75,75,.22), 0 0 22px rgba(255,75,75,.42) !important;
+  animation: ahSiegePulseFast .85s ease-in-out infinite;
+}
+.map-pin.siege-cooldown .pin-ring{
+  border-color: rgba(80,220,180,.96) !important;
+  box-shadow: 0 0 0 2px rgba(80,220,180,.18), 0 0 16px rgba(80,220,180,.28) !important;
+}
+.map-pin.siege-forming .pin-badge,
+.map-pin.siege-running .pin-badge,
+.map-pin.siege-cooldown .pin-badge{
+  display:grid;
+  color:#fff !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+.map-pin.siege-forming .pin-badge{ background:rgba(255,140,40,.88); }
+.map-pin.siege-running .pin-badge{ background:rgba(220,60,60,.90); }
+.map-pin.siege-cooldown .pin-badge{ background:rgba(50,180,145,.88); }
+
+.chip-state{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:26px;
+  height:18px;
+  margin-left:6px;
+  padding:0 6px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.02em;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.10);
+  vertical-align:middle;
+}
+.chip-state.s-forming{ background:rgba(255,140,40,.16); border-color:rgba(255,170,70,.30); color:#ffbe78; }
+.chip-state.s-running{ background:rgba(220,60,60,.18); border-color:rgba(255,90,90,.30); color:#ff9a9a; }
+.chip-state.s-cooldown{ background:rgba(50,180,145,.16); border-color:rgba(80,220,180,.28); color:#96f0d7; }
 
 @keyframes ahPinPulse{
   0%,100%{ transform:scale(1); opacity:.85; }
+  50%{ transform:scale(1.08); opacity:1; }
+}
+@keyframes ahSiegePulse{
+  0%,100%{ transform:scale(1); opacity:.92; }
+  50%{ transform:scale(1.06); opacity:1; }
+}
+@keyframes ahSiegePulseFast{
+  0%,100%{ transform:scale(1); opacity:.92; }
   50%{ transform:scale(1.08); opacity:1; }
 }
 `;
@@ -92,6 +149,19 @@
     return String(s || "").replace(/[&<>"']/g, m => ({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
     }[m]));
+  }
+
+  function rid(prefix){
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  }
+
+  function getApiPost(){
+    const fn =
+      window.S?.apiPost ||
+      window.apiPost ||
+      null;
+
+    return (typeof fn === "function") ? fn : null;
   }
 
   function iconUrl(owner) {
@@ -117,7 +187,11 @@
 
   function _clearFactionClasses(pinEl) {
     if (!pinEl) return;
-    pinEl.classList.remove("f-rb", "f-ew", "f-pb", "f-ih", "is-contested", "is-controlled");
+    pinEl.classList.remove(
+      "f-rb", "f-ew", "f-pb", "f-ih",
+      "is-contested", "is-controlled",
+      "siege-forming", "siege-running", "siege-cooldown"
+    );
   }
 
   function _normFactionKey(raw) {
@@ -225,21 +299,53 @@
     return ((top1 - top2) / top1) < 0.12;
   }
 
+  function _extractSiegeMeta(info) {
+    const src = (info && typeof info === "object") ? info : {};
+    const siegeStatus = String(src?.siegeStatus || src?.status || "").trim().toLowerCase();
+
+    return {
+      siegeStatus,
+      attackerFaction: _normFactionKey(src?.attackerFaction || ""),
+      defenderFaction: _normFactionKey(src?.defenderFaction || ""),
+      cooldownLeftSec: Number(src?.cooldownLeftSec || 0) || 0,
+      attackersCount: Number(src?.attackersCount || 0) || 0,
+      minAttackers: Number(src?.minAttackers || 0) || 0,
+      watchCount: Number(src?.watchCount || 0) || 0,
+      isUnderAttack: !!src?.isUnderAttack
+    };
+  }
+
   function resolveNodeLeader(meta, info) {
     const liveNode = !!meta?.liveFactionNode;
     const safeInfo = (info && typeof info === "object") ? info : {};
     const scores = _extractScores(safeInfo);
+    const siegeMeta = _extractSiegeMeta(safeInfo);
 
-    // LIVE nodes: truth only from scores
+    // LIVE nodes: truth only from leadersMap/backend
     if (liveNode) {
       const top = _resolveTopFaction(scores);
+      const explicitOwner = _normFactionKey(
+        safeInfo?.ownerFaction ||
+        safeInfo?.owner ||
+        safeInfo?.faction ||
+        ""
+      );
+
+      const owner = explicitOwner || top.owner || "";
+      const contested = (
+        siegeMeta.siegeStatus === "forming" ||
+        siegeMeta.siegeStatus === "running" ||
+        _isContested(safeInfo, top.top1, top.top2)
+      );
+
       return {
-        owner: top.owner || "",
-        contested: _isContested(safeInfo, top.top1, top.top2),
+        owner,
+        contested,
         top1: top.top1,
         top2: top.top2,
         scores,
-        source: "scores"
+        source: explicitOwner ? "ownerFaction" : "scores",
+        siegeMeta
       };
     }
 
@@ -250,8 +356,40 @@
       top1: 0,
       top2: 0,
       scores: {},
-      source: "non-live"
+      source: "non-live",
+      siegeMeta
     };
+  }
+
+  function _leaderBadgeText(owner, siegeMeta) {
+    const status = String(siegeMeta?.siegeStatus || "");
+    if (status === "forming") return "ATK";
+    if (status === "running") return "LIVE";
+    if (status === "cooldown") return "CD";
+    return CODE[owner] || "";
+  }
+
+  function _chipStateText(siegeMeta) {
+    const status = String(siegeMeta?.siegeStatus || "");
+    if (status === "forming") return "UNDER ATTACK";
+    if (status === "running") return "LIVE";
+    if (status === "cooldown") return "SECURED";
+    return "";
+  }
+
+  function _chipStateClass(siegeMeta) {
+    const status = String(siegeMeta?.siegeStatus || "");
+    if (status === "forming") return "s-forming";
+    if (status === "running") return "s-running";
+    if (status === "cooldown") return "s-cooldown";
+    return "";
+  }
+
+  function _applySiegeStateClasses(pinEl, siegeMeta) {
+    const status = String(siegeMeta?.siegeStatus || "");
+    if (status === "forming") pinEl.classList.add("siege-forming");
+    if (status === "running") pinEl.classList.add("siege-running");
+    if (status === "cooldown") pinEl.classList.add("siege-cooldown");
   }
 
   function setLeader(pinEl, owner, opts) {
@@ -261,6 +399,7 @@
     const name = pinEl.dataset.nodeName || "";
     const contested = !!opts?.contested;
     const source = String(opts?.source || "");
+    const siegeMeta = opts?.siegeMeta || {};
 
     _clearFactionClasses(pinEl);
 
@@ -269,6 +408,11 @@
 
     pinEl.dataset.liveLeader = owner || "";
     pinEl.dataset.leaderSource = source || "";
+    pinEl.dataset.siegeStatus = String(siegeMeta?.siegeStatus || "");
+    pinEl.dataset.siegeAttackerFaction = String(siegeMeta?.attackerFaction || "");
+    pinEl.dataset.siegeDefenderFaction = String(siegeMeta?.defenderFaction || "");
+    pinEl.dataset.siegeCooldownLeftSec = String(siegeMeta?.cooldownLeftSec || 0);
+    pinEl.dataset.isUnderAttack = siegeMeta?.isUnderAttack ? "1" : "0";
 
     if (!owner) {
       if (badge) {
@@ -278,20 +422,25 @@
       if (chip) {
         chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
       }
+      _applySiegeStateClasses(pinEl, siegeMeta);
       if (contested) pinEl.classList.add("is-contested");
       return;
     }
 
     const code = CODE[owner] || "";
     const cls = CLS[owner] || "";
+    const badgeText = _leaderBadgeText(owner, siegeMeta);
+    const chipStateText = _chipStateText(siegeMeta);
+    const chipStateClass = _chipStateClass(siegeMeta);
 
     if (cls) pinEl.classList.add(cls);
     pinEl.classList.add("is-controlled");
     if (contested) pinEl.classList.add("is-contested");
+    _applySiegeStateClasses(pinEl, siegeMeta);
 
     if (badge) {
-      badge.textContent = code || "";
-      badge.style.display = "grid";
+      badge.textContent = badgeText || "";
+      badge.style.display = badgeText ? "grid" : "none";
     }
 
     if (chip) {
@@ -300,7 +449,8 @@
           <img src="${iconUrl(owner)}" alt="${esc(owner)}" style="width:12px;height:12px;display:block" />
         </span>
         <span class="chip-name">
-          ${esc(name)}${code ? ` • ${code}` : ""}${contested ? ` <span class="chip-warn">⚠</span>` : ""}
+          ${esc(name)}${code ? ` • ${code}` : ""}${contested && !chipStateText ? ` <span class="chip-warn">⚠</span>` : ""}
+          ${chipStateText ? ` <span class="chip-state ${chipStateClass}">${esc(chipStateText)}</span>` : ""}
         </span>
       `;
       const img = chip.querySelector("img");
@@ -309,7 +459,7 @@
   }
 
   function _clearLeader(pinEl) {
-    setLeader(pinEl, null, { contested: false, source: "clear" });
+    setLeader(pinEl, null, { contested: false, source: "clear", siegeMeta: {} });
   }
 
   function decoratePin(pinEl, node) {
@@ -345,8 +495,9 @@
   }
 
   function applyLeaders(leadersMap) {
-    if (!leadersMap) return;
+    if (!leadersMap || typeof leadersMap !== "object") return;
     _lastLeadersMap = leadersMap;
+    try { API._leadersMap = leadersMap; } catch (_) {}
 
     const pins = document.querySelectorAll(_getPinsSelector());
 
@@ -372,17 +523,9 @@
 
       setLeader(pin, ex.owner || null, {
         contested: !!ex.contested,
-        source: ex.source || "scores"
+        source: ex.source || "scores",
+        siegeMeta: ex.siegeMeta || {}
       });
-
-    //  console.log("[AHMap][PIN]", {
-    //    nodeId: _pinNodeId(pin),
-   //     buildingId: _pinBuildingId(pin),
-   //     leader: ex.owner,
-   //     contested: ex.contested,
-   //     source: ex.source,
-   //     scores: ex.scores
-   //   });
     });
   }
 
@@ -425,6 +568,32 @@
     }, true);
   }
 
+  async function refreshLeaders() {
+    try {
+      const apiPost = getApiPost();
+      if (!apiPost) return null;
+
+      const out = await apiPost("/webapp/map/leaders", {
+        run_id: rid("lead")
+      });
+
+      const leaders =
+        out?.leadersMap ||
+        out?.data?.leadersMap ||
+        out?.state?.leadersMap ||
+        out?.data ||
+        out;
+
+      if (leaders && typeof leaders === "object") {
+        applyLeaders(leaders);
+        return leaders;
+      }
+    } catch (err) {
+      console.warn("[AHMap] refreshLeaders failed:", err);
+    }
+    return null;
+  }
+
   function init() {
     if (_inited) return;
     _inited = true;
@@ -434,11 +603,13 @@
   }
 
   const API = {
+    _leadersMap: _lastLeadersMap,
     init,
     decoratePin,
     setLeader,
     applyLeaders,
     resolveNodeLeader,
+    refreshLeaders,
     reapplyLastLeaders: () => { if (_lastLeadersMap) applyLeaders(_lastLeadersMap); }
   };
 
