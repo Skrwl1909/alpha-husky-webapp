@@ -2,21 +2,211 @@
 (function () {
   const Siege = {};
   let _apiPost = null, _tg = null, _dbg = false;
-  function getApiPost(){
-  const fn =
-    _apiPost ||
-    window.apiPost ||
-    window.S?.apiPost ||
-    null;
 
-  return (typeof fn === "function") ? fn : null;
-}
+  function getApiPost() {
+    const fn =
+      _apiPost ||
+      window.apiPost ||
+      window.S?.apiPost ||
+      null;
 
-  function qs(id){ return document.getElementById(id); }
-  function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
-  function rid(prefix){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
+    return (typeof fn === "function") ? fn : null;
+  }
 
-  function ensureModal(){
+  function qs(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[m]));
+  }
+
+  function rid(prefix) {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function normFaction(v) {
+    return String(v || "").trim().toLowerCase();
+  }
+
+  function factionLabel(f) {
+    const key = normFaction(f);
+    const map = {
+      rogue_byte: "Rogue Byte",
+      echo_wardens: "Echo Wardens",
+      pack_burners: "Pack Burners",
+      inner_howl: "Inner Howl"
+    };
+    if (!key) return "Neutral";
+    return map[key] || key.split("_").map(x => x ? x[0].toUpperCase() + x.slice(1) : "").join(" ");
+  }
+
+  function normalize(raw) {
+    return raw || null;
+  }
+
+  function getNode(raw) {
+    const out = normalize(raw) || {};
+    if (out.siegeNode && typeof out.siegeNode === "object") return out.siegeNode;
+    if (out.data?.siegeNode && typeof out.data.siegeNode === "object") return out.data.siegeNode;
+    if (out.node && typeof out.node === "object") return out.node;
+    if (out.data && typeof out.data === "object" && (out.data.nodeId || out.data.ownerFaction || out.data.currentSiege)) return out.data;
+    if (out.nodeId || out.ownerFaction || out.currentSiege) return out;
+    return {};
+  }
+
+  function getCurrentSiege(node) {
+    return node?.currentSiege || node?.siege || node?.activeSiege || null;
+  }
+
+  function getSiegeStatus(node) {
+    const cur = getCurrentSiege(node);
+    return String(cur?.status || "").trim().toUpperCase();
+  }
+
+  function isNeutralNode(node) {
+    const owner = normFaction(node?.ownerFaction || node?.owner || "");
+    return !owner;
+  }
+
+  function getYouFaction(raw, node) {
+    return normFaction(raw?.you?.faction || node?.youFaction || "");
+  }
+
+  function defendersList(node) {
+    if (Array.isArray(node?.siegeDefenders)) return node.siegeDefenders;
+    if (Array.isArray(node?.defenders)) return node.defenders;
+    if (Array.isArray(node?.watchers)) return node.watchers;
+    return [];
+  }
+
+  function attackersList(node) {
+    const cur = getCurrentSiege(node);
+    return Array.isArray(cur?.attackers) ? cur.attackers : [];
+  }
+
+  function curDefendersList(node) {
+    const cur = getCurrentSiege(node);
+    return Array.isArray(cur?.defenders) ? cur.defenders : [];
+  }
+
+  function fightsList(node) {
+    const cur = getCurrentSiege(node);
+    return Array.isArray(cur?.fightHistory) ? cur.fightHistory : [];
+  }
+
+  function guardUsed(node) {
+    const explicit = Number(node?.guardSlotsUsed);
+    if (Number.isFinite(explicit) && explicit >= 0) return explicit;
+    return defendersList(node).length;
+  }
+
+  function guardMax(node) {
+    const explicitA = Number(node?.guardSlotsMax);
+    if (Number.isFinite(explicitA) && explicitA > 0) return explicitA;
+    const explicitB = Number(node?.guardSlots);
+    if (Number.isFinite(explicitB) && explicitB > 0) return explicitB;
+    return 4;
+  }
+
+  function cooldownLeftSec(node) {
+    const explicitA = Number(node?.cooldownLeftSec);
+    if (Number.isFinite(explicitA) && explicitA >= 0) return explicitA;
+
+    const explicitB = Number(node?.siegeCooldownLeftSec);
+    if (Number.isFinite(explicitB) && explicitB >= 0) return explicitB;
+
+    const until = Number(node?.siegeCooldownUntil || 0);
+    const now = Math.floor(Date.now() / 1000);
+    return Math.max(0, until - now);
+  }
+
+  function cooldownLabel(node) {
+    const left = cooldownLeftSec(node);
+    if (left <= 0) return "Ready";
+    const m = Math.floor(left / 60);
+    const s = left % 60;
+    if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
+    return `${s}s`;
+  }
+
+  function setBtn(id, visible, label) {
+    const el = qs(id);
+    if (!el) return;
+    el.hidden = !visible;
+    el.style.display = visible ? "" : "none";
+    el.disabled = !visible;
+    if (label) el.textContent = label;
+  }
+
+  function resetActionBar() {
+    setBtn("siegeRefresh", true, "Refresh");
+    setBtn("siegeWatch", false, "Take Watch");
+    setBtn("siegeUnwatch", false, "Leave Watch");
+    setBtn("siegeStart", false, "Start Siege");
+    setBtn("siegeJoin", false, "Join Siege");
+    setBtn("siegeLaunch", false, "Launch");
+    setBtn("siegeNext", false, "Next Fight");
+  }
+
+  function updateActionBar(raw) {
+    const out = normalize(raw) || {};
+    if (out.ok === false) {
+      resetActionBar();
+      return;
+    }
+
+    const node = getNode(out);
+    const cur = getCurrentSiege(node);
+    const status = getSiegeStatus(node);
+
+    const youFaction = getYouFaction(out, node);
+    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+    const attackerFaction = normFaction(cur?.attackerFaction || "");
+    const neutral = !ownerFaction;
+
+    const hasForming = status === "FORMING";
+    const hasRunning = status === "RUNNING";
+    const hasActiveSiege = hasForming || hasRunning;
+
+    const showWatch = !neutral && !hasActiveSiege && !!ownerFaction && youFaction === ownerFaction;
+    const showUnwatch = !neutral && !hasActiveSiege && !!ownerFaction && youFaction === ownerFaction;
+
+    const showStart =
+      !!youFaction &&
+      !hasActiveSiege &&
+      (
+        neutral ||
+        (!!ownerFaction && ownerFaction !== youFaction)
+      );
+
+    const showJoin =
+      !!youFaction &&
+      hasForming &&
+      !!attackerFaction &&
+      attackerFaction === youFaction;
+
+    const showLaunch =
+      hasForming &&
+      !!attackerFaction &&
+      attackerFaction === youFaction;
+
+    const showNext = hasRunning;
+
+    setBtn("siegeRefresh", true, "Refresh");
+    setBtn("siegeWatch", showWatch, "Take Watch");
+    setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
+    setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
+    setBtn("siegeJoin", showJoin, "Join Siege");
+    setBtn("siegeLaunch", showLaunch, "Launch");
+    setBtn("siegeNext", showNext, "Next Fight");
+  }
+
+  function ensureModal() {
     if (qs("siegeBack")) return;
 
     const wrap = document.createElement("div");
@@ -74,6 +264,8 @@
         background:rgba(255,255,255,.08); color:#fff; font-weight:700;
       }
       .siege-btn:hover{ background:rgba(255,255,255,.14); }
+      .siege-btn[hidden]{ display:none !important; }
+
       .siege-card{
         border:1px solid rgba(255,255,255,.08);
         background:rgba(255,255,255,.03);
@@ -81,13 +273,45 @@
         padding:10px 12px;
         margin-bottom:10px;
       }
-      .siege-kv{ display:flex; justify-content:space-between; gap:10px; margin:4px 0; }
-      .siege-list{ margin:6px 0 0; padding-left:18px; opacity:.92; }
-      .siege-muted{ opacity:.68; font-size:12px; }
-      .siege-row{ display:flex; flex-wrap:wrap; gap:8px; }
+
+      .siege-kv{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:10px;
+        margin:4px 0;
+      }
+
+      .siege-list{
+        margin:6px 0 0;
+        padding-left:18px;
+        opacity:.92;
+      }
+
+      .siege-muted{
+        opacity:.68;
+        font-size:12px;
+      }
+
+      .siege-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+      }
+
       .siege-pill{
-        padding:6px 8px; border-radius:999px; font-size:12px;
-        background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08);
+        padding:6px 8px;
+        border-radius:999px;
+        font-size:12px;
+        background:rgba(255,255,255,.07);
+        border:1px solid rgba(255,255,255,.08);
+      }
+
+      .siege-note{
+        margin-top:8px;
+        font-size:12px;
+        line-height:1.35;
+        opacity:.82;
       }
     `;
     document.head.appendChild(style);
@@ -96,72 +320,85 @@
     wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
 
     qs("siegeRefresh").onclick = () => loadState();
-    qs("siegeWatch").onclick = () => act("/webapp/siege/watch", "watch");
-    qs("siegeUnwatch").onclick = () => act("/webapp/siege/unwatch", "unwatch");
-    qs("siegeStart").onclick = () => act("/webapp/siege/start", "start");
-    qs("siegeJoin").onclick = () => act("/webapp/siege/join", "join");
-    qs("siegeLaunch").onclick = () => act("/webapp/siege/launch", "launch");
-    qs("siegeNext").onclick = () => act("/webapp/siege/next", "next");
+    qs("siegeWatch").onclick = () => act("/webapp/siege/watch", "siege_watch");
+    qs("siegeUnwatch").onclick = () => act("/webapp/siege/unwatch", "siege_unwatch");
+    qs("siegeStart").onclick = () => act("/webapp/siege/start", "siege_start");
+    qs("siegeJoin").onclick = () => act("/webapp/siege/join", "siege_join");
+    qs("siegeLaunch").onclick = () => act("/webapp/siege/launch", "siege_launch");
+    qs("siegeNext").onclick = () => act("/webapp/siege/next", "siege_next");
+
+    resetActionBar();
   }
 
-  function open(){
+  function open() {
     ensureModal();
-    qs("siegeBack").style.display = "flex";
+    const back = qs("siegeBack");
+    if (back) back.style.display = "flex";
     loadState();
   }
 
-  function close(){
+  function close() {
     const el = qs("siegeBack");
     if (el) el.style.display = "none";
   }
 
-  function normalize(out){
-    if (!out) return null;
-    return out.data || out.state || out;
-  }
-
-  function factionLabel(f){
-    const m = {
-      rogue_byte: "Rogue Byte",
-      echo_wardens: "Echo Wardens",
-      pack_burners: "Pack Burners",
-      inner_howl: "Inner Howl"
-    };
-    return m[String(f||"").toLowerCase()] || (f || "—");
-  }
-
-  function render(out){
-    const d = normalize(out) || {};
+  function render(raw) {
+    const out = normalize(raw) || {};
     const root = qs("siegeRoot");
     if (!root) return;
 
-    const defenders = Array.isArray(d.siegeDefenders) ? d.siegeDefenders : [];
-    const cur = d.currentSiege || null;
-    const attackers = Array.isArray(cur?.attackers) ? cur.attackers : [];
-    const curDefs = Array.isArray(cur?.defenders) ? cur.defenders : [];
-    const fights = Array.isArray(cur?.fightHistory) ? cur.fightHistory : [];
-    const owner = d.ownerFaction || "";
-    const cd = Number(d.siegeCooldownUntil || 0);
-    const now = Math.floor(Date.now()/1000);
-    const left = Math.max(0, cd - now);
+    if (out.ok === false) {
+      const reason = out.reason || "UNKNOWN";
+      qs("siegeSub").textContent = "Siege control node";
+      root.innerHTML = `
+        <div class="siege-card">
+          Failed to load siege state.<br>
+          <span class="siege-muted">${esc(reason)}</span>
+        </div>
+      `;
+      resetActionBar();
+      return;
+    }
+
+    const node = getNode(out);
+    const cur = getCurrentSiege(node);
+    const status = getSiegeStatus(node);
+
+    const defenders = defendersList(node);
+    const attackers = attackersList(node);
+    const curDefs = curDefendersList(node);
+    const fights = fightsList(node);
+
+    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+    const neutral = !ownerFaction;
+
+    const ownerText = factionLabel(ownerFaction);
+    const watchText = `${guardUsed(node)} / ${guardMax(node)}`;
+    const cooldownText = cooldownLabel(node);
 
     qs("siegeSub").textContent =
-      cur ? `Status: ${cur.status || "—"}` : `Owner: ${factionLabel(owner)}`;
+      cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
 
     root.innerHTML = `
       <div class="siege-card">
-        <div class="siege-kv"><strong>Owner</strong><span>${esc(factionLabel(owner))}</span></div>
-        <div class="siege-kv"><strong>Watch</strong><span>${defenders.length} / 4</span></div>
-        <div class="siege-kv"><strong>Cooldown</strong><span>${left > 0 ? `${left}s` : "Ready"}</span></div>
-        <div class="siege-muted">Control this node to hold the line. Break it to take the chain.</div>
+        <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
+        <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
+        <div class="siege-kv"><strong>Cooldown</strong><span>${esc(cooldownText)}</span></div>
+        <div class="siege-note">
+          ${
+            neutral
+              ? `This node is neutral. Start Siege to claim it.`
+              : `Control this node to hold the line. Break it to take the chain.`
+          }
+        </div>
       </div>
 
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
         ${
           defenders.length
-            ? `<ul class="siege-list">${defenders.map(x => `<li>${esc(x.name || x.uid || "Unknown")}</li>`).join("")}</ul>`
-            : `<div class="siege-muted">No defenders assigned.</div>`
+            ? `<ul class="siege-list">${defenders.map(x => `<li>${esc(x?.name || x?.displayName || x?.uid || "Unknown")}</li>`).join("")}</ul>`
+            : `<div class="siege-muted">${neutral ? "No defenders. Neutral node." : "No defenders assigned."}</div>`
         }
       </div>
 
@@ -169,29 +406,29 @@
         <div style="font-weight:800;margin-bottom:6px">Active Siege</div>
         ${
           cur ? `
-            <div class="siege-kv"><strong>Status</strong><span>${esc(cur.status || "—")}</span></div>
+            <div class="siege-kv"><strong>Status</strong><span>${esc(status || "—")}</span></div>
             <div class="siege-kv"><strong>Attacker Faction</strong><span>${esc(factionLabel(cur.attackerFaction))}</span></div>
-            <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(factionLabel(cur.defenderFaction))}</span></div>
+            <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(cur.defenderFaction ? factionLabel(cur.defenderFaction) : "Neutral")}</span></div>
             <div class="siege-kv"><strong>Fight No.</strong><span>${Number(cur.currentFight || 0)}</span></div>
 
             <div style="margin-top:10px;font-weight:700">Attackers</div>
             ${
               attackers.length
-                ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x.name || x.uid || "Unknown")}${x.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
+                ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
                 : `<div class="siege-muted">No attackers yet.</div>`
             }
 
             <div style="margin-top:10px;font-weight:700">Defenders in Siege</div>
             ${
               curDefs.length
-                ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x.name || x.uid || "Unknown")}${x.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
-                : `<div class="siege-muted">Will be populated on launch.</div>`
+                ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
+                : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may remain empty." : "Will be populated on launch."}</div>`
             }
 
             <div style="margin-top:10px;font-weight:700">Fight History</div>
             ${
               fights.length
-                ? `<ul class="siege-list">${fights.slice(-8).reverse().map(f => `<li>Fight ${Number(f.fightNo||0)} · winner: ${esc(f.winnerUid || "—")}</li>`).join("")}</ul>`
+                ? `<ul class="siege-list">${fights.slice(-8).reverse().map(f => `<li>Fight ${Number(f?.fightNo || 0)} · winner: ${esc(f?.winnerUid || "—")}</li>`).join("")}</ul>`
                 : `<div class="siege-muted">No fights resolved yet.</div>`
             }
           `
@@ -199,68 +436,78 @@
         }
       </div>
     `;
+
+    updateActionBar(out);
   }
 
- async function loadState(){
-  try{
-    const apiPost = getApiPost();
-    if (!apiPost) throw new Error("apiPost not ready");
+  async function loadState() {
+    try {
+      const apiPost = getApiPost();
+      if (!apiPost) throw new Error("apiPost not ready");
 
-    const out = await apiPost("/webapp/siege/state", {
-      nodeId: "edge_of_chain",
-      run_id: rid("siege_state")
-    });
+      const out = await apiPost("/webapp/siege/state", {
+        nodeId: "edge_of_chain",
+        run_id: rid("siege_state")
+      });
 
-    if (_dbg) console.log("[SIEGE][STATE]", out);
-    render(out);
-  }catch(err){
-    const root = qs("siegeRoot");
-    if (root) {
-      root.innerHTML = `
-        <div class="siege-card">
-          Failed to load siege state.<br>
-          <span class="siege-muted">${esc(err?.message || err)}</span>
-        </div>
-      `;
+      if (_dbg) console.log("[SIEGE][STATE]", out);
+      render(out);
+    } catch (err) {
+      const root = qs("siegeRoot");
+      if (root) {
+        root.innerHTML = `
+          <div class="siege-card">
+            Failed to load siege state.<br>
+            <span class="siege-muted">${esc(err?.message || err)}</span>
+          </div>
+        `;
+      }
+      qs("siegeSub") && (qs("siegeSub").textContent = "Siege control node");
+      resetActionBar();
     }
   }
-}
 
- async function act(path, prefix){
-  try{
-    const apiPost = getApiPost();
-    if (!apiPost) throw new Error("apiPost not ready");
+  async function act(path, prefix) {
+    try {
+      const apiPost = getApiPost();
+      if (!apiPost) throw new Error("apiPost not ready");
 
-    const out = await apiPost(path, {
-      nodeId: "edge_of_chain",
-      run_id: rid(prefix)
-    });
+      const out = await apiPost(path, {
+        nodeId: "edge_of_chain",
+        run_id: rid(prefix)
+      });
 
-    if (_dbg) console.log("[SIEGE][ACT]", path, out);
-    render(out);
-  }catch(err){
-    if (_dbg) console.warn("[SIEGE][ERR]", path, err);
-    alert(`Siege action failed: ${err?.message || err}`);
+      if (_dbg) console.log("[SIEGE][ACT]", path, out);
+      render(out);
+
+      if (out && out.ok === false) {
+        alert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
+      }
+    } catch (err) {
+      if (_dbg) console.warn("[SIEGE][ERR]", path, err);
+      alert(`Siege action failed: ${err?.message || err}`);
+    }
   }
-}
 
-  Siege.init = function({ apiPost, tg, dbg } = {}){
-  _apiPost =
-    (typeof apiPost === "function" && apiPost) ||
-    (typeof window.apiPost === "function" && window.apiPost) ||
-    (typeof window.S?.apiPost === "function" && window.S.apiPost) ||
-    null;
+  Siege.init = function ({ apiPost, tg, dbg } = {}) {
+    _apiPost =
+      (typeof apiPost === "function" && apiPost) ||
+      (typeof window.apiPost === "function" && window.apiPost) ||
+      (typeof window.S?.apiPost === "function" && window.S.apiPost) ||
+      null;
 
-  _tg = tg || window.Telegram?.WebApp || null;
-  _dbg = !!dbg;
+    _tg = tg || window.Telegram?.WebApp || null;
+    _dbg = !!dbg;
 
-  if (_dbg) console.log("[SIEGE][INIT]", {
-    hasApiPost: typeof _apiPost === "function"
-  });
+    if (_dbg) {
+      console.log("[SIEGE][INIT]", {
+        hasApiPost: typeof _apiPost === "function"
+      });
+    }
 
-  ensureModal();
-  return Siege;
-};
+    ensureModal();
+    return Siege;
+  };
 
   Siege.open = open;
   Siege.close = close;
