@@ -718,7 +718,54 @@
       </div>
     `;
   }
+  async function upgradeStat(stat){
+    if (_loading) return;
 
+    if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
+    if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
+    if (!_tg) _tg = window.Telegram?.WebApp || null;
+
+    if (typeof _apiPost !== "function") {
+      renderError("Stats: api not ready.");
+      return;
+    }
+
+    _loading = true;
+
+    try {
+      const res = await _apiPost("/webapp/stats/upgrade", {
+        stat,
+        run_id: `stat_${stat}_${Date.now()}`
+      });
+
+      if (_dbg) console.log("[Stats] upgradeRes =", res);
+
+      const payload = getPayload(res);
+      const nextStats = payload?.stats || null;
+      const nextMystats = payload?.mystats || null;
+
+      if (!res?.ok || !nextStats) {
+        const reason = res?.reason || "Upgrade failed.";
+        if (reason === "NO_POINTS") {
+          try { _tg?.showAlert?.("No unspent points left."); } catch(_) {}
+        } else if (reason === "BAD_STAT") {
+          try { _tg?.showAlert?.("Unknown stat."); } catch(_) {}
+        } else {
+          try { _tg?.showAlert?.(String(reason)); } catch(_) {}
+        }
+        return;
+      }
+
+      render(nextStats, nextMystats);
+      try { _tg?.HapticFeedback?.impactOccurred?.("medium"); } catch (_) {}
+    } catch (e) {
+      if (_dbg) console.error("[Stats] upgrade failed", e);
+      try { _tg?.showAlert?.("Stat upgrade failed"); } catch (_) {}
+    } finally {
+      _loading = false;
+    }
+  }
+  
   async function load(){
     if (_loading) return;
     _loading = true;
