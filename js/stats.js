@@ -847,6 +847,18 @@
     bindClickOnce(qs("refreshStats"), load);
     bindClickOnce(qs("closeStats"), Stats.close);
 
+    bindClickOnce(qs("statsRoot"), (e) => {
+      const btn = e.target.closest(".ahs-plus");
+      if (!btn) return;
+
+      e.preventDefault();
+
+      const stat = String(btn.dataset.stat || "").trim().toLowerCase();
+      if (!stat) return;
+
+      upgradeStat(stat);
+    });
+
     window.openStats = Stats.open;
     window.closeStats = Stats.close;
   };
