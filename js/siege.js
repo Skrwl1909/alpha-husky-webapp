@@ -2,6 +2,15 @@
 (function () {
   const Siege = {};
   let _apiPost = null, _tg = null, _dbg = false;
+  function getApiPost(){
+  const fn =
+    _apiPost ||
+    window.apiPost ||
+    window.S?.apiPost ||
+    null;
+
+  return (typeof fn === "function") ? fn : null;
+}
 
   function qs(id){ return document.getElementById(id); }
   function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
@@ -192,41 +201,66 @@
     `;
   }
 
-  async function loadState(){
-    try{
-      const out = await _apiPost("/webapp/siege/state", {
-        nodeId: "edge_of_chain",
-        run_id: rid("siege_state")
-      });
-      if (_dbg) console.log("[SIEGE][STATE]", out);
-      render(out);
-    }catch(err){
-      const root = qs("siegeRoot");
-      if (root) root.innerHTML = `<div class="siege-card">Failed to load siege state.<br><span class="siege-muted">${esc(err?.message || err)}</span></div>`;
-    }
-  }
+ async function loadState(){
+  try{
+    const apiPost = getApiPost();
+    if (!apiPost) throw new Error("apiPost not ready");
 
-  async function act(path, prefix){
-    try{
-      const out = await _apiPost(path, {
-        nodeId: "edge_of_chain",
-        run_id: rid(prefix)
-      });
-      if (_dbg) console.log("[SIEGE][ACT]", path, out);
-      render(out);
-    }catch(err){
-      if (_dbg) console.warn("[SIEGE][ERR]", path, err);
-      alert(`Siege action failed: ${err?.message || err}`);
+    const out = await apiPost("/webapp/siege/state", {
+      nodeId: "edge_of_chain",
+      run_id: rid("siege_state")
+    });
+
+    if (_dbg) console.log("[SIEGE][STATE]", out);
+    render(out);
+  }catch(err){
+    const root = qs("siegeRoot");
+    if (root) {
+      root.innerHTML = `
+        <div class="siege-card">
+          Failed to load siege state.<br>
+          <span class="siege-muted">${esc(err?.message || err)}</span>
+        </div>
+      `;
     }
   }
+}
+
+ async function act(path, prefix){
+  try{
+    const apiPost = getApiPost();
+    if (!apiPost) throw new Error("apiPost not ready");
+
+    const out = await apiPost(path, {
+      nodeId: "edge_of_chain",
+      run_id: rid(prefix)
+    });
+
+    if (_dbg) console.log("[SIEGE][ACT]", path, out);
+    render(out);
+  }catch(err){
+    if (_dbg) console.warn("[SIEGE][ERR]", path, err);
+    alert(`Siege action failed: ${err?.message || err}`);
+  }
+}
 
   Siege.init = function({ apiPost, tg, dbg } = {}){
-    _apiPost = apiPost || window.S?.apiPost;
-    _tg = tg || window.Telegram?.WebApp || null;
-    _dbg = !!dbg;
-    ensureModal();
-    return Siege;
-  };
+  _apiPost =
+    (typeof apiPost === "function" && apiPost) ||
+    (typeof window.apiPost === "function" && window.apiPost) ||
+    (typeof window.S?.apiPost === "function" && window.S.apiPost) ||
+    null;
+
+  _tg = tg || window.Telegram?.WebApp || null;
+  _dbg = !!dbg;
+
+  if (_dbg) console.log("[SIEGE][INIT]", {
+    hasApiPost: typeof _apiPost === "function"
+  });
+
+  ensureModal();
+  return Siege;
+};
 
   Siege.open = open;
   Siege.close = close;
