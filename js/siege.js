@@ -335,6 +335,67 @@
         opacity: .75;
         padding: 0 8px;
       }
+
+      /* === KROK 2 + FIX: SKRÓTY FRAKCJI (RB / EW) + CENTRALNY BUDYNEK === */
+      .siege-faction-short {
+        font-size: 26px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        line-height: 1;
+      }
+      .siege-faction-full {
+        font-size: 11px;
+        opacity: .85;
+        letter-spacing: 1px;
+        margin-top: -2px;
+      }
+
+      .siege-building-container {
+        margin: 14px 0 18px;
+        padding: 14px;
+        background: rgba(10,12,22,0.85);
+        border: 1px solid rgba(0,234,255,0.25);
+        border-radius: 16px;
+      }
+      .building-title {
+        text-align: center;
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: #00eaff;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      .siege-building {
+        width: 100%;
+        max-width: 290px;
+        margin: 0 auto;
+        background: linear-gradient(#0c0f1a, #141a2b);
+        border: 3px solid #00eaff;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 0 35px rgba(0, 234, 255, 0.35);
+      }
+      .floor {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        position: relative;
+        color: #ddd;
+      }
+      .floor:last-child { border-bottom: none; }
+      .breach-bar {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 32%;
+        background: linear-gradient(#ff2d55, #ff8833);
+        box-shadow: 4px 0 25px #ff3366;
+        opacity: 0.85;
+      }
     `;
     document.head.appendChild(style);
 
@@ -394,25 +455,61 @@
     qs("siegeSub").textContent =
       cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
 
-    // === KROK 1: przygotowanie nazw frakcji do VS headera ===
-    const leftFaction  = cur 
+    // === NOWA FUNKCJA: krótkie kody frakcji (RB / EW itd.) ===
+    const factionShort = (f) => {
+      const key = normFaction(f);
+      const map = {
+        rogue_byte: "RB",
+        echo_wardens: "EW",
+        pack_burners: "PB",
+        inner_howl: "IH"
+      };
+      return map[key] || (key ? key.slice(0,2).toUpperCase() : "??");
+    };
+
+    const leftFactionFull  = cur 
       ? factionLabel(cur.attackerFaction || "ECHO WARDENS")
       : (neutral ? "NEUTRAL" : ownerText);
-    const rightFaction = cur 
+    const rightFactionFull = cur 
       ? factionLabel(cur.defenderFaction || "ROGUE BYTE")
       : "NEUTRAL";
 
+    const leftShort  = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+    const rightShort = factionShort(cur ? cur.defenderFaction : "");
+
+    // breach % (można później podpiąć pod realne dane)
+    const breachPercent = cur && status === "RUNNING" ? 45 : 0;
+
     root.innerHTML = `
-      <!-- NOWY VS HEADER (z klasami z ensureModal) -->
+      <!-- VS HEADER Z SKRÓTAMI (RB / EW) -->
       <div class="siege-vs-header">
         <div class="siege-faction echo">
-          <span>🔷</span>
-          <span>${esc(leftFaction)}</span>
+          <span class="siege-faction-short">${leftShort}</span>
+          <div>
+            <span>${esc(leftFactionFull)}</span>
+            <div class="siege-faction-full">${leftShort}</div>
+          </div>
         </div>
         <div class="vs">VS</div>
         <div class="siege-faction rogue">
-          <span>${esc(rightFaction)}</span>
-          <span>💀</span>
+          <div>
+            <span>${esc(rightFactionFull)}</span>
+            <div class="siege-faction-full">${rightShort}</div>
+          </div>
+          <span class="siege-faction-short">${rightShort}</span>
+        </div>
+      </div>
+
+      <!-- CENTRALNY BUDYNEK (bez zmian) -->
+      <div class="siege-building-container">
+        <div class="building-title">THE BUILDING • BREACH ${breachPercent}%</div>
+        <div class="siege-building">
+          <div class="floor"><span class="floor-name">ROOFTOP</span></div>
+          <div class="floor"><span class="floor-name">SERVER ROOM</span></div>
+          <div class="floor"><span class="floor-name">LABORATORY</span></div>
+          <div class="floor"><span class="floor-name">MAIN HALL</span></div>
+          <div class="floor"><span class="floor-name">GROUND FLOOR</span></div>
+          <div class="breach-bar" style="height: ${breachPercent}%"></div>
         </div>
       </div>
 
