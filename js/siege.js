@@ -302,7 +302,7 @@
         opacity:.82;
       }
 
-      /* === KROK 1: NOWY VS HEADER (neon + frakcje) === */
+      /* VS HEADER + kolory frakcji (zostawiamy) */
       .siege-vs-header {
         display: flex;
         align-items: center;
@@ -321,22 +321,6 @@
         align-items: center;
         gap: 8px;
       }
-      .echo { 
-        color: #00f0ff; 
-        text-shadow: 0 0 12px #00f0ff; 
-      }
-      .rogue { 
-        color: #ff00aa; 
-        text-shadow: 0 0 12px #ff00aa; 
-      }
-      .vs {
-        font-size: 22px;
-        color: #fff;
-        opacity: .75;
-        padding: 0 8px;
-      }
-
-      /* === KROK 2 + FIX: SKRÓTY FRAKCJI (RB / EW) + CENTRALNY BUDYNEK === */
       .siege-faction-short {
         font-size: 26px;
         font-weight: 900;
@@ -349,52 +333,67 @@
         letter-spacing: 1px;
         margin-top: -2px;
       }
+      .vs {
+        font-size: 22px;
+        color: #fff;
+        opacity: .75;
+        padding: 0 8px;
+      }
 
-      .siege-building-container {
+      /* === NOWY CENTRALNY PANEL: 4 DEFENDER SLOTS === */
+      .siege-defender-slots {
         margin: 14px 0 18px;
-        padding: 14px;
-        background: rgba(10,12,22,0.85);
-        border: 1px solid rgba(0,234,255,0.25);
+        padding: 16px;
+        background: rgba(10,12,22,0.9);
+        border: 2px solid rgba(0,234,255,0.3);
         border-radius: 16px;
       }
-      .building-title {
+      .slots-title {
         text-align: center;
-        font-size: 13px;
-        letter-spacing: 2px;
+        font-size: 14px;
+        font-weight: 800;
         color: #00eaff;
-        margin-bottom: 10px;
-        text-transform: uppercase;
+        margin-bottom: 12px;
+        letter-spacing: 1px;
       }
-      .siege-building {
-        width: 100%;
-        max-width: 290px;
-        margin: 0 auto;
-        background: linear-gradient(#0c0f1a, #141a2b);
-        border: 3px solid #00eaff;
+      .slots-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .defender-slot {
+        background: rgba(255,255,255,0.03);
+        border: 2px solid rgba(255,255,255,0.15);
         border-radius: 12px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: 0 0 35px rgba(0, 234, 255, 0.35);
-      }
-      .floor {
-        height: 48px;
+        padding: 12px 10px;
+        text-align: center;
+        min-height: 92px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        font-size: 13px;
-        font-weight: 600;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        position: relative;
-        color: #ddd;
+        transition: all 0.2s;
       }
-      .floor:last-child { border-bottom: none; }
-      .breach-bar {
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 32%;
-        background: linear-gradient(#ff2d55, #ff8833);
-        box-shadow: 4px 0 25px #ff3366;
-        opacity: 0.85;
+      .defender-slot.occupied {
+        border-color: #00ffaa;
+        box-shadow: 0 0 15px rgba(0,255,170,0.4);
+      }
+      .defender-slot.empty {
+        border-style: dashed;
+        opacity: 0.6;
+      }
+      .slot-icon {
+        font-size: 28px;
+        margin-bottom: 6px;
+      }
+      .slot-name {
+        font-weight: 700;
+        font-size: 13px;
+        color: #fff;
+      }
+      .slot-status {
+        font-size: 11px;
+        opacity: .7;
       }
     `;
     document.head.appendChild(style);
@@ -455,65 +454,67 @@
     qs("siegeSub").textContent =
       cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
 
-    // === NOWA FUNKCJA: krótkie kody frakcji (RB / EW itd.) ===
     const factionShort = (f) => {
       const key = normFaction(f);
-      const map = {
-        rogue_byte: "RB",
-        echo_wardens: "EW",
-        pack_burners: "PB",
-        inner_howl: "IH"
-      };
+      const map = { rogue_byte: "RB", echo_wardens: "EW", pack_burners: "PB", inner_howl: "IH" };
       return map[key] || (key ? key.slice(0,2).toUpperCase() : "??");
     };
+    const factionClass = (f) => `faction-${normFaction(f)}`;
 
-    const leftFactionFull  = cur 
-      ? factionLabel(cur.attackerFaction || "ECHO WARDENS")
-      : (neutral ? "NEUTRAL" : ownerText);
-    const rightFactionFull = cur 
-      ? factionLabel(cur.defenderFaction || "ROGUE BYTE")
-      : "NEUTRAL";
+    const leftFactionFull  = cur ? factionLabel(cur.attackerFaction || "ECHO WARDENS") : (neutral ? "NEUTRAL" : ownerText);
+    const rightFactionFull = cur ? factionLabel(cur.defenderFaction || "ROGUE BYTE") : "NEUTRAL";
 
     const leftShort  = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
     const rightShort = factionShort(cur ? cur.defenderFaction : "");
 
-    // breach % (można później podpiąć pod realne dane)
-    const breachPercent = cur && status === "RUNNING" ? 45 : 0;
+    const leftClass  = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+    const rightClass = factionClass(cur ? cur.defenderFaction : "");
+
+    // === 4 sloty defenders (z aktualnych danych) ===
+    const maxSlots = guardMax(node);
+    const usedSlots = Math.min(defenders.length, maxSlots);
+    const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
+      const defender = defenders[i];
+      if (defender) {
+        return `
+          <div class="defender-slot occupied">
+            <div class="slot-icon">🛡️</div>
+            <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
+            <div class="slot-status">WATCHING</div>
+          </div>`;
+      } else {
+        return `
+          <div class="defender-slot empty">
+            <div class="slot-icon">+</div>
+            <div class="slot-name">EMPTY SLOT</div>
+            <div class="slot-status">${i < usedSlots ? "" : "AVAILABLE"}</div>
+          </div>`;
+      }
+    }).join("");
 
     root.innerHTML = `
-      <!-- VS HEADER Z SKRÓTAMI (RB / EW) -->
+      <!-- VS HEADER -->
       <div class="siege-vs-header">
-        <div class="siege-faction echo">
+        <div class="siege-faction ${leftClass}">
           <span class="siege-faction-short">${leftShort}</span>
-          <div>
-            <span>${esc(leftFactionFull)}</span>
-            <div class="siege-faction-full">${leftShort}</div>
-          </div>
+          <div><span class="siege-faction-full ${leftClass}">${esc(leftFactionFull)}</span></div>
         </div>
         <div class="vs">VS</div>
-        <div class="siege-faction rogue">
-          <div>
-            <span>${esc(rightFactionFull)}</span>
-            <div class="siege-faction-full">${rightShort}</div>
-          </div>
+        <div class="siege-faction ${rightClass}">
+          <div><span class="siege-faction-full ${rightClass}">${esc(rightFactionFull)}</span></div>
           <span class="siege-faction-short">${rightShort}</span>
         </div>
       </div>
 
-      <!-- CENTRALNY BUDYNEK (bez zmian) -->
-      <div class="siege-building-container">
-        <div class="building-title">THE BUILDING • BREACH ${breachPercent}%</div>
-        <div class="siege-building">
-          <div class="floor"><span class="floor-name">ROOFTOP</span></div>
-          <div class="floor"><span class="floor-name">SERVER ROOM</span></div>
-          <div class="floor"><span class="floor-name">LABORATORY</span></div>
-          <div class="floor"><span class="floor-name">MAIN HALL</span></div>
-          <div class="floor"><span class="floor-name">GROUND FLOOR</span></div>
-          <div class="breach-bar" style="height: ${breachPercent}%"></div>
+      <!-- NOWY CENTRALNY PANEL: 4 DEFENDER SLOTS -->
+      <div class="siege-defender-slots">
+        <div class="slots-title">DEFENDER WATCH SLOTS • ${usedSlots}/${maxSlots}</div>
+        <div class="slots-grid">
+          ${slotsHTML}
         </div>
       </div>
 
-      <!-- reszta kart bez zmian -->
+      <!-- reszta kart (Owner / Watch / Cooldown itd.) -->
       <div class="siege-card">
         <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
         <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
