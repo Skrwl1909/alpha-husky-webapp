@@ -208,7 +208,6 @@
 
   function ensureModal() {
     if (qs("siegeBack")) return;
-
     const wrap = document.createElement("div");
     wrap.id = "siegeBack";
     wrap.style.cssText = `
@@ -218,7 +217,6 @@
       padding: calc(env(safe-area-inset-top,0px) + 12px) 10px calc(env(safe-area-inset-bottom,0px) + 16px);
       box-sizing:border-box;
     `;
-
     wrap.innerHTML = `
       <div id="siegeModal" style="
         width:min(92vw,460px);
@@ -240,9 +238,7 @@
             background:rgba(255,255,255,.08); color:#fff;
           ">✕</button>
         </div>
-
         <div id="siegeRoot" style="padding:12px; overflow:auto; -webkit-overflow-scrolling:touch;"></div>
-
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-top:1px solid rgba(255,255,255,.08)">
           <button id="siegeRefresh" class="siege-btn">Refresh</button>
           <button id="siegeWatch" class="siege-btn">Take Watch</button>
@@ -254,7 +250,6 @@
         </div>
       </div>
     `;
-
     document.body.appendChild(wrap);
 
     const style = document.createElement("style");
@@ -265,7 +260,6 @@
       }
       .siege-btn:hover{ background:rgba(255,255,255,.14); }
       .siege-btn[hidden]{ display:none !important; }
-
       .siege-card{
         border:1px solid rgba(255,255,255,.08);
         background:rgba(255,255,255,.03);
@@ -273,7 +267,6 @@
         padding:10px 12px;
         margin-bottom:10px;
       }
-
       .siege-kv{
         display:flex;
         justify-content:space-between;
@@ -281,24 +274,20 @@
         gap:10px;
         margin:4px 0;
       }
-
       .siege-list{
         margin:6px 0 0;
         padding-left:18px;
         opacity:.92;
       }
-
       .siege-muted{
         opacity:.68;
         font-size:12px;
       }
-
       .siege-row{
         display:flex;
         flex-wrap:wrap;
         gap:8px;
       }
-
       .siege-pill{
         padding:6px 8px;
         border-radius:999px;
@@ -306,19 +295,51 @@
         background:rgba(255,255,255,.07);
         border:1px solid rgba(255,255,255,.08);
       }
-
       .siege-note{
         margin-top:8px;
         font-size:12px;
         line-height:1.35;
         opacity:.82;
       }
+
+      /* === KROK 1: NOWY VS HEADER (neon + frakcje) === */
+      .siege-vs-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 14px 0;
+        background: linear-gradient(90deg, rgba(0,255,255,0.08), rgba(255,0,255,0.08));
+        border-bottom: 1px solid rgba(255,255,255,.12);
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .siege-faction {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .echo { 
+        color: #00f0ff; 
+        text-shadow: 0 0 12px #00f0ff; 
+      }
+      .rogue { 
+        color: #ff00aa; 
+        text-shadow: 0 0 12px #ff00aa; 
+      }
+      .vs {
+        font-size: 22px;
+        color: #fff;
+        opacity: .75;
+        padding: 0 8px;
+      }
     `;
     document.head.appendChild(style);
 
     qs("closeSiege").onclick = close;
     wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
-
     qs("siegeRefresh").onclick = () => loadState();
     qs("siegeWatch").onclick = () => act("/webapp/siege/watch", "siege_watch");
     qs("siegeUnwatch").onclick = () => act("/webapp/siege/unwatch", "siege_unwatch");
@@ -326,7 +347,6 @@
     qs("siegeJoin").onclick = () => act("/webapp/siege/join", "siege_join");
     qs("siegeLaunch").onclick = () => act("/webapp/siege/launch", "siege_launch");
     qs("siegeNext").onclick = () => act("/webapp/siege/next", "siege_next");
-
     resetActionBar();
   }
 
