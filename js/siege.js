@@ -302,7 +302,7 @@
         opacity:.82;
       }
 
-      /* VS HEADER + kolory frakcji (zostawiamy) */
+      /* VS HEADER + kolory frakcji */
       .siege-vs-header {
         display: flex;
         align-items: center;
@@ -340,7 +340,7 @@
         padding: 0 8px;
       }
 
-      /* === NOWY CENTRALNY PANEL: 4 DEFENDER SLOTS === */
+      /* KLIKALNE SLOTY DEFENDERÓW */
       .siege-defender-slots {
         margin: 14px 0 18px;
         padding: 16px;
@@ -373,6 +373,11 @@
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
+        cursor: pointer;
+      }
+      .defender-slot:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(0,255,170,0.5);
       }
       .defender-slot.occupied {
         border-color: #00ffaa;
@@ -380,20 +385,30 @@
       }
       .defender-slot.empty {
         border-style: dashed;
-        opacity: 0.6;
+        opacity: 0.75;
       }
-      .slot-icon {
-        font-size: 28px;
-        margin-bottom: 6px;
+      .slot-icon { font-size: 28px; margin-bottom: 6px; }
+      .slot-name { font-weight: 700; font-size: 13px; color: #fff; }
+      .slot-status { font-size: 11px; opacity: .7; }
+
+      /* PULSUJĄCY BADGE RUNNING */
+      .status-badge {
+        text-align: center;
+        padding: 10px 24px;
+        margin: 8px 0 16px;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        border-radius: 999px;
+        background: rgba(255,50,50,0.15);
+        border: 2px solid #ff3366;
+        color: #ff3366;
+        text-shadow: 0 0 15px #ff3366;
+        animation: pulse 2s infinite;
       }
-      .slot-name {
-        font-weight: 700;
-        font-size: 13px;
-        color: #fff;
-      }
-      .slot-status {
-        font-size: 11px;
-        opacity: .7;
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(1.03); }
       }
     `;
     document.head.appendChild(style);
@@ -470,24 +485,25 @@
     const leftClass  = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
     const rightClass = factionClass(cur ? cur.defenderFaction : "");
 
-    // === 4 sloty defenders (z aktualnych danych) ===
     const maxSlots = guardMax(node);
     const usedSlots = Math.min(defenders.length, maxSlots);
+
+    // === KLIKALNE SLOTY ===
     const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
       const defender = defenders[i];
       if (defender) {
         return `
-          <div class="defender-slot occupied">
+          <div class="defender-slot occupied" onclick="document.getElementById('siegeUnwatch').click()">
             <div class="slot-icon">🛡️</div>
             <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
             <div class="slot-status">WATCHING</div>
           </div>`;
       } else {
         return `
-          <div class="defender-slot empty">
+          <div class="defender-slot empty" onclick="document.getElementById('siegeWatch').click()">
             <div class="slot-icon">+</div>
             <div class="slot-name">EMPTY SLOT</div>
-            <div class="slot-status">${i < usedSlots ? "" : "AVAILABLE"}</div>
+            <div class="slot-status">AVAILABLE • TAP TO JOIN</div>
           </div>`;
       }
     }).join("");
@@ -506,7 +522,10 @@
         </div>
       </div>
 
-      <!-- NOWY CENTRALNY PANEL: 4 DEFENDER SLOTS -->
+      <!-- STATUS BADGE (pulsuje gdy RUNNING) -->
+      ${status === "RUNNING" ? `<div class="status-badge">RUNNING • SIEGE IN PROGRESS</div>` : ''}
+
+      <!-- KLIKALNE SLOTY DEFENDERÓW -->
       <div class="siege-defender-slots">
         <div class="slots-title">DEFENDER WATCH SLOTS • ${usedSlots}/${maxSlots}</div>
         <div class="slots-grid">
@@ -514,7 +533,7 @@
         </div>
       </div>
 
-      <!-- reszta kart (Owner / Watch / Cooldown itd.) -->
+      <!-- reszta kart (bez zmian) -->
       <div class="siege-card">
         <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
         <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
@@ -527,6 +546,7 @@
           }
         </div>
       </div>
+      <!-- ... (pozostałe karty Watch Defenders i Active Siege bez zmian) ... -->
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
         ${
@@ -568,7 +588,7 @@
     `;
     updateActionBar(out);
   }
-
+  
   async function loadState() {
     try {
       const apiPost = getApiPost();
