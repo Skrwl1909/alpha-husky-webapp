@@ -366,7 +366,6 @@
     const out = normalize(raw) || {};
     const root = qs("siegeRoot");
     if (!root) return;
-
     if (out.ok === false) {
       const reason = out.reason || "UNKNOWN";
       qs("siegeSub").textContent = "Siege control node";
@@ -379,19 +378,15 @@
       resetActionBar();
       return;
     }
-
     const node = getNode(out);
     const cur = getCurrentSiege(node);
     const status = getSiegeStatus(node);
-
     const defenders = defendersList(node);
     const attackers = attackersList(node);
     const curDefs = curDefendersList(node);
     const fights = fightsList(node);
-
     const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
     const neutral = !ownerFaction;
-
     const ownerText = factionLabel(ownerFaction);
     const watchText = `${guardUsed(node)} / ${guardMax(node)}`;
     const cooldownText = cooldownLabel(node);
@@ -399,7 +394,29 @@
     qs("siegeSub").textContent =
       cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
 
+    // === KROK 1: przygotowanie nazw frakcji do VS headera ===
+    const leftFaction  = cur 
+      ? factionLabel(cur.attackerFaction || "ECHO WARDENS")
+      : (neutral ? "NEUTRAL" : ownerText);
+    const rightFaction = cur 
+      ? factionLabel(cur.defenderFaction || "ROGUE BYTE")
+      : "NEUTRAL";
+
     root.innerHTML = `
+      <!-- NOWY VS HEADER (z klasami z ensureModal) -->
+      <div class="siege-vs-header">
+        <div class="siege-faction echo">
+          <span>🔷</span>
+          <span>${esc(leftFaction)}</span>
+        </div>
+        <div class="vs">VS</div>
+        <div class="siege-faction rogue">
+          <span>${esc(rightFaction)}</span>
+          <span>💀</span>
+        </div>
+      </div>
+
+      <!-- reszta kart bez zmian -->
       <div class="siege-card">
         <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
         <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
@@ -412,7 +429,6 @@
           }
         </div>
       </div>
-
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
         ${
@@ -421,7 +437,6 @@
             : `<div class="siege-muted">${neutral ? "No defenders. Neutral node." : "No defenders assigned."}</div>`
         }
       </div>
-
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Active Siege</div>
         ${
@@ -430,21 +445,18 @@
             <div class="siege-kv"><strong>Attacker Faction</strong><span>${esc(factionLabel(cur.attackerFaction))}</span></div>
             <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(cur.defenderFaction ? factionLabel(cur.defenderFaction) : "Neutral")}</span></div>
             <div class="siege-kv"><strong>Fight No.</strong><span>${Number(cur.currentFight || 0)}</span></div>
-
             <div style="margin-top:10px;font-weight:700">Attackers</div>
             ${
               attackers.length
                 ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
                 : `<div class="siege-muted">No attackers yet.</div>`
             }
-
             <div style="margin-top:10px;font-weight:700">Defenders in Siege</div>
             ${
               curDefs.length
                 ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
                 : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may remain empty." : "Will be populated on launch."}</div>`
             }
-
             <div style="margin-top:10px;font-weight:700">Fight History</div>
             ${
               fights.length
@@ -456,7 +468,6 @@
         }
       </div>
     `;
-
     updateActionBar(out);
   }
 
