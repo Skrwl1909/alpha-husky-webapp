@@ -164,9 +164,9 @@
     return (typeof fn === "function") ? fn : null;
   }
 
-  function iconUrl(owner) {
-    return `/images/ui/factions/${owner}_color.svg`;
-  }
+ function iconUrl(owner) {
+    return `https://app.alphahusky.win/images/ui/factions/${owner}_color.svg`;
+}
 
   function ensureLevel1(pinEl) {
     if (!pinEl) return;
