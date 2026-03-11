@@ -860,67 +860,70 @@
     updateActionBar(out);
   }
 
-  async function loadState() {
-    if (_busy) return;
+  async function loadState(force = false) {
+  if (_busy && !force) return;
 
-    try {
-      const apiPost = getApiPost();
-      if (!apiPost) throw new Error("apiPost not ready");
+  try {
+    const apiPost = getApiPost();
+    if (!apiPost) throw new Error("apiPost not ready");
 
-      const out = await apiPost("/webapp/siege/state", {
-        nodeId: "edge_of_chain",
-        run_id: rid("siege_state")
-      });
+    const out = await apiPost("/webapp/siege/state", {
+      nodeId: "edge_of_chain",
+      run_id: rid("siege_state")
+    });
 
-      if (_dbg) console.log("[SIEGE][STATE]", out);
-      render(out);
-    } catch (err) {
-      const root = qs("siegeRoot");
-      if (root) {
-        root.innerHTML = `
-          <div class="siege-card">
-            Failed to load siege state.<br>
-            <span class="siege-muted">${esc(err?.message || err)}</span>
-          </div>
-        `;
-      }
-      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege control node";
-      resetActionBar();
+    if (_dbg) console.log("[SIEGE][STATE]", out);
+    render(out);
+    return out;
+  } catch (err) {
+    const root = qs("siegeRoot");
+    if (root) {
+      root.innerHTML = `
+        <div class="siege-card">
+          Failed to load siege state.<br>
+          <span class="siege-muted">${esc(err?.message || err)}</span>
+        </div>
+      `;
     }
+    if (qs("siegeSub")) qs("siegeSub").textContent = "Siege control node";
+    resetActionBar();
+    return null;
   }
+}
 
-  async function act(path, prefix, opts = {}) {
-    if (_busy) return;
+ async function act(path, prefix, opts = {}) {
+  if (_busy) return;
 
-    const btnId = String(opts.btnId || "");
-    const busyLabel = String(opts.busyLabel || "Processing...");
+  const btnId = String(opts.btnId || "");
+  const busyLabel = String(opts.busyLabel || "Processing...");
 
-    try {
-      const apiPost = getApiPost();
-      if (!apiPost) throw new Error("apiPost not ready");
+  try {
+    const apiPost = getApiPost();
+    if (!apiPost) throw new Error("apiPost not ready");
 
-      setBusyState(true, btnId, busyLabel);
+    setBusyState(true, btnId, busyLabel);
 
-      const out = await apiPost(path, {
-        nodeId: "edge_of_chain",
-        run_id: rid(prefix)
-      });
+    const out = await apiPost(path, {
+      nodeId: "edge_of_chain",
+      run_id: rid(prefix)
+    });
 
-      if (_dbg) console.log("[SIEGE][ACT]", path, out);
-      render(out);
+    if (_dbg) console.log("[SIEGE][ACT]", path, out);
 
-      if (out && out.ok === false) {
-        showAlert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
-      } else {
-        try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-      }
-    } catch (err) {
-      if (_dbg) console.warn("[SIEGE][ERR]", path, err);
-      showAlert(`Siege action failed: ${err?.message || err}`);
-    } finally {
-      setBusyState(false);
+    if (out && out.ok === false) {
+      showAlert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
+      return;
     }
+
+    try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+  } catch (err) {
+    if (_dbg) console.warn("[SIEGE][ERR]", path, err);
+    showAlert(`Siege action failed: ${err?.message || err}`);
+  } finally {
+    setBusyState(false);
+    await loadState(true);
   }
+}
 
   Siege.init = function ({ apiPost, tg, dbg } = {}) {
     _apiPost =
