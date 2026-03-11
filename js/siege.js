@@ -909,6 +909,7 @@
     });
 
     if (_dbg) console.log("[SIEGE][ACT]", path, out);
+    console.log("[SIEGE][ACT RAW]", path, JSON.stringify(out, null, 2));
 
     if (out && out.ok === false) {
       showAlert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
