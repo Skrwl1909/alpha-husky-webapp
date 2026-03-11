@@ -3,6 +3,31 @@
   const Siege = {};
   let _apiPost = null, _tg = null, _dbg = false;
 
+  const ACTION_IDS = [
+    "siegeRefresh",
+    "siegeWatch",
+    "siegeUnwatch",
+    "siegeStart",
+    "siegeJoin",
+    "siegeLaunch",
+    "siegeNext"
+  ];
+
+  const DEFAULT_LABELS = {
+    siegeRefresh: "Refresh",
+    siegeWatch: "Take Watch",
+    siegeUnwatch: "Leave Watch",
+    siegeStart: "Start Siege",
+    siegeJoin: "Join Siege",
+    siegeLaunch: "Launch",
+    siegeNext: "Next Fight"
+  };
+
+  let _lastRaw = null;
+  let _busy = false;
+  let _busyBtnId = "";
+  let _busyBtnLabel = "Processing...";
+
   function getApiPost() {
     const fn =
       _apiPost ||
@@ -27,6 +52,15 @@
 
   function rid(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function showAlert(msg) {
+    const text = String(msg || "Unknown error");
+    try {
+      _tg?.showAlert?.(text);
+    } catch (_) {
+      try { alert(text); } catch (_) {}
+    }
   }
 
   function normFaction(v) {
@@ -54,8 +88,8 @@
     if (out.siegeNode && typeof out.siegeNode === "object") return out.siegeNode;
     if (out.data?.siegeNode && typeof out.data.siegeNode === "object") return out.data.siegeNode;
     if (out.node && typeof out.node === "object") return out.node;
-    if (out.data && typeof out.data === "object" && (out.data.nodeId || out.data.ownerFaction || out.data.currentSiege)) return out.data;
-    if (out.nodeId || out.ownerFaction || out.currentSiege) return out;
+    if (out.data && typeof out.data === "object" && (out.data.nodeId || out.data.ownerFaction || out.data.currentSiege || out.data.siegeFeed)) return out.data;
+    if (out.nodeId || out.ownerFaction || out.currentSiege || out.siegeFeed) return out;
     return {};
   }
 
@@ -75,6 +109,14 @@
 
   function getYouFaction(raw, node) {
     return normFaction(raw?.you?.faction || node?.youFaction || "");
+  }
+
+  function getYouUid(raw, node) {
+    const tgUid =
+      _tg?.initDataUnsafe?.user?.id ||
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.id ||
+      "";
+    return String(raw?.you?.uid || node?.youUid || tgUid || "").trim();
   }
 
   function defendersList(node) {
@@ -97,6 +139,18 @@
   function fightsList(node) {
     const cur = getCurrentSiege(node);
     return Array.isArray(cur?.fightHistory) ? cur.fightHistory : [];
+  }
+
+  function siegeFeedList(node) {
+    if (Array.isArray(node?.siegeFeed)) return node.siegeFeed;
+    if (Array.isArray(node?.feed)) return node.feed;
+    return [];
+  }
+
+  function isYouWatching(raw, node) {
+    const youUid = getYouUid(raw, node);
+    if (!youUid) return false;
+    return defendersList(node).some(x => String(x?.uid || "").trim() === youUid);
   }
 
   function guardUsed(node) {
@@ -134,13 +188,121 @@
     return `${s}s`;
   }
 
+  function feedKindLabel(kind) {
+    const key = String(kind || "").trim().toLowerCase();
+    const map = {
+      watch_join: "Watch Joined",
+      watch_leave: "Watch Left",
+      siege_start: "Siege Started",
+      siege_join: "Joined Siege",
+      siege_launch: "Siege Launched",
+      next_fight: "Next Fight",
+      fight: "Fight",
+      result: "Result",
+      claim: "Claimed",
+      event: "Event"
+    };
+    return map[key] || (key ? key.replaceAll("_", " ") : "Event");
+  }
+
+  function fmtClock(ts) {
+    try {
+      const n = Number(ts || 0);
+      if (!n) return "";
+      return new Date(n * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function renderFeedHTML(feed) {
+    const rows = Array.isArray(feed) ? feed : [];
+    return `
+      <div class="siege-card">
+        <div style="font-weight:800;margin-bottom:8px">Siege Feed</div>
+        ${
+          rows.length
+            ? `
+              <div class="siege-feed-list">
+                ${rows.map(item => {
+                  const kind = esc(feedKindLabel(item?.kind));
+                  const time = esc(fmtClock(item?.ts));
+                  const name = esc(item?.name || "");
+                  const faction = esc(item?.faction ? factionLabel(item.faction) : "");
+                  const text = esc(item?.text || "");
+                  return `
+                    <div class="siege-feed-item">
+                      <div class="siege-feed-meta">
+                        <span class="siege-feed-kind">${kind}</span>
+                        ${time ? `<span class="siege-feed-time">${time}</span>` : ""}
+                        ${name ? `<span class="siege-feed-name">${name}</span>` : ""}
+                        ${faction ? `<span class="siege-feed-faction">${faction}</span>` : ""}
+                      </div>
+                      <div class="siege-feed-text">${text || "—"}</div>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            `
+            : `<div class="siege-muted">No siege activity yet.</div>`
+        }
+      </div>
+    `;
+  }
+
   function setBtn(id, visible, label) {
     const el = qs(id);
     if (!el) return;
+    const nextLabel = label || DEFAULT_LABELS[id] || el.textContent || "";
     el.hidden = !visible;
     el.style.display = visible ? "" : "none";
     el.disabled = !visible;
-    if (label) el.textContent = label;
+    el.textContent = nextLabel;
+    el.dataset.baseLabel = nextLabel;
+  }
+
+  function applyBusyState() {
+    ACTION_IDS.forEach(id => {
+      const el = qs(id);
+      if (!el) return;
+      el.classList.remove("is-busy");
+    });
+
+    if (!_busy) return;
+
+    ACTION_IDS.forEach(id => {
+      const el = qs(id);
+      if (!el) return;
+      el.disabled = true;
+    });
+
+    if (_busyBtnId) {
+      const btn = qs(_busyBtnId);
+      if (btn) {
+        btn.hidden = false;
+        btn.style.display = "";
+        btn.disabled = true;
+        btn.classList.add("is-busy");
+        btn.textContent = _busyBtnLabel || "Processing...";
+      }
+    }
+  }
+
+  function setBusyState(isBusy, btnId = "", busyLabel = "Processing...") {
+    _busy = !!isBusy;
+    _busyBtnId = _busy ? String(btnId || "") : "";
+    _busyBtnLabel = _busy ? String(busyLabel || "Processing...") : "Processing...";
+
+    if (_lastRaw) {
+      updateActionBar(_lastRaw);
+    } else if (_busy) {
+      applyBusyState();
+    } else {
+      resetActionBar();
+    }
   }
 
   function resetActionBar() {
@@ -151,6 +313,7 @@
     setBtn("siegeJoin", false, "Join Siege");
     setBtn("siegeLaunch", false, "Launch");
     setBtn("siegeNext", false, "Next Fight");
+    applyBusyState();
   }
 
   function updateActionBar(raw) {
@@ -168,13 +331,25 @@
     const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
     const attackerFaction = normFaction(cur?.attackerFaction || "");
     const neutral = !ownerFaction;
+    const youWatching = isYouWatching(out, node);
 
     const hasForming = status === "FORMING";
     const hasRunning = status === "RUNNING";
     const hasActiveSiege = hasForming || hasRunning;
 
-    const showWatch = !neutral && !hasActiveSiege && !!ownerFaction && youFaction === ownerFaction;
-    const showUnwatch = !neutral && !hasActiveSiege && !!ownerFaction && youFaction === ownerFaction;
+    const showWatch =
+      !neutral &&
+      !hasActiveSiege &&
+      !!ownerFaction &&
+      youFaction === ownerFaction &&
+      !youWatching;
+
+    const showUnwatch =
+      !neutral &&
+      !hasActiveSiege &&
+      !!ownerFaction &&
+      youFaction === ownerFaction &&
+      youWatching;
 
     const showStart =
       !!youFaction &&
@@ -204,10 +379,13 @@
     setBtn("siegeJoin", showJoin, "Join Siege");
     setBtn("siegeLaunch", showLaunch, "Launch");
     setBtn("siegeNext", showNext, "Next Fight");
+
+    applyBusyState();
   }
 
   function ensureModal() {
     if (qs("siegeBack")) return;
+
     const wrap = document.createElement("div");
     wrap.id = "siegeBack";
     wrap.style.cssText = `
@@ -260,6 +438,13 @@
       }
       .siege-btn:hover{ background:rgba(255,255,255,.14); }
       .siege-btn[hidden]{ display:none !important; }
+      .siege-btn:disabled{
+        opacity:.58;
+        pointer-events:none;
+      }
+      .siege-btn.is-busy{
+        background:rgba(255,255,255,.16);
+      }
       .siege-card{
         border:1px solid rgba(255,255,255,.08);
         background:rgba(255,255,255,.03);
@@ -300,6 +485,44 @@
         font-size:12px;
         line-height:1.35;
         opacity:.82;
+      }
+
+      .siege-feed-list{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        max-height:220px;
+        overflow:auto;
+      }
+      .siege-feed-item{
+        padding:9px 10px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+      }
+      .siege-feed-meta{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+        align-items:center;
+        margin-bottom:5px;
+      }
+      .siege-feed-kind,
+      .siege-feed-time,
+      .siege-feed-name,
+      .siege-feed-faction{
+        font-size:11px;
+        line-height:1;
+        padding:4px 7px;
+        border-radius:999px;
+        background:rgba(255,255,255,.07);
+        border:1px solid rgba(255,255,255,.08);
+        opacity:.92;
+      }
+      .siege-feed-text{
+        font-size:13px;
+        line-height:1.35;
+        opacity:.95;
       }
 
       /* VS HEADER + kolory frakcji */
@@ -415,13 +638,42 @@
 
     qs("closeSiege").onclick = close;
     wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
-    qs("siegeRefresh").onclick = () => loadState();
-    qs("siegeWatch").onclick = () => act("/webapp/siege/watch", "siege_watch");
-    qs("siegeUnwatch").onclick = () => act("/webapp/siege/unwatch", "siege_unwatch");
-    qs("siegeStart").onclick = () => act("/webapp/siege/start", "siege_start");
-    qs("siegeJoin").onclick = () => act("/webapp/siege/join", "siege_join");
-    qs("siegeLaunch").onclick = () => act("/webapp/siege/launch", "siege_launch");
-    qs("siegeNext").onclick = () => act("/webapp/siege/next", "siege_next");
+
+    qs("siegeRefresh").onclick = () => {
+      if (_busy) return;
+      loadState();
+    };
+
+    qs("siegeWatch").onclick = () => act("/webapp/siege/watch", "siege_watch", {
+      btnId: "siegeWatch",
+      busyLabel: "Taking Watch..."
+    });
+
+    qs("siegeUnwatch").onclick = () => act("/webapp/siege/unwatch", "siege_unwatch", {
+      btnId: "siegeUnwatch",
+      busyLabel: "Leaving Watch..."
+    });
+
+    qs("siegeStart").onclick = () => act("/webapp/siege/start", "siege_start", {
+      btnId: "siegeStart",
+      busyLabel: "Starting..."
+    });
+
+    qs("siegeJoin").onclick = () => act("/webapp/siege/join", "siege_join", {
+      btnId: "siegeJoin",
+      busyLabel: "Joining..."
+    });
+
+    qs("siegeLaunch").onclick = () => act("/webapp/siege/launch", "siege_launch", {
+      btnId: "siegeLaunch",
+      busyLabel: "Launching..."
+    });
+
+    qs("siegeNext").onclick = () => act("/webapp/siege/next", "siege_next", {
+      btnId: "siegeNext",
+      busyLabel: "Processing..."
+    });
+
     resetActionBar();
   }
 
@@ -439,8 +691,11 @@
 
   function render(raw) {
     const out = normalize(raw) || {};
+    _lastRaw = out;
+
     const root = qs("siegeRoot");
     if (!root) return;
+
     if (out.ok === false) {
       const reason = out.reason || "UNKNOWN";
       qs("siegeSub").textContent = "Siege control node";
@@ -453,6 +708,7 @@
       resetActionBar();
       return;
     }
+
     const node = getNode(out);
     const cur = getCurrentSiege(node);
     const status = getSiegeStatus(node);
@@ -460,6 +716,8 @@
     const attackers = attackersList(node);
     const curDefs = curDefendersList(node);
     const fights = fightsList(node);
+    const feed = siegeFeedList(node);
+
     const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
     const neutral = !ownerFaction;
     const ownerText = factionLabel(ownerFaction);
@@ -471,36 +729,46 @@
 
     const factionShort = (f) => {
       const key = normFaction(f);
-      const map = { rogue_byte: "RB", echo_wardens: "EW", pack_burners: "PB", inner_howl: "IH" };
-      return map[key] || (key ? key.slice(0,2).toUpperCase() : "??");
+      const map = {
+        rogue_byte: "RB",
+        echo_wardens: "EW",
+        pack_burners: "PB",
+        inner_howl: "IH"
+      };
+      return map[key] || (key ? key.slice(0, 2).toUpperCase() : "??");
     };
+
     const factionClass = (f) => `faction-${normFaction(f)}`;
 
-    const leftFactionFull  = cur ? factionLabel(cur.attackerFaction || "ECHO WARDENS") : (neutral ? "NEUTRAL" : ownerText);
-    const rightFactionFull = cur ? factionLabel(cur.defenderFaction || "ROGUE BYTE") : "NEUTRAL";
+    const leftFactionFull = cur
+      ? factionLabel(cur.attackerFaction || "")
+      : (neutral ? "Neutral" : ownerText);
 
-    const leftShort  = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+    const rightFactionFull = cur
+      ? factionLabel(cur.defenderFaction || "")
+      : "Neutral";
+
+    const leftShort = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
     const rightShort = factionShort(cur ? cur.defenderFaction : "");
 
-    const leftClass  = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+    const leftClass = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
     const rightClass = factionClass(cur ? cur.defenderFaction : "");
 
     const maxSlots = guardMax(node);
     const usedSlots = Math.min(defenders.length, maxSlots);
 
-    // === KLIKALNE SLOTY ===
     const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
       const defender = defenders[i];
       if (defender) {
         return `
-          <div class="defender-slot occupied" onclick="document.getElementById('siegeUnwatch').click()">
+          <div class="defender-slot occupied" onclick="document.getElementById('siegeUnwatch')?.click()">
             <div class="slot-icon">🛡️</div>
             <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
             <div class="slot-status">WATCHING</div>
           </div>`;
       } else {
         return `
-          <div class="defender-slot empty" onclick="document.getElementById('siegeWatch').click()">
+          <div class="defender-slot empty" onclick="document.getElementById('siegeWatch')?.click()">
             <div class="slot-icon">+</div>
             <div class="slot-name">EMPTY SLOT</div>
             <div class="slot-status">AVAILABLE • TAP TO JOIN</div>
@@ -509,23 +777,20 @@
     }).join("");
 
     root.innerHTML = `
-      <!-- VS HEADER -->
       <div class="siege-vs-header">
         <div class="siege-faction ${leftClass}">
-          <span class="siege-faction-short">${leftShort}</span>
+          <span class="siege-faction-short">${esc(leftShort)}</span>
           <div><span class="siege-faction-full ${leftClass}">${esc(leftFactionFull)}</span></div>
         </div>
         <div class="vs">VS</div>
         <div class="siege-faction ${rightClass}">
           <div><span class="siege-faction-full ${rightClass}">${esc(rightFactionFull)}</span></div>
-          <span class="siege-faction-short">${rightShort}</span>
+          <span class="siege-faction-short">${esc(rightShort)}</span>
         </div>
       </div>
 
-      <!-- STATUS BADGE (pulsuje gdy RUNNING) -->
-      ${status === "RUNNING" ? `<div class="status-badge">RUNNING • SIEGE IN PROGRESS</div>` : ''}
+      ${status === "RUNNING" ? `<div class="status-badge">RUNNING • SIEGE IN PROGRESS</div>` : ""}
 
-      <!-- KLIKALNE SLOTY DEFENDERÓW -->
       <div class="siege-defender-slots">
         <div class="slots-title">DEFENDER WATCH SLOTS • ${usedSlots}/${maxSlots}</div>
         <div class="slots-grid">
@@ -533,7 +798,6 @@
         </div>
       </div>
 
-      <!-- reszta kart (bez zmian) -->
       <div class="siege-card">
         <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
         <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
@@ -546,7 +810,7 @@
           }
         </div>
       </div>
-      <!-- ... (pozostałe karty Watch Defenders i Active Siege bez zmian) ... -->
+
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
         ${
@@ -555,6 +819,7 @@
             : `<div class="siege-muted">${neutral ? "No defenders. Neutral node." : "No defenders assigned."}</div>`
         }
       </div>
+
       <div class="siege-card">
         <div style="font-weight:800;margin-bottom:6px">Active Siege</div>
         ${
@@ -563,18 +828,21 @@
             <div class="siege-kv"><strong>Attacker Faction</strong><span>${esc(factionLabel(cur.attackerFaction))}</span></div>
             <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(cur.defenderFaction ? factionLabel(cur.defenderFaction) : "Neutral")}</span></div>
             <div class="siege-kv"><strong>Fight No.</strong><span>${Number(cur.currentFight || 0)}</span></div>
+
             <div style="margin-top:10px;font-weight:700">Attackers</div>
             ${
               attackers.length
                 ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
                 : `<div class="siege-muted">No attackers yet.</div>`
             }
+
             <div style="margin-top:10px;font-weight:700">Defenders in Siege</div>
             ${
               curDefs.length
                 ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
                 : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may remain empty." : "Will be populated on launch."}</div>`
             }
+
             <div style="margin-top:10px;font-weight:700">Fight History</div>
             ${
               fights.length
@@ -585,11 +853,16 @@
           : `<div class="siege-muted">No active siege.</div>`
         }
       </div>
+
+      ${renderFeedHTML(feed)}
     `;
+
     updateActionBar(out);
   }
-  
+
   async function loadState() {
+    if (_busy) return;
+
     try {
       const apiPost = getApiPost();
       if (!apiPost) throw new Error("apiPost not ready");
@@ -611,15 +884,22 @@
           </div>
         `;
       }
-      qs("siegeSub") && (qs("siegeSub").textContent = "Siege control node");
+      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege control node";
       resetActionBar();
     }
   }
 
-  async function act(path, prefix) {
+  async function act(path, prefix, opts = {}) {
+    if (_busy) return;
+
+    const btnId = String(opts.btnId || "");
+    const busyLabel = String(opts.busyLabel || "Processing...");
+
     try {
       const apiPost = getApiPost();
       if (!apiPost) throw new Error("apiPost not ready");
+
+      setBusyState(true, btnId, busyLabel);
 
       const out = await apiPost(path, {
         nodeId: "edge_of_chain",
@@ -630,11 +910,15 @@
       render(out);
 
       if (out && out.ok === false) {
-        alert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
+        showAlert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
+      } else {
+        try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       }
     } catch (err) {
       if (_dbg) console.warn("[SIEGE][ERR]", path, err);
-      alert(`Siege action failed: ${err?.message || err}`);
+      showAlert(`Siege action failed: ${err?.message || err}`);
+    } finally {
+      setBusyState(false);
     }
   }
 
