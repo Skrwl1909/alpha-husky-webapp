@@ -82,16 +82,71 @@
   function normalize(raw) {
     return raw || null;
   }
+  function unwrap(raw) {
+  let cur = raw || null;
 
-  function getNode(raw) {
-    const out = normalize(raw) || {};
-    if (out.siegeNode && typeof out.siegeNode === "object") return out.siegeNode;
-    if (out.data?.siegeNode && typeof out.data.siegeNode === "object") return out.data.siegeNode;
-    if (out.node && typeof out.node === "object") return out.node;
-    if (out.data && typeof out.data === "object" && (out.data.nodeId || out.data.ownerFaction || out.data.currentSiege || out.data.siegeFeed)) return out.data;
-    if (out.nodeId || out.ownerFaction || out.currentSiege || out.siegeFeed) return out;
-    return {};
+  for (let i = 0; i < 5; i++) {
+    if (!cur || typeof cur !== "object") break;
+
+    // jeśli to już jawny fail, zatrzymaj się tutaj
+    if (cur.ok === false) return cur;
+
+    const d = cur.data;
+    if (!d || typeof d !== "object") break;
+
+    // jeśli data wygląda jak kolejna koperta albo payload noda, schodzimy niżej
+    if (
+      "ok" in d ||
+      "reason" in d ||
+      "data" in d ||
+      "nodeId" in d ||
+      "ownerFaction" in d ||
+      "currentSiege" in d ||
+      "siegeFeed" in d ||
+      "youFaction" in d ||
+      "guardSlotsUsed" in d
+    ) {
+      cur = d;
+      continue;
+    }
+
+    break;
   }
+
+  return cur || {};
+}
+
+function findFailure(raw) {
+  let cur = raw || null;
+
+  for (let i = 0; i < 5; i++) {
+    if (!cur || typeof cur !== "object") break;
+    if (cur.ok === false) return cur;
+    cur = cur.data;
+  }
+
+  return null;
+}
+
+ function getNode(raw) {
+  const out = unwrap(raw) || {};
+
+  if (out.siegeNode && typeof out.siegeNode === "object") return out.siegeNode;
+  if (out.data?.siegeNode && typeof out.data.siegeNode === "object") return out.data.siegeNode;
+  if (out.node && typeof out.node === "object") return out.node;
+
+  if (
+    out.data &&
+    typeof out.data === "object" &&
+    (out.data.nodeId || out.data.ownerFaction || out.data.currentSiege || out.data.siegeFeed)
+  ) {
+    return out.data;
+  }
+
+  if (out.nodeId || out.ownerFaction || out.currentSiege || out.siegeFeed) return out;
+
+  return {};
+}
 
   function getCurrentSiege(node) {
     return node?.currentSiege || node?.siege || node?.activeSiege || null;
@@ -108,16 +163,19 @@
   }
 
   function getYouFaction(raw, node) {
-    return normFaction(raw?.you?.faction || node?.youFaction || "");
-  }
+  const out = unwrap(raw) || {};
+  return normFaction(out?.you?.faction || out?.youFaction || node?.youFaction || "");
+}
 
-  function getYouUid(raw, node) {
-    const tgUid =
-      _tg?.initDataUnsafe?.user?.id ||
-      window.Telegram?.WebApp?.initDataUnsafe?.user?.id ||
-      "";
-    return String(raw?.you?.uid || node?.youUid || tgUid || "").trim();
-  }
+ function getYouUid(raw, node) {
+  const out = unwrap(raw) || {};
+  const tgUid =
+    _tg?.initDataUnsafe?.user?.id ||
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.id ||
+    "";
+
+  return String(out?.you?.uid || out?.youUid || node?.youUid || tgUid || "").trim();
+}
 
   function defendersList(node) {
     if (Array.isArray(node?.siegeDefenders)) return node.siegeDefenders;
@@ -690,9 +748,9 @@
   }
 
   function render(raw) {
-    const out = normalize(raw) || {};
-    _lastRaw = out;
-
+  const out = unwrap(raw) || {};
+  _lastRaw = out;
+    
     const root = qs("siegeRoot");
     if (!root) return;
 
@@ -872,8 +930,8 @@
       run_id: rid("siege_state")
     });
 
-    if (_dbg) console.log("[SIEGE][STATE]", out);
-    render(out);
+    console.log("[SIEGE][STATE RAW]", out);
+render(unwrap(out));
     return out;
   } catch (err) {
     const root = qs("siegeRoot");
@@ -903,19 +961,23 @@
 
     setBusyState(true, btnId, busyLabel);
 
-    const out = await apiPost(path, {
+    const rawOut = await apiPost(path, {
       nodeId: "edge_of_chain",
       run_id: rid(prefix)
     });
 
-    if (_dbg) console.log("[SIEGE][ACT]", path, out);
-    console.log("[SIEGE][ACT RAW]", path, JSON.stringify(out, null, 2));
+    console.log("[SIEGE][ACT RAW]", path, rawOut);
 
-    if (out && out.ok === false) {
-      showAlert(`Siege action failed: ${out.reason || "UNKNOWN"}`);
+    const fail = findFailure(rawOut);
+    if (fail) {
+      showAlert(`Siege action failed: ${fail.reason || "UNKNOWN"}`);
       return;
     }
 
+    const out = unwrap(rawOut);
+    if (_dbg) console.log("[SIEGE][ACT UNWRAPPED]", path, out);
+
+    render(out);
     try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   } catch (err) {
     if (_dbg) console.warn("[SIEGE][ERR]", path, err);
