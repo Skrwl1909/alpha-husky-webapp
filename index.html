@@ -2313,6 +2313,63 @@ body.missions-open{
   #statsBack .pbar{ width: 118px; }
 }
 </style>
+  <style id="ah-community-btn-css">
+  /* === Alpha Husky Community Float Button === */
+  .ah-community-btn {
+    position: fixed;
+    right: 16px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    width: 88px;
+    height: 88px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .18s ease, opacity .18s ease;
+    animation: ah-community-float 3.2s ease-in-out infinite;
+  }
+
+  .ah-community-btn img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+  }
+
+  .ah-community-btn:active {
+    transform: scale(1.07);
+  }
+
+  .ah-community-btn.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(.96);
+  }
+
+  @keyframes ah-community-float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-2px) scale(1.025); }
+  }
+
+  @media (max-width: 420px) {
+    .ah-community-btn {
+      width: 78px;
+      height: 78px;
+      right: 12px;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  </style>
   
   <!-- ✅ Bottom Nav + Sheets -->
 <style id="home-nav-css">
@@ -5767,6 +5824,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
