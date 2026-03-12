@@ -3250,21 +3250,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
-<!-- Floating FAQ button (bottom-left, kontra Quests po prawej) -->
-<button id="fabFaq" class="fab-faq" type="button" aria-label="Open FAQ">
-  <img src="images/ui/faq_icon.png?v=1" alt="FAQ" class="faq-icon">
-  <span>FAQ</span>
-</button>
-
 <!-- Floating launcher (📜) -->
 <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
+
+<button id="ahCommunityBtn" class="ah-community-btn" type="button" aria-label="Open Alpha Husky Telegram Community">
+  <img src="/assets/ui/ah-community-btn.png" alt="Alpha Husky Community" />
+</button>
+
 <div class="fallback" id="fallback">
-  <div>
-    <p>Open this page inside Telegram WebApp for full functionality.</p>
-    <p>Go to <strong>Alpha Husky</strong> bot and tap <em>Open</em>.</p>
-  </div>
-</div>
-</div>
 
   <!-- 1) SDK Telegrama -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -5774,6 +5767,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
