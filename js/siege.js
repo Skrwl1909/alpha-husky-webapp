@@ -4,24 +4,26 @@
   let _apiPost = null, _tg = null, _dbg = false;
 
   const ACTION_IDS = [
-    "siegeRefresh",
-    "siegeWatch",
-    "siegeUnwatch",
-    "siegeStart",
-    "siegeJoin",
-    "siegeLaunch",
-    "siegeNext"
-  ];
+  "siegeRefresh",
+  "siegeWatch",
+  "siegeUnwatch",
+  "siegeStart",
+  "siegeJoin",
+  "siegeLaunch",
+  "siegeCTA",
+  "siegeNext"
+];
 
   const DEFAULT_LABELS = {
-    siegeRefresh: "Refresh",
-    siegeWatch: "Take Watch",
-    siegeUnwatch: "Leave Watch",
-    siegeStart: "Start Siege",
-    siegeJoin: "Join Siege",
-    siegeLaunch: "Launch",
-    siegeNext: "Next Fight"
-  };
+  siegeRefresh: "Refresh",
+  siegeWatch: "Take Watch",
+  siegeUnwatch: "Leave Watch",
+  siegeStart: "Start Siege",
+  siegeJoin: "Join Siege",
+  siegeLaunch: "Launch",
+  siegeCTA: "Call to Arms",
+  siegeNext: "Next Fight"
+};
 
   let _lastRaw = null;
   let _busy = false;
@@ -249,17 +251,18 @@ function findFailure(raw) {
   function feedKindLabel(kind) {
     const key = String(kind || "").trim().toLowerCase();
     const map = {
-      watch_join: "Watch Joined",
-      watch_leave: "Watch Left",
-      siege_start: "Siege Started",
-      siege_join: "Joined Siege",
-      siege_launch: "Siege Launched",
-      next_fight: "Next Fight",
-      fight: "Fight",
-      result: "Result",
-      claim: "Claimed",
-      event: "Event"
-    };
+  watch_join: "Watch Joined",
+  watch_leave: "Watch Left",
+  siege_start: "Siege Started",
+  siege_join: "Joined Siege",
+  siege_launch: "Siege Launched",
+  next_fight: "Next Fight",
+  cta: "Call to Arms",
+  fight: "Fight",
+  result: "Result",
+  claim: "Claimed",
+  event: "Event"
+};
     return map[key] || (key ? key.replaceAll("_", " ") : "Event");
   }
 
@@ -364,16 +367,17 @@ function findFailure(raw) {
   }
 
   function resetActionBar() {
-    setBtn("siegeRefresh", true, "Refresh");
-    setBtn("siegeWatch", false, "Take Watch");
-    setBtn("siegeUnwatch", false, "Leave Watch");
-    setBtn("siegeStart", false, "Start Siege");
-    setBtn("siegeJoin", false, "Join Siege");
-    setBtn("siegeLaunch", false, "Launch");
-    setBtn("siegeNext", false, "Next Fight");
-    applyBusyState();
-  }
-
+  setBtn("siegeRefresh", true, "Refresh");
+  setBtn("siegeWatch", false, "Take Watch");
+  setBtn("siegeUnwatch", false, "Leave Watch");
+  setBtn("siegeStart", false, "Start Siege");
+  setBtn("siegeJoin", false, "Join Siege");
+  setBtn("siegeLaunch", false, "Launch");
+  setBtn("siegeCTA", false, "Call to Arms");
+  setBtn("siegeNext", false, "Next Fight");
+  applyBusyState();
+}
+  
   function updateActionBar(raw) {
     const out = normalize(raw) || {};
     if (out.ok === false) {
@@ -429,17 +433,18 @@ function findFailure(raw) {
       attackerFaction === youFaction;
 
     const showNext = hasRunning;
+  const showCTA = !!youFaction;
 
-    setBtn("siegeRefresh", true, "Refresh");
-    setBtn("siegeWatch", showWatch, "Take Watch");
-    setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
-    setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
-    setBtn("siegeJoin", showJoin, "Join Siege");
-    setBtn("siegeLaunch", showLaunch, "Launch");
-    setBtn("siegeNext", showNext, "Next Fight");
+setBtn("siegeRefresh", true, "Refresh");
+setBtn("siegeWatch", showWatch, "Take Watch");
+setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
+setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
+setBtn("siegeJoin", showJoin, "Join Siege");
+setBtn("siegeLaunch", showLaunch, "Launch");
+setBtn("siegeCTA", showCTA, "Call to Arms");
+setBtn("siegeNext", showNext, "Next Fight");
 
-    applyBusyState();
-  }
+applyBusyState();
 
   function ensureModal() {
     if (qs("siegeBack")) return;
@@ -476,14 +481,15 @@ function findFailure(raw) {
         </div>
         <div id="siegeRoot" style="padding:12px; overflow:auto; -webkit-overflow-scrolling:touch;"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-top:1px solid rgba(255,255,255,.08)">
-          <button id="siegeRefresh" class="siege-btn">Refresh</button>
-          <button id="siegeWatch" class="siege-btn">Take Watch</button>
-          <button id="siegeUnwatch" class="siege-btn">Leave Watch</button>
-          <button id="siegeStart" class="siege-btn">Start Siege</button>
-          <button id="siegeJoin" class="siege-btn">Join Siege</button>
-          <button id="siegeLaunch" class="siege-btn">Launch</button>
-          <button id="siegeNext" class="siege-btn">Next Fight</button>
-        </div>
+  <button id="siegeRefresh" class="siege-btn">Refresh</button>
+  <button id="siegeWatch" class="siege-btn">Take Watch</button>
+  <button id="siegeUnwatch" class="siege-btn">Leave Watch</button>
+  <button id="siegeStart" class="siege-btn">Start Siege</button>
+  <button id="siegeJoin" class="siege-btn">Join Siege</button>
+  <button id="siegeLaunch" class="siege-btn">Launch</button>
+  <button id="siegeCTA" class="siege-btn">Call to Arms</button>
+  <button id="siegeNext" class="siege-btn">Next Fight</button>
+</div>
       </div>
     `;
     document.body.appendChild(wrap);
@@ -727,6 +733,12 @@ function findFailure(raw) {
       busyLabel: "Launching..."
     });
 
+    qs("siegeCTA").onclick = () => act("/webapp/siege/cta", "siege_cta", {
+  btnId: "siegeCTA",
+  busyLabel: "Calling...",
+  successAlert: "Call to Arms sent."
+});
+
     qs("siegeNext").onclick = () => act("/webapp/siege/next", "siege_next", {
       btnId: "siegeNext",
       busyLabel: "Processing..."
@@ -954,6 +966,8 @@ render(unwrap(out));
 
   const btnId = String(opts.btnId || "");
   const busyLabel = String(opts.busyLabel || "Processing...");
+  const successAlert = String(opts.successAlert || "");
+  const extraBody = (opts.body && typeof opts.body === "object") ? opts.body : null;
 
   try {
     const apiPost = getApiPost();
@@ -961,11 +975,13 @@ render(unwrap(out));
 
     setBusyState(true, btnId, busyLabel);
 
-    const rawOut = await apiPost(path, {
+    const reqBody = {
       nodeId: "edge_of_chain",
-      run_id: rid(prefix)
-    });
+      run_id: rid(prefix),
+      ...(extraBody || {})
+    };
 
+    const rawOut = await apiPost(path, reqBody);
     console.log("[SIEGE][ACT RAW]", path, rawOut);
 
     const fail = findFailure(rawOut);
@@ -978,7 +994,12 @@ render(unwrap(out));
     if (_dbg) console.log("[SIEGE][ACT UNWRAPPED]", path, out);
 
     render(out);
-    try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+    if (successAlert && (out?.ctaSent || rawOut?.ctaSent)) {
+      showAlert(successAlert);
+    } else {
+      try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+    }
   } catch (err) {
     if (_dbg) console.warn("[SIEGE][ERR]", path, err);
     showAlert(`Siege action failed: ${err?.message || err}`);
