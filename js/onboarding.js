@@ -1,11 +1,11 @@
-// js/onboarding.js — Alpha Husky WebApp Onboarding v3 (premium & new-player friendly)
+// js/onboarding.js — Alpha Husky WebApp Onboarding v4 (backend-driven tutorial state)
 (function () {
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
 
   const KEY = "ah_onboarding_v";
-  const VERSION = "3"; // bump when you want to show onboarding again to everyone
+  const VERSION = "4";
   const GROUP_LINK = "https://t.me/The_Alpha_husky";
 
   let backEl = null;
@@ -18,20 +18,10 @@
   let steps = [];
   let idx = 0;
   let _toastLock = 0;
+  let _tutorial = null;
 
   function log(...a) { if (_dbg) console.log("[Onboarding]", ...a); }
-
-  function getTG() {
-    return _tg || window.Telegram?.WebApp || null;
-  }
-
-  function getState() {
-    return window.PLAYER_STATE || window.STATE || {};
-  }
-
-  function getProfile() {
-    return window.PROFILE || {};
-  }
+  function getTG() { return _tg || window.Telegram?.WebApp || null; }
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
@@ -44,144 +34,194 @@
     lsSet(KEY, VERSION);
   }
 
-  // ====================== FACTION NORMALIZER ======================
-  function normFactionKey(raw) {
-    const k = String(raw || "").toLowerCase().trim();
-    if (!k) return "";
+  function makeRunId(prefix = "ob") {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
 
-    // short codes
-    if (["rb", "ew", "pb", "ih"].includes(k)) return k;
+  function arr(v) {
+    return Array.isArray(v) ? v : [];
+  }
 
-    // full names + keywords
-    if (k.includes("rogue") || k.includes("byte")) return "rb";
-    if (k.includes("echo") || k.includes("wardens")) return "ew";
-    if (k.includes("pack") || k.includes("burners")) return "pb";
-    if (k.includes("inner") || k.includes("howl")) return "ih";
+  function uniq(list) {
+    return [...new Set(arr(list).map(x => String(x || "").trim()).filter(Boolean))];
+  }
 
-    return "";
+  function normalizeTutorialPayload(out) {
+    if (!out || out.ok === false) {
+      return {
+        exists: false,
+        started: false,
+        finished: false,
+        current_step: null,
+        completed_steps: [],
+        optional_skips: [],
+        step_ts: {},
+        version: null
+      };
+    }
+
+    const data = out.data || out.tutorial || out;
+    const completed = uniq(data.completed_steps);
+    const optionalSkips = uniq(data.optional_skips);
+
+    const exists =
+      data.exists === true ||
+      !!data.started ||
+      !!data.finished ||
+      !!data.current_step ||
+      completed.length > 0;
+
+    return {
+      exists,
+      started: !!data.started,
+      finished: !!data.finished,
+      current_step: data.current_step || null,
+      completed_steps: completed,
+      optional_skips: optionalSkips,
+      step_ts: data.step_ts || {},
+      version: data.version || null
+    };
+  }
+
+  async function fetchTutorialState() {
+    if (!_apiPost) {
+      log("No apiPost; cannot fetch tutorial state");
+      _tutorial = null;
+      return null;
+    }
+
+    try {
+      const out = await _apiPost("/webapp/tutorial/state", {
+        run_id: makeRunId("tutorial_state")
+      });
+      _tutorial = normalizeTutorialPayload(out);
+      log("tutorial state", _tutorial);
+      return _tutorial;
+    } catch (e) {
+      log("tutorial state fetch failed", e);
+      _tutorial = null;
+      return null;
+    }
   }
 
   // ====================== STEP CONFIG ======================
   const STEP_CONFIG = {
-    profile: {
-      icon: "🆔",
-      h: "Claim Your Identity",
-      p: "Choose your nickname + look. Your legend starts here.",
-      label: "Customize Profile"
+    profile_stats_seen: {
+      icon: "📊",
+      h: "Check Your Profile & Stats",
+      p: "Your account is live. Start by looking at your current profile and base stats.",
+      label: "Open Stats"
     },
-    faction: {
+    quests_seen: {
+      icon: "📜",
+      h: "See Your Daily Quests",
+      p: "These are your first short-term goals. They help you understand what to do next.",
+      label: "Open Quests"
+    },
+    missions_seen: {
+      icon: "⚔️",
+      h: "Open Mission Board",
+      p: "Missions are your first real gameplay loop — XP, loot and steady progress.",
+      label: "Open Missions"
+    },
+    faction_selected: {
       icon: "🏴",
-      h: "Choose Your Pack",
-      p: "Rogue Byte, Echo Wardens, Pack Burners or Inner Howl — pick your faction.",
+      h: "Choose Your Faction",
+      p: "Pick the Pack you want to fight for. This unlocks the social/meta side of the world.",
       label: "Pick Faction"
     },
-    adopt: {
-      icon: "🐺",
-      h: "Adopt Your Companion",
-      p: "Every Alpha needs a companion. Grab your pet now.",
-      label: "Adopt Pet"
+    chain_building_started: {
+      icon: "🗺️",
+      h: "Start Your First Chain Run",
+      p: "Open the map and start one beginner Chain building run. Use Abandoned Wallets Vault or Broken Contracts Hub.",
+      label: "Open Map",
+      note: "Tutorial step completes after starting one of the whitelisted Chain buildings."
     },
-    feed: {
-      icon: "🥩",
-      h: "Feed & Grow",
-      p: "Use /feed in the Telegram bot to earn XP. Small actions add up.",
-      label: "Copy /feed",
-      note: "This is a Telegram bot command for now."
+    referral_seen: {
+      icon: "🔗",
+      h: "Grab Your Referral Link",
+      p: "Invite friends later and grow your Pack. This step is optional.",
+      label: "Open Referrals",
+      optional: true
     },
-    missions: {
-      icon: "⚔️",
-      h: "Start Your First Hunt",
-      p: "Launch a mission and return for XP + loot. Fastest way to level up.",
-      label: "Open Missions"
+    shop_preview_seen: {
+      icon: "🛒",
+      h: "Preview the Shop",
+      p: "Take a quick look at the economy and future upgrades. No purchase needed.",
+      label: "Open Shop",
+      optional: true
     },
     community: {
       icon: "🔥",
       h: "Join The Pack",
-      p: "Co-op runs, Pet Arena battles, and tips from veteran wolves.",
+      p: "Co-op runs, updates, support and the wider Alpha Husky community live here.",
       label: "Open Community",
-      cta: true
+      cta: true,
+      optional: true
     }
   };
 
-  // ====================== STATE CHECKS ======================
-  function hasProfile() {
-    const st = getState();
-    const p = st.profile || {};
-    const prof = getProfile();
-    const nick = String(p.nickname || p.name || prof.nickname || "").trim();
-    if (nick && nick.toLowerCase() !== "alpha husky") return true;
+  const REQUIRED_ORDER = [
+    "profile_stats_seen",
+    "quests_seen",
+    "missions_seen",
+    "faction_selected",
+    "chain_building_started"
+  ];
 
-    const hero = (document.getElementById("heroName")?.textContent || "").trim();
-    return !!(hero && hero.toLowerCase() !== "alpha husky");
-  }
-
-  function hasFaction() {
-    const st = getState();
-    const p = st.profile || {};
-    const prof = getProfile();
-    const v = p.faction || prof.faction || lsGet("ah_faction") || "";
-    return !!normFactionKey(v);
-  }
-
-  function hasPet() {
-    const st = getState();
-
-    if (st.profile?.active_pet || st.profile?.pet || st.profile?.pet_key) return true;
-    if (st.pets?.active || st.pets?.active_key || st.pets?.activePet) return true;
-    if (st.pet && (st.pet.key || st.pet.slug || st.pet.name)) return true;
-
-    const petEl = document.getElementById("petLevel");
-    if (petEl && (petEl.textContent || "").trim()) return true;
-
-    return false;
-  }
-
-  function hasRunMission() {
-    const st = getState();
-    const m = st.missions || st.mission || st.expeditions || st.user_missions;
-    if (!m) return false;
-
-    if (String(m.status || "").toUpperCase() === "RUNNING") return true;
-    if (String(m.state || "").toUpperCase() === "ACTIVE") return true;
-    if (m.active_mission || m.activeMission || m.running || m.current) return true;
-
-    if (Array.isArray(m)) return m.some(x => String(x?.status || "").toUpperCase() === "RUNNING" || x?.started_ts);
-
-    return false;
-  }
+  const OPTIONAL_ORDER = [
+    "referral_seen",
+    "shop_preview_seen"
+  ];
 
   // ====================== ACTIONS ======================
-  function openProfile() {
-    if (window.Skins?.open) return window.Skins.open();
-    document.querySelector(".btn.profile")?.click();
+  function openStats() {
+    if (window.Stats?.open) return window.Stats.open();
+    if (window.openStats) return window.openStats();
+    document.querySelector('.btn.stats, [data-go="stats"], #openStats')?.click();
+  }
+
+  function openQuests() {
+    if (window.Quests?.open) return window.Quests.open();
+    if (window.openQuests) return window.openQuests();
+    document.querySelector('.btn.quests, [data-go="quests"], #openQuests')?.click();
+  }
+
+  function openMissions() {
+    if (window.Missions?.open) return window.Missions.open();
+    if (window.openMissions) return window.openMissions();
+    document.querySelector('.btn.mission, [data-go="missions"], #openMissions')?.click();
   }
 
   function openFactionPicker() {
     if (window.Factions?.openPicker) return window.Factions.openPicker();
     if (window.chooseFaction) return window.chooseFaction();
     if (window.Factions?.open) return window.Factions.open({ mode: "select" });
+    document.querySelector('.btn.faction, [data-go="faction"], #openFaction')?.click();
   }
 
-  function openAdopt() {
-    if (window.Adopt?.open) return window.Adopt.open();
-    document.querySelector(".btn.adopt")?.click();
-  }
+  function openChain() {
+    if (window.openMap) return window.openMap();
+    if (window.AHMap?.open) return window.AHMap.open();
+    if (window.Map?.open) return window.Map.open();
+    document.querySelector('.btn.map, [data-go="map"], #openMap')?.click();
 
-  function openFeedOrTip() {
     const tg = getTG();
-    const cmd = "/feed";
-
-    // copy (best effort)
-    try { navigator.clipboard?.writeText?.(cmd); } catch (_) {}
-
-    const msg = `Copied ${cmd}. Paste it in the bot to earn XP.`;
-    try { tg?.showAlert ? tg.showAlert(msg) : alert(msg); }
-    catch (_) { alert(msg); }
+    try {
+      tg?.showAlert?.("Open the map and start Abandoned Wallets Vault or Broken Contracts Hub to finish this step.");
+    } catch (_) {}
   }
 
-  function openMissions() {
-    if (window.Missions?.open) return window.Missions.open();
-    document.querySelector('.btn.mission, [data-go="missions"]')?.click();
+  function openReferrals() {
+    if (window.Referrals?.open) return window.Referrals.open();
+    if (window.openReferrals) return window.openReferrals();
+    document.querySelector('.btn.referrals, [data-go="referrals"], #openReferrals')?.click();
+  }
+
+  function openShop() {
+    if (window.Shop?.open) return window.Shop.open();
+    if (window.openShop) return window.openShop();
+    document.querySelector('.btn.shop, [data-go="shop"], #openShop')?.click();
   }
 
   function openCommunity() {
@@ -193,22 +233,39 @@
     window.open(GROUP_LINK, "_blank");
   }
 
-  // ====================== BUILD STEPS ======================
-  function buildSteps() {
+  function attachGo(step) {
+    switch (step.key) {
+      case "profile_stats_seen": return openStats;
+      case "quests_seen": return openQuests;
+      case "missions_seen": return openMissions;
+      case "faction_selected": return openFactionPicker;
+      case "chain_building_started": return openChain;
+      case "referral_seen": return openReferrals;
+      case "shop_preview_seen": return openShop;
+      case "community": return openCommunity;
+      default: return () => {};
+    }
+  }
+
+  // ====================== STEP BUILD ======================
+  function buildStepsFromTutorial(tut) {
     const list = [];
+    const done = new Set(uniq(tut?.completed_steps));
+    const skipped = new Set(uniq(tut?.optional_skips));
 
-    if (!hasProfile()) list.push({ key: "profile", ...STEP_CONFIG.profile, go: openProfile });
-    if (!hasFaction()) list.push({ key: "faction", ...STEP_CONFIG.faction, go: openFactionPicker });
-    if (!hasPet()) list.push({ key: "adopt", ...STEP_CONFIG.adopt, go: openAdopt });
+    for (const key of REQUIRED_ORDER) {
+      if (!done.has(key)) {
+        list.push({ key, ...STEP_CONFIG[key], go: attachGo({ key }) });
+      }
+    }
 
-    // always show feed tip (command-only for now)
-    list.push({ key: "feed", ...STEP_CONFIG.feed, go: openFeedOrTip });
+    for (const key of OPTIONAL_ORDER) {
+      if (!done.has(key) && !skipped.has(key)) {
+        list.push({ key, ...STEP_CONFIG[key], go: attachGo({ key }) });
+      }
+    }
 
-    if (!hasRunMission()) list.push({ key: "missions", ...STEP_CONFIG.missions, go: openMissions });
-
-    // community only at the end (as you requested)
-    list.push({ key: "community", ...STEP_CONFIG.community, go: openCommunity });
-
+    list.push({ key: "community", ...STEP_CONFIG.community, go: attachGo({ key: "community" }) });
     return list;
   }
 
@@ -296,10 +353,19 @@
 
     backEl.addEventListener("click", e => { if (e.target === backEl) close(false); });
     btnLater.onclick = () => close(false);
-    btnBack.onclick = () => { if (idx > 0) { idx--; render(); } };
+    btnBack.onclick = () => {
+      if (idx > 0) {
+        idx--;
+        render();
+      }
+    };
     btnNext.onclick = () => {
-      if (idx < steps.length - 1) { idx++; render(); }
-      else close(true);
+      if (idx < steps.length - 1) {
+        idx++;
+        render();
+      } else {
+        close(true);
+      }
     };
   }
 
@@ -327,8 +393,38 @@
     setTimeout(() => t.remove(), 2200);
   }
 
+  async function refreshSteps(keepCurrent = true) {
+    const prevKey = steps[idx]?.key || null;
+    await fetchTutorialState();
+
+    if (!_tutorial || !_tutorial.exists || !_tutorial.started) {
+      steps = [];
+      close(false);
+      return;
+    }
+
+    steps = buildStepsFromTutorial(_tutorial);
+
+    if (!steps.length) {
+      markDone();
+      close(true);
+      return;
+    }
+
+    if (keepCurrent && prevKey) {
+      const nextIdx = steps.findIndex(s => s.key === prevKey);
+      idx = nextIdx >= 0 ? nextIdx : Math.min(idx, Math.max(0, steps.length - 1));
+    } else {
+      idx = 0;
+    }
+
+    render();
+  }
+
   // ====================== RENDER ======================
   function render() {
+    if (!steps.length) return;
+
     const s = steps[idx];
     const percent = Math.round(((idx + 1) / steps.length) * 100);
     if (progressFill) progressFill.style.width = percent + "%";
@@ -357,31 +453,39 @@
       `;
       bodyEl.style.opacity = "1";
 
-      document.getElementById("obDo").onclick = () => {
+      document.getElementById("obDo").onclick = async () => {
         haptic("medium");
+
         try { s.go(); } catch (_) {}
         showToast("Opened for you ✨");
 
-        // re-evaluate steps (smart) after user action
-        setTimeout(() => {
-          steps = buildSteps();
-          if (!steps.length) { close(true); return; }
-          if (idx >= steps.length) idx = Math.max(0, steps.length - 1);
-          render();
+        setTimeout(async () => {
+          await refreshSteps(true);
         }, 900);
       };
 
       btnBack.style.display = idx === 0 ? "none" : "block";
       btnNext.textContent = idx === steps.length - 1 ? "Finish Onboarding" : "Next";
-    }, 180);
+    }, 120);
   }
 
-  function open(force = false) {
+  async function open(force = false) {
     ensureCSS();
     ensureHTML();
 
-    steps = buildSteps();
-    if (!steps.length) { markDone(); return; }
+    await fetchTutorialState();
+
+    // backend is canonical; if no tutorial exists, do not auto-open for legacy users
+    if (!_tutorial || !_tutorial.exists || !_tutorial.started) {
+      log("No active backend tutorial; skipping onboarding modal");
+      return;
+    }
+
+    steps = buildStepsFromTutorial(_tutorial);
+    if (!steps.length) {
+      markDone();
+      return;
+    }
 
     if (!force && !shouldShow()) return;
 
@@ -412,9 +516,9 @@
 
     window.openOnboarding = (force = false) => open(!!force);
     window.maybeOpenOnboarding = () => open(false);
-    window.refreshOnboarding = () => { steps = buildSteps(); render(); };
+    window.refreshOnboarding = () => refreshSteps(true);
 
-    log("Alpha Husky Onboarding v3 ready 🐺");
+    log("Alpha Husky Onboarding v4 ready 🐺");
   }
 
   function boot() {
@@ -427,5 +531,10 @@
     boot();
   }
 
-  window.Onboarding = { init, open, close, refresh: () => { steps = buildSteps(); } };
+  window.Onboarding = {
+    init,
+    open,
+    close,
+    refresh: () => refreshSteps(true)
+  };
 })();
