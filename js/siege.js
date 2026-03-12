@@ -379,74 +379,75 @@ function findFailure(raw) {
 }
   
   function updateActionBar(raw) {
-    const out = normalize(raw) || {};
-    if (out.ok === false) {
-      resetActionBar();
-      return;
-    }
+  const out = normalize(raw) || {};
+  if (out.ok === false) {
+    resetActionBar();
+    return;
+  }
 
-    const node = getNode(out);
-    const cur = getCurrentSiege(node);
-    const status = getSiegeStatus(node);
+  const node = getNode(out);
+  const cur = getCurrentSiege(node);
+  const status = getSiegeStatus(node);
 
-    const youFaction = getYouFaction(out, node);
-    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
-    const attackerFaction = normFaction(cur?.attackerFaction || "");
-    const neutral = !ownerFaction;
-    const youWatching = isYouWatching(out, node);
+  const youFaction = getYouFaction(out, node);
+  const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+  const attackerFaction = normFaction(cur?.attackerFaction || "");
+  const neutral = !ownerFaction;
+  const youWatching = isYouWatching(out, node);
 
-    const hasForming = status === "FORMING";
-    const hasRunning = status === "RUNNING";
-    const hasActiveSiege = hasForming || hasRunning;
+  const hasForming = status === "FORMING";
+  const hasRunning = status === "RUNNING";
+  const hasActiveSiege = hasForming || hasRunning;
 
-    const showWatch =
-      !neutral &&
-      !hasActiveSiege &&
-      !!ownerFaction &&
-      youFaction === ownerFaction &&
-      !youWatching;
+  const showWatch =
+    !neutral &&
+    !hasActiveSiege &&
+    !!ownerFaction &&
+    youFaction === ownerFaction &&
+    !youWatching;
 
-    const showUnwatch =
-      !neutral &&
-      !hasActiveSiege &&
-      !!ownerFaction &&
-      youFaction === ownerFaction &&
-      youWatching;
+  const showUnwatch =
+    !neutral &&
+    !hasActiveSiege &&
+    !!ownerFaction &&
+    youFaction === ownerFaction &&
+    youWatching;
 
-    const showStart =
-      !!youFaction &&
-      !hasActiveSiege &&
-      (
-        neutral ||
-        (!!ownerFaction && ownerFaction !== youFaction)
-      );
+  const showStart =
+    !!youFaction &&
+    !hasActiveSiege &&
+    (
+      neutral ||
+      (!!ownerFaction && ownerFaction !== youFaction)
+    );
 
-    const showJoin =
-      !!youFaction &&
-      hasForming &&
-      !!attackerFaction &&
-      attackerFaction === youFaction;
+  const showJoin =
+    !!youFaction &&
+    hasForming &&
+    !!attackerFaction &&
+    attackerFaction === youFaction;
 
-    const showLaunch =
-      hasForming &&
-      !!attackerFaction &&
-      attackerFaction === youFaction;
+  const showLaunch =
+    hasForming &&
+    !!attackerFaction &&
+    attackerFaction === youFaction;
 
-    const showNext = hasRunning;
+  const showNext = hasRunning;
   const showCTA = !!youFaction;
 
-setBtn("siegeRefresh", true, "Refresh");
-setBtn("siegeWatch", showWatch, "Take Watch");
-setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
-setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
-setBtn("siegeJoin", showJoin, "Join Siege");
-setBtn("siegeLaunch", showLaunch, "Launch");
-setBtn("siegeCTA", showCTA, "Call to Arms");
-setBtn("siegeNext", showNext, "Next Fight");
+  setBtn("siegeRefresh", true, "Refresh");
+  setBtn("siegeWatch", showWatch, "Take Watch");
+  setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
+  setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
+  setBtn("siegeJoin", showJoin, "Join Siege");
+  setBtn("siegeLaunch", showLaunch, "Launch");
+  setBtn("siegeCTA", showCTA, "Call to Arms");
+  setBtn("siegeNext", showNext, "Next Fight");
 
-applyBusyState();
+  applyBusyState();
+}
 
-  function ensureModal() {
+function ensureModal() {
     if (qs("siegeBack")) return;
 
     const wrap = document.createElement("div");
