@@ -170,24 +170,61 @@
     return _root;
   }
 
-  function fighterCardHtml(side, data, currentHp, active) {
+  function fighterCardHtml(side, data, currentHp, active, fx = {}) {
     const isLeft = side === "left";
     const percent = pct(currentHp, data.hpMax);
     const accent = isLeft ? "0,255,255" : "255,90,180";
     const label = isLeft ? "LEFT" : "RIGHT";
 
+    const flash = !!fx.flash;
+    const popupText = fx.popupText || "";
+    const popupKind = fx.popupKind || "";
+    const popupColor =
+      popupKind === "heal"
+        ? "rgba(120,255,160,.96)"
+        : popupKind === "crit"
+        ? "rgba(255,210,90,.98)"
+        : "rgba(255,120,120,.96)";
+
+    const shiftX =
+      active ? (isLeft ? "translateX(6px)" : "translateX(-6px)") : "translateX(0px)";
+
     return `
       <div style="
+        position:relative;
         min-width:0;
         border-radius:14px;
         padding:12px;
-        border:1px solid rgba(${accent}, ${active ? ".55" : ".20"});
+        border:1px solid rgba(${accent}, ${flash ? ".55" : active ? ".40" : ".20"});
         background:
           radial-gradient(circle at ${isLeft ? "20%" : "80%"} 20%, rgba(${accent}, ${active ? ".18" : ".08"}), transparent 35%),
-          rgba(255,255,255,.03);
-        box-shadow:${active ? `0 0 22px rgba(${accent}, .14)` : "none"};
-        transition:all .18s ease;
+          ${flash ? `linear-gradient(0deg, rgba(${accent}, .10), rgba(255,255,255,.04))` : "rgba(255,255,255,.03)"};
+        box-shadow:${flash ? `0 0 26px rgba(${accent}, .18)` : active ? `0 0 18px rgba(${accent}, .10)` : "none"};
+        transform:${shiftX};
+        transition:all .22s ease;
+        overflow:hidden;
       ">
+        ${
+          popupText
+            ? `
+        <div style="
+          position:absolute;
+          top:8px;
+          ${isLeft ? "right:10px" : "left:10px"};
+          padding:3px 8px;
+          border-radius:999px;
+          background:rgba(10,12,24,.82);
+          border:1px solid rgba(255,255,255,.10);
+          color:${popupColor};
+          font-size:11px;
+          font-weight:900;
+          letter-spacing:.02em;
+          pointer-events:none;
+        ">${esc(popupText)}</div>
+      `
+            : ""
+        }
+
         <div style="font-size:11px;opacity:.72;margin-bottom:6px;letter-spacing:.04em;font-weight:800;">${label}</div>
 
         <div style="font-size:16px;font-weight:900;line-height:1.15;">${esc(data.name)}</div>
@@ -305,7 +342,7 @@
 
     return `
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;">
-        ${fighterCardHtml("left", info.left, state.leftHp, leftActive)}
+        ${fighterCardHtml("left", info.left, state.leftHp, leftActive, state.leftFx)}
 
         <div style="
           font-size:18px;
@@ -317,7 +354,7 @@
           transition:transform .18s ease;
         ">VS</div>
 
-        ${fighterCardHtml("right", info.right, state.rightHp, rightActive)}
+        ${fighterCardHtml("right", info.right, state.rightHp, rightActive, state.rightFx)}
       </div>
     `;
   }
@@ -406,6 +443,9 @@
         _playState.currentTurn = idx;
         _playState.activeSide = actor;
 
+        _playState.leftFx = { flash: false, popupText: "", popupKind: "" };
+        _playState.rightFx = { flash: false, popupText: "", popupKind: "" };
+
         if (!_playState.visibleTurns[idx]) {
           _playState.visibleTurns.push(turn);
         } else {
@@ -415,14 +455,34 @@
         if (target === "left") {
           if (kind === "heal") {
             _playState.leftHp = Math.min(info.left.hpMax, num(turn?.targetHpAfter, _playState.leftHp + value));
+            _playState.leftFx = {
+              flash: true,
+              popupText: `+${value}`,
+              popupKind: "heal",
+            };
           } else {
             _playState.leftHp = num(turn?.targetHpAfter, Math.max(0, _playState.leftHp - Math.max(0, value)));
+            _playState.leftFx = {
+              flash: true,
+              popupText: kind === "crit" ? `CRIT ${value}` : `-${value}`,
+              popupKind: kind === "crit" ? "crit" : "hit",
+            };
           }
         } else if (target === "right") {
           if (kind === "heal") {
             _playState.rightHp = Math.min(info.right.hpMax, num(turn?.targetHpAfter, _playState.rightHp + value));
+            _playState.rightFx = {
+              flash: true,
+              popupText: `+${value}`,
+              popupKind: "heal",
+            };
           } else {
             _playState.rightHp = num(turn?.targetHpAfter, Math.max(0, _playState.rightHp - Math.max(0, value)));
+            _playState.rightFx = {
+              flash: true,
+              popupText: kind === "crit" ? `CRIT ${value}` : `-${value}`,
+              popupKind: kind === "crit" ? "crit" : "hit",
+            };
           }
         }
 
@@ -432,6 +492,8 @@
           if (token !== _runToken || !_playState) return;
           if (_playState.currentTurn === idx) {
             _playState.activeSide = "";
+            _playState.leftFx = { flash: false, popupText: "", popupKind: "" };
+            _playState.rightFx = { flash: false, popupText: "", popupKind: "" };
             renderFrame();
           }
         });
@@ -473,6 +535,8 @@
       leftHp: info.left.hpStart || info.left.hpMax,
       rightHp: info.right.hpStart || info.right.hpMax,
       visibleTurns: [],
+      leftFx: { flash: false, popupText: "", popupKind: "" },
+      rightFx: { flash: false, popupText: "", popupKind: "" },
     };
 
     renderFrame();
