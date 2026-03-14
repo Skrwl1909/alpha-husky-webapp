@@ -1207,7 +1207,7 @@
 
   const battlePlayBtn = qs("siegeBattlePlay");
   if (battlePlayBtn) {
-    battlePlayBtn.onclick = () => {
+    battlePlayBtn.onclick = async () => {
       const replay = getLastReplay(raw, node, cur);
       if (!replay) {
         showAlert("No replay yet.");
@@ -1217,14 +1217,14 @@
       const stage = qs("siegeBattleStage");
       if (!stage) return;
 
-      if (!window.SiegePixi?.play) {
-        showAlert("Battle panel ready. Pixi viewer will be wired in the next step.");
+      if (!window.SiegePixi) {
+        showAlert("siege_pixi.js not loaded.");
         return;
       }
 
       try {
-        window.SiegePixi.init?.(stage, { dbg: _dbg, tg: _tg });
-        window.SiegePixi.play(replay, { dbg: _dbg });
+        await window.SiegePixi.init(stage, { dbg: _dbg, tg: _tg });
+        await window.SiegePixi.play(replay, { dbg: _dbg });
       } catch (err) {
         if (_dbg) console.warn("[SIEGE][BATTLE PLAY ERR]", err);
         showAlert(`Replay failed: ${err?.message || err}`);
