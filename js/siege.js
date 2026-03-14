@@ -454,46 +454,6 @@
   setBtn("siegeCTA", showCTA, "Call to Arms");
   setBtn("siegeNext", showNext, "Next Fight");
 
-  const dbg = qs("siegeDebugRuntime");
-  if (dbg) {
-    dbg.innerHTML = `
-      <div style="font-weight:800; margin-bottom:6px;">SIEGE DEBUG</div>
-
-      <div class="siege-kv"><strong>status</strong><span>${esc(String(status || ""))}</span></div>
-
-      <div class="siege-kv"><strong>youFaction raw</strong><span>${esc(String(youFactionRaw || ""))}</span></div>
-      <div class="siege-kv"><strong>youFaction norm</strong><span>${esc(String(youFaction || ""))}</span></div>
-
-      <div class="siege-kv"><strong>owner raw</strong><span>${esc(String(ownerFactionRaw || ""))}</span></div>
-      <div class="siege-kv"><strong>owner norm</strong><span>${esc(String(ownerFaction || ""))}</span></div>
-
-      <div class="siege-kv"><strong>attacker raw</strong><span>${esc(String(attackerFactionRaw || ""))}</span></div>
-      <div class="siege-kv"><strong>attacker norm</strong><span>${esc(String(attackerFaction || ""))}</span></div>
-
-      <div class="siege-kv"><strong>neutral</strong><span>${neutral ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>youWatching</strong><span>${youWatching ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>hasForming</strong><span>${hasForming ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>hasRunning</strong><span>${hasRunning ? "true" : "false"}</span></div>
-
-      <div class="siege-kv"><strong>showWatch</strong><span>${showWatch ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showUnwatch</strong><span>${showUnwatch ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showStart</strong><span>${showStart ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showJoin</strong><span>${showJoin ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showLaunch</strong><span>${showLaunch ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showCTA</strong><span>${showCTA ? "true" : "false"}</span></div>
-      <div class="siege-kv"><strong>showNext</strong><span>${showNext ? "true" : "false"}</span></div>
-
-      <div class="siege-kv"><strong>btn#siegeRefresh</strong><span>${qs("siegeRefresh") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeWatch</strong><span>${qs("siegeWatch") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeUnwatch</strong><span>${qs("siegeUnwatch") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeStart</strong><span>${qs("siegeStart") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeJoin</strong><span>${qs("siegeJoin") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeLaunch</strong><span>${qs("siegeLaunch") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeCTA</strong><span>${qs("siegeCTA") ? "YES" : "NO"}</span></div>
-      <div class="siege-kv"><strong>btn#siegeNext</strong><span>${qs("siegeNext") ? "YES" : "NO"}</span></div>
-    `;
-  }
-
   applyBusyState();
 }
 
@@ -1158,10 +1118,6 @@
   }).join("");
 
   root.innerHTML = `
-    <div id="siegeDebugRuntime" class="siege-card" style="border:1px dashed #4cc9f0; margin-bottom:8px;">
-      <div style="font-weight:800; margin-bottom:6px;">SIEGE DEBUG</div>
-      <div class="siege-muted">waiting for updateActionBar...</div>
-    </div>
 
     <div class="siege-vs-header">
       <div class="siege-faction ${leftClass}">
