@@ -70,8 +70,16 @@
   }
 
   function normFaction(v) {
-    return String(v || "").trim().toLowerCase();
-  }
+  const s = String(v || "").trim().toLowerCase();
+  if (!s) return "";
+
+  if (s === "rb" || s === "rogue_byte" || s === "rogue byte") return "rb";
+  if (s === "ew" || s === "echo_wardens" || s === "echo wardens") return "ew";
+  if (s === "pb" || s === "pack_burners" || s === "pack burners") return "pb";
+  if (s === "ih" || s === "inner_howl" || s === "inner howl") return "ih";
+
+  return s;
+}
 
   function factionLabel(f) {
     const key = normFaction(f);
