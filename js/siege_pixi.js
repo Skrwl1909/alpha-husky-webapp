@@ -171,68 +171,89 @@ function avatarNodeHtml(data, fallback) {
   }
 
   function fighterHudHtml(side) {
-    const right = side === "right";
-    const align = right ? "right" : "left";
-    const prefix = side === "left" ? "LEFT" : "RIGHT";
+  const right = side === "right";
+  const align = right ? "right" : "left";
+  const prefix = side === "left" ? "LEFT" : "RIGHT";
 
-    return `
+  return `
+    <div style="
+      position:relative;
+      min-width:0;
+      pointer-events:none;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(9,12,24,.68);
+      backdrop-filter:blur(6px);
+      border-radius:14px;
+      padding:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.24);
+      text-align:${align};
+    ">
       <div style="
-        position:relative;
-        min-width:0;
-        pointer-events:none;
-        border:1px solid rgba(255,255,255,.10);
-        background:rgba(9,12,24,.68);
-        backdrop-filter:blur(6px);
-        border-radius:14px;
-        padding:10px;
-        box-shadow:0 8px 24px rgba(0,0,0,.24);
-        text-align:${align};
-      ">
-        <div style="
-          position:absolute;
-          top:8px;
-          ${right ? "left:10px" : "right:10px"};
-          opacity:0;
-          transition:opacity .16s ease;
-          padding:3px 8px;
-          border-radius:999px;
-          background:rgba(10,12,24,.88);
+        position:absolute;
+        top:8px;
+        ${right ? "left:10px" : "right:10px"};
+        opacity:0;
+        transition:opacity .16s ease;
+        padding:3px 8px;
+        border-radius:999px;
+        background:rgba(10,12,24,.88);
+        border:1px solid rgba(255,255,255,.12);
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.02em;
+      " id="ah-siege-${side}-popup"></div>
+
+      <div style="font-size:11px;opacity:.72;margin-bottom:8px;letter-spacing:.04em;font-weight:800;">${prefix}</div>
+
+      <div style="display:flex;align-items:center;gap:10px;${right ? "flex-direction:row-reverse;" : ""}">
+        <div id="ah-siege-${side}-avatar" style="
+          width:54px;
+          height:54px;
+          min-width:54px;
+          border-radius:14px;
+          overflow:hidden;
           border:1px solid rgba(255,255,255,.12);
-          font-size:11px;
-          font-weight:900;
-          letter-spacing:.02em;
-        " id="ah-siege-${side}-popup"></div>
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 18px rgba(0,0,0,.22);
+          background:rgba(8,10,22,.82);
+        ">
+          ${avatarNodeHtml({ name: prefix, avatarUrl: "" }, side === "left" ? "L" : "R")}
+        </div>
 
-        <div style="font-size:11px;opacity:.72;margin-bottom:6px;letter-spacing:.04em;font-weight:800;">${prefix}</div>
-        <div id="ah-siege-${side}-name" style="font-size:15px;font-weight:900;line-height:1.15;">—</div>
-        <div id="ah-siege-${side}-faction" style="font-size:12px;opacity:.72;margin-top:4px;">—</div>
-
-        <div style="margin-top:10px;">
-          <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.84;margin-bottom:5px;">
-            <span>HP</span>
-            <b id="ah-siege-${side}-hp-text">0 / 0</b>
-          </div>
-          <div style="
-            height:10px;
-            border-radius:999px;
-            background:rgba(255,255,255,.07);
-            overflow:hidden;
-            border:1px solid rgba(255,255,255,.08);
-          ">
-            <div id="ah-siege-${side}-hp-fill" style="
-              width:0%;
-              height:100%;
-              border-radius:999px;
-              transition:width .28s ease;
-              background:${right
-                ? "linear-gradient(90deg, rgba(255,105,190,.95), rgba(255,105,190,.55))"
-                : "linear-gradient(90deg, rgba(0,246,255,.95), rgba(0,246,255,.55))"};
-            "></div>
-          </div>
+        <div style="min-width:0;flex:1;">
+          <div id="ah-siege-${side}-name" style="font-size:15px;font-weight:900;line-height:1.15;">—</div>
+          <div id="ah-siege-${side}-faction" style="font-size:12px;opacity:.72;margin-top:4px;">—</div>
         </div>
       </div>
-    `;
-  }
+
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.84;margin-bottom:5px;">
+          <span>HP</span>
+          <b id="ah-siege-${side}-hp-text">0 / 0</b>
+        </div>
+        <div style="
+          height:10px;
+          border-radius:999px;
+          background:rgba(255,255,255,.07);
+          overflow:hidden;
+          border:1px solid rgba(255,255,255,.08);
+        ">
+          <div id="ah-siege-${side}-hp-fill" style="
+            width:0%;
+            height:100%;
+            border-radius:999px;
+            transition:width .28s ease;
+            background:${right
+              ? "linear-gradient(90deg, rgba(255,105,190,.95), rgba(255,105,190,.55))"
+              : "linear-gradient(90deg, rgba(0,246,255,.95), rgba(0,246,255,.55))"};
+            box-shadow:${right
+              ? "0 0 16px rgba(255,105,190,.18)"
+              : "0 0 16px rgba(0,246,255,.18)"};
+          "></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
   function replayInfo(replay) {
   const left = replay?.left || {};
@@ -426,18 +447,19 @@ function avatarNodeHtml(data, fallback) {
     _metaEl = _root.querySelector("#ah-siege-meta");
     _badgeEl = _root.querySelector("#ah-siege-center-badge");
 
-    _leftNameEl = _root.querySelector("#ah-siege-left-name");
-    _leftFactionEl = _root.querySelector("#ah-siege-left-faction");
-    _leftHpTextEl = _root.querySelector("#ah-siege-left-hp-text");
-    _leftHpFillEl = _root.querySelector("#ah-siege-left-hp-fill");
-    _leftPopupEl = _root.querySelector("#ah-siege-left-popup");
+   _leftAvatarEl = _root.querySelector("#ah-siege-left-avatar");
+_leftNameEl = _root.querySelector("#ah-siege-left-name");
+_leftFactionEl = _root.querySelector("#ah-siege-left-faction");
+_leftHpTextEl = _root.querySelector("#ah-siege-left-hp-text");
+_leftHpFillEl = _root.querySelector("#ah-siege-left-hp-fill");
+_leftPopupEl = _root.querySelector("#ah-siege-left-popup");
 
-    _rightNameEl = _root.querySelector("#ah-siege-right-name");
-    _rightFactionEl = _root.querySelector("#ah-siege-right-faction");
-    _rightHpTextEl = _root.querySelector("#ah-siege-right-hp-text");
-    _rightHpFillEl = _root.querySelector("#ah-siege-right-hp-fill");
-    _rightPopupEl = _root.querySelector("#ah-siege-right-popup");
-
+_rightAvatarEl = _root.querySelector("#ah-siege-right-avatar");
+_rightNameEl = _root.querySelector("#ah-siege-right-name");
+_rightFactionEl = _root.querySelector("#ah-siege-right-faction");
+_rightHpTextEl = _root.querySelector("#ah-siege-right-hp-text");
+_rightHpFillEl = _root.querySelector("#ah-siege-right-hp-fill");
+_rightPopupEl = _root.querySelector("#ah-siege-right-popup");
     return _root;
   }
 
@@ -502,47 +524,49 @@ function avatarNodeHtml(data, fallback) {
   }
 
   function updateHud(info, state) {
-    if (_leftNameEl) _leftNameEl.textContent = info.left.name || "Left";
-    if (_leftFactionEl) _leftFactionEl.textContent = info.left.faction || "—";
-    if (_leftHpTextEl) _leftHpTextEl.textContent = `${num(state.leftHp, 0)} / ${num(info.left.hpMax, 0)}`;
-    if (_leftHpFillEl) _leftHpFillEl.style.width = `${pct(state.leftHp, info.left.hpMax)}%`;
-    setPopup(_leftPopupEl, state.leftFx?.popupText || "", state.leftFx?.popupKind || "");
+  if (_leftAvatarEl) _leftAvatarEl.innerHTML = avatarNodeHtml(info.left, "L");
+  if (_leftNameEl) _leftNameEl.textContent = info.left.name || "Left";
+  if (_leftFactionEl) _leftFactionEl.textContent = info.left.faction || "—";
+  if (_leftHpTextEl) _leftHpTextEl.textContent = `${num(state.leftHp, 0)} / ${num(info.left.hpMax, 0)}`;
+  if (_leftHpFillEl) _leftHpFillEl.style.width = `${pct(state.leftHp, info.left.hpMax)}%`;
+  setPopup(_leftPopupEl, state.leftFx?.popupText || "", state.leftFx?.popupKind || "");
 
-    if (_rightNameEl) _rightNameEl.textContent = info.right.name || "Right";
-    if (_rightFactionEl) _rightFactionEl.textContent = info.right.faction || "—";
-    if (_rightHpTextEl) _rightHpTextEl.textContent = `${num(state.rightHp, 0)} / ${num(info.right.hpMax, 0)}`;
-    if (_rightHpFillEl) _rightHpFillEl.style.width = `${pct(state.rightHp, info.right.hpMax)}%`;
-    setPopup(_rightPopupEl, state.rightFx?.popupText || "", state.rightFx?.popupKind || "");
+  if (_rightAvatarEl) _rightAvatarEl.innerHTML = avatarNodeHtml(info.right, "R");
+  if (_rightNameEl) _rightNameEl.textContent = info.right.name || "Right";
+  if (_rightFactionEl) _rightFactionEl.textContent = info.right.faction || "—";
+  if (_rightHpTextEl) _rightHpTextEl.textContent = `${num(state.rightHp, 0)} / ${num(info.right.hpMax, 0)}`;
+  if (_rightHpFillEl) _rightHpFillEl.style.width = `${pct(state.rightHp, info.right.hpMax)}%`;
+  setPopup(_rightPopupEl, state.rightFx?.popupText || "", state.rightFx?.popupKind || "");
 
-    if (_metaEl) {
-      _metaEl.innerHTML = [
-        metaPill(`Fight ${info.fightNo || "—"}`),
-        metaPill(
-          state.currentTurn >= 0
-            ? `Turn ${state.currentTurn + 1} / ${Math.max(1, info.turns.length)}`
-            : `Turn 0 / ${Math.max(1, info.turns.length)}`
-        ),
-        metaPill(`Winner: ${info.winnerName}`),
-        metaPill(_usingPixi ? "PIXI" : "FALLBACK", _usingPixi ? "rgba(0,246,255,.08)" : "rgba(255,255,255,.06)")
-      ].join("");
-    }
+  if (_metaEl) {
+    _metaEl.innerHTML = [
+      metaPill(`Fight ${info.fightNo || "—"}`),
+      metaPill(
+        state.currentTurn >= 0
+          ? `Turn ${state.currentTurn + 1} / ${Math.max(1, info.turns.length)}`
+          : `Turn 0 / ${Math.max(1, info.turns.length)}`
+      ),
+      metaPill(`Winner: ${info.winnerName}`),
+      metaPill(_usingPixi ? "PIXI" : "FALLBACK", _usingPixi ? "rgba(0,246,255,.08)" : "rgba(255,255,255,.06)")
+    ].join("");
+  }
 
-    if (_badgeEl) {
-      if (state.finished) {
-        _badgeEl.textContent = `WINNER • ${info.winnerName}`;
-        _badgeEl.style.borderColor = "rgba(255,215,90,.25)";
-        _badgeEl.style.background = "rgba(255,215,90,.10)";
-      } else if (state.currentTurn >= 0) {
-        _badgeEl.textContent = `TURN ${state.currentTurn + 1}`;
-        _badgeEl.style.borderColor = "rgba(255,255,255,.10)";
-        _badgeEl.style.background = "rgba(8,10,22,.82)";
-      } else {
-        _badgeEl.textContent = "READY";
-        _badgeEl.style.borderColor = "rgba(255,255,255,.10)";
-        _badgeEl.style.background = "rgba(8,10,22,.82)";
-      }
+  if (_badgeEl) {
+    if (state.finished) {
+      _badgeEl.textContent = `WINNER • ${info.winnerName}`;
+      _badgeEl.style.borderColor = "rgba(255,215,90,.25)";
+      _badgeEl.style.background = "rgba(255,215,90,.10)";
+    } else if (state.currentTurn >= 0) {
+      _badgeEl.textContent = `TURN ${state.currentTurn + 1}`;
+      _badgeEl.style.borderColor = "rgba(255,255,255,.10)";
+      _badgeEl.style.background = "rgba(8,10,22,.82)";
+    } else {
+      _badgeEl.textContent = "READY";
+      _badgeEl.style.borderColor = "rgba(255,255,255,.10)";
+      _badgeEl.style.background = "rgba(8,10,22,.82)";
     }
   }
+}
 
   function renderLog(info, state) {
     if (!_logEl) return;
@@ -774,17 +798,19 @@ function avatarNodeHtml(data, fallback) {
       _badgeEl.style.background = "rgba(8,10,22,.82)";
     }
 
-    if (_leftNameEl) _leftNameEl.textContent = "Attacker";
-    if (_leftFactionEl) _leftFactionEl.textContent = "—";
-    if (_leftHpTextEl) _leftHpTextEl.textContent = "0 / 0";
-    if (_leftHpFillEl) _leftHpFillEl.style.width = "0%";
-    setPopup(_leftPopupEl, "", "");
+    if (_leftAvatarEl) _leftAvatarEl.innerHTML = avatarNodeHtml({ name: "Attacker", avatarUrl: "" }, "L");
+if (_leftNameEl) _leftNameEl.textContent = "Attacker";
+if (_leftFactionEl) _leftFactionEl.textContent = "—";
+if (_leftHpTextEl) _leftHpTextEl.textContent = "0 / 0";
+if (_leftHpFillEl) _leftHpFillEl.style.width = "0%";
+setPopup(_leftPopupEl, "", "");
 
-    if (_rightNameEl) _rightNameEl.textContent = "Defender";
-    if (_rightFactionEl) _rightFactionEl.textContent = "—";
-    if (_rightHpTextEl) _rightHpTextEl.textContent = "0 / 0";
-    if (_rightHpFillEl) _rightHpFillEl.style.width = "0%";
-    setPopup(_rightPopupEl, "", "");
+if (_rightAvatarEl) _rightAvatarEl.innerHTML = avatarNodeHtml({ name: "Defender", avatarUrl: "" }, "R");
+if (_rightNameEl) _rightNameEl.textContent = "Defender";
+if (_rightFactionEl) _rightFactionEl.textContent = "—";
+if (_rightHpTextEl) _rightHpTextEl.textContent = "0 / 0";
+if (_rightHpFillEl) _rightHpFillEl.style.width = "0%";
+setPopup(_rightPopupEl, "", "");
 
     if (_logEl) {
       _logEl.innerHTML = `
@@ -1006,17 +1032,19 @@ function avatarNodeHtml(data, fallback) {
     _metaEl = null;
     _badgeEl = null;
 
-    _leftNameEl = null;
-    _leftFactionEl = null;
-    _leftHpTextEl = null;
-    _leftHpFillEl = null;
-    _leftPopupEl = null;
+    _leftAvatarEl = null;
+_leftNameEl = null;
+_leftFactionEl = null;
+_leftHpTextEl = null;
+_leftHpFillEl = null;
+_leftPopupEl = null;
 
-    _rightNameEl = null;
-    _rightFactionEl = null;
-    _rightHpTextEl = null;
-    _rightHpFillEl = null;
-    _rightPopupEl = null;
+_rightAvatarEl = null;
+_rightNameEl = null;
+_rightFactionEl = null;
+_rightHpTextEl = null;
+_rightHpFillEl = null;
+_rightPopupEl = null;
 
     _opts = {};
   };
