@@ -481,79 +481,32 @@
     );
   }
 
-  function cleanupBattleStage() {
+ function cleanupBattleStage() {
   try { window.SiegePixi?.stop?.(); }
-  catch (err) { if (_dbg) console.warn("[SIEGE][PIX I STOP ERR]", err); }
+  catch (err) { if (_dbg) console.warn("[SIEGE][PIXI STOP ERR]", err); }
 
   try { window.SiegePixi?.destroy?.(); }
-  catch (err) { if (_dbg) console.warn("[SIEGE][PIX I DESTROY ERR]", err); }
+  catch (err) { if (_dbg) console.warn("[SIEGE][PIXI DESTROY ERR]", err); }
 
   const stage = qs("siegeBattleStage");
   if (stage) stage.innerHTML = "";
 }
 
-  function renderBattlePanelHTML(raw, node, cur) {
+function renderBattlePanelHTML(raw, node, cur) {
   const replay = getLastReplay(raw, node, cur);
+  const siegeStatus = String(getSiegeStatus(node) || "").trim().toUpperCase();
 
-  if (!replay) {
-    return `
-      <div class="siege-card siege-battle-card">
-        <div class="siege-battle-head">
-          <div>
-            <div class="siege-battle-title">Battle Viewer</div>
-            <div class="siege-muted">Latest duel replay will appear here</div>
-          </div>
-          <div class="siege-battle-badge idle">NO REPLAY</div>
-        </div>
-
-        <div id="siegeBattleMeta" class="siege-battle-meta">
-          <span class="siege-pill">Fight: —</span>
-          <span class="siege-pill">Turns: 0</span>
-          <span class="siege-pill">Winner: —</span>
-        </div>
-
-        <div class="siege-battle-summary">
-          <div class="siege-battle-fighter left">
-            <div class="siege-battle-fighter-label">ATTACKER</div>
-            <div class="siege-battle-fighter-name">Waiting</div>
-            <div class="siege-battle-fighter-sub siege-muted">No resolved fight yet</div>
-          </div>
-
-          <div class="siege-battle-vs">VS</div>
-
-          <div class="siege-battle-fighter right">
-            <div class="siege-battle-fighter-label">DEFENDER</div>
-            <div class="siege-battle-fighter-name">Waiting</div>
-            <div class="siege-battle-fighter-sub siege-muted">No resolved fight yet</div>
-          </div>
-        </div>
-
-        <div id="siegeBattleStage" class="siege-battle-stage">
-          <div class="siege-battle-stage-empty">
-            <div class="siege-battle-stage-title">Battle Viewer Ready</div>
-            <div class="siege-muted">
-              After the next resolved duel, this stage will show the replay.
-            </div>
-          </div>
-        </div>
-
-        <div id="siegeBattleControls" class="siege-battle-controls">
-          <button id="siegeBattlePlay" class="siege-btn" disabled>Play Replay</button>
-        </div>
-      </div>
-    `;
-  }
-
+  const hasReplay = !!replay;
   const left = replay?.left || {};
   const right = replay?.right || {};
   const turns = Array.isArray(replay?.turns) ? replay.turns : [];
   const fightNo = Number(replay?.fightNo || replay?.fight_no || cur?.currentFight || 0);
 
-  const leftName = fighterLabel(left, "Left Fighter");
-  const rightName = fighterLabel(right, "Right Fighter");
+  const leftName = hasReplay ? fighterLabel(left, "Left Fighter") : "Waiting";
+  const rightName = hasReplay ? fighterLabel(right, "Right Fighter") : "Waiting";
 
-  const leftFaction = esc(String(left?.faction || "Unknown"));
-  const rightFaction = esc(String(right?.faction || "Unknown"));
+  const leftFaction = hasReplay ? String(left?.faction || "Unknown") : "No resolved fight yet";
+  const rightFaction = hasReplay ? String(right?.faction || "Unknown") : "No resolved fight yet";
 
   const leftHpMax = Number(left?.hpMax || left?.hp_max || left?.hpStart || 0);
   const rightHpMax = Number(right?.hpMax || right?.hp_max || right?.hpStart || 0);
@@ -566,28 +519,63 @@
       ? rightName
       : String(replay?.winnerName || "—");
 
+  let badgeClass = "idle";
+  let badgeText = "NO REPLAY";
+  let subtitle = "Latest duel replay will appear here";
+  let stageTitle = "Battle Viewer Ready";
+  let stageHint = "After the next resolved duel, this stage will show the replay.";
+
+  if (hasReplay) {
+    badgeClass = "ready";
+    badgeText = "REPLAY READY";
+    subtitle = "Latest resolved duel replay";
+    stageTitle = "Replay Ready";
+    stageHint = "Click Play Replay to watch the latest duel.";
+
+    if (siegeStatus === "RUNNING") {
+      badgeClass = "running";
+      badgeText = "LIVE SIEGE";
+      subtitle = "Previous duel replay available while siege is running";
+      stageTitle = "Replay Ready";
+      stageHint = "A new fight may replace this replay after Next Fight resolves.";
+    } else if (siegeStatus === "FINISHED") {
+      badgeClass = "finished";
+      badgeText = "SIEGE FINISHED";
+      subtitle = "Final available duel replay";
+      stageTitle = "Final Replay Ready";
+      stageHint = "This is the latest replay saved from the finished siege.";
+    } else if (siegeStatus === "COOLDOWN") {
+      badgeClass = "finished";
+      badgeText = "COOLDOWN";
+      subtitle = "Last resolved duel replay";
+      stageTitle = "Replay Ready";
+      stageHint = "The siege is on cooldown. You can still review the latest duel.";
+    }
+  }
+
   return `
-    <div class="siege-card siege-battle-card">
+    <div class="siege-card siege-battle-card ${hasReplay ? "has-replay" : "no-replay"} ${badgeClass}">
       <div class="siege-battle-head">
         <div>
           <div class="siege-battle-title">Battle Viewer</div>
-          <div class="siege-muted">Latest resolved duel replay</div>
+          <div class="siege-muted">${esc(subtitle)}</div>
         </div>
-        <div class="siege-battle-badge ready">REPLAY READY</div>
+        <div class="siege-battle-badge ${badgeClass}">${esc(badgeText)}</div>
       </div>
 
       <div id="siegeBattleMeta" class="siege-battle-meta">
-        <span class="siege-pill">Fight: ${esc(String(fightNo || "—"))}</span>
-        <span class="siege-pill">Turns: ${turns.length}</span>
-        <span class="siege-pill">Winner: ${esc(winnerName)}</span>
+        <span class="siege-pill">Fight: ${esc(String(hasReplay ? (fightNo || "—") : "—"))}</span>
+        <span class="siege-pill">Turns: ${hasReplay ? turns.length : 0}</span>
+        <span class="siege-pill">Winner: ${esc(hasReplay ? winnerName : "—")}</span>
+        <span class="siege-pill">Siege: ${esc(siegeStatus || "—")}</span>
       </div>
 
       <div class="siege-battle-summary">
         <div class="siege-battle-fighter left">
           <div class="siege-battle-fighter-label">ATTACKER</div>
           <div class="siege-battle-fighter-name">${esc(leftName)}</div>
-          <div class="siege-battle-fighter-sub">${leftFaction}</div>
-          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(leftHpMax || "—"))}</div>
+          <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(leftFaction)}</div>
+          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (leftHpMax || "—") : "—"))}</div>
         </div>
 
         <div class="siege-battle-vs">VS</div>
@@ -595,22 +583,20 @@
         <div class="siege-battle-fighter right">
           <div class="siege-battle-fighter-label">DEFENDER</div>
           <div class="siege-battle-fighter-name">${esc(rightName)}</div>
-          <div class="siege-battle-fighter-sub">${rightFaction}</div>
-          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(rightHpMax || "—"))}</div>
+          <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(rightFaction)}</div>
+          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (rightHpMax || "—") : "—"))}</div>
         </div>
       </div>
 
       <div id="siegeBattleStage" class="siege-battle-stage">
         <div class="siege-battle-stage-empty">
-          <div class="siege-battle-stage-title">Replay Ready</div>
-          <div class="siege-muted">
-            Click Play Replay to watch the latest duel.
-          </div>
+          <div class="siege-battle-stage-title">${esc(stageTitle)}</div>
+          <div class="siege-muted">${esc(stageHint)}</div>
         </div>
       </div>
 
       <div id="siegeBattleControls" class="siege-battle-controls">
-        <button id="siegeBattlePlay" class="siege-btn">Play Replay</button>
+        <button id="siegeBattlePlay" class="siege-btn" ${hasReplay ? "" : "disabled"}>Play Replay</button>
       </div>
     </div>
   `;
