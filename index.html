@@ -928,180 +928,14 @@ html.ah-modal-open #heroFrame{
 #avatarBack .sheet-card > div:not(#skinButtons):not(.btn-row) {
     opacity: 0.15 !important;   /* przyciemnimy, jeśli nadal widać */
 }
-    <style id="factionhq-css">
-/* === FACTION HQ BACKDROP === */
-#factionHQBack{
-  position: fixed;
-  inset: 0;
-  z-index: 999990;   /* poniżej missionsBack (999999), ale nad resztą UI */
-  display: none;     /* JS otwiera */
-  pointer-events: auto;
-}
-
-#factionHQBack.is-open{ display:block !important; }
-
-#factionHQBack .hq-bg{
-  position:absolute;
-  inset:0;
-  background: #07080c;
-  background-image: var(--hq-bg-url);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  /* lekki “cinematic” polish */
-  filter: saturate(1.05) contrast(1.05);
-}
-
-/* czytelność UI na tle (Twoje) */
-#factionHQBack .hq-bg::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.04), rgba(0,0,0,.26)),
-    linear-gradient(to bottom, rgba(0,0,0,.04), rgba(0,0,0,.30));
-}
-
-#factionHQBack .hq-vignette{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background: radial-gradient(ellipse at center,
-    rgba(0,0,0,.00) 0%,
-    rgba(0,0,0,.12) 72%,
-    rgba(0,0,0,.24) 100%);
-  z-index: 0;
-}
-    /* ==================== FRONT WOJENNY FRAKCJI – FAZA 1 (bezpieczna) ==================== */
-
-/* Nowa warstwa tylko na front (nad zwykłymi ścieżkami, pod pinami) */
-.front-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* 1. Terytorialne overlaye (duży, półprzezroczysty glow frakcji pod nodami) */
-.territory-glow {
-  position: absolute;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  filter: blur(55px);
-  opacity: 0.16;
-  pointer-events: none;
-  z-index: 0;
-  mix-blend-mode: screen;
-}
-
-/* Kolory terytoriów (dokładnie jak w Twoich klasach) */
-.territory-glow.f-rb { background: #ff3366; }
-.territory-glow.f-ew { background: #ffdd33; }
-.territory-glow.f-pb { background: #c84cff; }
-.territory-glow.f-ih { background: #00ddff; }
-
-/* 2. Grube neonowe linie frontu (nad istniejącymi .path) */
-.front-path {
-  stroke: #ffaa00;
-  stroke-width: 11;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 22px #ff3300) drop-shadow(0 0 8px #ff6600);
-  animation: frontPulse 2.4s ease-in-out infinite;
-  opacity: 0.82;
-}
-
-@keyframes frontPulse {
-  0%, 100% { opacity: 0.75; stroke-width: 10; }
-  50% { opacity: 0.98; stroke-width: 13.5; }
-}
-
-/* 3. Efekt pęknięć / cracków na froncie (jak uszkodzona powierzchnia księżyca) */
-.front-crack {
-  stroke: #ff2200;
-  stroke-width: 2.8;
-  stroke-dasharray: 8 12;
-  animation: crackAnim 1.8s linear infinite;
-  opacity: 0.6;
-}
-
-@keyframes crackAnim {
-  to { stroke-dashoffset: -40; }
-}
-
-/* Bonus: mocniejszy contested ring (już masz, tylko podkręcamy) */
-.map-pin.is-contested::after {
-  inset: -22px;
-  border-width: 4px;
-  border-color: #ff9800;
-  animation-duration: 1.4s;
-}
-
-/* === HQ PANEL: glass + ring === */
-/* użyj tego na swoim głównym kontenerze treści (najczęściej #factionHQRoot lub #factionHQModal) */
-#factionHQRoot,
-#factionHQModal{
-  position: relative;
-  z-index: 1;
-  border-radius: 20px;
-  overflow: hidden;
-
-  background: rgba(12,12,18,.55);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 50px rgba(0,0,0,.55);
-}
-
-/* fallback gdy brak backdrop-filter */
-@supports not ((backdrop-filter: blur(1px))){
-  #factionHQRoot,
-  #factionHQModal{
-    background: rgba(12,12,18,.82);
-  }
-}
-
-/* delikatny “inner rim” */
-#factionHQRoot::before,
-#factionHQModal::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  border-radius: 20px;
-  padding: 1px;
-
-  background: linear-gradient(135deg,
-    rgba(255,255,255,.14),
-    rgba(255,255,255,0));
-
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-
-  opacity:.9;
-}
-
-/* subtelny ring w kolorze frakcji */
-#factionHQRoot::after,
-#factionHQModal::after{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  border-radius: 22px;
-<style id="factionhq-css">
+   <style id="factionhq-css">
 /* =========================
    FACTION HQ BACKDROP
    ========================= */
 #factionHQBack{
   position: fixed;
   inset: 0;
-  z-index: 999990;
+  z-index: 999990; /* poniżej missionsBack (999999), ale nad resztą UI */
   display: none;
   pointer-events: auto;
   overflow: hidden;
@@ -1126,18 +960,30 @@ html.ah-modal-open #heroFrame{
   background-position: center center;
   background-repeat: no-repeat;
 
-  /* lekki polish, ale bez rozmycia */
-  filter: saturate(1.02) contrast(1.03) brightness(.98);
-  transform: none;
+  /* lekki cinematic polish */
+  filter: saturate(1.05) contrast(1.05);
 }
 
-/* Na razie wyłączone — to one wcześniej za bardzo zabijały background */
+/* czytelność UI na tle */
 #factionHQBack .hq-bg::after{
-  display: none !important;
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.04), rgba(0,0,0,.26)),
+    linear-gradient(to bottom, rgba(0,0,0,.04), rgba(0,0,0,.30));
 }
 
 #factionHQBack .hq-vignette{
-  display: none !important;
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,.00) 0%,
+    rgba(0,0,0,.12) 72%,
+    rgba(0,0,0,.24) 100%);
+  z-index: 0;
 }
 
 /* =========================
@@ -1322,210 +1168,283 @@ html.ah-modal-open #heroFrame{
   opacity: .45;
   filter: saturate(.6);
 }
+</style>
 
-<style id="factionhq-css">
-/* === FACTION HQ BACKDROP === */
-#factionHQBack{
-  position: fixed;
-  inset: 0;
-  z-index: 999990;   /* poniżej missionsBack (999999), ale nad resztą UI */
-  display: none;     /* JS otwiera */
-  pointer-events: auto;
-}
-
-#factionHQBack.is-open{ display:block !important; }
-
-#factionHQBack .hq-bg{
-  position:absolute;
-  inset:0;
-  background: #07080c;
-  background-image: var(--hq-bg-url);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  /* lekki “cinematic” polish */
-  filter: saturate(1.05) contrast(1.05);
-}
-
-/* czytelność UI na tle (Twoje) */
+<style id="factionhq-debug-override">
 #factionHQBack .hq-bg::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.04), rgba(0,0,0,.26)),
-    linear-gradient(to bottom, rgba(0,0,0,.04), rgba(0,0,0,.30));
+  display:none !important;
 }
 
 #factionHQBack .hq-vignette{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background: radial-gradient(ellipse at center,
-    rgba(0,0,0,.00) 0%,
-    rgba(0,0,0,.12) 72%,
-    rgba(0,0,0,.24) 100%);
-  z-index: 0;
-}
-    /* ==================== FRONT WOJENNY FRAKCJI – FAZA 1 (bezpieczna) ==================== */
-
-/* Nowa warstwa tylko na front (nad zwykłymi ścieżkami, pod pinami) */
-.front-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* 1. Terytorialne overlaye (duży, półprzezroczysty glow frakcji pod nodami) */
-.territory-glow {
-  position: absolute;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  filter: blur(55px);
-  opacity: 0.16;
-  pointer-events: none;
-  z-index: 0;
-  mix-blend-mode: screen;
-}
-
-/* Kolory terytoriów (dokładnie jak w Twoich klasach) */
-.territory-glow.f-rb { background: #ff3366; }
-.territory-glow.f-ew { background: #ffdd33; }
-.territory-glow.f-pb { background: #c84cff; }
-.territory-glow.f-ih { background: #00ddff; }
-
-/* 2. Grube neonowe linie frontu (nad istniejącymi .path) */
-.front-path {
-  stroke: #ffaa00;
-  stroke-width: 11;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 22px #ff3300) drop-shadow(0 0 8px #ff6600);
-  animation: frontPulse 2.4s ease-in-out infinite;
-  opacity: 0.82;
-}
-
-@keyframes frontPulse {
-  0%, 100% { opacity: 0.75; stroke-width: 10; }
-  50% { opacity: 0.98; stroke-width: 13.5; }
-}
-
-/* 3. Efekt pęknięć / cracków na froncie (jak uszkodzona powierzchnia księżyca) */
-.front-crack {
-  stroke: #ff2200;
-  stroke-width: 2.8;
-  stroke-dasharray: 8 12;
-  animation: crackAnim 1.8s linear infinite;
-  opacity: 0.6;
-}
-
-@keyframes crackAnim {
-  to { stroke-dashoffset: -40; }
-}
-
-/* Bonus: mocniejszy contested ring (już masz, tylko podkręcamy) */
-.map-pin.is-contested::after {
-  inset: -22px;
-  border-width: 4px;
-  border-color: #ff9800;
-  animation-duration: 1.4s;
-}
-
-/* === HQ PANEL: glass + ring === */
-/* użyj tego na swoim głównym kontenerze treści (najczęściej #factionHQRoot lub #factionHQModal) */
-#factionHQRoot,
-#factionHQModal{
-  position: relative;
-  z-index: 1;
-  border-radius: 20px;
-  overflow: hidden;
-
-  background: rgba(12,12,18,.55);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 50px rgba(0,0,0,.55);
-}
-
-/* fallback gdy brak backdrop-filter */
-@supports not ((backdrop-filter: blur(1px))){
-  #factionHQRoot,
-  #factionHQModal{
-    background: rgba(12,12,18,.82);
-  }
-}
-
-/* delikatny “inner rim” */
-#factionHQRoot::before,
-#factionHQModal::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  border-radius: 20px;
-  padding: 1px;
-
-  background: linear-gradient(135deg,
-    rgba(255,255,255,.14),
-    rgba(255,255,255,0));
-
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-
-  opacity:.9;
-}
-
-/* subtelny ring w kolorze frakcji */
-#factionHQRoot::after,
-#factionHQModal::after{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  border-radius: 22px;
-
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.10),
-    0 0 34px rgba(var(--hq-accent-rgb, 0,229,255), .18);
-
-  opacity:.95;
-}
-
-/* Akcent per frakcja — ustawiane przez JS przez data-faction="..." */
-#factionHQRoot[data-faction="rogue_byte"],
-#factionHQModal[data-faction="rogue_byte"]   { --hq-accent-rgb: 0,229,255; }
-
-#factionHQRoot[data-faction="echo_wardens"],
-#factionHQModal[data-faction="echo_wardens"] { --hq-accent-rgb: 170,120,255; }
-
-#factionHQRoot[data-faction="pack_burners"],
-#factionHQModal[data-faction="pack_burners"] { --hq-accent-rgb: 255,110,80; }
-
-#factionHQRoot[data-faction="inner_howl"],
-#factionHQModal[data-faction="inner_howl"]   { --hq-accent-rgb: 180,255,120; }
-
-/* mały bonus: bezpieczne paddingi na mobile (jeśli panel jest full-screen sheetem) */
-#factionHQRoot,
-#factionHQModal{
-  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  display:none !important;
 }
 </style>
-  </style>
-  <style id="factionhq-debug-override">
-  #factionHQBack .hq-bg::after{
-    display:none !important;
+
+<style id="siege-battle-css">
+/* === SIEGE / BATTLE VIEWER POLISH === */
+
+.siege-battle-card{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at top left, rgba(0,255,255,.06), transparent 28%),
+    radial-gradient(circle at top right, rgba(255,80,180,.06), transparent 28%),
+    linear-gradient(180deg, rgba(10,14,28,.96), rgba(14,16,30,.98));
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.siege-battle-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.siege-battle-title{
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.03em;
+  line-height:1.1;
+}
+
+.siege-battle-badge{
+  flex:0 0 auto;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.04em;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.05);
+  white-space:nowrap;
+}
+
+.siege-battle-badge.idle{
+  color:#c8d0dc;
+  background:rgba(255,255,255,.04);
+  border-color:rgba(255,255,255,.08);
+}
+
+.siege-battle-badge.ready{
+  color:#b8fff7;
+  background:rgba(0,255,255,.08);
+  border-color:rgba(0,255,255,.18);
+  box-shadow:0 0 18px rgba(0,255,255,.08);
+}
+
+.siege-battle-badge.running{
+  color:#ffdca8;
+  background:rgba(255,170,60,.10);
+  border-color:rgba(255,170,60,.22);
+  box-shadow:0 0 18px rgba(255,170,60,.08);
+}
+
+.siege-battle-badge.finished{
+  color:#ffe8a3;
+  background:rgba(255,215,90,.10);
+  border-color:rgba(255,215,90,.22);
+  box-shadow:0 0 18px rgba(255,215,90,.08);
+}
+
+.siege-battle-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:12px;
+}
+
+.siege-battle-summary{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:10px;
+  align-items:stretch;
+  margin-bottom:12px;
+}
+
+.siege-battle-fighter{
+  min-width:0;
+  border-radius:14px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.035);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+
+.siege-battle-fighter.left{
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,255,255,.08), transparent 32%),
+    rgba(255,255,255,.03);
+  border-color:rgba(0,255,255,.14);
+}
+
+.siege-battle-fighter.right{
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,80,180,.08), transparent 32%),
+    rgba(255,255,255,.03);
+  border-color:rgba(255,80,180,.14);
+}
+
+.siege-battle-fighter-label{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.05em;
+  opacity:.72;
+  margin-bottom:6px;
+}
+
+.siege-battle-fighter-name{
+  font-size:15px;
+  font-weight:900;
+  line-height:1.15;
+  word-break:break-word;
+}
+
+.siege-battle-fighter-sub{
+  margin-top:4px;
+  font-size:12px;
+  opacity:.78;
+  word-break:break-word;
+}
+
+.siege-battle-fighter-stat{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:700;
+  opacity:.88;
+}
+
+.siege-battle-vs{
+  align-self:center;
+  justify-self:center;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:.06em;
+  opacity:.9;
+  padding:0 4px;
+}
+
+.siege-battle-stage{
+  position:relative;
+  min-height:360px;
+  height:360px;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(0,255,255,.06), transparent 26%),
+    radial-gradient(circle at 70% 75%, rgba(255,80,180,.06), transparent 30%),
+    linear-gradient(180deg, rgba(7,12,24,.94), rgba(12,14,28,.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    inset 0 -20px 40px rgba(0,0,0,.18);
+}
+
+.siege-battle-card.has-replay .siege-battle-stage{
+  border-color:rgba(255,255,255,.10);
+}
+
+.siege-battle-card.no-replay .siege-battle-stage{
+  opacity:.96;
+}
+
+.siege-battle-card.running .siege-battle-stage{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    inset 0 -20px 40px rgba(0,0,0,.18),
+    0 0 0 1px rgba(255,170,60,.06);
+}
+
+.siege-battle-card.finished .siege-battle-stage{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    inset 0 -20px 40px rgba(0,0,0,.18),
+    0 0 0 1px rgba(255,215,90,.06);
+}
+
+.siege-battle-stage-empty{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:18px;
+  z-index:0;
+}
+
+.siege-battle-stage-title{
+  font-size:22px;
+  font-weight:900;
+  line-height:1.1;
+  margin-bottom:8px;
+}
+
+.siege-battle-controls{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+
+.siege-battle-controls .siege-btn{
+  min-width:140px;
+}
+
+.siege-battle-controls .siege-btn[disabled]{
+  opacity:.55;
+  filter:saturate(.7);
+  cursor:not-allowed;
+}
+
+/* log inside viewer */
+#ah-siege-log::-webkit-scrollbar{
+  width:8px;
+}
+#ah-siege-log::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.12);
+  border-radius:999px;
+}
+#ah-siege-log{
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;
+}
+
+/* mobile polish */
+@media (max-width: 720px){
+  .siege-battle-summary{
+    grid-template-columns:1fr;
   }
 
-  #factionHQBack .hq-vignette{
-    display:none !important;
+  .siege-battle-vs{
+    font-size:14px;
+    padding:2px 0;
   }
-  </style>
+
+  .siege-battle-stage{
+    min-height:320px;
+    height:320px;
+  }
+
+  .siege-battle-head{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .siege-battle-controls{
+    justify-content:stretch;
+  }
+
+  .siege-battle-controls .siege-btn{
+    width:100%;
+    min-width:0;
+  }
+}
+</style>
     <style id="missions-hotfix">
 
 #missionsBack{
