@@ -377,74 +377,74 @@
   }
 
   function updateActionBar(raw) {
-    const out = raw || {};
-    const fail = findFailure(out);
-    if (fail) {
-      resetActionBar();
-      return;
-    }
-
-    const node = getNode(out);
-    const cur = getCurrentSiege(node);
-    const status = getSiegeStatus(node);
-
-    const youFaction = getYouFaction(out, node);
-    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
-    const attackerFaction = normFaction(cur?.attackerFaction || "");
-    const neutral = !ownerFaction;
-    const youWatching = isYouWatching(out, node);
-
-    const hasForming = status === "FORMING";
-    const hasRunning = status === "RUNNING";
-    const hasActiveSiege = hasForming || hasRunning;
-
-    const showWatch =
-      !neutral &&
-      !hasActiveSiege &&
-      !!ownerFaction &&
-      youFaction === ownerFaction &&
-      !youWatching;
-
-    const showUnwatch =
-      !neutral &&
-      !hasActiveSiege &&
-      !!ownerFaction &&
-      youFaction === ownerFaction &&
-      youWatching;
-
-    const showStart =
-      !!youFaction &&
-      !hasActiveSiege &&
-      (
-        neutral ||
-        (!!ownerFaction && ownerFaction !== youFaction)
-      );
-
-    const showJoin =
-      !!youFaction &&
-      hasForming &&
-      !!attackerFaction &&
-      attackerFaction === youFaction;
-
-    const showLaunch =
-      hasForming &&
-      !!attackerFaction &&
-      attackerFaction === youFaction;
-
-    const showNext = hasRunning;
-    const showCTA = !!youFaction;
-
-    setBtn("siegeRefresh", true, "Refresh");
-    setBtn("siegeWatch", showWatch, "Take Watch");
-    setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
-    setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
-    setBtn("siegeJoin", showJoin, "Join Siege");
-    setBtn("siegeLaunch", showLaunch, "Launch");
-    setBtn("siegeCTA", showCTA, "Call to Arms");
-    setBtn("siegeNext", showNext, "Next Fight");
-
-    applyBusyState();
+  const out = raw || {};
+  const fail = findFailure(out);
+  if (fail) {
+    resetActionBar();
+    return;
   }
+
+  const node = getNode(out);
+  const cur = getCurrentSiege(node);
+  const status = getSiegeStatus(node);
+
+  const youFaction = normFaction(getYouFaction(out, node));
+  const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+  const attackerFaction = normFaction(cur?.attackerFaction || "");
+  const neutral = !ownerFaction;
+  const youWatching = isYouWatching(out, node);
+
+  const hasForming = status === "FORMING";
+  const hasRunning = status === "RUNNING";
+  const hasActiveSiege = hasForming || hasRunning;
+
+  const showWatch =
+    !neutral &&
+    !hasActiveSiege &&
+    !!ownerFaction &&
+    youFaction === ownerFaction &&
+    !youWatching;
+
+  const showUnwatch =
+    !neutral &&
+    !hasActiveSiege &&
+    !!ownerFaction &&
+    youFaction === ownerFaction &&
+    youWatching;
+
+  const showStart =
+    !!youFaction &&
+    !hasActiveSiege &&
+    (
+      neutral ||
+      (!!ownerFaction && ownerFaction !== youFaction)
+    );
+
+  const showJoin =
+    !!youFaction &&
+    hasForming &&
+    !!attackerFaction &&
+    attackerFaction === youFaction;
+
+  const showLaunch =
+    hasForming &&
+    !!attackerFaction &&
+    attackerFaction === youFaction;
+
+  const showNext = hasRunning;
+  const showCTA = !!youFaction;
+
+  setBtn("siegeRefresh", true, "Refresh");
+  setBtn("siegeWatch", showWatch, "Take Watch");
+  setBtn("siegeUnwatch", showUnwatch, "Leave Watch");
+  setBtn("siegeStart", showStart, neutral ? "Claim Node" : "Start Siege");
+  setBtn("siegeJoin", showJoin, "Join Siege");
+  setBtn("siegeLaunch", showLaunch, "Launch");
+  setBtn("siegeCTA", showCTA, "Call to Arms");
+  setBtn("siegeNext", showNext, "Next Fight");
+
+  applyBusyState();
+}
 
   function getLastReplay(raw, node, cur) {
     const replay =
@@ -560,59 +560,59 @@
   }
 
   function getSlotAction(raw, node, cur, occupant) {
-    const status = getSiegeStatus(node);
-    const youFaction = getYouFaction(raw, node);
-    const youUid = getYouUid(raw, node);
-    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
-    const attackerFaction = normFaction(cur?.attackerFaction || "");
-    const hasForming = status === "FORMING";
-    const hasRunning = status === "RUNNING";
-    const hasActiveSiege = hasForming || hasRunning;
-    const youWatching = isYouWatching(raw, node);
+  const status = getSiegeStatus(node);
+  const youFaction = normFaction(getYouFaction(raw, node));
+  const youUid = getYouUid(raw, node);
+  const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+  const attackerFaction = normFaction(cur?.attackerFaction || "");
+  const hasForming = status === "FORMING";
+  const hasRunning = status === "RUNNING";
+  const hasActiveSiege = hasForming || hasRunning;
+  const youWatching = isYouWatching(raw, node);
 
-    if (occupant) {
-      const occUid = String(occupant?.uid || "").trim();
-      if (!hasActiveSiege && occUid && occUid === youUid) {
-        return {
-          clickId: "siegeUnwatch",
-          statusText: "YOUR SLOT • TAP TO LEAVE",
-          icon: "🛡️",
-          clickable: true
-        };
-      }
+  if (occupant) {
+    const occUid = String(occupant?.uid || "").trim();
+    if (!hasActiveSiege && occUid && occUid === youUid) {
       return {
-        clickId: "",
-        statusText: "WATCHING",
+        clickId: "siegeUnwatch",
+        statusText: "YOUR SLOT • TAP TO LEAVE",
         icon: "🛡️",
-        clickable: false
-      };
-    }
-
-    if (hasForming && attackerFaction && youFaction === attackerFaction) {
-      return {
-        clickId: "siegeJoin",
-        statusText: "AVAILABLE • TAP TO JOIN",
-        icon: "⚔️",
         clickable: true
       };
     }
-
-    if (!hasActiveSiege && ownerFaction && youFaction === ownerFaction && !youWatching) {
-      return {
-        clickId: "siegeWatch",
-        statusText: "AVAILABLE • TAP TO JOIN",
-        icon: "+",
-        clickable: true
-      };
-    }
-
     return {
       clickId: "",
-      statusText: "AVAILABLE",
-      icon: "+",
+      statusText: "WATCHING",
+      icon: "🛡️",
       clickable: false
     };
   }
+
+  if (hasForming && attackerFaction && youFaction === attackerFaction) {
+    return {
+      clickId: "siegeJoin",
+      statusText: "AVAILABLE • TAP TO JOIN",
+      icon: "⚔️",
+      clickable: true
+    };
+  }
+
+  if (!hasActiveSiege && ownerFaction && youFaction === ownerFaction && !youWatching) {
+    return {
+      clickId: "siegeWatch",
+      statusText: "AVAILABLE • TAP TO JOIN",
+      icon: "+",
+      clickable: true
+    };
+  }
+
+  return {
+    clickId: "",
+    statusText: "AVAILABLE",
+    icon: "+",
+    clickable: false
+  };
+}
 
   function ensureModal() {
     if (qs("siegeBack")) return;
@@ -999,225 +999,225 @@
   }
 
   function render(raw) {
-    _lastRaw = raw || null;
+  _lastRaw = raw || null;
 
-    const root = qs("siegeRoot");
-    if (!root) return;
+  const root = qs("siegeRoot");
+  if (!root) return;
 
-    cleanupBattleStage();
+  cleanupBattleStage();
 
-    const fail = findFailure(raw);
-    if (fail) {
-      const reason = fail.reason || "UNKNOWN";
-      qs("siegeSub").textContent = "Siege control node";
-      root.innerHTML = `
-        <div class="siege-card">
-          Failed to load siege state.<br>
-          <span class="siege-muted">${esc(reason)}</span>
-        </div>
-      `;
-      resetActionBar();
-      return;
-    }
+  const fail = findFailure(raw);
+  if (fail) {
+    const reason = fail.reason || "UNKNOWN";
+    qs("siegeSub").textContent = "Siege control node";
+    root.innerHTML = `
+      <div class="siege-card">
+        Failed to load siege state.<br>
+        <span class="siege-muted">${esc(reason)}</span>
+      </div>
+    `;
+    resetActionBar();
+    return;
+  }
 
-    const node = getNode(raw);
-    const cur = getCurrentSiege(node);
-    const status = getSiegeStatus(node);
-    const defenders = defendersList(node);
-    const attackers = attackersList(node);
-    const curDefs = curDefendersList(node);
-    const fights = fightsList(node);
-    const feed = siegeFeedList(node);
+  const node = getNode(raw);
+  const cur = getCurrentSiege(node);
+  const status = getSiegeStatus(node);
+  const defenders = defendersList(node);
+  const attackers = attackersList(node);
+  const curDefs = curDefendersList(node);
+  const fights = fightsList(node);
+  const feed = siegeFeedList(node);
 
-    const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
-    const neutral = !ownerFaction;
-    const ownerText = factionLabel(ownerFaction);
-    const watchText = `${guardUsed(node)} / ${guardMax(node)}`;
-    const cooldownText = cooldownLabel(node);
+  const ownerFaction = normFaction(node?.ownerFaction || node?.owner || "");
+  const neutral = !ownerFaction;
+  const ownerText = factionLabel(ownerFaction);
+  const watchText = `${guardUsed(node)} / ${guardMax(node)}`;
+  const cooldownText = cooldownLabel(node);
 
-    qs("siegeSub").textContent =
-      cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
+  qs("siegeSub").textContent =
+    cur ? `Status: ${status || "—"}` : `Owner: ${ownerText}`;
 
-    const factionShort = (f) => {
-      const key = normFaction(f);
-      const map = {
-        rogue_byte: "RB",
-        echo_wardens: "EW",
-        pack_burners: "PB",
-        inner_howl: "IH"
-      };
-      return map[key] || (key ? key.slice(0, 2).toUpperCase() : "??");
+  const factionShort = (f) => {
+    const key = normFaction(f);
+    const map = {
+      rb: "RB",
+      ew: "EW",
+      pb: "PB",
+      ih: "IH"
     };
+    return map[key] || (key ? key.slice(0, 2).toUpperCase() : "??");
+  };
 
-    const factionClass = (f) => `faction-${normFaction(f)}`;
+  const factionClass = (f) => `faction-${normFaction(f)}`;
 
-    const leftFactionFull = cur
-      ? factionLabel(cur.attackerFaction || "")
-      : (neutral ? "Neutral" : ownerText);
+  const leftFactionFull = cur
+    ? factionLabel(cur.attackerFaction || "")
+    : (neutral ? "Neutral" : ownerText);
 
-    const rightFactionFull = cur
-      ? factionLabel(cur.defenderFaction || "")
-      : "Neutral";
+  const rightFactionFull = cur
+    ? factionLabel(cur.defenderFaction || "")
+    : "Neutral";
 
-    const leftShort = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
-    const rightShort = factionShort(cur ? cur.defenderFaction : "");
-    const leftClass = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
-    const rightClass = factionClass(cur ? cur.defenderFaction : "");
+  const leftShort = factionShort(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+  const rightShort = factionShort(cur ? cur.defenderFaction : "");
+  const leftClass = factionClass(cur ? cur.attackerFaction : (neutral ? "" : ownerFaction));
+  const rightClass = factionClass(cur ? cur.defenderFaction : "");
 
-    const maxSlots = guardMax(node);
-    const statusUpper = getSiegeStatus(node);
-    const youFaction = getYouFaction(raw, node);
-    const attackerFaction = normFaction(cur?.attackerFaction || "");
-    const hasForming = statusUpper === "FORMING";
+  const maxSlots = guardMax(node);
+  const statusUpper = getSiegeStatus(node);
+  const youFaction = normFaction(getYouFaction(raw, node));
+  const attackerFaction = normFaction(cur?.attackerFaction || "");
+  const hasForming = statusUpper === "FORMING";
 
-    const slotsTitle =
-      hasForming && attackerFaction && attackerFaction === youFaction
-        ? `ATTACKER SLOTS • JOIN THE ASSAULT`
-        : `DEFENDER WATCH SLOTS • ${Math.min(defenders.length, maxSlots)}/${maxSlots}`;
+  const slotsTitle =
+    hasForming && attackerFaction && attackerFaction === youFaction
+      ? `ATTACKER SLOTS • JOIN THE ASSAULT`
+      : `DEFENDER WATCH SLOTS • ${Math.min(defenders.length, maxSlots)}/${maxSlots}`;
 
-    const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
-      const defender = defenders[i];
-      const slotCfg = getSlotAction(raw, node, cur, defender);
+  const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
+    const defender = defenders[i];
+    const slotCfg = getSlotAction(raw, node, cur, defender);
 
-      if (defender) {
-        const clickHtml = slotCfg.clickId
-          ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
-          : "";
-
-        return `
-          <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-            <div class="slot-icon">${esc(slotCfg.icon || "🛡️")}</div>
-            <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
-            <div class="slot-status">${esc(slotCfg.statusText || "WATCHING")}</div>
-          </div>
-        `;
-      }
-
+    if (defender) {
       const clickHtml = slotCfg.clickId
         ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
         : "";
 
       return `
-        <div class="defender-slot empty ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-          <div class="slot-icon">${esc(slotCfg.icon || "+")}</div>
-          <div class="slot-name">EMPTY SLOT</div>
-          <div class="slot-status">${esc(slotCfg.statusText || "AVAILABLE")}</div>
+        <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
+          <div class="slot-icon">${esc(slotCfg.icon || "🛡️")}</div>
+          <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
+          <div class="slot-status">${esc(slotCfg.statusText || "WATCHING")}</div>
         </div>
       `;
-    }).join("");
-
-    root.innerHTML = `
-      <div class="siege-vs-header">
-        <div class="siege-faction ${leftClass}">
-          <span class="siege-faction-short">${esc(leftShort)}</span>
-          <div><span class="siege-faction-full ${leftClass}">${esc(leftFactionFull)}</span></div>
-        </div>
-        <div class="vs">VS</div>
-        <div class="siege-faction ${rightClass}">
-          <div><span class="siege-faction-full ${rightClass}">${esc(rightFactionFull)}</span></div>
-          <span class="siege-faction-short">${esc(rightShort)}</span>
-        </div>
-      </div>
-
-      ${status === "RUNNING" ? `<div class="status-badge">RUNNING • SIEGE IN PROGRESS</div>` : ""}
-
-      <div class="siege-defender-slots">
-        <div class="slots-title">${esc(slotsTitle)}</div>
-        <div class="slots-grid">
-          ${slotsHTML}
-        </div>
-      </div>
-
-      <div class="siege-card">
-        <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
-        <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
-        <div class="siege-kv"><strong>Cooldown</strong><span>${esc(cooldownText)}</span></div>
-        <div class="siege-note">
-          ${
-            neutral
-              ? `This node is neutral. Start Siege to claim it.`
-              : `Control this node to hold the line. Break it to take the chain.`
-          }
-        </div>
-      </div>
-
-      <div class="siege-card">
-        <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
-        ${
-          defenders.length
-            ? `<ul class="siege-list">${defenders.map(x => `<li>${esc(x?.name || x?.displayName || x?.uid || "Unknown")}</li>`).join("")}</ul>`
-            : `<div class="siege-muted">${neutral ? "No defenders. Neutral node." : "No defenders assigned."}</div>`
-        }
-      </div>
-
-      <div class="siege-card">
-        <div style="font-weight:800;margin-bottom:6px">Active Siege</div>
-        ${
-          cur ? `
-            <div class="siege-kv"><strong>Status</strong><span>${esc(status || "—")}</span></div>
-            <div class="siege-kv"><strong>Attacker Faction</strong><span>${esc(factionLabel(cur.attackerFaction))}</span></div>
-            <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(cur.defenderFaction ? factionLabel(cur.defenderFaction) : "Neutral")}</span></div>
-            <div class="siege-kv"><strong>Fight No.</strong><span>${Number(cur.currentFight || 0)}</span></div>
-
-            <div style="margin-top:10px;font-weight:700">Attackers</div>
-            ${
-              attackers.length
-                ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
-                : `<div class="siege-muted">No attackers yet.</div>`
-            }
-
-            <div style="margin-top:10px;font-weight:700">Defenders in Siege</div>
-            ${
-              curDefs.length
-                ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
-                : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may remain empty." : "Will be populated on launch."}</div>`
-            }
-
-            <div style="margin-top:10px;font-weight:700">Fight History</div>
-            ${
-              fights.length
-                ? `<ul class="siege-list">${fights.slice(-8).reverse().map(f => `<li>Fight ${Number(f?.fightNo || 0)} · winner: ${esc(f?.winnerName || f?.winnerUid || "—")}</li>`).join("")}</ul>`
-                : `<div class="siege-muted">No fights resolved yet.</div>`
-            }
-          `
-          : `<div class="siege-muted">No active siege.</div>`
-        }
-      </div>
-
-      ${renderBattlePanelHTML(raw, node, cur)}
-
-      ${renderFeedHTML(feed)}
-    `;
-
-    const battlePlayBtn = qs("siegeBattlePlay");
-    if (battlePlayBtn) {
-      battlePlayBtn.onclick = () => {
-        const replay = getLastReplay(raw, node, cur);
-        if (!replay) {
-          showAlert("No replay yet.");
-          return;
-        }
-
-        const stage = qs("siegeBattleStage");
-        if (!stage) return;
-
-        if (!window.SiegePixi?.play) {
-          showAlert("Battle panel ready. Pixi viewer will be wired in the next step.");
-          return;
-        }
-
-        try {
-          window.SiegePixi.init?.(stage, { dbg: _dbg, tg: _tg });
-          window.SiegePixi.play(replay, { dbg: _dbg });
-        } catch (err) {
-          if (_dbg) console.warn("[SIEGE][BATTLE PLAY ERR]", err);
-          showAlert(`Replay failed: ${err?.message || err}`);
-        }
-      };
     }
 
-    updateActionBar(raw);
+    const clickHtml = slotCfg.clickId
+      ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
+      : "";
+
+    return `
+      <div class="defender-slot empty ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
+        <div class="slot-icon">${esc(slotCfg.icon || "+")}</div>
+        <div class="slot-name">EMPTY SLOT</div>
+        <div class="slot-status">${esc(slotCfg.statusText || "AVAILABLE")}</div>
+      </div>
+    `;
+  }).join("");
+
+  root.innerHTML = `
+    <div class="siege-vs-header">
+      <div class="siege-faction ${leftClass}">
+        <span class="siege-faction-short">${esc(leftShort)}</span>
+        <div><span class="siege-faction-full ${leftClass}">${esc(leftFactionFull)}</span></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="siege-faction ${rightClass}">
+        <div><span class="siege-faction-full ${rightClass}">${esc(rightFactionFull)}</span></div>
+        <span class="siege-faction-short">${esc(rightShort)}</span>
+      </div>
+    </div>
+
+    ${status === "RUNNING" ? `<div class="status-badge">RUNNING • SIEGE IN PROGRESS</div>` : ""}
+
+    <div class="siege-defender-slots">
+      <div class="slots-title">${esc(slotsTitle)}</div>
+      <div class="slots-grid">
+        ${slotsHTML}
+      </div>
+    </div>
+
+    <div class="siege-card">
+      <div class="siege-kv"><strong>Owner</strong><span>${esc(ownerText)}</span></div>
+      <div class="siege-kv"><strong>Watch</strong><span>${esc(watchText)}</span></div>
+      <div class="siege-kv"><strong>Cooldown</strong><span>${esc(cooldownText)}</span></div>
+      <div class="siege-note">
+        ${
+          neutral
+            ? `This node is neutral. Start Siege to claim it.`
+            : `Control this node to hold the line. Break it to take the chain.`
+        }
+      </div>
+    </div>
+
+    <div class="siege-card">
+      <div style="font-weight:800;margin-bottom:6px">Watch Defenders</div>
+      ${
+        defenders.length
+          ? `<ul class="siege-list">${defenders.map(x => `<li>${esc(x?.name || x?.displayName || x?.uid || "Unknown")}</li>`).join("")}</ul>`
+          : `<div class="siege-muted">${neutral ? "No defenders. Neutral node." : "No defenders assigned."}</div>`
+      }
+    </div>
+
+    <div class="siege-card">
+      <div style="font-weight:800;margin-bottom:6px">Active Siege</div>
+      ${
+        cur ? `
+          <div class="siege-kv"><strong>Status</strong><span>${esc(status || "—")}</span></div>
+          <div class="siege-kv"><strong>Attacker Faction</strong><span>${esc(factionLabel(cur.attackerFaction))}</span></div>
+          <div class="siege-kv"><strong>Defender Faction</strong><span>${esc(cur.defenderFaction ? factionLabel(cur.defenderFaction) : "Neutral")}</span></div>
+          <div class="siege-kv"><strong>Fight No.</strong><span>${Number(cur.currentFight || 0)}</span></div>
+
+          <div style="margin-top:10px;font-weight:700">Attackers</div>
+          ${
+            attackers.length
+              ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
+              : `<div class="siege-muted">No attackers yet.</div>`
+          }
+
+          <div style="margin-top:10px;font-weight:700">Defenders in Siege</div>
+          ${
+            curDefs.length
+              ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " ✖" : ""}</span>`).join("")}</div>`
+              : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may remain empty." : "Will be populated on launch."}</div>`
+          }
+
+          <div style="margin-top:10px;font-weight:700">Fight History</div>
+          ${
+            fights.length
+              ? `<ul class="siege-list">${fights.slice(-8).reverse().map(f => `<li>Fight ${Number(f?.fightNo || 0)} · winner: ${esc(f?.winnerName || f?.winnerUid || "—")}</li>`).join("")}</ul>`
+              : `<div class="siege-muted">No fights resolved yet.</div>`
+          }
+        `
+        : `<div class="siege-muted">No active siege.</div>`
+      }
+    </div>
+
+    ${renderBattlePanelHTML(raw, node, cur)}
+
+    ${renderFeedHTML(feed)}
+  `;
+
+  const battlePlayBtn = qs("siegeBattlePlay");
+  if (battlePlayBtn) {
+    battlePlayBtn.onclick = () => {
+      const replay = getLastReplay(raw, node, cur);
+      if (!replay) {
+        showAlert("No replay yet.");
+        return;
+      }
+
+      const stage = qs("siegeBattleStage");
+      if (!stage) return;
+
+      if (!window.SiegePixi?.play) {
+        showAlert("Battle panel ready. Pixi viewer will be wired in the next step.");
+        return;
+      }
+
+      try {
+        window.SiegePixi.init?.(stage, { dbg: _dbg, tg: _tg });
+        window.SiegePixi.play(replay, { dbg: _dbg });
+      } catch (err) {
+        if (_dbg) console.warn("[SIEGE][BATTLE PLAY ERR]", err);
+        showAlert(`Replay failed: ${err?.message || err}`);
+      }
+    };
   }
+
+  updateActionBar(raw);
+}
 
   async function loadState(force = false) {
     if (_busy && !force) return null;
