@@ -6,36 +6,38 @@
   const SiegePixi = {};
 
   let _container = null;
-  let _root = null;
-  let _stageMount = null;
-  let _stageBg = null;
-  let _logEl = null;
-  let _metaEl = null;
-  let _badgeEl = null;
+let _root = null;
+let _stageMount = null;
+let _stageBg = null;
+let _logEl = null;
+let _metaEl = null;
+let _badgeEl = null;
 
-  let _leftNameEl = null;
-  let _leftFactionEl = null;
-  let _leftHpTextEl = null;
-  let _leftHpFillEl = null;
-  let _leftPopupEl = null;
+let _leftAvatarEl = null;
+let _leftNameEl = null;
+let _leftFactionEl = null;
+let _leftHpTextEl = null;
+let _leftHpFillEl = null;
+let _leftPopupEl = null;
 
-  let _rightNameEl = null;
-  let _rightFactionEl = null;
-  let _rightHpTextEl = null;
-  let _rightHpFillEl = null;
-  let _rightPopupEl = null;
+let _rightAvatarEl = null;
+let _rightNameEl = null;
+let _rightFactionEl = null;
+let _rightHpTextEl = null;
+let _rightHpFillEl = null;
+let _rightPopupEl = null;
 
-  let _app = null;
-  let _gfx = null;
-  let _pixiReady = false;
-  let _usingPixi = false;
+let _app = null;
+let _gfx = null;
+let _pixiReady = false;
+let _usingPixi = false;
 
-  let _lastReplay = null;
-  let _playState = null;
-  let _opts = {};
+let _lastReplay = null;
+let _playState = null;
+let _opts = {};
 
-  let _runToken = 0;
-  let _timers = [];
+let _runToken = 0;
+let _timers = [];
 
   function esc(v) {
     return String(v == null ? "" : v)
