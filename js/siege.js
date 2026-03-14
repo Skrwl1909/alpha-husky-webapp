@@ -482,11 +482,15 @@
   }
 
   function cleanupBattleStage() {
-    try { window.__SIEGE_PIXI_CLEANUP__?.(); } catch (_) {}
-    try { window.SiegePixi?.destroy?.(); } catch (_) {}
-    const stage = qs("siegeBattleStage");
-    if (stage) stage.innerHTML = "";
-  }
+  try { window.SiegePixi?.stop?.(); }
+  catch (err) { if (_dbg) console.warn("[SIEGE][PIX I STOP ERR]", err); }
+
+  try { window.SiegePixi?.destroy?.(); }
+  catch (err) { if (_dbg) console.warn("[SIEGE][PIX I DESTROY ERR]", err); }
+
+  const stage = qs("siegeBattleStage");
+  if (stage) stage.innerHTML = "";
+}
 
   function renderBattlePanelHTML(raw, node, cur) {
     const replay = getLastReplay(raw, node, cur);
