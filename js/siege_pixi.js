@@ -64,6 +64,89 @@ let _timers = [];
     }
     return null;
   }
+  function initials(name, fallback = "?") {
+  const s = String(name || "").trim();
+  if (!s) return fallback;
+  const parts = s.split(/\s+/).filter(Boolean).slice(0, 2);
+  const out = parts.map(p => p.charAt(0)).join("").toUpperCase();
+  return out || fallback;
+}
+
+function replayAvatar(side) {
+  return String(pick(
+    side?.avatarUrl,
+    side?.avatar_url,
+    side?.portraitUrl,
+    side?.portrait_url,
+    side?.avatar,
+    side?.portrait,
+    side?.img,
+    side?.image,
+    side?.icon,
+    side?.iconUrl,
+    side?.icon_url,
+    ""
+  ) || "");
+}
+
+function replayHpMax(side) {
+  const out = num(pick(
+    side?.hpMax,
+    side?.hp_max,
+    side?.maxHp,
+    side?.max_hp,
+    side?.playerHpMax,
+    side?.player_hp_max,
+    side?.youHpMax,
+    side?.you_hp_max,
+    side?.targetHpMax,
+    side?.target_hp_max,
+    side?.hpStart,
+    side?.hp_start,
+    side?.hp,
+    side?.currentHp,
+    side?.current_hp,
+    0
+  ), 0);
+
+  return Math.max(1, out || 1);
+}
+
+function replayHpStart(side, hpMax) {
+  const out = num(pick(
+    side?.hpStart,
+    side?.hp_start,
+    side?.hp,
+    side?.currentHp,
+    side?.current_hp,
+    hpMax
+  ), hpMax);
+
+  return Math.max(0, out);
+}
+
+function avatarNodeHtml(data, fallback) {
+  const src = String(data?.avatarUrl || "").trim();
+  if (src) {
+    return `<img src="${esc(src)}" alt="${esc(data?.name || fallback || "avatar")}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+  }
+
+  return `
+    <div style="
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:15px;
+      font-weight:900;
+      color:#eef4ff;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 40%),
+        linear-gradient(180deg, rgba(24,28,44,.96), rgba(10,12,22,.98));
+    ">${esc(initials(data?.name || "", fallback || "?"))}</div>
+  `;
+}
 
   function clearTimers() {
     for (const t of _timers) clearTimeout(t);
@@ -152,45 +235,45 @@ let _timers = [];
   }
 
   function replayInfo(replay) {
-    const left = replay?.left || {};
-    const right = replay?.right || {};
+  const left = replay?.left || {};
+  const right = replay?.right || {};
 
-    const leftHpStart = num(pick(left.hpStart, left.hpMax), 0);
-    const rightHpStart = num(pick(right.hpStart, right.hpMax), 0);
-    const leftHpMax = Math.max(leftHpStart, num(left.hpMax, leftHpStart || 1));
-    const rightHpMax = Math.max(rightHpStart, num(right.hpMax, rightHpStart || 1));
+  const leftHpMax = replayHpMax(left);
+  const rightHpMax = replayHpMax(right);
+  const leftHpStart = replayHpStart(left, leftHpMax);
+  const rightHpStart = replayHpStart(right, rightHpMax);
 
-    const winnerSide = String(replay?.winner || "");
-    const winnerName =
-      winnerSide === "left"
-        ? String(left.name || "Left")
-        : winnerSide === "right"
-        ? String(right.name || "Right")
-        : String(replay?.winner || "Unknown");
+  const winnerSide = String(replay?.winner || "");
+  const winnerName =
+    winnerSide === "left"
+      ? String(left.name || "Left")
+      : winnerSide === "right"
+      ? String(right.name || "Right")
+      : String(replay?.winner || "Unknown");
 
-    return {
-      fightNo: num(replay?.fightNo, 0),
-      turns: Array.isArray(replay?.turns) ? replay.turns : [],
-      left: {
-        uid: String(left.uid || ""),
-        name: String(left.name || "Left"),
-        faction: String(left.faction || ""),
-        hpStart: leftHpStart,
-        hpMax: leftHpMax,
-        avatarUrl: String(left.avatarUrl || ""),
-      },
-      right: {
-        uid: String(right.uid || ""),
-        name: String(right.name || "Right"),
-        faction: String(right.faction || ""),
-        hpStart: rightHpStart,
-        hpMax: rightHpMax,
-        avatarUrl: String(right.avatarUrl || ""),
-      },
-      winnerSide,
-      winnerName,
-    };
-  }
+  return {
+    fightNo: num(replay?.fightNo, num(replay?.fight_no, 0)),
+    turns: Array.isArray(replay?.turns) ? replay.turns : [],
+    left: {
+      uid: String(left.uid || ""),
+      name: String(left.name || "Left"),
+      faction: String(left.faction || ""),
+      hpStart: leftHpStart,
+      hpMax: leftHpMax,
+      avatarUrl: replayAvatar(left),
+    },
+    right: {
+      uid: String(right.uid || ""),
+      name: String(right.name || "Right"),
+      faction: String(right.faction || ""),
+      hpStart: rightHpStart,
+      hpMax: rightHpMax,
+      avatarUrl: replayAvatar(right),
+    },
+    winnerSide,
+    winnerName,
+  };
+}
 
   function makeTurnText(turn, info) {
     const actorSide = String(turn?.actor || "");
