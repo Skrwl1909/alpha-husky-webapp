@@ -491,6 +491,62 @@
   const stage = qs("siegeBattleStage");
   if (stage) stage.innerHTML = "";
 }
+  function replayPick(...vals) {
+  for (const v of vals) {
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return null;
+}
+
+function replaySideHpMax(side) {
+  return Number(replayPick(
+    side?.hpMax,
+    side?.hp_max,
+    side?.maxHp,
+    side?.max_hp,
+    side?.playerHpMax,
+    side?.player_hp_max,
+    side?.youHpMax,
+    side?.you_hp_max,
+    side?.targetHpMax,
+    side?.target_hp_max,
+    side?.hpStart,
+    side?.hp_start,
+    side?.hp,
+    side?.currentHp,
+    0
+  )) || 0;
+}
+
+function replaySideAvatar(side) {
+  return String(replayPick(
+    side?.avatarUrl,
+    side?.avatar_url,
+    side?.portraitUrl,
+    side?.portrait_url,
+    side?.img,
+    side?.image,
+    side?.icon,
+    side?.iconUrl,
+    side?.icon_url,
+    ""
+  ) || "");
+}
+
+function replaySideInitial(side, fallback) {
+  const raw = String(replayPick(
+    side?.name,
+    side?.displayName,
+    side?.label,
+    fallback || "?"
+  ) || fallback || "?").trim();
+
+  if (!raw) return (fallback || "?").toUpperCase();
+
+  const parts = raw.split(/\s+/).filter(Boolean).slice(0, 2);
+  const out = parts.map(p => p.charAt(0)).join("").toUpperCase();
+  return out || (fallback || "?").toUpperCase();
+}
 
 function renderBattlePanelHTML(raw, node, cur) {
   const replay = getLastReplay(raw, node, cur);
@@ -508,8 +564,13 @@ function renderBattlePanelHTML(raw, node, cur) {
   const leftFaction = hasReplay ? String(left?.faction || "Unknown") : "No resolved fight yet";
   const rightFaction = hasReplay ? String(right?.faction || "Unknown") : "No resolved fight yet";
 
-  const leftHpMax = Number(left?.hpMax || left?.hp_max || left?.hpStart || 0);
-  const rightHpMax = Number(right?.hpMax || right?.hp_max || right?.hpStart || 0);
+  const leftHpMax = replaySideHpMax(left);
+  const rightHpMax = replaySideHpMax(right);
+
+  const leftAvatar = replaySideAvatar(left);
+  const rightAvatar = replaySideAvatar(right);
+  const leftInitial = replaySideInitial(left, "A");
+  const rightInitial = replaySideInitial(right, "D");
 
   const winnerKey = String(replay?.winner || "").trim().toLowerCase();
   const winnerName =
@@ -572,18 +633,40 @@ function renderBattlePanelHTML(raw, node, cur) {
 
       <div class="siege-battle-summary">
         <div class="siege-battle-fighter left">
-          <div class="siege-battle-fighter-label">ATTACKER</div>
-          <div class="siege-battle-fighter-name">${esc(leftName)}</div>
-          <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(leftFaction)}</div>
+          <div class="siege-battle-fighter-head">
+            <div class="siege-battle-avatar ${leftAvatar ? "has-img" : ""}">
+              ${
+                leftAvatar
+                  ? `<img src="${esc(leftAvatar)}" alt="${esc(leftName)}">`
+                  : esc(leftInitial)
+              }
+            </div>
+            <div class="siege-battle-fighter-main">
+              <div class="siege-battle-fighter-label">ATTACKER</div>
+              <div class="siege-battle-fighter-name">${esc(leftName)}</div>
+              <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(leftFaction)}</div>
+            </div>
+          </div>
           <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (leftHpMax || "—") : "—"))}</div>
         </div>
 
         <div class="siege-battle-vs">VS</div>
 
         <div class="siege-battle-fighter right">
-          <div class="siege-battle-fighter-label">DEFENDER</div>
-          <div class="siege-battle-fighter-name">${esc(rightName)}</div>
-          <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(rightFaction)}</div>
+          <div class="siege-battle-fighter-head">
+            <div class="siege-battle-avatar ${rightAvatar ? "has-img" : ""}">
+              ${
+                rightAvatar
+                  ? `<img src="${esc(rightAvatar)}" alt="${esc(rightName)}">`
+                  : esc(rightInitial)
+              }
+            </div>
+            <div class="siege-battle-fighter-main">
+              <div class="siege-battle-fighter-label">DEFENDER</div>
+              <div class="siege-battle-fighter-name">${esc(rightName)}</div>
+              <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(rightFaction)}</div>
+            </div>
+          </div>
           <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (rightHpMax || "—") : "—"))}</div>
         </div>
       </div>
