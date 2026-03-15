@@ -181,11 +181,16 @@ function avatarNodeHtml(data, fallback) {
       min-width:0;
       pointer-events:none;
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(9,12,24,.68);
-      backdrop-filter:blur(6px);
-      border-radius:14px;
-      padding:10px;
-      box-shadow:0 8px 24px rgba(0,0,0,.24);
+      background:
+        radial-gradient(circle at ${right ? "75% 25%" : "25% 25%"}, ${right ? "rgba(255,105,190,.14)" : "rgba(0,246,255,.14)"}, transparent 46%),
+        rgba(9,12,24,.72);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:
+        0 10px 28px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.06);
       text-align:${align};
     ">
       <div style="
@@ -201,41 +206,90 @@ function avatarNodeHtml(data, fallback) {
         font-size:11px;
         font-weight:900;
         letter-spacing:.02em;
+        box-shadow:0 4px 14px rgba(0,0,0,.22);
       " id="ah-siege-${side}-popup"></div>
 
-      <div style="font-size:11px;opacity:.72;margin-bottom:8px;letter-spacing:.04em;font-weight:800;">${prefix}</div>
+      <div style="
+        font-size:11px;
+        opacity:.76;
+        margin-bottom:8px;
+        letter-spacing:.08em;
+        font-weight:900;
+        color:${right ? "rgba(255,105,190,.92)" : "rgba(0,246,255,.92)"};
+        text-shadow:${right
+          ? "0 0 10px rgba(255,105,190,.22)"
+          : "0 0 10px rgba(0,246,255,.22)"};
+      ">${prefix}</div>
 
-      <div style="display:flex;align-items:center;gap:10px;${right ? "flex-direction:row-reverse;" : ""}">
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:12px;
+        ${right ? "flex-direction:row-reverse;" : ""}
+      ">
         <div id="ah-siege-${side}-avatar" style="
-          width:54px;
-          height:54px;
-          min-width:54px;
-          border-radius:14px;
+          width:64px;
+          height:64px;
+          min-width:64px;
+          border-radius:16px;
           overflow:hidden;
-          border:1px solid rgba(255,255,255,.12);
-          box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 18px rgba(0,0,0,.22);
-          background:rgba(8,10,22,.82);
+          border:2px solid rgba(255,255,255,.18);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.12),
+            ${right
+              ? "0 8px 24px rgba(255,105,190,.22)"
+              : "0 8px 24px rgba(0,246,255,.25)"};
+          background:
+            radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 48%),
+            rgba(8,10,22,.92);
         ">
           ${avatarNodeHtml({ name: prefix, avatarUrl: "" }, side === "left" ? "L" : "R")}
         </div>
 
         <div style="min-width:0;flex:1;">
-          <div id="ah-siege-${side}-name" style="font-size:15px;font-weight:900;line-height:1.15;">—</div>
-          <div id="ah-siege-${side}-faction" style="font-size:12px;opacity:.72;margin-top:4px;">—</div>
+          <div id="ah-siege-${side}-name" style="
+            font-size:15px;
+            font-weight:900;
+            line-height:1.15;
+            color:#eef4ff;
+            text-shadow:0 0 10px rgba(255,255,255,.05);
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+          ">—</div>
+
+          <div id="ah-siege-${side}-faction" style="
+            font-size:12px;
+            opacity:.78;
+            margin-top:4px;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+          ">—</div>
         </div>
       </div>
 
-      <div style="margin-top:10px;">
-        <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.84;margin-bottom:5px;">
-          <span>HP</span>
-          <b id="ah-siege-${side}-hp-text">0 / 0</b>
+      <div style="margin-top:12px;">
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:8px;
+          font-size:11px;
+          opacity:.86;
+          margin-bottom:6px;
+          align-items:center;
+        ">
+          <span style="letter-spacing:.06em;">HP</span>
+          <b id="ah-siege-${side}-hp-text" style="font-size:11px;">0 / 0</b>
         </div>
+
         <div style="
           height:10px;
           border-radius:999px;
           background:rgba(255,255,255,.07);
           overflow:hidden;
           border:1px solid rgba(255,255,255,.08);
+          box-shadow:inset 0 1px 3px rgba(0,0,0,.35);
         ">
           <div id="ah-siege-${side}-hp-fill" style="
             width:0%;
@@ -243,11 +297,11 @@ function avatarNodeHtml(data, fallback) {
             border-radius:999px;
             transition:width .28s ease;
             background:${right
-              ? "linear-gradient(90deg, rgba(255,105,190,.95), rgba(255,105,190,.55))"
-              : "linear-gradient(90deg, rgba(0,246,255,.95), rgba(0,246,255,.55))"};
+              ? "linear-gradient(90deg, rgba(255,105,190,.98), rgba(255,105,190,.58))"
+              : "linear-gradient(90deg, rgba(0,246,255,.98), rgba(0,246,255,.58))"};
             box-shadow:${right
-              ? "0 0 16px rgba(255,105,190,.18)"
-              : "0 0 16px rgba(0,246,255,.18)"};
+              ? "0 0 16px rgba(255,105,190,.24)"
+              : "0 0 16px rgba(0,246,255,.24)"};
           "></div>
         </div>
       </div>
