@@ -679,7 +679,7 @@ function renderBattlePanelHTML(raw, node, cur) {
       </div>
 
       <div id="siegeBattleControls" class="siege-battle-controls">
-        <button id="siegeBattlePlay" class="siege-btn" ${hasReplay ? "" : "disabled"}>Play Replay</button>
+        <button id="siegeBattlePlay" class="siege-btn" ${hasReplay ? "" : "disabled"}>▶ PLAY REPLAY</button>
       </div>
     </div>
   `;
