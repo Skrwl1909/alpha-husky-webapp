@@ -322,49 +322,52 @@
   }
 
   function resolveNodeLeader(meta, info) {
-    const liveNode = !!meta?.liveFactionNode;
-    const safeInfo = (info && typeof info === "object") ? info : {};
-    const scores = _extractScores(safeInfo);
-    const siegeMeta = _extractSiegeMeta(safeInfo);
+  const liveNode = !!meta?.liveFactionNode;
+  const safeInfo = (info && typeof info === "object") ? info : {};
+  const scores = _extractScores(safeInfo);
+  const siegeMeta = _extractSiegeMeta(safeInfo);
 
-    // LIVE nodes: truth only from leadersMap/backend
-    if (liveNode) {
-      const top = _resolveTopFaction(scores);
-      const explicitOwner = _normFactionKey(
-        safeInfo?.ownerFaction ||
-        safeInfo?.owner ||
-        safeInfo?.faction ||
-        ""
-      );
+  // LIVE nodes: truth only from leadersMap/backend
+  if (liveNode) {
+    const top = _resolveTopFaction(scores);
 
-      const owner = explicitOwner || top.owner || "";
-      const contested = (
-        siegeMeta.siegeStatus === "forming" ||
-        siegeMeta.siegeStatus === "running" ||
-        _isContested(safeInfo, top.top1, top.top2)
-      );
+    // trust ONLY explicit ownership fields
+    // never use generic "faction" as owner
+    const explicitOwner = _normFactionKey(
+      safeInfo?.ownerFaction ??
+      safeInfo?.owner ??
+      ""
+    );
 
-      return {
-        owner,
-        contested,
-        top1: top.top1,
-        top2: top.top2,
-        scores,
-        source: explicitOwner ? "ownerFaction" : "scores",
-        siegeMeta
-      };
-    }
+    const owner = explicitOwner || (top.top1 > 0 ? top.owner : "") || "";
 
-    // non-live nodes never show leader UI now
+    const contested = (
+      siegeMeta.siegeStatus === "forming" ||
+      siegeMeta.siegeStatus === "running" ||
+      _isContested(safeInfo, top.top1, top.top2)
+    );
+
     return {
-      owner: "",
-      contested: false,
-      top1: 0,
-      top2: 0,
-      scores: {},
-      source: "non-live",
+      owner,
+      contested,
+      top1: top.top1,
+      top2: top.top2,
+      scores,
+      source: explicitOwner ? "ownerFaction" : (top.top1 > 0 ? "scores" : "none"),
       siegeMeta
     };
+  }
+
+  // non-live nodes never show leader UI now
+  return {
+    owner: "",
+    contested: false,
+    top1: 0,
+    top2: 0,
+    scores: {},
+    source: "non-live",
+    siegeMeta
+  };
   }
 
   function _leaderBadgeText(owner, siegeMeta) {
