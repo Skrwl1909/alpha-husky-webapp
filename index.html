@@ -3024,20 +3024,32 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
 
     <!-- Howlboard modal -->
-    <div class="sheet-back" id="boardBack">
-      <div class="sheet-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-weight:700;">Howlboard</div>
-          <button class="btn" id="closeBoard" type="button">×</button>
-        </div>
-        <div class="tabs" style="margin-top:10px;">
-          <button class="tab" data-sort="bones" type="button">Bones</button>
-          <button class="tab" data-sort="level" type="button">Level</button>
-          <button class="tab" data-sort="howls" type="button">Howls</button>
-        </div>
-        <p style="opacity:.8;margin-top:10px;">Choose a tab to open the board in the bot.</p>
-      </div>
+<div class="sheet-back" id="boardBack" style="display:none">
+  <div class="sheet-card" style="width:min(92vw,720px);max-height:86vh;overflow:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <div style="font-weight:700;">Howlboard</div>
+      <button class="btn" id="closeBoard" type="button">×</button>
     </div>
+
+    <div class="tabs" style="margin-top:10px;">
+      <button class="tab" data-sort="bones" type="button">Bones</button>
+      <button class="tab" data-sort="level" type="button">Level</button>
+      <button class="tab" data-sort="howls" type="button">Howls</button>
+    </div>
+
+    <div id="boardStatus" style="opacity:.8;margin-top:10px;">Choose a board.</div>
+
+    <div id="boardImageWrap" style="display:none;margin-top:12px;">
+      <img
+        id="boardImage"
+        alt="Howlboard"
+        style="display:block;width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08);"
+      />
+    </div>
+
+    <div id="boardRows" style="margin-top:12px;display:grid;gap:8px;"></div>
+  </div>
+</div>
     <!-- ✅ Support Sheet -->
 <div id="supportBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support">
@@ -5177,24 +5189,205 @@ mapRoot?.addEventListener("click", (e) => {
 /* === Howlboard === */
 const boardBack = document.getElementById("boardBack");
 const closeBoard = document.getElementById("closeBoard");
-function openBoard(){
+const boardStatus = document.getElementById("boardStatus");
+const boardRows = document.getElementById("boardRows");
+const boardImage = document.getElementById("boardImage");
+const boardImageWrap = document.getElementById("boardImageWrap");
+
+let boardSort = "bones";
+let boardLoadSeq = 0;
+let boardImageUrl = "";
+
+function normalizeBoardSort(sort) {
+  const s = String(sort || "").trim().toLowerCase();
+  if (s === "level" || s === "xp") return "level";
+  if (s === "howls" || s === "messages") return "howls";
+  return "bones";
+}
+
+function cleanupBoardImage() {
+  try {
+    if (boardImageUrl) URL.revokeObjectURL(boardImageUrl);
+  } catch (_) {}
+  boardImageUrl = "";
+  if (boardImage) boardImage.src = "";
+  if (boardImageWrap) boardImageWrap.style.display = "none";
+}
+
+function setBoardStatus(text) {
+  if (boardStatus) boardStatus.textContent = text || "";
+}
+
+function setBoardTabs(sort) {
+  boardSort = normalizeBoardSort(sort);
+  $$("#boardBack .tab[data-sort]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-sort") === boardSort);
+  });
+}
+
+function renderBoardRows(rows, sort) {
+  if (!boardRows) return;
+  const list = Array.isArray(rows) ? rows : [];
+  if (!list.length) {
+    boardRows.innerHTML = `<div style="opacity:.75;">No entries found.</div>`;
+    return;
+  }
+
+  const getName = (r, i) =>
+    r?.display_name || r?.nick || r?.name || r?.username || `Player ${i + 1}`;
+
+  const getFaction = (r) =>
+    r?.faction_tag || r?.faction || r?.factionName || "";
+
+  const getValue = (r, currentSort) => {
+    if (currentSort === "bones") return r?.bones ?? r?.points ?? 0;
+    if (currentSort === "level") return r?.level ?? r?.xp ?? 0;
+    return r?.howls ?? r?.messages ?? r?.count ?? 0;
+  };
+
+  const valueLabel =
+    sort === "bones" ? "Bones" :
+    sort === "level" ? "Level" :
+    "Howls";
+
+  boardRows.innerHTML = list.map((r, i) => {
+    const rank = r?.rank ?? (i + 1);
+    const name = getName(r, i);
+    const faction = getFaction(r);
+    const value = getValue(r, sort);
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.03);">
+        <div style="min-width:0;">
+          <div style="font-weight:700;">#${rank} ${name}</div>
+          <div style="opacity:.7;font-size:12px;">${faction ? faction + " · " : ""}${valueLabel}</div>
+        </div>
+        <div style="font-weight:700;white-space:nowrap;">${value}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function getBoardInitData() {
+  try {
+    if (typeof window.getInitDataSafe === "function") {
+      return window.getInitDataSafe() || "";
+    }
+  } catch (_) {}
+  try { return window.Telegram?.WebApp?.initData || ""; } catch (_) {}
+  return "";
+}
+
+function getBoardApiBase() {
+  try {
+    if (typeof window.API_BASE === "string" && window.API_BASE) return window.API_BASE;
+  } catch (_) {}
+  try {
+    if (typeof window.S?.apiBase === "string" && window.S.apiBase) return window.S.apiBase;
+  } catch (_) {}
+  if (location.hostname === "app.alphahusky.win") return "https://api.alphahusky.win";
+  return "";
+}
+
+async function boardPost(path, body) {
+  const apiPost = window.apiPost || window.S?.apiPost;
+  if (typeof apiPost === "function") {
+    const out = await apiPost(path, body || {});
+    return out?.data ?? out?.state ?? out;
+  }
+
+  const init_data = getBoardInitData();
+  const base = getBoardApiBase();
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...(body || {}), init_data })
+  });
+
+  let json = {};
+  try { json = await res.json(); } catch (_) {}
+
+  if (!res.ok || json?.ok === false) {
+    throw new Error(json?.reason || `HTTP_${res.status}`);
+  }
+
+  return json?.data ?? json?.state ?? json;
+}
+
+async function boardFetchImage(sort) {
+  const init_data = getBoardInitData();
+  const base = getBoardApiBase();
+
+  const res = await fetch(`${base}/webapp/howlboard/image`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sort: normalizeBoardSort(sort), init_data })
+  });
+
+  if (!res.ok) {
+    throw new Error(`IMG_HTTP_${res.status}`);
+  }
+
+  return await res.blob();
+}
+
+async function loadBoard(sort) {
+  const seq = ++boardLoadSeq;
+  const safeSort = normalizeBoardSort(sort);
+
+  setBoardTabs(safeSort);
+  setBoardStatus("Loading Howlboard...");
+  if (boardRows) boardRows.innerHTML = "";
+  cleanupBoardImage();
+
+  try {
+    const state = await boardPost("/webapp/howlboard/state", { sort: safeSort });
+    if (seq !== boardLoadSeq) return;
+
+    const rows = state?.rows || state?.players || state?.top || [];
+    renderBoardRows(rows, safeSort);
+    setBoardStatus("");
+
+    const blob = await boardFetchImage(safeSort);
+    if (seq !== boardLoadSeq) return;
+
+    boardImageUrl = URL.createObjectURL(blob);
+    if (boardImage) boardImage.src = boardImageUrl;
+    if (boardImageWrap) boardImageWrap.style.display = "block";
+  } catch (err) {
+    if (seq !== boardLoadSeq) return;
+    console.error("[Howlboard] load failed:", err);
+    cleanupBoardImage();
+    if (boardRows) boardRows.innerHTML = "";
+    setBoardStatus("Failed to load Howlboard.");
+  }
+}
+
+function openBoard(sort = "bones") {
+  if (!boardBack) return;
   boardBack.style.display = "flex";
   navOpen("boardBack");
+  loadBoard(sort);
 }
-closeBoard?.addEventListener("click", () => {
-  boardBack.style.display = "none";
-  navClose("boardBack");
-});
-$$(".tab").forEach(t => {
-  t.addEventListener("click", () => {
-    $$(".tab").forEach(x => x.classList.toggle("active", x===t));
-    const sort = t.getAttribute("data-sort");
-    sendAction("cmd", { name: "howlboard", args: [sort] });
 
-    // ✅ close + pop from nav stack
-    boardBack.style.display = "none";
-    navClose("boardBack");
+function closeBoardModal() {
+  boardLoadSeq += 1;
+  cleanupBoardImage();
+  if (boardBack) boardBack.style.display = "none";
+  navClose("boardBack");
+}
+
+closeBoard?.addEventListener("click", closeBoardModal);
+
+$$("#boardBack .tab[data-sort]").forEach((t) => {
+  t.addEventListener("click", () => {
+    const sort = t.getAttribute("data-sort") || "bones";
+    loadBoard(sort);
   });
+});
+
+document.querySelector(".btn.howlboard")?.addEventListener("click", () => {
+  openBoard("bones");
 });
 
 /* Daily fallback (stary modal) */
