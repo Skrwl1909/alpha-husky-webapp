@@ -267,21 +267,27 @@
   }
 
   function _resolveTopFaction(scores) {
-    let owner = "";
-    let top1 = 0;
-    let top2 = 0;
+  let owner = "";
+  let top1 = 0;
+  let top2 = 0;
 
-    for (const fk of FACTION_KEYS) {
-      const n = Number(scores?.[fk] || 0);
-      if (n >= top1) {
-        top2 = top1;
-        top1 = n;
-        owner = fk;
-      } else if (n > top2) {
-        top2 = n;
-      }
+  for (const fk of FACTION_KEYS) {
+    const n = Number(scores?.[fk] || 0);
+
+    if (n > top1) {
+      top2 = top1;
+      top1 = n;
+      owner = fk;
+    } else if (n > top2) {
+      top2 = n;
     }
-    return { owner, top1, top2 };
+  }
+
+  if (!(top1 > 0)) {
+    return { owner: "", top1: 0, top2: 0 };
+  }
+
+  return { owner, top1, top2 };
   }
 
   function _isContested(info, top1, top2) {
