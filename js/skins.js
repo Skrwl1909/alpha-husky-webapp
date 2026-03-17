@@ -1,4 +1,5 @@
-// js/skins.js — Skins modal (owned/equipped + buy/equip + earn-only unlocks w/ progress + CODE CLAIM) for Alpha Husky WebApp
+// js/skins.js — Skins modal (owned/equipped + buy/equip + earn-only unlocks
+// + support-stars skins + CODE CLAIM) for Alpha Husky WebApp
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -33,7 +34,7 @@
     avatarBack = document.getElementById("avatarBack");
     skinCanvas = document.getElementById("skinCanvas");
     skinCtx = skinCanvas ? skinCanvas.getContext("2d") : null;
-    skinPreviewImg = document.getElementById("skinPreviewImg"); // ✅ needed for animated webp
+    skinPreviewImg = document.getElementById("skinPreviewImg");
     skinDesc = document.getElementById("skinDesc");
     closeAvatar = document.getElementById("closeAvatar");
     equipBtn = document.getElementById("equipSkin");
@@ -52,6 +53,7 @@
         avatarBack.style.display = "none";
       }
     });
+
     closeAvatar?.addEventListener("click", () => {
       if (avatarBack) {
         _cleanupPreview();
@@ -122,27 +124,45 @@
     return unlockKind(meta) === "code" || unlockKind(meta) === "claim" || unlockKind(meta) === "password";
   }
 
+  function isSupportStars(meta) {
+    const k = unlockKind(meta);
+    return k === "support_stars" || k === "stars_support" || k === "support";
+  }
+
+  function getStarsPrice(metaOrKey) {
+    const m = (typeof metaOrKey === "string") ? getMeta(metaOrKey) : metaOrKey;
+    const v = Number(m?.stars ?? m?.cost?.stars ?? 0);
+    return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+  }
+
   // prefer backend-provided progress fields
   function unlockHave(meta) {
     const v = Number(meta?.unlockHave);
     return Number.isFinite(v) ? v : null;
   }
+
   function unlockNeed(meta) {
     const v = Number(meta?.unlockNeed);
     return Number.isFinite(v) ? v : null;
   }
+
   function unlockedNow(meta) {
     return !!meta?.unlockedNow;
   }
+
   function unlockEndsSec(meta) {
     const v = Number(meta?.unlockEndsSec);
     return Number.isFinite(v) ? v : null;
   }
 
   function isEarnOnly(meta) {
-    const u = getUnlock(meta);
-    if (!u) return false;
-    // earn-only is any unlock skin (weekly/referrals/code/etc.)
+    const kind = unlockKind(meta);
+    if (!kind) return false;
+
+    // support_stars is premium paid, not earn-only
+    if (isSupportStars(meta)) return false;
+
+    // weekly / referrals / code / claim / password / etc.
     return true;
   }
 
@@ -197,9 +217,10 @@
     if (!meta) return " 🔒";
     const u = getUnlock(meta);
     if (!u) return " 🔒";
-    if (unlockedNow(meta)) return ""; // unlocked → no lock suffix
+    if (unlockedNow(meta)) return "";
 
-    if (isCodeUnlock(meta)) return " 🔑"; // ✅ code-locked indicator
+    if (isSupportStars(meta)) return " ⭐";
+    if (isCodeUnlock(meta)) return " 🔑";
 
     const have = unlockHave(meta);
     const need = unlockNeed(meta);
@@ -213,6 +234,14 @@
     const u = getUnlock(meta);
     if (!u) return "Locked.";
     const kind = String(u.kind || "").trim().toLowerCase();
+
+    if (isSupportStars(meta)) {
+      const stars = getStarsPrice(meta);
+      return stars > 0
+        ? `Premium support skin. Buy for ${stars} Stars.`
+        : "Premium support skin. Buy with Telegram Stars.";
+    }
+
     const have = unlockHave(meta);
     const need = unlockNeed(meta);
 
@@ -258,21 +287,25 @@
 
     const m = getMeta(k);
 
-    // ✅ if effectively owned -> equip allowed
     if (isEffectivelyOwned(k)) {
       equipBtn.textContent = "Equip";
       equipBtn.disabled = false;
       return;
     }
 
-    // ✅ code-locked -> CLAIM allowed
     if (m && isCodeUnlock(m)) {
       equipBtn.textContent = "Claim";
       equipBtn.disabled = false;
       return;
     }
 
-    // earn-only but locked -> disabled with progress
+    if (m && isSupportStars(m)) {
+      const stars = getStarsPrice(m);
+      equipBtn.textContent = stars > 0 ? `Buy for ${stars} Stars` : "Buy for Stars";
+      equipBtn.disabled = false;
+      return;
+    }
+
     if (m && isEarnOnly(m)) {
       const have = unlockHave(m);
       const need = unlockNeed(m);
@@ -285,7 +318,6 @@
       return;
     }
 
-    // buyable
     const cost = getCost(k);
     const label = fmtCostLabel(cost);
     if (label) {
@@ -334,8 +366,8 @@
 
       for (let i = 0; i < u8.length - 3; i++) {
         const a = u8[i], b = u8[i + 1], c = u8[i + 2], d = u8[i + 3];
-        if (a === 65 && b === 78 && c === 73 && d === 77) { _animCache.set(url, true); return true; } // ANIM
-        if (a === 65 && b === 78 && c === 77 && d === 70) { _animCache.set(url, true); return true; } // ANMF
+        if (a === 65 && b === 78 && c === 73 && d === 77) { _animCache.set(url, true); return true; }
+        if (a === 65 && b === 78 && c === 77 && d === 70) { _animCache.set(url, true); return true; }
       }
     } catch (e) {
       dbg("_isAnimatedWebp fetch failed", e);
@@ -355,7 +387,6 @@
 
     const seq = ++_previewSeq;
 
-    // ✅ If animated flagged, force <img> preview (so it actually animates)
     if (forceImg && skinPreviewImg) {
       _useImgPreview(true);
       skinPreviewImg.onerror = () => {
@@ -375,7 +406,6 @@
 
     (async () => {
       try {
-        // auto-detect animated webp to switch to <img>
         const animated = await _isAnimatedWebp(imgUrl);
         if (seq !== _previewSeq) return;
 
@@ -408,7 +438,6 @@
       } catch (e) {
         dbg("renderSkinPreview failed", e);
 
-        // ✅ fallback png if provided
         if (fallbackUrl && fallbackUrl !== imgUrl) {
           renderSkinPreview(fallbackUrl, name, null, false);
           return;
@@ -420,14 +449,12 @@
   }
 
   function ensureClaimUI() {
-    // try find existing
     claimWrap = document.getElementById("skinClaimWrap") || null;
     claimInput = document.getElementById("skinClaimInput") || null;
     claimBtn = document.getElementById("skinClaimBtn") || null;
 
     if (claimWrap && claimInput && claimBtn) return;
 
-    // create dynamically near skinDesc
     const host = skinDesc?.parentElement || avatarBack;
     if (!host) return;
 
@@ -440,11 +467,7 @@
     claimWrap.style.justifyContent = "center";
     claimWrap.style.flexWrap = "wrap";
     claimWrap.style.width = "100%";
-    claimWrap.style.display = "none";
     claimWrap.style.textAlign = "center";
-
-    // make it flex-ish without relying on CSS
-    claimWrap.style.display = "none";
     claimWrap.style.padding = "6px 0";
 
     claimInput = document.createElement("input");
@@ -487,6 +510,81 @@
     if (claimInput) claimInput.value = "";
   }
 
+  async function reloadSkinsState(preferKey) {
+    if (!_apiPost) throw new Error("NO_API_POST");
+
+    const out = await _apiPost("/webapp/skins", {});
+    if (!out || !out.ok) throw new Error(out?.reason || "skins refresh failed");
+
+    _catalog = Array.isArray(out.skins) ? out.skins : [];
+    _owned = Array.isArray(out.owned) ? out.owned : ["default"];
+    _equipped = (out.equipped && typeof out.equipped === "object")
+      ? out.equipped
+      : { skin: (out.active || "") };
+
+    buildSkinButtons();
+
+    const wanted = normKey(preferKey);
+    if (wanted && skinButtonsWrap) {
+      const btn = [...skinButtonsWrap.querySelectorAll(".skin-btn")]
+        .find(x => normKey(x.dataset.skin) === wanted);
+      btn?.click?.();
+    }
+
+    setPrimaryButtonState();
+  }
+
+  async function buySupportSkin(key) {
+    if (!_apiPost) throw new Error("NO_API_POST");
+
+    const rid = uuid();
+    const res = await _apiPost("/webapp/skins/support_invoice", {
+      skin: key,
+      run_id: rid,
+    });
+
+    if (res?.already) {
+      await reloadSkinsState(key);
+      try { await window.loadProfile?.(); } catch (_) {}
+      try { _tg?.showAlert?.("You already own this skin."); } catch (_) {}
+      return;
+    }
+
+    if (!res || !res.ok) {
+      const reason = res?.reason || "INVOICE_FAILED";
+      throw new Error(reason);
+    }
+
+    const link = String(res.invoiceLink || "").trim();
+    if (!link) throw new Error("NO_INVOICE_LINK");
+
+    if (typeof _tg?.openInvoice === "function") {
+      _tg.openInvoice(link, (status) => {
+        setTimeout(async () => {
+          try {
+            await reloadSkinsState(key);
+          } catch (_) {}
+
+          try {
+            await window.loadProfile?.();
+          } catch (_) {}
+
+          if (status === "paid") {
+            try { _tg?.showAlert?.("Unlocked! Now equip it."); } catch (_) {}
+            haptic("medium");
+          } else if (status === "cancelled") {
+            try { _tg?.showAlert?.("Payment cancelled."); } catch (_) {}
+          } else if (status === "failed") {
+            try { _tg?.showAlert?.("Payment failed."); } catch (_) {}
+          }
+        }, 1200);
+      });
+      return;
+    }
+
+    window.location.href = link;
+  }
+
   async function claimSkin(codeRaw) {
     const code = String(codeRaw || "").trim();
     if (!code) {
@@ -512,7 +610,6 @@
         throw new Error(msg);
       }
 
-      // refresh state from response (handler returns full state)
       if (Array.isArray(out.skins)) _catalog = out.skins;
       if (Array.isArray(out.owned)) _owned = out.owned;
       if (out.equipped && typeof out.equipped === "object") _equipped = out.equipped;
@@ -523,7 +620,6 @@
       buildSkinButtons();
       setPrimaryButtonState();
 
-      // close modal + refresh profile
       if (avatarBack) {
         _cleanupPreview();
         hideClaimUI();
@@ -566,10 +662,8 @@
 
         _selectedKey = key;
 
-        // ✅ preview with fallback + forceImg if animated flag is set
         renderSkinPreview(s.img, s.name || s.key, s.fallback, !!s.animated);
 
-        // Claim UI toggle
         const meta = (key === "default") ? null : s;
         const shouldShowClaim = !!meta && isCodeUnlock(meta) && !isEffectivelyOwned(key);
         showClaimUI(shouldShowClaim);
@@ -580,6 +674,8 @@
           } else if (isEffectivelyOwned(key)) {
             skinDesc.textContent = `${s.name || s.key} — available.`;
           } else if (meta && isCodeUnlock(meta)) {
+            skinDesc.textContent = `${s.name || s.key} — ${lockDesc(meta)}`;
+          } else if (meta && isSupportStars(meta)) {
             skinDesc.textContent = `${s.name || s.key} — ${lockDesc(meta)}`;
           } else if (isEarnOnly(s)) {
             skinDesc.textContent = `${s.name || s.key} — ${lockDesc(s)}`;
@@ -648,7 +744,6 @@
     const meta = getMeta(key);
 
     try {
-      // equip (if effective-owned OR default)
       if (isEffectivelyOwned(key) || key === "default") {
         const out = await _apiPost("/webapp/skins/equip", { skin: key === "default" ? "default" : key });
         if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
@@ -663,20 +758,22 @@
         return;
       }
 
-      // ✅ code-locked -> claim flow
       if (meta && isCodeUnlock(meta)) {
         const code = String(claimInput?.value || "").trim() || String(prompt("Enter claim code") || "").trim();
         await claimSkin(code);
         return;
       }
 
-      // earn-only locked -> show requirements
+      if (meta && isSupportStars(meta)) {
+        await buySupportSkin(key);
+        return;
+      }
+
       if (meta && isEarnOnly(meta)) {
         try { _tg?.showAlert?.(lockDesc(meta)); } catch (_) {}
         return;
       }
 
-      // buyable
       const cost = getCost(key);
       if ((cost.bones <= 0) && (cost.tokens <= 0)) {
         try { _tg?.showAlert?.("This skin is locked."); } catch (_) {}
@@ -693,11 +790,11 @@
           (r === "NOT_ENOUGH_BONES") ? "Not enough bones." :
           (r === "ALREADY_OWNED") ? "Already owned." :
           (r === "EARN_ONLY") ? "This skin is earn-only." :
+          (r === "EXTERNAL_UNLOCK") ? "This skin is unlocked externally." :
           r;
         throw new Error(msg);
       }
 
-      // refresh state after buy
       const out = await _apiPost("/webapp/skins", {});
       if (out && out.ok) {
         _owned = Array.isArray(out.owned) ? out.owned : _owned;
