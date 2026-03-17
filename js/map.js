@@ -1,7 +1,8 @@
-// js/map.js — Alpha Husky Map module (LIVE faction control + live siege state truth-first)
+// js/map.js — Alpha Husky Map module (LIVE faction control + live siege state truth-first + pressure overlay)
 // - live faction nodes resolve owner/status only from backend leadersMap
 // - non-live / locked nodes NEVER show faction leader badge
 // - cached leadersMap is re-applied after pin rerenders / focus changes
+// - pressure overlay badges (HOT / CONTESTED / FORTIFIED) are read-only UI from leadersMap
 (function () {
   let _inited = false;
   let _lastLeadersMap = null;
@@ -38,7 +39,7 @@
     const s = document.createElement("style");
     s.id = CSS_ID;
     s.textContent = `
-/* === Map Level 1: faction leader ring + badge + siege state === */
+/* === Map Level 1: faction leader ring + badge + siege state + pressure overlay === */
 .map-pin{ position:absolute; }
 .map-pin .pin-ring{
   position:absolute;
@@ -67,6 +68,74 @@
 .map-pin .pin-icon, .map-pin > img{
   position:relative;
   z-index:2;
+}
+
+/* pressure badges */
+.map-pin .pin-pressure-badges{
+  position:absolute;
+  left:50%;
+  top:calc(100% + 6px);
+  transform:translateX(-50%);
+  display:none;
+  flex-wrap:wrap;
+  gap:4px;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  max-width:92px;
+  pointer-events:none;
+  z-index:4;
+}
+.map-pin .pin-pressure-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:18px;
+  padding:2px 7px;
+  border-radius:999px;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
+  white-space:nowrap;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(8,10,14,.76);
+  backdrop-filter: blur(6px);
+  box-shadow:0 4px 14px rgba(0,0,0,.24);
+}
+.map-pin .pin-pressure-chip.p-hot{
+  color:#ffd7a6;
+  background:rgba(255,116,24,.18);
+  border-color:rgba(255,140,56,.34);
+  box-shadow:0 0 0 1px rgba(255,140,56,.08), 0 0 18px rgba(255,116,24,.18);
+}
+.map-pin .pin-pressure-chip.p-contested{
+  color:#ffd2d2;
+  background:rgba(255,56,56,.18);
+  border-color:rgba(255,88,88,.36);
+  box-shadow:0 0 0 1px rgba(255,88,88,.08), 0 0 18px rgba(255,56,56,.18);
+  animation: ahPressurePulse 1.8s ease-in-out infinite;
+}
+.map-pin .pin-pressure-chip.p-fortified{
+  color:#d6e7ff;
+  background:rgba(46,110,255,.18);
+  border-color:rgba(96,144,255,.34);
+  box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 18px rgba(46,110,255,.16);
+}
+.map-pin .pin-pressure-chip.p-tier{
+  color:#eee;
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.14);
+}
+
+/* optional subtle node feel from pressure overlay only */
+.map-pin.pressure-hot .pin-icon,
+.map-pin.pressure-hot > img{
+  filter: drop-shadow(0 0 10px rgba(255,116,24,.18));
+}
+.map-pin.pressure-fortified .pin-icon,
+.map-pin.pressure-fortified > img{
+  filter: drop-shadow(0 0 10px rgba(80,130,255,.16));
 }
 
 /* faction colors */
@@ -141,6 +210,10 @@
   0%,100%{ transform:scale(1); opacity:.92; }
   50%{ transform:scale(1.08); opacity:1; }
 }
+@keyframes ahPressurePulse{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  50%{ transform:translateY(-1px); filter:brightness(1.08); }
+}
 `;
     document.head.appendChild(s);
   }
@@ -164,9 +237,9 @@
     return (typeof fn === "function") ? fn : null;
   }
 
- function iconUrl(owner) {
+  function iconUrl(owner) {
     return `https://app.alphahusky.win/images/ui/factions/${owner}_color.svg`;
-}
+  }
 
   function ensureLevel1(pinEl) {
     if (!pinEl) return;
@@ -183,6 +256,11 @@
       badge.textContent = "";
       pinEl.appendChild(badge);
     }
+    if (!pinEl.querySelector(".pin-pressure-badges")) {
+      const wrap = document.createElement("span");
+      wrap.className = "pin-pressure-badges";
+      pinEl.appendChild(wrap);
+    }
   }
 
   function _clearFactionClasses(pinEl) {
@@ -191,6 +269,15 @@
       "f-rb", "f-ew", "f-pb", "f-ih",
       "is-contested", "is-controlled",
       "siege-forming", "siege-running", "siege-cooldown"
+    );
+  }
+
+  function _clearPressureClasses(pinEl) {
+    if (!pinEl) return;
+    pinEl.classList.remove(
+      "pressure-hot",
+      "pressure-contested",
+      "pressure-fortified"
     );
   }
 
@@ -267,27 +354,27 @@
   }
 
   function _resolveTopFaction(scores) {
-  let owner = "";
-  let top1 = 0;
-  let top2 = 0;
+    let owner = "";
+    let top1 = 0;
+    let top2 = 0;
 
-  for (const fk of FACTION_KEYS) {
-    const n = Number(scores?.[fk] || 0);
+    for (const fk of FACTION_KEYS) {
+      const n = Number(scores?.[fk] || 0);
 
-    if (n > top1) {
-      top2 = top1;
-      top1 = n;
-      owner = fk;
-    } else if (n > top2) {
-      top2 = n;
+      if (n > top1) {
+        top2 = top1;
+        top1 = n;
+        owner = fk;
+      } else if (n > top2) {
+        top2 = n;
+      }
     }
-  }
 
-  if (!(top1 > 0)) {
-    return { owner: "", top1: 0, top2: 0 };
-  }
+    if (!(top1 > 0)) {
+      return { owner: "", top1: 0, top2: 0 };
+    }
 
-  return { owner, top1, top2 };
+    return { owner, top1, top2 };
   }
 
   function _isContested(info, top1, top2) {
@@ -321,53 +408,125 @@
     };
   }
 
-  function resolveNodeLeader(meta, info) {
-  const liveNode = !!meta?.liveFactionNode;
-  const safeInfo = (info && typeof info === "object") ? info : {};
-  const scores = _extractScores(safeInfo);
-  const siegeMeta = _extractSiegeMeta(safeInfo);
+  function _extractPressureMeta(info) {
+    const src = (info && typeof info === "object") ? info : {};
 
-  // LIVE nodes: truth only from leadersMap/backend
-  if (liveNode) {
-    const top = _resolveTopFaction(scores);
+    const pressureDerivedStatus = String(src?.pressureDerivedStatus || "").trim().toUpperCase();
+    const captureTierNum = Number(src?.captureTier || 0);
+    const captureTier = Number.isFinite(captureTierNum) ? captureTierNum : 0;
 
-    // trust ONLY explicit ownership fields
-    // never use generic "faction" as owner
-    const explicitOwner = _normFactionKey(
-      safeInfo?.ownerFaction ??
-      safeInfo?.owner ??
-      ""
-    );
-
-    const owner = explicitOwner || (top.top1 > 0 ? top.owner : "") || "";
-
-    const contested = (
-      siegeMeta.siegeStatus === "forming" ||
-      siegeMeta.siegeStatus === "running" ||
-      _isContested(safeInfo, top.top1, top.top2)
-    );
+    const isHot = !!src?.isHot || pressureDerivedStatus === "HOT";
+    const isContested = !!src?.isContested || pressureDerivedStatus === "CONTESTED";
+    const isFortified = !!src?.isFortified || pressureDerivedStatus === "FORTIFIED";
 
     return {
-      owner,
-      contested,
-      top1: top.top1,
-      top2: top.top2,
-      scores,
-      source: explicitOwner ? "ownerFaction" : (top.top1 > 0 ? "scores" : "none"),
-      siegeMeta
+      isHot,
+      isContested,
+      isFortified,
+      captureTier,
+      pressureDerivedStatus
     };
   }
 
-  // non-live nodes never show leader UI now
-  return {
-    owner: "",
-    contested: false,
-    top1: 0,
-    top2: 0,
-    scores: {},
-    source: "non-live",
-    siegeMeta
-  };
+  function _pressureBadgesHtml(pressureMeta) {
+    const meta = pressureMeta || {};
+    const out = [];
+
+    // Priorytet czytelności: contested > hot > fortified
+    if (meta.isContested) {
+      out.push('<span class="pin-pressure-chip p-contested">CONTESTED</span>');
+    }
+    if (meta.isHot) {
+      out.push('<span class="pin-pressure-chip p-hot">HOT</span>');
+    }
+    if (meta.isFortified) {
+      out.push('<span class="pin-pressure-chip p-fortified">FORTIFIED</span>');
+    }
+
+    // na razie tier tylko do dataset/debug/rozszerzenia później
+    // if (meta.captureTier > 0) {
+    //   out.push(`<span class="pin-pressure-chip p-tier">T${meta.captureTier}</span>`);
+    // }
+
+    return out.join("");
+  }
+
+  function _applyPressureBadges(pinEl, pressureMeta) {
+    if (!pinEl) return;
+    ensureLevel1(pinEl);
+
+    const meta = pressureMeta || {};
+    const wrap = pinEl.querySelector(".pin-pressure-badges");
+
+    pinEl.dataset.pressureHot = meta.isHot ? "1" : "0";
+    pinEl.dataset.pressureContested = meta.isContested ? "1" : "0";
+    pinEl.dataset.pressureFortified = meta.isFortified ? "1" : "0";
+    pinEl.dataset.captureTier = String(meta.captureTier || 0);
+    pinEl.dataset.pressureDerivedStatus = String(meta.pressureDerivedStatus || "");
+
+    _clearPressureClasses(pinEl);
+
+    if (meta.isHot) pinEl.classList.add("pressure-hot");
+    if (meta.isContested) pinEl.classList.add("pressure-contested");
+    if (meta.isFortified) pinEl.classList.add("pressure-fortified");
+
+    if (!wrap) return;
+
+    const html = _pressureBadgesHtml(meta);
+    wrap.innerHTML = html;
+    wrap.style.display = html ? "flex" : "none";
+  }
+
+  function resolveNodeLeader(meta, info) {
+    const liveNode = !!meta?.liveFactionNode;
+    const safeInfo = (info && typeof info === "object") ? info : {};
+    const scores = _extractScores(safeInfo);
+    const siegeMeta = _extractSiegeMeta(safeInfo);
+    const pressureMeta = _extractPressureMeta(safeInfo);
+
+    // LIVE nodes: truth only from leadersMap/backend
+    if (liveNode) {
+      const top = _resolveTopFaction(scores);
+
+      // trust ONLY explicit ownership fields
+      // never use generic "faction" as owner
+      const explicitOwner = _normFactionKey(
+        safeInfo?.ownerFaction ??
+        safeInfo?.owner ??
+        ""
+      );
+
+      const owner = explicitOwner || (top.top1 > 0 ? top.owner : "") || "";
+
+      const contested = (
+        siegeMeta.siegeStatus === "forming" ||
+        siegeMeta.siegeStatus === "running" ||
+        _isContested(safeInfo, top.top1, top.top2)
+      );
+
+      return {
+        owner,
+        contested,
+        top1: top.top1,
+        top2: top.top2,
+        scores,
+        source: explicitOwner ? "ownerFaction" : (top.top1 > 0 ? "scores" : "none"),
+        siegeMeta,
+        pressureMeta
+      };
+    }
+
+    // non-live nodes never show leader UI now
+    return {
+      owner: "",
+      contested: false,
+      top1: 0,
+      top2: 0,
+      scores: {},
+      source: "non-live",
+      siegeMeta,
+      pressureMeta
+    };
   }
 
   function _leaderBadgeText(owner, siegeMeta) {
@@ -409,6 +568,7 @@
     const contested = !!opts?.contested;
     const source = String(opts?.source || "");
     const siegeMeta = opts?.siegeMeta || {};
+    const pressureMeta = opts?.pressureMeta || {};
 
     _clearFactionClasses(pinEl);
 
@@ -433,6 +593,7 @@
       }
       _applySiegeStateClasses(pinEl, siegeMeta);
       if (contested) pinEl.classList.add("is-contested");
+      _applyPressureBadges(pinEl, pressureMeta);
       return;
     }
 
@@ -465,10 +626,17 @@
       const img = chip.querySelector("img");
       if (img) img.onerror = () => { img.style.display = "none"; };
     }
+
+    _applyPressureBadges(pinEl, pressureMeta);
   }
 
   function _clearLeader(pinEl) {
-    setLeader(pinEl, null, { contested: false, source: "clear", siegeMeta: {} });
+    setLeader(pinEl, null, {
+      contested: false,
+      source: "clear",
+      siegeMeta: {},
+      pressureMeta: {}
+    });
   }
 
   function decoratePin(pinEl, node) {
@@ -533,7 +701,8 @@
       setLeader(pin, ex.owner || null, {
         contested: !!ex.contested,
         source: ex.source || "scores",
-        siegeMeta: ex.siegeMeta || {}
+        siegeMeta: ex.siegeMeta || {},
+        pressureMeta: ex.pressureMeta || {}
       });
     });
   }
