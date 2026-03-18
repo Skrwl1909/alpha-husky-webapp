@@ -429,8 +429,8 @@
   }
 
   function _pressureBadgesHtml(pressureMeta) {
-  return '<span class="pin-pressure-chip p-hot">HOT</span>';
-}
+    const meta = pressureMeta || {};
+    const out = [];
 
     // Priorytet czytelności: contested > hot > fortified
     if (meta.isContested) {
@@ -451,9 +451,9 @@
     return out.join("");
   }
 
-  function _pressureBadgesHtml(pressureMeta) {
-  const meta = pressureMeta || {};
-  const out = [];
+  function _applyPressureBadges(pinEl, pressureMeta) {
+    if (!pinEl) return;
+    ensureLevel1(pinEl);
 
     const meta = pressureMeta || {};
     const wrap = pinEl.querySelector(".pin-pressure-badges");
