@@ -282,41 +282,71 @@ html.ah-skins-open #heroFrame{
   pointer-events: none;
 }
 
-/* 2) Jeśli w preview skinów używasz .hero-frame,
-   wyłącz dekoracje home-frame */
-#avatarBack .hero-frame{
-  width: min(68vw, 280px);
-  aspect-ratio: 3/4;
-  background: transparent !important;
+/* =========================
+   SKINS MODAL — real DOM fix
+   ========================= */
+
+html.ah-skins-open #heroFrame{
+  opacity: 0 !important;
+  filter: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* sam modal */
+#avatarBack{
+  backdrop-filter: blur(8px);
+}
+
+/* preview image + canvas */
+#avatarBack #skinPreviewImg,
+#avatarBack #skinCanvas{
+  display: block;
+  margin: 20px auto !important;
+
+  width: min(68vw, 310px) !important;
+  max-width: 310px !important;
+  height: auto !important;
+  max-height: 460px !important;
+
   border: none !important;
+  outline: none !important;
   box-shadow: none !important;
-  overflow: hidden !important;   /* ważne: żadnego bleed w modalu */
-  isolation: isolate;
-  --frame-bleed: 0px !important;
-  --frame-scale: 1 !important;
-  --frame-x: 0px !important;
-  --frame-y: 0px !important;
-}
-
-/* 3) Sam skin ma zostać, ale bez drugiej ramy */
-#avatarBack .hero-frame .hero-skin{
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center bottom;
-  clip-path: inset(0 round 22px);
-  border-radius: 22px;
   background: transparent !important;
+  border-radius: 22px !important;
 }
 
-/* 4) Wyłącz overlay frame w skin preview */
-#avatarBack .hero-frame .hero-frame-overlay{
+/* tryb img */
+#avatarBack.is-img-preview #skinPreviewImg{
+  display: block !important;
+}
+#avatarBack.is-img-preview #skinCanvas{
   display: none !important;
 }
 
-/* 5) Wyłącz przyciemnienie dolne z home hero */
-#avatarBack .hero-frame::after{
+/* tryb canvas */
+#avatarBack.is-canvas-preview #skinCanvas{
+  display: block !important;
+}
+#avatarBack.is-canvas-preview #skinPreviewImg{
   display: none !important;
+}
+
+/* opis */
+#avatarBack #skinDesc{
+  text-align: center;
+  opacity: .92;
+  margin-top: 10px;
+}
+
+/* claim row */
+#avatarBack #skinClaimWrap{
+  display: none;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
 }
 
 /* =========================
