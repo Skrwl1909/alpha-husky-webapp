@@ -208,10 +208,11 @@
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 
-/* ✅ When any sheet/modal is open (stack not empty) — fade hero to avoid “ghost frame” */
 html.ah-modal-open #heroFrame{
-  opacity: .08;
-  filter: blur(8px) saturate(.8);
+  opacity: 0 !important;
+  filter: none !important;
+  visibility: hidden;
+  pointer-events: none;
 }
 .hero-caption{
   font-size:13px;
@@ -267,6 +268,55 @@ html.ah-modal-open #heroFrame{
     font-size: 11px;
     min-width: 72px;
   }
+}
+    /* =========================
+   SKINS MODAL — kill double frame
+   ========================= */
+
+/* 1) Gdy otwarty jest modal skinów — schowaj home hero całkowicie,
+   nie tylko dimuj, bo przez półprzezroczystość robi "ghost frame" */
+html.ah-skins-open #heroFrame{
+  opacity: 0 !important;
+  filter: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 2) Jeśli w preview skinów używasz .hero-frame,
+   wyłącz dekoracje home-frame */
+#avatarBack .hero-frame{
+  width: min(68vw, 280px);
+  aspect-ratio: 3/4;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;   /* ważne: żadnego bleed w modalu */
+  isolation: isolate;
+  --frame-bleed: 0px !important;
+  --frame-scale: 1 !important;
+  --frame-x: 0px !important;
+  --frame-y: 0px !important;
+}
+
+/* 3) Sam skin ma zostać, ale bez drugiej ramy */
+#avatarBack .hero-frame .hero-skin{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  clip-path: inset(0 round 22px);
+  border-radius: 22px;
+  background: transparent !important;
+}
+
+/* 4) Wyłącz overlay frame w skin preview */
+#avatarBack .hero-frame .hero-frame-overlay{
+  display: none !important;
+}
+
+/* 5) Wyłącz przyciemnienie dolne z home hero */
+#avatarBack .hero-frame::after{
+  display: none !important;
 }
 
 /* =========================
