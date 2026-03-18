@@ -671,6 +671,54 @@
     );
   }
 
+function _findLeaderInfoByNodeId(nodeId, leadersMap) {
+    const key = String(nodeId || "").trim();
+    if (!key || !leadersMap || typeof leadersMap !== "object") return null;
+    return leadersMap[key] || null;
+  }
+
+  function getPressureMeta(nodeId) {
+    const info = _findLeaderInfoByNodeId(nodeId, _lastLeadersMap);
+    return _extractPressureMeta(info || {});
+  }
+
+  function getPressureState(nodeId) {
+    const meta = getPressureMeta(nodeId);
+
+    if (meta.isContested) return "CONTESTED";
+    if (meta.isHot) return "HOT";
+    if (meta.isFortified) return "FORTIFIED";
+    return "";
+  }
+
+  function getPressureNote(nodeId) {
+    const meta = getPressureMeta(nodeId);
+
+    if (meta.isContested) {
+      return "Actively contested. Multiple factions are pushing this node.";
+    }
+    if (meta.isHot) {
+      return "Pressure is rising here. This node is heating up.";
+    }
+    if (meta.isFortified) {
+      return "This node is currently well fortified.";
+    }
+    return "";
+  }
+
+  function getPressureSummary(nodeId) {
+    const meta = getPressureMeta(nodeId);
+    return {
+      state: getPressureState(nodeId),
+      note: getPressureNote(nodeId),
+      captureTier: Number(meta.captureTier || 0) || 0,
+      isHot: !!meta.isHot,
+      isContested: !!meta.isContested,
+      isFortified: !!meta.isFortified,
+      pressureDerivedStatus: String(meta.pressureDerivedStatus || "")
+    };
+  }
+
   function applyLeaders(leadersMap) {
     if (!leadersMap || typeof leadersMap !== "object") return;
     _lastLeadersMap = leadersMap;
@@ -788,6 +836,10 @@
     applyLeaders,
     resolveNodeLeader,
     refreshLeaders,
+    getPressureMeta,
+    getPressureState,
+    getPressureNote,
+    getPressureSummary,
     reapplyLastLeaders: () => { if (_lastLeadersMap) applyLeaders(_lastLeadersMap); }
   };
 
