@@ -23,6 +23,61 @@
   const _animCache = new Map();
   let _previewSeq = 0;
 
+  function dbg(msg, obj) {
+    if (_dbg) console.log("[Skins]", msg, obj ?? "");
+  }
+
+  function haptic(kind) {
+    try { _tg?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
+  }
+
+  function uuid() {
+    try { return crypto.randomUUID(); } catch (_) {}
+    return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function normKey(key) {
+    return (key || "").trim().toLowerCase();
+  }
+
+  function _setSkinsModalOpen(on) {
+    const html = document.documentElement;
+    html?.classList.toggle("ah-skins-open", !!on);
+    avatarBack?.classList.toggle("is-open", !!on);
+  }
+
+  function _useImgPreview(on) {
+    if (skinPreviewImg) skinPreviewImg.style.display = on ? "block" : "none";
+    if (skinCanvas) skinCanvas.style.display = on ? "none" : "block";
+
+    avatarBack?.classList.toggle("is-img-preview", !!on);
+    avatarBack?.classList.toggle("is-canvas-preview", !on);
+  }
+
+  function _cleanupPreview() {
+    _previewSeq++;
+
+    if (skinPreviewImg) {
+      skinPreviewImg.onerror = null;
+      skinPreviewImg.src = "";
+    }
+
+    if (skinCtx && skinCanvas) {
+      skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
+    }
+
+    avatarBack?.classList.remove("is-img-preview", "is-canvas-preview", "is-animated-preview");
+    _useImgPreview(false);
+  }
+
+  function _closeSkinsModal() {
+    _cleanupPreview();
+    hideClaimUI();
+    avatarBack?.classList.remove("is-img-preview", "is-canvas-preview", "is-animated-preview");
+    _setSkinsModalOpen(false);
+    if (avatarBack) avatarBack.style.display = "none";
+  }
+
   function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || window.S?.apiPost || _apiPost || null;
     _tg = tg || (window.Telegram && window.Telegram.WebApp) || _tg || null;
@@ -47,20 +102,10 @@
     _bound = true;
 
     avatarBack?.addEventListener("click", (e) => {
-      if (e.target === avatarBack) {
-        _cleanupPreview();
-        hideClaimUI();
-        avatarBack.style.display = "none";
-      }
+      if (e.target === avatarBack) _closeSkinsModal();
     });
 
-    closeAvatar?.addEventListener("click", () => {
-      if (avatarBack) {
-        _cleanupPreview();
-        hideClaimUI();
-        avatarBack.style.display = "none";
-      }
-    });
+    closeAvatar?.addEventListener("click", _closeSkinsModal);
 
     equipBtn?.addEventListener("click", onPrimaryAction);
     shareBtn?.addEventListener("click", onShare);
@@ -79,23 +124,6 @@
     });
 
     return true;
-  }
-
-  function dbg(msg, obj) {
-    if (_dbg) console.log("[Skins]", msg, obj ?? "");
-  }
-
-  function haptic(kind) {
-    try { _tg?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
-  }
-
-  function uuid() {
-    try { return crypto.randomUUID(); } catch (_) {}
-    return "rid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
-  }
-
-  function normKey(key) {
-    return (key || "").trim().toLowerCase();
   }
 
   function isOwned(key) {
@@ -330,17 +358,6 @@
     equipBtn.disabled = true;
   }
 
-  function _useImgPreview(on) {
-    if (skinPreviewImg) skinPreviewImg.style.display = on ? "block" : "none";
-    if (skinCanvas) skinCanvas.style.display = on ? "none" : "block";
-  }
-
-  function _cleanupPreview() {
-    _previewSeq++;
-    if (skinPreviewImg) skinPreviewImg.src = "";
-    _useImgPreview(false);
-  }
-
   function drawPlaceholder(text) {
     _useImgPreview(false);
     if (skinPreviewImg) skinPreviewImg.src = "";
@@ -388,6 +405,7 @@
     const seq = ++_previewSeq;
 
     if (forceImg && skinPreviewImg) {
+      avatarBack?.classList.add("is-animated-preview");
       _useImgPreview(true);
       skinPreviewImg.onerror = () => {
         if (fallbackUrl && fallbackUrl !== imgUrl) skinPreviewImg.src = fallbackUrl;
@@ -409,6 +427,8 @@
         const animated = await _isAnimatedWebp(imgUrl);
         if (seq !== _previewSeq) return;
 
+        avatarBack?.classList.toggle("is-animated-preview", !!animated);
+
         if (animated && skinPreviewImg) {
           _useImgPreview(true);
           skinPreviewImg.onerror = () => {
@@ -418,12 +438,17 @@
           return;
         }
 
+        avatarBack?.classList.remove("is-animated-preview");
+
         if (skinPreviewImg) skinPreviewImg.src = "";
         _useImgPreview(false);
 
         let img;
-        try { img = await tryLoad(true); }
-        catch { img = await tryLoad(false); }
+        try {
+          img = await tryLoad(true);
+        } catch {
+          img = await tryLoad(false);
+        }
 
         if (seq !== _previewSeq) return;
         if (!skinCtx || !skinCanvas) return;
@@ -501,7 +526,7 @@
 
   function showClaimUI(on) {
     if (!claimWrap) return;
-    claimWrap.style.display = on ? "block" : "none";
+    claimWrap.style.display = on ? "flex" : "none";
     if (on && claimInput) claimInput.focus();
   }
 
@@ -619,14 +644,9 @@
 
       buildSkinButtons();
       setPrimaryButtonState();
+      _closeSkinsModal();
 
-      if (avatarBack) {
-        _cleanupPreview();
-        hideClaimUI();
-        avatarBack.style.display = "none";
-      }
       try { window.loadProfile?.(); } catch (_) {}
-
     } catch (e) {
       console.warn(e);
       const msg = (e && e.data && e.data.reason) ? e.data.reason : (e?.message || "Claim failed");
@@ -725,6 +745,7 @@
       buildSkinButtons();
 
       if (avatarBack) avatarBack.style.display = "flex";
+      _setSkinsModalOpen(true);
       setPrimaryButtonState();
     } catch (e) {
       console.warn(e);
@@ -749,11 +770,7 @@
         if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
 
         try { _tg?.showAlert?.("Skin equipped!"); } catch (_) {}
-        if (avatarBack) {
-          _cleanupPreview();
-          hideClaimUI();
-          avatarBack.style.display = "none";
-        }
+        _closeSkinsModal();
         try { window.loadProfile?.(); } catch (_) {}
         return;
       }
