@@ -3584,33 +3584,36 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           el.addEventListener('click', (e)=>{ if(e.target === el) hide(el); });
         });
 
-        async function openSkins(){
-  // 1) schowaj Character sheet żeby nie zasłaniał modala Skins
+        async function openSkins() {
   const charBack = document.getElementById("charBack");
-  if (charBack && charBack.style.display !== "none"){
+  if (charBack && charBack.style.display !== "none") {
     charBack.style.display = "none";
-    try { window.navClose?.(charBack); } catch(_) {}
+    try { window.navClose?.(charBack); } catch (_) {}
   }
 
-  // (opcjonalnie) jeśli Hub też bywa otwarty
   const hubBack = document.getElementById("hubBack");
-  if (hubBack && hubBack.style.display !== "none"){
+  if (hubBack && hubBack.style.display !== "none") {
     hubBack.style.display = "none";
-    try { window.navClose?.(hubBack); } catch(_) {}
+    try { window.navClose?.(hubBack); } catch (_) {}
   }
 
-  // 2) lazy-load (jeśli masz)
-  try { await window.ensureSkinsLoaded?.(); } catch(_) {}
+  try {
+    await ensureSkinsLoaded(apiPost, _tg, _dbg);
+  } catch (e) {
+    console.warn("ensureSkinsLoaded failed", e);
+    try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
+    return;
+  }
 
-  // 3) zawsze init (u Ciebie init ma guard _inited, więc jest bezpieczne)
-  try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch(e){ console.warn("Skins.init err", e); }
+  if (window.Skins?.open) {
+    return window.Skins.open();
+  }
 
-  // 4) open
-  if (window.Skins?.open) return window.Skins.open();
-
-  // fallback: stary przycisk
-  document.querySelector('.btn.skins')?.click();
+  console.warn("window.Skins.open missing after ensureSkinsLoaded");
+  try { _tg?.showAlert?.("Skins module not available."); } catch (_) {}
 }
+window.openSkinsModal = openSkins;
+        
         function openFaqModal(){
   // 1) schowaj character sheet
   const charBack = document.getElementById("charBack");
