@@ -117,6 +117,306 @@
         --ah-cyan:rgba(74,199,255,.92);
         --ah-red:rgba(255,94,94,.95);
       }
+      /* =========================
+   PATCH 2 — VAULT FORGE OVERRIDES
+   doklej na KONIEC ensureStyles()
+   ========================= */
+
+.ah-forge{
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255,128,34,.16), transparent 23%),
+    radial-gradient(circle at 86% 10%, rgba(83,199,255,.11), transparent 20%),
+    linear-gradient(180deg, #0d0a08 0%, #16110d 48%, #0b0f14 100%);
+  border:1px solid rgba(191,137,78,.42);
+  box-shadow:
+    0 -22px 60px rgba(0,0,0,.62),
+    0 0 0 1px rgba(255,166,71,.05),
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 90px rgba(255,132,0,.04);
+}
+
+.ah-forge::after{
+  content:"";
+  position:absolute; inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), transparent 22%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 72px,
+      rgba(255,255,255,.012) 72px 73px
+    );
+  opacity:.42;
+}
+
+.ah-forge-head{
+  background:
+    linear-gradient(180deg, rgba(255,174,79,.06), rgba(255,255,255,0)),
+    linear-gradient(90deg, rgba(38,27,20,.96), rgba(19,16,14,.96));
+  border-bottom:1px solid rgba(212,175,55,.18);
+}
+
+.ah-forge-title{
+  color:#ffd8a3;
+  text-shadow:
+    0 0 18px rgba(255,135,44,.18),
+    0 0 34px rgba(0,0,0,.22);
+}
+
+.ah-forge-sub{ color:rgba(230,214,193,.76); }
+
+.ah-forge-tab{
+  border-color:rgba(138,96,55,.30);
+  background:
+    linear-gradient(180deg, rgba(49,36,27,.92), rgba(27,22,18,.94));
+  color:#edd2af;
+}
+
+.ah-forge-tab.active{
+  border-color:rgba(255,200,102,.42);
+  background:
+    linear-gradient(180deg, rgba(255,137,41,.28), rgba(114,63,24,.18)),
+    rgba(31,24,20,.96);
+  color:#fff5e2;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 0 1px rgba(255,171,72,.10),
+    0 10px 28px rgba(255,122,24,.12);
+}
+
+.ah-note,
+.ah-panel,
+.ah-card,
+.ah-result,
+.ah-preview-card,
+.ah-statbox{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)),
+    linear-gradient(180deg, rgba(42,30,22,.50), rgba(13,16,20,.45));
+  border-color:rgba(138,103,67,.24);
+}
+
+.ah-card:hover{
+  border-color:rgba(212,175,55,.26);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.20),
+    0 0 22px rgba(255,140,33,.07);
+}
+
+.ah-card.selected{
+  border-color:rgba(255,191,94,.40);
+  background:
+    linear-gradient(180deg, rgba(255,174,79,.10), rgba(255,255,255,.02)),
+    linear-gradient(180deg, rgba(45,31,21,.62), rgba(13,16,20,.50));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 0 0 1px rgba(255,184,73,.10),
+    0 12px 28px rgba(255,126,31,.13);
+}
+
+.ah-btn{
+  border-color:rgba(185,152,117,.26);
+  background:
+    linear-gradient(180deg, rgba(58,42,30,.95), rgba(26,20,16,.95));
+  color:#f6d3a6;
+}
+
+.ah-btn:hover:not(:disabled){
+  border-color:rgba(255,209,126,.42);
+}
+
+.ah-btn.primary{
+  background:
+    linear-gradient(180deg, rgba(255,132,33,.95), rgba(177,74,18,.95));
+  border-color:rgba(255,211,127,.40);
+  color:#fff7eb;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    0 12px 26px rgba(255,98,0,.18);
+}
+
+.ah-btn.primary:hover:not(:disabled){
+  filter:brightness(1.05);
+  transform:translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 0 28px rgba(255,110,16,.26);
+}
+
+.ah-control{
+  background:
+    linear-gradient(180deg, rgba(31,25,20,.96), rgba(17,19,24,.96));
+  border-color:rgba(166,125,83,.26);
+  color:#f8e7cd;
+}
+
+.ah-control:focus{
+  border-color:rgba(255,194,95,.36);
+  box-shadow:0 0 0 3px rgba(255,184,73,.09), 0 0 22px rgba(255,124,19,.08);
+}
+
+.ah-preview-label,
+.ah-statbox .k,
+.ah-section-kicker{
+  color:#ffcf90;
+}
+
+.ah-meter{
+  background:rgba(255,255,255,.05);
+  border-color:rgba(255,255,255,.06);
+}
+
+.ah-meter-fill{
+  background:linear-gradient(90deg, rgba(255,121,20,.98), rgba(255,211,124,.98));
+  box-shadow:0 0 16px rgba(255,160,52,.28);
+}
+
+.ah-tag{
+  background:rgba(12,12,12,.30);
+}
+
+.ah-tag.is-uncommon{ border-color:rgba(104,255,173,.24); color:#c9ffe1; }
+.ah-tag.is-epic{ border-color:rgba(197,133,255,.30); color:#ecd7ff; }
+.ah-tag.is-legendary{
+  border-color:rgba(255,192,86,.38);
+  color:#ffe5b6;
+  box-shadow:0 0 18px rgba(255,192,86,.10);
+}
+
+.ah-forge-hero{
+  position:relative;
+  overflow:hidden;
+  padding:16px;
+  border:1px solid rgba(255,184,73,.14);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,139,42,.10), transparent 24%),
+    radial-gradient(circle at 84% 14%, rgba(83,199,255,.08), transparent 20%),
+    linear-gradient(180deg, rgba(39,29,22,.72), rgba(13,16,20,.52));
+}
+
+.ah-forge-hero::before{
+  content:"";
+  position:absolute; inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.03), transparent 35%),
+    radial-gradient(circle at 78% 22%, rgba(255,255,255,.035), transparent 18%);
+}
+
+.ah-forge-halo{
+  position:absolute;
+  right:-20px; top:-20px;
+  width:150px; height:150px; border-radius:999px;
+  background:radial-gradient(circle, rgba(255,150,54,.16), transparent 60%);
+  filter:blur(2px);
+  pointer-events:none;
+}
+
+.ah-forge-rune{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:34px; height:34px;
+  border-radius:999px;
+  border:1px solid rgba(255,199,101,.24);
+  background:rgba(255,134,34,.10);
+  color:#ffd59b;
+  font-weight:1000;
+  font-size:15px;
+  box-shadow:0 0 16px rgba(255,134,34,.10);
+}
+
+.ah-forge-hero-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.ah-forge-hero-copy{
+  min-width:0;
+  flex:1;
+}
+
+.ah-outcome-strip{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.ah-outcome-pill{
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.04);
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.ah-result-cine{
+  position:relative;
+  overflow:hidden;
+  min-height:82px;
+  border-radius:18px;
+}
+
+.ah-result-cine::before{
+  content:"";
+  position:absolute; inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.04), transparent 38%),
+    radial-gradient(circle at 82% 18%, rgba(255,196,102,.06), transparent 18%);
+}
+
+.ah-result-ribbon{
+  position:absolute;
+  top:10px; right:10px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.25);
+  color:#ffd8a3;
+}
+
+.ah-result-cine.is-uncommon .ah-result-ribbon{
+  border-color:rgba(104,255,173,.24);
+  color:#c9ffe1;
+}
+.ah-result-cine.is-epic .ah-result-ribbon{
+  border-color:rgba(197,133,255,.28);
+  color:#ecd7ff;
+}
+.ah-result-cine.is-legendary .ah-result-ribbon{
+  border-color:rgba(255,192,86,.35);
+  color:#ffe5b6;
+  box-shadow:0 0 16px rgba(255,192,86,.12);
+}
+
+.ah-detail-ico{
+  position:relative;
+}
+
+.ah-detail-ico.is-legendary::after{
+  content:"";
+  position:absolute; inset:-8px;
+  border-radius:24px;
+  border:1px solid rgba(255,201,104,.14);
+  pointer-events:none;
+}
+
+.ah-loreline{
+  color:rgba(233,214,190,.72);
+}
 
       .ah-forge-backdrop{
         position:fixed; inset:0; z-index:2147483640;
