@@ -491,15 +491,18 @@
       `;
       bodyEl.style.opacity = "1";
 
-      document.getElementById("obDo").onclick = async () => {
+      document.getElementById("obDo").onclick = () => {
         haptic("medium");
 
-        try { s.go(); } catch (_) {}
-        showToast("Opened for you ✨");
+        const go = s.go;
 
-        setTimeout(async () => {
-          await refreshSteps(true);
-        }, 900);
+        // zamknij onboarding, żeby nie przykrywał docelowego modułu
+        close(false);
+
+        // otwórz właściwy ekran dopiero po schowaniu overlay
+        requestAnimationFrame(() => {
+          try { go?.(); } catch (_) {}
+        });
       };
 
       btnBack.style.display = idx === 0 ? "none" : "block";
@@ -555,6 +558,7 @@
     window.openOnboarding = (force = false) => open(!!force);
     window.maybeOpenOnboarding = () => open(false);
     window.refreshOnboarding = () => refreshSteps(true);
+    window.resumeOnboarding = () => open(true);
 
     log("Alpha Husky Onboarding v4 ready 🐺");
   }
