@@ -22,6 +22,7 @@
 
   function log(...a) { if (_dbg) console.log("[Onboarding]", ...a); }
   function getTG() { return _tg || window.Telegram?.WebApp || null; }
+  function getApiPost() { return _apiPost || window.apiPost || null; }
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
@@ -37,6 +38,27 @@
   function makeRunId(prefix = "ob") {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
+
+  // ====================== DEBUG TEST OVERRIDE ======================
+  function getTutorialDebugOverride() {
+    const raw = window.__AH_TUTORIAL_DEBUG__;
+    if (!raw) return null;
+    if (typeof raw === "function") {
+      try { return raw(); } catch (_) { return null; }
+    }
+    return raw;
+  }
+
+  window.setTutorialDebugState = function (state) {
+    window.__AH_TUTORIAL_DEBUG__ = state;
+    return state;
+  };
+
+  window.clearTutorialDebugState = function () {
+    try { delete window.__AH_TUTORIAL_DEBUG__; } catch (_) {
+      window.__AH_TUTORIAL_DEBUG__ = null;
+    }
+  };
 
   function arr(v) {
     return Array.isArray(v) ? v : [];
@@ -84,14 +106,25 @@
   }
 
   async function fetchTutorialState() {
-    if (!_apiPost) {
+    const debugOverride = getTutorialDebugOverride();
+    if (debugOverride && typeof debugOverride === "object") {
+      _tutorial = normalizeTutorialPayload({
+        ok: true,
+        data: debugOverride
+      });
+      log("tutorial debug override", _tutorial);
+      return _tutorial;
+    }
+
+    const apiPost = getApiPost();
+    if (!apiPost) {
       log("No apiPost; cannot fetch tutorial state");
       _tutorial = null;
       return null;
     }
 
     try {
-      const out = await _apiPost("/webapp/tutorial/state", {
+      const out = await apiPost("/webapp/tutorial/state", {
         run_id: makeRunId("tutorial_state")
       });
       _tutorial = normalizeTutorialPayload(out);
@@ -178,7 +211,7 @@
   function openStats() {
     if (window.Stats?.open) return window.Stats.open();
     if (window.openStats) return window.openStats();
-    document.querySelector('.btn.stats, [data-go="stats"], #openStats')?.click();
+    document.querySelector('.btn.char, .btn.mystats, .btn.stats, [data-go="stats"], [data-go="char"], #openStats')?.click();
   }
 
   function openQuests() {
@@ -215,7 +248,7 @@
   function openReferrals() {
     if (window.Referrals?.open) return window.Referrals.open();
     if (window.openReferrals) return window.openReferrals();
-    document.querySelector('.btn.referrals, [data-go="referrals"], #openReferrals')?.click();
+    document.querySelector('.btn.referral, .btn.referrals, [data-go="referrals"], #openReferrals')?.click();
   }
 
   function openShop() {
@@ -252,8 +285,13 @@
     const list = [];
     const done = new Set(uniq(tut?.completed_steps));
     const skipped = new Set(uniq(tut?.optional_skips));
+    const finished = !!tut?.finished;
+    const currentStep = String(tut?.current_step || "").trim();
+    const rawIdx = REQUIRED_ORDER.indexOf(currentStep);
+    const requiredStartIdx = finished ? REQUIRED_ORDER.length : (rawIdx >= 0 ? rawIdx : 0);
 
-    for (const key of REQUIRED_ORDER) {
+    for (let i = requiredStartIdx; i < REQUIRED_ORDER.length; i++) {
+      const key = REQUIRED_ORDER[i];
       if (!done.has(key)) {
         list.push({ key, ...STEP_CONFIG[key], go: attachGo({ key }) });
       }
@@ -507,7 +545,7 @@
   }
 
   function init({ apiPost, tg, dbg } = {}) {
-    _apiPost = apiPost || _apiPost;
+    _apiPost = apiPost || _apiPost || window.apiPost || null;
     _tg = tg || _tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
 
@@ -522,7 +560,7 @@
   }
 
   function boot() {
-    init({ dbg: !!window.DBG });
+    init({ apiPost: window.apiPost, tg: window.Telegram?.WebApp || null, dbg: !!window.DBG });
   }
 
   if (document.readyState === "loading") {
