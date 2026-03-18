@@ -451,9 +451,9 @@
     return out.join("");
   }
 
-  function _applyPressureBadges(pinEl, pressureMeta) {
-    if (!pinEl) return;
-    ensureLevel1(pinEl);
+  function _pressureBadgesHtml(pressureMeta) {
+  const meta = pressureMeta || {};
+  const out = [];
 
     const meta = pressureMeta || {};
     const wrap = pinEl.querySelector(".pin-pressure-badges");
