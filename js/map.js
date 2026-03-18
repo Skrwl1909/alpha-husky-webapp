@@ -672,10 +672,27 @@
   }
 
 function _findLeaderInfoByNodeId(nodeId, leadersMap) {
-    const key = String(nodeId || "").trim();
-    if (!key || !leadersMap || typeof leadersMap !== "object") return null;
-    return leadersMap[key] || null;
+  const key = String(nodeId || "").trim();
+  if (!key || !leadersMap || typeof leadersMap !== "object") return null;
+
+  if (leadersMap[key]) return leadersMap[key];
+
+  for (const [k, v] of Object.entries(leadersMap)) {
+    if (!v || typeof v !== "object") continue;
+
+    const candNodeId =
+      String(v.nodeId || v.id || "").trim();
+
+    const candBuildingId =
+      String(v.buildingId || v.building || "").trim();
+
+    if (candNodeId === key || candBuildingId === key || String(k).trim() === key) {
+      return v;
+    }
   }
+
+  return null;
+}
 
   function getPressureMeta(nodeId) {
     const info = _findLeaderInfoByNodeId(nodeId, _lastLeadersMap);
