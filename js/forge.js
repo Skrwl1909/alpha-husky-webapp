@@ -1772,23 +1772,50 @@
     }
 
     const slotField = makeField("Slot", "Craft consumes <b>{slot}_shards</b> from the chosen category.");
-    const sel = document.createElement("select");
-    sel.className = "ah-control";
+const sel = document.createElement("select");
+sel.className = "ah-control ah-slot-ghost-select";
 
-    function refreshSlotLabels() {
-      Array.from(sel.options).forEach((opt) => {
-        const s = opt.value;
-        opt.textContent = `${cap(s)} (${shardsHave(s)})`;
-      });
-    }
+const chipbar = el("div", "ah-chipbar");
 
-    shardSlots.forEach((s) => {
-      const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = `${cap(s)} (${shardsHave(s)})`;
-      sel.appendChild(opt);
+function renderSlotChips() {
+  chipbar.innerHTML = "";
+  const current = sel.value || shardSlots[0] || "weapon";
+
+  shardSlots.forEach((s) => {
+    const b = el(
+      "button",
+      `ah-chip ${current === s ? "active" : ""}`,
+      `${esc(cap(s))}<span class="count">${shardsHave(s)}</span>`
+    );
+    b.type = "button";
+    b.disabled = _busy;
+    b.addEventListener("click", () => {
+      if (_busy) return;
+      sel.value = s;
+      renderSlotChips();
+      updateCost();
     });
-    slotField.right.appendChild(sel);
+    chipbar.appendChild(b);
+  });
+}
+
+function refreshSlotLabels() {
+  Array.from(sel.options).forEach((opt) => {
+    const s = opt.value;
+    opt.textContent = `${cap(s)} (${shardsHave(s)})`;
+  });
+  renderSlotChips();
+}
+
+shardSlots.forEach((s) => {
+  const opt = document.createElement("option");
+  opt.value = s;
+  opt.textContent = `${cap(s)} (${shardsHave(s)})`;
+  sel.appendChild(opt);
+});
+
+slotField.right.appendChild(sel);
+slotField.right.appendChild(chipbar);
 
     const countField = makeField("Count", "How many pulls to execute in one batch.");
     const countWrap = el("div", "ah-stepper");
@@ -1869,57 +1896,92 @@
     });
 
     function updateCost() {
-      const slot = sel.value;
-      const n = clampField(inpCount, 1, 50);
-      const r = clampField(inpRef, 0, 5);
+  const slot = sel.value;
+  const n = clampField(inpCount, 1, 50);
+  const r = clampField(inpRef, 0, 5);
 
-      const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
-      const total = per * n;
+  const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
+  const total = per * n;
 
-      const have = shardsHave(slot);
-      const left = have - total;
+  const have = shardsHave(slot);
+  const left = have - total;
 
-      const pU = Math.min((cfg.uncommonBase || 0) + (cfg.uncommonRefineAdd || 0) * r, (cfg.uncommonCap || 1));
-      const pity = currentPity(slot);
-      const pityRatio = pity != null && cfg.pity ? Math.max(0, Math.min(1, Number(pity) / Number(cfg.pity))) : 0;
+  const pU = Math.min(
+    (cfg.uncommonBase || 0) + (cfg.uncommonRefineAdd || 0) * r,
+    (cfg.uncommonCap || 1)
+  );
 
-      previewPanel.innerHTML = `
-        <div class="ah-section-kicker">Forge Preview</div>
-        <div class="ah-section-title">${esc(cap(slot))} slot roll</div>
-        <div class="ah-section-copy">Preview only. Real spending still comes from the backend craft endpoint.</div>
+  const pity = currentPity(slot);
+  const pityMax = Number(cfg.pity || 0);
+  const pityRatio = (pity != null && pityMax > 0)
+    ? Math.max(0, Math.min(1, Number(pity) / pityMax))
+    : 0;
 
-        <div class="ah-preview-grid" style="margin-top:12px">
-          <div class="ah-preview-card">
-            <div class="ah-preview-label">Shard Spend</div>
-            <div class="ah-preview-value">${total} total</div>
-            <div class="ah-preview-sub">Have ${have} · Per pull ${per} · After ${left}</div>
-          </div>
-          <div class="ah-preview-card">
-            <div class="ah-preview-label">Odds Snapshot</div>
-            <div class="ah-preview-value">${Math.round(pU * 100)}% uncommon+</div>
-            <div class="ah-preview-sub">
-              ${cfg.pEpic ? `Epic ${(cfg.pEpic * 100).toFixed(2)}% · ` : ``}
-              ${cfg.pLegendary ? `Legendary ${(cfg.pLegendary * 100).toFixed(2)}% · ` : ``}
-              Base uncommon ${Math.round((cfg.uncommonBase || 0) * 100)}%
-            </div>
-          </div>
+  let pityClass = "";
+  let pityLabel = "Cold";
+  if (pityRatio >= 1) {
+    pityClass = "charged";
+    pityLabel = "Charged";
+  } else if (pityRatio >= 0.66) {
+    pityClass = "hot";
+    pityLabel = "Heating Up";
+  }
+
+  let spendState = "Ready";
+  if (left < 0) spendState = "Insufficient Shards";
+  else if (left === 0) spendState = "Exact Spend";
+
+  previewPanel.className = "ah-panel ah-preview-shell";
+  previewPanel.innerHTML = `
+    <div class="ah-preview-top">
+      <div>
+        <div class="ah-preview-kicker">Forge Preview</div>
+        <div class="ah-preview-title">${esc(cap(slot))} shard roll</div>
+      </div>
+      <div class="ah-preview-badge">${esc(spendState)}</div>
+    </div>
+
+    <div class="ah-forecast-grid">
+      <div class="ah-forecast-card">
+        <div class="k">Shard Spend</div>
+        <div class="v">${total} total</div>
+        <div class="sub">Have ${have} · Per pull ${per} · After ${left}</div>
+      </div>
+
+      <div class="ah-forecast-card">
+        <div class="k">Odds Snapshot</div>
+        <div class="v">${Math.round(pU * 100)}% uncommon+</div>
+        <div class="sub">
+          ${cfg.pEpic ? `Epic ${(cfg.pEpic * 100).toFixed(2)}% · ` : ``}
+          ${cfg.pLegendary ? `Legendary ${(cfg.pLegendary * 100).toFixed(2)}% · ` : ``}
+          Base uncommon ${Math.round((cfg.uncommonBase || 0) * 100)}%
         </div>
+      </div>
+    </div>
 
-        ${pity != null ? `
-          <div class="ah-meter-wrap">
-            <div class="ah-meter-top">
-              <span>Pity progress</span>
-              <b>${Number(pity)} / ${Number(cfg.pity)}</b>
-            </div>
-            <div class="ah-meter">
-              <div class="ah-meter-fill" style="width:${Math.round(pityRatio * 100)}%"></div>
-            </div>
-          </div>
-        ` : ``}
-      `;
-
-      fDbg.textContent = `preview(per=${per}, total=${total}, count=${n}, refine=${r})`;
+    ${
+      pity != null ? `
+      <div class="ah-pity-row">
+        <span class="ah-pity-state ${pityClass}">
+          <span class="ah-pity-dot"></span>
+          <span>${pityLabel}</span>
+        </span>
+        <b>${Number(pity)} / ${pityMax}</b>
+      </div>
+      <div class="ah-meter">
+        <div class="ah-meter-fill" style="width:${Math.round(pityRatio * 100)}%"></div>
+      </div>
+      ` : ``
     }
+
+    <div class="ah-outcome-note">
+      Forecast only. Real shard spend, pity updates and drop resolution still come directly from the backend craft endpoint.
+    </div>
+  `;
+
+  fDbg.textContent = `preview(per=${per}, total=${total}, count=${n}, refine=${r}, slot=${slot})`;
+  renderSlotChips();
+}
 
     inpCount.addEventListener("input", updateCost);
     inpRef.addEventListener("input", updateCost);
