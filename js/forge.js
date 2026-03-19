@@ -1151,6 +1151,207 @@
       color:#ffe5b6;
       box-shadow:0 0 18px rgba(255,192,86,.10);
     }
+    /* =========================
+   PATCH 3 — CRAFT UI POLISH
+   doklej na sam KONIEC ensureStyles()
+   ========================= */
+
+.ah-chipbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.ah-chip{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+    rgba(255,255,255,.03);
+  color:inherit;
+  border-radius:999px;
+  padding:9px 12px;
+  font-weight:1000;
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+  transition:transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease;
+}
+
+.ah-chip:hover{
+  transform:translateY(-1px);
+  border-color:rgba(255,214,130,.28);
+}
+
+.ah-chip.active{
+  border-color:rgba(255,200,102,.42);
+  background:
+    linear-gradient(180deg, rgba(255,137,41,.26), rgba(114,63,24,.16)),
+    rgba(31,24,20,.96);
+  color:#fff5e2;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 0 1px rgba(255,171,72,.10),
+    0 10px 22px rgba(255,122,24,.10);
+}
+
+.ah-chip .count{
+  opacity:.82;
+  margin-left:6px;
+}
+
+.ah-slot-ghost-select{
+  position:absolute !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  width:1px !important;
+  height:1px !important;
+  overflow:hidden !important;
+}
+
+.ah-preview-shell{
+  position:relative;
+  overflow:hidden;
+}
+
+.ah-preview-shell::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,139,42,.08), transparent 22%),
+    radial-gradient(circle at 84% 14%, rgba(83,199,255,.06), transparent 18%);
+}
+
+.ah-preview-top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+
+.ah-preview-title{
+  font-size:20px;
+  line-height:1.05;
+  font-weight:1000;
+}
+
+.ah-preview-kicker{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:1000;
+  color:#ffcf90;
+  margin-bottom:6px;
+}
+
+.ah-preview-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,200,102,.25);
+  background:rgba(255,140,33,.10);
+  color:#ffe0b0;
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.ah-forecast-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+
+@media(min-width:620px){
+  .ah-forecast-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+.ah-forecast-card{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  padding:12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+    rgba(255,255,255,.02);
+}
+
+.ah-forecast-card .k{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.10em;
+  font-weight:1000;
+  color:#ffcf90;
+  margin-bottom:6px;
+}
+
+.ah-forecast-card .v{
+  font-size:16px;
+  font-weight:1000;
+  line-height:1.25;
+}
+
+.ah-forecast-card .sub{
+  margin-top:4px;
+  font-size:12px;
+  color:var(--ah-dim);
+  line-height:1.4;
+}
+
+.ah-pity-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:12px;
+  margin-bottom:6px;
+  font-size:12px;
+}
+
+.ah-pity-state{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-weight:1000;
+}
+
+.ah-pity-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,181,72,.95);
+  box-shadow:0 0 12px rgba(255,181,72,.35);
+}
+
+.ah-pity-state.hot .ah-pity-dot{
+  background:#ffd27a;
+  box-shadow:0 0 14px rgba(255,210,122,.45);
+}
+
+.ah-pity-state.charged .ah-pity-dot{
+  background:#fff0b8;
+  box-shadow:0 0 16px rgba(255,240,184,.55);
+}
+
+.ah-outcome-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  font-size:12px;
+  color:var(--ah-dim);
+  line-height:1.45;
+}
   `;
 
   document.head.appendChild(s);
