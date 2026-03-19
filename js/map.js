@@ -409,25 +409,60 @@
   }
 
   function _extractPressureMeta(info) {
-    const src = (info && typeof info === "object") ? info : {};
+  const src = (info && typeof info === "object") ? info : {};
 
-    const pressureDerivedStatus = String(src?.pressureDerivedStatus || "").trim().toUpperCase();
-    const captureTierNum = Number(src?.captureTier || 0);
-    const captureTier = Number.isFinite(captureTierNum) ? captureTierNum : 0;
+  const pressureDerivedStatus = String(
+    src?.pressureDerivedStatus ||
+    src?.derivedPressureStatus ||
+    ""
+  ).trim().toUpperCase();
 
-    const isHot = !!src?.isHot || pressureDerivedStatus === "HOT";
-    const isContested = !!src?.isContested || pressureDerivedStatus === "CONTESTED";
-    const isFortified = !!src?.isFortified || pressureDerivedStatus === "FORTIFIED";
+  const captureTierNum = Number(src?.captureTier || 0);
+  const captureTier = Number.isFinite(captureTierNum) ? captureTierNum : 0;
 
-    return {
-      isHot,
-      isContested,
-      isFortified,
-      captureTier,
-      pressureDerivedStatus
-    };
-  }
+  const heat = Number(src?.heat || 0) || 0;
+  const pressureDelta = Number(src?.pressureDelta || 0) || 0;
+  const pressureTopValue = Number(src?.pressureTopValue || 0) || 0;
 
+  const siegeStatus = String(
+    src?.siegeStatus ||
+    src?.currentSiegeStatus ||
+    ""
+  ).trim().toLowerCase();
+
+  const isContested =
+    !!src?.isContested ||
+    !!src?.contested ||
+    pressureDerivedStatus === "CONTESTED" ||
+    siegeStatus === "forming" ||
+    siegeStatus === "running";
+
+  const isFortified =
+    !!src?.isFortified ||
+    pressureDerivedStatus === "FORTIFIED" ||
+    pressureDerivedStatus === "OWNED" ||
+    pressureDerivedStatus === "SECURED" ||
+    (captureTier >= 2 && !isContested);
+
+  const isHot =
+    !!src?.isHot ||
+    pressureDerivedStatus === "HOT" ||
+    pressureDerivedStatus === "HEATING" ||
+    heat >= 10 ||
+    pressureDelta >= 10 ||
+    pressureTopValue >= 15;
+
+  return {
+    isHot,
+    isContested,
+    isFortified,
+    captureTier,
+    pressureDerivedStatus: pressureDerivedStatus || "NEUTRAL",
+    heat,
+    pressureDelta,
+    pressureTopValue,
+  };
+}
   function _pressureBadgesHtml(pressureMeta) {
     const meta = pressureMeta || {};
     const out = [];
