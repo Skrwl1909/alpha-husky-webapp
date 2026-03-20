@@ -1,6 +1,9 @@
 {
-  "version": 7,
-  "meta": { "name": "Alpha Husky Overworld", "viewBox": [1600, 900] },
+  "version": 9,
+  "meta": {
+    "name": "Alpha Husky Overworld",
+    "viewBox": [1600, 900]
+  },
   "assets": {
     "icons": "images/map/building",
     "ui": "images/ui",
@@ -36,19 +39,19 @@
       "lockedReason": null
     },
     "shadow_layers": {
-  "id": "shadow_layers",
-  "name": "Shadow Layers",
-  "desc": "Corrupted underchain crawling with high-level threats and phantom signals.",
-  "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 8 },
-  "lockedReason": "The path is scrambled. Collect more fragments to stabilize a route."
-},
-"edge_chain": {
-  "id": "edge_chain",
-  "name": "Edge of the Chain",
-  "desc": "Reality frays. The void answers.",
-  "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 12 },
-  "lockedReason": "You’re not ready. The edge only opens when the Chain recognizes you."
-}
+      "id": "shadow_layers",
+      "name": "Shadow Layers",
+      "desc": "Corrupted underchain crawling with high-level threats and phantom signals.",
+      "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 8 },
+      "lockedReason": "The path is scrambled. Collect more fragments to stabilize a route."
+    },
+    "edge_chain": {
+      "id": "edge_chain",
+      "name": "Edge of the Chain",
+      "desc": "Reality frays. The void answers.",
+      "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 12 },
+      "lockedReason": "You’re not ready. The edge only opens when the Chain recognizes you."
+    }
   },
   "fortress": {
     "enemies": {
@@ -69,13 +72,13 @@
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
       "region": "chain",
-      "x": 13,
-      "y": 10,
+      "x": 9,
+      "y": 25,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "action": "building_enter",
       "buildingId": "abandoned_wallets_vault",
-      "labelOffset": { "x": 10, "y": 30 },
+      "labelOffset": { "x": 14, "y": 30 },
       "gameplay": {
         "loop": "dungeon",
         "rooms": { "min": 3, "max": 6 },
@@ -84,146 +87,147 @@
         "extractOnEnd": true,
         "deathPenalty": 0.3,
         "averageRunMinutes": 5,
-        "rewards": { "scrap": [2, 6], "bones": [1, 3], "chanceItems": ["wallet_shard", "rune_dust"] },
+        "rewards": {
+          "scrap": [2, 6],
+          "bones": [1, 3],
+          "chanceItems": ["wallet_shard", "rune_dust"]
+        },
         "fragmentDrops": { "map_key_fragment": 0.08 }
       },
       "tags": ["loot", "chance"]
     },
     {
-  "id": "phantom_nodes",
-  "name": "Phantom Nodes",
-  "region": "shadow_layers",
-  "x": 56,
-  "y": 42,
-  "icon": "images/map/building/phantom_nodes.png",
-  "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
-  "action": "coming_soon",
-  "buildingId": "phantom_nodes",
-  "labelOffset": { "x": -70, "y": 34 },
-  "factionControl": true,
-  "uiHint": {
-    "type": "factionControl",
-    "showInfluenceBar": true,
-    "showTimer": true,
-    "showBonusIcon": true,
-    "showContestedRing": true
-  },
-  "tags": ["control","lore","future-pvp"]
+      "id": "phantom_nodes",
+      "name": "Phantom Nodes",
+      "region": "shadow_layers",
+      "x": 47,
+      "y": 43,
+      "icon": "images/map/building/phantom_nodes.png",
+      "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
+      "action": "coming_soon",
+      "buildingId": "phantom_nodes",
+      "labelOffset": { "x": -70, "y": 34 },
+      "factionControl": true,
+      "uiHint": {
+        "type": "factionControl",
+        "showInfluenceBar": true,
+        "showTimer": true,
+        "showBonusIcon": true,
+        "showContestedRing": true
+      },
+      "tags": ["control", "lore", "future-pvp"]
     },
-{
-  "id": "blood_moon_tower",
-  "name": "Blood-Moon Tower",
-  "region": "shadow_layers",
-  "x": 80,
-  "y": 37,
-  "icon": "images/map/building/blood_moon_tower.png",
-  "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
-  "action": "coming_soon",
-  "buildingId": "blood_moon_tower",
-  "labelOffset": { "x": -90, "y": 34 },
-  "factionControl": true,
-  "raidEnabled": true,
-  "uiHint": {
-    "type": "factionControl",
-    "showInfluenceBar": true,
-    "showTimer": true,
-    "showBonusIcon": true,
-    "showContestedRing": true
-  },
-  "tags": ["raid","lore"]
-},
-{
-  "id": "edge_of_chain",
-  "name": "Edge of the Chain",
-  "region": "edge_chain",
-  "x": 20,
-  "y": 23,
-  "icon": "images/map/building/edge_of_chain.png",
-  "desc": "Where the code frays and stars flicker like dying nodes.",
-  "action": "open_siege",
-  "buildingId": "edge_of_chain",
-  "labelOffset": { "x": -98, "y": 32 },
-
-  "factionControl": true,
-  "raidEnabled": true,
-  "maxDefenders": 4,
-
-  "uiHint": {
-    "type": "factionControl",
-    "showInfluenceBar": true,
-    "showTimer": true,
-    "showBonusIcon": true,
-    "showContestedRing": true
-  },
-
-  "tags": ["act-gate", "lore", "raid-target"]
-},
-{
-  "id": "oracle_void_doorway",
-  "name": "The Oracle’s Void Doorway",
-  "region": "edge_chain",
-  "x": 84,
-  "y": 12,
-  "icon": "images/map/building/void_doorway.png",
-  "desc": "A doorway not coded, not mapped. Just… waiting.",
-  "action": "coming_soon",
-  "buildingId": "oracle_void_doorway",
-  "labelOffset": { "x": -70, "y": 34 },
-  "uiHint": { "owner": "echo_wardens", "state": "new" },
-  "tags": ["story","oracle","rewrite"]
-},
-   {
-  "id": "alpha_network_hq",
-  "name": "Faction HQ",
-  "region": "chain",
-  "x": 18,
-  "y": 43,
-  "icon": "images/map/building/alpha_network_hq.webp",
-  "desc": "Your faction’s command hub. Donate to the treasury and upgrade HQ together.",
-  "action": "open_faction_hq",
-  "buildingId": "faction_hq",
-  "labelOffset": { "x": 12, "y": 30 },
-  "gameplay": { "type": "faction_hq" },
-  "tags": ["hq", "faction", "safe", "community"]
-},
+    {
+      "id": "blood_moon_tower",
+      "name": "Blood-Moon Tower",
+      "region": "shadow_layers",
+      "x": 74,
+      "y": 38,
+      "icon": "images/map/building/blood_moon_tower.png",
+      "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
+      "action": "coming_soon",
+      "buildingId": "blood_moon_tower",
+      "labelOffset": { "x": -104, "y": 34 },
+      "factionControl": true,
+      "raidEnabled": true,
+      "uiHint": {
+        "type": "factionControl",
+        "showInfluenceBar": true,
+        "showTimer": true,
+        "showBonusIcon": true,
+        "showContestedRing": true
+      },
+      "tags": ["raid", "lore"]
+    },
+    {
+      "id": "edge_of_chain",
+      "name": "Edge of the Chain",
+      "region": "edge_chain",
+      "x": 21,
+      "y": 39,
+      "icon": "images/map/building/edge_of_chain.png",
+      "desc": "Where the code frays and stars flicker like dying nodes.",
+      "action": "open_siege",
+      "buildingId": "edge_of_chain",
+      "labelOffset": { "x": 14, "y": 30 },
+      "factionControl": true,
+      "raidEnabled": true,
+      "maxDefenders": 4,
+      "uiHint": {
+        "type": "factionControl",
+        "showInfluenceBar": true,
+        "showTimer": true,
+        "showBonusIcon": true,
+        "showContestedRing": true
+      },
+      "tags": ["act-gate", "lore", "raid-target"]
+    },
+    {
+      "id": "oracle_void_doorway",
+      "name": "The Oracle’s Void Doorway",
+      "region": "edge_chain",
+      "x": 53,
+      "y": 11,
+      "icon": "images/map/building/void_doorway.png",
+      "desc": "A doorway not coded, not mapped. Just… waiting.",
+      "action": "coming_soon",
+      "buildingId": "oracle_void_doorway",
+      "labelOffset": { "x": -86, "y": 34 },
+      "uiHint": { "owner": "echo_wardens", "state": "new" },
+      "tags": ["story", "oracle", "rewrite"]
+    },
+    {
+      "id": "alpha_network_hq",
+      "name": "Faction HQ",
+      "region": "chain",
+      "x": 14,
+      "y": 55,
+      "icon": "images/map/building/alpha_network_hq.webp",
+      "desc": "Your faction’s command hub. Donate to the treasury and upgrade HQ together.",
+      "action": "open_faction_hq",
+      "buildingId": "faction_hq",
+      "labelOffset": { "x": 12, "y": 30 },
+      "gameplay": { "type": "faction_hq" },
+      "tags": ["hq", "faction", "safe", "community"]
+    },
     {
       "id": "chain_gate",
       "name": "The Chain Gate",
       "region": "chain",
-      "x": 16,
-      "y": 62,
+      "x": 17,
+      "y": 73,
       "icon": "images/map/building/the_chain.png",
       "desc": "Long-haul expeditions through dead chain fragments. Small but steady scrap, rune dust, and a tiny chance for item shards.",
       "action": "building_enter",
       "buildingId": "chain_gate",
-      "labelOffset": { "x": -40, "y": -42 },
+      "labelOffset": { "x": -36, "y": -42 },
       "gameplay": {
         "loop": "expedition",
         "averageRunMinutes": 120,
-        "rewards": { "scrap": [2,4], "rune_dust": [0,1], "chanceShards": true }
+        "rewards": { "scrap": [2, 4], "rune_dust": [0, 1], "chanceShards": true }
       },
       "tags": ["expedition", "safe", "afk"]
     },
     {
-  "id": "vault_forge",
-  "name": "Forgotten Tokens’ Vault",
-  "region": "chain",
-  "x": 40,
-  "y": 74,
-  "icon": "images/map/building/vault_forge.webp",
-  "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
-  "action": "open_forge",
-  "buildingId": "forgotten_tokens_vault_forge",
-  "labelOffset": { "x": -120, "y": -40 },
-  "gameplay": { "type": "forge" },
-  "tags": ["forge", "upgrade", "utility"]
-},
+      "id": "vault_forge",
+      "name": "Forgotten Tokens’ Vault",
+      "region": "chain",
+      "x": 47,
+      "y": 79,
+      "icon": "images/map/building/vault_forge.webp",
+      "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
+      "action": "open_forge",
+      "buildingId": "forgotten_tokens_vault_forge",
+      "labelOffset": { "x": -118, "y": -40 },
+      "gameplay": { "type": "forge" },
+      "tags": ["forge", "upgrade", "utility"]
+    },
     {
       "id": "broken_contracts",
       "name": "Broken Contracts",
       "region": "chain",
-      "x": 44,
-      "y": 48,
+      "x": 33,
+      "y": 58,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
       "action": "open_quests",
@@ -235,7 +239,11 @@
         "rotation": "daily",
         "combatWave": { "count": 1, "scaleWithProgress": true },
         "averageRunMinutes": 6,
-        "rewards": { "scrap": [3, 7], "rune_dust": [1, 2], "chanceItems": ["bug_token"] },
+        "rewards": {
+          "scrap": [3, 7],
+          "rune_dust": [1, 2],
+          "chanceItems": ["bug_token"]
+        },
         "fragmentDrops": { "map_key_fragment": 0.10 },
         "leaderboard": { "metric": "time_ms", "season": "weekly" }
       },
@@ -245,8 +253,8 @@
       "id": "moon_lab",
       "name": "Moon Lab",
       "region": "moon_lab",
-      "x": 70,
-      "y": 14,
+      "x": 31,
+      "y": 18,
       "icon": "images/map/building/moon_lab.png",
       "desc": "Three-floor fortress: 10 sequential single-fights per floor. Win → next encounter after cooldown; lose → retry same encounter.",
       "action": "building_enter",
@@ -281,7 +289,7 @@
               { "id": "F1-E07", "rank": "elite", "power": 279, "rareDropBoost": 1.22 },
               { "id": "F1-E08", "rank": "elite", "power": 321, "rareDropBoost": 1.24 },
               { "id": "F1-E09", "rank": "elite", "power": 369, "rareDropBoost": 1.26 },
-              { "id": "F1-E10", "rank": "boss",  "power": 425, "rareDropBoost": 1.30 }
+              { "id": "F1-E10", "rank": "boss", "power": 425, "rareDropBoost": 1.30 }
             ],
             "floorReward": { "firstClear": ["moon_shard", "tech_cache"] }
           },
@@ -298,7 +306,7 @@
               { "id": "F2-E07", "rank": "elite", "power": 539, "rareDropBoost": 1.38 },
               { "id": "F2-E08", "rank": "elite", "power": 636, "rareDropBoost": 1.41 },
               { "id": "F2-E09", "rank": "elite", "power": 750, "rareDropBoost": 1.45 },
-              { "id": "F2-E10", "rank": "boss",  "power": 885, "rareDropBoost": 1.50 }
+              { "id": "F2-E10", "rank": "boss", "power": 885, "rareDropBoost": 1.50 }
             ],
             "floorReward": { "firstClear": ["moon_shard", "tech_cache", "rune_dust"] }
           },
@@ -306,16 +314,16 @@
             "id": "floor_3",
             "name": "Core Spire",
             "encounters": [
-              { "id": "F3-E01", "rank": "elite", "power": 320,  "rareDropBoost": 1.35 },
-              { "id": "F3-E02", "rank": "elite", "power": 384,  "rareDropBoost": 1.38 },
-              { "id": "F3-E03", "rank": "elite", "power": 461,  "rareDropBoost": 1.41 },
-              { "id": "F3-E04", "rank": "elite", "power": 553,  "rareDropBoost": 1.44 },
-              { "id": "F3-E05", "rank": "elite", "power": 664,  "rareDropBoost": 1.47 },
-              { "id": "F3-E06", "rank": "elite", "power": 797,  "rareDropBoost": 1.50 },
-              { "id": "F3-E07", "rank": "elite", "power": 956,  "rareDropBoost": 1.55 },
+              { "id": "F3-E01", "rank": "elite", "power": 320, "rareDropBoost": 1.35 },
+              { "id": "F3-E02", "rank": "elite", "power": 384, "rareDropBoost": 1.38 },
+              { "id": "F3-E03", "rank": "elite", "power": 461, "rareDropBoost": 1.41 },
+              { "id": "F3-E04", "rank": "elite", "power": 553, "rareDropBoost": 1.44 },
+              { "id": "F3-E05", "rank": "elite", "power": 664, "rareDropBoost": 1.47 },
+              { "id": "F3-E06", "rank": "elite", "power": 797, "rareDropBoost": 1.50 },
+              { "id": "F3-E07", "rank": "elite", "power": 956, "rareDropBoost": 1.55 },
               { "id": "F3-E08", "rank": "elite", "power": 1147, "rareDropBoost": 1.60 },
               { "id": "F3-E09", "rank": "elite", "power": 1376, "rareDropBoost": 1.65 },
-              { "id": "F3-E10", "rank": "boss",  "power": 1651, "rareDropBoost": 1.75 }
+              { "id": "F3-E10", "rank": "boss", "power": 1651, "rareDropBoost": 1.75 }
             ],
             "floorReward": { "firstClear": ["lunar_core", "ancient_module"] }
           }
@@ -334,13 +342,12 @@
       "difficulty": "mid-high",
       "tags": ["boss", "fortress", "raid"]
     },
-
     {
       "id": "testnet_wastes_dojo",
       "name": "Testnet Wastes — Dojo",
       "region": "testnet_wastes",
-      "x": 86,
-      "y": 50,
+      "x": 81,
+      "y": 62,
       "icon": "images/map/building/testnet_wastes.png",
       "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
       "action": "building_enter",
@@ -355,67 +362,127 @@
     }
   ],
   "paths": [
-  { "id":"p1", "from":"chain_gate", "to":"moon_lab",
-    "points":[[28,78],[44,58],[60,26]], "lockForRegion":"moon_lab", "emphasis":true },
-
-  { "id":"p2", "from":"moon_lab", "to":"testnet_wastes",
-    "points":[[60,26],[72,50],[86,78]], "lockForRegion":"testnet_wastes" },
-
-  { "id":"p3", "from":"chain_gate", "to":"broken_contracts",
-    "points":[[28,78],[38,66],[46,55]] },
-
-  { "id":"p4", "from":"chain_gate", "to":"abandoned_wallets",
-    "points":[[28,78],[18,42],[13,10]] },
-
-  { "id":"p5", "from":"chain_gate", "to":"vault_forge",
-    "points":[[28,78],[40,84],[50,82]] },
-
-  { "id":"p6", "from":"vault_forge", "to":"moon_lab",
-    "points":[[50,82],[55,54],[60,26]], "lockForRegion":"moon_lab" },
-
-  { "id":"p7", "from":"broken_contracts", "to":"alpha_network_hq",
-    "points":[[46,55],[60,58],[74,60]] }
-],
-  "lore": {
-  "chain": [
     {
-      "id": "chain_intro_01",
-      "title": "Static Log — The Chain",
-      "text": "The primal wilderness of code. Every path starts with a mistake.",
-      "unlock": { "type": "free" }
-    }
-  ],
-  "edge_chain": [
-    {
-      "id": "p6_oracle_01",
-      "title": "Part 6 — The Oracle of Rugs",
-      "text": "A doorway. Not coded. Not mapped. Just… waiting.",
-      "unlock": { "type": "visit_node", "node": "edge_of_chain" }
+      "id": "p1",
+      "from": "alpha_network_hq",
+      "to": "broken_contracts",
+      "points": [[14, 55], [20, 55], [27, 56], [33, 58]]
     },
     {
-      "id": "p6_oracle_02",
-      "title": "$REWRITE",
-      "text": "The Chain cannot be flipped. It must be rewritten.",
-      "unlock": { "type": "visit_node", "node": "oracle_void_doorway" }
+      "id": "p2",
+      "from": "broken_contracts",
+      "to": "chain_gate",
+      "points": [[33, 58], [29, 62], [23, 67], [17, 73]]
+    },
+    {
+      "id": "p3",
+      "from": "broken_contracts",
+      "to": "vault_forge",
+      "points": [[33, 58], [38, 64], [43, 71], [47, 79]]
+    },
+    {
+      "id": "p4",
+      "from": "vault_forge",
+      "to": "testnet_wastes_dojo",
+      "points": [[47, 79], [58, 77], [70, 71], [81, 62]],
+      "lockForRegion": "testnet_wastes"
+    },
+    {
+      "id": "p5",
+      "from": "broken_contracts",
+      "to": "edge_of_chain",
+      "points": [[33, 58], [30, 52], [26, 46], [21, 39]],
+      "lockForRegion": "edge_chain",
+      "emphasis": true
+    },
+    {
+      "id": "p6",
+      "from": "edge_of_chain",
+      "to": "phantom_nodes",
+      "points": [[21, 39], [29, 39], [38, 41], [47, 43]],
+      "lockForRegion": "shadow_layers",
+      "emphasis": true
+    },
+    {
+      "id": "p7",
+      "from": "phantom_nodes",
+      "to": "blood_moon_tower",
+      "points": [[47, 43], [56, 42], [65, 40], [74, 38]],
+      "lockForRegion": "shadow_layers",
+      "emphasis": true
+    },
+    {
+      "id": "p8",
+      "from": "phantom_nodes",
+      "to": "moon_lab",
+      "points": [[47, 43], [43, 36], [37, 27], [31, 18]],
+      "lockForRegion": "moon_lab"
+    },
+    {
+      "id": "p9",
+      "from": "phantom_nodes",
+      "to": "oracle_void_doorway",
+      "points": [[47, 43], [49, 34], [51, 23], [53, 11]],
+      "lockForRegion": "edge_chain"
+    },
+    {
+      "id": "p10",
+      "from": "alpha_network_hq",
+      "to": "abandoned_wallets",
+      "points": [[14, 55], [12, 47], [10, 36], [9, 25]]
+    },
+    {
+      "id": "p11",
+      "from": "moon_lab",
+      "to": "oracle_void_doorway",
+      "points": [[31, 18], [37, 15], [45, 13], [53, 11]],
+      "lockForRegion": "edge_chain"
     }
   ],
-  "shadow_layers": [
-    {
-      "id": "p7_hash_01",
-      "title": "Part 7 — The Betrayal Hash",
-      "text": "hash: 0xD1V1D3_ME",
-      "unlock": { "type": "visit_node", "node": "phantom_nodes" }
-    }
-  ]
+  "lore": {
+    "chain": [
+      {
+        "id": "chain_intro_01",
+        "title": "Static Log — The Chain",
+        "text": "The primal wilderness of code. Every path starts with a mistake.",
+        "unlock": { "type": "free" }
+      }
+    ],
+    "edge_chain": [
+      {
+        "id": "p6_oracle_01",
+        "title": "Part 6 — The Oracle of Rugs",
+        "text": "A doorway. Not coded. Not mapped. Just… waiting.",
+        "unlock": { "type": "visit_node", "node": "edge_of_chain" }
+      },
+      {
+        "id": "p6_oracle_02",
+        "title": "$REWRITE",
+        "text": "The Chain cannot be flipped. It must be rewritten.",
+        "unlock": { "type": "visit_node", "node": "oracle_void_doorway" }
+      }
+    ],
+    "shadow_layers": [
+      {
+        "id": "p7_hash_01",
+        "title": "Part 7 — The Betrayal Hash",
+        "text": "hash: 0xD1V1D3_ME",
+        "unlock": { "type": "visit_node", "node": "phantom_nodes" }
+      }
+    ]
   },
   "ui": {
     "pin": { "badgeLock": "images/ui/lock.svg" },
     "path": {
       "stroke": "rgba(255,255,255,.25)",
       "strokeLocked": "rgba(255,255,255,.16)",
-      "dashLocked": [7,6],
+      "dashLocked": [7, 6],
       "glow": "rgba(255,0,0,.08)"
     },
-    "unlockTarget": { "region": "moon_lab", "item": "map_key_fragment", "required": 5 }
+    "unlockTarget": {
+      "region": "moon_lab",
+      "item": "map_key_fragment",
+      "required": 5
+    }
   }
 }
