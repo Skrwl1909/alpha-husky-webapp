@@ -348,6 +348,183 @@ html.ah-skins-open #heroFrame{
   width: 100%;
   text-align: center;
 }
+    /* =========================
+   SKINS MODAL — premium polish
+   ========================= */
+
+#avatarBack .ah-skin-title{
+  width: min(100%, 460px);
+  margin: 14px auto 4px;
+  text-align: center;
+  color: #f5f7ff;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  line-height: 1.1;
+  text-shadow: 0 2px 16px rgba(0,0,0,.25);
+}
+
+#avatarBack .ah-skin-meta{
+  width: min(100%, 460px);
+  margin: 0 auto 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#avatarBack .ah-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.09);
+  color: rgba(244,247,255,.88);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+#avatarBack .ah-pill.is-owned{
+  background: rgba(86,195,126,.12);
+  border-color: rgba(86,195,126,.22);
+  color: #c9ffd9;
+}
+
+#avatarBack .ah-pill.is-support{
+  background: rgba(255,188,74,.12);
+  border-color: rgba(255,188,74,.24);
+  color: #ffe2a8;
+}
+
+#avatarBack .ah-pill.is-code{
+  background: rgba(178,110,255,.13);
+  border-color: rgba(178,110,255,.24);
+  color: #ead9ff;
+}
+
+#avatarBack .ah-pill.is-locked{
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.08);
+  color: rgba(235,240,255,.68);
+}
+
+#avatarBack #skinDesc{
+  width: min(100%, 460px);
+  margin: 10px auto 0;
+  text-align: center;
+  color: rgba(235,240,255,.82);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#avatarBack #equipSkin,
+#avatarBack #shareSkin{
+  min-height: 54px;
+  border-radius: 18px;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: .01em;
+  transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+}
+
+#avatarBack #equipSkin:not(:disabled):active,
+#avatarBack #shareSkin:not(:disabled):active{
+  transform: translateY(1px) scale(.99);
+}
+
+#avatarBack #equipSkin{
+  background: linear-gradient(180deg, #2d7cff 0%, #1767f2 100%);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(23,103,242,.28);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+#avatarBack #equipSkin[data-kind="support-stars"]{
+  background: linear-gradient(180deg, #ffcd69 0%, #f5a623 100%);
+  color: #241400;
+  box-shadow: 0 12px 28px rgba(245,166,35,.26);
+}
+
+#avatarBack #equipSkin[data-kind="claim"]{
+  background: linear-gradient(180deg, #9e67ff 0%, #7c3aed 100%);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(124,58,237,.25);
+}
+
+#avatarBack #equipSkin:disabled{
+  opacity: .48;
+  box-shadow: none;
+  filter: saturate(.7);
+}
+
+#avatarBack #shareSkin{
+  background: rgba(255,255,255,.03);
+  color: rgba(244,247,255,.92);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+
+#avatarBack #skinButtons{
+  width: min(100%, 520px);
+  margin: 18px auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+#avatarBack .skin-btn{
+  min-height: 72px;
+  border-radius: 18px;
+  padding: 14px 12px;
+  background: linear-gradient(180deg, rgba(17,22,36,.94), rgba(11,14,24,.96));
+  border: 1px solid rgba(255,255,255,.07);
+  color: #eef2ff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  box-shadow: 0 10px 26px rgba(0,0,0,.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
+}
+
+#avatarBack .skin-btn.active{
+  border-color: rgba(71,151,255,.65);
+  box-shadow:
+    0 0 0 1px rgba(71,151,255,.30),
+    0 14px 30px rgba(18,88,214,.20);
+  transform: translateY(-1px);
+}
+
+#avatarBack .skin-btn.locked{
+  color: rgba(238,242,255,.76);
+  border-color: rgba(255,255,255,.05);
+  background: linear-gradient(180deg, rgba(14,17,26,.92), rgba(10,12,19,.96));
+}
+
+@media (max-width: 430px){
+  #avatarBack .ah-skin-title{
+    font-size: 22px;
+  }
+
+  #avatarBack #equipSkin,
+  #avatarBack #shareSkin{
+    min-height: 50px;
+    font-size: 16px;
+  }
+
+  #avatarBack .skin-btn{
+    min-height: 66px;
+    font-size: 15px;
+  }
+}
 
 /* =========================
    Active Buffs line — overlay
