@@ -677,29 +677,28 @@
   }
 
   function renderTopLevelRow(row, idx) {
-    const faction = row?.faction || "";
-    const fm = factionMeta(faction);
-    const lvl = intOr(row?.level, 0);
-    const xp = intOr(row?.xp, 0);
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const lvl = intOr(row?.level, 0);
+  const xp = intOr(row?.xp, 0);
 
-    return `
-      <div class="oracle-rank-row">
-        <div class="oracle-rank-left">
-          <div class="oracle-rank-no">${idx + 1}</div>
-          <div class="oracle-faction-badge ${fm.cls}">${escapeHtml(fm.code)}</div>
-          <div>
-            <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
-            <div class="oracle-rank-sub">${escapeHtml(fm.label)}</div>
-          </div>
-        </div>
-        <div class="oracle-rank-right">
-          <div class="oracle-rank-level">Lvl ${lvl}</div>
-          <div class="oracle-rank-xp">${xp} XP</div>
+  return `
+    <div class="oracle-rank-row">
+      <div class="oracle-rank-left">
+        <div class="oracle-rank-no">${idx + 1}</div>
+        ${renderFactionBadge(faction)}
+        <div>
+          <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
+          <div class="oracle-rank-sub">${escapeHtml(fm.label)}</div>
         </div>
       </div>
-    `;
+      <div class="oracle-rank-right">
+        <div class="oracle-rank-level">Lvl ${lvl}</div>
+        <div class="oracle-rank-xp">${xp} XP</div>
+      </div>
+    </div>
+  `;
   }
-
   function renderFortressStandout(f) {
     const hasData = !!(f && (f.name || f.label || f.floor));
     if (!hasData) {
