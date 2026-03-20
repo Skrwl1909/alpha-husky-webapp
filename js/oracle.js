@@ -1162,26 +1162,75 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
       }
 
       .oracle-faction-badge{
-        width:30px;height:30px;
-        display:grid;place-items:center;
-        border-radius:999px;
-        font-size:11px;
-        font-weight:900;
-        color:#fff;
-        background:rgba(255,255,255,.08);
-        border:1px solid rgba(255,255,255,.08);
-      }
-      .oracle-faction-badge.big{
-        width:42px;height:42px;
-        font-size:13px;
-      }
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  overflow:hidden;
+  font-size:11px;
+  font-weight:900;
+  color:#fff;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
+}
 
-      .oracle-faction-badge.rb, .oracle-chip.faction.rb{ background:rgba(108,74,255,.16); border-color:rgba(108,74,255,.28); color:#d7cbff; }
-      .oracle-faction-badge.ew, .oracle-chip.faction.ew{ background:rgba(66,208,255,.14); border-color:rgba(66,208,255,.24); color:#c7f4ff; }
-      .oracle-faction-badge.pb, .oracle-chip.faction.pb{ background:rgba(255,112,81,.16); border-color:rgba(255,112,81,.24); color:#ffd3c9; }
-      .oracle-faction-badge.ih, .oracle-chip.faction.ih{ background:rgba(255,198,82,.16); border-color:rgba(255,198,82,.24); color:#ffe8b5; }
-      .oracle-faction-badge.none, .oracle-chip.faction.none{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.08); color:#dbe4ff; }
+.oracle-faction-badge.big{
+  width:42px;
+  height:42px;
+  font-size:13px;
+}
 
+.oracle-faction-badge img{
+  width:18px;
+  height:18px;
+  object-fit:contain;
+  display:block;
+}
+
+.oracle-faction-badge.big img{
+  width:24px;
+  height:24px;
+}
+
+.oracle-faction-code-fallback{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  font-size:11px;
+  font-weight:900;
+}
+
+.oracle-faction-badge.big .oracle-faction-code-fallback{
+  font-size:13px;
+}
+
+.oracle-faction-badge.rb, .oracle-chip.faction.rb{
+  background:rgba(108,74,255,.16);
+  border-color:rgba(108,74,255,.28);
+  color:#d7cbff;
+}
+.oracle-faction-badge.ew, .oracle-chip.faction.ew{
+  background:rgba(66,208,255,.14);
+  border-color:rgba(66,208,255,.24);
+  color:#c7f4ff;
+}
+.oracle-faction-badge.pb, .oracle-chip.faction.pb{
+  background:rgba(255,112,81,.16);
+  border-color:rgba(255,112,81,.24);
+  color:#ffd3c9;
+}
+.oracle-faction-badge.ih, .oracle-chip.faction.ih{
+  background:rgba(255,198,82,.16);
+  border-color:rgba(255,198,82,.24);
+  color:#ffe8b5;
+}
+.oracle-faction-badge.none, .oracle-chip.faction.none{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.08);
+  color:#dbe4ff;
+}
       .oracle-echo-top{
         display:flex;
         justify-content:space-between;
