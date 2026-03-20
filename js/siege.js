@@ -82,15 +82,19 @@
 }
 
   function factionLabel(f) {
-    const key = normFaction(f);
-    const map = {
-      rogue_byte: "Rogue Byte",
-      echo_wardens: "Echo Wardens",
-      pack_burners: "Pack Burners",
-      inner_howl: "Inner Howl"
-    };
-    if (!key) return "Neutral";
-    return map[key] || key.split("_").map(x => (x ? x[0].toUpperCase() + x.slice(1) : "")).join(" ");
+  const key = normFaction(f);
+  const map = {
+    rb: "Rogue Byte",
+    ew: "Echo Wardens",
+    pb: "Pack Burners",
+    ih: "Inner Howl",
+    rogue_byte: "Rogue Byte",
+    echo_wardens: "Echo Wardens",
+    pack_burners: "Pack Burners",
+    inner_howl: "Inner Howl"
+  };
+  if (!key) return "Neutral";
+  return map[key] || key.split("_").map(x => (x ? x[0].toUpperCase() + x.slice(1) : "")).join(" ");
   }
 
   function unwrap(raw) {
@@ -685,7 +689,7 @@ function renderBattlePanelHTML(raw, node, cur) {
   `;
 }
 
-  function getSlotAction(raw, node, cur, occupant) {
+  function getSlotAction(raw, node, cur, occupant, side = "defender") {
   const status = getSiegeStatus(node);
   const youFaction = normFaction(getYouFaction(raw, node));
   const youUid = getYouUid(raw, node);
@@ -698,6 +702,16 @@ function renderBattlePanelHTML(raw, node, cur) {
 
   if (occupant) {
     const occUid = String(occupant?.uid || "").trim();
+
+    if (side === "attacker") {
+      return {
+        clickId: "",
+        statusText: occUid && occUid === youUid ? "YOU • JOINED" : "JOINED ASSAULT",
+        icon: "⚔️",
+        clickable: false
+      };
+    }
+
     if (!hasActiveSiege && occUid && occUid === youUid) {
       return {
         clickId: "siegeUnwatch",
@@ -706,6 +720,7 @@ function renderBattlePanelHTML(raw, node, cur) {
         clickable: true
       };
     }
+
     return {
       clickId: "",
       statusText: "WATCHING",
@@ -714,12 +729,21 @@ function renderBattlePanelHTML(raw, node, cur) {
     };
   }
 
-  if (hasForming && attackerFaction && youFaction === attackerFaction) {
+  if (side === "attacker") {
+    if (hasForming && attackerFaction && youFaction === attackerFaction) {
+      return {
+        clickId: "siegeJoin",
+        statusText: "AVAILABLE • TAP TO JOIN",
+        icon: "⚔️",
+        clickable: true
+      };
+    }
+
     return {
-      clickId: "siegeJoin",
-      statusText: "AVAILABLE • TAP TO JOIN",
+      clickId: "",
+      statusText: "AVAILABLE",
       icon: "⚔️",
-      clickable: true
+      clickable: false
     };
   }
 
@@ -738,7 +762,7 @@ function renderBattlePanelHTML(raw, node, cur) {
     icon: "+",
     clickable: false
   };
-}
+  }
 
   function ensureModal() {
     if (qs("siegeBack")) return;
@@ -1191,46 +1215,45 @@ function renderBattlePanelHTML(raw, node, cur) {
   const rightClass = factionClass(cur ? cur.defenderFaction : "");
 
   const maxSlots = guardMax(node);
-  const statusUpper = getSiegeStatus(node);
-  const youFaction = normFaction(getYouFaction(raw, node));
-  const attackerFaction = normFaction(cur?.attackerFaction || "");
-  const hasForming = statusUpper === "FORMING";
+const statusUpper = getSiegeStatus(node);
+const youFaction = normFaction(getYouFaction(raw, node));
+const attackerFaction = normFaction(cur?.attackerFaction || "");
+const hasForming = statusUpper === "FORMING";
 
-  const slotsTitle =
-    hasForming && attackerFaction && attackerFaction === youFaction
-      ? `ATTACKER SLOTS • JOIN THE ASSAULT`
-      : `DEFENDER WATCH SLOTS • ${Math.min(defenders.length, maxSlots)}/${maxSlots}`;
+const slotMode = hasForming ? "attacker" : "defender";
+const slotPool = hasForming ? attackers : defenders;
 
-  const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
-    const defender = defenders[i];
-    const slotCfg = getSlotAction(raw, node, cur, defender);
+const slotsTitle =
+  hasForming
+    ? `ATTACKER SLOTS • JOIN THE ASSAULT`
+    : `DEFENDER WATCH SLOTS • ${Math.min(defenders.length, maxSlots)}/${maxSlots}`;
 
-    if (defender) {
-      const clickHtml = slotCfg.clickId
-        ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
-        : "";
+const slotsHTML = Array.from({ length: maxSlots }, (_, i) => {
+  const occupant = slotPool[i];
+  const slotCfg = getSlotAction(raw, node, cur, occupant, slotMode);
 
-      return `
-        <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-          <div class="slot-icon">${esc(slotCfg.icon || "🛡️")}</div>
-          <div class="slot-name">${esc(defender.name || defender.displayName || defender.uid || "Unknown")}</div>
-          <div class="slot-status">${esc(slotCfg.statusText || "WATCHING")}</div>
-        </div>
-      `;
-    }
+  const clickHtml = slotCfg.clickId
+    ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
+    : "";
 
-    const clickHtml = slotCfg.clickId
-      ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
-      : "";
-
+  if (occupant) {
     return `
-      <div class="defender-slot empty ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-        <div class="slot-icon">${esc(slotCfg.icon || "+")}</div>
-        <div class="slot-name">EMPTY SLOT</div>
-        <div class="slot-status">${esc(slotCfg.statusText || "AVAILABLE")}</div>
+      <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
+        <div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "⚔️" : "🛡️"))}</div>
+        <div class="slot-name">${esc(occupant.name || occupant.displayName || occupant.uid || "Unknown")}</div>
+        <div class="slot-status">${esc(slotCfg.statusText || (slotMode === "attacker" ? "JOINED ASSAULT" : "WATCHING"))}</div>
       </div>
     `;
-  }).join("");
+  }
+
+  return `
+    <div class="defender-slot empty ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
+      <div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "⚔️" : "+"))}</div>
+      <div class="slot-name">EMPTY SLOT</div>
+      <div class="slot-status">${esc(slotCfg.statusText || "AVAILABLE")}</div>
+    </div>
+  `;
+}).join("");
 
   root.innerHTML = `
 
