@@ -488,8 +488,8 @@
     return `
       <article class="oracle-echo-card">
         <div class="oracle-echo-side ${fm.cls}">
-          <div class="oracle-faction-badge ${fm.cls}">${escapeHtml(fm.code)}</div>
-        </div>
+  ${renderFactionBadge(faction)}
+</div>
 
         <div class="oracle-echo-main">
           <div class="oracle-echo-top">
