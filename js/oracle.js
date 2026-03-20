@@ -812,6 +812,35 @@
       cls: "none",
     };
   }
+  function factionLogoUrl(faction) {
+  const key = String(faction || "").toLowerCase().trim();
+  if (!key) return "";
+  return `/images/ui/factions/icon_${key}.png`;
+}
+
+function renderFactionBadge(faction, { big = false, code = "" } = {}) {
+  const fm = factionMeta(faction);
+  const logo = factionLogoUrl(faction);
+  const safeCode = escapeHtml(code || fm.code || "—");
+  const safeLabel = escapeHtml(fm.label || faction || "Faction");
+
+  return `
+    <div class="oracle-faction-badge ${fm.cls} ${big ? "big" : ""}">
+      ${
+        logo
+          ? `<img
+               src="${logo}"
+               alt="${safeLabel}"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+             >`
+          : ""
+      }
+      <span class="oracle-faction-code-fallback" ${logo ? `style="display:none"` : ""}>
+        ${safeCode}
+      </span>
+    </div>
+  `;
+}
 
   function formatAge(ageSec, ts) {
     let sec = Number(ageSec);
