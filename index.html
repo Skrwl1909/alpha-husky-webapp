@@ -6032,6 +6032,42 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   document.head.appendChild(s);
 })();
 </script>
+  <!-- ORACLE (loader + init) -->
+<script>
+(function loadOracle(){
+  const tg = window.Telegram?.WebApp || null;
+  const v = String(window.WEBAPP_VER || "oracle");
+  const s = document.createElement("script");
+  s.src = "/js/oracle.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+
+  function waitApiPost(cb){
+    const t0 = Date.now();
+    (function tick(){
+      if (typeof window.apiPost === "function") return cb();
+      if (Date.now() - t0 > 6000) return console.warn("[Oracle] apiPost not ready");
+      setTimeout(tick, 50);
+    })();
+  }
+
+  s.onload = () => {
+    console.log("[Oracle] script loaded:", s.src);
+    waitApiPost(() => {
+      try {
+        if (!window.__oracleInited && window.Oracle?.init) {
+          window.Oracle.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.__oracleInited = true;
+          console.log("✅ Oracle module initialized");
+        }
+      } catch (e) {
+        console.warn("❌ Oracle.init failed", e);
+      }
+    });
+  };
+
+  s.onerror = () => console.warn("[Oracle] FAILED to load:", s.src);
+  document.head.appendChild(s);
+})();
+</script>
 
 <!-- FACTION HQ (loader + init) -->
 <script>
