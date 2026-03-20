@@ -80,23 +80,24 @@
   }
 
   function close() {
-    if (!els.back) return;
+  if (!els.back) return;
 
-    els.back.classList.remove("show");
-    els.modal.classList.remove("show");
+  _isOpen = false;
 
-    setTimeout(() => {
-      if (!_isOpen) return;
-      els.back.style.display = "none";
-    }, 180);
+  els.back.classList.remove("show");
+  els.modal.classList.remove("show");
 
-    lockScroll(false);
-    showBackButton(false);
-    stopAutoRefresh();
+  setTimeout(() => {
+    if (_isOpen) return; // hide only if it was not reopened meanwhile
+    els.back.style.display = "none";
+  }, 180);
 
-    _isOpen = false;
-    document.documentElement.classList.remove("ah-oracle-open");
-    document.body.classList.remove("ah-oracle-open");
+  lockScroll(false);
+  showBackButton(false);
+  stopAutoRefresh();
+
+  document.documentElement.classList.remove("ah-oracle-open");
+  document.body.classList.remove("ah-oracle-open");
   }
 
   function refresh() {
