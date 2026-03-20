@@ -4948,8 +4948,8 @@ function isRegionUnlocked(regionId){
         return openBuilding(bid, b.name, b.desc); // fallback
       }
 
-      if (!unlocked) return openLocked(b);
-      if (
+      // ✅ ORACLE — allow opening even if currently placeholder/locked
+if (
   b.buildingId === "oracle_void_doorway" ||
   b.id === "oracle_void_doorway" ||
   b.action === "open_oracle"
@@ -4957,13 +4957,14 @@ function isRegionUnlocked(regionId){
   if (window.Oracle?.open) return window.Oracle.open();
   console.warn("[Oracle] module not ready");
   return openBuilding(bid, b.name, b.desc);
+}
+
+if (!unlocked) return openLocked(b);
+
+// ✅ lore-only pins
+if (b.action === "coming_soon") {
+  return openBuilding(bid, b.name, b.desc);
   }
-
-      // ✅ lore-only pins
-      if (b.action === "coming_soon") {
-        return openBuilding(bid, b.name, b.desc);
-      }
-
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
       if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
