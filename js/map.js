@@ -238,7 +238,9 @@
   }
 
   function iconUrl(owner) {
-    return `https://app.alphahusky.win/images/ui/factions/${owner}_color.svg`;
+  const key = String(owner || "").toLowerCase().trim();
+  if (!key) return "";
+  return `/images/ui/factions/icon_${key}.png`;
   }
 
   function ensureLevel1(pinEl) {
