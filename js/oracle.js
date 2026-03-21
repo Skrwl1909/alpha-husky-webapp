@@ -718,12 +718,13 @@
     return `
       <div class="oracle-standout-card">
         <div class="oracle-standout-top">
-          <div class="oracle-faction-badge big ${fm.cls}">${escapeHtml(fm.code)}</div>
-          <div>
-            <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
-            <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
-          </div>
-        </div>
+          <div class="oracle-standout-top">
+  ${renderFactionBadge(faction, { big: true })}
+  <div>
+    <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
+    <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
+  </div>
+</div>
         <div class="oracle-standout-text">${escapeHtml(f?.label || "Fortress signal recorded.")}</div>
         <div class="oracle-standout-age">${escapeHtml(formatAge(null, f?.ts))}</div>
       </div>
