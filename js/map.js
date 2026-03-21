@@ -652,14 +652,20 @@
 
     if (chip) {
       chip.innerHTML = `
-        <span class="chip-faction ${cls}">
-          <img src="${iconUrl(owner)}" alt="${esc(owner)}" style="width:12px;height:12px;display:block" />
-        </span>
-        <span class="chip-name">
-          ${esc(name)}${code ? ` • ${code}` : ""}${contested && !chipStateText ? ` <span class="chip-warn">⚠</span>` : ""}
-          ${chipStateText ? ` <span class="chip-state ${chipStateClass}">${esc(chipStateText)}</span>` : ""}
-        </span>
-      `;
+  <span class="chip-faction ${cls}">
+    <img
+      src="${iconUrl(owner)}"
+      alt="${esc(owner)}"
+      style="width:12px;height:12px;display:block"
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+    />
+    <span class="chip-faction-fallback" style="display:none">${esc(code)}</span>
+  </span>
+  <span class="chip-name">
+    ${esc(name)}${code ? ` • ${code}` : ""}${contested && !chipStateText ? ` <span class="chip-warn">⚠</span>` : ""}
+    ${chipStateText ? ` <span class="chip-state ${chipStateClass}">${esc(chipStateText)}</span>` : ""}
+  </span>
+`;
       const img = chip.querySelector("img");
       if (img) img.onerror = () => { img.style.display = "none"; };
     }
