@@ -6072,7 +6072,47 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   document.head.appendChild(s);
 })();
 </script>
+<!-- BLOOD-MOON TOWER (loader + init) -->
+<script>
+(function loadBloodMoon(){
+  const tg = window.Telegram?.WebApp || null;
+  const v = String(window.WEBAPP_VER || "bloodmoon");
+  const s = document.createElement("script");
+  s.src = "/js/bloodmoon.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
 
+  function waitApiPost(cb){
+    const t0 = Date.now();
+    (function tick(){
+      if (typeof window.apiPost === "function") return cb();
+      if (Date.now() - t0 > 6000) return console.warn("[BloodMoon] apiPost not ready");
+      setTimeout(tick, 50);
+    })();
+  }
+
+  s.onload = () => {
+    console.log("[BloodMoon] script loaded:", s.src);
+    waitApiPost(() => {
+      try {
+        if (!window.__bloodMoonInited && window.BloodMoon?.init) {
+          window.BloodMoon.init({
+            tg,
+            apiPost: window.apiPost,
+            dbg: !!window.DBG
+          });
+          window.__bloodMoonInited = true;
+          console.log("✅ BloodMoon module initialized");
+        }
+      } catch (e) {
+        console.warn("❌ BloodMoon.init failed", e);
+      }
+    });
+  };
+
+  s.onerror = () => console.warn("[BloodMoon] FAILED to load:", s.src);
+  document.head.appendChild(s);
+})();
+</script>
+  
 <!-- FACTION HQ (loader + init) -->
 <script>
 (function loadFactionHQ(){
