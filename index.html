@@ -4940,13 +4940,25 @@ function isRegionUnlocked(regionId){
       // ✅ TAP 2 = action
       const bid = String(b.buildingId || b.id || "");
 
-      // ✅ INFLUENCE PILOT: Phantom Nodes + Blood-Moon Tower (always open, even if locked)
-      if (bid === "phantom_nodes" || bid === "blood_moon_tower") {
-        const title = (b.name || bid).replaceAll("_", " ");
-        if (window.Influence?.open) return window.Influence.open(bid, title);
-        console.warn("[Influence] module not ready");
-        return openBuilding(bid, b.name, b.desc); // fallback
-      }
+     // ✅ INFLUENCE PILOT: Phantom Nodes only (always open, even if locked)
+if (bid === "phantom_nodes") {
+  const title = (b.name || bid).replaceAll("_", " ");
+  if (window.Influence?.open) return window.Influence.open(bid, title);
+  console.warn("[Influence] module not ready");
+  return openBuilding(bid, b.name, b.desc); // fallback
+}
+
+// ✅ BLOOD-MOON TOWER: dedicated raid modal (always open, even if locked/placeholder)
+if (
+  bid === "blood_moon_tower" ||
+  b.buildingId === "blood_moon_tower" ||
+  b.id === "blood_moon_tower" ||
+  b.action === "open_bloodmoon"
+) {
+  if (window.BloodMoon?.open) return window.BloodMoon.open();
+  console.warn("[BloodMoon] module not ready");
+  return openBuilding(bid, b.name, b.desc); // fallback
+}
 
       // ✅ ORACLE — allow opening even if currently placeholder/locked
 if (
