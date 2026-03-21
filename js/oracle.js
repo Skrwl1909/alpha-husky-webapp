@@ -748,12 +748,13 @@
     return `
       <div class="oracle-standout-card actor">
         <div class="oracle-standout-top">
-          <div class="oracle-faction-badge big ${fm.cls}">${escapeHtml(a?.code || fm.code)}</div>
-          <div>
-            <div class="oracle-standout-name">${escapeHtml(a?.label || fm.label)}</div>
-            <div class="oracle-standout-sub">Current force</div>
-          </div>
-        </div>
+          <div class="oracle-standout-top">
+  ${renderFactionBadge(faction, { big: true, code: a?.code || fm.code })}
+  <div>
+    <div class="oracle-standout-name">${escapeHtml(a?.label || fm.label)}</div>
+    <div class="oracle-standout-sub">Current force</div>
+  </div>
+</div>
         <div class="oracle-standout-text">${escapeHtml(a?.headline || "Signal building...")}</div>
       </div>
     `;
