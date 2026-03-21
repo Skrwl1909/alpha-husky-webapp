@@ -591,11 +591,13 @@
       <article class="oracle-faction-card ${fm.cls}">
         <div class="oracle-faction-top">
           <div class="oracle-faction-id">
-            <div class="oracle-faction-badge big ${fm.cls}">${escapeHtml(fm.code)}</div>
-            <div>
-              <div class="oracle-faction-name">${escapeHtml(row?.label || fm.label)}</div>
-              <div class="oracle-faction-sub">${members} members</div>
-            </div>
+            <div class="oracle-faction-id">
+  ${renderFactionBadge(faction, { big: true })}
+  <div>
+    <div class="oracle-faction-name">${escapeHtml(row?.label || fm.label)}</div>
+    <div class="oracle-faction-sub">${members} members</div>
+  </div>
+</div>
           </div>
           <div class="oracle-faction-mult">x${mult.toFixed(2)}</div>
         </div>
