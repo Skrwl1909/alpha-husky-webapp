@@ -3,6 +3,7 @@
 // - robust UX: inline status + cooldown countdown + clear error messages
 // - applies leadersMap when returned
 // - exports setFaction/ensureFaction for HQ integration
+// - weekly war section: standings + active temp rewards + last winners
 (function () {
   const Influence = {};
   let _apiPost = null, _tg = null, _dbg = false;
@@ -12,6 +13,15 @@
   // Faction memory (cache only)
   // -------------------------
   const VALID_FACTIONS = new Set(["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"]);
+
+  const FACTION_LABELS = {
+    rogue_byte: "Rogue Byte",
+    echo_wardens: "Echo Wardens",
+    pack_burners: "Pack Burners",
+    inner_howl: "Inner Howl",
+  };
+
+  let _weekly = null;
 
   let _faction = "";
   try { _faction = (localStorage.getItem("ah_faction") || "").toLowerCase(); } catch (_) {}
@@ -31,6 +41,206 @@
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function esc(v) {
+    return String(v ?? "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[m]));
+  }
+
+  function fmtFaction(f) {
+    const key = String(f || "").toLowerCase();
+    return FACTION_LABELS[key] || key.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—";
+  }
+
+  function shortUid(uid) {
+    const s = String(uid || "");
+    if (!s) return "—";
+    if (s.length <= 10) return s;
+    return `${s.slice(0, 4)}…${s.slice(-4)}`;
+  }
+
+  function fmtRemain(sec) {
+    sec = Math.max(0, parseInt(sec || 0, 10) || 0);
+
+    const d = Math.floor(sec / 86400);
+    sec %= 86400;
+    const h = Math.floor(sec / 3600);
+    sec %= 3600;
+    const m = Math.floor(sec / 60);
+
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  function rewardTypeLabel(t) {
+    const x = String(t || "").toLowerCase();
+    if (x === "skin") return "Skin";
+    if (x === "frame") return "Frame";
+    if (x === "aura") return "Aura";
+    return x || "Reward";
+  }
+
+  function extractWeekly(r) {
+    return r?.weekly || r?.data?.weekly || null;
+  }
+
+  function renderWeekly() {
+    const host = _qs("infWeekly");
+    if (!host) return;
+
+    const w = _weekly || null;
+    if (!w || !w.weekId) {
+      host.style.display = "none";
+      host.innerHTML = "";
+      return;
+    }
+
+    const my = w.my || null;
+    const rewards = Array.isArray(w.activeTempRewards) ? w.activeTempRewards : [];
+    const factions = Array.isArray(w.factions) ? w.factions : [];
+    const last = w.lastWinners || {};
+
+    const rewardsHtml = rewards.length
+      ? rewards.map((r) => `
+          <div style="
+            padding:10px 12px;
+            border-radius:12px;
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.08);
+          ">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <div style="font-weight:700;font-size:13px;">${esc(r.shortLabel || r.label || r.id || "Weekly Reward")}</div>
+              <div style="
+                font-size:10px;
+                opacity:.8;
+                padding:4px 8px;
+                border-radius:999px;
+                background:rgba(255,255,255,.06);
+                border:1px solid rgba(255,255,255,.08);
+              ">${esc(rewardTypeLabel(r.type))}</div>
+            </div>
+            <div style="font-size:11px;opacity:.72;margin-top:4px;">
+              Expires in ${esc(fmtRemain(r.expiresInSec))}
+            </div>
+          </div>
+        `).join("")
+      : `<div style="font-size:12px;opacity:.68;">No active weekly rewards.</div>`;
+
+    const boardHtml = factions.length
+      ? factions.slice(0, 4).map((row, idx) => `
+          <div style="
+            display:flex;align-items:center;justify-content:space-between;gap:10px;
+            padding:8px 10px;border-radius:10px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.06);
+          ">
+            <div style="font-size:12px;">
+              <span style="opacity:.65;">#${idx + 1}</span>
+              <span style="margin-left:6px;font-weight:700;">${esc(fmtFaction(row.faction))}</span>
+            </div>
+            <div style="font-size:12px;font-weight:700;">${esc(row.score || 0)}</div>
+          </div>
+        `).join("")
+      : `<div style="font-size:12px;opacity:.68;">No faction standings yet.</div>`;
+
+    const myHtml = my
+      ? `
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:8px;
+          margin-top:8px;
+        ">
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:11px;opacity:.68;">My score</div>
+            <div style="font-size:16px;font-weight:800;margin-top:3px;">${esc(my.score || 0)}</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:11px;opacity:.68;">My rank</div>
+            <div style="font-size:16px;font-weight:800;margin-top:3px;">#${esc(my.factionRank || my.overallRank || "—")}</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:11px;opacity:.68;">Tickets</div>
+            <div style="font-size:16px;font-weight:800;margin-top:3px;">${esc(my.tickets || 0)}</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:${my.qualified ? "rgba(120,255,180,.08)" : "rgba(255,255,255,.05)"};border:1px solid ${my.qualified ? "rgba(120,255,180,.18)" : "rgba(255,255,255,.08)"};">
+            <div style="font-size:11px;opacity:.68;">Qualified</div>
+            <div style="font-size:16px;font-weight:800;margin-top:3px;">${my.qualified ? "Yes" : "No"}</div>
+          </div>
+        </div>
+      `
+      : `<div style="font-size:12px;opacity:.68;margin-top:8px;">No weekly contribution yet.</div>`;
+
+    const lastHtml = last && (last.weekId || last.faction || last.mvpUid || last.raffleUid)
+      ? `
+        <div style="display:grid;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-size:12px;opacity:.72;">Winning faction</div>
+            <div style="font-size:12px;font-weight:700;">${esc(fmtFaction(last.faction))}</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-size:12px;opacity:.72;">MVP</div>
+            <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.mvpUid))}</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-size:12px;opacity:.72;">Raffle</div>
+            <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.raffleUid))}</div>
+          </div>
+        </div>
+      `
+      : `<div style="font-size:12px;opacity:.68;">No last-week result yet.</div>`;
+
+    host.style.display = "block";
+    host.innerHTML = `
+      <div style="
+        margin-top:12px;
+        padding:12px;
+        border-radius:14px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.08);
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div>
+            <div style="font-weight:800;font-size:14px;">Weekly War</div>
+            <div style="font-size:11px;opacity:.68;margin-top:2px;">
+              Ends in ${esc(fmtRemain(w.endsInSec))}
+            </div>
+          </div>
+          <div style="
+            font-size:10px;
+            opacity:.85;
+            padding:5px 8px;
+            border-radius:999px;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.08);
+          ">${esc(w.weekId)}</div>
+        </div>
+
+        ${myHtml}
+
+        <div style="margin-top:12px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Faction Board</div>
+          <div style="display:grid;gap:6px;">${boardHtml}</div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Active Weekly Rewards</div>
+          <div style="display:grid;gap:8px;">${rewardsHtml}</div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Last Winners</div>
+          ${lastHtml}
+        </div>
+      </div>
+    `;
   }
 
   // -------------------------
@@ -395,6 +605,8 @@
           opacity:.95;
         "></div>
 
+        <div id="infWeekly" style="display:none;"></div>
+
         <div id="infFoot" style="margin-top:10px; font-size:12px; opacity:.65;"></div>
       </div>
     `;
@@ -463,6 +675,22 @@
     }
   }
 
+  async function refreshWeekly(nodeId) {
+    if (!_apiPost) return;
+
+    try {
+      const r = await _apiPost("/webapp/influence/state", {
+        nodeId,
+        run_id: rid("infstate"),
+      });
+
+      _weekly = extractWeekly(r);
+      renderWeekly();
+    } catch (e) {
+      if (_dbg) console.warn("refreshWeekly failed", e);
+    }
+  }
+
   function open(nodeId, title = "") {
     ensureModal();
     const m = document.getElementById("influenceModal");
@@ -486,9 +714,13 @@
     const donateBox = document.getElementById("infDonateBox");
     if (donateBox) donateBox.style.display = "none";
 
+    _weekly = null;
+    renderWeekly();
+
     (async () => {
       await refreshLeaders(false);
       paintLeader(nodeId);
+      await refreshWeekly(nodeId);
     })();
 
     const patrolBtn = document.getElementById("infPatrolBtn");
@@ -589,6 +821,7 @@
       setStatus(`+${r.gain} influence${hq}`, "ok");
 
       applyLeadersFromResponse(r, nodeId);
+      await refreshWeekly(nodeId);
     } finally {
       // if cooldown active, keep disabled
       if (btn) {
@@ -640,6 +873,7 @@
       setStatus(`Donated ${amount} ${asset} → +${r.gain} influence${hq}`, "ok");
 
       applyLeadersFromResponse(r, nodeId);
+      await refreshWeekly(nodeId);
     } finally {
       if (btn) btn.disabled = false;
     }
