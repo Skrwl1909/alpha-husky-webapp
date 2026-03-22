@@ -63,12 +63,13 @@
   }
 
   function factionLabel(f) {
-    const x = String(f || "").trim().toLowerCase();
-    if (x === "rb") return "Rogue Byte";
-    if (x === "ew") return "Echo Wardens";
-    if (x === "ih") return "Inner Howlers";
-    return x ? x.toUpperCase() : "Unaligned";
-  }
+  const x = String(f || "").trim().toLowerCase();
+  if (x === "rb") return "Rogue Byte";
+  if (x === "ew") return "Echo Wardens";
+  if (x === "ih") return "Inner Howlers";
+  if (x === "pb") return "Pack Burners";
+  return x ? x.toUpperCase() : "Unaligned";
+}
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
