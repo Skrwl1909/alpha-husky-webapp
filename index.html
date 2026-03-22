@@ -4868,18 +4868,17 @@ function isRegionUnlocked(regionId){
           }
         }
 
-        function renderPins(){
+       function renderPins(){
   if (!DATA) return;
   pinsEl.innerHTML = '';
-          const isOracle =
-  b.buildingId === "oracle_void_doorway" ||
-  b.id === "oracle_void_doorway" ||
-  b.action === "open_oracle";
-
-const unlocked = isOracle ? true : isRegionUnlocked(b.region);
 
   for (const b of (DATA.nodes || [])){
-    const unlocked = isRegionUnlocked(b.region);
+    const isOracle =
+      b.buildingId === "oracle_void_doorway" ||
+      b.id === "oracle_void_doorway" ||
+      b.action === "open_oracle";
+
+    const unlocked = isOracle ? true : isRegionUnlocked(b.region);
 
     const btn = document.createElement('button');
     btn.type = 'button';
