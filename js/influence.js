@@ -92,155 +92,321 @@
   }
 
   function renderWeekly() {
-    const host = _qs("infWeekly");
-    if (!host) return;
+  const host = _qs("infWeekly");
+  if (!host) return;
 
-    const w = _weekly || null;
-    if (!w || !w.weekId) {
-      host.style.display = "none";
-      host.innerHTML = "";
-      return;
-    }
+  const w = _weekly || null;
+  if (!w || !w.weekId) {
+    host.style.display = "none";
+    host.innerHTML = "";
+    return;
+  }
 
-    const my = w.my || null;
-    const rewards = Array.isArray(w.activeTempRewards) ? w.activeTempRewards : [];
-    const factions = Array.isArray(w.factions) ? w.factions : [];
-    const last = w.lastWinners || {};
+  const my = w.my || null;
+  const rewards = Array.isArray(w.activeTempRewards) ? w.activeTempRewards : [];
+  const factions = Array.isArray(w.factions) ? w.factions : [];
+  const last = w.lastWinners || {};
 
-    const rewardsHtml = rewards.length
-      ? rewards.map((r) => `
+  const topFactions = factions.slice(0, 3);
+
+  const statCard = ({ label, value, accent = "#7dd3fc", muted = false }) => `
+    <div style="
+      padding:10px 12px;
+      border-radius:14px;
+      background:${muted ? "rgba(255,255,255,.035)" : "rgba(255,255,255,.05)"};
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    ">
+      <div style="font-size:10px; letter-spacing:.05em; text-transform:uppercase; opacity:.62;">${esc(label)}</div>
+      <div style="
+        margin-top:4px;
+        font-size:18px;
+        line-height:1.05;
+        font-weight:800;
+        color:${accent};
+        text-shadow:0 0 14px rgba(255,255,255,.04);
+      ">${esc(value)}</div>
+    </div>
+  `;
+
+  const qualifyTone = my?.qualified
+    ? {
+        bg: "rgba(110,255,170,.08)",
+        bd: "rgba(110,255,170,.18)",
+        fg: "#8ff7b5",
+        text: "Qualified",
+      }
+    : {
+        bg: "rgba(255,190,90,.08)",
+        bd: "rgba(255,190,90,.16)",
+        fg: "#ffcf85",
+        text: "Not yet",
+      };
+
+  const myProgressHtml = my
+    ? `
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;font-weight:800;margin-bottom:8px;opacity:.92;">My Progress</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${statCard({ label: "Score", value: my.score || 0, accent: "#79e8ff" })}
+          ${statCard({ label: "Rank", value: "#" + (my.factionRank || my.overallRank || "—"), accent: "#b692ff" })}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          ${statCard({ label: "Tickets", value: my.tickets || 0, accent: "#ffd36f", muted: true })}
+          <div style="
+            padding:10px 12px;
+            border-radius:14px;
+            background:${qualifyTone.bg};
+            border:1px solid ${qualifyTone.bd};
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+          ">
+            <div style="font-size:10px; letter-spacing:.05em; text-transform:uppercase; opacity:.62;">Status</div>
+            <div style="
+              margin-top:4px;
+              font-size:18px;
+              line-height:1.05;
+              font-weight:800;
+              color:${qualifyTone.fg};
+            ">${qualifyTone.text}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;font-size:11px;opacity:.66;">
+          Need ${esc(w?.qualifyThreshold?.score ?? 60)} score and ${esc(w?.qualifyThreshold?.activeDays ?? 2)} active days.
+        </div>
+      </div>
+    `
+    : `
+      <div style="
+        margin-top:12px;
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        font-size:12px;
+        opacity:.72;
+      ">
+        No weekly contribution yet.
+      </div>
+    `;
+
+  const boardHtml = topFactions.length
+    ? `
+      <div style="display:grid;gap:7px;">
+        ${topFactions.map((row, idx) => {
+          const isLeader = idx === 0;
+          return `
+            <div style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+              padding:9px 10px;
+              border-radius:12px;
+              background:${isLeader ? "rgba(255,210,110,.08)" : "rgba(255,255,255,.04)"};
+              border:1px solid ${isLeader ? "rgba(255,210,110,.18)" : "rgba(255,255,255,.06)"};
+              box-shadow:${isLeader ? "0 0 18px rgba(255,210,110,.05)" : "none"};
+            ">
+              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <div style="
+                  width:22px;height:22px;border-radius:999px;
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:11px;font-weight:800;
+                  background:${isLeader ? "rgba(255,210,110,.16)" : "rgba(255,255,255,.06)"};
+                  border:1px solid ${isLeader ? "rgba(255,210,110,.24)" : "rgba(255,255,255,.08)"};
+                  color:${isLeader ? "#ffd98a" : "#ddd"};
+                  flex:0 0 auto;
+                ">${idx + 1}</div>
+
+                <div style="min-width:0;">
+                  <div style="
+                    font-size:12px;
+                    font-weight:${isLeader ? "800" : "700"};
+                    color:${isLeader ? "#fff0c8" : "#f3f3f3"};
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                  ">${esc(fmtFaction(row.faction))}</div>
+                  <div style="font-size:10px;opacity:.56;margin-top:1px;">
+                    ${esc(row.qualifiedCount || 0)} qualified · ${esc(row.playerCount || 0)} players
+                  </div>
+                </div>
+              </div>
+
+              <div style="
+                font-size:15px;
+                font-weight:800;
+                color:${isLeader ? "#ffd98a" : "#fff"};
+                flex:0 0 auto;
+              ">${esc(row.score || 0)}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `
+    : `
+      <div style="
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        font-size:12px;
+        opacity:.72;
+      ">
+        No faction standings yet.
+      </div>
+    `;
+
+  const rewardsHtml = rewards.length
+    ? `
+      <div style="display:grid;gap:8px;">
+        ${rewards.map((r) => `
           <div style="
             padding:10px 12px;
             border-radius:12px;
-            background:rgba(255,255,255,.05);
-            border:1px solid rgba(255,255,255,.08);
+            background:rgba(255,255,255,.045);
+            border:1px solid rgba(255,255,255,.07);
           ">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-              <div style="font-weight:700;font-size:13px;">${esc(r.shortLabel || r.label || r.id || "Weekly Reward")}</div>
+              <div style="min-width:0;">
+                <div style="
+                  font-size:13px;
+                  font-weight:800;
+                  color:#f6f6f6;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                ">${esc(r.shortLabel || r.label || r.id || "Weekly Reward")}</div>
+                <div style="font-size:11px;opacity:.62;margin-top:3px;">
+                  Expires in ${esc(fmtRemain(r.expiresInSec))}
+                </div>
+              </div>
+
               <div style="
                 font-size:10px;
-                opacity:.8;
-                padding:4px 8px;
+                font-weight:700;
+                padding:5px 8px;
                 border-radius:999px;
                 background:rgba(255,255,255,.06);
                 border:1px solid rgba(255,255,255,.08);
+                opacity:.92;
+                flex:0 0 auto;
               ">${esc(rewardTypeLabel(r.type))}</div>
             </div>
-            <div style="font-size:11px;opacity:.72;margin-top:4px;">
-              Expires in ${esc(fmtRemain(r.expiresInSec))}
-            </div>
           </div>
-        `).join("")
-      : `<div style="font-size:12px;opacity:.68;">No active weekly rewards.</div>`;
-
-    const boardHtml = factions.length
-      ? factions.slice(0, 4).map((row, idx) => `
-          <div style="
-            display:flex;align-items:center;justify-content:space-between;gap:10px;
-            padding:8px 10px;border-radius:10px;
-            background:rgba(255,255,255,.04);
-            border:1px solid rgba(255,255,255,.06);
-          ">
-            <div style="font-size:12px;">
-              <span style="opacity:.65;">#${idx + 1}</span>
-              <span style="margin-left:6px;font-weight:700;">${esc(fmtFaction(row.faction))}</span>
-            </div>
-            <div style="font-size:12px;font-weight:700;">${esc(row.score || 0)}</div>
-          </div>
-        `).join("")
-      : `<div style="font-size:12px;opacity:.68;">No faction standings yet.</div>`;
-
-    const myHtml = my
-      ? `
-        <div style="
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:8px;
-          margin-top:8px;
-        ">
-          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
-            <div style="font-size:11px;opacity:.68;">My score</div>
-            <div style="font-size:16px;font-weight:800;margin-top:3px;">${esc(my.score || 0)}</div>
-          </div>
-          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
-            <div style="font-size:11px;opacity:.68;">My rank</div>
-            <div style="font-size:16px;font-weight:800;margin-top:3px;">#${esc(my.factionRank || my.overallRank || "—")}</div>
-          </div>
-          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
-            <div style="font-size:11px;opacity:.68;">Tickets</div>
-            <div style="font-size:16px;font-weight:800;margin-top:3px;">${esc(my.tickets || 0)}</div>
-          </div>
-          <div style="padding:10px 12px;border-radius:12px;background:${my.qualified ? "rgba(120,255,180,.08)" : "rgba(255,255,255,.05)"};border:1px solid ${my.qualified ? "rgba(120,255,180,.18)" : "rgba(255,255,255,.08)"};">
-            <div style="font-size:11px;opacity:.68;">Qualified</div>
-            <div style="font-size:16px;font-weight:800;margin-top:3px;">${my.qualified ? "Yes" : "No"}</div>
-          </div>
-        </div>
-      `
-      : `<div style="font-size:12px;opacity:.68;margin-top:8px;">No weekly contribution yet.</div>`;
-
-    const lastHtml = last && (last.weekId || last.faction || last.mvpUid || last.raffleUid)
-      ? `
-        <div style="display:grid;gap:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="font-size:12px;opacity:.72;">Winning faction</div>
-            <div style="font-size:12px;font-weight:700;">${esc(fmtFaction(last.faction))}</div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="font-size:12px;opacity:.72;">MVP</div>
-            <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.mvpUid))}</div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="font-size:12px;opacity:.72;">Raffle</div>
-            <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.raffleUid))}</div>
-          </div>
-        </div>
-      `
-      : `<div style="font-size:12px;opacity:.68;">No last-week result yet.</div>`;
-
-    host.style.display = "block";
-    host.innerHTML = `
+        `).join("")}
+      </div>
+    `
+    : `
       <div style="
-        margin-top:12px;
-        padding:12px;
-        border-radius:14px;
-        background:rgba(255,255,255,.04);
-        border:1px solid rgba(255,255,255,.08);
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        font-size:12px;
+        opacity:.72;
+      ">
+        No active weekly rewards yet.
+      </div>
+    `;
+
+  const lastHtml = last && (last.weekId || last.faction || last.mvpUid || last.raffleUid)
+    ? `
+      <div style="
+        display:grid;
+        gap:8px;
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-          <div>
-            <div style="font-weight:800;font-size:14px;">Weekly War</div>
-            <div style="font-size:11px;opacity:.68;margin-top:2px;">
-              Ends in ${esc(fmtRemain(w.endsInSec))}
-            </div>
+          <div style="font-size:12px;opacity:.68;">Winning Faction</div>
+          <div style="font-size:12px;font-weight:700;">${esc(fmtFaction(last.faction))}</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="font-size:12px;opacity:.68;">MVP</div>
+          <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.mvpUid))}</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="font-size:12px;opacity:.68;">Raffle</div>
+          <div style="font-size:12px;font-weight:700;">${esc(shortUid(last.raffleUid))}</div>
+        </div>
+      </div>
+    `
+    : `
+      <div style="
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        font-size:12px;
+        opacity:.72;
+      ">
+        No last-week result yet.
+      </div>
+    `;
+
+  host.style.display = "block";
+  host.innerHTML = `
+    <div style="
+      margin-top:12px;
+      padding:12px;
+      border-radius:16px;
+      background:
+        radial-gradient(circle at top right, rgba(120,180,255,.08), transparent 35%),
+        radial-gradient(circle at top left, rgba(180,120,255,.06), transparent 32%),
+        rgba(255,255,255,.035);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    ">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-weight:900;font-size:15px;line-height:1.15;">Weekly War</div>
+          <div style="font-size:11px;opacity:.65;margin-top:3px;">
+            Faction rivalry for weekly rewards
           </div>
+        </div>
+
+        <div style="display:grid;gap:6px;justify-items:end;">
           <div style="
             font-size:10px;
-            opacity:.85;
+            font-weight:700;
             padding:5px 8px;
             border-radius:999px;
             background:rgba(255,255,255,.06);
             border:1px solid rgba(255,255,255,.08);
+            opacity:.9;
           ">${esc(w.weekId)}</div>
-        </div>
 
-        ${myHtml}
-
-        <div style="margin-top:12px;">
-          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Faction Board</div>
-          <div style="display:grid;gap:6px;">${boardHtml}</div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Active Weekly Rewards</div>
-          <div style="display:grid;gap:8px;">${rewardsHtml}</div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Last Winners</div>
-          ${lastHtml}
+          <div style="
+            font-size:10px;
+            font-weight:700;
+            padding:5px 8px;
+            border-radius:999px;
+            background:rgba(120,180,255,.08);
+            border:1px solid rgba(120,180,255,.14);
+            color:#bfe8ff;
+          ">Ends in ${esc(fmtRemain(w.endsInSec))}</div>
         </div>
       </div>
-    `;
+
+      ${myProgressHtml}
+
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;font-weight:800;margin-bottom:8px;opacity:.92;">Faction Race</div>
+        ${boardHtml}
+      </div>
+
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;font-weight:800;margin-bottom:8px;opacity:.92;">Active Weekly Rewards</div>
+        ${rewardsHtml}
+      </div>
+
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;font-weight:800;margin-bottom:8px;opacity:.92;">Last Winners</div>
+        ${lastHtml}
+      </div>
+    </div>
+  `;
   }
 
   // -------------------------
