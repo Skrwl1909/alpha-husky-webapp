@@ -68,7 +68,6 @@
     }
   },
   "nodes": [
-    [
     {
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
