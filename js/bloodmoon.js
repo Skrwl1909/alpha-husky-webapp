@@ -61,6 +61,53 @@
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
   }
+  
+   function fmtGrantList(grants) {
+    grants = Array.isArray(grants) ? grants : [];
+    const parts = [];
+
+    for (const g of grants) {
+      if (!g || typeof g !== "object") continue;
+
+      const type = String(g.type || "").trim().toLowerCase();
+      const key = String(g.key || "").trim();
+      const amount = Number(g.amount || 0);
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
+      if (type === "bones") {
+        parts.push(`${fmtNum(amount)} Bones`);
+        continue;
+      }
+      if (type === "tower_marks") {
+        parts.push(`${fmtNum(amount)} Tower Marks`);
+        continue;
+      }
+      if (type === "material") {
+        const label = key ? key.replaceAll("_", " ") : "material";
+        parts.push(`${fmtNum(amount)} ${label}`);
+        continue;
+      }
+
+      parts.push(`${fmtNum(amount)} ${key || type}`);
+    }
+
+    return parts.join(" • ");
+  }
+
+  function rewardLabel(rewardKey) {
+    return String(rewardKey || "")
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function notify(msg) {
+    try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+    try {
+      if (window.showToast) return window.showToast(msg);
+      if (window.toast) return window.toast(msg);
+    } catch (_) {}
+    alert(msg);
+  }
 
   function factionLabel(f) {
     const x = String(f || "").trim().toLowerCase();
@@ -690,15 +737,27 @@
 
     return `
       <div class="bm-list">
-        ${claimable.map((key) => `
-          <div class="bm-reward">
-            <div>
-              <div class="bm-standing-name">${esc(String(key).replaceAll("_", " ").toUpperCase())}</div>
-              <div class="bm-standing-sub">Wave milestone reward ready to claim</div>
+        ${claimable.map((row) => {
+          const isObj = row && typeof row === "object" && !Array.isArray(row);
+          const rewardKey = isObj ? String(row.rewardKey || "") : String(row || "");
+          const title = isObj
+            ? String(row.label || rewardLabel(rewardKey))
+            : rewardLabel(rewardKey);
+
+          const summary = isObj
+            ? String(row.summary || fmtGrantList(row.grants || row.reward?.grants || []))
+            : "Wave milestone reward ready to claim";
+
+          return `
+            <div class="bm-reward">
+              <div>
+                <div class="bm-standing-name">${esc(title)}</div>
+                <div class="bm-standing-sub">${esc(summary || "Reward ready to claim")}</div>
+              </div>
+              <button class="bm-claim-btn" data-bm-claim="${esc(rewardKey)}" type="button">Claim</button>
             </div>
-            <button class="bm-claim-btn" data-bm-claim="${esc(key)}" type="button">Claim</button>
-          </div>
-        `).join("")}
+          `;
+        }).join("")}
       </div>
     `;
   }
@@ -843,7 +902,7 @@
 
     <div class="bm-card">
       <div class="bm-label">CLAIMABLE BLOOD REWARDS</div>
-      ${renderClaimables(my.claimableRewards)}
+      ${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}
     </div>
 
     <div class="bm-card">
@@ -889,6 +948,8 @@
       });
 
       if (!res || res.ok !== true) {
+        const nextData = res?.data;
+        if (nextData) render(nextData);
         throw new Error((res && res.reason) || "ATTACK_FAILED");
       }
 
@@ -912,10 +973,19 @@
       });
 
       if (!res || res.ok !== true) {
+        const nextData = res?.data;
+        if (nextData) render(nextData);
         throw new Error((res && res.reason) || "CLAIM_FAILED");
       }
 
+      const granted = res?.result?.granted || [];
+      const reward = res?.result?.reward || {};
+      const label = rewardLabel(res?.result?.rewardKey || rewardKey);
+      const summary = fmtGrantList(granted.length ? granted : (reward?.grants || []));
+
       if (res.data) render(res.data);
+
+      notify(summary ? `${label} claimed: ${summary}` : `${label} claimed.`);
       return res;
     } catch (e) {
       dbg("claim error", e);
