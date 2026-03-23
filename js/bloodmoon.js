@@ -742,117 +742,122 @@
   }
 
   function render(data) {
-    _state = data || {};
-    const body = bodyEl();
-    if (!body) return;
+  _state = data || {};
+  const body = bodyEl();
+  if (!body) return;
 
-    const currentWave = Number(_state.currentWave || 1);
-    const maxWave = Number(_state.maxWave || 1);
-    const waveHp = Number(_state.waveHp || 0);
-    const waveHpMax = Number(_state.waveHpMax || 1);
-    const wavePct = pct(_state.waveProgressPct || 0);
+  const currentWave = Number(_state.currentWave || 1);
+  const maxWave = Number(_state.maxWave || 1);
 
-    const cta = _state.cta || {};
-    const my = _state.myContribution || {};
-    const attemptsLeft = Number(my.attemptsLeft || 0);
-    const cooldownLeftSec = Number(my.cooldownLeftSec || 0);
+  const waveHp = Math.max(0, Number(_state.waveHp || 0));
+  const waveHpMaxRaw = Number(_state.waveHpMax || 1);
+  const waveHpMax = waveHpMaxRaw > 0 ? waveHpMaxRaw : 1;
 
-    const sortedFactions = [...(_state.factionStandings || [])].sort(
-      (a, b) => Number(b?.score || 0) - Number(a?.score || 0)
-    );
-    const topScore = Number(sortedFactions[0]?.score || 0);
-    const secondScore = Number(sortedFactions[1]?.score || 0);
-    const dominancePct =
-      (topScore > 0 || secondScore > 0)
-        ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
-        : 0;
+  // HP bara przeciwnika nie licz z progressPct, tylko z realnego HP
+  const waveRemainingPct = pct((waveHp / waveHpMax) * 100);
+  const waveClearedPct = pct(((waveHpMax - waveHp) / waveHpMax) * 100);
 
-    body.innerHTML = `
-      <div class="bm-card bm-card-hero" style="z-index:2">
-        <div class="bm-hero-intensity">
-          BLOOD MOON INTENSITY • WAVE ${fmtNum(currentWave)} / ${fmtNum(maxWave)}
-        </div>
+  const cta = _state.cta || {};
+  const my = _state.myContribution || {};
+  const attemptsLeft = Number(my.attemptsLeft || 0);
+  const cooldownLeftSec = Number(my.cooldownLeftSec || 0);
 
-        <div class="bm-label" style="margin-bottom:6px">THE BEAST • CURRENT WAVE</div>
-        <div class="bm-boss-bar">
-          <div class="bm-boss-fill" style="width:${wavePct}%"></div>
-        </div>
-        <div class="bm-wave-line">
-          <span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span>
-          <span style="color:#ff5e70">${wavePct}% • TEAR IT APART</span>
-        </div>
+  const sortedFactions = [...(_state.factionStandings || [])].sort(
+    (a, b) => Number(b?.score || 0) - Number(a?.score || 0)
+  );
+  const topScore = Number(sortedFactions[0]?.score || 0);
+  const secondScore = Number(sortedFactions[1]?.score || 0);
+  const dominancePct =
+    (topScore > 0 || secondScore > 0)
+      ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
+      : 0;
 
-        <div style="margin-top:18px">
-          <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>
-            ${esc(cta.label || "RIP THROUGH THE VEIL")}
-          </button>
-        </div>
-
-        <div class="bm-meta-row">
-          <div class="bm-meta-pill">
-            <div class="bm-label">Status</div>
-            <div class="bm-value">${esc(_state.status || "UNKNOWN")}</div>
-          </div>
-          <div class="bm-meta-pill">
-            <div class="bm-label">My Faction</div>
-            <div class="bm-value">${esc(factionLabel(_state.myFaction))}</div>
-          </div>
-          <div class="bm-meta-pill">
-            <div class="bm-label">Cooldown</div>
-            <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div>
-          </div>
-        </div>
+  body.innerHTML = `
+    <div class="bm-card bm-card-hero" style="z-index:2">
+      <div class="bm-hero-intensity">
+        BLOOD MOON INTENSITY • WAVE ${fmtNum(currentWave)} / ${fmtNum(maxWave)}
       </div>
 
-      <div class="bm-card">
-        <div class="bm-label">FACTION WAR • LIVE RACE</div>
-        ${renderRace(sortedFactions, dominancePct)}
+      <div class="bm-label" style="margin-bottom:6px">THE BEAST • CURRENT WAVE</div>
+      <div class="bm-boss-bar">
+        <div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div>
+      </div>
+      <div class="bm-wave-line">
+        <span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span>
+        <span style="color:#ff5e70">${waveClearedPct}% • TEAR IT APART</span>
       </div>
 
-      <div class="bm-card">
-        <div class="bm-label">YOUR CARNAGE</div>
-        <div class="bm-mini-grid">
-          <div class="bm-stat">
-            <div class="bm-label">Total Damage</div>
-            <div class="bm-value">${fmtNum(my.totalDamage)}</div>
-          </div>
-          <div class="bm-stat">
-            <div class="bm-label">Best Hit</div>
-            <div class="bm-value">${fmtNum(my.bestHit)}</div>
-          </div>
-          <div class="bm-stat">
-            <div class="bm-label">Attempts</div>
-            <div class="bm-value">${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</div>
-          </div>
-          <div class="bm-stat">
-            <div class="bm-label">Cooldown</div>
-            <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY TO KILL"}</div>
-          </div>
+      <div style="margin-top:18px">
+        <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>
+          ${esc(cta.label || "RIP THROUGH THE VEIL")}
+        </button>
+      </div>
+
+      <div class="bm-meta-row">
+        <div class="bm-meta-pill">
+          <div class="bm-label">Status</div>
+          <div class="bm-value">${esc(_state.status || "UNKNOWN")}</div>
+        </div>
+        <div class="bm-meta-pill">
+          <div class="bm-label">My Faction</div>
+          <div class="bm-value">${esc(factionLabel(_state.myFaction))}</div>
+        </div>
+        <div class="bm-meta-pill">
+          <div class="bm-label">Cooldown</div>
+          <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div>
         </div>
       </div>
+    </div>
 
-      <div class="bm-card">
-        <div class="bm-label">Faction Standings</div>
-        ${renderFactionStandings(_state.factionStandings)}
+    <div class="bm-card">
+      <div class="bm-label">FACTION WAR • LIVE RACE</div>
+      ${renderRace(sortedFactions, dominancePct)}
+    </div>
+
+    <div class="bm-card">
+      <div class="bm-label">YOUR CARNAGE</div>
+      <div class="bm-mini-grid">
+        <div class="bm-stat">
+          <div class="bm-label">Total Damage</div>
+          <div class="bm-value">${fmtNum(my.totalDamage)}</div>
+        </div>
+        <div class="bm-stat">
+          <div class="bm-label">Best Hit</div>
+          <div class="bm-value">${fmtNum(my.bestHit)}</div>
+        </div>
+        <div class="bm-stat">
+          <div class="bm-label">Attempts</div>
+          <div class="bm-value">${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</div>
+        </div>
+        <div class="bm-stat">
+          <div class="bm-label">Cooldown</div>
+          <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY TO KILL"}</div>
+        </div>
       </div>
+    </div>
 
-      <div class="bm-card">
-        <div class="bm-label">CLAIMABLE BLOOD REWARDS</div>
-        ${renderClaimables(my.claimableRewards)}
-      </div>
+    <div class="bm-card">
+      <div class="bm-label">Faction Standings</div>
+      ${renderFactionStandings(_state.factionStandings)}
+    </div>
 
-      <div class="bm-card">
-        <div class="bm-label">TOP SLAUGHTERERS</div>
-        ${renderTopPlayers(_state.topPlayers)}
-      </div>
+    <div class="bm-card">
+      <div class="bm-label">CLAIMABLE BLOOD REWARDS</div>
+      ${renderClaimables(my.claimableRewards)}
+    </div>
 
-      <div class="bm-card">
-        <div class="bm-label">LIVE CARNAGE FEED</div>
-        ${renderFeed(_state.recentFeed)}
-      </div>
-    `;
+    <div class="bm-card">
+      <div class="bm-label">TOP SLAUGHTERERS</div>
+      ${renderTopPlayers(_state.topPlayers)}
+    </div>
 
-    bindActions();
+    <div class="bm-card">
+      <div class="bm-label">LIVE CARNAGE FEED</div>
+      ${renderFeed(_state.recentFeed)}
+    </div>
+  `;
+
+  bindActions();
   }
 
   async function loadState() {
