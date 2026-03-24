@@ -1,4 +1,4 @@
-// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — Premium visual layer, real data only
+// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — Premium HQ mockup version
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -61,6 +61,11 @@
     }
   }
 
+  function _clampLvl(v) {
+    const n = parseInt(v || 1, 10) || 1;
+    return Math.max(1, Math.min(7, n));
+  }
+
   // ---------------------------
   // Faction normalization
   // ---------------------------
@@ -95,6 +100,17 @@
       iron_howlers: "Iron Howlers",
     };
     return m[key] || key || "—";
+  }
+
+  function factionShort(key) {
+    const canon = _canonFaction(key) || key;
+    const m = {
+      rogue_byte: "RB",
+      echo_wardens: "EW",
+      pack_burners: "PB",
+      inner_howl: "IH",
+    };
+    return m[canon] || "HQ";
   }
 
   // ---------------------------
@@ -332,6 +348,14 @@
         opacity:.22;
       }
 
+      #factionHQRoot .hq-topline{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        flex-wrap:wrap;
+      }
+
       #factionHQRoot .hq-pill{
         display:inline-flex;
         align-items:center;
@@ -344,6 +368,24 @@
         background:rgba(255,255,255,.07);
         border:1px solid color-mix(in srgb, var(--faction-color) 42%, rgba(255,255,255,.12));
         box-shadow:0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent);
+      }
+
+      #factionHQRoot .hq-status-chip{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:5px 11px;
+        border-radius:999px;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.45px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.12);
+      }
+      #factionHQRoot .hq-status-chip.ready{
+        color:#c8ffde;
+        border-color:rgba(91,255,154,.38);
+        box-shadow:0 0 18px rgba(91,255,154,.12);
       }
 
       #factionHQRoot .hq-title{
@@ -360,98 +402,201 @@
         line-height:1.4;
       }
 
-      #factionHQRoot .hq-hero{
+      /* === HQ MOCKUP — wizualna siedziba (progresja leveli) === */
+      #factionHQRoot .hq-mockup{
+        height:240px;
+        border-radius:18px;
+        background:#0a0c14;
         position:relative;
         overflow:hidden;
-        border-radius:20px;
-        min-height:168px;
-        margin-top:14px;
-        border:1px solid rgba(255,255,255,.12);
-        background:
-          radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--faction-color) 26%, transparent), transparent 38%),
-          linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-          rgba(4,6,12,.55);
+        border:2px solid var(--faction-color);
         box-shadow:
-          inset 0 0 0 1px rgba(255,255,255,.03),
-          0 18px 30px rgba(0,0,0,.22);
+          0 0 35px color-mix(in srgb, var(--faction-color) 55%, transparent),
+          inset 0 0 0 1px rgba(255,255,255,.05);
+        margin:16px 0 6px;
       }
-      #factionHQRoot .hq-hero::before{
+
+      #factionHQRoot .hq-mockup .layer{
+        position:absolute;
+        inset:0;
+        background-size:cover;
+        background-position:center;
+        transition:opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1), transform 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      #factionHQRoot .hq-mockup .layer-base{
+        background:
+          radial-gradient(circle at 50% 88%, rgba(255,255,255,.06), transparent 30%),
+          linear-gradient(180deg, #121726 0%, #0a0c14 100%);
+      }
+
+      #factionHQRoot .hq-mockup .layer-grid{
+        opacity:.22;
+        background-image:
+          linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size:22px 22px;
+        mask-image:linear-gradient(to bottom, rgba(0,0,0,.88), rgba(0,0,0,.18));
+      }
+
+      #factionHQRoot .hq-mockup .layer-core{
+        opacity:.78;
+        background:
+          radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--faction-color) 32%, transparent), transparent 18%),
+          radial-gradient(circle at 50% 76%, rgba(255,255,255,.07), transparent 18%);
+      }
+
+      #factionHQRoot .hq-mockup .layer-1{
+        opacity:0;
+        background:
+          linear-gradient(transparent 40%, color-mix(in srgb, var(--faction-color) 18%, transparent) 100%);
+      }
+
+      #factionHQRoot .hq-mockup .layer-towers{
+        opacity:0;
+        background:
+          linear-gradient(transparent 52%, rgba(0,0,0,.0) 52%),
+          radial-gradient(circle at 20% 72%, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 10%),
+          radial-gradient(circle at 80% 72%, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 10%);
+      }
+
+      #factionHQRoot .hq-mockup .tower{
+        position:absolute;
+        bottom:54px;
+        width:34px;
+        border-radius:10px 10px 4px 4px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)),
+          linear-gradient(180deg, color-mix(in srgb, var(--faction-color) 30%, #151a26), #0a0c14 88%);
+        border:1px solid rgba(255,255,255,.08);
+        box-shadow:0 0 18px color-mix(in srgb, var(--faction-color) 20%, transparent);
+        opacity:0;
+        transform:translateY(14px);
+        transition:opacity 1.2s ease, transform 1.2s ease;
+      }
+      #factionHQRoot .hq-mockup .tower.left{ left:22%; height:74px; }
+      #factionHQRoot .hq-mockup .tower.center{ left:calc(50% - 22px); width:44px; height:102px; border-radius:12px 12px 6px 6px; }
+      #factionHQRoot .hq-mockup .tower.right{ right:22%; height:74px; }
+
+      #factionHQRoot .hq-mockup .tower::before{
         content:"";
         position:absolute;
-        inset:0;
-        pointer-events:none;
+        left:50%;
+        top:10px;
+        transform:translateX(-50%);
+        width:52%;
+        height:6px;
+        border-radius:999px;
+        background:color-mix(in srgb, var(--faction-color) 85%, white);
+        box-shadow:0 0 12px color-mix(in srgb, var(--faction-color) 55%, transparent);
+      }
+
+      #factionHQRoot .hq-mockup .layer-neon{
+        opacity:0;
         background:
-          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 30%),
-          repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,.025) 0px,
-            rgba(255,255,255,.025) 1px,
-            transparent 2px,
-            transparent 4px
+          radial-gradient(circle at 50% 63%, color-mix(in srgb, var(--faction-color) 26%, transparent), transparent 26%),
+          linear-gradient(transparent 30%, rgba(255,255,255,.03) 100%);
+      }
+
+      #factionHQRoot .hq-mockup .layer-sat{
+        opacity:0;
+        background:
+          conic-gradient(
+            from 0deg at 50% 44%,
+            transparent 0% 18%,
+            color-mix(in srgb, var(--faction-color) 72%, white) 22% 28%,
+            transparent 33% 62%,
+            color-mix(in srgb, var(--faction-color) 52%, white) 68% 74%,
+            transparent 78% 100%
           );
-        opacity:.7;
+        animation:satRotate 25s linear infinite;
+        transform-origin:50% 44%;
+        filter:blur(1px);
       }
-      #factionHQRoot .hq-hero-grid{
-        position:absolute;
-        inset:0;
-        background:
-          linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-        background-size:22px 22px;
-        mask-image:linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.15));
-        opacity:.16;
-      }
-      #factionHQRoot .hq-hero-core{
+
+      #factionHQRoot .hq-mockup .scan-ring{
         position:absolute;
         left:50%;
-        top:50%;
-        width:118px;
-        height:118px;
-        transform:translate(-50%,-54%);
+        top:46%;
+        width:124px;
+        height:124px;
+        transform:translate(-50%,-50%);
         border-radius:50%;
-        border:1px solid color-mix(in srgb, var(--faction-color) 55%, transparent);
-        box-shadow:
-          0 0 28px color-mix(in srgb, var(--faction-color) 25%, transparent),
-          inset 0 0 22px color-mix(in srgb, var(--faction-color) 18%, transparent);
-        background:
-          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--faction-color) 25%, rgba(255,255,255,.04)), rgba(255,255,255,.02) 55%, transparent 70%);
+        border:1px solid color-mix(in srgb, var(--faction-color) 45%, transparent);
+        box-shadow:0 0 22px color-mix(in srgb, var(--faction-color) 18%, transparent);
+        opacity:.58;
       }
-      #factionHQRoot .hq-hero-ring{
-        position:absolute;
-        left:50%;
-        top:50%;
-        width:154px;
-        height:154px;
-        transform:translate(-50%,-54%);
-        border-radius:50%;
-        border:1px dashed color-mix(in srgb, var(--faction-color) 55%, transparent);
-        opacity:.55;
-        animation:hqSpin 18s linear infinite;
+      #factionHQRoot .hq-mockup .scan-ring.r2{
+        width:162px;
+        height:162px;
+        opacity:.28;
+        border-style:dashed;
+        animation:satRotate 18s linear infinite reverse;
       }
-      #factionHQRoot .hq-hero-meta{
+
+      #factionHQRoot .hq-mockup .hq-glow-line{
         position:absolute;
+        left:10%;
+        right:10%;
+        bottom:48px;
+        height:2px;
+        border-radius:999px;
+        background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--faction-color) 80%, white), transparent);
+        box-shadow:0 0 16px color-mix(in srgb, var(--faction-color) 35%, transparent);
+        opacity:.85;
+      }
+
+      #factionHQRoot .hq-mockup .hq-badge-mini{
+        position:absolute;
+        top:12px;
         left:12px;
-        right:12px;
-        bottom:12px;
+        min-width:34px;
+        height:34px;
+        padding:0 10px;
         display:flex;
-        justify-content:space-between;
-        gap:8px;
         align-items:center;
-        padding:10px 12px;
-        border-radius:14px;
-        background:rgba(0,0,0,.40);
-        border:1px solid rgba(255,255,255,.08);
-        backdrop-filter:blur(8px);
-      }
-      #factionHQRoot .hq-hero-label{
-        font-size:13px;
-        opacity:.9;
-      }
-      #factionHQRoot .hq-hero-value{
-        font-size:13px;
+        justify-content:center;
+        border-radius:999px;
+        font-size:12px;
         font-weight:900;
-        color:color-mix(in srgb, var(--faction-color) 70%, white);
+        letter-spacing:.5px;
+        color:#fff;
+        background:rgba(0,0,0,.42);
+        border:1px solid rgba(255,255,255,.10);
+        box-shadow:0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent);
+        backdrop-filter:blur(6px);
       }
+
+      #factionHQRoot .hq-mockup .hq-label{
+        position:absolute;
+        bottom:14px;
+        left:14px;
+        right:14px;
+        background:rgba(0,0,0,.75);
+        padding:8px 14px;
+        border-radius:12px;
+        font-size:13px;
+        text-align:center;
+        color:#fff;
+        border:1px solid color-mix(in srgb, var(--faction-color) 55%, rgba(255,255,255,.12));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      }
+
+      #factionHQRoot .hq-mockup[data-level="1"] .layer-1{ opacity:.65; }
+      #factionHQRoot .hq-mockup[data-level="2"] .layer-1{ opacity:.90; }
+      #factionHQRoot .hq-mockup[data-level="3"] .layer-towers,
+      #factionHQRoot .hq-mockup[data-level="4"] .layer-towers{ opacity:1; }
+      #factionHQRoot .hq-mockup[data-level="3"] .tower,
+      #factionHQRoot .hq-mockup[data-level="4"] .tower,
+      #factionHQRoot .hq-mockup[data-level="5"] .tower,
+      #factionHQRoot .hq-mockup[data-level="6"] .tower,
+      #factionHQRoot .hq-mockup[data-level="7"] .tower{
+        opacity:1;
+        transform:translateY(0);
+      }
+      #factionHQRoot .hq-mockup[data-level="5"] .layer-neon,
+      #factionHQRoot .hq-mockup[data-level="6"] .layer-neon{ opacity:1; }
+      #factionHQRoot .hq-mockup[data-level="7"] .layer-sat{ opacity:.92; }
 
       #factionHQRoot .hq-grid{
         display:grid;
@@ -602,6 +747,9 @@
       #factionHQRoot .hq-btn.ghost{
         background:rgba(255,255,255,.05);
       }
+      #factionHQRoot .hq-btn.pulse{
+        animation:hqPulseBtn 1.8s ease-in-out infinite;
+      }
       #factionHQRoot .hq-btn[disabled]{
         opacity:.45;
         filter:saturate(.6);
@@ -647,13 +795,25 @@
         touch-action:none;
       }
 
-      @keyframes hqSpin{
-        from{ transform:translate(-50%,-54%) rotate(0deg); }
-        to{ transform:translate(-50%,-54%) rotate(360deg); }
+      @keyframes satRotate {
+        from { transform:rotate(0deg); }
+        to   { transform:rotate(360deg); }
       }
       @keyframes hqScan{
         0%{ transform:translateX(-120%); }
         100%{ transform:translateX(150%); }
+      }
+      @keyframes hqPulseBtn{
+        0%,100%{
+          box-shadow:
+            0 8px 20px rgba(0,0,0,.18),
+            0 0 0 0 color-mix(in srgb, var(--faction-color) 0%, transparent);
+        }
+        50%{
+          box-shadow:
+            0 8px 20px rgba(0,0,0,.18),
+            0 0 0 10px color-mix(in srgb, var(--faction-color) 14%, transparent);
+        }
       }
     `;
     document.head.appendChild(st);
@@ -845,6 +1005,7 @@
     const feed = Array.isArray(d.feed) ? d.feed : [];
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
+    const mockLevel = _clampLvl(curLevel);
     const nextLevel = curLevel + 1;
 
     const nextCost = d.nextUpgradeCost || {};
@@ -865,20 +1026,42 @@
 
     _root.innerHTML = `
       <div class="hq-head">
-        <div class="hq-pill">HQ</div>
+        <div class="hq-topline">
+          <div class="hq-pill">HQ • ${esc(factionShort(fk))}</div>
+          <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
+            ${canUpgrade ? "UPGRADE READY" : "FUNDING"}
+          </div>
+        </div>
+
         <div class="hq-title">${esc(niceFactionName(fk))}</div>
         <div class="hq-sub">
           Level <b>${num(curLevel)}</b> • Members <b>${num(d.membersCount ?? "—")}</b>
         </div>
         ${dbgLine}
 
-        <div class="hq-hero">
-          <div class="hq-hero-grid"></div>
-          <div class="hq-hero-ring"></div>
-          <div class="hq-hero-core"></div>
-          <div class="hq-hero-meta">
-            <div class="hq-hero-label">Faction Headquarters</div>
-            <div class="hq-hero-value">Level ${num(curLevel)}</div>
+        <!-- CENTRALNA MAKIETA HQ -->
+        <div class="hq-mockup" data-level="${mockLevel}" data-faction="${esc(fk)}">
+          <div class="layer layer-base"></div>
+          <div class="layer layer-grid"></div>
+          <div class="layer layer-core"></div>
+          <div class="scan-ring"></div>
+          <div class="scan-ring r2"></div>
+
+          <div class="layer layer-1"></div>
+          <div class="layer layer-towers"></div>
+
+          <div class="tower left"></div>
+          <div class="tower center"></div>
+          <div class="tower right"></div>
+
+          <div class="layer layer-neon"></div>
+          <div class="layer layer-sat"></div>
+
+          <div class="hq-glow-line"></div>
+          <div class="hq-badge-mini">${esc(factionShort(fk))}</div>
+
+          <div class="hq-label">
+            Faction Headquarters • Level ${num(curLevel)}
           </div>
         </div>
       </div>
@@ -942,10 +1125,14 @@
           </div>
 
           <div style="margin-top:14px;">
-            <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
               Upgrade to Level ${num(nextLevel)}
             </button>
-            ${canUpgrade ? "" : `
+            ${canUpgrade ? `
+              <div class="hq-mini" style="margin-top:10px;opacity:.85;">
+                Treasury threshold reached — HQ can be upgraded now.
+              </div>
+            ` : `
               <div class="hq-mini" style="margin-top:10px;opacity:.8;">
                 Not enough in treasury yet — donate to push it over the line.
               </div>
@@ -990,6 +1177,7 @@
           ${feed.length ? feed.map((x) => {
             const who = x.uid ? String(x.uid).slice(-4) : "????";
             const t = fmtTs(x.t);
+
             if (x.type === "upgrade") {
               const lvl = x.level || "?";
               return `
