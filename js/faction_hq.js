@@ -1118,6 +1118,7 @@ function _contribSummary(c) {
     const bones = Number(tre.bones || 0);
     const scrap = Number(tre.scrap || 0);
     const feed = Array.isArray(d.feed) ? d.feed : [];
+    const contributors = _recentContributors(feed, 6);
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
     const mockLevel = _clampLvl(curLevel);
