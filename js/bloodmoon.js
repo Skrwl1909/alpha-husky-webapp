@@ -985,6 +985,178 @@
   color:rgba(255,255,255,.62);
   font-size:13px;
 }
+/* ===== Blood-Moon Battle Cleanup v1 ===== */
+
+/* 1) Cały battle stage ma być spokojniejszy i czytelniejszy */
+.bm-battle-stage{
+  min-height:220px;
+  padding:14px 12px 12px;
+  gap:10px;
+  background:linear-gradient(180deg, rgba(20,10,14,.94), rgba(11,8,10,.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 12px 24px rgba(0,0,0,.22);
+}
+
+@media (min-width:640px){
+  .bm-battle-stage{
+    grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);
+    align-items:start;
+  }
+}
+
+/* 2) Wywalamy dodatkowy wizualny szum z overlay lines */
+.bm-battle-stage::before{
+  display:none;
+}
+
+/* 3) Pixi nie może przykrywać całej sekcji i logu */
+.bm-battle-pixi-host{
+  inset:0 0 auto 0;
+  height:185px;
+  opacity:.74;
+}
+
+/* 4) Mniejsze, spokojniejsze portrety / badge */
+.bm-battle-side-head{
+  gap:10px;
+}
+
+.bm-battle-crest{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  font-size:15px;
+  box-shadow:0 8px 16px rgba(0,0,0,.18);
+}
+
+.bm-battle-side-name{
+  font-size:16px;
+}
+
+.bm-battle-side-sub{
+  margin-top:2px;
+  font-size:11px;
+  color:rgba(255,255,255,.62);
+}
+
+/* 5) Środkowy panel hitu ma być lżejszy */
+.bm-battle-impact-core{
+  max-width:128px;
+  padding:10px 8px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.025);
+}
+
+.bm-battle-impact-label{
+  font-size:10px;
+  letter-spacing:.4px;
+}
+
+.bm-battle-damage{
+  margin-top:4px;
+  font-size:24px;
+  text-shadow:0 0 12px rgba(255,94,112,.14);
+}
+
+.bm-battle-impact-sub{
+  display:none;
+}
+
+/* 6) HP ma być prostsze i czytelniejsze */
+.bm-battle-hp-wrap{
+  margin-top:10px;
+}
+
+.bm-battle-hp-track{
+  height:12px;
+}
+
+.bm-battle-hp-line{
+  justify-content:flex-start;
+  margin-top:6px;
+  font-size:11px;
+  color:rgba(255,255,255,.72);
+}
+
+/* 7) Log ma być wsparciem, nie drugim głównym panelem */
+.bm-battle-log{
+  margin-top:10px;
+  gap:6px;
+  position:relative;
+  z-index:2;
+}
+
+.bm-battle-log-item{
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.022);
+  border:1px solid rgba(255,255,255,.05);
+}
+
+.bm-battle-log-no{
+  width:22px;
+  height:22px;
+  font-size:10px;
+}
+
+.bm-battle-log-text{
+  font-size:12px;
+  line-height:1.28;
+}
+
+.bm-battle-log-sub{
+  margin-top:2px;
+  font-size:10px;
+  color:rgba(255,255,255,.50);
+}
+
+/* 8) Trochę lżejszy stan crit / cleared */
+.bm-battle-stage.is-crit{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    0 12px 24px rgba(0,0,0,.24),
+    0 0 16px rgba(255,193,94,.08);
+}
+
+.bm-battle-stage.is-cleared{
+  border-color:rgba(255,94,112,.14);
+}
+
+/* 9) Mobile: prostszy układ */
+@media (max-width:639px){
+  .bm-battle-stage{
+    grid-template-columns:minmax(0,1fr) 110px;
+    grid-template-areas:
+      "player impact"
+      "enemy enemy";
+    align-items:start;
+    gap:12px;
+  }
+
+  .bm-battle-side-player{
+    grid-area:player;
+  }
+
+  .bm-battle-impact{
+    grid-area:impact;
+    justify-content:flex-end;
+  }
+
+  .bm-battle-side-enemy{
+    grid-area:enemy;
+    text-align:left;
+  }
+
+  .bm-battle-side-enemy .bm-battle-side-head{
+    justify-content:space-between;
+  }
+
+  .bm-battle-pixi-host{
+    height:170px;
+  }
+}
     `.trim();
 
     const style = document.createElement("style");
