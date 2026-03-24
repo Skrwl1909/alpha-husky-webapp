@@ -1289,6 +1289,30 @@ function _contribSummary(c) {
           <button class="hq-btn ghost" style="width:auto;padding:10px 14px;" onclick="FactionHQ.open()">Refresh</button>
         </div>
 
+        <div class="hq-mini" style="margin-bottom:10px;">
+          Latest members who helped build the headquarters.
+        </div>
+
+        ${
+          contributors.length
+            ? `
+              <div class="hq-contrib-strip">
+                ${contributors.map((c) => `
+                  <div class="hq-contrib">
+                    <div class="hq-contrib-badge">…${esc(c.tail)}</div>
+                    <div class="hq-contrib-name">Member</div>
+                    <div class="hq-contrib-meta">${esc(_contribSummary(c))}</div>
+                  </div>
+                `).join("")}
+              </div>
+            `
+            : `
+              <div class="hq-contrib-empty">
+                No contributors yet — first donations will appear here.
+              </div>
+            `
+        }
+
         <div class="hq-feed">
           ${feed.length ? feed.map((x) => {
             const who = x.uid ? String(x.uid).slice(-4) : "????";
