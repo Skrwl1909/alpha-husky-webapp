@@ -1544,9 +1544,8 @@
                     <div class="bm-battle-hp-current"></div>
                   </div>
                   <div class="bm-battle-hp-line">
-                    <span>${fmtNum(hpAfter)} / ${fmtNum(hpMax)} HP</span>
-                    <span>Before ${fmtNum(hpBefore)}</span>
-                  </div>
+              <span>${fmtNum(hpAfter)} / ${fmtNum(hpMax)} HP • ${afterPct}% remaining</span>
+              </div>
                 </div>
               </div>
             </div>
