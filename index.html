@@ -4873,42 +4873,84 @@ function isRegionUnlocked(regionId){
   pinsEl.innerHTML = '';
 
   for (const b of (DATA.nodes || [])){
+    const bid = String(b.buildingId || b.id || "");
+
     const isOracle =
       b.buildingId === "oracle_void_doorway" ||
       b.id === "oracle_void_doorway" ||
       b.action === "open_oracle";
 
+    const isBloodMoon =
+      b.buildingId === "blood_moon_tower" ||
+      b.id === "blood_moon_tower" ||
+      b.action === "open_bloodmoon";
+
+    const isPhantom =
+      b.buildingId === "phantom_nodes" ||
+      b.id === "phantom_nodes";
+
+    const isEdge =
+      b.buildingId === "edge_of_chain" ||
+      b.id === "edge_of_chain" ||
+      b.action === "open_siege";
+
+    const isHeroLandmark = isBloodMoon || isOracle || isEdge;
+    const previewable = isOracle || isBloodMoon || isPhantom;
+
     const unlocked = isOracle ? true : isRegionUnlocked(b.region);
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'hotspot ' + (unlocked ? 'unlocked' : 'locked');
+    btn.className = 'hotspot map-pin ' + (unlocked ? 'unlocked' : 'locked');
     btn.style.left = b.x + '%';
     btn.style.top  = b.y + '%';
     btn.title = b.name + (unlocked ? '' : ' (locked)');
 
-    // ✅ dataset (map.js może to czytać)
+    // dataset
     btn.dataset.nodeId = String(b.id || '');
     btn.dataset.nodeName = String(b.name || '');
     if (b.buildingId) btn.dataset.buildingId = String(b.buildingId);
+
+    // theme / landmark classes
+    if (isBloodMoon) {
+      btn.classList.add('theme-bloodmoon', 'is-raid-landmark', 'is-hero-landmark');
+      btn.dataset.theme = 'bloodmoon';
+    } else if (isOracle) {
+      btn.classList.add('theme-oracle', 'is-hero-landmark');
+      btn.dataset.theme = 'oracle';
+    } else if (isPhantom) {
+      btn.classList.add('theme-phantom');
+      btn.dataset.theme = 'phantom';
+    } else if (isEdge) {
+      btn.classList.add('theme-edge', 'is-hero-landmark');
+      btn.dataset.theme = 'edge';
+    }
+
+    if (b.raidEnabled) btn.dataset.raidNode = "1";
+    if (isHeroLandmark) btn.dataset.landmark = "1";
 
     const ring = document.createElement('span');
     ring.className = 'ping';
     btn.appendChild(ring);
 
     const img = document.createElement('img');
+    img.className = 'pin-icon';
     img.src = b.icon;
     img.alt = b.name;
-    img.onerror = () => { img.style.display = 'none'; btn.classList.add('no-icon'); };
+    img.decoding = 'async';
+    img.onerror = () => {
+      img.style.display = 'none';
+      btn.classList.add('no-icon');
+    };
     btn.appendChild(img);
 
-    // ✅ CHIP musi być w DOM zanim decoratePin odpali
+    // CHIP musi być w DOM zanim decoratePin odpali
     const chip = document.createElement('div');
     chip.className = 'chip';
-    chip.textContent = b.name || ''; // fallback treści
+    chip.textContent = b.name || '';
     btn.appendChild(chip);
 
-    // ✅ focus: active class + show only 1 chip
+    // focus
     const isActive = String(ACTIVE_PIN_ID || "") === String(b.id || "");
     btn.classList.toggle('active', isActive);
     chip.style.display = isActive ? 'flex' : 'none';
@@ -4920,10 +4962,11 @@ function isRegionUnlocked(regionId){
       btn.appendChild(lock);
     }
 
-    // ✅ locked class (pod CSS)
-    btn.classList.toggle('is-locked', !unlocked);
+    // locked / preview-locked
+    btn.classList.toggle('is-locked', !unlocked && !previewable);
+    btn.classList.toggle('is-preview-locked', !unlocked && previewable);
 
-    // ✅ dekoruj (frakcja / contested / itd.)
+    // dekoruj (frakcja / contested / itd.)
     try { window.AHMap?.decoratePin?.(btn, b); } catch(e){ console.warn('decoratePin error', e); }
 
     btn.addEventListener('click', (e) => {
@@ -4932,56 +4975,56 @@ function isRegionUnlocked(regionId){
 
       const id = String(b.id || "");
 
-      // (opcjonalnie) burst / wibracja jeśli masz
       try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
 
-      // ✅ TAP 1 = focus ZAWSZE (nawet locked)
+      // TAP 1 = focus
       if (String(ACTIVE_PIN_ID || "") !== id) {
-        ACTIVE_PIN_ID = id;   // zapisuj jako string
+        ACTIVE_PIN_ID = id;
         renderPins();
         return;
       }
 
-      // ✅ TAP 2 = action
+      // TAP 2 = action
       const bid = String(b.buildingId || b.id || "");
 
-     // ✅ INFLUENCE PILOT: Phantom Nodes only (always open, even if locked)
-if (bid === "phantom_nodes") {
-  const title = (b.name || bid).replaceAll("_", " ");
-  if (window.Influence?.open) return window.Influence.open(bid, title);
-  console.warn("[Influence] module not ready");
-  return openBuilding(bid, b.name, b.desc); // fallback
-}
+      // Phantom Nodes
+      if (bid === "phantom_nodes") {
+        const title = (b.name || bid).replaceAll("_", " ");
+        if (window.Influence?.open) return window.Influence.open(bid, title);
+        console.warn("[Influence] module not ready");
+        return openBuilding(bid, b.name, b.desc);
+      }
 
-// ✅ BLOOD-MOON TOWER: dedicated raid modal (always open, even if locked/placeholder)
-if (
-  bid === "blood_moon_tower" ||
-  b.buildingId === "blood_moon_tower" ||
-  b.id === "blood_moon_tower" ||
-  b.action === "open_bloodmoon"
-) {
-  if (window.BloodMoon?.open) return window.BloodMoon.open();
-  console.warn("[BloodMoon] module not ready");
-  return openBuilding(bid, b.name, b.desc); // fallback
-}
+      // Blood-Moon Tower
+      if (
+        bid === "blood_moon_tower" ||
+        b.buildingId === "blood_moon_tower" ||
+        b.id === "blood_moon_tower" ||
+        b.action === "open_bloodmoon"
+      ) {
+        if (window.BloodMoon?.open) return window.BloodMoon.open();
+        console.warn("[BloodMoon] module not ready");
+        return openBuilding(bid, b.name, b.desc);
+      }
 
-      // ✅ ORACLE — allow opening even if currently placeholder/locked
-if (
-  b.buildingId === "oracle_void_doorway" ||
-  b.id === "oracle_void_doorway" ||
-  b.action === "open_oracle"
-) {
-  if (window.Oracle?.open) return window.Oracle.open();
-  console.warn("[Oracle] module not ready");
-  return openBuilding(bid, b.name, b.desc);
-}
+      // Oracle
+      if (
+        b.buildingId === "oracle_void_doorway" ||
+        b.id === "oracle_void_doorway" ||
+        b.action === "open_oracle"
+      ) {
+        if (window.Oracle?.open) return window.Oracle.open();
+        console.warn("[Oracle] module not ready");
+        return openBuilding(bid, b.name, b.desc);
+      }
 
-if (!unlocked) return openLocked(b);
+      if (!unlocked) return openLocked(b);
 
-// ✅ lore-only pins
-if (b.action === "coming_soon") {
-  return openBuilding(bid, b.name, b.desc);
-  }
+      // lore-only pins
+      if (b.action === "coming_soon") {
+        return openBuilding(bid, b.name, b.desc);
+      }
+
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
       if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
@@ -4993,19 +5036,17 @@ if (b.action === "coming_soon") {
         if (window.Dojo?.open) return window.Dojo.open();
       }
 
-      // ✅ Faction HQ (replaces old Alpha Network HQ shop)
-if (
-  b.id === "alpha_network_hq" ||
-  b.buildingId === "faction_hq" ||
-  b.action === "open_faction_hq" ||
-  b.buildingId === "alpha_network_hq_shop" // legacy
-) {
-  if (window.FactionHQ?.open) return window.FactionHQ.open();
-
-  // fallback (legacy) — jeśli HQ nie załadowało się jeszcze
-  if (window.Shop?.open) return window.Shop.open();
-  return openBuilding(bid, b.name, b.desc);
-}
+      // Faction HQ
+      if (
+        b.id === "alpha_network_hq" ||
+        b.buildingId === "faction_hq" ||
+        b.action === "open_faction_hq" ||
+        b.buildingId === "alpha_network_hq_shop"
+      ) {
+        if (window.FactionHQ?.open) return window.FactionHQ.open();
+        if (window.Shop?.open) return window.Shop.open();
+        return openBuilding(bid, b.name, b.desc);
+      }
 
       if (
         b.action === "open_forge" ||
