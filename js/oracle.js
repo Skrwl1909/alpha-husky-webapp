@@ -479,6 +479,11 @@
     const type = prettifyType(row?.type || "signal");
     const age = formatAge(row?.ageSec, row?.ts);
     const text = row?.text || "Unknown echo";
+    const isHighlighted = !!row?.highlighted;
+    const highlightLevel = safeClass(row?.highlightLevel || "");
+    const highlightTag = isHighlighted
+      ? `<span class="oracle-tag moment ${highlightLevel || "elevated"}">${escapeHtml(echoHighlightLabel(row))}</span>`
+      : "";
     const rarity = row?.rarity ? `<span class="oracle-tag rarity ${safeClass(row.rarity)}">${escapeHtml(String(row.rarity))}</span>` : "";
     const difficulty = row?.difficulty ? `<span class="oracle-tag">${escapeHtml(String(row.difficulty))}</span>` : "";
     const itemName = row?.itemName ? `<span class="oracle-inline-note">${escapeHtml(row.itemName)}</span>` : "";
@@ -486,7 +491,7 @@
     const pathName = row?.path ? `<span class="oracle-inline-note">${escapeHtml(row.path)}</span>` : "";
 
     return `
-      <article class="oracle-echo-card">
+      <article class="oracle-echo-card ${isHighlighted ? `is-highlighted hl-${highlightLevel || "elevated"}` : ""}">
         <div class="oracle-echo-side ${fm.cls}">
   ${renderFactionBadge(faction)}
 </div>
@@ -500,6 +505,7 @@
           <div class="oracle-echo-text">${escapeHtml(text)}</div>
 
           <div class="oracle-echo-meta">
+            ${highlightTag}
             ${row?.name ? `<span class="oracle-tag">${escapeHtml(row.name)}</span>` : ""}
             ${difficulty}
             ${rarity}
@@ -783,6 +789,19 @@
     return String(type || "")
       .replace(/_/g, " ")
       .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function echoHighlightLabel(row) {
+    const moment = String(row?.momentKind || "").trim();
+    if (moment === "tower_finished") return "Tower Finished";
+    if (moment === "wave_cleared") return "Wave Cleared";
+    if (moment === "best_crit") return "Best Crit";
+    if (moment === "best_hit") return "Best Hit";
+    if (moment === "critical_hit") return "Critical Hit";
+
+    const level = String(row?.highlightLevel || "").trim();
+    if (!level) return "Highlighted";
+    return level.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
   }
 
   function escapeHtml(v) {
@@ -1158,6 +1177,24 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         background:rgba(255,255,255,.035);
         border:1px solid rgba(255,255,255,.05);
       }
+      .oracle-echo-card.is-highlighted{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+          rgba(255,255,255,.04);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      }
+      .oracle-echo-card.is-highlighted.hl-elevated{
+        border-color:rgba(255,146,174,.24);
+      }
+      .oracle-echo-card.is-highlighted.hl-major{
+        border-color:rgba(255,206,106,.28);
+      }
+      .oracle-echo-card.is-highlighted.hl-legendary{
+        border-color:rgba(255,226,140,.34);
+        box-shadow:
+          0 10px 26px rgba(255,196,92,.08),
+          inset 0 1px 0 rgba(255,255,255,.06);
+      }
       .oracle-echo-side{
         display:flex;
         justify-content:center;
@@ -1276,6 +1313,23 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         color:#d4dcff;
         font-size:11px;
         font-weight:800;
+      }
+      .oracle-tag.moment{
+        text-transform:uppercase;
+        letter-spacing:.08em;
+      }
+      .oracle-tag.moment.elevated{
+        border-color:rgba(255,120,158,.24);
+        color:#ffd0dc;
+      }
+      .oracle-tag.moment.major{
+        border-color:rgba(255,206,106,.26);
+        color:#ffe4a3;
+      }
+      .oracle-tag.moment.legendary{
+        border-color:rgba(255,231,150,.34);
+        color:#fff0b9;
+        background:rgba(255,218,118,.08);
       }
       .oracle-tag.rarity.legendary{
         border-color:rgba(255,196,92,.26);
