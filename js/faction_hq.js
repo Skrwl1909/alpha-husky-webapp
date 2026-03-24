@@ -1,4 +1,4 @@
-// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — warroom backgrounds + HQ backdrop
+// js/faction_hq.js — Faction HQ (Alpha Husky WebApp) — Premium visual layer, real data only
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -11,6 +11,57 @@
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
   // ---------------------------
+  // Helpers
+  // ---------------------------
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function num(v) {
+    const n = Number(v || 0);
+    try { return n.toLocaleString(); } catch (_) { return String(n); }
+  }
+
+  function pct(have, need) {
+    const h = Number(have || 0);
+    const n = Number(need || 0);
+    if (n <= 0) return 100;
+    return Math.max(0, Math.min(100, Math.round((h / n) * 100)));
+  }
+
+  function fmtTs(t) {
+    try { return new Date((t || 0) * 1000).toLocaleString(); }
+    catch (_) { return ""; }
+  }
+
+  function _uid() {
+    try { return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ""); }
+    catch (_) { return ""; }
+  }
+
+  function _uidTail() {
+    const u = _uid();
+    return u ? u.slice(-5) : "?????";
+  }
+
+  function _rid(prefix = "hq") {
+    try {
+      const uid = _uid() || "0";
+      const r = (crypto?.randomUUID
+        ? crypto.randomUUID()
+        : (String(Date.now()) + Math.random().toString(16).slice(2)));
+      return `${prefix}:${uid}:${r}`;
+    } catch (_) {
+      return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    }
+  }
+
+  // ---------------------------
   // Faction normalization
   // ---------------------------
   function _normFactionKey(f) {
@@ -18,11 +69,10 @@
     if (!f) return "";
     if (f === "rb" || f === "ew" || f === "pb" || f === "ih") return f;
 
-    // canonical keys
     if (f === "rogue_byte" || f === "roguebyte" || f.includes("rogue")) return "rb";
     if (f === "echo_wardens" || f === "echowardens" || f.includes("echo")) return "ew";
     if (f === "pack_burners" || f === "packburners" || f.includes("pack") || f.includes("burn")) return "pb";
-    if (f === "inner_howl" || f === "Inner Howlers" || f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
+    if (f === "inner_howl" || f === "inner howlers" || f === "iron_howlers" || f.includes("inner") || f.includes("iron") || f.includes("howl")) return "ih";
 
     return f;
   }
@@ -48,7 +98,7 @@
   }
 
   // ---------------------------
-  // BG mapping
+  // Theme / backgrounds
   // ---------------------------
   function _hqBgUrlForFaction(faction) {
     const k = _normFactionKey(faction);
@@ -62,140 +112,555 @@
     return map[k] || map.rb;
   }
 
+  function _factionColorFor(faction) {
+    const canon = _canonFaction(faction);
+    const map = {
+      rogue_byte: "#00eaff",
+      echo_wardens: "#5bff9a",
+      pack_burners: "#ff7a2f",
+      inner_howl: "#c45cff",
+    };
+    return map[canon] || "#00eaff";
+  }
+
   function applyHqBg(faction) {
-  const url = _hqBgUrlForFaction(faction);
-  const cssUrl = `url("${url}")`;
+    const url = _hqBgUrlForFaction(faction);
+    const cssUrl = `url("${url}")`;
 
-  const back = document.getElementById("factionHQBack");
-  if (!back) return;
+    const back = document.getElementById("factionHQBack");
+    if (!back) return;
 
-  // ustaw var lokalnie i globalnie
-  back.style.setProperty("--hq-bg-url", cssUrl);
-  document.documentElement.style.setProperty("--hq-bg-url", cssUrl);
+    back.style.setProperty("--hq-bg-url", cssUrl);
 
-  let bg = back.querySelector(".hq-bg");
+    let bg = back.querySelector(".hq-bg");
+    if (!bg) {
+      bg = document.createElement("div");
+      bg.className = "hq-bg";
+      back.insertBefore(bg, back.firstChild);
+    }
 
-  // self-heal: jeśli .hq-bg nie istnieje, twórz ją
-  if (!bg) {
-    bg = document.createElement("div");
-    bg.className = "hq-bg";
-    back.insertBefore(bg, back.firstChild);
+    bg.style.setProperty("position", "absolute", "important");
+    bg.style.setProperty("inset", "0", "important");
+    bg.style.setProperty("display", "block", "important");
+    bg.style.setProperty("visibility", "visible", "important");
+    bg.style.setProperty("opacity", "1", "important");
+    bg.style.setProperty("z-index", "0", "important");
+    bg.style.setProperty("background-color", "#07080c", "important");
+    bg.style.setProperty("background-image", cssUrl, "important");
+    bg.style.setProperty("background-size", "cover", "important");
+    bg.style.setProperty("background-position", "center center", "important");
+    bg.style.setProperty("background-repeat", "no-repeat", "important");
+    bg.style.setProperty("filter", "none", "important");
+    bg.style.setProperty("transform", "none", "important");
+
+    back.style.setProperty("position", "fixed", "important");
+    back.style.setProperty("inset", "0", "important");
+    back.style.setProperty("overflow", "hidden", "important");
+    back.style.setProperty("background", "transparent", "important");
+
+    const modal = document.getElementById("factionHQModal");
+    if (modal) {
+      modal.style.setProperty("position", "absolute", "important");
+      modal.style.setProperty("inset", "0", "important");
+      modal.style.setProperty("z-index", "2", "important");
+      modal.style.setProperty("background", "transparent", "important");
+    }
+
+    if (_dbg) {
+      const cs = getComputedStyle(bg);
+      const rect = bg.getBoundingClientRect();
+      console.log("[FactionHQ][BG_FORCE]", {
+        faction,
+        norm: _normFactionKey(faction),
+        url,
+        bgExists: !!bg,
+        bgImage: cs.backgroundImage,
+        display: cs.display,
+        visibility: cs.visibility,
+        opacity: cs.opacity,
+        rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y }
+      });
+    }
   }
 
-  // twarde wymuszenie tła
-  bg.style.setProperty("position", "absolute", "important");
-  bg.style.setProperty("inset", "0", "important");
-  bg.style.setProperty("display", "block", "important");
-  bg.style.setProperty("visibility", "visible", "important");
-  bg.style.setProperty("opacity", "1", "important");
-  bg.style.setProperty("z-index", "0", "important");
-  bg.style.setProperty("background-color", "#07080c", "important");
-  bg.style.setProperty("background-image", cssUrl, "important");
-  bg.style.setProperty("background-size", "cover", "important");
-  bg.style.setProperty("background-position", "center center", "important");
-  bg.style.setProperty("background-repeat", "no-repeat", "important");
-  bg.style.setProperty("filter", "none", "important");
-  bg.style.setProperty("transform", "none", "important");
-
-  // porządek warstw
-  back.style.setProperty("position", "fixed", "important");
-  back.style.setProperty("inset", "0", "important");
-  back.style.setProperty("overflow", "hidden", "important");
-  back.style.setProperty("background", "transparent", "important");
-
-  const modal = document.getElementById("factionHQModal");
-  if (modal) {
-    modal.style.setProperty("position", "absolute", "important");
-    modal.style.setProperty("inset", "0", "important");
-    modal.style.setProperty("z-index", "2", "important");
-    modal.style.setProperty("background", "transparent", "important");
-  }
-
-  if (_dbg) {
-    const cs = getComputedStyle(bg);
-    const rect = bg.getBoundingClientRect();
-    console.log("[FactionHQ][BG_FORCE]", {
-      faction,
-      norm: _normFactionKey(faction),
-      url,
-      bgExists: !!bg,
-      bgImage: cs.backgroundImage,
-      display: cs.display,
-      visibility: cs.visibility,
-      opacity: cs.opacity,
-      rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y }
-    });
-  }
-  }
   function applyHQTheme(faction) {
     const canon = _canonFaction(faction);
+    const color = _factionColorFor(faction);
+
     try {
-      if (_root) _root.setAttribute("data-faction", canon || "");
-      if (_modal) _modal.setAttribute("data-faction", canon || "");
+      if (_back) {
+        _back.style.setProperty("--faction-color", color);
+        _back.setAttribute("data-faction", canon || "");
+      }
+      if (_root) {
+        _root.style.setProperty("--faction-color", color);
+        _root.setAttribute("data-faction", canon || "");
+      }
+      if (_modal) {
+        _modal.style.setProperty("--faction-color", color);
+        _modal.setAttribute("data-faction", canon || "");
+      }
     } catch (_) { }
   }
 
   function _prefetchBgs() {
     try {
       const v = window.WEBAPP_VER ? `?v=${encodeURIComponent(window.WEBAPP_VER)}` : "";
-      ["rb", "ew", "pb", "ih"].forEach(k => { const i = new Image(); i.src = `/hq_warroom_${k}.webp${v}`; });
+      ["rb", "ew", "pb", "ih"].forEach(k => {
+        const i = new Image();
+        i.src = `/hq_warroom_${k}.webp${v}`;
+      });
     } catch (_) { }
   }
 
   // ---------------------------
-  // UID helper (debug)
-  // ---------------------------
-  function _uid() {
-    try { return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ""); }
-    catch (_) { return ""; }
-  }
-  function _uidTail() {
-    const u = _uid();
-    return u ? u.slice(-5) : "?????";
-  }
-
-  // ---------------------------
-  // Fallback styles (ONLY if index.html doesn't provide them)
+  // Styles
   // ---------------------------
   function ensureStyles() {
-    // Jeśli masz już CSS w index.html (style#factionhq-css) — NIE nadpisujemy
-    if (document.getElementById("factionhq-css")) return;
-    if (document.getElementById("faction-hq-ui-css")) return;
+    if (document.getElementById("factionhq-premium-css")) return;
 
     const st = document.createElement("style");
-    st.id = "faction-hq-ui-css";
+    st.id = "factionhq-premium-css";
     st.textContent = `
-      #factionHQBack{ position:fixed; inset:0; z-index:999990; display:none; pointer-events:auto; }
+      #factionHQBack{
+        --faction-color:#00eaff;
+        position:fixed !important;
+        inset:0 !important;
+        z-index:999990 !important;
+        display:none;
+        pointer-events:auto;
+      }
       #factionHQBack.is-open{ display:block !important; }
-      #factionHQBack .hq-bg{ position:absolute; inset:0; background:#07080c; background-image:var(--hq-bg-url);
-        background-size:cover; background-position:center; background-repeat:no-repeat; }
-      #factionHQBack .hq-bg::after{ content:""; position:absolute; inset:0; pointer-events:none;
-        background: radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.18), rgba(0,0,0,.78)),
-                    linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.85)); }
-      #factionHQBack .hq-vignette{ position:absolute; inset:0; pointer-events:none; z-index:0;
-        background: radial-gradient(ellipse at center, rgba(0,0,0,.08) 0%, rgba(0,0,0,.55) 72%, rgba(0,0,0,.82) 100%); }
-      #factionHQModal{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:12px; z-index:1; }
-      #factionHQRoot{ width:min(560px,100%); max-height:calc(100vh - 24px); overflow:auto; -webkit-overflow-scrolling:touch;
-        background:rgba(10,12,18,.70); border:1px solid rgba(255,255,255,.14); border-radius:22px; padding:22px 18px; color:rgba(255,255,255,.92);
-        box-shadow:0 18px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08); }
-      .hq-card{ background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.10); border-radius:16px; padding:16px; margin:12px 0; }
-      .hq-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
-      .hq-btn{ width:100%; padding:14px; border-radius:12px; font-weight:800; font-size:15px; border:0; background:rgba(255,255,255,0.12); color:#fff; }
-      .hq-btn[disabled]{ opacity:.45; filter:saturate(.6); }
-      .hq-btn.primary{ background:#2b8cff; }
-      .hq-mini{ opacity:.85; font-size:13px; }
-      .hq-input{ width:100%; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.16);
-        background:rgba(0,0,0,0.25); color:#fff; outline:none; font-weight:700; }
-      .hq-feed{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
-      .hq-feed-item{ padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); font-size:13px; opacity:.95; }
-      .hq-pill{ display:inline-flex; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.10); font-size:12px; font-weight:900; letter-spacing:.4px; }
-      body.hq-open{ overflow:hidden !important; touch-action:none; }
+
+      #factionHQBack .hq-bg{
+        position:absolute !important;
+        inset:0 !important;
+        background:#07080c;
+        background-image:var(--hq-bg-url);
+        background-size:cover !important;
+        background-position:center !important;
+        background-repeat:no-repeat !important;
+      }
+      #factionHQBack .hq-bg::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+          radial-gradient(120% 70% at 50% 28%, rgba(0,0,0,.10), rgba(0,0,0,.76)),
+          linear-gradient(to bottom, rgba(0,0,0,.14), rgba(0,0,0,.88));
+      }
+      #factionHQBack .hq-vignette{
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        z-index:1;
+        background:
+          radial-gradient(ellipse at center, rgba(0,0,0,.04) 0%, rgba(0,0,0,.34) 60%, rgba(0,0,0,.82) 100%);
+      }
+      #factionHQBack .hq-noise{
+        position:absolute;
+        inset:0;
+        z-index:1;
+        pointer-events:none;
+        opacity:.10;
+        mix-blend-mode:screen;
+        background-image:
+          linear-gradient(to bottom, rgba(255,255,255,.06), rgba(255,255,255,0)),
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,.035) 0px,
+            rgba(255,255,255,.035) 1px,
+            transparent 2px,
+            transparent 4px
+          );
+      }
+
+      #factionHQModal{
+        position:absolute !important;
+        inset:0 !important;
+        z-index:2 !important;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:12px;
+      }
+
+      #factionHQRoot{
+        --faction-color:#00eaff;
+        width:min(620px, 100%);
+        max-height:calc(100vh - 24px);
+        overflow:auto;
+        -webkit-overflow-scrolling:touch;
+        padding:18px;
+        border-radius:24px;
+        color:rgba(255,255,255,.96);
+        background:
+          linear-gradient(180deg, rgba(11,13,21,.88), rgba(8,10,16,.94));
+        border:1px solid rgba(255,255,255,.12);
+        box-shadow:
+          0 20px 70px rgba(0,0,0,.55),
+          inset 0 1px 0 rgba(255,255,255,.08),
+          0 0 0 1px rgba(255,255,255,.03),
+          0 0 26px color-mix(in srgb, var(--faction-color) 28%, transparent);
+        backdrop-filter:blur(14px);
+      }
+
+      #factionHQRoot .hq-head{
+        position:relative;
+        overflow:hidden;
+        border-radius:22px;
+        padding:18px 16px 16px;
+        margin-bottom:14px;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+          radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--faction-color) 30%, transparent), transparent 42%);
+        border:1px solid rgba(255,255,255,.12);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.08),
+          0 12px 28px rgba(0,0,0,.18);
+      }
+      #factionHQRoot .hq-head::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+          linear-gradient(115deg, transparent 0%, rgba(255,255,255,.09) 48%, transparent 62%);
+        transform:translateX(-120%);
+        animation:hqScan 6.5s linear infinite;
+        opacity:.22;
+      }
+
+      #factionHQRoot .hq-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:5px 12px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.5px;
+        background:rgba(255,255,255,.07);
+        border:1px solid color-mix(in srgb, var(--faction-color) 42%, rgba(255,255,255,.12));
+        box-shadow:0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent);
+      }
+
+      #factionHQRoot .hq-title{
+        margin:10px 0 6px;
+        font-size:28px;
+        line-height:1.05;
+        font-weight:900;
+        letter-spacing:.2px;
+      }
+
+      #factionHQRoot .hq-sub{
+        opacity:.86;
+        font-size:14px;
+        line-height:1.4;
+      }
+
+      #factionHQRoot .hq-hero{
+        position:relative;
+        overflow:hidden;
+        border-radius:20px;
+        min-height:168px;
+        margin-top:14px;
+        border:1px solid rgba(255,255,255,.12);
+        background:
+          radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--faction-color) 26%, transparent), transparent 38%),
+          linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+          rgba(4,6,12,.55);
+        box-shadow:
+          inset 0 0 0 1px rgba(255,255,255,.03),
+          0 18px 30px rgba(0,0,0,.22);
+      }
+      #factionHQRoot .hq-hero::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 30%),
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,.025) 0px,
+            rgba(255,255,255,.025) 1px,
+            transparent 2px,
+            transparent 4px
+          );
+        opacity:.7;
+      }
+      #factionHQRoot .hq-hero-grid{
+        position:absolute;
+        inset:0;
+        background:
+          linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+        background-size:22px 22px;
+        mask-image:linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.15));
+        opacity:.16;
+      }
+      #factionHQRoot .hq-hero-core{
+        position:absolute;
+        left:50%;
+        top:50%;
+        width:118px;
+        height:118px;
+        transform:translate(-50%,-54%);
+        border-radius:50%;
+        border:1px solid color-mix(in srgb, var(--faction-color) 55%, transparent);
+        box-shadow:
+          0 0 28px color-mix(in srgb, var(--faction-color) 25%, transparent),
+          inset 0 0 22px color-mix(in srgb, var(--faction-color) 18%, transparent);
+        background:
+          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--faction-color) 25%, rgba(255,255,255,.04)), rgba(255,255,255,.02) 55%, transparent 70%);
+      }
+      #factionHQRoot .hq-hero-ring{
+        position:absolute;
+        left:50%;
+        top:50%;
+        width:154px;
+        height:154px;
+        transform:translate(-50%,-54%);
+        border-radius:50%;
+        border:1px dashed color-mix(in srgb, var(--faction-color) 55%, transparent);
+        opacity:.55;
+        animation:hqSpin 18s linear infinite;
+      }
+      #factionHQRoot .hq-hero-meta{
+        position:absolute;
+        left:12px;
+        right:12px;
+        bottom:12px;
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        align-items:center;
+        padding:10px 12px;
+        border-radius:14px;
+        background:rgba(0,0,0,.40);
+        border:1px solid rgba(255,255,255,.08);
+        backdrop-filter:blur(8px);
+      }
+      #factionHQRoot .hq-hero-label{
+        font-size:13px;
+        opacity:.9;
+      }
+      #factionHQRoot .hq-hero-value{
+        font-size:13px;
+        font-weight:900;
+        color:color-mix(in srgb, var(--faction-color) 70%, white);
+      }
+
+      #factionHQRoot .hq-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:14px;
+      }
+      @media (min-width: 700px){
+        #factionHQRoot .hq-grid.two{
+          grid-template-columns:1fr 1fr;
+        }
+      }
+
+      #factionHQRoot .hq-card{
+        position:relative;
+        overflow:hidden;
+        border-radius:18px;
+        padding:16px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.035));
+        border:1px solid rgba(255,255,255,.10);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.06),
+          0 10px 24px rgba(0,0,0,.18);
+      }
+      #factionHQRoot .hq-card::before{
+        content:"";
+        position:absolute;
+        inset:auto -30% 100% -30%;
+        height:60%;
+        background:radial-gradient(circle, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 60%);
+        opacity:.55;
+        pointer-events:none;
+      }
+
+      #factionHQRoot .hq-card-title{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:12px;
+      }
+      #factionHQRoot .hq-card-title b{
+        font-size:15px;
+        letter-spacing:.2px;
+      }
+
+      #factionHQRoot .hq-row{
+        display:flex;
+        gap:10px;
+        align-items:center;
+        justify-content:space-between;
+      }
+
+      #factionHQRoot .hq-stat-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+      }
+
+      #factionHQRoot .hq-stat{
+        border-radius:16px;
+        padding:14px 12px;
+        text-align:center;
+        background:rgba(0,0,0,.20);
+        border:1px solid rgba(255,255,255,.08);
+      }
+      #factionHQRoot .hq-stat-icon{
+        font-size:24px;
+        margin-bottom:8px;
+      }
+      #factionHQRoot .hq-stat-value{
+        font-size:22px;
+        font-weight:900;
+        line-height:1.05;
+      }
+      #factionHQRoot .hq-stat-label{
+        font-size:12px;
+        opacity:.78;
+        margin-top:4px;
+      }
+
+      #factionHQRoot .hq-mini{
+        opacity:.84;
+        font-size:13px;
+        line-height:1.4;
+      }
+
+      #factionHQRoot .hq-progress{
+        margin-top:12px;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+      #factionHQRoot .hq-progress-line{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+      }
+      #factionHQRoot .hq-progress-head{
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        font-size:12px;
+        opacity:.86;
+      }
+      #factionHQRoot .hq-bar{
+        height:10px;
+        border-radius:999px;
+        overflow:hidden;
+        background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.06);
+      }
+      #factionHQRoot .hq-bar > span{
+        display:block;
+        height:100%;
+        width:0%;
+        border-radius:999px;
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 62%, white), var(--faction-color));
+        box-shadow:0 0 16px color-mix(in srgb, var(--faction-color) 35%, transparent);
+      }
+
+      #factionHQRoot .hq-actions{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:10px;
+      }
+
+      #factionHQRoot .hq-btn{
+        width:100%;
+        padding:14px 14px;
+        border-radius:14px;
+        font-weight:800;
+        font-size:15px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.09);
+        color:#fff;
+        transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease, filter .15s ease;
+        box-shadow:0 8px 20px rgba(0,0,0,.18);
+      }
+      #factionHQRoot .hq-btn:active{ transform:translateY(1px) scale(.995); }
+      #factionHQRoot .hq-btn.primary{
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 88%, white), var(--faction-color));
+        color:#081018;
+        border-color:transparent;
+      }
+      #factionHQRoot .hq-btn.ghost{
+        background:rgba(255,255,255,.05);
+      }
+      #factionHQRoot .hq-btn[disabled]{
+        opacity:.45;
+        filter:saturate(.6);
+        box-shadow:none;
+      }
+
+      #factionHQRoot .hq-input{
+        width:100%;
+        padding:13px 14px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(0,0,0,.24);
+        color:#fff;
+        outline:none;
+        font-weight:700;
+        box-sizing:border-box;
+      }
+      #factionHQRoot .hq-input::placeholder{
+        color:rgba(255,255,255,.45);
+      }
+
+      #factionHQRoot .hq-feed{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        margin-top:10px;
+      }
+      #factionHQRoot .hq-feed-item{
+        padding:12px 13px;
+        border-radius:14px;
+        background:rgba(255,255,255,.055);
+        border:1px solid rgba(255,255,255,.08);
+        font-size:13px;
+        line-height:1.45;
+      }
+      #factionHQRoot .hq-feed-item.upgrade{
+        border-color:color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.08));
+        box-shadow:0 0 0 1px color-mix(in srgb, var(--faction-color) 8%, transparent) inset;
+      }
+
+      body.hq-open{
+        overflow:hidden !important;
+        touch-action:none;
+      }
+
+      @keyframes hqSpin{
+        from{ transform:translate(-50%,-54%) rotate(0deg); }
+        to{ transform:translate(-50%,-54%) rotate(360deg); }
+      }
+      @keyframes hqScan{
+        0%{ transform:translateX(-120%); }
+        100%{ transform:translateX(150%); }
+      }
     `;
     document.head.appendChild(st);
   }
 
   // ---------------------------
-  // Vignette (insert once, correct layer order)
+  // Vignette / noise
   // ---------------------------
   function ensureHQVignette() {
     if (!_back) return;
@@ -205,8 +670,15 @@
     if (!_back.querySelector(".hq-vignette")) {
       const v = document.createElement("div");
       v.className = "hq-vignette";
-      // wstaw nad .hq-bg, ale pod modalem
       bg.insertAdjacentElement("afterend", v);
+    }
+
+    if (!_back.querySelector(".hq-noise")) {
+      const n = document.createElement("div");
+      n.className = "hq-noise";
+      const v = _back.querySelector(".hq-vignette");
+      if (v) v.insertAdjacentElement("afterend", n);
+      else bg.insertAdjacentElement("afterend", n);
     }
   }
 
@@ -219,32 +691,18 @@
     _back = document.getElementById("factionHQBack");
     _modal = document.getElementById("factionHQModal");
 
-    // fallback injection if HTML not present
     if (!_back) {
       _back = document.createElement("div");
       _back.id = "factionHQBack";
       _back.style.display = "none";
-      _back.innerHTML = `<div class="hq-bg"></div><div class="hq-vignette"></div><div id="factionHQModal"></div>`;
+      _back.innerHTML = `<div class="hq-bg"></div><div class="hq-vignette"></div><div class="hq-noise"></div><div id="factionHQModal"></div>`;
       document.body.appendChild(_back);
       _modal = document.getElementById("factionHQModal");
     } else {
       if (!_back.querySelector(".hq-bg")) {
-  const bg = document.createElement("div");
-  bg.className = "hq-bg";
-  bg.style.position = "absolute";
-  bg.style.inset = "0";
-  bg.style.display = "block";
-  bg.style.visibility = "visible";
-  bg.style.opacity = "1";
-  bg.style.zIndex = "0";
-  bg.style.backgroundColor = "#07080c";
-  bg.style.backgroundSize = "cover";
-  bg.style.backgroundPosition = "center center";
-  bg.style.backgroundRepeat = "no-repeat";
-  _back.insertBefore(bg, _back.firstChild);
-      }
-      if (!_back.querySelector(".hq-vignette")) {
-        ensureHQVignette();
+        const bg = document.createElement("div");
+        bg.className = "hq-bg";
+        _back.insertBefore(bg, _back.firstChild);
       }
       if (!_modal) {
         const m = document.createElement("div");
@@ -261,7 +719,6 @@
       _modal.appendChild(_root);
     }
 
-    // make sure vignette exists even if index markup changes
     ensureHQVignette();
 
     if (!_back.__hq_click) {
@@ -270,46 +727,31 @@
         if (e.target === _back) return close();
         if (e.target?.classList?.contains("hq-bg")) return close();
         if (e.target?.classList?.contains("hq-vignette")) return close();
+        if (e.target?.classList?.contains("hq-noise")) return close();
       });
     }
   }
 
-  function fmtTs(t) {
-    try { return new Date((t || 0) * 1000).toLocaleString(); }
-    catch (_) { return ""; }
-  }
-
-  function _rid(prefix = "hq") {
-    try {
-      const uid = _uid() || "0";
-      const r = (crypto?.randomUUID ? crypto.randomUUID() : (String(Date.now()) + Math.random().toString(16).slice(2)));
-      return `${prefix}:${uid}:${r}`;
-    } catch (_) {
-      return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
-    }
-  }
-
   // ---------------------------
-  // open/close
+  // Open / close
   // ---------------------------
-async function open() {
-  ensureModal();
+  async function open() {
+    ensureModal();
 
-  // najpierw pokaż warstwy
-  _back.classList.add("is-open");
-  document.body.classList.add("hq-open");
+    _back.classList.add("is-open");
+    document.body.classList.add("hq-open");
 
-  let cached =
-    window.PROFILE?.faction ||
-    window.PLAYER_STATE?.profile?.faction ||
-    (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
+    let cached =
+      window.PROFILE?.faction ||
+      window.PLAYER_STATE?.profile?.faction ||
+      (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
 
-  cached = _canonFaction(cached) || cached;
+    cached = _canonFaction(cached) || cached;
 
-  applyHqBg(cached);
-  applyHQTheme(cached);
+    applyHqBg(cached);
+    applyHQTheme(cached);
 
-  await render();
+    await render();
   }
 
   function close() {
@@ -318,12 +760,9 @@ async function open() {
   }
 
   // ---------------------------
-  // Render
+  // State normalization
   // ---------------------------
   function _normStatePayload(res) {
-    // wspieramy obie struktury:
-    // A) {ok:true, data:{...}}
-    // B) {ok:true, faction:"...", hq:{...}, ...}
     if (!res || typeof res !== "object") return { ok: false, reason: "NO_RESPONSE" };
     if (res.data && typeof res.data === "object") {
       return { ok: !!res.ok, reason: res.reason, data: res.data, _raw: res };
@@ -331,22 +770,29 @@ async function open() {
     return { ok: !!res.ok, reason: res.reason, data: res, _raw: res };
   }
 
+  // ---------------------------
+  // Render
+  // ---------------------------
   async function render() {
     if (!_apiPost) {
-      _root.innerHTML = `<div class="hq-card">API not ready.</div>
-        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
+      _root.innerHTML = `
+        <div class="hq-card">API not ready.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
       return;
     }
 
-    _root.innerHTML = `<div class="hq-card">Loading HQ…</div>`;
+    _root.innerHTML = `<div class="hq-card" style="text-align:center;">Loading HQ…</div>`;
 
     let raw;
     try {
       raw = await _apiPost("/webapp/faction/hq/state", _dbg ? { dbg: true } : {});
       log("state raw:", raw);
     } catch (e) {
-      _root.innerHTML = `<div class="hq-card">HQ load failed.</div>
-        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>`;
+      _root.innerHTML = `
+        <div class="hq-card">HQ load failed.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
       return;
     }
 
@@ -355,34 +801,38 @@ async function open() {
 
     if (!res.ok) {
       const reason = res.reason || "NO_FACTION";
+
       if (reason === "NO_FACTION") {
         _root.innerHTML = `
-          <div style="text-align:center; margin-bottom:10px;">
-            <h2 style="margin:0 0 6px;">Faction HQ</h2>
-            <div class="hq-mini">Join a faction to access HQ.</div>
+          <div class="hq-head" style="text-align:center;">
+            <div class="hq-pill">HQ</div>
+            <h2 class="hq-title">Faction HQ</h2>
+            <div class="hq-sub">Join a faction to access headquarters.</div>
           </div>
-          <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
-          <div style="height:10px"></div>
-          <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+          <div class="hq-grid">
+            <div class="hq-card">
+              <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
+              <div style="height:10px"></div>
+              <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+            </div>
+          </div>
         `;
         return;
       }
+
       _root.innerHTML = `
-        <div class="hq-card">HQ error: <b>${String(reason)}</b></div>
+        <div class="hq-card">HQ error: <b>${esc(reason)}</b></div>
         <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
       `;
       return;
     }
 
-    // faction from payload
     const fkRaw = d.faction || res._raw?.faction || "";
     const fk = _canonFaction(fkRaw) || String(fkRaw || "").toLowerCase();
 
-    // ✅ authoritative bg + ring theme
     applyHqBg(fk);
     applyHQTheme(fk);
 
-    // cache + notify other modules
     try {
       if (fk) localStorage.setItem("ah_faction", fk);
       window.Influence?.setFaction?.(fk);
@@ -390,121 +840,183 @@ async function open() {
     } catch (_) { }
 
     const tre = d.treasury || {};
-    const bones = tre.bones || 0;
-    const scrap = tre.scrap || 0;
+    const bones = Number(tre.bones || 0);
+    const scrap = Number(tre.scrap || 0);
     const feed = Array.isArray(d.feed) ? d.feed : [];
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
     const nextLevel = curLevel + 1;
+
     const nextCost = d.nextUpgradeCost || {};
     const needBones = parseInt(nextCost.bones || 0, 10) || 0;
     const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
     const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
 
-    const dbgLine = _dbg ? `<div class="hq-mini" style="margin-top:6px; opacity:.75;">
-      uid …${_uidTail()} • faction <b>${String(fk || "")}</b>
-    </div>` : "";
+    const bonesPct = pct(bones, needBones);
+    const scrapPct = pct(scrap, needScrap);
+    const bonesLeft = Math.max(0, needBones - bones);
+    const scrapLeft = Math.max(0, needScrap - scrap);
+
+    const dbgLine = _dbg ? `
+      <div class="hq-sub" style="margin-top:8px;opacity:.72;">
+        uid …${_uidTail()} • faction <b>${esc(String(fk || ""))}</b>
+      </div>
+    ` : "";
 
     _root.innerHTML = `
-      <div style="text-align:center; margin-bottom:10px;">
+      <div class="hq-head">
         <div class="hq-pill">HQ</div>
-        <h2 style="margin:8px 0 6px;">${niceFactionName(fk)}</h2>
-        <div class="hq-mini">Level ${d.level || 1} • Members ${d.membersCount ?? "—"}</div>
+        <div class="hq-title">${esc(niceFactionName(fk))}</div>
+        <div class="hq-sub">
+          Level <b>${num(curLevel)}</b> • Members <b>${num(d.membersCount ?? "—")}</b>
+        </div>
         ${dbgLine}
-      </div>
 
-      <div class="hq-card">
-        <div class="hq-row">
-          <div><b>Treasury</b></div>
-          <div class="hq-mini">shared vault</div>
-        </div>
-        <div style="height:10px"></div>
-        <div class="hq-row">
-          <div>🦴 Bones</div><div><b>${bones}</b></div>
-        </div>
-        <div class="hq-row" style="margin-top:6px;">
-          <div>🔩 Scrap</div><div><b>${scrap}</b></div>
+        <div class="hq-hero">
+          <div class="hq-hero-grid"></div>
+          <div class="hq-hero-ring"></div>
+          <div class="hq-hero-core"></div>
+          <div class="hq-hero-meta">
+            <div class="hq-hero-label">Faction Headquarters</div>
+            <div class="hq-hero-value">Level ${num(curLevel)}</div>
+          </div>
         </div>
       </div>
 
-      <div class="hq-card">
-        <div class="hq-row">
-          <div><b>Upgrade HQ</b></div>
-          <div class="hq-mini">community build</div>
+      <div class="hq-grid two">
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Treasury</b>
+            <span class="hq-mini">shared vault</span>
+          </div>
+
+          <div class="hq-stat-grid">
+            <div class="hq-stat">
+              <div class="hq-stat-icon">🦴</div>
+              <div class="hq-stat-value">${num(bones)}</div>
+              <div class="hq-stat-label">Bones</div>
+            </div>
+            <div class="hq-stat">
+              <div class="hq-stat-icon">🔩</div>
+              <div class="hq-stat-value">${num(scrap)}</div>
+              <div class="hq-stat-label">Scrap</div>
+            </div>
+          </div>
+
+          <div class="hq-progress">
+            <div class="hq-progress-line">
+              <div class="hq-progress-head">
+                <span>Bones toward Lv ${num(nextLevel)}</span>
+                <span>${num(bones)} / ${num(needBones)}</span>
+              </div>
+              <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
+            </div>
+
+            <div class="hq-progress-line">
+              <div class="hq-progress-head">
+                <span>Scrap toward Lv ${num(nextLevel)}</span>
+                <span>${num(scrap)} / ${num(needScrap)}</span>
+              </div>
+              <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
+            </div>
+          </div>
+
+          <div class="hq-mini" style="margin-top:12px;">
+            Remaining: <b>${num(bonesLeft)}</b> 🦴 + <b>${num(scrapLeft)}</b> 🔩
+          </div>
         </div>
 
-        <div class="hq-mini" style="margin-top:8px;">
-          Next level: <b>${nextLevel}</b><br/>
-          Cost: <b>${needBones}</b> 🦴 + <b>${needScrap}</b> 🔩<br/>
-          <span class="hq-mini" style="opacity:.85;">
-            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
-          </span>
-        </div>
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Upgrade HQ</b>
+            <span class="hq-mini">community build</span>
+          </div>
 
-        <div style="margin-top:10px;">
-          <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
-            Upgrade to Level ${nextLevel}
-          </button>
-          ${canUpgrade ? "" : `<div class="hq-mini" style="margin-top:8px; opacity:.8;">
-            Not enough in treasury yet — donate to push it over the line.
-          </div>`}
-        </div>
-      </div>
+          <div class="hq-mini">
+            Next level: <b>${num(nextLevel)}</b><br/>
+            Cost: <b>${num(needBones)}</b> 🦴 + <b>${num(needScrap)}</b> 🔩<br/>
+            <span style="opacity:.86;">
+              Bonus: +5% influence multiplier per level
+              (and daily scrap bonus grows).
+            </span>
+          </div>
 
-      <div class="hq-card">
-        <b>Donate</b>
-        <div class="hq-mini" style="margin-top:6px;">Fuel upgrades later. For now: it’s the signal.</div>
-
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 🦴</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 🦴</button>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 🔩</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 🔩</button>
-        </div>
-
-        <div style="margin-top:10px;">
-          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
-          <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="hq-btn" onclick="FactionHQ._donateCustom('bones')">Custom 🦴</button>
-            <button class="hq-btn" onclick="FactionHQ._donateCustom('scrap')">Custom 🔩</button>
+          <div style="margin-top:14px;">
+            <button class="hq-btn primary" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+              Upgrade to Level ${num(nextLevel)}
+            </button>
+            ${canUpgrade ? "" : `
+              <div class="hq-mini" style="margin-top:10px;opacity:.8;">
+                Not enough in treasury yet — donate to push it over the line.
+              </div>
+            `}
           </div>
         </div>
       </div>
 
       <div class="hq-card">
-        <div class="hq-row">
+        <div class="hq-card-title">
+          <b>Donate</b>
+          <span class="hq-mini">fuel the HQ</span>
+        </div>
+
+        <div class="hq-mini" style="margin-bottom:12px;">
+          Donate to the shared faction treasury and help unlock the next level.
+        </div>
+
+        <div class="hq-actions">
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 🔩</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 🔩</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
+          <div class="hq-actions" style="margin-top:10px;">
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('bones')">Custom 🦴</button>
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('scrap')">Custom 🔩</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
           <b>Recent activity</b>
-          <button class="hq-btn" style="width:auto; padding:10px 12px;" onclick="FactionHQ.open()">Refresh</button>
+          <button class="hq-btn ghost" style="width:auto;padding:10px 14px;" onclick="FactionHQ.open()">Refresh</button>
         </div>
 
         <div class="hq-feed">
           ${feed.length ? feed.map((x) => {
-            const who = (x.uid ? String(x.uid).slice(-4) : "????");
+            const who = x.uid ? String(x.uid).slice(-4) : "????";
             const t = fmtTs(x.t);
-
             if (x.type === "upgrade") {
               const lvl = x.level || "?";
-              return `<div class="hq-feed-item">
-                <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${lvl})</span><br/>
-                <span class="hq-mini">by …${who} • ${t}</span>
-              </div>`;
+              return `
+                <div class="hq-feed-item upgrade">
+                  <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${esc(lvl)})</span><br/>
+                  <span class="hq-mini">by …${esc(who)} • ${esc(t)}</span>
+                </div>
+              `;
             }
 
-            const amt = x.amount || 0;
-            const asset = x.asset || "";
+            const amt = Number(x.amount || 0);
+            const asset = String(x.asset || "");
             const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
-            return `<div class="hq-feed-item">
-              <b>${icon} ${amt}</b> to treasury <span class="hq-mini">(${asset})</span><br/>
-              <span class="hq-mini">from …${who} • ${t}</span>
-            </div>`;
-          }).join("") : `<div class="hq-feed-item hq-mini">No activity yet.</div>`}
+
+            return `
+              <div class="hq-feed-item">
+                <b>${icon} ${num(amt)}</b> to treasury <span class="hq-mini">(${esc(asset)})</span><br/>
+                <span class="hq-mini">from …${esc(who)} • ${esc(t)}</span>
+              </div>
+            `;
+          }).join("") : `
+            <div class="hq-feed-item hq-mini">No activity yet.</div>
+          `}
         </div>
       </div>
 
-      <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
     `;
   }
 
@@ -560,14 +1072,24 @@ async function open() {
     }
   }
 
+  // ---------------------------
+  // Init
+  // ---------------------------
   function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     log("init ok");
-
     _prefetchBgs();
   }
 
-  window.FactionHQ = { init, open, close, _donate, _donateCustom, _upgrade, applyHqBg };
+  window.FactionHQ = {
+    init,
+    open,
+    close,
+    _donate,
+    _donateCustom,
+    _upgrade,
+    applyHqBg
+  };
 })();
