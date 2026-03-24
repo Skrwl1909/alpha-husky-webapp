@@ -66,6 +66,52 @@
     return Math.max(1, Math.min(7, n));
   }
 
+  function _recentContributors(feed, limit = 6) {
+  const src = Array.isArray(feed) ? feed : [];
+  const byUid = new Map();
+
+  for (const x of src) {
+    const uid = x && x.uid ? String(x.uid) : "";
+    if (!uid) continue;
+
+    const t = Number(x.t || 0);
+    const amount = Number(x.amount || 0);
+
+    if (!byUid.has(uid)) {
+      byUid.set(uid, {
+        uid,
+        tail: uid.slice(-4),
+        lastTs: t,
+        actions: 0,
+        upgrades: 0,
+        bones: 0,
+        scrap: 0,
+      });
+    }
+
+    const row = byUid.get(uid);
+    row.actions += 1;
+    row.lastTs = Math.max(row.lastTs, t);
+
+    if (x.type === "upgrade") row.upgrades += 1;
+    if (x.asset === "bones") row.bones += amount;
+    if (x.asset === "scrap") row.scrap += amount;
+  }
+
+  return Array.from(byUid.values())
+    .sort((a, b) => (b.lastTs - a.lastTs) || (b.actions - a.actions))
+    .slice(0, limit);
+}
+
+function _contribSummary(c) {
+  if (!c) return "";
+  if (c.upgrades > 0) return `Upgrades ${c.upgrades}`;
+  if (c.bones > 0 && c.scrap > 0) return `${num(c.bones)}🦴 • ${num(c.scrap)}🔩`;
+  if (c.bones > 0) return `${num(c.bones)}🦴`;
+  if (c.scrap > 0) return `${num(c.scrap)}🔩`;
+  return `${num(c.actions)} actions`;
+}
+  
   // ---------------------------
   // Faction normalization
   // ---------------------------
@@ -788,6 +834,75 @@
       #factionHQRoot .hq-feed-item.upgrade{
         border-color:color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.08));
         box-shadow:0 0 0 1px color-mix(in srgb, var(--faction-color) 8%, transparent) inset;
+      }
+            #factionHQRoot .hq-contrib-strip{
+        display:flex;
+        gap:10px;
+        overflow-x:auto;
+        padding-bottom:4px;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+      }
+      #factionHQRoot .hq-contrib-strip::-webkit-scrollbar{
+        display:none;
+      }
+
+      #factionHQRoot .hq-contrib{
+        min-width:92px;
+        flex:0 0 auto;
+        border-radius:16px;
+        padding:10px 10px 9px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.035));
+        border:1px solid rgba(255,255,255,.08);
+        text-align:center;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.05),
+          0 8px 18px rgba(0,0,0,.16);
+      }
+
+      #factionHQRoot .hq-contrib-badge{
+        width:42px;
+        height:42px;
+        margin:0 auto 8px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.5px;
+        color:#fff;
+        background:
+          radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 35%),
+          linear-gradient(180deg, color-mix(in srgb, var(--faction-color) 36%, #1a2030), #0d111b 88%);
+        border:1px solid color-mix(in srgb, var(--faction-color) 36%, rgba(255,255,255,.12));
+        box-shadow:
+          0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent),
+          inset 0 1px 0 rgba(255,255,255,.08);
+      }
+
+      #factionHQRoot .hq-contrib-name{
+        font-size:12px;
+        font-weight:900;
+        line-height:1.1;
+        margin-bottom:4px;
+      }
+
+      #factionHQRoot .hq-contrib-meta{
+        font-size:11px;
+        opacity:.78;
+        line-height:1.2;
+        white-space:nowrap;
+      }
+
+      #factionHQRoot .hq-contrib-empty{
+        border-radius:14px;
+        padding:12px;
+        background:rgba(255,255,255,.04);
+        border:1px dashed rgba(255,255,255,.10);
+        font-size:13px;
+        opacity:.8;
       }
 
       body.hq-open{
