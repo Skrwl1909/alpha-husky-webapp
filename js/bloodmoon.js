@@ -643,23 +643,20 @@
 .bm-battle-stage{
   position:relative;
   overflow:hidden;
-  border-radius:20px;
+  min-height:300px;
+  border-radius:22px;
   border:1px solid rgba(255,255,255,.08);
   background:
-    radial-gradient(circle at 50% 0%, rgba(255,94,112,.16), transparent 50%),
-    linear-gradient(180deg, rgba(30,8,14,.95), rgba(14,8,12,.92));
-  padding:16px;
-  display:grid;
-  grid-template-columns:minmax(0,1fr);
-  gap:14px;
+    radial-gradient(circle at 70% 10%, rgba(255,94,112,.18), transparent 30%),
+    radial-gradient(circle at 24% 76%, rgba(78,112,255,.10), transparent 30%),
+    linear-gradient(180deg, rgba(18,8,13,.98), rgba(8,8,14,.96));
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.03),
     0 18px 34px rgba(0,0,0,.28);
 }
-@media (min-width:640px){
+@media (max-width:639px){
   .bm-battle-stage{
-    grid-template-columns:minmax(0,1fr) minmax(160px, .8fr) minmax(0,1fr);
-    align-items:center;
+    min-height:276px;
   }
 }
 .bm-battle-stage::before{
@@ -667,8 +664,8 @@
   position:absolute;
   inset:0;
   background:
-    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.03) 48%, transparent 52%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgba(255,255,255,.025) 50%, transparent 100%);
+    linear-gradient(180deg, rgba(255,255,255,.05), transparent 20%, transparent 76%, rgba(0,0,0,.26)),
+    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.03) 48%, transparent 52%);
   pointer-events:none;
 }
 .bm-battle-stage.is-crit{
@@ -682,7 +679,7 @@
 }
 .bm-battle-stage.is-empty{
   display:block;
-  min-height:190px;
+  min-height:220px;
 }
 .bm-battle-stage.is-pixi-active{
   border-color:rgba(255,255,255,.10);
@@ -701,14 +698,135 @@
   height:100%;
   display:block;
 }
-.bm-battle-stage.is-replaying .bm-battle-side-player .bm-battle-crest{
-  animation:bmBattleAdvance .75s ease;
+.bm-battle-stage-ui{
+  position:relative;
+  z-index:1;
+  min-height:inherit;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px;
+  pointer-events:none;
 }
-.bm-battle-stage.is-replaying .bm-battle-side-enemy .bm-battle-crest{
-  animation:bmBattleHit .72s ease;
+.bm-battle-stage-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
 }
-.bm-battle-stage.is-replaying .bm-battle-impact-core{
+.bm-battle-stage-kicker{
+  font-size:10px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.62);
+  font-weight:900;
+}
+.bm-battle-stage-meta{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:28px;
+  padding:0 10px;
+  border-radius:999px;
+  background:rgba(8,12,20,.46);
+  border:1px solid rgba(255,255,255,.09);
+  color:#dfe6ff;
+  font-size:11px;
+  font-weight:800;
+}
+.bm-battle-stage-focus{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  margin:auto 0;
+}
+.bm-battle-stage-wave{
+  max-width:min(100%, 260px);
+  padding:7px 12px;
+  border-radius:999px;
+  background:rgba(8,12,20,.40);
+  border:1px solid rgba(255,255,255,.08);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.bm-battle-hit-value{
+  font-size:clamp(34px, 8vw, 58px);
+  line-height:1;
+  font-weight:950;
+  color:#fff;
+  text-shadow:
+    0 0 28px rgba(255,94,112,.26),
+    0 8px 24px rgba(0,0,0,.34);
+}
+.bm-battle-hit-value.is-crit{
+  color:#ffd978;
+  text-shadow:
+    0 0 30px rgba(255,217,120,.30),
+    0 8px 24px rgba(0,0,0,.34);
+}
+.bm-battle-hit-sub{
+  max-width:min(100%, 300px);
+  color:rgba(255,255,255,.78);
+  font-size:12px;
+  line-height:1.42;
+}
+.bm-battle-stage-bottom{
+  display:grid;
+  gap:12px;
+  align-items:end;
+}
+@media (min-width:640px){
+  .bm-battle-stage-bottom{
+    grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+    gap:18px;
+  }
+}
+.bm-battle-stage-player{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.bm-battle-stage-playerline{
+  font-size:14px;
+  font-weight:900;
+  color:#fff;
+}
+.bm-battle-stage-playersub{
+  font-size:12px;
+  color:rgba(255,255,255,.66);
+}
+.bm-battle-stage-enemy{
+  min-width:0;
+}
+.bm-battle-stage-enemyhead{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.bm-battle-stage-enemyname{
+  font-size:14px;
+  font-weight:900;
+  color:#fff;
+}
+.bm-battle-stage-enemysub{
+  font-size:11px;
+  color:rgba(255,255,255,.62);
+  text-align:right;
+}
+.bm-battle-stage.is-replaying .bm-battle-hit-value{
   animation:bmBattleImpact .92s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bm-battle-stage.is-replaying .bm-battle-hit-sub{
+  animation:bmBattleLogIn .5s ease;
 }
 .bm-battle-stage.is-replaying .bm-battle-hp-before{
   animation:bmBattleDrain .95s cubic-bezier(0.25, 1, 0.3, 1) forwards;
@@ -771,118 +889,15 @@
   font-weight:900;
   color:#fff;
 }
-.bm-battle-grid{
-  position:relative;
-  z-index:1;
-  display:contents;
-}
-.bm-battle-side{
-  min-width:0;
-  position:relative;
-  z-index:1;
-}
-.bm-battle-side-head{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.bm-battle-side-player .bm-battle-side-head{
-  justify-content:flex-start;
-}
-.bm-battle-side-enemy .bm-battle-side-head{
-  justify-content:flex-start;
-}
-@media (min-width:640px){
-  .bm-battle-side-enemy .bm-battle-side-head{
-    justify-content:flex-end;
-  }
-  .bm-battle-side-enemy{
-    text-align:right;
-  }
-}
-.bm-battle-crest{
-  width:58px;
-  height:58px;
-  border-radius:18px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:900;
-  font-size:18px;
-  color:#fff;
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 10px 24px rgba(0,0,0,.24);
-  flex:0 0 auto;
-}
-.bm-battle-side-player .bm-battle-crest{
-  background:linear-gradient(180deg, #a32034, #5c1120);
-}
-.bm-battle-side-enemy .bm-battle-crest{
-  background:linear-gradient(180deg, #5f1320, #21070d);
-}
-.bm-battle-side-role{
-  font-size:11px;
-  letter-spacing:.45px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.54);
-}
-.bm-battle-side-name{
-  margin-top:2px;
-  font-size:18px;
-  font-weight:900;
-  color:#fff;
-}
-.bm-battle-side-sub{
-  margin-top:3px;
-  font-size:12px;
-  color:rgba(255,255,255,.68);
-}
-.bm-battle-impact{
-  display:flex;
-  justify-content:center;
-  position:relative;
-  z-index:1;
-}
-.bm-battle-impact-core{
-  width:100%;
-  max-width:180px;
-  text-align:center;
-  border-radius:18px;
-  padding:14px 12px;
-  border:1px solid rgba(255,255,255,.10);
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255,94,112,.16), transparent 64%),
-    rgba(255,255,255,.03);
-}
-.bm-battle-impact-label{
-  font-size:11px;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.56);
-}
-.bm-battle-damage{
-  margin-top:6px;
-  font-size:30px;
-  line-height:1;
-  font-weight:900;
-  color:#fff;
-  text-shadow:0 0 24px rgba(255,94,112,.22);
-}
-.bm-battle-impact-core.is-crit .bm-battle-damage{
-  color:#ffd978;
-  text-shadow:0 0 28px rgba(255,217,120,.34);
-}
-.bm-battle-impact-sub{
-  margin-top:8px;
-  font-size:12px;
-  color:rgba(255,255,255,.74);
-}
 .bm-battle-hp-wrap{
-  margin-top:14px;
+  padding:10px 12px 12px;
+  border-radius:16px;
+  background:rgba(8,12,20,.44);
+  border:1px solid rgba(255,255,255,.07);
 }
 .bm-battle-hp-track{
   position:relative;
-  height:16px;
+  height:12px;
   overflow:hidden;
   border-radius:999px;
   background:rgba(255,255,255,.08);
@@ -912,15 +927,14 @@
   justify-content:space-between;
   gap:8px;
   margin-top:8px;
-  font-size:12px;
+  font-size:11px;
   color:rgba(255,255,255,.76);
 }
 .bm-battle-log{
   margin-top:12px;
-  grid-column:1 / -1;
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:7px;
   position:relative;
   z-index:1;
 }
@@ -929,15 +943,15 @@
   display:flex;
   gap:10px;
   align-items:flex-start;
-  background:rgba(255,255,255,.03);
+  background:rgba(255,255,255,.025);
   border:1px solid rgba(255,255,255,.06);
-  border-radius:14px;
-  padding:10px 12px;
+  border-radius:13px;
+  padding:9px 11px;
 }
 .bm-battle-log-no{
   flex:0 0 auto;
-  width:26px;
-  height:26px;
+  width:24px;
+  height:24px;
   border-radius:999px;
   display:inline-flex;
   align-items:center;
@@ -948,7 +962,7 @@
   font-weight:900;
 }
 .bm-battle-log-text{
-  font-size:13px;
+  font-size:12px;
   color:#fff;
   line-height:1.35;
 }
@@ -984,178 +998,6 @@
   text-align:center;
   color:rgba(255,255,255,.62);
   font-size:13px;
-}
-/* ===== Blood-Moon Battle Cleanup v1 ===== */
-
-/* 1) Cały battle stage ma być spokojniejszy i czytelniejszy */
-.bm-battle-stage{
-  min-height:220px;
-  padding:14px 12px 12px;
-  gap:10px;
-  background:linear-gradient(180deg, rgba(20,10,14,.94), rgba(11,8,10,.96));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.025),
-    0 12px 24px rgba(0,0,0,.22);
-}
-
-@media (min-width:640px){
-  .bm-battle-stage{
-    grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);
-    align-items:start;
-  }
-}
-
-/* 2) Wywalamy dodatkowy wizualny szum z overlay lines */
-.bm-battle-stage::before{
-  display:none;
-}
-
-/* 3) Pixi nie może przykrywać całej sekcji i logu */
-.bm-battle-pixi-host{
-  inset:0 0 auto 0;
-  height:185px;
-  opacity:.74;
-}
-
-/* 4) Mniejsze, spokojniejsze portrety / badge */
-.bm-battle-side-head{
-  gap:10px;
-}
-
-.bm-battle-crest{
-  width:48px;
-  height:48px;
-  border-radius:14px;
-  font-size:15px;
-  box-shadow:0 8px 16px rgba(0,0,0,.18);
-}
-
-.bm-battle-side-name{
-  font-size:16px;
-}
-
-.bm-battle-side-sub{
-  margin-top:2px;
-  font-size:11px;
-  color:rgba(255,255,255,.62);
-}
-
-/* 5) Środkowy panel hitu ma być lżejszy */
-.bm-battle-impact-core{
-  max-width:128px;
-  padding:10px 8px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.025);
-}
-
-.bm-battle-impact-label{
-  font-size:10px;
-  letter-spacing:.4px;
-}
-
-.bm-battle-damage{
-  margin-top:4px;
-  font-size:24px;
-  text-shadow:0 0 12px rgba(255,94,112,.14);
-}
-
-.bm-battle-impact-sub{
-  display:none;
-}
-
-/* 6) HP ma być prostsze i czytelniejsze */
-.bm-battle-hp-wrap{
-  margin-top:10px;
-}
-
-.bm-battle-hp-track{
-  height:12px;
-}
-
-.bm-battle-hp-line{
-  justify-content:flex-start;
-  margin-top:6px;
-  font-size:11px;
-  color:rgba(255,255,255,.72);
-}
-
-/* 7) Log ma być wsparciem, nie drugim głównym panelem */
-.bm-battle-log{
-  margin-top:10px;
-  gap:6px;
-  position:relative;
-  z-index:2;
-}
-
-.bm-battle-log-item{
-  padding:8px 10px;
-  border-radius:12px;
-  background:rgba(255,255,255,.022);
-  border:1px solid rgba(255,255,255,.05);
-}
-
-.bm-battle-log-no{
-  width:22px;
-  height:22px;
-  font-size:10px;
-}
-
-.bm-battle-log-text{
-  font-size:12px;
-  line-height:1.28;
-}
-
-.bm-battle-log-sub{
-  margin-top:2px;
-  font-size:10px;
-  color:rgba(255,255,255,.50);
-}
-
-/* 8) Trochę lżejszy stan crit / cleared */
-.bm-battle-stage.is-crit{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.03),
-    0 12px 24px rgba(0,0,0,.24),
-    0 0 16px rgba(255,193,94,.08);
-}
-
-.bm-battle-stage.is-cleared{
-  border-color:rgba(255,94,112,.14);
-}
-
-/* 9) Mobile: prostszy układ */
-@media (max-width:639px){
-  .bm-battle-stage{
-    grid-template-columns:minmax(0,1fr) 110px;
-    grid-template-areas:
-      "player impact"
-      "enemy enemy";
-    align-items:start;
-    gap:12px;
-  }
-
-  .bm-battle-side-player{
-    grid-area:player;
-  }
-
-  .bm-battle-impact{
-    grid-area:impact;
-    justify-content:flex-end;
-  }
-
-  .bm-battle-side-enemy{
-    grid-area:enemy;
-    text-align:left;
-  }
-
-  .bm-battle-side-enemy .bm-battle-side-head{
-    justify-content:space-between;
-  }
-
-  .bm-battle-pixi-host{
-    height:170px;
-  }
 }
     `.trim();
 
@@ -1443,9 +1285,9 @@
     const afterPct = pct((hpAfter / hpMax) * 100);
     const playerName = String(battle?.player?.name || "You");
     const playerLevel = Math.max(1, Number(battle?.player?.level || 1));
-    const playerFaction = factionLabel(battle?.player?.faction);
+    const playerFaction = factionLabel(battle?.player?.faction) || "Unbound";
     const enemyName = String(battle?.enemy?.name || `Blood-Moon Wave ${wave}`);
-    const stamp = fmtBattleStamp(battle?.ts);
+    const stamp = fmtBattleStamp(battle?.ts) || "Fresh strike";
     const logs = buildBattleLogRows(battle);
     const impactLabel = battle?.waveCleared
       ? "Wave Broken"
@@ -1464,8 +1306,8 @@
           <div class="bm-battle-head">
             <div>
               <div class="bm-label">Battle Viewer</div>
-              <div class="bm-battle-title">Replay-Lite Stage Ready</div>
-              <div class="bm-battle-sub">Your next Blood-Moon strike will appear here as a stylized battle moment.</div>
+              <div class="bm-battle-title">Raid Strike Viewer Ready</div>
+              <div class="bm-battle-sub">Your next Blood-Moon hit will appear here as a focused raid strike scene.</div>
             </div>
             <div class="bm-battle-chip">Waiting</div>
           </div>
@@ -1488,8 +1330,8 @@
         <div class="bm-battle-head">
           <div>
             <div class="bm-label">Battle Viewer</div>
-            <div class="bm-battle-title">Last Strike Replay-Lite</div>
-            <div class="bm-battle-sub">A stylized hit view driven by the real Blood-Moon battle summary.</div>
+            <div class="bm-battle-title">Last Raid Strike</div>
+            <div class="bm-battle-sub">A focused strike scene driven by the real Blood-Moon battle summary.</div>
           </div>
           <button class="bm-battle-replay" data-bm-replay type="button">Replay Strike</button>
         </div>
@@ -1508,60 +1350,55 @@
             style="--bm-before-pct:${beforePct}%;--bm-after-pct:${afterPct}%"
           >
             <div class="bm-battle-pixi-host" data-bm-pixi-host></div>
-            <div class="bm-battle-grid">
-              <div class="bm-battle-side bm-battle-side-player">
-                <div class="bm-battle-side-head">
-                  <div class="bm-battle-crest">${esc(battleInitial(playerName, "Y"))}</div>
-                  <div>
-                    <div class="bm-battle-side-role">Hunter</div>
-                    <div class="bm-battle-side-name">${esc(playerName)}</div>
-                    <div class="bm-battle-side-sub">${esc(playerFaction)} • Lv ${fmtNum(playerLevel)}</div>
+            <div class="bm-battle-stage-ui">
+              <div class="bm-battle-stage-top">
+                <div class="bm-battle-stage-kicker">Blood-Moon Raid</div>
+                <div class="bm-battle-stage-meta">${esc(stamp)}</div>
+              </div>
+
+              <div class="bm-battle-stage-focus">
+                <div class="bm-battle-stage-wave">${esc(enemyName)} • Wave ${fmtNum(wave)}</div>
+                <div class="bm-battle-hit-value ${battle?.attack?.crit ? "is-crit" : ""}">-${fmtNum(damage)}</div>
+                <div class="bm-battle-hit-sub">${esc(impactLabel)} • ${esc(impactSub)}</div>
+              </div>
+
+              <div class="bm-battle-stage-bottom">
+                <div class="bm-battle-stage-player">
+                  <div class="bm-battle-stage-playerline">${esc(playerName)}</div>
+                  <div class="bm-battle-stage-playersub">${esc(playerFaction)} • Lv ${fmtNum(playerLevel)}</div>
+                </div>
+
+                <div class="bm-battle-stage-enemy">
+                  <div class="bm-battle-stage-enemyhead">
+                    <span class="bm-battle-stage-enemyname">${fmtNum(hpAfter)} / ${fmtNum(hpMax)} HP</span>
+                    <span class="bm-battle-stage-enemysub">${afterPct}% remain</span>
+                  </div>
+                  <div class="bm-battle-hp-wrap">
+                    <div class="bm-battle-hp-track">
+                      <div class="bm-battle-hp-before"></div>
+                      <div class="bm-battle-hp-current"></div>
+                    </div>
+                    <div class="bm-battle-hp-line">
+                      <span>Before ${fmtNum(hpBefore)}</span>
+                      <span>After ${fmtNum(hpAfter)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <div class="bm-battle-impact">
-                <div class="bm-battle-impact-core ${battle?.attack?.crit ? "is-crit" : ""}">
-                  <div class="bm-battle-impact-label">${esc(impactLabel)}</div>
-                  <div class="bm-battle-damage">-${fmtNum(damage)}</div>
-                  <div class="bm-battle-impact-sub">${esc(impactSub)}</div>
-                </div>
-              </div>
-
-              <div class="bm-battle-side bm-battle-side-enemy">
-                <div class="bm-battle-side-head">
-                  <div>
-                    <div class="bm-battle-side-role">Target</div>
-                    <div class="bm-battle-side-name">${esc(enemyName)}</div>
-                    <div class="bm-battle-side-sub">Shared raid enemy • ${afterPct}% remaining</div>
-                  </div>
-                  <div class="bm-battle-crest">${esc(`W${wave}`)}</div>
-                </div>
-
-                <div class="bm-battle-hp-wrap">
-                  <div class="bm-battle-hp-track">
-                    <div class="bm-battle-hp-before"></div>
-                    <div class="bm-battle-hp-current"></div>
-                  </div>
-                  <div class="bm-battle-hp-line">
-              <span>${fmtNum(hpAfter)} / ${fmtNum(hpMax)} HP • ${afterPct}% remaining</span>
-              </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bm-battle-log">
-              ${logs.map((row, idx) => `
-                <div class="bm-battle-log-item">
-                  <div class="bm-battle-log-no">${idx + 1}</div>
-                  <div>
-                    <div class="bm-battle-log-text">${esc(row.text || "")}</div>
-                    <div class="bm-battle-log-sub">${esc(row.sub || "")}</div>
-                  </div>
-                </div>
-              `).join("")}
             </div>
           </div>
+        </div>
+
+        <div class="bm-battle-log">
+          ${logs.map((row, idx) => `
+            <div class="bm-battle-log-item">
+              <div class="bm-battle-log-no">${idx + 1}</div>
+              <div>
+                <div class="bm-battle-log-text">${esc(row.text || "")}</div>
+                <div class="bm-battle-log-sub">${esc(row.sub || "")}</div>
+              </div>
+            </div>
+          `).join("")}
         </div>
       </div>
     `;
