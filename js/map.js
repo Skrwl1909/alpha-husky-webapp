@@ -35,12 +35,23 @@
   const CSS_ID = "ah-map-level1-css";
 
   function ensureCss() {
-    if (document.getElementById(CSS_ID)) return;
-    const s = document.createElement("style");
-    s.id = CSS_ID;
-    s.textContent = `
-/* === Map Level 1: faction leader ring + badge + siege state + pressure overlay === */
-.map-pin{ position:absolute; }
+  if (document.getElementById(CSS_ID)) return;
+  const s = document.createElement("style");
+  s.id = CSS_ID;
+  s.textContent = `
+/* === Map Level 1: faction leader ring + badge + siege state + pressure overlay (FAZA 1 UPGRADE) === */
+.map-pin{ 
+  position:absolute; 
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.map-pin:hover {
+  transform: scale(1.12);
+  filter: brightness(1.15);
+  z-index: 10;
+}
+
+/* === PIN RING === */
 .map-pin .pin-ring{
   position:absolute;
   inset:-7px;
@@ -48,29 +59,47 @@
   border:2px solid rgba(255,255,255,.22);
   pointer-events:none;
   z-index:0;
+  transition: all 0.3s ease;
 }
-.map-pin .pin-badge{
-  position:absolute;
-  top:-10px; right:-10px;
-  min-width:22px; height:22px;
-  padding:0 6px;
-  border-radius:999px;
-  display:none;
-  place-items:center;
-  font-size:10px; font-weight:800;
-  letter-spacing:.02em;
-  background:rgba(0,0,0,.72);
-  border:1px solid rgba(255,255,255,.18);
-  pointer-events:none;
-  z-index:3;
-  white-space:nowrap;
-}
-.map-pin .pin-icon, .map-pin > img{
+
+/* === PIN ICON GLOW + PULSE === */
+.map-pin .pin-icon,
+.map-pin > img{
   position:relative;
   z-index:2;
 }
 
-/* pressure badges */
+/* HOT - ognisty puls */
+.map-pin.pressure-hot .pin-icon,
+.map-pin.pressure-hot > img{
+  filter: drop-shadow(0 0 12px #ff7418) drop-shadow(0 0 24px #ff8c38);
+  animation: ahHotPulse 1.8s ease-in-out infinite;
+}
+
+/* FORTIFIED - chłodny puls */
+.map-pin.pressure-fortified .pin-icon,
+.map-pin.pressure-fortified > img{
+  filter: drop-shadow(0 0 12px #5e9eff) drop-shadow(0 0 24px #7eb8ff);
+  animation: ahFortifiedPulse 2.2s ease-in-out infinite;
+}
+
+/* CONTESTED - agresywny puls */
+.map-pin.pressure-contested .pin-icon,
+.map-pin.pressure-contested > img{
+  filter: drop-shadow(0 0 14px #ff3838) drop-shadow(0 0 28px #ff5656);
+  animation: ahContestedPulse 1.4s ease-in-out infinite;
+}
+
+/* FACTION HQ - złoty premium glow */
+.map-pin[data-node-id="faction-hq"] .pin-icon,
+.map-pin[data-node-id="faction-hq"] > img,
+.map-pin[data-building-id="faction-hq"] .pin-icon,
+.map-pin[data-building-id="faction-hq"] > img {
+  animation: ahHQGoldenGlow 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px #ffd700) drop-shadow(0 0 32px #ffed9e);
+}
+
+/* === PRESSURE BADGES / CHIPKI === */
 .map-pin .pin-pressure-badges{
   position:absolute;
   left:50%;
@@ -86,59 +115,49 @@
   pointer-events:none;
   z-index:4;
 }
+
 .map-pin .pin-pressure-chip{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:18px;
-  padding:2px 7px;
+  min-height:19px;
+  padding:3px 8px;
   border-radius:999px;
-  font-size:9px;
+  font-size:9.5px;
   line-height:1;
   font-weight:900;
-  letter-spacing:.08em;
+  letter-spacing:.06em;
   white-space:nowrap;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(8,10,14,.76);
-  backdrop-filter: blur(6px);
-  box-shadow:0 4px 14px rgba(0,0,0,.24);
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(8,10,14,.82);
+  backdrop-filter: blur(8px);
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  transition: all 0.2s ease;
 }
+
 .map-pin .pin-pressure-chip.p-hot{
-  color:#ffd7a6;
-  background:rgba(255,116,24,.18);
-  border-color:rgba(255,140,56,.34);
-  box-shadow:0 0 0 1px rgba(255,140,56,.08), 0 0 18px rgba(255,116,24,.18);
+  color:#ffe6c4;
+  background:rgba(255,116,24,.22);
+  border-color:rgba(255,160,60,.45);
+  box-shadow:0 0 0 2px rgba(255,140,56,.12), 0 0 22px rgba(255,116,24,.35);
 }
+
 .map-pin .pin-pressure-chip.p-contested{
   color:#ffd2d2;
-  background:rgba(255,56,56,.18);
-  border-color:rgba(255,88,88,.36);
-  box-shadow:0 0 0 1px rgba(255,88,88,.08), 0 0 18px rgba(255,56,56,.18);
-  animation: ahPressurePulse 1.8s ease-in-out infinite;
+  background:rgba(255,56,56,.22);
+  border-color:rgba(255,88,88,.45);
+  box-shadow:0 0 0 2px rgba(255,88,88,.12), 0 0 22px rgba(255,56,56,.45);
+  animation: ahPressurePulse 1.6s ease-in-out infinite;
 }
+
 .map-pin .pin-pressure-chip.p-fortified{
   color:#d6e7ff;
-  background:rgba(46,110,255,.18);
-  border-color:rgba(96,144,255,.34);
-  box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 18px rgba(46,110,255,.16);
-}
-.map-pin .pin-pressure-chip.p-tier{
-  color:#eee;
-  background:rgba(255,255,255,.08);
-  border-color:rgba(255,255,255,.14);
+  background:rgba(46,110,255,.22);
+  border-color:rgba(96,160,255,.45);
+  box-shadow:0 0 0 2px rgba(96,144,255,.12), 0 0 22px rgba(46,110,255,.32);
 }
 
-/* optional subtle node feel from pressure overlay only */
-.map-pin.pressure-hot .pin-icon,
-.map-pin.pressure-hot > img{
-  filter: drop-shadow(0 0 10px rgba(255,116,24,.18));
-}
-.map-pin.pressure-fortified .pin-icon,
-.map-pin.pressure-fortified > img{
-  filter: drop-shadow(0 0 10px rgba(80,130,255,.16));
-}
-
-/* faction colors */
+/* === FACTION COLORS + STATES === */
 .map-pin.f-rb .pin-ring{ border-color: rgba(255,70,70,.95); box-shadow:0 0 14px rgba(255,70,70,.35); }
 .map-pin.f-ew .pin-ring{ border-color: rgba(255,200,70,.95); box-shadow:0 0 14px rgba(255,200,70,.32); }
 .map-pin.f-pb .pin-ring{ border-color: rgba(255,140,40,.95); box-shadow:0 0 14px rgba(255,140,40,.32); }
@@ -167,6 +186,7 @@
   border-color: rgba(80,220,180,.96) !important;
   box-shadow: 0 0 0 2px rgba(80,220,180,.18), 0 0 16px rgba(80,220,180,.28) !important;
 }
+
 .map-pin.siege-forming .pin-badge,
 .map-pin.siege-running .pin-badge,
 .map-pin.siege-cooldown .pin-badge{
@@ -198,6 +218,27 @@
 .chip-state.s-running{ background:rgba(220,60,60,.18); border-color:rgba(255,90,90,.30); color:#ff9a9a; }
 .chip-state.s-cooldown{ background:rgba(50,180,145,.16); border-color:rgba(80,220,180,.28); color:#96f0d7; }
 
+/* === NOWE ANIMACJE (FAZA 1) === */
+@keyframes ahHotPulse {
+  0%,100% { filter: drop-shadow(0 0 12px #ff7418) drop-shadow(0 0 24px #ff8c38); }
+  50%     { filter: drop-shadow(0 0 18px #ff8c38) drop-shadow(0 0 34px #ffb366); }
+}
+@keyframes ahFortifiedPulse {
+  0%,100% { filter: drop-shadow(0 0 12px #5e9eff) drop-shadow(0 0 24px #7eb8ff); }
+  50%     { filter: drop-shadow(0 0 18px #7eb8ff) drop-shadow(0 0 34px #a8d0ff); }
+}
+@keyframes ahContestedPulse {
+  0%,100% { filter: drop-shadow(0 0 14px #ff3838) drop-shadow(0 0 28px #ff5656); }
+  50%     { filter: drop-shadow(0 0 20px #ff5656) drop-shadow(0 0 38px #ff7878); }
+}
+@keyframes ahHQGoldenGlow {
+  0%,100% { filter: drop-shadow(0 0 18px #ffd700) drop-shadow(0 0 32px #ffed9e); }
+  50%     { filter: drop-shadow(0 0 26px #ffed9e) drop-shadow(0 0 42px #ffffb8); }
+}
+@keyframes ahPressurePulse {
+  0%,100% { transform:translateY(0) scale(1); }
+  50%     { transform:translateY(-2px) scale(1.08); }
+}
 @keyframes ahPinPulse{
   0%,100%{ transform:scale(1); opacity:.85; }
   50%{ transform:scale(1.08); opacity:1; }
@@ -210,13 +251,9 @@
   0%,100%{ transform:scale(1); opacity:.92; }
   50%{ transform:scale(1.08); opacity:1; }
 }
-@keyframes ahPressurePulse{
-  0%,100%{ transform:translateY(0); filter:brightness(1); }
-  50%{ transform:translateY(-1px); filter:brightness(1.08); }
-}
 `;
-    document.head.appendChild(s);
-  }
+  document.head.appendChild(s);
+}
 
   function esc(s){
     return String(s || "").replace(/[&<>"']/g, m => ({
