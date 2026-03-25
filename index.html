@@ -929,7 +929,9 @@ html.ah-skins-open #heroFrame{
           drop-shadow(-2px 0 6px rgba(0,229,255,.22))
           drop-shadow( 2px 0 6px rgba(155,77,255,.22));
 }
-  .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+  .hotspot.locked img
+    {filter: drop-shadow(0 10px 16px rgba(0,0,0,.55));
+    }
   .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
     transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
   .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
