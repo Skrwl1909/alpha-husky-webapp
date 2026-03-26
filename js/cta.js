@@ -1,0 +1,719 @@
+(function () {
+  const POLL_MS = 60 * 1000;
+  const STYLE_ID = "cta-surface-css";
+
+  const STATE = {
+    apiPost: null,
+    tg: null,
+    dbg: false,
+    root: null,
+    cardRoot: null,
+    highlightsRoot: null,
+    pollTimer: 0,
+    lastData: null,
+    visHandler: null,
+    pageShowHandler: null,
+  };
+
+  function log(...args) {
+    if (typeof STATE.dbg === "function") {
+      try { STATE.dbg("[CTA]", ...args); } catch (_) {}
+      return;
+    }
+    if (STATE.dbg) {
+      console.debug("[CTA]", ...args);
+    }
+  }
+
+  function warn(...args) {
+    if (STATE.dbg) {
+      console.warn("[CTA]", ...args);
+    }
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function getApiPost() {
+    const fn = STATE.apiPost || window.apiPost || window.S?.apiPost || null;
+    return typeof fn === "function" ? fn : null;
+  }
+
+  function escAttr(value) {
+    return String(value || "")
+      .replaceAll("\\", "\\\\")
+      .replaceAll('"', '\\"');
+  }
+
+  function asText(value) {
+    return String(value ?? "").trim();
+  }
+
+  function prettifyKind(kind) {
+    const raw = asText(kind);
+    if (!raw) return "";
+    return raw
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+#ctaSurface{
+  width:min(
+    520px,
+    calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
+  );
+  display:none;
+  margin:14px auto 0;
+}
+#ctaSurface.is-visible{ display:block !important; }
+#ctaCardRoot,
+#ctaHighlightsRoot{
+  width:100%;
+}
+#ctaHighlightsRoot{
+  margin-top:10px;
+}
+#ctaHighlightsRoot:empty,
+#ctaCardRoot:empty + #ctaHighlightsRoot{
+  margin-top:0;
+}
+.cta-card,
+.cta-highlight{
+  width:100%;
+  border:0;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.cta-card{
+  position:relative;
+  display:block;
+  padding:14px;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(0,229,255,.12), transparent 48%),
+    radial-gradient(circle at 88% 10%, rgba(255,176,0,.12), transparent 42%),
+    linear-gradient(180deg, rgba(9,13,18,.88), rgba(9,13,18,.96));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    0 18px 38px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 0 0 1px rgba(0,229,255,.05);
+  backdrop-filter: blur(12px);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.cta-card:active{
+  transform: translateY(1px);
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 0 0 1px rgba(0,229,255,.04);
+}
+.cta-card:hover{
+  border-color: rgba(255,255,255,.16);
+}
+.cta-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.cta-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:22px;
+  padding:3px 9px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.92);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.cta-card-go{
+  color:rgba(255,255,255,.64);
+  font-size:18px;
+  line-height:1;
+}
+.cta-title{
+  margin:0;
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.01em;
+  line-height:1.25;
+}
+.cta-subtitle{
+  margin:6px 0 0;
+  color:rgba(255,255,255,.72);
+  font-size:13px;
+  line-height:1.35;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.cta-highlights{
+  display:grid;
+  gap:8px;
+}
+.cta-highlight{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  background:rgba(9,13,18,.62);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+.cta-highlight:active{
+  transform: translateY(1px);
+}
+.cta-highlight:hover{
+  border-color: rgba(255,255,255,.14);
+  background:rgba(12,16,22,.72);
+}
+.cta-highlight-text{
+  min-width:0;
+  flex:1 1 auto;
+  color:rgba(255,255,255,.88);
+  font-size:13px;
+  line-height:1.35;
+}
+`;
+    document.head.appendChild(style);
+  }
+
+  function mount() {
+    injectStyles();
+    STATE.root = document.getElementById("ctaSurface");
+    STATE.cardRoot = document.getElementById("ctaCardRoot");
+    STATE.highlightsRoot = document.getElementById("ctaHighlightsRoot");
+    return !!(STATE.root && STATE.cardRoot && STATE.highlightsRoot);
+  }
+
+  function clearRoot(el) {
+    if (el) el.innerHTML = "";
+  }
+
+  function setVisible(on) {
+    if (!STATE.root) return;
+    STATE.root.classList.toggle("is-visible", !!on);
+    STATE.root.style.display = on ? "block" : "none";
+  }
+
+  function unwrapPayload(raw) {
+    let cur = raw;
+    for (let i = 0; i < 4; i += 1) {
+      if (!cur || typeof cur !== "object") break;
+      if (cur.ok === false) break;
+      const next = cur.data;
+      if (!next || typeof next !== "object") break;
+      cur = next;
+    }
+    return cur && typeof cur === "object" ? cur : {};
+  }
+
+  function normalizeTarget(target) {
+    if (!target || typeof target !== "object") return null;
+
+    const type = asText(target.type).toLowerCase();
+    if (!type) return null;
+
+    if (type === "siege") {
+      const nodeId = asText(target.nodeId);
+      return nodeId ? { type, nodeId } : null;
+    }
+    if (type === "bloodmoon") {
+      return { type: "bloodmoon" };
+    }
+    if (type === "fortress") {
+      const buildingId = asText(target.buildingId) || "moonlab_fortress";
+      return { type: "fortress", buildingId };
+    }
+    if (type === "missions") {
+      return { type: "missions" };
+    }
+    if (type === "map_node") {
+      const nodeId = asText(target.nodeId);
+      return nodeId ? { type, nodeId } : null;
+    }
+
+    return null;
+  }
+
+  function fallbackPrimaryBadge(kind, target) {
+    const key = asText(kind).toLowerCase();
+    if (key.startsWith("siege_")) return "LIVE";
+    if (key === "bloodmoon_claim_ready") return "READY";
+    if (key === "bloodmoon_live") return "TOWER";
+    if (key === "fortress_ready") return "READY";
+    if (key === "mission_ready") return "READY";
+    if (key === "node_contested" || key === "node_hot") return "HOT";
+
+    const type = asText(target?.type).toLowerCase();
+    if (type === "siege") return "LIVE";
+    if (type === "bloodmoon") return "TOWER";
+    if (type === "fortress") return "READY";
+    if (type === "missions") return "READY";
+    if (type === "map_node") return "MAP";
+    return "";
+  }
+
+  function fallbackHighlightBadge(kind, target) {
+    const type = asText(target?.type).toLowerCase();
+    const key = asText(kind).toLowerCase();
+    if (key.startsWith("siege_") || type === "siege") return "LIVE";
+    if (type === "map_node") return "MAP";
+    if (type === "bloodmoon") return "TOWER";
+    if (type === "fortress") return "RAID";
+    return "WORLD";
+  }
+
+  function normalizePrimary(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const target = normalizeTarget(raw.target);
+    if (!target) return null;
+
+    const title = asText(raw.title) || prettifyKind(raw.kind);
+    const subtitle = asText(raw.subtitle);
+    if (!title && !subtitle) return null;
+
+    return {
+      kind: asText(raw.kind),
+      title,
+      subtitle,
+      badge: asText(raw.badge) || fallbackPrimaryBadge(raw.kind, target),
+      target,
+    };
+  }
+
+  function normalizeHighlight(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const target = normalizeTarget(raw.target);
+    if (!target) return null;
+
+    const text = asText(raw.text) || asText(raw.title);
+    if (!text) return null;
+
+    return {
+      kind: asText(raw.kind),
+      text,
+      badge: asText(raw.badge) || fallbackHighlightBadge(raw.kind, target),
+      target,
+    };
+  }
+
+  function normalize(raw) {
+    const data = unwrapPayload(raw);
+    const primary = normalizePrimary(data.primary);
+
+    const highlights = [];
+    const seen = new Set();
+    const list = Array.isArray(data.highlights) ? data.highlights : [];
+    for (const row of list) {
+      const item = normalizeHighlight(row);
+      if (!item) continue;
+      const key = [
+        item.kind,
+        item.target?.type,
+        item.target?.nodeId,
+        item.target?.buildingId,
+        item.text,
+      ].join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      highlights.push(item);
+      if (highlights.length >= 3) break;
+    }
+
+    return { primary, highlights };
+  }
+
+  function createBadge(text) {
+    const badge = document.createElement("span");
+    badge.className = "cta-badge";
+    badge.textContent = text || "LIVE";
+    return badge;
+  }
+
+  function renderPrimary(primary) {
+    clearRoot(STATE.cardRoot);
+    if (!STATE.cardRoot || !primary) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cta-card";
+    btn.setAttribute("aria-label", primary.title || "Open live world event");
+
+    const top = document.createElement("div");
+    top.className = "cta-card-top";
+    top.appendChild(createBadge(primary.badge));
+
+    const go = document.createElement("span");
+    go.className = "cta-card-go";
+    go.setAttribute("aria-hidden", "true");
+    go.textContent = "›";
+    top.appendChild(go);
+
+    const title = document.createElement("h3");
+    title.className = "cta-title";
+    title.textContent = primary.title;
+
+    btn.appendChild(top);
+    btn.appendChild(title);
+
+    if (primary.subtitle) {
+      const subtitle = document.createElement("p");
+      subtitle.className = "cta-subtitle";
+      subtitle.textContent = primary.subtitle;
+      btn.appendChild(subtitle);
+    }
+
+    btn.addEventListener("click", () => {
+      void openTarget(primary.target);
+    });
+
+    STATE.cardRoot.appendChild(btn);
+  }
+
+  function renderHighlights(highlights) {
+    clearRoot(STATE.highlightsRoot);
+    if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "cta-highlights";
+
+    for (const item of highlights.slice(0, 3)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cta-highlight";
+      btn.setAttribute("aria-label", item.text || "Open highlight");
+
+      btn.appendChild(createBadge(item.badge));
+
+      const text = document.createElement("span");
+      text.className = "cta-highlight-text";
+      text.textContent = item.text;
+      btn.appendChild(text);
+
+      btn.addEventListener("click", () => {
+        void openTarget(item.target);
+      });
+
+      wrap.appendChild(btn);
+    }
+
+    STATE.highlightsRoot.appendChild(wrap);
+  }
+
+  function render(data) {
+    if (!mount()) return null;
+
+    const safe = data && typeof data === "object"
+      ? data
+      : { primary: null, highlights: [] };
+
+    renderPrimary(safe.primary || null);
+    renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
+
+    const hasPrimary = !!safe.primary;
+    const hasHighlights = Array.isArray(safe.highlights) && safe.highlights.length > 0;
+    setVisible(hasPrimary || hasHighlights);
+    return safe;
+  }
+
+  async function load() {
+    if (!mount()) return null;
+
+    const apiPost = getApiPost();
+    if (!apiPost) {
+      warn("apiPost missing");
+      if (!STATE.lastData) render({ primary: null, highlights: [] });
+      return STATE.lastData;
+    }
+
+    try {
+      const raw = await apiPost("/webapp/cta/state", {});
+      const data = normalize(raw);
+      STATE.lastData = data;
+      render(data);
+      return data;
+    } catch (err) {
+      warn("load failed", err);
+      if (!STATE.lastData) render({ primary: null, highlights: [] });
+      return STATE.lastData;
+    }
+  }
+
+  function refresh() {
+    return load();
+  }
+
+  function clearPolling() {
+    if (STATE.pollTimer) {
+      clearInterval(STATE.pollTimer);
+      STATE.pollTimer = 0;
+    }
+  }
+
+  function startPolling() {
+    clearPolling();
+    STATE.pollTimer = window.setInterval(() => {
+      void load();
+    }, POLL_MS);
+  }
+
+  function findMapPin(target) {
+    if (!target || typeof target !== "object") return null;
+
+    const selectors = [];
+    if (target.nodeId) {
+      const nodeId = escAttr(target.nodeId);
+      selectors.push(`#pins [data-node-id="${nodeId}"]`);
+      selectors.push(`#pins [data-nodeid="${nodeId}"]`);
+    }
+    if (target.buildingId) {
+      const buildingId = escAttr(target.buildingId);
+      selectors.push(`#pins [data-building-id="${buildingId}"]`);
+    }
+
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  async function waitForMapPin(target, timeoutMs = 4000) {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      const pin = findMapPin(target);
+      if (pin) return pin;
+      await wait(80);
+    }
+    return null;
+  }
+
+  function openMap() {
+    try {
+      if (typeof window.showSection === "function") {
+        window.showSection("map");
+        return true;
+      }
+    } catch (err) {
+      warn("showSection(map) failed", err);
+    }
+
+    const navBtn = document.querySelector('.ah-navbtn[data-go="map"]');
+    if (navBtn) {
+      navBtn.click();
+      return true;
+    }
+
+    const legacyBtn = document.querySelector(".btn.map, button.btn.map");
+    if (legacyBtn) {
+      legacyBtn.click();
+      return true;
+    }
+
+    const mapBack = document.getElementById("mapBack");
+    if (mapBack) {
+      mapBack.style.display = "flex";
+      try { window.navOpen?.("mapBack"); } catch (_) {}
+      return true;
+    }
+
+    return false;
+  }
+
+  function openMissions() {
+    if (typeof window.openMissions === "function") {
+      return !!window.openMissions();
+    }
+    if (typeof window.Missions?.open === "function") {
+      return !!window.Missions.open();
+    }
+
+    const navBtn = document.querySelector('.ah-navbtn[data-go="missions"]');
+    if (navBtn) {
+      navBtn.click();
+      return true;
+    }
+
+    const legacyBtn = document.querySelector(".btn.mission, button.btn.mission");
+    if (legacyBtn) {
+      legacyBtn.click();
+      return true;
+    }
+
+    return false;
+  }
+
+  async function openMapPin(target, { activate = false } = {}) {
+    openMap();
+    const pin = await waitForMapPin(target);
+    if (!pin) {
+      warn("map pin not found", target);
+      return false;
+    }
+
+    const isActive = pin.classList.contains("active");
+    if (!isActive) {
+      pin.click();
+      if (!activate) return true;
+      await wait(90);
+    }
+
+    if (activate) {
+      pin.click();
+    }
+
+    return true;
+  }
+
+  async function openTarget(target) {
+    const safeTarget = normalizeTarget(target);
+    if (!safeTarget) {
+      warn("invalid target", target);
+      return false;
+    }
+
+    try { STATE.tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+    switch (safeTarget.type) {
+      case "siege":
+        if (safeTarget.nodeId === "edge_of_chain") {
+          try {
+            if (typeof window.Siege?.open === "function") {
+              window.Siege.open();
+              return true;
+            }
+          } catch (err) {
+            warn("Siege open failed", err);
+          }
+        }
+        return await openMapPin(
+          { nodeId: safeTarget.nodeId, buildingId: safeTarget.nodeId },
+          { activate: true }
+        );
+
+      case "bloodmoon":
+        try {
+          if (typeof window.BloodMoon?.open === "function") {
+            await window.BloodMoon.open();
+            return true;
+          }
+        } catch (err) {
+          warn("BloodMoon open failed", err);
+        }
+        return await openMapPin(
+          { nodeId: "blood_moon_tower", buildingId: "blood_moon_tower" },
+          { activate: true }
+        );
+
+      case "fortress":
+        try {
+          if (typeof window.Fortress?.open === "function") {
+            window.Fortress.open();
+            return true;
+          }
+        } catch (err) {
+          warn("Fortress open failed", err);
+        }
+        return await openMapPin(
+          { buildingId: safeTarget.buildingId || "moonlab_fortress" },
+          { activate: true }
+        );
+
+      case "missions":
+        try {
+          return openMissions();
+        } catch (err) {
+          warn("Missions open failed", err);
+          return false;
+        }
+
+      case "map_node":
+        return await openMapPin({ nodeId: safeTarget.nodeId }, { activate: false });
+
+      default:
+        warn("unknown target type", safeTarget);
+        return false;
+    }
+  }
+
+  function bindLifecycleRefresh() {
+    if (!STATE.visHandler) {
+      STATE.visHandler = () => {
+        if (document.visibilityState === "visible") {
+          void load();
+        }
+      };
+      document.addEventListener("visibilitychange", STATE.visHandler);
+    }
+
+    if (!STATE.pageShowHandler) {
+      STATE.pageShowHandler = () => { void load(); };
+      window.addEventListener("pageshow", STATE.pageShowHandler);
+    }
+  }
+
+  function destroy() {
+    clearPolling();
+    if (STATE.visHandler) {
+      document.removeEventListener("visibilitychange", STATE.visHandler);
+      STATE.visHandler = null;
+    }
+    if (STATE.pageShowHandler) {
+      window.removeEventListener("pageshow", STATE.pageShowHandler);
+      STATE.pageShowHandler = null;
+    }
+    if (STATE.root) {
+      setVisible(false);
+    }
+    clearRoot(STATE.cardRoot);
+    clearRoot(STATE.highlightsRoot);
+  }
+
+  function init({ apiPost, tg, dbg } = {}) {
+    STATE.apiPost = apiPost || STATE.apiPost || null;
+    STATE.tg = tg || STATE.tg || null;
+    STATE.dbg = dbg ?? STATE.dbg;
+
+    if (!mount()) {
+      log("mounts missing");
+      return window.CTA;
+    }
+
+    bindLifecycleRefresh();
+    startPolling();
+    void load();
+    return window.CTA;
+  }
+
+  window.CTA = {
+    init,
+    load,
+    refresh,
+    render,
+    openTarget,
+    mount,
+    destroy,
+  };
+})();
