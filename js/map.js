@@ -140,6 +140,19 @@
   border-color:rgba(96,144,255,.34);
   box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 16px rgba(46,110,255,.12);
 }
+.map-pin.pressure-flashpoint{
+  z-index:6;
+}
+.map-pin.pressure-flashpoint .pin-icon,
+.map-pin.pressure-flashpoint > img{
+  animation: ahFlashpointBreath 1.8s ease-in-out infinite;
+}
+.map-pin.pressure-flashpoint .pin-pressure-chip{
+  border-color:rgba(255,255,255,.24);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 0 18px rgba(255,255,255,.14);
+}
 .map-pin .pin-pressure-chip.p-tier{
   color:#eee;
   background:rgba(255,255,255,.08);
@@ -262,6 +275,10 @@
   0%,100%{ transform:scale(1); filter:brightness(1); }
   50%{ transform:scale(1.08); filter:brightness(1.12); }
 }
+@keyframes ahFlashpointBreath{
+  0%,100%{ transform:scale(1); filter:brightness(1); }
+  50%{ transform:scale(1.06); filter:brightness(1.08); }
+}
 `;
     document.head.appendChild(s);
   }
@@ -327,7 +344,8 @@
     pinEl.classList.remove(
       "pressure-hot",
       "pressure-contested",
-      "pressure-fortified"
+      "pressure-fortified",
+      "pressure-flashpoint"
     );
   }
 
@@ -531,6 +549,61 @@
     const primary = _primaryPressureChip(pressureMeta);
     if (!primary) return "";
     return ` <span class="chip-state ${primary.cls}">${esc(primary.text)}</span>`;
+  }
+
+  function _pressureTone(pressureMeta) {
+    const primary = _primaryPressureChip(pressureMeta);
+    if (!primary) return "calm";
+    if (primary.cls === "p-contested") return "contested";
+    if (primary.cls === "p-hot") return "hot";
+    if (primary.cls === "p-fortified") return "fortified";
+    return "calm";
+  }
+
+  function _flashpointScore(siegeMeta, pressureMeta) {
+    const siege = siegeMeta || {};
+    const pressure = pressureMeta || {};
+    const status = String(siege.siegeStatus || "");
+
+    let score = 0;
+    if (status === "running") score += 140;
+    else if (status === "forming") score += 105;
+
+    if (pressure.isContested) score += 100;
+    else if (pressure.isHot) score += 58;
+    else return 0;
+
+    score += Math.min(30, Number(pressure.pressureTopValue || 0));
+    score += Math.min(22, Number(pressure.pressureDelta || 0));
+    score += Math.min(18, Number(pressure.heat || 0));
+    return score;
+  }
+
+  function _updateMapPressureMood(summary) {
+    const el = document.getElementById("mapPressureMood");
+    if (!el) return;
+
+    const counts = summary || {};
+    const contested = Number(counts.contested || 0);
+    const hot = Number(counts.hot || 0);
+    const fortified = Number(counts.fortified || 0);
+
+    const parts = [];
+    if (contested > 0) parts.push(`${contested} contested`);
+    if (hot > 0) parts.push(`${hot} hot`);
+    if (!contested && fortified > 0) parts.push(`${fortified} fortified`);
+
+    const tone = contested > 0
+      ? "contested"
+      : hot > 0
+        ? "hot"
+        : fortified > 0
+          ? "fortified"
+          : "calm";
+
+    el.dataset.tone = tone;
+    el.textContent = parts.length ? parts.join(" • ").toUpperCase() : "CALM";
+    el.hidden = false;
   }
 
   function _applyPressureBadges(pinEl, pressureMeta) {
@@ -846,6 +919,13 @@ function _findLeaderInfoByNodeId(nodeId, leadersMap) {
     try { API._leadersMap = leadersMap; } catch (_) {}
 
     const pins = document.querySelectorAll(_getPinsSelector());
+    const mood = { contested: 0, hot: 0, fortified: 0 };
+    let flashpointPin = null;
+    let flashpointScore = 0;
+
+    pins.forEach((pin) => {
+      pin.classList.remove("pressure-flashpoint");
+    });
 
     pins.forEach((pin) => {
       ensureLevel1(pin);
@@ -867,6 +947,17 @@ function _findLeaderInfoByNodeId(nodeId, leadersMap) {
         info
       );
 
+      const tone = _pressureTone(ex.pressureMeta || {});
+      if (tone === "contested") mood.contested += 1;
+      else if (tone === "hot") mood.hot += 1;
+      else if (tone === "fortified") mood.fortified += 1;
+
+      const score = _flashpointScore(ex.siegeMeta || {}, ex.pressureMeta || {});
+      if (score > flashpointScore) {
+        flashpointScore = score;
+        flashpointPin = pin;
+      }
+
       setLeader(pin, ex.owner || null, {
         contested: !!ex.contested,
         source: ex.source || "scores",
@@ -874,6 +965,12 @@ function _findLeaderInfoByNodeId(nodeId, leadersMap) {
         pressureMeta: ex.pressureMeta || {}
       });
     });
+
+    if (flashpointPin && flashpointScore > 0) {
+      flashpointPin.classList.add("pressure-flashpoint");
+    }
+
+    _updateMapPressureMood(mood);
   }
 
   function _scheduleReapply() {
