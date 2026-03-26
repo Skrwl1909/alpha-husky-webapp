@@ -1,5 +1,6 @@
 (function () {
   const POLL_MS = 60 * 1000;
+  const MAX_HIGHLIGHTS = 2;
   const STYLE_ID = "cta-surface-css";
 
   const STATE = {
@@ -70,7 +71,7 @@
     calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
   );
   display:none;
-  margin:14px auto 0;
+  margin:8px auto 0;
 }
 #ctaSurface.is-visible{ display:block !important; }
 #ctaCardRoot,
@@ -78,7 +79,7 @@
   width:100%;
 }
 #ctaHighlightsRoot{
-  margin-top:10px;
+  margin-top:6px;
 }
 #ctaHighlightsRoot:empty,
 #ctaCardRoot:empty + #ctaHighlightsRoot{
@@ -95,105 +96,109 @@
 .cta-card{
   position:relative;
   display:block;
-  padding:14px;
-  border-radius:18px;
+  padding:10px 11px;
+  border-radius:14px;
   background:
-    radial-gradient(circle at 16% 14%, rgba(0,229,255,.12), transparent 48%),
-    radial-gradient(circle at 88% 10%, rgba(255,176,0,.12), transparent 42%),
-    linear-gradient(180deg, rgba(9,13,18,.88), rgba(9,13,18,.96));
-  border:1px solid rgba(255,255,255,.12);
+    radial-gradient(circle at 14% 16%, rgba(0,229,255,.08), transparent 42%),
+    radial-gradient(circle at 90% 12%, rgba(255,176,0,.08), transparent 36%),
+    linear-gradient(180deg, rgba(9,13,18,.78), rgba(9,13,18,.90));
+  border:1px solid rgba(255,255,255,.10);
   box-shadow:
-    0 18px 38px rgba(0,0,0,.28),
-    inset 0 1px 0 rgba(255,255,255,.05),
+    0 10px 22px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.04),
     0 0 0 1px rgba(0,229,255,.05);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
   transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
 }
 .cta-card:active{
   transform: translateY(1px);
   box-shadow:
-    0 10px 22px rgba(0,0,0,.24),
-    inset 0 1px 0 rgba(255,255,255,.05),
+    0 6px 14px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.04),
     0 0 0 1px rgba(0,229,255,.04);
 }
 .cta-card:hover{
-  border-color: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.14);
 }
 .cta-card-top{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  margin-bottom:8px;
+  gap:8px;
+  margin-bottom:5px;
 }
 .cta-badge{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:22px;
-  padding:3px 9px;
+  min-height:18px;
+  padding:2px 7px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.08);
   color:rgba(255,255,255,.92);
-  font-size:10px;
+  font-size:9px;
   font-weight:900;
-  letter-spacing:.08em;
+  letter-spacing:.07em;
   text-transform:uppercase;
   white-space:nowrap;
 }
 .cta-card-go{
   color:rgba(255,255,255,.64);
-  font-size:18px;
+  font-size:15px;
   line-height:1;
 }
 .cta-title{
   margin:0;
   color:#fff;
-  font-size:16px;
+  font-size:14px;
   font-weight:900;
   letter-spacing:.01em;
-  line-height:1.25;
+  line-height:1.2;
 }
 .cta-subtitle{
-  margin:6px 0 0;
-  color:rgba(255,255,255,.72);
-  font-size:13px;
-  line-height:1.35;
+  margin:3px 0 0;
+  color:rgba(255,255,255,.64);
+  font-size:12px;
+  line-height:1.25;
   display:-webkit-box;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:1;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
 .cta-highlights{
   display:grid;
-  gap:8px;
+  gap:4px;
 }
 .cta-highlight{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:14px;
-  background:rgba(9,13,18,.62);
-  border:1px solid rgba(255,255,255,.08);
-  backdrop-filter: blur(10px);
-  box-shadow:0 10px 24px rgba(0,0,0,.18);
+  gap:8px;
+  min-height:34px;
+  padding:7px 9px;
+  border-radius:11px;
+  background:rgba(9,13,18,.48);
+  border:1px solid rgba(255,255,255,.06);
+  backdrop-filter: blur(8px);
+  box-shadow:0 5px 12px rgba(0,0,0,.12);
   transition: transform .14s ease, border-color .14s ease, background .14s ease;
 }
 .cta-highlight:active{
   transform: translateY(1px);
 }
 .cta-highlight:hover{
-  border-color: rgba(255,255,255,.14);
-  background:rgba(12,16,22,.72);
+  border-color: rgba(255,255,255,.10);
+  background:rgba(12,16,22,.56);
 }
 .cta-highlight-text{
   min-width:0;
   flex:1 1 auto;
-  color:rgba(255,255,255,.88);
-  font-size:13px;
-  line-height:1.35;
+  color:rgba(255,255,255,.82);
+  font-size:12px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 `;
     document.head.appendChild(style);
@@ -339,7 +344,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
       highlights.push(item);
-      if (highlights.length >= 3) break;
+      if (highlights.length >= MAX_HIGHLIGHTS) break;
     }
 
     return { primary, highlights };
@@ -399,7 +404,7 @@
     const wrap = document.createElement("div");
     wrap.className = "cta-highlights";
 
-    for (const item of highlights.slice(0, 3)) {
+    for (const item of highlights.slice(0, MAX_HIGHLIGHTS)) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "cta-highlight";
