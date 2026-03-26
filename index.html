@@ -814,155 +814,6 @@ html.ah-skins-open #heroFrame{
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
 .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
-    /* === HOME / MAP WORLD INDICATOR v1 === */
-.map-live-host{
-  position:relative;
-  overflow:visible !important;
-}
-
-.map-live-badge{
-  position:absolute;
-  top:-8px;
-  right:8px;
-  z-index:8;
-  display:none;
-  align-items:center;
-  gap:6px;
-  padding:4px 8px 4px 7px;
-  border-radius:999px;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.55px;
-  color:#fff;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(8,10,16,.88);
-  box-shadow:
-    0 8px 18px rgba(0,0,0,.34),
-    inset 0 1px 0 rgba(255,255,255,.05);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  pointer-events:none;
-}
-
-.map-live-badge::before{
-  content:"";
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:currentColor;
-  box-shadow:0 0 10px currentColor;
-  opacity:.95;
-}
-
-.map-live-host.has-world-alert .map-live-badge{
-  display:inline-flex;
-}
-
-.map-live-host.world-live .map-live-badge{
-  color:#44d8ff;
-  box-shadow:
-    0 0 0 1px rgba(68,216,255,.10) inset,
-    0 10px 22px rgba(0,0,0,.34),
-    0 0 18px rgba(68,216,255,.14);
-}
-
-.map-live-host.world-ready .map-live-badge{
-  color:#79f0b4;
-  box-shadow:
-    0 0 0 1px rgba(121,240,180,.10) inset,
-    0 10px 22px rgba(0,0,0,.34),
-    0 0 18px rgba(121,240,180,.12);
-}
-
-.map-live-host.world-hot .map-live-badge{
-  color:#ffb35a;
-  box-shadow:
-    0 0 0 1px rgba(255,179,90,.10) inset,
-    0 10px 22px rgba(0,0,0,.34),
-    0 0 18px rgba(255,179,90,.14);
-}
-
-.map-live-dot{
-  position:absolute;
-  top:10px;
-  right:14px;
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  display:none;
-  z-index:7;
-  pointer-events:none;
-}
-
-.map-live-host.has-world-alert .map-live-dot{
-  display:block;
-}
-
-.map-live-host.world-live .map-live-dot{
-  background:#44d8ff;
-  box-shadow:
-    0 0 0 4px rgba(68,216,255,.12),
-    0 0 18px rgba(68,216,255,.42);
-  animation: ahWorldPulseLive 1.8s ease-out infinite;
-}
-
-.map-live-host.world-ready .map-live-dot{
-  background:#79f0b4;
-  box-shadow:
-    0 0 0 4px rgba(121,240,180,.12),
-    0 0 18px rgba(121,240,180,.34);
-  animation: ahWorldPulseReady 2.1s ease-out infinite;
-}
-
-.map-live-host.world-hot .map-live-dot{
-  background:#ffb35a;
-  box-shadow:
-    0 0 0 4px rgba(255,179,90,.12),
-    0 0 18px rgba(255,179,90,.38);
-  animation: ahWorldPulseHot 1.6s ease-out infinite;
-}
-
-.map-live-host.has-world-alert{
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.08) inset,
-    0 0 22px rgba(255,255,255,.04);
-}
-
-.map-live-host.world-live{
-  box-shadow:
-    0 0 0 1px rgba(68,216,255,.14) inset,
-    0 0 22px rgba(68,216,255,.10);
-}
-
-.map-live-host.world-ready{
-  box-shadow:
-    0 0 0 1px rgba(121,240,180,.12) inset,
-    0 0 22px rgba(121,240,180,.08);
-}
-
-.map-live-host.world-hot{
-  box-shadow:
-    0 0 0 1px rgba(255,179,90,.12) inset,
-    0 0 22px rgba(255,179,90,.10);
-}
-
-@keyframes ahWorldPulseLive{
-  0%   { transform:scale(.92); opacity:.92; }
-  70%  { transform:scale(1.16); opacity:1; }
-  100% { transform:scale(.92); opacity:.92; }
-}
-
-@keyframes ahWorldPulseReady{
-  0%   { transform:scale(.94); opacity:.90; }
-  70%  { transform:scale(1.12); opacity:1; }
-  100% { transform:scale(.94); opacity:.90; }
-}
-
-@keyframes ahWorldPulseHot{
-  0%   { transform:scale(.90); opacity:.94; }
-  70%  { transform:scale(1.18); opacity:1; }
-  100% { transform:scale(.90); opacity:.94; }
-  }
     /* =========================================================
      ✅ Equipment Icon Glow (UI-only)
      - Master icons stay clean (no baked glow)
@@ -1051,267 +902,84 @@ html.ah-skins-open #heroFrame{
     url("images/map/overlays/fog.png") center/cover no-repeat,
     linear-gradient(0deg, rgba(0,0,0,.24), transparent);
   opacity:.50;
-}
+    }
 
 .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
 .paths-layer svg{ width:100%; height:100%; }
 
 .pins{ position:absolute; inset:0; z-index:3; }
 
-.hotspot{
-  position:absolute;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  padding:0;
-  background:none;
-  border:none;
-  cursor:pointer;
-  z-index:3;
-  transition: transform .12s ease, filter .12s ease;
-
-  --pin-glow-1: rgba(0,229,255,.22);
-  --pin-glow-2: rgba(155,77,255,.22);
-  --ping-color: rgba(255,255,255,.08);
-  --chip-bg: rgba(10,12,16,.8);
-  --chip-border: rgba(255,255,255,.07);
-  --chip-text: #fff;
-}
+.hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
+  padding:0; background:none; border:none; cursor:pointer;
+  z-index:3; transition: transform .12s ease, filter .12s ease; }
 
 .hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
 
-.hotspot::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width: clamp(48px, 7vw, 120px);
-  height: clamp(22px, 3.4vw, 60px);
+.hotspot::before{ content:""; position:absolute; left:50%; top:50%;
+  width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
   transform: translate(-50%, calc(-50% + 20px));
   background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-  opacity:.9;
-  filter: blur(.2px);
-  pointer-events:none;
-}
+  opacity:.9; filter: blur(.2px); pointer-events:none; }
 
-.hotspot img{
-  width: clamp(40px, 3.6vw, 72px);
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55));
-  pointer-events:none;
-}
+.hotspot img{ width: clamp(40px, 3.6vw, 72px);
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
 
 .hotspot.unlocked img{
-  filter:
-    drop-shadow(0 10px 16px rgba(0,0,0,.55))
-    drop-shadow(-2px 0 6px var(--pin-glow-1))
-    drop-shadow( 2px 0 6px var(--pin-glow-2));
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
+          drop-shadow(-2px 0 6px rgba(0,229,255,.22))
+          drop-shadow( 2px 0 6px rgba(155,77,255,.22));
 }
+  .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
+  .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
+    transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
+  .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
+  .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
+  @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
+  .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
+    font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
+    background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
+    backdrop-filter: blur(3px); }
+  .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
+    transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
+  .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
+    background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+  .lock-badge img{ width:14px; height:14px; opacity:.9 }
+  .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
+  .path.locked{ stroke:rgba(255,255,255,.16); }
+  .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
+  .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+  .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
+  .tab.active{ outline:2px solid rgba(255,255,255,.18); }
+  /* progress + region sheet width */
+  .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
+    background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
+    font:600 12px system-ui}
+  .progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
+    background:rgba(255,255,255,.1);overflow:hidden}
+  .progress-bar>i{display:block;height:100%;width:0%;
+    background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
+  .region-sheet .sheet-card{width:min(92vw,520px)}
+  .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
+  /* DEBUG banner (pojedynczy) */
+  #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
+    background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
+  /* Avatar/Skins modal */
+  .avatar-sheet .sheet-card {
+    width: min(92vw, 520px);
+    max-height: 80vh;
+    overflow: auto;
+  }
+  .avatar-sheet canvas {
+    max-width: 100%;
+    height: auto;
+  }
+  .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
+  .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
-.hotspot.locked img{
-  filter:
-    drop-shadow(0 10px 16px rgba(0,0,0,.55))
-    drop-shadow(-2px 0 6px var(--pin-glow-1))
-    drop-shadow( 2px 0 6px var(--pin-glow-2));
-  opacity:1;
-}
-
-/* Kolory dominacji frakcji dla hotspotów */
-.hotspot.f-rb{
-  --pin-glow-1: rgba(255,82,82,.28);
-  --pin-glow-2: rgba(255,120,120,.20);
-  --ping-color: rgba(255,82,82,.16);
-  --chip-bg: rgba(36,10,12,.88);
-  --chip-border: rgba(255,82,82,.30);
-  --chip-text: #ffd7d7;
-}
-.hotspot.f-ew{
-  --pin-glow-1: rgba(0,229,255,.28);
-  --pin-glow-2: rgba(90,170,255,.20);
-  --ping-color: rgba(0,229,255,.16);
-  --chip-bg: rgba(8,20,28,.88);
-  --chip-border: rgba(0,229,255,.28);
-  --chip-text: #d6fbff;
-}
-.hotspot.f-pb{
-  --pin-glow-1: rgba(255,145,0,.28);
-  --pin-glow-2: rgba(255,94,0,.20);
-  --ping-color: rgba(255,145,0,.16);
-  --chip-bg: rgba(34,18,6,.88);
-  --chip-border: rgba(255,145,0,.28);
-  --chip-text: #ffe6c7;
-}
-.hotspot.f-ih{
-  --pin-glow-1: rgba(180,90,255,.28);
-  --pin-glow-2: rgba(255,105,190,.20);
-  --ping-color: rgba(180,90,255,.16);
-  --chip-bg: rgba(24,10,34,.88);
-  --chip-border: rgba(180,90,255,.28);
-  --chip-text: #f1dbff;
-}
-
-.ping{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width: clamp(40px, 3.8vw, 76px);
-  height: clamp(40px, 3.8vw, 76px);
-  transform: translate(-50%,-50%);
-  border-radius:50%;
-  animation:ping 1.4s infinite;
-  pointer-events:none;
-}
-
-.hotspot.unlocked .ping{ background:var(--ping-color); }
-.hotspot.locked .ping{ background:var(--ping-color); }
-
-@keyframes ping{
-  0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 }
-  100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 }
-}
-
-.chip{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  margin-top:6px;
-  font-size:12px;
-  line-height:1;
-  padding:6px 10px;
-  border-radius:999px;
-  background:var(--chip-bg);
-  border:1px solid var(--chip-border);
-  color:var(--chip-text);
-  white-space:nowrap;
-  backdrop-filter: blur(3px);
-}
-
-.chip::before{
-  content:"";
-  position:absolute;
-  top:-6px;
-  left:50%;
-  width:10px;
-  height:10px;
-  transform: translateX(-50%) rotate(45deg);
-  background:inherit;
-  border-left:inherit;
-  border-top:inherit;
-}
-
-.lock-badge{
-  display:none !important;
-}
-
-.lock-badge img{
-  display:none !important;
-}
-
-.path{
-  fill:none;
-  stroke:rgba(255,255,255,.25);
-  stroke-width:2.2;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  filter:drop-shadow(0 0 2px rgba(0,0,0,.6));
-}
-
-.path.locked{ stroke:rgba(255,255,255,.25); }
-.path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
-
-.locked-back, .sheet-back{
-  position:fixed;
-  inset:0;
-  z-index:5;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,.7);
-}
-
-.locked-card, .sheet-card{
-  width:min(92vw,480px);
-  background:rgba(0,0,0,.85);
-  border:1px solid var(--ring);
-  border-radius:16px;
-  padding:18px;
-  color: var(--tg-theme-text-color, #fff);
-}
-
-.tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
-.tab.active{ outline:2px solid rgba(255,255,255,.18); }
-
-/* progress + region sheet width */
-.progress-pill{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  border:1px solid var(--ring);
-  background:rgba(0,0,0,.45);
-  border-radius:999px;
-  padding:6px 10px;
-  color:#cfe7ff;
-  font:600 12px system-ui;
-}
-
-.progress-bar{
-  width:140px;
-  max-width:28vw;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,255,255,.1);
-  overflow:hidden;
-}
-
-.progress-bar>i{
-  display:block;
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6));
-}
-
-.region-sheet .sheet-card{ width:min(92vw,520px) }
-.muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-
-/* DEBUG banner (pojedynczy) */
-#dbg{
-  position:fixed;
-  right:8px;
-  top:8px;
-  z-index:9;
-  font:600 11px system-ui;
-  background:rgba(0,0,0,.6);
-  color:#fff;
-  padding:6px 8px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.12);
-  display:none
-}
-
-/* Avatar/Skins modal */
-.avatar-sheet .sheet-card{
-  width: min(92vw, 520px);
-  max-height: 80vh;
-  overflow: auto;
-}
-
-.avatar-sheet canvas{
-  max-width: 100%;
-  height: auto;
-}
-
-.skin-btn.active{
-  background: var(--tg-theme-button-color, rgba(16,185,129,.18));
-  color: var(--tg-theme-button-text-color, #fff);
-}
-
-.skins-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  justify-content:center;
-  margin:10px 0;
-}
-
-/* ==================== MAP RYWALIZACJA FRAKCYJNA v2 (SCOPED) ==================== */
+   /* ==================== MAP RYWALIZACJA FRAKCYJNA v2 (SCOPED) ==================== */
 /* WAŻNE: scope do #pins, żeby przypadkowe klasy .map-pin na modalach NIE psuły layoutu */
 
 #pins .map-pin {
@@ -1402,11 +1070,7 @@ html.ah-skins-open #heroFrame{
   border-radius: 999px;
   letter-spacing: 0.3px;
 }
-
-#pins .map-pin .timer.low {
-  color: #ff5252;
-  animation: timerPulse 1.2s infinite;
-}
+#pins .map-pin .timer.low { color: #ff5252; animation: timerPulse 1.2s infinite; }
 
 /* ===== CONTESTED RING ===== */
 #pins .map-pin.is-contested::after {
@@ -1438,12 +1102,10 @@ html.ah-skins-open #heroFrame{
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
 }
-
 @keyframes contestedRing {
   0% { transform: scale(0.6); opacity: 0.9; }
   100% { transform: scale(1.6); opacity: 0; }
 }
-
 @keyframes timerPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
@@ -1523,7 +1185,63 @@ html.ah-skins-open #heroFrame{
 #avatarBack .sheet-card > div:not(#skinButtons):not(.btn-row) {
     opacity: 0.15 !important;   /* przyciemnimy, jeśli nadal widać */
 }
+   <style id="factionhq-css">
+/* =========================
+   FACTION HQ BACKDROP
+   ========================= */
+#factionHQBack{
+  position: fixed;
+  inset: 0;
+  z-index: 999990; /* poniżej missionsBack (999999), ale nad resztą UI */
+  display: none;
+  pointer-events: auto;
+  overflow: hidden;
+  background: transparent;
+}
 
+#factionHQBack.is-open{
+  display: block !important;
+}
+
+#factionHQBack .hq-bg{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+
+  background: #07080c;
+  background-image: var(--hq-bg-url);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+
+  /* lekki cinematic polish */
+  filter: saturate(1.05) contrast(1.05);
+}
+
+/* czytelność UI na tle */
+#factionHQBack .hq-bg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(120% 70% at 50% 30%, rgba(0,0,0,.04), rgba(0,0,0,.26)),
+    linear-gradient(to bottom, rgba(0,0,0,.04), rgba(0,0,0,.30));
+}
+
+#factionHQBack .hq-vignette{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,.00) 0%,
+    rgba(0,0,0,.12) 72%,
+    rgba(0,0,0,.24) 100%);
+  z-index: 0;
+}
 
 /* =========================
    FRONT WOJENNY FRAKCJI – FAZA 1
@@ -3697,13 +3415,12 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <div class="map-card">
           <div class="map-head">
             <h2>Regions Map</h2>
-            <div id="unlockProgress" class="progress-pill" style="display:none">
-              <span id="unlockLabel">Moon Lab</span>
-              <span class="progress-bar"><i id="unlockFill"></i></span>
-              <span id="unlockCount">0/5</span>
-            </div>
             <button class="close-x" id="closeMap" type="button">×</button>
           </div>
+          <section id="ctaSurface" style="display:none;margin:0 0 10px;width:auto;">
+            <div id="ctaCardRoot"></div>
+            <div id="ctaHighlightsRoot"></div>
+          </section>
           <div id="map" class="map" data-map-root>
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
 <div class="pins" id="pins"></div>
@@ -5076,8 +4793,39 @@ hydrateFactionFromPayload({ profile: p, ...out });
     /* ✅ A) TAG: pobierz tier tag z profilu */
     PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
 
+    PROFILE.avatar = p?.avatar || PROFILE.avatar || null;
+    PROFILE.avatarImg = p?.avatar?.img || PROFILE.avatarImg || "";
+    PROFILE.avatarKey = p?.avatar?.key || PROFILE.avatarKey || "";
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
+
+    try {
+      const heroImg =
+        (typeof p?.skin === "string" ? p.skin : p?.skin?.img) ||
+        (typeof PROFILE?.skin === "string" ? PROFILE.skin : PROFILE?.skin?.img) ||
+        "";
+      const avatarImg = p?.avatar?.img || PROFILE.avatarImg || "";
+      const sharedProfile = {
+        ...(PROFILE || {}),
+        ...(p || {}),
+        avatar: p?.avatar || PROFILE.avatar || null,
+        avatarUrl: avatarImg,
+        avatarPng: avatarImg,
+        avatarKey: p?.avatar?.key || PROFILE.avatarKey || "",
+        profileAvatar: avatarImg,
+        skin: p?.skin || PROFILE.skin || null,
+        activeSkin: p?.skin || PROFILE.skin || null,
+        heroImg: heroImg,
+        heroPng: heroImg,
+        character: heroImg,
+        characterPng: heroImg,
+      };
+      window.PROFILE = PROFILE;
+      window.__PROFILE__ = sharedProfile;
+      window.lastProfile = sharedProfile;
+      window.profileState = sharedProfile;
+      window._profile = sharedProfile;
+    } catch (_) {}
 
     /* ✅ FRAME — dynamic (z profilu) */
     setHeroFrame(
@@ -6463,11 +6211,35 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/shop.js?v=WEBAPP_VER"></script>
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script src="js/missions.js?v=WEBAPP_VER"></script>
+<script src="js/cta.js?v=WEBAPP_VER"></script>
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
   <script src="/js/community_btn.js?v=20260313b"></script>
 <script src="js/share_levelup.js?v=WEBAPP_VER"></script>
+<script>
+(function initCTA(){
+  function tryInitCTA(){
+    if (!window.CTA || window.__ctaInited) return;
+    try {
+      window.CTA.init({
+        apiPost: window.apiPost,
+        tg: window.Telegram?.WebApp || window.tg || null,
+        dbg: !!window.DBG
+      });
+      window.__ctaInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[CTA] init failed", e);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tryInitCTA, { once: true });
+  } else {
+    tryInitCTA();
+  }
+})();
+</script>
   <!-- STATS (loader + init, cache-bust) -->
 <script>
 (function loadStats(){
@@ -6824,107 +6596,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
   // ".btn.equipped": () => window.Equipped?.open?.()
 </script>
-  <script>
-(function(){
-  function getLikelyMapTab(){
-    const direct =
-      document.querySelector('#navMap') ||
-      document.querySelector('[data-tab="map"]') ||
-      document.querySelector('[data-route="map"]') ||
-      document.querySelector('.nav-map');
-
-    if (direct) return direct;
-
-    const all = Array.from(document.querySelectorAll('button, a, .tab, .nav-item, .dock-item, [role="button"]'));
-    const byText = all.find(el => /map/i.test((el.textContent || '').trim()));
-    if (byText) return byText;
-
-    return null;
-  }
-
-  function ensureDebugBadge(el){
-    if (!el) return null;
-
-    el.classList.add('map-live-host');
-    el.style.position = 'relative';
-    el.style.overflow = 'visible';
-
-    let badge = el.querySelector('.map-live-badge');
-    if (!badge){
-      badge = document.createElement('div');
-      badge.className = 'map-live-badge';
-      badge.textContent = 'LIVE';
-      badge.style.display = 'inline-flex';
-      badge.style.position = 'absolute';
-      badge.style.top = '2px';
-      badge.style.right = '2px';
-      badge.style.zIndex = '9999';
-      badge.style.padding = '3px 7px';
-      badge.style.borderRadius = '999px';
-      badge.style.fontSize = '10px';
-      badge.style.fontWeight = '900';
-      badge.style.background = 'rgba(8,10,16,.95)';
-      badge.style.color = '#44d8ff';
-      badge.style.border = '1px solid rgba(255,255,255,.18)';
-      badge.style.boxShadow = '0 0 12px rgba(68,216,255,.35)';
-      el.appendChild(badge);
-    }
-
-    let dot = el.querySelector('.map-live-dot');
-    if (!dot){
-      dot = document.createElement('div');
-      dot.className = 'map-live-dot';
-      dot.style.position = 'absolute';
-      dot.style.top = '8px';
-      dot.style.right = '50px';
-      dot.style.width = '8px';
-      dot.style.height = '8px';
-      dot.style.borderRadius = '50%';
-      dot.style.background = '#44d8ff';
-      dot.style.boxShadow = '0 0 14px rgba(68,216,255,.55)';
-      dot.style.zIndex = '9998';
-      el.appendChild(dot);
-    }
-
-    el.style.outline = '2px solid rgba(68,216,255,.45)';
-    return { badge, dot };
-  }
-
-  function applyMapWorldIndicator(payload){
-    const el = getLikelyMapTab();
-    console.log('[MapIndicator] target=', el);
-    if (!el) return false;
-
-    const shell = ensureDebugBadge(el);
-    if (!shell) return false;
-
-    const kind = String(payload?.primary?.kind || '');
-    let label = 'LIVE';
-
-    if (
-      kind === 'bloodmoon_claim_ready' ||
-      kind === 'fortress_ready' ||
-      kind === 'mission_ready'
-    ) label = 'READY';
-
-    if (
-      kind === 'node_contested' ||
-      kind === 'node_hot'
-    ) label = 'HOT';
-
-    shell.badge.textContent = label;
-    return true;
-  }
-
-  window.applyMapWorldIndicator = applyMapWorldIndicator;
-
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      window.applyMapWorldIndicator({ primary:{ kind:'siege_forming_defense' } });
-    }, 800);
-  });
-})();
-  </script>
 </body>
 </html>
 
