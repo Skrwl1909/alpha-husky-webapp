@@ -7,6 +7,7 @@
     apiPost: null,
     tg: null,
     dbg: false,
+    expanded: false,
     root: null,
     cardRoot: null,
     highlightsRoot: null,
@@ -170,6 +171,57 @@
   display:grid;
   gap:4px;
 }
+.cta-highlights-body{
+  display:grid;
+  gap:4px;
+  margin-top:4px;
+}
+.cta-expander{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:28px;
+  padding:5px 8px;
+  border:0;
+  border-radius:999px;
+  background:rgba(9,13,18,.34);
+  border:1px solid rgba(255,255,255,.06);
+  color:rgba(255,255,255,.72);
+  text-align:left;
+  cursor:pointer;
+  backdrop-filter: blur(8px);
+  box-shadow:0 3px 10px rgba(0,0,0,.10);
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+.cta-expander:active{
+  transform: translateY(1px);
+}
+.cta-expander:hover{
+  border-color: rgba(255,255,255,.10);
+  background:rgba(12,16,22,.42);
+}
+.cta-expander-text{
+  min-width:0;
+  flex:1 1 auto;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cta-expander-chev{
+  flex:0 0 auto;
+  color:rgba(255,255,255,.56);
+  font-size:11px;
+  line-height:1;
+  transition: transform .14s ease;
+}
+.cta-expander.is-open .cta-expander-chev{
+  transform: rotate(90deg);
+}
 .cta-highlight{
   display:flex;
   align-items:center;
@@ -214,6 +266,14 @@
 
   function clearRoot(el) {
     if (el) el.innerHTML = "";
+  }
+
+  function collapseExpanded(rerender = false) {
+    if (!STATE.expanded) return;
+    STATE.expanded = false;
+    if (rerender && STATE.lastData) {
+      render(STATE.lastData);
+    }
   }
 
   function setVisible(on) {
@@ -357,6 +417,39 @@
     return badge;
   }
 
+  function highlightToggleLabel(count) {
+    const n = Math.max(0, Number(count || 0));
+    return `More activity (${n})`;
+  }
+
+  function renderExpander(count) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cta-expander" + (STATE.expanded ? " is-open" : "");
+    btn.setAttribute("aria-expanded", STATE.expanded ? "true" : "false");
+    btn.setAttribute("aria-label", highlightToggleLabel(count));
+
+    const text = document.createElement("span");
+    text.className = "cta-expander-text";
+    text.textContent = highlightToggleLabel(count);
+    btn.appendChild(text);
+
+    const chev = document.createElement("span");
+    chev.className = "cta-expander-chev";
+    chev.setAttribute("aria-hidden", "true");
+    chev.textContent = ">";
+    btn.appendChild(chev);
+
+    btn.addEventListener("click", () => {
+      STATE.expanded = !STATE.expanded;
+      if (STATE.lastData) {
+        render(STATE.lastData);
+      }
+    });
+
+    return btn;
+  }
+
   function renderPrimary(primary) {
     clearRoot(STATE.cardRoot);
     if (!STATE.cardRoot || !primary) return;
@@ -373,7 +466,7 @@
     const go = document.createElement("span");
     go.className = "cta-card-go";
     go.setAttribute("aria-hidden", "true");
-    go.textContent = "›";
+    go.textContent = ">";
     top.appendChild(go);
 
     const title = document.createElement("h3");
@@ -391,6 +484,7 @@
     }
 
     btn.addEventListener("click", () => {
+      collapseExpanded(true);
       void openTarget(primary.target);
     });
 
@@ -401,10 +495,19 @@
     clearRoot(STATE.highlightsRoot);
     if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
 
-    const wrap = document.createElement("div");
-    wrap.className = "cta-highlights";
+    const items = highlights.slice(0, MAX_HIGHLIGHTS);
+    const primaryVisible = !!(STATE.lastData && STATE.lastData.primary);
+    const collapsible = primaryVisible && items.length > 0;
 
-    for (const item of highlights.slice(0, MAX_HIGHLIGHTS)) {
+    if (collapsible) {
+      STATE.highlightsRoot.appendChild(renderExpander(items.length));
+      if (!STATE.expanded) return;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = collapsible ? "cta-highlights-body" : "cta-highlights";
+
+    for (const item of items) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "cta-highlight";
@@ -418,6 +521,7 @@
       btn.appendChild(text);
 
       btn.addEventListener("click", () => {
+        collapseExpanded(true);
         void openTarget(item.target);
       });
 
@@ -433,6 +537,10 @@
     const safe = data && typeof data === "object"
       ? data
       : { primary: null, highlights: [] };
+
+    if (!safe.primary || !Array.isArray(safe.highlights) || !safe.highlights.length) {
+      STATE.expanded = false;
+    }
 
     renderPrimary(safe.primary || null);
     renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
