@@ -6826,26 +6826,47 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
   <script>
 (function(){
-  function findMapTab(){
-    return (
+  function getLikelyMapTab(){
+    const direct =
       document.querySelector('#navMap') ||
       document.querySelector('[data-tab="map"]') ||
       document.querySelector('[data-route="map"]') ||
-      document.querySelector('.nav-map') ||
-      Array.from(document.querySelectorAll('button, .tab, .nav-item, .dock-item'))
-        .find(el => /map/i.test((el.textContent || '').trim()))
-    );
+      document.querySelector('.nav-map');
+
+    if (direct) return direct;
+
+    const all = Array.from(document.querySelectorAll('button, a, .tab, .nav-item, .dock-item, [role="button"]'));
+    const byText = all.find(el => /map/i.test((el.textContent || '').trim()));
+    if (byText) return byText;
+
+    return null;
   }
 
-  function ensureMapIndicatorShell(el){
+  function ensureDebugBadge(el){
     if (!el) return null;
+
     el.classList.add('map-live-host');
+    el.style.position = 'relative';
+    el.style.overflow = 'visible';
 
     let badge = el.querySelector('.map-live-badge');
     if (!badge){
       badge = document.createElement('div');
       badge.className = 'map-live-badge';
       badge.textContent = 'LIVE';
+      badge.style.display = 'inline-flex';
+      badge.style.position = 'absolute';
+      badge.style.top = '2px';
+      badge.style.right = '2px';
+      badge.style.zIndex = '9999';
+      badge.style.padding = '3px 7px';
+      badge.style.borderRadius = '999px';
+      badge.style.fontSize = '10px';
+      badge.style.fontWeight = '900';
+      badge.style.background = 'rgba(8,10,16,.95)';
+      badge.style.color = '#44d8ff';
+      badge.style.border = '1px solid rgba(255,255,255,.18)';
+      badge.style.boxShadow = '0 0 12px rgba(68,216,255,.35)';
       el.appendChild(badge);
     }
 
@@ -6853,100 +6874,57 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     if (!dot){
       dot = document.createElement('div');
       dot.className = 'map-live-dot';
+      dot.style.position = 'absolute';
+      dot.style.top = '8px';
+      dot.style.right = '50px';
+      dot.style.width = '8px';
+      dot.style.height = '8px';
+      dot.style.borderRadius = '50%';
+      dot.style.background = '#44d8ff';
+      dot.style.boxShadow = '0 0 14px rgba(68,216,255,.55)';
+      dot.style.zIndex = '9998';
       el.appendChild(dot);
     }
 
+    el.style.outline = '2px solid rgba(68,216,255,.45)';
     return { badge, dot };
   }
 
-  function classifyWorldState(primary){
-    const kind = String(primary?.kind || '');
+  function applyMapWorldIndicator(payload){
+    const el = getLikelyMapTab();
+    console.log('[MapIndicator] target=', el);
+    if (!el) return false;
 
-    if (
-      kind.startsWith('siege_running') ||
-      kind.startsWith('siege_forming') ||
-      kind === 'bloodmoon_live'
-    ) return 'live';
+    const shell = ensureDebugBadge(el);
+    if (!shell) return false;
+
+    const kind = String(payload?.primary?.kind || '');
+    let label = 'LIVE';
 
     if (
       kind === 'bloodmoon_claim_ready' ||
       kind === 'fortress_ready' ||
       kind === 'mission_ready'
-    ) return 'ready';
+    ) label = 'READY';
 
     if (
       kind === 'node_contested' ||
       kind === 'node_hot'
-    ) return 'hot';
+    ) label = 'HOT';
 
-    return '';
-  }
-
-  function labelForState(state){
-    if (state === 'live') return 'LIVE';
-    if (state === 'ready') return 'READY';
-    if (state === 'hot') return 'HOT';
-    return '';
-  }
-
-  function clearWorldIndicator(mapTab){
-    if (!mapTab) return;
-    mapTab.classList.remove(
-      'has-world-alert',
-      'world-live',
-      'world-ready',
-      'world-hot'
-    );
-  }
-
-  function applyMapWorldIndicator(payload){
-    const mapTab = findMapTab();
-    if (!mapTab) return false;
-
-    const shell = ensureMapIndicatorShell(mapTab);
-    if (!shell) return false;
-
-    clearWorldIndicator(mapTab);
-
-    const state = classifyWorldState(payload?.primary);
-    if (!state) return true;
-
-    mapTab.classList.add('has-world-alert', `world-${state}`);
-    shell.badge.textContent = labelForState(state);
+    shell.badge.textContent = label;
     return true;
   }
 
-  function initMapWorldIndicator(){
-    const ok = applyMapWorldIndicator({ primary: null });
-    if (ok) return;
-
-    let tries = 0;
-    const maxTries = 20;
-    const timer = setInterval(() => {
-      tries += 1;
-      const ready = applyMapWorldIndicator({ primary: null });
-      if (ready || tries >= maxTries){
-        clearInterval(timer);
-      }
-    }, 250);
-  }
-
   window.applyMapWorldIndicator = applyMapWorldIndicator;
-  window.initMapWorldIndicator = initMapWorldIndicator;
 
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initMapWorldIndicator);
-  } else {
-    initMapWorldIndicator();
-  }
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      window.applyMapWorldIndicator({ primary:{ kind:'siege_forming_defense' } });
+    }, 800);
+  });
 })();
-</script>
-
-<script>
-window.addEventListener('load', () => {
-  window.applyMapWorldIndicator?.({ primary:{ kind:'siege_forming_defense' } });
-});
-</script>
+  </script>
 </body>
 </html>
 
