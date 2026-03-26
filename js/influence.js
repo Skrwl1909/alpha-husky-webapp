@@ -24,10 +24,21 @@
   let _weekly = null;
 
   let _faction = "";
-  try { _faction = (localStorage.getItem("ah_faction") || "").toLowerCase(); } catch (_) {}
+  try { _faction = normalizeFaction(localStorage.getItem("ah_faction") || ""); } catch (_) {}
+
+  function normalizeFaction(raw) {
+    const key = String(raw || "").toLowerCase().trim();
+    if (!key) return "";
+    if (VALID_FACTIONS.has(key)) return key;
+    if (key === "rb" || key.includes("rogue")) return "rogue_byte";
+    if (key === "ew" || key.includes("echo")) return "echo_wardens";
+    if (key === "pb" || key.includes("pack") || key.includes("burn")) return "pack_burners";
+    if (key === "ih" || key.includes("inner") || key.includes("howl")) return "inner_howl";
+    return "";
+  }
 
   function setFaction(f) {
-    _faction = String(f || "").toLowerCase();
+    _faction = normalizeFaction(f);
     try { localStorage.setItem("ah_faction", _faction); } catch (_) {}
   }
 
@@ -534,44 +545,41 @@
   }
 
   // -------------------------
-  // Backend truth → cache
+  // Frontend truth → cache
   // -------------------------
-  async function fetchFactionFromBackend() {
-    if (!_apiPost) return "";
-    try {
-      const r = await _apiPost("/webapp/faction/state", { run_id: rid("fstate") });
+  function syncFactionFromFrontendState() {
+    const st = window.PLAYER_STATE || window.STATE || {};
+    const p = st.profile || st.player || {};
 
-      const f =
-        r?.faction ||
-        r?.data?.faction ||
-        r?.data?.key ||
-        r?.data?.factionKey ||
-        "";
+    const key = normalizeFaction(
+      p.faction ||
+      p.faction_key ||
+      p.factionKey ||
+      st.faction ||
+      st.faction_key ||
+      window.PROFILE?.faction ||
+      window.currentUserFaction ||
+      _faction
+    );
 
-      const cd = parseInt(r?.cooldownLeftSec || r?.data?.cooldownLeftSec || 0, 10) || 0;
-      _lastFactionCdSec = cd;
-      if (cd > 0) startCooldown(cd);
+    _lastFactionCdSec = 0;
 
-      const key = String(f || "").toLowerCase();
-      if (VALID_FACTIONS.has(key)) {
-        setFaction(key);
-        window.currentUserFaction = key;
-        return key;
-      }
-      return "";
-    } catch (e) {
-      if (_dbg) console.warn("fetchFactionFromBackend failed", e);
-      return "";
+    if (VALID_FACTIONS.has(key)) {
+      setFaction(key);
+      window.currentUserFaction = key;
+      return key;
     }
+
+    return "";
   }
 
   // -------------------------
   // Ensure faction (truth first)
   // -------------------------
   async function ensureFaction() {
-    // 1) backend truth first (prevents loops)
-    const fromApi = await fetchFactionFromBackend();
-    if (VALID_FACTIONS.has(fromApi)) return fromApi;
+    // 1) current frontend state first (profile/state/local cache)
+    const fromState = syncFactionFromFrontendState();
+    if (VALID_FACTIONS.has(fromState)) return fromState;
 
     // 2) fallback: cached value
     if (VALID_FACTIONS.has(_faction)) return _faction;
@@ -1057,7 +1065,7 @@
 
     ensureModal();
     refreshLeaders(true);
-    fetchFactionFromBackend();
+    syncFactionFromFrontendState();
   };
 
   Influence.open = open;
