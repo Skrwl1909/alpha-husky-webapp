@@ -814,6 +814,155 @@ html.ah-skins-open #heroFrame{
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
 .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
+    /* === HOME / MAP WORLD INDICATOR v1 === */
+.map-live-host{
+  position:relative;
+  overflow:visible !important;
+}
+
+.map-live-badge{
+  position:absolute;
+  top:-8px;
+  right:8px;
+  z-index:8;
+  display:none;
+  align-items:center;
+  gap:6px;
+  padding:4px 8px 4px 7px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.55px;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(8,10,16,.88);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events:none;
+}
+
+.map-live-badge::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 10px currentColor;
+  opacity:.95;
+}
+
+.map-live-host.has-world-alert .map-live-badge{
+  display:inline-flex;
+}
+
+.map-live-host.world-live .map-live-badge{
+  color:#44d8ff;
+  box-shadow:
+    0 0 0 1px rgba(68,216,255,.10) inset,
+    0 10px 22px rgba(0,0,0,.34),
+    0 0 18px rgba(68,216,255,.14);
+}
+
+.map-live-host.world-ready .map-live-badge{
+  color:#79f0b4;
+  box-shadow:
+    0 0 0 1px rgba(121,240,180,.10) inset,
+    0 10px 22px rgba(0,0,0,.34),
+    0 0 18px rgba(121,240,180,.12);
+}
+
+.map-live-host.world-hot .map-live-badge{
+  color:#ffb35a;
+  box-shadow:
+    0 0 0 1px rgba(255,179,90,.10) inset,
+    0 10px 22px rgba(0,0,0,.34),
+    0 0 18px rgba(255,179,90,.14);
+}
+
+.map-live-dot{
+  position:absolute;
+  top:10px;
+  right:14px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:none;
+  z-index:7;
+  pointer-events:none;
+}
+
+.map-live-host.has-world-alert .map-live-dot{
+  display:block;
+}
+
+.map-live-host.world-live .map-live-dot{
+  background:#44d8ff;
+  box-shadow:
+    0 0 0 4px rgba(68,216,255,.12),
+    0 0 18px rgba(68,216,255,.42);
+  animation: ahWorldPulseLive 1.8s ease-out infinite;
+}
+
+.map-live-host.world-ready .map-live-dot{
+  background:#79f0b4;
+  box-shadow:
+    0 0 0 4px rgba(121,240,180,.12),
+    0 0 18px rgba(121,240,180,.34);
+  animation: ahWorldPulseReady 2.1s ease-out infinite;
+}
+
+.map-live-host.world-hot .map-live-dot{
+  background:#ffb35a;
+  box-shadow:
+    0 0 0 4px rgba(255,179,90,.12),
+    0 0 18px rgba(255,179,90,.38);
+  animation: ahWorldPulseHot 1.6s ease-out infinite;
+}
+
+.map-live-host.has-world-alert{
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 0 22px rgba(255,255,255,.04);
+}
+
+.map-live-host.world-live{
+  box-shadow:
+    0 0 0 1px rgba(68,216,255,.14) inset,
+    0 0 22px rgba(68,216,255,.10);
+}
+
+.map-live-host.world-ready{
+  box-shadow:
+    0 0 0 1px rgba(121,240,180,.12) inset,
+    0 0 22px rgba(121,240,180,.08);
+}
+
+.map-live-host.world-hot{
+  box-shadow:
+    0 0 0 1px rgba(255,179,90,.12) inset,
+    0 0 22px rgba(255,179,90,.10);
+}
+
+@keyframes ahWorldPulseLive{
+  0%   { transform:scale(.92); opacity:.92; }
+  70%  { transform:scale(1.16); opacity:1; }
+  100% { transform:scale(.92); opacity:.92; }
+}
+
+@keyframes ahWorldPulseReady{
+  0%   { transform:scale(.94); opacity:.90; }
+  70%  { transform:scale(1.12); opacity:1; }
+  100% { transform:scale(.94); opacity:.90; }
+}
+
+@keyframes ahWorldPulseHot{
+  0%   { transform:scale(.90); opacity:.94; }
+  70%  { transform:scale(1.18); opacity:1; }
+  100% { transform:scale(.90); opacity:.94; }
+  }
     /* =========================================================
      ✅ Equipment Icon Glow (UI-only)
      - Master icons stay clean (no baked glow)
