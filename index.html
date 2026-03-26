@@ -814,7 +814,44 @@ html.ah-skins-open #heroFrame{
 }
 
 .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; flex:0 0 auto; }
+.map-head-main{ display:flex; align-items:center; gap:8px; min-width:0; }
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-pressure-mood{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:20px;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(8,12,16,.52);
+  color:rgba(230,238,255,.82);
+  font:800 10px/1 system-ui, sans-serif;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  box-shadow:0 4px 12px rgba(0,0,0,.16);
+}
+.map-pressure-mood[data-tone="contested"]{
+  color:#ffd8d8;
+  border-color:rgba(255,96,96,.18);
+  background:rgba(48,10,14,.50);
+}
+.map-pressure-mood[data-tone="hot"]{
+  color:#ffe0b4;
+  border-color:rgba(255,140,56,.16);
+  background:rgba(44,20,8,.48);
+}
+.map-pressure-mood[data-tone="fortified"]{
+  color:#d9e7ff;
+  border-color:rgba(96,144,255,.16);
+  background:rgba(10,18,36,.48);
+}
+.map-pressure-mood[data-tone="calm"]{
+  color:#d7e7f7;
+  border-color:rgba(140,180,220,.14);
+  background:rgba(12,20,30,.42);
+}
 .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
     /* =========================================================
@@ -3447,7 +3484,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="map-wrap">
         <div class="map-card">
           <div class="map-head">
-            <h2>Regions Map</h2>
+            <div class="map-head-main">
+              <h2>Regions Map</h2>
+              <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
+            </div>
             <button class="close-x" id="closeMap" type="button">×</button>
           </div>
           <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
