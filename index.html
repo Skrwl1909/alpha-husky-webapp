@@ -6824,6 +6824,129 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   // Equipped nie ruszamy tutaj, bo obsługuje go actions wyżej:
   // ".btn.equipped": () => window.Equipped?.open?.()
 </script>
+  <script>
+(function(){
+  function findMapTab(){
+    return (
+      document.querySelector('#navMap') ||
+      document.querySelector('[data-tab="map"]') ||
+      document.querySelector('[data-route="map"]') ||
+      document.querySelector('.nav-map') ||
+      Array.from(document.querySelectorAll('button, .tab, .nav-item, .dock-item'))
+        .find(el => /map/i.test((el.textContent || '').trim()))
+    );
+  }
+
+  function ensureMapIndicatorShell(el){
+    if (!el) return null;
+    el.classList.add('map-live-host');
+
+    let badge = el.querySelector('.map-live-badge');
+    if (!badge){
+      badge = document.createElement('div');
+      badge.className = 'map-live-badge';
+      badge.textContent = 'LIVE';
+      el.appendChild(badge);
+    }
+
+    let dot = el.querySelector('.map-live-dot');
+    if (!dot){
+      dot = document.createElement('div');
+      dot.className = 'map-live-dot';
+      el.appendChild(dot);
+    }
+
+    return { badge, dot };
+  }
+
+  function classifyWorldState(primary){
+    const kind = String(primary?.kind || '');
+
+    if (
+      kind.startsWith('siege_running') ||
+      kind.startsWith('siege_forming') ||
+      kind === 'bloodmoon_live'
+    ) return 'live';
+
+    if (
+      kind === 'bloodmoon_claim_ready' ||
+      kind === 'fortress_ready' ||
+      kind === 'mission_ready'
+    ) return 'ready';
+
+    if (
+      kind === 'node_contested' ||
+      kind === 'node_hot'
+    ) return 'hot';
+
+    return '';
+  }
+
+  function labelForState(state){
+    if (state === 'live') return 'LIVE';
+    if (state === 'ready') return 'READY';
+    if (state === 'hot') return 'HOT';
+    return '';
+  }
+
+  function clearWorldIndicator(mapTab){
+    if (!mapTab) return;
+    mapTab.classList.remove(
+      'has-world-alert',
+      'world-live',
+      'world-ready',
+      'world-hot'
+    );
+  }
+
+  function applyMapWorldIndicator(payload){
+    const mapTab = findMapTab();
+    if (!mapTab) return false;
+
+    const shell = ensureMapIndicatorShell(mapTab);
+    if (!shell) return false;
+
+    clearWorldIndicator(mapTab);
+
+    const state = classifyWorldState(payload?.primary);
+    if (!state) return true;
+
+    mapTab.classList.add('has-world-alert', `world-${state}`);
+    shell.badge.textContent = labelForState(state);
+    return true;
+  }
+
+  function initMapWorldIndicator(){
+    const ok = applyMapWorldIndicator({ primary: null });
+    if (ok) return;
+
+    let tries = 0;
+    const maxTries = 20;
+    const timer = setInterval(() => {
+      tries += 1;
+      const ready = applyMapWorldIndicator({ primary: null });
+      if (ready || tries >= maxTries){
+        clearInterval(timer);
+      }
+    }, 250);
+  }
+
+  window.applyMapWorldIndicator = applyMapWorldIndicator;
+  window.initMapWorldIndicator = initMapWorldIndicator;
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initMapWorldIndicator);
+  } else {
+    initMapWorldIndicator();
+  }
+})();
+</script>
+
+<script>
+window.addEventListener('load', () => {
+  window.applyMapWorldIndicator?.({ primary:{ kind:'siege_forming_defense' } });
+});
+</script>
 </body>
 </html>
 
