@@ -125,19 +125,20 @@
   background:rgba(255,116,24,.18);
   border-color:rgba(255,140,56,.34);
   box-shadow:0 0 0 1px rgba(255,140,56,.08), 0 0 18px rgba(255,116,24,.18);
+  animation: ahPressureHeat 3.2s ease-in-out infinite;
 }
 .map-pin .pin-pressure-chip.p-contested{
   color:#ffd2d2;
   background:rgba(255,56,56,.18);
   border-color:rgba(255,88,88,.36);
   box-shadow:0 0 0 1px rgba(255,88,88,.08), 0 0 18px rgba(255,56,56,.18);
-  animation: ahPressurePulse 1.8s ease-in-out infinite;
+  animation: ahPressureConflict 1.2s ease-in-out infinite;
 }
 .map-pin .pin-pressure-chip.p-fortified{
   color:#d6e7ff;
   background:rgba(46,110,255,.18);
   border-color:rgba(96,144,255,.34);
-  box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 18px rgba(46,110,255,.16);
+  box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 16px rgba(46,110,255,.12);
 }
 .map-pin .pin-pressure-chip.p-tier{
   color:#eee;
@@ -150,9 +151,28 @@
 .map-pin.pressure-hot > img{
   filter: drop-shadow(0 0 10px rgba(255,116,24,.18));
 }
+.map-pin.pressure-hot:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
+  box-shadow:
+    0 0 0 1px rgba(255,146,72,.14),
+    0 0 16px rgba(255,116,24,.20);
+  animation: ahPressureHeat 3.2s ease-in-out infinite;
+}
+.map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
+  border-color: rgba(255,88,88,.90) !important;
+  box-shadow:
+    0 0 0 2px rgba(255,88,88,.16),
+    0 0 20px rgba(255,56,56,.24) !important;
+  animation: ahPressureConflict 1.2s ease-in-out infinite;
+}
 .map-pin.pressure-fortified .pin-icon,
 .map-pin.pressure-fortified > img{
   filter: drop-shadow(0 0 10px rgba(80,130,255,.16));
+}
+.map-pin.pressure-fortified:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
+  border-color: rgba(120,170,255,.74);
+  box-shadow:
+    0 0 0 1px rgba(120,170,255,.14),
+    0 0 12px rgba(80,130,255,.14);
 }
 
 /* faction colors */
@@ -233,6 +253,14 @@
 @keyframes ahPressurePulse{
   0%,100%{ transform:translateY(0); filter:brightness(1); }
   50%{ transform:translateY(-1px); filter:brightness(1.08); }
+}
+@keyframes ahPressureHeat{
+  0%,100%{ transform:scale(1); filter:brightness(1); }
+  50%{ transform:scale(1.04); filter:brightness(1.08); }
+}
+@keyframes ahPressureConflict{
+  0%,100%{ transform:scale(1); filter:brightness(1); }
+  50%{ transform:scale(1.08); filter:brightness(1.12); }
 }
 `;
     document.head.appendChild(s);

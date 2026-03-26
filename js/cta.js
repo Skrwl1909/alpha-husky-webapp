@@ -175,6 +175,12 @@
   display:grid;
   gap:4px;
   margin-top:3px;
+  max-height:min(84px, 18dvh);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding-right:2px;
+  scrollbar-width:thin;
 }
 .cta-expander{
   width:100%;
@@ -251,6 +257,13 @@
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+}
+.cta-highlights-body::-webkit-scrollbar{
+  width:4px;
+}
+.cta-highlights-body::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
 }
 `;
     document.head.appendChild(style);
