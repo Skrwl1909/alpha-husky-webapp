@@ -805,9 +805,12 @@ html.ah-skins-open #heroFrame{
   border-radius:16px;
   padding:12px;
   box-shadow:0 10px 30px rgba(0,0,0,.5);
-  max-height: 88dvh;
+  width:100%;
+  height:min(88dvh, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
   display:flex;
   flex-direction:column;
+  overflow:hidden;
 }
 
 .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; flex:0 0 auto; }
@@ -884,12 +887,15 @@ html.ah-skins-open #heroFrame{
   position:relative;
   width:100%;
   flex: 1 1 auto;
-  height: min(66dvh, 620px);
+  min-height: clamp(280px, 48dvh, 420px);
+  max-height: min(66dvh, 620px);
+  height:auto;
   background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
   border-radius:16px;
   overflow:hidden;
   box-shadow:0 0 0 1px var(--ring) inset;
   isolation:isolate;
+  min-width:0;
 }
 
 .map::after{
