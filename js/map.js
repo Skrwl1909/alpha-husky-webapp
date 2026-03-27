@@ -189,15 +189,39 @@
 }
 
 /* faction colors */
-.map-pin.f-rb .pin-ring{ border-color: rgba(255,70,70,.95); box-shadow:0 0 14px rgba(255,70,70,.35); }
-.map-pin.f-ew .pin-ring{ border-color: rgba(255,200,70,.95); box-shadow:0 0 14px rgba(255,200,70,.32); }
-.map-pin.f-pb .pin-ring{ border-color: rgba(255,140,40,.95); box-shadow:0 0 14px rgba(255,140,40,.32); }
-.map-pin.f-ih .pin-ring{ border-color: rgba(60,220,255,.95); box-shadow:0 0 14px rgba(60,220,255,.28); }
+.map-pin.f-rb .pin-ring{
+  border-color: rgba(255,82,82,.95);
+  box-shadow: 0 0 14px rgba(255,82,82,.35);
+}
+.map-pin.f-ew .pin-ring{
+  border-color: rgba(255,213,74,.95);
+  box-shadow: 0 0 14px rgba(255,213,74,.32);
+}
+.map-pin.f-pb .pin-ring{
+  border-color: rgba(255,159,67,.95);
+  box-shadow: 0 0 14px rgba(255,159,67,.32);
+}
+.map-pin.f-ih .pin-ring{
+  border-color: rgba(64,196,255,.95);
+  box-shadow: 0 0 14px rgba(64,196,255,.30);
+}
 
-.map-pin.f-rb .pin-badge{ color: rgba(255,90,90,1); border-color: rgba(255,90,90,.35); }
-.map-pin.f-ew .pin-badge{ color: rgba(255,210,90,1); border-color: rgba(255,210,90,.35); }
-.map-pin.f-pb .pin-badge{ color: rgba(255,160,70,1); border-color: rgba(255,160,70,.35); }
-.map-pin.f-ih .pin-badge{ color: rgba(90,235,255,1); border-color: rgba(90,235,255,.35); }
+.map-pin.f-rb .pin-badge{
+  color: rgba(255,82,82,1);
+  border-color: rgba(255,82,82,.35);
+}
+.map-pin.f-ew .pin-badge{
+  color: rgba(255,213,74,1);
+  border-color: rgba(255,213,74,.35);
+}
+.map-pin.f-pb .pin-badge{
+  color: rgba(255,159,67,1);
+  border-color: rgba(255,159,67,.35);
+}
+.map-pin.f-ih .pin-badge{
+  color: rgba(64,196,255,1);
+  border-color: rgba(64,196,255,.35);
+}
 
 .map-pin.is-controlled .pin-ring{ opacity:1; }
 .map-pin.is-contested .pin-ring{ animation: ahPinPulse 1.6s ease-in-out infinite; }
