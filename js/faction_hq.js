@@ -1262,7 +1262,6 @@ function _contribSummary(c) {
     const contributors = _recentContributors(feed, 6);
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
-    const mockLevel = _clampLvl(curLevel);
     const nextLevel = curLevel + 1;
 
     const nextCost = d.nextUpgradeCost || {};
