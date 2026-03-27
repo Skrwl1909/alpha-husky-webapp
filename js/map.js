@@ -251,6 +251,38 @@
 .chip-state.p-hot{ background:rgba(255,116,24,.16); border-color:rgba(255,140,56,.30); color:#ffd7a6; }
 .chip-state.p-fortified{ background:rgba(46,110,255,.16); border-color:rgba(96,144,255,.28); color:#d6e7ff; }
 
+/* visual-state fallback chip */
+.chip-state.node-visual-state{
+  color:#e8eef8;
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.12);
+}
+.chip-state.node-visual-state.v-live{
+  background:rgba(15,255,159,.14);
+  border-color:rgba(15,255,159,.28);
+  color:#bfffe2;
+}
+.chip-state.node-visual-state.v-active{
+  background:rgba(5,217,255,.14);
+  border-color:rgba(5,217,255,.26);
+  color:#c7f6ff;
+}
+.chip-state.node-visual-state.v-threatened{
+  background:rgba(255,149,0,.14);
+  border-color:rgba(255,149,0,.26);
+  color:#ffe0b0;
+}
+.chip-state.node-visual-state.v-contested{
+  background:rgba(255,42,109,.16);
+  border-color:rgba(255,42,109,.28);
+  color:#ffd0de;
+}
+.chip-state.node-visual-state.v-fortified{
+  background:rgba(199,36,255,.15);
+  border-color:rgba(199,36,255,.26);
+  color:#f0d4ff;
+}
+
 @keyframes ahPinPulse{
   0%,100%{ transform:scale(1); opacity:.85; }
   50%{ transform:scale(1.08); opacity:1; }
@@ -303,9 +335,9 @@
   }
 
   function iconUrl(owner) {
-  const key = String(owner || "").toLowerCase().trim();
-  if (!key) return "";
-  return `/images/ui/factions/icon_${key}.png`;
+    const key = String(owner || "").toLowerCase().trim();
+    if (!key) return "";
+    return `/images/ui/factions/icon_${key}.png`;
   }
 
   function ensureLevel1(pinEl) {
@@ -335,7 +367,9 @@
     pinEl.classList.remove(
       "f-rb", "f-ew", "f-pb", "f-ih",
       "is-contested", "is-controlled",
-      "siege-forming", "siege-running", "siege-cooldown"
+      "siege-forming", "siege-running", "siege-cooldown",
+      "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-generic"
     );
   }
 
@@ -477,60 +511,61 @@
   }
 
   function _extractPressureMeta(info) {
-  const src = (info && typeof info === "object") ? info : {};
+    const src = (info && typeof info === "object") ? info : {};
 
-  const pressureDerivedStatus = String(
-    src?.pressureDerivedStatus ||
-    src?.derivedPressureStatus ||
-    ""
-  ).trim().toUpperCase();
+    const pressureDerivedStatus = String(
+      src?.pressureDerivedStatus ||
+      src?.derivedPressureStatus ||
+      ""
+    ).trim().toUpperCase();
 
-  const captureTierNum = Number(src?.captureTier || 0);
-  const captureTier = Number.isFinite(captureTierNum) ? captureTierNum : 0;
+    const captureTierNum = Number(src?.captureTier || 0);
+    const captureTier = Number.isFinite(captureTierNum) ? captureTierNum : 0;
 
-  const heat = Number(src?.heat || 0) || 0;
-  const pressureDelta = Number(src?.pressureDelta || 0) || 0;
-  const pressureTopValue = Number(src?.pressureTopValue || 0) || 0;
+    const heat = Number(src?.heat || 0) || 0;
+    const pressureDelta = Number(src?.pressureDelta || 0) || 0;
+    const pressureTopValue = Number(src?.pressureTopValue || 0) || 0;
 
-  const siegeStatus = String(
-    src?.siegeStatus ||
-    src?.currentSiegeStatus ||
-    ""
-  ).trim().toLowerCase();
+    const siegeStatus = String(
+      src?.siegeStatus ||
+      src?.currentSiegeStatus ||
+      ""
+    ).trim().toLowerCase();
 
-  const isContested =
-    !!src?.isContested ||
-    !!src?.contested ||
-    pressureDerivedStatus === "CONTESTED" ||
-    siegeStatus === "forming" ||
-    siegeStatus === "running";
+    const isContested =
+      !!src?.isContested ||
+      !!src?.contested ||
+      pressureDerivedStatus === "CONTESTED" ||
+      siegeStatus === "forming" ||
+      siegeStatus === "running";
 
-  const isFortified =
-    !!src?.isFortified ||
-    pressureDerivedStatus === "FORTIFIED" ||
-    pressureDerivedStatus === "OWNED" ||
-    pressureDerivedStatus === "SECURED" ||
-    (captureTier >= 2 && !isContested);
+    const isFortified =
+      !!src?.isFortified ||
+      pressureDerivedStatus === "FORTIFIED" ||
+      pressureDerivedStatus === "OWNED" ||
+      pressureDerivedStatus === "SECURED" ||
+      (captureTier >= 2 && !isContested);
 
-  const isHot =
-    !!src?.isHot ||
-    pressureDerivedStatus === "HOT" ||
-    pressureDerivedStatus === "HEATING" ||
-    heat >= 10 ||
-    pressureDelta >= 10 ||
-    pressureTopValue >= 15;
+    const isHot =
+      !!src?.isHot ||
+      pressureDerivedStatus === "HOT" ||
+      pressureDerivedStatus === "HEATING" ||
+      heat >= 10 ||
+      pressureDelta >= 10 ||
+      pressureTopValue >= 15;
 
-  return {
-    isHot,
-    isContested,
-    isFortified,
-    captureTier,
-    pressureDerivedStatus: pressureDerivedStatus || "NEUTRAL",
-    heat,
-    pressureDelta,
-    pressureTopValue,
-  };
-}
+    return {
+      isHot,
+      isContested,
+      isFortified,
+      captureTier,
+      pressureDerivedStatus: pressureDerivedStatus || "NEUTRAL",
+      heat,
+      pressureDelta,
+      pressureTopValue,
+    };
+  }
+
   function _pressureBadgesHtml(pressureMeta) {
     const primary = _primaryPressureChip(pressureMeta);
     if (!primary) return "";
@@ -748,6 +783,121 @@
     badge.style.display = text ? "grid" : "none";
   }
 
+  function _deriveNodeVisualModel(pinEl, owner, opts) {
+    const o = (opts && typeof opts === "object") ? opts : {};
+    const siegeMeta = o.siegeMeta || {};
+    const pressureMeta = o.pressureMeta || {};
+    const siegeStatus = String(siegeMeta.siegeStatus || "").trim().toLowerCase();
+
+    const id = String(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "").trim().toLowerCase();
+    const faction = _normFactionKey(owner || "");
+
+    let type = "generic";
+    if (id === "phantom_nodes") type = "phantom";
+    else if (id === "bloodmoon_tower") type = "bloodmoon";
+    else if (id === "oracle" || id === "oracle_void_doorway") type = "oracle";
+    else if (id === "edge_of_the_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
+    else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
+
+    const isContested =
+      !!o.contested ||
+      !!pressureMeta.isContested ||
+      siegeStatus === "forming" ||
+      siegeStatus === "running";
+
+    const isLive =
+      !isContested &&
+      siegeStatus === "running";
+
+    const isThreatened =
+      !isContested &&
+      !isLive &&
+      (
+        !!pressureMeta.isHot ||
+        siegeStatus === "forming"
+      );
+
+    const isFortified =
+      !isContested &&
+      !isLive &&
+      !isThreatened &&
+      (
+        !!pressureMeta.isFortified ||
+        siegeStatus === "cooldown"
+      );
+
+    const isActive =
+      !isContested &&
+      !isLive &&
+      !isThreatened &&
+      !isFortified &&
+      !!faction;
+
+    let status = "";
+    if (isContested) status = "contested";
+    else if (isLive) status = "live";
+    else if (isThreatened) status = "threatened";
+    else if (isFortified) status = "fortified";
+    else if (isActive) status = "active";
+
+    let chip = "";
+    if (status === "contested") chip = "CONTESTED";
+    else if (status === "live") chip = "LIVE";
+    else if (status === "threatened") chip = pressureMeta.isHot ? "HOT" : "THREATENED";
+    else if (status === "fortified") chip = "FORTIFIED";
+    else if (status === "active") chip = "ACTIVE";
+
+    return {
+      faction,
+      type,
+      status,
+      chip
+    };
+  }
+
+  function _applyNodeVisualClasses(pinEl, model) {
+    if (!pinEl) return;
+
+    const m = (model && typeof model === "object") ? model : {};
+
+    pinEl.classList.remove(
+      "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral",
+      "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-generic"
+    );
+
+    if (m.faction) pinEl.classList.add(CLS[m.faction] || "");
+    else pinEl.classList.add("is-neutral");
+
+    if (m.status) pinEl.classList.add(`is-${m.status}`);
+    if (m.type) pinEl.classList.add(`type-${m.type}`);
+
+    const chipEl = pinEl.querySelector(".chip");
+    if (!chipEl) return;
+
+    const pressureState = chipEl.querySelector(".chip-state:not(.node-visual-state)");
+    let visualState = chipEl.querySelector(".chip-state.node-visual-state");
+
+    if (pressureState) {
+      if (visualState) visualState.remove();
+      return;
+    }
+
+    if (!m.chip) {
+      if (visualState) visualState.remove();
+      return;
+    }
+
+    if (!visualState) {
+      visualState = document.createElement("span");
+      visualState.className = "chip-state node-visual-state";
+      chipEl.appendChild(visualState);
+    }
+
+    visualState.className = `chip-state node-visual-state v-${m.status || "generic"}`;
+    visualState.textContent = m.chip;
+  }
+
   function setLeader(pinEl, owner, opts) {
     ensureCss();
     ensureLevel1(pinEl);
@@ -771,13 +921,22 @@
     pinEl.dataset.siegeCooldownLeftSec = String(siegeMeta?.cooldownLeftSec || 0);
     pinEl.dataset.isUnderAttack = siegeMeta?.isUnderAttack ? "1" : "0";
 
+    const visualModel = _deriveNodeVisualModel(pinEl, owner, {
+      contested,
+      source,
+      siegeMeta,
+      pressureMeta
+    });
+
     if (!owner) {
       _clearPinBadge(badge);
+
       if (chip) {
         chip.innerHTML = `<span class="chip-name">${esc(name)}</span>${_chipPressureHtml(pressureMeta)}`;
       }
+
+      _applyNodeVisualClasses(pinEl, visualModel);
       _applySiegeStateClasses(pinEl, siegeMeta);
-      if (contested) pinEl.classList.add("is-contested");
       _applyPressureBadges(pinEl, pressureMeta);
       return;
     }
@@ -785,10 +944,9 @@
     const code = CODE[owner] || "";
     const cls = CLS[owner] || "";
     const badgeText = _leaderBadgeText(owner, siegeMeta);
+
     if (cls) pinEl.classList.add(cls);
     pinEl.classList.add("is-controlled");
-    if (contested) pinEl.classList.add("is-contested");
-    _applySiegeStateClasses(pinEl, siegeMeta);
 
     if (badge) {
       if (badgeText && badgeText !== code) {
@@ -804,6 +962,8 @@
       chip.innerHTML = `<span class="chip-name">${esc(name)}</span>${_chipPressureHtml(pressureMeta)}`;
     }
 
+    _applyNodeVisualClasses(pinEl, visualModel);
+    _applySiegeStateClasses(pinEl, siegeMeta);
     _applyPressureBadges(pinEl, pressureMeta);
   }
 
@@ -848,28 +1008,28 @@
     );
   }
 
-function _findLeaderInfoByNodeId(nodeId, leadersMap) {
-  const key = String(nodeId || "").trim();
-  if (!key || !leadersMap || typeof leadersMap !== "object") return null;
+  function _findLeaderInfoByNodeId(nodeId, leadersMap) {
+    const key = String(nodeId || "").trim();
+    if (!key || !leadersMap || typeof leadersMap !== "object") return null;
 
-  if (leadersMap[key]) return leadersMap[key];
+    if (leadersMap[key]) return leadersMap[key];
 
-  for (const [k, v] of Object.entries(leadersMap)) {
-    if (!v || typeof v !== "object") continue;
+    for (const [k, v] of Object.entries(leadersMap)) {
+      if (!v || typeof v !== "object") continue;
 
-    const candNodeId =
-      String(v.nodeId || v.id || "").trim();
+      const candNodeId =
+        String(v.nodeId || v.id || "").trim();
 
-    const candBuildingId =
-      String(v.buildingId || v.building || "").trim();
+      const candBuildingId =
+        String(v.buildingId || v.building || "").trim();
 
-    if (candNodeId === key || candBuildingId === key || String(k).trim() === key) {
-      return v;
+      if (candNodeId === key || candBuildingId === key || String(k).trim() === key) {
+        return v;
+      }
     }
-  }
 
-  return null;
-}
+    return null;
+  }
 
   function getPressureMeta(nodeId) {
     const info = _findLeaderInfoByNodeId(nodeId, _lastLeadersMap);
@@ -1058,7 +1218,9 @@ function _findLeaderInfoByNodeId(nodeId, leadersMap) {
     getPressureState,
     getPressureNote,
     getPressureSummary,
-    reapplyLastLeaders: () => { if (_lastLeadersMap) applyLeaders(_lastLeadersMap); }
+    reapplyLastLeaders: () => {
+      if (_lastLeadersMap) applyLeaders(_lastLeadersMap);
+    }
   };
 
   window.AHMap = API;
