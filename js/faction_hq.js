@@ -951,6 +951,105 @@ function _contribSummary(c) {
         overflow:hidden !important;
         touch-action:none;
       }
+      /* === HQ HOLOGRAM ASSET STAGE === */
+      #factionHQRoot .hq-holo-stage{
+        background:
+          radial-gradient(circle at 50% 58%, rgba(0,255,255,.14), transparent 28%),
+          linear-gradient(180deg, #101522 0%, #090c14 100%);
+      }
+
+      #factionHQRoot .hq-holo-grid{
+        position:absolute;
+        inset:0;
+        opacity:.34;
+        pointer-events:none;
+        background-image:
+          linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size:22px 22px;
+        mask-image:linear-gradient(to bottom, rgba(0,0,0,.92), rgba(0,0,0,.18));
+      }
+
+      #factionHQRoot .hq-holo-ring{
+        position:absolute;
+        left:50%;
+        top:46%;
+        transform:translate(-50%,-50%);
+        border-radius:50%;
+        border:1px solid color-mix(in srgb, var(--faction-color) 55%, transparent);
+        box-shadow:0 0 22px color-mix(in srgb, var(--faction-color) 18%, transparent);
+        opacity:.58;
+        pointer-events:none;
+        z-index:1;
+      }
+
+      #factionHQRoot .hq-holo-ring-a{
+        width:132px;
+        height:132px;
+        animation:satRotate 18s linear infinite;
+      }
+
+      #factionHQRoot .hq-holo-ring-b{
+        width:176px;
+        height:176px;
+        opacity:.26;
+        border-style:dashed;
+        animation:satRotate 24s linear infinite reverse;
+      }
+
+      #factionHQRoot .hq-holo-model{
+        position:absolute;
+        left:50%;
+        top:52%;
+        transform:translate(-50%,-50%);
+        width:min(84%, 420px);
+        max-height:78%;
+        object-fit:contain;
+        z-index:2;
+        user-select:none;
+        -webkit-user-drag:none;
+        filter:
+          drop-shadow(0 0 8px color-mix(in srgb, var(--faction-color) 18%, transparent))
+          drop-shadow(0 0 24px color-mix(in srgb, var(--faction-color) 22%, transparent));
+        animation:hqModelFloat 5s ease-in-out infinite;
+      }
+
+      #factionHQRoot .hq-holo-scan{
+        position:absolute;
+        inset:0;
+        z-index:3;
+        pointer-events:none;
+        background:linear-gradient(
+          180deg,
+          transparent 0%,
+          rgba(255,255,255,.02) 28%,
+          color-mix(in srgb, var(--faction-color) 20%, transparent) 50%,
+          rgba(255,255,255,.02) 72%,
+          transparent 100%
+        );
+        transform:translateY(-100%);
+        animation:hqVerticalScan 4.6s linear infinite;
+        mix-blend-mode:screen;
+      }
+
+      #factionHQRoot .hq-holo-stage .hq-badge-mini{
+        z-index:4;
+      }
+
+      #factionHQRoot .hq-holo-stage .hq-label{
+        z-index:4;
+      }
+
+      @keyframes hqModelFloat{
+        0%,100%{ transform:translate(-50%,-50%) translateY(0px); }
+        50%{ transform:translate(-50%,-50%) translateY(-6px); }
+      }
+
+      @keyframes hqVerticalScan{
+        0%{ transform:translateY(-100%); opacity:0; }
+        12%{ opacity:.9; }
+        100%{ transform:translateY(100%); opacity:0; }
+      }
 
       @keyframes satRotate {
         from { transform:rotate(0deg); }
