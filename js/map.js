@@ -556,12 +556,38 @@
       ""
     ).trim().toLowerCase();
 
-    const isContested =
-      !!src?.isContested ||
-      !!src?.contested ||
-      pressureDerivedStatus === "CONTESTED" ||
+    const isSiegeContested =
       siegeStatus === "forming" ||
       siegeStatus === "running";
+
+    const explicitPressureContestedRaw =
+      src?.isPressureContested ??
+      src?.pressureContested ??
+      src?.pressureIsContested ??
+      src?.pressure_contested;
+
+    const hasExplicitPressureContested =
+      explicitPressureContestedRaw !== undefined &&
+      explicitPressureContestedRaw !== null &&
+      String(explicitPressureContestedRaw).trim() !== "";
+
+    const explicitPressureContested = hasExplicitPressureContested
+      ? !/^(false|0|no)$/i.test(String(explicitPressureContestedRaw).trim())
+      : false;
+
+    const fallbackPressureContested =
+      !isSiegeContested &&
+      (
+        !!src?.isContested ||
+        !!src?.contested
+      );
+
+    const isPressureContested =
+      explicitPressureContested ||
+      pressureDerivedStatus === "CONTESTED" ||
+      fallbackPressureContested;
+
+    const isContested = isPressureContested || isSiegeContested;
 
     const isFortified =
       !!src?.isFortified ||
@@ -581,6 +607,8 @@
     return {
       isHot,
       isContested,
+      isPressureContested,
+      isSiegeContested,
       isFortified,
       captureTier,
       pressureDerivedStatus: pressureDerivedStatus || "NEUTRAL",
@@ -598,16 +626,10 @@
 
   function _primaryPressureChip(pressureMeta) {
     const meta = pressureMeta || {};
-    if (meta.isContested) return { text: "CONTESTED", cls: "p-contested" };
+    if (meta.isPressureContested) return { text: "CONTESTED", cls: "p-contested" };
     if (meta.isHot) return { text: "HOT", cls: "p-hot" };
     if (meta.isFortified) return { text: "FORTIFIED", cls: "p-fortified" };
     return null;
-  }
-
-  function _chipPressureHtml(pressureMeta) {
-    const primary = _primaryPressureChip(pressureMeta);
-    if (!primary) return "";
-    return ` <span class="chip-state ${primary.cls}">${esc(primary.text)}</span>`;
   }
 
   function _pressureTone(pressureMeta) {
@@ -628,7 +650,7 @@
     if (status === "running") score += 140;
     else if (status === "forming") score += 105;
 
-    if (pressure.isContested) score += 100;
+    if (pressure.isPressureContested) score += 100;
     else if (pressure.isHot) score += 58;
     else return 0;
 
@@ -670,10 +692,11 @@
     ensureLevel1(pinEl);
 
     const meta = pressureMeta || {};
+    const isPressureContested = !!meta.isPressureContested;
     const wrap = pinEl.querySelector(".pin-pressure-badges");
 
     pinEl.dataset.pressureHot = meta.isHot ? "1" : "0";
-    pinEl.dataset.pressureContested = meta.isContested ? "1" : "0";
+    pinEl.dataset.pressureContested = isPressureContested ? "1" : "0";
     pinEl.dataset.pressureFortified = meta.isFortified ? "1" : "0";
     pinEl.dataset.captureTier = String(meta.captureTier || 0);
     pinEl.dataset.pressureDerivedStatus = String(meta.pressureDerivedStatus || "");
@@ -681,7 +704,7 @@
     _clearPressureClasses(pinEl);
 
     if (meta.isHot) pinEl.classList.add("pressure-hot");
-    if (meta.isContested) pinEl.classList.add("pressure-contested");
+    if (isPressureContested) pinEl.classList.add("pressure-contested");
     if (meta.isFortified) pinEl.classList.add("pressure-fortified");
 
     if (!wrap) return;
@@ -751,22 +774,6 @@
     return CODE[owner] || "";
   }
 
-  function _chipStateText(siegeMeta) {
-    const status = String(siegeMeta?.siegeStatus || "");
-    if (status === "forming") return "UNDER ATTACK";
-    if (status === "running") return "LIVE";
-    if (status === "cooldown") return "SECURED";
-    return "";
-  }
-
-  function _chipStateClass(siegeMeta) {
-    const status = String(siegeMeta?.siegeStatus || "");
-    if (status === "forming") return "s-forming";
-    if (status === "running") return "s-running";
-    if (status === "cooldown") return "s-cooldown";
-    return "";
-  }
-
   function _applySiegeStateClasses(pinEl, siegeMeta) {
     const status = String(siegeMeta?.siegeStatus || "");
     if (status === "forming") pinEl.classList.add("siege-forming");
@@ -823,11 +830,16 @@
     else if (id === "edge_of_the_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
 
-    const isContested =
-      !!o.contested ||
-      !!pressureMeta.isContested ||
+    const isPressureContested = !!pressureMeta.isPressureContested;
+    const isSiegeContested =
+      !!pressureMeta.isSiegeContested ||
       siegeStatus === "forming" ||
       siegeStatus === "running";
+
+    const isContested =
+      !!o.contested ||
+      isPressureContested ||
+      isSiegeContested;
 
     const isLive =
       !isContested &&
@@ -885,13 +897,18 @@
     const m = (model && typeof model === "object") ? model : {};
 
     pinEl.classList.remove(
-      "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral",
+      "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral", "is-controlled",
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
       "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-generic"
     );
 
-    if (m.faction) pinEl.classList.add(CLS[m.faction] || "");
-    else pinEl.classList.add("is-neutral");
+    if (m.faction) {
+      const cls = CLS[m.faction] || "";
+      if (cls) pinEl.classList.add(cls);
+      pinEl.classList.add("is-controlled");
+    } else {
+      pinEl.classList.add("is-neutral");
+    }
 
     if (m.status) pinEl.classList.add(`is-${m.status}`);
     if (m.type) pinEl.classList.add(`type-${m.type}`);
@@ -899,13 +916,7 @@
     const chipEl = pinEl.querySelector(".chip");
     if (!chipEl) return;
 
-    const pressureState = chipEl.querySelector(".chip-state:not(.node-visual-state)");
     let visualState = chipEl.querySelector(".chip-state.node-visual-state");
-
-    if (pressureState) {
-      if (visualState) visualState.remove();
-      return;
-    }
 
     if (!m.chip) {
       if (visualState) visualState.remove();
@@ -920,6 +931,13 @@
 
     visualState.className = `chip-state node-visual-state v-${m.status || "generic"}`;
     visualState.textContent = m.chip;
+  }
+
+  function _applyPinVisualState(pinEl, visualModel, opts) {
+    const o = (opts && typeof opts === "object") ? opts : {};
+    _applyNodeVisualClasses(pinEl, visualModel);
+    _applySiegeStateClasses(pinEl, o.siegeMeta || {});
+    _applyPressureBadges(pinEl, o.pressureMeta || {});
   }
 
   function setLeader(pinEl, owner, opts) {
@@ -947,30 +965,22 @@
 
     const visualModel = _deriveNodeVisualModel(pinEl, owner, {
       contested,
-      source,
       siegeMeta,
       pressureMeta
     });
 
+    if (chip) {
+      chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
+    }
+
     if (!owner) {
       _clearPinBadge(badge);
-
-      if (chip) {
-        chip.innerHTML = `<span class="chip-name">${esc(name)}</span>${_chipPressureHtml(pressureMeta)}`;
-      }
-
-      _applyNodeVisualClasses(pinEl, visualModel);
-      _applySiegeStateClasses(pinEl, siegeMeta);
-      _applyPressureBadges(pinEl, pressureMeta);
+      _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta });
       return;
     }
 
     const code = CODE[owner] || "";
-    const cls = CLS[owner] || "";
     const badgeText = _leaderBadgeText(owner, siegeMeta);
-
-    if (cls) pinEl.classList.add(cls);
-    pinEl.classList.add("is-controlled");
 
     if (badge) {
       if (badgeText && badgeText !== code) {
@@ -982,13 +992,7 @@
       }
     }
 
-    if (chip) {
-      chip.innerHTML = `<span class="chip-name">${esc(name)}</span>${_chipPressureHtml(pressureMeta)}`;
-    }
-
-    _applyNodeVisualClasses(pinEl, visualModel);
-    _applySiegeStateClasses(pinEl, siegeMeta);
-    _applyPressureBadges(pinEl, pressureMeta);
+    _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta });
   }
 
   function _clearLeader(pinEl) {
@@ -1062,17 +1066,14 @@
 
   function getPressureState(nodeId) {
     const meta = getPressureMeta(nodeId);
-
-    if (meta.isContested) return "CONTESTED";
-    if (meta.isHot) return "HOT";
-    if (meta.isFortified) return "FORTIFIED";
-    return "";
+    const primary = _primaryPressureChip(meta);
+    return primary ? primary.text : "";
   }
 
   function getPressureNote(nodeId) {
     const meta = getPressureMeta(nodeId);
 
-    if (meta.isContested) {
+    if (meta.isPressureContested) {
       return "Actively contested. Multiple factions are pushing this node.";
     }
     if (meta.isHot) {
@@ -1092,6 +1093,8 @@
       captureTier: Number(meta.captureTier || 0) || 0,
       isHot: !!meta.isHot,
       isContested: !!meta.isContested,
+      isPressureContested: !!meta.isPressureContested,
+      isSiegeContested: !!meta.isSiegeContested,
       isFortified: !!meta.isFortified,
       pressureDerivedStatus: String(meta.pressureDerivedStatus || "")
     };
