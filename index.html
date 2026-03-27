@@ -3740,40 +3740,67 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <div id="supportBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support">
     <div class="ah-panel-hd">
-      <div class="ah-title">Support Alpha Husky</div>
+      <div class="ah-title">Support</div>
       <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
     </div>
 
-    <div style="opacity:.96;font-size:13px;line-height:1.45;margin-bottom:12px">
-      <div style="font-weight:800;font-size:14px;margin-bottom:6px">
-        Built solo. Backed by the Pack.
+    <!-- krótki hero copy -->
+    <div style="
+      margin-bottom:12px;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+      backdrop-filter: blur(4px);
+    ">
+      <div style="font-weight:800;font-size:14px;line-height:1.2;margin-bottom:4px">
+        Back the Pack
       </div>
-      <div>
-        Alpha Husky has been built and funded solo for 14 months.
-        If you want to help keep the servers running and support future updates,
-        this is the best direct way to back the Pack.
+      <div style="opacity:.86;font-size:12px;line-height:1.35">
+        Built solo for 14 months. Your support helps keep Alpha Husky growing.
       </div>
     </div>
 
+    <!-- tiers -->
     <div class="ah-actions" style="gap:10px;display:flex;flex-direction:column">
-      <button class="ah-action" type="button" data-support-tier="supporter" style="text-align:left;padding:14px 14px">
-        <div style="font-weight:800;font-size:15px">⭐ Become a Supporter</div>
-        <div style="opacity:.88;font-size:12px;line-height:1.35;margin-top:4px">
-          Exclusive supporter tag, frame and early Pack recognition.
+      <button class="ah-action" type="button" data-support-tier="supporter" style="
+        text-align:left;
+        padding:14px 14px;
+        border-radius:16px;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="font-weight:800;font-size:15px">⭐ Supporter</div>
+          <div style="opacity:.7;font-size:11px">Entry tier</div>
+        </div>
+        <div style="opacity:.84;font-size:12px;line-height:1.35;margin-top:6px">
+          Exclusive tag + frame.
         </div>
       </button>
 
-      <button class="ah-action" type="button" data-support-tier="patron" style="text-align:left;padding:14px 14px">
-        <div style="font-weight:800;font-size:15px">💎 Become a Patron</div>
-        <div style="opacity:.88;font-size:12px;line-height:1.35;margin-top:4px">
-          Stronger support tier with patron tag, frame and higher supporter status.
+      <button class="ah-action" type="button" data-support-tier="patron" style="
+        text-align:left;
+        padding:14px 14px;
+        border-radius:16px;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="font-weight:800;font-size:15px">💎 Patron</div>
+          <div style="opacity:.7;font-size:11px">Higher tier</div>
+        </div>
+        <div style="opacity:.84;font-size:12px;line-height:1.35;margin-top:6px">
+          Premium tag + frame.
         </div>
       </button>
     </div>
 
-    <div style="opacity:.9;font-size:12px;line-height:1.4;margin-top:12px">
-      Support helps cover servers and keeps Alpha Husky moving forward.
-      Early supporters will always be part of the game’s first era.
+    <!-- mały footer -->
+    <div style="
+      opacity:.75;
+      font-size:11px;
+      line-height:1.35;
+      margin-top:12px;
+      text-align:center;
+    ">
+      Early supporters help fund servers and future updates.
     </div>
   </div>
 </div>
