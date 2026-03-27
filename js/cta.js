@@ -382,187 +382,193 @@
   }
 
   function normalizeHighlight(raw) {
-    if (!raw || typeof raw !== "object") return null;
-    const target = normalizeTarget(raw.target);
-    if (!target) return null;
+  if (!raw || typeof raw !== "object") return null;
+  const target = normalizeTarget(raw.target);
+  if (!target) return null;
 
-    const text = asText(raw.text) || asText(raw.title);
-    if (!text) return null;
+  const text = asText(raw.text) || asText(raw.title);
+  if (!text) return null;
 
-    return {
-      kind: asText(raw.kind),
-      text,
-      badge: asText(raw.badge) || fallbackHighlightBadge(raw.kind, target),
-      target,
-    };
+  return {
+    kind: asText(raw.kind),
+    text,
+    badge: asText(raw.badge) || fallbackHighlightBadge(raw.kind, target),
+    target,
+  };
+}
+
+function normalize(raw) {
+  const data = unwrapPayload(raw);
+  const primary = normalizePrimary(data.primary);
+
+  const highlights = [];
+  const seen = new Set();
+  const list = Array.isArray(data.highlights) ? data.highlights : [];
+  for (const row of list) {
+    const item = normalizeHighlight(row);
+    if (!item) continue;
+    const key = [
+      item.kind,
+      item.target?.type,
+      item.target?.nodeId,
+      item.target?.buildingId,
+      item.text,
+    ].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    highlights.push(item);
+    if (highlights.length >= MAX_HIGHLIGHTS) break;
   }
 
-  function normalize(raw) {
-    const data = unwrapPayload(raw);
-    const primary = normalizePrimary(data.primary);
+  return { primary, highlights };
+}
 
-    const highlights = [];
-    const seen = new Set();
-    const list = Array.isArray(data.highlights) ? data.highlights : [];
-    for (const row of list) {
-      const item = normalizeHighlight(row);
-      if (!item) continue;
-      const key = [
-        item.kind,
-        item.target?.type,
-        item.target?.nodeId,
-        item.target?.buildingId,
-        item.text,
-      ].join("|");
-      if (seen.has(key)) continue;
-      seen.add(key);
-      highlights.push(item);
-      if (highlights.length >= MAX_HIGHLIGHTS) break;
+function createBadge(text) {
+  const badge = document.createElement("span");
+  badge.className = "cta-badge";
+  badge.textContent = text || "LIVE";
+  return badge;
+}
+
+function highlightToggleLabel(count) {
+  const n = Math.max(0, Number(count || 0));
+  return n > 0 ? `More activity · ${n}` : "More activity";
+}
+
+function renderExpander(count) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "cta-expander" + (STATE.expanded ? " is-open" : "");
+  btn.setAttribute("aria-expanded", STATE.expanded ? "true" : "false");
+  btn.setAttribute("aria-label", highlightToggleLabel(count));
+
+  const text = document.createElement("span");
+  text.className = "cta-expander-text";
+  text.textContent = highlightToggleLabel(count);
+  btn.appendChild(text);
+
+  const chev = document.createElement("span");
+  chev.className = "cta-expander-chev";
+  chev.setAttribute("aria-hidden", "true");
+  chev.textContent = ">";
+  btn.appendChild(chev);
+
+  btn.addEventListener("click", () => {
+    STATE.expanded = !STATE.expanded;
+    if (STATE.lastData) {
+      render(STATE.lastData);
     }
+  });
 
-    return { primary, highlights };
+  return btn;
+}
+
+function renderPrimary(primary) {
+  clearRoot(STATE.cardRoot);
+  if (!STATE.cardRoot || !primary) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "cta-strip";
+  btn.setAttribute("aria-label", primary.title || "Open live world event");
+  btn.title = primary.subtitle
+    ? `${primary.title} — ${primary.subtitle}`
+    : (primary.title || "Open live world event");
+
+  const badge = createBadge(primary.badge || "LIVE");
+  badge.classList.add("cta-strip-badge");
+  btn.appendChild(badge);
+
+  const body = document.createElement("span");
+  body.className = "cta-strip-body";
+
+  const line = document.createElement("span");
+  line.className = "cta-strip-line";
+  line.textContent = primary.title || "";
+  body.appendChild(line);
+
+  if (primary.subtitle) {
+    const meta = document.createElement("span");
+    meta.className = "cta-strip-meta";
+    meta.textContent = primary.subtitle;
+    body.appendChild(meta);
   }
 
-  function createBadge(text) {
-    const badge = document.createElement("span");
-    badge.className = "cta-badge";
-    badge.textContent = text || "LIVE";
-    return badge;
+  btn.appendChild(body);
+
+  const go = document.createElement("span");
+  go.className = "cta-strip-go";
+  go.setAttribute("aria-hidden", "true");
+  go.textContent = ">";
+  btn.appendChild(go);
+
+  btn.addEventListener("click", () => {
+    collapseExpanded(true);
+    void openTarget(primary.target);
+  });
+
+  STATE.cardRoot.appendChild(btn);
+}
+
+function renderHighlights(highlights) {
+  clearRoot(STATE.highlightsRoot);
+  if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
+
+  const items = highlights.slice(0, MAX_HIGHLIGHTS);
+  const primaryVisible = !!(STATE.lastData && STATE.lastData.primary);
+  const collapsible = primaryVisible && items.length > 0;
+
+  if (collapsible) {
+    STATE.highlightsRoot.appendChild(renderExpander(items.length));
+    if (!STATE.expanded) return;
   }
 
-  function highlightToggleLabel(count) {
-    const n = Math.max(0, Number(count || 0));
-    return `More activity (${n})`;
-  }
+  const wrap = document.createElement("div");
+  wrap.className = collapsible ? "cta-highlights-body" : "cta-highlights";
 
-  function renderExpander(count) {
+  for (const item of items) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "cta-expander" + (STATE.expanded ? " is-open" : "");
-    btn.setAttribute("aria-expanded", STATE.expanded ? "true" : "false");
-    btn.setAttribute("aria-label", highlightToggleLabel(count));
+    btn.className = "cta-highlight";
+    btn.setAttribute("aria-label", item.text || "Open highlight");
+
+    btn.appendChild(createBadge(item.badge));
 
     const text = document.createElement("span");
-    text.className = "cta-expander-text";
-    text.textContent = highlightToggleLabel(count);
+    text.className = "cta-highlight-text";
+    text.textContent = item.text;
     btn.appendChild(text);
-
-    const chev = document.createElement("span");
-    chev.className = "cta-expander-chev";
-    chev.setAttribute("aria-hidden", "true");
-    chev.textContent = ">";
-    btn.appendChild(chev);
-
-    btn.addEventListener("click", () => {
-      STATE.expanded = !STATE.expanded;
-      if (STATE.lastData) {
-        render(STATE.lastData);
-      }
-    });
-
-    return btn;
-  }
-
-  function renderPrimary(primary) {
-    clearRoot(STATE.cardRoot);
-    if (!STATE.cardRoot || !primary) return;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "cta-card";
-    btn.setAttribute("aria-label", primary.title || "Open live world event");
-
-    const top = document.createElement("div");
-    top.className = "cta-card-top";
-    top.appendChild(createBadge(primary.badge));
-
-    const go = document.createElement("span");
-    go.className = "cta-card-go";
-    go.setAttribute("aria-hidden", "true");
-    go.textContent = ">";
-    top.appendChild(go);
-
-    const title = document.createElement("h3");
-    title.className = "cta-title";
-    title.textContent = primary.title;
-
-    btn.appendChild(top);
-    btn.appendChild(title);
-
-    if (primary.subtitle) {
-      const subtitle = document.createElement("p");
-      subtitle.className = "cta-subtitle";
-      subtitle.textContent = primary.subtitle;
-      btn.appendChild(subtitle);
-    }
 
     btn.addEventListener("click", () => {
       collapseExpanded(true);
-      void openTarget(primary.target);
+      void openTarget(item.target);
     });
 
-    STATE.cardRoot.appendChild(btn);
+    wrap.appendChild(btn);
   }
 
-  function renderHighlights(highlights) {
-    clearRoot(STATE.highlightsRoot);
-    if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
+  STATE.highlightsRoot.appendChild(wrap);
+}
 
-    const items = highlights.slice(0, MAX_HIGHLIGHTS);
-    const primaryVisible = !!(STATE.lastData && STATE.lastData.primary);
-    const collapsible = primaryVisible && items.length > 0;
+function render(data) {
+  if (!mount()) return null;
 
-    if (collapsible) {
-      STATE.highlightsRoot.appendChild(renderExpander(items.length));
-      if (!STATE.expanded) return;
-    }
+  const safe = data && typeof data === "object"
+    ? data
+    : { primary: null, highlights: [] };
 
-    const wrap = document.createElement("div");
-    wrap.className = collapsible ? "cta-highlights-body" : "cta-highlights";
-
-    for (const item of items) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "cta-highlight";
-      btn.setAttribute("aria-label", item.text || "Open highlight");
-
-      btn.appendChild(createBadge(item.badge));
-
-      const text = document.createElement("span");
-      text.className = "cta-highlight-text";
-      text.textContent = item.text;
-      btn.appendChild(text);
-
-      btn.addEventListener("click", () => {
-        collapseExpanded(true);
-        void openTarget(item.target);
-      });
-
-      wrap.appendChild(btn);
-    }
-
-    STATE.highlightsRoot.appendChild(wrap);
+  if (!safe.primary || !Array.isArray(safe.highlights) || !safe.highlights.length) {
+    STATE.expanded = false;
   }
 
-  function render(data) {
-    if (!mount()) return null;
+  renderPrimary(safe.primary || null);
+  renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
 
-    const safe = data && typeof data === "object"
-      ? data
-      : { primary: null, highlights: [] };
-
-    if (!safe.primary || !Array.isArray(safe.highlights) || !safe.highlights.length) {
-      STATE.expanded = false;
-    }
-
-    renderPrimary(safe.primary || null);
-    renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
-
-    const hasPrimary = !!safe.primary;
-    const hasHighlights = Array.isArray(safe.highlights) && safe.highlights.length > 0;
-    setVisible(hasPrimary || hasHighlights);
-    return safe;
-  }
+  const hasPrimary = !!safe.primary;
+  const hasHighlights = Array.isArray(safe.highlights) && safe.highlights.length > 0;
+  setVisible(hasPrimary || hasHighlights);
+  return safe;
+}
 
   async function load() {
     if (!mount()) return null;
