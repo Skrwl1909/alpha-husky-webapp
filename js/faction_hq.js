@@ -391,24 +391,24 @@ function _contribSummary(c) {
       }
 
       #factionHQRoot{
-        --faction-color:#00eaff;
-        width:min(620px, 100%);
-        max-height:calc(100vh - 24px);
-        overflow:auto;
-        -webkit-overflow-scrolling:touch;
-        padding:18px;
-        border-radius:24px;
-        color:rgba(255,255,255,.96);
-        background:
-          linear-gradient(180deg, rgba(11,13,21,.88), rgba(8,10,16,.94));
-        border:1px solid rgba(255,255,255,.12);
-        box-shadow:
-          0 20px 70px rgba(0,0,0,.55),
-          inset 0 1px 0 rgba(255,255,255,.08),
-          0 0 0 1px rgba(255,255,255,.03),
-          0 0 26px color-mix(in srgb, var(--faction-color) 28%, transparent);
-        backdrop-filter:blur(14px);
-      }
+  --faction-color:#00eaff;
+  width:min(620px, 100%);
+  max-height:calc(100vh - 14px);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:14px;
+  border-radius:24px;
+  color:rgba(255,255,255,.96);
+  background:
+    linear-gradient(180deg, rgba(11,13,21,.88), rgba(8,10,16,.94));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    0 20px 70px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 0 1px rgba(255,255,255,.03),
+    0 0 26px color-mix(in srgb, var(--faction-color) 28%, transparent);
+  backdrop-filter:blur(14px);
+}
 
       #factionHQRoot .hq-head{
         position:relative;
