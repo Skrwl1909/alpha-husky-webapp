@@ -1295,31 +1295,7 @@ function _contribSummary(c) {
         </div>
         ${dbgLine}
 
-        <!-- CENTRALNA MAKIETA HQ -->
-        <div class="hq-mockup" data-level="${mockLevel}" data-faction="${esc(fk)}">
-          <div class="layer layer-base"></div>
-          <div class="layer layer-grid"></div>
-          <div class="layer layer-core"></div>
-          <div class="scan-ring"></div>
-          <div class="scan-ring r2"></div>
-
-          <div class="layer layer-1"></div>
-          <div class="layer layer-towers"></div>
-
-          <div class="tower left"></div>
-          <div class="tower center"></div>
-          <div class="tower right"></div>
-
-          <div class="layer layer-neon"></div>
-          <div class="layer layer-sat"></div>
-
-          <div class="hq-glow-line"></div>
-          <div class="hq-badge-mini">${esc(factionShort(fk))}</div>
-
-          <div class="hq-label">
-            Faction Headquarters • Level ${num(curLevel)}
-          </div>
-        </div>
+        ${_hqStageHTML(curLevel, fk)}
       </div>
 
       <div class="hq-grid two">
