@@ -59,43 +59,43 @@
   }
 
   async function handleTierClick(tier) {
-    const tg = getTg();
-    try { tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+  const tg = getTg();
+  const tierName =
+    String(tier || "").toLowerCase() === "patron" ? "Patron" : "Supporter";
 
-    // 1) Stars invoice (preferred)
-    try {
-      const { link } = await createInvoice(tier);
+  try { tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
-      if (typeof tg?.openInvoice === "function") {
-        tg.openInvoice(link, async (status) => {
-          log("openInvoice status:", status);
+  try {
+    const { link } = await createInvoice(tier);
 
-          if (status === "paid") {
-            try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-            await refreshAfterPaid();
-            try { tg?.showAlert?.("✅ Support unlocked. Thank you, Howler."); } catch (_) {}
-          } else if (status === "cancelled") {
-            try { tg?.showAlert?.("Payment cancelled."); } catch (_) {}
-          } else if (status === "failed") {
-            try { tg?.showAlert?.("Payment failed."); } catch (_) {}
-          } else {
-            // pending/unknown -> nic
-          }
-        });
-        return;
-      }
+    if (typeof tg?.openInvoice === "function") {
+      tg.openInvoice(link, async (status) => {
+        log("openInvoice status:", status);
 
-      // jeśli klient nie ma openInvoice, lecimy fallback
-      throw new Error("NO_OPENINVOICE");
-    } catch (e) {
-      log("Invoice flow failed -> fallback to bot /start", e);
-
-      // 2) fallback: bot /start support_<tier>
-      const deep = `https://t.me/${BOT_USERNAME}?start=support_${encodeURIComponent(String(tier || ""))}`;
-      try { tg?.openTelegramLink?.(deep); }
-      catch (_) { tg?.showAlert?.("Open /support in chat"); }
+        if (status === "paid") {
+          try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+          await refreshAfterPaid();
+          try {
+            tg?.showAlert?.(`✅ ${tierName} unlocked. Thank you for backing the Pack.`);
+          } catch (_) {}
+        } else if (status === "cancelled") {
+          try { tg?.showAlert?.("Payment cancelled."); } catch (_) {}
+        } else if (status === "failed") {
+          try { tg?.showAlert?.("Payment failed."); } catch (_) {}
+        }
+      });
+      return;
     }
+
+    throw new Error("NO_OPENINVOICE");
+  } catch (e) {
+    log("Invoice flow failed -> fallback to bot /start", e);
+
+    const deep = `https://t.me/${BOT_USERNAME}?start=support_${encodeURIComponent(String(tier || ""))}`;
+    try { tg?.openTelegramLink?.(deep); }
+    catch (_) { tg?.showAlert?.("Open /support in chat"); }
   }
+}
 
   function wireClicks() {
     const back = document.getElementById("supportBack");
