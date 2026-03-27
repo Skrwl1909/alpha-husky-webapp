@@ -919,6 +919,7 @@ html.ah-skins-open #heroFrame{
       drop-shadow(0 0 18px rgba(0,255,255,.12));
   }
 
+
 /* PATCH: zamiast aspect-ratio -> realna wysokość mapy */
 .map{
   position:relative;
@@ -945,232 +946,374 @@ html.ah-skins-open #heroFrame{
     url("images/map/overlays/fog.png") center/cover no-repeat,
     linear-gradient(0deg, rgba(0,0,0,.24), transparent);
   opacity:.50;
-    }
+}
 
 .paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
 .paths-layer svg{ width:100%; height:100%; }
 
 .pins{ position:absolute; inset:0; z-index:3; }
 
-.hotspot{ position:absolute; transform:translate(-50%,-50%); text-align:center;
-  padding:0; background:none; border:none; cursor:pointer;
-  z-index:3; transition: transform .12s ease, filter .12s ease; }
+/* === MAP VISUAL SYSTEM v1 === */
 
-.hotspot:hover{ transform:translate(-50%,-50%) scale(1.05); z-index:3; }
+:root{
+  --f-rb: #ff5252;
+  --f-ew: #05d9ff;
+  --f-pb: #ff9500;
+  --f-ih: #c724ff;
 
-.hotspot::before{ content:""; position:absolute; left:50%; top:50%;
-  width: clamp(48px, 7vw, 120px); height: clamp(22px, 3.4vw, 60px);
+  --status-live: #0fff9f;
+  --status-active: #05d9ff;
+  --status-threatened: #ff9500;
+  --status-contested: #ff2a6d;
+  --status-fortified: #c724ff;
+}
+
+.hotspot{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  padding:0;
+  background:none;
+  border:none;
+  cursor:pointer;
+  z-index:3;
+  transition: transform .12s ease, filter .12s ease;
+
+  --node-glow-1: rgba(255,255,255,.12);
+  --node-glow-2: rgba(255,255,255,.08);
+  --node-ping: rgba(255,255,255,.08);
+  --node-chip-color: rgba(255,255,255,.92);
+  --node-chip-border: rgba(255,255,255,.16);
+  --node-chip-bg: rgba(10,12,16,.88);
+}
+
+.hotspot:hover{
+  transform:translate(-50%,-50%) scale(1.05);
+  z-index:3;
+}
+
+.hotspot::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width: clamp(48px, 7vw, 120px);
+  height: clamp(22px, 3.4vw, 60px);
   transform: translate(-50%, calc(-50% + 20px));
   background: url("images/map/decals/decal_soft.png") center/contain no-repeat;
-  opacity:.9; filter: blur(.2px); pointer-events:none; }
-
-.hotspot img{ width: clamp(40px, 3.6vw, 72px);
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55)); pointer-events:none; }
-
-.hotspot.unlocked img{
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,.55))
-          drop-shadow(-2px 0 6px rgba(0,229,255,.22))
-          drop-shadow( 2px 0 6px rgba(155,77,255,.22));
+  opacity:.9;
+  filter: blur(.2px);
+  pointer-events:none;
 }
-  .hotspot.locked img{ filter: grayscale(1) opacity(.7) drop-shadow(0 8px 14px rgba(0,0,0,.55)); }
-  .ping{ position:absolute; left:50%; top:50%; width: clamp(40px, 3.8vw, 76px); height: clamp(40px, 3.8vw, 76px);
-    transform: translate(-50%,-50%); border-radius:50%; animation:ping 1.4s infinite; pointer-events:none; }
-  .hotspot.unlocked .ping{ background:rgba(0,229,255,.14); }
-  .hotspot.locked .ping{ background:rgba(148,163,184,.10); }
-  @keyframes ping{ 0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9 } 100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0 } }
-  .chip{ position:absolute; left:50%; transform:translateX(-50%); margin-top:6px;
-    font-size:12px; line-height:1; padding:6px 10px; border-radius:999px;
-    background:rgba(10,12,16,.8); border:1px solid rgba(255,255,255,.07); color:#fff; white-space:nowrap;
-    backdrop-filter: blur(3px); }
-  .chip::before{ content:""; position:absolute; top:-6px; left:50%; width:10px; height:10px;
-    transform: translateX(-50%) rotate(45deg); background:inherit; border-left:inherit; border-top:inherit; }
-  .lock-badge{ position:absolute; right:-6px; top:-6px; width:22px; height:22px; border-radius:50%;
-    background:rgba(18,20,26,.96); border:1px solid rgba(255,255,255,.08);
-    display:flex; align-items:center; justify-content:center; font-size:12px; color:#cbd5e1;
-    box-shadow: 0 2px 6px rgba(0,0,0,.5); }
-  .lock-badge img{ width:14px; height:14px; opacity:.9 }
-  .path{ fill:none; stroke:rgba(255,255,255,.25); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px rgba(0,0,0,.6)); }
-  .path.locked{ stroke:rgba(255,255,255,.16); }
-  .path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
-  .locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
-  .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
-  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
-  .tab.active{ outline:2px solid rgba(255,255,255,.18); }
-  /* progress + region sheet width */
-  .progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
-    background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
-    font:600 12px system-ui}
-  .progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
-    background:rgba(255,255,255,.1);overflow:hidden}
-  .progress-bar>i{display:block;height:100%;width:0%;
-    background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
-  .region-sheet .sheet-card{width:min(92vw,520px)}
-  .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
-  /* DEBUG banner (pojedynczy) */
-  #dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
-    background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
-  /* Avatar/Skins modal */
-  .avatar-sheet .sheet-card {
-    width: min(92vw, 520px);
-    max-height: 80vh;
-    overflow: auto;
+
+.hotspot img{
+  width: clamp(40px, 3.6vw, 72px);
+  pointer-events:none;
+  opacity:1;
+  filter:
+    drop-shadow(0 10px 16px rgba(0,0,0,.55))
+    drop-shadow(-2px 0 6px var(--node-glow-1))
+    drop-shadow( 2px 0 6px var(--node-glow-2));
+}
+
+.hotspot.unlocked img,
+.hotspot.locked img{
+  opacity:1;
+  filter:
+    drop-shadow(0 10px 16px rgba(0,0,0,.55))
+    drop-shadow(-2px 0 6px var(--node-glow-1))
+    drop-shadow( 2px 0 6px var(--node-glow-2));
+}
+
+.ping{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width: clamp(40px, 3.8vw, 76px);
+  height: clamp(40px, 3.8vw, 76px);
+  transform: translate(-50%,-50%);
+  border-radius:50%;
+  animation: ping 1.4s infinite;
+  pointer-events:none;
+  background: var(--node-ping);
+}
+
+@keyframes ping{
+  0%{ transform:translate(-50%,-50%) scale(.9); opacity:.9; }
+  100%{ transform:translate(-50%,-50%) scale(1.6); opacity:0; }
+}
+
+.chip{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  margin-top:6px;
+  font-size:11px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  padding:6px 10px;
+  border-radius:999px;
+  white-space:nowrap;
+  backdrop-filter: blur(3px);
+  background:var(--node-chip-bg);
+  border:1px solid var(--node-chip-border);
+  color:var(--node-chip-color);
+  box-shadow:
+    0 6px 14px rgba(0,0,0,.30),
+    0 0 12px rgba(255,255,255,.04);
+}
+
+.chip::before{
+  content:"";
+  position:absolute;
+  top:-6px;
+  left:50%;
+  width:10px;
+  height:10px;
+  transform: translateX(-50%) rotate(45deg);
+  background:inherit;
+  border-left:inherit;
+  border-top:inherit;
+}
+
+/* remove lock visuals entirely */
+.lock-badge,
+.lock-badge img,
+.hotspot .lock,
+.hotspot .pin-lock,
+.hotspot .node-lock,
+.hotspot [data-role="lock"]{
+  display:none !important;
+}
+
+/* paths */
+.path{
+  fill:none;
+  stroke:rgba(255,255,255,.25);
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,.6));
+}
+
+.path.locked{ stroke:rgba(255,255,255,.25); }
+.path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
+
+/* neutral */
+.hotspot.is-neutral{
+  --node-glow-1: rgba(255,255,255,.12);
+  --node-glow-2: rgba(180,180,180,.06);
+  --node-ping: rgba(255,255,255,.06);
+}
+
+/* faction states */
+.hotspot.f-rb{
+  --node-glow-1: rgba(255,82,82,.30);
+  --node-glow-2: rgba(255,130,130,.18);
+  --node-ping: rgba(255,82,82,.14);
+}
+
+.hotspot.f-ew{
+  --node-glow-1: rgba(5,217,255,.30);
+  --node-glow-2: rgba(120,220,255,.18);
+  --node-ping: rgba(5,217,255,.14);
+}
+
+.hotspot.f-pb{
+  --node-glow-1: rgba(255,149,0,.30);
+  --node-glow-2: rgba(255,190,80,.18);
+  --node-ping: rgba(255,149,0,.14);
+}
+
+.hotspot.f-ih{
+  --node-glow-1: rgba(199,36,255,.30);
+  --node-glow-2: rgba(235,120,255,.18);
+  --node-ping: rgba(199,36,255,.14);
+}
+
+/* status chip colors */
+.hotspot.is-live{
+  --node-chip-color: var(--status-live);
+  --node-chip-border: rgba(15,255,159,.32);
+  animation: ahNodePulse 1.8s ease-in-out infinite;
+}
+
+.hotspot.is-active{
+  --node-chip-color: var(--status-active);
+  --node-chip-border: rgba(5,217,255,.28);
+}
+
+.hotspot.is-active img{
+  animation: ahGlowPulse 2.2s ease-in-out infinite;
+}
+
+.hotspot.is-threatened{
+  --node-chip-color: var(--status-threatened);
+  --node-chip-border: rgba(255,149,0,.28);
+  animation: ahThreatShake .42s ease-in-out infinite;
+}
+
+.hotspot.is-contested{
+  --node-chip-color: var(--status-contested);
+  --node-chip-border: rgba(255,42,109,.34);
+}
+
+.hotspot.is-contested img{
+  animation: ahContestedGlow .9s ease-in-out infinite;
+}
+
+.hotspot.is-fortified{
+  --node-chip-color: var(--status-fortified);
+  --node-chip-border: rgba(199,36,255,.30);
+  animation: ahFortifiedPulse 2.4s ease-in-out infinite;
+}
+
+/* type sizing */
+.hotspot.type-phantom img{ width: clamp(38px, 3.5vw, 68px); }
+.hotspot.type-bloodmoon img{ width: clamp(52px, 4.4vw, 82px); }
+.hotspot.type-siege img{ width: clamp(48px, 4.1vw, 76px); }
+.hotspot.type-oracle img{ width: clamp(50px, 4.2vw, 78px); }
+.hotspot.type-hq img{ width: clamp(64px, 5.2vw, 92px); }
+
+/* type flavor */
+.hotspot.type-bloodmoon{
+  --node-glow-2: rgba(255,42,109,.22);
+}
+
+.hotspot.type-siege.is-contested::after{
+  content:"";
+  position:absolute;
+  inset:-12px;
+  border-radius:50%;
+  border:2px solid rgba(255,42,109,.45);
+  pointer-events:none;
+  animation: ahSiegeRing 1.7s linear infinite;
+}
+
+.hotspot.type-oracle img{
+  animation: ahOracleFlicker 3.4s ease-in-out infinite;
+}
+
+.hotspot.type-hq{
+  z-index:4;
+}
+
+.hotspot.type-hq img{
+  filter:
+    drop-shadow(0 12px 18px rgba(0,0,0,.58))
+    drop-shadow(0 0 10px var(--node-glow-1))
+    drop-shadow(0 0 20px var(--node-glow-2));
+}
+
+.hotspot.type-hq.is-contested{
+  animation: ahHQAlert .6s ease-in-out infinite;
+}
+
+.hotspot.type-bloodmoon .chip,
+.hotspot.type-siege .chip,
+.hotspot.type-oracle .chip,
+.hotspot.type-hq .chip{
+  font-size:11px;
+  padding:6px 10px;
+}
+
+/* motion */
+@keyframes ahNodePulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1); }
+  50%{ transform:translate(-50%,-50%) scale(1.04); }
+}
+
+@keyframes ahGlowPulse{
+  0%,100%{
+    filter:
+      drop-shadow(0 10px 16px rgba(0,0,0,.55))
+      drop-shadow(-2px 0 6px var(--node-glow-1))
+      drop-shadow( 2px 0 6px var(--node-glow-2));
   }
-  .avatar-sheet canvas {
-    max-width: 100%;
-    height: auto;
+  50%{
+    filter:
+      drop-shadow(0 10px 16px rgba(0,0,0,.55))
+      drop-shadow(-2px 0 10px var(--node-glow-1))
+      drop-shadow( 2px 0 10px var(--node-glow-2));
   }
-  .skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
-  .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
-
-   /* ==================== MAP RYWALIZACJA FRAKCYJNA v2 (SCOPED) ==================== */
-/* WAŻNE: scope do #pins, żeby przypadkowe klasy .map-pin na modalach NIE psuły layoutu */
-
-#pins .map-pin {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  transition: transform .15s ease, filter .15s ease;
-  z-index: 3;
 }
 
-/* Hover + active */
-#pins .map-pin:hover { transform: translate(-50%, -50%) scale(1.08); }
-#pins .map-pin:active { transform: translate(-50%, -50%) scale(0.96); }
-
-/* ===== BADGE FRAKCJI (kompaktowy fallback zgodny z map.js) ===== */
-#pins .map-pin .pin-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 900;
-  color: #fff;
-  text-shadow: none;
-  box-shadow: 0 3px 10px rgba(0,0,0,.20);
-  border: 1px solid rgba(255,255,255,.18);
-  z-index: 4;
-  backdrop-filter: blur(6px);
-  background: rgba(8,10,14,.78);
-}
-#pins .map-pin .pin-badge.is-faction{
-  width: 18px;
-  min-width: 18px;
-  padding: 0;
-  overflow: hidden;
-}
-#pins .map-pin .pin-badge img{
-  width: 12px;
-  height: 12px;
-  display: block;
-}
-#pins .map-pin .pin-badge .pin-badge-fallback{
-  display: none;
-  font-size: 8px;
-  font-weight: 900;
-  line-height: 1;
+@keyframes ahThreatShake{
+  0%,100%{ transform:translate(-50%,-50%) translateX(0); }
+  25%{ transform:translate(-50%,-50%) translateX(1px); }
+  75%{ transform:translate(-50%,-50%) translateX(-1px); }
 }
 
-/* Kolory frakcji */
-#pins .map-pin.f-rb .pin-badge { color:#ff5a5a; border-color:rgba(255,90,90,.35); }   /* Rogue Byte */
-#pins .map-pin.f-ew .pin-badge { color:#ffd25a; border-color:rgba(255,210,90,.35); }   /* Echo Wardens */
-#pins .map-pin.f-pb .pin-badge { color:#ffa046; border-color:rgba(255,160,70,.35); }   /* Pack Burners */
-#pins .map-pin.f-ih .pin-badge { color:#5aebff; border-color:rgba(90,235,255,.35); }   /* Inner Howl */
-
-#pins .map-pin.siege-forming .pin-badge { background:rgba(255,140,40,.88); color:#fff; border-color:rgba(255,255,255,.16); }
-#pins .map-pin.siege-running .pin-badge { background:rgba(220,60,60,.90); color:#fff; border-color:rgba(255,255,255,.16); }
-#pins .map-pin.siege-cooldown .pin-badge { background:rgba(50,180,145,.88); color:#fff; border-color:rgba(255,255,255,.16); }
-
-/* Glow dla lidera */
-#pins .map-pin.is-leader .pin-badge {
-  box-shadow: 0 0 18px currentColor, 0 4px 12px rgba(0,0,0,.6);
-  animation: leaderPulse 2s infinite;
+@keyframes ahContestedGlow{
+  0%,100%{
+    filter:
+      drop-shadow(0 10px 16px rgba(0,0,0,.55))
+      drop-shadow(-2px 0 8px var(--node-glow-1))
+      drop-shadow( 2px 0 8px var(--node-glow-2));
+  }
+  50%{
+    filter:
+      drop-shadow(0 10px 16px rgba(0,0,0,.55))
+      drop-shadow(-2px 0 12px rgba(255,42,109,.30))
+      drop-shadow( 2px 0 12px rgba(255,149,0,.18));
+  }
 }
 
-/* ===== INFLUENCE BAR ===== */
-#pins .map-pin .influence-bar {
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 68px;
-  height: 6px;
-  background: rgba(255,255,255,.12);
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.15);
+@keyframes ahFortifiedPulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1); }
+  50%{ transform:translate(-50%,-50%) scale(1.02); }
 }
 
-#pins .map-pin .influence-fill {
-  height: 100%;
-  width: 0%;
-  transition: width .4s ease;
-  border-radius: 999px;
+@keyframes ahSiegeRing{
+  0%{ transform:scale(.86); opacity:.75; }
+  100%{ transform:scale(1.28); opacity:0; }
 }
 
-/* Kolory wypełnień */
-#pins .map-pin.f-rb .influence-fill { background: linear-gradient(90deg, #ff5252, #c62828); }
-#pins .map-pin.f-ew .influence-fill { background: linear-gradient(90deg, #ffd600, #f9a825); }
-#pins .map-pin.f-pb .influence-fill { background: linear-gradient(90deg, #ba68c8, #8e24aa); }
-#pins .map-pin.f-ih .influence-fill { background: linear-gradient(90deg, #40c4ff, #0277bd); }
-
-/* ===== TIMER ===== */
-#pins .map-pin .timer {
-  position: absolute;
-  bottom: -26px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,.9);
-  white-space: nowrap;
-  background: rgba(0,0,0,.65);
-  padding: 2px 8px;
-  border-radius: 999px;
-  letter-spacing: 0.3px;
-}
-#pins .map-pin .timer.low { color: #ff5252; animation: timerPulse 1.2s infinite; }
-
-/* ===== CONTESTED RING ===== */
-#pins .map-pin.is-contested::after {
-  content: none;
+@keyframes ahOracleFlicker{
+  0%,92%,100%{ opacity:1; }
+  94%{ opacity:.86; }
+  96%{ opacity:1; }
 }
 
-/* ===== BONUS ICON ===== */
-#pins .map-pin .bonus-icon {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 18px;
-  line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,.7));
-  z-index: 11;
+@keyframes ahHQAlert{
+  0%,100%{ transform:translate(-50%,-50%) scale(1); }
+  50%{ transform:translate(-50%,-50%) scale(1.05); }
 }
 
-/* Animacje */
-@keyframes leaderPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); }
-}
-@keyframes contestedRing {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-@keyframes timerPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
+.locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+.locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
+.tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
+.tab.active{ outline:2px solid rgba(255,255,255,.18); }
 
-/* Dodatkowe efekty */
-#pins .map-pin.is-leader { filter: brightness(1.12) saturate(1.15); }
+/* progress + region sheet width */
+.progress-pill{display:flex;gap:8px;align-items:center;border:1px solid var(--ring);
+  background:rgba(0,0,0,.45);border-radius:999px;padding:6px 10px;color:#cfe7ff;
+  font:600 12px system-ui}
+.progress-bar{width:140px;max-width:28vw;height:8px;border-radius:999px;
+  background:rgba(255,255,255,.1);overflow:hidden}
+.progress-bar>i{display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
+.region-sheet .sheet-card{width:min(92vw,520px)}
+.muted { color: var(--tg-theme-hint-color, #9aa4ad); }
+
+/* DEBUG banner (pojedynczy) */
+#dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
+  background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
+
+/* Avatar/Skins modal */
+.avatar-sheet .sheet-card {
+  width: min(92vw, 520px);
+  max-height: 80vh;
+  overflow: auto;
+}
+.avatar-sheet canvas {
+  max-width: 100%;
+  height: auto;
+}
+.skin-btn.active { background: var(--tg-theme-button-color, rgba(16,185,129,.18)); color: var(--tg-theme-button-text-color, #fff); }
+.skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
 /* ==================== SAFETY NET (opcjonalne, ale polecam) ==================== */
 /* Jeśli jakiś bug nadal dopnie .map-pin do overlay, to i tak overlay będzie stabilny */
