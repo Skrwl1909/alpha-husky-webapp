@@ -62,9 +62,51 @@
   }
 
   function _clampLvl(v) {
-    const n = parseInt(v || 1, 10) || 1;
-    return Math.max(1, Math.min(7, n));
-  }
+  const n = parseInt(v || 1, 10) || 1;
+  return Math.max(1, Math.min(6, n));
+}
+
+const HQ_HOLO_BY_LEVEL = {
+  1: { name: "Raw Core", asset: "/images/hq/hq_lv1.png" },
+  2: { name: "First Expansion", asset: "/images/hq/hq_lv2.png" },
+  3: { name: "Network Expansion", asset: "/images/hq/hq_lv3.png" },
+  4: { name: "Data Fortress", asset: "/images/hq/hq_lv4.png" },
+  5: { name: "Energy Core", asset: "/images/hq/hq_lv5.png" },
+  6: { name: "Ghost Layer", asset: "/images/hq/hq_lv6.png" },
+};
+
+function _hqAsset(level) {
+  return HQ_HOLO_BY_LEVEL[_clampLvl(level)] || HQ_HOLO_BY_LEVEL[1];
+}
+
+function _hqStageHTML(level, faction) {
+  const lv = _clampLvl(level);
+  const cfg = _hqAsset(lv);
+
+  return `
+    <div class="hq-mockup hq-holo-stage" data-level="${lv}" data-faction="${esc(faction)}">
+      <div class="hq-holo-grid"></div>
+      <div class="hq-holo-ring hq-holo-ring-a"></div>
+      <div class="hq-holo-ring hq-holo-ring-b"></div>
+
+      <img
+        class="hq-holo-model"
+        src="${esc(cfg.asset)}"
+        alt="Faction HQ Level ${lv}"
+        loading="eager"
+        decoding="async"
+        onerror="this.style.display='none';"
+      />
+
+      <div class="hq-holo-scan"></div>
+      <div class="hq-badge-mini">${esc(factionShort(faction))}</div>
+
+      <div class="hq-label">
+        Faction Headquarters • Level ${num(level)}
+      </div>
+    </div>
+  `;
+}
 
   function _recentContributors(feed, limit = 6) {
   const src = Array.isArray(feed) ? feed : [];
