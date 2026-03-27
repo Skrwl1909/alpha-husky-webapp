@@ -1179,7 +1179,42 @@ html.ah-skins-open #heroFrame{
 
 /* type flavor */
 .hotspot.type-bloodmoon{
-  --node-glow-2: rgba(255,42,109,.22);
+  --node-glow-1: rgba(255,92,92,.20);
+  --node-glow-2: rgba(255,42,109,.30);
+  --node-ping: rgba(255,68,68,.14);
+}
+
+.hotspot.type-bloodmoon::after{
+  content:"";
+  position:absolute;
+  inset:-10px;
+  border-radius:50%;
+  pointer-events:none;
+  border:1px solid rgba(255,86,86,.24);
+  box-shadow:
+    0 0 0 1px rgba(255,86,86,.08),
+    0 0 14px rgba(255,52,52,.14),
+    0 0 24px rgba(255,42,109,.10);
+  animation: ahBloodMoonAura 2.8s ease-in-out infinite;
+}
+
+.hotspot.type-bloodmoon img{
+  filter:
+    drop-shadow(0 12px 18px rgba(0,0,0,.58))
+    drop-shadow(0 0 8px rgba(255,72,72,.18))
+    drop-shadow(0 0 16px rgba(255,42,109,.16));
+}
+
+.hotspot.type-bloodmoon .chip{
+  border-color: rgba(255,120,120,.22);
+}
+
+.hotspot.type-bloodmoon.is-live .chip,
+.hotspot.type-bloodmoon.is-threatened .chip,
+.hotspot.type-bloodmoon.is-contested .chip{
+  box-shadow:
+    0 6px 14px rgba(0,0,0,.30),
+    0 0 12px rgba(255,72,72,.08);
 }
 
 .hotspot.type-siege.is-contested::after{
@@ -1264,6 +1299,16 @@ html.ah-skins-open #heroFrame{
 @keyframes ahFortifiedPulse{
   0%,100%{ transform:translate(-50%,-50%) scale(1); }
   50%{ transform:translate(-50%,-50%) scale(1.02); }
+}
+    @keyframes ahBloodMoonAura{
+  0%,100%{
+    transform:scale(1);
+    opacity:.78;
+  }
+  50%{
+    transform:scale(1.05);
+    opacity:1;
+  }
 }
 
 @keyframes ahSiegeRing{
