@@ -1450,6 +1450,18 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
             <div class="hq-feed-item hq-mini">No activity yet.</div>
           `}
         </div>
+
+        ${feed.length > 3 ? `
+          <div style="margin-top:10px;">
+            <button
+              class="hq-btn ghost"
+              style="width:100%;"
+              onclick="FactionHQ._toggleFeed()"
+            >
+              ${_feedExpanded ? "Show less" : `Show ${feed.length - 3} more`}
+            </button>
+          </div>
+        ` : ``}
       </div>
 
       <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
