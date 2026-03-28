@@ -409,21 +409,20 @@ function _contribSummary(c) {
     0 0 26px color-mix(in srgb, var(--faction-color) 28%, transparent);
   backdrop-filter:blur(14px);
 }
-
-      #factionHQRoot .hq-head{
-        position:relative;
-        overflow:hidden;
-        border-radius:22px;
-        padding:18px 16px 16px;
-        margin-bottom:14px;
-        background:
-          linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
-          radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--faction-color) 30%, transparent), transparent 42%);
-        border:1px solid rgba(255,255,255,.12);
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.08),
-          0 12px 28px rgba(0,0,0,.18);
-      }
+#factionHQRoot .hq-head{
+  position:relative;
+  overflow:hidden;
+  border-radius:22px;
+  padding:16px 14px 14px;
+  margin-bottom:12px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--faction-color) 30%, transparent), transparent 42%);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 12px 28px rgba(0,0,0,.18);
+}
       #factionHQRoot .hq-head::after{
         content:"";
         position:absolute;
@@ -492,18 +491,17 @@ function _contribSummary(c) {
 
       /* === HQ MOCKUP — wizualna siedziba (progresja leveli) === */
       #factionHQRoot .hq-mockup{
-        height:240px;
-        border-radius:18px;
-        background:#0a0c14;
-        position:relative;
-        overflow:hidden;
-        border:2px solid var(--faction-color);
-        box-shadow:
-          0 0 35px color-mix(in srgb, var(--faction-color) 55%, transparent),
-          inset 0 0 0 1px rgba(255,255,255,.05);
-        margin:16px 0 6px;
-      }
-
+  height:276px;
+  border-radius:18px;
+  background:#0a0c14;
+  position:relative;
+  overflow:hidden;
+  border:2px solid var(--faction-color);
+  box-shadow:
+    0 0 35px color-mix(in srgb, var(--faction-color) 55%, transparent),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+  margin:14px 0 4px;
+}
       #factionHQRoot .hq-mockup .layer{
         position:absolute;
         inset:0;
@@ -998,21 +996,21 @@ function _contribSummary(c) {
       }
 
       #factionHQRoot .hq-holo-model{
-        position:absolute;
-        left:50%;
-        top:52%;
-        transform:translate(-50%,-50%);
-        width:min(84%, 420px);
-        max-height:78%;
-        object-fit:contain;
-        z-index:2;
-        user-select:none;
-        -webkit-user-drag:none;
-        filter:
-          drop-shadow(0 0 8px color-mix(in srgb, var(--faction-color) 18%, transparent))
-          drop-shadow(0 0 24px color-mix(in srgb, var(--faction-color) 22%, transparent));
-        animation:hqModelFloat 5s ease-in-out infinite;
-      }
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(92%, 500px);
+  max-height:86%;
+  object-fit:contain;
+  z-index:2;
+  user-select:none;
+  -webkit-user-drag:none;
+  filter:
+    drop-shadow(0 0 8px color-mix(in srgb, var(--faction-color) 18%, transparent))
+    drop-shadow(0 0 24px color-mix(in srgb, var(--faction-color) 22%, transparent));
+  animation:hqModelFloat 5s ease-in-out infinite;
+}
 
       #factionHQRoot .hq-holo-scan{
         position:absolute;
