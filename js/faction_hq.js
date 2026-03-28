@@ -491,7 +491,7 @@ function _contribSummary(c) {
 
       /* === HQ MOCKUP — wizualna siedziba (progresja leveli) === */
       #factionHQRoot .hq-mockup{
-  height:276px;
+  height:300px;
   border-radius:18px;
   background:#0a0c14;
   position:relative;
@@ -998,20 +998,22 @@ function _contribSummary(c) {
       #factionHQRoot .hq-holo-model{
   position:absolute;
   left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:min(92%, 500px);
-  max-height:86%;
+  top:52%;
+  width:100%;
+  max-width:none;
+  max-height:none;
+  height:auto;
   object-fit:contain;
   z-index:2;
   user-select:none;
   -webkit-user-drag:none;
+  transform:translate(-50%,-50%) scale(1.55);
+  transform-origin:center center;
   filter:
     drop-shadow(0 0 8px color-mix(in srgb, var(--faction-color) 18%, transparent))
     drop-shadow(0 0 24px color-mix(in srgb, var(--faction-color) 22%, transparent));
   animation:hqModelFloat 5s ease-in-out infinite;
 }
-
       #factionHQRoot .hq-holo-scan{
         position:absolute;
         inset:0;
