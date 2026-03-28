@@ -214,7 +214,7 @@
       "y": 62,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
-      "action": "open_quests",
+      "action": "open_broken_contracts",
       "buildingId": "broken_contracts_hub",
       "labelOffset": { "x": -18, "y": 38 },
       "gameplay": {

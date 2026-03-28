@@ -3600,9 +3600,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="ah-grid">
       <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
       <!-- ✅ NEW: Support -->
-      <button class="ah-tile" data-action="support" type="button" title="Help keep Alpha Husky growing">
-  <span>💎</span><b>Support Alpha</b>
-</button>
+      <button class="ah-tile" data-action="support" type="button"><span>💎</span><b>Support</b></button>
       <button class="ah-tile" data-action="faq" type="button"><span>❓</span><b>FAQ</b></button>
       <button class="ah-tile" data-action="adopt" type="button"><span>🐾</span><b>Adopt</b></button>
       <button class="ah-tile" data-action="arena" type="button"><span>🏆</span><b>Arena</b></button>
@@ -3744,63 +3742,23 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
     </div>
 
-    <!-- krótki hero copy -->
-    <div style="
-      margin-bottom:12px;
-      padding:10px 12px;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:14px;
-      background:rgba(255,255,255,.03);
-      backdrop-filter: blur(4px);
-    ">
-      <div style="font-weight:800;font-size:14px;line-height:1.2;margin-bottom:4px">
-        Back the Pack
-      </div>
-      <div style="opacity:.86;font-size:12px;line-height:1.35">
-        Built solo for 14 months. Your support helps keep Alpha Husky growing.
-      </div>
-    </div>
-
-    <!-- tiers -->
-    <div class="ah-actions" style="gap:10px;display:flex;flex-direction:column">
-      <button class="ah-action" type="button" data-support-tier="supporter" style="
-        text-align:left;
-        padding:14px 14px;
-        border-radius:16px;
-      ">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <div style="font-weight:800;font-size:15px">⭐ Supporter</div>
-          <div style="opacity:.7;font-size:11px">Entry tier</div>
-        </div>
-        <div style="opacity:.84;font-size:12px;line-height:1.35;margin-top:6px">
-          Exclusive tag + frame.
-        </div>
+    <div class="ah-actions" style="gap:10px">
+      <button class="ah-action" type="button" data-support-tier="supporter">
+        ⭐ Supporter — frame + tag
+      </button>
+      <button class="ah-action" type="button" data-support-tier="patron">
+        💎 Patron — frame + tag
       </button>
 
-      <button class="ah-action" type="button" data-support-tier="patron" style="
-        text-align:left;
-        padding:14px 14px;
-        border-radius:16px;
-      ">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <div style="font-weight:800;font-size:15px">💎 Patron</div>
-          <div style="opacity:.7;font-size:11px">Higher tier</div>
-        </div>
-        <div style="opacity:.84;font-size:12px;line-height:1.35;margin-top:6px">
-          Premium tag + frame.
-        </div>
+      <!-- Founder raczej admin/self-claim z backendu -->
+      <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
+        🔥 Founder (admin)
       </button>
     </div>
 
-    <!-- mały footer -->
-    <div style="
-      opacity:.75;
-      font-size:11px;
-      line-height:1.35;
-      margin-top:12px;
-      text-align:center;
-    ">
-      Early supporters help fund servers and future updates.
+    <div style="opacity:.85;font-size:12px;line-height:1.35;margin-top:10px">
+      Purchase will unlock a topbar tag + frame (Supporter / Patron).  
+      Payment will be handled via Telegram (Stars) once backend is wired.
     </div>
   </div>
 </div>
@@ -3960,6 +3918,25 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
 
     <div id="qList" class="quest-board"></div>
+  </div>
+</div>
+
+<!-- Broken Contracts modal -->
+<div class="sheet-back" id="brokenContractsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Broken Contracts">
+  <div class="sheet-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div>
+        <div style="font-weight:700;">Broken Contracts</div>
+        <div id="bcMeta" style="opacity:.72;font-size:12px;margin-top:4px;">Faction daily contracts</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="bcRefresh" type="button">Refresh</button>
+        <button class="btn" id="bcClose" type="button" aria-label="Close broken contracts">×</button>
+      </div>
+    </div>
+
+    <div id="bcStatus" style="margin-top:12px;opacity:.82;font-size:12px;">Ready</div>
+    <div id="bcRoot" style="margin-top:12px;display:grid;gap:10px;"></div>
   </div>
 </div>
 
@@ -4663,6 +4640,7 @@ window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.BrokenContracts?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });   
       window.Oracle?.init?.({ apiPost, tg: _tg, dbg: _dbg });
  
@@ -5525,6 +5503,15 @@ function isRegionUnlocked(regionId){
         return openBuilding(bid, b.name, b.desc);
       }
 
+      if (
+        b.action === 'open_broken_contracts' ||
+        b.id === 'broken_contracts' ||
+        b.buildingId === 'broken_contracts_hub'
+      ) {
+        if (window.BrokenContracts?.open) return window.BrokenContracts.open({ buildingId: b.buildingId || b.id, name: b.name, desc: b.desc });
+        return openBuilding(b.buildingId || bid, b.name, b.desc);
+      }
+
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
       if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
@@ -6370,6 +6357,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
   <script src="js/quests.js?v=20251119f" defer></script>
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
+  <script src="js/broken-contracts.js?v=20260328a" defer></script>
   
   <!-- NATYCHMIASTOWE INIT – bez czekania na fallback -->
   <script>
@@ -6388,6 +6376,21 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         });
         window.Quests.init({ apiPost, tg, dbg: console.debug });
         console.log("Mission Board (z opisami) zainicjowany!");
+      }
+
+      if (window.BrokenContracts && typeof window.BrokenContracts.init === 'function') {
+        const tg = window.Telegram?.WebApp;
+        const apiPost = window.S?.apiPost || (async (path, data) => {
+          const init_data = tg?.initData;
+          const res = await fetch((window.API_BASE || "") + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(init_data ? { Authorization: `Bearer ${init_data}` } : {}) },
+            body: JSON.stringify({ init_data, ...(data || {}) })
+          });
+          return res.json();
+        });
+        window.BrokenContracts.init({ apiPost, tg, dbg: console.debug });
+        console.log("Broken Contracts zainicjowany!");
       }
     });
 
