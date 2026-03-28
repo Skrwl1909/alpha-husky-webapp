@@ -858,19 +858,20 @@ function _contribSummary(c) {
       }
 
       #factionHQRoot .hq-feed{
-        display:flex;
-        flex-direction:column;
-        gap:10px;
-        margin-top:10px;
-      }
-      #factionHQRoot .hq-feed-item{
-        padding:12px 13px;
-        border-radius:14px;
-        background:rgba(255,255,255,.055);
-        border:1px solid rgba(255,255,255,.08);
-        font-size:13px;
-        line-height:1.45;
-      }
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:8px;
+}
+
+#factionHQRoot .hq-feed-item{
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.08);
+  font-size:13px;
+  line-height:1.45;
+}
       #factionHQRoot .hq-feed-item.upgrade{
         border-color:color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.08));
         box-shadow:0 0 0 1px color-mix(in srgb, var(--faction-color) 8%, transparent) inset;
@@ -888,40 +889,39 @@ function _contribSummary(c) {
       }
 
       #factionHQRoot .hq-contrib{
-        min-width:92px;
-        flex:0 0 auto;
-        border-radius:16px;
-        padding:10px 10px 9px;
-        background:
-          linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.035));
-        border:1px solid rgba(255,255,255,.08);
-        text-align:center;
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.05),
-          0 8px 18px rgba(0,0,0,.16);
-      }
+  min-width:84px;
+  flex:0 0 auto;
+  border-radius:16px;
+  padding:9px 9px 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.035));
+  border:1px solid rgba(255,255,255,.08);
+  text-align:center;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 8px 18px rgba(0,0,0,.16);
+}
 
-      #factionHQRoot .hq-contrib-badge{
-        width:42px;
-        height:42px;
-        margin:0 auto 8px;
-        border-radius:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:12px;
-        font-weight:900;
-        letter-spacing:.5px;
-        color:#fff;
-        background:
-          radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 35%),
-          linear-gradient(180deg, color-mix(in srgb, var(--faction-color) 36%, #1a2030), #0d111b 88%);
-        border:1px solid color-mix(in srgb, var(--faction-color) 36%, rgba(255,255,255,.12));
-        box-shadow:
-          0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent),
-          inset 0 1px 0 rgba(255,255,255,.08);
-      }
-
+#factionHQRoot .hq-contrib-badge{
+  width:38px;
+  height:38px;
+  margin:0 auto 7px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.5px;
+  color:#fff;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 35%),
+    linear-gradient(180deg, color-mix(in srgb, var(--faction-color) 36%, #1a2030), #0d111b 88%);
+  border:1px solid color-mix(in srgb, var(--faction-color) 36%, rgba(255,255,255,.12));
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
       #factionHQRoot .hq-contrib-name{
         font-size:12px;
         font-weight:900;
