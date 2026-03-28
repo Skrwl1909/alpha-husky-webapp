@@ -654,19 +654,19 @@ function _contribSummary(c) {
       }
 
       #factionHQRoot .hq-mockup .hq-label{
-        position:absolute;
-        bottom:14px;
-        left:14px;
-        right:14px;
-        background:rgba(0,0,0,.75);
-        padding:8px 14px;
-        border-radius:12px;
-        font-size:13px;
-        text-align:center;
-        color:#fff;
-        border:1px solid color-mix(in srgb, var(--faction-color) 55%, rgba(255,255,255,.12));
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-      }
+  position:absolute;
+  bottom:10px;
+  left:12px;
+  right:12px;
+  background:rgba(0,0,0,.75);
+  padding:7px 12px;
+  border-radius:12px;
+  font-size:12px;
+  text-align:center;
+  color:#fff;
+  border:1px solid color-mix(in srgb, var(--faction-color) 55%, rgba(255,255,255,.12));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
 
       #factionHQRoot .hq-mockup[data-level="1"] .layer-1{ opacity:.65; }
       #factionHQRoot .hq-mockup[data-level="2"] .layer-1{ opacity:.90; }
