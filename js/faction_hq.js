@@ -8,6 +8,8 @@
   let _modal = null;  // #factionHQModal
   let _root = null;   // #factionHQRoot
 
+  let _feedExpanded = false;
+
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
   // ---------------------------
