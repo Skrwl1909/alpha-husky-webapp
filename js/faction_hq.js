@@ -1422,7 +1422,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         }
 
         <div class="hq-feed">
-          ${feed.length ? feed.map((x) => {
+  ${visibleFeed.length ? visibleFeed.map((x) => {
             const who = x.uid ? String(x.uid).slice(-4) : "????";
             const t = fmtTs(x.t);
 
