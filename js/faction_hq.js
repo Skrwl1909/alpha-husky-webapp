@@ -1262,7 +1262,8 @@ function _contribSummary(c) {
     const bones = Number(tre.bones || 0);
     const scrap = Number(tre.scrap || 0);
     const feed = Array.isArray(d.feed) ? d.feed : [];
-    const contributors = _recentContributors(feed, 6);
+const contributors = _recentContributors(feed, 4);
+const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
     const nextLevel = curLevel + 1;
