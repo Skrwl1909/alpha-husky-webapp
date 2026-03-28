@@ -1302,78 +1302,66 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         ${_hqStageHTML(curLevel, fk)}
       </div>
 
-      <div class="hq-grid two">
-        <div class="hq-card">
-          <div class="hq-card-title">
-            <b>Treasury</b>
-            <span class="hq-mini">shared vault</span>
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>HQ Status</b>
+          <span class="hq-mini">Lv ${num(curLevel)} → ${num(nextLevel)}</span>
+        </div>
+
+        <div class="hq-stat-grid">
+          <div class="hq-stat">
+            <div class="hq-stat-icon">🦴</div>
+            <div class="hq-stat-value">${num(bones)}</div>
+            <div class="hq-stat-label">Bones</div>
           </div>
-
-          <div class="hq-stat-grid">
-            <div class="hq-stat">
-              <div class="hq-stat-icon">🦴</div>
-              <div class="hq-stat-value">${num(bones)}</div>
-              <div class="hq-stat-label">Bones</div>
-            </div>
-            <div class="hq-stat">
-              <div class="hq-stat-icon">🔩</div>
-              <div class="hq-stat-value">${num(scrap)}</div>
-              <div class="hq-stat-label">Scrap</div>
-            </div>
-          </div>
-
-          <div class="hq-progress">
-            <div class="hq-progress-line">
-              <div class="hq-progress-head">
-                <span>Bones toward Lv ${num(nextLevel)}</span>
-                <span>${num(bones)} / ${num(needBones)}</span>
-              </div>
-              <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
-            </div>
-
-            <div class="hq-progress-line">
-              <div class="hq-progress-head">
-                <span>Scrap toward Lv ${num(nextLevel)}</span>
-                <span>${num(scrap)} / ${num(needScrap)}</span>
-              </div>
-              <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
-            </div>
-          </div>
-
-          <div class="hq-mini" style="margin-top:12px;">
-            Remaining: <b>${num(bonesLeft)}</b> 🦴 + <b>${num(scrapLeft)}</b> 🔩
+          <div class="hq-stat">
+            <div class="hq-stat-icon">🔩</div>
+            <div class="hq-stat-value">${num(scrap)}</div>
+            <div class="hq-stat-label">Scrap</div>
           </div>
         </div>
 
-        <div class="hq-card">
-          <div class="hq-card-title">
-            <b>Upgrade HQ</b>
-            <span class="hq-mini">community build</span>
+        <div class="hq-progress">
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Bones toward Lv ${num(nextLevel)}</span>
+              <span>${num(bones)} / ${num(needBones)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
           </div>
 
-          <div class="hq-mini">
-            Next level: <b>${num(nextLevel)}</b><br/>
-            Cost: <b>${num(needBones)}</b> 🦴 + <b>${num(needScrap)}</b> 🔩<br/>
-            <span style="opacity:.86;">
-              Bonus: +5% influence multiplier per level
-              (and daily scrap bonus grows).
-            </span>
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Scrap toward Lv ${num(nextLevel)}</span>
+              <span>${num(scrap)} / ${num(needScrap)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
           </div>
+        </div>
 
-          <div style="margin-top:14px;">
-            <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
-              Upgrade to Level ${num(nextLevel)}
-            </button>
-            ${canUpgrade ? `
-              <div class="hq-mini" style="margin-top:10px;opacity:.85;">
-                Treasury threshold reached — HQ can be upgraded now.
-              </div>
-            ` : `
-              <div class="hq-mini" style="margin-top:10px;opacity:.8;">
-                Not enough in treasury yet — donate to push it over the line.
-              </div>
-            `}
-          </div>
+        <div class="hq-mini" style="margin-top:12px;">
+          Next level: <b>${num(nextLevel)}</b><br/>
+          Cost: <b>${num(needBones)}</b> 🦴 + <b>${num(needScrap)}</b> 🔩<br/>
+          Remaining: <b>${num(bonesLeft)}</b> 🦴 + <b>${num(scrapLeft)}</b> 🔩<br/>
+          <span style="opacity:.86;">
+            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
+          </span>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            Upgrade to Level ${num(nextLevel)}
+          </button>
+
+          ${canUpgrade ? `
+            <div class="hq-mini" style="margin-top:10px;opacity:.85;">
+              Treasury threshold reached — HQ can be upgraded now.
+            </div>
+          ` : `
+            <div class="hq-mini" style="margin-top:10px;opacity:.8;">
+              Not enough in treasury yet — donate to push it over the line.
+            </div>
+          `}
         </div>
       </div>
 
