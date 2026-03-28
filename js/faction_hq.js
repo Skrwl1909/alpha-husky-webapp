@@ -1493,6 +1493,10 @@ function _contribSummary(c) {
     if (n <= 0) return alert("Enter amount.");
     return _donate(asset, n);
   }
+  function _toggleFeed() {
+  _feedExpanded = !_feedExpanded;
+  render();
+  }
 
   async function _upgrade() {
     if (!_apiPost) return;
@@ -1537,6 +1541,7 @@ function _contribSummary(c) {
     _donate,
     _donateCustom,
     _upgrade,
+    _toggleFeed,
     applyHqBg
   };
 })();
