@@ -1154,7 +1154,8 @@ function _contribSummary(c) {
   // Open / close
   // ---------------------------
   async function open() {
-    ensureModal();
+  ensureModal();
+  _feedExpanded = false;
 
     _back.classList.add("is-open");
     document.body.classList.add("hq-open");
