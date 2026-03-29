@@ -173,7 +173,7 @@ function avatarNodeHtml(data, fallback) {
     return "#ff8f8f";
   }
 
-  function fighterHudHtml(side) {
+function fighterHudHtml(side) {
   const right = side === "right";
   const align = right ? "right" : "left";
   const prefix = side === "left" ? "LEFT" : "RIGHT";
@@ -312,7 +312,47 @@ function avatarNodeHtml(data, fallback) {
   `;
 }
 
+  function factionDisplayName(v) {
+    const s = String(v || "").trim().toLowerCase();
+    if (!s) return "Neutral";
+    if (s === "rb" || s === "rogue_byte" || s === "rogue byte") return "Rogue Byte";
+    if (s === "ew" || s === "echo_wardens" || s === "echo wardens") return "Echo Wardens";
+    if (s === "pb" || s === "pack_burners" || s === "pack burners") return "Pack Burners";
+    if (s === "ih" || s === "inner_howl" || s === "inner howl") return "Inner Howl";
+    return s.split("_").map(x => (x ? x.charAt(0).toUpperCase() + x.slice(1) : "")).join(" ");
+  }
+
+  function clashBouts(replay) {
+    if (!replay || typeof replay !== "object") return [];
+    return Array.isArray(replay?.bouts)
+      ? replay.bouts.filter(it => it && typeof it === "object")
+      : [];
+  }
+
+  function isClashReplay(replay) {
+    return clashBouts(replay).length >= 2;
+  }
+
+  function clashSummary(replay) {
+    const bouts = clashBouts(replay);
+    const first = bouts[0] || {};
+    const left = first?.left || {};
+    const right = first?.right || {};
+
+    return {
+      bouts,
+      attackerWins: num(replay?.attackerWins, 0),
+      defenderWins: num(replay?.defenderWins, 0),
+      attackerName: factionDisplayName(replay?.attackerFaction || left?.faction || ""),
+      defenderName: factionDisplayName(replay?.defenderFaction || right?.faction || ""),
+      finalWinnerName: factionDisplayName(replay?.finalWinner || ""),
+    };
+  }
+
   function replayInfo(replay) {
+  const bouts = clashBouts(replay);
+  if (bouts.length) replay = bouts[bouts.length - 1];
+
   const left = replay?.left || {};
   const right = replay?.right || {};
   const turns = Array.isArray(replay?.events)
@@ -618,34 +658,51 @@ _rightPopupEl = _root.querySelector("#ah-siege-right-popup");
   function updateHud(info, state) {
   if (_leftAvatarEl) _leftAvatarEl.innerHTML = avatarNodeHtml(info.left, "L");
   if (_leftNameEl) _leftNameEl.textContent = info.left.name || "Left";
-  if (_leftFactionEl) _leftFactionEl.textContent = info.left.faction || "—";
+  if (_leftFactionEl) _leftFactionEl.textContent = info.left.faction || "-";
   if (_leftHpTextEl) _leftHpTextEl.textContent = `${num(state.leftHp, 0)} / ${num(info.left.hpMax, 0)}`;
   if (_leftHpFillEl) _leftHpFillEl.style.width = `${pct(state.leftHp, info.left.hpMax)}%`;
   setPopup(_leftPopupEl, state.leftFx?.popupText || "", state.leftFx?.popupKind || "");
 
   if (_rightAvatarEl) _rightAvatarEl.innerHTML = avatarNodeHtml(info.right, "R");
   if (_rightNameEl) _rightNameEl.textContent = info.right.name || "Right";
-  if (_rightFactionEl) _rightFactionEl.textContent = info.right.faction || "—";
+  if (_rightFactionEl) _rightFactionEl.textContent = info.right.faction || "-";
   if (_rightHpTextEl) _rightHpTextEl.textContent = `${num(state.rightHp, 0)} / ${num(info.right.hpMax, 0)}`;
   if (_rightHpFillEl) _rightHpFillEl.style.width = `${pct(state.rightHp, info.right.hpMax)}%`;
   setPopup(_rightPopupEl, state.rightFx?.popupText || "", state.rightFx?.popupKind || "");
 
   if (_metaEl) {
-    _metaEl.innerHTML = [
-      metaPill(`Fight ${info.fightNo || "—"}`),
+    const pills = [];
+    if (num(state.clashTotal, 0) > 1) {
+      pills.push(metaPill(`Clash ${Math.max(1, num(state.clashIndex, 0) + 1)} / ${num(state.clashTotal, 0)}`));
+    }
+    pills.push(
+      metaPill(`Fight ${info.fightNo || "-"}`),
       metaPill(
         state.currentTurn >= 0
           ? `Turn ${state.currentTurn + 1} / ${Math.max(1, info.turns.length)}`
           : `Turn 0 / ${Math.max(1, info.turns.length)}`
       ),
-      metaPill(`Winner: ${info.winnerName}`),
+      metaPill(`${state.metaOutcomeLabel || "Winner"}: ${state.metaWinnerName || info.winnerName}`),
       metaPill(_usingPixi ? "PIXI" : "FALLBACK", _usingPixi ? "rgba(0,246,255,.08)" : "rgba(255,255,255,.06)")
-    ].join("");
+    );
+    _metaEl.innerHTML = pills.join("");
   }
 
   if (_badgeEl) {
-    if (state.finished) {
-      _badgeEl.textContent = `WINNER • ${info.winnerName}`;
+    if (state.badgeText) {
+      _badgeEl.textContent = state.badgeText;
+      if (state.badgeKind === "final") {
+        _badgeEl.style.borderColor = "rgba(255,215,90,.25)";
+        _badgeEl.style.background = "rgba(255,215,90,.10)";
+      } else if (state.badgeKind === "clash") {
+        _badgeEl.style.borderColor = "rgba(0,246,255,.18)";
+        _badgeEl.style.background = "rgba(0,246,255,.10)";
+      } else {
+        _badgeEl.style.borderColor = "rgba(255,255,255,.10)";
+        _badgeEl.style.background = "rgba(8,10,22,.82)";
+      }
+    } else if (state.finished) {
+      _badgeEl.textContent = `WINNER - ${info.winnerName}`;
       _badgeEl.style.borderColor = "rgba(255,215,90,.25)";
       _badgeEl.style.background = "rgba(255,215,90,.10)";
     } else if (state.currentTurn >= 0) {
@@ -662,6 +719,22 @@ _rightPopupEl = _root.querySelector("#ah-siege-right-popup");
 
   function renderLog(info, state) {
     if (!_logEl) return;
+
+    if (!state.visibleTurns.length && state.logMessage) {
+      _logEl.innerHTML = `
+        <div style="
+          padding:14px;
+          border-radius:12px;
+          background:rgba(255,255,255,.035);
+          border:1px solid rgba(255,255,255,.05);
+          font-size:12px;
+          opacity:.8;
+        ">
+          ${esc(state.logMessage)}
+        </div>
+      `;
+      return;
+    }
 
     if (!state.visibleTurns.length) {
       _logEl.innerHTML = `
@@ -684,8 +757,8 @@ _rightPopupEl = _root.querySelector("#ah-siege-right-popup");
         turn?.actor === "left"
           ? "rgba(0,246,255,.95)"
           : turn?.actor === "right"
-          ? "rgba(255,105,190,.96)"
-          : "rgba(255,255,255,.88)";
+            ? "rgba(255,105,190,.96)"
+            : "rgba(255,255,255,.88)";
 
       const isActive = idx === state.currentTurn;
 
@@ -841,17 +914,18 @@ _rightPopupEl = _root.querySelector("#ah-siege-right-popup");
   function drawFallbackStage(info, state) {
     if (!_stageBg) return;
 
+    const outcomeLabel = state.metaOutcomeLabel || "Winner";
     const msg = state.finished
-      ? `Winner: ${info.winnerName}`
+      ? `${outcomeLabel}: ${state.metaWinnerName || info.winnerName}`
       : state.currentTurn >= 0
-      ? `Turn ${state.currentTurn + 1} / ${Math.max(1, info.turns.length)}`
-      : `Replay viewer ready`;
+        ? `Turn ${state.currentTurn + 1} / ${Math.max(1, info.turns.length)}`
+        : "Replay viewer ready";
 
     _stageBg.innerHTML = `
       <div>
         <div style="font-size:22px;font-weight:900;margin-bottom:8px;">Battle Viewer</div>
         <div style="font-size:13px;opacity:.82;line-height:1.5;">
-          PIXI not loaded — DOM fallback active.<br>${esc(msg)}
+          Lightweight fallback viewer active.<br>${esc(msg)}
         </div>
       </div>
     `;
@@ -949,23 +1023,78 @@ setPopup(_rightPopupEl, "", "");
     }
   }
 
-  function startReplayPlayback(token) {
-    const info = replayInfo(_lastReplay);
-    const turns = info.turns;
-    const stepMs = Math.max(450, num(_opts.stepMs, 850));
-    const introMs = Math.max(150, num(_opts.introMs, 220));
+  function makePlayState(info, extra = {}) {
+    return {
+      currentTurn: -1,
+      activeSide: "",
+      finished: false,
+      leftHp: info.left.hpStart || info.left.hpMax,
+      rightHp: info.right.hpStart || info.right.hpMax,
+      visibleTurns: [],
+      leftFx: { flash: false, popupText: "", popupKind: "" },
+      rightFx: { flash: false, popupText: "", popupKind: "" },
+      clashIndex: -1,
+      clashTotal: 0,
+      badgeText: "",
+      badgeKind: "",
+      metaWinnerName: "",
+      metaOutcomeLabel: "Winner",
+      logMessage: "",
+      ...extra,
+    };
+  }
 
-    function finishIfCurrent() {
+  function renderStageCard(title, body, overline = "") {
+    if (!_stageBg) return;
+    _stageBg.innerHTML = `
+      <div>
+        <div style="font-size:11px;font-weight:900;letter-spacing:.08em;opacity:.72;margin-bottom:6px;">${esc(overline)}</div>
+        <div style="font-size:22px;font-weight:900;margin-bottom:8px;">${esc(title)}</div>
+        <div style="font-size:13px;opacity:.82;line-height:1.5;">${esc(body)}</div>
+      </div>
+    `;
+  }
+
+  function renderReplayCard(replay, extra = {}) {
+    const info = replayInfo(replay);
+    _lastReplay = replay;
+    _playState = makePlayState(info, extra);
+    renderFrame();
+    return info;
+  }
+
+  function startBoutPlayback(replay, token, opts = {}) {
+    const info = replayInfo(replay);
+    const turns = info.turns;
+    const stepMs = Math.max(450, num(_opts.stepMs, 760));
+    const introMs = Math.max(120, num(opts.introMs, num(_opts.introMs, 160)));
+
+    _lastReplay = replay;
+    _playState = makePlayState(info, {
+      clashIndex: num(opts.clashIndex, -1),
+      clashTotal: num(opts.clashTotal, 0),
+      metaWinnerName: String(opts.metaWinnerName || ""),
+      metaOutcomeLabel: String(opts.metaOutcomeLabel || "Winner"),
+    });
+    renderFrame();
+
+    function doneIfCurrent() {
       if (token !== _runToken || !_playState) return;
-      _playState.currentTurn = turns.length - 1;
+      _playState.currentTurn = turns.length ? (turns.length - 1) : -1;
       _playState.activeSide = "";
       _playState.finished = true;
+      _playState.leftFx = { flash: false, popupText: "", popupKind: "" };
+      _playState.rightFx = { flash: false, popupText: "", popupKind: "" };
       renderFrame();
+      if (typeof opts.onDone === "function") {
+        opts.onDone(info);
+      }
     }
 
     if (!turns.length) {
       _playState.finished = true;
       renderFrame();
+      later(160, doneIfCurrent);
       return;
     }
 
@@ -984,10 +1113,8 @@ setPopup(_rightPopupEl, "", "");
 
         _playState.currentTurn = idx;
         _playState.activeSide = actor;
-
         _playState.leftFx = { flash: false, popupText: "", popupKind: "" };
         _playState.rightFx = { flash: false, popupText: "", popupKind: "" };
-
         _playState.visibleTurns.push(turn);
         _playState.leftHp = nextLeftHp;
         _playState.rightHp = nextRightHp;
@@ -1031,10 +1158,99 @@ setPopup(_rightPopupEl, "", "");
         });
 
         if (idx === turns.length - 1) {
-          later(Math.max(260, stepMs - 80), finishIfCurrent);
+          later(Math.max(260, stepMs - 80), doneIfCurrent);
         }
       });
     });
+  }
+
+  function startClashPlayback(replay, token) {
+    const clash = clashSummary(replay);
+    const bouts = clash.bouts;
+    if (!bouts.length) {
+      startBoutPlayback(replay, token);
+      return;
+    }
+
+    const isFinal = !!_opts.clashFinal;
+    const total = bouts.length;
+    const introMs = Math.max(220, num(_opts.clashIntroMs, total <= 2 ? 280 : 420));
+    const interMs = Math.max(160, num(_opts.clashPauseMs, total <= 2 ? 180 : 240));
+
+    renderReplayCard(bouts[0], {
+      clashIndex: 0,
+      clashTotal: total,
+      badgeText: isFinal ? "FINAL CLASH" : "RECENT CLASH",
+      badgeKind: "clash",
+      metaWinnerName: clash.finalWinnerName || "",
+      metaOutcomeLabel: isFinal ? "Result" : "Lead",
+      logMessage: `${total} recent duel${total === 1 ? "" : "s"}. Playback starting.`,
+    });
+    renderStageCard(
+      `${clash.attackerName} vs ${clash.defenderName}`,
+      isFinal ? "Final clash playback starting." : "Recent clash playback starting.",
+      isFinal ? "CLASH REPLAY" : "RECENT CLASH"
+    );
+
+    const playIndex = (index) => {
+      if (token !== _runToken) return;
+
+      startBoutPlayback(bouts[index], token, {
+        clashIndex: index,
+        clashTotal: total,
+        metaWinnerName: clash.finalWinnerName || "",
+        metaOutcomeLabel: isFinal ? "Result" : "Lead",
+        onDone: () => {
+          if (token !== _runToken) return;
+
+          if (index < total - 1) {
+            const nextIndex = index + 1;
+            renderReplayCard(bouts[nextIndex], {
+              clashIndex: nextIndex,
+              clashTotal: total,
+              badgeText: `FIGHT ${nextIndex + 1}`,
+              badgeKind: "clash",
+              metaWinnerName: clash.finalWinnerName || "",
+              metaOutcomeLabel: isFinal ? "Result" : "Lead",
+              logMessage: `Fight ${nextIndex + 1} incoming.`,
+            });
+            renderStageCard("Next duel", `${clash.attackerName} vs ${clash.defenderName}`, `FIGHT ${nextIndex + 1}`);
+            later(interMs, () => playIndex(nextIndex));
+            return;
+          }
+
+          const finalReplay = bouts[total - 1];
+          const finalInfo = replayInfo(finalReplay);
+          _lastReplay = finalReplay;
+          _playState = makePlayState(finalInfo, {
+            currentTurn: Math.max(-1, finalInfo.turns.length - 1),
+            activeSide: "",
+            finished: true,
+            leftHp: num(finalReplay?.left?.hpEnd, finalInfo.left.hpStart || finalInfo.left.hpMax),
+            rightHp: num(finalReplay?.right?.hpEnd, finalInfo.right.hpStart || finalInfo.right.hpMax),
+            visibleTurns: finalInfo.turns.slice(),
+            clashIndex: total - 1,
+            clashTotal: total,
+            badgeText: isFinal ? "SIEGE RESULT" : "SKIRMISH RESULT",
+            badgeKind: "final",
+            metaWinnerName: clash.finalWinnerName || finalInfo.winnerName,
+            metaOutcomeLabel: isFinal ? "Result" : "Lead",
+          });
+          renderFrame();
+          renderStageCard(
+            isFinal
+              ? `${clash.finalWinnerName || "Unknown"} won the siege`
+              : `${clash.finalWinnerName || "Unknown"} won this skirmish`,
+            isFinal
+              ? `Final clash window: ${clash.attackerWins}-${clash.defenderWins}.`
+              : `Recent clash window: ${clash.attackerWins}-${clash.defenderWins}. The siege is still running.`,
+            isFinal ? "SIEGE RESULT" : "SKIRMISH RESULT"
+          );
+        },
+      });
+    };
+
+    later(introMs, () => playIndex(0));
   }
 
   SiegePixi.init = async function init(container, opts = {}) {
@@ -1048,7 +1264,7 @@ setPopup(_rightPopupEl, "", "");
       if (_opts.dbg) console.warn("[SIEGE PIXI INIT FALLBACK]", err);
     }
 
-    renderIdle("Click Play Replay to preview the latest siege duel.");
+    renderIdle("Click Play to start playback.");
     return true;
   };
 
@@ -1076,21 +1292,11 @@ setPopup(_rightPopupEl, "", "");
       return false;
     }
 
-    const info = replayInfo(_lastReplay);
-
-    _playState = {
-      currentTurn: -1,
-      activeSide: "",
-      finished: false,
-      leftHp: info.left.hpStart || info.left.hpMax,
-      rightHp: info.right.hpStart || info.right.hpMax,
-      visibleTurns: [],
-      leftFx: { flash: false, popupText: "", popupKind: "" },
-      rightFx: { flash: false, popupText: "", popupKind: "" }
-    };
-
-    renderFrame();
-    startReplayPlayback(_runToken);
+    if (isClashReplay(_lastReplay)) {
+      startClashPlayback(_lastReplay, _runToken);
+    } else {
+      startBoutPlayback(_lastReplay, _runToken);
+    }
     return true;
   };
 

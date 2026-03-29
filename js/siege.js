@@ -671,6 +671,30 @@
     return replay && typeof replay === "object" ? replay : null;
   }
 
+  function getLastClashReplay(raw, node, cur) {
+    const clash =
+      raw?.lastClashReplay ||
+      raw?.clashReplay ||
+      raw?.state?.lastClashReplay ||
+      raw?.data?.lastClashReplay ||
+      node?.lastClashReplay ||
+      node?.clashReplay ||
+      cur?.lastClashReplay ||
+      cur?.clashReplay ||
+      null;
+
+    const bouts = Array.isArray(clash?.bouts)
+      ? clash.bouts.filter(it => it && typeof it === "object")
+      : [];
+
+    if (!clash || typeof clash !== "object" || bouts.length < 2) return null;
+    return { ...clash, bouts };
+  }
+
+  function getBattleReplay(raw, node, cur) {
+    return getLastClashReplay(raw, node, cur) || getLastReplay(raw, node, cur);
+  }
+
   function fighterLabel(x, fallback = "Unknown") {
     return String(
       x?.name ||
@@ -681,9 +705,6 @@
   }
 
  function cleanupBattleStage() {
-  try { window.SiegePixi?.stop?.(); }
-  catch (err) { if (_dbg) console.warn("[SIEGE][PIXI STOP ERR]", err); }
-
   try { window.SiegePixi?.destroy?.(); }
   catch (err) { if (_dbg) console.warn("[SIEGE][PIXI DESTROY ERR]", err); }
 
@@ -748,20 +769,39 @@ function replaySideInitial(side, fallback) {
 }
 
 function renderBattlePanelHTML(raw, node, cur) {
-  const replay = getLastReplay(raw, node, cur);
+  const clash = getLastClashReplay(raw, node, cur);
+  const replay = clash || getLastReplay(raw, node, cur);
   const siegeStatus = String(getSiegeStatus(node) || "").trim().toUpperCase();
+  const isSiegeResolved = siegeStatus === "FINISHED" || siegeStatus === "COOLDOWN";
+  const isClash = !!clash;
+  const bouts = Array.isArray(clash?.bouts) ? clash.bouts : [];
+  const previewReplay = isClash ? (bouts[bouts.length - 1] || null) : replay;
 
   const hasReplay = !!replay;
-  const left = replay?.left || {};
-  const right = replay?.right || {};
-  const turns = Array.isArray(replay?.turns) ? replay.turns : [];
-  const fightNo = Number(replay?.fightNo || replay?.fight_no || cur?.currentFight || 0);
+  const left = previewReplay?.left || {};
+  const right = previewReplay?.right || {};
+  const turns = Array.isArray(previewReplay?.events)
+    ? previewReplay.events
+    : Array.isArray(previewReplay?.turns)
+      ? previewReplay.turns
+      : [];
+  const fightNo = Number(previewReplay?.fightNo || previewReplay?.fight_no || cur?.currentFight || 0);
+  const firstFightNo = Number(bouts?.[0]?.fightNo || bouts?.[0]?.fight_no || fightNo || 0);
+  const boutCount = bouts.length;
 
-  const leftName = hasReplay ? fighterLabel(left, "Left Fighter") : "Waiting";
-  const rightName = hasReplay ? fighterLabel(right, "Right Fighter") : "Waiting";
+  const leftName = hasReplay
+    ? (isClash ? factionLabel(clash?.attackerFaction || left?.faction || "") : fighterLabel(left, "Left Fighter"))
+    : "Waiting";
+  const rightName = hasReplay
+    ? (isClash ? factionLabel(clash?.defenderFaction || right?.faction || "") : fighterLabel(right, "Right Fighter"))
+    : "Waiting";
 
-  const leftFaction = hasReplay ? String(left?.faction || "Unknown") : "No resolved fight yet";
-  const rightFaction = hasReplay ? String(right?.faction || "Unknown") : "No resolved fight yet";
+  const leftFaction = hasReplay
+    ? (isClash ? `Latest fighter: ${fighterLabel(left, "Attacker")}` : String(left?.faction || "Unknown"))
+    : "No resolved fight yet";
+  const rightFaction = hasReplay
+    ? (isClash ? `Latest fighter: ${fighterLabel(right, "Defender")}` : String(right?.faction || "Unknown"))
+    : "No resolved fight yet";
 
   const leftHpMax = replaySideHpMax(left);
   const rightHpMax = replaySideHpMax(right);
@@ -771,13 +811,15 @@ function renderBattlePanelHTML(raw, node, cur) {
   const leftInitial = replaySideInitial(left, "A");
   const rightInitial = replaySideInitial(right, "D");
 
-  const winnerKey = String(replay?.winner || "").trim().toLowerCase();
-  const winnerName =
-    winnerKey === "left"
+  const winnerKey = String(previewReplay?.winner || "").trim().toLowerCase();
+  const winnerName = isClash
+    ? factionLabel(clash?.finalWinner || "")
+    : winnerKey === "left"
       ? leftName
       : winnerKey === "right"
-      ? rightName
-      : String(replay?.winnerName || "—");
+        ? rightName
+        : String(previewReplay?.winnerName || "-");
+  const outcomeLabel = isClash ? (isSiegeResolved ? "Result" : "Lead") : "Winner";
 
   let badgeClass = "idle";
   let badgeText = "NO REPLAY";
@@ -786,31 +828,25 @@ function renderBattlePanelHTML(raw, node, cur) {
   let stageHint = "After the next resolved duel, this stage will show the replay.";
 
   if (hasReplay) {
-    badgeClass = "ready";
-    badgeText = "REPLAY READY";
-    subtitle = "Latest resolved duel replay";
-    stageTitle = "Replay Ready";
-    stageHint = "Click Play Replay to watch the latest duel.";
-
-    if (siegeStatus === "RUNNING") {
-      badgeClass = "running";
-      badgeText = "LIVE SIEGE";
-      subtitle = "Previous duel replay available while siege is running";
-      stageTitle = "Replay Ready";
-      stageHint = "A new fight may replace this replay after Next Fight resolves.";
-    } else if (siegeStatus === "FINISHED") {
-      badgeClass = "finished";
-      badgeText = "SIEGE FINISHED";
-      subtitle = "Final available duel replay";
-      stageTitle = "Final Replay Ready";
-      stageHint = "This is the latest replay saved from the finished siege.";
-    } else if (siegeStatus === "COOLDOWN") {
-      badgeClass = "finished";
-      badgeText = "COOLDOWN";
-      subtitle = "Last resolved duel replay";
-      stageTitle = "Replay Ready";
-      stageHint = "The siege is on cooldown. You can still review the latest duel.";
-    }
+    badgeClass = isSiegeResolved ? "finished" : siegeStatus === "RUNNING" ? "running" : "ready";
+    badgeText = isClash
+      ? (isSiegeResolved ? "FINAL CLASH" : "RECENT CLASH")
+      : (isSiegeResolved ? "FINAL DUEL" : "LATEST DUEL");
+    subtitle = isClash
+      ? (isSiegeResolved
+          ? "Latest clash replay from the finished siege"
+          : `Recent clash replay from the last ${boutCount} duels`)
+      : (siegeStatus === "RUNNING"
+          ? "Latest resolved duel while the siege is running"
+          : "Latest resolved duel replay");
+    stageTitle = isClash
+      ? (isSiegeResolved ? "Final Clash Replay Ready" : "Clash Replay Ready")
+      : (isSiegeResolved ? "Final Duel Replay Ready" : "Duel Replay Ready");
+    stageHint = isClash
+      ? (isSiegeResolved
+          ? "Play clash to review the decisive exchange."
+          : "Play clash to review the latest exchange.")
+      : "Play replay to review the latest duel.";
   }
 
   return `
@@ -824,10 +860,10 @@ function renderBattlePanelHTML(raw, node, cur) {
       </div>
 
       <div id="siegeBattleMeta" class="siege-battle-meta">
-        <span class="siege-pill">Fight: ${esc(String(hasReplay ? (fightNo || "—") : "—"))}</span>
-        <span class="siege-pill">Turns: ${hasReplay ? turns.length : 0}</span>
-        <span class="siege-pill">Winner: ${esc(hasReplay ? winnerName : "—")}</span>
-        <span class="siege-pill">Siege: ${esc(siegeStatus || "—")}</span>
+        <span class="siege-pill">${esc(isClash ? `Bouts: ${hasReplay ? boutCount : 0}` : `Fight: ${hasReplay ? (fightNo || "-") : "-"}`)}</span>
+        <span class="siege-pill">${esc(isClash ? `Fights: ${hasReplay ? `${firstFightNo || fightNo || "-"}-${fightNo || "-"}` : "-"}` : `Turns: ${hasReplay ? turns.length : 0}`)}</span>
+        <span class="siege-pill">${esc(`${outcomeLabel}: ${hasReplay ? winnerName : "-"}`)}</span>
+        <span class="siege-pill">Siege: ${esc(siegeStatus || "-")}</span>
       </div>
 
       <div class="siege-battle-summary">
@@ -846,7 +882,7 @@ function renderBattlePanelHTML(raw, node, cur) {
               <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(leftFaction)}</div>
             </div>
           </div>
-          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (leftHpMax || "—") : "—"))}</div>
+          <div class="siege-battle-fighter-stat">${esc(isClash ? `Wins: ${Number(clash?.attackerWins || 0)}` : `Max HP: ${hasReplay ? (leftHpMax || "-") : "-"}`)}</div>
         </div>
 
         <div class="siege-battle-vs">VS</div>
@@ -866,7 +902,7 @@ function renderBattlePanelHTML(raw, node, cur) {
               <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(rightFaction)}</div>
             </div>
           </div>
-          <div class="siege-battle-fighter-stat">Max HP: ${esc(String(hasReplay ? (rightHpMax || "—") : "—"))}</div>
+          <div class="siege-battle-fighter-stat">${esc(isClash ? `Wins: ${Number(clash?.defenderWins || 0)}` : `Max HP: ${hasReplay ? (rightHpMax || "-") : "-"}`)}</div>
         </div>
       </div>
 
@@ -878,7 +914,7 @@ function renderBattlePanelHTML(raw, node, cur) {
       </div>
 
       <div id="siegeBattleControls" class="siege-battle-controls">
-        <button id="siegeBattlePlay" class="siege-btn" ${hasReplay ? "" : "disabled"}>▶ PLAY REPLAY</button>
+        <button id="siegeBattlePlay" class="siege-btn" ${hasReplay ? "" : "disabled"}>${esc(isClash ? "PLAY CLASH" : "PLAY REPLAY")}</button>
       </div>
     </div>
   `;
@@ -1533,7 +1569,7 @@ function renderBattlePanelHTML(raw, node, cur) {
     const battlePlayBtn = qs("siegeBattlePlay");
     if (battlePlayBtn) {
       battlePlayBtn.onclick = async () => {
-        const replay = getLastReplay(raw, node, cur);
+        const replay = getBattleReplay(raw, node, cur);
         if (!replay) {
           showAlert("No replay yet.");
           return;
@@ -1548,8 +1584,18 @@ function renderBattlePanelHTML(raw, node, cur) {
         }
 
         try {
+          const isSiegeResolved = status === "FINISHED" || status === "COOLDOWN";
+          const clashCount = Array.isArray(replay?.bouts) ? replay.bouts.length : 0;
+
           await window.SiegePixi.init(stage, { dbg: _dbg, tg: _tg });
-          await window.SiegePixi.play(replay, { dbg: _dbg });
+          await window.SiegePixi.play(replay, {
+            dbg: _dbg,
+            clashFinal: isSiegeResolved,
+            stepMs: 760,
+            introMs: clashCount >= 2 ? 120 : 160,
+            clashIntroMs: clashCount === 2 ? 280 : 420,
+            clashPauseMs: clashCount === 2 ? 180 : 240,
+          });
         } catch (err) {
           if (_dbg) console.warn("[SIEGE][BATTLE PLAY ERR]", err);
           showAlert(`Replay failed: ${err?.message || err}`);
