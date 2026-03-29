@@ -585,45 +585,62 @@
   }
 
   function mount() {
-    ensureStyles();
-    lockScroll(true);
+  ensureStyles();
 
-    const backdrop = el("div", "ah-ref-backdrop");
-    const modal = el("div", "ah-ref");
+  // usuń stare / osierocone instancje
+  cleanupReferralDom();
 
-    const head = el("div", "ah-ref-head");
-    const left = el("div");
-    left.appendChild(el("div", "ah-ref-title", "Pack Recruitment"));
-    left.appendChild(
-      el("div", "ah-ref-sub", "#Referrals — bring new Howlers into the Pack")
-    );
-    head.appendChild(left);
+  lockScroll(true);
+  document.body.classList.add("referral-open");
 
-    const close = el("button", "ah-ref-close", "✕");
-    close.type = "button";
-    close.addEventListener("click", unmount);
-    head.appendChild(close);
+  const backdrop = el("div", "ah-ref-backdrop");
+  const modal = el("div", "ah-ref");
 
-    const body = el("div", "ah-ref-body", "");
-    modal.appendChild(head);
-    modal.appendChild(body);
-    backdrop.appendChild(modal);
+  const head = el("div", "ah-ref-head");
+  const left = el("div");
+  left.appendChild(el("div", "ah-ref-title", "Pack Recruitment"));
+  left.appendChild(
+    el("div", "ah-ref-sub", "#Referrals — bring new Howlers into the Pack")
+  );
+  head.appendChild(left);
 
-    backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) unmount();
-    });
+  const close = el("button", "ah-ref-close", "✕");
+  close.type = "button";
+  close.addEventListener("click", () => unmount(true));
+  head.appendChild(close);
 
-    _root = backdrop;
-    document.body.appendChild(backdrop);
-  }
+  const body = el("div", "ah-ref-body", "");
+  modal.appendChild(head);
+  modal.appendChild(body);
+  backdrop.appendChild(modal);
 
-  function unmount() {
-    lockScroll(false);
-    if (_root) _root.remove();
-    _root = null;
-    _state = null;
-    _loadError = "";
-  }
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) unmount(true);
+  });
+
+  _root = backdrop;
+  document.body.appendChild(backdrop);
+}
+
+  function unmount(goHomeAfter = false) {
+  cleanupReferralDom();
+
+  _root = null;
+  _state = null;
+  _loadError = "";
+
+  try { window.navOpen?.(); } catch (_) {}
+  try { window.navCloseTop?.(); } catch (_) {}
+
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event("resize"));
+    window.Telegram?.WebApp?.expand?.();
+
+    if (goHomeAfter) {
+      try { window.goHome?.(); } catch (_) {}
+    }
+  });
+}
 
   function renderError(body) {
     const wrap = el("div", "ah-card ah-card-pad");
@@ -865,15 +882,19 @@
   }
 
   async function open() {
-    mount();
-    try {
-      await loadState();
-    } catch (e) {
-      toast(`Referrals load failed: ${e.message}`);
-    } finally {
-      render();
-    }
+  if (_root || document.querySelector(".ah-ref-backdrop")) {
+    unmount(false);
   }
+
+  mount();
+  try {
+    await loadState();
+  } catch (e) {
+    toast(`Referrals load failed: ${e.message}`);
+  } finally {
+    render();
+  }
+}
 
   window.Referrals = {
     init,
