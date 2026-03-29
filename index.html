@@ -3921,22 +3921,276 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
+<style id="broken-contracts-css">
+  #brokenContractsBack .sheet-card.bc-sheet{
+    width:min(580px,100%);
+    max-height:calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:18px;
+    border-radius:22px;
+    border:1px solid rgba(255,255,255,.08);
+    background:
+      radial-gradient(circle at top left, rgba(126,231,135,.06), transparent 34%),
+      linear-gradient(180deg, rgba(18,23,31,.96), rgba(11,15,22,.98));
+    box-shadow:
+      0 18px 48px rgba(0,0,0,.44),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  .bc-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .bc-head-copy{
+    min-width:0;
+    display:grid;
+    gap:4px;
+  }
+
+  .bc-title{
+    margin:0;
+    font-size:18px;
+    line-height:1.1;
+    font-weight:800;
+    letter-spacing:.01em;
+  }
+
+  .bc-meta{
+    opacity:.72;
+    font-size:12px;
+    line-height:1.45;
+  }
+
+  .bc-actions{
+    display:flex;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .bc-statusline{
+    font-size:12px;
+    line-height:1.45;
+    opacity:.84;
+    padding:8px 10px;
+    border-radius:12px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.06);
+  }
+
+  .bc-list{
+    display:grid;
+    gap:14px;
+    overflow:auto;
+    min-height:0;
+    padding-right:2px;
+  }
+
+  .bc-empty{
+    opacity:.78;
+    padding:16px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.06);
+    background:rgba(255,255,255,.03);
+  }
+
+  .bc-card{
+    --bc-accent: rgba(126,231,135,.72);
+    position:relative;
+    display:grid;
+    gap:14px;
+    padding:16px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025)),
+      rgba(9,13,18,.74);
+    box-shadow:
+      0 10px 28px rgba(0,0,0,.22),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    overflow:hidden;
+  }
+
+  .bc-card::before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:4px;
+    background:linear-gradient(180deg, var(--bc-accent), transparent 82%);
+    opacity:.9;
+  }
+
+  .bc-card.type-missions{ --bc-accent: rgba(126,231,135,.8); }
+  .bc-card.type-economy{ --bc-accent: rgba(246,198,92,.8); }
+  .bc-card.type-faction_activity{ --bc-accent: rgba(88,166,255,.8); }
+
+  .bc-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .bc-card-copy{
+    min-width:0;
+    display:grid;
+    gap:6px;
+  }
+
+  .bc-card-title{
+    font-size:15px;
+    line-height:1.25;
+    font-weight:800;
+    letter-spacing:.01em;
+  }
+
+  .bc-card-desc{
+    font-size:12px;
+    line-height:1.45;
+    opacity:.76;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .bc-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:24px;
+    padding:0 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.045);
+    color:#d8e3ef;
+    flex-shrink:0;
+  }
+
+  .bc-badge.is-claimed{
+    color:#9ff2b4;
+    border-color:rgba(126,231,135,.22);
+    background:rgba(126,231,135,.08);
+  }
+
+  .bc-badge.is-ready{
+    color:#8ac7ff;
+    border-color:rgba(88,166,255,.22);
+    background:rgba(88,166,255,.08);
+  }
+
+  .bc-badge.is-pending{
+    color:#f6c65c;
+    border-color:rgba(246,198,92,.24);
+    background:rgba(246,198,92,.09);
+  }
+
+  .bc-badge.is-locked{
+    color:#b8c0cb;
+  }
+
+  .bc-claim{
+    min-width:96px;
+  }
+
+  .bc-section{
+    display:grid;
+    gap:8px;
+  }
+
+  .bc-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    font-size:12px;
+    line-height:1.45;
+  }
+
+  .bc-row-label{
+    opacity:.74;
+  }
+
+  .bc-row-value{
+    font-weight:700;
+    opacity:.94;
+    white-space:nowrap;
+  }
+
+  .bc-bar{
+    height:8px;
+    border-radius:999px;
+    overflow:hidden;
+    background:rgba(255,255,255,.08);
+  }
+
+  .bc-fill{
+    height:100%;
+    width:0%;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--bc-accent), rgba(255,255,255,.92));
+  }
+
+  .bc-fill.is-contrib{
+    background:linear-gradient(90deg, rgba(255,255,255,.22), var(--bc-accent));
+    opacity:.86;
+  }
+
+  .bc-rewards{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .bc-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-height:28px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.045);
+    font-size:11px;
+    line-height:1;
+    font-weight:700;
+    letter-spacing:.01em;
+  }
+
+  .bc-chip-key{
+    opacity:.7;
+    font-weight:600;
+    text-transform:capitalize;
+  }
+
+  .bc-chip-val{
+    color:#f4f7fb;
+  }
+</style>
+
 <!-- Broken Contracts modal -->
 <div class="sheet-back" id="brokenContractsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Broken Contracts">
-  <div class="sheet-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-      <div>
-        <div style="font-weight:700;">Broken Contracts</div>
-        <div id="bcMeta" style="opacity:.72;font-size:12px;margin-top:4px;">Faction daily contracts</div>
+  <div class="sheet-card bc-sheet">
+    <div class="bc-head">
+      <div class="bc-head-copy">
+        <div class="bc-title">Broken Contracts</div>
+        <div id="bcMeta" class="bc-meta">Faction daily contracts</div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div class="bc-actions">
         <button class="btn" id="bcRefresh" type="button">Refresh</button>
         <button class="btn" id="bcClose" type="button" aria-label="Close broken contracts">×</button>
       </div>
     </div>
 
-    <div id="bcStatus" style="margin-top:12px;opacity:.82;font-size:12px;">Ready</div>
-    <div id="bcRoot" style="margin-top:12px;display:grid;gap:10px;"></div>
+    <div id="bcStatus" class="bc-statusline">Ready</div>
+    <div id="bcRoot" class="bc-list"></div>
   </div>
 </div>
 
