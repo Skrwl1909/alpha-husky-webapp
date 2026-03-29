@@ -521,6 +521,7 @@
   function renderPulseTab(factionPulse, meta) {
     const summary = factionPulse?.summary || {};
     const factions = Array.isArray(factionPulse?.factions) ? factionPulse.factions.slice() : [];
+    const weekly = factionPulse?.weekly || {};
 
     factions.sort((a, b) => {
       return (
@@ -545,6 +546,8 @@
             ${summaryCard("Hot Nodes", intOr(summary.hotNodes, 0), "warn")}
             ${summaryCard("Controlled Nodes", intOr(summary.controlledNodes, 0), "neutral")}
           </div>
+
+          ${renderWeeklyStandings(weekly, meta)}
         </section>
 
         <section class="oracle-panel">
@@ -562,6 +565,115 @@
         </section>
       </div>
     `;
+  }
+
+  function renderWeeklyStandings(weekly, meta) {
+    const rows = Array.isArray(weekly?.rows) ? weekly.rows.slice(0, 4) : [];
+    const leaderLabel = String(weekly?.leaderLabel || "No leader yet").trim();
+    const leaderScore = intOr(weekly?.leaderScore, 0);
+    const remain = formatRemainCompact(intOr(weekly?.endsInSec, 0));
+
+    return `
+      <div style="
+        margin-top:12px;
+        padding:12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.08);
+      ">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.58;">This week</div>
+            <div style="margin-top:4px;font-size:16px;font-weight:800;">Weekly faction standings</div>
+          </div>
+          <div style="text-align:right;min-width:120px;">
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.58;">Time left</div>
+            <div style="margin-top:4px;font-size:15px;font-weight:800;color:#ffd888;">${escapeHtml(remain)}</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+          <div style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;opacity:.58;">Leader</div>
+            <div style="margin-top:4px;font-size:15px;font-weight:800;">${escapeHtml(leaderLabel)}</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);text-align:right;">
+            <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;opacity:.58;">Score</div>
+            <div style="margin-top:4px;font-size:15px;font-weight:800;color:#8ff7b5;">${escapeHtml(String(leaderScore))}</div>
+          </div>
+        </div>
+
+        ${rows.length ? `
+          <div style="display:grid;gap:8px;margin-top:10px;">
+            ${rows.map((row) => renderWeeklyStandingsRow(row, weekly, meta)).join("")}
+          </div>
+        ` : `
+          <div style="margin-top:10px;font-size:12px;opacity:.68;">Patrols, donations and siege outcomes will start shaping this board once the week picks up.</div>
+        `}
+      </div>
+    `;
+  }
+
+  function renderWeeklyStandingsRow(row, weekly, meta) {
+    const faction = row?.faction || "";
+    const fm = factionMeta(faction);
+    const score = intOr(row?.score, 0);
+    const activity = intOr(row?.activityScore, 0);
+    const control = intOr(row?.controlBonus, 0);
+    const qualified = intOr(row?.qualifiedCount, 0);
+    const players = intOr(row?.playerCount, 0);
+    const isViewer = !!row?.isViewer;
+    const isLeader = !!row?.isLeader;
+    const border = isViewer
+      ? "1px solid rgba(125,211,252,.26)"
+      : "1px solid rgba(255,255,255,.06)";
+    const background = isLeader
+      ? "rgba(255,215,120,.08)"
+      : isViewer
+        ? "rgba(125,211,252,.07)"
+        : "rgba(255,255,255,.03)";
+
+    return `
+      <div style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:10px 12px;
+        border-radius:14px;
+        background:${background};
+        border:${border};
+      ">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <div style="width:22px;font-size:12px;font-weight:900;opacity:.68;">#${escapeHtml(String(intOr(row?.rank, 0) || "—"))}</div>
+          ${renderFactionBadge(faction)}
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(row?.label || fm.label)}
+            </div>
+            <div style="font-size:11px;opacity:.62;">
+              ${escapeHtml(`${activity} activity + ${control} control`)}
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;white-space:nowrap;">
+          <div style="font-size:15px;font-weight:900;color:${isLeader ? "#ffd888" : "#ffffff"};">${escapeHtml(String(score))}</div>
+          <div style="font-size:11px;opacity:.62;">${escapeHtml(`${qualified} ready • ${players} active`)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function formatRemainCompact(sec) {
+    let left = Math.max(0, intOr(sec, 0));
+    const d = Math.floor(left / 86400);
+    left %= 86400;
+    const h = Math.floor(left / 3600);
+    left %= 3600;
+    const m = Math.floor(left / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
   }
 
   function summaryCard(label, value, tone) {

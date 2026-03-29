@@ -8,6 +8,10 @@
 // ✅ supports buttons: data-share-style OR data-share-levelup-style
 (function (global) {
   let _dbg = false;
+  let _ensureTimer = null;
+  let _hookTimer = null;
+  let _observer = null;
+  let _observerRaf = 0;
   const log = (...a) => { if (_dbg) console.log("[ShareLevelUp]", ...a); };
 
   function toast(title, msg) {
@@ -585,23 +589,37 @@
 
   // ✅ keep trying until row+hero exist (fix: UI may render after this script)
   function startEnsureLoop() {
+    if (_ensureTimer) clearInterval(_ensureTimer);
     let tries = 0;
-    const t = setInterval(() => {
+    _ensureTimer = setInterval(() => {
       tries++;
       const okShow = showRow();
       const okPlace = ensureRowAboveSkin();
-      if ((okShow && okPlace) || tries > 80) clearInterval(t);
+      if ((okShow && okPlace) || tries > 80) {
+        clearInterval(_ensureTimer);
+        _ensureTimer = null;
+      }
     }, 125);
   }
 
   // ✅ watch DOM changes (some modules re-render hero-center)
   function startObserver() {
+    if (_observer) return;
     try {
-      const obs = new MutationObserver(() => {
-        showRow();
-        ensureRowAboveSkin();
+      const root =
+        getHero()?.parentNode ||
+        document.getElementById("heroCenter") ||
+        document.body;
+      if (!root) return;
+      _observer = new MutationObserver(() => {
+        if (_observerRaf) return;
+        _observerRaf = requestAnimationFrame(() => {
+          _observerRaf = 0;
+          showRow();
+          ensureRowAboveSkin();
+        });
       });
-      obs.observe(document.documentElement, { childList: true, subtree: true });
+      _observer.observe(root, { childList: true, subtree: true });
     } catch (_) {}
   }
 
@@ -622,14 +640,17 @@
       startObserver();
     }
 
+    if (_hookTimer) clearInterval(_hookTimer);
     let tries = 0;
-    const t = setInterval(() => {
+    _hookTimer = setInterval(() => {
       tries++;
       if (typeof global.loadProfile === "function") {
         wrapLoadProfile();
-        clearInterval(t);
+        clearInterval(_hookTimer);
+        _hookTimer = null;
       } else if (tries > 200) {
-        clearInterval(t);
+        clearInterval(_hookTimer);
+        _hookTimer = null;
       }
     }, 50);
   }

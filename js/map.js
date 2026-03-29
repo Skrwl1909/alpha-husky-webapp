@@ -140,6 +140,29 @@
   border-color:rgba(96,144,255,.34);
   box-shadow:0 0 0 1px rgba(96,144,255,.08), 0 0 16px rgba(46,110,255,.12);
 }
+.map-pin .pin-pressure-chip.s-live{
+  color:#ffd8d8;
+  background:rgba(220,60,60,.20);
+  border-color:rgba(255,92,92,.36);
+  box-shadow:0 0 0 1px rgba(255,92,92,.08), 0 0 18px rgba(220,60,60,.18);
+}
+.map-pin .pin-pressure-chip.s-forming{
+  color:#ffe1bf;
+  background:rgba(255,140,40,.18);
+  border-color:rgba(255,170,70,.34);
+  box-shadow:0 0 0 1px rgba(255,170,70,.08), 0 0 18px rgba(255,140,40,.16);
+}
+.map-pin .pin-pressure-chip.s-cooldown{
+  color:#cbfff0;
+  background:rgba(50,180,145,.18);
+  border-color:rgba(80,220,180,.34);
+  box-shadow:0 0 0 1px rgba(80,220,180,.08), 0 0 16px rgba(50,180,145,.12);
+}
+.map-pin .pin-pressure-chip.p-calm{
+  color:#dde6f3;
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.14);
+}
 .map-pin.pressure-flashpoint{
   z-index:6;
 }
@@ -305,6 +328,51 @@
   background:rgba(199,36,255,.15);
   border-color:rgba(199,36,255,.26);
   color:#f0d4ff;
+}
+
+.map-pin .chip-copy{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.map-pin .chip-subrow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+.map-pin .chip-action{
+  font-size:10px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.03em;
+  opacity:.86;
+}
+.map-pin .chip-value{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:16px;
+  padding:1px 6px;
+  border-radius:999px;
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.06em;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:#e7edf6;
+}
+.map-pin .chip-value[data-tier="STRATEGIC"]{
+  color:#ffe5ae;
+  background:rgba(255,184,56,.16);
+  border-color:rgba(255,202,92,.26);
+}
+.map-pin .chip-value[data-tier="HIGH_VALUE"]{
+  color:#d5f4ff;
+  background:rgba(68,186,255,.16);
+  border-color:rgba(96,204,255,.24);
 }
 
 @keyframes ahPinPulse{
@@ -618,10 +686,251 @@
     };
   }
 
-  function _pressureBadgesHtml(pressureMeta) {
-    const primary = _primaryPressureChip(pressureMeta);
-    if (!primary) return "";
-    return `<span class="pin-pressure-chip ${primary.cls}">${primary.text}</span>`;
+  function _readViewerFactionFallback() {
+    let cachedFaction = "";
+    try { cachedFaction = localStorage.getItem("ah_faction") || ""; } catch (_) {}
+
+    return _normFactionKey(
+      window.currentUserFaction ||
+      window.PLAYER_STATE?.profile?.faction ||
+      window.PLAYER_STATE?.profile?.factionKey ||
+      window.PLAYER_STATE?.faction ||
+      cachedFaction ||
+      ""
+    );
+  }
+
+  function _getFactionStore() {
+    const existing = window.__AHFactionStore;
+    if (
+      existing &&
+      typeof existing.get === "function" &&
+      typeof existing.set === "function" &&
+      typeof existing.clear === "function"
+    ) {
+      return existing;
+    }
+
+    const store = {
+      value: "",
+      get() {
+        const next = _readViewerFactionFallback() || _normFactionKey(store.value);
+        store.value = next || "";
+        return store.value;
+      },
+      set(raw) {
+        const next = _normFactionKey(raw);
+        const prev = _normFactionKey(store.value);
+        store.value = next || "";
+        if (prev === store.value && _normFactionKey(window.currentUserFaction || "") === store.value) {
+          return store.value;
+        }
+        try {
+          if (store.value) localStorage.setItem("ah_faction", store.value);
+          else localStorage.removeItem("ah_faction");
+        } catch (_) {}
+        try { window.currentUserFaction = store.value; } catch (_) {}
+        try { window.AHMap?.reapplyLastLeaders?.(); } catch (_) {}
+        return store.value;
+      },
+      clear() {
+        const prev = _normFactionKey(store.value || window.currentUserFaction || "");
+        store.value = "";
+        if (!prev) return "";
+        try { localStorage.removeItem("ah_faction"); } catch (_) {}
+        try { window.currentUserFaction = ""; } catch (_) {}
+        try { window.AHMap?.reapplyLastLeaders?.(); } catch (_) {}
+        return "";
+      }
+    };
+
+    window.__AHFactionStore = store;
+    store.get();
+    return store;
+  }
+
+  function _getViewerFaction() {
+    try { return _getFactionStore().get(); } catch (_) {}
+    return _readViewerFactionFallback();
+  }
+
+  function _normalizeDisplayStatus(raw) {
+    const key = String(raw || "").trim().toUpperCase();
+    if (!key) return "";
+    if (key === "UNDER_ATTACK" || key === "SIEGE" || key === "LIVE") return "SIEGE_LIVE";
+    if (key === "CLAIMING" || key === "FORMING") return "SIEGE_FORMING";
+    if (key === "COOLDOWN") return "SIEGE_COOLDOWN";
+    if (key === "SECURED" || key === "NEUTRAL") return "CALM";
+    return key;
+  }
+
+  function _fallbackDisplayStatus(info) {
+    const src = (info && typeof info === "object") ? info : {};
+    const siegeStatus = String(src?.siegeStatus || src?.currentSiegeStatus || "").trim().toLowerCase();
+    if (siegeStatus === "running") return "SIEGE_LIVE";
+    if (siegeStatus === "forming") return "SIEGE_FORMING";
+    if (siegeStatus === "cooldown") return "SIEGE_COOLDOWN";
+
+    const pressureMeta = _extractPressureMeta(src);
+    if (pressureMeta.isPressureContested) return "CONTESTED";
+    if (pressureMeta.isHot) return "HOT";
+    if (pressureMeta.isFortified) return "FORTIFIED";
+    return "CALM";
+  }
+
+  function _nodeOwnerFaction(info) {
+    return _normFactionKey(
+      info?.effectiveOwnerFaction ||
+      info?.ownerFaction ||
+      info?.owner ||
+      ""
+    );
+  }
+
+  function _statusChipLabel(displayStatus) {
+    const key = _normalizeDisplayStatus(displayStatus);
+    const labels = {
+      SIEGE_LIVE: "LIVE",
+      SIEGE_FORMING: "FORMING",
+      SIEGE_COOLDOWN: "COOLDOWN",
+      CONTESTED: "CONTESTED",
+      HOT: "HOT",
+      FORTIFIED: "FORTIFIED",
+      CALM: "CALM"
+    };
+    return labels[key] || "CALM";
+  }
+
+  function _statusChipClass(displayStatus) {
+    const key = _normalizeDisplayStatus(displayStatus);
+    if (key === "SIEGE_LIVE") return "s-live";
+    if (key === "SIEGE_FORMING") return "s-forming";
+    if (key === "SIEGE_COOLDOWN") return "s-cooldown";
+    if (key === "CONTESTED") return "p-contested";
+    if (key === "HOT") return "p-hot";
+    if (key === "FORTIFIED") return "p-fortified";
+    return "p-calm";
+  }
+
+  function _valueTierLabel(valueTier) {
+    const key = String(valueTier || "").trim().toUpperCase();
+    if (key === "STRATEGIC") return "Strategic";
+    if (key === "HIGH_VALUE") return "High Value";
+    return "Support";
+  }
+
+  function _valueMultiplierForTier(valueTier) {
+    const key = String(valueTier || "").trim().toUpperCase();
+    if (key === "STRATEGIC") return 2.0;
+    if (key === "HIGH_VALUE") return 1.5;
+    return 1.0;
+  }
+
+  function _valueText(valueTier) {
+    const key = String(valueTier || "").trim().toUpperCase();
+    if (key === "STRATEGIC") return "A major node that can shift local faction pressure.";
+    if (key === "HIGH_VALUE") return "Gives stronger faction progress and control impact.";
+    return "Helps with steady faction support.";
+  }
+
+  function _statusText(displayStatus) {
+    const key = _normalizeDisplayStatus(displayStatus);
+    const labels = {
+      SIEGE_LIVE: "A live battle for this node is underway.",
+      SIEGE_FORMING: "An assault is gathering here.",
+      SIEGE_COOLDOWN: "This frontline is resetting after a siege.",
+      CONTESTED: "Control is being actively challenged.",
+      HOT: "Pressure is rising here.",
+      FORTIFIED: "This node is strongly secured.",
+      CALM: "This node is stable right now."
+    };
+    return labels[key] || "This node is stable right now.";
+  }
+
+  function _deriveActionHint(displayStatus, effectiveOwner, viewerFaction) {
+    const owner = _normFactionKey(effectiveOwner || "");
+    const viewer = _normFactionKey(viewerFaction || "");
+    const sameOwner = !!(owner && viewer && owner === viewer);
+    const neutral = !owner;
+
+    if (displayStatus === "SIEGE_LIVE") return "Join now";
+    if (displayStatus === "SIEGE_FORMING") return "Join siege";
+    if (displayStatus === "SIEGE_COOLDOWN") {
+      if (sameOwner) return "Hold";
+      if (viewer && owner && owner !== viewer) return "Low priority";
+      return "Patrol";
+    }
+    if (displayStatus === "CONTESTED") {
+      if (sameOwner) return "Defend";
+      if (viewer) return "Push";
+      return "Respond";
+    }
+    if (displayStatus === "HOT") {
+      if (sameOwner) return "Defend";
+      if (neutral) return "Patrol";
+      if (viewer) return "Pressure";
+      return "Patrol";
+    }
+    if (displayStatus === "FORTIFIED") {
+      if (sameOwner) return "Hold";
+      if (viewer && owner && owner !== viewer) return "Low priority";
+      return "Hold";
+    }
+    if (sameOwner || neutral) return "Patrol";
+    if (viewer) return "Scout";
+    return "Patrol";
+  }
+
+  function _deriveUrgency(displayStatus, effectiveOwner, viewerFaction, valueTier) {
+    const owner = _normFactionKey(effectiveOwner || "");
+    const viewer = _normFactionKey(viewerFaction || "");
+    const sameOwner = !!(owner && viewer && owner === viewer);
+
+    if (displayStatus === "SIEGE_LIVE") return "critical";
+    if (displayStatus === "SIEGE_FORMING" || displayStatus === "CONTESTED") return "high";
+    if (displayStatus === "HOT") return sameOwner ? "high" : "medium";
+    if (displayStatus === "SIEGE_COOLDOWN") return valueTier === "STRATEGIC" ? "medium" : "low";
+    if (displayStatus === "FORTIFIED") return valueTier === "LOW_VALUE" ? "low" : "medium";
+    return "low";
+  }
+
+  function _extractNodeUx(info, viewerFaction) {
+    const src = (info && typeof info === "object") ? info : {};
+    const displayStatus = _normalizeDisplayStatus(src?.displayStatus) || _fallbackDisplayStatus(src);
+    const valueTier = String(src?.valueTier || "").trim().toUpperCase() || "LOW_VALUE";
+    const ownerFaction = _nodeOwnerFaction(src);
+    const viewer = _normFactionKey(src?.youFaction || viewerFaction || _getViewerFaction());
+
+    let actionHint = String(src?.actionHint || "").trim();
+    if (!actionHint || viewer) {
+      actionHint = _deriveActionHint(displayStatus, ownerFaction, viewer);
+    }
+
+    const urgency = String(src?.urgency || "").trim().toLowerCase() || _deriveUrgency(displayStatus, ownerFaction, viewer, valueTier);
+
+    return {
+      displayStatus,
+      displayLabel: _statusChipLabel(displayStatus),
+      displayClass: _statusChipClass(displayStatus),
+      statusText: _statusText(displayStatus),
+      actionHint,
+      urgency,
+      valueTier,
+      valueMultiplier: Number(src?.valueMultiplier || 0) || _valueMultiplierForTier(valueTier),
+      valueLabel: _valueTierLabel(valueTier),
+      valueText: String(src?.valueText || "").trim() || _valueText(valueTier),
+      ownerFaction,
+      reasonText: String(src?.reasonText || "").trim() || _statusText(displayStatus),
+      rewardText: String(src?.rewardText || "").trim() || "Helping here supports weekly faction progress."
+    };
+  }
+
+  function _pressureBadgesHtml(pressureMeta, nodeUx) {
+    const ux = nodeUx || {};
+    const text = String(ux.displayLabel || "").trim();
+    const cls = String(ux.displayClass || "").trim();
+    if (!text || !cls) return "";
+    return `<span class="pin-pressure-chip ${cls}">${text}</span>`;
   }
 
   function _primaryPressureChip(pressureMeta) {
@@ -687,11 +996,12 @@
     el.hidden = false;
   }
 
-  function _applyPressureBadges(pinEl, pressureMeta) {
+  function _applyPressureBadges(pinEl, pressureMeta, nodeUx) {
     if (!pinEl) return;
     ensureLevel1(pinEl);
 
     const meta = pressureMeta || {};
+    const ux = nodeUx || {};
     const isPressureContested = !!meta.isPressureContested;
     const wrap = pinEl.querySelector(".pin-pressure-badges");
 
@@ -709,7 +1019,7 @@
 
     if (!wrap) return;
 
-    const html = pinEl.classList.contains("active") ? "" : _pressureBadgesHtml(meta);
+    const html = pinEl.classList.contains("active") ? "" : _pressureBadgesHtml(meta, ux);
     wrap.innerHTML = html;
     wrap.style.display = html ? "flex" : "none";
   }
@@ -720,6 +1030,7 @@
     const scores = _extractScores(safeInfo);
     const siegeMeta = _extractSiegeMeta(safeInfo);
     const pressureMeta = _extractPressureMeta(safeInfo);
+    const nodeUx = _extractNodeUx(safeInfo);
 
     // LIVE nodes: truth only from leadersMap/backend
     if (liveNode) {
@@ -749,7 +1060,8 @@
         scores,
         source: explicitOwner ? "ownerFaction" : (top.top1 > 0 ? "scores" : "none"),
         siegeMeta,
-        pressureMeta
+        pressureMeta,
+        nodeUx
       };
     }
 
@@ -762,15 +1074,12 @@
       scores: {},
       source: "non-live",
       siegeMeta,
-      pressureMeta
+      pressureMeta,
+      nodeUx
     };
   }
 
-  function _leaderBadgeText(owner, siegeMeta) {
-    const status = String(siegeMeta?.siegeStatus || "");
-    if (status === "forming") return "ATK";
-    if (status === "running") return "LIVE";
-    if (status === "cooldown") return "CD";
+  function _leaderBadgeText(owner) {
     return CODE[owner] || "";
   }
 
@@ -818,7 +1127,13 @@
     const o = (opts && typeof opts === "object") ? opts : {};
     const siegeMeta = o.siegeMeta || {};
     const pressureMeta = o.pressureMeta || {};
+    const nodeUx = o.nodeUx || {};
     const siegeStatus = String(siegeMeta.siegeStatus || "").trim().toLowerCase();
+    const displayStatus = _normalizeDisplayStatus(nodeUx.displayStatus) || _fallbackDisplayStatus({
+      ...o,
+      ...siegeMeta,
+      ...pressureMeta
+    });
 
     const id = String(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "").trim().toLowerCase();
     const faction = _normFactionKey(owner || "");
@@ -830,58 +1145,14 @@
     else if (id === "edge_of_the_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
 
-    const isPressureContested = !!pressureMeta.isPressureContested;
-    const isSiegeContested =
-      !!pressureMeta.isSiegeContested ||
-      siegeStatus === "forming" ||
-      siegeStatus === "running";
-
-    const isContested =
-      !!o.contested ||
-      isPressureContested ||
-      isSiegeContested;
-
-    const isLive =
-      !isContested &&
-      siegeStatus === "running";
-
-    const isThreatened =
-      !isContested &&
-      !isLive &&
-      (
-        !!pressureMeta.isHot ||
-        siegeStatus === "forming"
-      );
-
-    const isFortified =
-      !isContested &&
-      !isLive &&
-      !isThreatened &&
-      (
-        !!pressureMeta.isFortified ||
-        siegeStatus === "cooldown"
-      );
-
-    const isActive =
-      !isContested &&
-      !isLive &&
-      !isThreatened &&
-      !isFortified &&
-      !!faction;
-
     let status = "";
-    if (isContested) status = "contested";
-    else if (isLive) status = "live";
-    else if (isThreatened) status = "threatened";
-    else if (isFortified) status = "fortified";
-    else if (isActive) status = "active";
+    if (displayStatus === "CONTESTED") status = "contested";
+    else if (displayStatus === "SIEGE_LIVE") status = "live";
+    else if (displayStatus === "SIEGE_FORMING" || displayStatus === "HOT") status = "threatened";
+    else if (displayStatus === "SIEGE_COOLDOWN" || displayStatus === "FORTIFIED") status = "fortified";
+    else if (displayStatus === "CALM" && faction) status = "active";
 
-    let chip = "";
-    if (status === "contested") chip = "CONTESTED";
-    else if (status === "live") chip = "LIVE";
-    else if (status === "threatened") chip = pressureMeta.isHot ? "HOT" : "THREATENED";
-    else if (status === "fortified") chip = "FORTIFIED";
-    else if (status === "active") chip = "ACTIVE";
+    const chip = String(nodeUx.displayLabel || _statusChipLabel(displayStatus) || "");
 
     return {
       faction,
@@ -937,7 +1208,7 @@
     const o = (opts && typeof opts === "object") ? opts : {};
     _applyNodeVisualClasses(pinEl, visualModel);
     _applySiegeStateClasses(pinEl, o.siegeMeta || {});
-    _applyPressureBadges(pinEl, o.pressureMeta || {});
+    _applyPressureBadges(pinEl, o.pressureMeta || {}, o.nodeUx || {});
   }
 
   function setLeader(pinEl, owner, opts) {
@@ -949,6 +1220,11 @@
     const source = String(opts?.source || "");
     const siegeMeta = opts?.siegeMeta || {};
     const pressureMeta = opts?.pressureMeta || {};
+    const nodeUx = opts?.nodeUx || _extractNodeUx({
+      ownerFaction: owner || "",
+      ...siegeMeta,
+      ...pressureMeta
+    });
 
     _clearFactionClasses(pinEl);
 
@@ -962,25 +1238,43 @@
     pinEl.dataset.siegeDefenderFaction = String(siegeMeta?.defenderFaction || "");
     pinEl.dataset.siegeCooldownLeftSec = String(siegeMeta?.cooldownLeftSec || 0);
     pinEl.dataset.isUnderAttack = siegeMeta?.isUnderAttack ? "1" : "0";
+    pinEl.dataset.displayStatus = String(nodeUx?.displayStatus || "");
+    pinEl.dataset.actionHint = String(nodeUx?.actionHint || "");
+    pinEl.dataset.valueTier = String(nodeUx?.valueTier || "");
+    pinEl.dataset.urgency = String(nodeUx?.urgency || "");
 
     const visualModel = _deriveNodeVisualModel(pinEl, owner, {
       contested,
       siegeMeta,
-      pressureMeta
+      pressureMeta,
+      nodeUx
     });
 
     if (chip) {
-      chip.innerHTML = `<span class="chip-name">${esc(name)}</span>`;
+      const actionHtml = nodeUx?.actionHint
+        ? `<span class="chip-action">${esc(nodeUx.actionHint)}</span>`
+        : "";
+      const valueHtml = nodeUx?.valueTier && nodeUx.valueTier !== "LOW_VALUE"
+        ? `<span class="chip-value" data-tier="${esc(nodeUx.valueTier)}">${esc(nodeUx.valueLabel || _valueTierLabel(nodeUx.valueTier))}</span>`
+        : "";
+      chip.innerHTML = `
+        <span class="chip-copy">
+          <span class="chip-name">${esc(name)}</span>
+          ${(actionHtml || valueHtml)
+            ? `<span class="chip-subrow">${actionHtml}${valueHtml}</span>`
+            : ""}
+        </span>
+      `;
     }
 
     if (!owner) {
       _clearPinBadge(badge);
-      _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta });
+      _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta, nodeUx });
       return;
     }
 
     const code = CODE[owner] || "";
-    const badgeText = _leaderBadgeText(owner, siegeMeta);
+    const badgeText = _leaderBadgeText(owner);
 
     if (badge) {
       if (badgeText && badgeText !== code) {
@@ -992,7 +1286,7 @@
       }
     }
 
-    _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta });
+    _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta, nodeUx });
   }
 
   function _clearLeader(pinEl) {
@@ -1100,8 +1394,16 @@
     };
   }
 
+  function getNodeUx(nodeId, infoOverride) {
+    const info = (infoOverride && typeof infoOverride === "object")
+      ? infoOverride
+      : _findLeaderInfoByNodeId(nodeId, _lastLeadersMap) || {};
+    return _extractNodeUx(info, _getViewerFaction());
+  }
+
   function applyLeaders(leadersMap) {
     if (!leadersMap || typeof leadersMap !== "object") return;
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     _lastLeadersMap = leadersMap;
     try { API._leadersMap = leadersMap; } catch (_) {}
 
@@ -1149,7 +1451,8 @@
         contested: !!ex.contested,
         source: ex.source || "scores",
         siegeMeta: ex.siegeMeta || {},
-        pressureMeta: ex.pressureMeta || {}
+        pressureMeta: ex.pressureMeta || {},
+        nodeUx: ex.nodeUx || {}
       });
     });
 
@@ -1158,9 +1461,18 @@
     }
 
     _updateMapPressureMood(mood);
+    window.__ahPerf?.log?.("AHMap.applyLeaders", perfT0, { pins: pins.length });
+  }
+
+  function _isMapVisible() {
+    const mapBack = document.getElementById("mapBack");
+    if (!mapBack) return false;
+    const display = mapBack.style.display || window.getComputedStyle?.(mapBack)?.display || "";
+    return display !== "none";
   }
 
   function _scheduleReapply() {
+    if (!_isMapVisible() || !_lastLeadersMap) return;
     if (_reapplyQueued) return;
     _reapplyQueued = true;
 
@@ -1191,15 +1503,20 @@
   function _bindReapplyHooks() {
     // po kliknięciu / focusie na mapie UI czasem przebudowuje piny
     document.addEventListener("click", () => {
+      if (!_isMapVisible()) return;
       setTimeout(_scheduleReapply, 50);
     }, true);
 
     document.addEventListener("touchend", () => {
+      if (!_isMapVisible()) return;
       setTimeout(_scheduleReapply, 50);
     }, true);
   }
 
   async function refreshLeaders() {
+    if (window.Influence?.refreshLeaders) {
+      return window.Influence.refreshLeaders(true);
+    }
     try {
       const apiPost = getApiPost();
       if (!apiPost) return null;
@@ -1245,6 +1562,8 @@
     getPressureState,
     getPressureNote,
     getPressureSummary,
+    getNodeUx,
+    getViewerFaction: _getViewerFaction,
     reapplyLastLeaders: () => {
       if (_lastLeadersMap) applyLeaders(_lastLeadersMap);
     }

@@ -1271,7 +1271,7 @@ function _normalizeRareDropObj(obj) {
   // =========================
   // Actions
   // =========================
-  async function loadState() {
+  async function loadStateBase() {
     renderLoading("Loading missions…");
     try {
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
@@ -1288,9 +1288,18 @@ function _normalizeRareDropObj(obj) {
       if (a.status && a.status !== "NONE") _pendingStart = null;
 
       render();
+      return _state;
     } catch (e) {
       renderError("Missions backend error", String(e?.message || e || ""));
+      return null;
     }
+  }
+
+  async function loadState() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    const out = await loadStateBase();
+    window.__ahPerf?.log?.("Missions.loadState", perfT0, { ok: !!out });
+    return out;
   }
 
   async function doRefresh() {
