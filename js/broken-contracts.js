@@ -60,24 +60,46 @@
   }
 
   function statusUi(contract) {
-    const claimable = !!contract?.claimable;
-    const claimed = Number(contract?.myClaimedAt || 0) > 0;
-    const pending = !!contract?.claimPending;
+  const claimable = !!contract?.claimable;
+  const claimed = Number(contract?.myClaimedAt || 0) > 0;
+  const pending = !!contract?.claimPending;
 
-    if (claimable) {
-      return {
-        mode: "button",
-        label: "Claim",
-        cls: "primary bc-claim",
-        disabled: false
-      };
-    }
-    if (claimed) return { mode: "badge", label: "Claimed", cls: "is-claimed" };
-    if (pending) return { mode: "badge", label: "Pending", cls: "is-pending" };
-    if (contract?.myFactionCompleted) return { mode: "badge", label: "Ready", cls: "is-ready" };
-    return { mode: "badge", label: "Locked", cls: "is-locked" };
+  const factionProgress = Number(contract?.myFactionProgress || 0);
+  const goal = Math.max(1, Number(contract?.goal || 0));
+  const myContribution = Number(contract?.myContribution || 0);
+  const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
+
+  const hasAnyProgress = factionProgress > 0 || myContribution > 0;
+  const factionDone = factionProgress >= goal;
+  const myDone = myContribution >= minContribution;
+
+  if (claimable) {
+    return {
+      mode: "button",
+      label: "Claim",
+      cls: "primary bc-claim",
+      disabled: false
+    };
   }
 
+  if (claimed) {
+    return { mode: "badge", label: "Claimed", cls: "is-claimed" };
+  }
+
+  if (pending) {
+    return { mode: "badge", label: "Pending", cls: "is-pending" };
+  }
+
+  if (factionDone && myDone) {
+    return { mode: "badge", label: "Ready", cls: "is-ready" };
+  }
+
+  if (hasAnyProgress) {
+    return { mode: "badge", label: "In Progress", cls: "is-progress" };
+  }
+
+  return { mode: "badge", label: "Locked", cls: "is-locked" };
+}
   function renderBadgeOrButton(contract) {
     const ui = statusUi(contract);
     if (ui.mode === "button") {
