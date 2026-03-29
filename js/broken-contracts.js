@@ -42,12 +42,55 @@
     return `${s}s`;
   }
 
-  function fmtReward(reward) {
+  function assetLabel(key) {
+    return String(key || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function rewardChips(reward) {
     const personal = reward?.personal && typeof reward.personal === "object" ? reward.personal : {};
-    const bits = Object.entries(personal)
+    return Object.entries(personal)
       .filter(([, value]) => Number(value || 0) > 0)
-      .map(([key, value]) => `${value} ${key}`);
-    return bits.length ? bits.join(" • ") : "No personal reward";
+      .map(([key, value]) => ({
+        key,
+        label: assetLabel(key),
+        value: Number(value || 0)
+      }));
+  }
+
+  function statusUi(contract) {
+    const claimable = !!contract?.claimable;
+    const claimed = Number(contract?.myClaimedAt || 0) > 0;
+    const pending = !!contract?.claimPending;
+
+    if (claimable) {
+      return {
+        mode: "button",
+        label: "Claim",
+        cls: "primary bc-claim",
+        disabled: false
+      };
+    }
+    if (claimed) return { mode: "badge", label: "Claimed", cls: "is-claimed" };
+    if (pending) return { mode: "badge", label: "Pending", cls: "is-pending" };
+    if (contract?.myFactionCompleted) return { mode: "badge", label: "Ready", cls: "is-ready" };
+    return { mode: "badge", label: "Locked", cls: "is-locked" };
+  }
+
+  function renderBadgeOrButton(contract) {
+    const ui = statusUi(contract);
+    if (ui.mode === "button") {
+      return `
+        <button
+          class="btn ${esc(ui.cls || "")}"
+          type="button"
+          data-bc-claim="${esc(contract?.id || "")}"
+          ${ui.disabled ? "disabled" : ""}
+        >${esc(ui.label)}</button>
+      `;
+    }
+    return `<span class="bc-badge ${esc(ui.cls || "")}">${esc(ui.label)}</span>`;
   }
 
   function setStatus(text) {
@@ -58,22 +101,22 @@
   function setMeta(data) {
     const node = el(META_ID);
     if (!node) return;
-    const faction = data?.myFactionCode || data?.myFaction || "—";
-    const dayKey = data?.dayKey || "—";
-    node.textContent = `Faction: ${faction} • Reset in ${fmtReset(data?.secondsToReset)} • Day ${dayKey}`;
+    const faction = data?.myFactionCode || data?.myFaction || "-";
+    const dayKey = data?.dayKey || "-";
+    node.textContent = `Faction ${faction} - Reset in ${fmtReset(data?.secondsToReset)} - Day ${dayKey}`;
   }
 
   function renderLoading(msg) {
-    setStatus(msg || "Loading Broken Contracts…");
+    setStatus(msg || "Loading Broken Contracts...");
     setMeta(null);
     const root = el(ROOT_ID);
-    if (root) root.innerHTML = `<div style="opacity:.78;">${esc(msg || "Loading Broken Contracts…")}</div>`;
+    if (root) root.innerHTML = `<div class="bc-empty">${esc(msg || "Loading Broken Contracts...")}</div>`;
   }
 
   function renderError(msg) {
     setStatus("Error");
     const root = el(ROOT_ID);
-    if (root) root.innerHTML = `<div style="color:#ffb4b4;">${esc(msg || "Failed to load Broken Contracts")}</div>`;
+    if (root) root.innerHTML = `<div class="bc-empty" style="color:#ffb4b4;">${esc(msg || "Failed to load Broken Contracts")}</div>`;
   }
 
   function renderState(data) {
@@ -86,50 +129,60 @@
     if (!root) return;
 
     if (!contracts.length) {
-      root.innerHTML = `<div style="opacity:.78;">No Broken Contracts available.</div>`;
+      root.innerHTML = `<div class="bc-empty">No Broken Contracts available.</div>`;
       return;
     }
 
     root.innerHTML = contracts.map((contract) => {
+      const type = String(contract?.type || "generic").toLowerCase();
       const progress = Number(contract?.myFactionProgress || 0);
       const goal = Math.max(1, Number(contract?.goal || 0));
-      const pct = Math.max(0, Math.min(100, Math.round((progress / goal) * 100)));
-      const claimable = !!contract?.claimable;
-      const claimed = Number(contract?.myClaimedAt || 0) > 0;
-      const pending = !!contract?.claimPending;
-      const btnLabel = claimed ? "Claimed" : pending ? "Pending" : claimable ? "Claim Reward" : "Locked";
-      const btnDisabled = claimed || pending || !claimable;
+      const progressPct = Math.max(0, Math.min(100, Math.round((progress / goal) * 100)));
+      const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
+      const myContribution = Number(contract?.myContribution || 0);
+      const contributionPct = Math.max(0, Math.min(100, Math.round((myContribution / minContribution) * 100)));
+      const rewards = rewardChips(contract?.reward);
 
       return `
-        <div class="card" style="padding:12px;display:grid;gap:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-            <div>
-              <div style="font-weight:700;">${esc(contract?.title || contract?.id || "Contract")}</div>
-              <div style="opacity:.82;font-size:12px;margin-top:4px;">${esc(contract?.desc || "")}</div>
+        <div class="bc-card type-${esc(type)}">
+          <div class="bc-card-head">
+            <div class="bc-card-copy">
+              <div class="bc-card-title">${esc(contract?.title || contract?.id || "Contract")}</div>
+              <div class="bc-card-desc" title="${esc(contract?.desc || "")}">${esc(contract?.desc || "")}</div>
             </div>
-            <div style="opacity:.76;font-size:12px;text-align:right;">
-              <div>${esc(contract?.type || "")}</div>
-              <div>${progress}/${goal}</div>
+            ${renderBadgeOrButton(contract)}
+          </div>
+
+          <div class="bc-section">
+            <div class="bc-row">
+              <span class="bc-row-label">Faction progress</span>
+              <span class="bc-row-value">${progress}/${goal}</span>
+            </div>
+            <div class="bc-bar">
+              <div class="bc-fill" style="width:${progressPct}%;"></div>
             </div>
           </div>
 
-          <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#7ee787,#58a6ff);"></div>
+          <div class="bc-section">
+            <div class="bc-row">
+              <span class="bc-row-label">My contribution</span>
+              <span class="bc-row-value">${myContribution}/${minContribution}</span>
+            </div>
+            <div class="bc-bar">
+              <div class="bc-fill is-contrib" style="width:${contributionPct}%;"></div>
+            </div>
           </div>
 
-          <div style="display:grid;gap:4px;font-size:12px;opacity:.86;">
-            <div>My faction progress: ${progress}/${goal}</div>
-            <div>My contribution: ${Number(contract?.myContribution || 0)} / min ${Number(contract?.minPersonalContribution || 0)}</div>
-            <div>Reward: ${esc(fmtReward(contract?.reward))}</div>
-          </div>
-
-          <div style="display:flex;justify-content:flex-end;">
-            <button
-              class="btn${claimable ? ' primary' : ''}"
-              type="button"
-              data-bc-claim="${esc(contract?.id || "")}"
-              ${btnDisabled ? "disabled" : ""}
-            >${esc(btnLabel)}</button>
+          <div class="bc-rewards">
+            ${rewards.length
+              ? rewards.map((reward) => `
+                <span class="bc-chip">
+                  <span class="bc-chip-key">${esc(reward.label)}</span>
+                  <span class="bc-chip-val">+${esc(reward.value)}</span>
+                </span>
+              `).join("")
+              : `<span class="bc-chip"><span class="bc-chip-key">Reward</span><span class="bc-chip-val">None</span></span>`
+            }
           </div>
         </div>
       `;
@@ -167,7 +220,7 @@
   }
 
   async function loadState() {
-    renderLoading("Loading Broken Contracts…");
+    renderLoading("Loading Broken Contracts...");
     try {
       const out = await api("/webapp/brokencontracts/state", { includeStandings: false });
       const data = out?.data || out;
@@ -181,7 +234,7 @@
 
   async function claim(contractId) {
     if (!contractId) return false;
-    setStatus(`Claiming ${contractId}…`);
+    setStatus(`Claiming ${contractId}...`);
     try {
       const out = await api("/webapp/brokencontracts/claim", {
         contractId,
