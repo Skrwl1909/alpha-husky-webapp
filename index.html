@@ -3985,9 +3985,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   .bc-list{
     display:grid;
     gap:14px;
-    overflow:auto;
+    overflow-y:auto;
+    overflow-x:hidden;
     min-height:0;
     padding-right:2px;
+    padding-bottom:110px;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
   }
 
   .bc-empty{
@@ -4090,6 +4094,12 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     color:#f6c65c;
     border-color:rgba(246,198,92,.24);
     background:rgba(246,198,92,.09);
+  }
+  
+  .bc-badge.is-progress{
+    color:#8fd3ff;
+    border-color:rgba(63,177,255,.28);
+    background:rgba(63,177,255,.16);
   }
 
   .bc-badge.is-locked{
