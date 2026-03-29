@@ -160,9 +160,11 @@
       const progress = Number(contract?.myFactionProgress || 0);
       const goal = Math.max(1, Number(contract?.goal || 0));
       const progressPct = Math.max(0, Math.min(100, Math.round((progress / goal) * 100)));
+      const progressFillClass = progressPct > 0 ? "bc-fill has-progress" : "bc-fill";
       const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
       const myContribution = Number(contract?.myContribution || 0);
       const contributionPct = Math.max(0, Math.min(100, Math.round((myContribution / minContribution) * 100)));
+      const contributionFillClass = contributionPct > 0 ? "bc-fill is-contrib has-progress" : "bc-fill is-contrib";
       const rewards = rewardChips(contract?.reward);
 
       return `
@@ -178,20 +180,20 @@
           <div class="bc-section">
             <div class="bc-row">
               <span class="bc-row-label">Faction progress</span>
-              <span class="bc-row-value">${progress}/${goal}</span>
+              <span class="bc-row-value">${progress}/${goal}<span class="bc-row-percent">${progressPct}%</span></span>
             </div>
             <div class="bc-bar">
-              <div class="bc-fill" style="width:${progressPct}%;"></div>
+              <div class="${progressFillClass}" style="width:${progressPct}%;"></div>
             </div>
           </div>
 
           <div class="bc-section">
             <div class="bc-row">
               <span class="bc-row-label">My contribution</span>
-              <span class="bc-row-value">${myContribution}/${minContribution}</span>
+              <span class="bc-row-value">${myContribution}/${minContribution}<span class="bc-row-percent">${contributionPct}%</span></span>
             </div>
             <div class="bc-bar">
-              <div class="bc-fill is-contrib" style="width:${contributionPct}%;"></div>
+              <div class="${contributionFillClass}" style="width:${contributionPct}%;"></div>
             </div>
           </div>
 

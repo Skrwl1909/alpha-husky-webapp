@@ -33,6 +33,23 @@
   };
 
   const CSS_ID = "ah-map-level1-css";
+  const NODE_ID_ALIASES = {
+    bloodmoon_tower: "blood_moon_tower",
+    edge_of_the_chain: "edge_of_chain",
+    broken_contracts_hub: "broken_contracts",
+    alpha_network_hq_shop: "alpha_network_hq",
+    moonlab_fortress: "moon_lab",
+  };
+  const STRATEGIC_NODE_IDS = new Set(["alpha_network_hq", "blood_moon_tower", "edge_of_chain"]);
+  const HIGH_VALUE_NODE_IDS = new Set(["phantom_nodes", "broken_contracts"]);
+  const LEGACY_NODE_IDS = new Set(["abandoned_wallets", "moon_lab", "testnet_wastes_dojo"]);
+  const RIVALRY_NODE_IDS = new Set([
+    "alpha_network_hq",
+    "blood_moon_tower",
+    "edge_of_chain",
+    "phantom_nodes",
+    "broken_contracts",
+  ]);
 
   function ensureCss() {
     if (document.getElementById(CSS_ID)) return;
@@ -85,6 +102,100 @@
 .map-pin .pin-icon, .map-pin > img{
   position:relative;
   z-index:2;
+}
+
+.map-pin.family-legacy{
+  z-index:1;
+}
+.map-pin.family-legacy .pin-ring{
+  inset:-5px;
+  border-color:rgba(255,255,255,.10);
+  box-shadow:none;
+  opacity:.42;
+}
+.map-pin.family-legacy .pin-icon,
+.map-pin.family-legacy > img{
+  transform:scale(.92);
+  opacity:.82;
+  filter:
+    brightness(.88)
+    saturate(.82)
+    drop-shadow(0 6px 10px rgba(0,0,0,.24));
+}
+
+.map-pin.family-rivalry{
+  z-index:4;
+}
+.map-pin.family-rivalry .pin-ring{
+  inset:-9px;
+  border-width:2px;
+  opacity:.94;
+}
+.map-pin.family-rivalry.is-neutral .pin-ring{
+  border-color:rgba(184,208,255,.30);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 0 14px rgba(120,168,255,.10);
+}
+.map-pin.family-rivalry .pin-icon,
+.map-pin.family-rivalry > img{
+  transform:scale(1.05);
+  filter:
+    brightness(1.02)
+    saturate(1.06)
+    drop-shadow(0 8px 14px rgba(0,0,0,.28));
+}
+
+.map-pin.tier-low .chip{
+  border-color:rgba(255,255,255,.08);
+}
+.map-pin.tier-high .pin-ring{
+  inset:-10px;
+}
+.map-pin.tier-high.is-neutral .pin-ring{
+  border-color:rgba(104,188,255,.34);
+  box-shadow:
+    0 0 0 1px rgba(104,188,255,.10),
+    0 0 16px rgba(104,188,255,.14);
+}
+.map-pin.tier-high .pin-icon,
+.map-pin.tier-high > img{
+  transform:scale(1.08);
+}
+.map-pin.tier-strategic{
+  z-index:7;
+}
+.map-pin.tier-strategic .pin-ring{
+  inset:-12px;
+  border-width:2px;
+}
+.map-pin.tier-strategic.is-neutral .pin-ring{
+  border-color:rgba(255,196,86,.44);
+  box-shadow:
+    0 0 0 1px rgba(255,196,86,.12),
+    0 0 18px rgba(255,184,56,.18);
+}
+.map-pin.tier-strategic .pin-icon,
+.map-pin.tier-strategic > img{
+  transform:scale(1.14);
+  filter:
+    brightness(1.06)
+    saturate(1.10)
+    drop-shadow(0 10px 18px rgba(0,0,0,.30));
+}
+
+.map-pin.type-contracts.is-neutral .pin-ring{
+  border-color:rgba(88,166,255,.36);
+  box-shadow:
+    0 0 0 1px rgba(88,166,255,.10),
+    0 0 16px rgba(88,166,255,.12);
+}
+.map-pin.type-contracts .pin-icon,
+.map-pin.type-contracts > img{
+  filter:
+    brightness(1.03)
+    saturate(1.10)
+    drop-shadow(0 0 10px rgba(88,166,255,.20));
 }
 
 /* pressure badges */
@@ -461,7 +572,9 @@
       "is-contested", "is-controlled",
       "siege-forming", "siege-running", "siege-cooldown",
       "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-generic"
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
+      "family-rivalry", "family-legacy",
+      "tier-low", "tier-high", "tier-strategic"
     );
   }
 
@@ -508,6 +621,49 @@
       pinEl?.getAttribute?.("data-building-id") ||
       ""
     );
+  }
+
+  function _normalizeNodeId(raw) {
+    const key = String(raw || "").trim().toLowerCase();
+    if (!key) return "";
+    return NODE_ID_ALIASES[key] || key;
+  }
+
+  function _resolveNodeId(info) {
+    const src = (info && typeof info === "object") ? info : {};
+    return _normalizeNodeId(
+      src?.nodeId ||
+      src?.buildingId ||
+      src?.id ||
+      src?.building ||
+      ""
+    );
+  }
+
+  function _fallbackValueTierForNodeId(nodeId) {
+    const key = _normalizeNodeId(nodeId);
+    if (STRATEGIC_NODE_IDS.has(key)) return "STRATEGIC";
+    if (HIGH_VALUE_NODE_IDS.has(key)) return "HIGH_VALUE";
+    return "LOW_VALUE";
+  }
+
+  function _nodeFamilyFor(id, type, valueTier) {
+    const key = _normalizeNodeId(id);
+    const tier = String(valueTier || "").trim().toUpperCase();
+    if (key === "oracle" || key === "oracle_void_doorway" || type === "oracle") return "";
+    if (RIVALRY_NODE_IDS.has(key) || type === "hq" || type === "siege" || type === "bloodmoon" || type === "phantom" || type === "contracts") {
+      return "rivalry";
+    }
+    if (LEGACY_NODE_IDS.has(key)) return "legacy";
+    if (tier === "STRATEGIC" || tier === "HIGH_VALUE") return "rivalry";
+    return "legacy";
+  }
+
+  function _valueTierClass(valueTier) {
+    const key = String(valueTier || "").trim().toUpperCase();
+    if (key === "STRATEGIC") return "tier-strategic";
+    if (key === "HIGH_VALUE") return "tier-high";
+    return "tier-low";
   }
 
   function _isLiveFactionNodeFromNode(node) {
@@ -897,7 +1053,8 @@
   function _extractNodeUx(info, viewerFaction) {
     const src = (info && typeof info === "object") ? info : {};
     const displayStatus = _normalizeDisplayStatus(src?.displayStatus) || _fallbackDisplayStatus(src);
-    const valueTier = String(src?.valueTier || "").trim().toUpperCase() || "LOW_VALUE";
+    const nodeId = _resolveNodeId(src);
+    const valueTier = String(src?.valueTier || _fallbackValueTierForNodeId(nodeId)).trim().toUpperCase() || "LOW_VALUE";
     const ownerFaction = _nodeOwnerFaction(src);
     const viewer = _normFactionKey(src?.youFaction || viewerFaction || _getViewerFaction());
 
@@ -915,6 +1072,7 @@
       statusText: _statusText(displayStatus),
       actionHint,
       urgency,
+      nodeId,
       valueTier,
       valueMultiplier: Number(src?.valueMultiplier || 0) || _valueMultiplierForTier(valueTier),
       valueLabel: _valueTierLabel(valueTier),
@@ -927,6 +1085,7 @@
 
   function _pressureBadgesHtml(pressureMeta, nodeUx) {
     const ux = nodeUx || {};
+    if (_normalizeDisplayStatus(ux.displayStatus) === "CALM") return "";
     const text = String(ux.displayLabel || "").trim();
     const cls = String(ux.displayClass || "").trim();
     if (!text || !cls) return "";
@@ -1135,15 +1294,17 @@
       ...pressureMeta
     });
 
-    const id = String(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "").trim().toLowerCase();
+    const id = _normalizeNodeId(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "");
     const faction = _normFactionKey(owner || "");
+    const valueTier = String(nodeUx.valueTier || _fallbackValueTierForNodeId(id)).trim().toUpperCase() || "LOW_VALUE";
 
     let type = "generic";
     if (id === "phantom_nodes") type = "phantom";
-    else if (id === "bloodmoon_tower") type = "bloodmoon";
+    else if (id === "blood_moon_tower") type = "bloodmoon";
     else if (id === "oracle" || id === "oracle_void_doorway") type = "oracle";
-    else if (id === "edge_of_the_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
+    else if (id === "edge_of_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
+    else if (id === "broken_contracts") type = "contracts";
 
     let status = "";
     if (displayStatus === "CONTESTED") status = "contested";
@@ -1152,13 +1313,18 @@
     else if (displayStatus === "SIEGE_COOLDOWN" || displayStatus === "FORTIFIED") status = "fortified";
     else if (displayStatus === "CALM" && faction) status = "active";
 
-    const chip = String(nodeUx.displayLabel || _statusChipLabel(displayStatus) || "");
+    const chip = displayStatus === "CALM"
+      ? ""
+      : String(nodeUx.displayLabel || _statusChipLabel(displayStatus) || "");
 
     return {
       faction,
       type,
       status,
-      chip
+      chip,
+      family: _nodeFamilyFor(id, type, valueTier),
+      valueTier,
+      tierClass: _valueTierClass(valueTier)
     };
   }
 
@@ -1170,7 +1336,9 @@
     pinEl.classList.remove(
       "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral", "is-controlled",
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-generic"
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
+      "family-rivalry", "family-legacy",
+      "tier-low", "tier-high", "tier-strategic"
     );
 
     if (m.faction) {
@@ -1183,6 +1351,8 @@
 
     if (m.status) pinEl.classList.add(`is-${m.status}`);
     if (m.type) pinEl.classList.add(`type-${m.type}`);
+    if (m.family) pinEl.classList.add(`family-${m.family}`);
+    if (m.tierClass) pinEl.classList.add(m.tierClass);
 
     const chipEl = pinEl.querySelector(".chip");
     if (!chipEl) return;
@@ -1289,12 +1459,17 @@
     _applyPinVisualState(pinEl, visualModel, { siegeMeta, pressureMeta, nodeUx });
   }
 
-  function _clearLeader(pinEl) {
+  function _clearLeader(pinEl, nodeInfo) {
     setLeader(pinEl, null, {
       contested: false,
       source: "clear",
       siegeMeta: {},
-      pressureMeta: {}
+      pressureMeta: {},
+      nodeUx: _extractNodeUx(nodeInfo || {
+        nodeId: _pinNodeId(pinEl),
+        buildingId: _pinBuildingId(pinEl),
+        name: pinEl?.dataset?.nodeName || ""
+      })
     });
   }
 
@@ -1311,12 +1486,12 @@
 
     // for live nodes do NOT trust map.json owner
     if (liveFactionNode) {
-      _clearLeader(pinEl);
+      _clearLeader(pinEl, node);
       return;
     }
 
     // non-live nodes: no leader badge at all
-    _clearLeader(pinEl);
+    _clearLeader(pinEl, node);
   }
 
   function _findLeaderInfoForPin(pinEl, leadersMap) {
@@ -1397,7 +1572,7 @@
   function getNodeUx(nodeId, infoOverride) {
     const info = (infoOverride && typeof infoOverride === "object")
       ? infoOverride
-      : _findLeaderInfoByNodeId(nodeId, _lastLeadersMap) || {};
+      : _findLeaderInfoByNodeId(nodeId, _lastLeadersMap) || { nodeId };
     return _extractNodeUx(info, _getViewerFaction());
   }
 
@@ -1421,13 +1596,21 @@
 
       // hard gate: badges only for live faction nodes
       if (!_isLiveFactionNodeFromPin(pin)) {
-        _clearLeader(pin);
+        _clearLeader(pin, {
+          nodeId: _pinNodeId(pin),
+          buildingId: _pinBuildingId(pin),
+          name: pin.dataset.nodeName || ""
+        });
         return;
       }
 
       const info = _findLeaderInfoForPin(pin, leadersMap);
       if (!info) {
-        _clearLeader(pin);
+        _clearLeader(pin, {
+          nodeId: _pinNodeId(pin),
+          buildingId: _pinBuildingId(pin),
+          name: pin.dataset.nodeName || ""
+        });
         return;
       }
 
