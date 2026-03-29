@@ -167,6 +167,9 @@ function avatarNodeHtml(data, fallback) {
   function popupColor(kind) {
     if (kind === "heal") return "#8bffb2";
     if (kind === "crit") return "#ffd86b";
+    if (kind === "dodge") return "#9fd8ff";
+    if (kind === "defeat") return "#ffb36b";
+    if (kind === "log") return "#e8edf7";
     return "#ff8f8f";
   }
 
@@ -312,6 +315,11 @@ function avatarNodeHtml(data, fallback) {
   function replayInfo(replay) {
   const left = replay?.left || {};
   const right = replay?.right || {};
+  const turns = Array.isArray(replay?.events)
+    ? replay.events
+    : Array.isArray(replay?.turns)
+    ? replay.turns
+    : [];
 
   const leftHpMax = replayHpMax(left);
   const rightHpMax = replayHpMax(right);
@@ -328,7 +336,7 @@ function avatarNodeHtml(data, fallback) {
 
   return {
     fightNo: num(replay?.fightNo, num(replay?.fight_no, 0)),
-    turns: Array.isArray(replay?.turns) ? replay.turns : [],
+    turns,
     left: {
       uid: String(left.uid || ""),
       name: String(left.name || "Left"),
@@ -350,12 +358,40 @@ function avatarNodeHtml(data, fallback) {
   };
 }
 
+  function isDodgeKind(kind) {
+    const s = String(kind || "").trim().toLowerCase();
+    return s === "dodge" || s === "miss" || s === "evade";
+  }
+
+  function turnSideHpAfter(turn, side, fallback) {
+    const direct = side === "left"
+      ? pick(turn?.leftHpAfter, turn?.left_hp_after, turn?.leftHp, turn?.left_hp)
+      : pick(turn?.rightHpAfter, turn?.right_hp_after, turn?.rightHp, turn?.right_hp);
+    if (direct !== null) return num(direct, fallback);
+
+    const target = String(turn?.target || "");
+    if (target === side) {
+      return num(pick(turn?.targetHpAfter, turn?.target_hp_after), fallback);
+    }
+
+    return num(fallback, 0);
+  }
+
+  function isDefeatTurn(turn) {
+    if (!!turn?.defeat) return true;
+    const target = String(turn?.target || "");
+    if (target === "left") return turnSideHpAfter(turn, "left", 1) <= 0;
+    if (target === "right") return turnSideHpAfter(turn, "right", 1) <= 0;
+    return false;
+  }
+
   function makeTurnText(turn, info) {
     const actorSide = String(turn?.actor || "");
     const targetSide = String(turn?.target || "");
     const kind = String(turn?.kind || "hit");
     const value = num(turn?.value, 0);
     const hpAfter = num(turn?.targetHpAfter, 0);
+    const defeat = isDefeatTurn(turn);
 
     const actorName =
       actorSide === "left"
@@ -375,10 +411,12 @@ function avatarNodeHtml(data, fallback) {
     if (custom) return String(custom);
 
     if (kind === "heal") return `${actorName} healed ${targetName} for ${value}. HP now ${hpAfter}`;
+    if (isDodgeKind(kind)) return `${targetName} dodged ${actorName}.`;
+    if (kind === "crit" && defeat) return `${actorName} crit ${targetName} for ${value}. ${targetName} was defeated.`;
     if (kind === "crit") return `${actorName} crit ${targetName} for ${value}. HP now ${hpAfter}`;
     if (kind === "block") return `${actorName} blocked the attack.`;
-    if (kind === "miss") return `${actorName} missed ${targetName}.`;
     if (kind === "log") return `${actorName}: ${value}`;
+    if (defeat) return `${actorName} hit ${targetName} for ${value}. ${targetName} was defeated.`;
 
     return `${actorName} hit ${targetName} for ${value}. HP now ${hpAfter}`;
   }
@@ -939,6 +977,10 @@ setPopup(_rightPopupEl, "", "");
         const target = String(turn?.target || "");
         const value = num(turn?.value, 0);
         const kind = String(turn?.kind || "hit");
+        const dodged = isDodgeKind(kind);
+        const defeat = isDefeatTurn(turn);
+        const nextLeftHp = Math.max(0, Math.min(info.left.hpMax, turnSideHpAfter(turn, "left", _playState.leftHp)));
+        const nextRightHp = Math.max(0, Math.min(info.right.hpMax, turnSideHpAfter(turn, "right", _playState.rightHp)));
 
         _playState.currentTurn = idx;
         _playState.activeSide = actor;
@@ -947,29 +989,31 @@ setPopup(_rightPopupEl, "", "");
         _playState.rightFx = { flash: false, popupText: "", popupKind: "" };
 
         _playState.visibleTurns.push(turn);
+        _playState.leftHp = nextLeftHp;
+        _playState.rightHp = nextRightHp;
 
         if (target === "left") {
           if (kind === "heal") {
-            _playState.leftHp = Math.min(info.left.hpMax, num(turn?.targetHpAfter, _playState.leftHp + value));
             _playState.leftFx = { flash: true, popupText: `+${value}`, popupKind: "heal" };
+          } else if (dodged) {
+            _playState.leftFx = { flash: true, popupText: "DODGE", popupKind: "dodge" };
           } else {
-            _playState.leftHp = num(turn?.targetHpAfter, Math.max(0, _playState.leftHp - Math.max(0, value)));
             _playState.leftFx = {
               flash: true,
-              popupText: kind === "crit" ? `CRIT ${value}` : `-${value}`,
-              popupKind: kind === "crit" ? "crit" : "hit"
+              popupText: defeat ? (kind === "crit" ? `CRIT ${value} KO` : `-${value} KO`) : kind === "crit" ? `CRIT ${value}` : `-${value}`,
+              popupKind: defeat ? "defeat" : kind === "crit" ? "crit" : "hit"
             };
           }
         } else if (target === "right") {
           if (kind === "heal") {
-            _playState.rightHp = Math.min(info.right.hpMax, num(turn?.targetHpAfter, _playState.rightHp + value));
             _playState.rightFx = { flash: true, popupText: `+${value}`, popupKind: "heal" };
+          } else if (dodged) {
+            _playState.rightFx = { flash: true, popupText: "DODGE", popupKind: "dodge" };
           } else {
-            _playState.rightHp = num(turn?.targetHpAfter, Math.max(0, _playState.rightHp - Math.max(0, value)));
             _playState.rightFx = {
               flash: true,
-              popupText: kind === "crit" ? `CRIT ${value}` : `-${value}`,
-              popupKind: kind === "crit" ? "crit" : "hit"
+              popupText: defeat ? (kind === "crit" ? `CRIT ${value} KO` : `-${value} KO`) : kind === "crit" ? `CRIT ${value}` : `-${value}`,
+              popupKind: defeat ? "defeat" : kind === "crit" ? "crit" : "hit"
             };
           }
         }
