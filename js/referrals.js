@@ -508,34 +508,43 @@
   }
 
   function lockScroll(lock) {
-    document.body.style.overflow = lock ? "hidden" : "";
-    document.body.style.touchAction = lock ? "none" : "";
+  document.body.style.overflow = lock ? "hidden" : "";
+  document.body.style.touchAction = lock ? "none" : "";
+}
+
+function cleanupReferralDom() {
+  document.querySelectorAll(".ah-ref-backdrop").forEach((n) => n.remove());
+
+  document.body.style.overflow = "";
+  document.body.style.touchAction = "";
+
+  document.body.classList.remove("referral-open", "modal-open", "sheet-open");
+  document.documentElement.classList.remove("referral-open", "modal-open", "sheet-open");
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Copied.");
+    return;
+  } catch (_) {}
+
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+
+  try {
+    document.execCommand("copy");
+    toast("Copied.");
+  } catch (e) {
+    toast("Copy failed.");
   }
 
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("Copied.");
-      return;
-    } catch (_) {}
-
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-
-    try {
-      document.execCommand("copy");
-      toast("Copied.");
-    } catch (e) {
-      toast("Copy failed.");
-    }
-
-    ta.remove();
-  }
-
+  ta.remove();
+}
   function shareLink(url, text) {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
       url
