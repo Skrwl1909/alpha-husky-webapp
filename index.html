@@ -3985,13 +3985,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   .bc-list{
     display:grid;
     gap:14px;
-    overflow-y:auto;
-    overflow-x:hidden;
+    overflow:auto;
     min-height:0;
     padding-right:2px;
-    padding-bottom:110px;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior:contain;
   }
 
   .bc-empty{
@@ -4095,12 +4091,6 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     border-color:rgba(246,198,92,.24);
     background:rgba(246,198,92,.09);
   }
-  
-  .bc-badge.is-progress{
-    color:#8fd3ff;
-    border-color:rgba(63,177,255,.28);
-    background:rgba(63,177,255,.16);
-  }
 
   .bc-badge.is-locked{
     color:#b8c0cb;
@@ -4129,16 +4119,32 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   }
 
   .bc-row-value{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
     font-weight:700;
     opacity:.94;
     white-space:nowrap;
   }
 
+  .bc-row-percent{
+    font-size:11px;
+    font-weight:600;
+    opacity:.7;
+  }
+
   .bc-bar{
-    height:8px;
+    position:relative;
+    height:10px;
     border-radius:999px;
     overflow:hidden;
-    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.10);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)),
+      rgba(4,7,12,.74);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,.40),
+      0 1px 0 rgba(255,255,255,.03);
   }
 
   .bc-fill{
@@ -4146,11 +4152,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     width:0%;
     border-radius:999px;
     background:linear-gradient(90deg, var(--bc-accent), rgba(255,255,255,.92));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.24),
+      0 0 12px rgba(255,255,255,.08);
+  }
+
+  .bc-fill.has-progress{
+    min-width:12px;
   }
 
   .bc-fill.is-contrib{
-    background:linear-gradient(90deg, rgba(255,255,255,.22), var(--bc-accent));
-    opacity:.86;
+    background:linear-gradient(90deg, rgba(255,255,255,.18), var(--bc-accent));
+    opacity:.92;
   }
 
   .bc-rewards{
@@ -4320,13 +4333,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   document.head.appendChild(s);
 })(window.WEBAPP_VER);
 </script>
-  <script>
+<script>
 (function(v){
   var s = document.createElement('script');
   s.src = 'js/map.js?v=' + encodeURIComponent(v || 'dev');
   s.async = false;
   s.onload = function(){
-    try { window.AHMap?.init?.(); } catch(e){}
+    window.__mapScriptLoaded = true;
+    try {
+      window.AHMap?.init?.();
+      window.__mapInited = true;
+    } catch(e){}
   };
   document.head.appendChild(s);
 })(window.WEBAPP_VER);
@@ -4746,6 +4763,55 @@ try{
 
         function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
+function perfNow() {
+  try { return window.performance?.now?.() || Date.now(); } catch (_) { return Date.now(); }
+}
+
+function perfEnabled() {
+  try {
+    return !!window.DBG || localStorage.getItem("ah_perf") === "1" || sessionStorage.getItem("ah_perf") === "1";
+  } catch (_) {
+    return !!window.DBG;
+  }
+}
+
+function perfShouldLogApi(path) {
+  const p = String(path || "");
+  return p === "/webapp/state" ||
+         p === "/webapp/profile" ||
+         p === "/webapp/map/leaders" ||
+         p === "/webapp/faction/hq/state" ||
+         p === "/webapp/oracle/state";
+}
+
+function perfLog(label, startedAt, extra) {
+  if (!perfEnabled()) return;
+  const ms = Math.round((perfNow() - startedAt) * 10) / 10;
+  try {
+    if (extra && Object.keys(extra).length) console.info("[AH perf]", label, ms + "ms", extra);
+    else console.info("[AH perf]", label, ms + "ms");
+  } catch (_) {}
+}
+
+window.__ahPerf = window.__ahPerf || {
+  enabled: perfEnabled,
+  now: perfNow,
+  log: perfLog,
+  shouldApiLog: perfShouldLogApi
+};
+
+window.waitForApiPostReady = window.waitForApiPostReady || function(timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    const t0 = Date.now();
+    (function tick() {
+      const fn = window.apiPost || window.S?.apiPost || window.AH?.apiPost;
+      if (typeof fn === "function") return resolve(fn);
+      if (Date.now() - t0 > timeoutMs) return reject(new Error("apiPost not ready"));
+      setTimeout(tick, 50);
+    })();
+  });
+};
+
 async function getInitDataSafe(timeoutMs = 800) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
@@ -4756,7 +4822,7 @@ async function getInitDataSafe(timeoutMs = 800) {
   return window.Telegram?.WebApp?.initData || "";
 }
 
-async function apiPost(path, payload){
+async function apiPostRaw(path, payload){
   const init_data = await getInitDataSafe();
   const headers = { "Content-Type": "application/json" };
   if (init_data) headers.Authorization = `Bearer ${init_data}`;
@@ -4771,6 +4837,25 @@ async function apiPost(path, payload){
   const data = await res.json().catch(()=> ({}));
   if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
   return data;
+}
+
+async function apiPost(path, payload) {
+  const perfT0 = perfNow();
+  let ok = false;
+  let status = 0;
+  try {
+    const out = await apiPostRaw(path, payload);
+    ok = !!(out && out.ok !== false);
+    status = ok ? 200 : 0;
+    return out;
+  } catch (err) {
+    status = Number(err?.status || 0);
+    throw err;
+  } finally {
+    if (window.__ahPerf?.shouldApiLog?.(path)) {
+      window.__ahPerf.log("api " + String(path || ""), perfT0, { ok, status });
+    }
+  }
 }
 
 window.S = window.S || {};
@@ -5315,6 +5400,7 @@ function setTopTag(tagKey, baseText="PACK"){
       }
 
 async function loadProfile() {
+  const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
@@ -5391,6 +5477,8 @@ hydrateFactionFromPayload({ profile: p, ...out });
 
   } catch (e) {
     console.warn("profile load failed", e);
+  } finally {
+    window.__ahPerf?.log?.("loadProfile", perfT0);
   }
 }
 window.loadProfile = loadProfile;
@@ -5531,6 +5619,7 @@ window.goHome = function goHome() {
 };
 
 async function loadPlayerState() {
+  const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
     const state = await apiPost("/webapp/state");
     PLAYER_STATE = state;
@@ -5568,7 +5657,12 @@ async function loadPlayerState() {
 
   } catch (e) {
     console.warn("state load failed", e);
+  } finally {
+    window.__ahPerf?.log?.("loadPlayerState", perfT0, { mapOpen: mapBack.style.display === "flex" });
   }
+}
+async function loadPlayerStateLogged() {
+  return loadPlayerState();
 }
 window.loadPlayerState = loadPlayerState; // ✅ expose globally for goHome()
 
@@ -6591,15 +6685,17 @@ function showSection(name){
 }
 
 loadPlayerState();
-loadProfile();
 if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
 
-document.getElementById('quests-launcher')?.addEventListener('click', () => {
-  window.Quests?.open?.();
-  // ✅ track mission board container
-  try { document.getElementById('qBack').style.display='flex'; } catch(_) {}
-  navOpen("qBack");
-});
+if (!window.__ahQuestsLauncherBound) {
+  window.__ahQuestsLauncherBound = true;
+  document.getElementById('quests-launcher')?.addEventListener('click', () => {
+    window.Quests?.open?.();
+    // ✅ track mission board container
+    try { document.getElementById('qBack').style.display='flex'; } catch(_) {}
+    navOpen("qBack");
+  });
+}
 
 document.getElementById('qClose')?.addEventListener('click', () => {
   document.getElementById('qBack').style.display='none';
@@ -6658,14 +6754,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       }
     });
 
-    // Launcher otwiera ZAWSZE nowy Mission Board
-    document.getElementById('quests-launcher')?.addEventListener('click', () => {
-      if (window.Quests?.open) {
-        window.Quests.open();
-      } else {
-        console.error("Quests.js nie załadowany!");
-      }
-    });
+    // Launcher is already wired during main boot.
   </script>
 
   <!-- BOOT AUTH (MUSI BYĆ PRZED WSZYSTKIMI INITAMI MODUŁÓW) -->
@@ -6699,6 +6788,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   // SINGLE source of truth apiPost
   window.apiPost = window.apiPost || (async (path, data) => {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const init_data = await window.getInitDataSafe(1200);
 
     if (!init_data || init_data.length < 20) {
@@ -6707,22 +6797,31 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     }
 
     const url = (window.API_BASE || "") + path;
+    let status = 0;
+    let ok = false;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${init_data}`
+        },
+        body: JSON.stringify({ ...(data || {}), init_data }) // init_data LAST
+      });
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${init_data}`
-      },
-      body: JSON.stringify({ ...(data || {}), init_data }) // init_data LAST
-    });
+      status = Number(res.status || 0);
+      const txt = await res.text();
+      let json = null;
+      try { json = txt ? JSON.parse(txt) : null; } catch(_) { json = { ok:false, raw: txt }; }
 
-    const txt = await res.text();
-    let json = null;
-    try { json = txt ? JSON.parse(txt) : null; } catch(_) { json = { ok:false, raw: txt }; }
-
-    if (!res.ok) console.warn("[apiPost] HTTP", res.status, path, json, { initDataLen: init_data.length });
-    return json;
+      ok = !!res.ok && !!(json && json.ok !== false);
+      if (!res.ok) console.warn("[apiPost] HTTP", res.status, path, json, { initDataLen: init_data.length });
+      return json;
+    } finally {
+      if (window.__ahPerf?.shouldApiLog?.(path)) {
+        window.__ahPerf.log("api " + String(path || ""), perfT0, { ok, status });
+      }
+    }
   });
 
   console.log("[BOOT] initLen=", cur.length, "lastLen=", (window.__AH_INIT_DATA_LAST||"").length, "uid=", tg?.initDataUnsafe?.user?.id);
@@ -6817,30 +6916,21 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   const v = String(window.WEBAPP_VER || "stats");
   const s = document.createElement("script");
-  s.src = "/js/stats.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  function waitApiPost(cb){
-    const t0 = Date.now();
-    (function tick(){
-      if (typeof window.apiPost === "function") return cb();
-      if (Date.now() - t0 > 6000) return console.warn("[Stats] apiPost not ready");
-      setTimeout(tick, 50);
-    })();
-  }
+  s.src = "/js/stats.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
     console.log("[Stats] script loaded:", s.src);
-    waitApiPost(() => {
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
         if (!window.__statsInited && window.Stats?.init) {
-          window.Stats.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.Stats.init({ tg, apiPost, dbg: !!window.DBG });
           window.__statsInited = true;
           console.log("✅ Stats initialized");
         }
       } catch (e) {
         console.warn("❌ Stats.init failed", e);
       }
-    });
+    }).catch(() => console.warn("[Stats] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[Stats] FAILED to load:", s.src);
@@ -6855,30 +6945,21 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "factions");
   const s = document.createElement("script");
-  s.src = "/js/factions.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  function waitApiPost(cb){
-    const t0 = Date.now();
-    (function tick(){
-      if (typeof window.apiPost === "function") return cb();
-      if (Date.now() - t0 > 6000) return console.warn("[Factions] apiPost not ready");
-      setTimeout(tick, 50);
-    })();
-  }
+  s.src = "/js/factions.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
     console.log("[Factions] script loaded:", s.src);
-    waitApiPost(() => {
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
         if (!window.__factionsInited && window.Factions?.init) {
-          window.Factions.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.Factions.init({ tg, apiPost, dbg: !!window.DBG });
           window.__factionsInited = true;
           console.log("✅ Factions module initialized");
         }
       } catch (e) {
         console.warn("❌ Factions.init failed", e);
       }
-    });
+    }).catch(() => console.warn("[Factions] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[Factions] FAILED to load:", s.src);
@@ -6891,30 +6972,21 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "oracle");
   const s = document.createElement("script");
-  s.src = "/js/oracle.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  function waitApiPost(cb){
-    const t0 = Date.now();
-    (function tick(){
-      if (typeof window.apiPost === "function") return cb();
-      if (Date.now() - t0 > 6000) return console.warn("[Oracle] apiPost not ready");
-      setTimeout(tick, 50);
-    })();
-  }
+  s.src = "/js/oracle.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
     console.log("[Oracle] script loaded:", s.src);
-    waitApiPost(() => {
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
         if (!window.__oracleInited && window.Oracle?.init) {
-          window.Oracle.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+          window.Oracle.init({ tg, apiPost, dbg: !!window.DBG });
           window.__oracleInited = true;
           console.log("✅ Oracle module initialized");
         }
       } catch (e) {
         console.warn("❌ Oracle.init failed", e);
       }
-    });
+    }).catch(() => console.warn("[Oracle] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[Oracle] FAILED to load:", s.src);
@@ -6927,25 +6999,16 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "bloodmoon");
   const s = document.createElement("script");
-  s.src = "/js/bloodmoon.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  function waitApiPost(cb){
-    const t0 = Date.now();
-    (function tick(){
-      if (typeof window.apiPost === "function") return cb();
-      if (Date.now() - t0 > 6000) return console.warn("[BloodMoon] apiPost not ready");
-      setTimeout(tick, 50);
-    })();
-  }
+  s.src = "/js/bloodmoon.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
     console.log("[BloodMoon] script loaded:", s.src);
-    waitApiPost(() => {
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
         if (!window.__bloodMoonInited && window.BloodMoon?.init) {
           window.BloodMoon.init({
             tg,
-            apiPost: window.apiPost,
+            apiPost,
             dbg: !!window.DBG
           });
           window.__bloodMoonInited = true;
@@ -6954,7 +7017,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       } catch (e) {
         console.warn("❌ BloodMoon.init failed", e);
       }
-    });
+    }).catch(() => console.warn("[BloodMoon] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[BloodMoon] FAILED to load:", s.src);
@@ -6969,18 +7032,20 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   const v = String(window.WEBAPP_VER || "hq");
   const s = document.createElement("script");
-  s.src = "/js/faction_hq.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
+  s.src = "/js/faction_hq.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
-    try {
-      if (!window.__factionHQInited && window.FactionHQ?.init) {
-        window.FactionHQ.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
-        window.__factionHQInited = true;
-        console.log("✅ FactionHQ initialized");
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
+      try {
+        if (!window.__factionHQInited && window.FactionHQ?.init) {
+          window.FactionHQ.init({ tg, apiPost, dbg: !!window.DBG });
+          window.__factionHQInited = true;
+          console.log("✅ FactionHQ initialized");
+        }
+      } catch (e) {
+        console.warn("❌ FactionHQ.init failed", e);
       }
-    } catch (e) {
-      console.warn("❌ FactionHQ.init failed", e);
-    }
+    }).catch(() => console.warn("[FactionHQ] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[FactionHQ] FAILED to load:", s.src);
@@ -6994,16 +7059,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "2026-03-03b");
   const s = document.createElement("script");
-  s.src = "/js/influence.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  function waitApiPost(cb){
-    const t0 = Date.now();
-    (function tick(){
-      if (typeof window.apiPost === "function") return cb();
-      if (Date.now() - t0 > 6000) return console.warn("[Influence] apiPost not ready");
-      setTimeout(tick, 50);
-    })();
-  }
+  s.src = "/js/influence.js?v=" + encodeURIComponent(v);
 
   s.onload = () => {
     console.log("[Influence] script loaded:", s.src);
@@ -7014,14 +7070,14 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       return;
     }
 
-    waitApiPost(() => {
+    window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
-        window.Influence.init({ tg, apiPost: window.apiPost, dbg: !!window.DBG });
+        window.Influence.init({ tg, apiPost, dbg: !!window.DBG });
         console.log("✅ [Influence] init OK");
       } catch (e) {
         console.warn("❌ [Influence] init failed", e);
       }
-    });
+    }).catch(() => console.warn("[Influence] apiPost not ready"));
   };
 
   s.onerror = () => console.warn("[Influence] FAILED to load:", s.src);
@@ -7032,15 +7088,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <!-- MAP (loader + init, cache-bust) -->
 <script>
 (function loadMap(){
-  const v = String(window.WEBAPP_VER || "map");
-  const s = document.createElement("script");
-  s.src = "/js/map.js?v=" + encodeURIComponent(v) + "&ts=" + Date.now();
-
-  s.onload = () => {
-    console.log("[Map] script loaded:", s.src);
-
+  function initMapModule() {
     try {
-      // compat: jeśli map.js eksportuje AHMap, aliasujemy do Map
       if (!window.Map && window.AHMap) window.Map = window.AHMap;
       if (!window.AHMap && window.Map) window.AHMap = window.Map;
 
@@ -7055,11 +7104,47 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         }
       }
 
-      // force a leaders refresh so the UI visibly changes
       try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
     } catch (e) {
       console.warn("❌ Map init failed", e);
     }
+  }
+
+  if (window.AHMap?.init || window.Map?.init) {
+    initMapModule();
+    return;
+  }
+
+  const existing = Array.from(document.scripts || []).some((script) => {
+    const src = String(script.src || "");
+    return src.includes("/js/map.js") || src.includes("js/map.js");
+  });
+
+  if (existing || window.__mapScriptLoaded) {
+    let tries = 0;
+    const waitForExisting = setInterval(() => {
+      tries += 1;
+      if (window.AHMap?.init || window.Map?.init) {
+        clearInterval(waitForExisting);
+        initMapModule();
+        return;
+      }
+      if (tries > 120) {
+        clearInterval(waitForExisting);
+        console.warn("[Map] existing map.js script did not initialize in time");
+      }
+    }, 50);
+    return;
+  }
+
+  const v = String(window.WEBAPP_VER || "map");
+  const s = document.createElement("script");
+  s.src = "/js/map.js?v=" + encodeURIComponent(v);
+
+  s.onload = () => {
+    console.log("[Map] script loaded:", s.src);
+    window.__mapScriptLoaded = true;
+    initMapModule();
   };
 
   s.onerror = () => console.warn("[Map] FAILED to load:", s.src);
