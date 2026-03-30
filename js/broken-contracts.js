@@ -257,38 +257,55 @@
   }
 
   async function claim(contractId) {
-    if (!contractId) return false;
-    setStatus(`Claiming ${contractId}...`);
-    try {
-      const out = await api("/webapp/brokencontracts/claim", {
-        contractId,
-        run_id: rid("bc:claim", contractId)
-      });
-      const data = out?.state || out?.data || S.state;
-      renderState(data);
-      try { S.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-      return true;
-    } catch (err) {
-      setStatus("Claim failed");
-      try { S.tg?.showAlert?.(String(err?.message || err || "Claim failed")); } catch (_) {}
-      return false;
-    }
+  if (!contractId) return false;
+  setStatus(`Claiming ${contractId}...`);
+  try {
+    const out = await api("/webapp/brokencontracts/claim", {
+      contractId,
+      run_id: rid("bc:claim", contractId)
+    });
+    const data = out?.state || out?.data || S.state;
+    renderState(data);
+    try { S.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+    return true;
+  } catch (err) {
+    setStatus("Claim failed");
+    try { S.tg?.showAlert?.(String(err?.message || err || "Claim failed")); } catch (_) {}
+    return false;
   }
+}
 
-  function close() {
-    const back = el(MODAL_ID);
-    if (back) back.style.display = "none";
-    try { global.navClose?.(MODAL_ID); } catch (_) {}
-  }
+function close() {
+  document.body.classList.remove("bc-open");
 
-  async function open() {
-    BrokenContracts.init({ apiPost: global.S?.apiPost, tg: global.Telegram?.WebApp, dbg: global.dbg || console.debug });
-    const back = el(MODAL_ID);
-    if (back) back.style.display = "flex";
-    try { global.navOpen?.(MODAL_ID); } catch (_) {}
+  const back = el(MODAL_ID);
+  if (back) back.style.display = "none";
+
+  try { global.navClose?.(MODAL_ID); } catch (_) {}
+}
+
+async function open() {
+  BrokenContracts.init({
+    apiPost: global.S?.apiPost,
+    tg: global.Telegram?.WebApp,
+    dbg: global.dbg || console.debug
+  });
+
+  document.body.classList.add("bc-open");
+
+  const back = el(MODAL_ID);
+  if (back) back.style.display = "flex";
+
+  try { global.navOpen?.(MODAL_ID); } catch (_) {}
+
+  try {
     await loadState();
     return true;
+  } catch (err) {
+    document.body.classList.remove("bc-open");
+    throw err;
   }
+}
 
   function wire() {
     const back = el(MODAL_ID);
