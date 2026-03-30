@@ -9,6 +9,7 @@
   let _root = null;   // #factionHQRoot
 
   let _feedExpanded = false;
+  let _supportCustomExpanded = false;
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
@@ -326,6 +327,69 @@ function _contribSummaryLegacy(c) {
       kicker: "Faction circle",
       rows: `<div class="hq-contrib-empty">More member activity will surface here as the faction fills out.</div>`,
     };
+  }
+
+  function renderFactionCircle(social, myPlace, myContribution) {
+    const top = Array.isArray(social?.topContributors) ? social.topContributors.slice(0, 3) : [];
+    const notable = Array.isArray(social?.notableMembers) ? social.notableMembers.slice(0, 3) : [];
+    const topHasYou = top.some((row) => !!row?.isYou);
+    const myScore = Number(myContribution?.weeklyScore || myPlace?.weeklyScore || 0);
+    const myRank = Number(myPlace?.factionRank || 0);
+    const myName = myPlace?.name || "You";
+
+    if (top.length) {
+      const topHtml = top.map((row, idx) => `
+        <div class="hq-circle-rank-card ${row.isYou ? "is-you" : ""}" data-rank="${idx + 1}">
+          <div class="hq-circle-rank-head">
+            <span class="hq-circle-rank-pill">#${idx + 1}</span>
+            ${row.isYou ? `<span class="hq-you-pill">YOU</span>` : ``}
+          </div>
+          <div class="hq-circle-rank-name">${esc(row.name || "Member")}</div>
+          <div class="hq-circle-rank-score">${num(row.score || 0)}</div>
+          <div class="hq-circle-rank-meta">${row.rank ? `Faction ${rankLabel(row.rank)}` : "Faction contributor"}</div>
+        </div>
+      `).join("");
+
+      const currentPlayerHtml = topHasYou
+        ? `<div class="hq-circle-you-band is-top3">You are visible inside this week's Top 3.</div>`
+        : ((myRank > 0 || myScore > 0) ? `
+          <div class="hq-circle-you-band">
+            <div class="hq-circle-you-copy">
+              <div class="hq-circle-you-label">Your line in the faction</div>
+              <div class="hq-circle-you-name">${esc(myName)}</div>
+            </div>
+            <div class="hq-circle-you-stats">
+              <div class="hq-circle-you-rank">${esc(rankLabel(myRank))}</div>
+              <div class="hq-circle-you-score">${num(myScore)}</div>
+            </div>
+          </div>
+        ` : ``);
+
+      return `
+        <div class="hq-circle-topline">Top 3 this week</div>
+        <div class="hq-circle-grid">${topHtml}</div>
+        ${currentPlayerHtml}
+      `;
+    }
+
+    if (notable.length) {
+      return `
+        <div class="hq-circle-topline">Known names inside the faction</div>
+        <div class="hq-spotlight">
+          ${notable.map((row, idx) => `
+            <div class="hq-spotlight-item">
+              <div class="hq-rank-badge">${idx + 1}</div>
+              <div class="hq-spotlight-main">
+                <div class="hq-spotlight-name">${esc(row.name || "Member")}</div>
+                <div class="hq-spotlight-sub">Level ${num(row.level || 1)}</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    return `<div class="hq-contrib-empty">Faction names will surface here as weekly activity starts to build.</div>`;
   }
 
   // ---------------------------
@@ -1142,6 +1206,134 @@ function _contribSummaryLegacy(c) {
         vertical-align:middle;
       }
 
+      #factionHQRoot .hq-circle-topline{
+        margin-bottom:10px;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.45px;
+        text-transform:uppercase;
+        opacity:.72;
+      }
+
+      #factionHQRoot .hq-circle-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:9px;
+      }
+
+      #factionHQRoot .hq-circle-rank-card{
+        padding:12px;
+        border-radius:16px;
+        background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.035));
+        border:1px solid rgba(255,255,255,.10);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 8px 18px rgba(0,0,0,.14);
+      }
+
+      #factionHQRoot .hq-circle-rank-card.is-you{
+        border-color:color-mix(in srgb, var(--faction-color) 48%, rgba(255,255,255,.12));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.06),
+          0 0 0 1px color-mix(in srgb, var(--faction-color) 14%, transparent),
+          0 12px 22px rgba(0,0,0,.16);
+      }
+
+      #factionHQRoot .hq-circle-rank-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+      }
+
+      #factionHQRoot .hq-circle-rank-pill{
+        display:inline-flex;
+        align-items:center;
+        min-height:28px;
+        padding:0 10px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.12);
+      }
+
+      #factionHQRoot .hq-circle-rank-name{
+        margin-top:10px;
+        font-size:14px;
+        font-weight:900;
+      }
+
+      #factionHQRoot .hq-circle-rank-score{
+        margin-top:6px;
+        font-size:24px;
+        line-height:1;
+        font-weight:950;
+      }
+
+      #factionHQRoot .hq-circle-rank-meta{
+        margin-top:5px;
+        font-size:12px;
+        opacity:.72;
+      }
+
+      #factionHQRoot .hq-circle-you-band{
+        margin-top:12px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:11px 12px;
+        border-radius:14px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.08);
+      }
+
+      #factionHQRoot .hq-circle-you-band.is-top3{
+        justify-content:center;
+        font-size:13px;
+        font-weight:800;
+      }
+
+      #factionHQRoot .hq-circle-you-copy{
+        min-width:0;
+        flex:1;
+      }
+
+      #factionHQRoot .hq-circle-you-label{
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.38px;
+        text-transform:uppercase;
+        opacity:.7;
+      }
+
+      #factionHQRoot .hq-circle-you-name{
+        margin-top:4px;
+        font-size:13px;
+        font-weight:900;
+      }
+
+      #factionHQRoot .hq-circle-you-stats{
+        text-align:right;
+        white-space:nowrap;
+      }
+
+      #factionHQRoot .hq-circle-you-rank{
+        font-size:13px;
+        font-weight:900;
+      }
+
+      #factionHQRoot .hq-circle-you-score{
+        margin-top:3px;
+        font-size:12px;
+        opacity:.72;
+      }
+
+      @media (min-width: 560px){
+        #factionHQRoot .hq-circle-grid{
+          grid-template-columns:repeat(3, minmax(0, 1fr));
+        }
+      }
+
       #factionHQRoot .hq-progress{
         margin-top:12px;
         display:flex;
@@ -1183,6 +1375,10 @@ function _contribSummaryLegacy(c) {
         gap:10px;
       }
 
+      #factionHQRoot .hq-actions.compact{
+        gap:8px;
+      }
+
       #factionHQRoot .hq-btn{
         width:100%;
         padding:14px 14px;
@@ -1204,6 +1400,17 @@ function _contribSummaryLegacy(c) {
       }
       #factionHQRoot .hq-btn.ghost{
         background:rgba(255,255,255,.05);
+      }
+      #factionHQRoot .hq-btn.mini{
+        padding:10px 10px;
+        border-radius:12px;
+        font-size:13px;
+        font-weight:800;
+        box-shadow:none;
+      }
+      #factionHQRoot .hq-btn.subtle{
+        background:rgba(255,255,255,.04);
+        border-color:rgba(255,255,255,.08);
       }
       #factionHQRoot .hq-btn.pulse{
         animation:hqPulseBtn 1.8s ease-in-out infinite;
@@ -1227,6 +1434,47 @@ function _contribSummaryLegacy(c) {
       }
       #factionHQRoot .hq-input::placeholder{
         color:rgba(255,255,255,.45);
+      }
+
+      #factionHQRoot .hq-support-shell{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+
+      #factionHQRoot .hq-support-blurb{
+        font-size:13px;
+        line-height:1.45;
+        opacity:.84;
+      }
+
+      #factionHQRoot .hq-support-need{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+      }
+
+      #factionHQRoot .hq-support-toggle{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:34px;
+        padding:0 12px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.3px;
+        color:#fff;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.10);
+        cursor:pointer;
+      }
+
+      #factionHQRoot .hq-support-inline{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        padding-top:2px;
       }
 
       #factionHQRoot .hq-feed{
@@ -1526,6 +1774,7 @@ function _contribSummaryLegacy(c) {
   async function open() {
   ensureModal();
   _feedExpanded = false;
+  _supportCustomExpanded = false;
 
     _back.classList.add("is-open");
     document.body.classList.add("hq-open");
@@ -1908,7 +2157,6 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const bones = Number(tre.bones || 0);
     const scrap = Number(tre.scrap || 0);
     const feed = Array.isArray(d.feed) ? d.feed : [];
-    const contributors = _recentContributors(feed, 4);
     const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
     const curLevel = parseInt(d.level || 1, 10) || 1;
@@ -1928,14 +2176,13 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const snapshot = d.snapshot || {};
     const social = d.social || {};
     const meta = factionHomeMeta(fk);
-    const spotlight = renderSpotlightRows(social);
+    const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
     const highlight = snapshot.recentHighlight || {};
     const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
       ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
       : "HQ support has not started from your side yet. Treasury donations show up here as soon as you send them.";
-    const circleNote = myPlace.rankBand && myPlace.rankBand !== "Not ranked yet"
-      ? `You currently sit in the ${String(myPlace.rankBand).toLowerCase()} of current faction activity.`
-      : "Patrols, donations, and sieges will surface your standing here.";
+    const supportNeedBones = Math.max(0, needBones - bones);
+    const supportNeedScrap = Math.max(0, needScrap - scrap);
     const highlightHTML = highlight.text
       ? `<div class="hq-note"><b>Latest:</b> ${esc(highlight.text)}${highlight.ts ? ` <span class="hq-mini">(${esc(timeAgo(highlight.ts))})</span>` : ``}</div>`
       : `<div class="hq-note">${esc(snapshot.momentumSummary || "Faction movement will surface here when the world state picks up.")}</div>`;
@@ -1973,6 +2220,20 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       <div class="hq-grid two">
         <div class="hq-card">
           <div class="hq-card-title">
+            <b>Faction Circle</b>
+            <span class="hq-mini">Top 3 this week</span>
+          </div>
+
+          <div class="hq-note" style="margin-top:0;">
+            Faces carrying the faction right now, with your own line kept in view.
+          </div>
+          <div style="margin-top:12px;">
+            ${factionCircleHTML}
+          </div>
+        </div>
+
+        <div class="hq-card">
+          <div class="hq-card-title">
             <b>My Place</b>
             <span class="hq-mini">${esc(myPlace.rankBand || "Faction member")}</span>
           </div>
@@ -2000,6 +2261,21 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           </div>
 
           <div class="hq-note">${myPlace.qualified ? "Weekly reward threshold is active for you right now." : "Current standing is built from live faction activity and HQ support."}</div>
+        </div>
+
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>My Contribution</b>
+            <span class="hq-mini">${num(myContribution.activeDays || 0)} active days</span>
+          </div>
+
+          ${renderMetricRow("Weekly influence", num(myContribution.weeklyScore || 0), "Live score from patrols, donations, and siege play.")}
+          ${renderMetricRow("Patrol impact", num(myContribution.patrolScore || 0))}
+          ${renderMetricRow("Donation impact", num(myContribution.donateScore || 0))}
+          ${renderMetricRow("Siege impact", num(myContribution.siegeScore || 0))}
+          ${renderMetricRow("HQ support", `${num(myContribution.hqDonationCount || 0)} drops`, myContribution.lastDonationAt ? `Last support ${timeAgo(myContribution.lastDonationAt)}` : "")}
+
+          <div class="hq-note">${esc(contributionSupportNote)}</div>
         </div>
 
         <div class="hq-card">
@@ -2033,33 +2309,6 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
       <div class="hq-grid two">
         <div class="hq-card">
-          <div class="hq-card-title">
-            <b>My Contribution</b>
-            <span class="hq-mini">${num(myContribution.activeDays || 0)} active days</span>
-          </div>
-
-          ${renderMetricRow("Weekly influence", num(myContribution.weeklyScore || 0), "Live score from patrols, donations, and siege play.")}
-          ${renderMetricRow("Patrol impact", num(myContribution.patrolScore || 0))}
-          ${renderMetricRow("Donation impact", num(myContribution.donateScore || 0))}
-          ${renderMetricRow("Siege impact", num(myContribution.siegeScore || 0))}
-          ${renderMetricRow("HQ support", `${num(myContribution.hqDonationCount || 0)} drops`, myContribution.lastDonationAt ? `Last support ${timeAgo(myContribution.lastDonationAt)}` : "")}
-
-          <div class="hq-note">${esc(contributionSupportNote)}</div>
-        </div>
-
-        <div class="hq-card">
-          <div class="hq-card-title">
-            <b>Faction Circle</b>
-            <span class="hq-mini">${num(membersCount)} members</span>
-          </div>
-
-          <div class="hq-mini" style="margin-bottom:10px;">${esc(spotlight.kicker)}</div>
-          <div class="hq-spotlight">${spotlight.rows}</div>
-          <div class="hq-note">${esc(circleNote)}</div>
-        </div>
-      </div>
-
-      <div class="hq-card">
         <div class="hq-card-title">
           <b>HQ Status</b>
           <span class="hq-mini">Lv ${num(curLevel)} -> ${num(nextLevel)}</span>
@@ -2118,30 +2367,46 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
             </div>
           `}
         </div>
-
-        <div class="hq-divider"></div>
-
-        <div class="hq-card-title">
-          <b>Donate to Treasury</b>
-          <span class="hq-mini">keep the HQ moving</span>
         </div>
 
-        <div class="hq-mini" style="margin-bottom:12px;">
-          Shared HQ support only. Mission objectives stay in Broken Contracts.
-        </div>
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Support HQ</b>
+            <span class="hq-mini">calm, shared boosts</span>
+          </div>
 
-        <div class="hq-actions">
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 Bones</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 Bones</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 Scrap</button>
-          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 Scrap</button>
-        </div>
+          <div class="hq-support-shell">
+            <div class="hq-support-blurb">
+              Small treasury support for HQ progression. Mission objectives stay in Broken Contracts.
+            </div>
 
-        <div style="margin-top:12px;">
-          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
-          <div class="hq-actions" style="margin-top:10px;">
-            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('bones')">Custom Bones</button>
-            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('scrap')">Custom Scrap</button>
+            <div class="hq-support-need">
+              <div class="hq-chip">Need <strong>${num(supportNeedBones)}</strong> bones</div>
+              <div class="hq-chip">Need <strong>${num(supportNeedScrap)}</strong> scrap</div>
+            </div>
+
+            <div class="hq-actions compact">
+              <button class="hq-btn mini subtle" onclick="FactionHQ._donate('bones', 25)">+25 Bones</button>
+              <button class="hq-btn mini subtle" onclick="FactionHQ._donate('bones', 100)">+100 Bones</button>
+              <button class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap', 10)">+10 Scrap</button>
+              <button class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap', 50)">+50 Scrap</button>
+            </div>
+
+            <div>
+              <button class="hq-support-toggle" onclick="FactionHQ._toggleSupportCustom()">
+                ${_supportCustomExpanded ? "Hide custom support" : "Custom support"}
+              </button>
+            </div>
+
+            ${_supportCustomExpanded ? `
+              <div class="hq-support-inline">
+                <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount" />
+                <div class="hq-actions compact">
+                  <button class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('bones')">Send Bones</button>
+                  <button class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('scrap')">Send Scrap</button>
+                </div>
+              </div>
+            ` : ``}
           </div>
         </div>
       </div>
@@ -2153,28 +2418,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         </div>
 
         <div class="hq-mini" style="margin-bottom:10px;">
-          Recent treasury support and upgrade milestones.
+          Recent HQ support and upgrade moments.
         </div>
-
-        ${
-          contributors.length
-            ? `
-              <div class="hq-contrib-strip">
-                ${contributors.map((c) => `
-                  <div class="hq-contrib">
-                    <div class="hq-contrib-badge">...${esc(c.tail)}</div>
-                    <div class="hq-contrib-name">Member</div>
-                    <div class="hq-contrib-meta">${esc(_contribSummary(c))}</div>
-                  </div>
-                `).join("")}
-              </div>
-            `
-            : `
-              <div class="hq-contrib-empty">
-                No contributors yet. First donations will appear here.
-              </div>
-            `
-        }
 
         <div class="hq-feed">
           ${visibleFeed.length ? visibleFeed.map((x) => {
@@ -2233,6 +2478,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     try {
       const r = await _apiPost("/webapp/faction/hq/donate", { asset, amount, run_id });
       if (r && r.ok) {
+        _supportCustomExpanded = false;
         try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) { }
         await render();
         return;
@@ -2248,6 +2494,10 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const n = parseInt((el && el.value) || "0", 10) || 0;
     if (n <= 0) return alert("Enter amount.");
     return _donate(asset, n);
+  }
+  function _toggleSupportCustom() {
+    _supportCustomExpanded = !_supportCustomExpanded;
+    render();
   }
   function _toggleFeed() {
   _feedExpanded = !_feedExpanded;
@@ -2296,6 +2546,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     close,
     _donate,
     _donateCustom,
+    _toggleSupportCustom,
     _upgrade,
     _toggleFeed,
     applyHqBg
