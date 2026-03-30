@@ -535,40 +535,48 @@
   }
 
   function renderMetaStrip(ctx) {
-    const strip = document.getElementById("oracleMetaStrip");
-    if (!strip) return;
+  const strip = document.getElementById("oracleMetaStrip");
+  if (!strip) return;
 
-    if (!ctx) {
-      strip.innerHTML = `
+  if (!ctx) {
+    strip.innerHTML = `
+      <div class="oracle-chip-row identity">
         <div class="oracle-chip muted">No signal</div>
         <div class="oracle-chip muted">Awaiting sync</div>
-      `;
-      return;
-    }
+      </div>
+    `;
+    return;
+  }
 
-    const meta = ctx.meta || {};
-    const pulse = ctx.pulse || {};
-    const summary = pulse.summary || {};
+  const meta = ctx.meta || {};
+  const pulse = ctx.pulse || {};
+  const summary = pulse.summary || {};
 
-    const viewerFaction = meta.viewerFaction || "";
-    const viewerFactionMeta = factionMeta(viewerFaction);
-    const viewerLevel = intOr(meta.viewerLevel, 1);
+  const viewerFaction = meta.viewerFaction || "";
+  const viewerFactionMeta = factionMeta(viewerFaction);
+  const viewerLevel = intOr(meta.viewerLevel, 1);
 
-    const chips = [
-      viewerFaction
-        ? `<div class="oracle-chip faction ${viewerFactionMeta.cls}">
-             <span class="code">${viewerFactionMeta.code}</span>
-             <span>${escapeHtml(viewerFactionMeta.label)}</span>
-           </div>`
-        : `<div class="oracle-chip muted">No faction</div>`,
-      `<div class="oracle-chip">Lvl ${viewerLevel}</div>`,
-      `<div class="oracle-chip">Echoes ${intOr(meta.echoCount, 0)}</div>`,
-      `<div class="oracle-chip">Nodes ${intOr(meta.nodeCount, 0)}</div>`,
-      `<div class="oracle-chip warn">Hot ${intOr(summary.hotNodes, 0)}</div>`,
-      `<div class="oracle-chip danger">Sieges ${intOr(summary.activeSieges, 0)}</div>`,
-    ];
+  const identityChips = [
+    viewerFaction
+      ? `<div class="oracle-chip faction ${viewerFactionMeta.cls}">
+           <span class="code">${viewerFactionMeta.code}</span>
+           <span>${escapeHtml(viewerFactionMeta.label)}</span>
+         </div>`
+      : `<div class="oracle-chip muted">Unbound</div>`,
+    `<div class="oracle-chip">Lvl ${viewerLevel}</div>`,
+    `<div class="oracle-chip">Echoes ${intOr(meta.echoCount, 0)}</div>`,
+  ];
 
-    strip.innerHTML = chips.join("");
+  const worldChips = [
+    `<div class="oracle-chip">Nodes ${intOr(meta.nodeCount, 0)}</div>`,
+    `<div class="oracle-chip warn">Hot ${intOr(summary.hotNodes, 0)}</div>`,
+    `<div class="oracle-chip danger">Sieges ${intOr(summary.activeSieges, 0)}</div>`,
+  ];
+
+  strip.innerHTML = `
+    <div class="oracle-chip-row identity">${identityChips.join("")}</div>
+    <div class="oracle-chip-row world">${worldChips.join("")}</div>
+  `;
   }
 
   function renderEchoesTab(echoes, meta) {
