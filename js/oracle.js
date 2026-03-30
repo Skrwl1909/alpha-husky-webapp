@@ -2384,31 +2384,124 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         }
       }
 
-      @media (max-width: 560px){
-        .oracle-hero-title{
-          font-size:20px;
-        }
+    @media (max-width: 560px){
+  .oracle-topbar{
+    padding:14px 14px 10px;
+  }
 
-        .oracle-hero-left{
-          align-items:flex-start;
-        }
+  .oracle-title{
+    font-size:24px;
+  }
 
-        .oracle-hero-stats{
-          grid-template-columns:1fr;
-        }
+  .oracle-subtitle{
+    margin-top:6px;
+    font-size:12px;
+    line-height:1.3;
+  }
 
-        .oracle-weekly-cards{
-          grid-template-columns:1fr;
-        }
+  .oracle-hero{
+    padding:10px 14px 0;
+  }
 
-        .oracle-weekly-row{
-          align-items:flex-start;
-        }
+  .oracle-hero-card{
+    padding:12px;
+    gap:10px;
+    border-radius:18px;
+  }
 
-        .oracle-weekly-row-right{
-          min-width:84px;
-        }
-      }
+  .oracle-hero-title{
+    font-size:18px;
+    line-height:1.08;
+  }
+
+  .oracle-hero-text{
+    margin-top:5px;
+    font-size:12px;
+    line-height:1.35;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  .oracle-hero-left{
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .oracle-hero-stats{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:6px;
+  }
+
+  .oracle-hero-stat{
+    min-width:0;
+    padding:8px 6px;
+    border-radius:12px;
+  }
+
+  .oracle-hero-stat-value{
+    font-size:14px;
+  }
+
+  .oracle-hero-stat-label{
+    margin-top:2px;
+    font-size:10px;
+    line-height:1.2;
+  }
+
+  .oracle-meta-strip{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:10px 14px 4px;
+    scrollbar-width:none;
+  }
+
+  .oracle-meta-strip::-webkit-scrollbar{
+    display:none;
+  }
+
+  .oracle-chip-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:nowrap;
+    flex:0 0 auto;
+  }
+
+  .oracle-chip{
+    height:32px;
+    padding:0 11px;
+    font-size:12px;
+  }
+
+  .oracle-tabs{
+    padding:8px 14px 10px;
+    gap:6px;
+  }
+
+  .oracle-tab{
+    padding:10px 12px;
+    border-radius:12px;
+  }
+
+  .oracle-body{
+    padding:12px 14px calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .oracle-weekly-cards{
+    grid-template-columns:1fr;
+  }
+
+  .oracle-weekly-row{
+    align-items:flex-start;
+  }
+
+  .oracle-weekly-row-right{
+    min-width:84px;
+  }
+}
+       
 
       @media (max-width: 720px){
         .oracle-modal{
