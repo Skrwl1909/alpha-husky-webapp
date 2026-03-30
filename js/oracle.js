@@ -357,35 +357,151 @@
   }
 
   function render() {
-    updateTabs();
+  updateTabs();
 
-    if (!_state) {
-      els.root.innerHTML = renderSkeleton();
-      renderMetaStrip(null);
-      return;
-    }
+  if (!_state) {
+    renderHero(null);
+    els.root.innerHTML = renderSkeleton();
+    renderMetaStrip(null);
+    return;
+  }
 
-    const { liveEchoes, factionPulse, hallOfFame, meta } = _state;
+  const { liveEchoes, factionPulse, hallOfFame, meta } = _state;
 
-    renderMetaStrip({
-      meta,
-      pulse: factionPulse,
-      echoes: liveEchoes,
-    });
+  renderHero({
+    meta,
+    pulse: factionPulse,
+    echoes: liveEchoes,
+    hall: hallOfFame,
+  });
 
-    if (_activeTab === "echoes") {
-      els.root.innerHTML = renderEchoesTab(liveEchoes, meta);
-      return;
-    }
+  renderMetaStrip({
+    meta,
+    pulse: factionPulse,
+    echoes: liveEchoes,
+  });
 
-    if (_activeTab === "pulse") {
-      els.root.innerHTML = renderPulseTab(factionPulse, meta);
-      return;
-    }
+  if (_activeTab === "echoes") {
+    els.root.innerHTML = renderEchoesTab(liveEchoes, meta);
+    return;
+  }
 
-    if (_activeTab === "hall") {
-      els.root.innerHTML = renderHallTab(hallOfFame, meta);
-    }
+  if (_activeTab === "pulse") {
+    els.root.innerHTML = renderPulseTab(factionPulse, meta);
+    return;
+  }
+
+  if (_activeTab === "hall") {
+    els.root.innerHTML = renderHallTab(hallOfFame, meta);
+  }
+  }
+  function renderHero(ctx) {
+  if (!els.hero) return;
+
+  if (!ctx) {
+    els.hero.innerHTML = `
+      <div class="oracle-hero-card is-quiet">
+        <div class="oracle-hero-left">
+          <div class="oracle-hero-sigil">
+            <div class="oracle-faction-badge big none">
+              <span class="oracle-faction-code-fallback">◌</span>
+            </div>
+          </div>
+          <div class="oracle-hero-copy">
+            <div class="oracle-hero-kicker">SYNCING</div>
+            <div class="oracle-hero-title">Reading the Void</div>
+            <div class="oracle-hero-text">Pulling the latest world state, faction pressure and hall records.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const meta = ctx.meta || {};
+  const pulse = ctx.pulse || {};
+  const summary = pulse.summary || {};
+  const weekly = pulse.weekly || {};
+  const hall = ctx.hall || {};
+
+  const viewerFaction = meta.viewerFaction || "";
+  const viewerFactionMeta = factionMeta(viewerFaction);
+
+  const viewerLevel = intOr(meta.viewerLevel, 1);
+  const echoCount = intOr(meta.echoCount, 0);
+  const nodeCount = intOr(meta.nodeCount, 0);
+  const hotNodes = intOr(summary.hotNodes, 0);
+  const activeSieges = intOr(summary.activeSieges, 0);
+  const weeklyLeader = String(weekly?.leaderLabel || viewerFactionMeta.label || "No leader").trim();
+  const topTracked = Array.isArray(hall?.topLevels) ? hall.topLevels.length : 0;
+  const fortressFloor = intOr(hall?.fortressStandout?.floor, 0);
+
+  let heroKicker = "VOID FEED";
+  let heroTitle = "Oracle";
+  let heroText = "Living world board";
+  let heroTone = "is-live";
+  let stats = [];
+
+  if (_activeTab === "echoes") {
+    heroKicker = "LIVE SIGNALS";
+    heroTitle = echoCount > 0 ? `${echoCount} echoes in motion` : "Live echoes online";
+    heroText = "Recent signals, rare moments, world activity and highlights from across Alpha Husky.";
+    heroTone = echoCount > 0 ? "is-live" : "is-quiet";
+    stats = [
+      { value: String(echoCount), label: "Visible echoes" },
+      { value: String(nodeCount), label: "Tracked nodes" },
+      { value: String(hotNodes), label: "Hot sectors" },
+    ];
+  } else if (_activeTab === "pulse") {
+    heroKicker = "TACTICAL OVERVIEW";
+    heroTitle = viewerFaction
+      ? `${viewerFactionMeta.label} pressure report`
+      : "Faction pressure report";
+    heroText = `${weeklyLeader} leads this week. ${hotNodes} hot sectors, ${activeSieges} live sieges and ${nodeCount} nodes under watch.`;
+    heroTone = activeSieges > 0 ? "is-danger" : hotNodes > 0 ? "is-warn" : "is-live";
+    stats = [
+      { value: `Lvl ${viewerLevel}`, label: "Viewer" },
+      { value: String(nodeCount), label: "Nodes" },
+      { value: String(activeSieges), label: "Live sieges" },
+    ];
+  } else {
+    heroKicker = "LEGEND ARCHIVE";
+    heroTitle = "Hall of Fame";
+    heroText = "Standouts, top levels, strong clears and names worth remembering in the wasteland.";
+    heroTone = topTracked > 0 || fortressFloor > 0 ? "is-prestige" : "is-quiet";
+    stats = [
+      { value: String(topTracked), label: "Tracked names" },
+      { value: fortressFloor > 0 ? `F${fortressFloor}` : "—", label: "Fortress floor" },
+      { value: String(echoCount), label: "World echoes" },
+    ];
+  }
+
+  els.hero.innerHTML = `
+    <div class="oracle-hero-card ${heroTone}">
+      <div class="oracle-hero-glow"></div>
+
+      <div class="oracle-hero-left">
+        <div class="oracle-hero-sigil">
+          ${renderFactionBadge(viewerFaction, { big: true, code: viewerFactionMeta.code })}
+        </div>
+
+        <div class="oracle-hero-copy">
+          <div class="oracle-hero-kicker">${escapeHtml(heroKicker)}</div>
+          <div class="oracle-hero-title">${escapeHtml(heroTitle)}</div>
+          <div class="oracle-hero-text">${escapeHtml(heroText)}</div>
+        </div>
+      </div>
+
+      <div class="oracle-hero-stats">
+        ${stats.map((s) => `
+          <div class="oracle-hero-stat">
+            <div class="oracle-hero-stat-value">${escapeHtml(s.value)}</div>
+            <div class="oracle-hero-stat-label">${escapeHtml(s.label)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
   }
 
   function renderError(err) {
