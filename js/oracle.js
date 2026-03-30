@@ -1873,6 +1873,540 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         transform:translateX(-50%) translateY(0);
       }
 
+      /* === ORACLE VISUAL PASS v1 === */
+
+      .oracle-hero{
+        padding:14px 18px 0;
+      }
+
+      .oracle-hero-card{
+        position:relative;
+        overflow:hidden;
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto;
+        gap:14px;
+        padding:16px;
+        border-radius:22px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+        border:1px solid rgba(255,255,255,.07);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          0 12px 30px rgba(0,0,0,.16);
+      }
+
+      .oracle-hero-glow{
+        position:absolute;
+        inset:auto;
+        width:180px;
+        height:180px;
+        right:-34px;
+        top:-64px;
+        border-radius:999px;
+        filter:blur(28px);
+        opacity:.24;
+        pointer-events:none;
+        background:rgba(109,91,255,.30);
+      }
+
+      .oracle-hero-card.is-live .oracle-hero-glow{
+        background:rgba(88,120,255,.28);
+      }
+      .oracle-hero-card.is-warn .oracle-hero-glow{
+        background:rgba(255,188,77,.28);
+      }
+      .oracle-hero-card.is-danger .oracle-hero-glow{
+        background:rgba(255,102,102,.24);
+      }
+      .oracle-hero-card.is-prestige .oracle-hero-glow{
+        background:rgba(255,218,118,.28);
+      }
+      .oracle-hero-card.is-quiet .oracle-hero-glow{
+        background:rgba(160,170,210,.18);
+      }
+
+      .oracle-hero-left{
+        position:relative;
+        z-index:1;
+        display:flex;
+        align-items:center;
+        gap:12px;
+        min-width:0;
+      }
+
+      .oracle-hero-copy{
+        min-width:0;
+      }
+
+      .oracle-hero-kicker{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#9aa7dc;
+        margin-bottom:6px;
+      }
+
+      .oracle-hero-title{
+        font-size:22px;
+        line-height:1.08;
+        font-weight:900;
+        color:#f7f9ff;
+      }
+
+      .oracle-hero-text{
+        margin-top:7px;
+        color:#b2bce2;
+        font-size:13px;
+        line-height:1.5;
+        max-width:560px;
+      }
+
+      .oracle-hero-stats{
+        position:relative;
+        z-index:1;
+        display:grid;
+        grid-auto-flow:column;
+        gap:8px;
+        align-content:center;
+      }
+
+      .oracle-hero-stat{
+        min-width:84px;
+        padding:10px 12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.06);
+        text-align:center;
+      }
+
+      .oracle-hero-stat-value{
+        font-size:16px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-hero-stat-label{
+        margin-top:4px;
+        font-size:11px;
+        color:#98a5d7;
+        font-weight:800;
+      }
+
+      .oracle-meta-strip{
+        display:grid;
+        gap:8px;
+        padding:12px 18px 4px;
+      }
+
+      .oracle-chip-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+      }
+
+      .oracle-chip-row.identity .oracle-chip{
+        background:rgba(255,255,255,.055);
+      }
+
+      .oracle-chip-row.world .oracle-chip{
+        background:rgba(255,255,255,.04);
+      }
+
+      .oracle-tab{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .oracle-tab-ico{
+        width:18px;
+        text-align:center;
+        opacity:.82;
+        font-size:12px;
+      }
+
+      .oracle-tab.is-active .oracle-tab-ico{
+        opacity:1;
+      }
+
+      .oracle-panel{
+        overflow:hidden;
+      }
+
+      .oracle-panel::before{
+        content:"";
+        position:absolute;
+        left:14px;
+        right:14px;
+        top:0;
+        height:1px;
+        background:linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+        pointer-events:none;
+      }
+
+      .oracle-weekly{
+        margin-top:14px;
+        padding:14px;
+        border-radius:20px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+        border:1px solid rgba(255,255,255,.08);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      }
+
+      .oracle-weekly-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        flex-wrap:wrap;
+      }
+
+      .oracle-weekly-kicker{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-title{
+        margin-top:4px;
+        font-size:18px;
+        font-weight:900;
+        color:#f8faff;
+      }
+
+      .oracle-weekly-time{
+        text-align:right;
+        min-width:120px;
+      }
+
+      .oracle-weekly-time-label{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-time-value{
+        margin-top:4px;
+        font-size:18px;
+        font-weight:900;
+        color:#ffd888;
+      }
+
+      .oracle-weekly-cards{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:12px;
+      }
+
+      .oracle-weekly-card{
+        padding:12px 14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-card.leader{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      }
+
+      .oracle-weekly-card.score{
+        text-align:right;
+      }
+
+      .oracle-weekly-card-label{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-card-value{
+        margin-top:5px;
+        font-size:17px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-card.score .oracle-weekly-card-value{
+        color:#8ff7b5;
+      }
+
+      .oracle-weekly-list{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+
+      .oracle-weekly-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 13px;
+        border-radius:18px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      }
+
+      .oracle-weekly-row.is-leader{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.10), rgba(255,220,128,.04)),
+          rgba(255,255,255,.03);
+        border-color:rgba(255,220,128,.18);
+      }
+
+      .oracle-weekly-row.is-viewer{
+        border-color:rgba(125,211,252,.24);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          0 0 0 1px rgba(125,211,252,.04);
+      }
+
+      .oracle-weekly-row-left{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      }
+
+      .oracle-weekly-rank{
+        width:34px;
+        text-align:center;
+        font-size:12px;
+        font-weight:900;
+        opacity:.76;
+        color:#ffffff;
+        flex:0 0 auto;
+      }
+
+      .oracle-weekly-row-copy{
+        min-width:0;
+      }
+
+      .oracle-weekly-row-name{
+        font-size:15px;
+        font-weight:900;
+        color:#ffffff;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .oracle-weekly-row-sub{
+        margin-top:3px;
+        font-size:12px;
+        color:#a9b5e4;
+      }
+
+      .oracle-weekly-row-right{
+        text-align:right;
+        flex:0 0 auto;
+      }
+
+      .oracle-weekly-row-score{
+        font-size:18px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-row.is-leader .oracle-weekly-row-score{
+        color:#ffd888;
+      }
+
+      .oracle-weekly-row-meta{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        margin-top:4px;
+        font-size:11px;
+        color:#9aa7da;
+      }
+
+      .oracle-weekly-empty{
+        margin-top:12px;
+        font-size:13px;
+        color:#9eabd9;
+        line-height:1.5;
+      }
+
+      .oracle-faction-signals{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:12px;
+      }
+
+      .oracle-soft-pill{
+        display:inline-flex;
+        align-items:center;
+        height:26px;
+        padding:0 10px;
+        border-radius:999px;
+        font-size:11px;
+        font-weight:900;
+        border:1px solid rgba(255,255,255,.07);
+        background:rgba(255,255,255,.05);
+        color:#d7e0ff;
+      }
+
+      .oracle-soft-pill.warn{
+        color:#ffd89a;
+        border-color:rgba(255,188,77,.18);
+        background:rgba(255,188,77,.08);
+      }
+
+      .oracle-soft-pill.danger{
+        color:#ffb8b8;
+        border-color:rgba(255,102,102,.18);
+        background:rgba(255,102,102,.08);
+      }
+
+      .oracle-soft-pill.live{
+        color:#bfe2ff;
+        border-color:rgba(92,170,255,.18);
+        background:rgba(92,170,255,.08);
+      }
+
+      .oracle-soft-pill.neutral{
+        color:#e3e8ff;
+      }
+
+      .oracle-soft-pill.quiet{
+        color:#a5b0dd;
+      }
+
+      .oracle-hall-grid .oracle-panel:first-child{
+        background:
+          linear-gradient(180deg, rgba(255,226,140,.04), rgba(255,255,255,.02));
+      }
+
+      .oracle-rank-row.top-1{
+        border-color:rgba(255,220,128,.22);
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.08), rgba(255,255,255,.03));
+      }
+
+      .oracle-rank-row.top-2{
+        border-color:rgba(188,208,255,.18);
+      }
+
+      .oracle-rank-row.top-3{
+        border-color:rgba(255,184,120,.16);
+      }
+
+      .oracle-rank-row.top-1 .oracle-rank-no{
+        background:rgba(255,220,128,.18);
+        color:#ffe7a8;
+      }
+
+      .oracle-rank-row.top-2 .oracle-rank-no{
+        background:rgba(188,208,255,.14);
+      }
+
+      .oracle-rank-row.top-3 .oracle-rank-no{
+        background:rgba(255,184,120,.14);
+      }
+
+      .oracle-standout-card{
+        position:relative;
+        overflow:hidden;
+      }
+
+      .oracle-standout-card.prestige{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.07), rgba(255,255,255,.03));
+        border-color:rgba(255,220,128,.14);
+      }
+
+      .oracle-standout-card.actor{
+        background:
+          linear-gradient(180deg, rgba(92,170,255,.07), rgba(255,255,255,.03));
+        border-color:rgba(92,170,255,.14);
+      }
+
+      .oracle-standout-kicker{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#aab6e5;
+        margin-bottom:10px;
+      }
+
+      .oracle-echo-card,
+      .oracle-faction-card,
+      .oracle-rank-row,
+      .oracle-standout-card,
+      .oracle-summary-card,
+      .oracle-weekly-row{
+        transition:
+          transform .16s ease,
+          border-color .16s ease,
+          background .16s ease,
+          box-shadow .16s ease;
+      }
+
+      .oracle-echo-card:hover,
+      .oracle-faction-card:hover,
+      .oracle-rank-row:hover,
+      .oracle-standout-card:hover,
+      .oracle-weekly-row:hover{
+        transform:translateY(-1px);
+      }
+
+      @media (max-width: 720px){
+        .oracle-hero{
+          padding:12px 14px 0;
+        }
+
+        .oracle-hero-card{
+          grid-template-columns:1fr;
+        }
+
+        .oracle-hero-stats{
+          grid-auto-flow:unset;
+          grid-template-columns:repeat(3, 1fr);
+        }
+
+        .oracle-weekly-cards{
+          grid-template-columns:1fr 1fr;
+        }
+      }
+
+      @media (max-width: 560px){
+        .oracle-hero-title{
+          font-size:20px;
+        }
+
+        .oracle-hero-left{
+          align-items:flex-start;
+        }
+
+        .oracle-hero-stats{
+          grid-template-columns:1fr;
+        }
+
+        .oracle-weekly-cards{
+          grid-template-columns:1fr;
+        }
+
+        .oracle-weekly-row{
+          align-items:flex-start;
+        }
+
+        .oracle-weekly-row-right{
+          min-width:84px;
+        }
+      }
+
       @media (max-width: 720px){
         .oracle-modal{
           width:100vw;
