@@ -41,6 +41,24 @@
     catch (_) { return ""; }
   }
 
+  function timeAgo(t) {
+    const ts = Number(t || 0);
+    if (!ts) return "";
+    const sec = Math.max(0, Math.floor(Date.now() / 1000) - ts);
+    if (sec < 60) return `${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  function rankLabel(rank) {
+    const n = Number(rank || 0);
+    return n > 0 ? `#${num(n)}` : "Unranked";
+  }
+
   function _uid() {
     try { return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ""); }
     catch (_) { return ""; }
@@ -147,7 +165,7 @@ function _hqStageHTML(level, faction) {
     .slice(0, limit);
 }
 
-function _contribSummary(c) {
+function _contribSummaryLegacy(c) {
   if (!c) return "";
   if (c.upgrades > 0) return `Upgrades ${c.upgrades}`;
   if (c.bones > 0 && c.scrap > 0) return `${num(c.bones)}🦴 • ${num(c.scrap)}🔩`;
@@ -201,6 +219,113 @@ function _contribSummary(c) {
       inner_howl: "IH",
     };
     return m[canon] || "HQ";
+  }
+
+  function _contribSummary(c) {
+    if (!c) return "";
+    if (c.upgrades > 0) return `Upgrades ${c.upgrades}`;
+    if (c.bones > 0 && c.scrap > 0) return `${num(c.bones)} bones / ${num(c.scrap)} scrap`;
+    if (c.bones > 0) return `${num(c.bones)} bones`;
+    if (c.scrap > 0) return `${num(c.scrap)} scrap`;
+    return `${num(c.actions)} actions`;
+  }
+
+  const FACTION_HOME_META = {
+    rogue_byte: {
+      motto: "Break the line. Own the static.",
+      summary: "Fast-hit operators built around sabotage, tempo, and sudden openings.",
+      belonging: "Best for players who like striking first, breaking rhythm, and keeping enemy plans unstable.",
+      tags: ["Sabotage", "Tempo", "Disruption", "Shock"],
+    },
+    echo_wardens: {
+      motto: "Hold the signal. Hold the line.",
+      summary: "Route keepers who turn support play, control, and patience into durable faction ground.",
+      belonging: "Best for players who like anchoring lanes, reinforcing allies, and winning through control.",
+      tags: ["Control", "Defense", "Guard", "Stability"],
+    },
+    pack_burners: {
+      motto: "Light it. Spread it. Keep it moving.",
+      summary: "Momentum faction for players who stack pressure, donate hard, and turn noise into presence.",
+      belonging: "Best for players who like swarm energy, shared pushes, and feeding the wider faction wave.",
+      tags: ["Swarm", "Pressure", "Momentum", "Chaos"],
+    },
+    inner_howl: {
+      motto: "Strike clean. Stay cold.",
+      summary: "Precision operators built for disciplined pressure, clean timing, and steady takeover.",
+      belonging: "Best for players who like measured play, exact execution, and long-game dominance.",
+      tags: ["Precision", "Discipline", "Control", "Relentless"],
+    },
+  };
+
+  function factionHomeMeta(key) {
+    return FACTION_HOME_META[_canonFaction(key)] || {
+      motto: "Stand together.",
+      summary: "Your faction is the home layer behind the wider conflict.",
+      belonging: "Belonging here means your actions build alongside everyone else under the same banner.",
+      tags: ["Faction", "Identity"],
+    };
+  }
+
+  function renderMetricRow(label, value, note = "") {
+    return `
+      <div class="hq-metric-row">
+        <div class="hq-metric-copy">
+          <div class="hq-metric-label">${esc(label)}</div>
+          ${note ? `<div class="hq-metric-note">${esc(note)}</div>` : ``}
+        </div>
+        <div class="hq-metric-value">${esc(value)}</div>
+      </div>
+    `;
+  }
+
+  function renderTags(tags) {
+    const rows = Array.isArray(tags) ? tags.filter(Boolean).slice(0, 4) : [];
+    if (!rows.length) return "";
+    return `
+      <div class="hq-tag-row">
+        ${rows.map((tag) => `<span class="hq-tag">${esc(tag)}</span>`).join("")}
+      </div>
+    `;
+  }
+
+  function renderSpotlightRows(social) {
+    const top = Array.isArray(social?.topContributors) ? social.topContributors : [];
+    const notable = Array.isArray(social?.notableMembers) ? social.notableMembers : [];
+
+    if (top.length) {
+      return {
+        kicker: "Most active this week",
+        rows: top.map((row, idx) => `
+          <div class="hq-spotlight-item">
+            <div class="hq-rank-badge">#${idx + 1}</div>
+            <div class="hq-spotlight-main">
+              <div class="hq-spotlight-name">${esc(row.name || "Member")}${row.isYou ? ` <span class="hq-you-pill">YOU</span>` : ``}</div>
+              <div class="hq-spotlight-sub">Score ${num(row.score || 0)}${row.rank ? ` | faction ${rankLabel(row.rank)}` : ``}</div>
+            </div>
+          </div>
+        `).join(""),
+      };
+    }
+
+    if (notable.length) {
+      return {
+        kicker: "Known names inside the faction",
+        rows: notable.map((row, idx) => `
+          <div class="hq-spotlight-item">
+            <div class="hq-rank-badge">${idx + 1}</div>
+            <div class="hq-spotlight-main">
+              <div class="hq-spotlight-name">${esc(row.name || "Member")}</div>
+              <div class="hq-spotlight-sub">Level ${num(row.level || 1)}</div>
+            </div>
+          </div>
+        `).join(""),
+      };
+    }
+
+    return {
+      kicker: "Faction circle",
+      rows: `<div class="hq-contrib-empty">More member activity will surface here as the faction fills out.</div>`,
+    };
   }
 
   // ---------------------------
@@ -772,6 +897,251 @@ function _contribSummary(c) {
         line-height:1.4;
       }
 
+      #factionHQRoot .hq-motto{
+        margin-top:6px;
+        font-size:15px;
+        font-weight:900;
+        letter-spacing:.2px;
+        color:color-mix(in srgb, var(--faction-color) 55%, white);
+      }
+
+      #factionHQRoot .hq-identity{
+        margin-top:8px;
+        opacity:.88;
+        font-size:13px;
+        line-height:1.45;
+        max-width:44ch;
+      }
+
+      #factionHQRoot .hq-tag-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:12px;
+      }
+
+      #factionHQRoot .hq-tag{
+        display:inline-flex;
+        align-items:center;
+        min-height:28px;
+        padding:0 11px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:.2px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.12);
+      }
+
+      #factionHQRoot .hq-head-strip{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:12px;
+      }
+
+      #factionHQRoot .hq-chip{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        min-height:30px;
+        padding:0 11px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:800;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.10);
+      }
+
+      #factionHQRoot .hq-chip strong{
+        font-weight:900;
+        color:#fff;
+      }
+
+      #factionHQRoot .hq-role-pill{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:42px;
+        padding:0 16px;
+        border-radius:999px;
+        font-size:16px;
+        font-weight:900;
+        letter-spacing:.2px;
+        color:#081018;
+        background:linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 82%, white), var(--faction-color));
+        box-shadow:0 12px 24px color-mix(in srgb, var(--faction-color) 22%, transparent);
+      }
+
+      #factionHQRoot .hq-tone-pill{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:30px;
+        padding:0 11px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.3px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.12);
+      }
+      #factionHQRoot .hq-tone-pill[data-tone="hot"]{
+        color:#ffe7cc;
+        border-color:rgba(255,122,47,.35);
+      }
+      #factionHQRoot .hq-tone-pill[data-tone="contested"]{
+        color:#ffd7e2;
+        border-color:rgba(255,42,109,.35);
+      }
+      #factionHQRoot .hq-tone-pill[data-tone="fortified"]{
+        color:#d4ffe7;
+        border-color:rgba(91,255,154,.35);
+      }
+
+      #factionHQRoot .hq-kpi-grid{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:10px;
+      }
+
+      #factionHQRoot .hq-kpi{
+        border-radius:14px;
+        padding:12px;
+        background:rgba(0,0,0,.18);
+        border:1px solid rgba(255,255,255,.08);
+      }
+
+      #factionHQRoot .hq-kpi-label{
+        font-size:11px;
+        font-weight:800;
+        opacity:.7;
+        text-transform:uppercase;
+        letter-spacing:.45px;
+      }
+
+      #factionHQRoot .hq-kpi-value{
+        margin-top:6px;
+        font-size:20px;
+        line-height:1.05;
+        font-weight:900;
+      }
+
+      #factionHQRoot .hq-note{
+        margin-top:12px;
+        padding:11px 12px;
+        border-radius:14px;
+        background:rgba(255,255,255,.045);
+        border:1px solid rgba(255,255,255,.08);
+        font-size:13px;
+        line-height:1.45;
+      }
+
+      #factionHQRoot .hq-divider{
+        height:1px;
+        margin:14px 0;
+        background:linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+      }
+
+      #factionHQRoot .hq-metric-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        padding:10px 0;
+        border-bottom:1px solid rgba(255,255,255,.08);
+      }
+      #factionHQRoot .hq-metric-row:last-child{
+        border-bottom:0;
+        padding-bottom:0;
+      }
+
+      #factionHQRoot .hq-metric-copy{
+        min-width:0;
+        flex:1;
+      }
+
+      #factionHQRoot .hq-metric-label{
+        font-size:13px;
+        font-weight:800;
+      }
+
+      #factionHQRoot .hq-metric-note{
+        margin-top:3px;
+        font-size:12px;
+        opacity:.7;
+        line-height:1.35;
+      }
+
+      #factionHQRoot .hq-metric-value{
+        font-size:14px;
+        font-weight:900;
+        text-align:right;
+        white-space:nowrap;
+      }
+
+      #factionHQRoot .hq-spotlight{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+
+      #factionHQRoot .hq-spotlight-item{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:10px 12px;
+        border-radius:14px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.08);
+      }
+
+      #factionHQRoot .hq-rank-badge{
+        width:34px;
+        height:34px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:12px;
+        font-weight:900;
+        background:linear-gradient(180deg, color-mix(in srgb, var(--faction-color) 36%, #1a2030), #0d111b 88%);
+        border:1px solid color-mix(in srgb, var(--faction-color) 36%, rgba(255,255,255,.12));
+      }
+
+      #factionHQRoot .hq-spotlight-main{
+        min-width:0;
+        flex:1;
+      }
+
+      #factionHQRoot .hq-spotlight-name{
+        font-size:13px;
+        font-weight:900;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      #factionHQRoot .hq-spotlight-sub{
+        margin-top:3px;
+        font-size:12px;
+        opacity:.72;
+        line-height:1.35;
+      }
+
+      #factionHQRoot .hq-you-pill{
+        display:inline-flex;
+        align-items:center;
+        padding:1px 6px;
+        border-radius:999px;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.4px;
+        color:#081018;
+        background:linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 82%, white), var(--faction-color));
+        vertical-align:middle;
+      }
+
       #factionHQRoot .hq-progress{
         margin-top:12px;
         display:flex;
@@ -1192,7 +1562,7 @@ function _contribSummary(c) {
   // ---------------------------
   // Render
   // ---------------------------
-  async function render() {
+  async function _legacyRender_unused() {
     if (!_apiPost) {
       _root.innerHTML = `
         <div class="hq-card">API not ready.</div>
@@ -1444,6 +1814,391 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
               <div class="hq-feed-item">
                 <b>${icon} ${num(amt)}</b> to treasury <span class="hq-mini">(${esc(asset)})</span><br/>
                 <span class="hq-mini">from …${esc(who)} • ${esc(t)}</span>
+              </div>
+            `;
+          }).join("") : `
+            <div class="hq-feed-item hq-mini">No activity yet.</div>
+          `}
+        </div>
+
+        ${feed.length > 3 ? `
+          <div style="margin-top:10px;">
+            <button
+              class="hq-btn ghost"
+              style="width:100%;"
+              onclick="FactionHQ._toggleFeed()"
+            >
+              ${_feedExpanded ? "Show less" : `Show ${feed.length - 3} more`}
+            </button>
+          </div>
+        ` : ``}
+      </div>
+
+      <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+    `;
+  }
+
+  async function render() {
+    if (!_apiPost) {
+      _root.innerHTML = `
+        <div class="hq-card">API not ready.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    _root.innerHTML = `<div class="hq-card" style="text-align:center;">Loading HQ...</div>`;
+
+    let raw;
+    try {
+      raw = await _apiPost("/webapp/faction/hq/state", _dbg ? { dbg: true } : {});
+      log("state raw:", raw);
+    } catch (e) {
+      _root.innerHTML = `
+        <div class="hq-card">HQ load failed.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    const res = _normStatePayload(raw);
+    const d = res.data || {};
+
+    if (!res.ok) {
+      const reason = res.reason || "NO_FACTION";
+
+      if (reason === "NO_FACTION") {
+        _root.innerHTML = `
+          <div class="hq-head" style="text-align:center;">
+            <div class="hq-pill">HQ</div>
+            <h2 class="hq-title">Faction HQ</h2>
+            <div class="hq-sub">Join a faction to access headquarters.</div>
+          </div>
+          <div class="hq-grid">
+            <div class="hq-card">
+              <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
+              <div style="height:10px"></div>
+              <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      _root.innerHTML = `
+        <div class="hq-card">HQ error: <b>${esc(reason)}</b></div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    const fkRaw = d.faction || res._raw?.faction || "";
+    const fk = _canonFaction(fkRaw) || String(fkRaw || "").toLowerCase();
+
+    applyHqBg(fk);
+    applyHQTheme(fk);
+
+    try {
+      if (fk) localStorage.setItem("ah_faction", fk);
+      window.Influence?.setFaction?.(fk);
+      window.renderFactionBadge?.();
+    } catch (_) { }
+
+    const tre = d.treasury || {};
+    const bones = Number(tre.bones || 0);
+    const scrap = Number(tre.scrap || 0);
+    const feed = Array.isArray(d.feed) ? d.feed : [];
+    const contributors = _recentContributors(feed, 4);
+    const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
+
+    const curLevel = parseInt(d.level || 1, 10) || 1;
+    const nextLevel = curLevel + 1;
+    const nextCost = d.nextUpgradeCost || {};
+    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
+    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
+    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+    const bonesPct = pct(bones, needBones);
+    const scrapPct = pct(scrap, needScrap);
+    const bonesLeft = Math.max(0, needBones - bones);
+    const scrapLeft = Math.max(0, needScrap - scrap);
+
+    const membersCount = Number(d.membersCount ?? d.members_count ?? 0);
+    const myPlace = d.myPlace || {};
+    const myContribution = d.myContribution || {};
+    const snapshot = d.snapshot || {};
+    const social = d.social || {};
+    const meta = factionHomeMeta(fk);
+    const spotlight = renderSpotlightRows(social);
+    const highlight = snapshot.recentHighlight || {};
+    const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
+      ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
+      : "HQ support has not started from your side yet. Treasury donations show up here as soon as you send them.";
+    const circleNote = myPlace.rankBand && myPlace.rankBand !== "Not ranked yet"
+      ? `You currently sit in the ${String(myPlace.rankBand).toLowerCase()} of current faction activity.`
+      : "Patrols, donations, and sieges will surface your standing here.";
+    const highlightHTML = highlight.text
+      ? `<div class="hq-note"><b>Latest:</b> ${esc(highlight.text)}${highlight.ts ? ` <span class="hq-mini">(${esc(timeAgo(highlight.ts))})</span>` : ``}</div>`
+      : `<div class="hq-note">${esc(snapshot.momentumSummary || "Faction movement will surface here when the world state picks up.")}</div>`;
+
+    const dbgLine = _dbg ? `
+      <div class="hq-sub" style="margin-top:8px;opacity:.72;">
+        uid ...${_uidTail()} | faction <b>${esc(String(fk || ""))}</b>
+      </div>
+    ` : "";
+
+    _root.innerHTML = `
+      <div class="hq-head">
+        <div class="hq-topline">
+          <div class="hq-pill">HQ | ${esc(factionShort(fk))}</div>
+          <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
+            ${canUpgrade ? "UPGRADE READY" : "TREASURY BUILD"}
+          </div>
+        </div>
+
+        <div class="hq-title">${esc(niceFactionName(fk))}</div>
+        <div class="hq-motto">${esc(meta.motto)}</div>
+        <div class="hq-identity">${esc(meta.summary)}</div>
+        <div class="hq-identity">${esc(meta.belonging)}</div>
+        ${renderTags(meta.tags)}
+        <div class="hq-head-strip">
+          <div class="hq-chip">Role <strong>${esc(myPlace.role || "Scout")}</strong></div>
+          <div class="hq-chip">Standing <strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
+          <div class="hq-chip">Members <strong>${num(membersCount)}</strong></div>
+        </div>
+        ${dbgLine}
+
+        ${_hqStageHTML(curLevel, fk)}
+      </div>
+
+      <div class="hq-grid two">
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>My Place</b>
+            <span class="hq-mini">${esc(myPlace.rankBand || "Faction member")}</span>
+          </div>
+
+          <div class="hq-role-pill">${esc(myPlace.role || "Scout")}</div>
+          <div class="hq-note">${esc(myPlace.status || "You are part of the faction network.")}</div>
+
+          <div class="hq-kpi-grid" style="margin-top:12px;">
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Weekly score</div>
+              <div class="hq-kpi-value">${num(myPlace.weeklyScore || 0)}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Faction rank</div>
+              <div class="hq-kpi-value">${esc(rankLabel(myPlace.factionRank))}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Overall rank</div>
+              <div class="hq-kpi-value">${esc(rankLabel(myPlace.overallRank))}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Player level</div>
+              <div class="hq-kpi-value">${num(myPlace.level || 1)}</div>
+            </div>
+          </div>
+
+          <div class="hq-note">${myPlace.qualified ? "Weekly reward threshold is active for you right now." : "Current standing is built from live faction activity and HQ support."}</div>
+        </div>
+
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Faction Snapshot</b>
+            <span class="hq-tone-pill" data-tone="${esc(snapshot.momentumTone || "calm")}">${esc(snapshot.momentumLabel || "Building presence")}</span>
+          </div>
+
+          <div class="hq-kpi-grid">
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Controlled</div>
+              <div class="hq-kpi-value">${num(snapshot.controlledNodes || 0)}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Pressure</div>
+              <div class="hq-kpi-value">${num(snapshot.pressureNodes || 0)}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Contested</div>
+              <div class="hq-kpi-value">${num(snapshot.contestedPresence || 0)}</div>
+            </div>
+            <div class="hq-kpi">
+              <div class="hq-kpi-label">Live sieges</div>
+              <div class="hq-kpi-value">${num(snapshot.activeSieges || 0)}</div>
+            </div>
+          </div>
+
+          ${highlightHTML}
+        </div>
+      </div>
+
+      <div class="hq-grid two">
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>My Contribution</b>
+            <span class="hq-mini">${num(myContribution.activeDays || 0)} active days</span>
+          </div>
+
+          ${renderMetricRow("Weekly influence", num(myContribution.weeklyScore || 0), "Live score from patrols, donations, and siege play.")}
+          ${renderMetricRow("Patrol impact", num(myContribution.patrolScore || 0))}
+          ${renderMetricRow("Donation impact", num(myContribution.donateScore || 0))}
+          ${renderMetricRow("Siege impact", num(myContribution.siegeScore || 0))}
+          ${renderMetricRow("HQ support", `${num(myContribution.hqDonationCount || 0)} drops`, myContribution.lastDonationAt ? `Last support ${timeAgo(myContribution.lastDonationAt)}` : "")}
+
+          <div class="hq-note">${esc(contributionSupportNote)}</div>
+        </div>
+
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Faction Circle</b>
+            <span class="hq-mini">${num(membersCount)} members</span>
+          </div>
+
+          <div class="hq-mini" style="margin-bottom:10px;">${esc(spotlight.kicker)}</div>
+          <div class="hq-spotlight">${spotlight.rows}</div>
+          <div class="hq-note">${esc(circleNote)}</div>
+        </div>
+      </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>HQ Status</b>
+          <span class="hq-mini">Lv ${num(curLevel)} -> ${num(nextLevel)}</span>
+        </div>
+
+        <div class="hq-stat-grid">
+          <div class="hq-stat">
+            <div class="hq-stat-value">${num(bones)}</div>
+            <div class="hq-stat-label">Bones</div>
+          </div>
+          <div class="hq-stat">
+            <div class="hq-stat-value">${num(scrap)}</div>
+            <div class="hq-stat-label">Scrap</div>
+          </div>
+        </div>
+
+        <div class="hq-progress">
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Bones toward Lv ${num(nextLevel)}</span>
+              <span>${num(bones)} / ${num(needBones)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
+          </div>
+
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Scrap toward Lv ${num(nextLevel)}</span>
+              <span>${num(scrap)} / ${num(needScrap)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
+          </div>
+        </div>
+
+        <div class="hq-mini" style="margin-top:12px;">
+          Next level: <b>${num(nextLevel)}</b><br/>
+          Cost: <b>${num(needBones)}</b> bones + <b>${num(needScrap)}</b> scrap<br/>
+          Remaining: <b>${num(bonesLeft)}</b> bones + <b>${num(scrapLeft)}</b> scrap<br/>
+          <span style="opacity:.86;">
+            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
+          </span>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            Upgrade to Level ${num(nextLevel)}
+          </button>
+
+          ${canUpgrade ? `
+            <div class="hq-mini" style="margin-top:10px;opacity:.85;">
+              Treasury threshold reached. HQ can be upgraded now.
+            </div>
+          ` : `
+            <div class="hq-mini" style="margin-top:10px;opacity:.8;">
+              Treasury is still building. Donations push it over the line.
+            </div>
+          `}
+        </div>
+
+        <div class="hq-divider"></div>
+
+        <div class="hq-card-title">
+          <b>Donate to Treasury</b>
+          <span class="hq-mini">keep the HQ moving</span>
+        </div>
+
+        <div class="hq-mini" style="margin-bottom:12px;">
+          Shared HQ support only. Mission objectives stay in Broken Contracts.
+        </div>
+
+        <div class="hq-actions">
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 Bones</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 Bones</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 Scrap</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 Scrap</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
+          <div class="hq-actions" style="margin-top:10px;">
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('bones')">Custom Bones</button>
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('scrap')">Custom Scrap</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>HQ Build Log</b>
+          <button class="hq-btn ghost" style="width:auto;padding:10px 14px;" onclick="FactionHQ.open()">Refresh</button>
+        </div>
+
+        <div class="hq-mini" style="margin-bottom:10px;">
+          Recent treasury support and upgrade milestones.
+        </div>
+
+        ${
+          contributors.length
+            ? `
+              <div class="hq-contrib-strip">
+                ${contributors.map((c) => `
+                  <div class="hq-contrib">
+                    <div class="hq-contrib-badge">...${esc(c.tail)}</div>
+                    <div class="hq-contrib-name">Member</div>
+                    <div class="hq-contrib-meta">${esc(_contribSummary(c))}</div>
+                  </div>
+                `).join("")}
+              </div>
+            `
+            : `
+              <div class="hq-contrib-empty">
+                No contributors yet. First donations will appear here.
+              </div>
+            `
+        }
+
+        <div class="hq-feed">
+          ${visibleFeed.length ? visibleFeed.map((x) => {
+            const who = x.uid ? String(x.uid).slice(-4) : "????";
+            const t = fmtTs(x.t);
+
+            if (x.type === "upgrade") {
+              const lvl = x.level || "?";
+              return `
+                <div class="hq-feed-item upgrade">
+                  <b>HQ upgraded</b> <span class="hq-mini">(Lv ${esc(lvl)})</span><br/>
+                  <span class="hq-mini">by ...${esc(who)} | ${esc(t)}</span>
+                </div>
+              `;
+            }
+
+            const amt = Number(x.amount || 0);
+            const asset = String(x.asset || "");
+            const assetLabel = asset === "bones" ? "bones" : (asset === "scrap" ? "scrap" : asset || "support");
+
+            return `
+              <div class="hq-feed-item">
+                <b>${num(amt)} ${esc(assetLabel)}</b> to treasury<br/>
+                <span class="hq-mini">from ...${esc(who)} | ${esc(t)}</span>
               </div>
             `;
           }).join("") : `
