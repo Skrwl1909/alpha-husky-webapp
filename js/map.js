@@ -108,19 +108,19 @@
   z-index:1;
 }
 .map-pin.family-legacy .pin-ring{
-  inset:-5px;
-  border-color:rgba(255,255,255,.10);
+  inset:-4px;
+  border-color:rgba(255,255,255,.08);
   box-shadow:none;
-  opacity:.42;
+  opacity:.32;
 }
 .map-pin.family-legacy .pin-icon,
 .map-pin.family-legacy > img{
-  transform:scale(.92);
-  opacity:.82;
+  transform:scale(.89);
+  opacity:.76;
   filter:
-    brightness(.88)
-    saturate(.82)
-    drop-shadow(0 6px 10px rgba(0,0,0,.24));
+    brightness(.84)
+    saturate(.76)
+    drop-shadow(0 5px 9px rgba(0,0,0,.22));
 }
 
 .map-pin.family-rivalry{
@@ -150,17 +150,21 @@
   border-color:rgba(255,255,255,.08);
 }
 .map-pin.tier-high .pin-ring{
-  inset:-10px;
+  inset:-11px;
+  border-width:2px;
 }
 .map-pin.tier-high.is-neutral .pin-ring{
-  border-color:rgba(104,188,255,.34);
+  border-color:rgba(116,192,255,.40);
   box-shadow:
-    0 0 0 1px rgba(104,188,255,.10),
-    0 0 16px rgba(104,188,255,.14);
+    0 0 0 1px rgba(116,192,255,.12),
+    0 0 18px rgba(116,192,255,.16);
 }
 .map-pin.tier-high .pin-icon,
 .map-pin.tier-high > img{
-  transform:scale(1.08);
+  transform:scale(1.10);
+}
+.map-pin.tier-high{
+  z-index:5;
 }
 .map-pin.tier-strategic{
   z-index:7;
