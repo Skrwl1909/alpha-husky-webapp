@@ -1153,6 +1153,8 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         max-height:min(88vh, 900px);
         border-radius:28px;
         overflow:hidden;
+        display:flex;
+        flex-direction:column;
         background:
           linear-gradient(180deg, rgba(18,22,42,.98), rgba(8,10,20,.985));
         border:1px solid rgba(159,173,255,.16);
@@ -1349,9 +1351,10 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
 
       .oracle-body{
         position:relative;
-        padding:16px 18px 18px;
+        flex:1 1 auto;
+        min-height:0;
+        padding:16px 18px calc(18px + env(safe-area-inset-bottom));
         overflow:auto;
-        max-height:calc(min(88vh, 900px) - 170px);
         overscroll-behavior:contain;
         -webkit-overflow-scrolling:touch;
       }
@@ -2427,24 +2430,36 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         }
       }
 
-      @media (max-width: 560px){
-        .oracle-topbar{
-          padding:16px 14px 12px;
+     @media (max-width: 720px){
+        .oracle-modal{
+          width:100vw;
+          height:100dvh;
+          max-height:100dvh;
+          border-radius:0;
+          top:50%;
         }
-        .oracle-title{
-          font-size:24px;
-        }
+
+        .oracle-topbar,
+        .oracle-hero,
         .oracle-meta-strip,
         .oracle-tabs{
-          padding-left:14px;
-          padding-right:14px;
+          flex:0 0 auto;
         }
+
         .oracle-body{
-          padding:14px;
+          flex:1 1 auto;
+          min-height:0;
+          padding:14px 14px calc(22px + env(safe-area-inset-bottom));
         }
+
         .oracle-summary-grid{
-          grid-template-columns:1fr;
+          grid-template-columns:1fr 1fr 1fr;
         }
+
+        .oracle-faction-stats{
+          grid-template-columns:1fr 1fr;
+        }
+        
         .oracle-rank-row{
           align-items:flex-start;
         }
