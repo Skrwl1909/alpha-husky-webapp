@@ -704,50 +704,46 @@
   }
 
   function renderWeeklyStandings(weekly, meta) {
-    const rows = Array.isArray(weekly?.rows) ? weekly.rows.slice(0, 4) : [];
-    const leaderLabel = String(weekly?.leaderLabel || "No leader yet").trim();
-    const leaderScore = intOr(weekly?.leaderScore, 0);
-    const remain = formatRemainCompact(intOr(weekly?.endsInSec, 0));
+  const rows = Array.isArray(weekly?.rows) ? weekly.rows.slice(0, 4) : [];
+  const leaderLabel = String(weekly?.leaderLabel || "No leader yet").trim();
+  const leaderScore = intOr(weekly?.leaderScore, 0);
+  const remain = formatRemainCompact(intOr(weekly?.endsInSec, 0));
 
-    return `
-      <div style="
-        margin-top:12px;
-        padding:12px;
-        border-radius:16px;
-        background:rgba(255,255,255,.035);
-        border:1px solid rgba(255,255,255,.08);
-      ">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.58;">This week</div>
-            <div style="margin-top:4px;font-size:16px;font-weight:800;">Weekly faction standings</div>
-          </div>
-          <div style="text-align:right;min-width:120px;">
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.58;">Time left</div>
-            <div style="margin-top:4px;font-size:15px;font-weight:800;color:#ffd888;">${escapeHtml(remain)}</div>
-          </div>
+  return `
+    <section class="oracle-weekly">
+      <div class="oracle-weekly-head">
+        <div>
+          <div class="oracle-weekly-kicker">THIS WEEK</div>
+          <div class="oracle-weekly-title">Weekly faction standings</div>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-          <div style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);">
-            <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;opacity:.58;">Leader</div>
-            <div style="margin-top:4px;font-size:15px;font-weight:800;">${escapeHtml(leaderLabel)}</div>
-          </div>
-          <div style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);text-align:right;">
-            <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;opacity:.58;">Score</div>
-            <div style="margin-top:4px;font-size:15px;font-weight:800;color:#8ff7b5;">${escapeHtml(String(leaderScore))}</div>
-          </div>
+        <div class="oracle-weekly-time">
+          <div class="oracle-weekly-time-label">Time left</div>
+          <div class="oracle-weekly-time-value">${escapeHtml(remain)}</div>
         </div>
-
-        ${rows.length ? `
-          <div style="display:grid;gap:8px;margin-top:10px;">
-            ${rows.map((row) => renderWeeklyStandingsRow(row, weekly, meta)).join("")}
-          </div>
-        ` : `
-          <div style="margin-top:10px;font-size:12px;opacity:.68;">Patrols, donations and siege outcomes will start shaping this board once the week picks up.</div>
-        `}
       </div>
-    `;
+
+      <div class="oracle-weekly-cards">
+        <div class="oracle-weekly-card leader">
+          <div class="oracle-weekly-card-label">Leader</div>
+          <div class="oracle-weekly-card-value">${escapeHtml(leaderLabel)}</div>
+        </div>
+        <div class="oracle-weekly-card score">
+          <div class="oracle-weekly-card-label">Score</div>
+          <div class="oracle-weekly-card-value">${escapeHtml(String(leaderScore))}</div>
+        </div>
+      </div>
+
+      ${rows.length ? `
+        <div class="oracle-weekly-list">
+          ${rows.map((row) => renderWeeklyStandingsRow(row, weekly, meta)).join("")}
+        </div>
+      ` : `
+        <div class="oracle-weekly-empty">
+          Patrols, donations and siege outcomes will start shaping this board once the week picks up.
+        </div>
+      `}
+    </section>
+  `;
   }
 
   function renderWeeklyStandingsRow(row, weekly, meta) {
