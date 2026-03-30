@@ -186,64 +186,76 @@
   }
 
   function ensureDom() {
-    if (_mounted && els.back && document.body.contains(els.back)) return;
+  if (_mounted && els.back && document.body.contains(els.back)) return;
 
-    const back = document.createElement("div");
-    back.id = "oracleBack";
-    back.className = "oracle-back";
-    back.style.display = "none";
+  const back = document.createElement("div");
+  back.id = "oracleBack";
+  back.className = "oracle-back";
+  back.style.display = "none";
 
-    back.innerHTML = `
-      <div class="oracle-modal" id="oracleModal" role="dialog" aria-modal="true" aria-label="Oracle Void Doorway">
-        <div class="oracle-ambient oracle-ambient-a"></div>
-        <div class="oracle-ambient oracle-ambient-b"></div>
+  back.innerHTML = `
+    <div class="oracle-modal" id="oracleModal" role="dialog" aria-modal="true" aria-label="Oracle Void Doorway">
+      <div class="oracle-ambient oracle-ambient-a"></div>
+      <div class="oracle-ambient oracle-ambient-b"></div>
 
-        <div class="oracle-topbar">
-          <div class="oracle-head">
-            <div class="oracle-kicker">VOID DOORWAY</div>
-            <div class="oracle-title-row">
-              <div class="oracle-title">Oracle</div>
-              <div class="oracle-live">
-                <span class="oracle-live-dot" id="oracleStatusDot"></span>
-                <span class="oracle-live-text">synced</span>
-              </div>
+      <div class="oracle-topbar">
+        <div class="oracle-head">
+          <div class="oracle-kicker">VOID DOORWAY</div>
+          <div class="oracle-title-row">
+            <div class="oracle-title">Oracle</div>
+            <div class="oracle-live">
+              <span class="oracle-live-dot" id="oracleStatusDot"></span>
+              <span class="oracle-live-text">synced</span>
             </div>
-            <div class="oracle-subtitle" id="oracleSubtitle">Living world board</div>
           </div>
-
-          <div class="oracle-actions">
-            <button type="button" class="oracle-btn ghost" id="oracleRefreshBtn">Refresh</button>
-            <button type="button" class="oracle-btn close" id="oracleCloseBtn" aria-label="Close Oracle">✕</button>
-          </div>
+          <div class="oracle-subtitle" id="oracleSubtitle">Living world board</div>
         </div>
 
-        <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
-
-        <div class="oracle-tabs" id="oracleTabs">
-          <button type="button" class="oracle-tab is-active" data-tab="echoes">Live Echoes</button>
-          <button type="button" class="oracle-tab" data-tab="pulse">Faction Pulse</button>
-          <button type="button" class="oracle-tab" data-tab="hall">Hall of Fame</button>
-        </div>
-
-        <div class="oracle-body" id="oracleBody">
-          <div class="oracle-root" id="oracleRoot"></div>
+        <div class="oracle-actions">
+          <button type="button" class="oracle-btn ghost" id="oracleRefreshBtn">Refresh</button>
+          <button type="button" class="oracle-btn close" id="oracleCloseBtn" aria-label="Close Oracle">✕</button>
         </div>
       </div>
-    `;
 
-    document.body.appendChild(back);
+      <div class="oracle-hero" id="oracleHero"></div>
 
-    els.back = back;
-    els.modal = back.querySelector("#oracleModal");
-    els.root = back.querySelector("#oracleRoot");
-    els.body = back.querySelector("#oracleBody");
-    els.tabs = back.querySelector("#oracleTabs");
-    els.subtitle = back.querySelector("#oracleSubtitle");
-    els.refreshBtn = back.querySelector("#oracleRefreshBtn");
-    els.closeBtn = back.querySelector("#oracleCloseBtn");
-    els.statusDot = back.querySelector("#oracleStatusDot");
+      <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
 
-    _mounted = true;
+      <div class="oracle-tabs" id="oracleTabs">
+        <button type="button" class="oracle-tab is-active" data-tab="echoes">
+          <span class="oracle-tab-ico">◉</span>
+          <span>Live Echoes</span>
+        </button>
+        <button type="button" class="oracle-tab" data-tab="pulse">
+          <span class="oracle-tab-ico">⌁</span>
+          <span>Faction Pulse</span>
+        </button>
+        <button type="button" class="oracle-tab" data-tab="hall">
+          <span class="oracle-tab-ico">✦</span>
+          <span>Hall of Fame</span>
+        </button>
+      </div>
+
+      <div class="oracle-body" id="oracleBody">
+        <div class="oracle-root" id="oracleRoot"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(back);
+
+  els.back = back;
+  els.modal = back.querySelector("#oracleModal");
+  els.root = back.querySelector("#oracleRoot");
+  els.body = back.querySelector("#oracleBody");
+  els.tabs = back.querySelector("#oracleTabs");
+  els.subtitle = back.querySelector("#oracleSubtitle");
+  els.refreshBtn = back.querySelector("#oracleRefreshBtn");
+  els.closeBtn = back.querySelector("#oracleCloseBtn");
+  els.statusDot = back.querySelector("#oracleStatusDot");
+  els.hero = back.querySelector("#oracleHero");
+
+  _mounted = true;
   }
 
   function bindEvents() {
