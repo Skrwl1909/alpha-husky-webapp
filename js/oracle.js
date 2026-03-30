@@ -747,55 +747,38 @@
   }
 
   function renderWeeklyStandingsRow(row, weekly, meta) {
-    const faction = row?.faction || "";
-    const fm = factionMeta(faction);
-    const score = intOr(row?.score, 0);
-    const activity = intOr(row?.activityScore, 0);
-    const control = intOr(row?.controlBonus, 0);
-    const qualified = intOr(row?.qualifiedCount, 0);
-    const players = intOr(row?.playerCount, 0);
-    const isViewer = !!row?.isViewer;
-    const isLeader = !!row?.isLeader;
-    const border = isViewer
-      ? "1px solid rgba(125,211,252,.26)"
-      : "1px solid rgba(255,255,255,.06)";
-    const background = isLeader
-      ? "rgba(255,215,120,.08)"
-      : isViewer
-        ? "rgba(125,211,252,.07)"
-        : "rgba(255,255,255,.03)";
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const score = intOr(row?.score, 0);
+  const activity = intOr(row?.activityScore, 0);
+  const control = intOr(row?.controlBonus, 0);
+  const qualified = intOr(row?.qualifiedCount, 0);
+  const players = intOr(row?.playerCount, 0);
+  const isViewer = !!row?.isViewer;
+  const isLeader = !!row?.isLeader;
+  const rank = intOr(row?.rank, 0) || "—";
 
-    return `
-      <div style="
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
-        padding:10px 12px;
-        border-radius:14px;
-        background:${background};
-        border:${border};
-      ">
-        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-          <div style="width:22px;font-size:12px;font-weight:900;opacity:.68;">#${escapeHtml(String(intOr(row?.rank, 0) || "—"))}</div>
-          ${renderFactionBadge(faction)}
-          <div style="min-width:0;">
-            <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${escapeHtml(row?.label || fm.label)}
-            </div>
-            <div style="font-size:11px;opacity:.62;">
-              ${escapeHtml(`${activity} activity + ${control} control`)}
-            </div>
-          </div>
-        </div>
-        <div style="text-align:right;white-space:nowrap;">
-          <div style="font-size:15px;font-weight:900;color:${isLeader ? "#ffd888" : "#ffffff"};">${escapeHtml(String(score))}</div>
-          <div style="font-size:11px;opacity:.62;">${escapeHtml(`${qualified} ready • ${players} active`)}</div>
+  return `
+    <article class="oracle-weekly-row ${fm.cls} ${isViewer ? "is-viewer" : ""} ${isLeader ? "is-leader" : ""}">
+      <div class="oracle-weekly-row-left">
+        <div class="oracle-weekly-rank">#${escapeHtml(String(rank))}</div>
+        ${renderFactionBadge(faction)}
+        <div class="oracle-weekly-row-copy">
+          <div class="oracle-weekly-row-name">${escapeHtml(row?.label || fm.label)}</div>
+          <div class="oracle-weekly-row-sub">${escapeHtml(`${activity} activity • +${control} control`)}</div>
         </div>
       </div>
-    `;
-  }
 
+      <div class="oracle-weekly-row-right">
+        <div class="oracle-weekly-row-score">${escapeHtml(String(score))}</div>
+        <div class="oracle-weekly-row-meta">
+          <span>${qualified} ready ops</span>
+          <span>${players} active now</span>
+        </div>
+      </div>
+    </article>
+  `;
+  }
   function formatRemainCompact(sec) {
     let left = Math.max(0, intOr(sec, 0));
     const d = Math.floor(left / 86400);
@@ -827,43 +810,52 @@
   }
 
   function renderFactionPulseCard(row) {
-    const faction = row?.faction || "";
-    const fm = factionMeta(faction);
-    const lastEcho = row?.lastEcho || "";
-    const members = intOr(row?.members, 0);
-    const controlled = intOr(row?.controlledNodes, 0);
-    const hot = intOr(row?.hotZones, 0);
-    const sieges = intOr(row?.activeSieges, 0);
-    const recent = intOr(row?.recentEchoes, 0);
-    const mult = numOr(row?.influenceMult, 1);
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const lastEcho = row?.lastEcho || "";
+  const members = intOr(row?.members, 0);
+  const controlled = intOr(row?.controlledNodes, 0);
+  const hot = intOr(row?.hotZones, 0);
+  const sieges = intOr(row?.activeSieges, 0);
+  const recent = intOr(row?.recentEchoes, 0);
+  const mult = numOr(row?.influenceMult, 1);
 
-    return `
-      <article class="oracle-faction-card ${fm.cls}">
-        <div class="oracle-faction-top">
-          <div class="oracle-faction-id">
-            <div class="oracle-faction-id">
-  ${renderFactionBadge(faction, { big: true })}
-  <div>
-    <div class="oracle-faction-name">${escapeHtml(row?.label || fm.label)}</div>
-    <div class="oracle-faction-sub">${members} members</div>
-  </div>
-</div>
+  const signalTags = [];
+  if (controlled > 0) signalTags.push(`<span class="oracle-soft-pill neutral">${controlled} held</span>`);
+  if (hot > 0) signalTags.push(`<span class="oracle-soft-pill warn">${hot} hot</span>`);
+  if (sieges > 0) signalTags.push(`<span class="oracle-soft-pill danger">${sieges} siege</span>`);
+  if (recent > 0) signalTags.push(`<span class="oracle-soft-pill live">${recent} recent</span>`);
+
+  return `
+    <article class="oracle-faction-card ${fm.cls}">
+      <div class="oracle-faction-top">
+        <div class="oracle-faction-id">
+          ${renderFactionBadge(faction, { big: true })}
+          <div>
+            <div class="oracle-faction-name">${escapeHtml(row?.label || fm.label)}</div>
+            <div class="oracle-faction-sub">${members} members</div>
           </div>
-          <div class="oracle-faction-mult">x${mult.toFixed(2)}</div>
         </div>
 
-        <div class="oracle-faction-stats">
-          ${miniStat("Control", controlled)}
-          ${miniStat("Hot", hot)}
-          ${miniStat("Sieges", sieges)}
-          ${miniStat("Echoes", recent)}
-        </div>
+        <div class="oracle-faction-mult">x${mult.toFixed(2)}</div>
+      </div>
 
-        <div class="oracle-faction-last">
-          ${lastEcho ? escapeHtml(lastEcho) : "No fresh broadcast."}
-        </div>
-      </article>
-    `;
+      <div class="oracle-faction-signals">
+        ${signalTags.length ? signalTags.join("") : `<span class="oracle-soft-pill quiet">Quiet front</span>`}
+      </div>
+
+      <div class="oracle-faction-stats">
+        ${miniStat("Control", controlled)}
+        ${miniStat("Hot", hot)}
+        ${miniStat("Sieges", sieges)}
+        ${miniStat("Echoes", recent)}
+      </div>
+
+      <div class="oracle-faction-last">
+        ${lastEcho ? escapeHtml(lastEcho) : "No fresh broadcast."}
+      </div>
+    </article>
+  `;
   }
 
   function miniStat(label, value) {
@@ -876,56 +868,56 @@
   }
 
   function renderHallTab(hall, meta) {
-    const topLevels = Array.isArray(hall?.topLevels) ? hall.topLevels : [];
-    const fortress = hall?.fortressStandout || {};
-    const actor = hall?.worldActor || {};
+  const topLevels = Array.isArray(hall?.topLevels) ? hall.topLevels : [];
+  const fortress = hall?.fortressStandout || {};
+  const actor = hall?.worldActor || {};
 
-    return `
-      <div class="oracle-grid hall">
-        <section class="oracle-panel">
-          <div class="oracle-panel-head">
-            <div>
-              <div class="oracle-panel-kicker">ASCENSION</div>
-              <div class="oracle-panel-title">Top levels</div>
-            </div>
-            <div class="oracle-panel-note">${topLevels.length || 0} tracked</div>
+  return `
+    <div class="oracle-grid hall oracle-hall-grid">
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">ASCENSION ARCHIVE</div>
+            <div class="oracle-panel-title">Top levels</div>
           </div>
+          <div class="oracle-panel-note">${topLevels.length || 0} tracked</div>
+        </div>
 
-          ${topLevels.length ? `
-            <div class="oracle-rank-list">
-              ${topLevels.slice(0, 8).map(renderTopLevelRow).join("")}
-            </div>
-          ` : `
-            <div class="oracle-empty compact">
-              <div class="oracle-empty-title">No ascendants yet</div>
-              <div class="oracle-empty-text">Level leaders will surface here once activity accumulates.</div>
-            </div>
-          `}
-        </section>
-
-        <section class="oracle-panel">
-          <div class="oracle-panel-head">
-            <div>
-              <div class="oracle-panel-kicker">FORTRESS STANDOUT</div>
-              <div class="oracle-panel-title">Moon Lab signal</div>
-            </div>
+        ${topLevels.length ? `
+          <div class="oracle-rank-list">
+            ${topLevels.slice(0, 8).map(renderTopLevelRow).join("")}
           </div>
-
-          ${renderFortressStandout(fortress)}
-        </section>
-
-        <section class="oracle-panel">
-          <div class="oracle-panel-head">
-            <div>
-              <div class="oracle-panel-kicker">WORLD ACTOR</div>
-              <div class="oracle-panel-title">Most visible current force</div>
-            </div>
+        ` : `
+          <div class="oracle-empty compact">
+            <div class="oracle-empty-title">No ascendants yet</div>
+            <div class="oracle-empty-text">Level leaders will surface here once activity accumulates.</div>
           </div>
+        `}
+      </section>
 
-          ${renderWorldActor(actor)}
-        </section>
-      </div>
-    `;
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">FORTRESS SIGNAL</div>
+            <div class="oracle-panel-title">Moon Lab standout</div>
+          </div>
+        </div>
+
+        ${renderFortressStandout(fortress)}
+      </section>
+
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">WORLD ACTOR</div>
+            <div class="oracle-panel-title">Most visible current force</div>
+          </div>
+        </div>
+
+        ${renderWorldActor(actor)}
+      </section>
+    </div>
+  `;
   }
 
   function renderTopLevelRow(row, idx) {
@@ -933,11 +925,12 @@
   const fm = factionMeta(faction);
   const lvl = intOr(row?.level, 0);
   const xp = intOr(row?.xp, 0);
+  const rank = idx + 1;
 
   return `
-    <div class="oracle-rank-row">
+    <div class="oracle-rank-row ${rank === 1 ? "top-1" : rank === 2 ? "top-2" : rank === 3 ? "top-3" : ""}">
       <div class="oracle-rank-left">
-        <div class="oracle-rank-no">${idx + 1}</div>
+        <div class="oracle-rank-no">${rank}</div>
         ${renderFactionBadge(faction)}
         <div>
           <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
@@ -952,62 +945,66 @@
   `;
   }
   function renderFortressStandout(f) {
-    const hasData = !!(f && (f.name || f.label || f.floor));
-    if (!hasData) {
-      return `
-        <div class="oracle-empty compact">
-          <div class="oracle-empty-title">No fortress standout yet</div>
-          <div class="oracle-empty-text">The next serious clear will carve a mark here.</div>
-        </div>
-      `;
-    }
-
-    const faction = f?.faction || "";
-    const fm = factionMeta(faction);
-
+  const hasData = !!(f && (f.name || f.label || f.floor));
+  if (!hasData) {
     return `
-      <div class="oracle-standout-card">
-        <div class="oracle-standout-top">
-          <div class="oracle-standout-top">
-  ${renderFactionBadge(faction, { big: true })}
-  <div>
-    <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
-    <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
-  </div>
-</div>
-        <div class="oracle-standout-text">${escapeHtml(f?.label || "Fortress signal recorded.")}</div>
-        <div class="oracle-standout-age">${escapeHtml(formatAge(null, f?.ts))}</div>
+      <div class="oracle-empty compact">
+        <div class="oracle-empty-title">No fortress standout yet</div>
+        <div class="oracle-empty-text">The next serious clear will carve a mark here.</div>
       </div>
     `;
   }
 
-  function renderWorldActor(a) {
-    const hasData = !!(a && (a.headline || a.label || a.faction));
-    if (!hasData) {
-      return `
-        <div class="oracle-empty compact">
-          <div class="oracle-empty-title">No dominant actor yet</div>
-          <div class="oracle-empty-text">Oracle will highlight the strongest current push once the board heats up.</div>
+  const faction = f?.faction || "";
+
+  return `
+    <div class="oracle-standout-card prestige">
+      <div class="oracle-standout-kicker">Recorded standout</div>
+
+      <div class="oracle-standout-top">
+        ${renderFactionBadge(faction, { big: true })}
+        <div>
+          <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
+          <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
         </div>
-      `;
-    }
+      </div>
 
-    const faction = a?.faction || "";
-    const fm = factionMeta(faction);
+      <div class="oracle-standout-text">${escapeHtml(f?.label || "Fortress signal recorded.")}</div>
+      <div class="oracle-standout-age">${escapeHtml(formatAge(null, f?.ts))}</div>
+    </div>
+  `;
+  }
+  
 
+  function renderWorldActor(a) {
+  const hasData = !!(a && (a.headline || a.label || a.faction));
+  if (!hasData) {
     return `
-      <div class="oracle-standout-card actor">
-        <div class="oracle-standout-top">
-          <div class="oracle-standout-top">
-  ${renderFactionBadge(faction, { big: true, code: a?.code || fm.code })}
-  <div>
-    <div class="oracle-standout-name">${escapeHtml(a?.label || fm.label)}</div>
-    <div class="oracle-standout-sub">Current force</div>
-  </div>
-</div>
-        <div class="oracle-standout-text">${escapeHtml(a?.headline || "Signal building...")}</div>
+      <div class="oracle-empty compact">
+        <div class="oracle-empty-title">No dominant actor yet</div>
+        <div class="oracle-empty-text">Oracle will highlight the strongest current push once the board heats up.</div>
       </div>
     `;
+  }
+
+  const faction = a?.faction || "";
+  const fm = factionMeta(faction);
+
+  return `
+    <div class="oracle-standout-card actor">
+      <div class="oracle-standout-kicker">Current force</div>
+
+      <div class="oracle-standout-top">
+        ${renderFactionBadge(faction, { big: true, code: a?.code || fm.code })}
+        <div>
+          <div class="oracle-standout-name">${escapeHtml(a?.label || fm.label)}</div>
+          <div class="oracle-standout-sub">World presence</div>
+        </div>
+      </div>
+
+      <div class="oracle-standout-text">${escapeHtml(a?.headline || "Signal building...")}</div>
+    </div>
+  `;
   }
 
   function renderSkeleton() {
