@@ -208,6 +208,30 @@
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
 }
 
+.hero-frame.has-aura{
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.60),
+    0 0 28px var(--hero-aura-glow, rgba(125,211,252,.22));
+}
+
+.hero-frame .hero-aura-ring{
+  position:absolute;
+  inset:-6px;
+  border-radius:28px;
+  border:1px solid var(--hero-aura-border, rgba(125,211,252,.22));
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04),
+    0 0 24px var(--hero-aura-glow, rgba(125,211,252,.22));
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .18s ease;
+  z-index:0;
+}
+
+.hero-frame.has-aura .hero-aura-ring{
+  opacity:1;
+}
+
 html.ah-modal-open #heroFrame{
   opacity: 0 !important;
   filter: none !important;
@@ -225,6 +249,25 @@ html.ah-modal-open #heroFrame{
   background:rgba(0,0,0,.55);
   border:1px solid rgba(255,255,255,.16);
   backdrop-filter:blur(8px);
+}
+
+.hero-aura-badge{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  max-width:min(72vw, 280px);
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);
+  color:#f5f7ff;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  backdrop-filter:blur(10px);
+  box-shadow:0 10px 24px rgba(0,0,0,.24);
 }
     
 
@@ -3518,6 +3561,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <!-- ŚRODEK – SKIN / HERO -->
 <div class="hero-center">
   <div class="hero-frame" id="heroFrame">
+    <div id="heroAuraRing" class="hero-aura-ring"></div>
     <img
       id="player-skin"
       class="hero-skin"
@@ -3533,6 +3577,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <span>·</span>
     <span id="heroLevel">Lv.1</span>
   </div>
+  <div id="heroAuraBadge" class="hero-aura-badge"></div>
   <div class="share-row" id="shareRow" style="display:none">
   <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
   <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
@@ -5434,6 +5479,67 @@ function setHeroFrame(frameUrl){
   }
 }
 
+function formatHeroAuraRemain(sec){
+  let left = Math.max(0, Number(sec || 0) || 0);
+  const d = Math.floor(left / 86400);
+  left %= 86400;
+  const h = Math.floor(left / 3600);
+  left %= 3600;
+  const m = Math.floor(left / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function getAuraToneStyle(faction){
+  const key = String(faction || "").trim().toLowerCase();
+  if (key === "rogue_byte") {
+    return { bg: "rgba(255,96,150,.12)", border: "rgba(255,96,150,.28)", glow: "rgba(255,96,150,.24)", color: "#ffd8e8" };
+  }
+  if (key === "echo_wardens") {
+    return { bg: "rgba(123,225,255,.12)", border: "rgba(123,225,255,.28)", glow: "rgba(123,225,255,.24)", color: "#dcf8ff" };
+  }
+  if (key === "pack_burners") {
+    return { bg: "rgba(255,181,82,.12)", border: "rgba(255,181,82,.28)", glow: "rgba(255,181,82,.24)", color: "#ffe7bf" };
+  }
+  if (key === "inner_howl") {
+    return { bg: "rgba(164,255,171,.12)", border: "rgba(164,255,171,.28)", glow: "rgba(164,255,171,.24)", color: "#e4ffe6" };
+  }
+  return { bg: "rgba(255,255,255,.08)", border: "rgba(255,255,255,.16)", glow: "rgba(255,255,255,.18)", color: "#f5f7ff" };
+}
+
+function applyHeroAura(aura){
+  const frame = document.getElementById("heroFrame");
+  const badge = document.getElementById("heroAuraBadge");
+  if (!frame || !badge) return;
+
+  const label = String(aura?.label || aura?.key || "").trim();
+  if (!aura || !label) {
+    frame.classList.remove("has-aura");
+    frame.style.removeProperty("--hero-aura-border");
+    frame.style.removeProperty("--hero-aura-glow");
+    badge.style.display = "none";
+    badge.textContent = "";
+    badge.style.background = "";
+    badge.style.borderColor = "";
+    badge.style.color = "";
+    return;
+  }
+
+  const tone = getAuraToneStyle(aura?.faction);
+  const remain = Number(aura?.expiresInSec || 0) > 0 ? ` • ${formatHeroAuraRemain(aura.expiresInSec)}` : "";
+
+  frame.classList.add("has-aura");
+  frame.style.setProperty("--hero-aura-border", tone.border);
+  frame.style.setProperty("--hero-aura-glow", tone.glow);
+
+  badge.style.display = "inline-flex";
+  badge.style.background = tone.bg;
+  badge.style.borderColor = tone.border;
+  badge.style.color = tone.color;
+  badge.textContent = `${label}${remain}`;
+}
+
 function pickFrameUrl(p){
   return (
     p?.frameUrl ||
@@ -5511,6 +5617,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
 
     /* ✅ A) TAG: pobierz tier tag z profilu */
     PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
+    PROFILE.weeklyAura = p?.weeklyAura || p?.activeAura || null;
 
     PROFILE.avatar = p?.avatar || PROFILE.avatar || null;
     PROFILE.avatarImg = p?.avatar?.img || PROFILE.avatarImg || "";
@@ -5534,6 +5641,8 @@ hydrateFactionFromPayload({ profile: p, ...out });
         profileAvatar: avatarImg,
         skin: p?.skin || PROFILE.skin || null,
         activeSkin: p?.skin || PROFILE.skin || null,
+        weeklyAura: p?.weeklyAura || p?.activeAura || null,
+        activeAura: p?.weeklyAura || p?.activeAura || null,
         heroImg: heroImg,
         heroPng: heroImg,
         character: heroImg,
@@ -5551,6 +5660,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
       pickFrameUrl(p) ||
       "https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/v1771250188/frames/frame_supporter.webp"
     );
+    applyHeroAura(p?.weeklyAura || p?.activeAura || null);
 
     // ✅ Topbar może się przebudować – ok
     try { renderTopbar(); } catch (_) {}
@@ -6518,11 +6628,31 @@ function renderBoardRows(rows, sort) {
     const name = getName(r, i);
     const faction = getFaction(r);
     const value = getValue(r, sort);
+    const auraBadge = (() => {
+      const label = String(r?.aura?.label || r?.aura?.key || "").trim();
+      if (!label) return "";
+      const tone = getAuraToneStyle(r?.aura?.faction);
+      return `
+        <span style="
+          display:inline-flex;
+          align-items:center;
+          padding:3px 7px;
+          border-radius:999px;
+          border:1px solid ${tone.border};
+          background:${tone.bg};
+          color:${tone.color};
+          font-size:10px;
+          font-weight:700;
+          line-height:1.15;
+        ">${label}</span>
+      `;
+    })();
 
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.03);">
         <div style="min-width:0;">
           <div style="font-weight:700;">#${rank} ${name}</div>
+          ${auraBadge ? `<div style="margin-top:4px;">${auraBadge}</div>` : ""}
           <div style="opacity:.7;font-size:12px;">${faction ? faction + " · " : ""}${valueLabel}</div>
         </div>
         <div style="font-weight:700;white-space:nowrap;">${value}</div>
