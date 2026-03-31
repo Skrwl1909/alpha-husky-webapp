@@ -3923,20 +3923,23 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
 <style id="broken-contracts-css">
   #brokenContractsBack .sheet-card.bc-sheet{
-    width:min(580px,100%);
-    max-height:calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-    padding:18px;
-    border-radius:22px;
-    border:1px solid rgba(255,255,255,.08);
-    background:
-      radial-gradient(circle at top left, rgba(126,231,135,.06), transparent 34%),
-      linear-gradient(180deg, rgba(18,23,31,.96), rgba(11,15,22,.98));
-    box-shadow:
-      0 18px 48px rgba(0,0,0,.44),
-      inset 0 1px 0 rgba(255,255,255,.05);
+  width:min(580px,100%);
+  height:calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  max-height:none;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:18px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(circle at top left, rgba(126,231,135,.06), transparent 34%),
+    linear-gradient(180deg, rgba(18,23,31,.96), rgba(11,15,22,.98));
+  box-shadow:
+    0 18px 48px rgba(0,0,0,.44),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  overflow:hidden;
+  box-sizing:border-box;
   }
 
   .bc-head{
@@ -3983,11 +3986,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   }
 
   .bc-list{
-    display:grid;
-    gap:14px;
-    overflow:auto;
-    min-height:0;
-    padding-right:2px;
+  flex:1 1 auto;
+  min-height:0;
+  display:grid;
+  align-content:start;
+  gap:14px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding-right:4px;
+  padding-bottom:calc(120px + env(safe-area-inset-bottom));
   }
 
   .bc-empty{
@@ -4239,29 +4248,24 @@ body.bc-open #ahCommunityBtn{
 
 /* mobile readability */
 @media (max-width: 640px){
-  #brokenContractsBack .sheet-card.bc-sheet{
-    width:min(100%, 100vw - 10px);
-    max-height:calc(100vh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    padding:14px;
-    border-radius:18px;
+  #brokenContractsBack{
+    padding:
+      calc(6px + env(safe-area-inset-top))
+      6px
+      calc(6px + env(safe-area-inset-bottom));
   }
 
-  #bcRoot{
-    padding-bottom:calc(122px + env(safe-area-inset-bottom));
+  #brokenContractsBack .sheet-card.bc-sheet{
+    width:calc(100vw - 12px);
+    height:calc(100vh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border-radius:18px;
+    padding:14px;
+    gap:12px;
   }
 
   .bc-card{
     gap:12px;
     padding:14px;
-  }
-
-  .bc-row{
-    align-items:flex-start;
-  }
-
-  .bc-row-value{
-    white-space:normal;
-    text-align:right;
   }
 
   .bc-bar{
@@ -4272,19 +4276,12 @@ body.bc-open #ahCommunityBtn{
       rgba(4,7,12,.82);
   }
 
-  .bc-fill{
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.28),
-      0 0 14px rgba(255,255,255,.12);
-  }
-
   .bc-fill.has-progress{
     min-width:16px;
   }
 
-  .bc-row-percent{
-    font-size:12px;
-    opacity:.82;
+  .bc-list{
+    padding-bottom:calc(132px + env(safe-area-inset-bottom));
   }
   }
 </style>
