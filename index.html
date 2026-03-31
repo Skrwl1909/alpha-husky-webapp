@@ -4196,6 +4196,97 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   .bc-chip-val{
     color:#f4f7fb;
   }
+  /* === Broken Contracts mobile/layout fix === */
+
+#brokenContractsBack .sheet-card.bc-sheet{
+  overflow:hidden;
+}
+
+#bcStatus{
+  flex:0 0 auto;
+}
+
+#bcRoot{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding-right:4px;
+  padding-bottom:calc(108px + env(safe-area-inset-bottom));
+}
+
+/* lekki scrollbar */
+#bcRoot::-webkit-scrollbar{
+  width:8px;
+}
+#bcRoot::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
+}
+#bcRoot::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+/* ukryj community button gdy Broken Contracts jest otwarte */
+body.bc-open #ahCommunityBtn{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:translateY(10px) scale(.96);
+  transition:opacity .18s ease, transform .18s ease;
+}
+
+/* mobile readability */
+@media (max-width: 640px){
+  #brokenContractsBack .sheet-card.bc-sheet{
+    width:min(100%, 100vw - 10px);
+    max-height:calc(100vh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding:14px;
+    border-radius:18px;
+  }
+
+  #bcRoot{
+    padding-bottom:calc(122px + env(safe-area-inset-bottom));
+  }
+
+  .bc-card{
+    gap:12px;
+    padding:14px;
+  }
+
+  .bc-row{
+    align-items:flex-start;
+  }
+
+  .bc-row-value{
+    white-space:normal;
+    text-align:right;
+  }
+
+  .bc-bar{
+    height:12px;
+    border-color:rgba(255,255,255,.14);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.06)),
+      rgba(4,7,12,.82);
+  }
+
+  .bc-fill{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.28),
+      0 0 14px rgba(255,255,255,.12);
+  }
+
+  .bc-fill.has-progress{
+    min-width:16px;
+  }
+
+  .bc-row-percent{
+    font-size:12px;
+    opacity:.82;
+  }
+  }
 </style>
 
 <!-- Broken Contracts modal -->
