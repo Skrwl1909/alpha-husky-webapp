@@ -134,23 +134,19 @@
 }
 
 /* =========================
-   ✅ HERO FRAME — clean viewport fit
+   ✅ HERO FRAME — founder-friendly polish
    + ✅ dim/blur hero when any modal/sheet is open (ah-modal-open)
    ========================= */
 
 .hero-frame{
-  width:min(44vw, 196px);
+  width:min(40vw, 178px);
   aspect-ratio:3/4;
 
   position: relative;
   border-radius: 24px;
 
-  /* spokojniejsze tło bazy pod frame */
-  background:
-    radial-gradient(circle at top left, rgba(0,229,255,.12), transparent 58%),
-    radial-gradient(circle at bottom right, rgba(255,176,0,.10), transparent 58%),
-    rgba(0,0,0,.18);
-
+  /* usuwamy efekt dużej "karty" pod ramą */
+  background: transparent;
   border:0;
   box-shadow:none;
 
@@ -159,17 +155,17 @@
   isolation: isolate;
 
   /* 🎛️ TUNING */
-  --frame-bleed: 6px;    /* ile ramka może wyjść poza kadr */
-  --frame-scale: 1.12;   /* dopasowanie “większa/mniejsza” */
+  --frame-bleed: 4px;    /* ile ramka może wyjść poza kadr */
+  --frame-scale: 1.22;   /* founder frame trochę większy */
   --frame-x: 0px;        /* mikro przesunięcie */
-  --frame-y: 8px;        /* lekkie opuszczenie overlay */
+  --frame-y: 4px;        /* lekkie opuszczenie overlay */
 }
 
 /* ✅ NOWY viewport — skin siedzi w realnym "oknie" frame'a */
 .hero-frame .hero-skin-viewport{
   position:absolute;
-  inset:8% 9% 14% 9%;
-  border-radius:18px;
+  inset:14% 18% 19% 18%;
+  border-radius:16px;
   overflow:hidden;
   z-index:1;
   background:transparent;
@@ -181,8 +177,8 @@
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center 34%;
-  transform: scale(.94);
+  object-position: center 30%;
+  transform: scale(1.02);
   border-radius: 0;
   clip-path: none;
 }
@@ -193,7 +189,7 @@
   position:absolute;
   left:0; right:0; bottom:0;
   height: 30%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.34) 100%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.28) 100%);
   z-index: 2;
   pointer-events:none;
 }
@@ -217,18 +213,16 @@
 
 .hero-frame.has-aura{
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.04),
-    0 0 28px var(--hero-aura-glow, rgba(125,211,252,.22));
+    0 0 18px var(--hero-aura-glow, rgba(125,211,252,.16));
 }
 
 .hero-frame .hero-aura-ring{
   position:absolute;
-  inset:-6px;
-  border-radius:28px;
-  border:1px solid var(--hero-aura-border, rgba(125,211,252,.22));
+  inset:10px;
+  border-radius:18px;
+  border:1px solid var(--hero-aura-border, rgba(125,211,252,.14));
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.04),
-    0 0 24px var(--hero-aura-glow, rgba(125,211,252,.22));
+    0 0 18px var(--hero-aura-glow, rgba(125,211,252,.16));
   pointer-events:none;
   opacity:0;
   transition:opacity .18s ease;
@@ -245,6 +239,7 @@ html.ah-modal-open #heroFrame{
   visibility: hidden;
   pointer-events: none;
 }
+
 .hero-caption{
   font-size:13px;
   display:flex;
@@ -282,7 +277,6 @@ html.ah-modal-open #heroFrame{
   position:relative;
   z-index:4;
 }
-    
 
 /* ✅ HOME REBUILD PATCH (KROK A)
    - chowamy legacy kolumny (zostają w DOM dla fallback click)
@@ -314,19 +308,19 @@ html.ah-modal-open #heroFrame{
   .hud-col.hud-right{ transform: translateX(-16px); }
 
   .hero-frame{
-    width:min(50vw, 204px);
-    --frame-scale: 1.08;
-    --frame-y: 7px;
+    width:min(46vw, 186px);
+    --frame-scale: 1.18;
+    --frame-y: 3px;
   }
 
   .hero-frame .hero-skin-viewport{
-    inset:8.5% 8.5% 14.5% 8.5%;
-    border-radius:16px;
+    inset:15% 18.5% 19.5% 18.5%;
+    border-radius:14px;
   }
 
   .hero-frame .hero-skin{
-    object-position:center 33%;
-    transform:scale(.95);
+    object-position:center 29%;
+    transform:scale(1.03);
   }
 
   .hero-center .share-row{
@@ -339,7 +333,8 @@ html.ah-modal-open #heroFrame{
     min-width: 72px;
   }
 }
-    /* =========================
+
+/* =========================
    SKINS MODAL — kill double frame
    ========================= */
 
