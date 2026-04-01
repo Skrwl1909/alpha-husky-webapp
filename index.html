@@ -3566,14 +3566,22 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <div class="hero-center">
   <div class="hero-frame" id="heroFrame">
     <div id="heroAuraRing" class="hero-aura-ring"></div>
-    <img
-      id="player-skin"
-      class="hero-skin"
-      src="/assets/skins/lunarhowl_skin.webp"
-      alt="Alpha Husky skin">
+
+    <div class="hero-skin-viewport">
+      <img
+        id="player-skin"
+        class="hero-skin"
+        src="/assets/skins/lunarhowl_skin.webp"
+        alt="Alpha Husky skin">
+    </div>
 
     <!-- ✅ FRAME OVERLAY (ramka na wierzchu) -->
-  <img id="player-frame" class="hero-frame-overlay" src="" alt="" style="display:none">
+    <img
+      id="player-frame"
+      class="hero-frame-overlay"
+      src=""
+      alt=""
+      style="display:none">
   </div>
 
   <div class="hero-caption">
@@ -3581,12 +3589,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <span>·</span>
     <span id="heroLevel">Lv.1</span>
   </div>
+
   <div id="heroAuraBadge" class="hero-aura-badge"></div>
+
   <div class="share-row" id="shareRow" style="display:none">
-  <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
-  <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
-  <button class="btn share-mini" type="button" data-share-style="3">Share III</button>
-</div>
+    <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
+    <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
+    <button class="btn share-mini" type="button" data-share-style="3">Share III</button>
+  </div>
 
   <!-- ✅ ACTIVE BUFFS (pod nickiem/levelem) -->
   <div id="buffsLine" class="buffs-line" style="display:none"></div>
