@@ -760,6 +760,8 @@ html.ah-skins-open #heroFrame{
 #faction .tag-supporter{ background: rgba(0,229,255,.14); border-color: rgba(0,229,255,.32); }
 #faction .tag-founder{ background: rgba(255,176,0,.14); border-color: rgba(255,176,0,.34); }
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
+#faction .tag-believe{ background: rgba(99,255,214,.14); border-color: rgba(99,255,214,.30); }
+#faction .tag-dual{ background: rgba(255,221,109,.14); border-color: rgba(255,221,109,.30); }
 
 /* =========================
    TON CONNECT (small)
@@ -829,6 +831,8 @@ html.ah-skins-open #heroFrame{
 #faction .tag-supporter{ background: rgba(0,229,255,.14); border-color: rgba(0,229,255,.32); }
 #faction .tag-founder{ background: rgba(255,176,0,.14); border-color: rgba(255,176,0,.34); }
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
+#faction .tag-believe{ background: rgba(99,255,214,.14); border-color: rgba(99,255,214,.30); }
+#faction .tag-dual{ background: rgba(255,221,109,.14); border-color: rgba(255,221,109,.30); }
   @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
   .fallback {
     position: absolute; inset: 0; display:none; z-index: 3;
@@ -3781,29 +3785,61 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 </div>
     <!-- ✅ Support Sheet -->
 <div id="supportBack" class="ah-back" style="display:none">
-  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support Alpha">
     <div class="ah-panel-hd">
-      <div class="ah-title">Support</div>
+      <div class="ah-title">Support Alpha</div>
       <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
     </div>
 
-    <div class="ah-actions" style="gap:10px">
-      <button class="ah-action" type="button" data-support-tier="supporter">
-        ⭐ Supporter — frame + tag
-      </button>
-      <button class="ah-action" type="button" data-support-tier="patron">
-        💎 Patron — frame + tag
-      </button>
+    <div style="display:grid;gap:14px">
+      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+        <div style="font-weight:700">Telegram Stars</div>
+        <div id="supportStarsStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
+          Checking Stars support status...
+        </div>
+        <div class="ah-actions" style="gap:10px;margin-top:10px">
+          <button class="ah-action" type="button" data-support-tier="supporter">
+            ⭐ Supporter — frame + tag
+          </button>
+          <button class="ah-action" type="button" data-support-tier="patron">
+            💎 Patron — frame + tag
+          </button>
+          <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
+            🔥 Founder (admin)
+          </button>
+        </div>
+        <div style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
+          Native in-Telegram support stays unchanged. Existing Stars tags, frames, and support skins still apply.
+        </div>
+      </section>
 
-      <!-- Founder raczej admin/self-claim z backendu -->
-      <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
-        🔥 Founder (admin)
-      </button>
-    </div>
+      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+        <div style="font-weight:700">Believe / Solana Holder</div>
+        <div id="supportTokenStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
+          Token holder support is coming soon.
+        </div>
+        <div id="supportTokenPerks" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
+          Support with Stars is live now. Holder cosmetics and weekly support perks will unlock later.
+        </div>
+        <div class="ah-actions" style="gap:10px;margin-top:10px">
+          <button class="ah-action" id="supportTokenConnect" type="button" disabled>Coming Soon</button>
+          <button class="ah-action" id="supportTokenRefresh" type="button" disabled style="display:none">Refresh Holder Status</button>
+          <button class="ah-action" id="supportTokenClaim" type="button" disabled style="display:none">Weekly Claim</button>
+        </div>
+        <div id="supportTokenHint" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
+          Wallet linking, holder refresh, and weekly claim will open when the Believe support token is live.
+        </div>
+      </section>
 
-    <div style="opacity:.85;font-size:12px;line-height:1.35;margin-top:10px">
-      Purchase will unlock a topbar tag + frame (Supporter / Patron).  
-      Payment will be handled via Telegram (Stars) once backend is wired.
+      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+        <div style="font-weight:700">Combined Support Status</div>
+        <div id="supportCombinedStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
+          Loading combined support state...
+        </div>
+        <div id="supportCombinedPerks" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
+          Stars-only, token-only, and dual-supporter states will all appear here.
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -5555,7 +5591,7 @@ function setTopTag(tagKey, baseText="PACK"){
   const tagEl = document.getElementById("factionTag");
   if(!tagEl) return;
 
-  tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron");
+  tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron","tag-believe","tag-dual");
 
   const t = String(tagKey || "").toLowerCase();
 
@@ -5568,6 +5604,12 @@ function setTopTag(tagKey, baseText="PACK"){
   }else if(t === "patron"){
     tagEl.textContent = "PATRON";
     tagEl.classList.add("tag-patron");
+  }else if(t === "believe_holder" || t === "believe"){
+    tagEl.textContent = "BELIEVE";
+    tagEl.classList.add("tag-believe");
+  }else if(t === "dual_supporter" || t === "dual"){
+    tagEl.textContent = "DUAL";
+    tagEl.classList.add("tag-dual");
   }else{
     tagEl.textContent = String(baseText || "PACK");
     tagEl.classList.add("tag-pack");
