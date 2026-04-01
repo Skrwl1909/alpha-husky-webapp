@@ -52,7 +52,7 @@
   place-items:end center;
   box-sizing: border-box;
   padding:
-    calc(24px + env(safe-area-inset-top, 0px))
+    calc(94px + env(safe-area-inset-top, 0px))
     calc(16px + env(safe-area-inset-right, 0px))
     calc(24px + 78px + env(safe-area-inset-bottom, 0px)) /* ✅ + miejsce na bottom nav */
     calc(16px + env(safe-area-inset-left, 0px));
@@ -93,7 +93,10 @@
   flex-direction:column;
   align-items:center;
   justify-content:flex-end;
-  gap:6px;
+  gap:10px;
+  padding-top:clamp(8px, 1.6vh, 16px);
+  position:relative;
+  z-index:2;
 }
 
 /* ✅ SHARE ROW — ma być NAD skinem (czyli odstęp w dół, nie w górę) */
@@ -106,7 +109,7 @@
   flex-wrap: wrap;
 
   position: relative;
-  z-index: 2; /* niżej niż buffsLine (z-index:6) */
+  z-index: 4; /* niżej niż buffsLine (z-index:6) */
 }
 
 .hero-center .btn.share-mini{
@@ -131,64 +134,68 @@
 }
 
 /* =========================
-   ✅ HERO FRAME — stable overlay (skin never escapes, frame never clipped)
+   ✅ HERO FRAME — clean viewport fit
    + ✅ dim/blur hero when any modal/sheet is open (ah-modal-open)
    ========================= */
 
 .hero-frame{
-  width:min(46vw, 210px);
+  width:min(44vw, 196px);
   aspect-ratio:3/4;
 
   position: relative;
   border-radius: 24px;
 
-  /* tło karty */
+  /* spokojniejsze tło bazy pod frame */
   background:
-    radial-gradient(circle at top left, rgba(0,229,255,.18), transparent 60%),
-    radial-gradient(circle at bottom right, rgba(255,176,0,.16), transparent 60%),
-    rgba(0,0,0,.72);
+    radial-gradient(circle at top left, rgba(0,229,255,.12), transparent 58%),
+    radial-gradient(circle at bottom right, rgba(255,176,0,.10), transparent 58%),
+    rgba(0,0,0,.18);
 
-  border:1px solid rgba(255,255,255,.18);
-  box-shadow:0 18px 40px rgba(0,0,0,.60);
+  border:0;
+  box-shadow:none;
 
   /* ✅ ważne: ramka może “wyjść” poza boxa */
   overflow: visible;
   isolation: isolate;
 
-  /* 🎛️ TUNING (dotykasz tylko tego) */
-  --frame-bleed: 12px;   /* ile ramka może wyjść poza kadr */
-  --frame-scale: 1.65;   /* dopasowanie “większa/mniejsza” */
+  /* 🎛️ TUNING */
+  --frame-bleed: 6px;    /* ile ramka może wyjść poza kadr */
+  --frame-scale: 1.12;   /* dopasowanie “większa/mniejsza” */
   --frame-x: 0px;        /* mikro przesunięcie */
-  --frame-y: 0px;        /* mikro przesunięcie */
+  --frame-y: 8px;        /* lekkie opuszczenie overlay */
 }
 
-/* ✅ SKIN zawsze w środku i nigdy nie “ucieknie” */
-.hero-frame .hero-skin{
-  position: relative;
-  z-index: 1;
+/* ✅ NOWY viewport — skin siedzi w realnym "oknie" frame'a */
+.hero-frame .hero-skin-viewport{
+  position:absolute;
+  inset:8% 9% 14% 9%;
+  border-radius:18px;
+  overflow:hidden;
+  z-index:1;
+  background:transparent;
+}
 
+/* ✅ SKIN siedzi w viewport i nie wychodzi poza ramkę */
+.hero-frame .hero-skin{
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
-
-  border-radius: inherit;
-
-  /* klucz: klipuje skina nawet gdy overflow jest visible */
-  clip-path: inset(0 round 24px);
+  object-position: center 34%;
+  transform: scale(.94);
+  border-radius: 0;
+  clip-path: none;
 }
 
 /* ✅ delikatne “sklejenie” skina z UI (ciemniej na dole) */
-.hero-frame::after{
+.hero-frame .hero-skin-viewport::after{
   content:"";
   position:absolute;
   left:0; right:0; bottom:0;
-  height: 34%;
-  border-radius: inherit;
-  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.42) 100%);
+  height: 30%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.34) 100%);
   z-index: 2;
   pointer-events:none;
-  clip-path: inset(0 round 24px);
 }
 
 /* ✅ RAMKA — pełna, nieucięta, na wierzchu */
@@ -205,12 +212,12 @@
 
   transform-origin: center;
   transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.30));
 }
 
 .hero-frame.has-aura{
   box-shadow:
-    0 18px 40px rgba(0,0,0,.60),
+    0 0 0 1px rgba(255,255,255,.04),
     0 0 28px var(--hero-aura-glow, rgba(125,211,252,.22));
 }
 
@@ -244,11 +251,15 @@ html.ah-modal-open #heroFrame{
   gap:6px;
   align-items:center;
   justify-content:center;
-  padding:4px 8px;
+  padding:5px 10px;
   border-radius:999px;
-  background:rgba(0,0,0,.55);
-  border:1px solid rgba(255,255,255,.16);
+  background:rgba(0,0,0,.48);
+  border:1px solid rgba(255,255,255,.14);
   backdrop-filter:blur(8px);
+  box-shadow:0 8px 18px rgba(0,0,0,.22);
+  margin-top:2px;
+  position:relative;
+  z-index:4;
 }
 
 .hero-aura-badge{
@@ -268,6 +279,8 @@ html.ah-modal-open #heroFrame{
   text-align:center;
   backdrop-filter:blur(10px);
   box-shadow:0 10px 24px rgba(0,0,0,.24);
+  position:relative;
+  z-index:4;
 }
     
 
@@ -300,7 +313,21 @@ html.ah-modal-open #heroFrame{
   /* ✅ PATCH 1A: mocniej na ultra wąskich ekranach */
   .hud-col.hud-right{ transform: translateX(-16px); }
 
-  .hero-frame{ width:56vw; }
+  .hero-frame{
+    width:min(50vw, 204px);
+    --frame-scale: 1.08;
+    --frame-y: 7px;
+  }
+
+  .hero-frame .hero-skin-viewport{
+    inset:8.5% 8.5% 14.5% 8.5%;
+    border-radius:16px;
+  }
+
+  .hero-frame .hero-skin{
+    object-position:center 33%;
+    transform:scale(.95);
+  }
 
   .hero-center .share-row{
     gap: 6px;
@@ -620,14 +647,14 @@ html.ah-skins-open #heroFrame{
   transform: translateY(1px);
 }
 
-  .btn {
-    appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
-    background:var(--glass); border:1px solid var(--stroke);
-    font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
-    display: flex; /* Umożliwia column layout w .btn.map */
-    align-items: center;
-    justify-content: center;
-  }
+.btn {
+  appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
+  background:var(--glass); border:1px solid var(--stroke);
+  font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
+  display: flex; /* Umożliwia column layout w .btn.map */
+  align-items: center;
+  justify-content: center;
+}
   .btn:active { transform: translateY(1px); }
   .btn.linklike { text-decoration:none; }
   /* Ogólny styl dla ikon w buttonach */
