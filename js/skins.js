@@ -157,6 +157,11 @@
     return k === "support_stars" || k === "stars_support" || k === "support";
   }
 
+  function isSupportToken(meta) {
+    const k = unlockKind(meta);
+    return k === "support_token" || k === "token_support" || k === "supporter_token";
+  }
+
   function getStarsPrice(metaOrKey) {
     const m = (typeof metaOrKey === "string") ? getMeta(metaOrKey) : metaOrKey;
     const v = Number(m?.stars ?? m?.cost?.stars ?? 0);
@@ -268,6 +273,13 @@
       return stars > 0
         ? `Premium support skin. Buy for ${stars} Stars.`
         : "Premium support skin. Buy with Telegram Stars.";
+    }
+
+    if (isSupportToken(meta)) {
+      if (have != null && need != null && need > 0) {
+        return `Locked. Reach Believe holder tier ${need} (${have}/${need}).`;
+      }
+      return "Locked. Reach the required Believe holder tier to unlock.";
     }
 
     const have = unlockHave(meta);

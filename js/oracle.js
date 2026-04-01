@@ -708,6 +708,9 @@
   const leaderLabel = String(weekly?.leaderLabel || "No leader yet").trim();
   const leaderScore = intOr(weekly?.leaderScore, 0);
   const remain = formatRemainCompact(intOr(weekly?.endsInSec, 0));
+  const recap = weekly?.weeklySummary || {};
+  const aura = weekly?.weeklyAura || null;
+  const rewards = weekly?.weeklyRewards || {};
 
   return `
     <section class="oracle-weekly">
@@ -721,6 +724,9 @@
           <div class="oracle-weekly-time-value">${escapeHtml(remain)}</div>
         </div>
       </div>
+
+      ${renderWeeklyRecap(recap, aura)}
+      ${renderWeeklyRewards(rewards, recap, aura)}
 
       <div class="oracle-weekly-cards">
         <div class="oracle-weekly-card leader">
@@ -789,6 +795,121 @@
     if (d > 0) return `${d}d ${h}h`;
     if (h > 0) return `${h}h ${m}m`;
     return `${m}m`;
+  }
+
+  function auraTone(faction) {
+    const key = String(faction || "").trim().toLowerCase();
+    if (key === "rogue_byte") return { bg: "rgba(108,74,255,.14)", border: "rgba(108,74,255,.24)", color: "#ddd4ff" };
+    if (key === "echo_wardens") return { bg: "rgba(66,208,255,.12)", border: "rgba(66,208,255,.22)", color: "#d1f5ff" };
+    if (key === "pack_burners") return { bg: "rgba(255,112,81,.12)", border: "rgba(255,112,81,.22)", color: "#ffd8cf" };
+    if (key === "inner_howl") return { bg: "rgba(255,198,82,.12)", border: "rgba(255,198,82,.22)", color: "#ffeab9" };
+    return { bg: "rgba(255,255,255,.08)", border: "rgba(255,255,255,.14)", color: "#f4f6ff" };
+  }
+
+  function renderAuraPill(aura, opts = {}) {
+    if (!aura || typeof aura !== "object") return "";
+    const label = String(aura?.label || aura?.key || "").trim();
+    if (!label) return "";
+
+    const tone = auraTone(aura?.faction);
+    const compact = !!opts.compact;
+    const showTimer = opts.showTimer !== false;
+    const remain = showTimer && intOr(aura?.expiresInSec, 0) > 0
+      ? ` | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}`
+      : "";
+
+    return `
+      <span
+        class="oracle-aura-pill ${compact ? "compact" : ""}"
+        style="background:${tone.bg};border-color:${tone.border};color:${tone.color};"
+      >${escapeHtml(`${label}${remain}`)}</span>
+    `;
+  }
+
+  function renderWeeklyRecap(summary, aura) {
+    if (!summary || typeof summary !== "object") return "";
+
+    const state = String(summary?.viewerState || "").trim();
+    const winnerLabel = String(summary?.winnerLabel || "Unknown faction").trim();
+    let lines = [];
+
+    if (state === "winner_qualified") {
+      const rewardLine = aura && intOr(aura?.expiresInSec, 0) > 0
+        ? `Reward active: ${String(aura?.label || "Faction Aura")} | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}`
+        : `Reward active: ${String(summary?.auraLabel || "Faction Aura")}`;
+      lines = [
+        "Your faction finished #1",
+        "You qualified",
+        rewardLine,
+      ];
+    } else if (state === "winner_unqualified") {
+      lines = [
+        "Your faction finished #1",
+        "You did not meet weekly qualification requirements",
+        "No aura was activated for your account",
+      ];
+    } else if (state === "other_faction") {
+      lines = [
+        `Winning faction: ${winnerLabel}`,
+        "Your faction did not secure the weekly aura this cycle",
+      ];
+    } else {
+      return "";
+    }
+
+    return `
+      <div class="oracle-weekly-recap">
+        <div class="oracle-weekly-recap-kicker">Last cycle recap</div>
+        <div class="oracle-weekly-recap-list">
+          ${lines.map((line) => `<div class="oracle-weekly-recap-line">${escapeHtml(line)}</div>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderWeeklyRewardCard(title, reward, subtitle) {
+    if (!reward || typeof reward !== "object") return "";
+    const label = String(reward?.label || reward?.key || "").trim();
+    if (!label) return "";
+
+    return `
+      <div class="oracle-weekly-reward-card ${reward?.active ? "is-active" : ""}">
+        <div class="oracle-weekly-reward-title">${escapeHtml(title)}</div>
+        <div class="oracle-weekly-reward-label">${escapeHtml(label)}</div>
+        ${subtitle ? `<div class="oracle-weekly-reward-sub">${escapeHtml(subtitle)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderWeeklyRewards(rewards, summary, aura) {
+    if (!rewards || typeof rewards !== "object") return "";
+
+    const factionAura = rewards?.factionAura || null;
+    const winnerLabel = String(summary?.winnerLabel || "Winning faction").trim();
+    const auraSubtitle = factionAura
+      ? (
+        factionAura?.active
+          ? `Active on your account${aura && intOr(aura?.expiresInSec, 0) > 0 ? ` | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}` : ""}`
+          : `Qualified ${winnerLabel} members receive this aura`
+      )
+      : "";
+
+    const cards = [
+      renderWeeklyRewardCard("Faction Aura", factionAura, auraSubtitle),
+      renderWeeklyRewardCard("MVP Reward", rewards?.mvpReward || null, "Top performer reward"),
+      renderWeeklyRewardCard("Raffle Reward", rewards?.raffleReward || null, "Drawn from qualified players"),
+    ].filter(Boolean);
+
+    if (!cards.length) return "";
+
+    return `
+      <div class="oracle-weekly-rewards">
+        <div class="oracle-weekly-rewards-kicker">Active weekly rewards</div>
+        <div class="oracle-weekly-reward-grid">
+          ${cards.join("")}
+        </div>
+      </div>
+    `;
   }
 
   function summaryCard(label, value, tone) {
@@ -926,6 +1047,7 @@
   const lvl = intOr(row?.level, 0);
   const xp = intOr(row?.xp, 0);
   const rank = idx + 1;
+  const aura = renderAuraPill(row?.aura, { compact: true, showTimer: false });
 
   return `
     <div class="oracle-rank-row ${rank === 1 ? "top-1" : rank === 2 ? "top-2" : rank === 3 ? "top-3" : ""}">
@@ -935,6 +1057,7 @@
         <div>
           <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
           <div class="oracle-rank-sub">${escapeHtml(fm.label)}</div>
+          ${aura ? `<div class="oracle-rank-aura">${aura}</div>` : ""}
         </div>
       </div>
       <div class="oracle-rank-right">
@@ -956,6 +1079,7 @@
   }
 
   const faction = f?.faction || "";
+  const aura = renderAuraPill(f?.aura, { compact: true, showTimer: false });
 
   return `
     <div class="oracle-standout-card prestige">
@@ -966,6 +1090,7 @@
         <div>
           <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
           <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
+          ${aura ? `<div class="oracle-standout-aura">${aura}</div>` : ""}
         </div>
       </div>
 
@@ -1759,6 +1884,10 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         color:#96a4d8;
       }
 
+      .oracle-rank-aura{
+        margin-top:5px;
+      }
+
       .oracle-standout-card{
         border-radius:20px;
         padding:14px;
@@ -1791,6 +1920,26 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         margin-top:10px;
         color:#93a0d1;
         font-size:12px;
+      }
+
+      .oracle-standout-aura{
+        margin-top:6px;
+      }
+
+      .oracle-aura-pill{
+        display:inline-flex;
+        align-items:center;
+        padding:6px 10px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.14);
+        font-size:11px;
+        font-weight:900;
+        line-height:1.2;
+      }
+
+      .oracle-aura-pill.compact{
+        padding:4px 8px;
+        font-size:10px;
       }
 
       .oracle-empty{
@@ -2100,6 +2249,89 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         color:#ffd888;
       }
 
+      .oracle-weekly-recap{
+        margin-top:12px;
+        padding:12px 14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-recap-kicker{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-recap-list{
+        display:grid;
+        gap:4px;
+        margin-top:8px;
+      }
+
+      .oracle-weekly-recap-line{
+        font-size:12px;
+        line-height:1.45;
+        color:#eef2ff;
+      }
+
+      .oracle-weekly-rewards{
+        margin-top:12px;
+      }
+
+      .oracle-weekly-rewards-kicker{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-reward-grid{
+        display:grid;
+        gap:10px;
+        grid-template-columns:repeat(3, 1fr);
+        margin-top:8px;
+      }
+
+      .oracle-weekly-reward-card{
+        padding:12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-reward-card.is-active{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.10), rgba(255,220,128,.04)),
+          rgba(255,255,255,.03);
+        border-color:rgba(255,220,128,.18);
+      }
+
+      .oracle-weekly-reward-title{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-reward-label{
+        margin-top:5px;
+        font-size:14px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-reward-sub{
+        margin-top:5px;
+        font-size:11px;
+        line-height:1.4;
+        color:#9eabd9;
+      }
+
       .oracle-weekly-cards{
         display:grid;
         grid-template-columns:1fr 1fr;
@@ -2382,6 +2614,10 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         .oracle-weekly-cards{
           grid-template-columns:1fr 1fr;
         }
+
+        .oracle-weekly-reward-grid{
+          grid-template-columns:1fr;
+        }
       }
 
     @media (max-width: 560px){
@@ -2490,6 +2726,10 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
   }
 
   .oracle-weekly-cards{
+    grid-template-columns:1fr;
+  }
+
+  .oracle-weekly-reward-grid{
     grid-template-columns:1fr;
   }
 

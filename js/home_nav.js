@@ -125,9 +125,10 @@
       return;
     }
     if (A === "support") {
-  closeBack("hubBack");
-  openBack("supportBack");
-  return;
+      closeBack("hubBack");
+      if (typeof window.Support?.open === "function") window.Support.open();
+      else openBack("supportBack");
+      return;
     }
     if (A === "stats") {
   closeBack("charBack");
