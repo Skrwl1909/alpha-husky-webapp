@@ -297,40 +297,45 @@ html.ah-modal-open #heroFrame{
 }
 
 /* ✅ MOBILE */
+/* ✅ MOBILE */
 @media (max-width:380px){
   .hud-layout{ gap:8px; }
+
   .hud-col .btn{
     font-size:12px;
     padding:6px 8px;
   }
 
   /* ✅ PATCH 1A: mocniej na ultra wąskich ekranach */
-  .hud-col.hud-right{ transform: translateX(-16px); }
+  .hud-col.hud-right{
+    transform: translateX(-16px);
+  }
 
   .hero-frame{
-    width:min(46vw, 186px);
-    --frame-scale: 1.18;
-    --frame-y: 3px;
+    width:min(53vw, 232px);
+    --frame-scale: 1.40;
+    --frame-y: 2px;
   }
 
   .hero-frame .hero-skin-viewport{
-    inset:15% 18.5% 19.5% 18.5%;
+    inset:7% 11% 12% 11%;
     border-radius:14px;
   }
 
   .hero-frame .hero-skin{
-    object-position:center 29%;
-    transform:scale(1.03);
+    object-position:center 20%;
+    transform:scale(1.22);
   }
 
   .hero-center .share-row{
-    gap: 6px;
-    margin-bottom: 6px; /* nadal NAD skinem */
+    gap:6px;
+    margin-bottom:6px; /* nadal NAD skinem */
   }
+
   .hero-center .btn.share-mini{
-    padding: 6px 9px;
-    font-size: 11px;
-    min-width: 72px;
+    padding:6px 9px;
+    font-size:11px;
+    min-width:72px;
   }
 }
 
