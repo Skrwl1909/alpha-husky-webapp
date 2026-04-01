@@ -264,48 +264,48 @@
   }
 
   function lockDesc(meta) {
-    const u = getUnlock(meta);
-    if (!u) return "Locked.";
-    const kind = String(u.kind || "").trim().toLowerCase();
+  const u = getUnlock(meta);
+  if (!u) return "Locked.";
+  const kind = String(u.kind || "").trim().toLowerCase();
 
-    if (isSupportStars(meta)) {
-      const stars = getStarsPrice(meta);
-      return stars > 0
-        ? `Premium support skin. Buy for ${stars} Stars.`
-        : "Premium support skin. Buy with Telegram Stars.";
+  const have = unlockHave(meta);
+  const need = unlockNeed(meta);
+
+  if (isSupportStars(meta)) {
+    const stars = getStarsPrice(meta);
+    return stars > 0
+      ? `Premium support skin. Buy for ${stars} Stars.`
+      : "Premium support skin. Buy with Telegram Stars.";
+  }
+
+  if (isSupportToken(meta)) {
+    if (have != null && need != null && need > 0) {
+      return `Locked. Reach Believe holder tier ${need} (${have}/${need}).`;
     }
+    return "Locked. Reach the required Believe holder tier to unlock.";
+  }
 
-    if (isSupportToken(meta)) {
-      if (have != null && need != null && need > 0) {
-        return `Locked. Reach Believe holder tier ${need} (${have}/${need}).`;
-      }
-      return "Locked. Reach the required Believe holder tier to unlock.";
+  if (kind === "code" || kind === "claim" || kind === "password") {
+    return "Locked. Enter the code to claim this skin.";
+  }
+
+  if (kind === "referrals") {
+    if (have != null && need != null && need > 0) {
+      const left = Math.max(0, need - have);
+      return `Locked. Invite ${need} members via your reflink (${have}/${need}). Left: ${left}.`;
     }
+    return "Locked. Invite members via your reflink to unlock.";
+  }
 
-    const have = unlockHave(meta);
-    const need = unlockNeed(meta);
-
-    if (kind === "code" || kind === "claim" || kind === "password") {
-      return "Locked. Enter the code to claim this skin.";
+  if (kind === "teamup_weekly") {
+    const ends = fmtEnds(unlockEndsSec(meta));
+    if (have != null && need != null && need > 0) {
+      return `Locked. Complete TeamUp ${need} times this week (${have}/${need}). Resets in ${ends || "soon"}.`;
     }
+    return `Locked. Earn it in TeamUp weekly challenge. Resets in ${ends || "soon"}.`;
+  }
 
-    if (kind === "referrals") {
-      if (have != null && need != null && need > 0) {
-        const left = Math.max(0, need - have);
-        return `Locked. Invite ${need} members via your reflink (${have}/${need}). Left: ${left}.`;
-      }
-      return "Locked. Invite members via your reflink to unlock.";
-    }
-
-    if (kind === "teamup_weekly") {
-      const ends = fmtEnds(unlockEndsSec(meta));
-      if (have != null && need != null && need > 0) {
-        return `Locked. Complete TeamUp ${need} times this week (${have}/${need}). Resets in ${ends || "soon"}.`;
-      }
-      return `Locked. Earn it in TeamUp weekly challenge. Resets in ${ends || "soon"}.`;
-    }
-
-    return "Locked. Earn-only skin.";
+  return "Locked. Earn-only skin.";
   }
 
   function setPrimaryButtonState() {
