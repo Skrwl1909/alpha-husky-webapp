@@ -296,8 +296,7 @@ html.ah-modal-open #heroFrame{
   gap: 0 !important;
 }
 
-/* ✅ MOBILE */
-/* ✅ MOBILE */
+/* ✅ MOBILE — balanced founder fit */
 @media (max-width:380px){
   .hud-layout{ gap:8px; }
 
@@ -306,30 +305,29 @@ html.ah-modal-open #heroFrame{
     padding:6px 8px;
   }
 
-  /* ✅ PATCH 1A: mocniej na ultra wąskich ekranach */
   .hud-col.hud-right{
     transform: translateX(-16px);
   }
 
   .hero-frame{
-    width:min(53vw, 232px);
-    --frame-scale: 1.40;
-    --frame-y: 2px;
+    width:min(50vw, 214px);
+    --frame-scale: 1.32;
+    --frame-y: 3px;
   }
 
   .hero-frame .hero-skin-viewport{
-    inset:7% 11% 12% 11%;
+    inset:10% 14% 15% 14%;
     border-radius:14px;
   }
 
   .hero-frame .hero-skin{
-    object-position:center 20%;
-    transform:scale(1.22);
+    object-position:center 24%;
+    transform:scale(1.10);
   }
 
   .hero-center .share-row{
     gap:6px;
-    margin-bottom:6px; /* nadal NAD skinem */
+    margin-bottom:6px;
   }
 
   .hero-center .btn.share-mini{
