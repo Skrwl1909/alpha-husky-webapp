@@ -288,7 +288,9 @@ html.ah-modal-open #heroFrame{
 }
 
 #shareRow{
-  display:none !important;
+  display:flex !important;
+  justify-content:center;
+  margin-top:12px;
 }
 
 .hud-layout{
@@ -3617,10 +3619,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
   <div id="heroAuraBadge" class="hero-aura-badge"></div>
 
-  <div class="share-row" id="shareRow" style="display:none">
-    <button class="btn share-mini" type="button" data-share-style="1">Share I</button>
-    <button class="btn share-mini" type="button" data-share-style="2">Share II</button>
-    <button class="btn share-mini" type="button" data-share-style="3">Share III</button>
+  <div class="share-row" id="shareRow">
+    <button class="btn share-mini" id="heroProfileBtn" type="button" style="min-width:132px;">Profile</button>
+    <button class="btn share-mini" id="heroShareBtn" type="button" style="min-width:148px;">Share</button>
   </div>
 
   <!-- ✅ ACTIVE BUFFS (pod nickiem/levelem) -->
@@ -3739,13 +3740,30 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <div id="shareBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Share">
     <div class="ah-panel-hd">
-      <div class="ah-title">Share</div>
+      <div class="ah-title" id="shareCardTitle">Share</div>
       <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">✕</button>
     </div>
-    <div class="ah-actions">
-      <button class="ah-action" data-share-style="1" type="button">Share Style I</button>
-      <button class="ah-action" data-share-style="2" type="button">Share Style II</button>
-      <button class="ah-action" data-share-style="3" type="button">Share Style III</button>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div id="shareCardContext" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.72;">Main Hub preview</div>
+      <div style="border-radius:24px;padding:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+        <canvas id="shareCardCanvas" width="1200" height="1500" style="width:100%;height:auto;display:block;border-radius:18px;background:rgba(4,8,18,.8);"></canvas>
+      </div>
+      <div id="shareCardMeta" style="font-size:13px;line-height:1.45;opacity:.84;">
+        Rendered from the same live player presentation state visible in the app.
+      </div>
+      <div style="border-radius:18px;padding:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+        <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.62;margin-bottom:8px;">Caption</div>
+        <div id="shareCardCaptionPreview" style="font-size:13px;line-height:1.5;white-space:pre-wrap;"></div>
+      </div>
+      <div class="ah-actions">
+        <button class="ah-action" id="shareCardTelegramBtn" type="button">Share on Telegram</button>
+        <button class="ah-action" id="shareCardXBtn" type="button">Share on X</button>
+        <button class="ah-action" id="shareCardSaveBtn" type="button">Save Image</button>
+        <button class="ah-action" id="shareCardCopyBtn" type="button">Copy Caption</button>
+      </div>
+      <div id="shareCardHelp" style="font-size:12px;line-height:1.45;opacity:.7;">
+        X opens a compose screen only. Save the image first, then attach it manually in X.
+      </div>
     </div>
   </div>
 </div>
@@ -4674,6 +4692,10 @@ body.bc-open #ahCommunityBtn{
         }
         function hide(el){
           if(!el) return;
+          if (el.id === 'shareBack' && window.ShareCard?.hide) {
+            window.ShareCard.hide();
+            return;
+          }
           el.style.display = 'none';
           document.body.classList.remove('ah-sheet-open');
           window.navClose?.(el);
@@ -4798,7 +4820,7 @@ function closeFaqModal(){
           faq: () => openFaqModal(),
           whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
           feed:      ()=>document.querySelector('.btn.feed')?.click(),
-          share:     ()=>show(shareBack),
+          share:     ()=>{ hide(hubBack); window.ShareCard?.open?.("hub"); },
 
           // character sheet actions
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
@@ -4827,18 +4849,8 @@ function closeFaqModal(){
         // Tap hero-frame => Character sheet
         $('#heroFrame')?.addEventListener('click', ()=>show(charBack));
 
-        // Share styles -> reuse existing share flow
-        shareBack?.addEventListener('click', (e)=>{
-          const b = e.target.closest('[data-share-style]');
-          if(!b) return;
-          const style = Number(b.getAttribute('data-share-style') || 1);
-
-          // jeśli masz API w share_levelup.js:
-          if (window.ShareLevelUp?.open) return window.ShareLevelUp.open(style);
-
-          // fallback: klik w stare mini-buttony jeśli jeszcze istnieją
-          document.querySelector(`#shareRow .btn.share-mini[data-share-style="${style}"]`)?.click();
-        });
+        $('#heroProfileBtn')?.addEventListener('click', ()=>window.Equipped?.open?.());
+        $('#heroShareBtn')?.addEventListener('click', ()=>window.ShareCard?.open?.("hub"));
       })();
 
       // ✅ ONE global HOME — deterministic return to main menu/map
@@ -7180,7 +7192,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
   <script src="/js/community_btn.js?v=20260313b"></script>
-<script src="js/share_levelup.js?v=WEBAPP_VER"></script>
+<script src="js/share_card.js?v=WEBAPP_VER"></script>
 <script>
 (function initCTA(){
   function tryInitCTA(){
