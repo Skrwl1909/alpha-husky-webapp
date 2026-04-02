@@ -52,6 +52,11 @@
     return String(value ?? "").trim();
   }
 
+  function asInt(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
   function prettifyKind(kind) {
     const raw = asText(kind);
     if (!raw) return "";
@@ -60,12 +65,235 @@
       .replace(/\b\w/g, (m) => m.toUpperCase());
   }
 
-  function injectStyles() {
-  if (document.getElementById(STYLE_ID)) return;
+  function prettifyNodeId(nodeId) {
+    const raw = asText(nodeId).toLowerCase();
+    if (!raw) return "";
+    return raw
+      .replaceAll("_", " ")
+      .replaceAll("-", " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
 
-  const style = document.createElement("style");
-  style.id = STYLE_ID;
-  style.textContent = `
+  function primaryNodeLabel(primary) {
+    return prettifyNodeId(primary?.target?.nodeId);
+  }
+
+  const PRIMARY_PLAYBOOK = {
+    bloodmoon_claim_ready: {
+      context: "Event Pressure",
+      now: "Claim your Blood-Moon rewards",
+      why: (primary) => asText(primary.subtitle) || "Your event run is complete and rewards are waiting.",
+      reward: (primary) => {
+        const n = asInt(primary?.meta?.claimCount, 0);
+        return n > 0
+          ? `${n} reward${n === 1 ? "" : "s"} ready to claim right now.`
+          : "Secure your event rewards before the window closes.";
+      },
+      go: "Claim rewards",
+    },
+    bloodmoon_live: {
+      context: "Event Pressure",
+      now: "Join the Blood-Moon push",
+      why: (primary) => asText(primary.subtitle) || "Live waves are active in the tower right now.",
+      reward: "Earn claimable event rewards for your faction.",
+      go: "Join Blood-Moon",
+    },
+    fortress_ready: {
+      context: "Co-op Raid",
+      now: "Enter Moon Lab Fortress",
+      why: (primary) => asText(primary.subtitle) || "A raid window is open for your team.",
+      reward: "Clear boss stages for strong raid rewards.",
+      go: "Enter fortress",
+    },
+    mission_ready: {
+      context: "Progression",
+      now: (primary) => {
+        const title = asText(primary.title);
+        if (!title) return "Your mission is ready to resolve";
+        return title.replace(/\bis ready\b/i, "ready to resolve");
+      },
+      why: (primary) => asText(primary.subtitle) || "Your mission timer is complete and waiting.",
+      reward: "Collect mission rewards and unlock your next move.",
+      go: "Resolve mission",
+    },
+    siege_running_defense: {
+      context: "Faction Frontline",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Defend ${node} now` : "Defend the live siege";
+      },
+      why: (primary) => asText(primary.subtitle) || "Your faction can lose this node without a response.",
+      reward: "Hold territory and secure siege rewards.",
+      go: "Join defense",
+    },
+    siege_forming_defense: {
+      context: "Faction Frontline",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Prepare defense at ${node}` : "Prepare defense for the siege";
+      },
+      why: (primary) => asText(primary.subtitle) || "Attackers are gathering and pressure is rising.",
+      reward: "Help your faction lock the line before launch.",
+      go: "Take watch",
+    },
+    siege_running_attack: {
+      context: "Faction Frontline",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Push the siege at ${node}` : "Push the live siege";
+      },
+      why: (primary) => asText(primary.subtitle) || "Your faction can capture this node right now.",
+      reward: "Win control and siege payouts for your side.",
+      go: "Join attack",
+    },
+    siege_forming_attack: {
+      context: "Faction Frontline",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Join siege formation at ${node}` : "Join siege formation now";
+      },
+      why: (primary) => asText(primary.subtitle) || "Your faction is preparing an attack window.",
+      reward: "Help trigger the assault and gain map control.",
+      go: "Join formation",
+    },
+    node_contested: {
+      context: "World Pressure",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Patrol ${node}` : "Patrol the contested node";
+      },
+      why: (primary) => asText(primary.subtitle) || "Control is unstable and can flip quickly.",
+      reward: "Build faction pressure where it matters most.",
+      go: "Open contested node",
+    },
+    node_hot: {
+      context: "World Pressure",
+      now: (primary) => {
+        const node = primaryNodeLabel(primary);
+        return node ? `Pressure ${node}` : "Pressure the HOT node";
+      },
+      why: (primary) => asText(primary.subtitle) || "Momentum is rising on this frontline.",
+      reward: "Gain influence before rivals lock the area.",
+      go: "Open HOT node",
+    },
+    choose_faction: {
+      context: "Identity",
+      now: "Choose your faction",
+      why: "Your side defines your role in the world war.",
+      reward: "Unlock faction progress, sieges, and shared goals.",
+      go: "Choose faction",
+    },
+    first_mission: {
+      context: "Action",
+      now: "Run your first mission",
+      why: "This is the fastest way to learn the loop.",
+      reward: "Earn your first rewards and unlock momentum.",
+      go: "Start mission",
+    },
+    equip_item: {
+      context: "Progression",
+      now: "Equip your best item",
+      why: "Stronger loadout means better mission and siege output.",
+      reward: "Boost your impact in live events.",
+      go: "Open equipped",
+    },
+    first_map_action: {
+      context: "World",
+      now: "Take your first map action",
+      why: "The map is live and faction pressure moves in real time.",
+      reward: "Learn where pressure matters and where to help next.",
+      go: "Open live node",
+    },
+    contracts_push: {
+      context: "Cooperation",
+      now: "Push Broken Contracts",
+      why: "Your faction needs active pressure to progress contracts.",
+      reward: "Unlock shared rewards for your side.",
+      go: "Open contracts",
+    },
+    contracts_claim_ready: {
+      context: "Cooperation",
+      now: "Claim Broken Contracts rewards",
+      why: "Your faction contract is complete and ready to claim.",
+      reward: "Collect shared contract payouts before reset.",
+      go: "Claim contracts",
+    },
+  };
+
+  function resolveGuideValue(value, primary) {
+    if (typeof value === "function") return asText(value(primary));
+    return asText(value);
+  }
+
+  function defaultContextForPrimary(primary) {
+    const kind = asText(primary?.kind).toLowerCase();
+    const type = asText(primary?.target?.type).toLowerCase();
+
+    if (kind.startsWith("siege_") || type === "siege") return "Faction Frontline";
+    if (kind.startsWith("bloodmoon_") || type === "bloodmoon") return "Event Pressure";
+    if (kind === "fortress_ready" || type === "fortress") return "Co-op Raid";
+    if (kind === "contracts_claim_ready" || kind === "contracts_push") return "Cooperation";
+    if (kind === "mission_ready" || type === "missions") return "Progression";
+    if (kind === "node_contested" || kind === "node_hot" || type === "map_node") return "World Pressure";
+    if (type === "open_action") return "World Guide";
+    return "World Guide";
+  }
+
+  function defaultNowForPrimary(primary) {
+    const title = asText(primary?.title);
+    if (title) return title;
+    return "Take the next action now";
+  }
+
+  function defaultWhyForPrimary(primary) {
+    const subtitle = asText(primary?.subtitle);
+    if (subtitle) return subtitle;
+    return "This action advances your progress and your faction position.";
+  }
+
+  function defaultRewardForPrimary(primary) {
+    const kind = asText(primary?.kind).toLowerCase();
+    const type = asText(primary?.target?.type).toLowerCase();
+
+    if (kind.startsWith("siege_")) return "Secure territory and siege rewards for your side.";
+    if (kind === "bloodmoon_claim_ready" || kind === "bloodmoon_live") return "Gain claimable event rewards and faction momentum.";
+    if (kind === "contracts_claim_ready" || kind === "contracts_push") return "Advance faction contracts and shared rewards.";
+    if (kind === "mission_ready" || type === "missions") return "Collect mission rewards and unlock the next task.";
+    if (kind === "fortress_ready" || type === "fortress") return "Earn raid rewards and stronger progression drops.";
+    if (kind === "node_contested" || kind === "node_hot" || type === "map_node") return "Build influence and frontline pressure for your faction.";
+    return "Gain progress and world impact from this action.";
+  }
+
+  function defaultGoForPrimary(primary) {
+    const type = asText(primary?.target?.type).toLowerCase();
+    if (type === "siege") return "Join siege";
+    if (type === "bloodmoon") return "Open Blood-Moon";
+    if (type === "fortress") return "Enter fortress";
+    if (type === "missions") return "Open missions";
+    if (type === "map_node") return "Open node";
+    if (type === "open_action") return "Open guide";
+    return "Go now";
+  }
+
+  function buildPrimaryGuide(primary) {
+    const key = asText(primary?.kind).toLowerCase();
+    const play = PRIMARY_PLAYBOOK[key] || {};
+
+    const context = resolveGuideValue(play.context, primary) || defaultContextForPrimary(primary);
+    const now = resolveGuideValue(play.now, primary) || defaultNowForPrimary(primary);
+    const why = resolveGuideValue(play.why, primary) || defaultWhyForPrimary(primary);
+    const reward = resolveGuideValue(play.reward, primary) || defaultRewardForPrimary(primary);
+    const go = resolveGuideValue(play.go, primary) || defaultGoForPrimary(primary);
+
+    return { context, now, why, reward, go };
+  }
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
 #ctaSurface{
   width:min(
     520px,
@@ -75,12 +303,10 @@
   margin:6px auto 0;
 }
 #ctaSurface.is-visible{ display:block !important; }
-
 #ctaCardRoot,
 #ctaHighlightsRoot{
   width:100%;
 }
-
 #ctaHighlightsRoot{
   margin-top:4px;
 }
@@ -88,22 +314,14 @@
 #ctaCardRoot:empty + #ctaHighlightsRoot{
   margin-top:0;
 }
-
 .cta-card,
-.cta-highlight,
-.cta-strip{
+.cta-highlight{
   width:100%;
   border:0;
   color:inherit;
   text-align:left;
   cursor:pointer;
-  font:inherit;
-  appearance:none;
-  -webkit-appearance:none;
-  outline:none;
 }
-
-/* legacy card — zostawione dla kompatybilności */
 .cta-card{
   position:relative;
   display:block;
@@ -134,76 +352,21 @@
 .cta-card-top{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:7px;
   margin-bottom:4px;
 }
-
-/* NEW compact strip */
-.cta-strip{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:8px 10px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.08);
-  background:
-    linear-gradient(180deg, rgba(10,16,24,.88), rgba(7,12,18,.94));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.04);
-  color:#f5f7fb;
-  transition: border-color .14s ease, background .14s ease, transform .12s ease;
-}
-.cta-strip:hover{
-  border-color:rgba(255,255,255,.14);
-  background:
-    linear-gradient(180deg, rgba(12,18,28,.92), rgba(8,13,20,.98));
-}
-.cta-strip:active{
-  transform:translateY(1px);
-}
-.cta-strip:focus-visible{
-  outline:1px solid rgba(90,170,255,.75);
-  outline-offset:1px;
-}
-.cta-strip-badge{
-  flex:0 0 auto;
-}
-.cta-strip-body{
+.cta-context{
   min-width:0;
-  flex:1 1 auto;
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-}
-.cta-strip-line{
-  display:block;
-  min-width:0;
+  color:rgba(200,224,255,.78);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-size:13px;
-  line-height:1.2;
-  font-weight:800;
-  color:#f7f9fc;
 }
-.cta-strip-meta{
-  display:block;
-  min-width:0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  font-size:11px;
-  line-height:1.2;
-  color:rgba(230,236,245,.62);
-}
-.cta-strip-go{
-  flex:0 0 auto;
-  font-size:14px;
-  line-height:1;
-  color:rgba(255,255,255,.55);
-}
-
 .cta-badge{
   display:inline-flex;
   align-items:center;
@@ -220,18 +383,6 @@
   text-transform:uppercase;
   white-space:nowrap;
 }
-.cta-strip .cta-badge{
-  min-height:20px;
-  padding:0 8px;
-  font-size:10px;
-  letter-spacing:.04em;
-}
-
-.cta-card-go{
-  color:rgba(255,255,255,.64);
-  font-size:13px;
-  line-height:1;
-}
 .cta-title{
   margin:0;
   color:#fff;
@@ -240,17 +391,49 @@
   letter-spacing:.01em;
   line-height:1.2;
 }
-.cta-subtitle{
+.cta-why,
+.cta-reward{
   margin:2px 0 0;
-  color:rgba(255,255,255,.64);
   font-size:11px;
   line-height:1.2;
-  display:-webkit-box;
-  -webkit-line-clamp:1;
-  -webkit-box-orient:vertical;
+  white-space:nowrap;
   overflow:hidden;
+  text-overflow:ellipsis;
 }
-
+.cta-why{
+  color:rgba(255,255,255,.66);
+}
+.cta-reward{
+  color:rgba(186,229,255,.82);
+}
+.cta-go-row{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:6px;
+}
+.cta-go-btn{
+  min-height:22px;
+  padding:2px 9px;
+  border-radius:999px;
+  border:1px solid rgba(0,229,255,.36);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(0,229,255,.18), transparent 56%),
+    linear-gradient(180deg, rgba(6,20,28,.94), rgba(8,24,34,.96));
+  color:rgba(223,247,255,.95);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition: transform .14s ease, border-color .14s ease, filter .14s ease;
+}
+.cta-go-btn:active{
+  transform: translateY(1px);
+}
+.cta-go-btn:hover{
+  border-color: rgba(0,229,255,.48);
+  filter: brightness(1.06);
+}
 .cta-highlights{
   display:grid;
   gap:4px;
@@ -266,86 +449,92 @@
   padding-right:2px;
   scrollbar-width:thin;
 }
-.cta-highlights-body::-webkit-scrollbar{
-  width:4px;
-}
-.cta-highlights-body::-webkit-scrollbar-thumb{
-  background:rgba(255,255,255,.18);
-  border-radius:999px;
-}
-
-.cta-highlight{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:7px 9px;
-  border-radius:11px;
-  background:rgba(10,14,20,.72);
-  border:1px solid rgba(255,255,255,.08);
-  transition: border-color .14s ease, background .14s ease, transform .12s ease;
-}
-.cta-highlight:hover{
-  border-color:rgba(255,255,255,.14);
-  background:rgba(12,17,24,.84);
-}
-.cta-highlight:active{
-  transform:translateY(1px);
-}
-.cta-highlight-text{
-  min-width:0;
-  flex:1 1 auto;
-  color:#eef3fb;
-  font-size:12px;
-  line-height:1.2;
-  font-weight:700;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
 .cta-expander{
   width:100%;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:6px 8px;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:11px;
-  background:rgba(10,14,20,.58);
-  color:rgba(235,241,250,.88);
+  min-height:24px;
+  padding:4px 8px;
+  border:0;
+  border-radius:999px;
+  background:rgba(9,13,18,.34);
+  border:1px solid rgba(255,255,255,.06);
+  color:rgba(255,255,255,.72);
+  text-align:left;
   cursor:pointer;
-  font:inherit;
-  appearance:none;
-  -webkit-appearance:none;
+  backdrop-filter: blur(8px);
+  box-shadow:0 2px 8px rgba(0,0,0,.10);
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+.cta-expander:active{
+  transform: translateY(1px);
 }
 .cta-expander:hover{
-  border-color:rgba(255,255,255,.14);
-  background:rgba(12,17,24,.72);
+  border-color: rgba(255,255,255,.10);
+  background:rgba(12,16,22,.42);
 }
 .cta-expander-text{
   min-width:0;
-  font-size:11px;
-  font-weight:800;
-  line-height:1.2;
+  flex:1 1 auto;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.01em;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 .cta-expander-chev{
   flex:0 0 auto;
-  font-size:12px;
+  color:rgba(255,255,255,.56);
+  font-size:11px;
   line-height:1;
-  color:rgba(255,255,255,.58);
-  transform:rotate(0deg);
-  transition:transform .14s ease;
+  transition: transform .14s ease;
 }
 .cta-expander.is-open .cta-expander-chev{
-  transform:rotate(90deg);
+  transform: rotate(90deg);
+}
+.cta-highlight{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:30px;
+  padding:6px 8px;
+  border-radius:10px;
+  background:rgba(9,13,18,.48);
+  border:1px solid rgba(255,255,255,.06);
+  backdrop-filter: blur(8px);
+  box-shadow:0 4px 10px rgba(0,0,0,.10);
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+.cta-highlight:active{
+  transform: translateY(1px);
+}
+.cta-highlight:hover{
+  border-color: rgba(255,255,255,.10);
+  background:rgba(12,16,22,.56);
+}
+.cta-highlight-text{
+  min-width:0;
+  flex:1 1 auto;
+  color:rgba(255,255,255,.82);
+  font-size:11px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cta-highlights-body::-webkit-scrollbar{
+  width:4px;
+}
+.cta-highlights-body::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
 }
 `;
-  document.head.appendChild(style);
-}
+    document.head.appendChild(style);
+  }
 
   function mount() {
     injectStyles();
@@ -409,6 +598,10 @@
       const nodeId = asText(target.nodeId);
       return nodeId ? { type, nodeId } : null;
     }
+    if (type === "open_action") {
+      const action = asText(target.action).toLowerCase();
+      return action ? { type, action } : null;
+    }
 
     return null;
   }
@@ -420,6 +613,8 @@
     if (key === "bloodmoon_live") return "TOWER";
     if (key === "fortress_ready") return "READY";
     if (key === "mission_ready") return "READY";
+    if (key === "contracts_claim_ready") return "READY";
+    if (key === "choose_faction" || key === "first_mission" || key === "equip_item" || key === "first_map_action" || key === "contracts_push") return "GUIDE";
     if (key === "node_contested" || key === "node_hot") return "HOT";
 
     const type = asText(target?.type).toLowerCase();
@@ -428,6 +623,7 @@
     if (type === "fortress") return "READY";
     if (type === "missions") return "READY";
     if (type === "map_node") return "MAP";
+    if (type === "open_action") return "GUIDE";
     return "";
   }
 
@@ -456,197 +652,228 @@
       subtitle,
       badge: asText(raw.badge) || fallbackPrimaryBadge(raw.kind, target),
       target,
+      meta: raw.meta && typeof raw.meta === "object" ? raw.meta : {},
+      priority: asInt(raw.priority, 0),
+      expiresInSec: asInt(raw.expiresInSec, 0),
     };
   }
 
   function normalizeHighlight(raw) {
-  if (!raw || typeof raw !== "object") return null;
-  const target = normalizeTarget(raw.target);
-  if (!target) return null;
+    if (!raw || typeof raw !== "object") return null;
+    const target = normalizeTarget(raw.target);
+    if (!target) return null;
 
-  const text = asText(raw.text) || asText(raw.title);
-  if (!text) return null;
+    const text = asText(raw.text) || asText(raw.title);
+    if (!text) return null;
 
-  return {
-    kind: asText(raw.kind),
-    text,
-    badge: asText(raw.badge) || fallbackHighlightBadge(raw.kind, target),
-    target,
-  };
-}
-
-function normalize(raw) {
-  const data = unwrapPayload(raw);
-  const primary = normalizePrimary(data.primary);
-
-  const highlights = [];
-  const seen = new Set();
-  const list = Array.isArray(data.highlights) ? data.highlights : [];
-  for (const row of list) {
-    const item = normalizeHighlight(row);
-    if (!item) continue;
-    const key = [
-      item.kind,
-      item.target?.type,
-      item.target?.nodeId,
-      item.target?.buildingId,
-      item.text,
-    ].join("|");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    highlights.push(item);
-    if (highlights.length >= MAX_HIGHLIGHTS) break;
+    return {
+      kind: asText(raw.kind),
+      text,
+      badge: asText(raw.badge) || fallbackHighlightBadge(raw.kind, target),
+      target,
+    };
   }
 
-  return { primary, highlights };
-}
+  function normalize(raw) {
+    const data = unwrapPayload(raw);
+    const primary = normalizePrimary(data.primary);
 
-function createBadge(text) {
-  const badge = document.createElement("span");
-  badge.className = "cta-badge";
-  badge.textContent = text || "LIVE";
-  return badge;
-}
-
-function highlightToggleLabel(count) {
-  const n = Math.max(0, Number(count || 0));
-  return n > 0 ? `More activity · ${n}` : "More activity";
-}
-
-function renderExpander(count) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "cta-expander" + (STATE.expanded ? " is-open" : "");
-  btn.setAttribute("aria-expanded", STATE.expanded ? "true" : "false");
-  btn.setAttribute("aria-label", highlightToggleLabel(count));
-
-  const text = document.createElement("span");
-  text.className = "cta-expander-text";
-  text.textContent = highlightToggleLabel(count);
-  btn.appendChild(text);
-
-  const chev = document.createElement("span");
-  chev.className = "cta-expander-chev";
-  chev.setAttribute("aria-hidden", "true");
-  chev.textContent = ">";
-  btn.appendChild(chev);
-
-  btn.addEventListener("click", () => {
-    STATE.expanded = !STATE.expanded;
-    if (STATE.lastData) {
-      render(STATE.lastData);
+    const highlights = [];
+    const seen = new Set();
+    const list = Array.isArray(data.highlights) ? data.highlights : [];
+    for (const row of list) {
+      const item = normalizeHighlight(row);
+      if (!item) continue;
+      const key = [
+        item.kind,
+        item.target?.type,
+        item.target?.nodeId,
+        item.target?.buildingId,
+        item.text,
+      ].join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      highlights.push(item);
+      if (highlights.length >= MAX_HIGHLIGHTS) break;
     }
-  });
 
-  return btn;
-}
-
-function renderPrimary(primary) {
-  clearRoot(STATE.cardRoot);
-  if (!STATE.cardRoot || !primary) return;
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "cta-strip";
-  btn.setAttribute("aria-label", primary.title || "Open live world event");
-  btn.title = primary.subtitle
-    ? `${primary.title} — ${primary.subtitle}`
-    : (primary.title || "Open live world event");
-
-  const badge = createBadge(primary.badge || "LIVE");
-  badge.classList.add("cta-strip-badge");
-  btn.appendChild(badge);
-
-  const body = document.createElement("span");
-  body.className = "cta-strip-body";
-
-  const line = document.createElement("span");
-  line.className = "cta-strip-line";
-  line.textContent = primary.title || "";
-  body.appendChild(line);
-
-  if (primary.subtitle) {
-    const meta = document.createElement("span");
-    meta.className = "cta-strip-meta";
-    meta.textContent = primary.subtitle;
-    body.appendChild(meta);
+    return { primary, highlights };
   }
 
-  btn.appendChild(body);
-
-  const go = document.createElement("span");
-  go.className = "cta-strip-go";
-  go.setAttribute("aria-hidden", "true");
-  go.textContent = ">";
-  btn.appendChild(go);
-
-  btn.addEventListener("click", () => {
-    collapseExpanded(true);
-    void openTarget(primary.target);
-  });
-
-  STATE.cardRoot.appendChild(btn);
-}
-
-function renderHighlights(highlights) {
-  clearRoot(STATE.highlightsRoot);
-  if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
-
-  const items = highlights.slice(0, MAX_HIGHLIGHTS);
-  const primaryVisible = !!(STATE.lastData && STATE.lastData.primary);
-  const collapsible = primaryVisible && items.length > 0;
-
-  if (collapsible) {
-    STATE.highlightsRoot.appendChild(renderExpander(items.length));
-    if (!STATE.expanded) return;
+  function createBadge(text) {
+    const badge = document.createElement("span");
+    badge.className = "cta-badge";
+    badge.textContent = text || "LIVE";
+    return badge;
   }
 
-  const wrap = document.createElement("div");
-  wrap.className = collapsible ? "cta-highlights-body" : "cta-highlights";
+  function highlightToggleLabel(count) {
+    const n = Math.max(0, Number(count || 0));
+    return `Background activity (${n})`;
+  }
 
-  for (const item of items) {
+  function renderExpander(count) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "cta-highlight";
-    btn.setAttribute("aria-label", item.text || "Open highlight");
-
-    btn.appendChild(createBadge(item.badge));
+    btn.className = "cta-expander" + (STATE.expanded ? " is-open" : "");
+    btn.setAttribute("aria-expanded", STATE.expanded ? "true" : "false");
+    btn.setAttribute("aria-label", highlightToggleLabel(count));
 
     const text = document.createElement("span");
-    text.className = "cta-highlight-text";
-    text.textContent = item.text;
+    text.className = "cta-expander-text";
+    text.textContent = highlightToggleLabel(count);
     btn.appendChild(text);
 
+    const chev = document.createElement("span");
+    chev.className = "cta-expander-chev";
+    chev.setAttribute("aria-hidden", "true");
+    chev.textContent = ">";
+    btn.appendChild(chev);
+
     btn.addEventListener("click", () => {
-      collapseExpanded(true);
-      void openTarget(item.target);
+      STATE.expanded = !STATE.expanded;
+      if (STATE.lastData) {
+        render(STATE.lastData);
+      }
     });
 
-    wrap.appendChild(btn);
+    return btn;
   }
 
-  STATE.highlightsRoot.appendChild(wrap);
-}
+  function renderPrimary(primary) {
+    clearRoot(STATE.cardRoot);
+    if (!STATE.cardRoot || !primary) return;
 
-function render(data) {
-  if (!mount()) return null;
+    const guide = buildPrimaryGuide(primary);
 
-  const safe = data && typeof data === "object"
-    ? data
-    : { primary: null, highlights: [] };
+    const card = document.createElement("article");
+    card.className = "cta-card";
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.setAttribute("aria-label", `${guide.now}. ${guide.why}`);
 
-  if (!safe.primary || !Array.isArray(safe.highlights) || !safe.highlights.length) {
-    STATE.expanded = false;
+    const go = () => {
+      collapseExpanded(true);
+      void openTarget(primary.target);
+    };
+
+    const top = document.createElement("div");
+    top.className = "cta-card-top";
+    top.appendChild(createBadge(primary.badge));
+
+    const context = document.createElement("span");
+    context.className = "cta-context";
+    context.textContent = guide.context;
+    top.appendChild(context);
+
+    const title = document.createElement("h3");
+    title.className = "cta-title";
+    title.textContent = guide.now;
+
+    card.appendChild(top);
+    card.appendChild(title);
+
+    if (guide.why) {
+      const why = document.createElement("p");
+      why.className = "cta-why";
+      why.textContent = guide.why;
+      card.appendChild(why);
+    }
+
+    if (guide.reward) {
+      const reward = document.createElement("p");
+      reward.className = "cta-reward";
+      reward.textContent = guide.reward;
+      card.appendChild(reward);
+    }
+
+    const goRow = document.createElement("div");
+    goRow.className = "cta-go-row";
+
+    const goBtn = document.createElement("button");
+    goBtn.type = "button";
+    goBtn.className = "cta-go-btn";
+    goBtn.textContent = guide.go;
+    goBtn.setAttribute("aria-label", `${guide.go}. ${guide.now}`);
+    goBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      go();
+    });
+    goRow.appendChild(goBtn);
+    card.appendChild(goRow);
+
+    card.addEventListener("click", go);
+    card.addEventListener("keydown", (event) => {
+      if (event.target !== card) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        go();
+      }
+    });
+
+    STATE.cardRoot.appendChild(card);
   }
 
-  renderPrimary(safe.primary || null);
-  renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
+  function renderHighlights(highlights) {
+    clearRoot(STATE.highlightsRoot);
+    if (!STATE.highlightsRoot || !Array.isArray(highlights) || !highlights.length) return;
 
-  const hasPrimary = !!safe.primary;
-  const hasHighlights = Array.isArray(safe.highlights) && safe.highlights.length > 0;
-  setVisible(hasPrimary || hasHighlights);
-  return safe;
-}
+    const items = highlights.slice(0, MAX_HIGHLIGHTS);
+    const primaryVisible = !!(STATE.lastData && STATE.lastData.primary);
+    const collapsible = primaryVisible && items.length > 0;
+
+    if (collapsible) {
+      STATE.highlightsRoot.appendChild(renderExpander(items.length));
+      if (!STATE.expanded) return;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = collapsible ? "cta-highlights-body" : "cta-highlights";
+
+    for (const item of items) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cta-highlight";
+      btn.setAttribute("aria-label", item.text || "Open highlight");
+
+      btn.appendChild(createBadge(item.badge));
+
+      const text = document.createElement("span");
+      text.className = "cta-highlight-text";
+      text.textContent = item.text;
+      btn.appendChild(text);
+
+      btn.addEventListener("click", () => {
+        collapseExpanded(true);
+        void openTarget(item.target);
+      });
+
+      wrap.appendChild(btn);
+    }
+
+    STATE.highlightsRoot.appendChild(wrap);
+  }
+
+  function render(data) {
+    if (!mount()) return null;
+
+    const safe = data && typeof data === "object"
+      ? data
+      : { primary: null, highlights: [] };
+
+    if (!safe.primary || !Array.isArray(safe.highlights) || !safe.highlights.length) {
+      STATE.expanded = false;
+    }
+
+    renderPrimary(safe.primary || null);
+    renderHighlights(Array.isArray(safe.highlights) ? safe.highlights : []);
+
+    const hasPrimary = !!safe.primary;
+    const hasHighlights = Array.isArray(safe.highlights) && safe.highlights.length > 0;
+    setVisible(hasPrimary || hasHighlights);
+    return safe;
+  }
 
   async function load() {
     if (!mount()) return null;
@@ -775,6 +1002,79 @@ function render(data) {
     return false;
   }
 
+  async function openAction(action) {
+    const key = asText(action).toLowerCase();
+    if (!key) return false;
+
+    switch (key) {
+      case "factions":
+        try {
+          if (typeof window.Factions?.openPicker === "function") {
+            window.Factions.openPicker();
+            return true;
+          }
+          if (typeof window.Factions?.open === "function") {
+            window.Factions.open({ mode: "select" });
+            return true;
+          }
+        } catch (err) {
+          warn("Factions open failed", err);
+        }
+        {
+          const pill = document.getElementById("faction");
+          if (pill) {
+            pill.click();
+            return true;
+          }
+        }
+        return false;
+
+      case "equipped":
+      case "inspect_character":
+        try {
+          if (typeof window.Equipped?.open === "function") {
+            window.Equipped.open();
+            return true;
+          }
+        } catch (err) {
+          warn("Equipped open failed", err);
+        }
+        {
+          const btn = document.querySelector('.ah-action[data-action="equipped"], .btn.equipped, button.btn.equipped');
+          if (btn) {
+            btn.click();
+            return true;
+          }
+        }
+        return false;
+
+      case "broken_contracts":
+      case "contracts":
+        try {
+          if (typeof window.BrokenContracts?.open === "function") {
+            await window.BrokenContracts.open();
+            return true;
+          }
+        } catch (err) {
+          warn("Broken Contracts open failed", err);
+        }
+        return await openMapPin(
+          { buildingId: "broken_contracts_hub", nodeId: "phantom_nodes" },
+          { activate: true }
+        );
+
+      case "missions":
+        return openMissions();
+
+      case "map":
+        return openMap();
+
+      default:
+        warn("unknown open_action", key);
+        return false;
+    }
+  }
+
   async function openMapPin(target, { activate = false } = {}) {
     openMap();
     const pin = await waitForMapPin(target);
@@ -861,6 +1161,9 @@ function render(data) {
 
       case "map_node":
         return await openMapPin({ nodeId: safeTarget.nodeId }, { activate: false });
+
+      case "open_action":
+        return await openAction(safeTarget.action);
 
       default:
         warn("unknown target type", safeTarget);
