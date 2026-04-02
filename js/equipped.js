@@ -372,13 +372,21 @@
   }
 
   // Ładowanie PNG postaci z backendu
-  async function loadCharacterPngInto(imgEl, onLoaded) {
+  async function loadCharacterPngInto(imgEl, onLoaded, requestToken) {
     if (!imgEl) return;
     const tg = getTg();
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
     if (!initData) {
+      window.__EquippedPreviewReady = true;
       console.warn("Equipped: no initData for /api/character-image");
       return;
+    }
+
+    const token = Number(requestToken || 0) || 0;
+    window.__EquippedPreviewReady = false;
+    if (window.__EquippedCharImgUrl) {
+      try { URL.revokeObjectURL(window.__EquippedCharImgUrl); } catch (_) {}
+      window.__EquippedCharImgUrl = "";
     }
 
     try {
@@ -388,13 +396,22 @@
         body: JSON.stringify({ initData }),
       });
       if (!resp.ok) {
+        window.__EquippedPreviewReady = true;
         console.error("Equipped: character-image resp not ok:", resp.status);
         return;
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
 
+      if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+
       imgEl.onload = () => {
+        if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) return;
+        window.__EquippedPreviewReady = true;
+        window.__EquippedPreviewReadyAt = Date.now();
         try { onLoaded && onLoaded(); } catch (_) {}
       };
 
@@ -405,6 +422,7 @@
       }
       window.__EquippedCharImgUrl = url;
     } catch (err) {
+      window.__EquippedPreviewReady = true;
       console.error("Equipped: loadCharacterImage error", err);
     }
   }
@@ -536,6 +554,11 @@
                       onclick="window.Equipped && window.Equipped.refresh && window.Equipped.refresh()">
                 Refresh
               </button>
+              <button type="button"
+                      style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
+                      onclick="window.ShareCard && window.ShareCard.open && window.ShareCard.open('equipped')">
+                Share
+              </button>
             </div>
           </div>
 
@@ -564,6 +587,7 @@
 
     async refresh() {
       try {
+        window.__EquippedPreviewReady = false;
         const res = await equippedPost("/webapp/equipped/state", {});
         if (!res || !res.ok) {
           console.error("Equipped.state error:", res);
@@ -623,7 +647,10 @@
         `;
 
         const imgEl = document.getElementById("equipped-character-img");
-        loadCharacterPngInto(imgEl, () => this._mountHotspots());
+        const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
+        window.__EquippedPreviewToken = previewToken;
+        window.__EquippedPreviewReady = false;
+        loadCharacterPngInto(imgEl, () => this._mountHotspots(), previewToken);
         this._waitAndMountHotspots();
       }
 

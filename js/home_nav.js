@@ -43,6 +43,13 @@
     const el = document.getElementById(id);
     if (!el) return;
 
+    if (id === "shareBack" && typeof window.ShareCard?.hide === "function") {
+      window.ShareCard.hide();
+      delete el.dataset.open;
+      if (!anyOurSheetOpen()) setBodyLock(false);
+      return;
+    }
+
     el.style.display = "none";
     delete el.dataset.open;
     navCloseId(id);
@@ -113,14 +120,17 @@
 
   function openHub() { openBack("hubBack"); }
   function openCharSheet() { openBack("charBack"); }
-  function openShareSheet() { openBack("shareBack"); }
+  function openShareSheet() {
+    closeBack("hubBack");
+    if (typeof window.ShareCard?.open === "function") return window.ShareCard.open("hub");
+    openBack("shareBack");
+  }
 
   // ---------- Hub/Char actions ----------
   function routeAction(action) {
     const A = String(action || "").toLowerCase();
 
     if (A === "share") {
-      closeBack("hubBack");
       openShareSheet();
       return;
     }
@@ -231,32 +241,6 @@
     }
   }
 
-  // ---------- Share sheet buttons ----------
-  function wireShareButtons() {
-    const back = document.getElementById("shareBack");
-    if (!back) return;
-
-    back.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-share-style]");
-      if (!btn) return;
-
-      const style = Number(btn.getAttribute("data-share-style") || "1");
-
-      // Prefer your share module
-      if (typeof window.ShareLevelUp?.open === "function") {
-        window.ShareLevelUp.open(style);
-      } else if (typeof window.shareLevelUp === "function") {
-        window.shareLevelUp(style);
-      } else {
-        // last-resort fallback: if old buttons still exist
-        const legacy = $(`#shareRow [data-share-style="${style}"]`);
-        legacy?.click?.();
-      }
-
-      closeAllBacks();
-    });
-  }
-
   // ---------- Patch navCloseTop so BackButton unlocks body when closing our sheets ----------
   function patchNavCloseTop() {
     if (typeof window.navCloseTop !== "function") return;
@@ -283,7 +267,6 @@
     wireBackdropClose("statsBack");
 
     wireCloseButtons();
-    wireShareButtons();
     patchNavCloseTop();
 
     // BottomNav

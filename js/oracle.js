@@ -815,14 +815,18 @@
     const compact = !!opts.compact;
     const showTimer = opts.showTimer !== false;
     const remain = showTimer && intOr(aura?.expiresInSec, 0) > 0
-      ? ` | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}`
+      ? formatRemainCompact(intOr(aura?.expiresInSec, 0))
       : "";
 
     return `
       <span
         class="oracle-aura-pill ${compact ? "compact" : ""}"
         style="background:${tone.bg};border-color:${tone.border};color:${tone.color};"
-      >${escapeHtml(`${label}${remain}`)}</span>
+      >
+        <span class="oracle-aura-pill-tag">${compact ? "Aura" : "Weekly Aura"}</span>
+        <span class="oracle-aura-pill-label">${escapeHtml(label)}</span>
+        ${remain ? `<span class="oracle-aura-pill-time">${escapeHtml(remain)}</span>` : ""}
+      </span>
     `;
   }
 
@@ -1929,17 +1933,48 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
       .oracle-aura-pill{
         display:inline-flex;
         align-items:center;
+        gap:6px;
         padding:6px 10px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.14);
         font-size:11px;
         font-weight:900;
         line-height:1.2;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
       }
 
       .oracle-aura-pill.compact{
         padding:4px 8px;
         font-size:10px;
+      }
+
+      .oracle-aura-pill-tag{
+        display:inline-flex;
+        align-items:center;
+        padding:2px 6px;
+        border-radius:999px;
+        background:rgba(9,12,24,.24);
+        border:1px solid rgba(255,255,255,.10);
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#f7f9ff;
+        white-space:nowrap;
+      }
+
+      .oracle-aura-pill.compact .oracle-aura-pill-tag{
+        padding:2px 5px;
+        font-size:8px;
+      }
+
+      .oracle-aura-pill-label{
+        white-space:nowrap;
+      }
+
+      .oracle-aura-pill-time{
+        opacity:.82;
+        white-space:nowrap;
       }
 
       .oracle-empty{
