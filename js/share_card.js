@@ -2,8 +2,19 @@
   const CARD_WIDTH = 1200;
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
+  const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
+  const HUB_FRAME = {
+    viewportTop: 0.11,
+    viewportSide: 0.15,
+    viewportBottom: 0.16,
+    skinScale: 1.06,
+    skinFocusY: 0.25,
+    frameScale: 1.34,
+    frameBleed: 0.04,
+    frameOffsetY: 0.012,
+  };
   const STATE = {
     variant: "hub",
     presentation: null,
@@ -274,26 +285,50 @@
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
+  function drawCoverFocus(ctx, img, x, y, w, h, focusX, focusY, extraScale) {
+    if (!img) return;
+    const fx = Math.max(0, Math.min(1, Number(focusX ?? 0.5)));
+    const fy = Math.max(0, Math.min(1, Number(focusY ?? 0.5)));
+    const scale = Math.max(w / img.width, h / img.height) * Math.max(0.01, Number(extraScale || 1));
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const dx = x - Math.max(0, dw - w) * fx;
+    const dy = y - Math.max(0, dh - h) * fy;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  function drawContainScaled(ctx, img, x, y, w, h, scaleFactor, offsetX, offsetY) {
+    if (!img) return;
+    const scale = Math.min(w / img.width, h / img.height) * Math.max(0.01, Number(scaleFactor || 1));
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const dx = x + (w - dw) / 2 + Number(offsetX || 0);
+    const dy = y + (h - dh) / 2 + Number(offsetY || 0);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
   function drawChip(ctx, text, x, y, align) {
     const value = String(text || "").trim();
     if (!value) return y;
-    ctx.font = "600 30px system-ui, sans-serif";
-    const padX = 22;
-    const padY = 14;
+    ctx.font = "700 24px system-ui, sans-serif";
+    const padX = 18;
     const width = Math.ceil(ctx.measureText(value).width) + padX * 2;
-    const height = 60;
+    const height = 48;
     const left = align === "right" ? x - width : x;
     ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.shadowColor = "rgba(0,0,0,0.24)";
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = "rgba(7,12,20,0.70)";
+    ctx.strokeStyle = "rgba(255,224,170,0.16)";
     roundRect(ctx, left, y, width, height, 999);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#f8fafc";
+    ctx.fillStyle = "#f5f7fb";
     ctx.textBaseline = "middle";
     ctx.fillText(value, left + padX, y + height / 2);
     ctx.restore();
-    return y + height + 16;
+    return y + height + 12;
   }
 
   function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -314,6 +349,159 @@
     lines.forEach((line, idx) => ctx.fillText(line, x, y + idx * lineHeight));
   }
 
+  function drawAmbientBackground(ctx) {
+    const bg = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    bg.addColorStop(0, "#060d17");
+    bg.addColorStop(0.45, "#0f1930");
+    bg.addColorStop(1, "#170d1a");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+    ctx.save();
+    const topGlow = ctx.createRadialGradient(CARD_WIDTH * 0.52, 210, 40, CARD_WIDTH * 0.52, 210, 520);
+    topGlow.addColorStop(0, "rgba(255,191,92,0.34)");
+    topGlow.addColorStop(1, "rgba(255,191,92,0)");
+    ctx.fillStyle = topGlow;
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+    const sideGlow = ctx.createRadialGradient(160, 930, 30, 160, 930, 420);
+    sideGlow.addColorStop(0, "rgba(91,160,255,0.18)");
+    sideGlow.addColorStop(1, "rgba(91,160,255,0)");
+    ctx.fillStyle = sideGlow;
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+    ctx.globalAlpha = 0.18;
+    for (let i = 0; i < 18; i += 1) {
+      const x = 110 + (i * 59) % (CARD_WIDTH - 180);
+      const y = 120 + (i * 97) % (CARD_HEIGHT - 220);
+      const size = (i % 3) + 1.5;
+      ctx.fillStyle = i % 4 === 0 ? "rgba(255,212,138,0.75)" : "rgba(255,255,255,0.55)";
+      ctx.fillRect(x, y, size, size);
+    }
+    ctx.restore();
+  }
+
+  function drawFramePortrait(ctx, artImg, frameImg, x, y, w, h) {
+    const bleed = Math.round(w * HUB_FRAME.frameBleed);
+    const viewportX = x + Math.round(w * HUB_FRAME.viewportSide);
+    const viewportY = y + Math.round(h * HUB_FRAME.viewportTop);
+    const viewportW = w - Math.round(w * HUB_FRAME.viewportSide * 2);
+    const viewportH = h - Math.round(h * (HUB_FRAME.viewportTop + HUB_FRAME.viewportBottom));
+    const radius = Math.round(Math.min(w, h) * 0.08);
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.40)";
+    ctx.shadowBlur = 36;
+    ctx.shadowOffsetY = 18;
+    roundRect(ctx, x, y, w, h, radius + 10);
+    ctx.fillStyle = "rgba(2,6,12,0.46)";
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    roundRect(ctx, viewportX, viewportY, viewportW, viewportH, radius);
+    ctx.clip();
+    const inner = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
+    inner.addColorStop(0, "rgba(22,31,49,0.92)");
+    inner.addColorStop(1, "rgba(5,9,18,0.98)");
+    ctx.fillStyle = inner;
+    ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
+    drawCoverFocus(ctx, artImg, viewportX, viewportY, viewportW, viewportH, 0.5, HUB_FRAME.skinFocusY, HUB_FRAME.skinScale);
+
+    const vignette = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
+    vignette.addColorStop(0, "rgba(255,255,255,0)");
+    vignette.addColorStop(0.58, "rgba(0,0,0,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.36)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
+    ctx.restore();
+
+    if (frameImg) {
+      ctx.save();
+      drawContainScaled(
+        ctx,
+        frameImg,
+        x - bleed,
+        y - bleed,
+        w + bleed * 2,
+        h + bleed * 2,
+        HUB_FRAME.frameScale,
+        0,
+        Math.round(h * HUB_FRAME.frameOffsetY)
+      );
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, radius + 10);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    return { viewportX, viewportY, viewportW, viewportH, radius };
+  }
+
+  function drawFactionSeal(ctx, badgeImg, x, y, size) {
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.32)";
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 10;
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(12,18,30,0.95)";
+    ctx.fill();
+    ctx.restore();
+
+    if (badgeImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x + size / 2, y + size / 2, size / 2 - 6, 0, Math.PI * 2);
+      ctx.clip();
+      drawCover(ctx, badgeImg, x + 6, y + 6, size - 12, size - 12);
+      ctx.restore();
+    }
+
+    const ring = ctx.createLinearGradient(x, y, x + size, y + size);
+    ring.addColorStop(0, "rgba(255,220,170,0.95)");
+    ring.addColorStop(1, "rgba(255,255,255,0.60)");
+    ctx.strokeStyle = ring;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2 - 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawFooterNameplate(ctx, presentation, x, y, w) {
+    ctx.save();
+    roundRect(ctx, x, y, w, 122, 28);
+    ctx.fillStyle = "rgba(4,9,16,0.70)";
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "#f8fbff";
+    let nameSize = 54;
+    do {
+      ctx.font = `700 ${nameSize}px system-ui, sans-serif`;
+      if (ctx.measureText(presentation.playerName).width <= (w - 210) || nameSize <= 38) break;
+      nameSize -= 2;
+    } while (nameSize > 38);
+    ctx.fillText(presentation.playerName, x + 34, y + 52);
+
+    ctx.fillStyle = "rgba(230,236,244,0.80)";
+    ctx.font = "600 22px system-ui, sans-serif";
+    ctx.fillText("ALPHA HUSKY IDENTITY", x + 34, y + 86);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#f5d18b";
+    ctx.font = "800 46px system-ui, sans-serif";
+    ctx.fillText(`LV ${presentation.level}`, x + w - 30, y + 62);
+    ctx.textAlign = "left";
+  }
+
   async function renderPresentationToCanvas(canvas, presentation) {
     if (!canvas || !presentation) throw new Error("MISSING_RENDER_TARGET");
     await waitForFonts();
@@ -331,177 +519,168 @@
     if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
 
     const artImg = presentation.variant === "equipped" ? (equippedImg || skinImg) : skinImg;
-
     ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    const bg = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    bg.addColorStop(0, "#071019");
-    bg.addColorStop(0.56, "#101f35");
-    bg.addColorStop(1, "#261227");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    drawAmbientBackground(ctx);
 
     ctx.save();
-    ctx.globalAlpha = 0.22;
-    const glow = ctx.createRadialGradient(880, 320, 80, 880, 320, 560);
-    glow.addColorStop(0, "#f59e0b");
-    glow.addColorStop(1, "rgba(245,158,11,0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    ctx.restore();
-
-    ctx.save();
-    roundRect(ctx, 58, 58, CARD_WIDTH - 116, CARD_HEIGHT - 116, 42);
-    ctx.fillStyle = "rgba(5,10,20,0.36)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    roundRect(ctx, 54, 54, CARD_WIDTH - 108, CARD_HEIGHT - 108, 44);
+    ctx.fillStyle = "rgba(5,10,20,0.20)";
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 2;
+    ctx.fill();
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = "#f7fafc";
-    ctx.font = "700 34px system-ui, sans-serif";
-    ctx.fillText(presentation.variant === "equipped" ? "Equipped Loadout" : "Hub Identity", 92, 116);
+    if (presentation.variant === "hub") {
+      const portraitW = 700;
+      const portraitH = Math.round(portraitW * 4 / 3);
+      const portraitX = Math.round((CARD_WIDTH - portraitW) / 2);
+      const portraitY = 176;
 
-    ctx.font = "700 88px system-ui, sans-serif";
-    ctx.fillText(presentation.playerName, 92, 208);
-    ctx.font = "500 34px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(241,245,249,0.84)";
-    ctx.fillText(`Level ${presentation.level}`, 92, 258);
+      ctx.fillStyle = "rgba(226,232,240,0.76)";
+      ctx.font = "700 20px system-ui, sans-serif";
+      ctx.fillText("OFFICIAL ALPHA HUSKY IDENTITY", 92, 86);
 
-    let chipY = 96;
+      let chipY = 88;
+      chipY = drawChip(ctx, presentation.tag, CARD_WIDTH - 92, chipY, "right");
+      chipY = drawChip(ctx, presentation.auraText, CARD_WIDTH - 92, chipY, "right");
+
+      drawFramePortrait(ctx, artImg, frameImg, portraitX, portraitY, portraitW, portraitH);
+
+      if (!artImg) {
+        ctx.fillStyle = "rgba(226,232,240,0.84)";
+        ctx.textAlign = "center";
+        ctx.font = "600 38px system-ui, sans-serif";
+        ctx.fillText("Preview is still loading", CARD_WIDTH / 2, portraitY + portraitH / 2 - 12);
+        ctx.font = "500 24px system-ui, sans-serif";
+        ctx.fillText("Identity details are still safe to share.", CARD_WIDTH / 2, portraitY + portraitH / 2 + 34);
+        ctx.textAlign = "left";
+      }
+
+      drawFooterNameplate(ctx, presentation, 132, 1134, CARD_WIDTH - 264);
+      drawChip(ctx, presentation.factionMeta || "PACK", 132, 1276, "left");
+      drawChip(ctx, `Level ${presentation.level}`, CARD_WIDTH - 132, 1276, "right");
+
+      if (badgeImg) {
+        drawFactionSeal(ctx, badgeImg, 104, 1060, 116);
+      }
+
+      ctx.fillStyle = "rgba(226,232,240,0.62)";
+      ctx.font = "600 20px system-ui, sans-serif";
+      ctx.fillText("Collectible profile card", 92, CARD_HEIGHT - 88);
+      ctx.textAlign = "right";
+      ctx.fillText("#AlphaHusky", CARD_WIDTH - 92, CARD_HEIGHT - 88);
+      ctx.textAlign = "left";
+      return;
+    }
+
+    ctx.fillStyle = "rgba(226,232,240,0.76)";
+    ctx.font = "700 20px system-ui, sans-serif";
+    ctx.fillText("ALPHA HUSKY LOADOUT CARD", 92, 86);
+
+    let chipY = 88;
     chipY = drawChip(ctx, presentation.tag, CARD_WIDTH - 92, chipY, "right");
-    chipY = drawChip(ctx, presentation.factionMeta, CARD_WIDTH - 92, chipY, "right");
     chipY = drawChip(ctx, presentation.auraText, CARD_WIDTH - 92, chipY, "right");
 
-    const artX = 92;
-    const artY = 310;
-    const artW = CARD_WIDTH - 184;
-    const artH = presentation.variant === "equipped" ? 700 : 790;
+    const artX = 98;
+    const artY = 164;
+    const artW = CARD_WIDTH - 196;
+    const artH = 872;
 
     ctx.save();
-    roundRect(ctx, artX, artY, artW, artH, 34);
+    ctx.shadowColor = "rgba(0,0,0,0.38)";
+    ctx.shadowBlur = 34;
+    ctx.shadowOffsetY = 18;
+    roundRect(ctx, artX, artY, artW, artH, 40);
+    ctx.fillStyle = "rgba(4,8,16,0.58)";
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    roundRect(ctx, artX, artY, artW, artH, 40);
     ctx.clip();
-    const artBg = ctx.createLinearGradient(artX, artY, artX + artW, artY + artH);
-    artBg.addColorStop(0, "rgba(17,24,39,0.95)");
-    artBg.addColorStop(1, "rgba(15,23,42,0.80)");
+    const artBg = ctx.createLinearGradient(artX, artY, artX, artY + artH);
+    artBg.addColorStop(0, "rgba(18,27,42,0.96)");
+    artBg.addColorStop(1, "rgba(7,11,20,0.98)");
     ctx.fillStyle = artBg;
     ctx.fillRect(artX, artY, artW, artH);
-    drawContain(ctx, artImg, artX + 40, artY + 26, artW - 80, artH - 52);
+    drawContain(ctx, artImg, artX + 40, artY + 34, artW - 80, artH - 70);
+    ctx.restore();
+
     if (!artImg) {
       ctx.fillStyle = "rgba(226,232,240,0.84)";
       ctx.textAlign = "center";
-      ctx.font = "600 38px system-ui, sans-serif";
-      ctx.fillText("Preview is still loading", artX + artW / 2, artY + artH / 2 - 12);
-      ctx.font = "500 24px system-ui, sans-serif";
-      ctx.fillText("Identity details are still safe to share.", artX + artW / 2, artY + artH / 2 + 34);
+      ctx.font = "600 36px system-ui, sans-serif";
+      ctx.fillText("Preview is still loading", CARD_WIDTH / 2, artY + artH / 2 - 10);
+      ctx.font = "500 22px system-ui, sans-serif";
+      ctx.fillText("Loadout details are still safe to share.", CARD_WIDTH / 2, artY + artH / 2 + 28);
       ctx.textAlign = "left";
     }
-    ctx.restore();
 
-    if (frameImg) {
+    drawFooterNameplate(ctx, presentation, 122, 1066, CARD_WIDTH - 244);
+
+    const stats = presentation.equippedStats || {};
+    const slotLines = presentation.equippedSlots
+      .filter((slot) => slot && !slot.empty)
+      .slice(0, 3)
+      .map((slot) => {
+        const label = String(slot.label || slot.slot || "Slot");
+        const name = String(slot.name || slot.item_key || "Equipped");
+        return `${label}: ${name}`;
+      });
+
+    ctx.fillStyle = "rgba(228,234,242,0.84)";
+    ctx.font = "600 24px system-ui, sans-serif";
+    drawWrappedText(ctx, slotLines.join("  •  "), 126, 1218, CARD_WIDTH - 252, 34, 2);
+
+    const statChips = [
+      stats.hp != null ? `HP ${stats.hp}` : "",
+      stats.attack != null ? `ATK ${stats.attack}` : "",
+      stats.defense != null ? `DEF ${stats.defense}` : "",
+      stats.agility != null ? `AGI ${stats.agility}` : "",
+      stats.luck != null ? `LUCK ${stats.luck}` : "",
+    ].filter(Boolean);
+    let statX = 126;
+    let statY = 1300;
+    statChips.forEach((chip) => {
+      ctx.font = "700 22px system-ui, sans-serif";
+      const width = Math.ceil(ctx.measureText(chip).width) + 34;
+      if (statX + width > CARD_WIDTH - 126) {
+        statX = 126;
+        statY += 58;
+      }
       ctx.save();
-      roundRect(ctx, artX, artY, artW, artH, 34);
-      ctx.clip();
-      drawContain(ctx, frameImg, artX + 18, artY + 18, artW - 36, artH - 36);
+      roundRect(ctx, statX, statY, width, 44, 999);
+      ctx.fillStyle = "rgba(7,12,20,0.68)";
+      ctx.strokeStyle = "rgba(255,224,170,0.14)";
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#f5f7fb";
+      ctx.fillText(chip, statX + 17, statY + 29);
       ctx.restore();
-    }
+      statX += width + 12;
+    });
 
     if (badgeImg) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(146, artY + artH - 76, 48, 0, Math.PI * 2);
-      ctx.clip();
-      drawCover(ctx, badgeImg, 98, artY + artH - 124, 96, 96);
-      ctx.restore();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(146, artY + artH - 76, 49, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "#f8fafc";
-    ctx.font = "700 40px system-ui, sans-serif";
-    ctx.fillText(presentation.variant === "equipped" ? "Current build" : "Current player presentation", 92, artY + artH + 84);
-    ctx.font = "500 28px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(226,232,240,0.86)";
-
-    if (presentation.variant === "equipped") {
-      const stats = presentation.equippedStats || {};
-      const slotLines = presentation.equippedSlots
-        .filter((slot) => slot && !slot.empty)
-        .slice(0, 4)
-        .map((slot) => {
-          const label = String(slot.label || slot.slot || "Slot");
-          const name = String(slot.name || slot.item_key || "Equipped");
-          const level = slot.level ? ` Lv ${slot.level}` : "";
-          return `${label}: ${name}${level}`;
-        });
-
-      drawWrappedText(
-        ctx,
-        slotLines.join("  •  ") || "Live equipped preview from the current build.",
-        92,
-        artY + artH + 132,
-        CARD_WIDTH - 184,
-        38,
-        2
-      );
-
-      const statChips = [
-        stats.hp != null ? `HP ${stats.hp}` : "",
-        stats.attack != null ? `ATK ${stats.attack}` : "",
-        stats.defense != null ? `DEF ${stats.defense}` : "",
-        stats.agility != null ? `AGI ${stats.agility}` : "",
-        stats.luck != null ? `LUCK ${stats.luck}` : "",
-      ].filter(Boolean);
-
-      let statX = 92;
-      let statY = artY + artH + 226;
-      statChips.forEach((chip) => {
-        ctx.font = "600 28px system-ui, sans-serif";
-        const width = Math.ceil(ctx.measureText(chip).width) + 34;
-        if (statX + width > CARD_WIDTH - 92) {
-          statX = 92;
-          statY += 72;
-        }
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.strokeStyle = "rgba(255,255,255,0.10)";
-        roundRect(ctx, statX, statY, width, 54, 999);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = "#f8fafc";
-        ctx.fillText(chip, statX + 17, statY + 35);
-        statX += width + 14;
-      });
-    } else {
-      drawWrappedText(
-        ctx,
-        "Shared from the live Hub presentation. Skin, frame, faction tag, level, and aura all come from the same state the player is currently seeing in the app.",
-        92,
-        artY + artH + 132,
-        CARD_WIDTH - 184,
-        42,
-        3
-      );
+      drawFactionSeal(ctx, badgeImg, 104, 1004, 110);
     }
 
     ctx.fillStyle = "rgba(226,232,240,0.62)";
-    ctx.font = "500 24px system-ui, sans-serif";
-    ctx.fillText("alphahusky.win", 92, CARD_HEIGHT - 94);
+    ctx.font = "600 20px system-ui, sans-serif";
+    ctx.fillText("Live equipped state", 92, CARD_HEIGHT - 88);
     ctx.textAlign = "right";
-    ctx.fillText("#AlphaHusky", CARD_WIDTH - 92, CARD_HEIGHT - 94);
+    ctx.fillText("#AlphaHusky", CARD_WIDTH - 92, CARD_HEIGHT - 88);
     ctx.textAlign = "left";
   }
 
   function buildCaption(presentation) {
-    const link = presentation?.shareLink || getShareLink();
+    const link = TELEGRAM_PACK_LINK;
     const name = presentation?.playerName || "Howler";
     const level = presentation?.level || 1;
     if (presentation?.variant === "equipped") {
-      return `${name}'s current Alpha Husky loadout is live.\nLevel ${level}. Built from the in-app equipped state, not promo art.\n\nPlay now: ${link}\n#AlphaHusky #TelegramMiniApp`;
+      return `${name}'s current Alpha Husky loadout is live.\nLevel ${level}. Built from the in-app equipped state, not promo art.\n\nJoin the pack on Telegram: ${link}\n#AlphaHusky #TelegramMiniApp`;
     }
-    return `${name}'s Alpha Husky identity is live.\nLevel ${level}. This card matches the active hub presentation in-game.\n\nJoin the pack: ${link}\n#AlphaHusky #TelegramMiniApp`;
+    return `${name}'s Alpha Husky identity is live.\nLevel ${level}. This card matches the active hub presentation in-game.\n\nJoin the pack on Telegram: ${link}\n#AlphaHusky #TelegramMiniApp`;
   }
 
   function buildXIntent(caption, link) {
