@@ -233,21 +233,19 @@
   border:1px solid rgba(255,255,255,.14);
   background:rgba(8,10,14,.76);
   backdrop-filter: blur(6px);
-  box-shadow:0 3px 10px rgba(0,0,0,.20);
+  box-shadow:0 3px 8px rgba(0,0,0,.16);
 }
 .map-pin .pin-pressure-chip.p-hot{
   color:#ffd7a6;
   background:rgba(255,116,24,.18);
   border-color:rgba(255,140,56,.34);
   box-shadow:0 0 0 1px rgba(255,140,56,.08), 0 0 18px rgba(255,116,24,.18);
-  animation: ahPressureHeat 3.2s ease-in-out infinite;
 }
 .map-pin .pin-pressure-chip.p-contested{
   color:#ffd2d2;
   background:rgba(255,56,56,.18);
   border-color:rgba(255,88,88,.36);
   box-shadow:0 0 0 1px rgba(255,88,88,.08), 0 0 18px rgba(255,56,56,.18);
-  animation: ahPressureConflict 1.2s ease-in-out infinite;
 }
 .map-pin .pin-pressure-chip.p-fortified{
   color:#d6e7ff;
@@ -281,9 +279,10 @@
 .map-pin.pressure-flashpoint{
   z-index:6;
 }
-.map-pin.pressure-flashpoint .pin-icon,
-.map-pin.pressure-flashpoint > img{
-  animation: ahFlashpointBreath 1.8s ease-in-out infinite;
+.map-pin.pressure-flashpoint .pin-ring{
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.08),
+    0 0 18px rgba(255,255,255,.12);
 }
 .map-pin.pressure-flashpoint .pin-pressure-chip{
   border-color:rgba(255,255,255,.24);
@@ -298,26 +297,17 @@
 }
 
 /* optional subtle node feel from pressure overlay only */
-.map-pin.pressure-hot .pin-icon,
-.map-pin.pressure-hot > img{
-  filter: drop-shadow(0 0 10px rgba(255,116,24,.18));
-}
 .map-pin.pressure-hot:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
   box-shadow:
     0 0 0 1px rgba(255,146,72,.14),
     0 0 16px rgba(255,116,24,.20);
-  animation: ahPressureHeat 3.2s ease-in-out infinite;
 }
 .map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
   border-color: rgba(255,88,88,.90) !important;
   box-shadow:
-    0 0 0 2px rgba(255,88,88,.16),
-    0 0 20px rgba(255,56,56,.24) !important;
-  animation: ahPressureConflict 1.2s ease-in-out infinite;
-}
-.map-pin.pressure-fortified .pin-icon,
-.map-pin.pressure-fortified > img{
-  filter: drop-shadow(0 0 10px rgba(80,130,255,.16));
+    0 0 0 2px rgba(255,88,88,.14),
+    0 0 18px rgba(255,56,56,.20) !important;
+  animation: ahPressureConflict 1.8s ease-in-out infinite;
 }
 .map-pin.pressure-fortified:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring{
   border-color: rgba(120,170,255,.74);
@@ -458,11 +448,11 @@
   align-items:center;
 }
 .map-pin .chip-action{
-  font-size:10px;
+  font-size:9px;
   line-height:1;
   font-weight:800;
   letter-spacing:.03em;
-  opacity:.86;
+  opacity:.74;
 }
 .map-pin .chip-value{
   display:inline-flex;
@@ -512,11 +502,7 @@
 }
 @keyframes ahPressureConflict{
   0%,100%{ transform:scale(1); filter:brightness(1); }
-  50%{ transform:scale(1.08); filter:brightness(1.12); }
-}
-@keyframes ahFlashpointBreath{
-  0%,100%{ transform:scale(1); filter:brightness(1); }
-  50%{ transform:scale(1.06); filter:brightness(1.08); }
+  50%{ transform:scale(1.04); filter:brightness(1.08); }
 }
 `;
     document.head.appendChild(s);
@@ -1089,7 +1075,14 @@
 
   function _pressureBadgesHtml(pressureMeta, nodeUx) {
     const ux = nodeUx || {};
-    if (_normalizeDisplayStatus(ux.displayStatus) === "CALM") return "";
+    const displayStatus = _normalizeDisplayStatus(ux.displayStatus);
+    if (
+      displayStatus !== "SIEGE_LIVE" &&
+      displayStatus !== "SIEGE_FORMING" &&
+      displayStatus !== "CONTESTED"
+    ) {
+      return "";
+    }
     const text = String(ux.displayLabel || "").trim();
     const cls = String(ux.displayClass || "").trim();
     if (!text || !cls) return "";
@@ -1428,14 +1421,11 @@
       const actionHtml = nodeUx?.actionHint
         ? `<span class="chip-action">${esc(nodeUx.actionHint)}</span>`
         : "";
-      const valueHtml = nodeUx?.valueTier && nodeUx.valueTier !== "LOW_VALUE"
-        ? `<span class="chip-value" data-tier="${esc(nodeUx.valueTier)}">${esc(nodeUx.valueLabel || _valueTierLabel(nodeUx.valueTier))}</span>`
-        : "";
       chip.innerHTML = `
         <span class="chip-copy">
           <span class="chip-name">${esc(name)}</span>
-          ${(actionHtml || valueHtml)
-            ? `<span class="chip-subrow">${actionHtml}${valueHtml}</span>`
+          ${actionHtml
+            ? `<span class="chip-subrow">${actionHtml}</span>`
             : ""}
         </span>
       `;
