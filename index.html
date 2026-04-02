@@ -3692,6 +3692,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-tile" data-action="referrals" type="button"><span>🤝</span><b>Referrals</b></button>
       <button class="ah-tile" data-action="howlboard" type="button"><span>📣</span><b>Howlboard</b></button>
       <button class="ah-tile" data-action="profile" type="button"><span>👤</span><b>Profile</b></button>
+      <button class="ah-tile" data-action="mailbox" type="button"><span>✉️</span><b>Mailbox</b></button>
       <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
       <button class="ah-tile" data-action="feed" type="button"><span>🧾</span><b>Feed</b></button>
       <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
@@ -4812,6 +4813,7 @@ function closeFaqModal(){
           referrals: ()=>window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click(),
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
           profile:   ()=>document.querySelector('.btn.profile')?.click(),
+          mailbox:   ()=>window.Mailbox?.open?.(),
           faq: () => openFaqModal(),
           whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
           feed:      ()=>document.querySelector('.btn.feed')?.click(),
@@ -7183,6 +7185,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script src="js/missions.js?v=WEBAPP_VER"></script>
 <script src="js/cta.js?v=WEBAPP_VER"></script>
+<script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
@@ -7208,6 +7211,29 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     document.addEventListener("DOMContentLoaded", tryInitCTA, { once: true });
   } else {
     tryInitCTA();
+  }
+})();
+</script>
+<script>
+(function initMailbox(){
+  function tryInitMailbox(){
+    if (!window.Mailbox || window.__mailboxInited) return;
+    try {
+      window.Mailbox.init({
+        apiPost: window.apiPost,
+        tg: window.Telegram?.WebApp || window.tg || null,
+        dbg: !!window.DBG
+      });
+      window.__mailboxInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[Mailbox] init failed", e);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", tryInitMailbox, { once: true });
+  } else {
+    tryInitMailbox();
   }
 })();
 </script>
