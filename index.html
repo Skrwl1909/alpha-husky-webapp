@@ -4056,10 +4056,20 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 </div>
 
 <style id="broken-contracts-css">
+  #brokenContractsBack{
+    align-items:flex-start;
+    justify-content:center;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      10px
+      calc(92px + env(safe-area-inset-bottom))
+      10px;
+  }
+
   #brokenContractsBack .sheet-card.bc-sheet{
-  width:min(580px,100%);
-  height:calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  max-height:none;
+  width:min(580px, calc(100vw - 20px));
+  max-height:calc(100vh - max(10px, env(safe-area-inset-top)) - (92px + env(safe-area-inset-bottom)));
+  max-height:calc(100dvh - max(10px, env(safe-area-inset-top)) - (92px + env(safe-area-inset-bottom)));
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -4081,6 +4091,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     justify-content:space-between;
     align-items:flex-start;
     gap:12px;
+    flex:0 0 auto;
   }
 
   .bc-head-copy{
@@ -4117,6 +4128,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     border-radius:12px;
     background:rgba(255,255,255,.045);
     border:1px solid rgba(255,255,255,.06);
+    flex:0 0 auto;
   }
 
   .bc-list{
@@ -4130,7 +4142,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
   padding-right:4px;
-  padding-bottom:calc(120px + env(safe-area-inset-bottom));
+  padding-bottom:calc(24px + env(safe-area-inset-bottom));
   }
 
   .bc-empty{
@@ -4339,36 +4351,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   .bc-chip-val{
     color:#f4f7fb;
   }
-  /* === Broken Contracts mobile/layout fix === */
-
-#brokenContractsBack .sheet-card.bc-sheet{
-  overflow:hidden;
-}
-
-#bcStatus{
-  flex:0 0 auto;
-}
-
-#bcRoot{
-  flex:1 1 auto;
-  min-height:0;
-  overflow-y:auto;
-  overflow-x:hidden;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
-  padding-right:4px;
-  padding-bottom:calc(108px + env(safe-area-inset-bottom));
-}
+  /* === Broken Contracts shell fix === */
 
 /* lekki scrollbar */
-#bcRoot::-webkit-scrollbar{
+.bc-list::-webkit-scrollbar{
   width:8px;
 }
-#bcRoot::-webkit-scrollbar-thumb{
+.bc-list::-webkit-scrollbar-thumb{
   background:rgba(255,255,255,.16);
   border-radius:999px;
 }
-#bcRoot::-webkit-scrollbar-track{
+.bc-list::-webkit-scrollbar-track{
   background:transparent;
 }
 
@@ -4384,14 +4377,16 @@ body.bc-open #ahCommunityBtn{
 @media (max-width: 640px){
   #brokenContractsBack{
     padding:
-      calc(6px + env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-top))
       6px
-      calc(6px + env(safe-area-inset-bottom));
+      calc(88px + env(safe-area-inset-bottom))
+      6px;
   }
 
   #brokenContractsBack .sheet-card.bc-sheet{
     width:calc(100vw - 12px);
-    height:calc(100vh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height:calc(100vh - max(8px, env(safe-area-inset-top)) - (88px + env(safe-area-inset-bottom)));
+    max-height:calc(100dvh - max(8px, env(safe-area-inset-top)) - (88px + env(safe-area-inset-bottom)));
     border-radius:18px;
     padding:14px;
     gap:12px;
@@ -4415,7 +4410,7 @@ body.bc-open #ahCommunityBtn{
   }
 
   .bc-list{
-    padding-bottom:calc(132px + env(safe-area-inset-bottom));
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));
   }
   }
 </style>
