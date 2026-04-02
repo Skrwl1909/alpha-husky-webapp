@@ -11,6 +11,7 @@
     tg: null,
     dbg: null,
     state: null,
+    hideObserver: null,
   };
 
   function el(id) {
@@ -139,6 +140,20 @@
     setStatus("Error");
     const root = el(ROOT_ID);
     if (root) root.innerHTML = `<div class="bc-empty" style="color:#ffb4b4;">${esc(msg || "Failed to load Broken Contracts")}</div>`;
+  }
+
+  function syncShellState(open) {
+    document.body.classList.toggle("bc-open", !!open);
+  }
+
+  function isVisible(node) {
+    if (!node) return false;
+    if (node.style.display === "none") return false;
+    try {
+      return window.getComputedStyle(node).display !== "none";
+    } catch (_) {
+      return true;
+    }
   }
 
   function renderState(data) {
@@ -276,9 +291,8 @@
 }
 
 function close() {
-  document.body.classList.remove("bc-open");
-
   const back = el(MODAL_ID);
+  syncShellState(false);
   if (back) back.style.display = "none";
 
   try { global.navClose?.(MODAL_ID); } catch (_) {}
@@ -291,18 +305,20 @@ async function open() {
     dbg: global.dbg || console.debug
   });
 
-  document.body.classList.add("bc-open");
-
   const back = el(MODAL_ID);
+  syncShellState(true);
   if (back) back.style.display = "flex";
+  const root = el(ROOT_ID);
+  if (root) root.scrollTop = 0;
 
   try { global.navOpen?.(MODAL_ID); } catch (_) {}
 
   try {
     await loadState();
+    try { el(CLOSE_ID)?.focus?.({ preventScroll: true }); } catch (_) {}
     return true;
   } catch (err) {
-    document.body.classList.remove("bc-open");
+    close();
     throw err;
   }
 }
@@ -323,6 +339,22 @@ async function open() {
       back.dataset.bcBound = "1";
       back.addEventListener("click", (ev) => {
         if (ev.target === back) close();
+      });
+    }
+    if (back && !back.dataset.bcObserved) {
+      back.dataset.bcObserved = "1";
+      S.hideObserver = new MutationObserver(() => {
+        if (!isVisible(back)) syncShellState(false);
+      });
+      S.hideObserver.observe(back, {
+        attributes: true,
+        attributeFilter: ["style", "class", "hidden"]
+      });
+    }
+    if (!document.body.dataset.bcEscBound) {
+      document.body.dataset.bcEscBound = "1";
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && isVisible(el(MODAL_ID))) close();
       });
     }
   }
