@@ -1,0 +1,2854 @@
+// js/oracle.js — Alpha Husky Oracle Void Doorway
+// Self-contained modal UI for:
+// - Live Echoes
+// - Faction Pulse
+// - Hall of Fame
+//
+// Backend contract:
+// POST /webapp/oracle/state
+// -> { ok:true, data:{ buildingId, liveEchoes, factionPulse, hallOfFame, meta } }
+
+(function () {
+  const Oracle = {};
+
+  let _apiPost = null;
+  let _tg = null;
+  let _dbg = false;
+
+  let _inited = false;
+  let _mounted = false;
+  let _isOpen = false;
+  let _loading = false;
+
+  let _state = null;
+  let _activeTab = "echoes";
+  let _refreshTimer = null;
+
+  const REFRESH_MS = 25000;
+
+  const TAB_IDS = ["echoes", "pulse", "hall"];
+
+  const FACTIONS = {
+    rogue_byte:   { code: "RB", label: "Rogue Byte", cls: "rb" },
+    echo_wardens: { code: "EW", label: "Echo Wardens", cls: "ew" },
+    pack_burners: { code: "PB", label: "Pack Burners", cls: "pb" },
+    inner_howl:   { code: "IH", label: "Inner Howl", cls: "ih" },
+  };
+  const FACTION_BADGE_FILES = {
+    rogue_byte: "rogue_byte_40.webp",
+    echo_wardens: "echo_wardens_40.webp",
+    pack_burners: "pack_burners_40.webp",
+    inner_howl: "inner_howl_40.webp",
+  };
+
+  function dbg(...args) {
+    if (_dbg) console.log("[Oracle]", ...args);
+  }
+
+  function init({ apiPost, tg, dbg } = {}) {
+    _apiPost = apiPost || _apiPost || null;
+    _tg = tg || _tg || window.Telegram?.WebApp || null;
+    _dbg = !!dbg;
+
+    injectCss();
+    ensureDom();
+    bindEvents();
+
+    _inited = true;
+    dbg && console.log("[Oracle] init ok");
+  }
+
+  function open() {
+    if (!_inited) init({});
+    ensureDom();
+
+    document.documentElement.classList.add("ah-oracle-open");
+    document.body.classList.add("ah-oracle-open");
+
+    els.back.style.display = "block";
+    requestAnimationFrame(() => {
+      els.back.classList.add("show");
+      els.modal.classList.add("show");
+    });
+
+    lockScroll(true);
+    _isOpen = true;
+
+    showBackButton(true);
+    startAutoRefresh();
+
+    if (!_state) {
+      fetchState({ silent: false });
+    } else {
+      render();
+      fetchState({ silent: true });
+    }
+  }
+
+  function close() {
+  if (!els.back) return;
+
+  _isOpen = false;
+
+  els.back.classList.remove("show");
+  els.modal.classList.remove("show");
+
+  setTimeout(() => {
+    if (_isOpen) return; // hide only if it was not reopened meanwhile
+    els.back.style.display = "none";
+  }, 180);
+
+  lockScroll(false);
+  showBackButton(false);
+  stopAutoRefresh();
+
+  document.documentElement.classList.remove("ah-oracle-open");
+  document.body.classList.remove("ah-oracle-open");
+  }
+
+  function refresh() {
+    return fetchState({ silent: false, force: true });
+  }
+
+  Oracle.init = init;
+  Oracle.open = open;
+  Oracle.close = close;
+  Oracle.refresh = refresh;
+
+  window.Oracle = Oracle;
+
+  const els = {
+    back: null,
+    modal: null,
+    root: null,
+    body: null,
+    tabs: null,
+    title: null,
+    subtitle: null,
+    refreshBtn: null,
+    closeBtn: null,
+    statusDot: null,
+  };
+
+  function getApiPost() {
+    const fn =
+      _apiPost ||
+      window.apiPost ||
+      window.S?.apiPost ||
+      null;
+
+    return typeof fn === "function" ? fn : null;
+  }
+
+  function showBackButton(show) {
+    const bb = _tg?.BackButton;
+    if (!bb) return;
+
+    try {
+      bb.offClick(close);
+    } catch (_) {}
+
+    if (show) {
+      try {
+        bb.onClick(close);
+        bb.show();
+      } catch (_) {}
+    } else {
+      try {
+        bb.hide();
+      } catch (_) {}
+    }
+  }
+
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    _refreshTimer = setInterval(() => {
+      if (_isOpen) fetchState({ silent: true });
+    }, REFRESH_MS);
+  }
+
+  function stopAutoRefresh() {
+    if (_refreshTimer) {
+      clearInterval(_refreshTimer);
+      _refreshTimer = null;
+    }
+  }
+
+  function lockScroll(lock) {
+    document.body.style.overflow = lock ? "hidden" : "";
+    document.body.style.touchAction = lock ? "none" : "";
+  }
+
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "oracle-toast";
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add("show"), 10);
+    setTimeout(() => {
+      t.classList.remove("show");
+      setTimeout(() => t.remove(), 180);
+    }, 2200);
+  }
+
+  function ensureDom() {
+  if (_mounted && els.back && document.body.contains(els.back)) return;
+
+  const back = document.createElement("div");
+  back.id = "oracleBack";
+  back.className = "oracle-back";
+  back.style.display = "none";
+
+  back.innerHTML = `
+    <div class="oracle-modal" id="oracleModal" role="dialog" aria-modal="true" aria-label="Oracle Void Doorway">
+      <div class="oracle-ambient oracle-ambient-a"></div>
+      <div class="oracle-ambient oracle-ambient-b"></div>
+
+      <div class="oracle-topbar">
+        <div class="oracle-head">
+          <div class="oracle-kicker">VOID DOORWAY</div>
+          <div class="oracle-title-row">
+            <div class="oracle-title">Oracle</div>
+            <div class="oracle-live">
+              <span class="oracle-live-dot" id="oracleStatusDot"></span>
+              <span class="oracle-live-text">synced</span>
+            </div>
+          </div>
+          <div class="oracle-subtitle" id="oracleSubtitle">Living world board</div>
+        </div>
+
+        <div class="oracle-actions">
+          <button type="button" class="oracle-btn ghost" id="oracleRefreshBtn">Refresh</button>
+          <button type="button" class="oracle-btn close" id="oracleCloseBtn" aria-label="Close Oracle">✕</button>
+        </div>
+      </div>
+
+      <div class="oracle-hero" id="oracleHero"></div>
+
+      <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
+
+      <div class="oracle-tabs" id="oracleTabs">
+        <button type="button" class="oracle-tab is-active" data-tab="echoes">
+          <span class="oracle-tab-ico">◉</span>
+          <span>Live Echoes</span>
+        </button>
+        <button type="button" class="oracle-tab" data-tab="pulse">
+          <span class="oracle-tab-ico">⌁</span>
+          <span>Faction Pulse</span>
+        </button>
+        <button type="button" class="oracle-tab" data-tab="hall">
+          <span class="oracle-tab-ico">✦</span>
+          <span>Hall of Fame</span>
+        </button>
+      </div>
+
+      <div class="oracle-body" id="oracleBody">
+        <div class="oracle-root" id="oracleRoot"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(back);
+
+  els.back = back;
+  els.modal = back.querySelector("#oracleModal");
+  els.root = back.querySelector("#oracleRoot");
+  els.body = back.querySelector("#oracleBody");
+  els.tabs = back.querySelector("#oracleTabs");
+  els.subtitle = back.querySelector("#oracleSubtitle");
+  els.refreshBtn = back.querySelector("#oracleRefreshBtn");
+  els.closeBtn = back.querySelector("#oracleCloseBtn");
+  els.statusDot = back.querySelector("#oracleStatusDot");
+  els.hero = back.querySelector("#oracleHero");
+
+  _mounted = true;
+  }
+
+  function bindEvents() {
+    if (!els.back) return;
+
+    els.closeBtn?.addEventListener("click", close);
+    els.refreshBtn?.addEventListener("click", () => refresh());
+
+    els.back?.addEventListener("click", (e) => {
+      if (e.target === els.back) close();
+    });
+
+    els.tabs?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".oracle-tab");
+      if (!btn) return;
+      const tab = btn.getAttribute("data-tab");
+      if (!TAB_IDS.includes(tab)) return;
+      _activeTab = tab;
+      render();
+    });
+  }
+
+  async function fetchState({ silent = false } = {}) {
+    if (_loading) return;
+    const apiPost = getApiPost();
+
+    if (!apiPost) {
+      toast("Oracle: apiPost missing");
+      dbg("Missing apiPost");
+      return;
+    }
+
+    _loading = true;
+    setLoadingUi(true);
+
+    try {
+      const raw = await apiPost("/webapp/oracle/state", {});
+      dbg("oracle raw", raw);
+
+      const payload = normalizeOraclePayload(raw);
+      _state = payload;
+      render();
+
+      if (!silent) pulseSynced();
+      return payload;
+    } catch (err) {
+      console.error("[Oracle] fetchState failed", err);
+      if (!silent) toast("Oracle sync failed");
+      renderError(err);
+    } finally {
+      _loading = false;
+      setLoadingUi(false);
+    }
+  }
+
+  function normalizeOraclePayload(raw) {
+    const data =
+      raw?.data?.buildingId ? raw.data :
+      raw?.buildingId ? raw :
+      raw?.state?.buildingId ? raw.state :
+      {};
+
+    const liveEchoes = Array.isArray(data.liveEchoes) ? data.liveEchoes : [];
+    const factionPulse = data.factionPulse && typeof data.factionPulse === "object"
+      ? data.factionPulse
+      : { summary: {}, factions: [] };
+
+    const hallOfFame = data.hallOfFame && typeof data.hallOfFame === "object"
+      ? data.hallOfFame
+      : { topLevels: [], fortressStandout: {}, worldActor: {} };
+
+    const meta = data.meta && typeof data.meta === "object"
+      ? data.meta
+      : {};
+
+    return {
+      buildingId: data.buildingId || "oracle_void_doorway",
+      liveEchoes,
+      factionPulse,
+      hallOfFame,
+      meta,
+    };
+  }
+
+  function setLoadingUi(loading) {
+    if (!els.refreshBtn) return;
+    els.refreshBtn.disabled = loading;
+    els.refreshBtn.textContent = loading ? "Syncing..." : "Refresh";
+    if (els.statusDot) {
+      els.statusDot.classList.toggle("busy", !!loading);
+    }
+  }
+
+  function pulseSynced() {
+    if (!els.statusDot) return;
+    els.statusDot.classList.remove("busy");
+    els.statusDot.classList.add("ok");
+    setTimeout(() => els.statusDot?.classList.remove("ok"), 600);
+  }
+
+  function render() {
+  updateTabs();
+
+  if (!_state) {
+    renderHero(null);
+    els.root.innerHTML = renderSkeleton();
+    renderMetaStrip(null);
+    return;
+  }
+
+  const { liveEchoes, factionPulse, hallOfFame, meta } = _state;
+
+  renderHero({
+    meta,
+    pulse: factionPulse,
+    echoes: liveEchoes,
+    hall: hallOfFame,
+  });
+
+  renderMetaStrip({
+    meta,
+    pulse: factionPulse,
+    echoes: liveEchoes,
+  });
+
+  if (_activeTab === "echoes") {
+    els.root.innerHTML = renderEchoesTab(liveEchoes, meta);
+    return;
+  }
+
+  if (_activeTab === "pulse") {
+    els.root.innerHTML = renderPulseTab(factionPulse, meta);
+    return;
+  }
+
+  if (_activeTab === "hall") {
+    els.root.innerHTML = renderHallTab(hallOfFame, meta);
+  }
+  }
+  function renderHero(ctx) {
+  if (!els.hero) return;
+
+  if (!ctx) {
+    els.hero.innerHTML = `
+      <div class="oracle-hero-card is-quiet">
+        <div class="oracle-hero-left">
+          <div class="oracle-hero-sigil">
+            <div class="oracle-faction-badge big none">
+              <span class="oracle-faction-code-fallback">◌</span>
+            </div>
+          </div>
+          <div class="oracle-hero-copy">
+            <div class="oracle-hero-kicker">SYNCING</div>
+            <div class="oracle-hero-title">Reading the Void</div>
+            <div class="oracle-hero-text">Pulling the latest world state, faction pressure and hall records.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const meta = ctx.meta || {};
+  const pulse = ctx.pulse || {};
+  const summary = pulse.summary || {};
+  const weekly = pulse.weekly || {};
+  const hall = ctx.hall || {};
+
+  const viewerFaction = meta.viewerFaction || "";
+  const viewerFactionMeta = factionMeta(viewerFaction);
+
+  const viewerLevel = intOr(meta.viewerLevel, 1);
+  const echoCount = intOr(meta.echoCount, 0);
+  const nodeCount = intOr(meta.nodeCount, 0);
+  const hotNodes = intOr(summary.hotNodes, 0);
+  const activeSieges = intOr(summary.activeSieges, 0);
+  const weeklyLeader = String(weekly?.leaderLabel || viewerFactionMeta.label || "No leader").trim();
+  const topTracked = Array.isArray(hall?.topLevels) ? hall.topLevels.length : 0;
+  const fortressFloor = intOr(hall?.fortressStandout?.floor, 0);
+
+  let heroKicker = "VOID FEED";
+  let heroTitle = "Oracle";
+  let heroText = "Living world board";
+  let heroTone = "is-live";
+  let stats = [];
+
+  if (_activeTab === "echoes") {
+    heroKicker = "LIVE SIGNALS";
+    heroTitle = echoCount > 0 ? `${echoCount} echoes in motion` : "Live echoes online";
+    heroText = "Recent signals, rare moments, world activity and highlights from across Alpha Husky.";
+    heroTone = echoCount > 0 ? "is-live" : "is-quiet";
+    stats = [
+      { value: String(echoCount), label: "Visible echoes" },
+      { value: String(nodeCount), label: "Tracked nodes" },
+      { value: String(hotNodes), label: "Hot sectors" },
+    ];
+  } else if (_activeTab === "pulse") {
+    heroKicker = "TACTICAL OVERVIEW";
+    heroTitle = viewerFaction
+      ? `${viewerFactionMeta.label} pressure report`
+      : "Faction pressure report";
+    heroText = `${weeklyLeader} leads this week. ${hotNodes} hot sectors, ${activeSieges} live sieges and ${nodeCount} nodes under watch.`;
+    heroTone = activeSieges > 0 ? "is-danger" : hotNodes > 0 ? "is-warn" : "is-live";
+    stats = [
+      { value: `Lvl ${viewerLevel}`, label: "Viewer" },
+      { value: String(nodeCount), label: "Nodes" },
+      { value: String(activeSieges), label: "Live sieges" },
+    ];
+  } else {
+    heroKicker = "LEGEND ARCHIVE";
+    heroTitle = "Hall of Fame";
+    heroText = "Standouts, top levels, strong clears and names worth remembering in the wasteland.";
+    heroTone = topTracked > 0 || fortressFloor > 0 ? "is-prestige" : "is-quiet";
+    stats = [
+      { value: String(topTracked), label: "Tracked names" },
+      { value: fortressFloor > 0 ? `F${fortressFloor}` : "—", label: "Fortress floor" },
+      { value: String(echoCount), label: "World echoes" },
+    ];
+  }
+
+  els.hero.innerHTML = `
+    <div class="oracle-hero-card ${heroTone}">
+      <div class="oracle-hero-glow"></div>
+
+      <div class="oracle-hero-left">
+        <div class="oracle-hero-sigil">
+          ${renderFactionBadge(viewerFaction, { big: true, code: viewerFactionMeta.code })}
+        </div>
+
+        <div class="oracle-hero-copy">
+          <div class="oracle-hero-kicker">${escapeHtml(heroKicker)}</div>
+          <div class="oracle-hero-title">${escapeHtml(heroTitle)}</div>
+          <div class="oracle-hero-text">${escapeHtml(heroText)}</div>
+        </div>
+      </div>
+
+      <div class="oracle-hero-stats">
+        ${stats.map((s) => `
+          <div class="oracle-hero-stat">
+            <div class="oracle-hero-stat-value">${escapeHtml(s.value)}</div>
+            <div class="oracle-hero-stat-label">${escapeHtml(s.label)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+  }
+
+  function renderError(err) {
+    updateTabs();
+    renderMetaStrip(null);
+
+    els.root.innerHTML = `
+      <div class="oracle-empty danger">
+        <div class="oracle-empty-icon">⚠</div>
+        <div class="oracle-empty-title">Signal lost</div>
+        <div class="oracle-empty-text">${escapeHtml(err?.message || "Oracle state unavailable")}</div>
+      </div>
+    `;
+  }
+
+  function updateTabs() {
+    const buttons = els.tabs?.querySelectorAll(".oracle-tab") || [];
+    buttons.forEach((btn) => {
+      const isActive = btn.getAttribute("data-tab") === _activeTab;
+      btn.classList.toggle("is-active", isActive);
+    });
+
+    const subtitleMap = {
+      echoes: "Recent signals from across the world",
+      pulse: "Live faction movement and pressure",
+      hall: "Standouts, legends and active powers",
+    };
+    if (els.subtitle) {
+      els.subtitle.textContent = subtitleMap[_activeTab] || "Living world board";
+    }
+  }
+
+  function renderMetaStrip(ctx) {
+  const strip = document.getElementById("oracleMetaStrip");
+  if (!strip) return;
+
+  if (!ctx) {
+    strip.innerHTML = `
+      <div class="oracle-chip-row identity">
+        <div class="oracle-chip muted">No signal</div>
+        <div class="oracle-chip muted">Awaiting sync</div>
+      </div>
+    `;
+    return;
+  }
+
+  const meta = ctx.meta || {};
+  const pulse = ctx.pulse || {};
+  const summary = pulse.summary || {};
+
+  const viewerFaction = meta.viewerFaction || "";
+  const viewerFactionMeta = factionMeta(viewerFaction);
+  const viewerLevel = intOr(meta.viewerLevel, 1);
+
+  const identityChips = [
+    viewerFaction
+      ? `<div class="oracle-chip faction ${viewerFactionMeta.cls}">
+           <span class="code">${viewerFactionMeta.code}</span>
+           <span>${escapeHtml(viewerFactionMeta.label)}</span>
+         </div>`
+      : `<div class="oracle-chip muted">Unbound</div>`,
+    `<div class="oracle-chip">Lvl ${viewerLevel}</div>`,
+    `<div class="oracle-chip">Echoes ${intOr(meta.echoCount, 0)}</div>`,
+  ];
+
+  const worldChips = [
+    `<div class="oracle-chip">Nodes ${intOr(meta.nodeCount, 0)}</div>`,
+    `<div class="oracle-chip warn">Hot ${intOr(summary.hotNodes, 0)}</div>`,
+    `<div class="oracle-chip danger">Sieges ${intOr(summary.activeSieges, 0)}</div>`,
+  ];
+
+  strip.innerHTML = `
+    <div class="oracle-chip-row identity">${identityChips.join("")}</div>
+    <div class="oracle-chip-row world">${worldChips.join("")}</div>
+  `;
+  }
+
+  function renderEchoesTab(echoes, meta) {
+    const rows = Array.isArray(echoes) ? echoes : [];
+
+    if (!rows.length) {
+      return `
+        <div class="oracle-empty">
+          <div class="oracle-empty-icon">◌</div>
+          <div class="oracle-empty-title">No fresh echoes</div>
+          <div class="oracle-empty-text">The Void is quiet for now. Refresh later or trigger new activity in the world.</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">LIVE ECHOES</div>
+            <div class="oracle-panel-title">Recent world activity</div>
+          </div>
+          <div class="oracle-panel-note">${rows.length} visible</div>
+        </div>
+
+        <div class="oracle-echo-list">
+          ${rows.map(renderEchoCard).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEchoCard(row) {
+    const faction = row?.faction || "";
+    const fm = factionMeta(faction);
+    const type = prettifyType(row?.type || "signal");
+    const age = formatAge(row?.ageSec, row?.ts);
+    const text = row?.text || "Unknown echo";
+    const isHighlighted = !!row?.highlighted;
+    const highlightLevel = safeClass(row?.highlightLevel || "");
+    const highlightTag = isHighlighted
+      ? `<span class="oracle-tag moment ${highlightLevel || "elevated"}">${escapeHtml(echoHighlightLabel(row))}</span>`
+      : "";
+    const rarity = row?.rarity ? `<span class="oracle-tag rarity ${safeClass(row.rarity)}">${escapeHtml(String(row.rarity))}</span>` : "";
+    const difficulty = row?.difficulty ? `<span class="oracle-tag">${escapeHtml(String(row.difficulty))}</span>` : "";
+    const itemName = row?.itemName ? `<span class="oracle-inline-note">${escapeHtml(row.itemName)}</span>` : "";
+    const missionName = row?.missionName ? `<span class="oracle-inline-note">${escapeHtml(row.missionName)}</span>` : "";
+    const pathName = row?.path ? `<span class="oracle-inline-note">${escapeHtml(row.path)}</span>` : "";
+
+    return `
+      <article class="oracle-echo-card ${isHighlighted ? `is-highlighted hl-${highlightLevel || "elevated"}` : ""}">
+        <div class="oracle-echo-side ${fm.cls}">
+  ${renderFactionBadge(faction)}
+</div>
+
+        <div class="oracle-echo-main">
+          <div class="oracle-echo-top">
+            <div class="oracle-echo-type">${escapeHtml(type)}</div>
+            <div class="oracle-echo-age">${escapeHtml(age)}</div>
+          </div>
+
+          <div class="oracle-echo-text">${escapeHtml(text)}</div>
+
+          <div class="oracle-echo-meta">
+            ${highlightTag}
+            ${row?.name ? `<span class="oracle-tag">${escapeHtml(row.name)}</span>` : ""}
+            ${difficulty}
+            ${rarity}
+            ${itemName}
+            ${missionName}
+            ${pathName}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderPulseTab(factionPulse, meta) {
+    const summary = factionPulse?.summary || {};
+    const factions = Array.isArray(factionPulse?.factions) ? factionPulse.factions.slice() : [];
+    const weekly = factionPulse?.weekly || {};
+
+    factions.sort((a, b) => {
+      return (
+        intOr(b.controlledNodes, 0) - intOr(a.controlledNodes, 0) ||
+        intOr(b.activeSieges, 0) - intOr(a.activeSieges, 0) ||
+        intOr(b.recentEchoes, 0) - intOr(a.recentEchoes, 0)
+      );
+    });
+
+    return `
+      <div class="oracle-grid">
+        <section class="oracle-panel">
+          <div class="oracle-panel-head">
+            <div>
+              <div class="oracle-panel-kicker">WORLD PRESSURE</div>
+              <div class="oracle-panel-title">Operational summary</div>
+            </div>
+          </div>
+
+          <div class="oracle-summary-grid">
+            ${summaryCard("Active Sieges", intOr(summary.activeSieges, 0), "danger")}
+            ${summaryCard("Hot Nodes", intOr(summary.hotNodes, 0), "warn")}
+            ${summaryCard("Controlled Nodes", intOr(summary.controlledNodes, 0), "neutral")}
+          </div>
+
+          ${renderWeeklyStandings(weekly, meta)}
+        </section>
+
+        <section class="oracle-panel">
+          <div class="oracle-panel-head">
+            <div>
+              <div class="oracle-panel-kicker">FACTION PULSE</div>
+              <div class="oracle-panel-title">Control, motion and pressure</div>
+            </div>
+            <div class="oracle-panel-note">${factions.length} factions</div>
+          </div>
+
+          <div class="oracle-faction-list">
+            ${factions.length ? factions.map(renderFactionPulseCard).join("") : renderPulseEmpty()}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderWeeklyStandings(weekly, meta) {
+  const rows = Array.isArray(weekly?.rows) ? weekly.rows.slice(0, 4) : [];
+  const leaderLabel = String(weekly?.leaderLabel || "No leader yet").trim();
+  const leaderScore = intOr(weekly?.leaderScore, 0);
+  const remain = formatRemainCompact(intOr(weekly?.endsInSec, 0));
+  const recap = weekly?.weeklySummary || {};
+  const aura = weekly?.weeklyAura || null;
+  const rewards = weekly?.weeklyRewards || {};
+
+  return `
+    <section class="oracle-weekly">
+      <div class="oracle-weekly-head">
+        <div>
+          <div class="oracle-weekly-kicker">THIS WEEK</div>
+          <div class="oracle-weekly-title">Weekly faction standings</div>
+        </div>
+        <div class="oracle-weekly-time">
+          <div class="oracle-weekly-time-label">Time left</div>
+          <div class="oracle-weekly-time-value">${escapeHtml(remain)}</div>
+        </div>
+      </div>
+
+      ${renderWeeklyRecap(recap, aura)}
+      ${renderWeeklyRewards(rewards, recap, aura)}
+
+      <div class="oracle-weekly-cards">
+        <div class="oracle-weekly-card leader">
+          <div class="oracle-weekly-card-label">Leader</div>
+          <div class="oracle-weekly-card-value">${escapeHtml(leaderLabel)}</div>
+        </div>
+        <div class="oracle-weekly-card score">
+          <div class="oracle-weekly-card-label">Score</div>
+          <div class="oracle-weekly-card-value">${escapeHtml(String(leaderScore))}</div>
+        </div>
+      </div>
+
+      ${rows.length ? `
+        <div class="oracle-weekly-list">
+          ${rows.map((row) => renderWeeklyStandingsRow(row, weekly, meta)).join("")}
+        </div>
+      ` : `
+        <div class="oracle-weekly-empty">
+          Patrols, donations and siege outcomes will start shaping this board once the week picks up.
+        </div>
+      `}
+    </section>
+  `;
+  }
+
+  function renderWeeklyStandingsRow(row, weekly, meta) {
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const score = intOr(row?.score, 0);
+  const activity = intOr(row?.activityScore, 0);
+  const control = intOr(row?.controlBonus, 0);
+  const qualified = intOr(row?.qualifiedCount, 0);
+  const players = intOr(row?.playerCount, 0);
+  const isViewer = !!row?.isViewer;
+  const isLeader = !!row?.isLeader;
+  const rank = intOr(row?.rank, 0) || "—";
+
+  return `
+    <article class="oracle-weekly-row ${fm.cls} ${isViewer ? "is-viewer" : ""} ${isLeader ? "is-leader" : ""}">
+      <div class="oracle-weekly-row-left">
+        <div class="oracle-weekly-rank">#${escapeHtml(String(rank))}</div>
+        ${renderFactionBadge(faction)}
+        <div class="oracle-weekly-row-copy">
+          <div class="oracle-weekly-row-name">${escapeHtml(row?.label || fm.label)}</div>
+          <div class="oracle-weekly-row-sub">${escapeHtml(`${activity} activity • +${control} control`)}</div>
+        </div>
+      </div>
+
+      <div class="oracle-weekly-row-right">
+        <div class="oracle-weekly-row-score">${escapeHtml(String(score))}</div>
+        <div class="oracle-weekly-row-meta">
+          <span>${qualified} ready ops</span>
+          <span>${players} active now</span>
+        </div>
+      </div>
+    </article>
+  `;
+  }
+  function formatRemainCompact(sec) {
+    let left = Math.max(0, intOr(sec, 0));
+    const d = Math.floor(left / 86400);
+    left %= 86400;
+    const h = Math.floor(left / 3600);
+    left %= 3600;
+    const m = Math.floor(left / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  function auraTone(faction) {
+    const key = String(faction || "").trim().toLowerCase();
+    if (key === "rogue_byte") return { bg: "rgba(108,74,255,.14)", border: "rgba(108,74,255,.24)", color: "#ddd4ff" };
+    if (key === "echo_wardens") return { bg: "rgba(66,208,255,.12)", border: "rgba(66,208,255,.22)", color: "#d1f5ff" };
+    if (key === "pack_burners") return { bg: "rgba(255,112,81,.12)", border: "rgba(255,112,81,.22)", color: "#ffd8cf" };
+    if (key === "inner_howl") return { bg: "rgba(255,198,82,.12)", border: "rgba(255,198,82,.22)", color: "#ffeab9" };
+    return { bg: "rgba(255,255,255,.08)", border: "rgba(255,255,255,.14)", color: "#f4f6ff" };
+  }
+
+  function renderAuraPill(aura, opts = {}) {
+    if (!aura || typeof aura !== "object") return "";
+    const label = String(aura?.label || aura?.key || "").trim();
+    if (!label) return "";
+
+    const tone = auraTone(aura?.faction);
+    const compact = !!opts.compact;
+    const showTimer = opts.showTimer !== false;
+    const remain = showTimer && intOr(aura?.expiresInSec, 0) > 0
+      ? formatRemainCompact(intOr(aura?.expiresInSec, 0))
+      : "";
+
+    return `
+      <span
+        class="oracle-aura-pill ${compact ? "compact" : ""}"
+        style="background:${tone.bg};border-color:${tone.border};color:${tone.color};"
+      >
+        <span class="oracle-aura-pill-tag">${compact ? "Aura" : "Weekly Aura"}</span>
+        <span class="oracle-aura-pill-label">${escapeHtml(label)}</span>
+        ${remain ? `<span class="oracle-aura-pill-time">${escapeHtml(remain)}</span>` : ""}
+      </span>
+    `;
+  }
+
+  function renderWeeklyRecap(summary, aura) {
+    if (!summary || typeof summary !== "object") return "";
+
+    const state = String(summary?.viewerState || "").trim();
+    const winnerLabel = String(summary?.winnerLabel || "Unknown faction").trim();
+    let lines = [];
+
+    if (state === "winner_qualified") {
+      const rewardLine = aura && intOr(aura?.expiresInSec, 0) > 0
+        ? `Reward active: ${String(aura?.label || "Faction Aura")} | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}`
+        : `Reward active: ${String(summary?.auraLabel || "Faction Aura")}`;
+      lines = [
+        "Your faction finished #1",
+        "You qualified",
+        rewardLine,
+      ];
+    } else if (state === "winner_unqualified") {
+      lines = [
+        "Your faction finished #1",
+        "You did not meet weekly qualification requirements",
+        "No aura was activated for your account",
+      ];
+    } else if (state === "other_faction") {
+      lines = [
+        `Winning faction: ${winnerLabel}`,
+        "Your faction did not secure the weekly aura this cycle",
+      ];
+    } else {
+      return "";
+    }
+
+    return `
+      <div class="oracle-weekly-recap">
+        <div class="oracle-weekly-recap-kicker">Last cycle recap</div>
+        <div class="oracle-weekly-recap-list">
+          ${lines.map((line) => `<div class="oracle-weekly-recap-line">${escapeHtml(line)}</div>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderWeeklyRewardCard(title, reward, subtitle) {
+    if (!reward || typeof reward !== "object") return "";
+    const label = String(reward?.label || reward?.key || "").trim();
+    if (!label) return "";
+
+    return `
+      <div class="oracle-weekly-reward-card ${reward?.active ? "is-active" : ""}">
+        <div class="oracle-weekly-reward-title">${escapeHtml(title)}</div>
+        <div class="oracle-weekly-reward-label">${escapeHtml(label)}</div>
+        ${subtitle ? `<div class="oracle-weekly-reward-sub">${escapeHtml(subtitle)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderWeeklyRewards(rewards, summary, aura) {
+    if (!rewards || typeof rewards !== "object") return "";
+
+    const factionAura = rewards?.factionAura || null;
+    const winnerLabel = String(summary?.winnerLabel || "Winning faction").trim();
+    const auraSubtitle = factionAura
+      ? (
+        factionAura?.active
+          ? `Active on your account${aura && intOr(aura?.expiresInSec, 0) > 0 ? ` | ${formatRemainCompact(intOr(aura?.expiresInSec, 0))}` : ""}`
+          : `Qualified ${winnerLabel} members receive this aura`
+      )
+      : "";
+
+    const cards = [
+      renderWeeklyRewardCard("Faction Aura", factionAura, auraSubtitle),
+      renderWeeklyRewardCard("MVP Reward", rewards?.mvpReward || null, "Top performer reward"),
+      renderWeeklyRewardCard("Raffle Reward", rewards?.raffleReward || null, "Drawn from qualified players"),
+    ].filter(Boolean);
+
+    if (!cards.length) return "";
+
+    return `
+      <div class="oracle-weekly-rewards">
+        <div class="oracle-weekly-rewards-kicker">Active weekly rewards</div>
+        <div class="oracle-weekly-reward-grid">
+          ${cards.join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function summaryCard(label, value, tone) {
+    return `
+      <div class="oracle-summary-card ${safeClass(tone || "neutral")}">
+        <div class="oracle-summary-value">${escapeHtml(String(value))}</div>
+        <div class="oracle-summary-label">${escapeHtml(label)}</div>
+      </div>
+    `;
+  }
+
+  function renderPulseEmpty() {
+    return `
+      <div class="oracle-empty compact">
+        <div class="oracle-empty-title">No faction pulse yet</div>
+        <div class="oracle-empty-text">Once patrols, captures, HQ upgrades and sieges start firing, this board will light up.</div>
+      </div>
+    `;
+  }
+
+  function renderFactionPulseCard(row) {
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const lastEcho = row?.lastEcho || "";
+  const members = intOr(row?.members, 0);
+  const controlled = intOr(row?.controlledNodes, 0);
+  const hot = intOr(row?.hotZones, 0);
+  const sieges = intOr(row?.activeSieges, 0);
+  const recent = intOr(row?.recentEchoes, 0);
+  const mult = numOr(row?.influenceMult, 1);
+
+  const signalTags = [];
+  if (controlled > 0) signalTags.push(`<span class="oracle-soft-pill neutral">${controlled} held</span>`);
+  if (hot > 0) signalTags.push(`<span class="oracle-soft-pill warn">${hot} hot</span>`);
+  if (sieges > 0) signalTags.push(`<span class="oracle-soft-pill danger">${sieges} siege</span>`);
+  if (recent > 0) signalTags.push(`<span class="oracle-soft-pill live">${recent} recent</span>`);
+
+  return `
+    <article class="oracle-faction-card ${fm.cls}">
+      <div class="oracle-faction-top">
+        <div class="oracle-faction-id">
+          ${renderFactionBadge(faction, { big: true })}
+          <div>
+            <div class="oracle-faction-name">${escapeHtml(row?.label || fm.label)}</div>
+            <div class="oracle-faction-sub">${members} members</div>
+          </div>
+        </div>
+
+        <div class="oracle-faction-mult">x${mult.toFixed(2)}</div>
+      </div>
+
+      <div class="oracle-faction-signals">
+        ${signalTags.length ? signalTags.join("") : `<span class="oracle-soft-pill quiet">Quiet front</span>`}
+      </div>
+
+      <div class="oracle-faction-stats">
+        ${miniStat("Control", controlled)}
+        ${miniStat("Hot", hot)}
+        ${miniStat("Sieges", sieges)}
+        ${miniStat("Echoes", recent)}
+      </div>
+
+      <div class="oracle-faction-last">
+        ${lastEcho ? escapeHtml(lastEcho) : "No fresh broadcast."}
+      </div>
+    </article>
+  `;
+  }
+
+  function miniStat(label, value) {
+    return `
+      <div class="oracle-mini-stat">
+        <div class="oracle-mini-value">${escapeHtml(String(value))}</div>
+        <div class="oracle-mini-label">${escapeHtml(label)}</div>
+      </div>
+    `;
+  }
+
+  function renderHallTab(hall, meta) {
+  const topLevels = Array.isArray(hall?.topLevels) ? hall.topLevels : [];
+  const fortress = hall?.fortressStandout || {};
+  const actor = hall?.worldActor || {};
+
+  return `
+    <div class="oracle-grid hall oracle-hall-grid">
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">ASCENSION ARCHIVE</div>
+            <div class="oracle-panel-title">Top levels</div>
+          </div>
+          <div class="oracle-panel-note">${topLevels.length || 0} tracked</div>
+        </div>
+
+        ${topLevels.length ? `
+          <div class="oracle-rank-list">
+            ${topLevels.slice(0, 8).map(renderTopLevelRow).join("")}
+          </div>
+        ` : `
+          <div class="oracle-empty compact">
+            <div class="oracle-empty-title">No ascendants yet</div>
+            <div class="oracle-empty-text">Level leaders will surface here once activity accumulates.</div>
+          </div>
+        `}
+      </section>
+
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">FORTRESS SIGNAL</div>
+            <div class="oracle-panel-title">Moon Lab standout</div>
+          </div>
+        </div>
+
+        ${renderFortressStandout(fortress)}
+      </section>
+
+      <section class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">WORLD ACTOR</div>
+            <div class="oracle-panel-title">Most visible current force</div>
+          </div>
+        </div>
+
+        ${renderWorldActor(actor)}
+      </section>
+    </div>
+  `;
+  }
+
+  function renderTopLevelRow(row, idx) {
+  const faction = row?.faction || "";
+  const fm = factionMeta(faction);
+  const lvl = intOr(row?.level, 0);
+  const xp = intOr(row?.xp, 0);
+  const rank = idx + 1;
+  const aura = renderAuraPill(row?.aura, { compact: true, showTimer: false });
+
+  return `
+    <div class="oracle-rank-row ${rank === 1 ? "top-1" : rank === 2 ? "top-2" : rank === 3 ? "top-3" : ""}">
+      <div class="oracle-rank-left">
+        <div class="oracle-rank-no">${rank}</div>
+        ${renderFactionBadge(faction)}
+        <div>
+          <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
+          <div class="oracle-rank-sub">${escapeHtml(fm.label)}</div>
+          ${aura ? `<div class="oracle-rank-aura">${aura}</div>` : ""}
+        </div>
+      </div>
+      <div class="oracle-rank-right">
+        <div class="oracle-rank-level">Lvl ${lvl}</div>
+        <div class="oracle-rank-xp">${xp} XP</div>
+      </div>
+    </div>
+  `;
+  }
+  function renderFortressStandout(f) {
+  const hasData = !!(f && (f.name || f.label || f.floor));
+  if (!hasData) {
+    return `
+      <div class="oracle-empty compact">
+        <div class="oracle-empty-title">No fortress standout yet</div>
+        <div class="oracle-empty-text">The next serious clear will carve a mark here.</div>
+      </div>
+    `;
+  }
+
+  const faction = f?.faction || "";
+  const aura = renderAuraPill(f?.aura, { compact: true, showTimer: false });
+
+  return `
+    <div class="oracle-standout-card prestige">
+      <div class="oracle-standout-kicker">Recorded standout</div>
+
+      <div class="oracle-standout-top">
+        ${renderFactionBadge(faction, { big: true })}
+        <div>
+          <div class="oracle-standout-name">${escapeHtml(f?.name || "Unknown")}</div>
+          <div class="oracle-standout-sub">Floor ${intOr(f?.floor, 0)}</div>
+          ${aura ? `<div class="oracle-standout-aura">${aura}</div>` : ""}
+        </div>
+      </div>
+
+      <div class="oracle-standout-text">${escapeHtml(f?.label || "Fortress signal recorded.")}</div>
+      <div class="oracle-standout-age">${escapeHtml(formatAge(null, f?.ts))}</div>
+    </div>
+  `;
+  }
+  
+
+  function renderWorldActor(a) {
+  const hasData = !!(a && (a.headline || a.label || a.faction));
+  if (!hasData) {
+    return `
+      <div class="oracle-empty compact">
+        <div class="oracle-empty-title">No dominant actor yet</div>
+        <div class="oracle-empty-text">Oracle will highlight the strongest current push once the board heats up.</div>
+      </div>
+    `;
+  }
+
+  const faction = a?.faction || "";
+  const fm = factionMeta(faction);
+
+  return `
+    <div class="oracle-standout-card actor">
+      <div class="oracle-standout-kicker">Current force</div>
+
+      <div class="oracle-standout-top">
+        ${renderFactionBadge(faction, { big: true, code: a?.code || fm.code })}
+        <div>
+          <div class="oracle-standout-name">${escapeHtml(a?.label || fm.label)}</div>
+          <div class="oracle-standout-sub">World presence</div>
+        </div>
+      </div>
+
+      <div class="oracle-standout-text">${escapeHtml(a?.headline || "Signal building...")}</div>
+    </div>
+  `;
+  }
+
+  function renderSkeleton() {
+    return `
+      <div class="oracle-panel">
+        <div class="oracle-panel-head">
+          <div>
+            <div class="oracle-panel-kicker">SYNCING</div>
+            <div class="oracle-panel-title">Reading the Void...</div>
+          </div>
+        </div>
+
+        <div class="oracle-skeleton-list">
+          <div class="oracle-skeleton-card"></div>
+          <div class="oracle-skeleton-card"></div>
+          <div class="oracle-skeleton-card"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function prettifyType(type) {
+    return String(type || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function echoHighlightLabel(row) {
+    const moment = String(row?.momentKind || "").trim();
+    if (moment === "tower_finished") return "Tower Finished";
+    if (moment === "wave_cleared") return "Wave Cleared";
+    if (moment === "best_crit") return "Best Crit";
+    if (moment === "best_hit") return "Best Hit";
+    if (moment === "critical_hit") return "Critical Hit";
+
+    const level = String(row?.highlightLevel || "").trim();
+    if (!level) return "Highlighted";
+    return level.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function escapeHtml(v) {
+    return String(v == null ? "" : v)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function safeClass(v) {
+    return String(v || "").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  }
+
+  function intOr(v, d = 0) {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  function numOr(v, d = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  function factionMeta(faction) {
+    return FACTIONS[faction] || {
+      code: faction ? String(faction).slice(0, 2).toUpperCase() : "—",
+      label: faction || "Unbound",
+      cls: "none",
+    };
+  }
+function factionLogoUrl(faction) {
+  const key = String(faction || "").toLowerCase().trim();
+  if (!key) return "";
+  const file = FACTION_BADGE_FILES[key];
+  if (!file) return "";
+  const ver = window.WEBAPP_VER ? `?v=${encodeURIComponent(String(window.WEBAPP_VER))}` : "";
+  return `/images/factions/${file}${ver}`;
+}
+
+function renderFactionBadge(faction, { big = false, code = "" } = {}) {
+  const fm = factionMeta(faction);
+  const logo = factionLogoUrl(faction);
+  const safeCode = escapeHtml(code || fm.code || "—");
+  const safeLabel = escapeHtml(fm.label || faction || "Faction");
+
+  return `
+    <div class="oracle-faction-badge ${fm.cls} ${big ? "big" : ""} ${logo ? "has-logo" : "no-logo"}">
+      ${
+        logo
+          ? `<img
+               src="${logo}"
+               alt="${safeLabel}"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+             >`
+          : ""
+      }
+      <span class="oracle-faction-code-fallback" ${logo ? `style="display:none"` : ""}>
+        ${safeCode}
+      </span>
+    </div>
+  `;
+}
+
+  function formatAge(ageSec, ts) {
+    let sec = Number(ageSec);
+    if (!Number.isFinite(sec) && Number.isFinite(Number(ts))) {
+      sec = Math.max(0, Math.floor(Date.now() / 1000) - Number(ts));
+    }
+    if (!Number.isFinite(sec)) return "now";
+    if (sec < 10) return "just now";
+    if (sec < 60) return `${sec}s ago`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+    if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+    return `${Math.floor(sec / 86400)}d ago`;
+  }
+
+  function injectCss() {
+    if (document.getElementById("oracle-css")) return;
+
+    const s = document.createElement("style");
+    s.id = "oracle-css";
+    s.textContent = `
+      html.ah-oracle-open,
+      body.ah-oracle-open{
+        overflow:hidden !important;
+      }
+
+      .oracle-back{
+        position:fixed;
+        inset:0;
+        z-index:999999;
+        background:
+          radial-gradient(circle at 20% 15%, rgba(116,76,255,.18), transparent 34%),
+          radial-gradient(circle at 80% 85%, rgba(255,64,166,.12), transparent 30%),
+          rgba(6,8,16,.78);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        opacity:0;
+        transition:opacity .18s ease;
+      }
+      .oracle-back.show{ opacity:1; }
+
+      .oracle-modal{
+        position:absolute;
+        left:50%;
+        top:50%;
+        transform:translate(-50%, -48%);
+        width:min(94vw, 760px);
+        max-height:min(88vh, 900px);
+        border-radius:28px;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+        background:
+          linear-gradient(180deg, rgba(18,22,42,.98), rgba(8,10,20,.985));
+        border:1px solid rgba(159,173,255,.16);
+        box-shadow:
+          0 20px 80px rgba(0,0,0,.45),
+          inset 0 1px 0 rgba(255,255,255,.05);
+        opacity:0;
+        transition:transform .2s ease, opacity .2s ease;
+      }
+      .oracle-modal.show{
+        transform:translate(-50%, -50%);
+        opacity:1;
+      }
+
+      .oracle-ambient{
+        position:absolute;
+        inset:auto;
+        border-radius:999px;
+        filter:blur(22px);
+        pointer-events:none;
+      }
+      .oracle-ambient-a{
+        width:220px;height:220px;
+        top:-70px;right:-50px;
+        background:rgba(110,86,255,.22);
+      }
+      .oracle-ambient-b{
+        width:180px;height:180px;
+        left:-40px;bottom:-30px;
+        background:rgba(255,64,166,.14);
+      }
+
+      .oracle-topbar{
+        position:relative;
+        display:flex;
+        justify-content:space-between;
+        gap:14px;
+        padding:18px 18px 12px;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+      }
+
+      .oracle-head{ min-width:0; }
+      .oracle-kicker{
+        font-size:10px;
+        letter-spacing:.22em;
+        text-transform:uppercase;
+        color:#9fa9cf;
+        opacity:.9;
+        margin-bottom:6px;
+      }
+      .oracle-title-row{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+      }
+      .oracle-title{
+        font-size:28px;
+        line-height:1.05;
+        font-weight:900;
+        color:#f3f6ff;
+      }
+      .oracle-live{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:6px 10px;
+        border-radius:999px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.06);
+        color:#cbd5ff;
+        font-size:12px;
+      }
+      .oracle-live-dot{
+        width:8px;height:8px;border-radius:999px;
+        background:#8ea4ff;
+        box-shadow:0 0 0 0 rgba(142,164,255,.5);
+        transition:all .18s ease;
+      }
+      .oracle-live-dot.busy{
+        background:#ffc86b;
+        box-shadow:0 0 0 8px rgba(255,200,107,0);
+        animation:oraclePulse 1.2s infinite;
+      }
+      .oracle-live-dot.ok{
+        background:#68ffad;
+        box-shadow:0 0 12px rgba(104,255,173,.55);
+      }
+      @keyframes oraclePulse{
+        0%{ box-shadow:0 0 0 0 rgba(255,200,107,.35); }
+        70%{ box-shadow:0 0 0 10px rgba(255,200,107,0); }
+        100%{ box-shadow:0 0 0 0 rgba(255,200,107,0); }
+      }
+
+      .oracle-subtitle{
+        margin-top:7px;
+        color:#a8b2d9;
+        font-size:13px;
+      }
+
+      .oracle-actions{
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+      }
+      .oracle-btn{
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.05);
+        color:#eef2ff;
+        border-radius:14px;
+        padding:10px 14px;
+        font-weight:800;
+        cursor:pointer;
+      }
+      .oracle-btn:disabled{
+        opacity:.65;
+        cursor:default;
+      }
+      .oracle-btn.ghost:hover{ background:rgba(255,255,255,.08); }
+      .oracle-btn.close{
+        width:42px;height:42px;
+        padding:0;
+        font-size:18px;
+      }
+
+      .oracle-meta-strip{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        padding:12px 18px 4px;
+      }
+
+      .oracle-chip{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        height:34px;
+        padding:0 12px;
+        border-radius:999px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.06);
+        color:#dce4ff;
+        font-size:12px;
+        font-weight:800;
+      }
+      .oracle-chip.muted{ color:#99a5d6; }
+      .oracle-chip.warn{
+        background:rgba(255,188,77,.1);
+        border-color:rgba(255,188,77,.18);
+        color:#ffd89a;
+      }
+      .oracle-chip.danger{
+        background:rgba(255,102,102,.1);
+        border-color:rgba(255,102,102,.18);
+        color:#ffb3b3;
+      }
+      .oracle-chip.faction .code{
+        width:20px;height:20px;
+        display:grid;place-items:center;
+        border-radius:999px;
+        font-size:10px;
+        font-weight:900;
+        background:rgba(255,255,255,.1);
+      }
+
+      .oracle-tabs{
+        display:flex;
+        gap:8px;
+        padding:12px 18px 14px;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        overflow-x:auto;
+        scrollbar-width:none;
+      }
+      .oracle-tabs::-webkit-scrollbar{ display:none; }
+
+      .oracle-tab{
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        color:#bfc9f0;
+        border-radius:14px;
+        padding:11px 14px;
+        font-weight:900;
+        white-space:nowrap;
+        cursor:pointer;
+      }
+      .oracle-tab.is-active{
+        color:#fff;
+        background:
+          linear-gradient(180deg, rgba(121,97,255,.26), rgba(70,45,188,.22));
+        border-color:rgba(146,125,255,.34);
+        box-shadow:0 6px 18px rgba(88,63,210,.22);
+      }
+
+      .oracle-body{
+        position:relative;
+        flex:1 1 auto;
+        min-height:0;
+        padding:16px 18px calc(18px + env(safe-area-inset-bottom));
+        overflow:auto;
+        overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch;
+      }
+
+      .oracle-root{
+        display:block;
+      }
+
+      .oracle-grid{
+        display:grid;
+        gap:14px;
+      }
+      .oracle-grid.hall{
+        grid-template-columns:1fr;
+      }
+
+      .oracle-panel{
+        position:relative;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+        border:1px solid rgba(255,255,255,.06);
+        border-radius:22px;
+        padding:14px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      }
+
+      .oracle-panel-head{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:flex-start;
+        margin-bottom:12px;
+      }
+      .oracle-panel-kicker{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#8e9ad1;
+        margin-bottom:5px;
+      }
+      .oracle-panel-title{
+        font-size:18px;
+        font-weight:900;
+        color:#f5f7ff;
+      }
+      .oracle-panel-note{
+        color:#95a2d8;
+        font-size:12px;
+        font-weight:800;
+        padding-top:4px;
+      }
+
+      .oracle-echo-list{
+        display:grid;
+        gap:10px;
+      }
+
+      .oracle-echo-card{
+        display:grid;
+        grid-template-columns:48px 1fr;
+        gap:12px;
+        border-radius:18px;
+        padding:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.05);
+      }
+      .oracle-echo-card.is-highlighted{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+          rgba(255,255,255,.04);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      }
+      .oracle-echo-card.is-highlighted.hl-elevated{
+        border-color:rgba(255,146,174,.24);
+      }
+      .oracle-echo-card.is-highlighted.hl-major{
+        border-color:rgba(255,206,106,.28);
+      }
+      .oracle-echo-card.is-highlighted.hl-legendary{
+        border-color:rgba(255,226,140,.34);
+        box-shadow:
+          0 10px 26px rgba(255,196,92,.08),
+          inset 0 1px 0 rgba(255,255,255,.06);
+      }
+      .oracle-echo-side{
+        display:flex;
+        justify-content:center;
+        align-items:flex-start;
+      }
+
+      .oracle-faction-badge{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  overflow:hidden;
+  font-size:11px;
+  font-weight:900;
+  color:#fff;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.oracle-faction-badge.has-logo{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+
+.oracle-faction-badge.big{
+  width:42px;
+  height:42px;
+  font-size:13px;
+}
+
+.oracle-faction-badge img{
+  width:20px;
+  height:20px;
+  object-fit:contain;
+  display:block;
+  background:transparent;
+}
+
+.oracle-faction-badge.big img{
+  width:28px;
+  height:28px;
+}
+
+.oracle-faction-code-fallback{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  font-size:11px;
+  font-weight:900;
+}
+
+.oracle-faction-badge.big .oracle-faction-code-fallback{
+  font-size:13px;
+}
+
+.oracle-faction-badge.rb, .oracle-chip.faction.rb{
+  background:rgba(108,74,255,.16);
+  border-color:rgba(108,74,255,.28);
+  color:#d7cbff;
+}
+.oracle-faction-badge.ew, .oracle-chip.faction.ew{
+  background:rgba(66,208,255,.14);
+  border-color:rgba(66,208,255,.24);
+  color:#c7f4ff;
+}
+.oracle-faction-badge.pb, .oracle-chip.faction.pb{
+  background:rgba(255,112,81,.16);
+  border-color:rgba(255,112,81,.24);
+  color:#ffd3c9;
+}
+.oracle-faction-badge.ih, .oracle-chip.faction.ih{
+  background:rgba(255,198,82,.16);
+  border-color:rgba(255,198,82,.24);
+  color:#ffe8b5;
+}
+.oracle-faction-badge.none, .oracle-chip.faction.none{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.08);
+  color:#dbe4ff;
+}
+      .oracle-echo-top{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:center;
+      }
+      .oracle-echo-type{
+        font-size:12px;
+        font-weight:900;
+        color:#b9c6ff;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+      }
+      .oracle-echo-age{
+        font-size:12px;
+        color:#8f9ccc;
+      }
+      .oracle-echo-text{
+        margin-top:6px;
+        color:#f0f3ff;
+        font-weight:800;
+        line-height:1.45;
+      }
+      .oracle-echo-meta{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:10px;
+      }
+
+      .oracle-tag{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        height:26px;
+        padding:0 10px;
+        border-radius:999px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.06);
+        color:#d4dcff;
+        font-size:11px;
+        font-weight:800;
+      }
+      .oracle-tag.moment{
+        text-transform:uppercase;
+        letter-spacing:.08em;
+      }
+      .oracle-tag.moment.elevated{
+        border-color:rgba(255,120,158,.24);
+        color:#ffd0dc;
+      }
+      .oracle-tag.moment.major{
+        border-color:rgba(255,206,106,.26);
+        color:#ffe4a3;
+      }
+      .oracle-tag.moment.legendary{
+        border-color:rgba(255,231,150,.34);
+        color:#fff0b9;
+        background:rgba(255,218,118,.08);
+      }
+      .oracle-tag.rarity.legendary{
+        border-color:rgba(255,196,92,.26);
+        color:#ffe3a7;
+      }
+      .oracle-tag.rarity.epic{
+        border-color:rgba(206,136,255,.24);
+        color:#eed3ff;
+      }
+      .oracle-tag.rarity.rare{
+        border-color:rgba(92,170,255,.24);
+        color:#d3e8ff;
+      }
+      .oracle-inline-note{
+        display:inline-flex;
+        align-items:center;
+        padding:0 2px;
+        font-size:11px;
+        color:#9fb0ea;
+        font-weight:700;
+      }
+
+      .oracle-summary-grid{
+        display:grid;
+        grid-template-columns:repeat(3, 1fr);
+        gap:10px;
+      }
+      .oracle-summary-card{
+        border-radius:18px;
+        padding:14px 12px;
+        border:1px solid rgba(255,255,255,.06);
+        background:rgba(255,255,255,.04);
+        text-align:center;
+      }
+      .oracle-summary-card.warn{
+        background:rgba(255,188,77,.08);
+        border-color:rgba(255,188,77,.14);
+      }
+      .oracle-summary-card.danger{
+        background:rgba(255,102,102,.08);
+        border-color:rgba(255,102,102,.14);
+      }
+      .oracle-summary-value{
+        font-size:24px;
+        font-weight:900;
+        color:#fff;
+      }
+      .oracle-summary-label{
+        margin-top:4px;
+        color:#9aa7d9;
+        font-size:12px;
+        font-weight:800;
+      }
+
+      .oracle-faction-list{
+        display:grid;
+        gap:10px;
+      }
+      .oracle-faction-card{
+        border-radius:18px;
+        padding:14px;
+        border:1px solid rgba(255,255,255,.06);
+        background:rgba(255,255,255,.035);
+      }
+      .oracle-faction-card.rb{ box-shadow:inset 0 0 0 1px rgba(108,74,255,.10); }
+      .oracle-faction-card.ew{ box-shadow:inset 0 0 0 1px rgba(66,208,255,.09); }
+      .oracle-faction-card.pb{ box-shadow:inset 0 0 0 1px rgba(255,112,81,.09); }
+      .oracle-faction-card.ih{ box-shadow:inset 0 0 0 1px rgba(255,198,82,.09); }
+
+      .oracle-faction-top{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:flex-start;
+      }
+      .oracle-faction-id{
+        display:flex;
+        gap:10px;
+        align-items:center;
+      }
+      .oracle-faction-name{
+        font-size:16px;
+        font-weight:900;
+        color:#f5f7ff;
+      }
+      .oracle-faction-sub{
+        margin-top:2px;
+        color:#95a2d8;
+        font-size:12px;
+      }
+      .oracle-faction-mult{
+        min-width:56px;
+        height:34px;
+        display:grid;place-items:center;
+        border-radius:12px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.06);
+        color:#d9e1ff;
+        font-weight:900;
+      }
+      .oracle-faction-stats{
+        margin-top:12px;
+        display:grid;
+        grid-template-columns:repeat(4, 1fr);
+        gap:8px;
+      }
+      .oracle-mini-stat{
+        border-radius:14px;
+        padding:10px 8px;
+        text-align:center;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.05);
+      }
+      .oracle-mini-value{
+        font-size:16px;
+        font-weight:900;
+        color:#fff;
+      }
+      .oracle-mini-label{
+        margin-top:4px;
+        font-size:11px;
+        color:#96a4d8;
+      }
+      .oracle-faction-last{
+        margin-top:12px;
+        font-size:13px;
+        line-height:1.45;
+        color:#cfd8ff;
+      }
+
+      .oracle-rank-list{
+        display:grid;
+        gap:10px;
+      }
+      .oracle-rank-row{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:center;
+        border-radius:18px;
+        padding:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.05);
+      }
+      .oracle-rank-left{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      }
+      .oracle-rank-no{
+        width:26px;height:26px;
+        display:grid;place-items:center;
+        border-radius:999px;
+        background:rgba(255,255,255,.07);
+        color:#f6f8ff;
+        font-size:12px;
+        font-weight:900;
+        flex:0 0 auto;
+      }
+      .oracle-rank-name{
+        font-size:14px;
+        font-weight:900;
+        color:#fff;
+      }
+      .oracle-rank-sub{
+        margin-top:2px;
+        font-size:11px;
+        color:#96a4d8;
+      }
+      .oracle-rank-right{
+        text-align:right;
+        flex:0 0 auto;
+      }
+      .oracle-rank-level{
+        font-size:14px;
+        font-weight:900;
+        color:#fff;
+      }
+      .oracle-rank-xp{
+        margin-top:2px;
+        font-size:11px;
+        color:#96a4d8;
+      }
+
+      .oracle-rank-aura{
+        margin-top:5px;
+      }
+
+      .oracle-standout-card{
+        border-radius:20px;
+        padding:14px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+        border:1px solid rgba(255,255,255,.06);
+      }
+      .oracle-standout-top{
+        display:flex;
+        gap:12px;
+        align-items:center;
+      }
+      .oracle-standout-name{
+        font-size:17px;
+        font-weight:900;
+        color:#fff;
+      }
+      .oracle-standout-sub{
+        margin-top:2px;
+        font-size:12px;
+        color:#96a4d8;
+      }
+      .oracle-standout-text{
+        margin-top:12px;
+        color:#d7dfff;
+        line-height:1.5;
+        font-weight:700;
+      }
+      .oracle-standout-age{
+        margin-top:10px;
+        color:#93a0d1;
+        font-size:12px;
+      }
+
+      .oracle-standout-aura{
+        margin-top:6px;
+      }
+
+      .oracle-aura-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:6px 10px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.14);
+        font-size:11px;
+        font-weight:900;
+        line-height:1.2;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+      }
+
+      .oracle-aura-pill.compact{
+        padding:4px 8px;
+        font-size:10px;
+      }
+
+      .oracle-aura-pill-tag{
+        display:inline-flex;
+        align-items:center;
+        padding:2px 6px;
+        border-radius:999px;
+        background:rgba(9,12,24,.24);
+        border:1px solid rgba(255,255,255,.10);
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#f7f9ff;
+        white-space:nowrap;
+      }
+
+      .oracle-aura-pill.compact .oracle-aura-pill-tag{
+        padding:2px 5px;
+        font-size:8px;
+      }
+
+      .oracle-aura-pill-label{
+        white-space:nowrap;
+      }
+
+      .oracle-aura-pill-time{
+        opacity:.82;
+        white-space:nowrap;
+      }
+
+      .oracle-empty{
+        display:grid;
+        place-items:center;
+        text-align:center;
+        min-height:280px;
+        padding:26px 14px;
+        border-radius:22px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+        border:1px dashed rgba(255,255,255,.10);
+      }
+      .oracle-empty.compact{
+        min-height:170px;
+      }
+      .oracle-empty.danger{
+        border-color:rgba(255,102,102,.18);
+        background:rgba(255,102,102,.04);
+      }
+      .oracle-empty-icon{
+        width:54px;height:54px;
+        display:grid;place-items:center;
+        border-radius:999px;
+        background:rgba(255,255,255,.06);
+        color:#eef2ff;
+        font-size:22px;
+        font-weight:900;
+      }
+      .oracle-empty-title{
+        margin-top:12px;
+        font-size:18px;
+        font-weight:900;
+        color:#f5f7ff;
+      }
+      .oracle-empty-text{
+        margin-top:8px;
+        max-width:420px;
+        color:#9eabd9;
+        line-height:1.5;
+        font-size:13px;
+      }
+
+      .oracle-skeleton-list{
+        display:grid;
+        gap:10px;
+      }
+      .oracle-skeleton-card{
+        height:88px;
+        border-radius:18px;
+        background:
+          linear-gradient(90deg,
+            rgba(255,255,255,.04) 0%,
+            rgba(255,255,255,.07) 25%,
+            rgba(255,255,255,.04) 50%);
+        background-size:200% 100%;
+        animation:oracleShimmer 1.2s linear infinite;
+      }
+      @keyframes oracleShimmer{
+        0%{ background-position:200% 0; }
+        100%{ background-position:-200% 0; }
+      }
+
+      .oracle-toast{
+        position:fixed;
+        left:50%;
+        bottom:max(18px, env(safe-area-inset-bottom));
+        transform:translateX(-50%) translateY(8px);
+        z-index:1000001;
+        padding:10px 14px;
+        border-radius:14px;
+        color:#f7f9ff;
+        font-size:13px;
+        font-weight:900;
+        background:rgba(12,16,28,.96);
+        border:1px solid rgba(255,255,255,.08);
+        opacity:0;
+        transition:all .18s ease;
+        box-shadow:0 12px 34px rgba(0,0,0,.35);
+      }
+      .oracle-toast.show{
+        opacity:1;
+        transform:translateX(-50%) translateY(0);
+      }
+
+      /* === ORACLE VISUAL PASS v1 === */
+
+      .oracle-hero{
+        padding:14px 18px 0;
+      }
+
+      .oracle-hero-card{
+        position:relative;
+        overflow:hidden;
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto;
+        gap:14px;
+        padding:16px;
+        border-radius:22px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+        border:1px solid rgba(255,255,255,.07);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          0 12px 30px rgba(0,0,0,.16);
+      }
+
+      .oracle-hero-glow{
+        position:absolute;
+        inset:auto;
+        width:180px;
+        height:180px;
+        right:-34px;
+        top:-64px;
+        border-radius:999px;
+        filter:blur(28px);
+        opacity:.24;
+        pointer-events:none;
+        background:rgba(109,91,255,.30);
+      }
+
+      .oracle-hero-card.is-live .oracle-hero-glow{
+        background:rgba(88,120,255,.28);
+      }
+      .oracle-hero-card.is-warn .oracle-hero-glow{
+        background:rgba(255,188,77,.28);
+      }
+      .oracle-hero-card.is-danger .oracle-hero-glow{
+        background:rgba(255,102,102,.24);
+      }
+      .oracle-hero-card.is-prestige .oracle-hero-glow{
+        background:rgba(255,218,118,.28);
+      }
+      .oracle-hero-card.is-quiet .oracle-hero-glow{
+        background:rgba(160,170,210,.18);
+      }
+
+      .oracle-hero-left{
+        position:relative;
+        z-index:1;
+        display:flex;
+        align-items:center;
+        gap:12px;
+        min-width:0;
+      }
+
+      .oracle-hero-copy{
+        min-width:0;
+      }
+
+      .oracle-hero-kicker{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#9aa7dc;
+        margin-bottom:6px;
+      }
+
+      .oracle-hero-title{
+        font-size:22px;
+        line-height:1.08;
+        font-weight:900;
+        color:#f7f9ff;
+      }
+
+      .oracle-hero-text{
+        margin-top:7px;
+        color:#b2bce2;
+        font-size:13px;
+        line-height:1.5;
+        max-width:560px;
+      }
+
+      .oracle-hero-stats{
+        position:relative;
+        z-index:1;
+        display:grid;
+        grid-auto-flow:column;
+        gap:8px;
+        align-content:center;
+      }
+
+      .oracle-hero-stat{
+        min-width:84px;
+        padding:10px 12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.06);
+        text-align:center;
+      }
+
+      .oracle-hero-stat-value{
+        font-size:16px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-hero-stat-label{
+        margin-top:4px;
+        font-size:11px;
+        color:#98a5d7;
+        font-weight:800;
+      }
+
+      .oracle-meta-strip{
+        display:grid;
+        gap:8px;
+        padding:12px 18px 4px;
+      }
+
+      .oracle-chip-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+      }
+
+      .oracle-chip-row.identity .oracle-chip{
+        background:rgba(255,255,255,.055);
+      }
+
+      .oracle-chip-row.world .oracle-chip{
+        background:rgba(255,255,255,.04);
+      }
+
+      .oracle-tab{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .oracle-tab-ico{
+        width:18px;
+        text-align:center;
+        opacity:.82;
+        font-size:12px;
+      }
+
+      .oracle-tab.is-active .oracle-tab-ico{
+        opacity:1;
+      }
+
+      .oracle-panel{
+        overflow:hidden;
+      }
+
+      .oracle-panel::before{
+        content:"";
+        position:absolute;
+        left:14px;
+        right:14px;
+        top:0;
+        height:1px;
+        background:linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+        pointer-events:none;
+      }
+
+      .oracle-weekly{
+        margin-top:14px;
+        padding:14px;
+        border-radius:20px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+        border:1px solid rgba(255,255,255,.08);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      }
+
+      .oracle-weekly-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        flex-wrap:wrap;
+      }
+
+      .oracle-weekly-kicker{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-title{
+        margin-top:4px;
+        font-size:18px;
+        font-weight:900;
+        color:#f8faff;
+      }
+
+      .oracle-weekly-time{
+        text-align:right;
+        min-width:120px;
+      }
+
+      .oracle-weekly-time-label{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-time-value{
+        margin-top:4px;
+        font-size:18px;
+        font-weight:900;
+        color:#ffd888;
+      }
+
+      .oracle-weekly-recap{
+        margin-top:12px;
+        padding:12px 14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-recap-kicker{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-recap-list{
+        display:grid;
+        gap:4px;
+        margin-top:8px;
+      }
+
+      .oracle-weekly-recap-line{
+        font-size:12px;
+        line-height:1.45;
+        color:#eef2ff;
+      }
+
+      .oracle-weekly-rewards{
+        margin-top:12px;
+      }
+
+      .oracle-weekly-rewards-kicker{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-reward-grid{
+        display:grid;
+        gap:10px;
+        grid-template-columns:repeat(3, 1fr);
+        margin-top:8px;
+      }
+
+      .oracle-weekly-reward-card{
+        padding:12px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-reward-card.is-active{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.10), rgba(255,220,128,.04)),
+          rgba(255,255,255,.03);
+        border-color:rgba(255,220,128,.18);
+      }
+
+      .oracle-weekly-reward-title{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b7c1ea;
+        opacity:.66;
+      }
+
+      .oracle-weekly-reward-label{
+        margin-top:5px;
+        font-size:14px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-reward-sub{
+        margin-top:5px;
+        font-size:11px;
+        line-height:1.4;
+        color:#9eabd9;
+      }
+
+      .oracle-weekly-cards{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:12px;
+      }
+
+      .oracle-weekly-card{
+        padding:12px 14px;
+        border-radius:16px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+      }
+
+      .oracle-weekly-card.leader{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      }
+
+      .oracle-weekly-card.score{
+        text-align:right;
+      }
+
+      .oracle-weekly-card-label{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        opacity:.62;
+        color:#b7c1ea;
+      }
+
+      .oracle-weekly-card-value{
+        margin-top:5px;
+        font-size:17px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-card.score .oracle-weekly-card-value{
+        color:#8ff7b5;
+      }
+
+      .oracle-weekly-list{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+
+      .oracle-weekly-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 13px;
+        border-radius:18px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.06);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      }
+
+      .oracle-weekly-row.is-leader{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.10), rgba(255,220,128,.04)),
+          rgba(255,255,255,.03);
+        border-color:rgba(255,220,128,.18);
+      }
+
+      .oracle-weekly-row.is-viewer{
+        border-color:rgba(125,211,252,.24);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          0 0 0 1px rgba(125,211,252,.04);
+      }
+
+      .oracle-weekly-row-left{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      }
+
+      .oracle-weekly-rank{
+        width:34px;
+        text-align:center;
+        font-size:12px;
+        font-weight:900;
+        opacity:.76;
+        color:#ffffff;
+        flex:0 0 auto;
+      }
+
+      .oracle-weekly-row-copy{
+        min-width:0;
+      }
+
+      .oracle-weekly-row-name{
+        font-size:15px;
+        font-weight:900;
+        color:#ffffff;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .oracle-weekly-row-sub{
+        margin-top:3px;
+        font-size:12px;
+        color:#a9b5e4;
+      }
+
+      .oracle-weekly-row-right{
+        text-align:right;
+        flex:0 0 auto;
+      }
+
+      .oracle-weekly-row-score{
+        font-size:18px;
+        font-weight:900;
+        color:#ffffff;
+      }
+
+      .oracle-weekly-row.is-leader .oracle-weekly-row-score{
+        color:#ffd888;
+      }
+
+      .oracle-weekly-row-meta{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        margin-top:4px;
+        font-size:11px;
+        color:#9aa7da;
+      }
+
+      .oracle-weekly-empty{
+        margin-top:12px;
+        font-size:13px;
+        color:#9eabd9;
+        line-height:1.5;
+      }
+
+      .oracle-faction-signals{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:12px;
+      }
+
+      .oracle-soft-pill{
+        display:inline-flex;
+        align-items:center;
+        height:26px;
+        padding:0 10px;
+        border-radius:999px;
+        font-size:11px;
+        font-weight:900;
+        border:1px solid rgba(255,255,255,.07);
+        background:rgba(255,255,255,.05);
+        color:#d7e0ff;
+      }
+
+      .oracle-soft-pill.warn{
+        color:#ffd89a;
+        border-color:rgba(255,188,77,.18);
+        background:rgba(255,188,77,.08);
+      }
+
+      .oracle-soft-pill.danger{
+        color:#ffb8b8;
+        border-color:rgba(255,102,102,.18);
+        background:rgba(255,102,102,.08);
+      }
+
+      .oracle-soft-pill.live{
+        color:#bfe2ff;
+        border-color:rgba(92,170,255,.18);
+        background:rgba(92,170,255,.08);
+      }
+
+      .oracle-soft-pill.neutral{
+        color:#e3e8ff;
+      }
+
+      .oracle-soft-pill.quiet{
+        color:#a5b0dd;
+      }
+
+      .oracle-hall-grid .oracle-panel:first-child{
+        background:
+          linear-gradient(180deg, rgba(255,226,140,.04), rgba(255,255,255,.02));
+      }
+
+      .oracle-rank-row.top-1{
+        border-color:rgba(255,220,128,.22);
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.08), rgba(255,255,255,.03));
+      }
+
+      .oracle-rank-row.top-2{
+        border-color:rgba(188,208,255,.18);
+      }
+
+      .oracle-rank-row.top-3{
+        border-color:rgba(255,184,120,.16);
+      }
+
+      .oracle-rank-row.top-1 .oracle-rank-no{
+        background:rgba(255,220,128,.18);
+        color:#ffe7a8;
+      }
+
+      .oracle-rank-row.top-2 .oracle-rank-no{
+        background:rgba(188,208,255,.14);
+      }
+
+      .oracle-rank-row.top-3 .oracle-rank-no{
+        background:rgba(255,184,120,.14);
+      }
+
+      .oracle-standout-card{
+        position:relative;
+        overflow:hidden;
+      }
+
+      .oracle-standout-card.prestige{
+        background:
+          linear-gradient(180deg, rgba(255,220,128,.07), rgba(255,255,255,.03));
+        border-color:rgba(255,220,128,.14);
+      }
+
+      .oracle-standout-card.actor{
+        background:
+          linear-gradient(180deg, rgba(92,170,255,.07), rgba(255,255,255,.03));
+        border-color:rgba(92,170,255,.14);
+      }
+
+      .oracle-standout-kicker{
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#aab6e5;
+        margin-bottom:10px;
+      }
+
+      .oracle-echo-card,
+      .oracle-faction-card,
+      .oracle-rank-row,
+      .oracle-standout-card,
+      .oracle-summary-card,
+      .oracle-weekly-row{
+        transition:
+          transform .16s ease,
+          border-color .16s ease,
+          background .16s ease,
+          box-shadow .16s ease;
+      }
+
+      .oracle-echo-card:hover,
+      .oracle-faction-card:hover,
+      .oracle-rank-row:hover,
+      .oracle-standout-card:hover,
+      .oracle-weekly-row:hover{
+        transform:translateY(-1px);
+      }
+
+      @media (max-width: 720px){
+        .oracle-hero{
+          padding:12px 14px 0;
+        }
+
+        .oracle-hero-card{
+          grid-template-columns:1fr;
+        }
+
+        .oracle-hero-stats{
+          grid-auto-flow:unset;
+          grid-template-columns:repeat(3, 1fr);
+        }
+
+        .oracle-weekly-cards{
+          grid-template-columns:1fr 1fr;
+        }
+
+        .oracle-weekly-reward-grid{
+          grid-template-columns:1fr;
+        }
+      }
+
+    @media (max-width: 560px){
+  .oracle-topbar{
+    padding:14px 14px 10px;
+  }
+
+  .oracle-title{
+    font-size:24px;
+  }
+
+  .oracle-subtitle{
+    margin-top:6px;
+    font-size:12px;
+    line-height:1.3;
+  }
+
+  .oracle-hero{
+    padding:10px 14px 0;
+  }
+
+  .oracle-hero-card{
+    padding:12px;
+    gap:10px;
+    border-radius:18px;
+  }
+
+  .oracle-hero-title{
+    font-size:18px;
+    line-height:1.08;
+  }
+
+  .oracle-hero-text{
+    margin-top:5px;
+    font-size:12px;
+    line-height:1.35;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  .oracle-hero-left{
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .oracle-hero-stats{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:6px;
+  }
+
+  .oracle-hero-stat{
+    min-width:0;
+    padding:8px 6px;
+    border-radius:12px;
+  }
+
+  .oracle-hero-stat-value{
+    font-size:14px;
+  }
+
+  .oracle-hero-stat-label{
+    margin-top:2px;
+    font-size:10px;
+    line-height:1.2;
+  }
+
+  .oracle-meta-strip{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:10px 14px 4px;
+    scrollbar-width:none;
+  }
+
+  .oracle-meta-strip::-webkit-scrollbar{
+    display:none;
+  }
+
+  .oracle-chip-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:nowrap;
+    flex:0 0 auto;
+  }
+
+  .oracle-chip{
+    height:32px;
+    padding:0 11px;
+    font-size:12px;
+  }
+
+  .oracle-tabs{
+    padding:8px 14px 10px;
+    gap:6px;
+  }
+
+  .oracle-tab{
+    padding:10px 12px;
+    border-radius:12px;
+  }
+
+  .oracle-body{
+    padding:12px 14px calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .oracle-weekly-cards{
+    grid-template-columns:1fr;
+  }
+
+  .oracle-weekly-reward-grid{
+    grid-template-columns:1fr;
+  }
+
+  .oracle-weekly-row{
+    align-items:flex-start;
+  }
+
+  .oracle-weekly-row-right{
+    min-width:84px;
+  }
+}
+       
+
+      @media (max-width: 720px){
+        .oracle-modal{
+          width:100vw;
+          height:100dvh;
+          max-height:100dvh;
+          border-radius:0;
+          top:50%;
+        }
+        .oracle-body{
+          max-height:calc(100dvh - 178px);
+          padding-bottom:calc(18px + env(safe-area-inset-bottom));
+        }
+        .oracle-summary-grid{
+          grid-template-columns:1fr 1fr 1fr;
+        }
+        .oracle-faction-stats{
+          grid-template-columns:1fr 1fr;
+        }
+      }
+
+     @media (max-width: 720px){
+        .oracle-modal{
+          width:100vw;
+          height:100dvh;
+          max-height:100dvh;
+          border-radius:0;
+          top:50%;
+        }
+
+        .oracle-topbar,
+        .oracle-hero,
+        .oracle-meta-strip,
+        .oracle-tabs{
+          flex:0 0 auto;
+        }
+
+        .oracle-body{
+          flex:1 1 auto;
+          min-height:0;
+          padding:14px 14px calc(22px + env(safe-area-inset-bottom));
+        }
+
+        .oracle-summary-grid{
+          grid-template-columns:1fr 1fr 1fr;
+        }
+
+        .oracle-faction-stats{
+          grid-template-columns:1fr 1fr;
+        }
+        
+        .oracle-rank-row{
+          align-items:flex-start;
+        }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+})();
