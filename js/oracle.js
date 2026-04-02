@@ -34,6 +34,12 @@
     pack_burners: { code: "PB", label: "Pack Burners", cls: "pb" },
     inner_howl:   { code: "IH", label: "Inner Howl", cls: "ih" },
   };
+  const FACTION_BADGE_FILES = {
+    rogue_byte: "rogue_byte_40.webp",
+    echo_wardens: "echo_wardens_40.webp",
+    pack_burners: "pack_burners_40.webp",
+    inner_howl: "inner_howl_40.webp",
+  };
 
   function dbg(...args) {
     if (_dbg) console.log("[Oracle]", ...args);
@@ -1204,10 +1210,13 @@
       cls: "none",
     };
   }
-  function factionLogoUrl(faction) {
+function factionLogoUrl(faction) {
   const key = String(faction || "").toLowerCase().trim();
   if (!key) return "";
-  return `/images/ui/factions/icon_${key}.png`;
+  const file = FACTION_BADGE_FILES[key];
+  if (!file) return "";
+  const ver = window.WEBAPP_VER ? `?v=${encodeURIComponent(String(window.WEBAPP_VER))}` : "";
+  return `/images/factions/${file}${ver}`;
 }
 
 function renderFactionBadge(faction, { big = false, code = "" } = {}) {
@@ -1217,7 +1226,7 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
   const safeLabel = escapeHtml(fm.label || faction || "Faction");
 
   return `
-    <div class="oracle-faction-badge ${fm.cls} ${big ? "big" : ""}">
+    <div class="oracle-faction-badge ${fm.cls} ${big ? "big" : ""} ${logo ? "has-logo" : "no-logo"}">
       ${
         logo
           ? `<img
@@ -1588,6 +1597,12 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
   border:1px solid rgba(255,255,255,.08);
 }
 
+.oracle-faction-badge.has-logo{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+
 .oracle-faction-badge.big{
   width:42px;
   height:42px;
@@ -1595,15 +1610,16 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
 }
 
 .oracle-faction-badge img{
-  width:18px;
-  height:18px;
+  width:20px;
+  height:20px;
   object-fit:contain;
   display:block;
+  background:transparent;
 }
 
 .oracle-faction-badge.big img{
-  width:24px;
-  height:24px;
+  width:28px;
+  height:28px;
 }
 
 .oracle-faction-code-fallback{
