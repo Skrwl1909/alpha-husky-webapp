@@ -4,6 +4,14 @@
 // - BackButton closes our sheets AND unlocks body scroll (patches navCloseTop)
 
 (function () {
+  if (window.__ahLegacyHomeNavBound) {
+    return;
+  }
+  if (window.__ahHomeNavBound) {
+    return;
+  }
+  window.__ahHomeNavBound = true;
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 

@@ -12,6 +12,7 @@
     cardRoot: null,
     highlightsRoot: null,
     pollTimer: 0,
+    initDone: false,
     lastData: null,
     visHandler: null,
     pageShowHandler: null,
@@ -1291,6 +1292,7 @@
     }
     clearRoot(STATE.cardRoot);
     clearRoot(STATE.highlightsRoot);
+    STATE.initDone = false;
   }
 
   function init({ apiPost, tg, dbg } = {}) {
@@ -1298,11 +1300,18 @@
     STATE.tg = tg || STATE.tg || null;
     STATE.dbg = dbg ?? STATE.dbg;
 
+    if (STATE.initDone) {
+      if (!mount()) return window.CTA;
+      void load();
+      return window.CTA;
+    }
+
     if (!mount()) {
       log("mounts missing");
       return window.CTA;
     }
 
+    STATE.initDone = true;
     bindLifecycleRefresh();
     startPolling();
     void load();

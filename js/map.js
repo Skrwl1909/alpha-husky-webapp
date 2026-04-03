@@ -1662,7 +1662,7 @@
   function _ensureObserver() {
     if (_observer) return;
 
-    const root = document.getElementById("pins") || document.body;
+    const root = document.getElementById("pins") || document.getElementById("mapBack");
     if (!root) return;
 
     _observer = new MutationObserver(() => {
@@ -1679,15 +1679,19 @@
 
   function _bindReapplyHooks() {
     // po kliknięciu / focusie na mapie UI czasem przebudowuje piny
-    document.addEventListener("click", () => {
+    document.addEventListener("click", (event) => {
+      const mapBack = document.getElementById("mapBack");
+      if (!mapBack || !mapBack.contains(event?.target || null)) return;
       if (!_isMapVisible()) return;
       setTimeout(_scheduleReapply, 50);
     }, true);
 
-    document.addEventListener("touchend", () => {
+    document.addEventListener("touchend", (event) => {
+      const mapBack = document.getElementById("mapBack");
+      if (!mapBack || !mapBack.contains(event?.target || null)) return;
       if (!_isMapVisible()) return;
       setTimeout(_scheduleReapply, 50);
-    }, true);
+    }, { capture: true, passive: true });
   }
 
   async function refreshLeaders() {
