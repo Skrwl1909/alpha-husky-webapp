@@ -4482,90 +4482,14 @@ body.bc-open #ahCommunityBtn{
   
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
-  <script>
-  (function(v){
-    var s = document.createElement('script');
-    s.src = 'js/pixi.min.js?v=' + encodeURIComponent(v || 'dev');
-    s.async = false;
-    document.head.appendChild(s);
-  })(window.WEBAPP_VER);
-</script>
 
-  
-<script>
-  (function(v){
-    var s = document.createElement('script');
-    s.src = 'js/fortress_pixi.js?v=' + encodeURIComponent(v || 'dev');
-    s.async = false;
-    document.head.appendChild(s);
-  })(window.WEBAPP_VER);
-</script>
-  <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/combat.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
-  <script>
-    (function(v){
-      var s = document.createElement('script');
-      s.src = 'js/fortress.js?v=' + encodeURIComponent(v || 'dev');
-      s.async = false;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
-  <script>
-    (function(v){
-      var s=document.createElement('script');
-      s.src='js/dojo.js?v='+encodeURIComponent(v||'dev');
-      s.defer=true;
-      document.head.appendChild(s);
-    })(window.WEBAPP_VER);
-  </script>
-  
-  
-  <script>
-  (function(v){
-    var s = document.createElement('script');
-    s.src = 'js/referrals.js?v=' + encodeURIComponent(v || 'dev');
-    s.async = false;
-    document.head.appendChild(s);
-  })(window.WEBAPP_VER);
-</script>
-  <script>
-(function(v){
-  var s = document.createElement('script');
-  s.src = 'js/siege_pixi.js?v=' + encodeURIComponent(v || 'dev');
-  s.async = false;
-  document.head.appendChild(s);
-})(window.WEBAPP_VER);
-</script>
 
-<script>
-(function(v){
-  var s = document.createElement('script');
-  s.src = 'js/siege.js?v=' + encodeURIComponent(v || 'dev');
-  s.async = false;
-  document.head.appendChild(s);
-})(window.WEBAPP_VER);
-</script>
-<script>
-(function(v){
-  var s = document.createElement('script');
-  s.src = 'js/map.js?v=' + encodeURIComponent(v || 'dev');
-  s.async = false;
-  s.onload = function(){
-    window.__mapScriptLoaded = true;
-    try {
-      window.AHMap?.init?.();
-      window.__mapInited = true;
-    } catch(e){}
-  };
-  document.head.appendChild(s);
-})(window.WEBAPP_VER);
-  </script>
+
+
+
+
+
+
   <script>
   (function(v){
     var s = document.createElement('script');
@@ -4811,7 +4735,9 @@ function closeFaqModal(){
           shop:      ()=>window.Shop?.open?.() || document.querySelector('.btn.shop')?.click(),
           adopt:     ()=>window.Adopt?.open?.() || document.querySelector('.btn.adopt')?.click(),
           arena:     ()=>window.Arena?.open?.() || document.querySelector('.btn.arena')?.click(),
-          referrals: ()=>window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click(),
+          referrals: ()=>ensureReferralsLoaded(apiPost, _tg, _dbg)
+            .then(() => window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click())
+            .catch(() => document.querySelector('.btn.referral')?.click()),
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
           profile:   ()=>document.querySelector('.btn.profile')?.click(),
           mailbox:   ()=>window.Mailbox?.open?.(),
@@ -5199,13 +5125,158 @@ window.AH_makeRunId = function(prefix, key) {
 };
 
 /* ===== MODULE INIT (existing) ===== */
-window.Fortress?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-window.Dojo?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.BrokenContracts?.init?.({ apiPost, tg: _tg, dbg: _dbg });
-window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });   
-      window.Oracle?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+
+let _pixiCoreLoading = null;
+let _combatLoading = null;
+let _fortressLoading = null;
+let _dojoLoading = null;
+let _referralsLoading = null;
+let _siegeLoading = null;
+let _oracleLoading = null;
+let _bloodMoonLoading = null;
+let _arenaLoading = null;
+
+async function ensurePixiCoreLoaded() {
+  if (window.PIXI) return true;
+  if (_pixiCoreLoading) return await _pixiCoreLoading;
+
+  _pixiCoreLoading = (async () => {
+    await loadScriptOnce("js/pixi.min.js");
+    return true;
+  })();
+
+  return await _pixiCoreLoading;
+}
+
+async function ensureCombatLoaded() {
+  if (window.Combat?.rollHit || window.Combat?.resolve) return true;
+  if (_combatLoading) return await _combatLoading;
+
+  _combatLoading = (async () => {
+    await loadScriptOnce("js/combat.js");
+    return true;
+  })();
+
+  return await _combatLoading;
+}
+
+async function ensureFortressLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.Fortress?.open && window.Fortress?.init) {
+    try { window.Fortress.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  }
+  if (_fortressLoading) return await _fortressLoading;
+
+  _fortressLoading = (async () => {
+    await ensurePixiCoreLoaded();
+    await ensureCombatLoaded();
+    await loadScriptOnce("js/fortress.js");
+    try { window.Fortress?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  })();
+
+  return await _fortressLoading;
+}
+
+async function ensureDojoLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.Dojo?.open && window.Dojo?.init) {
+    try { window.Dojo.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  }
+  if (_dojoLoading) return await _dojoLoading;
+
+  _dojoLoading = (async () => {
+    await ensureCombatLoaded();
+    await loadScriptOnce("js/dojo.js");
+    try { window.Dojo?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  })();
+
+  return await _dojoLoading;
+}
+
+async function ensureReferralsLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.Referrals?.open && window.Referrals?.init) {
+    try { window.Referrals.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  }
+  if (_referralsLoading) return await _referralsLoading;
+
+  _referralsLoading = (async () => {
+    await loadScriptOnce("js/referrals.js");
+    try { window.Referrals?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    return true;
+  })();
+
+  return await _referralsLoading;
+}
+
+async function ensureSiegeLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.Siege?.open && window.Siege?.init) {
+    try { window.Siege.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__siegeInited = true;
+    return true;
+  }
+  if (_siegeLoading) return await _siegeLoading;
+
+  _siegeLoading = (async () => {
+    await ensurePixiCoreLoaded();
+    await loadScriptOnce("js/siege_pixi.js");
+    await loadScriptOnce("js/siege.js");
+    try { window.Siege?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__siegeInited = true;
+    return true;
+  })();
+
+  return await _siegeLoading;
+}
+
+async function ensureOracleLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.Oracle?.open && window.Oracle?.init) {
+    try { window.Oracle.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__oracleInited = true;
+    return true;
+  }
+  if (_oracleLoading) return await _oracleLoading;
+
+  _oracleLoading = (async () => {
+    await loadScriptOnce("js/oracle.js");
+    try { window.Oracle?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__oracleInited = true;
+    return true;
+  })();
+
+  return await _oracleLoading;
+}
+
+async function ensureBloodMoonLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
+  if (window.BloodMoon?.open && window.BloodMoon?.init) {
+    try { window.BloodMoon.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__bloodMoonInited = true;
+    return true;
+  }
+  if (_bloodMoonLoading) return await _bloodMoonLoading;
+
+  _bloodMoonLoading = (async () => {
+    await loadScriptOnce("js/bloodmoon.js");
+    try { window.BloodMoon?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
+    window.__bloodMoonInited = true;
+    return true;
+  })();
+
+  return await _bloodMoonLoading;
+}
+
+window.ensureFortressLoaded = ensureFortressLoaded;
+window.ensureDojoLoaded = ensureDojoLoaded;
+window.ensureReferralsLoaded = ensureReferralsLoaded;
+window.ensureSiegeLoaded = ensureSiegeLoaded;
+window.ensureOracleLoaded = ensureOracleLoaded;
+window.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
  
       // ✅ PATCH A — auto-open missions when ?section=missions
 (function autoOpenSection() {
@@ -5224,10 +5295,6 @@ window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });
       
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
-window.Referrals?.init?.({ apiPost, tg: window.tg, dbg: window.DBG });
-
-// NOTE: Arena may be lazy-loaded, but init is still safe if already present
-window.Arena?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 
 /* ===== ARENA: LAZY-LOAD (safe even if not in HTML) ===== */
 async function ensureArenaLoaded(apiPost, tg, dbg) {
@@ -5237,32 +5304,26 @@ async function ensureArenaLoaded(apiPost, tg, dbg) {
     return true;
   }
 
-  const v = (window.WEBAPP_VER || Date.now());
-
-  await new Promise((resolve, reject) => {
-    // prevent duplicates
-    const already = Array.from(document.scripts || []).some(s =>
-      String(s.src || "").includes("/js/arena.js")
-    );
-    if (already) return resolve(true);
-
-    const s = document.createElement("script");
-    s.src = `/js/arena.js?v=${encodeURIComponent(v)}`;
-    s.async = true;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("arena.js load failed"));
-    document.head.appendChild(s);
-  });
+  if (_arenaLoading) {
+    await _arenaLoading;
+  } else {
+    _arenaLoading = (async () => {
+      await loadScriptOnce("js/arena.js");
+      return true;
+    })();
+    await _arenaLoading;
+  }
 
   // init after load (idempotent in your arena.js)
   window.Arena?.init?.({ apiPost, tg, dbg });
   return true;
 }
 
+window.ensureArenaLoaded = ensureArenaLoaded;
+/* Startup preloads for skins/adopt/updates were removed; they now load on first open. */
+
 /* ===== skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML) ===== */
-ensureSkinsLoaded(apiPost, _tg, _dbg).catch(()=>{});
-ensureAdoptLoaded(apiPost, _tg, _dbg).catch(()=>{});
-ensureUpdatesLoaded(apiPost, _tg, _dbg).catch(()=>{});
+
 
 /* ===== Adopt: open on button/pin click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
@@ -5422,9 +5483,6 @@ document.addEventListener("click", async (e) => {
     window.toast?.("Updates failed to load");
   }
 });
-
-/* ===== Combat init (existing) ===== */
-setTimeout(() => { window.Combat?.init?.({ container: document.body }); }, 100);
 
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
@@ -6090,7 +6148,7 @@ function isRegionUnlocked(regionId){
     // dekoruj (frakcja / contested / itd.)
     try { window.AHMap?.decoratePin?.(btn, b); } catch(e){ console.warn('decoratePin error', e); }
 
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -6123,8 +6181,12 @@ function isRegionUnlocked(regionId){
         b.id === "blood_moon_tower" ||
         b.action === "open_bloodmoon"
       ) {
-        if (window.BloodMoon?.open) return window.BloodMoon.open();
-        console.warn("[BloodMoon] module not ready");
+        try {
+          await ensureBloodMoonLoaded(apiPost, _tg, _dbg);
+          if (window.BloodMoon?.open) return window.BloodMoon.open();
+        } catch (err) {
+          console.warn("[BloodMoon] load/open failed", err);
+        }
         return openBuilding(bid, b.name, b.desc);
       }
 
@@ -6134,12 +6196,16 @@ function isRegionUnlocked(regionId){
         b.id === "oracle_void_doorway" ||
         b.action === "open_oracle"
       ) {
-        if (window.Oracle?.open) return window.Oracle.open();
-        console.warn("[Oracle] module not ready");
+        try {
+          await ensureOracleLoaded(apiPost, _tg, _dbg);
+          if (window.Oracle?.open) return window.Oracle.open();
+        } catch (err) {
+          console.warn("[Oracle] load/open failed", err);
+        }
         return openBuilding(bid, b.name, b.desc);
       }
 
-      if (!unlocked) return openLocked(b);
+      if (!unlocked) return await openLocked(b);
 
       // lore-only pins
       if (b.action === "coming_soon") {
@@ -6157,13 +6223,25 @@ function isRegionUnlocked(regionId){
 
       if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
 
-      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress' && window.Fortress?.open) {
-        return window.Fortress.open();
+      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress') {
+        try {
+          await ensureFortressLoaded(apiPost, _tg, _dbg);
+          if (window.Fortress?.open) return window.Fortress.open();
+        } catch (err) {
+          console.warn("[Fortress] load/open failed", err);
+        }
+        return openBuilding(bid, b.name, b.desc);
       }
 
       if ((b.id === 'testnet_wastes') ||
           (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-        if (window.Dojo?.open) return window.Dojo.open();
+        try {
+          await ensureDojoLoaded(apiPost, _tg, _dbg);
+          if (window.Dojo?.open) return window.Dojo.open();
+        } catch (err) {
+          console.warn("[Dojo] load/open failed", err);
+        }
+        return openBuilding(bid, b.name, b.desc);
       }
 
       // Faction HQ
@@ -6267,13 +6345,19 @@ function isRegionUnlocked(regionId){
         const lockedAsk = $("#lockedAsk");
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
 
-        function openLocked(b){
+        async function openLocked(b){
   if (
-    (b?.id === 'edge_of_chain' || b?.buildingId === 'edge_of_chain' || b?.action === 'open_siege') &&
-    window.Siege?.open
+    (b?.id === 'edge_of_chain' || b?.buildingId === 'edge_of_chain' || b?.action === 'open_siege')
   ) {
-    window.Siege.open();
-    return;
+    try {
+      await ensureSiegeLoaded(apiPost, _tg, _dbg);
+      if (window.Siege?.open) {
+        window.Siege.open();
+        return;
+      }
+    } catch (err) {
+      console.warn("[Siege] load/open failed", err);
+    }
   }
 
   const reg = DATA && DATA.regions && DATA.regions[b.region];
@@ -6312,17 +6396,31 @@ function isRegionUnlocked(regionId){
         function openRegionSheet(node, reg){
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
           regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
-          btnRegionGo.onclick = () => {
+          btnRegionGo.onclick = async () => {
   regionBack.style.display = 'none';
 
-  if (node?.id === 'testnet_wastes' && window.Dojo?.open) {
-    window.Dojo.open();
-    return;
+  if (node?.id === 'testnet_wastes') {
+    try {
+      await ensureDojoLoaded(apiPost, _tg, _dbg);
+      if (window.Dojo?.open) {
+        window.Dojo.open();
+        return;
+      }
+    } catch (err) {
+      console.warn("[Dojo] load/open failed", err);
+    }
   }
 
-  if ((node?.action === 'open_siege' || node?.id === 'edge_of_chain') && window.Siege?.open) {
-    window.Siege.open();
-    return;
+  if (node?.action === 'open_siege' || node?.id === 'edge_of_chain') {
+    try {
+      await ensureSiegeLoaded(apiPost, _tg, _dbg);
+      if (window.Siege?.open) {
+        window.Siege.open();
+        return;
+      }
+    } catch (err) {
+      console.warn("[Siege] load/open failed", err);
+    }
   }
 
   sendAction('region_open', { region: node.region, nodeId: node.id });
@@ -6574,7 +6672,13 @@ const actions = {
   },
 
   ".btn.profile": () => sendAction("cmd", { name: "profile" }),
-  ".btn.referral": () => window.Referrals?.open?.(),
+  ".btn.referral": () =>
+    ensureReferralsLoaded(apiPost, _tg, _dbg)
+      .then(() => window.Referrals?.open?.())
+      .catch((err) => {
+        console.warn("[Referrals] load/open failed", err);
+        try { _tg?.showAlert?.("Failed to load Referrals."); } catch (_) {}
+      }),
   ".btn.howlboard": () => openBoard(),
 };
 
@@ -6952,7 +7056,7 @@ const sectionParam = (qs.get("section") || "").toLowerCase();
 const toastParam = qs.get("toast");
 if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
 
-function showSection(name){
+async function showSection(name){
   switch(name){
     case "map":
       mapBack.style.display = "flex";
@@ -6981,8 +7085,14 @@ function showSection(name){
       sendAction("pets_open");
       break;
     case "fortress":
-      if (window.Fortress?.open) window.Fortress.open();
-      else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
+      try {
+        await ensureFortressLoaded(apiPost, _tg, _dbg);
+        if (window.Fortress?.open) window.Fortress.open();
+        else tg?.showAlert?.("Fortress is loading. Try again in a moment.");
+      } catch (err) {
+        console.warn("[Fortress] load/open failed", err);
+        tg?.showAlert?.("Fortress failed to load. Try again.");
+      }
       break;
     default:
       break;
@@ -7266,8 +7376,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   document.head.appendChild(s);
 })();
 </script>
-<script src="/js/arena.js?v=WEBAPP_VER"></script>
-
 <!-- FACTIONS (loader + init, cache-bust) -->
 <script>
 (function loadFactions(){
@@ -7298,6 +7406,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <!-- ORACLE (loader + init) -->
 <script>
 (function loadOracle(){
+  return;
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "oracle");
   const s = document.createElement("script");
@@ -7325,6 +7434,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <!-- BLOOD-MOON TOWER (loader + init) -->
 <script>
 (function loadBloodMoon(){
+  return;
   const tg = window.Telegram?.WebApp || null;
   const v = String(window.WEBAPP_VER || "bloodmoon");
   const s = document.createElement("script");
