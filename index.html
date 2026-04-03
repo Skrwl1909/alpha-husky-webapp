@@ -4674,6 +4674,7 @@ body.bc-open #ahCommunityBtn{
       // ✅ HOME NAV WIRING (BottomNav + Hub/Char/Share)
       // =====================
       (function(){
+        window.__ahLegacyHomeNavBound = true;
         const $ = (sel, root=document) => root.querySelector(sel);
 
         const hubBack   = $('#hubBack');
@@ -7432,10 +7433,19 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         }
       }
 
-      try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
+      if (!window.__leadersBootRequested) {
+        window.__leadersBootRequested = true;
+        try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
+      }
     } catch (e) {
       console.warn("❌ Map init failed", e);
     }
+  }
+
+  if (window.__mapInited && (window.AHMap || window.Map)) {
+    if (!window.Map && window.AHMap) window.Map = window.AHMap;
+    if (!window.AHMap && window.Map) window.AHMap = window.Map;
+    return;
   }
 
   if (window.AHMap?.init || window.Map?.init) {
@@ -7443,25 +7453,23 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return;
   }
 
-  const existing = Array.from(document.scripts || []).some((script) => {
+  const existing = Array.from(document.scripts || []).find((script) => {
     const src = String(script.src || "");
     return src.includes("/js/map.js") || src.includes("js/map.js");
   });
 
-  if (existing || window.__mapScriptLoaded) {
-    let tries = 0;
-    const waitForExisting = setInterval(() => {
-      tries += 1;
-      if (window.AHMap?.init || window.Map?.init) {
-        clearInterval(waitForExisting);
-        initMapModule();
-        return;
-      }
-      if (tries > 120) {
-        clearInterval(waitForExisting);
-        console.warn("[Map] existing map.js script did not initialize in time");
-      }
-    }, 50);
+  if (existing) {
+    if (window.AHMap?.init || window.Map?.init) {
+      initMapModule();
+      return;
+    }
+    existing.addEventListener("load", () => {
+      window.__mapScriptLoaded = true;
+      initMapModule();
+    }, { once: true });
+    existing.addEventListener("error", () => {
+      console.warn("[Map] existing map.js script failed to load");
+    }, { once: true });
     return;
   }
 
@@ -7482,17 +7490,17 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   <script>
 (function bootLeaders(){
+  if (window.__leadersBootRequested) return;
   let tries = 0;
+  const MAX_TRIES = 16;
   function tick(){
     const I = window.Influence;
     const M = window.AHMap || window.Map;
     const apiOk = (typeof window.apiPost === "function");
     const can = !!(I?.refreshLeaders && M?.applyLeaders);
 
-    // ważne: piny muszą już istnieć w DOM
-    const pinsReady = !!document.querySelector(".hotspot[data-node-id], .hotspot[data-nodeid]");
-
-    if (apiOk && can && pinsReady) {
+    if (apiOk && can) {
+      window.__leadersBootRequested = true;
       try {
         I.refreshLeaders(true);
         console.log("✅ [Leaders] boot refresh done");
@@ -7502,13 +7510,18 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       return;
     }
 
-    if (++tries > 160) {
-      console.warn("⚠️ [Leaders] boot timeout", { apiOk, can, pinsReady });
+    if (++tries >= MAX_TRIES) {
+      console.warn("⚠️ [Leaders] boot timeout", { apiOk, can });
       return;
     }
-    setTimeout(tick, 50);
+    setTimeout(tick, 250);
   }
-  tick();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => setTimeout(tick, 120), { once: true });
+  } else {
+    setTimeout(tick, 120);
+  }
 })();
 </script>
   
