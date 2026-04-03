@@ -3631,6 +3631,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <div class="hud-col hud-right" id="homeLegacyRight">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
+            <button class="btn frames" aria-label="Open Frames" type="button">Frames</button>
             <button class="btn char" aria-label="Open Character" type="button">Character</button>
             <button class="btn arena" aria-label="Open Arena" type="button">Arena</button>
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
@@ -3711,6 +3712,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="ah-actions">
       <button class="ah-action" data-action="equipped" type="button">Equipped</button>
       <button class="ah-action" data-action="skins" type="button">Skins</button>
+      <button class="ah-action" data-action="frames" type="button">Frames</button>
       <button class="ah-action" data-action="avatar" type="button">Avatar</button>
 
       <!-- ✅ NEW: Stats -->
@@ -4637,7 +4639,7 @@ body.bc-open #ahCommunityBtn{
           el.addEventListener('click', (e)=>{ if(e.target === el) hide(el); });
         });
 
-        async function openSkins() {
+async function openSkins() {
   const charBack = document.getElementById("charBack");
   if (charBack && charBack.style.display !== "none") {
     charBack.style.display = "none";
@@ -4666,6 +4668,36 @@ body.bc-open #ahCommunityBtn{
   try { _tg?.showAlert?.("Skins module not available."); } catch (_) {}
 }
 window.openSkinsModal = openSkins;
+
+async function openFrames() {
+  const charBack = document.getElementById("charBack");
+  if (charBack && charBack.style.display !== "none") {
+    charBack.style.display = "none";
+    try { window.navClose?.(charBack); } catch (_) {}
+  }
+
+  const hubBack = document.getElementById("hubBack");
+  if (hubBack && hubBack.style.display !== "none") {
+    hubBack.style.display = "none";
+    try { window.navClose?.(hubBack); } catch (_) {}
+  }
+
+  try {
+    await ensureFramesLoaded(apiPost, _tg, _dbg);
+  } catch (e) {
+    console.warn("ensureFramesLoaded failed", e);
+    try { _tg?.showAlert?.("Failed to load frames."); } catch (_) {}
+    return;
+  }
+
+  if (window.Frames?.open) {
+    return window.Frames.open();
+  }
+
+  console.warn("window.Frames.open missing after ensureFramesLoaded");
+  try { _tg?.showAlert?.("Frames module not available."); } catch (_) {}
+}
+window.openFramesModal = openFrames;
         
         function openFaqModal(){
   // 1) schowaj character sheet
@@ -4750,6 +4782,7 @@ function closeFaqModal(){
           // character sheet actions
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
           skins: () => { void openSkins(); },
+          frames: () => { void openFrames(); },
           avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
           pets:      ()=>document.querySelector('.btn.mypets')?.click(),
         };
@@ -5043,81 +5076,6 @@ loadScriptOnce("js/tonwallet.js").then(() => {
   });
 }).catch(console.warn);
 
-let _skinsLoading = null;
-
-async function ensureSkinsLoaded(apiPost, tg, dbg) {
-  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() ma _apiPost=null)
-  if (window.Skins?.open && window.Skins?.init) {
-    try { window.Skins.init({ apiPost, tg, dbg }); } catch (_) {}
-    return;
-  }
-
-  if (_skinsLoading) return await _skinsLoading;
-
-  _skinsLoading = (async () => {
-    await loadScriptOnce("js/skins.js");
-    try { window.Skins?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-  })();
-
-  return await _skinsLoading;
-}
-
-// --- ADOPT module loader (cache-bust via WEBAPP_VER) ---
-let _adoptLoading = null;
-
-async function ensureAdoptLoaded(apiPost, tg, dbg) {
-  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-  if (window.Adopt?.open && window.Adopt?.init) {
-    try { window.Adopt.init({ apiPost, tg, dbg }); } catch (_) {}
-    return;
-  }
-
-  if (_adoptLoading) return await _adoptLoading;
-
-  _adoptLoading = (async () => {
-    await loadScriptOnce("js/adopt.js");
-    try { window.Adopt?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-  })();
-
-  return await _adoptLoading;
-}
-
-// --- UPDATES / WHAT'S NEW module loader (cache-bust via WEBAPP_VER) ---
-let _updatesLoading = null;
-
-async function ensureUpdatesLoaded(apiPost, tg, dbg) {
-  // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-  if (window.Updates?.open && window.Updates?.init) {
-    try {
-      window.Updates.init({
-        apiPost,
-        tg,
-        dbg,
-        btnEl: document.getElementById("btnWhatsNew"),
-        dotEl: document.getElementById("whatsNewDot"),
-      });
-    } catch (_) {}
-    return;
-  }
-
-  if (_updatesLoading) return await _updatesLoading;
-
-  _updatesLoading = (async () => {
-    await loadScriptOnce("js/updates.js");
-    try {
-      window.Updates?.init?.({
-        apiPost,
-        tg,
-        dbg,
-        btnEl: document.getElementById("btnWhatsNew"),
-        dotEl: document.getElementById("whatsNewDot"),
-      });
-    } catch (_) {}
-  })();
-
-  return await _updatesLoading;
-}
-
 // run_id helper (wspólny dla skins/adopt/shop)
 window.AH_makeRunId = function(prefix, key) {
   const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
@@ -5141,6 +5099,12 @@ if (window.AHBootLoaders?.init) {
 } else {
   console.warn("[BootLoaders] module missing; lazy feature loaders unavailable");
   const noopEnsure = async () => false;
+  window.ensureSkinsLoaded = window.ensureSkinsLoaded || noopEnsure;
+  window.ensureFramesLoaded = window.ensureFramesLoaded || noopEnsure;
+  window.ensureAdoptLoaded = window.ensureAdoptLoaded || noopEnsure;
+  window.ensureUpdatesLoaded = window.ensureUpdatesLoaded || noopEnsure;
+  window.ensureMissionsLoaded = window.ensureMissionsLoaded || noopEnsure;
+  window.ensureMyPetsLoaded = window.ensureMyPetsLoaded || noopEnsure;
   window.ensureFortressLoaded = window.ensureFortressLoaded || noopEnsure;
   window.ensureDojoLoaded = window.ensureDojoLoaded || noopEnsure;
   window.ensureReferralsLoaded = window.ensureReferralsLoaded || noopEnsure;
@@ -5237,65 +5201,6 @@ document.addEventListener("click", async (e) => {
 });
 
    /* ===== MISSIONS: LAZY-LOAD (safe even if not in HTML) ===== */
-async function ensureMissionsLoaded(apiPost, tg, dbg) {
-  console.log("[Missions] ensureMissionsLoaded() start", {
-    hasMissions: !!window.Missions,
-    hasOpen: !!window.Missions?.open,
-    ver: window.WEBAPP_VER
-  });
-
-  // jeśli już jest, tylko (re)init
-  if (window.Missions?.open) {
-    window.Missions?.init?.({ apiPost, tg, dbg });
-    console.log("[Missions] already loaded ✅");
-    return true;
-  }
-
-  const v = (window.WEBAPP_VER || Date.now());
-  const src = `/js/missions.js?v=${encodeURIComponent(v)}`;
-
-  // jeśli skrypt już jest w DOM, ale obiekt nie powstał (np. error w missions.js)
-  const already = Array.from(document.scripts || []).some(s =>
-    String(s.src || "").includes("/js/missions.js")
-  );
-
-  if (!already) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = src;
-      s.async = true;
-
-      const to = setTimeout(() => {
-        reject(new Error("missions.js load timeout (8s)"));
-      }, 8000);
-
-      s.onload = () => {
-        clearTimeout(to);
-        console.log("[Missions] missions.js loaded ✅", src);
-        resolve(true);
-      };
-
-      s.onerror = () => {
-        clearTimeout(to);
-        reject(new Error("missions.js load failed (404?) " + src));
-      };
-
-      document.head.appendChild(s);
-    });
-  } else {
-    console.log("[Missions] script tag already present (no re-inject)");
-  }
-
-  // init after load
-  window.Missions?.init?.({ apiPost, tg, dbg });
-
-  const ok = !!window.Missions?.open;
-  console.log("[Missions] after load, has open =", ok);
-
-  if (!ok) throw new Error("missions.js loaded but window.Missions.open is still missing (check console errors inside missions.js)");
-  return true;
-}
-
 /* ✅ Missions: delegated click (bo przycisk bywa rerenderowany) */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='missions'], [data-action='mission']");
@@ -5649,10 +5554,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     } catch (_) {}
 
     /* ✅ FRAME — dynamic (z profilu) */
-    setHeroFrame(
-      pickFrameUrl(p) ||
-      "https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/v1771250188/frames/frame_supporter.webp"
-    );
+    setHeroFrame(pickFrameUrl(p) || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
 
     // ✅ Topbar może się przebudować – ok
@@ -6471,26 +6373,6 @@ function isRegionUnlocked(regionId){
         });
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
-        // --- MYPETS module loader ---
-        let _mypetsLoading = null;
-
-        async function ensureMyPetsLoaded(apiPost, tg, dbg) {
-          // ✅ jeśli obiekt już istnieje, to WYMUSZ init (bez tego open() może mieć _apiPost=null)
-          if (window.MyPets?.open && window.MyPets?.init) {
-            try { window.MyPets.init({ apiPost, tg, dbg }); } catch (_) {}
-            return;
-          }
-
-          if (_mypetsLoading) return await _mypetsLoading;
-
-          _mypetsLoading = (async () => {
-            await loadScriptOnce("js/mypets.js");
-            try { window.MyPets?.init?.({ apiPost, tg, dbg }); } catch (_) {}
-          })();
-
-          return await _mypetsLoading;
-        }
-
         /* === BUTTONS / ACTIONS === */
 const actions = {
   ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
@@ -6560,6 +6442,23 @@ document.addEventListener("click", (e) => {
     .catch((err) => {
       console.warn("skins load/open failed", err);
       try { _tg?.showAlert?.("Failed to load skins."); } catch (_) {}
+    });
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.(".btn.frames");
+  if (!btn) return;
+
+  if (e.__AH_FRAMES_HANDLED) return;
+  e.__AH_FRAMES_HANDLED = true;
+
+  e.preventDefault();
+
+  ensureFramesLoaded(apiPost, _tg, _dbg)
+    .then(() => window.Frames?.open?.())
+    .catch((err) => {
+      console.warn("frames load/open failed", err);
+      try { _tg?.showAlert?.("Failed to load frames."); } catch (_) {}
     });
 });
 
@@ -7491,6 +7390,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
+
 
 
 
