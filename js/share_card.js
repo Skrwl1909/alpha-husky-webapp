@@ -3,6 +3,7 @@
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
   const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
+  const X_MANUAL_ATTACH_NOTE = "Image saved. To post on X, attach the saved image manually.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
   const HUB_FRAME = {
@@ -761,7 +762,7 @@
         : "Rendered from the same live profile state the Hub is showing.";
     }
     if (helpEl) {
-      helpEl.textContent = "X opens a prefilled compose screen. Save the image first, then attach it in X manually.";
+      helpEl.textContent = "X opens a prefilled compose screen. To post on X, attach the saved image manually.";
     }
 
     const tgBtn = $("shareCardTelegramBtn");
@@ -853,7 +854,7 @@
     const presentation = STATE.presentation || buildSharePresentation(STATE.variant);
     const caption = buildCaption(presentation);
     openLink(buildXIntent(caption, presentation.shareLink));
-    toast("X compose is open. Use Save Image first, then attach the generated image manually.", "Share on X");
+    toast("X compose is open. Use Save Image, then attach it manually.", "Share on X");
   }
 
   function hideModal() {
@@ -921,6 +922,7 @@
       setBusy(true);
       try {
         await saveImage();
+        toast(X_MANUAL_ATTACH_NOTE, "Save Image");
       } catch (err) {
         console.error("[ShareCard] save failed", err);
         toast(describeShareError(err, "save"));
