@@ -3260,6 +3260,138 @@ body.missions-open{
     letter-spacing: .2px;
     cursor:pointer;
   }
+
+  /* Character sheet polish (scoped, UI-only) */
+  #charBack{
+    background:
+      radial-gradient(circle at 18% 0%, rgba(112,157,204,.18), transparent 42%),
+      radial-gradient(circle at 82% 100%, rgba(151,108,62,.14), transparent 45%),
+      rgba(0,0,0,.62);
+  }
+  #charBack .ah-panel{
+    border-color: rgba(180,210,236,.22);
+    background:
+      radial-gradient(circle at 8% -24%, rgba(138,178,222,.16), transparent 56%),
+      radial-gradient(circle at 95% 128%, rgba(164,124,79,.12), transparent 60%),
+      linear-gradient(180deg, rgba(18,23,34,.94), rgba(10,14,21,.94));
+    box-shadow:
+      0 18px 48px rgba(0,0,0,.62),
+      inset 0 1px 0 rgba(255,255,255,.08);
+    position: relative;
+  }
+  #charBack .ah-panel::before{
+    content:"";
+    position:absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(206,231,255,.45), transparent);
+    pointer-events:none;
+  }
+  #charBack .ah-panel-hd{
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(177,205,229,.14);
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+    gap: 12px;
+  }
+  #charBack .ah-head-copy{
+    min-width: 0;
+    display:flex;
+    flex-direction:column;
+    gap: 3px;
+  }
+  #charBack .ah-title{
+    font-size: 17px;
+    letter-spacing: .35px;
+    font-weight: 900;
+    color: #f3f8ff;
+  }
+  #charBack .ah-head-sub{
+    font-size: 12px;
+    letter-spacing: .2px;
+    color: rgba(203,223,241,.78);
+  }
+  #charBack .ah-x{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    border-color: rgba(212,230,246,.16);
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+    color: rgba(238,247,255,.96);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  #charBack .ah-x:active{
+    transform: translateY(1px);
+  }
+  #charBack .ah-actions.ah-character-actions{
+    padding: 12px 14px 14px;
+    gap: 9px;
+  }
+  #charBack .ah-action.ah-character-row{
+    height: auto;
+    min-height: 61px;
+    padding: 11px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(184,212,237,.18);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.01)),
+      rgba(6,10,16,.56);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.05),
+      0 7px 18px rgba(0,0,0,.22);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    text-align:left;
+    color: #e9f4ff;
+  }
+  #charBack .ah-action.ah-character-row:active{
+    transform: translateY(1px);
+    filter: brightness(1.05);
+  }
+  #charBack .ah-character-copy{
+    min-width: 0;
+    display:flex;
+    flex-direction:column;
+    gap: 3px;
+  }
+  #charBack .ah-character-title{
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 900;
+    letter-spacing: .2px;
+  }
+  #charBack .ah-character-sub{
+    font-size: 11px;
+    line-height: 1.24;
+    color: rgba(198,219,237,.72);
+    font-weight: 600;
+    letter-spacing: .1px;
+  }
+  #charBack .ah-character-go{
+    flex: 0 0 auto;
+    width: 22px;
+    text-align: right;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 900;
+    color: rgba(219,235,249,.78);
+    opacity: .95;
+  }
+  #charBack .ah-action[data-action="frames"]{
+    border-color: rgba(188,219,248,.28);
+    background:
+      linear-gradient(180deg, rgba(120,149,184,.18), rgba(120,149,184,0)),
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.01)),
+      rgba(6,10,16,.56);
+  }
+  @media (max-width: 380px){
+    #charBack .ah-panel-hd{ padding: 14px 14px 11px; }
+    #charBack .ah-title{ font-size: 16px; }
+    #charBack .ah-character-row{ min-height: 58px; }
+    #charBack .ah-character-title{ font-size: 13.5px; }
+    #charBack .ah-character-sub{ font-size: 10.5px; }
+  }
 </style>
 </style>
   <style id="inventory-css">
@@ -3703,27 +3835,63 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
 <!-- ✅ Character Sheet (tap hero-frame) -->
 <div id="charBack" class="ah-back" style="display:none">
-  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Character">
+  <div class="ah-panel ah-character-panel" role="dialog" aria-modal="true" aria-label="Character">
     <div class="ah-panel-hd">
-      <div class="ah-title">Character</div>
-      <button class="ah-x" data-close="charBack" aria-label="Close" type="button">✕</button>
+      <div class="ah-head-copy">
+        <div class="ah-title">Character</div>
+        <div class="ah-head-sub">Cosmetics and profile setup</div>
+      </div>
+      <button class="ah-x" data-close="charBack" aria-label="Close" type="button">&times;</button>
     </div>
 
-    <div class="ah-actions">
-      <button class="ah-action" data-action="equipped" type="button">Equipped</button>
-      <button class="ah-action" data-action="skins" type="button">Skins</button>
-      <button class="ah-action" data-action="frames" type="button">Frames</button>
-      <button class="ah-action" data-action="avatar" type="button">Avatar</button>
-
-      <!-- ✅ NEW: Stats -->
-      <button class="ah-action" data-action="stats" type="button">Stats</button>
-
-      <button class="ah-action" data-action="pets" type="button">Pets</button>
+    <div class="ah-actions ah-character-actions">
+      <button class="ah-action ah-character-row" data-action="equipped" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Equipped</span>
+          <span class="ah-character-sub">Manage your active gear loadout</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="skins" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Skins</span>
+          <span class="ah-character-sub">Switch your hero appearance</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="frames" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Frames</span>
+          <span class="ah-character-sub">Set your profile frame style</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="avatar" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Avatar</span>
+          <span class="ah-character-sub">Pick your profile portrait</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="stats" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Stats</span>
+          <span class="ah-character-sub">Open combat and progression details</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="pets" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Pets</span>
+          <span class="ah-character-sub">Manage companions and bonuses</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ✅ NEW: Stats Sheet -->
+<!-- ? NEW: Stats Sheet -->
 <div id="statsBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Stats">
     <div class="ah-panel-hd">
