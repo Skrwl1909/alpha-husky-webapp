@@ -19,6 +19,26 @@ window.Inventory = {
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   },
 
+  _discardReasonText(reason, name = "item") {
+    const r = String(reason || "").trim();
+    const label = String(name || "item");
+    const map = {
+      locked_item: `${label} is locked and cannot be discarded.`,
+      protected_unique: `${label} is protected and cannot be discarded.`,
+      protected_exclusive: `${label} is protected and cannot be discarded.`,
+      protected_event: `${label} is protected and cannot be discarded.`,
+      protected_limited: `${label} is protected and cannot be discarded.`,
+      protected_type: `${label} is protected and cannot be discarded.`,
+      protected_category: `${label} is protected and cannot be discarded.`,
+      protected_pet: `Pets cannot be discarded from Inventory.`,
+      equipped_protected: `This item is currently equipped and cannot be discarded.`,
+      unknown_item_protected: `${label} is not removable right now.`,
+      not_owned: `${label} is no longer in inventory.`,
+      invalid_count: `Invalid discard amount.`,
+    };
+    return map[r] || `Discard failed (${r || "unknown_reason"}).`;
+  },
+
   _toast(msg) {
     try {
       if (window.toast) return window.toast(msg);
@@ -338,6 +358,7 @@ window.Inventory = {
         const key = item.key || item.item_key || item.item;
         const data = item.data || {};
         const amount = item.amount || 1;
+        const amountNum = Math.max(1, Number(amount || 1) || 1);
         const level = data.level || 1;
         const stats = data.stat_bonus || {};
 
@@ -362,7 +383,9 @@ window.Inventory = {
           .map(([k, v]) => `${k.slice(0, 3).toUpperCase()}: +${v}`)
           .join("  ");
 
-        const keyEsc = String(key || "").replace(/"/g, "&quot;");
+        const keyEsc = String(key || "")
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
 
         return `
         <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:center;position:relative;transition:0.3s;"
@@ -396,6 +419,22 @@ window.Inventory = {
                 EQUIP
               </button>
             ` : ""}
+
+            ${amountNum > 1 ? `
+              <button onclick="event.stopPropagation(); Inventory.removeItem('${keyEsc}','one')" type="button"
+                      style="padding:6px 10px;background:#3b1f1f;color:#ffb4b4;border:1px solid rgba(255,120,120,.25);border-radius:10px;font-size:11px;cursor:pointer;">
+                DISCARD 1
+              </button>
+              <button onclick="event.stopPropagation(); Inventory.removeItem('${keyEsc}','all')" type="button"
+                      style="padding:6px 10px;background:#5e1111;color:#ffdede;border:1px solid rgba(255,120,120,.35);border-radius:10px;font-size:11px;cursor:pointer;">
+                DISCARD ALL
+              </button>
+            ` : `
+              <button onclick="event.stopPropagation(); Inventory.removeItem('${keyEsc}','one')" type="button"
+                      style="padding:6px 10px;background:#3b1f1f;color:#ffb4b4;border:1px solid rgba(255,120,120,.25);border-radius:10px;font-size:11px;cursor:pointer;">
+                DISCARD
+              </button>
+            `}
 
           </div>
         </div>
@@ -490,6 +529,69 @@ async use(key) {
     Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
   }
 },
+
+  // === DISCARD ITEM (safe remove v1) ===
+  async removeItem(key, mode = "one") {
+    const item = this.findByKey(key);
+    if (!item) return;
+
+    if (item?.equipped || item?.equippedSlot) {
+      this._toast("Equipped items cannot be discarded here.");
+      return;
+    }
+
+    const amountNow = Math.max(1, Number(item.amount || 1) || 1);
+    const removeAll = String(mode || "").toLowerCase() === "all";
+    const removeCount = removeAll ? amountNow : 1;
+    const itemName = String(item.name || key || "item");
+
+    const ok = confirm(
+      removeAll
+        ? `Discard ALL ${amountNow}x ${itemName}?\n\nThis permanently removes the item(s).`
+        : `Discard 1x ${itemName}?\n\nThis permanently removes the item.`
+    );
+    if (!ok) return;
+
+    Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
+
+    const apiPost = window.S?.apiPost || window.apiPost;
+    if (typeof apiPost !== "function") {
+      this._toast("Inventory API not ready.");
+      return;
+    }
+
+    const pendingKey = `${String(key)}:${removeAll ? "all" : "one"}`;
+    this._removePending = this._removePending || new Set();
+    if (this._removePending.has(pendingKey)) return;
+    this._removePending.add(pendingKey);
+
+    try {
+      const res = await apiPost("/webapp/inventory/remove", {
+        key: String(key),
+        mode: removeAll ? "all" : "count",
+        count: removeCount,
+        run_id: this._mkRunId(removeAll ? "w_inv_remove_all" : "w_inv_remove_one"),
+      });
+
+      if (!res?.ok) {
+        throw new Error(
+          String(res?.message || this._discardReasonText(res?.reason, itemName) || "Discard failed")
+        );
+      }
+
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+      const removed = Math.max(1, Number(res?.removed || removeCount) || removeCount);
+      this._toast(
+        res?.message || `Discarded ${removed}x ${itemName}.`
+      );
+      await this.open();
+    } catch (e) {
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      this._toast(String(e?.message || "Discard failed."));
+    } finally {
+      this._removePending.delete(pendingKey);
+    }
+  },
 
   // === EQUIP ===
   async equip(key) {
