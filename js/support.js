@@ -48,6 +48,10 @@
     return !!(token && token.enabled !== false && token.comingSoon !== true);
   }
 
+  function isTokenLaneConfigured(token) {
+    return !!(token && token.configured !== false);
+  }
+
   function runId(prefix) {
     try { return `${prefix}:${crypto.randomUUID()}`; } catch (_) {}
     return `${prefix}:${Date.now()}:${Math.floor(Math.random() * 1e6)}`;
@@ -158,6 +162,33 @@
       return;
     }
 
+    if (!isTokenLaneConfigured(lane)) {
+      const walletLabel = lane.walletDisplay || "Not linked";
+      setText(
+        "supportTokenStatus",
+        lane.linked
+          ? `Wallet linked: ${walletLabel}. Holder checks are waiting for mint activation.`
+          : (lane.message || "Holder checks are waiting for mint activation.")
+      );
+      setText(
+        "supportTokenPerks",
+        lane.detail || "Holder tier, skin, frame, and weekly claim unlock after mint config + holder refresh."
+      );
+      setText(
+        "supportTokenHint",
+        lane.hint || "You can link wallet now. Refresh and claim unlock once BELIEVE_SUPPORT_MINT is configured."
+      );
+
+      const connectBtn = el("supportTokenConnect");
+      setDisabled("supportTokenConnect", false);
+      if (connectBtn) connectBtn.textContent = lane.linked ? "Reconnect Solana Wallet" : "Connect Solana Wallet";
+      setVisible("supportTokenRefresh", true);
+      setVisible("supportTokenClaim", !!lane.linked);
+      setDisabled("supportTokenRefresh", true);
+      setDisabled("supportTokenClaim", true);
+      return;
+    }
+
     const wallet = lane.walletDisplay || "Not linked";
     const tier = Number(lane.tier || 0);
     const checked = toLocal(lane.checkedAt);
@@ -220,6 +251,13 @@
     const token = support?.token || {};
     const combined = support?.combined || {};
     const tokenEnabled = isTokenLaneEnabled(token);
+    const tokenConfigured = isTokenLaneConfigured(token);
+
+    if (tokenEnabled && !tokenConfigured) {
+      setText("supportCombinedStatus", "Stars support is live. Token holder lane is staged and waiting for mint activation.");
+      setText("supportCombinedPerks", "Wallet linking is available now. Holder tier and cosmetics unlock after mint config + holder refresh.");
+      return;
+    }
 
     if (tokenEnabled && combined.dualSupporter) {
       setText(
@@ -428,7 +466,11 @@
       await refreshHolderStatus();
     } catch (err) {
       log("refreshHolderStatus failed:", err);
-      try { tg?.showAlert?.("Holder refresh failed. Please try again in a moment."); } catch (_) {}
+      const reason = String(err?.message || err || "");
+      const msg = reason === "TOKEN_MINT_NOT_CONFIGURED"
+        ? "Holder refresh is disabled until token mint config is set."
+        : "Holder refresh failed. Please try again in a moment.";
+      try { tg?.showAlert?.(msg); } catch (_) {}
     } finally {
       renderTokenState((_state || {}).token || {});
     }
@@ -449,6 +491,8 @@
       const msg =
         reason === "ALREADY_CLAIMED"
           ? "Weekly claim already used for this week."
+          : (reason === "TOKEN_MINT_NOT_CONFIGURED")
+            ? "Weekly claim is disabled until token mint config is set."
           : "Weekly claim failed. Please refresh your holder status and try again.";
       try { tg?.showAlert?.(msg); } catch (_) {}
     } finally {
