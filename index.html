@@ -4499,6 +4499,7 @@ body.bc-open #ahCommunityBtn{
   })(window.WEBAPP_VER);
 </script>
 
+  <script src="/js/boot_loaders.js?v=WEBAPP_VER"></script>
   <!-- 4) Główny skrypt aplikacji -->
 <script>
   const DEBUG_UI = true;
@@ -5130,153 +5131,24 @@ window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.BrokenContracts?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 
-let _pixiCoreLoading = null;
-let _combatLoading = null;
-let _fortressLoading = null;
-let _dojoLoading = null;
-let _referralsLoading = null;
-let _siegeLoading = null;
-let _oracleLoading = null;
-let _bloodMoonLoading = null;
-let _arenaLoading = null;
-
-async function ensurePixiCoreLoaded() {
-  if (window.PIXI) return true;
-  if (_pixiCoreLoading) return await _pixiCoreLoading;
-
-  _pixiCoreLoading = (async () => {
-    await loadScriptOnce("js/pixi.min.js");
-    return true;
-  })();
-
-  return await _pixiCoreLoading;
+if (window.AHBootLoaders?.init) {
+  window.AHBootLoaders.init({
+    apiPost,
+    tg: _tg,
+    dbg: _dbg,
+    loadScript: loadScriptOnce
+  });
+} else {
+  console.warn("[BootLoaders] module missing; lazy feature loaders unavailable");
+  const noopEnsure = async () => false;
+  window.ensureFortressLoaded = window.ensureFortressLoaded || noopEnsure;
+  window.ensureDojoLoaded = window.ensureDojoLoaded || noopEnsure;
+  window.ensureReferralsLoaded = window.ensureReferralsLoaded || noopEnsure;
+  window.ensureSiegeLoaded = window.ensureSiegeLoaded || noopEnsure;
+  window.ensureOracleLoaded = window.ensureOracleLoaded || noopEnsure;
+  window.ensureBloodMoonLoaded = window.ensureBloodMoonLoaded || noopEnsure;
+  window.ensureArenaLoaded = window.ensureArenaLoaded || noopEnsure;
 }
-
-async function ensureCombatLoaded() {
-  if (window.Combat?.rollHit || window.Combat?.resolve) return true;
-  if (_combatLoading) return await _combatLoading;
-
-  _combatLoading = (async () => {
-    await loadScriptOnce("js/combat.js");
-    return true;
-  })();
-
-  return await _combatLoading;
-}
-
-async function ensureFortressLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.Fortress?.open && window.Fortress?.init) {
-    try { window.Fortress.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  }
-  if (_fortressLoading) return await _fortressLoading;
-
-  _fortressLoading = (async () => {
-    await ensurePixiCoreLoaded();
-    await ensureCombatLoaded();
-    await loadScriptOnce("js/fortress.js");
-    try { window.Fortress?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  })();
-
-  return await _fortressLoading;
-}
-
-async function ensureDojoLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.Dojo?.open && window.Dojo?.init) {
-    try { window.Dojo.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  }
-  if (_dojoLoading) return await _dojoLoading;
-
-  _dojoLoading = (async () => {
-    await ensureCombatLoaded();
-    await loadScriptOnce("js/dojo.js");
-    try { window.Dojo?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  })();
-
-  return await _dojoLoading;
-}
-
-async function ensureReferralsLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.Referrals?.open && window.Referrals?.init) {
-    try { window.Referrals.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  }
-  if (_referralsLoading) return await _referralsLoading;
-
-  _referralsLoading = (async () => {
-    await loadScriptOnce("js/referrals.js");
-    try { window.Referrals?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    return true;
-  })();
-
-  return await _referralsLoading;
-}
-
-async function ensureSiegeLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.Siege?.open && window.Siege?.init) {
-    try { window.Siege.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__siegeInited = true;
-    return true;
-  }
-  if (_siegeLoading) return await _siegeLoading;
-
-  _siegeLoading = (async () => {
-    await ensurePixiCoreLoaded();
-    await loadScriptOnce("js/siege_pixi.js");
-    await loadScriptOnce("js/siege.js");
-    try { window.Siege?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__siegeInited = true;
-    return true;
-  })();
-
-  return await _siegeLoading;
-}
-
-async function ensureOracleLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.Oracle?.open && window.Oracle?.init) {
-    try { window.Oracle.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__oracleInited = true;
-    return true;
-  }
-  if (_oracleLoading) return await _oracleLoading;
-
-  _oracleLoading = (async () => {
-    await loadScriptOnce("js/oracle.js");
-    try { window.Oracle?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__oracleInited = true;
-    return true;
-  })();
-
-  return await _oracleLoading;
-}
-
-async function ensureBloodMoonLoaded(apiPostDep = apiPost, tgDep = _tg, dbgDep = _dbg) {
-  if (window.BloodMoon?.open && window.BloodMoon?.init) {
-    try { window.BloodMoon.init({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__bloodMoonInited = true;
-    return true;
-  }
-  if (_bloodMoonLoading) return await _bloodMoonLoading;
-
-  _bloodMoonLoading = (async () => {
-    await loadScriptOnce("js/bloodmoon.js");
-    try { window.BloodMoon?.init?.({ apiPost: apiPostDep, tg: tgDep, dbg: dbgDep }); } catch (_) {}
-    window.__bloodMoonInited = true;
-    return true;
-  })();
-
-  return await _bloodMoonLoading;
-}
-
-window.ensureFortressLoaded = ensureFortressLoaded;
-window.ensureDojoLoaded = ensureDojoLoaded;
-window.ensureReferralsLoaded = ensureReferralsLoaded;
-window.ensureSiegeLoaded = ensureSiegeLoaded;
-window.ensureOracleLoaded = ensureOracleLoaded;
-window.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
  
       // ✅ PATCH A — auto-open missions when ?section=missions
 (function autoOpenSection() {
@@ -5296,33 +5168,9 @@ window.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
 window.Shop.init({ apiPost, tg: window.tg, dbg: window.DBG });
 window.Forge && window.Forge.init({ apiPost, tg: _tg, dbg: _dbg });
 
-/* ===== ARENA: LAZY-LOAD (safe even if not in HTML) ===== */
-async function ensureArenaLoaded(apiPost, tg, dbg) {
-  // If Arena already exists (loaded via HTML or earlier), just (re)init and return.
-  if (window.Arena?.open) {
-    window.Arena?.init?.({ apiPost, tg, dbg });
-    return true;
-  }
-
-  if (_arenaLoading) {
-    await _arenaLoading;
-  } else {
-    _arenaLoading = (async () => {
-      await loadScriptOnce("js/arena.js");
-      return true;
-    })();
-    await _arenaLoading;
-  }
-
-  // init after load (idempotent in your arena.js)
-  window.Arena?.init?.({ apiPost, tg, dbg });
-  return true;
-}
-
-window.ensureArenaLoaded = ensureArenaLoaded;
 /* Startup preloads for skins/adopt/updates were removed; they now load on first open. */
 
-/* ===== skins/adopt/updates: init od razu (bezpiecznie, nawet jeśli js nie jest w HTML) ===== */
+/* ===== skins/adopt/updates: lazy on first open ===== */
 
 
 /* ===== Adopt: open on button/pin click (delegation-safe) ===== */
@@ -7403,67 +7251,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   document.head.appendChild(s);
 })();
 </script>
-  <!-- ORACLE (loader + init) -->
-<script>
-(function loadOracle(){
-  return;
-  const tg = window.Telegram?.WebApp || null;
-  const v = String(window.WEBAPP_VER || "oracle");
-  const s = document.createElement("script");
-  s.src = "/js/oracle.js?v=" + encodeURIComponent(v);
-
-  s.onload = () => {
-    console.log("[Oracle] script loaded:", s.src);
-    window.waitForApiPostReady?.(6000).then((apiPost) => {
-      try {
-        if (!window.__oracleInited && window.Oracle?.init) {
-          window.Oracle.init({ tg, apiPost, dbg: !!window.DBG });
-          window.__oracleInited = true;
-          console.log("✅ Oracle module initialized");
-        }
-      } catch (e) {
-        console.warn("❌ Oracle.init failed", e);
-      }
-    }).catch(() => console.warn("[Oracle] apiPost not ready"));
-  };
-
-  s.onerror = () => console.warn("[Oracle] FAILED to load:", s.src);
-  document.head.appendChild(s);
-})();
-</script>
-<!-- BLOOD-MOON TOWER (loader + init) -->
-<script>
-(function loadBloodMoon(){
-  return;
-  const tg = window.Telegram?.WebApp || null;
-  const v = String(window.WEBAPP_VER || "bloodmoon");
-  const s = document.createElement("script");
-  s.src = "/js/bloodmoon.js?v=" + encodeURIComponent(v);
-
-  s.onload = () => {
-    console.log("[BloodMoon] script loaded:", s.src);
-    window.waitForApiPostReady?.(6000).then((apiPost) => {
-      try {
-        if (!window.__bloodMoonInited && window.BloodMoon?.init) {
-          window.BloodMoon.init({
-            tg,
-            apiPost,
-            dbg: !!window.DBG
-          });
-          window.__bloodMoonInited = true;
-          console.log("✅ BloodMoon module initialized");
-        }
-      } catch (e) {
-        console.warn("❌ BloodMoon.init failed", e);
-      }
-    }).catch(() => console.warn("[BloodMoon] apiPost not ready"));
-  };
-
-  s.onerror = () => console.warn("[BloodMoon] FAILED to load:", s.src);
-  document.head.appendChild(s);
-})();
-</script>
-  
 <!-- FACTION HQ (loader + init) -->
 <script>
 (function loadFactionHQ(){
@@ -7704,6 +7491,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
