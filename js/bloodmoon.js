@@ -10,10 +10,12 @@
   let _battleReplayTimer = 0;
   let _battlePixiLoadPromise = null;
   let _battlePixiRunId = 0;
+  let _feedExpanded = false;
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
   const BATTLE_STAGE_ID = "bloodMoonBattleStage";
+  const FEED_MOUNT_ID = "bloodMoonFeedMount";
 
   function dbg(...args) {
     if (_dbg) console.log("[BloodMoon]", ...args);
@@ -502,6 +504,46 @@
   color:rgba(255,255,255,.62);
   margin-top:2px;
 }
+.bm-feed{
+  align-items:flex-start;
+  padding:9px 11px;
+}
+.bm-feed-text{
+  font-size:13px;
+  line-height:1.35;
+}
+.bm-feed-sub{
+  margin-top:3px;
+  font-size:11px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.56);
+}
+.bm-feed-stack{
+  margin-top:6px;
+}
+.bm-feed-toggle{
+  width:100%;
+  margin-top:8px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  color:rgba(255,255,255,.80);
+  font-size:12px;
+  font-weight:700;
+  padding:8px 10px;
+  text-align:left;
+  cursor:pointer;
+}
+.bm-feed-toggle.is-open{
+  background:rgba(255,255,255,.05);
+}
+.bm-feed-older{
+  margin-top:8px;
+}
+.bm-feed-older .bm-feed{
+  opacity:.92;
+}
 
 .bm-chip{
   display:inline-flex;
@@ -576,32 +618,39 @@
 
 .bm-battle-head{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:10px;
+}
+.bm-battle-head-main{
+  min-width:0;
+  flex:1 1 auto;
 }
 .bm-battle-title{
-  font-size:18px;
+  font-size:16px;
   font-weight:900;
   color:#fff;
+  line-height:1.2;
 }
 .bm-battle-sub{
-  margin-top:4px;
-  font-size:12px;
-  color:rgba(255,255,255,.68);
+  margin-top:2px;
+  font-size:11px;
+  color:rgba(255,255,255,.62);
+  line-height:1.3;
 }
 .bm-battle-replay{
   border:1px solid rgba(255,255,255,.12);
   outline:0;
   cursor:pointer;
-  border-radius:12px;
-  padding:10px 12px;
+  border-radius:10px;
+  padding:7px 10px;
   background:linear-gradient(180deg, rgba(126,18,34,.95), rgba(88,13,24,.95));
   color:#fff;
   font-weight:800;
-  letter-spacing:.4px;
+  font-size:11px;
+  letter-spacing:.02em;
   white-space:nowrap;
-  box-shadow:0 10px 20px rgba(0,0,0,.22);
+  box-shadow:0 8px 16px rgba(0,0,0,.20);
 }
 .bm-battle-replay:hover{
   transform:translateY(-1px);
@@ -609,20 +658,19 @@
 .bm-battle-meta{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
-  margin-top:12px;
+  gap:6px;
+  margin-top:8px;
 }
 .bm-battle-chip{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  min-height:28px;
-  padding:0 10px;
+  gap:4px;
+  min-height:24px;
+  padding:0 9px;
   border-radius:999px;
-  font-size:11px;
+  font-size:10px;
   font-weight:800;
-  letter-spacing:.4px;
-  text-transform:uppercase;
+  letter-spacing:.03em;
   color:#fff;
   background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.08);
@@ -638,12 +686,12 @@
   color:#ff9cab;
 }
 .bm-battle-stage-slot{
-  margin-top:14px;
+  margin-top:10px;
 }
 .bm-battle-stage{
   position:relative;
   overflow:hidden;
-  min-height:300px;
+  min-height:286px;
   border-radius:22px;
   border:1px solid rgba(255,255,255,.08);
   background:
@@ -656,7 +704,7 @@
 }
 @media (max-width:639px){
   .bm-battle-stage{
-    min-height:276px;
+    min-height:252px;
   }
 }
 .bm-battle-stage::before{
@@ -706,8 +754,8 @@
   display:flex;
   flex-direction:column;
   justify-content:space-between;
-  gap:14px;
-  padding:14px;
+  gap:10px;
+  padding:12px;
   pointer-events:none;
 }
 .bm-battle-stage-top{
@@ -747,13 +795,13 @@
   margin:auto 0;
 }
 .bm-battle-stage-wave{
-  max-width:min(100%, 260px);
-  padding:7px 12px;
+  max-width:min(100%, 252px);
+  padding:6px 10px;
   border-radius:999px;
   background:rgba(8,12,20,.40);
   border:1px solid rgba(255,255,255,.08);
   color:#fff;
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
   letter-spacing:.04em;
 }
@@ -775,7 +823,7 @@
 .bm-battle-hit-sub{
   max-width:min(100%, 300px);
   color:rgba(255,255,255,.78);
-  font-size:12px;
+  font-size:11px;
   line-height:1.42;
 }
 .bm-battle-stage-bottom{
@@ -1236,80 +1284,307 @@
     }
   }
 
+  function battleReplayTurns(battle) {
+    if (!battle || typeof battle !== "object") return [];
+
+    const leftHpStart = Math.max(
+      1,
+      Number(
+        battle?.left?.hpStart ||
+        battle?.player?.hpStart ||
+        battle?.player?.hpMax ||
+        battle?.left?.hpMax ||
+        1
+      )
+    );
+    const leftHpMax = Math.max(
+      1,
+      Number(
+        battle?.left?.hpMax ||
+        battle?.player?.hpMax ||
+        battle?.player?.hpStart ||
+        leftHpStart
+      )
+    );
+    const rightHpStart = Math.max(
+      0,
+      Number(
+        battle?.right?.hpStart ||
+        battle?.enemy?.hpBefore ||
+        battle?.enemy?.hpMax ||
+        0
+      )
+    );
+    const rightHpMax = Math.max(
+      1,
+      Number(
+        battle?.right?.hpMax ||
+        battle?.enemy?.hpMax ||
+        Math.max(1, rightHpStart)
+      )
+    );
+
+    const rawTurns = Array.isArray(battle?.turns)
+      ? battle.turns
+      : Array.isArray(battle?.events)
+        ? battle.events
+        : [];
+
+    if (rawTurns.length) {
+      let leftHp = leftHpStart;
+      let rightHp = rightHpStart;
+      return rawTurns
+        .filter((row) => row && typeof row === "object")
+        .map((row, idx) => {
+          const actor = row.actor === "right" ? "right" : "left";
+          const target = row.target === "left" ? "left" : "right";
+          let kind = String(row.kind || row.type || "hit").trim().toLowerCase();
+          if (kind === "evade") kind = "miss";
+          if (!["hit", "crit", "block", "heal", "miss", "tick", "finish"].includes(kind)) {
+            kind = "hit";
+          }
+
+          const value = Math.max(0, Number(row.value || row.amount || row.damage || 0));
+          const nextLeftHpRaw = row.leftHpAfter ?? row.left_hp_after;
+          const nextRightHpRaw = row.rightHpAfter ?? row.right_hp_after;
+          const nextTargetHpRaw = row.targetHpAfter ?? row.target_hp_after;
+          const nextSelfHpRaw = row.selfHpAfter ?? row.self_hp_after;
+
+          let nextLeftHp = Number.isFinite(Number(nextLeftHpRaw))
+            ? Math.max(0, Number(nextLeftHpRaw))
+            : leftHp;
+          let nextRightHp = Number.isFinite(Number(nextRightHpRaw))
+            ? Math.max(0, Number(nextRightHpRaw))
+            : rightHp;
+
+          if (!Number.isFinite(Number(nextLeftHpRaw)) && target === "left" && Number.isFinite(Number(nextTargetHpRaw))) {
+            nextLeftHp = Math.max(0, Number(nextTargetHpRaw));
+          }
+          if (!Number.isFinite(Number(nextRightHpRaw)) && target === "right" && Number.isFinite(Number(nextTargetHpRaw))) {
+            nextRightHp = Math.max(0, Number(nextTargetHpRaw));
+          }
+
+          if (!Number.isFinite(Number(nextLeftHpRaw)) && target === "left" && kind !== "miss" && kind !== "block") {
+            nextLeftHp = Math.max(0, leftHp - value);
+          }
+          if (!Number.isFinite(Number(nextRightHpRaw)) && target === "right" && kind !== "miss" && kind !== "block") {
+            nextRightHp = Math.max(0, rightHp - value);
+          }
+
+          leftHp = nextLeftHp;
+          rightHp = nextRightHp;
+
+          const targetHpAfter = target === "left" ? nextLeftHp : nextRightHp;
+          const selfHpAfter = Number.isFinite(Number(nextSelfHpRaw))
+            ? Math.max(0, Number(nextSelfHpRaw))
+            : actor === "left"
+              ? nextLeftHp
+              : nextRightHp;
+
+          return {
+            turn: Math.max(1, Number(row.turn || row.t || (idx + 1))),
+            actor,
+            target,
+            kind,
+            value,
+            targetHpAfter,
+            selfHpAfter,
+            leftHpAfter: nextLeftHp,
+            rightHpAfter: nextRightHp,
+            isCrit: !!row.isCrit || kind === "crit",
+            defeat: !!row.defeat || (target === "left" ? nextLeftHp <= 0 : nextRightHp <= 0),
+            label: String(row.label || row.text || row.message || "").trim(),
+          };
+        });
+    }
+
+    const damage = Math.max(0, Number(battle?.attack?.damage || 0));
+    const crit = !!battle?.attack?.crit;
+    const rightHpAfter = Math.max(
+      0,
+      Number(
+        battle?.right?.hpEnd ??
+        battle?.enemy?.hpAfter ??
+        Math.max(0, rightHpStart - damage)
+      )
+    );
+
+    return [{
+      turn: 1,
+      actor: "left",
+      target: "right",
+      kind: crit ? "crit" : "hit",
+      value: damage,
+      targetHpAfter: rightHpAfter,
+      selfHpAfter: leftHpStart,
+      leftHpAfter: leftHpStart,
+      rightHpAfter,
+      isCrit: crit,
+      defeat: rightHpAfter <= 0,
+      label: crit
+        ? `Critical strike landed for ${fmtNum(damage)} damage.`
+        : `Strike connected for ${fmtNum(damage)} damage.`,
+    }];
+  }
+
+  function battleReplayInfo(battle) {
+    const turns = battleReplayTurns(battle);
+    const lastTurn = turns.length ? turns[turns.length - 1] : null;
+    const leftHpStart = Math.max(
+      1,
+      Number(
+        battle?.left?.hpStart ||
+        battle?.player?.hpStart ||
+        battle?.player?.hpMax ||
+        1
+      )
+    );
+    const leftHpMax = Math.max(
+      1,
+      Number(
+        battle?.left?.hpMax ||
+        battle?.player?.hpMax ||
+        leftHpStart
+      )
+    );
+    const rightHpStart = Math.max(
+      0,
+      Number(
+        battle?.right?.hpStart ||
+        battle?.enemy?.hpBefore ||
+        battle?.enemy?.hpMax ||
+        0
+      )
+    );
+    const rightHpMax = Math.max(
+      1,
+      Number(
+        battle?.right?.hpMax ||
+        battle?.enemy?.hpMax ||
+        Math.max(1, rightHpStart)
+      )
+    );
+    const summary = battle?.summary && typeof battle.summary === "object" ? battle.summary : {};
+    const waveCleared = !!battle?.waveCleared || !!lastTurn?.defeat || (lastTurn?.rightHpAfter || 0) <= 0;
+    const hasCrit = turns.some((turn) => !!turn?.isCrit) || !!battle?.attack?.crit;
+
+    return {
+      turns,
+      turnCount: Math.max(
+        1,
+        Number(summary?.turns || 0) || turns.length || 1
+      ),
+      outcomeLabel: String(
+        summary?.outcomeLabel ||
+        (waveCleared ? "Wave Broken" : hasCrit ? "Critical Strike" : "Direct Hit")
+      ),
+      hasCrit,
+      waveCleared,
+      winner: String(battle?.winner || (waveCleared ? "left" : "draw")),
+      player: {
+        name: String(battle?.left?.name || battle?.player?.name || "You"),
+        faction: String(battle?.left?.faction || battle?.player?.faction || ""),
+        avatarUrl: String(battle?.left?.avatarUrl || battle?.player?.avatarUrl || ""),
+        hpStart: leftHpStart,
+        hpMax: leftHpMax,
+        hpEnd: Math.max(0, Number(battle?.left?.hpEnd ?? lastTurn?.leftHpAfter ?? leftHpStart)),
+      },
+      enemy: {
+        name: String(battle?.right?.name || battle?.enemy?.name || `Blood-Moon Wave ${Number(battle?.wave || 1)}`),
+        faction: String(battle?.right?.faction || battle?.enemy?.faction || "bloodmoon"),
+        avatarUrl: String(battle?.right?.avatarUrl || ""),
+        hpStart: rightHpStart,
+        hpMax: rightHpMax,
+        hpEnd: Math.max(0, Number(battle?.right?.hpEnd ?? battle?.enemy?.hpAfter ?? lastTurn?.rightHpAfter ?? rightHpStart)),
+      },
+    };
+  }
+
+  function battleReplayDurationMs(battle) {
+    const info = battleReplayInfo(battle);
+    return Math.max(1400, 340 + info.turns.length * 760);
+  }
+
   function buildBattleLogRows(battle) {
     if (!battle || typeof battle !== "object") return [];
 
+    const info = battleReplayInfo(battle);
     const wave = Number(battle.wave || battle.enemy?.wave || 1);
     const nextWave = Number(battle.nextWave || 0);
-    const damage = Number(battle.attack?.damage || 0);
-    const hpAfter = Math.max(0, Number(battle.enemy?.hpAfter || 0));
-    const hpMax = Math.max(1, Number(battle.enemy?.hpMax || 1));
-    const playerName = String(battle.player?.name || "You");
-    const rows = [];
 
-    rows.push({
-      text: `${playerName} stepped into Blood-Moon Wave ${fmtNum(wave)}.`,
-      sub: `Attempt ${fmtNum(battle.attemptNo || 1)} • ${factionLabel(battle.player?.faction)}`,
+    return info.turns.map((turn, idx) => {
+      const actorName = turn.actor === "right" ? info.enemy.name : info.player.name;
+      const targetName = turn.target === "left" ? info.player.name : info.enemy.name;
+
+      let text = String(turn.label || "").trim();
+      if (!text) {
+        if (turn.kind === "miss") {
+          text = `${actorName} missed ${targetName}.`;
+        } else if (turn.kind === "crit") {
+          text = `${actorName} crit ${targetName} for ${fmtNum(turn.value)}.`;
+        } else if (turn.kind === "heal") {
+          text = `${actorName} healed for ${fmtNum(turn.value)}.`;
+        } else if (turn.kind === "finish") {
+          text = `${targetName} fell.`;
+        } else {
+          text = `${actorName} hit ${targetName} for ${fmtNum(turn.value)}.`;
+        }
+      }
+
+      let sub = turn.target === "left"
+        ? `${info.player.name} HP ${fmtNum(turn.leftHpAfter)} / ${fmtNum(info.player.hpMax)}`
+        : `${info.enemy.name} HP ${fmtNum(turn.rightHpAfter)} / ${fmtNum(info.enemy.hpMax)}`;
+
+      if (turn.defeat && turn.target === "right") {
+        sub = battle.waveCleared && nextWave > wave
+          ? `Wave ${fmtNum(wave)} collapsed. Wave ${fmtNum(nextWave)} is now active.`
+          : `Wave ${fmtNum(wave)} collapsed under the strike.`;
+      } else if (idx === info.turns.length - 1 && !info.waveCleared) {
+        sub = `${info.outcomeLabel} • ${info.enemy.name} remains at ${fmtNum(info.enemy.hpEnd)} / ${fmtNum(info.enemy.hpMax)} HP.`;
+      }
+
+      return { text, sub };
     });
-
-    rows.push({
-      text: battle.attack?.crit
-        ? `Critical strike landed for ${fmtNum(damage)} damage.`
-        : `Strike connected for ${fmtNum(damage)} damage.`,
-      sub: battle.attack?.crit ? "The beast staggered under a crit." : "A clean hit ripped through the veil.",
-    });
-
-    rows.push({
-      text: battle.waveCleared
-        ? `Wave ${fmtNum(wave)} collapsed.`
-        : `The wave still has ${fmtNum(hpAfter)} / ${fmtNum(hpMax)} HP.`,
-      sub: battle.waveCleared && nextWave > wave
-        ? `Wave ${fmtNum(nextWave)} is now active.`
-        : battle.waveCleared
-        ? "The Blood-Moon moment is sealed."
-        : "The target survived this strike.",
-    });
-
-    return rows;
   }
 
   function renderBattlePanel(battle) {
     const hasBattle = !!(battle && typeof battle === "object");
+    const replay = battleReplayInfo(battle);
     const wave = Math.max(1, Number(battle?.wave || battle?.enemy?.wave || _state?.currentWave || 1));
-    const attemptNo = Math.max(1, Number(battle?.attemptNo || 1));
     const damage = Math.max(0, Number(battle?.attack?.damage || 0));
-    const hpBefore = Math.max(0, Number(battle?.enemy?.hpBefore || battle?.enemy?.hpMax || 0));
-    const hpAfter = Math.max(0, Number(battle?.enemy?.hpAfter || 0));
-    const hpMax = Math.max(1, Number(battle?.enemy?.hpMax || hpBefore || _state?.waveHpMax || 1));
+    const hpBefore = Math.max(0, Number(battle?.enemy?.hpBefore || replay.enemy.hpStart || battle?.enemy?.hpMax || 0));
+    const hpAfter = Math.max(0, Number(battle?.enemy?.hpAfter || replay.enemy.hpEnd || 0));
+    const hpMax = Math.max(1, Number(battle?.enemy?.hpMax || replay.enemy.hpMax || hpBefore || _state?.waveHpMax || 1));
     const beforePct = pct((hpBefore / hpMax) * 100);
     const afterPct = pct((hpAfter / hpMax) * 100);
-    const playerName = String(battle?.player?.name || "You");
+    const playerName = String(replay.player.name || battle?.player?.name || "You");
     const playerLevel = Math.max(1, Number(battle?.player?.level || 1));
-    const playerFaction = factionLabel(battle?.player?.faction) || "Unbound";
-    const enemyName = String(battle?.enemy?.name || `Blood-Moon Wave ${wave}`);
+    const playerFaction = factionLabel(replay.player.faction || battle?.player?.faction) || "Unbound";
+    const enemyName = String(replay.enemy.name || battle?.enemy?.name || `Blood-Moon Wave ${wave}`);
     const stamp = fmtBattleStamp(battle?.ts) || "Fresh strike";
-    const logs = buildBattleLogRows(battle);
-    const impactLabel = battle?.waveCleared
-      ? "Wave Broken"
-      : battle?.attack?.crit
-      ? "Critical Strike"
-      : "Direct Hit";
-    const impactSub = battle?.waveCleared
-      ? `Wave ${fmtNum(wave)} gave way under the pressure.`
-      : battle?.attack?.crit
-      ? "A clean crit ripped into the target."
-      : "The tower shuddered from the impact.";
+    const impactLabel = replay.outcomeLabel;
+    const statusLabel = replay.waveCleared ? "Cleared" : "Active";
+    const resultLabel = replay.waveCleared ? "Wave Broken" : impactLabel;
+    const statusClass = replay.waveCleared ? " clear" : replay.hasCrit ? " crit" : "";
 
     if (!hasBattle) {
+      const liveWave = Math.max(1, Number(_state?.currentWave || 1));
+      const liveFaction = factionLabel(_state?.myFaction) || "Unbound";
       return `
         <div class="bm-card">
           <div class="bm-battle-head">
-            <div>
-              <div class="bm-label">Battle Viewer</div>
-              <div class="bm-battle-title">Raid Strike Viewer Ready</div>
-              <div class="bm-battle-sub">Your next Blood-Moon hit will appear here as a focused raid strike scene.</div>
+            <div class="bm-battle-head-main">
+              <div class="bm-battle-title">Battle Watch</div>
+              <div class="bm-battle-sub">Waiting for your next resolved strike.</div>
             </div>
             <div class="bm-battle-chip">Waiting</div>
+          </div>
+
+          <div class="bm-battle-meta">
+            <div class="bm-battle-chip">Wave ${fmtNum(liveWave)}</div>
+            <div class="bm-battle-chip">${esc(liveFaction)}</div>
+            <div class="bm-battle-chip">Status Waiting</div>
+            <div class="bm-battle-chip">Result Pending</div>
           </div>
 
           <div id="${BATTLE_STAGE_ID}" class="bm-battle-stage-slot" data-bm-stage="lite">
@@ -1317,7 +1592,7 @@
               <div class="bm-battle-placeholder">
                 <div class="bm-battle-placeholder-core"></div>
                 <div class="bm-battle-placeholder-title">Battle Stage Primed</div>
-                <div class="bm-battle-sub">Hit the tower once and this card will turn into a replay-lite battle viewer.</div>
+                <div class="bm-battle-sub">Strike the tower once to load the latest replay here.</div>
               </div>
             </div>
           </div>
@@ -1328,25 +1603,23 @@
     return `
       <div class="bm-card">
         <div class="bm-battle-head">
-          <div>
-            <div class="bm-label">Battle Viewer</div>
-            <div class="bm-battle-title">Last Raid Strike</div>
-            <div class="bm-battle-sub">A focused strike scene driven by the real Blood-Moon battle summary.</div>
+          <div class="bm-battle-head-main">
+            <div class="bm-battle-title">Battle Watch</div>
+            <div class="bm-battle-sub">Last resolved Blood-Moon strike.</div>
           </div>
-          <button class="bm-battle-replay" data-bm-replay type="button">Replay Strike</button>
+          <button class="bm-battle-replay" data-bm-replay type="button">Replay</button>
         </div>
 
         <div class="bm-battle-meta">
           <div class="bm-battle-chip">Wave ${fmtNum(wave)}</div>
-          <div class="bm-battle-chip">Attempt ${fmtNum(attemptNo)}</div>
-          <div class="bm-battle-chip">${esc(stamp)}</div>
-          ${battle?.attack?.crit ? `<div class="bm-battle-chip crit">CRIT</div>` : ""}
-          ${battle?.waveCleared ? `<div class="bm-battle-chip clear">CLEARED</div>` : ""}
+          <div class="bm-battle-chip">${esc(playerFaction)}</div>
+          <div class="bm-battle-chip${statusClass}">Status ${esc(statusLabel)}</div>
+          <div class="bm-battle-chip">Result ${esc(resultLabel)}</div>
         </div>
 
         <div id="${BATTLE_STAGE_ID}" class="bm-battle-stage-slot" data-bm-stage="lite" data-bm-battle-id="${esc(battle?.battleId || "")}">
           <div
-            class="bm-battle-stage ${battle?.attack?.crit ? "is-crit" : ""} ${battle?.waveCleared ? "is-cleared" : ""}"
+            class="bm-battle-stage ${replay.hasCrit ? "is-crit" : ""} ${replay.waveCleared ? "is-cleared" : ""}"
             style="--bm-before-pct:${beforePct}%;--bm-after-pct:${afterPct}%"
           >
             <div class="bm-battle-pixi-host" data-bm-pixi-host></div>
@@ -1357,15 +1630,15 @@
               </div>
 
               <div class="bm-battle-stage-focus">
-                <div class="bm-battle-stage-wave">${esc(enemyName)} • Wave ${fmtNum(wave)}</div>
-                <div class="bm-battle-hit-value ${battle?.attack?.crit ? "is-crit" : ""}">-${fmtNum(damage)}</div>
-                <div class="bm-battle-hit-sub">${esc(impactLabel)} • ${esc(impactSub)}</div>
+                <div class="bm-battle-stage-wave">${esc(enemyName)} - ${fmtNum(replay.turnCount)} turns</div>
+                <div class="bm-battle-hit-value ${replay.hasCrit ? "is-crit" : ""}">-${fmtNum(damage)}</div>
+                <div class="bm-battle-hit-sub">${esc(impactLabel)}</div>
               </div>
 
               <div class="bm-battle-stage-bottom">
                 <div class="bm-battle-stage-player">
                   <div class="bm-battle-stage-playerline">${esc(playerName)}</div>
-                  <div class="bm-battle-stage-playersub">${esc(playerFaction)} • Lv ${fmtNum(playerLevel)}</div>
+                  <div class="bm-battle-stage-playersub">${esc(playerFaction)} - Lv ${fmtNum(playerLevel)} - ${fmtNum(replay.player.hpEnd)} / ${fmtNum(replay.player.hpMax)} HP</div>
                 </div>
 
                 <div class="bm-battle-stage-enemy">
@@ -1388,18 +1661,6 @@
             </div>
           </div>
         </div>
-
-        <div class="bm-battle-log">
-          ${logs.map((row, idx) => `
-            <div class="bm-battle-log-item">
-              <div class="bm-battle-log-no">${idx + 1}</div>
-              <div>
-                <div class="bm-battle-log-text">${esc(row.text || "")}</div>
-                <div class="bm-battle-log-sub">${esc(row.sub || "")}</div>
-              </div>
-            </div>
-          `).join("")}
-        </div>
       </div>
     `;
   }
@@ -1408,6 +1669,7 @@
     const battle = opts?.battle && typeof opts.battle === "object" ? opts.battle : getLastBattle();
     const stage = battleLiteStageEl();
     if (!battle || !stage) return false;
+    const replay = battleReplayInfo(battle);
 
     stopBattlePlayback(false);
     stage.classList.remove("is-replaying");
@@ -1416,14 +1678,14 @@
 
     if (opts?.haptic !== false) {
       try {
-        _tg?.HapticFeedback?.impactOccurred?.(battle?.attack?.crit ? "medium" : "light");
+        _tg?.HapticFeedback?.impactOccurred?.(replay.hasCrit ? "medium" : "light");
       } catch (_) {}
     }
 
     _battleReplayTimer = window.setTimeout(() => {
       stage.classList.remove("is-replaying");
       _battleReplayTimer = 0;
-    }, 1400);
+    }, battleReplayDurationMs(battle));
 
     void playLastBattlePixi(battle, {
       animate: opts?.animate !== false,
@@ -1468,20 +1730,97 @@
     `).join("");
   }
 
-  function renderFeed(rows) {
+  function feedKindLabel(kind, row = null) {
+    const key = String(kind || "").trim().toLowerCase();
+    if (key === "attack") return row?.crit ? "Critical Strike" : "Strike";
+    if (key === "wave_clear") return "Wave Cleared";
+    if (key === "claim") return "Reward Claim";
+    if (!key) return "Event";
+    return key
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function compactFeedText(text) {
+    const clean = String(text || "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!clean) return "";
+    if (clean.length <= 118) return clean;
+    return `${clean.slice(0, 115).trimEnd()}...`;
+  }
+
+  function normalizeFeedRows(rows) {
     rows = Array.isArray(rows) ? rows : [];
-    if (!rows.length) return `<div class="bm-empty">The tower is silent… for now.</div>`;
+    const out = [];
+    const seen = new Set();
+
+    for (const raw of rows) {
+      const row = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : { text: raw };
+      const text = compactFeedText(row.text || row.message || "");
+      if (!text) continue;
+
+      const kindRaw = String(row.kind || row.type || "event").trim().toLowerCase() || "event";
+      const key = `${kindRaw}|${text.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const ts = Number(row.ts || row.time || row.timestamp || 0);
+      out.push({
+        text,
+        kind: feedKindLabel(kindRaw, row),
+        ts: Number.isFinite(ts) ? ts : 0,
+      });
+    }
+
+    if (!out.length) return out;
+    if (out.every((row) => row.ts > 0)) {
+      out.sort((a, b) => b.ts - a.ts);
+    }
+
+    return out;
+  }
+
+  function renderFeedRows(rows) {
+    return rows.map((row) => `
+      <div class="bm-feed">
+        <div class="bm-feed-left">
+          <div class="bm-feed-text">${esc(row.text || "")}</div>
+          <div class="bm-feed-sub">${esc(row.kind || "Event")}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderFeed(rows) {
+    const normalized = normalizeFeedRows(rows);
+    if (!normalized.length) return `<div class="bm-empty">The tower is silent… for now.</div>`;
+
+    const previewCount = Math.min(3, normalized.length);
+    const latestRows = normalized.slice(0, previewCount);
+    const olderRows = normalized.slice(previewCount);
+    if (!olderRows.length) _feedExpanded = false;
 
     return `
-      <div class="bm-list">
-        ${rows.map((row) => `
-          <div class="bm-feed">
-            <div class="bm-feed-left">
-              <div class="bm-feed-text">${esc(row.text || "")}</div>
-              <div class="bm-feed-sub">${esc(row.kind || "event")}</div>
+      <div class="bm-feed-stack">
+        <div class="bm-list">
+          ${renderFeedRows(latestRows)}
+        </div>
+        ${olderRows.length ? `
+          <button
+            class="bm-feed-toggle ${_feedExpanded ? "is-open" : ""}"
+            data-bm-feed-toggle
+            type="button"
+            aria-expanded="${_feedExpanded ? "true" : "false"}"
+          >
+            ${_feedExpanded ? "Hide earlier carnage" : `Earlier carnage (${fmtNum(olderRows.length)})`}
+          </button>
+          ${_feedExpanded ? `
+            <div class="bm-list bm-feed-older">
+              ${renderFeedRows(olderRows)}
             </div>
-          </div>
-        `).join("")}
+          ` : ""}
+        ` : ""}
       </div>
     `;
   }
@@ -1536,6 +1875,19 @@
     `;
   }
 
+  function bindFeedToggle() {
+    const feedToggle = document.querySelector("[data-bm-feed-toggle]");
+    if (!feedToggle) return;
+
+    feedToggle.addEventListener("click", () => {
+      _feedExpanded = !_feedExpanded;
+      const mount = document.getElementById(FEED_MOUNT_ID);
+      if (!mount) return;
+      mount.innerHTML = renderFeed(_state?.recentFeed);
+      bindFeedToggle();
+    });
+  }
+
   function bindActions() {
     document.querySelectorAll("[data-bm-replay]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1560,6 +1912,8 @@
         await attack();
       });
     }
+
+    bindFeedToggle();
   }
 
   function render(data) {
@@ -1635,6 +1989,13 @@
     ${renderBattlePanel(lastBattle)}
 
     <div class="bm-card">
+      <div class="bm-label">LIVE CARNAGE FEED</div>
+      <div id="${FEED_MOUNT_ID}">
+        ${renderFeed(_state.recentFeed)}
+      </div>
+    </div>
+
+    <div class="bm-card">
       <div class="bm-label">FACTION WAR • LIVE RACE</div>
       ${renderRace(sortedFactions, dominancePct)}
     </div>
@@ -1676,10 +2037,6 @@
       ${renderTopPlayers(_state.topPlayers)}
     </div>
 
-    <div class="bm-card">
-      <div class="bm-label">LIVE CARNAGE FEED</div>
-      ${renderFeed(_state.recentFeed)}
-    </div>
   `;
 
   bindActions();

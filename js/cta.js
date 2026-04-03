@@ -288,6 +288,32 @@
     return { context, now, why, reward, go };
   }
 
+  function isBloodmoonPrimary(primary) {
+    const kind = asText(primary?.kind).toLowerCase();
+    const type = asText(primary?.target?.type).toLowerCase();
+    return type === "bloodmoon" || kind.startsWith("bloodmoon_");
+  }
+
+  function bloodmoonCompactLine(primary, guide) {
+    const kind = asText(primary?.kind).toLowerCase();
+    if (kind === "bloodmoon_claim_ready") {
+      const count = asInt(primary?.meta?.claimCount, 0);
+      if (count > 0) return `${count} reward${count === 1 ? "" : "s"} ready in Blood-Moon Tower`;
+      return "Blood-Moon rewards are ready to claim";
+    }
+    if (kind === "bloodmoon_live") {
+      return asText(primary?.subtitle) || "Blood-Moon raid is live now";
+    }
+    return asText(primary?.subtitle) || guide.now || "Blood-Moon Tower activity is live";
+  }
+
+  function bloodmoonCompactAction(primary, guide) {
+    const kind = asText(primary?.kind).toLowerCase();
+    if (kind === "bloodmoon_live") return "Watch Raid";
+    if (kind === "bloodmoon_claim_ready") return "Open Tower";
+    return asText(guide?.go) || "Open Tower";
+  }
+
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
 
@@ -348,6 +374,43 @@
 }
 .cta-card:hover{
   border-color: rgba(255,255,255,.14);
+}
+.cta-card.is-bloodmoon-compact{
+  padding:5px 8px;
+  border-radius:999px;
+  background:
+    radial-gradient(circle at 14% 50%, rgba(255,122,138,.14), transparent 48%),
+    linear-gradient(180deg, rgba(23,12,16,.86), rgba(14,10,12,.94));
+  border-color:rgba(255,122,138,.26);
+  box-shadow:
+    0 6px 12px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+.cta-card.is-bloodmoon-compact:hover{
+  border-color:rgba(255,151,163,.34);
+}
+.cta-bm-strip{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:22px;
+}
+.cta-bm-strip-text{
+  min-width:0;
+  flex:1 1 auto;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cta-go-btn.cta-go-btn-compact{
+  min-height:20px;
+  padding:1px 8px;
+  font-size:9px;
+  letter-spacing:.03em;
 }
 .cta-card-top{
   display:flex;
@@ -745,9 +808,10 @@
     if (!STATE.cardRoot || !primary) return;
 
     const guide = buildPrimaryGuide(primary);
+    const bloodmoonCompact = isBloodmoonPrimary(primary);
 
     const card = document.createElement("article");
-    card.className = "cta-card";
+    card.className = "cta-card" + (bloodmoonCompact ? " is-bloodmoon-compact" : "");
     card.setAttribute("role", "button");
     card.tabIndex = 0;
     card.setAttribute("aria-label", `${guide.now}. ${guide.why}`);
@@ -757,51 +821,76 @@
       void openTarget(primary.target);
     };
 
-    const top = document.createElement("div");
-    top.className = "cta-card-top";
-    top.appendChild(createBadge(primary.badge));
+    if (bloodmoonCompact) {
+      const strip = document.createElement("div");
+      strip.className = "cta-bm-strip";
 
-    const context = document.createElement("span");
-    context.className = "cta-context";
-    context.textContent = guide.context;
-    top.appendChild(context);
+      strip.appendChild(createBadge(primary.badge || "TOWER"));
 
-    const title = document.createElement("h3");
-    title.className = "cta-title";
-    title.textContent = guide.now;
+      const text = document.createElement("span");
+      text.className = "cta-bm-strip-text";
+      text.textContent = bloodmoonCompactLine(primary, guide);
+      strip.appendChild(text);
 
-    card.appendChild(top);
-    card.appendChild(title);
+      const goBtn = document.createElement("button");
+      goBtn.type = "button";
+      goBtn.className = "cta-go-btn cta-go-btn-compact";
+      goBtn.textContent = bloodmoonCompactAction(primary, guide);
+      goBtn.setAttribute("aria-label", `${goBtn.textContent}. ${text.textContent}`);
+      goBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        go();
+      });
+      strip.appendChild(goBtn);
+      card.appendChild(strip);
+    } else {
+      const top = document.createElement("div");
+      top.className = "cta-card-top";
+      top.appendChild(createBadge(primary.badge));
 
-    if (guide.why) {
-      const why = document.createElement("p");
-      why.className = "cta-why";
-      why.textContent = guide.why;
-      card.appendChild(why);
+      const context = document.createElement("span");
+      context.className = "cta-context";
+      context.textContent = guide.context;
+      top.appendChild(context);
+
+      const title = document.createElement("h3");
+      title.className = "cta-title";
+      title.textContent = guide.now;
+
+      card.appendChild(top);
+      card.appendChild(title);
+
+      if (guide.why) {
+        const why = document.createElement("p");
+        why.className = "cta-why";
+        why.textContent = guide.why;
+        card.appendChild(why);
+      }
+
+      if (guide.reward) {
+        const reward = document.createElement("p");
+        reward.className = "cta-reward";
+        reward.textContent = guide.reward;
+        card.appendChild(reward);
+      }
+
+      const goRow = document.createElement("div");
+      goRow.className = "cta-go-row";
+
+      const goBtn = document.createElement("button");
+      goBtn.type = "button";
+      goBtn.className = "cta-go-btn";
+      goBtn.textContent = guide.go;
+      goBtn.setAttribute("aria-label", `${guide.go}. ${guide.now}`);
+      goBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        go();
+      });
+      goRow.appendChild(goBtn);
+      card.appendChild(goRow);
     }
-
-    if (guide.reward) {
-      const reward = document.createElement("p");
-      reward.className = "cta-reward";
-      reward.textContent = guide.reward;
-      card.appendChild(reward);
-    }
-
-    const goRow = document.createElement("div");
-    goRow.className = "cta-go-row";
-
-    const goBtn = document.createElement("button");
-    goBtn.type = "button";
-    goBtn.className = "cta-go-btn";
-    goBtn.textContent = guide.go;
-    goBtn.setAttribute("aria-label", `${guide.go}. ${guide.now}`);
-    goBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      go();
-    });
-    goRow.appendChild(goBtn);
-    card.appendChild(goRow);
 
     card.addEventListener("click", go);
     card.addEventListener("keydown", (event) => {
