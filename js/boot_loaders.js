@@ -31,6 +31,12 @@
         const isReady =
           (readyName === "pixi.min.js" && !!global.PIXI) ||
           (readyName === "combat.js" && !!global.Combat) ||
+          (readyName === "skins.js" && !!global.Skins) ||
+          (readyName === "frames.js" && !!global.Frames) ||
+          (readyName === "adopt.js" && !!global.Adopt) ||
+          (readyName === "updates.js" && !!global.Updates) ||
+          (readyName === "missions.js" && !!global.Missions) ||
+          (readyName === "mypets.js" && !!global.MyPets) ||
           (readyName === "fortress.js" && !!global.Fortress) ||
           (readyName === "dojo.js" && !!global.Dojo) ||
           (readyName === "referrals.js" && !!global.Referrals) ||
@@ -107,6 +113,103 @@
     const loadScript = getLoadScript();
     return await once("combat", async () => {
       await loadScript("js/combat.js");
+      return true;
+    });
+  }
+
+  async function ensureSkinsLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.Skins?.open && global.Skins?.init) {
+      try { global.Skins.init(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("skins", async () => {
+      await loadScript("js/skins.js");
+      try { global.Skins?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureFramesLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.Frames?.open && global.Frames?.init) {
+      try { global.Frames.init(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("frames", async () => {
+      await loadScript("js/frames.js");
+      try { global.Frames?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureAdoptLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.Adopt?.open && global.Adopt?.init) {
+      try { global.Adopt.init(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("adopt", async () => {
+      await loadScript("js/adopt.js");
+      try { global.Adopt?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureUpdatesLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    const initPayload = {
+      ...deps,
+      btnEl: document.getElementById("btnWhatsNew"),
+      dotEl: document.getElementById("whatsNewDot")
+    };
+
+    if (global.Updates?.open && global.Updates?.init) {
+      try { global.Updates.init(initPayload); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("updates", async () => {
+      await loadScript("js/updates.js");
+      try { global.Updates?.init?.(initPayload); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureMissionsLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+
+    if (global.Missions?.open) {
+      global.Missions?.init?.(deps);
+      return true;
+    }
+
+    const loadScript = getLoadScript();
+    await once("missions", async () => {
+      await loadScript("js/missions.js");
+      global.Missions?.init?.(deps);
+      if (!global.Missions?.open) {
+        throw new Error("missions.js loaded but window.Missions.open is missing");
+      }
+      return true;
+    });
+
+    return true;
+  }
+
+  async function ensureMyPetsLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.MyPets?.open && global.MyPets?.init) {
+      try { global.MyPets.init(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("mypets", async () => {
+      await loadScript("js/mypets.js");
+      try { global.MyPets?.init?.(deps); } catch (_) {}
       return true;
     });
   }
@@ -228,6 +331,12 @@
       loadScript: typeof deps.loadScript === "function" ? deps.loadScript : STATE.deps.loadScript
     };
 
+    global.ensureSkinsLoaded = ensureSkinsLoaded;
+    global.ensureFramesLoaded = ensureFramesLoaded;
+    global.ensureAdoptLoaded = ensureAdoptLoaded;
+    global.ensureUpdatesLoaded = ensureUpdatesLoaded;
+    global.ensureMissionsLoaded = ensureMissionsLoaded;
+    global.ensureMyPetsLoaded = ensureMyPetsLoaded;
     global.ensureFortressLoaded = ensureFortressLoaded;
     global.ensureDojoLoaded = ensureDojoLoaded;
     global.ensureReferralsLoaded = ensureReferralsLoaded;
@@ -241,6 +350,12 @@
 
   const API = {
     init,
+    ensureSkinsLoaded,
+    ensureFramesLoaded,
+    ensureAdoptLoaded,
+    ensureUpdatesLoaded,
+    ensureMissionsLoaded,
+    ensureMyPetsLoaded,
     ensureFortressLoaded,
     ensureDojoLoaded,
     ensureReferralsLoaded,
