@@ -5,8 +5,6 @@
   let _dbg = false;
   let _state = null;
 
-  const BOT_USERNAME = "Alpha_husky_bot";
-
   function log(...args) {
     if (_dbg) console.log("[Support]", ...args);
   }
@@ -17,6 +15,29 @@
 
   function getApiPost() {
     return _apiPost || window.apiPost || window.S?.apiPost || window.AH?.apiPost || null;
+  }
+
+  function openSupportStartAppLink() {
+    if (typeof window.openTelegramStartAppLink === "function") {
+      return !!window.openTelegramStartAppLink("support");
+    }
+
+    const link = typeof window.buildTelegramStartAppLink === "function"
+      ? window.buildTelegramStartAppLink("support")
+      : "";
+    if (!link) return false;
+
+    const tg = getTg();
+    try {
+      tg?.openTelegramLink?.(link);
+      return true;
+    } catch (_) {}
+    try {
+      window.open(link, "_blank", "noopener");
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   function el(id) {
@@ -332,9 +353,11 @@
       throw new Error("NO_OPENINVOICE");
     } catch (err) {
       log("Invoice flow failed, fallback to bot deep link:", err);
-      const deep = `https://t.me/${BOT_USERNAME}?start=support_${encodeURIComponent(String(tier || ""))}`;
-      try { tg?.openTelegramLink?.(deep); }
-      catch (_) { tg?.showAlert?.("Open /support in chat"); }
+      const deep = window.buildTelegramBotStartLink?.(`support_${String(tier || "")}`) || "";
+      if (deep) {
+        try { tg?.openTelegramLink?.(deep); return; } catch (_) {}
+      }
+      try { tg?.showAlert?.("Open /support in chat"); } catch (_) {}
     }
   }
 
@@ -531,10 +554,11 @@
     init({});
 
     const back = el("supportBack");
-    const tg = getTg();
     if (!back) {
-      try { tg?.openTelegramLink?.(`https://t.me/${BOT_USERNAME}?start=support`); }
-      catch (_) { tg?.showAlert?.("Open /support in chat"); }
+      const opened = openSupportStartAppLink();
+      if (!opened) {
+        try { getTg()?.showAlert?.("Open Support from Alpha Husky bot."); } catch (_) {}
+      }
       return false;
     }
 
