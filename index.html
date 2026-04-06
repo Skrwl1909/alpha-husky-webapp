@@ -22,7 +22,20 @@
   <style>
   /* Telegram theme + bezpieczne fallbacki */
   :root { color-scheme: var(--tg-color-scheme, dark); }
-  :root { --glass: rgba(0,0,0,.45); --stroke: rgba(255,255,255,.18); --txt: var(--tg-theme-text-color, #fff); --ring: rgba(255,255,255,.12); }
+  :root {
+    --glass: rgba(0,0,0,.45);
+    --stroke: rgba(255,255,255,.18);
+    --txt: var(--tg-theme-text-color, #fff);
+    --ring: rgba(255,255,255,.12);
+    --ah-safe-top: 0px;
+    --ah-safe-bottom: 0px;
+    --ah-safe-left: 0px;
+    --ah-safe-right: 0px;
+    --ah-inset-top: max(var(--ah-safe-top), env(safe-area-inset-top, 0px));
+    --ah-inset-bottom: max(var(--ah-safe-bottom), env(safe-area-inset-bottom, 0px));
+    --ah-inset-left: max(var(--ah-safe-left), env(safe-area-inset-left, 0px));
+    --ah-inset-right: max(var(--ah-safe-right), env(safe-area-inset-right, 0px));
+  }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
   a { color: var(--tg-theme-link-color, #aef); }
@@ -52,10 +65,10 @@
   place-items:end center;
   box-sizing: border-box;
   padding:
-    calc(94px + env(safe-area-inset-top, 0px))
-    calc(16px + env(safe-area-inset-right, 0px))
-    calc(24px + 78px + env(safe-area-inset-bottom, 0px)) /* ✅ + miejsce na bottom nav */
-    calc(16px + env(safe-area-inset-left, 0px));
+    calc(94px + var(--ah-inset-top))
+    calc(16px + var(--ah-inset-right))
+    calc(24px + 78px + var(--ah-inset-bottom)) /* ✅ + miejsce na bottom nav */
+    calc(16px + var(--ah-inset-left));
 }
 
 .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
@@ -64,7 +77,7 @@
 .hud-layout{
   width: min(
     520px,
-    calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
+    calc(100vw - 32px - var(--ah-inset-left) - var(--ah-inset-right))
   );
   margin: 0 auto;                 /* centrowanie całości w poziomie */
   display: flex;
@@ -823,7 +836,7 @@ html.ah-skins-open #heroFrame{
   white-space:nowrap !important;
 }
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
-  .spacer { height: max(12px, env(safe-area-inset-bottom)); }
+  .spacer { height: max(12px, var(--ah-inset-bottom)); }
     /* === TOPBAR TAG PILL (PACK / SUPPORTER etc.) === */
 #faction.faction-pill{
   display:flex;
@@ -871,7 +884,14 @@ html.ah-skins-open #heroFrame{
 .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
 
 /* PATCH: większy modal + flex layout */
-.map-wrap { width:min(96vw, 1200px); padding:12px; }
+.map-wrap {
+  width:min(96vw, 1200px);
+  padding:
+    calc(12px + var(--ah-safe-top))
+    calc(12px + var(--ah-safe-right))
+    calc(12px + var(--ah-safe-bottom))
+    calc(12px + var(--ah-safe-left));
+}
 
 .map-card {
   background:rgba(12,14,18,.82);
@@ -1401,7 +1421,39 @@ html.ah-skins-open #heroFrame{
   50%{ transform:translate(-50%,-50%) scale(1.05); }
 }
 
-.locked-back, .sheet-back { position:fixed; inset:0; z-index:5; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
+.locked-back, .sheet-back {
+  position:fixed;
+  inset:0;
+  z-index:5;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.7);
+  padding:
+    var(--ah-safe-top)
+    var(--ah-safe-right)
+    var(--ah-safe-bottom)
+    var(--ah-safe-left);
+  box-sizing:border-box;
+}
+
+#bloodMoonBack{
+  padding:
+    var(--ah-safe-top)
+    var(--ah-safe-right)
+    var(--ah-safe-bottom)
+    var(--ah-safe-left) !important;
+  box-sizing:border-box;
+}
+
+#siegeBack{
+  padding:
+    calc(var(--ah-safe-top) + 12px)
+    calc(var(--ah-safe-right) + 10px)
+    calc(var(--ah-safe-bottom) + 16px)
+    calc(var(--ah-safe-left) + 10px) !important;
+  box-sizing:border-box;
+}
 .locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
 .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
 .tab.active{ outline:2px solid rgba(255,255,255,.18); }
@@ -2117,6 +2169,12 @@ body.missions-open{
     background:rgba(0,0,0,.52);
     z-index:9999;
     backdrop-filter: blur(3px);
+    padding:
+      var(--ah-safe-top)
+      var(--ah-safe-right)
+      var(--ah-safe-bottom)
+      var(--ah-safe-left);
+    box-sizing:border-box;
   }
 
   /* ✅ ważne: q-bg nie może być flex-itemem */
@@ -3083,7 +3141,7 @@ body.missions-open{
   .ah-bottomnav{
     position: fixed;
     left: 14px; right: 14px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
+    bottom: calc(12px + var(--ah-inset-bottom));
     height: 74px;
 
     padding: 10px;
@@ -3188,8 +3246,11 @@ body.missions-open{
     display:flex;
     align-items:flex-end;
     justify-content:center;
-    padding: 12px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding:
+      calc(12px + var(--ah-safe-top))
+      calc(12px + var(--ah-safe-right))
+      calc(12px + var(--ah-safe-bottom))
+      calc(12px + var(--ah-safe-left));
   }
 
   .ah-panel{
@@ -3382,6 +3443,13 @@ body.missions-open{
     border-color: rgba(188,219,248,.28);
     background:
       linear-gradient(180deg, rgba(120,149,184,.18), rgba(120,149,184,0)),
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.01)),
+      rgba(6,10,16,.56);
+  }
+  #charBack .ah-action[data-action="badges"]{
+    border-color: rgba(228,199,136,.28);
+    background:
+      linear-gradient(180deg, rgba(148,123,76,.2), rgba(148,123,76,0)),
       linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.01)),
       rgba(6,10,16,.56);
   }
@@ -3828,7 +3896,23 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-tile" data-action="mailbox" type="button"><span>✉️</span><b>Mailbox</b></button>
       <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
       <button class="ah-tile" data-action="feed" type="button"><span>🧾</span><b>Feed</b></button>
+      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span>📲</span><b>Add to Home</b></button>
       <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
+    </div>
+    <div style="padding:0 14px 8px;opacity:.68;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Quick Access</div>
+    <div class="ah-actions" id="ahStartAppLinks">
+      <div style="display:flex;gap:8px;">
+        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="map" data-start-link-action="open">Open War Map</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="map" data-start-link-action="copy" aria-label="Copy War Map link">⧉</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="bloodmoon" data-start-link-action="open">Enter Blood-Moon</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="bloodmoon" data-start-link-action="copy" aria-label="Copy Blood-Moon link">⧉</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="support" data-start-link-action="open">Support Alpha</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">⧉</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3863,6 +3947,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <span class="ah-character-copy">
           <span class="ah-character-title">Frames</span>
           <span class="ah-character-sub">Set your profile frame style</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button class="ah-action ah-character-row" data-action="badges" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">Badge Wall</span>
+          <span class="ah-character-sub">View your earned prestige collection</span>
         </span>
         <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
       </button>
@@ -4649,6 +4740,9 @@ body.bc-open #ahCommunityBtn{
     window.WEBAPP_VER = "2026-03-18a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
+  <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
+  <script src="/js/start_links.js?v=WEBAPP_VER"></script>
+  <script src="/js/start_router.js?v=WEBAPP_VER"></script>
   
 
   <!-- 3) Moduły JS ładowane w ustalonej kolejności -->
@@ -4689,6 +4783,8 @@ body.bc-open #ahCommunityBtn{
       const setVh = () => document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       setVh(); window.addEventListener('resize', setVh);
 
+      try { window.initTelegramShell?.(); } catch (_) {}
+
       const nativeTg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
       let tg = nativeTg;
 
@@ -4699,8 +4795,6 @@ body.bc-open #ahCommunityBtn{
         const fb = $("#fallback"); if (fb) fb.style.display = "flex";
         dbg('Open inside Telegram');
       }
-
-      tg?.ready?.(); tg?.expand?.();
 
       // =====================
       // ✅ NAV HELPERS (global)
@@ -4866,6 +4960,42 @@ async function openFrames() {
   try { _tg?.showAlert?.("Frames module not available."); } catch (_) {}
 }
 window.openFramesModal = openFrames;
+
+async function openBadges() {
+  const charBack = document.getElementById("charBack");
+  if (charBack && charBack.style.display !== "none") {
+    charBack.style.display = "none";
+    try { window.navClose?.(charBack); } catch (_) {}
+  }
+
+  const hubBack = document.getElementById("hubBack");
+  if (hubBack && hubBack.style.display !== "none") {
+    hubBack.style.display = "none";
+    try { window.navClose?.(hubBack); } catch (_) {}
+  }
+
+  try {
+    await loadScriptOnce("js/badges.js");
+  } catch (e) {
+    console.warn("Badge Wall script load failed", e);
+    try { _tg?.showAlert?.("Failed to load Badge Wall."); } catch (_) {}
+    return;
+  }
+
+  try {
+    window.Badges?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+  } catch (e) {
+    console.warn("Badge Wall init failed", e);
+  }
+
+  if (window.Badges?.open) {
+    return window.Badges.open();
+  }
+
+  console.warn("window.Badges.open missing after script load");
+  try { _tg?.showAlert?.("Badge Wall module not available."); } catch (_) {}
+}
+window.openBadgeWallModal = openBadges;
         
         function openFaqModal(){
   // 1) schowaj character sheet
@@ -4951,6 +5081,7 @@ function closeFaqModal(){
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
           skins: () => { void openSkins(); },
           frames: () => { void openFrames(); },
+          badges: () => { void openBadges(); },
           avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
           pets:      ()=>document.querySelector('.btn.mypets')?.click(),
         };
@@ -6101,7 +6232,10 @@ function isRegionUnlocked(regionId){
       ) {
         try {
           await ensureBloodMoonLoaded(apiPost, _tg, _dbg);
-          if (window.BloodMoon?.open) return window.BloodMoon.open();
+          if (window.BloodMoon?.open) {
+            try { window.requestTelegramFullscreen?.(); } catch (_) {}
+            return window.BloodMoon.open();
+          }
         } catch (err) {
           console.warn("[BloodMoon] load/open failed", err);
         }
@@ -6270,6 +6404,7 @@ function isRegionUnlocked(regionId){
     try {
       await ensureSiegeLoaded(apiPost, _tg, _dbg);
       if (window.Siege?.open) {
+        try { window.requestTelegramFullscreen?.(); } catch (_) {}
         window.Siege.open();
         return;
       }
@@ -6333,6 +6468,7 @@ function isRegionUnlocked(regionId){
     try {
       await ensureSiegeLoaded(apiPost, _tg, _dbg);
       if (window.Siege?.open) {
+        try { window.requestTelegramFullscreen?.(); } catch (_) {}
         window.Siege.open();
         return;
       }
@@ -6546,6 +6682,7 @@ const actions = {
   ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
   // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
   ".btn.map": () => {
+    try { window.requestTelegramFullscreen?.(); } catch (_) {}
     mapBack.style.display = "flex";
     navOpen("mapBack");
     if (!DATA) loadMapData();
@@ -6974,6 +7111,7 @@ if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
 async function showSection(name){
   switch(name){
     case "map":
+      try { window.requestTelegramFullscreen?.(); } catch (_) {}
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
       if (!DATA) loadMapData();
@@ -7016,6 +7154,7 @@ async function showSection(name){
 
 loadPlayerState();
 if (sectionParam) { setTimeout(() => showSection(sectionParam), 80); }
+try { window.routeTelegramStartParam?.(); } catch (_) {}
 
 if (!window.__ahQuestsLauncherBound) {
   window.__ahQuestsLauncherBound = true;
