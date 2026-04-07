@@ -163,18 +163,18 @@
   function renderTokenState(token) {
     const lane = token || {};
     if (!isTokenLaneEnabled(lane)) {
-      setText("supportTokenStatus", lane.message || "Token holder support is coming soon.");
+      setText("supportTokenStatus", lane.message || "Believe holder lane is in preparation.");
       setText(
         "supportTokenPerks",
-        lane.detail || "Support with Stars is live now. Holder cosmetics and weekly support perks will unlock later."
+        lane.detail || "Stars support is live now. Holder cosmetics and weekly claim activate at mint launch."
       );
       setText(
         "supportTokenHint",
-        lane.hint || "Support with Stars is live now."
+        lane.hint || "Stars support is fully live today."
       );
 
       const connectBtn = el("supportTokenConnect");
-      if (connectBtn) connectBtn.textContent = "Coming Soon";
+      if (connectBtn) connectBtn.textContent = "Preparing Lane";
       setDisabled("supportTokenConnect", true);
       setDisabled("supportTokenRefresh", true);
       setDisabled("supportTokenClaim", true);
@@ -188,16 +188,16 @@
       setText(
         "supportTokenStatus",
         lane.linked
-          ? `Wallet linked: ${walletLabel}. Holder checks are waiting for mint activation.`
-          : (lane.message || "Holder checks are waiting for mint activation.")
+          ? `Wallet linked: ${walletLabel}. Holder checks are queued for mint activation.`
+          : (lane.message || "Holder checks are queued for mint activation.")
       );
       setText(
         "supportTokenPerks",
-        lane.detail || "Holder tier, skin, frame, and weekly claim unlock after mint config + holder refresh."
+        lane.detail || "Holder tier, skin, frame, and weekly claim unlock after mint activation and first holder refresh."
       );
       setText(
         "supportTokenHint",
-        lane.hint || "You can link wallet now. Refresh and claim unlock once BELIEVE_SUPPORT_MINT is configured."
+        lane.hint || "You can link wallet now. Refresh and weekly claim unlock when the holder mint goes live."
       );
 
       const connectBtn = el("supportTokenConnect");
@@ -229,7 +229,7 @@
 
     const perks = [];
     if (lane.badge) perks.push(`Badge: ${lane.badge}`);
-    if (lane.frame) perks.push(`Frame: ${lane.frame}`);
+    if (lane.frame && lane.frameUrl) perks.push(`Frame: ${lane.frame}`);
     if (lane.skin) perks.push(`Tier 3 skin: ${lane.skin}`);
     if (!perks.length) perks.push("Perks unlock by holder tier only.");
     perks.push(claim);
@@ -276,7 +276,7 @@
 
     if (tokenEnabled && !tokenConfigured) {
       setText("supportCombinedStatus", "Stars support is live. Token holder lane is staged and waiting for mint activation.");
-      setText("supportCombinedPerks", "Wallet linking is available now. Holder tier and cosmetics unlock after mint config + holder refresh.");
+      setText("supportCombinedPerks", "Wallet linking is available now. Holder tier and cosmetics unlock after mint activation and holder refresh.");
       return;
     }
 
@@ -297,7 +297,7 @@
         "supportCombinedStatus",
         tokenEnabled
           ? "Stars-only supporter. Telegram native support is active."
-          : "Stars-only supporter. Telegram native support is active, and token holder support is coming soon."
+          : "Stars-only supporter. Telegram native support is active, and Believe holder lane is in preparation."
       );
       setText("supportCombinedPerks", `Resolved Stars tier: ${stars.tierKey || "supporter"}.`);
       return;
@@ -310,8 +310,8 @@
     }
 
     if (!tokenEnabled) {
-      setText("supportCombinedStatus", "Stars support is live now. Token holder support is coming soon.");
-      setText("supportCombinedPerks", "Telegram Stars remains the active support path until the Believe holder lane launches.");
+      setText("supportCombinedStatus", "Stars support is live now. Believe holder lane is in preparation.");
+      setText("supportCombinedPerks", "Telegram Stars remains active while holder checks and cosmetics are being finalized for launch.");
       return;
     }
 
@@ -441,7 +441,7 @@
     renderState(_state);
     await refreshProfileViews();
     try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    try { tg?.showAlert?.(`Weekly claim ready. Claimed ${res?.reward?.amount || 0} bones.`); } catch (_) {}
+    try { tg?.showAlert?.(`Weekly claim complete. Claimed ${res?.reward?.amount || 0} bones.`); } catch (_) {}
     return res;
   }
 
@@ -456,7 +456,7 @@
   async function onConnectClick() {
     const tg = getTg();
     if (!isTokenLaneEnabled((_state || {}).token || {})) {
-      try { tg?.showAlert?.("Token holder support is coming soon. Support with Stars is live now."); } catch (_) {}
+      try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
     try {
@@ -481,7 +481,7 @@
   async function onRefreshClick() {
     const tg = getTg();
     if (!isTokenLaneEnabled((_state || {}).token || {})) {
-      try { tg?.showAlert?.("Token holder support is coming soon. Support with Stars is live now."); } catch (_) {}
+      try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
     try {
@@ -502,7 +502,7 @@
   async function onClaimClick() {
     const tg = getTg();
     if (!isTokenLaneEnabled((_state || {}).token || {})) {
-      try { tg?.showAlert?.("Token holder support is coming soon. Support with Stars is live now."); } catch (_) {}
+      try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
     try {
@@ -570,9 +570,9 @@
     try { window.navOpen?.("supportBack"); } catch (_) {}
 
     setText("supportStarsStatus", "Checking Stars support status...");
-    setText("supportTokenStatus", "Token holder support is coming soon.");
-    setText("supportTokenPerks", "Support with Stars is live now. Holder cosmetics and weekly support perks will unlock later.");
-    setText("supportTokenHint", "Wallet linking, holder refresh, and weekly claim will open when the Believe support token is live.");
+    setText("supportTokenStatus", "Believe holder lane is in preparation.");
+    setText("supportTokenPerks", "Stars support is live now. Holder cosmetics and weekly claim activate at mint launch.");
+    setText("supportTokenHint", "Stars is active now. Wallet link and holder verification open with the live mint rollout.");
     setText("supportCombinedStatus", "Loading support status...");
 
     try {

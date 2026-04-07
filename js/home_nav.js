@@ -172,13 +172,32 @@
         break;
 
       case "referrals":
-        if (typeof window.Referrals?.open === "function") window.Referrals.open();
+        if (typeof window.ensureReferralsLoaded === "function") {
+          window.ensureReferralsLoaded()
+            .then(() => {
+              if (typeof window.Referrals?.open === "function") window.Referrals.open();
+              else clickLegacy(".btn.referral") || clickLegacy("button.btn.referral");
+            })
+            .catch(() => {
+              clickLegacy(".btn.referral") || clickLegacy("button.btn.referral");
+            });
+        } else if (typeof window.Referrals?.open === "function") window.Referrals.open();
         else clickLegacy(".btn.referral") || clickLegacy("button.btn.referral");
         break;
 
       case "howlboard":
         if (typeof window.Howlboard?.open === "function") window.Howlboard.open();
         else clickLegacy(".btn.howlboard") || clickLegacy("button.btn.howlboard");
+        break;
+
+      case "mailbox":
+        if (typeof window.Mailbox?.open === "function") window.Mailbox.open();
+        else clickLegacy(".btn.mailbox") || clickLegacy("button.btn.mailbox");
+        break;
+
+      case "faq":
+        if (typeof window.openFaqModal === "function") window.openFaqModal();
+        else clickLegacy(".btn.faq") || clickLegacy("button.btn.faq");
         break;
 
       case "profile":
@@ -205,6 +224,15 @@
       case "feed":
         if (typeof window.Feed?.open === "function") window.Feed.open();
         else clickLegacy(".btn.feed") || clickLegacy("button.btn.feed");
+        break;
+
+      case "add_to_home":
+        if (typeof window.promptInstallPWA === "function") window.promptInstallPWA();
+        else if (typeof window.promptAddToHome === "function") window.promptAddToHome();
+        else {
+          const tg = window.Telegram?.WebApp;
+          tg?.showAlert?.("Add to Home is not available on this device yet.");
+        }
         break;
 
       // Character sheet actions
