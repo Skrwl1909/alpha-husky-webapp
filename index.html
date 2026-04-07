@@ -3264,6 +3264,24 @@ body.missions-open{
     box-shadow: 0 12px 40px rgba(0,0,0,.55);
   }
 
+  #hubBack .ah-panel,
+  #supportBack .ah-panel{
+    max-height: calc(100vh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
+    max-height: calc(100dvh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
+    display: flex;
+    flex-direction: column;
+  }
+
+  #hubBack .ah-panel-scroll,
+  #supportBack .ah-panel-scroll{
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(10px + var(--ah-safe-bottom));
+  }
+
   .ah-panel-hd{
     display:flex;
     align-items:center;
@@ -3882,7 +3900,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="ah-title">Hub</div>
       <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
     </div>
-
+    <div class="ah-panel-scroll">
     <div class="ah-grid">
       <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
       <!-- ✅ NEW: Support -->
@@ -3913,6 +3931,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <button class="ah-action" type="button" style="flex:1;" data-start-link-route="support" data-start-link-action="open">Support Alpha</button>
         <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">⧉</button>
       </div>
+    </div>
     </div>
   </div>
 </div>
@@ -4105,7 +4124,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="ah-title">Support Alpha</div>
       <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">✕</button>
     </div>
-
+    <div class="ah-panel-scroll">
     <div style="display:grid;gap:14px">
       <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
         <div style="font-weight:700">Telegram Stars</div>
@@ -4131,18 +4150,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
         <div style="font-weight:700">Believe / Solana Holder</div>
         <div id="supportTokenStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
-          Token holder support is coming soon.
+          Believe holder lane is in preparation.
         </div>
         <div id="supportTokenPerks" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
-          Support with Stars is live now. Holder cosmetics and weekly support perks will unlock later.
+          Stars support is live now. Holder cosmetics and weekly claim activate at mint launch.
         </div>
         <div class="ah-actions" style="gap:10px;margin-top:10px">
-          <button class="ah-action" id="supportTokenConnect" type="button" disabled>Coming Soon</button>
+          <button class="ah-action" id="supportTokenConnect" type="button" disabled>Preparing Lane</button>
           <button class="ah-action" id="supportTokenRefresh" type="button" disabled style="display:none">Refresh Holder Status</button>
           <button class="ah-action" id="supportTokenClaim" type="button" disabled style="display:none">Weekly Claim</button>
         </div>
         <div id="supportTokenHint" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
-          Wallet linking, holder refresh, and weekly claim will open when the Believe support token is live.
+          Stars is active now. Wallet link and holder verification open with the live mint rollout.
         </div>
       </section>
 
@@ -4155,6 +4174,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           Stars-only, token-only, and dual-supporter states will all appear here.
         </div>
       </section>
+    </div>
     </div>
   </div>
 </div>
