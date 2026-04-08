@@ -193,11 +193,11 @@
       );
       setText(
         "supportTokenPerks",
-        lane.detail || "Holder tier, skin, frame, and weekly claim unlock after mint activation and first holder refresh."
+        lane.detail || "Connect Solana Wallet and sign message now. Holder checks and weekly claim unlock when mint is live."
       );
       setText(
         "supportTokenHint",
-        lane.hint || "You can link wallet now. Refresh and weekly claim unlock when the holder mint goes live."
+        lane.hint || "For Solana holder verification and rewards: Open Support -> Connect Solana Wallet -> Sign message -> Refresh Holder Status -> Claim Weekly Reward if eligible."
       );
 
       const connectBtn = el("supportTokenConnect");
@@ -223,7 +223,7 @@
     } else {
       setText(
         "supportTokenStatus",
-        "No Solana wallet linked yet. Link a wallet, verify holder balance, then unlock token-holder support perks."
+        "No Solana wallet linked yet. Connect Solana Wallet, sign message, then Refresh Holder Status."
       );
     }
 
@@ -244,7 +244,7 @@
     if (!provider) {
       setText(
         "supportTokenHint",
-        "No injected Solana wallet detected. Open Alpha Husky in Phantom or a browser with a Solana wallet extension to link."
+        "No injected Solana wallet detected. Open Alpha Husky in Phantom or a browser with a Solana wallet extension, then tap Connect Solana Wallet."
       );
     } else if (lane.linked && providerAddr && providerAddr === lane.wallet) {
       setText(
@@ -252,9 +252,9 @@
         "This wallet is already linked. To relink to a different wallet, switch accounts inside Phantom first, then tap reconnect."
       );
     } else if (lane.linked) {
-      setText("supportTokenHint", "Wallet ownership is verified by signed message. No transaction or token transfer is requested.");
+      setText("supportTokenHint", "Wallet ownership is verified by signed message. Refresh Holder Status, then claim weekly reward if eligible.");
     } else {
-      setText("supportTokenHint", "Linking will ask your wallet to sign a short ownership message. No transaction will be sent.");
+      setText("supportTokenHint", "Tap Connect Solana Wallet to sign a short ownership message, then tap Refresh Holder Status.");
     }
 
     const connectBtn = el("supportTokenConnect");
@@ -571,8 +571,8 @@
 
     setText("supportStarsStatus", "Checking Stars support status...");
     setText("supportTokenStatus", "Believe holder lane is in preparation.");
-    setText("supportTokenPerks", "Stars support is live now. Holder cosmetics and weekly claim activate at mint launch.");
-    setText("supportTokenHint", "Stars is active now. Wallet link and holder verification open with the live mint rollout.");
+    setText("supportTokenPerks", "Stars support is live now. Solana holder checks and weekly claim activate with the live mint rollout.");
+    setText("supportTokenHint", "For Solana holder verification and rewards: Open Support -> Connect Solana Wallet -> Sign message -> Refresh Holder Status -> Claim Weekly Reward if eligible.");
     setText("supportCombinedStatus", "Loading support status...");
 
     try {
