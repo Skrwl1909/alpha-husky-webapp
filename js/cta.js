@@ -180,43 +180,43 @@
     choose_faction: {
       context: "Identity",
       now: "Choose your faction",
-      why: "Your side defines your role in the world war.",
-      reward: "Unlock faction progress, sieges, and shared goals.",
+      why: "Alone, you survive. With a faction, you matter.",
+      reward: "Unlock faction progress, sieges, and shared pressure.",
       go: "Choose faction",
     },
     first_mission: {
       context: "Action",
       now: "Run your first mission",
-      why: "This is the fastest way to learn the loop.",
-      reward: "Earn your first rewards and unlock momentum.",
+      why: "You are not here to spectate. Move first.",
+      reward: "Lock your first reward and open the next route.",
       go: "Start mission",
     },
     equip_item: {
       context: "Progression",
       now: "Equip your best item",
-      why: "Stronger loadout means better mission and siege output.",
-      reward: "Boost your impact in live events.",
+      why: "Unarmed names vanish fast out here.",
+      reward: "Hit harder in missions, sieges, and event runs.",
       go: "Open equipped",
     },
     first_map_action: {
       context: "World",
       now: "Take your first map action",
-      why: "The map is live and faction pressure moves in real time.",
-      reward: "Learn where pressure matters and where to help next.",
+      why: "The map breathes. Pressure shifts whether you show up or not.",
+      reward: "Leave your first mark and learn where to push next.",
       go: "Open live node",
     },
     contracts_push: {
       context: "Cooperation",
       now: "Push Broken Contracts",
-      why: "Your faction needs active pressure to progress contracts.",
-      reward: "Unlock shared rewards for your side.",
+      why: "Idle factions get erased. Keep pressure on the line.",
+      reward: "Move shared contract progress for your faction.",
       go: "Open contracts",
     },
     contracts_claim_ready: {
       context: "Cooperation",
       now: "Claim Broken Contracts rewards",
-      why: "Your faction contract is complete and ready to claim.",
-      reward: "Collect shared contract payouts before reset.",
+      why: "The contract is closed. Take the payout before reset.",
+      reward: "Bank shared rewards and roll into the next push.",
       go: "Claim contracts",
     },
   };
@@ -249,7 +249,7 @@
   function defaultWhyForPrimary(primary) {
     const subtitle = asText(primary?.subtitle);
     if (subtitle) return subtitle;
-    return "This action advances your progress and your faction position.";
+    return "This move pushes your progress and your faction position.";
   }
 
   function defaultRewardForPrimary(primary) {
