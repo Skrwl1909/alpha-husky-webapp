@@ -4026,8 +4026,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;padding:0 14px 16px;">
       <div id="shareCardContext" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.58;">Main Hub preview</div>
-      <div style="border-radius:24px;padding:14px;background:linear-gradient(180deg,rgba(18,26,41,.74),rgba(7,11,19,.84));border:1px solid rgba(245,210,146,.16);box-shadow:0 16px 34px rgba(0,0,0,.28);">
-        <canvas id="shareCardCanvas" width="1200" height="1500" style="width:100%;height:auto;display:block;border-radius:18px;background:rgba(3,7,14,.92);"></canvas>
+      <div id="shareCardCanvasWrap" style="position:relative;border-radius:24px;padding:14px;background:linear-gradient(180deg,rgba(18,26,41,.74),rgba(7,11,19,.84));border:1px solid rgba(245,210,146,.16);box-shadow:0 16px 34px rgba(0,0,0,.28);overflow:hidden;">
+        <canvas id="shareCardCanvas" width="1200" height="1500" style="position:relative;z-index:1;width:100%;height:auto;display:block;border-radius:18px;background:rgba(3,7,14,.92);"></canvas>
+        <div id="shareCardPreviewFx" aria-hidden="true" style="position:absolute;left:14px;right:14px;top:14px;bottom:14px;z-index:2;border-radius:18px;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .24s ease;">
+          <span data-fx="eyes" style="position:absolute;left:50%;top:28.5%;width:16%;height:4.8%;transform:translate(-50%,-50%);opacity:.10;background:
+            radial-gradient(40% 68% at 34% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%),
+            radial-gradient(40% 68% at 66% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%);"></span>
+          <span data-fx="core" style="position:absolute;left:50%;top:47%;width:12%;aspect-ratio:1/1;transform:translate(-50%,-50%);opacity:.10;background:
+            radial-gradient(circle, rgba(255,214,146,.34) 0%, rgba(255,214,146,.18) 45%, rgba(255,214,146,0) 72%);"></span>
+          <span data-fx="sheen" style="position:absolute;left:57%;top:74%;width:30%;height:10%;transform:translate(-16%,0) skewX(-16deg);opacity:0;background:
+            linear-gradient(105deg, rgba(255,220,160,0) 14%, rgba(255,220,160,.34) 48%, rgba(255,220,160,0) 86%);"></span>
+        </div>
       </div>
       <div id="shareCardMeta" style="font-size:12px;line-height:1.5;opacity:.68;">
         Rendered from the same live player presentation state visible in the app.
