@@ -2,7 +2,6 @@
   const CARD_WIDTH = 1200;
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
-  const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
   const X_MANUAL_ATTACH_NOTE = "Image saved. To post on X, attach the saved image manually.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
@@ -21,6 +20,18 @@
     focusY: 0.33,
     scale: 1.16,
   };
+  const DEFAULT_CAPTION_VARIANT_INDEX = 0;
+  const CAPTION_VARIANTS = [
+    function premiumFounderCaption(presentation, modeLabel) {
+      return `${presentation.playerName} - Founder LV ${presentation.level}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky`;
+    },
+    function statusFounderCaption(presentation, modeLabel) {
+      return `Founder ${presentation.playerName} - LV ${presentation.level}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky`;
+    },
+    function packCollectibleCaption(presentation, modeLabel) {
+      return `${presentation.playerName} // LV ${presentation.level}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky`;
+    },
+  ];
   const STATE = {
     variant: "hub",
     presentation: null,
@@ -29,6 +40,7 @@
     upload: null,
     busy: false,
     openPromise: null,
+    previewFxAnimations: [],
   };
   const DEBUG = !!global.DBG;
 
@@ -339,7 +351,7 @@
 
   function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
     const normalized = String(text || "")
-      .replace(/â€˘|•/g, "|")
+      .replace(/(?:\u00e2\u20ac\u00a2|\u2022)/g, "|")
       .replace(/\s*\|\s*/g, " | ")
       .trim();
     const words = normalized.split(/\s+/).filter(Boolean);
@@ -834,14 +846,117 @@
     ctx.textAlign = "left";
   }
 
+  function captionModeLabel(variant) {
+    return variant === "equipped" ? "live loadout" : "live identity";
+  }
+
+  function getCaptionVariants(presentation) {
+    const source = presentation || {};
+    const normalized = {
+      playerName: String(source.playerName || "Howler").trim() || "Howler",
+      level: Number(source.level) > 0 ? Number(source.level) : 1,
+      variant: sanitizeVariant(source.variant),
+    };
+    const modeLabel = captionModeLabel(normalized.variant);
+    return CAPTION_VARIANTS.map((builder) => builder(normalized, modeLabel));
+  }
+
   function buildCaption(presentation) {
-    const link = TELEGRAM_PACK_LINK;
-    const name = presentation?.playerName || "Howler";
-    const level = presentation?.level || 1;
-    if (presentation?.variant === "equipped") {
-      return `${name}'s current Alpha Husky loadout is live.\nLevel ${level}. Built from the in-app equipped state, not promo art.\n\nJoin the pack on Telegram: ${link}\n#AlphaHusky #TelegramMiniApp`;
+    const variants = getCaptionVariants(presentation);
+    return variants[DEFAULT_CAPTION_VARIANT_INDEX] || variants[0] || "@The_Alpha_Husky #AlphaHusky";
+  }
+
+  function stopPreviewFx() {
+    if (Array.isArray(STATE.previewFxAnimations)) {
+      STATE.previewFxAnimations.forEach((anim) => {
+        try { anim?.cancel?.(); } catch (_) {}
+      });
     }
-    return `${name}'s Alpha Husky identity is live.\nLevel ${level}. This card matches the active hub presentation in-game.\n\nJoin the pack on Telegram: ${link}\n#AlphaHusky #TelegramMiniApp`;
+    STATE.previewFxAnimations = [];
+    const fxRoot = $("shareCardPreviewFx");
+    if (fxRoot) fxRoot.style.opacity = "0";
+  }
+
+  function positionPreviewFx(variant) {
+    const fxRoot = $("shareCardPreviewFx");
+    if (!fxRoot) return null;
+    const eyes = fxRoot.querySelector('[data-fx="eyes"]');
+    const core = fxRoot.querySelector('[data-fx="core"]');
+    const sheen = fxRoot.querySelector('[data-fx="sheen"]');
+    if (!eyes || !core || !sheen) return null;
+
+    const mode = sanitizeVariant(variant);
+    fxRoot.dataset.variant = mode;
+    if (mode === "equipped") {
+      eyes.style.top = "27%";
+      eyes.style.width = "19%";
+      core.style.top = "50.5%";
+      core.style.width = "14%";
+      sheen.style.top = "72.5%";
+      sheen.style.left = "56%";
+      sheen.style.width = "34%";
+      sheen.style.height = "10%";
+    } else {
+      eyes.style.top = "28.5%";
+      eyes.style.width = "16%";
+      core.style.top = "47%";
+      core.style.width = "12%";
+      sheen.style.top = "74%";
+      sheen.style.left = "57%";
+      sheen.style.width = "30%";
+      sheen.style.height = "10%";
+    }
+    return { eyes, core, sheen, fxRoot };
+  }
+
+  function startPreviewFx(variant) {
+    stopPreviewFx();
+    const nodes = positionPreviewFx(variant);
+    if (!nodes) return;
+    const { eyes, core, sheen, fxRoot } = nodes;
+
+    const modal = $("shareBack");
+    if (!modal || modal.style.display === "none" || modal.dataset.open !== "1") return;
+    if (document.hidden) return;
+
+    const reduceMotion = !!(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const supportsAnimate = typeof eyes.animate === "function" && typeof core.animate === "function" && typeof sheen.animate === "function";
+    if (reduceMotion || !supportsAnimate) {
+      fxRoot.style.opacity = "0.26";
+      return;
+    }
+
+    fxRoot.style.opacity = "1";
+    const baseEye = "translate(-50%, -50%)";
+    const baseCore = "translate(-50%, -50%)";
+    const baseSheen = "translate(-16%, 0)";
+
+    STATE.previewFxAnimations = [
+      eyes.animate(
+        [
+          { opacity: 0.08, transform: `${baseEye} scale(0.94)` },
+          { opacity: 0.34, transform: `${baseEye} scale(1.04)` },
+          { opacity: 0.10, transform: `${baseEye} scale(0.96)` },
+        ],
+        { duration: 2400, iterations: Infinity, easing: "ease-in-out" }
+      ),
+      core.animate(
+        [
+          { opacity: 0.07, transform: `${baseCore} scale(0.92)` },
+          { opacity: 0.28, transform: `${baseCore} scale(1.05)` },
+          { opacity: 0.09, transform: `${baseCore} scale(0.96)` },
+        ],
+        { duration: 3050, iterations: Infinity, easing: "ease-in-out", delay: 240 }
+      ),
+      sheen.animate(
+        [
+          { opacity: 0, transform: `${baseSheen} skewX(-16deg)` },
+          { opacity: 0.16, transform: "translate(16%, 0) skewX(-16deg)" },
+          { opacity: 0, transform: "translate(42%, 0) skewX(-16deg)" },
+        ],
+        { duration: 5400, iterations: Infinity, easing: "ease-in-out", delay: 520 }
+      ),
+    ];
   }
 
   function buildXIntent(caption, link) {
@@ -913,9 +1028,11 @@
     const contextEl = $("shareCardContext");
     const captionEl = $("shareCardCaptionPreview");
     const noteEl = $("shareCardMeta");
+    const canvasWrap = $("shareCardCanvasWrap");
     if (titleEl) titleEl.textContent = STATE.presentation.variant === "equipped" ? "Share Equipped Build" : "Share Hub Identity";
     if (contextEl) contextEl.textContent = STATE.presentation.variant === "equipped" ? "Equipped preview" : "Main Hub preview";
     if (captionEl) captionEl.textContent = caption;
+    if (canvasWrap) canvasWrap.dataset.variant = sanitizeVariant(STATE.presentation.variant);
     if (noteEl) {
       noteEl.textContent = STATE.presentation.variant === "equipped"
         ? "Rendered from live profile + current equipped preview."
@@ -932,6 +1049,7 @@
       tgBtn.disabled = !canNativeShare;
       tgBtn.title = canNativeShare ? "" : "Telegram native share is unavailable in this client.";
     }
+    startPreviewFx(STATE.presentation.variant);
     log("render:done", { variant: STATE.variant, size: STATE.pngBlob?.size || 0 });
     return STATE.pngBlob;
   }
@@ -1020,6 +1138,7 @@
   function hideModal() {
     const modal = $("shareBack");
     if (!modal) return;
+    stopPreviewFx();
     modal.style.display = "none";
     delete modal.dataset.open;
     document.body.classList.remove("ah-sheet-open");
@@ -1038,6 +1157,7 @@
       return STATE.openPromise;
     }
     STATE.variant = nextVariant;
+    stopPreviewFx();
     modal.style.display = "flex";
     modal.dataset.open = "1";
     document.body.classList.add("ah-sheet-open");
@@ -1105,10 +1225,24 @@
         toast("X share link failed to open.");
       }
     });
+
+    document.addEventListener("visibilitychange", () => {
+      const modal = $("shareBack");
+      if (!modal || modal.style.display === "none" || modal.dataset.open !== "1") {
+        stopPreviewFx();
+        return;
+      }
+      if (document.hidden) {
+        stopPreviewFx();
+      } else {
+        startPreviewFx(STATE.variant);
+      }
+    });
   }
 
   global.ShareCard = global.ShareCard || {};
   global.ShareCard.buildSharePresentation = buildSharePresentation;
+  global.ShareCard.getCaptionVariants = getCaptionVariants;
   global.ShareCard.open = open;
   global.ShareCard.openHub = function openHub() { return open("hub"); };
   global.ShareCard.openEquipped = function openEquipped() { return open("equipped"); };
