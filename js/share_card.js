@@ -2,6 +2,7 @@
   const CARD_WIDTH = 1200;
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
+  const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
   const X_MANUAL_ATTACH_NOTE = "Image saved. To post on X, attach the saved image manually.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
@@ -23,13 +24,13 @@
   const DEFAULT_CAPTION_VARIANT_INDEX = 0;
   const CAPTION_VARIANTS = [
     function premiumFounderCaption(presentation, modeLabel) {
-      return `${presentation.playerName} - Founder LV ${presentation.level}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky`;
+      return `${presentation.playerName} - Founder LV ${presentation.level}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
     function statusFounderCaption(presentation, modeLabel) {
-      return `Founder ${presentation.playerName} - LV ${presentation.level}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky`;
+      return `Founder ${presentation.playerName} - LV ${presentation.level}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
     function packCollectibleCaption(presentation, modeLabel) {
-      return `${presentation.playerName} // LV ${presentation.level}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky`;
+      return `${presentation.playerName} // LV ${presentation.level}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
   ];
   const STATE = {
@@ -588,7 +589,7 @@
 
     ctx.fillStyle = "rgba(232,239,249,0.74)";
     ctx.font = "700 15px system-ui, sans-serif";
-    ctx.fillText(subtitle, x + 34, y + 32);
+    ctx.fillText(subtitle, x + 34, y + 38);
 
     const levelW = 196;
     const levelH = 94;
