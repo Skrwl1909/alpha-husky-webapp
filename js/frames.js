@@ -40,26 +40,26 @@
     const style = document.createElement("style");
     style.id = "ah-frames-style";
     style.textContent = `
+      #framesBack .sheet-card{
+        display:flex;
+        flex-direction:column;
+        max-height:min(84vh, 760px);
+        overflow:hidden;
+        padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px));
+      }
       #framesBack .ah-frames-preview-wrap{
-        width:min(336px, 86vw);
-        margin:12px auto 10px;
+        width:min(320px, 84vw);
+        margin:10px auto 8px;
+        flex:0 0 auto;
       }
       #framesBack .ah-frames-preview{
         position:relative;
         width:100%;
         aspect-ratio: 2 / 3;
-        border-radius:18px;
+        border-radius:16px;
         overflow:hidden;
-        border:1px solid rgba(255,255,255,.12);
-        background:radial-gradient(110% 110% at 50% 12%, rgba(255,255,255,.08), rgba(8,10,16,.92));
-        box-shadow: 0 10px 24px rgba(0,0,0,.35);
-      }
-      #framesBack .ah-frames-preview::after{
-        content:"";
-        position:absolute;
-        inset:0;
-        pointer-events:none;
-        background:radial-gradient(120% 80% at 50% 56%, transparent 58%, rgba(0,0,0,.32) 100%);
+        border:1px solid rgba(255,255,255,.14);
+        background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(8,10,16,.90));
       }
       #framesBack .ah-frames-preview-skin,
       #framesBack .ah-frames-preview-frame{
@@ -68,34 +68,43 @@
         height:100%;
       }
       #framesBack .ah-frames-preview-skin{
-        inset:7% 9% 8%;
+        inset:4.5% 8.5% 14%;
         width:auto;
         height:auto;
         object-fit:cover;
-        border-radius:14px;
-        filter:drop-shadow(0 6px 14px rgba(0,0,0,.25));
+        object-position:50% 20%;
+        border-radius:12px;
+        filter:drop-shadow(0 4px 10px rgba(0,0,0,.20));
       }
       #framesBack .ah-frames-preview-frame{
-        inset:2.2%;
+        inset:2%;
         object-fit:contain;
+        object-position:center;
         pointer-events:none;
-        opacity:.96;
-        filter:drop-shadow(0 4px 12px rgba(0,0,0,.24));
+        opacity:.92;
+        filter:drop-shadow(0 3px 10px rgba(0,0,0,.22));
       }
       #framesBack .ah-frames-help{
         text-align:center;
         opacity:.76;
         font-size:12px;
-        margin:6px 0 9px;
+        margin:6px 0 8px;
+        flex:0 0 auto;
       }
       #framesBack #frameButtons{
         display:grid;
         grid-template-columns:repeat(2, minmax(0, 1fr));
         gap:8px;
+        flex:1 1 auto;
+        min-height:0;
+        overflow:auto;
+        align-content:start;
+        padding:2px 2px calc(96px + env(safe-area-inset-bottom, 0px));
+        -webkit-overflow-scrolling:touch;
       }
       #framesBack .frame-btn{
         border:1px solid rgba(255,255,255,.14);
-        background:rgba(255,255,255,.04);
+        background:rgba(255,255,255,.03);
         color:var(--tg-theme-text-color, #fff);
         border-radius:12px;
         padding:6px;
@@ -108,30 +117,32 @@
       #framesBack .frame-btn-thumb{
         position:relative;
         width:100%;
-        aspect-ratio: 4 / 5;
+        aspect-ratio: 16 / 10;
         border-radius:10px;
         overflow:hidden;
-        background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(7,10,16,.86));
+        background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(7,10,16,.84));
         border:1px solid rgba(255,255,255,.08);
       }
-      #framesBack .frame-btn-thumb-skin,
       #framesBack .frame-btn-thumb-frame{
         position:absolute;
         inset:0;
         width:100%;
         height:100%;
       }
-      #framesBack .frame-btn-thumb-skin{
-        inset:7% 8% 10%;
-        width:auto;
-        height:auto;
-        object-fit:cover;
-        border-radius:8px;
-      }
       #framesBack .frame-btn-thumb-frame{
-        inset:3%;
+        inset:7%;
         object-fit:contain;
         pointer-events:none;
+      }
+      #framesBack .frame-btn-thumb-empty{
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:10px;
+        color:rgba(255,255,255,.62);
+        letter-spacing:.02em;
       }
       #framesBack .frame-btn-meta{
         margin-top:6px;
@@ -154,22 +165,22 @@
         display:inline-flex;
         align-items:center;
         justify-content:center;
-        height:18px;
-        padding:0 7px;
+        height:17px;
+        padding:0 6px;
         border-radius:999px;
-        font-size:10px;
+        font-size:9px;
         letter-spacing:.02em;
         border:1px solid transparent;
       }
       #framesBack .frame-chip.is-equipped{
-        color:#e7f8ff;
-        background:rgba(20,164,255,.14);
-        border-color:rgba(20,164,255,.42);
+        color:#dbf4ff;
+        background:rgba(20,164,255,.12);
+        border-color:rgba(20,164,255,.34);
       }
       #framesBack .frame-chip.is-owned{
         color:rgba(255,255,255,.82);
-        background:rgba(255,255,255,.08);
-        border-color:rgba(255,255,255,.24);
+        background:rgba(255,255,255,.07);
+        border-color:rgba(255,255,255,.20);
       }
       #framesBack .frame-chip.is-locked{
         color:rgba(255,255,255,.66);
@@ -177,8 +188,8 @@
         border-color:rgba(255,255,255,.12);
       }
       #framesBack .frame-btn.active{
-        border-color:rgba(120,208,255,.65);
-        box-shadow:0 0 0 1px rgba(120,208,255,.22) inset;
+        border-color:rgba(120,208,255,.56);
+        box-shadow:0 0 0 1px rgba(120,208,255,.18) inset;
       }
       #framesBack .frame-btn.is-equipped{
         border-color:rgba(120,208,255,.36);
@@ -339,7 +350,6 @@
 
     const all = [{ key: "default", display_name: "No Frame", preview_url: "", source: "" }, ...(_catalog || [])];
     const equippedKey = normKey(_equipped?.frame || "") || "default";
-    const thumbSkinUrl = currentHeroSkinUrl();
 
     all.forEach((item) => {
       const key = normKey(item?.key);
@@ -358,8 +368,8 @@
       button.innerHTML = `
         <span class="frame-btn-inner">
           <span class="frame-btn-thumb">
-            <img class="frame-btn-thumb-skin" src="${thumbSkinUrl}" alt="" loading="lazy" />
             <img class="frame-btn-thumb-frame" src="${thumbFrameUrl}" alt="" loading="lazy" ${thumbFrameUrl ? "" : 'style="display:none"'} />
+            ${thumbFrameUrl ? "" : '<span class="frame-btn-thumb-empty">No Frame</span>'}
           </span>
           <span class="frame-btn-meta">
             <span class="frame-btn-name">${escapeHtml(name)}</span>
