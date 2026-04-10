@@ -53,7 +53,8 @@
         border:1px solid rgba(255,255,255,.12);
         background:rgba(0,0,0,.35);
       }
-      #framesBack .ah-frames-preview-skin,
+      
+#framesBack .ah-frames-preview-skin,
 #framesBack .ah-frames-preview-frame{
   position:absolute;
   inset:0;
@@ -63,15 +64,15 @@
 
 #framesBack .ah-frames-preview-skin{
   object-fit:contain;
-  object-position:center 50%;
-  transform:scale(.88);
+  object-position:center 54%;
+  transform:scale(.82);
   transform-origin:center center;
 }
 
 #framesBack .ah-frames-preview-frame{
   object-fit:contain;
   object-position:center center;
-  transform:scale(1.05);
+  transform:scale(1.08);
   transform-origin:center center;
   pointer-events:none;
 }
