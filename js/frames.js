@@ -41,47 +41,151 @@
     style.id = "ah-frames-style";
     style.textContent = `
       #framesBack .ah-frames-preview-wrap{
-        width:min(360px, 88vw);
-        margin:14px auto 10px;
+        width:min(336px, 86vw);
+        margin:12px auto 10px;
       }
       #framesBack .ah-frames-preview{
         position:relative;
         width:100%;
         aspect-ratio: 2 / 3;
-        border-radius:16px;
+        border-radius:18px;
         overflow:hidden;
         border:1px solid rgba(255,255,255,.12);
-        background:rgba(0,0,0,.35);
+        background:radial-gradient(110% 110% at 50% 12%, rgba(255,255,255,.08), rgba(8,10,16,.92));
+        box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      }
+      #framesBack .ah-frames-preview::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:radial-gradient(120% 80% at 50% 56%, transparent 58%, rgba(0,0,0,.32) 100%);
       }
       #framesBack .ah-frames-preview-skin,
       #framesBack .ah-frames-preview-frame{
         position:absolute;
-        inset:0;
         width:100%;
         height:100%;
-        object-fit:cover;
       }
       #framesBack .ah-frames-preview-skin{
-        object-fit:contain;
+        inset:7% 9% 8%;
+        width:auto;
+        height:auto;
+        object-fit:cover;
+        border-radius:14px;
+        filter:drop-shadow(0 6px 14px rgba(0,0,0,.25));
       }
       #framesBack .ah-frames-preview-frame{
+        inset:2.2%;
+        object-fit:contain;
         pointer-events:none;
+        opacity:.96;
+        filter:drop-shadow(0 4px 12px rgba(0,0,0,.24));
       }
       #framesBack .ah-frames-help{
         text-align:center;
         opacity:.76;
         font-size:12px;
-        margin:6px 0 10px;
+        margin:6px 0 9px;
+      }
+      #framesBack #frameButtons{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:8px;
       }
       #framesBack .frame-btn{
+        border:1px solid rgba(255,255,255,.14);
+        background:rgba(255,255,255,.04);
+        color:var(--tg-theme-text-color, #fff);
+        border-radius:12px;
+        padding:6px;
+        text-align:left;
+        white-space:normal;
+      }
+      #framesBack .frame-btn-inner{
+        display:block;
+      }
+      #framesBack .frame-btn-thumb{
+        position:relative;
+        width:100%;
+        aspect-ratio: 4 / 5;
+        border-radius:10px;
+        overflow:hidden;
+        background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(7,10,16,.86));
+        border:1px solid rgba(255,255,255,.08);
+      }
+      #framesBack .frame-btn-thumb-skin,
+      #framesBack .frame-btn-thumb-frame{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+      }
+      #framesBack .frame-btn-thumb-skin{
+        inset:7% 8% 10%;
+        width:auto;
+        height:auto;
+        object-fit:cover;
+        border-radius:8px;
+      }
+      #framesBack .frame-btn-thumb-frame{
+        inset:3%;
+        object-fit:contain;
+        pointer-events:none;
+      }
+      #framesBack .frame-btn-meta{
+        margin-top:6px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:6px;
+      }
+      #framesBack .frame-btn-name{
+        display:block;
+        min-width:0;
+        font-size:11px;
+        font-weight:600;
+        line-height:1.2;
+        overflow:hidden;
+        text-overflow:ellipsis;
         white-space:nowrap;
       }
+      #framesBack .frame-chip{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        height:18px;
+        padding:0 7px;
+        border-radius:999px;
+        font-size:10px;
+        letter-spacing:.02em;
+        border:1px solid transparent;
+      }
+      #framesBack .frame-chip.is-equipped{
+        color:#e7f8ff;
+        background:rgba(20,164,255,.14);
+        border-color:rgba(20,164,255,.42);
+      }
+      #framesBack .frame-chip.is-owned{
+        color:rgba(255,255,255,.82);
+        background:rgba(255,255,255,.08);
+        border-color:rgba(255,255,255,.24);
+      }
+      #framesBack .frame-chip.is-locked{
+        color:rgba(255,255,255,.66);
+        background:rgba(255,255,255,.03);
+        border-color:rgba(255,255,255,.12);
+      }
       #framesBack .frame-btn.active{
-        background:var(--tg-theme-button-color, rgba(16,185,129,.18));
-        color:var(--tg-theme-button-text-color, #fff);
+        border-color:rgba(120,208,255,.65);
+        box-shadow:0 0 0 1px rgba(120,208,255,.22) inset;
+      }
+      #framesBack .frame-btn.is-equipped{
+        border-color:rgba(120,208,255,.36);
       }
       #framesBack .frame-btn.locked{
-        opacity:.62;
+        opacity:.6;
+        filter:grayscale(.36);
       }
     `;
     document.head.appendChild(style);
@@ -172,6 +276,15 @@
     return String(item?.source || item?.source_label || item?.sourceLabel || "").trim();
   }
 
+  function escapeHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function isOwnedKey(key) {
     const k = normKey(key);
     if (!k || k === "default") return true;
@@ -226,6 +339,7 @@
 
     const all = [{ key: "default", display_name: "No Frame", preview_url: "", source: "" }, ...(_catalog || [])];
     const equippedKey = normKey(_equipped?.frame || "") || "default";
+    const thumbSkinUrl = currentHeroSkinUrl();
 
     all.forEach((item) => {
       const key = normKey(item?.key);
@@ -233,12 +347,26 @@
       const equipped = key === equippedKey;
       const name = frameDisplayName(item);
       const source = frameSourceLabel(item);
+      const thumbFrameUrl = framePreviewUrl(item);
+      const chipText = equipped ? "Equipped" : (owned ? "Unlocked" : "Locked");
+      const chipClass = equipped ? "is-equipped" : (owned ? "is-owned" : "is-locked");
 
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "btn skin-btn frame-btn" + (owned ? "" : " locked");
+      button.className = "btn skin-btn frame-btn" + (owned ? "" : " locked") + (equipped ? " is-equipped" : "");
       button.dataset.frame = key;
-      button.textContent = `${name}${equipped ? " [equipped]" : (owned || key === "default" ? "" : " [locked]")}`;
+      button.innerHTML = `
+        <span class="frame-btn-inner">
+          <span class="frame-btn-thumb">
+            <img class="frame-btn-thumb-skin" src="${thumbSkinUrl}" alt="" loading="lazy" />
+            <img class="frame-btn-thumb-frame" src="${thumbFrameUrl}" alt="" loading="lazy" ${thumbFrameUrl ? "" : 'style="display:none"'} />
+          </span>
+          <span class="frame-btn-meta">
+            <span class="frame-btn-name">${escapeHtml(name)}</span>
+            <span class="frame-chip ${chipClass}">${chipText}</span>
+          </span>
+        </span>
+      `;
       button.addEventListener("click", () => {
         frameButtonsWrap.querySelectorAll(".frame-btn").forEach((el) => el.classList.remove("active"));
         button.classList.add("active");
