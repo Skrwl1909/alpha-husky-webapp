@@ -1,4 +1,4 @@
-// js/support.js - Unified Support Alpha sheet (Stars + Solana holder lane)
+﻿// js/support.js - Unified Support Alpha sheet (Stars + Solana holder lane)
 (function () {
   let _tg = null;
   let _apiPost = null;
@@ -148,7 +148,7 @@
       if (Array.isArray(lane.skinUnlocks) && lane.skinUnlocks.length) {
         parts.push(`Support skins: ${lane.skinUnlocks.join(", ")}`);
       }
-      setText("supportStarsStatus", `Stars lane active. ${parts.join(" • ")}`);
+      setText("supportStarsStatus", `Stars lane active. ${parts.join(" â€˘ ")}`);
       return;
     }
 
@@ -218,7 +218,7 @@
     if (lane.linked) {
       setText(
         "supportTokenStatus",
-        `Wallet: ${wallet} • Tier ${tier} • Balance raw: ${lane.balanceRaw || "0"} • Last check: ${checked}`
+        `Wallet: ${wallet} â€˘ Tier ${tier} â€˘ Balance raw: ${lane.balanceRaw || "0"} â€˘ Last check: ${checked}`
       );
     } else {
       setText(
@@ -229,11 +229,20 @@
 
     const perks = [];
     if (lane.badge) perks.push(`Badge: ${lane.badge}`);
-    if (lane.frame && lane.frameUrl) perks.push(`Frame: ${lane.frame}`);
+
+    const frameOptions = Array.isArray(lane.frameOptions) ? lane.frameOptions : [];
+    if (frameOptions.length) {
+      const ownedFrames = frameOptions
+        .map((opt) => String(opt?.key || opt?.name || "").trim())
+        .filter(Boolean);
+      if (ownedFrames.length) perks.push(`Owned frames: ${ownedFrames.join(", ")}`);
+    }
+
+    if (lane.frame && lane.frameUrl) perks.push(`Active frame: ${lane.frame}`);
     if (lane.skin) perks.push(`Tier 3 skin: ${lane.skin}`);
     if (!perks.length) perks.push("Perks unlock by holder tier only.");
     perks.push(claim);
-    setText("supportTokenPerks", perks.join(" • "));
+    setText("supportTokenPerks", perks.join(" â€˘ "));
 
     const provider = getSolanaProvider();
     const providerAddr =
@@ -287,7 +296,7 @@
       );
       setText(
         "supportCombinedPerks",
-        `Stars tier: ${stars.tierKey || "active"} • Token tier: ${token.tier || 0} • Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}`
+        `Stars tier: ${stars.tierKey || "active"} â€˘ Token tier: ${token.tier || 0} â€˘ Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}`
       );
       return;
     }
@@ -305,7 +314,7 @@
 
     if (tokenEnabled && Number(token.tier || 0) > 0) {
       setText("supportCombinedStatus", "Token-only supporter. Believe holder lane is active.");
-      setText("supportCombinedPerks", `Holder tier: ${token.tier || 0} • Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}.`);
+      setText("supportCombinedPerks", `Holder tier: ${token.tier || 0} â€˘ Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}.`);
       return;
     }
 
@@ -591,3 +600,4 @@
   window.Support.init = init;
   window.Support.open = open;
 })();
+

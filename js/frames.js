@@ -1,4 +1,4 @@
-// js/frames.js - lightweight Frames modal (owned/equipped cosmetic slot)
+﻿// js/frames.js - lightweight Frames modal (owned/equipped cosmetic slot)
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -108,7 +108,7 @@
             </div>
           </div>
 
-          <div id="frameDesc" style="text-align:center; opacity:.84; font-size:12px;">—</div>
+          <div id="frameDesc" style="text-align:center; opacity:.84; font-size:12px;">-</div>
           <div class="ah-frames-help">Frames are cosmetic only.</div>
 
           <div style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
@@ -153,15 +153,37 @@
     }
   }
 
-  function isOwned(key) {
+  function framePreviewUrl(item) {
+    return String(
+      item?.preview_url ||
+      item?.previewUrl ||
+      item?.img ||
+      item?.frame_url ||
+      item?.frameUrl ||
+      ""
+    ).trim();
+  }
+
+  function frameDisplayName(item) {
+    return String(item?.display_name || item?.displayName || item?.name || item?.key || "Frame").trim();
+  }
+
+  function frameSourceLabel(item) {
+    return String(item?.source || item?.source_label || item?.sourceLabel || "").trim();
+  }
+
+  function isOwnedKey(key) {
     const k = normKey(key);
     if (!k || k === "default") return true;
     return Array.isArray(_owned) && _owned.includes(k);
   }
 
-  function getMeta(key) {
+  function frameOwned(item, key) {
     const k = normKey(key);
-    return (_catalog || []).find((x) => normKey(x?.key) === k) || null;
+    if (!k || k === "default") return true;
+    if (typeof item?.effective === "boolean") return !!item.effective;
+    if (typeof item?.owned === "boolean") return !!item.owned;
+    return isOwnedKey(k);
   }
 
   function close() {
@@ -172,9 +194,16 @@
   function setPrimaryState() {
     if (!equipBtn) return;
     const k = normKey(_selectedKey);
+    const equipped = normKey(_equipped?.frame || "");
+
     if (!k) {
       equipBtn.disabled = true;
       equipBtn.textContent = "Pick a frame";
+      return;
+    }
+    if (k === equipped) {
+      equipBtn.disabled = true;
+      equipBtn.textContent = k === "default" ? "No Frame Equipped" : "Equipped";
       return;
     }
     if (k === "default") {
@@ -182,7 +211,7 @@
       equipBtn.textContent = "Use No Frame";
       return;
     }
-    if (isOwned(k)) {
+    if (isOwnedKey(k)) {
       equipBtn.disabled = false;
       equipBtn.textContent = "Equip Frame";
       return;
@@ -195,29 +224,39 @@
     if (!frameButtonsWrap) return;
     frameButtonsWrap.innerHTML = "";
 
-    const all = [{ key: "default", name: "No Frame", img: "" }, ...(_catalog || [])];
+    const all = [{ key: "default", display_name: "No Frame", preview_url: "", source: "" }, ...(_catalog || [])];
+    const equippedKey = normKey(_equipped?.frame || "") || "default";
+
     all.forEach((item) => {
       const key = normKey(item?.key);
-      const owned = isOwned(key);
+      const owned = frameOwned(item, key);
+      const equipped = key === equippedKey;
+      const name = frameDisplayName(item);
+      const source = frameSourceLabel(item);
+
       const button = document.createElement("button");
       button.type = "button";
       button.className = "btn skin-btn frame-btn" + (owned ? "" : " locked");
       button.dataset.frame = key;
-      button.textContent = (item?.name || key || "Frame") + (owned || key === "default" ? "" : " [locked]");
+      button.textContent = `${name}${equipped ? " [equipped]" : (owned || key === "default" ? "" : " [locked]")}`;
       button.addEventListener("click", () => {
         frameButtonsWrap.querySelectorAll(".frame-btn").forEach((el) => el.classList.remove("active"));
         button.classList.add("active");
         _selectedKey = key;
+
         if (frameDesc) {
           if (key === "default") {
             frameDesc.textContent = "No frame equipped.";
+          } else if (owned && equipped) {
+            frameDesc.textContent = `${name}${source ? ` - ${source}` : ""} - equipped.`;
           } else if (owned) {
-            frameDesc.textContent = `${item?.name || key} — owned.`;
+            frameDesc.textContent = `${name}${source ? ` - ${source}` : ""} - unlocked.`;
           } else {
-            frameDesc.textContent = `${item?.name || key} — locked.`;
+            frameDesc.textContent = `${name}${source ? ` - ${source}` : ""} - locked.`;
           }
         }
-        setPreview(item?.img || "");
+
+        setPreview(framePreviewUrl(item));
         setPrimaryState();
         haptic("light");
       });
@@ -259,7 +298,7 @@
       showAlert("Frames are not ready yet.");
       return;
     }
-    if (key !== "default" && !isOwned(key)) {
+    if (key !== "default" && !isOwnedKey(key)) {
       showAlert("This frame is locked.");
       return;
     }
