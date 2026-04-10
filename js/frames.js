@@ -54,19 +54,27 @@
         background:rgba(0,0,0,.35);
       }
       #framesBack .ah-frames-preview-skin,
-      #framesBack .ah-frames-preview-frame{
-        position:absolute;
-        inset:0;
-        width:100%;
-        height:100%;
-        object-fit:cover;
-      }
-      #framesBack .ah-frames-preview-skin{
-        object-fit:contain;
-      }
-      #framesBack .ah-frames-preview-frame{
-        pointer-events:none;
-      }
+#framesBack .ah-frames-preview-frame{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+#framesBack .ah-frames-preview-skin{
+  object-fit:contain;
+  object-position:center 50%;
+  transform:scale(.88);
+  transform-origin:center center;
+}
+
+#framesBack .ah-frames-preview-frame{
+  object-fit:contain;
+  object-position:center center;
+  transform:scale(1.05);
+  transform-origin:center center;
+  pointer-events:none;
+}
       #framesBack .ah-frames-help{
         text-align:center;
         opacity:.76;
