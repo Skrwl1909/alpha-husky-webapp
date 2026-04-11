@@ -8,6 +8,7 @@
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
+  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinStateChip;
 
   // claim UI (dynamic)
   let claimWrap, claimInput, claimBtn;
@@ -40,6 +41,308 @@
     return (key || "").trim().toLowerCase();
   }
 
+  function currentHeroSkinUrl() {
+    const hero = document.getElementById("player-skin");
+    const src = hero?.currentSrc || hero?.src || "";
+    return String(src || "").trim();
+  }
+
+  function ensurePolishCss() {
+    if (document.getElementById("ah-skins-style")) return;
+    const style = document.createElement("style");
+    style.id = "ah-skins-style";
+    style.textContent = `
+      #avatarBack .sheet-card{
+        overflow-x:hidden;
+        padding-bottom:calc(14px + var(--ah-safe-bottom, 0px));
+      }
+      #avatarBack .ah-skin-stage-wrap{
+        width:min(368px, 88vw);
+        margin:12px auto 8px;
+        animation:ahSkinStageIn .22s ease-out both;
+      }
+      #avatarBack .ah-skin-stage{
+        position:relative;
+        width:100%;
+        aspect-ratio:2 / 3;
+        border-radius:18px;
+        overflow:hidden;
+        isolation:isolate;
+        border:1px solid rgba(255,255,255,.14);
+        background:
+          radial-gradient(130% 92% at 50% 18%, rgba(255,255,255,.11) 0%, rgba(255,255,255,0) 56%),
+          linear-gradient(180deg, rgba(11,14,22,.96), rgba(3,5,10,.96));
+        box-shadow:0 18px 42px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06);
+      }
+      #avatarBack .ah-skin-stage::before{
+        content:"";
+        position:absolute;
+        inset:-12% -8% 26%;
+        pointer-events:none;
+        background:radial-gradient(closest-side, rgba(130,151,196,.26), rgba(130,151,196,0));
+        z-index:0;
+      }
+      #avatarBack .ah-skin-stage::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+          radial-gradient(120% 110% at 50% 110%, rgba(0,0,0,0) 48%, rgba(0,0,0,.45) 100%),
+          linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.26));
+        z-index:3;
+      }
+      #avatarBack #skinPreviewImg.ah-skin-preview-media,
+      #avatarBack #skinCanvas.ah-skin-preview-media{
+        position:absolute !important;
+        inset:0 !important;
+        width:100% !important;
+        height:100% !important;
+        max-width:none !important;
+        max-height:none !important;
+        margin:0 !important;
+        border:0 !important;
+        border-radius:0 !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        z-index:1;
+      }
+      #avatarBack #skinPreviewImg.ah-skin-preview-media{
+        object-fit:contain !important;
+        object-position:center 36% !important;
+      }
+      #avatarBack .ah-skin-stage-frame{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        object-position:center;
+        transform:scale(.95);
+        transform-origin:center center;
+        filter:drop-shadow(0 8px 14px rgba(0,0,0,.30));
+        pointer-events:none;
+        z-index:2;
+        display:none;
+      }
+      #avatarBack .ah-skin-info{
+        width:min(368px, 88vw);
+        margin:8px auto 6px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.11);
+        background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      }
+      #avatarBack .ah-skin-info-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+      }
+      #avatarBack .ah-skin-info-name{
+        min-width:0;
+        font-size:14px;
+        font-weight:700;
+        letter-spacing:.01em;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      #avatarBack .ah-skin-info-meta{
+        margin-top:4px;
+        font-size:12px;
+        color:rgba(230,238,255,.74);
+      }
+      #avatarBack .ah-skin-chip{
+        flex:0 0 auto;
+        border-radius:999px;
+        padding:2px 8px;
+        font-size:11px;
+        font-weight:700;
+        border:1px solid rgba(255,255,255,.22);
+        background:rgba(255,255,255,.07);
+        color:rgba(255,255,255,.92);
+      }
+      #avatarBack #skinDesc{
+        width:min(368px, 88vw);
+        margin:4px auto 0;
+        text-align:center;
+        font-size:12px;
+        line-height:1.45;
+        color:rgba(229,236,248,.78);
+      }
+      #avatarBack .ah-skin-actions{
+        margin:10px 0;
+      }
+      #avatarBack .ah-skin-actions #equipSkin,
+      #avatarBack .ah-skin-actions #shareSkin{
+        min-height:44px;
+        border-radius:12px;
+        font-size:14px;
+        font-weight:700;
+      }
+      #avatarBack #skinButtons.skins-grid{
+        width:min(368px, 88vw);
+        margin:10px auto 2px;
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        gap:8px;
+        padding-bottom:max(14px, env(safe-area-inset-bottom));
+      }
+      #avatarBack .skin-btn.ah-skin-tile{
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        gap:6px;
+        min-height:118px;
+        white-space:normal;
+        text-align:left;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.14);
+        background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+        transition:border-color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease, filter .18s ease;
+      }
+      #avatarBack .skin-btn.ah-skin-tile.equipped{
+        border-color:rgba(147,197,253,.44);
+      }
+      #avatarBack .skin-btn.ah-skin-tile.active{
+        border-color:rgba(196,232,255,.8);
+        box-shadow:0 0 0 1px rgba(196,232,255,.24), 0 8px 18px rgba(0,0,0,.24);
+      }
+      #avatarBack .skin-btn.ah-skin-tile.locked{
+        opacity:.6;
+        filter:grayscale(.46);
+      }
+      #avatarBack .ah-skin-thumb{
+        position:relative;
+        height:56px;
+        border-radius:10px;
+        overflow:hidden;
+        border:1px solid rgba(255,255,255,.08);
+        background:
+          radial-gradient(100% 70% at 50% 22%, rgba(255,255,255,.10), rgba(255,255,255,0)),
+          linear-gradient(180deg, rgba(13,17,26,.94), rgba(6,9,15,.94));
+      }
+      #avatarBack .ah-skin-thumb img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center 30%;
+        opacity:.95;
+        pointer-events:none;
+      }
+      #avatarBack .ah-skin-thumb-empty{
+        height:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:10px;
+        font-weight:700;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+        color:rgba(255,255,255,.65);
+      }
+      #avatarBack .ah-skin-title{
+        font-size:12px;
+        font-weight:700;
+        line-height:1.2;
+        color:rgba(247,251,255,.95);
+        display:-webkit-box;
+        -webkit-line-clamp:2;
+        -webkit-box-orient:vertical;
+        overflow:hidden;
+      }
+      #avatarBack .ah-skin-state{
+        align-self:flex-start;
+        border-radius:999px;
+        padding:2px 7px;
+        font-size:10px;
+        font-weight:700;
+        letter-spacing:.03em;
+        border:1px solid rgba(255,255,255,.2);
+        background:rgba(255,255,255,.06);
+        color:rgba(255,255,255,.9);
+      }
+      #avatarBack .ah-skin-state.is-equipped,
+      #avatarBack .ah-skin-chip.is-equipped{
+        border-color:rgba(196,232,255,.72);
+        background:rgba(196,232,255,.2);
+        color:rgba(225,244,255,.98);
+      }
+      #avatarBack .ah-skin-state.is-selected,
+      #avatarBack .ah-skin-chip.is-selected{
+        border-color:rgba(255,255,255,.42);
+        background:rgba(255,255,255,.12);
+      }
+      #avatarBack .ah-skin-state.is-locked,
+      #avatarBack .ah-skin-chip.is-locked{
+        border-color:rgba(255,255,255,.18);
+        background:rgba(255,255,255,.04);
+        color:rgba(255,255,255,.7);
+      }
+      @keyframes ahSkinStageIn{
+        from{ opacity:.75; transform:translateY(4px) scale(.995); }
+        to{ opacity:1; transform:translateY(0) scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensurePolishDom() {
+    if (!avatarBack) return;
+    ensurePolishCss();
+
+    const card = avatarBack.querySelector(".sheet-card");
+    if (!card || !skinPreviewImg || !skinCanvas) return;
+
+    let stageWrap = card.querySelector(".ah-skin-stage-wrap");
+    let stage = card.querySelector(".ah-skin-stage");
+    if (!stageWrap || !stage) {
+      stageWrap = document.createElement("div");
+      stageWrap.className = "ah-skin-stage-wrap";
+      stage = document.createElement("div");
+      stage.className = "ah-skin-stage";
+      stageWrap.appendChild(stage);
+      card.insertBefore(stageWrap, skinDesc || null);
+    }
+
+    if (skinPreviewImg.parentElement !== stage) stage.appendChild(skinPreviewImg);
+    if (skinCanvas.parentElement !== stage) stage.appendChild(skinCanvas);
+
+    skinPreviewImg.classList.add("ah-skin-preview-media");
+    skinCanvas.classList.add("ah-skin-preview-media");
+
+    skinPreviewFrame = document.getElementById("skinPreviewFrameOverlay");
+    if (!skinPreviewFrame) {
+      skinPreviewFrame = document.createElement("img");
+      skinPreviewFrame.id = "skinPreviewFrameOverlay";
+      skinPreviewFrame.className = "ah-skin-stage-frame";
+      skinPreviewFrame.alt = "";
+      stage.appendChild(skinPreviewFrame);
+    }
+
+    let info = document.getElementById("skinInfo");
+    if (!info) {
+      info = document.createElement("div");
+      info.id = "skinInfo";
+      info.className = "ah-skin-info";
+      info.innerHTML = `
+        <div class="ah-skin-info-top">
+          <div id="skinInfoName" class="ah-skin-info-name">Default</div>
+          <span id="skinStateChip" class="ah-skin-chip">Base</span>
+        </div>
+        <div id="skinInfoMeta" class="ah-skin-info-meta">Base | Cosmetic skin</div>
+      `;
+      card.insertBefore(info, skinDesc || null);
+    }
+
+    skinInfoName = document.getElementById("skinInfoName");
+    skinInfoMeta = document.getElementById("skinInfoMeta");
+    skinStateChip = document.getElementById("skinStateChip");
+
+    equipBtn?.parentElement?.classList.add("ah-skin-actions");
+  }
+
   function _setSkinsModalOpen(on) {
     const html = document.documentElement;
     html?.classList.toggle("ah-skins-open", !!on);
@@ -60,6 +363,11 @@
     if (skinPreviewImg) {
       skinPreviewImg.onerror = null;
       skinPreviewImg.src = "";
+    }
+
+    if (skinPreviewFrame) {
+      skinPreviewFrame.removeAttribute("src");
+      skinPreviewFrame.style.display = "none";
     }
 
     if (skinCtx && skinCanvas) {
@@ -96,6 +404,7 @@
     shareBtn = document.getElementById("shareSkin");
     skinButtonsWrap = document.getElementById("skinButtons");
 
+    ensurePolishDom();
     ensureClaimUI();
 
     if (_bound) return true;
@@ -307,8 +616,116 @@
     return "Locked. Earn-only skin.";
   }
 
+  function currentEquippedFrameUrl() {
+    const frame = document.getElementById("player-frame");
+    if (!frame) return "";
+    const attr = String(frame.getAttribute("src") || "").trim();
+    if (!attr) return "";
+    let hidden = frame.style?.display === "none";
+    if (!hidden) {
+      try { hidden = window.getComputedStyle(frame).display === "none"; } catch (_) {}
+    }
+    return hidden ? "" : attr;
+  }
+
+  function syncCurrentFrameOverlay() {
+    if (!skinPreviewFrame) return;
+    const src = currentEquippedFrameUrl();
+    if (src) {
+      if (skinPreviewFrame.getAttribute("src") !== src) skinPreviewFrame.src = src;
+      skinPreviewFrame.style.display = "block";
+      return;
+    }
+    skinPreviewFrame.removeAttribute("src");
+    skinPreviewFrame.style.display = "none";
+  }
+
+  function skinLaneLabel(meta, key) {
+    const k = normKey(key);
+    if (k === "default") return "Base";
+    if (!meta) return "Cosmetic";
+    if (isSupportStars(meta) || isSupportToken(meta)) return "Support";
+    if (isCodeUnlock(meta)) return "Claim";
+    const kind = unlockKind(meta);
+    if (kind === "teamup_weekly" || kind === "referrals") return "Event";
+    if (kind) return "Progress";
+    const cost = getCost(k);
+    if (Number(cost?.bones || 0) > 0 || Number(cost?.tokens || 0) > 0) return "Shop";
+    return "Cosmetic";
+  }
+
+  function skinStateMeta({ key, owned, selected, equipped }) {
+    const k = normKey(key);
+    if (k === "default") {
+      if (equipped) return { label: "Equipped", className: "is-equipped" };
+      if (selected) return { label: "Selected", className: "is-selected" };
+      return { label: "Base", className: "is-owned" };
+    }
+    if (!owned) return { label: "Locked", className: "is-locked" };
+    if (equipped) return { label: "Equipped", className: "is-equipped" };
+    if (selected) return { label: "Selected", className: "is-selected" };
+    return { label: "Owned", className: "is-owned" };
+  }
+
+  function refreshSkinButtonStates() {
+    if (!skinButtonsWrap) return;
+    const selectedKey = normKey(_selectedKey);
+    const equippedKey = normKey((_equipped && _equipped.skin) || "") || "default";
+
+    skinButtonsWrap.querySelectorAll(".skin-btn[data-skin]").forEach((button) => {
+      const key = normKey(button.dataset.skin);
+      const owned = button.dataset.owned === "1";
+      const selected = key === selectedKey;
+      const equipped = key === equippedKey;
+      const state = skinStateMeta({ key, owned, selected, equipped });
+      const chip = button.querySelector(".ah-skin-state");
+
+      button.classList.toggle("active", selected);
+      button.classList.toggle("equipped", equipped);
+
+      if (chip) {
+        chip.textContent = state.label;
+        chip.className = `ah-skin-state ${state.className}`;
+      }
+    });
+  }
+
+  function setSkinInfo(meta, key, owned) {
+    const k = normKey(key);
+    const lane = skinLaneLabel(meta, k);
+    const state = skinStateMeta({
+      key: k,
+      owned,
+      selected: k === normKey(_selectedKey),
+      equipped: k === (normKey((_equipped && _equipped.skin) || "") || "default"),
+    });
+
+    if (skinInfoName) skinInfoName.textContent = k === "default" ? "Default" : (meta?.name || meta?.key || "Skin");
+
+    if (skinInfoMeta) {
+      const parts = [lane, "Cosmetic skin"];
+      if (!owned && meta) {
+        if (isSupportStars(meta)) {
+          const stars = getStarsPrice(meta);
+          if (stars > 0) parts.push(`${stars} Stars`);
+        } else {
+          const have = unlockHave(meta);
+          const need = unlockNeed(meta);
+          if (have != null && need != null && need > 0) parts.push(`${Math.min(have, need)}/${need}`);
+        }
+      }
+      skinInfoMeta.textContent = parts.join(" | ");
+    }
+
+    if (skinStateChip) {
+      skinStateChip.textContent = state.label;
+      skinStateChip.className = `ah-skin-chip ${state.className}`;
+    }
+  }
+
   function setPrimaryButtonState() {
     if (!equipBtn) return;
+    equipBtn.removeAttribute("data-kind");
 
     const k = normKey(_selectedKey);
 
@@ -320,6 +737,7 @@
 
     if (k === "default") {
       equipBtn.textContent = "Equip Default";
+      equipBtn.dataset.kind = "equip";
       equipBtn.disabled = false;
       return;
     }
@@ -328,12 +746,14 @@
 
     if (isEffectivelyOwned(k)) {
       equipBtn.textContent = "Equip";
+      equipBtn.dataset.kind = "equip";
       equipBtn.disabled = false;
       return;
     }
 
     if (m && isCodeUnlock(m)) {
       equipBtn.textContent = "Claim";
+      equipBtn.dataset.kind = "claim";
       equipBtn.disabled = false;
       return;
     }
@@ -341,6 +761,7 @@
     if (m && isSupportStars(m)) {
       const stars = getStarsPrice(m);
       equipBtn.textContent = stars > 0 ? `Buy for ${stars} Stars` : "Buy for Stars";
+      equipBtn.dataset.kind = "support-stars";
       equipBtn.disabled = false;
       return;
     }
@@ -361,6 +782,7 @@
     const label = fmtCostLabel(cost);
     if (label) {
       equipBtn.textContent = `Buy (${label})`;
+      equipBtn.dataset.kind = "shop";
       equipBtn.disabled = false;
       return;
     }
@@ -372,6 +794,7 @@
   function drawPlaceholder(text) {
     _useImgPreview(false);
     if (skinPreviewImg) skinPreviewImg.src = "";
+    syncCurrentFrameOverlay();
     if (!skinCtx || !skinCanvas) return;
 
     skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
@@ -407,6 +830,7 @@
 
   function renderSkinPreview(imgUrl, name, fallbackUrl, forceImg) {
     if ((!skinCtx || !skinCanvas) && !skinPreviewImg) return;
+    syncCurrentFrameOverlay();
 
     if (!imgUrl) {
       drawPlaceholder(name || "Default Skin");
@@ -469,7 +893,10 @@
         const drawW = img.width * scale;
         const drawH = img.height * scale;
         const offsetX = (skinCanvas.width - drawW) / 2;
-        const offsetY = (skinCanvas.height - drawH) / 2;
+        const offsetY = Math.max(
+          -skinCanvas.height * 0.2,
+          ((skinCanvas.height - drawH) / 2) - (skinCanvas.height * 0.07)
+        );
         skinCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
       } catch (e) {
         dbg("renderSkinPreview failed", e);
@@ -669,56 +1096,77 @@
     if (!skinButtonsWrap) return;
     skinButtonsWrap.innerHTML = "";
 
-    const all = [{ key: "default", name: "Default", img: "" }, ...(_catalog || [])];
+    const all = [{ key: "default", name: "Default", img: currentHeroSkinUrl() }, ...(_catalog || [])];
 
     all.forEach((s) => {
       const key = normKey(s.key);
       const owned = isEffectivelyOwned(key);
+      const previewUrl = String(s?.img || "").trim() || (key === "default" ? currentHeroSkinUrl() : "");
+      const thumbUrl = String(s?.thumb || s?.preview || s?.preview_url || previewUrl).trim();
 
       const b = document.createElement("button");
-      b.className =
-        "btn skin-btn" +
-        (key === normKey(_selectedKey) ? " active" : "") +
-        (!owned ? " locked" : "");
-
       b.type = "button";
-
-      const suffix = (!owned && key !== "default") ? lockSuffix(s) : "";
-      b.textContent = (s.name || s.key) + suffix;
+      b.className = "btn skin-btn ah-skin-tile" + (!owned ? " locked" : "");
       b.dataset.skin = key;
+      b.dataset.owned = owned ? "1" : "0";
+
+      const thumb = document.createElement("div");
+      thumb.className = "ah-skin-thumb";
+      if (thumbUrl) {
+        const thumbImg = document.createElement("img");
+        thumbImg.src = thumbUrl;
+        thumbImg.alt = "";
+        thumb.appendChild(thumbImg);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "ah-skin-thumb-empty";
+        empty.textContent = key === "default" ? "Default" : "Preview";
+        thumb.appendChild(empty);
+      }
+
+      const title = document.createElement("div");
+      title.className = "ah-skin-title";
+      title.textContent = s.name || s.key || "Skin";
+
+      const chip = document.createElement("span");
+      chip.className = "ah-skin-state";
+
+      b.appendChild(thumb);
+      b.appendChild(title);
+      b.appendChild(chip);
 
       b.addEventListener("click", () => {
-        [...skinButtonsWrap.querySelectorAll(".skin-btn")].forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-
         _selectedKey = key;
+        refreshSkinButtonStates();
 
-        renderSkinPreview(s.img, s.name || s.key, s.fallback, !!s.animated);
+        renderSkinPreview(previewUrl, s.name || s.key, s.fallback, !!s.animated);
 
         const meta = (key === "default") ? null : s;
+        setSkinInfo(meta, key, owned);
         const shouldShowClaim = !!meta && isCodeUnlock(meta) && !isEffectivelyOwned(key);
         showClaimUI(shouldShowClaim);
 
         if (skinDesc) {
           if (key === "default") {
-            skinDesc.textContent = "Default — clean Alpha.";
+            skinDesc.textContent = "Default - clean Alpha.";
           } else if (isEffectivelyOwned(key)) {
-            skinDesc.textContent = `${s.name || s.key} — available.`;
+            skinDesc.textContent = `${s.name || s.key} - available.`;
           } else if (meta && isCodeUnlock(meta)) {
-            skinDesc.textContent = `${s.name || s.key} — ${lockDesc(meta)}`;
+            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
           } else if (meta && isSupportStars(meta)) {
-            skinDesc.textContent = `${s.name || s.key} — ${lockDesc(meta)}`;
+            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
           } else if (isEarnOnly(s)) {
-            skinDesc.textContent = `${s.name || s.key} — ${lockDesc(s)}`;
+            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(s)}`;
           } else {
             const cost = getCost(key);
             const label = fmtCostLabel(cost);
             skinDesc.textContent = label
-              ? `${s.name || s.key} — locked. Buy to unlock (${label}).`
-              : `${s.name || s.key} — locked.`;
+              ? `${s.name || s.key} - locked. Buy to unlock (${label}).`
+              : `${s.name || s.key} - locked.`;
           }
         }
 
+        syncCurrentFrameOverlay();
         setPrimaryButtonState();
         haptic("light");
       });
@@ -735,8 +1183,8 @@
 
     btn?.click?.();
   }
-
   async function open() {
+    ensurePolishDom();
     if (!_apiPost) {
       console.warn("[Skins] apiPost missing (init not called yet?)");
       try { _tg?.showAlert?.("Skins not ready yet."); } catch (_) {}
@@ -757,6 +1205,7 @@
 
       if (avatarBack) avatarBack.style.display = "flex";
       _setSkinsModalOpen(true);
+      syncCurrentFrameOverlay();
       setPrimaryButtonState();
     } catch (e) {
       console.warn(e);
@@ -878,3 +1327,4 @@
 
   window.Skins = { init, open };
 })();
+
