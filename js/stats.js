@@ -24,11 +24,8 @@
     return Number.isFinite(x) ? x : d;
   }
 
-  function pct(cur, max){
-    const c = n(cur, 0);
-    const m = n(max, 0);
-    if (m <= 0) return 0;
-    return Math.max(0, Math.min(100, (c / m) * 100));
+  function clampPct(v){
+    return Math.max(0, Math.min(100, n(v, 0)));
   }
 
   function statLabel(k){
@@ -545,25 +542,28 @@
     const base = (stats && typeof stats.base === "object") ? stats.base : {};
     const petS = (stats && typeof stats.petStats === "object") ? stats.petStats : {};
     const gear = (stats && typeof stats.gear === "object") ? stats.gear : {};
+    const hp = (stats && typeof stats.hp === "object") ? stats.hp : {};
+    const xp = (stats && typeof stats.xp === "object") ? stats.xp : {};
     const pet = (stats && typeof stats.pet === "object") ? stats.pet : {};
     const rawSets = Array.isArray(stats?.sets) ? stats.sets : [];
     const sets = rawSets.map(normalizeSet);
     const unspent = mystats && mystats.unspentPoints != null ? n(mystats.unspentPoints, 0) : 0;
 
-    const hpCur = n(stats?.hpCur, 0);
-    const hpMax = n(stats?.hpMax, 0);
-    const xpCur = n(stats?.xpCur, 0);
-    const xpNeed = n(stats?.xpNeed, 0);
+    const hpCur = n(hp?.current, n(stats?.hpCur, 0));
+    const hpMax = n(hp?.max, n(stats?.hpMax, 0));
+    const xpCur = n(xp?.current_in_level, n(stats?.xpCur, 0));
+    const xpNeed = n(xp?.needed_for_next_level, n(stats?.xpNeed, 0));
     const level = n(stats?.level, 1);
 
     const petName = String(pet?.name || "None");
     const petLevel = n(pet?.level, 0);
-    const petXpCur = n(pet?.xpCur, 0);
-    const petXpNeed = n(pet?.xpNeed, 0);
+    const petXpCur = n(pet?.current, n(pet?.xpCur, 0));
+    const petXpNeed = n(pet?.max, n(pet?.xpNeed, 0));
+    const petLabel = String(pet?.label || `${petName}${petName !== "None" ? ` - lvl ${petLevel}` : ""}`).trim();
 
-    const hpPct = pct(hpCur, hpMax);
-    const xpPct = pct(xpCur, xpNeed);
-    const petXpPct = pct(petXpCur, petXpNeed);
+    const hpPct = clampPct(hp?.pct ?? stats?.hpPct);
+    const xpPct = clampPct(xp?.pct ?? stats?.xpPct);
+    const petXpPct = clampPct(pet?.pct ?? stats?.petPct);
 
     const statKeys = ["strength","agility","defense","vitality","intelligence","luck"];
 
@@ -674,10 +674,6 @@
       `
       : "";
 
-    const petFooter = petName !== "None"
-      ? `lvl ${esc(petLevel)} • ${petXpPct.toFixed(0)}%`
-      : `No active pet`;
-
     root.innerHTML = `
       <div class="ahs-wrap">
         <div class="ahs-card">
@@ -685,7 +681,7 @@
             <div class="ahs-hero-top">
               <div class="ahs-title">
                 <div class="ahs-title-main">Character Stats</div>
-                <div class="ahs-title-sub">Live totals from backend</div>
+                <div class="ahs-title-sub">Live character totals</div>
               </div>
 
               <div class="ahs-badges">
@@ -697,7 +693,7 @@
             <div class="ahs-grid-3">
               ${renderBarBlock("HP", hpCur, hpMax, "-hp", hpPct, `${hpPct.toFixed(0)}%`)}
               ${renderBarBlock("XP", xpCur, xpNeed, "-xp", xpPct, `${xpPct.toFixed(0)}%`)}
-              ${renderBarBlock("Pet", petXpCur, petXpNeed, "-pet", petXpPct, `${esc(petName)} ${esc(petName !== "None" ? `• lvl ${petLevel}` : "")}`.trim())}
+              ${renderBarBlock("Pet", petXpCur, petXpNeed, "-pet", petXpPct, esc(petLabel))}
             </div>
 
             ${unspent > 0 ? `<div class="ahs-note">${esc(unspent)} stat point${unspent === 1 ? "" : "s"} ready to spend.</div>` : ``}
