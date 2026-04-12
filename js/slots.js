@@ -8,6 +8,7 @@
     reel1: "images/slots/reel1.png",
     reel2: "images/slots/reel2.png",
     reel3: "images/slots/reel3.png",
+    spinVideo: "images/slots/reels_spin_512.webm",
     ghostLedgerAlphaTeaser: "images/slots/ghost_ledger_alpha_teaser.png",
     VISOR: "images/slots/VISOR.png",
     WILD: "images/slots/WILD.png",
@@ -22,6 +23,10 @@
     ["SCRAP", "WILD", "SHARD"],
     ["RELIC", "SCRAP", "VISOR"],
   ];
+  const SPIN_SYMBOLS = ["VISOR", "WILD", "RELIC", "SCATTER", "SCRAP", "SHARD"];
+  const SPIN_MIN_MS = 920;
+  const SPIN_TICK_MS = 54;
+  const REEL_STOP_DELAY_MS = 210;
 
   const S = {
     apiPost: null,
@@ -30,6 +35,12 @@
     spinning: false,
     lastState: null,
     cells: [],
+    cellEls: [],
+    reels: [],
+    spinIntervals: [],
+    spinVideo: null,
+    spinVideoUsable: true,
+    spinVideoActive: false,
   };
 
   function esc(v) {
@@ -77,9 +88,218 @@
     if (node) node.textContent = text || "";
   }
 
+  function setResultCard(kind, title, meta) {
+    const box = el("rtResult");
+    const titleEl = el("rtResultTitle");
+    const metaEl = el("rtResultMeta");
+    if (!box || !titleEl || !metaEl) return;
+
+    box.classList.remove("is-neutral", "is-win", "is-special", "is-miss");
+    box.classList.add(kind || "is-neutral");
+    titleEl.textContent = title || "";
+    metaEl.textContent = meta || "";
+  }
+
   function setSummary(text) {
-    const node = el("rtSummary");
-    if (node) node.textContent = text || "";
+    setResultCard("is-neutral", text || "", "");
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms || 0))));
+  }
+
+  function clearWinHighlights() {
+    const cells = S.cellEls || [];
+    for (let r = 0; r < cells.length; r += 1) {
+      const row = cells[r] || [];
+      for (let c = 0; c < row.length; c += 1) {
+        row[c]?.classList?.remove("is-payline-win", "is-hit", "is-wild-hit");
+      }
+    }
+  }
+
+  function clearSpinIntervals() {
+    const arr = Array.isArray(S.spinIntervals) ? S.spinIntervals : [];
+    for (let i = 0; i < arr.length; i += 1) {
+      if (arr[i]) clearInterval(arr[i]);
+    }
+    S.spinIntervals = [];
+  }
+
+  async function startSpinVideoOverlay() {
+    const frame = el("rtBoardFrame");
+    const video = S.spinVideo || el("rtSpinVideo");
+    if (!frame || !video || S.spinVideoUsable === false) return false;
+
+    try {
+      video.currentTime = 0;
+      const maybePromise = video.play?.();
+      if (maybePromise && typeof maybePromise.then === "function") {
+        await maybePromise;
+      }
+      frame.classList.add("video-spin-active");
+      S.spinVideoActive = true;
+      return true;
+    } catch (err) {
+      frame.classList.remove("video-spin-active");
+      S.spinVideoActive = false;
+      if (String(err?.name || "") === "NotSupportedError") {
+        S.spinVideoUsable = false;
+      }
+      return false;
+    }
+  }
+
+  function stopSpinVideoOverlay() {
+    const frame = el("rtBoardFrame");
+    const video = S.spinVideo || el("rtSpinVideo");
+    frame?.classList?.remove("video-spin-active");
+    S.spinVideoActive = false;
+    if (!video) return;
+    try { video.pause?.(); } catch (_) {}
+    try { video.currentTime = 0; } catch (_) {}
+  }
+
+  function setCellSymbol(row, col, symbol) {
+    const img = S.cells?.[row]?.[col];
+    if (!img) return;
+    const sym = String(symbol || "SCRAP").toUpperCase();
+    img.src = symbolImage(sym);
+    img.alt = sym;
+  }
+
+  function setColumnSymbols(col, rows) {
+    const safe = normalizeRows(rows);
+    setCellSymbol(0, col, safe[0][col]);
+    setCellSymbol(1, col, safe[1][col]);
+    setCellSymbol(2, col, safe[2][col]);
+  }
+
+  function cycleReelColumn(col) {
+    const topNow = String(S.cells?.[0]?.[col]?.alt || "SCRAP").toUpperCase();
+    const midNow = String(S.cells?.[1]?.[col]?.alt || "SCRAP").toUpperCase();
+    const nextTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
+    setCellSymbol(2, col, midNow);
+    setCellSymbol(1, col, topNow);
+    setCellSymbol(0, col, nextTop);
+  }
+
+  function startVisualSpin() {
+    clearWinHighlights();
+    clearSpinIntervals();
+    setResultCard("is-neutral", "Recovering cache...", "Reels spinning.");
+    void startSpinVideoOverlay();
+
+    const reels = Array.isArray(S.reels) ? S.reels : [];
+    for (let col = 0; col < reels.length; col += 1) {
+      const reel = reels[col];
+      reel?.classList?.remove("is-settle");
+      reel?.classList?.add("is-rolling");
+      cycleReelColumn(col);
+      S.spinIntervals[col] = setInterval(() => cycleReelColumn(col), SPIN_TICK_MS + (col * 8));
+    }
+  }
+
+  async function stopVisualSpin(finalRows) {
+    const reels = Array.isArray(S.reels) ? S.reels : [];
+    const safeRows = normalizeRows(finalRows);
+    const usedVideo = !!S.spinVideoActive;
+    stopSpinVideoOverlay();
+    if (usedVideo) await sleep(110);
+
+    for (let col = 0; col < reels.length; col += 1) {
+      if (S.spinIntervals[col]) {
+        clearInterval(S.spinIntervals[col]);
+        S.spinIntervals[col] = null;
+      }
+
+      setColumnSymbols(col, safeRows);
+      const reel = reels[col];
+      reel?.classList?.remove("is-rolling");
+      reel?.classList?.add("is-settle");
+      setTimeout(() => reel?.classList?.remove("is-settle"), 220);
+
+      if (col < reels.length - 1) await sleep(REEL_STOP_DELAY_MS);
+    }
+
+    clearSpinIntervals();
+  }
+
+  function buildSpinOutcome(out, rows) {
+    const safeRows = normalizeRows(rows);
+    const payline = safeRows[1];
+    const rewards = out?.rewards || {};
+    const lineSymbol = String(out?.result?.lineSymbol || "").toUpperCase();
+    const scatterCount = Number(out?.result?.scatterCount || 0);
+    const freeSpins = Number(rewards.free_spins || 0);
+    const scatterTriggered = scatterCount >= 3 || freeSpins > 0;
+    const fragmentWon = !!out?.fragment?.won;
+    const wildAssist = !!lineSymbol && lineSymbol !== "WILD" && payline.includes("WILD");
+
+    const gains = [];
+    const bones = Number(rewards.bones || 0);
+    const scrap = Number(rewards.scrap || 0);
+    const dust = Number(rewards.rune_dust || 0);
+    const shardAmount = Number(rewards.shard_amount || 0);
+    const shardSlot = String(rewards.shard_slot || "").replace(/_/g, " ").trim();
+
+    if (bones > 0) gains.push(`+${bones} Bones`);
+    if (scrap > 0) gains.push(`+${scrap} Scrap`);
+    if (dust > 0) gains.push(`+${dust} Rune Dust`);
+    if (shardAmount > 0) gains.push(`+${shardAmount} ${shardSlot ? `${shardSlot} Shards` : "Shards"}`);
+
+    const lineWin = !!lineSymbol;
+    const hasAnything = lineWin || scatterTriggered || fragmentWon || gains.length > 0;
+
+    if (!hasAnything) {
+      return {
+        kind: "is-miss",
+        title: "Recovery failed. Nothing salvageable found.",
+        meta: "No rewards this cycle.",
+        lineWin: false,
+        wildAssist: false,
+      };
+    }
+
+    let title = "Recovery successful.";
+    if (wildAssist) title = "WILD completed the line.";
+    else if (lineWin) title = "Line recovery successful.";
+    else if (freeSpins > 0) title = `Cache breach: +${freeSpins} Free Spin${freeSpins > 1 ? "s" : ""}.`;
+    else if (scatterTriggered) title = "Cache breach detected.";
+    else if (fragmentWon) title = "Ledger Shard recovered.";
+    else if (gains.length > 0) title = `Recovered: ${gains.join(", ")}.`;
+
+    const lines = [];
+    if (lineWin && !wildAssist && lineSymbol) lines.push(`Recovered line: ${lineSymbol}.`);
+    if (wildAssist) lines.push("WILD-assisted recovery confirmed.");
+    if (gains.length > 0) lines.push(`Recovered: ${gains.join(", ")}.`);
+    if (freeSpins > 0) lines.push(`Cache breach: +${freeSpins} Free Spin${freeSpins > 1 ? "s" : ""}.`);
+    else if (scatterTriggered) lines.push("Cache breach detected.");
+    if (fragmentWon) lines.push("Ledger Shard recovered.");
+
+    return {
+      kind: lineWin || gains.length ? "is-win" : "is-special",
+      title,
+      meta: lines.join(" "),
+      lineWin: !!lineWin,
+      wildAssist: !!wildAssist,
+      lineSymbol,
+      payline,
+    };
+  }
+
+  function applyWinPresentation(outcome) {
+    clearWinHighlights();
+    if (!outcome || !outcome.lineWin) return;
+
+    const payline = Array.isArray(outcome.payline) ? outcome.payline : [];
+    for (let col = 0; col < 3; col += 1) {
+      const cell = S.cellEls?.[1]?.[col];
+      if (!cell) continue;
+      const symbol = String(payline[col] || "").toUpperCase();
+      cell.classList.add("is-payline-win", "is-hit");
+      if (symbol === "WILD") cell.classList.add("is-wild-hit");
+    }
   }
 
   function ensureStyles() {
@@ -129,6 +349,8 @@
   font-size:12px; opacity:.82;
 }
 .rt-board-frame{
+  position:relative;
+  overflow:hidden;
   border-radius:16px;
   border:1px solid rgba(255,255,255,.12);
   background:
@@ -136,10 +358,38 @@
     url("${IMAGE.frame}") center / cover no-repeat;
   padding:10px;
 }
+.rt-board-wrap{
+  position:relative;
+  border-radius:12px;
+  overflow:hidden;
+}
 .rt-board{
+  position:relative;
+  z-index:1;
+  transition:opacity .18s ease, filter .18s ease;
   display:grid;
   grid-template-columns:repeat(3, minmax(0, 1fr));
   gap:9px;
+}
+.rt-spin-video{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease;
+  border-radius:10px;
+  background:rgba(8,12,18,.45);
+}
+.rt-board-frame.video-spin-active .rt-spin-video{
+  opacity:1;
+}
+.rt-board-frame.video-spin-active .rt-board{
+  opacity:.08;
+  filter:saturate(.8) blur(.6px);
 }
 .rt-reel{
   border-radius:12px;
@@ -148,6 +398,16 @@
   background-size:cover;
   background-position:center;
   box-shadow:inset 0 0 0 1px rgba(8,12,20,.34);
+}
+.rt-reel.is-rolling{
+  animation:rt-reel-roll-bg .11s linear infinite;
+}
+.rt-reel.is-rolling .rt-cell img{
+  animation:rt-symbol-roll .09s linear infinite;
+  will-change:transform, opacity, filter;
+}
+.rt-reel.is-settle{
+  animation:rt-reel-settle .22s ease-out;
 }
 .rt-cell{
   min-height:76px;
@@ -164,17 +424,46 @@
   background:linear-gradient(180deg, rgba(176,230,255,.20), rgba(115,191,255,.13));
   box-shadow:inset 0 0 0 1px rgba(189,230,255,.30);
 }
+.rt-cell.is-payline-win{
+  background:linear-gradient(180deg, rgba(188,255,228,.36), rgba(129,220,255,.30));
+  box-shadow:
+    inset 0 0 0 1px rgba(214,255,236,.50),
+    0 0 12px rgba(144,236,255,.34);
+}
+.rt-cell.is-hit img{
+  animation:rt-hit-pop .42s ease;
+  filter:drop-shadow(0 0 8px rgba(193,255,236,.70));
+}
+.rt-cell.is-wild-hit{
+  box-shadow:
+    inset 0 0 0 1px rgba(255,240,193,.65),
+    0 0 14px rgba(255,228,148,.45);
+}
+.rt-cell.is-wild-hit img{
+  filter:drop-shadow(0 0 10px rgba(255,230,146,.85));
+}
 .rt-cell img{
   width:52px; height:52px; object-fit:contain; image-rendering:auto;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));
 }
-.rt-board.spinning .rt-reel{
-  animation:rt-spin .34s linear infinite;
+@keyframes rt-reel-roll-bg{
+  from { background-position:center 0px; }
+  to   { background-position:center 32px; }
 }
-@keyframes rt-spin{
-  0%{ transform:translateY(0px); filter:brightness(1); }
-  50%{ transform:translateY(-3px); filter:brightness(1.08); }
-  100%{ transform:translateY(0px); filter:brightness(1); }
+@keyframes rt-symbol-roll{
+  from { transform:translateY(-24px); opacity:.58; filter:drop-shadow(0 3px 6px rgba(0,0,0,.35)) blur(.55px); }
+  to   { transform:translateY(24px); opacity:1; filter:drop-shadow(0 3px 6px rgba(0,0,0,.35)) blur(0); }
+}
+@keyframes rt-reel-settle{
+  0%   { transform:translateY(0); }
+  38%  { transform:translateY(8px); }
+  74%  { transform:translateY(-3px); }
+  100% { transform:translateY(0); }
+}
+@keyframes rt-hit-pop{
+  0%   { transform:scale(1); }
+  35%  { transform:scale(1.08); }
+  100% { transform:scale(1); }
 }
 .rt-metrics{
   display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;
@@ -301,11 +590,34 @@
   background:linear-gradient(90deg, rgba(160,218,255,.95), rgba(155,248,211,.92));
   transition:width .25s ease;
 }
-.rt-summary{
-  font-size:12px; line-height:1.35; opacity:.9;
+.rt-result{
   border:1px dashed rgba(170,198,255,.26);
   border-radius:12px;
   padding:8px 9px;
+  background:rgba(255,255,255,.02);
+}
+.rt-result-title{
+  font-size:12px;
+  line-height:1.32;
+  font-weight:700;
+}
+.rt-result-meta{
+  margin-top:4px;
+  font-size:11px;
+  line-height:1.32;
+  opacity:.85;
+}
+.rt-result.is-win{
+  border-color:rgba(153,255,209,.50);
+  background:rgba(124,242,192,.10);
+}
+.rt-result.is-special{
+  border-color:rgba(153,213,255,.50);
+  background:rgba(145,205,255,.10);
+}
+.rt-result.is-miss{
+  border-color:rgba(255,170,170,.34);
+  background:rgba(255,122,122,.08);
 }
 .rt-footer{
   position:sticky; bottom:0; z-index:2;
@@ -327,6 +639,10 @@
 }
 .rt-recover[disabled]{
   opacity:.55; cursor:not-allowed; box-shadow:none;
+}
+.rt-recover.is-loading{
+  opacity:.85;
+  filter:saturate(.78);
 }
 @media (max-width:560px){
   .rt-metrics{ grid-template-columns:1fr; }
@@ -354,8 +670,13 @@
         </div>
         <div class="rt-body">
           <div id="rtStatus" class="rt-status">Syncing terminal...</div>
-          <div class="rt-board-frame">
-            <div id="rtBoard" class="rt-board"></div>
+          <div id="rtBoardFrame" class="rt-board-frame">
+            <div class="rt-board-wrap">
+              <div id="rtBoard" class="rt-board"></div>
+              <video id="rtSpinVideo" class="rt-spin-video" muted playsinline preload="auto" loop aria-hidden="true">
+                <source src="${IMAGE.spinVideo}" type="video/webm">
+              </video>
+            </div>
           </div>
           <div class="rt-metrics">
             <div class="rt-metric"><div class="rt-k">Free Spins</div><div id="rtFree" class="rt-v">0</div></div>
@@ -384,7 +705,10 @@
               <div class="rt-teaser-bar"><div id="rtTeaserFill" class="rt-teaser-fill"></div></div>
             </div>
           </div>
-          <div id="rtSummary" class="rt-summary">Recover to scan one cycle.</div>
+          <div id="rtResult" class="rt-result is-neutral" aria-live="polite">
+            <div id="rtResultTitle" class="rt-result-title">Awaiting recovery cycle.</div>
+            <div id="rtResultMeta" class="rt-result-meta">Tap Recover to run the terminal.</div>
+          </div>
         </div>
         <div class="rt-footer">
           <button id="rtRecover" class="rt-recover" type="button">Recover</button>
@@ -396,6 +720,7 @@
 
     const teaserImg = el("rtTeaserImg");
     const teaserFallback = el("rtTeaserFallback");
+    const spinVideo = el("rtSpinVideo");
     if (teaserImg && teaserFallback) {
       const showFallback = () => {
         teaserImg.style.display = "none";
@@ -414,10 +739,28 @@
         else showFallback();
       }
     }
+    if (spinVideo) {
+      spinVideo.muted = true;
+      spinVideo.playsInline = true;
+      spinVideo.preload = "auto";
+      S.spinVideo = spinVideo;
+      S.spinVideoUsable = true;
+      const markVideoUnavailable = () => {
+        S.spinVideoUsable = false;
+        stopSpinVideoOverlay();
+      };
+      spinVideo.addEventListener("error", markVideoUnavailable);
+      try { spinVideo.load?.(); } catch (_) {}
+    } else {
+      S.spinVideo = null;
+      S.spinVideoUsable = false;
+    }
 
     const board = el("rtBoard");
     const reelBg = [IMAGE.reel1, IMAGE.reel2, IMAGE.reel3];
     S.cells = [[], [], []];
+    S.cellEls = [[], [], []];
+    S.reels = [];
     for (let col = 0; col < 3; col += 1) {
       const reel = document.createElement("div");
       reel.className = "rt-reel";
@@ -431,8 +774,10 @@
         cell.appendChild(img);
         reel.appendChild(cell);
         S.cells[row][col] = img;
+        S.cellEls[row][col] = cell;
       }
       board.appendChild(reel);
+      S.reels[col] = reel;
     }
 
     el("rtClose")?.addEventListener("click", close);
@@ -506,7 +851,8 @@
     const btn = el("rtRecover");
     if (btn) {
       btn.disabled = S.spinning || !canRecover;
-      btn.textContent = "Recover";
+      btn.classList.toggle("is-loading", !!S.spinning);
+      btn.textContent = S.spinning ? "Recovering..." : "Recover";
     }
   }
 
@@ -580,11 +926,15 @@
     if (S.spinning) return;
     S.spinning = true;
     const btn = el("rtRecover");
-    if (btn) btn.disabled = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-loading");
+      btn.textContent = "Recovering...";
+    }
 
-    const board = el("rtBoard");
-    board?.classList.add("spinning");
+    const startedAt = Date.now();
     setStatus("Recovering signal...");
+    startVisualSpin();
 
     try {
       const out = await post("/webapp/slots/spin", {
@@ -592,38 +942,55 @@
         run_id: makeRunId("slots_spin", "recovery_terminal"),
       });
 
-      renderBoard(out?.board?.rows || DEFAULT_ROWS);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < SPIN_MIN_MS) await sleep(SPIN_MIN_MS - elapsed);
+
+      const finalRows = normalizeRows(out?.board?.rows || DEFAULT_ROWS);
+      await stopVisualSpin(finalRows);
+
       renderState(out?.state || out);
+      const outcome = buildSpinOutcome(out, finalRows);
+      setResultCard(outcome.kind, outcome.title, outcome.meta);
+      applyWinPresentation(outcome);
 
-      const rewardParts = listRewards(out);
-      const summary = String(out?.result?.summary || "").trim();
-      if (rewardParts.length) {
-        setSummary(`${summary || "Recovery complete."} Rewards: ${rewardParts.join(", ")}.`);
-      } else {
-        setSummary(summary || "No stable payload recovered this cycle.");
-      }
-
-      setStatus("Cycle complete.");
-      try { S.tg?.HapticFeedback?.notificationOccurred?.(rewardParts.length ? "success" : "warning"); } catch (_) {}
+      setStatus(outcome.kind === "is-miss" ? "No recovery found." : "Cycle complete.");
+      try { S.tg?.HapticFeedback?.notificationOccurred?.(outcome.kind === "is-miss" ? "warning" : "success"); } catch (_) {}
     } catch (err) {
       const reason = String(err?.data?.reason || err?.message || "Recovery failed");
+
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < SPIN_MIN_MS) await sleep(SPIN_MIN_MS - elapsed);
+      await stopVisualSpin(S.lastState?.board?.rows || DEFAULT_ROWS);
+
       if (err?.data?.state) renderState(err.data);
+      clearWinHighlights();
       setStatus("Recovery failed.");
       if (reason === "NOT_ENOUGH_BONES") {
-        setSummary("Not enough Bones for this recovery cycle.");
+        setResultCard("is-miss", "Recovery aborted.", "Not enough Bones for this recovery cycle.");
+      } else {
+        setResultCard("is-miss", "Recovery failed.", reason);
       }
       try { S.tg?.showAlert?.(reason); } catch (_) {}
     } finally {
-      board?.classList.remove("spinning");
+      clearSpinIntervals();
+      stopSpinVideoOverlay();
+      for (let i = 0; i < (S.reels || []).length; i += 1) {
+        S.reels[i]?.classList?.remove("is-rolling", "is-settle");
+      }
       S.spinning = false;
       const canRecover = !!S.lastState?.canRecover;
-      if (btn) btn.disabled = !canRecover;
+      if (btn) {
+        btn.classList.remove("is-loading");
+        btn.textContent = "Recover";
+        btn.disabled = !canRecover;
+      }
     }
   }
 
   function close() {
     const back = el(MODAL_ID);
     if (back) back.style.display = "none";
+    stopSpinVideoOverlay();
     try { global.navClose?.(MODAL_ID); } catch (_) {}
   }
 
