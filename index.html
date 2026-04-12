@@ -5440,6 +5440,7 @@ if (window.AHBootLoaders?.init) {
   window.ensureOracleLoaded = window.ensureOracleLoaded || noopEnsure;
   window.ensureBloodMoonLoaded = window.ensureBloodMoonLoaded || noopEnsure;
   window.ensureArenaLoaded = window.ensureArenaLoaded || noopEnsure;
+  window.ensureSlotsLoaded = window.ensureSlotsLoaded || noopEnsure;
 }
  
       // ✅ PATCH A — auto-open missions when ?section=missions
@@ -6287,6 +6288,29 @@ function isRegionUnlocked(regionId){
       }
 
       if (!unlocked) return await openLocked(b);
+
+      if (
+        b.action === "building_enter" &&
+        (
+          b.buildingId === "abandoned_wallets_vault" ||
+          bid === "abandoned_wallets_vault" ||
+          b.id === "abandoned_wallets"
+        )
+      ) {
+        try {
+          await ensureSlotsLoaded(apiPost, _tg, _dbg);
+          if (window.Slots?.open) {
+            return window.Slots.open({
+              buildingId: b.buildingId || bid,
+              name: b.name,
+              desc: b.desc
+            });
+          }
+        } catch (err) {
+          console.warn("[RecoveryTerminal] load/open failed", err);
+        }
+        return openBuilding(bid, b.name, b.desc);
+      }
 
       // lore-only pins
       if (b.action === "coming_soon") {
