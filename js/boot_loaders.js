@@ -44,7 +44,8 @@
           (readyName === "siege.js" && !!global.Siege) ||
           (readyName === "oracle.js" && !!global.Oracle) ||
           (readyName === "bloodmoon.js" && !!global.BloodMoon) ||
-          (readyName === "arena.js" && !!global.Arena);
+          (readyName === "arena.js" && !!global.Arena) ||
+          (readyName === "slots.js" && !!global.Slots);
 
         if (isReady) return resolve(true);
 
@@ -323,6 +324,20 @@
     });
   }
 
+  async function ensureSlotsLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.Slots?.open && global.Slots?.init) {
+      try { global.Slots.init(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("slots", async () => {
+      await loadScript("js/slots.js");
+      try { global.Slots?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
   function init(deps = {}) {
     STATE.deps = {
       apiPost: deps.apiPost || STATE.deps.apiPost || null,
@@ -344,6 +359,7 @@
     global.ensureOracleLoaded = ensureOracleLoaded;
     global.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
     global.ensureArenaLoaded = ensureArenaLoaded;
+    global.ensureSlotsLoaded = ensureSlotsLoaded;
 
     return API;
   }
@@ -362,7 +378,8 @@
     ensureSiegeLoaded,
     ensureOracleLoaded,
     ensureBloodMoonLoaded,
-    ensureArenaLoaded
+    ensureArenaLoaded,
+    ensureSlotsLoaded
   };
 
   global.AHBootLoaders = API;
