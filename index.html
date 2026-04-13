@@ -910,6 +910,32 @@ html.ah-skins-open #heroFrame{
 .map-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 4px 10px; flex:0 0 auto; }
 .map-head-main{ display:flex; align-items:center; gap:8px; min-width:0; }
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-world-brief{
+  margin:0 4px 8px;
+  padding:7px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(circle at 12% 20%, rgba(122,188,255,.10), transparent 42%),
+    linear-gradient(180deg, rgba(10,16,24,.54), rgba(10,16,24,.64));
+  box-shadow:0 4px 12px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.03);
+}
+.map-world-brief-line{
+  margin:0;
+  line-height:1.28;
+}
+.map-world-brief-line-1{
+  color:rgba(214,232,255,.92);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+.map-world-brief-line-2{
+  margin-top:4px;
+  color:rgba(255,221,186,.90);
+  font-size:11px;
+  font-weight:700;
+}
 .map-pressure-mood{
   display:inline-flex;
   align-items:center;
@@ -4074,6 +4100,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <div id="ctaCardRoot"></div>
             <div id="ctaHighlightsRoot"></div>
           </section>
+          <div id="mapWorldBrief" class="map-world-brief">
+            <p class="map-world-brief-line map-world-brief-line-1" data-line="1">After the Betrayal Hash, the Alpha Network fights as four war-paths.</p>
+            <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+          </div>
           <div id="map" class="map" data-map-root>
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
 <div class="pins" id="pins"></div>
@@ -6595,11 +6625,17 @@ function isRegionUnlocked(regionId){
           const mapNode = findMapNodeByRef(node) || node || {};
           const baseDesc = (reg && reg.desc) || (mapNode && mapNode.desc) || '';
           const loreLines = buildNodeLoreLines(mapNode, { includeFaction: true, maxLines: 3 });
-          let loreVisible = false;
+          const defaultLoreLine = loreLines.length ? [loreLines[0]] : [];
+          const extraLoreLines = loreLines.length > 1 ? loreLines.slice(1) : [];
+          let loreExpanded = false;
 
           function paintRegionDesc(){
-            if (!loreVisible || !loreLines.length){
+            if (!defaultLoreLine.length){
               regionDesc.textContent = baseDesc;
+              return;
+            }
+            if (!loreExpanded) {
+              regionDesc.innerHTML = renderNodeLoreBlock(baseDesc, defaultLoreLine, "Node identity");
               return;
             }
             regionDesc.innerHTML = renderNodeLoreBlock(baseDesc, loreLines, "Node lore");
@@ -6638,12 +6674,12 @@ function isRegionUnlocked(regionId){
   sendAction('region_open', { region: node.region, nodeId: node.id });
 };
           if (btnRegionLo){
-            if (loreLines.length){
+            if (extraLoreLines.length){
               btnRegionLo.style.display = 'inline-block';
-              btnRegionLo.textContent = 'Lore';
+              btnRegionLo.textContent = 'More lore';
               btnRegionLo.onclick = () => {
-                loreVisible = !loreVisible;
-                btnRegionLo.textContent = loreVisible ? 'Hide lore' : 'Lore';
+                loreExpanded = !loreExpanded;
+                btnRegionLo.textContent = loreExpanded ? 'Less lore' : 'More lore';
                 paintRegionDesc();
               };
             } else {
