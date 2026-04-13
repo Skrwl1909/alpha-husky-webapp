@@ -91,6 +91,7 @@
           : "Secure your event rewards before the window closes.";
       },
       go: "Claim rewards",
+      stakes: "Claim before reset, or this completed run yields nothing lasting.",
     },
     bloodmoon_live: {
       context: "Event Pressure",
@@ -98,6 +99,7 @@
       why: (primary) => asText(primary.subtitle) || "Live waves are active in the tower right now.",
       reward: "Earn claimable event rewards for your faction.",
       go: "Join Blood-Moon",
+      stakes: "If ignored, breach pressure spreads while your faction loses containment tempo.",
     },
     fortress_ready: {
       context: "Co-op Raid",
@@ -126,6 +128,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction can lose this node without a response.",
       reward: "Hold territory and secure siege rewards.",
       go: "Join defense",
+      stakes: "Lose this defense and the front opens beyond this node.",
     },
     siege_forming_defense: {
       context: "Faction Frontline",
@@ -136,6 +139,7 @@
       why: (primary) => asText(primary.subtitle) || "Attackers are gathering and pressure is rising.",
       reward: "Help your faction lock the line before launch.",
       go: "Take watch",
+      stakes: "If no one answers, attackers start with tempo and structural advantage.",
     },
     siege_running_attack: {
       context: "Faction Frontline",
@@ -146,6 +150,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction can capture this node right now.",
       reward: "Win control and siege payouts for your side.",
       go: "Join attack",
+      stakes: "If this push stalls, defenders reset and lock the corridor again.",
     },
     siege_forming_attack: {
       context: "Faction Frontline",
@@ -156,6 +161,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction is preparing an attack window.",
       reward: "Help trigger the assault and gain map control.",
       go: "Join formation",
+      stakes: "Hesitate now and the breach window closes before your force forms.",
     },
     node_contested: {
       context: "World Pressure",
@@ -166,6 +172,7 @@
       why: (primary) => asText(primary.subtitle) || "Control is unstable and can flip quickly.",
       reward: "Build faction pressure where it matters most.",
       go: "Open contested node",
+      stakes: "Miss this window and rivals set the region's pace next.",
     },
     node_hot: {
       context: "World Pressure",
@@ -176,6 +183,7 @@
       why: (primary) => asText(primary.subtitle) || "Momentum is rising on this frontline.",
       reward: "Gain influence before rivals lock the area.",
       go: "Open HOT node",
+      stakes: "Ignore the warning and enemy pressure hardens into a stable foothold.",
     },
     choose_faction: {
       context: "Identity",
@@ -183,6 +191,7 @@
       why: "Alone, you survive. With a faction, you matter.",
       reward: "Unlock faction progress, sieges, and shared pressure.",
       go: "Choose faction",
+      stakes: "No doctrine means no line holds when Rewrite pressure spikes.",
     },
     first_mission: {
       context: "Action",
@@ -190,6 +199,7 @@
       why: "You are not here to spectate. Move first.",
       reward: "Lock your first reward and open the next route.",
       go: "Start mission",
+      stakes: "Stay idle now and you enter the map underpowered and late.",
     },
     equip_item: {
       context: "Progression",
@@ -204,6 +214,7 @@
       why: "The map breathes. Pressure shifts whether you show up or not.",
       reward: "Leave your first mark and learn where to push next.",
       go: "Open live node",
+      stakes: "If you do not show up, rivals define this front first.",
     },
     contracts_push: {
       context: "Cooperation",
@@ -211,6 +222,7 @@
       why: "Idle factions get erased. Keep pressure on the line.",
       reward: "Move shared contract progress for your faction.",
       go: "Open contracts",
+      stakes: "Leave it idle and recoverable value is lost to the Chain.",
     },
     contracts_claim_ready: {
       context: "Cooperation",
@@ -218,6 +230,7 @@
       why: "The contract is closed. Take the payout before reset.",
       reward: "Bank shared rewards and roll into the next push.",
       go: "Claim contracts",
+      stakes: "Delay claim and reset can erase gains your faction already earned.",
     },
   };
 
@@ -276,6 +289,25 @@
     return "Go now";
   }
 
+  function defaultStakesForPrimary(primary) {
+    const kind = asText(primary?.kind).toLowerCase();
+    const type = asText(primary?.target?.type).toLowerCase();
+
+    if (kind.startsWith("siege_") || type === "siege") {
+      return "Ignore this front and it tilts before your reinforcements arrive.";
+    }
+    if (kind === "node_contested" || kind === "node_hot" || type === "map_node") {
+      return "If ignored, rival pressure hardens before your faction can answer.";
+    }
+    if (kind === "contracts_claim_ready" || kind === "contracts_push") {
+      return "Unclaimed contract progress decays into pressure for someone else.";
+    }
+    if (kind === "bloodmoon_claim_ready" || kind === "bloodmoon_live" || type === "bloodmoon") {
+      return "If ignored, breach pressure rises while your side falls behind.";
+    }
+    return "";
+  }
+
   function buildPrimaryGuide(primary) {
     const key = asText(primary?.kind).toLowerCase();
     const play = PRIMARY_PLAYBOOK[key] || {};
@@ -285,8 +317,9 @@
     const why = resolveGuideValue(play.why, primary) || defaultWhyForPrimary(primary);
     const reward = resolveGuideValue(play.reward, primary) || defaultRewardForPrimary(primary);
     const go = resolveGuideValue(play.go, primary) || defaultGoForPrimary(primary);
+    const stakes = resolveGuideValue(play.stakes, primary) || defaultStakesForPrimary(primary);
 
-    return { context, now, why, reward, go };
+    return { context, now, why, reward, go, stakes };
   }
 
   function isBloodmoonPrimary(primary) {
@@ -469,6 +502,18 @@
 }
 .cta-reward{
   color:rgba(186,229,255,.82);
+}
+.cta-stakes{
+  margin:4px 0 0;
+  color:rgba(255,196,140,.95);
+  font-size:10px;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:.01em;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
 }
 .cta-go-row{
   display:flex;
@@ -809,13 +854,14 @@
     if (!STATE.cardRoot || !primary) return;
 
     const guide = buildPrimaryGuide(primary);
-    const bloodmoonCompact = isBloodmoonPrimary(primary);
+    const bloodmoonCompact = isBloodmoonPrimary(primary) && !guide.stakes;
 
     const card = document.createElement("article");
     card.className = "cta-card" + (bloodmoonCompact ? " is-bloodmoon-compact" : "");
     card.setAttribute("role", "button");
     card.tabIndex = 0;
-    card.setAttribute("aria-label", `${guide.now}. ${guide.why}`);
+    const aria = [guide.now, guide.why, guide.stakes].filter(Boolean).join(". ");
+    card.setAttribute("aria-label", aria || "CTA");
 
     const go = () => {
       collapseExpanded(true);
@@ -874,6 +920,13 @@
         reward.className = "cta-reward";
         reward.textContent = guide.reward;
         card.appendChild(reward);
+      }
+
+      if (guide.stakes) {
+        const stakes = document.createElement("p");
+        stakes.className = "cta-stakes";
+        stakes.textContent = guide.stakes;
+        card.appendChild(stakes);
       }
 
       const goRow = document.createElement("div");

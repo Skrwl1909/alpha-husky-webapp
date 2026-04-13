@@ -24,6 +24,13 @@
     pack_burners: "Pack Burners",
     inner_howl: "Inner Howl",
   };
+  const NODE_ID_ALIASES = {
+    edge_of_the_chain: "edge_of_chain",
+    broken_contracts_hub: "broken_contracts",
+    alpha_network_hq_shop: "alpha_network_hq",
+    faction_hq: "alpha_network_hq",
+    moonlab_fortress: "moon_lab",
+  };
 
   let _weekly = null;
   let _nodeInfoById = Object.create(null);
@@ -127,6 +134,61 @@
   function fmtFaction(f) {
     const key = String(f || "").toLowerCase();
     return FACTION_LABELS[key] || key.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "—";
+  }
+
+  function normalizeNodeId(raw) {
+    const key = String(raw || "").trim().toLowerCase();
+    if (!key) return "";
+    return NODE_ID_ALIASES[key] || key;
+  }
+
+  function findMapNode(nodeId, info) {
+    const nodes = (window.DATA && Array.isArray(window.DATA.nodes)) ? window.DATA.nodes : [];
+    if (!nodes.length) return null;
+
+    const keyCandidates = new Set();
+    const addKey = (v) => {
+      const key = normalizeNodeId(v);
+      if (key) keyCandidates.add(key);
+    };
+
+    addKey(nodeId);
+    addKey(info?.nodeId);
+    addKey(info?.buildingId);
+    addKey(info?.id);
+
+    if (!keyCandidates.size) return null;
+
+    for (const node of nodes) {
+      if (!node || typeof node !== "object") continue;
+      const nid = normalizeNodeId(node.id);
+      const bid = normalizeNodeId(node.buildingId);
+      for (const key of keyCandidates) {
+        if (key && (nid === key || bid === key)) return node;
+      }
+    }
+    return null;
+  }
+
+  function resolveNodeLoreLines(nodeId, info) {
+    const inlineLore = (info?.nodeLore && typeof info.nodeLore === "object") ? info.nodeLore : null;
+    const mapNode = findMapNode(nodeId, info);
+    const lore = inlineLore || ((mapNode && typeof mapNode.lore === "object") ? mapNode.lore : null);
+    if (!lore) return [];
+
+    const out = [];
+    const identity = String(lore.identity || lore.history || "").replace(/\s+/g, " ").trim();
+    const stakes = String(lore.stakes || lore.whyNow || "").replace(/\s+/g, " ").trim();
+    if (identity) out.push(identity);
+    if (stakes) out.push(stakes);
+
+    const factionKey = normalizeFaction(_faction || getCanonicalFaction() || "");
+    if (factionKey && lore.factionAngles && typeof lore.factionAngles === "object") {
+      const factionLine = String(lore.factionAngles[factionKey] || "").replace(/\s+/g, " ").trim();
+      if (factionLine) out.push(factionLine);
+    }
+
+    return out.slice(0, 3);
   }
 
   function shortUid(uid) {
@@ -867,6 +929,7 @@
           <div id="infUxStatusText" style="margin-top:8px;font-size:12px;opacity:.84;">This node is stable right now.</div>
           <div id="infUxReason" style="margin-top:6px;font-size:12px;line-height:1.35;opacity:.92;"></div>
           <div id="infUxReward" style="margin-top:4px;font-size:12px;line-height:1.35;opacity:.76;"></div>
+          <div id="infUxLore" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);font-size:12px;line-height:1.35;opacity:.90;"></div>
         </div>
 
         <div style="display:flex; gap:10px; margin-top:12px;">
@@ -1251,8 +1314,9 @@
     const statusTextEl = document.getElementById("infUxStatusText");
     const reasonEl = document.getElementById("infUxReason");
     const rewardEl = document.getElementById("infUxReward");
+    const loreEl = document.getElementById("infUxLore");
 
-    if (!leaderEl || !contEl || !foot || !statusEl || !actionEl || !valueEl || !statusTextEl || !reasonEl || !rewardEl) return;
+    if (!leaderEl || !contEl || !foot || !statusEl || !actionEl || !valueEl || !statusTextEl || !reasonEl || !rewardEl || !loreEl) return;
 
     if (!info || !Object.keys(info).length) {
       leaderEl.textContent = "—";
@@ -1269,6 +1333,8 @@
       statusTextEl.textContent = "This node is stable right now.";
       reasonEl.textContent = "Why: This node is stable right now.";
       rewardEl.textContent = "Gain: Helping here supports weekly faction progress.";
+      loreEl.style.display = "none";
+      loreEl.textContent = "";
       setPatrolButtonLabel("Patrol");
       return;
     }
@@ -1304,6 +1370,14 @@
     statusTextEl.textContent = uxStatusText(ux.displayStatus);
     reasonEl.textContent = `Why: ${ux.reasonText || "This node is stable right now."}`;
     rewardEl.textContent = `Gain: ${ux.rewardText || "Helping here supports weekly faction progress."}`;
+    const loreLines = resolveNodeLoreLines(nodeId, info);
+    if (loreLines.length) {
+      loreEl.style.display = "block";
+      loreEl.innerHTML = `<div style="opacity:.66;font-size:10px;letter-spacing:.06em;text-transform:uppercase;">Node lore</div>${loreLines.map((line) => `<div style="margin-top:4px;">${esc(line)}</div>`).join("")}`;
+    } else {
+      loreEl.style.display = "none";
+      loreEl.textContent = "";
+    }
     setPatrolButtonLabel(patrolLabelForAction(ux.actionHint));
     foot.textContent = `RB ${s.rogue_byte || 0} · EW ${s.echo_wardens || 0} · PB ${s.pack_burners || 0} · IH ${s.inner_howl || 0}`;
   }

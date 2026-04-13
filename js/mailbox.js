@@ -123,7 +123,6 @@
       items.push(item);
       if (items.length >= MAX_ITEMS) break;
     }
-    items.sort((a, b) => (b.ts - a.ts) || a.id.localeCompare(b.id));
     return {
       items,
       serverTs: asInt(data?.serverTs, Math.floor(Date.now() / 1000)),
@@ -131,6 +130,7 @@
   }
 
   function kindIcon(kind) {
+    if (kind === "npc_guidance" || String(kind || "").startsWith("npc_")) return "WARDEN";
     if (kind === "mission_ready") return "MISSION";
     if (kind === "bloodmoon_claim_ready") return "TOWER";
     if (kind === "contracts_claim_ready") return "CONTRACT";
