@@ -91,7 +91,7 @@
           : "Secure your event rewards before the window closes.";
       },
       go: "Claim rewards",
-      stakes: "Claim before reset, or this completed run yields nothing lasting.",
+      stakes: "Reset wipes this tower payout; unclaimed runs fund no war chest.",
     },
     bloodmoon_live: {
       context: "Event Pressure",
@@ -99,7 +99,7 @@
       why: (primary) => asText(primary.subtitle) || "Live waves are active in the tower right now.",
       reward: "Earn claimable event rewards for your faction.",
       go: "Join Blood-Moon",
-      stakes: "If ignored, breach pressure spreads while your faction loses containment tempo.",
+      stakes: "Ignore this breach and tower pressure spills across nearby fronts.",
     },
     fortress_ready: {
       context: "Co-op Raid",
@@ -128,7 +128,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction can lose this node without a response.",
       reward: "Hold territory and secure siege rewards.",
       go: "Join defense",
-      stakes: "Lose this defense and the front opens beyond this node.",
+      stakes: "If defenders break, attackers open the corridor behind this node.",
     },
     siege_forming_defense: {
       context: "Faction Frontline",
@@ -139,7 +139,7 @@
       why: (primary) => asText(primary.subtitle) || "Attackers are gathering and pressure is rising.",
       reward: "Help your faction lock the line before launch.",
       go: "Take watch",
-      stakes: "If no one answers, attackers start with tempo and structural advantage.",
+      stakes: "No early defense means attackers launch with first-strike control.",
     },
     siege_running_attack: {
       context: "Faction Frontline",
@@ -150,7 +150,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction can capture this node right now.",
       reward: "Win control and siege payouts for your side.",
       go: "Join attack",
-      stakes: "If this push stalls, defenders reset and lock the corridor again.",
+      stakes: "Stall here and defenders reset shields, sealing the corridor again.",
     },
     siege_forming_attack: {
       context: "Faction Frontline",
@@ -161,7 +161,7 @@
       why: (primary) => asText(primary.subtitle) || "Your faction is preparing an attack window.",
       reward: "Help trigger the assault and gain map control.",
       go: "Join formation",
-      stakes: "Hesitate now and the breach window closes before your force forms.",
+      stakes: "Miss formation and this assault window closes before launch.",
     },
     node_contested: {
       context: "World Pressure",
@@ -172,7 +172,7 @@
       why: (primary) => asText(primary.subtitle) || "Control is unstable and can flip quickly.",
       reward: "Build faction pressure where it matters most.",
       go: "Open contested node",
-      stakes: "Miss this window and rivals set the region's pace next.",
+      stakes: "Lose this scar and rival doctrine sets pressure for the hour.",
     },
     node_hot: {
       context: "World Pressure",
@@ -183,7 +183,7 @@
       why: (primary) => asText(primary.subtitle) || "Momentum is rising on this frontline.",
       reward: "Gain influence before rivals lock the area.",
       go: "Open HOT node",
-      stakes: "Ignore the warning and enemy pressure hardens into a stable foothold.",
+      stakes: "Leave it hot and rivals harden this relay into a foothold.",
     },
     choose_faction: {
       context: "Identity",
@@ -191,7 +191,7 @@
       why: "Alone, you survive. With a faction, you matter.",
       reward: "Unlock faction progress, sieges, and shared pressure.",
       go: "Choose faction",
-      stakes: "No doctrine means no line holds when Rewrite pressure spikes.",
+      stakes: "Without a war-path, you cannot hold lines when Rewrite surges.",
     },
     first_mission: {
       context: "Action",
@@ -214,7 +214,7 @@
       why: "The map breathes. Pressure shifts whether you show up or not.",
       reward: "Leave your first mark and learn where to push next.",
       go: "Open live node",
-      stakes: "If you do not show up, rivals define this front first.",
+      stakes: "If you stay out, rival war-paths define this front first.",
     },
     contracts_push: {
       context: "Cooperation",
@@ -222,7 +222,7 @@
       why: "Idle factions get erased. Keep pressure on the line.",
       reward: "Move shared contract progress for your faction.",
       go: "Open contracts",
-      stakes: "Leave it idle and recoverable value is lost to the Chain.",
+      stakes: "Leave this breach idle and contract salvage slips to rival hands.",
     },
     contracts_claim_ready: {
       context: "Cooperation",
@@ -230,7 +230,7 @@
       why: "The contract is closed. Take the payout before reset.",
       reward: "Bank shared rewards and roll into the next push.",
       go: "Claim contracts",
-      stakes: "Delay claim and reset can erase gains your faction already earned.",
+      stakes: "Miss claim timing and reset can void already-earned contract payout.",
     },
   };
 
@@ -294,16 +294,16 @@
     const type = asText(primary?.target?.type).toLowerCase();
 
     if (kind.startsWith("siege_") || type === "siege") {
-      return "Ignore this front and it tilts before your reinforcements arrive.";
+      return "Delay this front and enemy control snaps shut before reinforcements.";
     }
     if (kind === "node_contested" || kind === "node_hot" || type === "map_node") {
-      return "If ignored, rival pressure hardens before your faction can answer.";
+      return "Ignore this scar and rival pressure hardens before your faction answers.";
     }
     if (kind === "contracts_claim_ready" || kind === "contracts_push") {
-      return "Unclaimed contract progress decays into pressure for someone else.";
+      return "Unclaimed contract progress decays into pressure for rival factions.";
     }
     if (kind === "bloodmoon_claim_ready" || kind === "bloodmoon_live" || type === "bloodmoon") {
-      return "If ignored, breach pressure rises while your side falls behind.";
+      return "Ignore the tower and Blood-Moon breach pressure rolls into nearby fronts.";
     }
     return "";
   }
@@ -504,10 +504,14 @@
   color:rgba(186,229,255,.82);
 }
 .cta-stakes{
-  margin:4px 0 0;
-  color:rgba(255,196,140,.95);
-  font-size:10px;
-  font-weight:800;
+  margin:5px 0 0;
+  padding:5px 7px;
+  border-radius:8px;
+  border:1px solid rgba(255,168,108,.24);
+  background:linear-gradient(180deg, rgba(46,18,8,.54), rgba(36,14,6,.58));
+  color:rgba(255,215,178,.98);
+  font-size:10.5px;
+  font-weight:900;
   line-height:1.25;
   letter-spacing:.01em;
   display:-webkit-box;
@@ -925,7 +929,7 @@
       if (guide.stakes) {
         const stakes = document.createElement("p");
         stakes.className = "cta-stakes";
-        stakes.textContent = guide.stakes;
+        stakes.textContent = `Frontline risk: ${guide.stakes}`;
         card.appendChild(stakes);
       }
 

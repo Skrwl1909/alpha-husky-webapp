@@ -1125,7 +1125,7 @@
     return score;
   }
 
-  function _updateMapPressureMood(summary) {
+    function _updateMapPressureMood(summary) {
     const el = document.getElementById("mapPressureMood");
     if (!el) return;
 
@@ -1148,8 +1148,48 @@
           : "calm";
 
     el.dataset.tone = tone;
-    el.textContent = parts.length ? parts.join(" â€¢ ").toUpperCase() : "CALM";
+    el.textContent = parts.length ? parts.join(" · ").toUpperCase() : "CALM";
     el.hidden = false;
+  }
+
+  function _viewerWarPathLabel() {
+    const key = _normFactionKey(_getViewerFaction());
+    if (key === "rogue_byte") return "Rogue Byte";
+    if (key === "echo_wardens") return "Echo Wardens";
+    if (key === "pack_burners") return "Pack Burners";
+    if (key === "inner_howl") return "Inner Howl";
+    return "your war-path";
+  }
+
+  function _updateMapWorldBrief(summary) {
+    const root = document.getElementById("mapWorldBrief");
+    if (!root) return;
+
+    const line1El = root.querySelector('[data-line="1"]');
+    const line2El = root.querySelector('[data-line="2"]');
+    if (!line1El || !line2El) return;
+
+    const counts = summary || {};
+    const contested = Number(counts.contested || 0);
+    const hot = Number(counts.hot || 0);
+    const fortified = Number(counts.fortified || 0);
+
+    line1El.textContent = "After the Betrayal Hash, the Alpha Network fights as four war-paths.";
+
+    const warPath = _viewerWarPathLabel();
+    if (contested > 0) {
+      line2El.textContent = `${contested} contested front${contested === 1 ? "" : "s"}: ${warPath} line is under live pressure.`;
+      return;
+    }
+    if (hot > 0) {
+      line2El.textContent = `${hot} hot relay${hot === 1 ? "" : "s"}: pressure is building before the next push.`;
+      return;
+    }
+    if (fortified > 0) {
+      line2El.textContent = `${fortified} fortified node${fortified === 1 ? "" : "s"}: cracks are quieter, but Rewrite still probes.`;
+      return;
+    }
+    line2El.textContent = "Fronts are stable for now; patrol windows decide who sets next pressure.";
   }
 
   function _applyPressureBadges(pinEl, pressureMeta, nodeUx) {
@@ -1638,6 +1678,7 @@
     }
 
     _updateMapPressureMood(mood);
+    _updateMapWorldBrief(mood);
     window.__ahPerf?.log?.("AHMap.applyLeaders", perfT0, { pins: pins.length });
   }
 
@@ -1753,3 +1794,5 @@
   window.AHMap = API;
   window.Map = window.Map || API;
 })();
+
+
