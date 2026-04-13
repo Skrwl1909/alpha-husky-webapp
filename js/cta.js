@@ -360,7 +360,7 @@
     calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
   );
   display:none;
-  margin:6px auto 0;
+  margin:4px auto 0;
 }
 #ctaSurface.is-visible{ display:block !important; }
 #ctaCardRoot,
@@ -368,7 +368,7 @@
   width:100%;
 }
 #ctaHighlightsRoot{
-  margin-top:4px;
+  margin-top:3px;
 }
 #ctaHighlightsRoot:empty,
 #ctaCardRoot:empty + #ctaHighlightsRoot{
@@ -385,8 +385,8 @@
 .cta-card{
   position:relative;
   display:block;
-  padding:8px 10px;
-  border-radius:13px;
+  padding:6px 8px;
+  border-radius:11px;
   background:
     radial-gradient(circle at 14% 16%, rgba(0,229,255,.08), transparent 42%),
     radial-gradient(circle at 90% 12%, rgba(255,176,0,.08), transparent 36%),
@@ -450,13 +450,13 @@
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  gap:7px;
-  margin-bottom:4px;
+  gap:6px;
+  margin-bottom:3px;
 }
 .cta-context{
   min-width:0;
   color:rgba(200,224,255,.78);
-  font-size:9px;
+  font-size:8.5px;
   font-weight:700;
   letter-spacing:.05em;
   text-transform:uppercase;
@@ -468,13 +468,13 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:16px;
-  padding:1px 6px;
+  min-height:15px;
+  padding:1px 5px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.08);
   color:rgba(255,255,255,.92);
-  font-size:8px;
+  font-size:7.5px;
   font-weight:900;
   letter-spacing:.07em;
   text-transform:uppercase;
@@ -483,16 +483,16 @@
 .cta-title{
   margin:0;
   color:#fff;
-  font-size:13px;
+  font-size:12px;
   font-weight:900;
   letter-spacing:.01em;
-  line-height:1.2;
+  line-height:1.18;
 }
 .cta-why,
 .cta-reward{
-  margin:2px 0 0;
-  font-size:11px;
-  line-height:1.2;
+  margin:1px 0 0;
+  font-size:10.5px;
+  line-height:1.15;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -504,36 +504,36 @@
   color:rgba(186,229,255,.82);
 }
 .cta-stakes{
-  margin:5px 0 0;
-  padding:5px 7px;
-  border-radius:8px;
-  border:1px solid rgba(255,168,108,.24);
-  background:linear-gradient(180deg, rgba(46,18,8,.54), rgba(36,14,6,.58));
+  margin:4px 0 0;
+  padding:3px 6px;
+  border-radius:7px;
+  border:1px solid rgba(255,168,108,.22);
+  background:linear-gradient(180deg, rgba(46,18,8,.50), rgba(36,14,6,.54));
   color:rgba(255,215,178,.98);
-  font-size:10.5px;
+  font-size:10px;
   font-weight:900;
-  line-height:1.25;
+  line-height:1.15;
   letter-spacing:.01em;
   display:-webkit-box;
   -webkit-box-orient:vertical;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:1;
   overflow:hidden;
 }
 .cta-go-row{
   display:flex;
   justify-content:flex-end;
-  margin-top:6px;
+  margin-top:4px;
 }
 .cta-go-btn{
-  min-height:22px;
-  padding:2px 9px;
+  min-height:20px;
+  padding:2px 8px;
   border-radius:999px;
   border:1px solid rgba(0,229,255,.36);
   background:
     radial-gradient(circle at 30% 30%, rgba(0,229,255,.18), transparent 56%),
     linear-gradient(180deg, rgba(6,20,28,.94), rgba(8,24,34,.96));
   color:rgba(223,247,255,.95);
-  font-size:10px;
+  font-size:9.5px;
   font-weight:900;
   letter-spacing:.04em;
   text-transform:uppercase;
@@ -549,13 +549,13 @@
 }
 .cta-highlights{
   display:grid;
-  gap:4px;
+  gap:3px;
 }
 .cta-highlights-body{
   display:grid;
-  gap:4px;
-  margin-top:3px;
-  max-height:min(84px, 18dvh);
+  gap:3px;
+  margin-top:2px;
+  max-height:min(56px, 12dvh);
   overflow-y:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
@@ -568,8 +568,8 @@
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  min-height:24px;
-  padding:4px 8px;
+  min-height:21px;
+  padding:3px 7px;
   border:0;
   border-radius:999px;
   background:rgba(9,13,18,.34);
@@ -591,7 +591,7 @@
 .cta-expander-text{
   min-width:0;
   flex:1 1 auto;
-  font-size:10px;
+  font-size:9.5px;
   font-weight:700;
   letter-spacing:.01em;
   white-space:nowrap;
@@ -611,9 +611,9 @@
 .cta-highlight{
   display:flex;
   align-items:center;
-  gap:8px;
-  min-height:30px;
-  padding:6px 8px;
+  gap:7px;
+  min-height:26px;
+  padding:4px 7px;
   border-radius:10px;
   background:rgba(9,13,18,.48);
   border:1px solid rgba(255,255,255,.06);
@@ -632,8 +632,8 @@
   min-width:0;
   flex:1 1 auto;
   color:rgba(255,255,255,.82);
-  font-size:11px;
-  line-height:1.2;
+  font-size:10.5px;
+  line-height:1.15;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -919,7 +919,7 @@
         card.appendChild(why);
       }
 
-      if (guide.reward) {
+      if (guide.reward && !guide.stakes) {
         const reward = document.createElement("p");
         reward.className = "cta-reward";
         reward.textContent = guide.reward;
