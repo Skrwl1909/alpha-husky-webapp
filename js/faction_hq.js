@@ -205,8 +205,8 @@ function _contribSummaryLegacy(c) {
       rogue_byte: "Rogue Byte",
       echo_wardens: "Echo Wardens",
       pack_burners: "Pack Burners",
-      inner_howl: "Iron Howlers",
-      iron_howlers: "Iron Howlers",
+      inner_howl: "Inner Howl",
+      iron_howlers: "Inner Howl",
     };
     return m[key] || key || "—";
   }
@@ -233,37 +233,37 @@ function _contribSummaryLegacy(c) {
 
   const FACTION_HOME_META = {
     rogue_byte: {
-      motto: "Break the line. Own the static.",
-      summary: "Fast-hit operators built around sabotage, tempo, and sudden openings.",
-      belonging: "Best for players who like striking first, breaking rhythm, and keeping enemy plans unstable.",
-      tags: ["Sabotage", "Tempo", "Disruption", "Shock"],
+      motto: "Breach the cage. Rewrite from inside.",
+      summary: "Born after the Betrayal Hash, Rogue Byte infiltrates hostile systems and turns control architecture against itself.",
+      belonging: "For players who exploit openings fast, sabotage from inside, and refuse the safety that makes you predictable.",
+      tags: ["Breachcraft", "Sabotage", "Blind Spots", "Denial"],
     },
     echo_wardens: {
-      motto: "Hold the signal. Hold the line.",
-      summary: "Route keepers who turn support play, control, and patience into durable faction ground.",
-      belonging: "Best for players who like anchoring lanes, reinforcing allies, and winning through control.",
-      tags: ["Control", "Defense", "Guard", "Stability"],
+      motto: "Hold the signal. Defend what must survive.",
+      summary: "Echo Wardens guard routes, archives, and ground so the fractured rebellion stays coherent through the Rewrite.",
+      belonging: "For players who anchor lines, reinforce allies, and refuse to lose critical ground through neglect.",
+      tags: ["Signal", "Defense", "Continuity", "Stability"],
     },
     pack_burners: {
-      motto: "Light it. Spread it. Keep it moving.",
-      summary: "Momentum faction for players who stack pressure, donate hard, and turn noise into presence.",
-      belonging: "Best for players who like swarm energy, shared pushes, and feeding the wider faction wave.",
-      tags: ["Swarm", "Pressure", "Momentum", "Chaos"],
+      motto: "If the Chain only understands force, answer in fire.",
+      summary: "Pack Burners convert grief into momentum and force stalled fronts to move before enemy structure resets.",
+      belonging: "For players who push hard, escalate pressure, and refuse the slow death of hesitation.",
+      tags: ["Force", "Pressure", "Momentum", "Dominance"],
     },
     inner_howl: {
-      motto: "Strike clean. Stay cold.",
-      summary: "Precision operators built for disciplined pressure, clean timing, and steady takeover.",
-      belonging: "Best for players who like measured play, exact execution, and long-game dominance.",
-      tags: ["Precision", "Discipline", "Control", "Relentless"],
+      motto: "Hear what the static is trying to say.",
+      summary: "Inner Howl reads anomalies, echoes, and hidden pressure so the rebellion reacts before fractures spread.",
+      belonging: "For players who trust disciplined intuition and act on insight before others see the breach.",
+      tags: ["Anomalies", "Insight", "Pattern", "Foresight"],
     },
   };
 
   function factionHomeMeta(key) {
     return FACTION_HOME_META[_canonFaction(key)] || {
-      motto: "Stand together.",
-      summary: "Your faction is the home layer behind the wider conflict.",
-      belonging: "Belonging here means your actions build alongside everyone else under the same banner.",
-      tags: ["Faction", "Identity"],
+      motto: "One rebellion. Four war-paths.",
+      summary: "After the Betrayal Hash, the Alpha Network split into doctrines, but the war stayed shared.",
+      belonging: "Belonging here means carrying the same rebellion through a chosen doctrine.",
+      tags: ["Fracture", "Doctrine"],
     };
   }
 

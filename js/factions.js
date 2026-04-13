@@ -21,8 +21,8 @@
       color: "#ff5252",
       icon40: "/images/factions/rogue_byte_40.webp",
       icon80: "/images/factions/rogue_byte_80.webp",
-      desc: "Redline hackers. Fast raids, clean sabotage. Take ground quick.",
-      vibe: "Aggressive • High tempo • Disruption",
+      desc: "Breach-and-sabotage war-path of the fractured Alpha Network. Hit blind spots first and keep control unstable.",
+      vibe: "Infiltration | Sabotage | Openings",
     },
     {
       key: "ew",
@@ -31,8 +31,8 @@
       color: "#ffd600",
       icon40: "/images/factions/echo_wardens_40.webp",
       icon80: "/images/factions/echo_wardens_80.webp",
-      desc: "Signal guardians. Hold the line, protect routes, control influence.",
-      vibe: "Defensive • Stable • Control",
+      desc: "Line-holding war-path of the fractured Alpha Network. Defend signal routes and keep continuity alive.",
+      vibe: "Defense | Signal | Continuity",
     },
     {
       key: "pb",
@@ -41,8 +41,8 @@
       color: "#ba68c8",
       icon40: "/images/factions/pack_burners_40.webp",
       icon80: "/images/factions/pack_burners_80.webp",
-      desc: "Wild fire pack. Pressure, donations, crowd influence, chaos energy.",
-      vibe: "Viral • Pressure • Momentum",
+      desc: "Force doctrine of the fractured Alpha Network. Stack pressure, break resistance, and keep fronts moving.",
+      vibe: "Pressure | Tempo | Dominance",
     },
     {
       key: "ih",
@@ -51,8 +51,8 @@
       color: "#40c4ff",
       icon40: "/images/factions/inner_howl_40.webp",
       icon80: "/images/factions/inner_howl_80.webp",
-      desc: "Cold focus. Precision strikes, long-term dominance, steady growth.",
-      vibe: "Precision • Discipline • Growth",
+      desc: "Insight doctrine of the fractured Alpha Network. Read hidden fractures early and strike before noise turns fatal.",
+      vibe: "Intuition | Pattern | Precision",
     },
   ];
 
@@ -342,7 +342,7 @@
     const my = getMyFactionKey();
     const note = my
       ? "You already belong to a faction. Switching will be enabled later (cooldown/cost)."
-      : "Pick your side. This connects you to influence, leaders and faction events.";
+      : "After the Betrayal Hash, the Alpha Network fractured into four war-paths. Pick the doctrine you trust in the Rewrite.";
 
     _root.innerHTML = `
       <div class="fx-lead">

@@ -160,7 +160,7 @@
     faction_selected: {
       icon: "🏴",
       h: "Choose Your Faction",
-      p: "Pick the Pack you want to fight for. This unlocks the social/meta side of the world.",
+      p: "After the Betrayal Hash, the Alpha Network split into four war-paths. Choose the doctrine you fight under.",
       label: "Pick Faction"
     },
     chain_building_started: {
