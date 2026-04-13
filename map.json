@@ -76,6 +76,10 @@
       "y": 25,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
+      "lore": {
+        "identity": "Wallet districts emptied in the chaos after the Betrayal Hash.",
+        "stakes": "Recovered keys and scraps still fund small rebel operations."
+      },
       "action": "building_enter",
       "buildingId": "abandoned_wallets_vault",
       "labelOffset": { "x": 14, "y": 30 }
@@ -88,6 +92,16 @@
       "y": 42,
       "icon": "images/map/building/phantom_nodes.png",
       "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
+      "lore": {
+        "identity": "This was once the shared relay spine of the old Alpha Network.",
+        "stakes": "Who owns these channels shapes warnings, patrol routes, and response time.",
+        "factionAngles": {
+          "rogue_byte": "Rogue Byte turns the traffic into breach lanes and blind spots.",
+          "echo_wardens": "Echo Wardens lock routes here to keep continuity intact.",
+          "inner_howl": "Inner Howl listens for hidden pulses under the public signal.",
+          "pack_burners": "Pack Burners push volume and speed until rivals break."
+        }
+      },
       "action": "coming_soon",
       "buildingId": "phantom_nodes",
       "labelOffset": { "x": -78, "y": 34 },
@@ -109,6 +123,16 @@
       "y": 36,
       "icon": "images/map/building/blood_moon_tower.png",
       "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
+      "lore": {
+        "identity": "A lunar relay tower warped by repeated Blood-Moon spikes.",
+        "stakes": "When it surges, nearby fronts destabilize and raid pressure escalates.",
+        "factionAngles": {
+          "rogue_byte": "Rogue Byte treats each surge as cover for deep intrusions.",
+          "echo_wardens": "Echo Wardens hold perimeter links to contain spillover.",
+          "inner_howl": "Inner Howl tracks omen patterns hidden in the spike noise.",
+          "pack_burners": "Pack Burners force the tower window before rivals regroup."
+        }
+      },
       "action": "coming_soon",
       "buildingId": "blood_moon_tower",
       "labelOffset": { "x": -110, "y": 32 },
@@ -131,6 +155,16 @@
       "y": 38,
       "icon": "images/map/building/edge_of_chain.png",
       "desc": "Where the code frays and stars flicker like dying nodes.",
+      "lore": {
+        "identity": "The fracture front where Chain logic thins into Rewrite static.",
+        "stakes": "If this line falls, siege lanes open deeper into rebel territory.",
+        "factionAngles": {
+          "rogue_byte": "Rogue Byte uses the fractures to slip behind hostile lines.",
+          "echo_wardens": "Echo Wardens anchor defenses here to protect inner routes.",
+          "inner_howl": "Inner Howl reads pattern drift before assaults fully form.",
+          "pack_burners": "Pack Burners strike early to keep momentum on this frontier."
+        }
+      },
       "action": "open_siege",
       "buildingId": "edge_of_chain",
       "labelOffset": { "x": 14, "y": 30 },
@@ -154,6 +188,10 @@
       "y": 9,
       "icon": "images/map/building/void_doorway.png",
       "desc": "A doorway not coded, not mapped. Just… waiting.",
+      "lore": {
+        "identity": "A pre-map doorway that survived every cleanup and rollback.",
+        "stakes": "Its shifts often precede larger world pressure changes."
+      },
       "action": "coming_soon",
       "buildingId": "oracle_void_doorway",
       "labelOffset": { "x": -88, "y": 32 },
@@ -168,6 +206,16 @@
       "y": 58,
       "icon": "images/map/building/alpha_network_hq.webp",
       "desc": "Your faction’s command hub. Donate to the treasury and upgrade HQ together.",
+      "lore": {
+        "identity": "The last command bunker left from the unified Alpha rebellion.",
+        "stakes": "HQ strength sets how far each war-path can project support.",
+        "factionAngles": {
+          "rogue_byte": "Rogue Byte sees HQ as launch cover for covert operations.",
+          "echo_wardens": "Echo Wardens treat HQ as continuity infrastructure to defend.",
+          "inner_howl": "Inner Howl uses HQ archives to decode hidden fault lines.",
+          "pack_burners": "Pack Burners drive HQ output into direct frontline pressure."
+        }
+      },
       "action": "open_faction_hq",
       "buildingId": "faction_hq",
       "labelOffset": { "x": 12, "y": 30 },
@@ -182,6 +230,10 @@
       "y": 73,
       "icon": "images/map/building/the_chain.png",
       "desc": "Long-haul expeditions through dead chain fragments. Small but steady scrap, rune dust, and a tiny chance for item shards.",
+      "lore": {
+        "identity": "A transit gate rebuilt from dead validators and scavenged relays.",
+        "stakes": "Slow runs from here keep war stock moving between active fronts."
+      },
       "action": "building_enter",
       "buildingId": "chain_gate",
       "labelOffset": { "x": -36, "y": -42 },
@@ -200,6 +252,10 @@
       "y": 78,
       "icon": "images/map/building/vault_forge.webp",
       "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
+      "lore": {
+        "identity": "A token vault converted into a field forge for war gear.",
+        "stakes": "What gets reforged here decides who survives the next push."
+      },
       "action": "open_forge",
       "buildingId": "forgotten_tokens_vault_forge",
       "labelOffset": { "x": -110, "y": -38 },
@@ -214,6 +270,16 @@
       "y": 62,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
+      "lore": {
+        "identity": "Contract collapse scarred this district into unstable logic loops.",
+        "stakes": "Stabilizing it limits Rewrite leaks into nearby lanes.",
+        "factionAngles": {
+          "rogue_byte": "Rogue Byte harvests exploit windows before they close.",
+          "echo_wardens": "Echo Wardens patch critical routes to prevent cascade failures.",
+          "inner_howl": "Inner Howl maps hidden rules buried inside corrupted clauses.",
+          "pack_burners": "Pack Burners purge the zone fast and hold what remains."
+        }
+      },
       "action": "open_broken_contracts",
       "buildingId": "broken_contracts_hub",
       "labelOffset": { "x": -18, "y": 38 },
@@ -241,6 +307,10 @@
       "y": 14,
       "icon": "images/map/building/moon_lab.png",
       "desc": "Three-floor fortress: 10 sequential single-fights per floor. Win → next encounter after cooldown; lose → retry same encounter.",
+      "lore": {
+        "identity": "A research citadel abandoned on the night the Network fractured.",
+        "stakes": "Clearing its floors recovers shards and combat intel for the war."
+      },
       "action": "building_enter",
       "buildingId": "moonlab_fortress",
       "labelOffset": { "x": -18, "y": 40 },
@@ -334,6 +404,10 @@
       "y": 62,
       "icon": "images/map/building/testnet_wastes.png",
       "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
+      "lore": {
+        "identity": "A surviving sandbox range from the pre-fracture testnet era.",
+        "stakes": "Clean reps here reduce losses when real fronts ignite."
+      },
       "action": "building_enter",
       "buildingId": "testnet_wastes_dojo",
       "labelOffset": { "x": -95, "y": -40 },
