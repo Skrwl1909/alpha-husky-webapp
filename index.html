@@ -5633,6 +5633,98 @@ document.addEventListener("click", async (e) => {
           renderMap();
         }
 
+        function escMapHtml(value){
+          return String(value ?? "").replace(/[&<>"']/g, (m) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[m]));
+        }
+
+        function normalizeMapFaction(raw){
+          const key = String(raw || "").toLowerCase().trim();
+          if (!key) return "";
+          if (key === "rb" || key.includes("rogue")) return "rogue_byte";
+          if (key === "ew" || key.includes("echo")) return "echo_wardens";
+          if (key === "pb" || key.includes("pack") || key.includes("burn")) return "pack_burners";
+          if (key === "ih" || key.includes("inner") || key.includes("howl")) return "inner_howl";
+          if (["rogue_byte", "echo_wardens", "pack_burners", "inner_howl"].includes(key)) return key;
+          return "";
+        }
+
+        function currentMapFaction(){
+          try {
+            return normalizeMapFaction(
+              window.currentUserFaction ||
+              PROFILE?.faction ||
+              PLAYER_STATE?.profile?.faction ||
+              PLAYER_STATE?.faction ||
+              localStorage.getItem("ah_faction") ||
+              ""
+            );
+          } catch (_) {
+            return normalizeMapFaction(window.currentUserFaction || PROFILE?.faction || "");
+          }
+        }
+
+        function findMapNodeByRef(nodeLike){
+          const list = (DATA && Array.isArray(DATA.nodes)) ? DATA.nodes : [];
+          if (!list.length) return null;
+          const rawId = String(nodeLike?.id || nodeLike?.nodeId || "").trim().toLowerCase();
+          const rawBid = String(nodeLike?.buildingId || "").trim().toLowerCase();
+          if (!rawId && !rawBid) return null;
+
+          const idAlias = rawId === "edge_of_the_chain" ? "edge_of_chain" : rawId;
+          const bidAlias = rawBid === "edge_of_the_chain" ? "edge_of_chain" : rawBid;
+
+          for (const node of list){
+            if (!node || typeof node !== "object") continue;
+            const nid = String(node.id || "").trim().toLowerCase();
+            const bid = String(node.buildingId || "").trim().toLowerCase();
+            if (!nid && !bid) continue;
+            if (idAlias && (nid === idAlias || bid === idAlias)) return node;
+            if (bidAlias && (nid === bidAlias || bid === bidAlias)) return node;
+          }
+          return null;
+        }
+
+        function buildNodeLoreLines(nodeLike, opts = {}){
+          const includeFaction = opts.includeFaction !== false;
+          const maxLines = Number(opts.maxLines || 3);
+          const node = (nodeLike && typeof nodeLike === "object" && nodeLike.lore)
+            ? nodeLike
+            : findMapNodeByRef(nodeLike);
+          const lore = (node && typeof node.lore === "object") ? node.lore : null;
+          if (!lore) return [];
+
+          const lines = [];
+          const identity = String(lore.identity || lore.history || "").replace(/\s+/g, " ").trim();
+          const stakes = String(lore.stakes || lore.whyNow || "").replace(/\s+/g, " ").trim();
+          if (identity) lines.push(identity);
+          if (stakes) lines.push(stakes);
+
+          if (includeFaction && lore.factionAngles && typeof lore.factionAngles === "object"){
+            const factionKey = currentMapFaction();
+            const angled = String(lore.factionAngles[factionKey] || "").replace(/\s+/g, " ").trim();
+            if (angled) lines.push(angled);
+          }
+
+          return lines.slice(0, Math.max(1, maxLines));
+        }
+
+        function renderNodeLoreBlock(baseDescRaw, loreLines, titleText = "Field note"){
+          const baseDesc = String(baseDescRaw || "").replace(/\s+/g, " ").trim();
+          const lines = Array.isArray(loreLines) ? loreLines.filter(Boolean) : [];
+          if (!lines.length) return escMapHtml(baseDesc);
+
+          const baseHtml = baseDesc ? `<div>${escMapHtml(baseDesc)}</div>` : "";
+          const loreHtml = lines.map((line) => `<div style="margin-top:4px;">${escMapHtml(line)}</div>`).join("");
+
+          return `${baseHtml}<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:12px;line-height:1.35;"><div style="opacity:.68;font-size:11px;text-transform:uppercase;letter-spacing:.06em;">${escMapHtml(titleText)}</div>${loreHtml}</div>`;
+        }
+
         function applyStateToMap(){
           if (!PLAYER_STATE) return;
           if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
@@ -6500,8 +6592,21 @@ function isRegionUnlocked(regionId){
         document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
 
         function openRegionSheet(node, reg){
+          const mapNode = findMapNodeByRef(node) || node || {};
+          const baseDesc = (reg && reg.desc) || (mapNode && mapNode.desc) || '';
+          const loreLines = buildNodeLoreLines(mapNode, { includeFaction: true, maxLines: 3 });
+          let loreVisible = false;
+
+          function paintRegionDesc(){
+            if (!loreVisible || !loreLines.length){
+              regionDesc.textContent = baseDesc;
+              return;
+            }
+            regionDesc.innerHTML = renderNodeLoreBlock(baseDesc, loreLines, "Node lore");
+          }
+
           regionTitle.textContent = (reg && reg.name) || (node && node.name) || 'Region';
-          regionDesc.textContent = (reg && reg.desc) || (node && node.desc) || '';
+          paintRegionDesc();
           btnRegionGo.onclick = async () => {
   regionBack.style.display = 'none';
 
@@ -6532,7 +6637,20 @@ function isRegionUnlocked(regionId){
 
   sendAction('region_open', { region: node.region, nodeId: node.id });
 };
-          btnRegionLo.onclick = () => { regionBack.style.display='none'; sendAction('lore_open', { region: node.region }); };
+          if (btnRegionLo){
+            if (loreLines.length){
+              btnRegionLo.style.display = 'inline-block';
+              btnRegionLo.textContent = 'Lore';
+              btnRegionLo.onclick = () => {
+                loreVisible = !loreVisible;
+                btnRegionLo.textContent = loreVisible ? 'Hide lore' : 'Lore';
+                paintRegionDesc();
+              };
+            } else {
+              btnRegionLo.style.display = 'none';
+              btnRegionLo.onclick = null;
+            }
+          }
           regionBack.style.display = 'flex';
         }
 
@@ -6556,7 +6674,18 @@ function isRegionUnlocked(regionId){
         const MAX_RESOLVE_RETRIES = 5;
 
         let CURRENT_BID = null;
+        let CURRENT_BUILDING_DESC = "";
         let ticker = null;
+        function renderBuildingDesc(bid, descRaw){
+          const mapNode = findMapNodeByRef({ id: bid, buildingId: bid }) || {};
+          const baseDesc = String(descRaw || mapNode?.desc || "").replace(/\s+/g, " ").trim();
+          const loreLines = buildNodeLoreLines(mapNode, { includeFaction: true, maxLines: 2 });
+          if (!loreLines.length){
+            bDesc.textContent = baseDesc;
+            return;
+          }
+          bDesc.innerHTML = renderNodeLoreBlock(baseDesc, loreLines, "Field note");
+        }
         function stopBuildingTicker(){ if (ticker){ clearInterval(ticker); ticker=null; } }
         function startBuildingTicker(endTs){
           stopBuildingTicker();
@@ -6578,8 +6707,9 @@ function isRegionUnlocked(regionId){
 
         async function openBuilding(bid, name, desc){
           CURRENT_BID = bid;
+          CURRENT_BUILDING_DESC = String(desc || "").trim();
           bTitle.textContent = name || "Building";
-          bDesc.textContent = desc || "";
+          renderBuildingDesc(CURRENT_BID, CURRENT_BUILDING_DESC);
           bBack.style.display = 'flex';
           await loadBuildingState();
         }
@@ -6589,7 +6719,8 @@ function isRegionUnlocked(regionId){
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             bTitle.textContent = st.name || bTitle.textContent;
-            bDesc.textContent  = st.desc || bDesc.textContent;
+            if (st.desc) CURRENT_BUILDING_DESC = String(st.desc).trim();
+            renderBuildingDesc(CURRENT_BID, CURRENT_BUILDING_DESC);
 
             bRoutesW.style.display = (st.routes && st.routes.length) ? 'block' : 'none';
             bRoute.innerHTML = '';
@@ -6672,6 +6803,14 @@ function isRegionUnlocked(regionId){
           return lines;
         }
 
+        function formatBuildingLore(loreRaw, routeRaw) {
+          const lore = String(loreRaw ?? "").replace(/\s+/g, " ").trim();
+          if (!lore) return "";
+          const route = String(routeRaw ?? "").trim();
+          const clipped = lore.length > 140 ? `${lore.slice(0, 137).trimEnd()}...` : lore;
+          return route ? `${route} // ${clipped}` : clipped;
+        }
+
         async function resolveRun(maxRetries=0, silentRetries=false){
           if (!CURRENT_BID) return false;
           for (let i=0; i<=maxRetries; i++){
@@ -6679,8 +6818,11 @@ function isRegionUnlocked(regionId){
               const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
               const rw = out?.rewards || {};
               const lines = formatBuildingRewards(rw);
+              const loreLine = formatBuildingLore(out?.lore, out?.route);
+              const rewardsText = lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.";
+              const resultText = loreLine ? `${rewardsText}\n\nField note:\n${loreLine}` : rewardsText;
               try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
-              tg?.showAlert?.(lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.");
+              tg?.showAlert?.(resultText);
               await loadPlayerState();
               await loadBuildingState();
               return true;
