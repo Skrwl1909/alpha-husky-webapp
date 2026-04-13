@@ -166,6 +166,7 @@
     const sym = String(symbol || "SCRAP").toUpperCase();
     img.src = symbolImage(sym);
     img.alt = sym;
+    img.dataset.rtSymbol = sym;
   }
 
   function setColumnSymbols(col, rows) {
@@ -420,6 +421,15 @@
   border-bottom:1px solid rgba(255,255,255,.10);
   background:linear-gradient(180deg, rgba(8,12,18,.58), rgba(8,12,18,.30));
 }
+.rt-symbol-safe{
+  width:100%;
+  height:100%;
+  box-sizing:border-box;
+  padding:8px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 .rt-cell:last-child{
   border-bottom:none;
 }
@@ -446,8 +456,27 @@
   filter:drop-shadow(0 0 10px rgba(255,230,146,.85));
 }
 .rt-cell img{
-  width:52px; height:52px; object-fit:contain; image-rendering:auto;
+  width:100%;
+  height:100%;
+  max-width:46px;
+  max-height:46px;
+  display:block;
+  object-fit:contain;
+  object-position:50% 52%;
+  image-rendering:auto;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));
+}
+.rt-cell img[data-rt-symbol="SCATTER"]{
+  max-width:44px;
+  max-height:44px;
+  object-position:50% 58%;
+}
+.rt-cell img[data-rt-symbol="VISOR"],
+.rt-cell img[data-rt-symbol="WILD"]{
+  object-position:50% 54%;
+}
+.rt-cell img[data-rt-symbol="SCRAP"]{
+  object-position:50% 49%;
 }
 @keyframes rt-reel-roll-bg{
   from { background-position:center 0px; }
@@ -650,6 +679,17 @@
 @media (max-width:560px){
   .rt-metrics{ grid-template-columns:1fr; }
   .rt-cell{ min-height:68px; height:68px; }
+  .rt-symbol-safe{ padding:7px 8px; }
+  .rt-cell img{
+    max-width:42px;
+    max-height:42px;
+    object-position:50% 53%;
+  }
+  .rt-cell img[data-rt-symbol="SCATTER"]{
+    max-width:40px;
+    max-height:40px;
+    object-position:50% 59%;
+  }
 }
     `;
     document.head.appendChild(style);
@@ -771,10 +811,14 @@
       for (let row = 0; row < 3; row += 1) {
         const cell = document.createElement("div");
         cell.className = `rt-cell ${row === 1 ? "payline" : ""}`.trim();
+        const symbolSafe = document.createElement("div");
+        symbolSafe.className = "rt-symbol-safe";
         const img = document.createElement("img");
         img.alt = "Slot symbol";
         img.src = symbolImage("SCRAP");
-        cell.appendChild(img);
+        img.dataset.rtSymbol = "SCRAP";
+        symbolSafe.appendChild(img);
+        cell.appendChild(symbolSafe);
         reel.appendChild(cell);
         S.cells[row][col] = img;
         S.cellEls[row][col] = cell;
@@ -803,11 +847,7 @@
     const safeRows = normalizeRows(rows);
     for (let r = 0; r < 3; r += 1) {
       for (let c = 0; c < 3; c += 1) {
-        const img = S.cells?.[r]?.[c];
-        if (!img) continue;
-        const sym = safeRows[r][c];
-        img.src = symbolImage(sym);
-        img.alt = sym;
+        setCellSymbol(r, c, safeRows[r][c]);
       }
     }
   }
