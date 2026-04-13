@@ -410,6 +410,9 @@
   animation:rt-reel-settle .22s ease-out;
 }
 .rt-cell{
+  position:relative;
+  overflow:hidden;
+  height:76px;
   min-height:76px;
   display:flex;
   align-items:center;
@@ -646,7 +649,7 @@
 }
 @media (max-width:560px){
   .rt-metrics{ grid-template-columns:1fr; }
-  .rt-cell{ min-height:68px; }
+  .rt-cell{ min-height:68px; height:68px; }
 }
     `;
     document.head.appendChild(style);
@@ -809,24 +812,38 @@
     }
   }
 
-  function renderState(payload) {
-    const state = payload?.state || payload || {};
-    S.lastState = state;
+  function numOr(value, fallback) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+    const f = Number(fallback);
+    return Number.isFinite(f) ? f : 0;
+  }
 
-    const boardRows = state?.board?.rows || payload?.board?.rows || DEFAULT_ROWS;
+  function renderState(payload) {
+    const prevState = (S.lastState && typeof S.lastState === "object") ? S.lastState : {};
+    const nestedState = payload?.state;
+    const state = (nestedState && typeof nestedState === "object" && !Array.isArray(nestedState) && Object.keys(nestedState).length > 0)
+      ? nestedState
+      : ((payload && typeof payload === "object") ? payload : {});
+    const prevFrag = (prevState.fragments && typeof prevState.fragments === "object") ? prevState.fragments : {};
+    const nextFrag = (state.fragments && typeof state.fragments === "object") ? state.fragments : {};
+    const frag = { ...prevFrag, ...nextFrag };
+    const prevBoard = (prevState.board && typeof prevState.board === "object") ? prevState.board : {};
+    const nextBoard = (state.board && typeof state.board === "object") ? state.board : {};
+
+    const boardRows = state?.board?.rows || payload?.board?.rows || prevBoard?.rows || DEFAULT_ROWS;
     renderBoard(boardRows);
 
-    const freeSpins = Number(state.freeSpins || 0);
-    const spinCost = Number(state.spinCostBones || 0);
-    const canRecover = !!state.canRecover;
-    const bonesBal = state.bonesBalance;
+    const freeSpins = numOr(state.freeSpins ?? prevState.freeSpins, 0);
+    const spinCost = numOr(state.spinCostBones ?? prevState.spinCostBones, 0);
+    const canRecover = (state.canRecover == null ? !!prevState.canRecover : !!state.canRecover);
+    const bonesBal = (state.bonesBalance == null ? prevState.bonesBalance : state.bonesBalance);
 
-    const frag = state.fragments || {};
-    const fragOwned = Number(frag.owned || 0);
-    const fragGoal = Number(frag.goal || 0);
-    const fragPct = Math.max(0, Math.min(100, Number(frag.pct || 0)));
-    const earnedToday = Number(frag.earnedToday || 0);
-    const dailyCap = Number(frag.dailyCap || 0);
+    const fragOwned = numOr(frag.owned, 0);
+    const fragGoal = numOr(frag.goal, 0);
+    const fragPct = Math.max(0, Math.min(100, numOr(frag.pct, 0)));
+    const earnedToday = numOr(frag.earnedToday, 0);
+    const dailyCap = numOr(frag.dailyCap, 0);
 
     const freeEl = el("rtFree");
     if (freeEl) freeEl.textContent = String(freeSpins);
@@ -854,6 +871,21 @@
       btn.classList.toggle("is-loading", !!S.spinning);
       btn.textContent = S.spinning ? "Recovering..." : "Recover";
     }
+
+    S.lastState = {
+      ...prevState,
+      ...state,
+      freeSpins,
+      spinCostBones: spinCost,
+      canRecover: !!canRecover,
+      bonesBalance: bonesBal,
+      fragments: frag,
+      board: {
+        ...prevBoard,
+        ...nextBoard,
+        rows: normalizeRows(boardRows),
+      },
+    };
   }
 
   function listRewards(out) {
