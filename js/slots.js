@@ -25,7 +25,8 @@
   ];
   const SPIN_SYMBOLS = ["VISOR", "WILD", "RELIC", "SCATTER", "SCRAP", "SHARD"];
   const SPIN_MIN_MS = 920;
-  const SPIN_TICK_MS = 54;
+  const SPIN_TICK_MS = 88;
+  const SPIN_STRIP_STEP_MS = 72;
   const REEL_STOP_DELAY_MS = 210;
 
   const S = {
@@ -37,7 +38,12 @@
     cells: [],
     cellEls: [],
     reels: [],
+    reelStrips: [],
+    reelStripCells: [],
+    reelSpinSymbols: [],
     spinIntervals: [],
+    reelStepTimers: [],
+    reelStepping: [],
     spinVideo: null,
     spinVideoUsable: true,
     spinVideoActive: false,
@@ -124,6 +130,13 @@
       if (arr[i]) clearInterval(arr[i]);
     }
     S.spinIntervals = [];
+
+    const stepTimers = Array.isArray(S.reelStepTimers) ? S.reelStepTimers : [];
+    for (let i = 0; i < stepTimers.length; i += 1) {
+      if (stepTimers[i]) clearTimeout(stepTimers[i]);
+    }
+    S.reelStepTimers = [];
+    S.reelStepping = [];
   }
 
   async function startSpinVideoOverlay() {
@@ -160,6 +173,43 @@
     try { video.currentTime = 0; } catch (_) {}
   }
 
+  function getCellSizePx() {
+    const sample = S.cellEls?.[0]?.[0];
+    const h = Math.round(sample?.getBoundingClientRect?.().height || 0);
+    return h > 0 ? h : 76;
+  }
+
+  function resetReelStripPosition(col) {
+    const strip = S.reelStrips?.[col];
+    if (!strip) return;
+    const step = Math.max(1, getCellSizePx());
+    strip.style.transition = "none";
+    strip.style.transform = `translateY(${-step}px)`;
+  }
+
+  function setStripSymbol(col, stripRow, symbol) {
+    const img = S.reelStripCells?.[col]?.[stripRow];
+    if (!img) return;
+    const sym = String(symbol || "SCRAP").toUpperCase();
+    img.src = symbolImage(sym);
+    img.alt = sym;
+    img.dataset.rtSymbol = sym;
+  }
+
+  function syncColumnStripFromRows(col, rows) {
+    const safe = normalizeRows(rows);
+    const top = safe[0][col];
+    const mid = safe[1][col];
+    const bot = safe[2][col];
+    const buf = String(S.reelSpinSymbols?.[col]?.[0] || top || "SCRAP").toUpperCase();
+    S.reelSpinSymbols[col] = [buf, top, mid, bot];
+    setStripSymbol(col, 0, buf);
+    setStripSymbol(col, 1, top);
+    setStripSymbol(col, 2, mid);
+    setStripSymbol(col, 3, bot);
+    resetReelStripPosition(col);
+  }
+
   function setCellSymbol(row, col, symbol) {
     const img = S.cells?.[row]?.[col];
     if (!img) return;
@@ -170,32 +220,55 @@
   }
 
   function setColumnSymbols(col, rows) {
-    const safe = normalizeRows(rows);
-    setCellSymbol(0, col, safe[0][col]);
-    setCellSymbol(1, col, safe[1][col]);
-    setCellSymbol(2, col, safe[2][col]);
+    syncColumnStripFromRows(col, rows);
   }
 
   function cycleReelColumn(col) {
-    const topNow = String(S.cells?.[0]?.[col]?.alt || "SCRAP").toUpperCase();
-    const midNow = String(S.cells?.[1]?.[col]?.alt || "SCRAP").toUpperCase();
-    const nextTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
-    setCellSymbol(2, col, midNow);
-    setCellSymbol(1, col, topNow);
-    setCellSymbol(0, col, nextTop);
+    const strip = S.reelStrips?.[col];
+    const current = S.reelSpinSymbols?.[col];
+    if (!strip || !Array.isArray(current) || current.length < 4) return;
+    if (S.reelStepping[col]) return;
+
+    S.reelStepping[col] = true;
+    strip.style.transition = `transform ${SPIN_STRIP_STEP_MS}ms linear`;
+    strip.style.transform = "translateY(0px)";
+
+    if (S.reelStepTimers[col]) {
+      clearTimeout(S.reelStepTimers[col]);
+      S.reelStepTimers[col] = null;
+    }
+
+    S.reelStepTimers[col] = setTimeout(() => {
+      const snap = Array.isArray(S.reelSpinSymbols?.[col]) ? S.reelSpinSymbols[col] : current;
+      const nextTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
+      const shifted = [nextTop, snap[0], snap[1], snap[2]];
+      S.reelSpinSymbols[col] = shifted;
+      for (let i = 0; i < 4; i += 1) setStripSymbol(col, i, shifted[i]);
+      resetReelStripPosition(col);
+      void strip.offsetHeight;
+      strip.style.transition = "";
+      S.reelStepping[col] = false;
+      S.reelStepTimers[col] = null;
+    }, SPIN_STRIP_STEP_MS + 8);
   }
 
   function startVisualSpin() {
     clearWinHighlights();
     clearSpinIntervals();
     setResultCard("is-neutral", "Recovering cache...", "Reels spinning.");
-    void startSpinVideoOverlay();
 
     const reels = Array.isArray(S.reels) ? S.reels : [];
     for (let col = 0; col < reels.length; col += 1) {
       const reel = reels[col];
       reel?.classList?.remove("is-settle");
       reel?.classList?.add("is-rolling");
+      const top = String(S.cells?.[0]?.[col]?.alt || "SCRAP").toUpperCase();
+      const mid = String(S.cells?.[1]?.[col]?.alt || "SCRAP").toUpperCase();
+      const bot = String(S.cells?.[2]?.[col]?.alt || "SCRAP").toUpperCase();
+      const seedTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
+      S.reelSpinSymbols[col] = [seedTop, top, mid, bot];
+      for (let i = 0; i < 4; i += 1) setStripSymbol(col, i, S.reelSpinSymbols[col][i]);
+      resetReelStripPosition(col);
       cycleReelColumn(col);
       S.spinIntervals[col] = setInterval(() => cycleReelColumn(col), SPIN_TICK_MS + (col * 8));
     }
@@ -204,15 +277,18 @@
   async function stopVisualSpin(finalRows) {
     const reels = Array.isArray(S.reels) ? S.reels : [];
     const safeRows = normalizeRows(finalRows);
-    const usedVideo = !!S.spinVideoActive;
     stopSpinVideoOverlay();
-    if (usedVideo) await sleep(110);
 
     for (let col = 0; col < reels.length; col += 1) {
       if (S.spinIntervals[col]) {
         clearInterval(S.spinIntervals[col]);
         S.spinIntervals[col] = null;
       }
+      if (S.reelStepTimers[col]) {
+        clearTimeout(S.reelStepTimers[col]);
+        S.reelStepTimers[col] = null;
+      }
+      S.reelStepping[col] = false;
 
       setColumnSymbols(col, safeRows);
       const reel = reels[col];
@@ -365,6 +441,7 @@
   overflow:hidden;
 }
 .rt-board{
+  --rt-cell-size:76px;
   position:relative;
   z-index:1;
   transition:opacity .18s ease, filter .18s ease;
@@ -395,17 +472,22 @@
 .rt-reel{
   border-radius:12px;
   overflow:hidden;
+  height:calc(var(--rt-cell-size) * 3);
   border:1px solid rgba(255,255,255,.16);
   background-size:cover;
   background-position:center;
   box-shadow:inset 0 0 0 1px rgba(8,12,20,.34);
 }
+.rt-reel-strip{
+  display:flex;
+  flex-direction:column;
+  transform:translateY(calc(var(--rt-cell-size) * -1));
+}
 .rt-reel.is-rolling{
   animation:rt-reel-roll-bg .11s linear infinite;
 }
-.rt-reel.is-rolling .rt-cell img{
-  animation:rt-symbol-roll .09s linear infinite;
-  will-change:transform, opacity, filter;
+.rt-reel.is-rolling .rt-reel-strip{
+  will-change:transform;
 }
 .rt-reel.is-settle{
   animation:rt-reel-settle .22s ease-out;
@@ -413,8 +495,9 @@
 .rt-cell{
   position:relative;
   overflow:hidden;
-  height:76px;
-  min-height:76px;
+  box-sizing:border-box;
+  height:var(--rt-cell-size);
+  min-height:var(--rt-cell-size);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -677,8 +760,9 @@
   filter:saturate(.78);
 }
 @media (max-width:560px){
+  .rt-board{ --rt-cell-size:68px; }
   .rt-metrics{ grid-template-columns:1fr; }
-  .rt-cell{ min-height:68px; height:68px; }
+  .rt-cell{ min-height:var(--rt-cell-size); height:var(--rt-cell-size); }
   .rt-symbol-safe{ padding:7px 8px; }
   .rt-cell img{
     max-width:42px;
@@ -804,13 +888,19 @@
     S.cells = [[], [], []];
     S.cellEls = [[], [], []];
     S.reels = [];
+    S.reelStrips = [];
+    S.reelStripCells = [];
+    S.reelSpinSymbols = [];
     for (let col = 0; col < 3; col += 1) {
       const reel = document.createElement("div");
       reel.className = "rt-reel";
       reel.style.backgroundImage = `url("${reelBg[col]}")`;
-      for (let row = 0; row < 3; row += 1) {
+      const strip = document.createElement("div");
+      strip.className = "rt-reel-strip";
+      const stripCells = [];
+      for (let stripRow = 0; stripRow < 4; stripRow += 1) {
         const cell = document.createElement("div");
-        cell.className = `rt-cell ${row === 1 ? "payline" : ""}`.trim();
+        cell.className = `rt-cell ${stripRow === 2 ? "payline" : ""}`.trim();
         const symbolSafe = document.createElement("div");
         symbolSafe.className = "rt-symbol-safe";
         const img = document.createElement("img");
@@ -819,12 +909,21 @@
         img.dataset.rtSymbol = "SCRAP";
         symbolSafe.appendChild(img);
         cell.appendChild(symbolSafe);
-        reel.appendChild(cell);
-        S.cells[row][col] = img;
-        S.cellEls[row][col] = cell;
+        strip.appendChild(cell);
+        stripCells[stripRow] = img;
+        if (stripRow > 0) {
+          const row = stripRow - 1;
+          S.cells[row][col] = img;
+          S.cellEls[row][col] = cell;
+        }
       }
+      reel.appendChild(strip);
       board.appendChild(reel);
       S.reels[col] = reel;
+      S.reelStrips[col] = strip;
+      S.reelStripCells[col] = stripCells;
+      S.reelSpinSymbols[col] = ["SCRAP", "SCRAP", "SCRAP", "SCRAP"];
+      resetReelStripPosition(col);
     }
 
     el("rtClose")?.addEventListener("click", close);
@@ -845,10 +944,8 @@
 
   function renderBoard(rows) {
     const safeRows = normalizeRows(rows);
-    for (let r = 0; r < 3; r += 1) {
-      for (let c = 0; c < 3; c += 1) {
-        setCellSymbol(r, c, safeRows[r][c]);
-      }
+    for (let col = 0; col < 3; col += 1) {
+      syncColumnStripFromRows(col, safeRows);
     }
   }
 
@@ -1048,6 +1145,9 @@
       stopSpinVideoOverlay();
       for (let i = 0; i < (S.reels || []).length; i += 1) {
         S.reels[i]?.classList?.remove("is-rolling", "is-settle");
+        resetReelStripPosition(i);
+        const strip = S.reelStrips?.[i];
+        if (strip) strip.style.transition = "";
       }
       S.spinning = false;
       const canRecover = !!S.lastState?.canRecover;
@@ -1062,6 +1162,13 @@
   function close() {
     const back = el(MODAL_ID);
     if (back) back.style.display = "none";
+    clearSpinIntervals();
+    for (let i = 0; i < (S.reels || []).length; i += 1) {
+      S.reels[i]?.classList?.remove("is-rolling", "is-settle");
+      resetReelStripPosition(i);
+      const strip = S.reelStrips?.[i];
+      if (strip) strip.style.transition = "";
+    }
     stopSpinVideoOverlay();
     try { global.navClose?.(MODAL_ID); } catch (_) {}
   }
