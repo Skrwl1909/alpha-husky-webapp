@@ -1174,7 +1174,7 @@
     const hot = Number(counts.hot || 0);
     const fortified = Number(counts.fortified || 0);
 
-    line1El.textContent = "After the Betrayal Hash, the Alpha Network fights as four war-paths.";
+    line1El.textContent = "Network fracture";
 
     const warPath = _viewerWarPathLabel();
     if (contested > 0) {
@@ -1794,5 +1794,6 @@
   window.AHMap = API;
   window.Map = window.Map || API;
 })();
+
 
 

@@ -360,7 +360,7 @@
     calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
   );
   display:none;
-  margin:4px auto 0;
+  margin:2px auto 0;
 }
 #ctaSurface.is-visible{ display:block !important; }
 #ctaCardRoot,
@@ -388,14 +388,14 @@
   padding:6px 8px;
   border-radius:11px;
   background:
-    radial-gradient(circle at 14% 16%, rgba(0,229,255,.08), transparent 42%),
-    radial-gradient(circle at 90% 12%, rgba(255,176,0,.08), transparent 36%),
-    linear-gradient(180deg, rgba(9,13,18,.78), rgba(9,13,18,.90));
-  border:1px solid rgba(255,255,255,.10);
+    radial-gradient(circle at 14% 16%, rgba(0,229,255,.06), transparent 42%),
+    radial-gradient(circle at 90% 12%, rgba(255,176,0,.05), transparent 36%),
+    linear-gradient(180deg, rgba(9,13,18,.64), rgba(9,13,18,.78));
+  border:1px solid rgba(255,255,255,.08);
   box-shadow:
-    0 8px 18px rgba(0,0,0,.20),
+    0 6px 14px rgba(0,0,0,.16),
     inset 0 1px 0 rgba(255,255,255,.04),
-    0 0 0 1px rgba(0,229,255,.05);
+    0 0 0 1px rgba(0,229,255,.04);
   backdrop-filter: blur(10px);
   transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
 }
@@ -572,7 +572,7 @@
   padding:3px 7px;
   border:0;
   border-radius:999px;
-  background:rgba(9,13,18,.34);
+  background:rgba(9,13,18,.22);
   border:1px solid rgba(255,255,255,.06);
   color:rgba(255,255,255,.72);
   text-align:left;
@@ -615,10 +615,10 @@
   min-height:26px;
   padding:4px 7px;
   border-radius:10px;
-  background:rgba(9,13,18,.48);
-  border:1px solid rgba(255,255,255,.06);
+  background:rgba(9,13,18,.30);
+  border:1px solid rgba(255,255,255,.05);
   backdrop-filter: blur(8px);
-  box-shadow:0 4px 10px rgba(0,0,0,.10);
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
   transition: transform .14s ease, border-color .14s ease, background .14s ease;
 }
 .cta-highlight:active{
