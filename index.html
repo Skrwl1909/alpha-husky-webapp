@@ -5808,33 +5808,90 @@ function applyProfileSkin(skin){
   if (typeof skin === 'string') {
     skinImg.src = skin;
     skinImg.alt = 'Active skin';
+    const parsed = ahSkinKeyFromUrl(skin);
+    if (parsed) skinImg.dataset.skinKey = parsed;
+    else delete skinImg.dataset.skinKey;
     return;
   }
 
   if (skin.img) skinImg.src = skin.img;
   if (skin.name) skinImg.alt = skin.name;
+  const explicitKey = ahNormSkinKey(skin.key || skin.skinKey || skin.skin_key || "");
+  const parsed = explicitKey || ahSkinKeyFromUrl(skin.img || "");
+  if (parsed) skinImg.dataset.skinKey = parsed;
+  else delete skinImg.dataset.skinKey;
 }
 
 /* ✅ FRAME + SKIN FIT HELPERS (front-only, minimal + extensible) */
-const AH_HERO_SKIN_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
+const AH_HERO_SKIN_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
 const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
-  rogue_byte_overclock: { scale: 1.11, offsetX: 0, offsetY: -6 }, // map-influence frame tuning example
+  unbroken_alpha: { scale: 1.02, offsetX: 0, offsetY: -2 }, // skin-aware example (tune per asset framing)
 });
 
-window.__AH_FRAME_SKIN_FIT__ = window.__AH_FRAME_SKIN_FIT__ || {
+const AH_HERO_FRAME_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
+const AH_HERO_FRAME_FIT_OVERRIDES = Object.freeze({
+  rogue_byte_overclock: { scale: 1.08, offsetX: 0, offsetY: -6 }, // map-influence frame example
+});
+const AH_HERO_COMBO_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+const AH_HERO_COMBO_FIT_OVERRIDES = Object.freeze({
+  "unbroken_alpha::founder_ember_mark": { scale: 1.01, offsetX: 0, offsetY: -2 },
+  "unbroken_alpha::rogue_byte_overclock": { scale: 1.04, offsetX: 0, offsetY: 5 }, // stage 3 combo exception example
+});
+
+window.__AH_SKIN_FIT__ = window.__AH_SKIN_FIT__ || {
   default: AH_HERO_SKIN_FIT_DEFAULT,
   overrides: AH_HERO_SKIN_FIT_OVERRIDES,
 };
 
-window.__AH_FRAME_PREVIEW_SKIN_FIT__ = window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {
-  default: { scale: 0.9, offsetX: 0, offsetY: 0 },
+window.__AH_FRAME_FIT__ = window.__AH_FRAME_FIT__ || window.__AH_FRAME_SKIN_FIT__ || {
+  default: AH_HERO_FRAME_FIT_DEFAULT,
+  overrides: AH_HERO_FRAME_FIT_OVERRIDES,
+};
+
+// backward-compat alias for previous frame-only integration
+window.__AH_FRAME_SKIN_FIT__ = window.__AH_FRAME_FIT__;
+window.__AH_SKIN_FRAME_COMBO_FIT__ = window.__AH_SKIN_FRAME_COMBO_FIT__ || {
+  default: AH_HERO_COMBO_FIT_DEFAULT,
+  overrides: AH_HERO_COMBO_FIT_OVERRIDES,
+};
+
+window.__AH_SKIN_PREVIEW_FIT__ = window.__AH_SKIN_PREVIEW_FIT__ || {
+  default: { scale: 1, offsetX: 0, offsetY: 0 },
   overrides: {
-    rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 }, // modal preview tuning example
+    unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
   },
 };
 
+window.__AH_FRAME_PREVIEW_FIT__ = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {
+  default: { scale: 1, offsetX: 0, offsetY: 0 }, // stage 3: neutral baseline (0.9 felt globally undersized)
+  overrides: {
+    rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 },
+  },
+};
+window.__AH_SKIN_FRAME_PREVIEW_COMBO_FIT__ = window.__AH_SKIN_FRAME_PREVIEW_COMBO_FIT__ || {
+  default: { scale: 1, offsetX: 0, offsetY: 0 },
+  overrides: {
+    "unbroken_alpha::founder_ember_mark": { scale: 1.01, offsetX: 0, offsetY: -2 },
+    "unbroken_alpha::rogue_byte_overclock": { scale: 1.04, offsetX: 0, offsetY: 5 },
+  },
+};
+
+// backward-compat alias for previous preview frame map name
+window.__AH_FRAME_PREVIEW_SKIN_FIT__ = window.__AH_FRAME_PREVIEW_FIT__;
+
 function ahNormFrameKey(v){
   return String(v || "").trim().toLowerCase();
+}
+
+function ahNormSkinKey(v){
+  return String(v || "").trim().toLowerCase();
+}
+
+function ahSkinFrameComboKey(skinKey, frameKey){
+  const sk = ahNormSkinKey(skinKey);
+  const fk = ahNormFrameKey(frameKey);
+  if (!sk || !fk || fk === "default") return "";
+  return `${sk}::${fk}`;
 }
 
 function ahFrameKeyFromUrl(frameUrl){
@@ -5842,6 +5899,13 @@ function ahFrameKeyFromUrl(frameUrl){
   if (!url) return "";
   const m = url.match(/\/frames\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg)(?:[?#].*)?$/i);
   return ahNormFrameKey(m?.[1] || "");
+}
+
+function ahSkinKeyFromUrl(skinUrl){
+  const url = String(skinUrl || "").trim();
+  if (!url) return "";
+  const m = url.match(/\/skins\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg|avif|gif)(?:[?#].*)?$/i);
+  return ahNormSkinKey(m?.[1] || "");
 }
 
 function ahFitNum(value, fallback){
@@ -5859,26 +5923,56 @@ function ahNormalizeFit(raw, fallback){
 }
 
 function getHeroSkinFit(frameUrl, frameKey){
-  const cfg = window.__AH_FRAME_SKIN_FIT__ || {};
-  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_SKIN_FIT_DEFAULT);
+  const cfg = window.__AH_FRAME_FIT__ || window.__AH_FRAME_SKIN_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_FRAME_FIT_DEFAULT);
   const key = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const override = key ? (cfg?.overrides?.[key] || AH_HERO_FRAME_FIT_OVERRIDES[key]) : null;
+  return ahNormalizeFit(override, defaultFit);
+}
+
+function getHeroSkinBaseFit(skinUrl, skinKey){
+  const cfg = window.__AH_SKIN_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_SKIN_FIT_DEFAULT);
+  const key = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
   const override = key ? (cfg?.overrides?.[key] || AH_HERO_SKIN_FIT_OVERRIDES[key]) : null;
   return ahNormalizeFit(override, defaultFit);
 }
 
-function applyHeroSkinFit(frameUrl, frameKey){
+function getHeroComboFit(skinKey, frameKey){
+  const cfg = window.__AH_SKIN_FRAME_COMBO_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_COMBO_FIT_DEFAULT);
+  const comboKey = ahSkinFrameComboKey(skinKey, frameKey);
+  const override = comboKey ? (cfg?.overrides?.[comboKey] || AH_HERO_COMBO_FIT_OVERRIDES[comboKey]) : null;
+  return ahNormalizeFit(override, defaultFit);
+}
+
+function composeHeroFit(frameUrl, frameKey, skinUrl, skinKey){
+  const resolvedSkinKey = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
+  const resolvedFrameKey = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const skinFit = getHeroSkinBaseFit(skinUrl, resolvedSkinKey);
+  const frameFit = getHeroSkinFit(frameUrl, resolvedFrameKey);
+  const comboFit = getHeroComboFit(resolvedSkinKey, resolvedFrameKey);
+  return {
+    scale: skinFit.scale * frameFit.scale * comboFit.scale,
+    offsetX: skinFit.offsetX + frameFit.offsetX + comboFit.offsetX,
+    offsetY: skinFit.offsetY + frameFit.offsetY + comboFit.offsetY,
+  };
+}
+
+function applyHeroSkinFit(frameUrl, frameKey, skinUrl, skinKey){
   const skinEl = document.getElementById("player-skin");
   if (!skinEl) return;
-  const fit = getHeroSkinFit(frameUrl, frameKey);
+  const src = String(skinUrl || skinEl.currentSrc || skinEl.src || "").trim();
+  const fit = composeHeroFit(frameUrl, frameKey, src, skinKey);
   skinEl.style.objectFit = "contain";
   skinEl.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
 }
 
-function setHeroFrame(frameUrl, frameKey){
+function setHeroFrame(frameUrl, frameKey, skinKey){
   const el = document.getElementById("player-frame");
   if(!el) return;
 
-  applyHeroSkinFit(frameUrl, frameKey);
+  applyHeroSkinFit(frameUrl, frameKey, null, skinKey);
 
   if(frameUrl){
     el.src = frameUrl;
@@ -5974,6 +6068,25 @@ function pickFrameKey(p){
   return ahFrameKeyFromUrl(raw);
 }
 
+function pickSkinKey(p){
+  const raw =
+    p?.skinKey ||
+    p?.skin_key ||
+    p?.cosmetics?.skinKey ||
+    p?.cosmetics?.skin_key ||
+    p?.skin?.key ||
+    p?.activeSkin?.key ||
+    "";
+  const direct = ahNormSkinKey(raw);
+  if (direct && !direct.includes("/") && !direct.includes(".")) return direct;
+
+  const skinUrl =
+    (typeof p?.skin === "string" ? p.skin : p?.skin?.img) ||
+    (typeof p?.activeSkin === "string" ? p.activeSkin : p?.activeSkin?.img) ||
+    "";
+  return ahSkinKeyFromUrl(skinUrl || raw);
+}
+
 function setTopTag(tagKey, baseText="PACK"){
   const tagEl = document.getElementById("factionTag");
   if(!tagEl) return;
@@ -6052,6 +6165,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     PROFILE.avatarImg = p?.avatar?.img || PROFILE.avatarImg || "";
     PROFILE.avatarKey = p?.avatar?.key || PROFILE.avatarKey || "";
     PROFILE.skin = p.skin || p.activeSkin || PROFILE.skin || null;
+    PROFILE.skinKey = pickSkinKey(p) || PROFILE.skinKey || "";
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
     try {
@@ -6069,6 +6183,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
         avatarKey: p?.avatar?.key || PROFILE.avatarKey || "",
         profileAvatar: avatarImg,
         skin: p?.skin || PROFILE.skin || null,
+        skinKey: PROFILE.skinKey || "",
         activeSkin: p?.skin || PROFILE.skin || null,
         weeklyAura: p?.weeklyAura || p?.activeAura || null,
         activeAura: p?.weeklyAura || p?.activeAura || null,
@@ -6085,7 +6200,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     } catch (_) {}
 
     /* ✅ FRAME — dynamic (z profilu) */
-    setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "");
+    setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "", PROFILE.skinKey || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
 
     // ✅ Topbar może się przebudować – ok
