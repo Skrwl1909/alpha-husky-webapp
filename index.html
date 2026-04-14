@@ -5815,10 +5815,70 @@ function applyProfileSkin(skin){
   if (skin.name) skinImg.alt = skin.name;
 }
 
-/* ✅ FRAME HELPERS — wklej tutaj (między applyProfileSkin a loadProfile) */
-function setHeroFrame(frameUrl){
+/* ✅ FRAME + SKIN FIT HELPERS (front-only, minimal + extensible) */
+const AH_HERO_SKIN_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
+const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
+  rogue_byte_overclock: { scale: 1.11, offsetX: 0, offsetY: -6 }, // map-influence frame tuning example
+});
+
+window.__AH_FRAME_SKIN_FIT__ = window.__AH_FRAME_SKIN_FIT__ || {
+  default: AH_HERO_SKIN_FIT_DEFAULT,
+  overrides: AH_HERO_SKIN_FIT_OVERRIDES,
+};
+
+window.__AH_FRAME_PREVIEW_SKIN_FIT__ = window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {
+  default: { scale: 0.9, offsetX: 0, offsetY: 0 },
+  overrides: {
+    rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 }, // modal preview tuning example
+  },
+};
+
+function ahNormFrameKey(v){
+  return String(v || "").trim().toLowerCase();
+}
+
+function ahFrameKeyFromUrl(frameUrl){
+  const url = String(frameUrl || "").trim();
+  if (!url) return "";
+  const m = url.match(/\/frames\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg)(?:[?#].*)?$/i);
+  return ahNormFrameKey(m?.[1] || "");
+}
+
+function ahFitNum(value, fallback){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function ahNormalizeFit(raw, fallback){
+  const base = fallback || AH_HERO_SKIN_FIT_DEFAULT;
+  return {
+    scale: ahFitNum(raw?.scale, base.scale),
+    offsetX: ahFitNum(raw?.offsetX, base.offsetX),
+    offsetY: ahFitNum(raw?.offsetY, base.offsetY),
+  };
+}
+
+function getHeroSkinFit(frameUrl, frameKey){
+  const cfg = window.__AH_FRAME_SKIN_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_SKIN_FIT_DEFAULT);
+  const key = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const override = key ? (cfg?.overrides?.[key] || AH_HERO_SKIN_FIT_OVERRIDES[key]) : null;
+  return ahNormalizeFit(override, defaultFit);
+}
+
+function applyHeroSkinFit(frameUrl, frameKey){
+  const skinEl = document.getElementById("player-skin");
+  if (!skinEl) return;
+  const fit = getHeroSkinFit(frameUrl, frameKey);
+  skinEl.style.objectFit = "contain";
+  skinEl.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
+}
+
+function setHeroFrame(frameUrl, frameKey){
   const el = document.getElementById("player-frame");
   if(!el) return;
+
+  applyHeroSkinFit(frameUrl, frameKey);
 
   if(frameUrl){
     el.src = frameUrl;
@@ -5899,6 +5959,19 @@ function pickFrameUrl(p){
     p?.cosmetics?.frame ||
     null
   );
+}
+
+function pickFrameKey(p){
+  const raw =
+    p?.frameKey ||
+    p?.frame_key ||
+    p?.cosmetics?.frameKey ||
+    p?.cosmetics?.frame_key ||
+    p?.cosmetics?.frame ||
+    "";
+  const direct = ahNormFrameKey(raw);
+  if (direct && !direct.includes("/") && !direct.includes(".")) return direct;
+  return ahFrameKeyFromUrl(raw);
 }
 
 function setTopTag(tagKey, baseText="PACK"){
@@ -6012,7 +6085,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     } catch (_) {}
 
     /* ✅ FRAME — dynamic (z profilu) */
-    setHeroFrame(pickFrameUrl(p) || "");
+    setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
 
     // ✅ Topbar może się przebudować – ok
