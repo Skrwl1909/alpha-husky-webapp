@@ -20,6 +20,10 @@
   let _owned = [];
   let _equipped = { frame: "" };
   let _selectedKey = "";
+  const FRAME_PREVIEW_SKIN_FIT_DEFAULT = Object.freeze({ scale: 0.9, offsetX: 0, offsetY: 0 });
+  const FRAME_PREVIEW_SKIN_FIT_OVERRIDES = Object.freeze({
+    rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 }, // map-influence frame tuning example
+  });
 
   function dbg(msg, obj) {
     if (_dbg) console.log("[Frames]", msg, obj ?? "");
@@ -35,6 +39,27 @@
 
   function normKey(value) {
     return String(value || "").trim().toLowerCase();
+  }
+
+  function frameKeyFromUrl(url) {
+    const input = String(url || "").trim();
+    if (!input) return "";
+    const m = input.match(/\/frames\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg)(?:[?#].*)?$/i);
+    return normKey(m?.[1] || "");
+  }
+
+  function fitNum(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function normalizeFit(raw, fallback) {
+    const base = fallback || FRAME_PREVIEW_SKIN_FIT_DEFAULT;
+    return {
+      scale: fitNum(raw?.scale, base.scale),
+      offsetX: fitNum(raw?.offsetX, base.offsetX),
+      offsetY: fitNum(raw?.offsetY, base.offsetY),
+    };
   }
 
   function ensureCss() {
@@ -316,8 +341,11 @@
     return "/assets/skins/lunarhowl_skin.webp";
   }
 
-  function setPreview(frameUrl) {
+  function setPreview(item) {
     if (!previewSkin || !previewFrame) return;
+    const frameUrl = framePreviewUrl(item);
+    const frameKey = frameKeyForFit(item);
+    applyPreviewSkinFit(frameKey);
     previewSkin.src = currentHeroSkinUrl();
     if (frameUrl) {
       previewFrame.src = frameUrl;
@@ -345,6 +373,32 @@
 
   function frameSourceLabel(item) {
     return String(item?.source || item?.source_label || item?.sourceLabel || "").trim();
+  }
+
+  function frameKeyForFit(item) {
+    const direct =
+      item?.key ||
+      item?.frame_key ||
+      item?.frameKey ||
+      item?.frame ||
+      "";
+    const k = normKey(direct);
+    if (k && k !== "default" && !k.includes("/") && !k.includes(".")) return k;
+    return frameKeyFromUrl(framePreviewUrl(item));
+  }
+
+  function getPreviewSkinFit(frameKey) {
+    const cfg = window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
+    const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_SKIN_FIT_DEFAULT);
+    const k = normKey(frameKey);
+    const override = k ? (cfg?.overrides?.[k] || FRAME_PREVIEW_SKIN_FIT_OVERRIDES[k]) : null;
+    return normalizeFit(override, defaultFit);
+  }
+
+  function applyPreviewSkinFit(frameKey) {
+    if (!previewSkin) return;
+    const fit = getPreviewSkinFit(frameKey);
+    previewSkin.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
   }
 
   function frameLaneLabel(item, key) {
@@ -521,7 +575,7 @@
         _selectedKey = key;
         refreshButtonStates();
         setFrameInfo(item, key, owned);
-        setPreview(previewUrl);
+        setPreview(item);
         setPrimaryState();
         haptic("light");
       });
