@@ -24,8 +24,13 @@
     ["RELIC", "SCRAP", "VISOR"],
   ];
   const SPIN_SYMBOLS = ["VISOR", "WILD", "RELIC", "SCATTER", "SCRAP", "SHARD"];
+  const STRIP_BUFFER_TOP = 2;
+  const STRIP_BUFFER_BOTTOM = 2;
+  const STRIP_VISIBLE_ROWS = 3;
+  const STRIP_TOTAL_ROWS = STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS + STRIP_BUFFER_BOTTOM;
+  const STRIP_MID_INDEX = STRIP_BUFFER_TOP + 1;
   const SPIN_MIN_MS = 920;
-  const SPIN_TICK_MS = 88;
+  const SPIN_TICK_MS = 76;
   const SPIN_STRIP_STEP_MS = 72;
   const REEL_STOP_DELAY_MS = 210;
 
@@ -179,34 +184,58 @@
     return h > 0 ? h : 76;
   }
 
+  function randomSpinSymbol() {
+    return SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
+  }
+
+  function normalizeSymbol(symbol) {
+    return String(symbol || "SCRAP").toUpperCase();
+  }
+
   function resetReelStripPosition(col) {
     const strip = S.reelStrips?.[col];
     if (!strip) return;
     const step = Math.max(1, getCellSizePx());
     strip.style.transition = "none";
-    strip.style.transform = `translateY(${-step}px)`;
+    strip.style.transform = `translateY(${-(step * STRIP_BUFFER_TOP)}px)`;
   }
 
   function setStripSymbol(col, stripRow, symbol) {
     const img = S.reelStripCells?.[col]?.[stripRow];
     if (!img) return;
-    const sym = String(symbol || "SCRAP").toUpperCase();
+    const sym = normalizeSymbol(symbol);
     img.src = symbolImage(sym);
     img.alt = sym;
     img.dataset.rtSymbol = sym;
   }
 
+  function buildStripSymbols(top, mid, bot, previous) {
+    const out = Array.from({ length: STRIP_TOTAL_ROWS }, () => randomSpinSymbol());
+    out[STRIP_BUFFER_TOP] = normalizeSymbol(top);
+    out[STRIP_BUFFER_TOP + 1] = normalizeSymbol(mid);
+    out[STRIP_BUFFER_TOP + 2] = normalizeSymbol(bot);
+
+    const prev = Array.isArray(previous) ? previous : [];
+    if (STRIP_BUFFER_TOP > 0 && prev[STRIP_BUFFER_TOP - 1]) {
+      out[STRIP_BUFFER_TOP - 1] = normalizeSymbol(prev[STRIP_BUFFER_TOP - 1]);
+    }
+    const belowVisible = STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS;
+    if (belowVisible < STRIP_TOTAL_ROWS && prev[belowVisible]) {
+      out[belowVisible] = normalizeSymbol(prev[belowVisible]);
+    }
+    return out;
+  }
+
   function syncColumnStripFromRows(col, rows) {
     const safe = normalizeRows(rows);
-    const top = safe[0][col];
-    const mid = safe[1][col];
-    const bot = safe[2][col];
-    const buf = String(S.reelSpinSymbols?.[col]?.[0] || top || "SCRAP").toUpperCase();
-    S.reelSpinSymbols[col] = [buf, top, mid, bot];
-    setStripSymbol(col, 0, buf);
-    setStripSymbol(col, 1, top);
-    setStripSymbol(col, 2, mid);
-    setStripSymbol(col, 3, bot);
+    const top = normalizeSymbol(safe[0][col]);
+    const mid = normalizeSymbol(safe[1][col]);
+    const bot = normalizeSymbol(safe[2][col]);
+    const nextStrip = buildStripSymbols(top, mid, bot, S.reelSpinSymbols?.[col]);
+    S.reelSpinSymbols[col] = nextStrip;
+    for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) {
+      setStripSymbol(col, i, nextStrip[i]);
+    }
     resetReelStripPosition(col);
   }
 
@@ -223,33 +252,48 @@
     syncColumnStripFromRows(col, rows);
   }
 
-  function cycleReelColumn(col) {
-    const strip = S.reelStrips?.[col];
-    const current = S.reelSpinSymbols?.[col];
-    if (!strip || !Array.isArray(current) || current.length < 4) return;
-    if (S.reelStepping[col]) return;
+  function cycleReelColumn(col, opts) {
+    return new Promise((resolve) => {
+      const strip = S.reelStrips?.[col];
+      const current = S.reelSpinSymbols?.[col];
+      if (!strip || !Array.isArray(current) || current.length < STRIP_TOTAL_ROWS) {
+        resolve(false);
+        return;
+      }
+      if (S.reelStepping[col]) {
+        resolve(false);
+        return;
+      }
 
-    S.reelStepping[col] = true;
-    strip.style.transition = `transform ${SPIN_STRIP_STEP_MS}ms linear`;
-    strip.style.transform = "translateY(0px)";
+      const durationMs = Math.max(28, Number(opts?.durationMs || SPIN_STRIP_STEP_MS));
+      const easing = String(opts?.easing || "linear");
+      const step = Math.max(1, getCellSizePx());
+      const travelRows = Math.max(0, STRIP_BUFFER_TOP - 1);
+      const nextOffset = -(step * travelRows);
 
-    if (S.reelStepTimers[col]) {
-      clearTimeout(S.reelStepTimers[col]);
-      S.reelStepTimers[col] = null;
-    }
+      S.reelStepping[col] = true;
+      strip.style.transition = `transform ${durationMs}ms ${easing}`;
+      strip.style.transform = `translateY(${nextOffset}px)`;
 
-    S.reelStepTimers[col] = setTimeout(() => {
-      const snap = Array.isArray(S.reelSpinSymbols?.[col]) ? S.reelSpinSymbols[col] : current;
-      const nextTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
-      const shifted = [nextTop, snap[0], snap[1], snap[2]];
-      S.reelSpinSymbols[col] = shifted;
-      for (let i = 0; i < 4; i += 1) setStripSymbol(col, i, shifted[i]);
-      resetReelStripPosition(col);
-      void strip.offsetHeight;
-      strip.style.transition = "";
-      S.reelStepping[col] = false;
-      S.reelStepTimers[col] = null;
-    }, SPIN_STRIP_STEP_MS + 8);
+      if (S.reelStepTimers[col]) {
+        clearTimeout(S.reelStepTimers[col]);
+        S.reelStepTimers[col] = null;
+      }
+
+      S.reelStepTimers[col] = setTimeout(() => {
+        const snap = Array.isArray(S.reelSpinSymbols?.[col]) ? S.reelSpinSymbols[col] : current;
+        const nextTop = normalizeSymbol(opts?.nextTop || randomSpinSymbol());
+        const shifted = [nextTop, ...snap.slice(0, STRIP_TOTAL_ROWS - 1)];
+        S.reelSpinSymbols[col] = shifted;
+        for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) setStripSymbol(col, i, shifted[i]);
+        resetReelStripPosition(col);
+        void strip.offsetHeight;
+        strip.style.transition = "";
+        S.reelStepping[col] = false;
+        S.reelStepTimers[col] = null;
+        resolve(true);
+      }, durationMs + 12);
+    });
   }
 
   function startVisualSpin() {
@@ -262,15 +306,14 @@
       const reel = reels[col];
       reel?.classList?.remove("is-settle");
       reel?.classList?.add("is-rolling");
-      const top = String(S.cells?.[0]?.[col]?.alt || "SCRAP").toUpperCase();
-      const mid = String(S.cells?.[1]?.[col]?.alt || "SCRAP").toUpperCase();
-      const bot = String(S.cells?.[2]?.[col]?.alt || "SCRAP").toUpperCase();
-      const seedTop = SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
-      S.reelSpinSymbols[col] = [seedTop, top, mid, bot];
-      for (let i = 0; i < 4; i += 1) setStripSymbol(col, i, S.reelSpinSymbols[col][i]);
+      const top = normalizeSymbol(S.cells?.[0]?.[col]?.alt || "SCRAP");
+      const mid = normalizeSymbol(S.cells?.[1]?.[col]?.alt || "SCRAP");
+      const bot = normalizeSymbol(S.cells?.[2]?.[col]?.alt || "SCRAP");
+      S.reelSpinSymbols[col] = buildStripSymbols(top, mid, bot, S.reelSpinSymbols[col]);
+      for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) setStripSymbol(col, i, S.reelSpinSymbols[col][i]);
       resetReelStripPosition(col);
-      cycleReelColumn(col);
-      S.spinIntervals[col] = setInterval(() => cycleReelColumn(col), SPIN_TICK_MS + (col * 8));
+      void cycleReelColumn(col);
+      S.spinIntervals[col] = setInterval(() => { void cycleReelColumn(col); }, SPIN_TICK_MS + (col * 8));
     }
   }
 
@@ -289,12 +332,18 @@
         S.reelStepTimers[col] = null;
       }
       S.reelStepping[col] = false;
+      resetReelStripPosition(col);
+      const strip = S.reelStrips?.[col];
+      if (strip) void strip.offsetHeight;
+
+      await cycleReelColumn(col, { durationMs: 104 + (col * 10), easing: "cubic-bezier(.24,.64,.34,1)" });
+      await cycleReelColumn(col, { durationMs: 138 + (col * 14), easing: "cubic-bezier(.16,1,.3,1)" });
 
       setColumnSymbols(col, safeRows);
       const reel = reels[col];
       reel?.classList?.remove("is-rolling");
       reel?.classList?.add("is-settle");
-      setTimeout(() => reel?.classList?.remove("is-settle"), 220);
+      setTimeout(() => reel?.classList?.remove("is-settle"), 260);
 
       if (col < reels.length - 1) await sleep(REEL_STOP_DELAY_MS);
     }
@@ -470,6 +519,7 @@
   filter:saturate(.8) blur(.6px);
 }
 .rt-reel{
+  position:relative;
   border-radius:12px;
   overflow:hidden;
   height:calc(var(--rt-cell-size) * 3);
@@ -478,19 +528,60 @@
   background-position:center;
   box-shadow:inset 0 0 0 1px rgba(8,12,20,.34);
 }
+.rt-reel::before,
+.rt-reel::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  height:calc(var(--rt-cell-size) * .78);
+  z-index:3;
+  pointer-events:none;
+  opacity:.38;
+  transition:opacity .16s ease;
+}
+.rt-reel::before{
+  top:0;
+  background:linear-gradient(180deg, rgba(7,11,18,.88), rgba(7,11,18,0));
+}
+.rt-reel::after{
+  bottom:0;
+  background:linear-gradient(0deg, rgba(7,11,18,.88), rgba(7,11,18,0));
+}
+.rt-reel.is-rolling::before,
+.rt-reel.is-rolling::after{
+  opacity:.94;
+}
+.rt-reel.is-settle::before,
+.rt-reel.is-settle::after{
+  opacity:.64;
+}
 .rt-reel-strip{
   display:flex;
   flex-direction:column;
-  transform:translateY(calc(var(--rt-cell-size) * -1));
+  transform:translateY(calc(var(--rt-cell-size) * -2));
 }
 .rt-reel.is-rolling{
   animation:rt-reel-roll-bg .11s linear infinite;
 }
 .rt-reel.is-rolling .rt-reel-strip{
   will-change:transform;
+  filter:saturate(1.06);
+}
+.rt-reel.is-rolling .rt-symbol-safe{
+  padding:10px 11px;
+}
+.rt-reel.is-rolling .rt-cell img{
+  max-width:40px;
+  max-height:40px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.36)) saturate(1.04);
+}
+.rt-reel.is-rolling .rt-cell img[data-rt-symbol="SCATTER"]{
+  max-width:38px;
+  max-height:38px;
 }
 .rt-reel.is-settle{
-  animation:rt-reel-settle .22s ease-out;
+  animation:rt-reel-settle .26s cubic-bezier(.2,.8,.28,1);
 }
 .rt-cell{
   position:relative;
@@ -512,6 +603,7 @@
   display:flex;
   align-items:center;
   justify-content:center;
+  transition:padding .16s ease;
 }
 .rt-cell:last-child{
   border-bottom:none;
@@ -548,6 +640,7 @@
   object-position:50% 52%;
   image-rendering:auto;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));
+  transition:max-width .16s ease, max-height .16s ease, filter .16s ease;
 }
 .rt-cell img[data-rt-symbol="SCATTER"]{
   max-width:44px;
@@ -571,8 +664,8 @@
 }
 @keyframes rt-reel-settle{
   0%   { transform:translateY(0); }
-  38%  { transform:translateY(8px); }
-  74%  { transform:translateY(-3px); }
+  36%  { transform:translateY(5px); }
+  72%  { transform:translateY(-2px); }
   100% { transform:translateY(0); }
 }
 @keyframes rt-hit-pop{
@@ -774,6 +867,17 @@
     max-height:40px;
     object-position:50% 59%;
   }
+  .rt-reel.is-rolling .rt-symbol-safe{
+    padding:8px 9px;
+  }
+  .rt-reel.is-rolling .rt-cell img{
+    max-width:36px;
+    max-height:36px;
+  }
+  .rt-reel.is-rolling .rt-cell img[data-rt-symbol="SCATTER"]{
+    max-width:34px;
+    max-height:34px;
+  }
 }
     `;
     document.head.appendChild(style);
@@ -898,9 +1002,9 @@
       const strip = document.createElement("div");
       strip.className = "rt-reel-strip";
       const stripCells = [];
-      for (let stripRow = 0; stripRow < 4; stripRow += 1) {
+      for (let stripRow = 0; stripRow < STRIP_TOTAL_ROWS; stripRow += 1) {
         const cell = document.createElement("div");
-        cell.className = `rt-cell ${stripRow === 2 ? "payline" : ""}`.trim();
+        cell.className = `rt-cell ${stripRow === STRIP_MID_INDEX ? "payline" : ""}`.trim();
         const symbolSafe = document.createElement("div");
         symbolSafe.className = "rt-symbol-safe";
         const img = document.createElement("img");
@@ -911,8 +1015,8 @@
         cell.appendChild(symbolSafe);
         strip.appendChild(cell);
         stripCells[stripRow] = img;
-        if (stripRow > 0) {
-          const row = stripRow - 1;
+        if (stripRow >= STRIP_BUFFER_TOP && stripRow < (STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS)) {
+          const row = stripRow - STRIP_BUFFER_TOP;
           S.cells[row][col] = img;
           S.cellEls[row][col] = cell;
         }
@@ -922,7 +1026,7 @@
       S.reels[col] = reel;
       S.reelStrips[col] = strip;
       S.reelStripCells[col] = stripCells;
-      S.reelSpinSymbols[col] = ["SCRAP", "SCRAP", "SCRAP", "SCRAP"];
+      S.reelSpinSymbols[col] = Array.from({ length: STRIP_TOTAL_ROWS }, () => "SCRAP");
       resetReelStripPosition(col);
     }
 
