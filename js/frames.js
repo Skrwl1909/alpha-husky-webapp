@@ -20,9 +20,18 @@
   let _owned = [];
   let _equipped = { frame: "" };
   let _selectedKey = "";
-  const FRAME_PREVIEW_SKIN_FIT_DEFAULT = Object.freeze({ scale: 0.9, offsetX: 0, offsetY: 0 });
-  const FRAME_PREVIEW_SKIN_FIT_OVERRIDES = Object.freeze({
+  const SKIN_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+  const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
+    unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
+  });
+  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 }); // stage 3: neutral baseline
+  const FRAME_PREVIEW_FIT_OVERRIDES = Object.freeze({
     rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 }, // map-influence frame tuning example
+  });
+  const COMBO_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+  const COMBO_PREVIEW_FIT_OVERRIDES = Object.freeze({
+    "unbroken_alpha::founder_ember_mark": { scale: 1.01, offsetX: 0, offsetY: -2 },
+    "unbroken_alpha::rogue_byte_overclock": { scale: 1.04, offsetX: 0, offsetY: 5 },
   });
 
   function dbg(msg, obj) {
@@ -48,18 +57,32 @@
     return normKey(m?.[1] || "");
   }
 
+  function skinKeyFromUrl(url) {
+    const input = String(url || "").trim();
+    if (!input) return "";
+    const m = input.match(/\/skins\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg|avif|gif)(?:[?#].*)?$/i);
+    return normKey(m?.[1] || "");
+  }
+
   function fitNum(value, fallback) {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
   }
 
   function normalizeFit(raw, fallback) {
-    const base = fallback || FRAME_PREVIEW_SKIN_FIT_DEFAULT;
+    const base = fallback || FRAME_PREVIEW_FIT_DEFAULT;
     return {
       scale: fitNum(raw?.scale, base.scale),
       offsetX: fitNum(raw?.offsetX, base.offsetX),
       offsetY: fitNum(raw?.offsetY, base.offsetY),
     };
+  }
+
+  function skinFrameComboKey(skinKey, frameKey) {
+    const sk = normKey(skinKey);
+    const fk = normKey(frameKey);
+    if (!sk || !fk || fk === "default") return "";
+    return `${sk}::${fk}`;
   }
 
   function ensureCss() {
@@ -341,11 +364,37 @@
     return "/assets/skins/lunarhowl_skin.webp";
   }
 
+  function currentHeroSkinKey() {
+    const hero = document.getElementById("player-skin");
+    const attrKey = normKey(hero?.dataset?.skinKey || hero?.getAttribute?.("data-skin-key") || "");
+    if (attrKey && !attrKey.includes("/") && !attrKey.includes(".")) return attrKey;
+
+    const profile = window.__PROFILE__ || window.PROFILE || {};
+    const rawKey = normKey(
+      profile?.skinKey ||
+      profile?.skin_key ||
+      profile?.cosmetics?.skinKey ||
+      profile?.cosmetics?.skin_key ||
+      profile?.skin?.key ||
+      profile?.activeSkin?.key ||
+      ""
+    );
+    if (rawKey && !rawKey.includes("/") && !rawKey.includes(".")) return rawKey;
+
+    const fromProfileUrl = skinKeyFromUrl(
+      (typeof profile?.skin === "string" ? profile.skin : profile?.skin?.img) || ""
+    );
+    if (fromProfileUrl) return fromProfileUrl;
+
+    return skinKeyFromUrl(currentHeroSkinUrl());
+  }
+
   function setPreview(item) {
     if (!previewSkin || !previewFrame) return;
     const frameUrl = framePreviewUrl(item);
     const frameKey = frameKeyForFit(item);
-    applyPreviewSkinFit(frameKey);
+    const skinKey = currentHeroSkinKey();
+    applyPreviewSkinFit(frameKey, skinKey);
     previewSkin.src = currentHeroSkinUrl();
     if (frameUrl) {
       previewFrame.src = frameUrl;
@@ -387,17 +436,46 @@
     return frameKeyFromUrl(framePreviewUrl(item));
   }
 
-  function getPreviewSkinFit(frameKey) {
-    const cfg = window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
-    const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_SKIN_FIT_DEFAULT);
+  function getPreviewFrameFit(frameKey) {
+    const cfg = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
+    const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_FIT_DEFAULT);
     const k = normKey(frameKey);
-    const override = k ? (cfg?.overrides?.[k] || FRAME_PREVIEW_SKIN_FIT_OVERRIDES[k]) : null;
+    const override = k ? (cfg?.overrides?.[k] || FRAME_PREVIEW_FIT_OVERRIDES[k]) : null;
     return normalizeFit(override, defaultFit);
   }
 
-  function applyPreviewSkinFit(frameKey) {
+  function getPreviewSkinBaseFit(skinKey) {
+    const cfg = window.__AH_SKIN_PREVIEW_FIT__ || {};
+    const defaultFit = normalizeFit(cfg.default, SKIN_PREVIEW_FIT_DEFAULT);
+    const k = normKey(skinKey);
+    const override = k ? (cfg?.overrides?.[k] || SKIN_PREVIEW_FIT_OVERRIDES[k]) : null;
+    return normalizeFit(override, defaultFit);
+  }
+
+  function getPreviewComboFit(skinKey, frameKey) {
+    const cfg = window.__AH_SKIN_FRAME_PREVIEW_COMBO_FIT__ || window.__AH_SKIN_FRAME_COMBO_FIT__ || {};
+    const defaultFit = normalizeFit(cfg.default, COMBO_PREVIEW_FIT_DEFAULT);
+    const comboKey = skinFrameComboKey(skinKey, frameKey);
+    const override = comboKey ? (cfg?.overrides?.[comboKey] || COMBO_PREVIEW_FIT_OVERRIDES[comboKey]) : null;
+    return normalizeFit(override, defaultFit);
+  }
+
+  function composePreviewFit(frameKey, skinKey) {
+    const resolvedSkinKey = normKey(skinKey);
+    const resolvedFrameKey = normKey(frameKey);
+    const skinFit = getPreviewSkinBaseFit(resolvedSkinKey);
+    const frameFit = getPreviewFrameFit(resolvedFrameKey);
+    const comboFit = getPreviewComboFit(resolvedSkinKey, resolvedFrameKey);
+    return {
+      scale: skinFit.scale * frameFit.scale * comboFit.scale,
+      offsetX: skinFit.offsetX + frameFit.offsetX + comboFit.offsetX,
+      offsetY: skinFit.offsetY + frameFit.offsetY + comboFit.offsetY,
+    };
+  }
+
+  function applyPreviewSkinFit(frameKey, skinKey) {
     if (!previewSkin) return;
-    const fit = getPreviewSkinFit(frameKey);
+    const fit = composePreviewFit(frameKey, skinKey);
     previewSkin.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
   }
 
