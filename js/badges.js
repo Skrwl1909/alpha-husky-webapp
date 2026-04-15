@@ -434,9 +434,15 @@
     const iconText = String(badge.icon || "").trim() || "B";
     const primary = badgeIconSource(badge);
     const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
+    const sources = [];
 
-    if (!primary) {
-      iconWrap.textContent = iconText;
+    iconWrap.textContent = iconText;
+    if (primary) sources.push(primary);
+    if (localFallback && !sources.includes(localFallback)) {
+      sources.push(localFallback);
+    }
+
+    if (!sources.length) {
       return;
     }
 
@@ -444,16 +450,32 @@
     img.alt = String(badge.name || key || "Badge");
     img.loading = "lazy";
     img.decoding = "async";
-    img.src = primary;
+    img.hidden = true;
+
+    let sourceIndex = 0;
+    const tryNextSource = () => {
+      if (sourceIndex >= sources.length) {
+        img.remove();
+        return;
+      }
+      img.src = sources[sourceIndex++];
+    };
+
+    img.addEventListener("load", () => {
+      iconWrap.textContent = "";
+      img.hidden = false;
+    });
     img.addEventListener("error", () => {
-      if (primary !== localFallback && localFallback && img.src !== localFallback) {
-        img.src = localFallback;
+      img.hidden = true;
+      if (sourceIndex < sources.length) {
+        tryNextSource();
         return;
       }
       img.remove();
-      iconWrap.textContent = iconText;
     });
+
     iconWrap.appendChild(img);
+    tryNextSource();
   }
 
   function renderDetail(badge, activeKey) {
