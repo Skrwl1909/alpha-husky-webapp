@@ -1,4 +1,4 @@
-﻿// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
+// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -32,27 +32,9 @@
     legendary: "is-legendary",
   };
 
-  const TRACE_BADGE_WALL =
-    (typeof window !== "undefined" && window.__AH_BADGE_TRACE__ === true) ||
-    (typeof location !== "undefined" && /(?:[?&])badgeTrace=1(?:&|$)/i.test(String(location.search || "")));
-
-  function trace(msg, obj) {
-    if (!TRACE_BADGE_WALL) return;
-    try {
-      if (obj === undefined) console.log("[BadgeWallTrace]", msg);
-      else console.log("[BadgeWallTrace]", msg, obj);
-    } catch (_) {}
-  }
-
   function dbg(msg, obj) {
     if (_dbg) console.log("[BadgeWall]", msg, obj ?? "");
   }
-
-  trace("badges.js loaded", {
-    webappVer: String(window.WEBAPP_VER || ""),
-    badgesVer: String(window.BADGES_JS_VER || ""),
-    currentScript: String(document.currentScript?.src || ""),
-  });
 
   function haptic(kind) {
     try { _tg?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
@@ -449,34 +431,18 @@
   }
 
   function setBadgeImage(iconWrap, badge, key) {
+    const iconText = String(badge.icon || "").trim() || "B";
     const primary = badgeIconSource(badge);
     const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
     const sources = [];
-    const fallbackMark = "◆";
 
-    iconWrap.textContent = "";
+    iconWrap.textContent = iconText;
     if (primary) sources.push(primary);
     if (localFallback && !sources.includes(localFallback)) {
       sources.push(localFallback);
     }
 
-    trace("setBadgeImage.sources", {
-      key: String(key || ""),
-      primary: String(primary || ""),
-      localFallback: String(localFallback || ""),
-      sources: sources.slice(),
-    });
-
-    const showFallback = () => {
-      iconWrap.textContent = fallbackMark;
-      trace("setBadgeImage.fallback", {
-        key: String(key || ""),
-        reason: "no_source_or_all_failed",
-      });
-    };
-
     if (!sources.length) {
-      showFallback();
       return;
     }
 
@@ -490,41 +456,22 @@
     const tryNextSource = () => {
       if (sourceIndex >= sources.length) {
         img.remove();
-        showFallback();
         return;
       }
-      const nextSrc = String(sources[sourceIndex++] || "");
-      img.src = nextSrc;
-      trace("setBadgeImage.src", {
-        key: String(key || ""),
-        src: nextSrc,
-        attempt: sourceIndex,
-        total: sources.length,
-      });
+      img.src = sources[sourceIndex++];
     };
 
     img.addEventListener("load", () => {
       iconWrap.textContent = "";
       img.hidden = false;
-      trace("setBadgeImage.load", {
-        key: String(key || ""),
-        src: String(img.currentSrc || img.src || ""),
-      });
     });
     img.addEventListener("error", () => {
       img.hidden = true;
-      trace("setBadgeImage.error", {
-        key: String(key || ""),
-        attemptedSrc: String(img.currentSrc || img.src || ""),
-        nextAttempt: sourceIndex + 1,
-        total: sources.length,
-      });
       if (sourceIndex < sources.length) {
         tryNextSource();
         return;
       }
       img.remove();
-      showFallback();
     });
 
     iconWrap.appendChild(img);
@@ -640,44 +587,16 @@
 
   function normalizeState(payload) {
     const list = Array.isArray(payload?.badges) ? payload.badges : [];
-    trace("normalizeState.input", {
-      badgeCount: list.length,
-      hasPayload: !!payload,
-    });
     const badges = list.map((raw) => ({
       key: String(raw?.key || "").trim(),
       name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
       icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
       icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
       iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
-      icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
       description: String(raw?.description || "").trim(),
       rarity: sanitizeRarity(raw?.rarity),
       owned: raw?.owned !== false,
     }));
-
-    if (TRACE_BADGE_WALL) {
-      const stat = {
-        iconUrl: 0,
-        icon_url: 0,
-        icon_file: 0,
-      };
-      for (const badge of badges) {
-        if (badge.iconUrl) stat.iconUrl += 1;
-        if (badge.icon_url) stat.icon_url += 1;
-        if (badge.icon_file) stat.icon_file += 1;
-      }
-      trace("normalizeState.fields", stat);
-      if (badges.length) {
-        const sample = badges.slice(0, 6).map((badge) => ({
-          key: badge.key,
-          iconUrl: !!badge.iconUrl,
-          icon_url: !!badge.icon_url,
-          icon_file: !!badge.icon_file,
-        }));
-        trace("normalizeState.sample", sample);
-      }
-    }
 
     const total = Number.isFinite(payload?.total)
       ? Number(payload.total)
@@ -690,11 +609,6 @@
   async function loadState() {
     if (!_apiPost) throw new Error("API_NOT_READY");
     const out = await _apiPost("/webapp/badges/state", {});
-    trace("loadState.response", {
-      ok: !!out?.ok,
-      reason: out?.reason || "",
-      badgeCount: Array.isArray(out?.badges) ? out.badges.length : 0,
-    });
     if (!out || out.ok === false) throw new Error(out?.reason || "BADGES_STATE_FAILED");
     return normalizeState(out);
   }
