@@ -586,25 +586,29 @@
   }
 
   function normalizeState(payload) {
-    const list = Array.isArray(payload?.badges) ? payload.badges : [];
-    const badges = list.map((raw) => ({
-      key: String(raw?.key || "").trim(),
-      name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
-      icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
-      icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
-      iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
-      description: String(raw?.description || "").trim(),
-      rarity: sanitizeRarity(raw?.rarity),
-      owned: raw?.owned !== false,
-    }));
+  const list = Array.isArray(payload?.badges) ? payload.badges : [];
+  const badges = list.map((raw) => ({
+    key: String(raw?.key || "").trim(),
+    name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
+    icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
+    icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
+    iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
+    icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
+    description: String(raw?.description || "").trim(),
+    rarity: sanitizeRarity(raw?.rarity),
+    owned: raw?.owned !== false,
+  }));
 
-    const total = Number.isFinite(payload?.total)
-      ? Number(payload.total)
-      : badges.reduce((acc, item) => (item.owned ? acc + 1 : acc), 0);
-    const activeBadgeKey = String(payload?.activeBadgeKey || payload?.active_badge_key || "").trim();
+  const total = Number.isFinite(payload?.total)
+    ? Number(payload.total)
+    : badges.reduce((acc, item) => (item.owned ? acc + 1 : acc), 0);
 
-    return { badges, total, activeBadgeKey };
-  }
+  const activeBadgeKey = String(
+    payload?.activeBadgeKey || payload?.active_badge_key || ""
+  ).trim();
+
+  return { badges, total, activeBadgeKey };
+}
 
   async function loadState() {
     if (!_apiPost) throw new Error("API_NOT_READY");
