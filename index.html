@@ -4804,6 +4804,7 @@ body.bc-open #ahCommunityBtn{
   <script>
     window.API_BASE = "https://api.alphahusky.win";
     window.WEBAPP_VER = "2026-03-18a";
+    window.BADGES_JS_VER = "2026-04-16a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -5041,7 +5042,14 @@ async function openBadges() {
   }
 
   try {
-    await loadScriptOnce("js/badges.js");
+    const badgeVer = encodeURIComponent(String(window.BADGES_JS_VER || window.WEBAPP_VER || Date.now()));
+    await loadScriptOnce("js/badges.js?bw=" + badgeVer);
+    if (window.__AH_BADGE_TRACE__ === true || /(?:[?&])badgeTrace=1(?:&|$)/i.test(String(location.search || ""))) {
+      const loaded = [...document.scripts]
+        .map((s) => String(s.src || ""))
+        .filter((src) => src.includes("/js/badges.js"));
+      console.log("[BadgeWallTrace] openBadges.loadedScripts", loaded);
+    }
   } catch (e) {
     console.warn("Badge Wall script load failed", e);
     try { _tg?.showAlert?.("Failed to load Badge Wall."); } catch (_) {}
