@@ -32,9 +32,27 @@
     legendary: "is-legendary",
   };
 
+  const TRACE_BADGE_WALL =
+    (typeof window !== "undefined" && window.__AH_BADGE_TRACE__ === true) ||
+    (typeof location !== "undefined" && /(?:[?&])badgeTrace=1(?:&|$)/i.test(String(location.search || "")));
+
+  function trace(msg, obj) {
+    if (!TRACE_BADGE_WALL) return;
+    try {
+      if (obj === undefined) console.log("[BadgeWallTrace]", msg);
+      else console.log("[BadgeWallTrace]", msg, obj);
+    } catch (_) {}
+  }
+
   function dbg(msg, obj) {
     if (_dbg) console.log("[BadgeWall]", msg, obj ?? "");
   }
+
+  trace("badges.js loaded", {
+    webappVer: String(window.WEBAPP_VER || ""),
+    badgesVer: String(window.BADGES_JS_VER || ""),
+    currentScript: String(document.currentScript?.src || ""),
+  });
 
   function haptic(kind) {
     try { _tg?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
@@ -442,8 +460,19 @@
       sources.push(localFallback);
     }
 
+    trace("setBadgeImage.sources", {
+      key: String(key || ""),
+      primary: String(primary || ""),
+      localFallback: String(localFallback || ""),
+      sources: sources.slice(),
+    });
+
     const showFallback = () => {
       iconWrap.textContent = fallbackMark;
+      trace("setBadgeImage.fallback", {
+        key: String(key || ""),
+        reason: "no_source_or_all_failed",
+      });
     };
 
     if (!sources.length) {
@@ -464,15 +493,32 @@
         showFallback();
         return;
       }
-      img.src = sources[sourceIndex++];
+      const nextSrc = String(sources[sourceIndex++] || "");
+      img.src = nextSrc;
+      trace("setBadgeImage.src", {
+        key: String(key || ""),
+        src: nextSrc,
+        attempt: sourceIndex,
+        total: sources.length,
+      });
     };
 
     img.addEventListener("load", () => {
       iconWrap.textContent = "";
       img.hidden = false;
+      trace("setBadgeImage.load", {
+        key: String(key || ""),
+        src: String(img.currentSrc || img.src || ""),
+      });
     });
     img.addEventListener("error", () => {
       img.hidden = true;
+      trace("setBadgeImage.error", {
+        key: String(key || ""),
+        attemptedSrc: String(img.currentSrc || img.src || ""),
+        nextAttempt: sourceIndex + 1,
+        total: sources.length,
+      });
       if (sourceIndex < sources.length) {
         tryNextSource();
         return;
@@ -594,6 +640,10 @@
 
   function normalizeState(payload) {
     const list = Array.isArray(payload?.badges) ? payload.badges : [];
+    trace("normalizeState.input", {
+      badgeCount: list.length,
+      hasPayload: !!payload,
+    });
     const badges = list.map((raw) => ({
       key: String(raw?.key || "").trim(),
       name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
@@ -606,6 +656,29 @@
       owned: raw?.owned !== false,
     }));
 
+    if (TRACE_BADGE_WALL) {
+      const stat = {
+        iconUrl: 0,
+        icon_url: 0,
+        icon_file: 0,
+      };
+      for (const badge of badges) {
+        if (badge.iconUrl) stat.iconUrl += 1;
+        if (badge.icon_url) stat.icon_url += 1;
+        if (badge.icon_file) stat.icon_file += 1;
+      }
+      trace("normalizeState.fields", stat);
+      if (badges.length) {
+        const sample = badges.slice(0, 6).map((badge) => ({
+          key: badge.key,
+          iconUrl: !!badge.iconUrl,
+          icon_url: !!badge.icon_url,
+          icon_file: !!badge.icon_file,
+        }));
+        trace("normalizeState.sample", sample);
+      }
+    }
+
     const total = Number.isFinite(payload?.total)
       ? Number(payload.total)
       : badges.reduce((acc, item) => (item.owned ? acc + 1 : acc), 0);
@@ -617,6 +690,11 @@
   async function loadState() {
     if (!_apiPost) throw new Error("API_NOT_READY");
     const out = await _apiPost("/webapp/badges/state", {});
+    trace("loadState.response", {
+      ok: !!out?.ok,
+      reason: out?.reason || "",
+      badgeCount: Array.isArray(out?.badges) ? out.badges.length : 0,
+    });
     if (!out || out.ok === false) throw new Error(out?.reason || "BADGES_STATE_FAILED");
     return normalizeState(out);
   }
