@@ -443,46 +443,47 @@
     }
 
     const showFallback = () => {
-  iconWrap.textContent = fallbackMark;
-};
+      iconWrap.textContent = fallbackMark;
+    };
 
-if (!sources.length) {
-  showFallback();
-  return;
-}
+    if (!sources.length) {
+      showFallback();
+      return;
+    }
 
-const img = newEl("img");
-img.alt = String(badge.name || key || "Badge");
-img.loading = "lazy";
-img.decoding = "async";
-img.hidden = true;
+    const img = newEl("img");
+    img.alt = String(badge.name || key || "Badge");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.hidden = true;
 
-let sourceIndex = 0;
-const tryNextSource = () => {
-  if (sourceIndex >= sources.length) {
-    img.remove();
-    showFallback();
-    return;
-  }
-  img.src = sources[sourceIndex++];
-};
+    let sourceIndex = 0;
+    const tryNextSource = () => {
+      if (sourceIndex >= sources.length) {
+        img.remove();
+        showFallback();
+        return;
+      }
+      img.src = sources[sourceIndex++];
+    };
 
-img.addEventListener("load", () => {
-  img.hidden = false;
-});
+    img.addEventListener("load", () => {
+      iconWrap.textContent = "";
+      img.hidden = false;
+    });
+    img.addEventListener("error", () => {
+      img.hidden = true;
+      if (sourceIndex < sources.length) {
+        tryNextSource();
+        return;
+      }
+      img.remove();
+      showFallback();
+    });
 
-img.addEventListener("error", () => {
-  img.hidden = true;
-  if (sourceIndex < sources.length) {
+    iconWrap.appendChild(img);
     tryNextSource();
-    return;
   }
-  img.remove();
-  showFallback();
-});
-
-iconWrap.appendChild(img);
-tryNextSource();
 
   function renderDetail(badge, activeKey) {
     if (!detailBox) return;
