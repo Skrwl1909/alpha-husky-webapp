@@ -431,52 +431,60 @@
   }
 
   function setBadgeImage(iconWrap, badge, key) {
-    const iconText = String(badge.icon || "").trim() || "B";
-    const primary = badgeIconSource(badge);
-    const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
-    const sources = [];
+  const primary = badgeIconSource(badge);
+  const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
+  const sources = [];
+  const fallbackMark = "◆";
 
-    iconWrap.textContent = iconText;
-    if (primary) sources.push(primary);
-    if (localFallback && !sources.includes(localFallback)) {
-      sources.push(localFallback);
-    }
+  clearEl(iconWrap);
 
-    if (!sources.length) {
+  const fallback = newEl("span", "ah-bw-fallback", fallbackMark);
+  iconWrap.appendChild(fallback);
+
+  if (primary) sources.push(primary);
+  if (localFallback && !sources.includes(localFallback)) {
+    sources.push(localFallback);
+  }
+
+  if (!sources.length) {
+    return;
+  }
+
+  const img = newEl("img");
+  img.alt = String(badge.name || key || "Badge");
+  img.loading = "eager";
+  img.decoding = "async";
+  img.style.display = "none";
+
+  let sourceIndex = 0;
+
+  const tryNextSource = () => {
+    if (sourceIndex >= sources.length) {
+      img.remove();
+      fallback.style.display = "";
       return;
     }
+    img.src = sources[sourceIndex++];
+  };
 
-    const img = newEl("img");
-    img.alt = String(badge.name || key || "Badge");
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.hidden = true;
+  img.addEventListener("load", () => {
+    fallback.style.display = "none";
+    img.style.display = "block";
+  });
 
-    let sourceIndex = 0;
-    const tryNextSource = () => {
-      if (sourceIndex >= sources.length) {
-        img.remove();
-        return;
-      }
-      img.src = sources[sourceIndex++];
-    };
+  img.addEventListener("error", () => {
+    img.style.display = "none";
+    if (sourceIndex < sources.length) {
+      tryNextSource();
+      return;
+    }
+    img.remove();
+    fallback.style.display = "";
+  });
 
-    img.addEventListener("load", () => {
-      iconWrap.textContent = "";
-      img.hidden = false;
-    });
-    img.addEventListener("error", () => {
-      img.hidden = true;
-      if (sourceIndex < sources.length) {
-        tryNextSource();
-        return;
-      }
-      img.remove();
-    });
-
-    iconWrap.appendChild(img);
-    tryNextSource();
-  }
+  iconWrap.appendChild(img);
+  tryNextSource();
+}
 
   function renderDetail(badge, activeKey) {
     if (!detailBox) return;
