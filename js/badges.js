@@ -1,4 +1,4 @@
-﻿// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
+// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
 (function () {
   let _apiPost = null;
   let _tg = null;
