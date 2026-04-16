@@ -1,4 +1,4 @@
-// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
+﻿// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -431,59 +431,59 @@
   }
 
   function setBadgeImage(iconWrap, badge, key) {
-  const primary = badgeIconSource(badge);
-  const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
-  const sources = [];
-  const fallbackMark = "◆";
+    const primary = badgeIconSource(badge);
+    const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
+    const sources = [];
+    const fallbackMark = "◆";
 
-  iconWrap.textContent = "";
-  if (primary) sources.push(primary);
-  if (localFallback && !sources.includes(localFallback)) {
-    sources.push(localFallback);
-  }
+    iconWrap.textContent = "";
+    if (primary) sources.push(primary);
+    if (localFallback && !sources.includes(localFallback)) {
+      sources.push(localFallback);
+    }
 
-  const showFallback = () => {
-    iconWrap.textContent = fallbackMark;
-  };
+    const showFallback = () => {
+      iconWrap.textContent = fallbackMark;
+    };
 
-  if (!sources.length) {
-    showFallback();
-    return;
-  }
-
-  const img = newEl("img");
-  img.alt = String(badge.name || key || "Badge");
-  img.loading = "lazy";
-  img.decoding = "async";
-  img.hidden = true;
-
-  let sourceIndex = 0;
-  const tryNextSource = () => {
-    if (sourceIndex >= sources.length) {
-      img.remove();
+    if (!sources.length) {
       showFallback();
       return;
     }
-    img.src = sources[sourceIndex++];
-  };
 
-  img.addEventListener("load", () => {
-    img.hidden = false;
-  });
-
-  img.addEventListener("error", () => {
+    const img = newEl("img");
+    img.alt = String(badge.name || key || "Badge");
+    img.loading = "lazy";
+    img.decoding = "async";
     img.hidden = true;
-    if (sourceIndex < sources.length) {
-      tryNextSource();
-      return;
-    }
-    img.remove();
-    showFallback();
-  });
 
-  iconWrap.appendChild(img);
-  tryNextSource();
-}
+    let sourceIndex = 0;
+    const tryNextSource = () => {
+      if (sourceIndex >= sources.length) {
+        img.remove();
+        showFallback();
+        return;
+      }
+      img.src = sources[sourceIndex++];
+    };
+
+    img.addEventListener("load", () => {
+      iconWrap.textContent = "";
+      img.hidden = false;
+    });
+    img.addEventListener("error", () => {
+      img.hidden = true;
+      if (sourceIndex < sources.length) {
+        tryNextSource();
+        return;
+      }
+      img.remove();
+      showFallback();
+    });
+
+    iconWrap.appendChild(img);
+    tryNextSource();
+  }
 
   function renderDetail(badge, activeKey) {
     if (!detailBox) return;
