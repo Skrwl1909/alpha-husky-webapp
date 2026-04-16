@@ -431,18 +431,23 @@
   }
 
   function setBadgeImage(iconWrap, badge, key) {
-    const iconText = String(badge.icon || "").trim() || "B";
     const primary = badgeIconSource(badge);
     const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
     const sources = [];
+    const fallbackMark = "◆";
 
-    iconWrap.textContent = iconText;
+    iconWrap.textContent = "";
     if (primary) sources.push(primary);
     if (localFallback && !sources.includes(localFallback)) {
       sources.push(localFallback);
     }
 
+    const showFallback = () => {
+      iconWrap.textContent = fallbackMark;
+    };
+
     if (!sources.length) {
+      showFallback();
       return;
     }
 
@@ -456,6 +461,7 @@
     const tryNextSource = () => {
       if (sourceIndex >= sources.length) {
         img.remove();
+        showFallback();
         return;
       }
       img.src = sources[sourceIndex++];
@@ -472,6 +478,7 @@
         return;
       }
       img.remove();
+      showFallback();
     });
 
     iconWrap.appendChild(img);
@@ -593,6 +600,7 @@
       icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
       icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
       iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
+      icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
       description: String(raw?.description || "").trim(),
       rarity: sanitizeRarity(raw?.rarity),
       owned: raw?.owned !== false,
