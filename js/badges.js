@@ -1,4 +1,4 @@
-// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
+﻿// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -83,19 +83,6 @@
     const rarity = String(value || "common").trim().toLowerCase();
     return RARITY_CLASS[rarity] ? rarity : "common";
   }
-
-  function iconFileUrl(rawPath) {
-    const source = String(rawPath || "").trim();
-    if (!source) return "";
-    if (/^https?:\/\//i.test(source) || source.startsWith("/")) return source;
-    const safePath = source
-      .replaceAll("\\", "/")
-      .split("/")
-      .map(encodeURIComponent)
-      .join("/");
-    return "/assets/badges/" + safePath;
-  }
-
   function ensureCss() {
     if (document.getElementById("ah-badge-wall-style")) return;
     const style = document.createElement("style");
@@ -261,6 +248,7 @@
         width:100%;
         height:100%;
         border-radius:9px;
+        position:relative;
         border:1px solid rgba(183,208,233,.24);
         background:rgba(6,12,20,.7);
         display:flex;
@@ -276,6 +264,13 @@
         height:100%;
         object-fit:contain;
       }
+      #badgeWallBack .ah-bw-icon img.ah-bw-layer{
+        position:absolute;
+        inset:0;
+        display:none;
+      }
+      #badgeWallBack .ah-bw-icon img.ah-bw-emblem{ z-index:1; }
+      #badgeWallBack .ah-bw-icon img.ah-bw-frame{ z-index:2; }
       #badgeWallBack .ah-bw-lock{
         position:absolute;
         left:3px;
@@ -423,68 +418,93 @@
     if (!node) return;
     while (node.firstChild) node.removeChild(node.firstChild);
   }
-
   function badgeIconSource(badge) {
-    const cloud = String(badge.iconUrl || badge.icon_url || "").trim();
-    if (cloud) return cloud;
-    return iconFileUrl(badge.icon_file || badge.iconFile);
+    return String(badge?.iconUrl || badge?.icon_url || "").trim();
+  }
+  function badgeEmblemSource(badge) {
+    return String(
+      badge?.emblemUrl || badge?.emblem_url || badge?.iconUrl || badge?.icon_url || ""
+    ).trim();
+  }
+  function badgeFrameSource(badge) {
+    return String(badge?.frameUrl || badge?.frame_url || "").trim();
+  }
+  function isMasteryBadge(badge) {
+    return String(badge?.badgeType || badge?.badge_type || "").trim().toLowerCase() === "mastery";
   }
 
   function setBadgeImage(iconWrap, badge, key) {
-  const primary = badgeIconSource(badge);
-  const localFallback = iconFileUrl(badge.icon_file || badge.iconFile);
-  const sources = [];
-  const fallbackMark = "◆";
+    const primary = badgeIconSource(badge);
+    const emblem = badgeEmblemSource(badge);
+    const frame = badgeFrameSource(badge);
+    const layeredMode = !!frame;
+    const fallbackMark = "◆";
 
-  clearEl(iconWrap);
+    clearEl(iconWrap);
 
-  const fallback = newEl("span", "ah-bw-fallback", fallbackMark);
-  iconWrap.appendChild(fallback);
+    const fallback = newEl("span", "ah-bw-fallback", fallbackMark);
+    iconWrap.appendChild(fallback);
 
-  if (primary) sources.push(primary);
-  if (localFallback && !sources.includes(localFallback)) {
-    sources.push(localFallback);
-  }
+    if (layeredMode) {
+      const layers = [];
+      const showLockedEmblem = !isMasteryBadge(badge);
+      if (emblem && (badge?.owned || showLockedEmblem)) {
+        layers.push({ src: emblem, className: "ah-bw-layer ah-bw-emblem" });
+      }
+      layers.push({ src: frame, className: "ah-bw-layer ah-bw-frame" });
 
-  if (!sources.length) {
-    return;
-  }
+      let loadedCount = 0;
+      for (const layer of layers) {
+        const img = newEl("img", layer.className);
+        img.alt = String(badge.name || key || "Badge");
+        img.loading = "eager";
+        img.decoding = "async";
+        img.style.display = "none";
 
-  const img = newEl("img");
-  img.alt = String(badge.name || key || "Badge");
-  img.loading = "eager";
-  img.decoding = "async";
-  img.style.display = "none";
+        img.addEventListener("load", () => {
+          loadedCount += 1;
+          img.style.display = "block";
+          if (loadedCount > 0) {
+            fallback.style.display = "none";
+          }
+        });
 
-  let sourceIndex = 0;
+        img.addEventListener("error", () => {
+          img.remove();
+          if (loadedCount <= 0) {
+            fallback.style.display = "";
+          }
+        });
 
-  const tryNextSource = () => {
-    if (sourceIndex >= sources.length) {
+        iconWrap.appendChild(img);
+        img.src = layer.src;
+      }
+      return;
+    }
+
+    if (!primary) {
+      return;
+    }
+
+    const img = newEl("img");
+    img.alt = String(badge.name || key || "Badge");
+    img.loading = "eager";
+    img.decoding = "async";
+    img.style.display = "none";
+
+    img.addEventListener("load", () => {
+      fallback.style.display = "none";
+      img.style.display = "block";
+    });
+
+    img.addEventListener("error", () => {
       img.remove();
       fallback.style.display = "";
-      return;
-    }
-    img.src = sources[sourceIndex++];
-  };
+    });
 
-  img.addEventListener("load", () => {
-    fallback.style.display = "none";
-    img.style.display = "block";
-  });
-
-  img.addEventListener("error", () => {
-    img.style.display = "none";
-    if (sourceIndex < sources.length) {
-      tryNextSource();
-      return;
-    }
-    img.remove();
-    fallback.style.display = "";
-  });
-
-  iconWrap.appendChild(img);
-  tryNextSource();
-}
+    iconWrap.appendChild(img);
+    img.src = primary;
+  }
 
   function renderDetail(badge, activeKey) {
     if (!detailBox) return;
@@ -498,17 +518,44 @@
     const key = String(badge.key || "").trim();
     const isOwned = !!badge.owned;
     const isActive = !!activeKey && toKey(key) === activeKey;
+    const mastery = isMasteryBadge(badge);
+    const tier = Number.isFinite(Number(badge.tier)) ? Number(badge.tier) : 0;
+    const tierName = String(badge.tierName || badge.tier_name || "").trim();
 
     detailBox.hidden = false;
     detailBox.appendChild(newEl("h3", "ah-bw-detail-name", String(badge.name || key || "Unknown Badge")));
 
-    const metaBits = [isOwned ? "Owned" : "Locked", sanitizeRarity(badge.rarity)];
+    const metaBits = [isOwned ? "Owned" : "Locked"];
+    if (mastery) {
+      metaBits.push("mastery");
+      metaBits.push("Tier " + String(tier));
+      if (tierName) metaBits.push(tierName);
+    } else {
+      metaBits.push(sanitizeRarity(badge.rarity));
+    }
     if (isActive) metaBits.push("Displayed");
     if (key) metaBits.push(key);
-    detailBox.appendChild(newEl("div", "ah-bw-detail-meta", metaBits.join(" • ")));
+    detailBox.appendChild(newEl("div", "ah-bw-detail-meta", metaBits.join(" | ")));
 
     const desc = String(badge.description || "").trim() || "Prestige badge.";
     detailBox.appendChild(newEl("p", "ah-bw-detail-desc", desc));
+
+    if (mastery) {
+      const progress = Math.max(0, Number(badge.progress) || 0);
+      const nextRaw = (badge.nextThreshold != null) ? badge.nextThreshold : badge.next_threshold;
+      const next = Number(nextRaw);
+      const nextTierName = String(badge.nextTierName || badge.next_tier_name || "").trim();
+      const maxTier = !!badge.maxTier || !!badge.max_tier || !(Number.isFinite(next) && next > 0);
+      let progressText = "";
+      if (maxTier) {
+        progressText = "Mastery complete.";
+      } else if (nextTierName) {
+        progressText = "Progress " + String(progress) + " / " + String(next) + " toward " + nextTierName;
+      } else {
+        progressText = "Progress " + String(progress) + " / " + String(next);
+      }
+      detailBox.appendChild(newEl("div", "ah-bw-detail-meta", progressText));
+    }
   }
 
   function applySelection(activeKey) {
@@ -595,17 +642,36 @@
 
   function normalizeState(payload) {
   const list = Array.isArray(payload?.badges) ? payload.badges : [];
-  const badges = list.map((raw) => ({
-    key: String(raw?.key || "").trim(),
-    name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
-    icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
-    icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
-    iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
-    icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
-    description: String(raw?.description || "").trim(),
-    rarity: sanitizeRarity(raw?.rarity),
-    owned: raw?.owned !== false,
-  }));
+  const badges = list.map((raw) => {
+    const rawNext = (raw?.nextThreshold != null) ? raw.nextThreshold : raw?.next_threshold;
+    const nextThreshold = Number.isFinite(Number(rawNext)) ? Number(rawNext) : null;
+    return ({
+      key: String(raw?.key || "").trim(),
+      name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
+      icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
+      icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
+      iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
+      icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
+      emblemUrl: typeof raw?.emblemUrl === "string" ? raw.emblemUrl.trim() : "",
+      emblem_url: typeof raw?.emblem_url === "string" ? raw.emblem_url.trim() : "",
+      frameUrl: typeof raw?.frameUrl === "string" ? raw.frameUrl.trim() : "",
+      frame_url: typeof raw?.frame_url === "string" ? raw.frame_url.trim() : "",
+      framePublicId: String(raw?.framePublicId || raw?.frame_public_id || "").trim(),
+      badgeType: String(raw?.badgeType || raw?.badge_type || "").trim().toLowerCase(),
+      family: String(raw?.family || "").trim().toLowerCase(),
+      tier: Number.isFinite(Number(raw?.tier)) ? Number(raw.tier) : 0,
+      tierName: String(raw?.tierName || raw?.tier_name || "").trim(),
+      progress: Number.isFinite(Number(raw?.progress)) ? Math.max(0, Number(raw.progress)) : 0,
+      nextThreshold: nextThreshold,
+      nextTierName: String(raw?.nextTierName || raw?.next_tier_name || "").trim(),
+      maxTier: raw?.maxTier === true || raw?.max_tier === true,
+      displayable: raw?.displayable !== false,
+      canDisplay: raw?.canDisplay !== false,
+      description: String(raw?.description || "").trim(),
+      rarity: sanitizeRarity(raw?.rarity),
+      owned: raw?.owned !== false,
+    });
+  });
 
   const total = Number.isFinite(payload?.total)
     ? Number(payload.total)
@@ -699,3 +765,4 @@
 
   window.Badges = { init, open, close, refresh };
 })();
+
