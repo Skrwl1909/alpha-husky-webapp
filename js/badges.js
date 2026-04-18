@@ -10,19 +10,26 @@
   let wallBack;
   let closeBtn;
   let refreshBtn;
+  let saveFeaturedBtn;
   let ownedPill;
   let activePill;
+  let featuredPill;
   let statusBox;
   let gridBox;
   let emptyBox;
   let detailBox;
   let _selectedBadgeKey = "";
+  let _draftFeaturedBadgeKeys = [];
+  let _featuredDirty = false;
+  let _savingFeatured = false;
 
   let _state = {
     badges: [],
     total: 0,
     activeBadgeKey: "",
+    featuredBadgeKeys: [],
   };
+  const MAX_FEATURED_BADGES = 3;
 
   const RARITY_CLASS = {
     common: "is-common",
@@ -77,6 +84,30 @@
 
   function toKey(value) {
     return String(value || "").trim().toUpperCase();
+  }
+
+  function normalizeFeaturedKeys(list) {
+    const input = Array.isArray(list) ? list : [];
+    const out = [];
+    const seen = new Set();
+    for (const raw of input) {
+      const key = toKey(raw);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(key);
+      if (out.length >= MAX_FEATURED_BADGES) break;
+    }
+    return out;
+  }
+
+  function featuredChanged(nextKeys) {
+    const baseline = normalizeFeaturedKeys(_state.featuredBadgeKeys);
+    const next = normalizeFeaturedKeys(nextKeys);
+    if (baseline.length !== next.length) return true;
+    for (let i = 0; i < baseline.length; i += 1) {
+      if (baseline[i] !== next[i]) return true;
+    }
+    return false;
   }
 
   function sanitizeRarity(value) {
@@ -135,11 +166,14 @@
       #badgeWallBack .ah-bw-head-actions{
         display:flex;
         gap:8px;
+        flex-wrap:wrap;
+        justify-content:flex-end;
       }
       #badgeWallBack .ah-bw-head-actions .btn{
         min-width:44px;
         height:32px;
         border-radius:10px;
+        white-space:nowrap;
       }
       #badgeWallBack .ah-bw-meta{
         display:flex;
@@ -162,6 +196,10 @@
       #badgeWallBack .ah-bw-pill.is-muted{
         color:rgba(190,211,230,.7);
         border-color:rgba(170,188,206,.2);
+      }
+      #badgeWallBack .ah-bw-pill.is-dirty{
+        color:#ffe4ae;
+        border-color:rgba(248,205,121,.34);
       }
       #badgeWallBack .ah-bw-status{
         border-radius:10px;
@@ -222,6 +260,11 @@
         box-shadow:
           0 0 0 1px rgba(247,203,124,.28),
           0 6px 14px rgba(123,84,24,.26);
+      }
+      #badgeWallBack .ah-bw-tile.is-featured{
+        box-shadow:
+          0 0 0 1px rgba(153,200,245,.3),
+          0 4px 10px rgba(35,74,120,.2);
       }
       #badgeWallBack .ah-bw-tile.is-locked{
         opacity:.58;
@@ -288,6 +331,23 @@
         align-items:center;
         justify-content:center;
       }
+      #badgeWallBack .ah-bw-feature{
+        position:absolute;
+        left:3px;
+        top:3px;
+        min-width:14px;
+        height:14px;
+        padding:0 3px;
+        border-radius:999px;
+        border:1px solid rgba(150,196,237,.42);
+        background:rgba(16,38,64,.88);
+        color:rgba(207,231,255,.95);
+        font-size:9px;
+        font-weight:900;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
       #badgeWallBack .ah-bw-detail{
         border-radius:10px;
         border:1px solid rgba(165,196,226,.18);
@@ -312,6 +372,16 @@
         font-size:11px;
         line-height:1.35;
         color:rgba(195,216,236,.82);
+      }
+      #badgeWallBack .ah-bw-detail-actions{
+        margin-top:8px;
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+      }
+      #badgeWallBack .ah-bw-detail-actions .btn{
+        min-height:30px;
+        border-radius:9px;
       }
       @media (min-width: 560px){
         #badgeWallBack .ah-bw-grid{
@@ -338,6 +408,7 @@
             </div>
             <div class="ah-bw-head-actions">
               <button class="btn" id="badgeWallRefresh" type="button">Refresh</button>
+              <button class="btn" id="badgeWallSaveFeatured" type="button">Save Featured</button>
               <button class="btn" id="closeBadgeWall" type="button">X</button>
             </div>
           </div>
@@ -345,6 +416,7 @@
           <div class="ah-bw-meta">
             <span class="ah-bw-pill" id="badgeWallOwned">Owned 0/0</span>
             <span class="ah-bw-pill is-muted" id="badgeWallActive">No active title</span>
+            <span class="ah-bw-pill is-muted" id="badgeWallFeatured">Featured 0/3</span>
           </div>
 
           <div class="ah-bw-status" id="badgeWallStatus" hidden></div>
@@ -358,8 +430,10 @@
 
     closeBtn = document.getElementById("closeBadgeWall");
     refreshBtn = document.getElementById("badgeWallRefresh");
+    saveFeaturedBtn = document.getElementById("badgeWallSaveFeatured");
     ownedPill = document.getElementById("badgeWallOwned");
     activePill = document.getElementById("badgeWallActive");
+    featuredPill = document.getElementById("badgeWallFeatured");
     statusBox = document.getElementById("badgeWallStatus");
     gridBox = document.getElementById("badgeWallGrid");
     emptyBox = document.getElementById("badgeWallEmpty");
@@ -381,6 +455,12 @@
     else statusBox.removeAttribute("data-kind");
   }
 
+  function updateSaveButtonState() {
+    if (!saveFeaturedBtn) return;
+    saveFeaturedBtn.disabled = _savingFeatured || !_featuredDirty;
+    saveFeaturedBtn.textContent = _savingFeatured ? "Saving..." : "Save Featured";
+  }
+
   function updateSummary() {
     const list = Array.isArray(_state.badges) ? _state.badges : [];
     const ownedCount = list.reduce((acc, item) => (item?.owned ? acc + 1 : acc), 0);
@@ -390,21 +470,30 @@
       ownedPill.textContent = "Owned " + String(ownedCount) + "/" + String(totalCount);
     }
 
-    if (!activePill) return;
-    const activeKey = toKey(_state.activeBadgeKey);
-    if (!activeKey) {
-      activePill.textContent = "No active title";
-      activePill.classList.add("is-muted");
-      return;
+    if (activePill) {
+      const activeKey = toKey(_state.activeBadgeKey);
+      if (!activeKey) {
+        activePill.textContent = "No active title";
+        activePill.classList.add("is-muted");
+      } else {
+        const active = (_state.badges || []).find((item) => toKey(item.key) === activeKey);
+        if (active) {
+          activePill.textContent = "Displayed: " + (active.name || active.key);
+        } else {
+          activePill.textContent = "Displayed: " + activeKey;
+        }
+        activePill.classList.remove("is-muted");
+      }
     }
 
-    const active = (_state.badges || []).find((item) => toKey(item.key) === activeKey);
-    if (active) {
-      activePill.textContent = "Displayed: " + (active.name || active.key);
-    } else {
-      activePill.textContent = "Displayed: " + activeKey;
+    if (featuredPill) {
+      const count = _draftFeaturedBadgeKeys.length;
+      featuredPill.textContent = "Featured " + String(count) + "/" + String(MAX_FEATURED_BADGES) + (_featuredDirty ? " *" : "");
+      featuredPill.classList.toggle("is-muted", count === 0);
+      featuredPill.classList.toggle("is-dirty", _featuredDirty);
     }
-    activePill.classList.remove("is-muted");
+
+    updateSaveButtonState();
   }
 
   function newEl(tag, className, text) {
@@ -417,6 +506,35 @@
   function clearEl(node) {
     if (!node) return;
     while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function findBadge(rawKey) {
+    const key = toKey(rawKey);
+    if (!key) return null;
+    const list = Array.isArray(_state.badges) ? _state.badges : [];
+    return list.find((item) => toKey(item?.key) === key) || null;
+  }
+
+  function canBadgeBeFeatured(badge) {
+    if (!badge || !badge.owned) return false;
+    if (badge.displayable === false || badge.canDisplay === false) return false;
+    return !isMasteryBadge(badge);
+  }
+
+  function isFeaturedKey(rawKey) {
+    const key = toKey(rawKey);
+    return !!key && _draftFeaturedBadgeKeys.includes(key);
+  }
+
+  function featuredPayloadKeys() {
+    const out = [];
+    for (const norm of _draftFeaturedBadgeKeys) {
+      const badge = findBadge(norm);
+      if (!badge) continue;
+      const key = String(badge.key || "").trim();
+      if (key) out.push(key);
+    }
+    return out;
   }
   function badgeIconSource(badge) {
     return String(badge?.iconUrl || badge?.icon_url || "").trim();
@@ -506,6 +624,63 @@
     img.src = primary;
   }
 
+  function toggleFeaturedForKey(rawKey) {
+    const badge = findBadge(rawKey);
+    if (!badge || !canBadgeBeFeatured(badge)) {
+      setStatus("Only owned display badges can be featured.", "error");
+      haptic("light");
+      return;
+    }
+
+    const key = toKey(badge.key);
+    let next = _draftFeaturedBadgeKeys.slice();
+    const idx = next.indexOf(key);
+    if (idx >= 0) {
+      next.splice(idx, 1);
+    } else {
+      if (next.length >= MAX_FEATURED_BADGES) {
+        setStatus("You can feature up to " + String(MAX_FEATURED_BADGES) + " badges.", "error");
+        haptic("light");
+        return;
+      }
+      next.push(key);
+    }
+
+    _draftFeaturedBadgeKeys = normalizeFeaturedKeys(next);
+    _featuredDirty = featuredChanged(_draftFeaturedBadgeKeys);
+    updateSummary();
+    renderBadges();
+    setStatus("");
+    haptic("light");
+  }
+
+  async function saveFeaturedBadges() {
+    if (_savingFeatured || !_apiPost) return;
+    _savingFeatured = true;
+    updateSaveButtonState();
+    setStatus("Saving featured badges...", "");
+    try {
+      const out = await _apiPost("/webapp/badges/state", { featured_badges: featuredPayloadKeys() });
+      if (!out || out.ok === false) throw new Error(out?.reason || "BADGES_FEATURED_SAVE_FAILED");
+      const next = normalizeState(out);
+      _state = next;
+      _draftFeaturedBadgeKeys = normalizeFeaturedKeys(next.featuredBadgeKeys);
+      _featuredDirty = false;
+      updateSummary();
+      renderBadges();
+      setStatus("Featured badges saved.");
+      haptic("light");
+    } catch (err) {
+      dbg("save featured failed", err);
+      setStatus("Failed to save featured badges. Try again.", "error");
+      haptic("light");
+      throw err;
+    } finally {
+      _savingFeatured = false;
+      updateSaveButtonState();
+    }
+  }
+
   function renderDetail(badge, activeKey) {
     if (!detailBox) return;
     clearEl(detailBox);
@@ -518,9 +693,11 @@
     const key = String(badge.key || "").trim();
     const isOwned = !!badge.owned;
     const isActive = !!activeKey && toKey(key) === activeKey;
+    const isFeatured = isFeaturedKey(key);
     const mastery = isMasteryBadge(badge);
     const tier = Number.isFinite(Number(badge.tier)) ? Number(badge.tier) : 0;
     const tierName = String(badge.tierName || badge.tier_name || "").trim();
+    const canFeature = canBadgeBeFeatured(badge);
 
     detailBox.hidden = false;
     detailBox.appendChild(newEl("h3", "ah-bw-detail-name", String(badge.name || key || "Unknown Badge")));
@@ -534,6 +711,7 @@
       metaBits.push(sanitizeRarity(badge.rarity));
     }
     if (isActive) metaBits.push("Displayed");
+    if (isFeatured) metaBits.push("Featured");
     if (key) metaBits.push(key);
     detailBox.appendChild(newEl("div", "ah-bw-detail-meta", metaBits.join(" | ")));
 
@@ -555,6 +733,15 @@
         progressText = "Progress " + String(progress) + " / " + String(next);
       }
       detailBox.appendChild(newEl("div", "ah-bw-detail-meta", progressText));
+    }
+
+    if (canFeature) {
+      const actions = newEl("div", "ah-bw-detail-actions");
+      const toggleBtn = newEl("button", "btn", isFeatured ? "Remove from Featured" : "Add to Featured");
+      toggleBtn.type = "button";
+      toggleBtn.addEventListener("click", () => toggleFeaturedForKey(key));
+      actions.appendChild(toggleBtn);
+      detailBox.appendChild(actions);
     }
   }
 
@@ -590,8 +777,9 @@
     const key = String(badge.key || "").trim();
     const isActive = !!activeKey && toKey(key) === activeKey;
     const isOwned = !!badge.owned;
+    const isFeatured = isFeaturedKey(key);
 
-    const tileClass = "ah-bw-tile " + RARITY_CLASS[rarity] + (isActive ? " is-active" : "") + (isOwned ? " is-owned" : " is-locked");
+    const tileClass = "ah-bw-tile " + RARITY_CLASS[rarity] + (isActive ? " is-active" : "") + (isFeatured ? " is-featured" : "") + (isOwned ? " is-owned" : " is-locked");
     const card = newEl("button", tileClass);
     card.type = "button";
     card.setAttribute("aria-label", String(badge.name || key || "Badge"));
@@ -603,6 +791,9 @@
 
     if (isActive) {
       card.appendChild(newEl("span", "ah-bw-spot"));
+    }
+    if (isFeatured) {
+      card.appendChild(newEl("span", "ah-bw-feature", "F"));
     }
     if (!isOwned) {
       card.appendChild(newEl("span", "ah-bw-lock", "L"));
@@ -681,7 +872,11 @@
     payload?.activeBadgeKey || payload?.active_badge_key || ""
   ).trim();
 
-  return { badges, total, activeBadgeKey };
+  const featuredBadgeKeys = normalizeFeaturedKeys(
+    Array.isArray(payload?.featured_badges) ? payload.featured_badges : []
+  );
+
+  return { badges, total, activeBadgeKey, featuredBadgeKeys };
 }
 
   async function loadState() {
@@ -696,6 +891,8 @@
     try {
       const next = await loadState();
       _state = next;
+      _draftFeaturedBadgeKeys = normalizeFeaturedKeys(next.featuredBadgeKeys);
+      _featuredDirty = false;
       updateSummary();
       renderBadges();
       setStatus("");
@@ -738,6 +935,9 @@
     closeBtn?.addEventListener("click", close);
     refreshBtn?.addEventListener("click", () => {
       refresh().then(() => haptic("light")).catch(() => {});
+    });
+    saveFeaturedBtn?.addEventListener("click", () => {
+      saveFeaturedBadges().catch(() => {});
     });
 
     wallBack?.addEventListener("click", (e) => {

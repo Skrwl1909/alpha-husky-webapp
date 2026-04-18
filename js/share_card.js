@@ -6,6 +6,8 @@
   const X_MANUAL_ATTACH_NOTE = "Image saved. To post on X, attach the saved image manually.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
+  const FEATURED_BADGES_MAX = 3;
+  const FEATURED_BADGES_TIMEOUT_MS = 12000;
   const HUB_FRAME = {
     viewportTop: 0.08,
     viewportSide: 0.14,
@@ -42,6 +44,7 @@
     busy: false,
     openPromise: null,
     previewFxAnimations: [],
+    featuredBadges: [],
   };
   const DEBUG = !!global.DBG;
 
@@ -190,6 +193,83 @@
     }
   }
 
+  function normalizeBadgeKey(rawKey) {
+    return String(rawKey || "").trim().toUpperCase();
+  }
+
+  function badgeIconUrlFromPayload(rawBadge) {
+    return proxifyAssetUrl(
+      rawBadge?.iconUrl ||
+      rawBadge?.icon_url ||
+      rawBadge?.emblemUrl ||
+      rawBadge?.emblem_url ||
+      ""
+    );
+  }
+
+  function extractFeaturedBadgesFromPayload(payload) {
+    const list = Array.isArray(payload?.badges) ? payload.badges : [];
+    const featuredKeys = Array.isArray(payload?.featured_badges) ? payload.featured_badges : [];
+    const byKey = new Map();
+    for (const rawBadge of list) {
+      const norm = normalizeBadgeKey(rawBadge?.key);
+      if (!norm || byKey.has(norm)) continue;
+      byKey.set(norm, {
+        key: String(rawBadge?.key || norm).trim(),
+        name: String(rawBadge?.name || rawBadge?.label || rawBadge?.key || norm).trim(),
+        iconUrl: badgeIconUrlFromPayload(rawBadge),
+        owned: rawBadge?.owned !== false,
+        displayable: rawBadge?.displayable !== false && rawBadge?.canDisplay !== false,
+      });
+    }
+
+    const out = [];
+    const seen = new Set();
+    for (const rawKey of featuredKeys) {
+      const norm = normalizeBadgeKey(rawKey);
+      if (!norm || seen.has(norm)) continue;
+      const badge = byKey.get(norm);
+      if (!badge || !badge.owned || !badge.displayable) continue;
+      seen.add(norm);
+      out.push(badge);
+      if (out.length >= FEATURED_BADGES_MAX) break;
+    }
+    return out;
+  }
+
+  async function loadFeaturedBadges(forceReload) {
+    if (!forceReload && Array.isArray(STATE.featuredBadges)) {
+      return STATE.featuredBadges;
+    }
+
+    const initData = getInitData();
+    const apiBase = getApiBase();
+    if (!initData || !apiBase) {
+      STATE.featuredBadges = [];
+      return STATE.featuredBadges;
+    }
+
+    try {
+      const { res, data } = await fetchJsonWithTimeout(apiBase + "/webapp/badges/state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + initData,
+        },
+        body: JSON.stringify({}),
+      }, FEATURED_BADGES_TIMEOUT_MS);
+      if (!res.ok || data?.ok === false) {
+        throw new Error(data?.reason || "BADGES_STATE_FAILED");
+      }
+      STATE.featuredBadges = extractFeaturedBadgesFromPayload(data);
+    } catch (err) {
+      log("featured:load_failed", { reason: String(err?.message || err || "") });
+      if (!Array.isArray(STATE.featuredBadges)) STATE.featuredBadges = [];
+    }
+
+    return STATE.featuredBadges;
+  }
+
   function buildSharePresentation(variant) {
     const mode = sanitizeVariant(variant);
     const profile = global.__PROFILE__ || global.PROFILE || global.profileState || {};
@@ -214,6 +294,7 @@
       equippedPreviewUrl: proxifyAssetUrl(equippedPreview),
       equippedStats: stats,
       equippedSlots: Array.isArray(equippedState?.slots) ? equippedState.slots : [],
+      featuredBadges: Array.isArray(STATE.featuredBadges) ? STATE.featuredBadges.slice(0, FEATURED_BADGES_MAX) : [],
       shareLink: getShareLink(),
     };
   }
@@ -555,6 +636,59 @@
     ctx.stroke();
   }
 
+  function drawFeaturedBadgeRow(ctx, badges, badgeImages, x, y) {
+    const list = Array.isArray(badges) ? badges.slice(0, FEATURED_BADGES_MAX) : [];
+    if (!list.length) return;
+
+    const count = list.length;
+    const tileSize = 50;
+    const gap = 8;
+    const padX = 14;
+    const panelH = 76;
+    const panelW = padX * 2 + count * tileSize + (count - 1) * gap;
+
+    ctx.save();
+    roundRect(ctx, x, y, panelW, panelH, 16);
+    ctx.fillStyle = "rgba(8,14,24,0.78)";
+    ctx.strokeStyle = "rgba(152,196,236,0.20)";
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(221,232,246,0.80)";
+    ctx.font = "700 12px system-ui, sans-serif";
+    ctx.fillText("FEATURED", x + padX, y + 15);
+
+    for (let i = 0; i < count; i += 1) {
+      const badge = list[i] || {};
+      const img = Array.isArray(badgeImages) ? badgeImages[i] : null;
+      const tileX = x + padX + i * (tileSize + gap);
+      const tileY = y + 20;
+
+      roundRect(ctx, tileX, tileY, tileSize, tileSize, 12);
+      ctx.fillStyle = "rgba(4,10,18,0.92)";
+      ctx.strokeStyle = "rgba(158,200,238,0.28)";
+      ctx.lineWidth = 1.25;
+      ctx.fill();
+      ctx.stroke();
+
+      if (img) {
+        drawContain(ctx, img, tileX + 3, tileY + 3, tileSize - 6, tileSize - 6);
+      } else {
+        const fallback = String(badge?.name || badge?.key || "?").trim().slice(0, 1).toUpperCase() || "?";
+        ctx.fillStyle = "rgba(226,236,248,0.72)";
+        ctx.font = "800 21px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(fallback, tileX + tileSize / 2, tileY + tileSize / 2 + 1);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+      }
+    }
+
+    ctx.restore();
+  }
+
   function drawFooterNameplate(ctx, presentation, x, y, w, options) {
     const opts = options || {};
     const subtitle = String(opts.subtitle || "ALPHA HUSKY COLLECTIBLE").trim();
@@ -647,6 +781,7 @@
   async function renderPresentationToCanvas(canvas, presentation) {
     if (!canvas || !presentation) throw new Error("MISSING_RENDER_TARGET");
     await waitForFonts();
+    const featuredBadges = Array.isArray(presentation.featuredBadges) ? presentation.featuredBadges.slice(0, FEATURED_BADGES_MAX) : [];
 
     const [skinImg, frameImg, badgeImg, equippedImg] = await Promise.all([
       loadImage(presentation.skinUrl).catch(() => null),
@@ -654,6 +789,9 @@
       loadImage(presentation.factionBadgeUrl).catch(() => null),
       loadImage(presentation.equippedPreviewUrl).catch(() => null),
     ]);
+    const featuredBadgeImgs = await Promise.all(
+      featuredBadges.map((badge) => loadImage(badge?.iconUrl).catch(() => null))
+    );
 
     canvas.width = CARD_WIDTH;
     canvas.height = CARD_HEIGHT;
@@ -704,6 +842,7 @@
         metaLeft: presentation.factionMeta || presentation.tag || "Pack Identity",
         metaRight: "Hub Presentation",
       });
+      drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
 
       if (badgeImg) {
         drawFactionSeal(ctx, badgeImg, 106, 966, 124);
@@ -802,6 +941,7 @@
       metaLeft: "Live equipped state",
       metaRight: slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : "",
     });
+    drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
 
     ctx.fillStyle = "rgba(223,232,244,0.74)";
     ctx.font = "600 20px system-ui, sans-serif";
@@ -1016,6 +1156,7 @@
     if (sanitizeVariant(STATE.variant) === "equipped") {
       await waitForEquippedPreviewFreshness();
     }
+    await loadFeaturedBadges(true);
     STATE.presentation = buildSharePresentation(STATE.variant);
     log("render:start", { variant: STATE.variant, hasSkin: !!STATE.presentation.skinUrl, hasPreview: !!STATE.presentation.equippedPreviewUrl });
     await renderPresentationToCanvas(canvas, STATE.presentation);
