@@ -457,6 +457,22 @@
     return String(u?.kind || "").trim().toLowerCase();
   }
 
+  function acquisitionKind(meta) {
+    return String(meta?.acquisition || "").trim().toLowerCase();
+  }
+
+  function isSpinsOnly(meta) {
+    const k = unlockKind(meta);
+    const acq = acquisitionKind(meta);
+    if (acq === "spins_only") return true;
+    return k === "spins_only" || k === "spins";
+  }
+
+  function isPreviewOnly(meta) {
+    if (!meta || typeof meta !== "object") return false;
+    return !!meta.preview_only || isSpinsOnly(meta);
+  }
+
   function isCodeUnlock(meta) {
     return unlockKind(meta) === "code" || unlockKind(meta) === "claim" || unlockKind(meta) === "password";
   }
@@ -511,9 +527,11 @@
   function isEffectivelyOwned(key) {
     const k = normKey(key);
     if (!k || k === "default") return true;
-    if (isOwned(k)) return true;
 
     const m = getMeta(k);
+    if (m && isPreviewOnly(m)) return false;
+
+    if (isOwned(k)) return true;
     if (m && isEarnOnly(m) && unlockedNow(m)) return true;
 
     return false;
@@ -557,10 +575,10 @@
 
   function lockSuffix(meta) {
     if (!meta) return " 🔒";
+    if (isPreviewOnly(meta) || isSpinsOnly(meta)) return " 🎰";
     const u = getUnlock(meta);
     if (!u) return " 🔒";
     if (unlockedNow(meta)) return "";
-
     if (isSupportStars(meta)) return " ⭐";
     if (isCodeUnlock(meta)) return " 🔑";
 
@@ -573,11 +591,21 @@
   }
 
   function lockDesc(meta) {
+    const lockedLabel = String(meta?.locked_label || "").trim();
+    if (lockedLabel) return lockedLabel;
+
     const u = getUnlock(meta);
-    if (!u) return "Locked.";
+    if (!u) {
+      if (isSpinsOnly(meta) || isPreviewOnly(meta)) return "Available in Spins only.";
+      return "Locked.";
+    }
     const kind = String(u.kind || "").trim().toLowerCase();
     const have = unlockHave(meta);
     const need = unlockNeed(meta);
+
+    if (isSpinsOnly(meta) || isPreviewOnly(meta) || kind === "spins_only" || kind === "spins") {
+      return "Available in Spins only.";
+    }
 
     if (isSupportStars(meta)) {
       const stars = getStarsPrice(meta);
@@ -644,6 +672,7 @@
     const k = normKey(key);
     if (k === "default") return "Base";
     if (!meta) return "Cosmetic";
+    if (isSpinsOnly(meta) || isPreviewOnly(meta)) return "Spins";
     if (isSupportStars(meta) || isSupportToken(meta)) return "Support";
     if (isCodeUnlock(meta)) return "Claim";
     const kind = unlockKind(meta);
@@ -656,10 +685,14 @@
 
   function skinStateMeta({ key, owned, selected, equipped }) {
     const k = normKey(key);
+    const meta = getMeta(k);
     if (k === "default") {
       if (equipped) return { label: "Equipped", className: "is-equipped" };
       if (selected) return { label: "Selected", className: "is-selected" };
       return { label: "Base", className: "is-owned" };
+    }
+    if (!owned && meta && (isSpinsOnly(meta) || isPreviewOnly(meta))) {
+      return { label: "Spins only", className: "is-locked" };
     }
     if (!owned) return { label: "Locked", className: "is-locked" };
     if (equipped) return { label: "Equipped", className: "is-equipped" };
@@ -705,7 +738,9 @@
     if (skinInfoMeta) {
       const parts = [lane, "Cosmetic skin"];
       if (!owned && meta) {
-        if (isSupportStars(meta)) {
+        if (isSpinsOnly(meta) || isPreviewOnly(meta)) {
+          parts.push(lockDesc(meta));
+        } else if (isSupportStars(meta)) {
           const stars = getStarsPrice(meta);
           if (stars > 0) parts.push(`${stars} Stars`);
         } else {
@@ -743,6 +778,12 @@
     }
 
     const m = getMeta(k);
+
+    if (m && (isSpinsOnly(m) || isPreviewOnly(m))) {
+      equipBtn.textContent = "Spins only";
+      equipBtn.disabled = true;
+      return;
+    }
 
     if (isEffectivelyOwned(k)) {
       equipBtn.textContent = "Equip";
@@ -1151,6 +1192,8 @@
             skinDesc.textContent = "Default - clean Alpha.";
           } else if (isEffectivelyOwned(key)) {
             skinDesc.textContent = `${s.name || s.key} - available.`;
+          } else if (meta && (isSpinsOnly(meta) || isPreviewOnly(meta))) {
+            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
           } else if (meta && isCodeUnlock(meta)) {
             skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
           } else if (meta && isSupportStars(meta)) {
@@ -1227,11 +1270,20 @@
     try {
       if (isEffectivelyOwned(key) || key === "default") {
         const out = await _apiPost("/webapp/skins/equip", { skin: key === "default" ? "default" : key });
-        if (!out || !out.ok) throw new Error(out?.reason || "equip failed");
+        if (!out || !out.ok) {
+          const r = out?.reason || "equip failed";
+          const msg = (r === "SPINS_ONLY") ? "Available in Spins only." : r;
+          throw new Error(msg);
+        }
 
         try { _tg?.showAlert?.("Skin equipped!"); } catch (_) {}
         _closeSkinsModal();
         try { window.loadProfile?.(); } catch (_) {}
+        return;
+      }
+
+      if (meta && (isSpinsOnly(meta) || isPreviewOnly(meta))) {
+        try { _tg?.showAlert?.(lockDesc(meta)); } catch (_) {}
         return;
       }
 
@@ -1267,6 +1319,7 @@
           (r === "NOT_ENOUGH_BONES") ? "Not enough bones." :
           (r === "ALREADY_OWNED") ? "Already owned." :
           (r === "EARN_ONLY") ? "This skin is earn-only." :
+          (r === "SPINS_ONLY") ? "Available in Spins only." :
           (r === "EXTERNAL_UNLOCK") ? "This skin is unlocked externally." :
           r;
         throw new Error(msg);
