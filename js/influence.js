@@ -1,4 +1,4 @@
-﻿// js/influence.js â€” Influence MVP (Patrol + Donate) for map nodes
+﻿// js/influence.js - Influence MVP (Patrol + Donate) for map nodes
 // - truth-first faction (backend -> cache -> TG picker)
 // - robust UX: inline status + cooldown countdown + clear error messages
 // - applies leadersMap when returned
@@ -133,7 +133,7 @@
 
   function fmtFaction(f) {
     const key = String(f || "").toLowerCase();
-    return FACTION_LABELS[key] || key.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "â€”";
+    return FACTION_LABELS[key] || key.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "-";
   }
 
   function normalizeNodeId(raw) {
@@ -193,9 +193,9 @@
 
   function shortUid(uid) {
     const s = String(uid || "");
-    if (!s) return "â€”";
+    if (!s) return "-";
     if (s.length <= 10) return s;
-    return `${s.slice(0, 4)}â€¦${s.slice(-4)}`;
+    return `${s.slice(0, 4)}...${s.slice(-4)}`;
   }
 
   function fmtRemain(sec) {
@@ -378,14 +378,14 @@
           background:
             radial-gradient(circle at 82% 0%, rgba(255,128,88,.10), transparent 34%),
             radial-gradient(circle at 5% 100%, rgba(110,180,255,.09), transparent 40%),
-            rgba(255,255,255,.028);
-          border:1px solid rgba(255,255,255,.09);
+            rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.14);
         ">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
             <div>
-              <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.68;">Weekly War Preview</div>
+              <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b4c6dd;opacity:.84;">Weekly War Preview</div>
               <div style="margin-top:4px;font-size:14px;font-weight:800;line-height:1.2;">${esc(previewRankText)}</div>
-              <div style="margin-top:4px;font-size:12px;opacity:.76;">${esc(rewardStatus)}</div>
+              <div style="margin-top:4px;font-size:12px;color:#d0ddef;opacity:.9;">${esc(rewardStatus)}</div>
             </div>
             <div style="display:grid;gap:6px;justify-items:end;">
               <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:10px;font-weight:700;letter-spacing:.04em;">${esc(String(w.weekId || ""))}</span>
@@ -398,28 +398,28 @@
 
     const progressCards = `
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);">
-          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.62;">Your War Score</div>
+        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Your War Score</div>
           <div style="margin-top:6px;font-size:19px;font-weight:900;color:#79e8ff;">${esc(my ? myScore : 0)}</div>
           <div style="margin-top:7px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="width:${scorePct}%;height:100%;background:linear-gradient(90deg,rgba(121,232,255,.88),rgba(104,148,255,.82));"></div></div>
         </article>
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);">
-          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.62;">Your Position</div>
+        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Your Position</div>
           <div style="margin-top:6px;font-size:19px;font-weight:900;color:#c6a6ff;">${esc(my ? ("#" + (my.factionRank || my.overallRank || "-")) : "-")}</div>
-          <div style="margin-top:7px;font-size:10px;opacity:.66;">Faction race placement</div>
+          <div style="margin-top:7px;font-size:10px;color:#bdcde2;opacity:.84;">Faction race placement</div>
         </article>
         <article style="padding:11px 12px;border-radius:12px;background:${statusTone.bg};border:${statusTone.border};">
-          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.62;">Reward Access</div>
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Reward Access</div>
           <div style="margin-top:6px;font-size:15px;font-weight:900;color:${statusTone.color};line-height:1.2;">${esc(rewardStatus)}</div>
-          <div style="margin-top:7px;font-size:10px;opacity:.7;">Cycle qualification state</div>
+          <div style="margin-top:7px;font-size:10px;color:#bdcde2;opacity:.84;">Cycle qualification state</div>
         </article>
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);">
-          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.62;">Active Days</div>
+        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Active Days</div>
           <div style="margin-top:6px;font-size:15px;font-weight:900;color:#ffd392;line-height:1.2;">${esc(my ? `${myDays}/${reqDays}` : `0/${reqDays}`)}</div>
           <div style="margin-top:7px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="width:${daysPct}%;height:100%;background:linear-gradient(90deg,rgba(255,211,111,.86),rgba(255,165,116,.8));"></div></div>
         </article>
       </div>
-      <div style="margin-top:8px;font-size:11px;opacity:.72;">${esc(requirementHint)}</div>
+      <div style="margin-top:8px;font-size:11px;color:#c4d3e7;opacity:.9;">${esc(requirementHint)}</div>
     `;
 
     const raceRows = factions.slice(0, 5);
@@ -446,7 +446,7 @@
                 <span style="font-size:16px;font-weight:900;color:${tone.fg};">${esc(score)}</span>
               </div>
               <div style="margin-top:6px;font-size:12px;font-weight:800;color:${tone.fg};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(fmtFaction(row?.faction || ""))}${isViewer ? " (You)" : ""}</div>
-              <div style="margin-top:3px;font-size:10px;opacity:.66;">${esc(row?.qualifiedCount || 0)} qualified</div>
+              <div style="margin-top:3px;font-size:10px;color:#c4d2e4;opacity:.86;">${esc(row?.qualifiedCount || 0)} qualified</div>
               <div style="margin-top:8px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="width:${width}%;height:100%;background:${tone.bar};"></div></div>
             </article>
           `;
@@ -460,9 +460,9 @@
           const isViewer = !!viewerFaction && viewerFaction === factionKey;
           const score = Number(row?.score || 0);
           return `
-            <article style="padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;gap:8px;${isViewer ? "box-shadow:0 0 0 1px rgba(120,255,220,.24) inset;" : ""}">
+            <article style="padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between;gap:8px;${isViewer ? "box-shadow:0 0 0 1px rgba(120,255,220,.24) inset;" : ""}">
               <div style="min-width:0;display:flex;align-items:center;gap:8px;">
-                <span style="font-size:11px;font-weight:800;opacity:.74;">#${rank}</span>
+                <span style="font-size:11px;font-weight:800;color:#c1d1e6;opacity:.9;">#${rank}</span>
                 <span style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(fmtFaction(row?.faction || ""))}${isViewer ? " (You)" : ""}</span>
               </div>
               <span style="font-size:13px;font-weight:800;">${esc(score)}</span>
@@ -476,7 +476,7 @@
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
           <div style="min-width:0;">
             <div style="font-size:13px;font-weight:900;color:#f5f7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(reward.shortLabel || reward.label || reward.id || "Weekly Reward")}</div>
-            <div style="margin-top:4px;font-size:10px;opacity:.66;line-height:1.35;">${esc(reward.eligibility || "Earned from weekly war progress")}</div>
+            <div style="margin-top:4px;font-size:10px;color:#c4d3e7;opacity:.84;line-height:1.35;">${esc(reward.eligibility || "Earned from weekly war progress")}</div>
           </div>
           <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:10px;font-weight:800;">${esc(rewardTypeLabel(reward.type))}</span>
         </div>
@@ -489,20 +489,20 @@
           const fromPrior = !!effectWeek && effectWeek !== String(w.weekId || "").trim();
           const duplicateCount = Number(effect?._dupeCount || 1);
           return `
-            <article style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+            <article style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.11);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
               <div style="min-width:0;">
                 <div style="font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(effect.shortLabel || effect.label || effect.id || "Active Effect")}${duplicateCount > 1 ? ` x${duplicateCount}` : ""}</div>
-                <div style="margin-top:2px;font-size:10px;opacity:.66;">${esc(effectWeek ? `Cycle ${effectWeek}` : "Cycle not tagged")}${fromPrior ? " | Previous cycle" : ""}</div>
+                <div style="margin-top:2px;font-size:10px;color:#bfd0e5;opacity:.84;">${esc(effectWeek ? `Cycle ${effectWeek}` : "Cycle not tagged")}${fromPrior ? " | Previous cycle" : ""}</div>
               </div>
               <div style="text-align:right;flex:0 0 auto;">
                 <div style="font-size:10px;font-weight:700;color:${fromPrior ? "#ffd7aa" : "#bce8ff"};">${esc(fmtRemain(effect.expiresInSec))}</div>
-                <div style="margin-top:2px;font-size:9px;opacity:.62;">${esc(rewardTypeLabel(effect.type))}</div>
+                <div style="margin-top:2px;font-size:9px;color:#bfd0e5;opacity:.8;">${esc(rewardTypeLabel(effect.type))}</div>
               </div>
             </article>
           `;
         }).join("")
       : `
-        <div style="padding:10px 11px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);font-size:11px;opacity:.74;">
+        <div style="padding:10px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.11);font-size:11px;color:#c4d3e7;opacity:.9;">
           No active effects yet.
         </div>
       `;
@@ -516,14 +516,14 @@
         background:
           radial-gradient(circle at 88% 8%, rgba(255,136,104,.09), transparent 32%),
           radial-gradient(circle at 0% 100%, rgba(120,180,255,.10), transparent 44%),
-          rgba(255,255,255,.024);
-        border:1px solid rgba(255,255,255,.10);
+          rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.14);
       ">
         <header style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start;gap:10px;">
           <div>
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.68;">Weekly Faction War</div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b4c6dd;opacity:.84;">Weekly Faction War</div>
             <div style="margin-top:4px;font-size:16px;font-weight:900;line-height:1.2;">${esc(topFaction ? `${fmtFaction(topFaction.faction)} is leading` : "Race not started yet")}</div>
-            <div style="margin-top:4px;font-size:11px;opacity:.72;">${esc(viewerRank > 0 ? `Your faction position: #${viewerRank}` : "Join weekly actions to enter the race")}</div>
+            <div style="margin-top:4px;font-size:11px;color:#c4d3e7;opacity:.9;">${esc(viewerRank > 0 ? `Your faction position: #${viewerRank}` : "Join weekly actions to enter the race")}</div>
           </div>
           <div style="display:grid;justify-content:start;gap:6px;">
             <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:10px;font-weight:800;">${esc(String(w.weekId || ""))}</span>
@@ -533,12 +533,12 @@
         </header>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:12px;">
-          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);">
+          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);">
             <div style="font-size:12px;font-weight:900;margin-bottom:8px;">Your War Progress</div>
             ${progressCards}
           </section>
 
-          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);">
+          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);">
             <div style="font-size:12px;font-weight:900;margin-bottom:8px;">Faction Race</div>
             ${podiumHtml}
             ${chaseHtml}
@@ -546,21 +546,21 @@
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:12px;">
-          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);">
+          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);">
             <div style="font-size:12px;font-weight:900;margin-bottom:8px;">This Week's Rewards</div>
             <div style="display:grid;gap:8px;">${rewardPoolHtml}</div>
           </section>
 
-          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);">
+          <section style="padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);">
             <div style="font-size:12px;font-weight:800;margin-bottom:8px;opacity:.92;">Active Effects</div>
             ${priorCycleEffects.length ? `<div style="margin-bottom:7px;padding:7px 8px;border-radius:9px;background:rgba(255,188,120,.10);border:1px solid rgba(255,188,120,.22);font-size:10px;line-height:1.3;color:#ffd8ad;">${esc(`${priorCycleEffects.length} active effect(s) are from previous cycles and stay active until their timers end.`)}</div>` : ""}
             <div style="display:grid;gap:6px;">${activeEffectsHtml}</div>
           </section>
         </div>
 
-        <section style="margin-top:12px;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);">
+        <section style="margin-top:12px;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);">
           <div style="font-size:12px;font-weight:900;">What To Do Now</div>
-          <div style="margin-top:6px;font-size:11px;opacity:.75;line-height:1.45;">Patrol to build pressure. Defend or watch key nodes when they heat up. Donate to reinforce your faction's weekly push.</div>
+          <div style="margin-top:6px;font-size:11px;color:#c4d3e7;opacity:.9;line-height:1.45;">Patrol to build pressure. Defend or watch key nodes when they heat up. Donate to reinforce your faction's weekly push.</div>
         </section>
       </section>
     `;
@@ -691,7 +691,7 @@
         buttons: [
           { id: "rb", type: "default", text: "Rogue Byte" },
           { id: "ew", type: "default", text: "Echo Wardens" },
-          { id: "more", type: "default", text: "Moreâ€¦" },
+          { id: "more", type: "default", text: "More..." },
         ]
       }, (btnId) => {
         if (btnId === "rb") return pick("rogue_byte");
@@ -706,7 +706,7 @@
         buttons: [
           { id: "pb", type: "default", text: "Pack Burners" },
           { id: "ih", type: "default", text: "Inner Howl" },
-          { id: "back", type: "default", text: "â† Back" },
+          { id: "back", type: "default", text: "<- Back" },
         ]
       }, (btnId) => {
         if (btnId === "pb") return pick("pack_burners");
@@ -720,7 +720,7 @@
   }
 
   // -------------------------
-  // Frontend truth â†’ cache
+  // Frontend truth -> cache
   // -------------------------
   function syncFactionFromFrontendState() {
     const st = window.PLAYER_STATE || window.STATE || {};
@@ -787,7 +787,7 @@
     }
     if (reason === "TOO_SMALL") return "Amount too small.";
     if (reason === "DONATE_CAP_HIT") return `Donate capped. Refunded ${r?.refunded ?? 0}.`;
-    if (reason === "BAD_NODE") return "This node isnâ€™t active yet.";
+    if (reason === "BAD_NODE") return "This node isn't active yet.";
     if (reason === "BAD_ASSET") return "Bad asset type.";
     if (reason === "BAD_ACTION") return "Bad action.";
 
@@ -856,7 +856,7 @@
         6px;
       box-sizing: border-box;
       overflow: hidden;
-      background: rgba(0,0,0,.55);
+      background: rgba(0,0,0,.48);
       z-index: 2147483647;
       transform: none;
     `;
@@ -864,10 +864,10 @@
     wrap.innerHTML = `
       <div id="influenceCard" style="
         width: min(96vw, 560px);
-        background: rgba(12,12,16,.988);
-        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(14,18,26,.95);
+        border: 1px solid rgba(222,234,250,.16);
         border-radius: 18px;
-        box-shadow: 0 24px 72px rgba(0,0,0,.58);
+        box-shadow: 0 24px 72px rgba(0,0,0,.54), inset 0 1px 0 rgba(255,255,255,.06);
         padding: 16px 16px 14px;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 34px);
         overflow: auto;
@@ -875,11 +875,11 @@
       ">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
           <div>
-            <div id="infTitle" style="font-weight:900;font-size:17px;line-height:1.15;">Influence Frontline</div>
-            <div id="infSub" style="opacity:.74;font-size:12px;margin-top:3px;"></div>
+            <div id="infTitle" style="font-weight:900;font-size:17px;line-height:1.15;color:#f2f6ff;">Influence Frontline</div>
+            <div id="infSub" style="opacity:.9;font-size:12px;color:#c2d0e4;margin-top:3px;"></div>
           </div>
           <button data-close type="button" style="
-            border:0;background:rgba(255,255,255,.08);color:#fff;
+            border:1px solid rgba(220,233,250,.16);background:rgba(14,20,30,.42);color:#f4f8ff;
             border-radius:10px;padding:8px 10px;cursor:pointer;font-weight:700;
           ">Close</button>
         </div>
@@ -891,12 +891,13 @@
           background:
             radial-gradient(circle at 92% 8%, rgba(255,136,104,.12), transparent 35%),
             radial-gradient(circle at 4% 100%, rgba(120,180,255,.12), transparent 40%),
-            rgba(255,255,255,.03);
-          border:1px solid rgba(255,255,255,.11);
+            rgba(255,255,255,.055);
+          border:1px solid rgba(255,255,255,.16);
         ">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:start;">
             <div>
-              <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.66;">Top War Status</div>
+              <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Top War Status</div>
+              
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;">
                 <div id="infLeader" style="font-size:18px;font-weight:900;line-height:1.15;">-</div>
                 <div id="infContested" style="
@@ -910,8 +911,8 @@
                   color:#ffd59b;
                 ">Contested</div>
               </div>
-              <div id="infControlLine" style="margin-top:6px;font-size:11px;opacity:.78;line-height:1.35;"></div>
-              <div id="infUxStatusText" style="margin-top:6px;font-size:12px;opacity:.9;line-height:1.35;">This node is stable right now.</div>
+              <div id="infControlLine" style="margin-top:6px;font-size:11px;color:#d3deee;opacity:.92;line-height:1.35;"></div>
+              <div id="infUxStatusText" style="margin-top:6px;font-size:12px;color:#dfeafe;opacity:.96;line-height:1.35;">This node is stable right now.</div>
             </div>
 
             <div style="display:grid;gap:7px;align-content:start;">
@@ -957,29 +958,29 @@
                 color:#dffff3;
                 width:fit-content;
               ">Patrol</span>
-              <div id="infUxReward" style="font-size:11px;line-height:1.35;opacity:.8;"></div>
+              <div id="infUxReward" style="font-size:11px;line-height:1.35;color:#d8e7fb;opacity:.92;"></div>
             </div>
           </div>
 
-          <div id="infUxReason" style="margin-top:8px;font-size:12px;line-height:1.38;opacity:.94;"></div>
-          <div id="infUxLore" style="display:none;margin-top:8px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);font-size:12px;line-height:1.35;opacity:.9;"></div>
+          <div id="infUxReason" style="margin-top:8px;font-size:12px;line-height:1.38;color:#deebfd;opacity:.96;"></div>
+          <div id="infUxLore" style="display:none;margin-top:8px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.16);font-size:12px;line-height:1.35;color:#d7e5f8;opacity:.96;"></div>
         </section>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:11px;">
           <section style="
             padding:11px 12px;
             border-radius:12px;
-            background:rgba(255,255,255,.03);
-            border:1px solid rgba(255,255,255,.09);
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.14);
           ">
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.66;">Your Next Action</div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Your Next Action</div>
             <div style="display:flex; gap:9px; margin-top:8px;">
               <button id="infPatrolBtn" type="button" style="
                 flex:1; border:0; cursor:pointer;
                 border-radius:12px; padding:12px 12px;
                 background: linear-gradient(180deg, rgba(120,255,220,.18), rgba(120,255,220,.10));
                 border: 1px solid rgba(120,255,220,.26);
-                color:#eafff8; font-weight:800;
+                color:#eafff8; font-weight:800; text-shadow:0 1px 0 rgba(0,0,0,.35);
               ">Patrol</button>
 
               <button id="infDonateToggle" type="button" style="
@@ -987,7 +988,7 @@
                 border-radius:12px; padding:12px 12px;
                 background: linear-gradient(180deg, rgba(170,140,255,.18), rgba(170,140,255,.10));
                 border: 1px solid rgba(170,140,255,.26);
-                color:#f5f0ff; font-weight:800;
+                color:#f5f0ff; font-weight:800; text-shadow:0 1px 0 rgba(0,0,0,.35);
               ">Donate</button>
             </div>
             <div style="display:grid;gap:6px;margin-top:8px;">
@@ -1000,22 +1001,22 @@
           <section style="
             padding:11px 12px;
             border-radius:12px;
-            background:rgba(255,255,255,.024);
-            border:1px solid rgba(255,255,255,.08);
+            background:rgba(255,255,255,.045);
+            border:1px solid rgba(255,255,255,.13);
           ">
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.66;">Your Local Status</div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Your Local Status</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
               <article style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
-                <div style="font-size:10px;opacity:.66;">Owner</div>
+                <div style="font-size:10px;color:#b5c6dd;opacity:.84;">Owner</div>
                 <div id="infLocalOwner" style="margin-top:3px;font-size:12px;font-weight:800;">-</div>
               </article>
               <article style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
-                <div style="font-size:10px;opacity:.66;">Watch Slots</div>
+                <div style="font-size:10px;color:#b5c6dd;opacity:.84;">Watch Slots</div>
                 <div id="infLocalWatch" style="margin-top:3px;font-size:12px;font-weight:800;">-</div>
               </article>
             </div>
             <article style="padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);margin-top:8px;">
-              <div style="font-size:10px;opacity:.66;">Your Participation Here</div>
+              <div style="font-size:10px;color:#b5c6dd;opacity:.84;">Your Participation Here</div>
               <div id="infLocalYou" style="margin-top:3px;font-size:12px;font-weight:700;opacity:.92;">No local actions recorded yet.</div>
             </article>
           </section>
@@ -1025,7 +1026,7 @@
           <div style="display:flex; gap:8px; align-items:center;">
             <select id="infAsset" style="
               flex:1; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
             ">
               <option value="scrap">scrap</option>
               <option value="rune_dust">rune_dust</option>
@@ -1033,14 +1034,14 @@
             </select>
             <input id="infAmount" type="number" min="1" step="1" value="10" style="
               width:120px; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.10);
+              background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
             "/>
           </div>
 
           <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="infAmt" type="button" data-v="10" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+10</button>
-            <button class="infAmt" type="button" data-v="50" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+50</button>
-            <button class="infAmt" type="button" data-v="100" style="flex:1;border:0;border-radius:10px;padding:10px;background:rgba(255,255,255,.06);color:#fff;cursor:pointer;">+100</button>
+            <button class="infAmt" type="button" data-v="10" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+10</button>
+            <button class="infAmt" type="button" data-v="50" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+50</button>
+            <button class="infAmt" type="button" data-v="100" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+100</button>
           </div>
 
           <button id="infDonateBtn" type="button" style="
@@ -1048,7 +1049,7 @@
             border-radius:12px; padding:12px 12px;
             background: linear-gradient(180deg, rgba(255,210,120,.18), rgba(255,210,120,.10));
             border: 1px solid rgba(255,210,120,.26);
-            color:#fff6e8; font-weight:900;
+            color:#fff6e8; font-weight:900; text-shadow:0 1px 0 rgba(0,0,0,.35);
           ">Confirm donate</button>
         </div>
 
@@ -1067,7 +1068,7 @@
         <div id="infWeeklyPreview" style="display:none;"></div>
         <div id="infWeekly" style="display:none;"></div>
 
-        <div id="infFoot" style="margin-top:10px; font-size:11px; opacity:.62;"></div>
+        <div id="infFoot" style="margin-top:10px; font-size:11px; color:#c5d4e9; opacity:.84;"></div>
       </div>
     `;
 
@@ -1594,8 +1595,8 @@
 
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
-      toast(`Donated ${amount} ${asset} â†’ +${r.gain} influence${hq}`);
-      setStatus(`Donated ${amount} ${asset} â†’ +${r.gain} influence${hq}`, "ok");
+      toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
+      setStatus(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`, "ok");
 
       applyLeadersFromResponse(r, nodeId);
       await refreshWeekly(nodeId);
@@ -1637,4 +1638,5 @@
 
   window.Influence = Influence;
 })();
+
 
