@@ -2,6 +2,7 @@
 // Personal inbox: important things waiting for YOU.
 // Endpoint:
 //   POST /webapp/mailbox/state
+//   POST /webapp/mailbox/dismiss
 (function (global) {
   const S = {
     apiPost: null,
@@ -12,6 +13,7 @@
     pollTimer: null,
     visHandler: null,
     backEl: null,
+    dismissing: new Set(),
   };
 
   const SEEN_KEY = "ah_mailbox_seen_ts_v1";
@@ -97,6 +99,7 @@
     if (!id || !kind || !title) return null;
     const hasAction = !!target;
     const actionLabel = hasAction ? (asText(raw.actionLabel) || "Open") : "";
+    const dismissible = raw?.dismissible === true;
     return {
       id,
       kind,
@@ -107,6 +110,7 @@
       target,
       hasAction,
       actionLabel,
+      dismissible,
       meta: raw.meta && typeof raw.meta === "object" ? raw.meta : {},
     };
   }
@@ -312,6 +316,24 @@
         letter-spacing:.02em;
         cursor:pointer;
       }
+      .mailbox-actions{
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        gap:6px;
+      }
+      .mailbox-dismiss{
+        flex-shrink:0;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(0,0,0,.18);
+        color:rgba(255,255,255,.86);
+        border-radius:12px;
+        padding:6px 10px;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:.02em;
+        cursor:pointer;
+      }
       .mailbox-empty{
         border:1px dashed rgba(255,255,255,.16);
         border-radius:14px;
@@ -423,6 +445,26 @@
     return false;
   }
 
+  async function dismissItem(itemId) {
+    const id = asText(itemId);
+    if (!id) return false;
+    if (S.dismissing.has(id)) return false;
+    S.dismissing.add(id);
+    try {
+      const out = await api("/webapp/mailbox/dismiss", { itemId: id });
+      if (!out || out.ok === false) return false;
+      S.items = S.items.filter((row) => asText(row?.id) !== id);
+      applyHubUnreadBadge();
+      render();
+      return true;
+    } catch (err) {
+      warn("dismiss failed", err);
+      return false;
+    } finally {
+      S.dismissing.delete(id);
+    }
+  }
+
   function renderItemsSection(root, title, items, nowTs) {
     if (!Array.isArray(items) || !items.length) return;
     const sec = document.createElement("section");
@@ -437,6 +479,12 @@
       const actionButton = item.hasAction
         ? `<button type="button" class="mailbox-act">${esc(item.actionLabel || "Open")}</button>`
         : "";
+      const dismissButton = item.dismissible
+        ? `<button type="button" class="mailbox-dismiss" data-item-id="${esc(item.id)}">Dismiss</button>`
+        : "";
+      const controls = (actionButton || dismissButton)
+        ? `<div class="mailbox-actions">${actionButton}${dismissButton}</div>`
+        : "";
       const kicker = stamp ? `${kindIcon(item.kind)} · ${stamp}` : kindIcon(item.kind);
       row.innerHTML = `
         <div class="mailbox-left">
@@ -444,7 +492,7 @@
           <div class="mailbox-item-title">${esc(item.title)}</div>
           <div class="mailbox-item-line">${esc(item.line)}</div>
         </div>
-        ${actionButton}
+        ${controls}
       `;
 
       if (item.hasAction) {
@@ -459,6 +507,12 @@
           void open();
         });
       }
+
+      row.querySelector(".mailbox-dismiss")?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        try { S.tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+        void dismissItem(item.id);
+      });
 
       list.appendChild(row);
     }
