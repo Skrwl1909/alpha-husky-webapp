@@ -23,10 +23,14 @@
   /* Telegram theme + bezpieczne fallbacki */
   :root { color-scheme: var(--tg-color-scheme, dark); }
   :root {
-    --glass: rgba(0,0,0,.45);
-    --stroke: rgba(255,255,255,.18);
+    --glass: rgba(10,14,20,.62);
+    --stroke: rgba(255,255,255,.20);
     --txt: var(--tg-theme-text-color, #fff);
-    --ring: rgba(255,255,255,.12);
+    --ring: rgba(190,215,245,.22);
+    --ah-text-main: #f2f6ff;
+    --ah-text-body: #d7e1f0;
+    --ah-text-muted: #b5c2d6;
+    --ah-text-label: #94a4bd;
     --ah-safe-top: 0px;
     --ah-safe-bottom: 0px;
     --ah-safe-left: 0px;
@@ -132,14 +136,22 @@
   line-height: 1;
   min-width: 78px;
 
-  background: rgba(0,0,0,.40);
-  border: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(26,34,48,.78), rgba(10,14,22,.78));
+  border: 1px solid rgba(214,228,248,.22);
+  color: #f0f6ff;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
   backdrop-filter: blur(8px);
-  box-shadow: 0 10px 20px rgba(0,0,0,.35);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.08);
 }
 
 .hero-center .btn.share-mini:hover{
-  box-shadow: 0 12px 24px rgba(0,0,0,.45);
+  filter: brightness(1.05);
+  box-shadow:
+    0 12px 24px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.10);
 }
 
 .hero-center .btn.share-mini:active{
@@ -662,8 +674,15 @@ html.ah-skins-open #heroFrame{
 
 .btn {
   appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
-  background:var(--glass); border:1px solid var(--stroke);
-  font:600 16px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)),
+    var(--glass);
+  border:1px solid var(--stroke);
+  font:700 15px system-ui, sans-serif; cursor:pointer; transition: transform .08s ease;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.05);
   display: flex; /* Umożliwia column layout w .btn.map */
   align-items: center;
   justify-content: center;
@@ -881,7 +900,7 @@ html.ah-skins-open #heroFrame{
   }
   .fallback a { color:#aef; text-decoration:underline; }
 
-.map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.75); }
+.map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.62); }
 
 /* PATCH: większy modal + flex layout */
 .map-wrap {
@@ -1461,7 +1480,7 @@ html.ah-skins-open #heroFrame{
   display:none;
   align-items:center;
   justify-content:center;
-  background:rgba(0,0,0,.7);
+  background:rgba(0,0,0,.60);
   padding:
     var(--ah-safe-top)
     var(--ah-safe-right)
@@ -1487,7 +1506,7 @@ html.ah-skins-open #heroFrame{
     calc(var(--ah-safe-left) + 10px) !important;
   box-sizing:border-box;
 }
-.locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(0,0,0,.85); border:1px solid var(--ring); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); }
+.locked-card, .sheet-card{ width:min(92vw,480px); background:rgba(10,14,20,.88); border:1px solid rgba(208,223,245,.20); border-radius:16px; padding:18px; color: var(--tg-theme-text-color, #fff); box-shadow:0 22px 64px rgba(0,0,0,.56), inset 0 1px 0 rgba(255,255,255,.06); }
 .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0; }
 .tab.active{ outline:2px solid rgba(255,255,255,.18); }
 
@@ -2199,7 +2218,7 @@ body.missions-open{
     display:none;
     align-items:center;
     justify-content:center;
-    background:rgba(0,0,0,.52);
+    background:rgba(0,0,0,.46);
     z-index:9999;
     backdrop-filter: blur(3px);
     padding:
@@ -2226,24 +2245,24 @@ body.missions-open{
     max-height:86vh;
     overflow:auto;              /* ✅ scroll działa */
 
-    border:1px solid rgba(36,50,68,.95);
+    border:1px solid rgba(92,120,150,.82);
     border-radius:14px;
     padding:16px;
 
     background:
       radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
       radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
-      linear-gradient(to bottom, rgba(6,10,14,.60), rgba(6,10,14,.86)),
+      linear-gradient(to bottom, rgba(10,15,22,.56), rgba(10,15,22,.78)),
       var(--board-bg);
     background-position:center;
     background-size:cover;
     background-repeat:no-repeat;
 
     box-shadow:
-      0 18px 48px rgba(0,0,0,.62),
-      inset 0 1px 0 rgba(255,255,255,.08),
-      inset 0 0 0 1px rgba(0,229,255,.06);
-    outline: 1px solid rgba(0,229,255,.10);
+      0 18px 54px rgba(0,0,0,.60),
+      inset 0 1px 0 rgba(255,255,255,.10),
+      inset 0 0 0 1px rgba(158,194,232,.10);
+    outline: 1px solid rgba(158,194,232,.18);
     outline-offset: 0px;
   }
 
@@ -2273,7 +2292,7 @@ body.missions-open{
         rgba(0,0,0,0) 9px
       );
 
-    opacity:.28;
+    opacity:.18;
     mix-blend-mode: overlay;
   }
 
@@ -2302,23 +2321,23 @@ body.missions-open{
   /* Head/status: HUD readability */
   .q-modal-head,
   .q-status{
-    background: rgba(5,8,12,.35);
-    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(10,14,20,.48);
+    border: 1px solid rgba(214,226,245,.14);
     border-radius: 12px;
     padding: 10px 10px;
     backdrop-filter: blur(6px);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
   }
   .q-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .q-title{margin:0;font-size:18px}
+  .q-title{margin:0;font-size:18px;color:var(--ah-text-main)}
   .q-head-actions{display:flex;gap:6px}
-  .q-status{font-size:12px;opacity:.92;margin:0 2px 10px 2px}
-  .q-loader,.q-empty{padding:16px;opacity:.85}
+  .q-status{font-size:12px;color:var(--ah-text-body);opacity:.96;margin:0 2px 10px 2px}
+  .q-loader,.q-empty{padding:16px;opacity:.92;color:var(--ah-text-body)}
 
   /* Buttons: game feel */
   .q-btn{
-    border:1px solid rgba(255,255,255,.10);
-    color:#d9e3ec;
+    border:1px solid rgba(214,226,245,.16);
+    color:#e6effa;
     border-radius:10px;
     padding:6px 10px;
     cursor:pointer;
@@ -2326,7 +2345,7 @@ body.missions-open{
     background:
       radial-gradient(circle at 20% 10%, rgba(0,229,255,.12), transparent 55%),
       radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 60%),
-      rgba(15,22,32,.78);
+      rgba(18,28,40,.86);
 
     box-shadow:
       0 10px 20px rgba(0,0,0,.28),
@@ -2341,15 +2360,15 @@ body.missions-open{
       0 0 0 1px rgba(0,229,255,.10),
       inset 0 1px 0 rgba(255,255,255,.08);
   }
-  .q-btn-ghost{background:transparent;border-color:#2a3b4d}
+  .q-btn-ghost{background:transparent;border-color:rgba(173,196,223,.40);color:var(--ah-text-body)}
   .q-btn:active{ transform: translateY(1px); }
 
   /* Tabs */
   .q-filters{display:flex;gap:6px;margin:6px 2px 10px 2px;flex-wrap:wrap}
   .q-tab{
     border:1px solid rgba(255,255,255,.10);
-    background: rgba(12,18,26,.75);
-    color:#d7e0ea;
+    background: rgba(15,22,32,.82);
+    color:#e0e9f5;
     border-radius:999px;
     padding:4px 10px;
     font-size:12px;
@@ -2401,9 +2420,9 @@ body.missions-open{
 
   .q-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:10px}
   .q-name{font-weight:600}
-  .q-type{opacity:.7;font-size:12px;margin-left:6px}
+  .q-type{opacity:.86;font-size:12px;margin-left:6px;color:var(--ah-text-muted)}
   .q-head-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
-  .q-step{font-size:12px;opacity:.8}
+  .q-step{font-size:12px;opacity:.9;color:var(--ah-text-body)}
   .q-done{
     font-size:12px;background:#1b3a28;color:#b1f2c0;border:1px solid #2c5e43;
     padding:2px 6px;border-radius:999px;
@@ -2412,8 +2431,8 @@ body.missions-open{
 
   .q-reqs{display:flex;flex-direction:column;gap:8px}
   .q-row-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:4px}
-  .q-req-name{opacity:.9}
-  .q-req-val{opacity:.7}
+  .q-req-name{opacity:.95;color:var(--ah-text-body)}
+  .q-req-val{opacity:.86;color:var(--ah-text-muted)}
 
   /* Progress bar sheen */
   .q-bar{
@@ -2470,7 +2489,7 @@ body.missions-open{
     background: rgba(8, 14, 22, 0.55);
     backdrop-filter: blur(6px);
   }
-  .q-track-reward-label{font-size:12px;opacity:.75;white-space:nowrap}
+  .q-track-reward-label{font-size:12px;opacity:.88;color:var(--ah-text-muted);white-space:nowrap}
   .q-track-reward img.q-track-reward-icon,
   .q-track-reward-icon{
     width:22px !important;height:22px !important;max-width:22px !important;max-height:22px !important;
@@ -2562,23 +2581,24 @@ body.missions-open{
     gap:6px;
     padding:5px 9px;
     border-radius:999px;
-    background: rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.14);
+    background: rgba(8,12,18,.66);
+    border:1px solid rgba(220,233,250,.18);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 5px 14px rgba(0,0,0,.22);
+    box-shadow: 0 7px 18px rgba(0,0,0,.28);
   }
 
   .hotspot.active .chip{
-    background: rgba(0,0,0,.68);
-    border-color: rgba(255,255,255,.22);
-    box-shadow: 0 8px 22px rgba(0,0,0,.30);
+    background: rgba(8,12,18,.78);
+    border-color: rgba(230,239,252,.28);
+    box-shadow: 0 10px 26px rgba(0,0,0,.34);
   }
 
   .chip .chip-name{
     font-weight:800;
     font-size:11px;
     letter-spacing:.2px;
+    color:#f2f7ff;
     text-shadow: 0 1px 10px rgba(0,0,0,.35);
     display:block;
     max-width:110px;
@@ -3186,23 +3206,23 @@ body.missions-open{
     background:
       radial-gradient(circle at 20% 0%, rgba(0,229,255,.10), transparent 55%),
       radial-gradient(circle at 85% 120%, rgba(255,176,0,.10), transparent 55%),
-      rgba(0,0,0,.35);
-    border: 1px solid var(--ah-stroke);
+      rgba(9,12,18,.52);
+    border: 1px solid rgba(216,229,248,.16);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
 
     box-shadow:
-      0 18px 46px rgba(0,0,0,.65),
-      inset 0 1px 0 rgba(255,255,255,.06);
+      0 18px 46px rgba(0,0,0,.58),
+      inset 0 1px 0 rgba(255,255,255,.09);
 
     z-index: 8000; /* poniżej quests(9999) i missions(999999) */
   }
 
   .ah-navbtn{
     appearance:none;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(0,0,0,.20);
-    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(220,232,249,.14);
+    background: rgba(10,14,22,.34);
+    color: rgba(245,250,255,.96);
     border-radius: 18px;
 
     display:flex;
@@ -3222,34 +3242,36 @@ body.missions-open{
   .ah-navbtn .ah-ico{
     font-size: 18px;
     line-height: 1;
+    color:#ebf3ff;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,.55));
   }
 
   .ah-navbtn .ah-lbl{
     font-size: 10.5px;
     line-height: 1;
-    opacity: .82;
+    opacity: .94;
+    color: rgba(227,238,252,.96);
     letter-spacing: .2px;
     font-weight: 800;
   }
 
   /* “selected” state */
   .ah-navbtn.is-active{
-    border-color: rgba(0,229,255,.22);
+    border-color: rgba(0,229,255,.34);
     background:
-      radial-gradient(circle at 30% 10%, rgba(0,229,255,.10), transparent 55%),
-      rgba(0,0,0,.24);
-    filter: brightness(1.06);
+      radial-gradient(circle at 30% 10%, rgba(0,229,255,.16), transparent 55%),
+      rgba(12,19,29,.52);
+    filter: brightness(1.08);
   }
 
   /* Primary (Quests) */
   .ah-navbtn.ah-primary{
     transform: translateY(-6px);
-    border-color: rgba(255,255,255,.14);
+    border-color: rgba(235,244,255,.24);
     background:
       radial-gradient(circle at 25% 15%, rgba(0,229,255,.12), transparent 58%),
       radial-gradient(circle at 80% 90%, rgba(255,176,0,.10), transparent 58%),
-      rgba(0,0,0,.22);
+      rgba(10,16,26,.50);
     box-shadow: 0 10px 24px rgba(0,0,0,.45);
   }
   .ah-navbtn.ah-primary:active{ transform: translateY(-5px); }
@@ -3275,7 +3297,7 @@ body.missions-open{
     position: fixed;
     inset: 0;
     z-index: 8500;
-    background: rgba(0,0,0,.55);
+    background: rgba(0,0,0,.50);
     display:flex;
     align-items:flex-end;
     justify-content:center;
@@ -3289,12 +3311,14 @@ body.missions-open{
   .ah-panel{
     width: min(520px, 100%);
     border-radius: 22px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(10,12,16,.70);
+    border: 1px solid rgba(216,229,248,.16);
+    background: rgba(12,16,24,.80);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     overflow:hidden;
-    box-shadow: 0 12px 40px rgba(0,0,0,.55);
+    box-shadow:
+      0 16px 46px rgba(0,0,0,.50),
+      inset 0 1px 0 rgba(255,255,255,.07);
   }
 
   #hubBack .ah-panel,
@@ -3325,14 +3349,14 @@ body.missions-open{
     font-size: 14px;
     font-weight: 900;
     letter-spacing: .4px;
-    color: rgba(255,255,255,.92);
+    color: rgba(245,250,255,.97);
   }
   .ah-x{
     width: 36px; height: 36px;
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(0,0,0,.30);
-    color: rgba(255,255,255,.9);
+    border: 1px solid rgba(220,232,249,.16);
+    background: rgba(10,15,24,.40);
+    color: rgba(245,250,255,.96);
     cursor:pointer;
   }
 
@@ -3348,13 +3372,14 @@ body.missions-open{
     gap: 10px;
     padding: 14px 12px;
     border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(0,0,0,.25);
-    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(220,232,249,.14);
+    background: rgba(10,15,24,.34);
+    color: rgba(242,248,255,.96);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     cursor:pointer;
   }
-  .ah-tile span{ font-size: 18px; }
-  .ah-tile b{ font-size: 13px; letter-spacing:.2px; }
+  .ah-tile span{ font-size: 18px; filter: drop-shadow(0 1px 8px rgba(0,0,0,.28)); }
+  .ah-tile b{ font-size: 13px; letter-spacing:.2px; color: rgba(236,246,255,.96); }
 
   .ah-actions{
     display:flex;
@@ -3365,9 +3390,10 @@ body.missions-open{
   .ah-action{
     height: 46px;
     border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(0,0,0,.25);
-    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(220,232,249,.14);
+    background: rgba(10,15,24,.34);
+    color: rgba(242,248,255,.96);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     font-weight: 900;
     letter-spacing: .2px;
     cursor:pointer;
@@ -4804,7 +4830,6 @@ body.bc-open #ahCommunityBtn{
   <script>
     window.API_BASE = "https://api.alphahusky.win";
     window.WEBAPP_VER = "2026-03-18a";
-    window.BADGES_JS_VER = "2026-04-16a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -5042,14 +5067,7 @@ async function openBadges() {
   }
 
   try {
-    const badgeVer = encodeURIComponent(String(window.BADGES_JS_VER || window.WEBAPP_VER || Date.now()));
-    await loadScriptOnce("js/badges.js?bw=" + badgeVer);
-    if (window.__AH_BADGE_TRACE__ === true || /(?:[?&])badgeTrace=1(?:&|$)/i.test(String(location.search || ""))) {
-      const loaded = [...document.scripts]
-        .map((s) => String(s.src || ""))
-        .filter((src) => src.includes("/js/badges.js"));
-      console.log("[BadgeWallTrace] openBadges.loadedScripts", loaded);
-    }
+    await loadScriptOnce("js/badges.js");
   } catch (e) {
     console.warn("Badge Wall script load failed", e);
     try { _tg?.showAlert?.("Failed to load Badge Wall."); } catch (_) {}
