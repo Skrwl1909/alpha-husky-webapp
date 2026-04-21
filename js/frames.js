@@ -330,7 +330,7 @@
             </div>
             <div id="frameInfoMeta" class="ah-frame-info-meta">Base · Cosmetic frame</div>
           </div>
-          <div class="ah-frames-help">Frames are cosmetic only.</div>
+          <div class="ah-frames-help">Frames are cosmetic only. Previewed on your current hero skin.</div>
 
           <div style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
             <button class="btn primary" id="equipFrame" type="button">Equip Frame</button>
@@ -389,13 +389,24 @@
     return skinKeyFromUrl(currentHeroSkinUrl());
   }
 
+  function setPreviewSkinSource() {
+    if (!previewSkin) return;
+    const src = currentHeroSkinUrl();
+    previewSkin.onerror = () => {
+      previewSkin.onerror = null;
+      previewSkin.src = "/assets/skins/lunarhowl_skin.webp";
+    };
+    previewSkin.src = src || "/assets/skins/lunarhowl_skin.webp";
+    previewSkin.style.display = "block";
+  }
+
   function setPreview(item) {
     if (!previewSkin || !previewFrame) return;
     const frameUrl = framePreviewUrl(item);
     const frameKey = frameKeyForFit(item);
     const skinKey = currentHeroSkinKey();
     applyPreviewSkinFit(frameKey, skinKey);
-    previewSkin.src = currentHeroSkinUrl();
+    setPreviewSkinSource();
     if (frameUrl) {
       previewFrame.src = frameUrl;
       previewFrame.style.display = "block";

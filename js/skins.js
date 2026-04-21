@@ -8,7 +8,7 @@
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
-  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinStateChip;
+  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinStateChip, skinFramePreviewToggle;
 
   // claim UI (dynamic)
   let claimWrap, claimInput, claimBtn;
@@ -19,6 +19,7 @@
   let _equipped = { skin: "" };
   let _selectedKey = "";
   let _inited = false;
+  let _showPreviewFrame = false;
 
   // animated webp detection cache + anti-race guard
   const _animCache = new Map();
@@ -124,6 +125,32 @@
         pointer-events:none;
         z-index:2;
         display:none;
+      }
+      #avatarBack .ah-skin-preview-controls{
+        width:min(368px, 88vw);
+        margin:4px auto 0;
+        display:flex;
+        justify-content:flex-end;
+      }
+      #avatarBack .ah-skin-preview-toggle{
+        border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.06);
+        color:rgba(244,248,255,.92);
+        border-radius:999px;
+        padding:5px 10px;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:.02em;
+        cursor:pointer;
+      }
+      #avatarBack .ah-skin-preview-toggle[aria-pressed="true"]{
+        border-color:rgba(196,232,255,.68);
+        background:rgba(196,232,255,.18);
+        color:rgba(225,244,255,.98);
+      }
+      #avatarBack .ah-skin-preview-toggle:disabled{
+        opacity:.5;
+        cursor:default;
       }
       #avatarBack .ah-skin-info{
         width:min(368px, 88vw);
@@ -340,6 +367,16 @@
     skinInfoMeta = document.getElementById("skinInfoMeta");
     skinStateChip = document.getElementById("skinStateChip");
 
+    let previewControls = document.getElementById("skinPreviewControls");
+    if (!previewControls) {
+      previewControls = document.createElement("div");
+      previewControls.id = "skinPreviewControls";
+      previewControls.className = "ah-skin-preview-controls";
+      previewControls.innerHTML = `<button id="skinFramePreviewToggle" class="ah-skin-preview-toggle" type="button" aria-pressed="false">Preview with current frame</button>`;
+      card.insertBefore(previewControls, skinDesc || null);
+    }
+    skinFramePreviewToggle = document.getElementById("skinFramePreviewToggle");
+
     equipBtn?.parentElement?.classList.add("ah-skin-actions");
   }
 
@@ -430,6 +467,17 @@
         const code = String(claimInput?.value || "").trim();
         claimSkin(code);
       }
+    });
+
+    skinFramePreviewToggle?.addEventListener("click", () => {
+      if (!currentEquippedFrameUrl()) {
+        updateFramePreviewToggleUi();
+        return;
+      }
+      _showPreviewFrame = !_showPreviewFrame;
+      updateFramePreviewToggleUi();
+      syncCurrentFrameOverlay();
+      haptic("light");
     });
 
     return true;
@@ -656,9 +704,20 @@
     return hidden ? "" : attr;
   }
 
+  function updateFramePreviewToggleUi() {
+    if (!skinFramePreviewToggle) return;
+    const hasFrame = !!currentEquippedFrameUrl();
+    if (!hasFrame) _showPreviewFrame = false;
+    skinFramePreviewToggle.disabled = !hasFrame;
+    skinFramePreviewToggle.setAttribute("aria-pressed", (_showPreviewFrame && hasFrame) ? "true" : "false");
+    skinFramePreviewToggle.textContent = (_showPreviewFrame && hasFrame)
+      ? "With current frame: On"
+      : "Preview with current frame";
+  }
+
   function syncCurrentFrameOverlay() {
     if (!skinPreviewFrame) return;
-    const src = currentEquippedFrameUrl();
+    const src = _showPreviewFrame ? currentEquippedFrameUrl() : "";
     if (src) {
       if (skinPreviewFrame.getAttribute("src") !== src) skinPreviewFrame.src = src;
       skinPreviewFrame.style.display = "block";
@@ -1225,6 +1284,7 @@
       skinButtonsWrap.querySelector(".skin-btn");
 
     btn?.click?.();
+    updateFramePreviewToggleUi();
   }
   async function open() {
     ensurePolishDom();
@@ -1244,10 +1304,12 @@
         ? out.equipped
         : { skin: (out.active || "") };
 
+      _showPreviewFrame = false;
       buildSkinButtons();
 
       if (avatarBack) avatarBack.style.display = "flex";
       _setSkinsModalOpen(true);
+      updateFramePreviewToggleUi();
       syncCurrentFrameOverlay();
       setPrimaryButtonState();
     } catch (e) {
