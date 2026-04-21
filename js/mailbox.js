@@ -10,6 +10,7 @@
     dbg: false,
     items: [],
     serverTs: 0,
+    loadSeq: 0,
     pollTimer: null,
     visHandler: null,
     backEl: null,
@@ -383,8 +384,12 @@
   }
 
   async function load() {
+    const reqSeq = ++S.loadSeq;
     try {
       const raw = await api("/webapp/mailbox/state", {});
+      if (reqSeq !== S.loadSeq) {
+        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+      }
       const normalized = normalizePayload(raw || {});
       S.items = normalized.items;
       S.serverTs = normalized.serverTs;
@@ -394,6 +399,9 @@
       }
       return normalized;
     } catch (err) {
+      if (reqSeq !== S.loadSeq) {
+        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+      }
       warn("load failed", err);
       applyHubUnreadBadge();
       return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
@@ -448,17 +456,29 @@
   async function dismissItem(itemId) {
     const id = asText(itemId);
     if (!id) return false;
+    if (S.dismissing.size > 0) return false;
     if (S.dismissing.has(id)) return false;
+    const prevItems = Array.isArray(S.items) ? S.items.slice() : [];
+    S.items = prevItems.filter((row) => asText(row?.id) !== id);
+    applyHubUnreadBadge();
+    render();
     S.dismissing.add(id);
     try {
       const out = await api("/webapp/mailbox/dismiss", { itemId: id });
-      if (!out || out.ok === false) return false;
-      S.items = S.items.filter((row) => asText(row?.id) !== id);
-      applyHubUnreadBadge();
+      if (!out || out.ok === false) {
+        S.items = prevItems;
+        applyHubUnreadBadge();
+        render();
+        return false;
+      }
+      await load();
       render();
       return true;
     } catch (err) {
       warn("dismiss failed", err);
+      S.items = prevItems;
+      applyHubUnreadBadge();
+      render();
       return false;
     } finally {
       S.dismissing.delete(id);
