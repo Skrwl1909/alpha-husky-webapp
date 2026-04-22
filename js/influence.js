@@ -373,10 +373,13 @@
       previewHost.innerHTML = `
         <section style="
           margin-top:12px;
-          padding:10px 11px;
+          padding:10px 11px 11px;
           border-radius:12px;
-          background:rgba(255,255,255,.04);
-          border:1px solid rgba(255,255,255,.11);
+          background:
+            radial-gradient(circle at 90% 8%, rgba(120,180,255,.11), transparent 40%),
+            linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.03));
+          border:1px solid rgba(255,255,255,.12);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
         ">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
             <div>
@@ -395,12 +398,12 @@
 
     const progressCards = `
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+        <article style="padding:11px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.038));border:1px solid rgba(255,255,255,.13);">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Your War Score</div>
           <div style="margin-top:6px;font-size:19px;font-weight:900;color:#79e8ff;">${esc(my ? myScore : 0)}</div>
           <div style="margin-top:7px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="width:${scorePct}%;height:100%;background:linear-gradient(90deg,rgba(121,232,255,.88),rgba(104,148,255,.82));"></div></div>
         </article>
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+        <article style="padding:11px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.038));border:1px solid rgba(255,255,255,.13);">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Your Position</div>
           <div style="margin-top:6px;font-size:19px;font-weight:900;color:#c6a6ff;">${esc(my ? ("#" + (my.factionRank || my.overallRank || "-")) : "-")}</div>
           <div style="margin-top:7px;font-size:10px;color:#bdcde2;opacity:.84;">Faction race placement</div>
@@ -410,7 +413,7 @@
           <div style="margin-top:6px;font-size:15px;font-weight:900;color:${statusTone.color};line-height:1.2;">${esc(rewardStatus)}</div>
           <div style="margin-top:7px;font-size:10px;color:#bdcde2;opacity:.84;">Cycle qualification state</div>
         </article>
-        <article style="padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);">
+        <article style="padding:11px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.038));border:1px solid rgba(255,255,255,.13);">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b6c7de;opacity:.84;">Active Days</div>
           <div style="margin-top:6px;font-size:15px;font-weight:900;color:#ffd392;line-height:1.2;">${esc(my ? `${myDays}/${reqDays}` : `0/${reqDays}`)}</div>
           <div style="margin-top:7px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="width:${daysPct}%;height:100%;background:linear-gradient(90deg,rgba(255,211,111,.86),rgba(255,165,116,.8));"></div></div>
@@ -527,8 +530,11 @@
         margin-top:10px;
         padding:10px 11px 11px;
         border-radius:13px;
-        background:rgba(255,255,255,.04);
-        border:1px solid rgba(255,255,255,.11);
+        background:
+          radial-gradient(circle at 92% 8%, rgba(120,180,255,.10), transparent 42%),
+          linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.032));
+        border:1px solid rgba(255,255,255,.12);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
       ">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
           <div>
@@ -543,7 +549,7 @@
         </div>
 
         <div style="margin-top:9px;">${progressCards}</div>
-        <div style="margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);">
+        <div style="margin-top:9px;padding:8px 9px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.10);">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Race Frontline</div>
           <div style="margin-top:6px;display:grid;gap:6px;">${topThreeHtml}</div>
         </div>
@@ -551,18 +557,18 @@
         <details style="margin-top:8px;">
           <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#d7e4f7;opacity:.9;">Campaign details</summary>
           <div style="margin-top:7px;display:grid;gap:7px;">
-            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;line-height:1.35;">Cycle focus rewards: ${esc(rewardSummaryText)}</div>
-            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;line-height:1.35;">Active effects: ${esc(activeEffects.length)}${priorCycleEffects.length ? ` (including ${priorCycleEffects.length} from previous cycles)` : ""}</div>
-            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);font-size:11px;line-height:1.35;">Cycle focus rewards: ${esc(rewardSummaryText)}</div>
+            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);font-size:11px;line-height:1.35;">Active effects: ${esc(activeEffects.length)}${priorCycleEffects.length ? ` (including ${priorCycleEffects.length} from previous cycles)` : ""}</div>
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);">
               <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Full Race Board</div>
               <div style="margin-top:6px;">${podiumHtml || `<div style="font-size:11px;opacity:.86;">No standings yet.</div>`}</div>
               ${chaseHtml || ""}
             </div>
-            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);">
               <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Reward Pool</div>
               <div style="margin-top:6px;display:grid;gap:6px;">${rewardPoolHtml || `<div style="font-size:11px;opacity:.86;">Reward pool syncing.</div>`}</div>
             </div>
-            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);">
               <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Active Effects</div>
               <div style="margin-top:6px;display:grid;gap:6px;">${activeEffectsHtml}</div>
             </div>
@@ -686,7 +692,7 @@
     return new Promise((resolve) => {
       const tg = _tg || window.Telegram?.WebApp || null;
 
-      // fallback: jeĹ›li brak TG popup, zwrĂłÄ‡ zapisane / pusty
+      // fallback: if TG popup is unavailable, return cached faction or empty
       if (!tg?.showPopup) return resolve(_faction || "");
 
       const pick = (key) => { setFaction(key); resolve(key); };
@@ -895,6 +901,7 @@
           padding:13px 13px 12px;
           border-radius:15px;
           background:
+            repeating-linear-gradient(120deg, rgba(255,255,255,.03) 0 2px, transparent 2px 8px),
             radial-gradient(circle at 92% 8%, rgba(255,136,104,.15), transparent 38%),
             radial-gradient(circle at 6% 100%, rgba(120,180,255,.16), transparent 44%),
             linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
@@ -906,7 +913,7 @@
               <div style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Frontline Objective</div>
               <div style="margin-top:3px;font-size:11px;color:#d5e5fb;opacity:.86;">Phantom Node Control Surface</div>
             </div>
-            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:10px;font-weight:800;letter-spacing:.05em;">PN</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.20);font-size:10px;font-weight:900;letter-spacing:.05em;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;">PN</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;">
             <div id="infLeader" style="font-size:21px;font-weight:900;line-height:1.14;">-</div>
@@ -948,8 +955,8 @@
               border-radius:999px;
               font-size:10px;
               font-weight:800;
-              background:rgba(255,255,255,.06);
-              border:1px solid rgba(255,255,255,.12);
+              background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.05));
+              border:1px solid rgba(255,255,255,.16);
               color:#e6f0ff;
             ">Next: Patrol</span>
           </div>
@@ -957,61 +964,75 @@
           <div id="infControlLine" style="margin-top:5px;font-size:11px;color:#c7d8ee;opacity:.92;line-height:1.35;"></div>
         </section>
 
-        <section style="
+        <section id="infIntelShell" style="
           margin-top:9px;
-          padding:9px 10px;
+          padding:9px 10px 10px;
           border-radius:12px;
-          background:rgba(255,255,255,.042);
-          border:1px solid rgba(255,255,255,.11);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,.052), rgba(255,255,255,.03));
+          border:1px solid rgba(255,255,255,.13);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
         ">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.76;">Quick Intel</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.76;">Quick Intel</div>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:18px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:10px;font-weight:700;color:#d8e6fa;">HUD</span>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:7px;">
-            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
-              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Owner</div>
+            <article style="padding:7px 8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.022));border:1px solid rgba(255,255,255,.10);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.80;letter-spacing:.04em;text-transform:uppercase;">Owner Signal</div>
               <div id="infIntelOwner" style="margin-top:3px;font-size:12px;font-weight:800;">-</div>
             </article>
-            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
-              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Watch Slots</div>
+            <article style="padding:7px 8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.022));border:1px solid rgba(255,255,255,.10);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.80;letter-spacing:.04em;text-transform:uppercase;">Watch Slots</div>
               <div id="infIntelWatch" style="margin-top:3px;font-size:12px;font-weight:800;">No watch roster</div>
-              <div style="margin-top:5px;height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div id="infIntelWatchBar" style="width:0%;height:100%;background:linear-gradient(90deg,rgba(255,186,116,.9),rgba(255,120,120,.8));"></div></div>
+              <div style="margin-top:5px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);">
+                <div id="infIntelWatchBar" style="width:0%;height:100%;background:repeating-linear-gradient(90deg,rgba(255,206,148,.9) 0 8px, rgba(255,120,120,.8) 8px 12px);"></div>
+              </div>
             </article>
-            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
-              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Your Presence</div>
+            <article style="padding:7px 8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.022));border:1px solid rgba(255,255,255,.10);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.80;letter-spacing:.04em;text-transform:uppercase;">Your Presence</div>
               <div id="infIntelPresence" style="margin-top:3px;font-size:11px;font-weight:700;opacity:.9;">No local actions recorded yet.</div>
             </article>
-            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
-              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Local Pressure</div>
+            <article style="padding:7px 8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.022));border:1px solid rgba(255,255,255,.10);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.80;letter-spacing:.04em;text-transform:uppercase;">Pressure Signal</div>
               <div id="infIntelPressure" style="margin-top:3px;font-size:12px;font-weight:800;">0</div>
+              <div style="margin-top:5px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);">
+                <div id="infIntelPressureBar" style="width:0%;height:100%;background:linear-gradient(90deg,rgba(121,232,255,.88),rgba(255,148,92,.86));"></div>
+              </div>
+              <div id="infIntelPressureHint" style="margin-top:4px;font-size:10px;color:#bbcee8;opacity:.82;">Waiting for frontline pressure.</div>
             </article>
           </div>
         </section>
 
-        <section style="
+        <section id="infOpsPanel" style="
           margin-top:10px;
           padding:11px 12px 12px;
           border-radius:13px;
-          background:rgba(255,255,255,.055);
-          border:1px solid rgba(255,255,255,.15);
+          background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.038));
+          border:1px solid rgba(255,255,255,.16);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
         ">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Operations Panel</div>
-            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:3px 8px;border-radius:999px;background:rgba(120,255,220,.12);border:1px solid rgba(120,255,220,.22);font-size:10px;font-weight:800;color:#dffef4;">Actions Available</span>
+            <span id="infOpsState" style="display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:3px 8px;border-radius:999px;background:rgba(120,255,220,.12);border:1px solid rgba(120,255,220,.22);font-size:10px;font-weight:800;color:#dffef4;">Actions Available</span>
           </div>
           <button id="infPatrolBtn" type="button" style="
             width:100%; margin-top:8px; border:0; cursor:pointer;
             border-radius:12px; padding:13px 12px;
-            background: linear-gradient(180deg, rgba(120,255,220,.2), rgba(120,255,220,.11));
+            background: linear-gradient(180deg, rgba(120,255,220,.22), rgba(120,255,220,.11));
             border: 1px solid rgba(120,255,220,.30);
             color:#eafff8; font-weight:900; text-shadow:0 1px 0 rgba(0,0,0,.35);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 6px 14px rgba(0,0,0,.22);
           ">Patrol</button>
           <div id="infPatrolHelp" style="margin-top:7px;padding:7px 9px;border-radius:10px;background:rgba(120,255,220,.08);border:1px solid rgba(120,255,220,.18);font-size:11px;opacity:.9;">Patrol to defend. Build pressure and protect this node.</div>
           <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
             <button id="infDonateToggle" type="button" style="
               border:0; cursor:pointer; min-width:140px;
               border-radius:11px; padding:10px 12px;
-              background: linear-gradient(180deg, rgba(170,140,255,.18), rgba(170,140,255,.10));
+              background: linear-gradient(180deg, rgba(170,140,255,.24), rgba(170,140,255,.11));
               border: 1px solid rgba(170,140,255,.26);
-              color:#f5f0ff; font-weight:800; text-shadow:0 1px 0 rgba(0,0,0,.35);
+              color:#f5f0ff; font-weight:900; text-shadow:0 1px 0 rgba(0,0,0,.35);
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 4px 10px rgba(0,0,0,.20);
             ">Donate</button>
             <span style="font-size:10px;color:#c7d6ea;opacity:.86;">Command options update with node state.</span>
           </div>
@@ -1066,13 +1087,21 @@
           </article>
         </section>
 
-        <div id="infDonateBox" style="display:none; margin-top:10px;">
-          <div style="padding:8px 9px;border-radius:10px;background:rgba(170,140,255,.08);border:1px solid rgba(170,140,255,.20);font-size:11px;color:#e6dcff;opacity:.92;">Resource Reinforcement</div>
+        <div id="infDonateBox" style="
+          display:none;
+          margin-top:10px;
+          padding:10px;
+          border-radius:12px;
+          background:linear-gradient(180deg,rgba(170,140,255,.11),rgba(170,140,255,.05));
+          border:1px solid rgba(170,140,255,.24);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+        ">
+          <div id="infDonateShell" style="padding:7px 8px;border-radius:10px;background:rgba(170,140,255,.12);border:1px solid rgba(170,140,255,.24);font-size:11px;color:#e6dcff;opacity:.95;">Resource Reinforcement</div>
           <div style="display:flex; gap:8px; align-items:center;">
             <select id="infAsset" style="
               margin-top:8px;
               flex:1; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
+              background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.08)); color:#f5f8ff; border:1px solid rgba(255,255,255,.20);
             ">
               <option value="scrap">scrap</option>
               <option value="rune_dust">rune_dust</option>
@@ -1081,14 +1110,14 @@
             <input id="infAmount" type="number" min="1" step="1" value="10" style="
               margin-top:8px;
               width:120px; padding:10px 10px; border-radius:12px;
-              background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
+              background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.08)); color:#f5f8ff; border:1px solid rgba(255,255,255,.20);
             "/>
           </div>
 
           <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="infAmt" type="button" data-v="10" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+10</button>
-            <button class="infAmt" type="button" data-v="50" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+50</button>
-            <button class="infAmt" type="button" data-v="100" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+100</button>
+            <button class="infAmt" type="button" data-v="10" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07));color:#f4f8ff;font-weight:800;cursor:pointer;">+10</button>
+            <button class="infAmt" type="button" data-v="50" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07));color:#f4f8ff;font-weight:800;cursor:pointer;">+50</button>
+            <button class="infAmt" type="button" data-v="100" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07));color:#f4f8ff;font-weight:800;cursor:pointer;">+100</button>
           </div>
           <div style="margin-top:6px;font-size:10px;color:#c8d6ea;opacity:.84;">Donation contributes to node pressure and weekly faction race.</div>
 
@@ -1098,6 +1127,7 @@
             background: linear-gradient(180deg, rgba(255,210,120,.18), rgba(255,210,120,.10));
             border: 1px solid rgba(255,210,120,.26);
             color:#fff6e8; font-weight:900; text-shadow:0 1px 0 rgba(0,0,0,.35);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 5px 12px rgba(0,0,0,.24);
           ">Confirm donate</button>
         </div>
 
@@ -1393,6 +1423,73 @@
     return { background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", color: "#f4f4f4" };
   }
 
+  function uxMoodTokens(displayStatus) {
+    const key = String(displayStatus || "").trim().toUpperCase();
+    if (key === "SIEGE_LIVE") {
+      return {
+        burst: "rgba(255,106,96,.26)",
+        base: "rgba(255,120,104,.14)",
+        border: "rgba(255,132,112,.36)",
+        panel: "rgba(255,116,100,.10)",
+        chipBg: "rgba(255,110,96,.18)",
+        chipBorder: "rgba(255,110,96,.32)",
+        chipFg: "#ffd7d2",
+        chipLabel: "Live Contest",
+        pressureBar: "linear-gradient(90deg,rgba(255,148,116,.95),rgba(255,96,96,.9))",
+      };
+    }
+    if (key === "SIEGE_FORMING" || key === "CONTESTED") {
+      return {
+        burst: "rgba(255,172,98,.22)",
+        base: "rgba(255,182,116,.12)",
+        border: "rgba(255,184,116,.32)",
+        panel: "rgba(255,174,112,.09)",
+        chipBg: "rgba(255,182,116,.16)",
+        chipBorder: "rgba(255,182,116,.30)",
+        chipFg: "#ffe0b6",
+        chipLabel: "Contested",
+        pressureBar: "linear-gradient(90deg,rgba(255,214,126,.92),rgba(255,148,92,.86))",
+      };
+    }
+    if (key === "HOT") {
+      return {
+        burst: "rgba(255,206,122,.20)",
+        base: "rgba(255,208,132,.10)",
+        border: "rgba(255,212,136,.30)",
+        panel: "rgba(255,206,130,.09)",
+        chipBg: "rgba(255,210,130,.15)",
+        chipBorder: "rgba(255,210,130,.28)",
+        chipFg: "#ffe5b2",
+        chipLabel: "High Alert",
+        pressureBar: "linear-gradient(90deg,rgba(255,230,140,.90),rgba(255,170,108,.84))",
+      };
+    }
+    if (key === "FORTIFIED" || key === "SIEGE_COOLDOWN") {
+      return {
+        burst: "rgba(124,208,255,.20)",
+        base: "rgba(126,198,255,.10)",
+        border: "rgba(138,210,255,.30)",
+        panel: "rgba(120,190,255,.09)",
+        chipBg: "rgba(132,210,255,.15)",
+        chipBorder: "rgba(132,210,255,.28)",
+        chipFg: "#d8f4ff",
+        chipLabel: "Fortified",
+        pressureBar: "linear-gradient(90deg,rgba(138,228,255,.88),rgba(126,178,255,.82))",
+      };
+    }
+    return {
+      burst: "rgba(160,188,230,.15)",
+      base: "rgba(136,176,230,.08)",
+      border: "rgba(180,206,240,.24)",
+      panel: "rgba(130,170,224,.07)",
+      chipBg: "rgba(155,188,228,.12)",
+      chipBorder: "rgba(155,188,228,.22)",
+      chipFg: "#d9e8ff",
+      chipLabel: "Stable",
+      pressureBar: "linear-gradient(90deg,rgba(121,232,255,.88),rgba(104,148,255,.82))",
+    };
+  }
+
   function paintUxPill(el, text, styles, visible = true) {
     if (!el) return;
     const show = !!visible && !!String(text || "").trim();
@@ -1441,6 +1538,10 @@
 
   function paintLeader(nodeId) {
     const info = mergedNodeInfo(nodeId);
+    const heroEl = document.getElementById("infHero");
+    const intelShellEl = document.getElementById("infIntelShell");
+    const opsPanelEl = document.getElementById("infOpsPanel");
+    const opsStateEl = document.getElementById("infOpsState");
     const leaderEl = document.getElementById("infLeader");
     const contEl = document.getElementById("infContested");
     const controlLineEl = document.getElementById("infControlLine");
@@ -1457,15 +1558,44 @@
     const intelWatchBarEl = document.getElementById("infIntelWatchBar");
     const intelPresenceEl = document.getElementById("infIntelPresence");
     const intelPressureEl = document.getElementById("infIntelPressure");
+    const intelPressureBarEl = document.getElementById("infIntelPressureBar");
+    const intelPressureHintEl = document.getElementById("infIntelPressureHint");
     const localOwnerEl = document.getElementById("infLocalOwner");
     const localWatchEl = document.getElementById("infLocalWatch");
     const localYouEl = document.getElementById("infLocalYou");
     const localOpsEl = document.getElementById("infLocalOps");
+    const donateShellEl = document.getElementById("infDonateShell");
     const patrolHelpEl = document.getElementById("infPatrolHelp");
     const watchHelpEl = document.getElementById("infWatchHelp");
     const donateHelpEl = document.getElementById("infDonateHelp");
 
     if (!leaderEl || !contEl || !controlLineEl || !foot || !statusEl || !actionEl || !valueEl || !statusTextEl || !reasonEl || !rewardEl || !loreEl) return;
+
+    const applyVisualMood = (displayStatus) => {
+      const mood = uxMoodTokens(displayStatus);
+      if (heroEl) {
+        heroEl.style.background = `repeating-linear-gradient(120deg, rgba(255,255,255,.03) 0 2px, transparent 2px 8px), radial-gradient(circle at 92% 8%, ${mood.burst}, transparent 40%), radial-gradient(circle at 6% 100%, ${mood.base}, transparent 45%), linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04))`;
+        heroEl.style.border = `1px solid ${mood.border}`;
+      }
+      if (intelShellEl) {
+        intelShellEl.style.background = `linear-gradient(180deg, rgba(255,255,255,.052), ${mood.panel})`;
+        intelShellEl.style.border = `1px solid ${mood.border}`;
+      }
+      if (opsPanelEl) {
+        opsPanelEl.style.background = `linear-gradient(180deg, rgba(255,255,255,.062), ${mood.panel})`;
+        opsPanelEl.style.border = `1px solid ${mood.border}`;
+      }
+      if (opsStateEl) {
+        opsStateEl.textContent = mood.chipLabel;
+        opsStateEl.style.background = mood.chipBg;
+        opsStateEl.style.border = `1px solid ${mood.chipBorder}`;
+        opsStateEl.style.color = mood.chipFg;
+      }
+      if (donateShellEl) {
+        donateShellEl.style.border = `1px solid ${mood.chipBorder}`;
+      }
+      if (intelPressureBarEl) intelPressureBarEl.style.background = mood.pressureBar;
+    };
 
     const setLocalDefaults = () => {
       if (intelOwnerEl) intelOwnerEl.textContent = "-";
@@ -1473,6 +1603,8 @@
       if (intelPresenceEl) intelPresenceEl.textContent = "No local actions recorded yet.";
       if (intelPressureEl) intelPressureEl.textContent = "0";
       if (intelWatchBarEl) intelWatchBarEl.style.width = "0%";
+      if (intelPressureBarEl) intelPressureBarEl.style.width = "0%";
+      if (intelPressureHintEl) intelPressureHintEl.textContent = "Waiting for frontline pressure.";
       if (localOwnerEl) localOwnerEl.textContent = "-";
       if (localWatchEl) localWatchEl.textContent = "No watch roster";
       if (localYouEl) localYouEl.textContent = "No local actions recorded yet.";
@@ -1490,6 +1622,7 @@
       foot.textContent = "";
 
       paintUxPill(statusEl, "Secured", uxToneStyles("CALM"));
+      applyVisualMood("CALM");
       paintUxPill(actionEl, "Next: Patrol", {
         background: "rgba(255,255,255,.06)",
         border: "1px solid rgba(255,255,255,.12)",
@@ -1517,6 +1650,7 @@
     const valueLabel = uxValueLabel(ux.valueTier, ux.valueMultiplier);
 
     const displayStatus = String(ux.displayStatus || "").trim().toUpperCase();
+    applyVisualMood(displayStatus);
     contEl.style.display = "none";
     contEl.textContent = "";
 
@@ -1563,6 +1697,13 @@
     if (intelWatchBarEl) {
       const watchPct = watchMax > 0 ? Math.max(0, Math.min(100, Math.round((watchUsed / watchMax) * 100))) : 0;
       intelWatchBarEl.style.width = `${watchPct}%`;
+      if (watchPct >= 85) {
+        intelWatchBarEl.style.background = "repeating-linear-gradient(90deg,rgba(255,138,120,.95) 0 8px, rgba(255,92,92,.86) 8px 12px)";
+      } else if (watchPct >= 45) {
+        intelWatchBarEl.style.background = "repeating-linear-gradient(90deg,rgba(255,206,148,.92) 0 8px, rgba(255,140,112,.82) 8px 12px)";
+      } else {
+        intelWatchBarEl.style.background = "repeating-linear-gradient(90deg,rgba(170,214,255,.9) 0 8px, rgba(120,178,255,.8) 8px 12px)";
+      }
     }
 
     if (localYouEl) {
@@ -1590,6 +1731,30 @@
         intelPressureEl.textContent = `Lead ${leaderPressure}`;
       } else {
         intelPressureEl.textContent = "0";
+      }
+      if (intelPressureBarEl) {
+        const maxPressure = Math.max(
+          1,
+          Number(s?.rogue_byte || 0),
+          Number(s?.echo_wardens || 0),
+          Number(s?.pack_burners || 0),
+          Number(s?.inner_howl || 0),
+          Number(leaderPressure || 0)
+        );
+        const ratio = viewerPressure > 0 ? (viewerPressure / maxPressure) : 0;
+        const pct = viewerPressure > 0 ? Math.max(10, Math.min(100, Math.round(ratio * 100))) : 0;
+        intelPressureBarEl.style.width = `${pct}%`;
+      }
+      if (intelPressureHintEl) {
+        if (viewerPressure > 0 && leaderPressure > 0 && viewerPressure >= leaderPressure) {
+          intelPressureHintEl.textContent = "Your faction is setting local tempo.";
+        } else if (viewerPressure > 0) {
+          intelPressureHintEl.textContent = "Pressure building. Keep patrol cycles active.";
+        } else if (leaderPressure > 0) {
+          intelPressureHintEl.textContent = "Enemy pressure present. Counter-pressure advised.";
+        } else {
+          intelPressureHintEl.textContent = "Waiting for frontline pressure.";
+        }
       }
     }
     if (localOpsEl) {
