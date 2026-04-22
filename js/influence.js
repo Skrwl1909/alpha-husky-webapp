@@ -382,7 +382,7 @@
             <div>
               <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b4c6dd;opacity:.74;">Faction War Link</div>
               <div style="margin-top:4px;font-size:13px;font-weight:800;line-height:1.2;">${esc(topFaction ? `${fmtFaction(topFaction.faction)} leading` : "War cycle active")}</div>
-              <div style="margin-top:3px;font-size:11px;color:#d0ddef;opacity:.86;">${esc(previewRankText)} · ${esc(rewardStatus)}</div>
+              <div style="margin-top:3px;font-size:11px;color:#d0ddef;opacity:.86;">${esc(previewRankText)} - ${esc(rewardStatus)}</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:10px;font-weight:700;letter-spacing:.04em;">${esc(String(w.weekId || ""))}</span>
@@ -518,23 +518,23 @@
 
     const rewardSummary = rewardPool.slice(0, 2).map((reward) => reward.shortLabel || reward.label || reward.id || "Reward");
     const rewardSummaryText = rewardSummary.length
-      ? rewardSummary.join(" · ")
+      ? rewardSummary.join(" - ")
       : "Weekly rewards active";
 
     host.style.display = "block";
     host.innerHTML = `
       <section style="
         margin-top:10px;
-        padding:10px 11px;
-        border-radius:12px;
-        background:rgba(255,255,255,.035);
-        border:1px solid rgba(255,255,255,.10);
+        padding:10px 11px 11px;
+        border-radius:13px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.11);
       ">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
           <div>
-            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b4c6dd;opacity:.72;">Weekly War Link</div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b4c6dd;opacity:.72;">Faction War Snapshot</div>
             <div style="margin-top:4px;font-size:13px;font-weight:800;line-height:1.2;">${esc(topFaction ? `${fmtFaction(topFaction.faction)} leads this cycle` : "Cycle in progress")}</div>
-            <div style="margin-top:3px;font-size:11px;color:#c4d3e7;opacity:.86;">${esc(viewerRank > 0 ? `Your faction rank #${viewerRank}` : "No faction rank yet")} · ${esc(rewardStatus)}</div>
+            <div style="margin-top:3px;font-size:11px;color:#c4d3e7;opacity:.86;">${esc(viewerRank > 0 ? `Your faction rank #${viewerRank}` : "No faction rank yet")} - ${esc(rewardStatus)}</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:10px;font-weight:700;">${esc(String(w.weekId || ""))}</span>
@@ -542,14 +542,30 @@
           </div>
         </div>
 
-        <div style="margin-top:9px;font-size:11px;color:#c9d8eb;opacity:.9;">Score ${esc(my ? myScore : 0)} · Active days ${esc(my ? `${myDays}/${reqDays}` : `0/${reqDays}`)} · ${esc(requirementHint)}</div>
-        <div style="margin-top:9px;display:grid;gap:6px;">${topThreeHtml}</div>
+        <div style="margin-top:9px;">${progressCards}</div>
+        <div style="margin-top:9px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Race Frontline</div>
+          <div style="margin-top:6px;display:grid;gap:6px;">${topThreeHtml}</div>
+        </div>
 
         <details style="margin-top:8px;">
-          <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#d7e4f7;opacity:.9;">Weekly details</summary>
+          <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#d7e4f7;opacity:.9;">Campaign details</summary>
           <div style="margin-top:7px;display:grid;gap:7px;">
-            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;line-height:1.35;">Rewards: ${esc(rewardSummaryText)}</div>
+            <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;line-height:1.35;">Cycle focus rewards: ${esc(rewardSummaryText)}</div>
             <div style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;line-height:1.35;">Active effects: ${esc(activeEffects.length)}${priorCycleEffects.length ? ` (including ${priorCycleEffects.length} from previous cycles)` : ""}</div>
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+              <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Full Race Board</div>
+              <div style="margin-top:6px;">${podiumHtml || `<div style="font-size:11px;opacity:.86;">No standings yet.</div>`}</div>
+              ${chaseHtml || ""}
+            </div>
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+              <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Reward Pool</div>
+              <div style="margin-top:6px;display:grid;gap:6px;">${rewardPoolHtml || `<div style="font-size:11px;opacity:.86;">Reward pool syncing.</div>`}</div>
+            </div>
+            <div style="padding:8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);">
+              <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#b7c8de;opacity:.8;">Active Effects</div>
+              <div style="margin-top:6px;display:grid;gap:6px;">${activeEffectsHtml}</div>
+            </div>
           </div>
         </details>
       </section>
@@ -876,17 +892,24 @@
 
         <section id="infHero" style="
           margin-top:11px;
-          padding:12px;
-          border-radius:14px;
+          padding:13px 13px 12px;
+          border-radius:15px;
           background:
-            radial-gradient(circle at 92% 8%, rgba(255,136,104,.12), transparent 35%),
-            radial-gradient(circle at 4% 100%, rgba(120,180,255,.12), transparent 40%),
-            rgba(255,255,255,.055);
-          border:1px solid rgba(255,255,255,.16);
+            radial-gradient(circle at 92% 8%, rgba(255,136,104,.15), transparent 38%),
+            radial-gradient(circle at 6% 100%, rgba(120,180,255,.16), transparent 44%),
+            linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+          border:1px solid rgba(255,255,255,.20);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(0,0,0,.28);
         ">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Node State</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
-            <div id="infLeader" style="font-size:20px;font-weight:900;line-height:1.15;">-</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Frontline Objective</div>
+              <div style="margin-top:3px;font-size:11px;color:#d5e5fb;opacity:.86;">Phantom Node Control Surface</div>
+            </div>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:10px;font-weight:800;letter-spacing:.05em;">PN</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;">
+            <div id="infLeader" style="font-size:21px;font-weight:900;line-height:1.14;">-</div>
             <span id="infUxStatus" style="
               display:inline-flex;
               align-items:center;
@@ -903,9 +926,7 @@
             ">Secured</span>
             <div id="infContested" style="display:none;"></div>
           </div>
-          <div id="infUxStatusText" style="margin-top:7px;font-size:13px;color:#dfeafe;opacity:.97;line-height:1.35;">This frontline is stable right now.</div>
-          <div id="infControlLine" style="margin-top:5px;font-size:11px;color:#c7d8ee;opacity:.9;line-height:1.35;"></div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+          <div style="margin-top:7px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
             <span id="infUxValue" style="
               display:none;
               align-items:center;
@@ -918,17 +939,64 @@
               background:rgba(255,255,255,.06);
               border:1px solid rgba(255,255,255,.10);
             "></span>
+            <span id="infUxAction" style="
+              display:inline-flex;
+              align-items:center;
+              justify-content:center;
+              min-height:20px;
+              padding:3px 8px;
+              border-radius:999px;
+              font-size:10px;
+              font-weight:800;
+              background:rgba(255,255,255,.06);
+              border:1px solid rgba(255,255,255,.12);
+              color:#e6f0ff;
+            ">Next: Patrol</span>
+          </div>
+          <div id="infUxStatusText" style="margin-top:8px;font-size:13px;color:#dfeafe;opacity:.98;line-height:1.35;">This frontline is stable right now.</div>
+          <div id="infControlLine" style="margin-top:5px;font-size:11px;color:#c7d8ee;opacity:.92;line-height:1.35;"></div>
+        </section>
+
+        <section style="
+          margin-top:9px;
+          padding:9px 10px;
+          border-radius:12px;
+          background:rgba(255,255,255,.042);
+          border:1px solid rgba(255,255,255,.11);
+        ">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.76;">Quick Intel</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:7px;">
+            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Owner</div>
+              <div id="infIntelOwner" style="margin-top:3px;font-size:12px;font-weight:800;">-</div>
+            </article>
+            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Watch Slots</div>
+              <div id="infIntelWatch" style="margin-top:3px;font-size:12px;font-weight:800;">No watch roster</div>
+              <div style="margin-top:5px;height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;"><div id="infIntelWatchBar" style="width:0%;height:100%;background:linear-gradient(90deg,rgba(255,186,116,.9),rgba(255,120,120,.8));"></div></div>
+            </article>
+            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Your Presence</div>
+              <div id="infIntelPresence" style="margin-top:3px;font-size:11px;font-weight:700;opacity:.9;">No local actions recorded yet.</div>
+            </article>
+            <article style="padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);">
+              <div style="font-size:10px;color:#b6c7dd;opacity:.77;">Local Pressure</div>
+              <div id="infIntelPressure" style="margin-top:3px;font-size:12px;font-weight:800;">0</div>
+            </article>
           </div>
         </section>
 
         <section style="
           margin-top:10px;
-          padding:11px 12px;
+          padding:11px 12px 12px;
           border-radius:13px;
-          background:rgba(255,255,255,.05);
-          border:1px solid rgba(255,255,255,.14);
+          background:rgba(255,255,255,.055);
+          border:1px solid rgba(255,255,255,.15);
         ">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Immediate Action</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Operations Panel</div>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:3px 8px;border-radius:999px;background:rgba(120,255,220,.12);border:1px solid rgba(120,255,220,.22);font-size:10px;font-weight:800;color:#dffef4;">Actions Available</span>
+          </div>
           <button id="infPatrolBtn" type="button" style="
             width:100%; margin-top:8px; border:0; cursor:pointer;
             border-radius:12px; padding:13px 12px;
@@ -945,19 +1013,7 @@
               border: 1px solid rgba(170,140,255,.26);
               color:#f5f0ff; font-weight:800; text-shadow:0 1px 0 rgba(0,0,0,.35);
             ">Donate</button>
-            <span id="infUxAction" style="
-              display:inline-flex;
-              align-items:center;
-              justify-content:center;
-              min-height:22px;
-              padding:3px 9px;
-              border-radius:999px;
-              font-size:10px;
-              font-weight:800;
-              background:rgba(255,255,255,.06);
-              border:1px solid rgba(255,255,255,.12);
-              color:#e6f0ff;
-            ">Patrol</span>
+            <span style="font-size:10px;color:#c7d6ea;opacity:.86;">Command options update with node state.</span>
           </div>
           <div id="infWatchHelp" style="margin-top:7px;padding:7px 9px;border-radius:10px;background:rgba(255,186,116,.08);border:1px solid rgba(255,186,116,.18);font-size:11px;opacity:.86;">Join watch when pressure rises to help hold the frontline.</div>
           <div id="infDonateHelp" style="margin-top:6px;padding:7px 9px;border-radius:10px;background:rgba(170,140,255,.08);border:1px solid rgba(170,140,255,.18);font-size:11px;opacity:.86;">Donate to reinforce your faction's weekly push.</div>
@@ -965,20 +1021,26 @@
 
         <section style="
           margin-top:10px;
-          padding:10px 11px;
+          padding:10px 11px 11px;
           border-radius:12px;
           background:rgba(255,255,255,.045);
           border:1px solid rgba(255,255,255,.12);
         ">
           <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#aec0d8;opacity:.84;">Why It Matters</div>
-          <div id="infUxReason" style="margin-top:7px;font-size:12px;line-height:1.35;color:#deebfd;opacity:.96;"></div>
-          <div id="infUxReward" style="margin-top:6px;font-size:11px;line-height:1.35;color:#d8e7fb;opacity:.92;"></div>
+          <article style="margin-top:7px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.10);">
+            <div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#b6c7dd;opacity:.8;">Control Impact</div>
+            <div id="infUxReason" style="margin-top:4px;font-size:12px;line-height:1.35;color:#deebfd;opacity:.96;"></div>
+          </article>
+          <article style="margin-top:6px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.10);">
+            <div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#b6c7dd;opacity:.8;">War Momentum</div>
+            <div id="infUxReward" style="margin-top:4px;font-size:11px;line-height:1.35;color:#d8e7fb;opacity:.92;"></div>
+          </article>
           <div id="infUxLore" style="display:none;margin-top:8px;padding:8px 9px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.14);font-size:11px;line-height:1.35;color:#d7e5f8;opacity:.9;"></div>
         </section>
 
         <section style="
           margin-top:10px;
-          padding:10px 11px;
+          padding:10px 11px 11px;
           border-radius:12px;
           background:rgba(255,255,255,.035);
           border:1px solid rgba(255,255,255,.10);
@@ -998,11 +1060,17 @@
             <div style="font-size:10px;color:#b5c6dd;opacity:.75;">Your Participation Here</div>
             <div id="infLocalYou" style="margin-top:3px;font-size:11px;font-weight:700;opacity:.9;">No local actions recorded yet.</div>
           </article>
+          <article style="padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);margin-top:8px;">
+            <div style="font-size:10px;color:#b5c6dd;opacity:.75;">Operational Status</div>
+            <div id="infLocalOps" style="margin-top:3px;font-size:11px;font-weight:700;opacity:.9;">Awaiting frontline sync.</div>
+          </article>
         </section>
 
         <div id="infDonateBox" style="display:none; margin-top:10px;">
+          <div style="padding:8px 9px;border-radius:10px;background:rgba(170,140,255,.08);border:1px solid rgba(170,140,255,.20);font-size:11px;color:#e6dcff;opacity:.92;">Resource Reinforcement</div>
           <div style="display:flex; gap:8px; align-items:center;">
             <select id="infAsset" style="
+              margin-top:8px;
               flex:1; padding:10px 10px; border-radius:12px;
               background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
             ">
@@ -1011,6 +1079,7 @@
               <option value="bones">bones</option>
             </select>
             <input id="infAmount" type="number" min="1" step="1" value="10" style="
+              margin-top:8px;
               width:120px; padding:10px 10px; border-radius:12px;
               background:rgba(255,255,255,.10); color:#f5f8ff; border:1px solid rgba(255,255,255,.16);
             "/>
@@ -1021,6 +1090,7 @@
             <button class="infAmt" type="button" data-v="50" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+50</button>
             <button class="infAmt" type="button" data-v="100" style="flex:1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:10px;background:rgba(255,255,255,.10);color:#f4f8ff;font-weight:700;cursor:pointer;">+100</button>
           </div>
+          <div style="margin-top:6px;font-size:10px;color:#c8d6ea;opacity:.84;">Donation contributes to node pressure and weekly faction race.</div>
 
           <button id="infDonateBtn" type="button" style="
             width:100%; margin-top:10px; border:0; cursor:pointer;
@@ -1382,9 +1452,15 @@
     const reasonEl = document.getElementById("infUxReason");
     const rewardEl = document.getElementById("infUxReward");
     const loreEl = document.getElementById("infUxLore");
+    const intelOwnerEl = document.getElementById("infIntelOwner");
+    const intelWatchEl = document.getElementById("infIntelWatch");
+    const intelWatchBarEl = document.getElementById("infIntelWatchBar");
+    const intelPresenceEl = document.getElementById("infIntelPresence");
+    const intelPressureEl = document.getElementById("infIntelPressure");
     const localOwnerEl = document.getElementById("infLocalOwner");
     const localWatchEl = document.getElementById("infLocalWatch");
     const localYouEl = document.getElementById("infLocalYou");
+    const localOpsEl = document.getElementById("infLocalOps");
     const patrolHelpEl = document.getElementById("infPatrolHelp");
     const watchHelpEl = document.getElementById("infWatchHelp");
     const donateHelpEl = document.getElementById("infDonateHelp");
@@ -1392,9 +1468,15 @@
     if (!leaderEl || !contEl || !controlLineEl || !foot || !statusEl || !actionEl || !valueEl || !statusTextEl || !reasonEl || !rewardEl || !loreEl) return;
 
     const setLocalDefaults = () => {
+      if (intelOwnerEl) intelOwnerEl.textContent = "-";
+      if (intelWatchEl) intelWatchEl.textContent = "No watch roster";
+      if (intelPresenceEl) intelPresenceEl.textContent = "No local actions recorded yet.";
+      if (intelPressureEl) intelPressureEl.textContent = "0";
+      if (intelWatchBarEl) intelWatchBarEl.style.width = "0%";
       if (localOwnerEl) localOwnerEl.textContent = "-";
       if (localWatchEl) localWatchEl.textContent = "No watch roster";
       if (localYouEl) localYouEl.textContent = "No local actions recorded yet.";
+      if (localOpsEl) localOpsEl.textContent = "Awaiting frontline sync.";
       if (patrolHelpEl) patrolHelpEl.textContent = "Patrol now to build pressure on this frontline.";
       if (watchHelpEl) watchHelpEl.textContent = "Watch opens when siege pressure spikes.";
       if (donateHelpEl) donateHelpEl.textContent = "Donate to reinforce your faction's weekly momentum.";
@@ -1476,17 +1558,43 @@
 
     if (localOwnerEl) localOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
     if (localWatchEl) localWatchEl.textContent = watchText;
+    if (intelOwnerEl) intelOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
+    if (intelWatchEl) intelWatchEl.textContent = watchText;
+    if (intelWatchBarEl) {
+      const watchPct = watchMax > 0 ? Math.max(0, Math.min(100, Math.round((watchUsed / watchMax) * 100))) : 0;
+      intelWatchBarEl.style.width = `${watchPct}%`;
+    }
 
     if (localYouEl) {
       const my = (_weekly && typeof _weekly.my === "object") ? _weekly.my : null;
       if (my) {
         const rankTxt = my.factionRank ? `#${my.factionRank}` : (my.overallRank ? `#${my.overallRank}` : "-");
-        localYouEl.textContent = `Weekly score ${Number(my.score || 0)} · rank ${rankTxt} · ${Number(my.activeDays || 0)} active days${viewerPressure > 0 ? ` · local pressure ${viewerPressure}` : ""}`;
+        localYouEl.textContent = `Weekly score ${Number(my.score || 0)} - rank ${rankTxt} - ${Number(my.activeDays || 0)} active days${viewerPressure > 0 ? ` - local pressure ${viewerPressure}` : ""}`;
       } else if (viewerPressure > 0) {
         localYouEl.textContent = `Your faction pressure here this hour: ${viewerPressure}.`;
       } else {
         localYouEl.textContent = "Start with patrol to record local war contribution.";
       }
+    }
+    if (intelPresenceEl) {
+      if (viewerPressure > 0) intelPresenceEl.textContent = `Faction pressure active (${viewerPressure}).`;
+      else intelPresenceEl.textContent = "No local pressure yet.";
+    }
+    if (intelPressureEl) {
+      const leaderPressure = Number(info?.leaderValue || 0);
+      if (viewerPressure > 0 && leaderPressure > 0) {
+        intelPressureEl.textContent = `${viewerPressure} / lead ${leaderPressure}`;
+      } else if (viewerPressure > 0) {
+        intelPressureEl.textContent = String(viewerPressure);
+      } else if (leaderPressure > 0) {
+        intelPressureEl.textContent = `Lead ${leaderPressure}`;
+      } else {
+        intelPressureEl.textContent = "0";
+      }
+    }
+    if (localOpsEl) {
+      const valueTxt = valueLabel || "Support node";
+      localOpsEl.textContent = `${uxPrimaryStatusLabel(ux.displayStatus, ux.displayLabel)} status - ${valueTxt} - action ${ux.actionHint || "Patrol"}.`;
     }
 
     const patrolHint = /defend|hold/i.test(String(ux.actionHint || ""))
@@ -1504,7 +1612,7 @@
     if (donateHelpEl) donateHelpEl.textContent = donateHint;
 
     setPatrolButtonLabel(patrolLabelForAction(ux.actionHint));
-    foot.textContent = `Hourly pressure · RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
+    foot.textContent = `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
   }
 
   async function doPatrol(nodeId) {
