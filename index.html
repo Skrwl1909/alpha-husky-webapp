@@ -43,7 +43,7 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
   a { color: var(--tg-theme-link-color, #aef); }
-  /* twarde nadpisanie â€žblackâ€ť */
+  /* twarde nadpisanie Ă˘â‚¬ĹľblackĂ˘â‚¬ĹĄ */
   .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
   .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
   .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
@@ -61,7 +61,7 @@
 
 .ui { position: absolute; inset: 0; z-index: 2; }
 
-/* âś… PATCH 1A: keep HUD inside viewport + safe-area (fix right column overflow) */
+/* Ă˘Ĺ›â€¦ PATCH 1A: keep HUD inside viewport + safe-area (fix right column overflow) */
 .grid{
   position:absolute;
   inset:0;
@@ -71,7 +71,7 @@
   padding:
     calc(94px + var(--ah-inset-top))
     calc(16px + var(--ah-inset-right))
-    calc(24px + 78px + var(--ah-inset-bottom)) /* âś… + miejsce na bottom nav */
+    calc(24px + 78px + var(--ah-inset-bottom)) /* Ă˘Ĺ›â€¦ + miejsce na bottom nav */
     calc(16px + var(--ah-inset-left));
 }
 
@@ -83,11 +83,11 @@
     520px,
     calc(100vw - 32px - var(--ah-inset-left) - var(--ah-inset-right))
   );
-  margin: 0 auto;                 /* centrowanie caĹ‚oĹ›ci w poziomie */
+  margin: 0 auto;                 /* centrowanie caÄąâ€šoÄąâ€şci w poziomie */
   display: flex;
   justify-content: center;        /* zamiast space-between */
   align-items: flex-end;
-  gap: 16px;                      /* staĹ‚y, rĂłwny odstÄ™p lewoâ€“Ĺ›rodekâ€“prawo */
+  gap: 16px;                      /* staÄąâ€šy, rÄ‚Ĺ‚wny odstĂ„â„˘p lewoĂ˘â‚¬â€śÄąâ€şrodekĂ˘â‚¬â€śprawo */
 }
 .hud-col{
   display:flex;
@@ -100,12 +100,12 @@
   font-size:13px;
 }
 
-/* âś… PATCH 1A: lekkie â€śdociÄ…gniÄ™cieâ€ť prawej kolumny do Ĺ›rodka (ĹĽeby nie wychodziĹ‚a poza ekran) */
+/* Ă˘Ĺ›â€¦ PATCH 1A: lekkie Ă˘â‚¬Ĺ›dociĂ„â€¦gniĂ„â„˘cieĂ˘â‚¬ĹĄ prawej kolumny do Äąâ€şrodka (ÄąÄ˝eby nie wychodziÄąâ€ša poza ekran) */
 .hud-col.hud-right{ transform: translateX(-10px); }
 
 .hero-center{
   flex:1;
-  min-width:0; /* waĹĽne dla flexa: Ĺ›rodek nie wypycha prawej kolumny */
+  min-width:0; /* waÄąÄ˝ne dla flexa: Äąâ€şrodek nie wypycha prawej kolumny */
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -116,17 +116,17 @@
   z-index:2;
 }
 
-/* âś… SHARE ROW â€” ma byÄ‡ NAD skinem (czyli odstÄ™p w dĂłĹ‚, nie w gĂłrÄ™) */
+/* Ă˘Ĺ›â€¦ SHARE ROW Ă˘â‚¬â€ť ma byĂ„â€ˇ NAD skinem (czyli odstĂ„â„˘p w dÄ‚Ĺ‚Äąâ€š, nie w gÄ‚Ĺ‚rĂ„â„˘) */
 .hero-center .share-row{
   margin-bottom: 8px;          /* <-- NAD hero-frame */
-  display: flex;               /* JS pokaĹĽe przez style.display="" */
+  display: flex;               /* JS pokaÄąÄ˝e przez style.display="" */
   gap: 8px;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 
   position: relative;
-  z-index: 4; /* niĹĽej niĹĽ buffsLine (z-index:6) */
+  z-index: 4; /* niÄąÄ˝ej niÄąÄ˝ buffsLine (z-index:6) */
 }
 
 .hero-center .btn.share-mini{
@@ -159,8 +159,8 @@
 }
 
 /* =========================
-   âś… HERO FRAME â€” founder-friendly polish
-   + âś… dim/blur hero when any modal/sheet is open (ah-modal-open)
+   Ă˘Ĺ›â€¦ HERO FRAME Ă˘â‚¬â€ť founder-friendly polish
+   + Ă˘Ĺ›â€¦ dim/blur hero when any modal/sheet is open (ah-modal-open)
    ========================= */
 
 .hero-frame{
@@ -170,23 +170,23 @@
   position: relative;
   border-radius: 24px;
 
-  /* usuwamy efekt duĹĽej "karty" pod ramÄ… */
+  /* usuwamy efekt duÄąÄ˝ej "karty" pod ramĂ„â€¦ */
   background: transparent;
   border:0;
   box-shadow:none;
 
-  /* âś… waĹĽne: ramka moĹĽe â€śwyjĹ›Ä‡â€ť poza boxa */
+  /* Ă˘Ĺ›â€¦ waÄąÄ˝ne: ramka moÄąÄ˝e Ă˘â‚¬Ĺ›wyjÄąâ€şĂ„â€ˇĂ˘â‚¬ĹĄ poza boxa */
   overflow: visible;
   isolation: isolate;
 
-  /* đźŽ›ď¸Ź TUNING */
-  --frame-bleed: 4px;    /* ile ramka moĹĽe wyjĹ›Ä‡ poza kadr */
-  --frame-scale: 1.34;   /* founder frame trochÄ™ wiÄ™kszy */
-  --frame-x: 0px;        /* mikro przesuniÄ™cie */
+  /* Ä‘ĹşĹ˝â€şÄŹÂ¸Ĺą TUNING */
+  --frame-bleed: 4px;    /* ile ramka moÄąÄ˝e wyjÄąâ€şĂ„â€ˇ poza kadr */
+  --frame-scale: 1.34;   /* founder frame trochĂ„â„˘ wiĂ„â„˘kszy */
+  --frame-x: 0px;        /* mikro przesuniĂ„â„˘cie */
   --frame-y: 3px;        /* lekkie opuszczenie overlay */
 }
 
-/* âś… NOWY viewport â€” skin siedzi w realnym "oknie" frame'a */
+/* Ă˘Ĺ›â€¦ NOWY viewport Ă˘â‚¬â€ť skin siedzi w realnym "oknie" frame'a */
 .hero-frame .hero-skin-viewport{
   position:absolute;
   inset:11% 15% 16% 15%;
@@ -196,7 +196,7 @@
   background:transparent;
 }
 
-/* âś… SKIN siedzi w viewport i nie wychodzi poza ramkÄ™ */
+/* Ă˘Ĺ›â€¦ SKIN siedzi w viewport i nie wychodzi poza ramkĂ„â„˘ */
 .hero-frame .hero-skin{
   width: 100%;
   height: 100%;
@@ -208,7 +208,7 @@
   clip-path: none;
 }
 
-/* âś… delikatne â€śsklejenieâ€ť skina z UI (ciemniej na dole) */
+/* Ă˘Ĺ›â€¦ delikatne Ă˘â‚¬Ĺ›sklejenieĂ˘â‚¬ĹĄ skina z UI (ciemniej na dole) */
 .hero-frame .hero-skin-viewport::after{
   content:"";
   position:absolute;
@@ -219,7 +219,7 @@
   pointer-events:none;
 }
 
-/* âś… RAMKA â€” peĹ‚na, nieuciÄ™ta, na wierzchu */
+/* Ă˘Ĺ›â€¦ RAMKA Ă˘â‚¬â€ť peÄąâ€šna, nieuciĂ„â„˘ta, na wierzchu */
 .hero-frame .hero-frame-overlay{
   position:absolute;
   inset: calc(-1 * var(--frame-bleed));
@@ -303,10 +303,10 @@ html.ah-modal-open #heroFrame{
   z-index:4;
 }
 
-/* âś… HOME REBUILD PATCH (KROK A)
-   - chowamy legacy kolumny (zostajÄ… w DOM dla fallback click)
+/* Ă˘Ĺ›â€¦ HOME REBUILD PATCH (KROK A)
+   - chowamy legacy kolumny (zostajĂ„â€¦ w DOM dla fallback click)
    - chowamy shareRow (share idzie do Hub/Share sheet)
-   - hero centrowany z wiÄ™kszym luzem na ramkÄ™
+   - hero centrowany z wiĂ„â„˘kszym luzem na ramkĂ„â„˘
 */
 #homeLegacyLeft, #homeLegacyRight{
   display:none !important;
@@ -323,7 +323,7 @@ html.ah-modal-open #heroFrame{
   gap: 0 !important;
 }
 
-/* âś… MOBILE â€” balanced founder fit */
+/* Ă˘Ĺ›â€¦ MOBILE Ă˘â‚¬â€ť balanced founder fit */
 @media (max-width:380px){
   .hud-layout{ gap:8px; }
 
@@ -365,11 +365,11 @@ html.ah-modal-open #heroFrame{
 }
 
 /* =========================
-   SKINS MODAL â€” kill double frame
+   SKINS MODAL Ă˘â‚¬â€ť kill double frame
    ========================= */
 
-/* 1) Gdy otwarty jest modal skinĂłw â€” schowaj home hero caĹ‚kowicie,
-   nie tylko dimuj, bo przez pĂłĹ‚przezroczystoĹ›Ä‡ robi "ghost frame" */
+/* 1) Gdy otwarty jest modal skinÄ‚Ĺ‚w Ă˘â‚¬â€ť schowaj home hero caÄąâ€škowicie,
+   nie tylko dimuj, bo przez pÄ‚Ĺ‚Äąâ€šprzezroczystoÄąâ€şĂ„â€ˇ robi "ghost frame" */
 html.ah-skins-open #heroFrame{
   opacity: 0 !important;
   filter: none !important;
@@ -378,7 +378,7 @@ html.ah-skins-open #heroFrame{
 }
 
 /* =========================
-   SKINS MODAL â€” real DOM fix
+   SKINS MODAL Ă˘â‚¬â€ť real DOM fix
    ========================= */
 
 html.ah-skins-open #heroFrame{
@@ -444,7 +444,7 @@ html.ah-skins-open #heroFrame{
   text-align: center;
 }
     /* =========================
-   SKINS MODAL â€” premium polish
+   SKINS MODAL Ă˘â‚¬â€ť premium polish
    ========================= */
 
 #avatarBack .ah-skin-title{
@@ -622,13 +622,13 @@ html.ah-skins-open #heroFrame{
 }
 
 /* =========================
-   Active Buffs line â€” overlay
-   (NIE wpĹ‚ywa na layout kolumn)
+   Active Buffs line Ă˘â‚¬â€ť overlay
+   (NIE wpÄąâ€šywa na layout kolumn)
    ========================= */
 #buffsLine.buffs-line{
   position: fixed;
   left: 14px;
-  bottom: calc(86px + env(safe-area-inset-bottom)); /* âś… nad navem */
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* Ă˘Ĺ›â€¦ nad navem */
   z-index: 6;
 
   width: max-content;
@@ -683,13 +683,13 @@ html.ah-skins-open #heroFrame{
   box-shadow:
     0 10px 20px rgba(0,0,0,.28),
     inset 0 1px 0 rgba(255,255,255,.05);
-  display: flex; /* UmoĹĽliwia column layout w .btn.map */
+  display: flex; /* UmoÄąÄ˝liwia column layout w .btn.map */
   align-items: center;
   justify-content: center;
 }
   .btn:active { transform: translateY(1px); }
   .btn.linklike { text-decoration:none; }
-  /* OgĂłlny styl dla ikon w buttonach */
+  /* OgÄ‚Ĺ‚lny styl dla ikon w buttonach */
   .btn-icon {
     width: 28px;
     height: 28px;
@@ -698,7 +698,7 @@ html.ah-skins-open #heroFrame{
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     transition: filter 0.2s ease;
   }
-  /* Specyficznie dla Map â€“ mroczny vibe, mniejszy rozmiar */
+  /* Specyficznie dla Map Ă˘â‚¬â€ś mroczny vibe, mniejszy rozmiar */
   .btn.map {
     flex-direction: column;
     align-items: center;
@@ -737,17 +737,17 @@ html.ah-skins-open #heroFrame{
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
   border-radius:14px;
 
-  /* background jako pseudo-element, ĹĽeby nie â€śzjadaÄ‡â€ť klikĂłw na dziwnych webview */
+  /* background jako pseudo-element, ÄąÄ˝eby nie Ă˘â‚¬Ĺ›zjadaĂ„â€ˇĂ˘â‚¬ĹĄ klikÄ‚Ĺ‚w na dziwnych webview */
   background: transparent;
   border:1px solid var(--stroke);
   color:#cfe7ff;
   font:500 14px system-ui, sans-serif;
 
-  z-index: 10;          /* pewne, ĹĽe jest nad resztÄ… */
-  pointer-events:auto;  /* âś… TON CONNECT znowu klikalny */
+  z-index: 10;          /* pewne, ÄąÄ˝e jest nad resztĂ„â€¦ */
+  pointer-events:auto;  /* Ă˘Ĺ›â€¦ TON CONNECT znowu klikalny */
 }
 
-/* tĹ‚o topbara */
+/* tÄąâ€šo topbara */
 .topbar::before{
   content:"";
   position:absolute;
@@ -762,7 +762,7 @@ html.ah-skins-open #heroFrame{
   z-index:1;
 }
 
-/* âś… player po lewej, reszta w prawo */
+/* Ă˘Ĺ›â€¦ player po lewej, reszta w prawo */
 #player{
   margin-right:auto;
   min-width:0;
@@ -780,7 +780,7 @@ html.ah-skins-open #heroFrame{
   align-items:center;
   gap:8px;
 
-  /* âś… pozwĂłl siÄ™ lekko Ĺ›cisnÄ…Ä‡, ale nie znikaj */
+  /* Ă˘Ĺ›â€¦ pozwÄ‚Ĺ‚l siĂ„â„˘ lekko Äąâ€şcisnĂ„â€¦Ă„â€ˇ, ale nie znikaj */
   flex: 0 1 auto;
   min-width:0;
 }
@@ -808,7 +808,7 @@ html.ah-skins-open #heroFrame{
   opacity: .92;
   white-space: nowrap;
 
-  /* âś… jak brakuje miejsca, tnij meta, ale NIE tnij taga */
+  /* Ă˘Ĺ›â€¦ jak brakuje miejsca, tnij meta, ale NIE tnij taga */
   max-width: 120px;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -830,7 +830,7 @@ html.ah-skins-open #heroFrame{
   display:flex;
   align-items:center;
 
-  /* âś… twardo ograniczamy szerokoĹ›Ä‡, ĹĽeby TAG miaĹ‚ miejsce */
+  /* Ă˘Ĺ›â€¦ twardo ograniczamy szerokoÄąâ€şĂ„â€ˇ, ÄąÄ˝eby TAG miaÄąâ€š miejsce */
   max-width: 118px;
   overflow:hidden;
 }
@@ -838,7 +838,7 @@ html.ah-skins-open #heroFrame{
 /* status chowamy (na mobile tylko przeszkadza) */
 #ton-wallet-status{ display:none; }
 
-/* TonConnect button â€” kompakt */
+/* TonConnect button Ă˘â‚¬â€ť kompakt */
 #ton-connect button,
 #ton-connect [data-tc-connect-button],
 #ton-connect .tc-button{
@@ -902,7 +902,7 @@ html.ah-skins-open #heroFrame{
 
 .map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.62); }
 
-/* PATCH: wiÄ™kszy modal + flex layout */
+/* PATCH: wiĂ„â„˘kszy modal + flex layout */
 .map-wrap {
   width:min(96vw, 1200px);
   padding:
@@ -1001,7 +1001,7 @@ html.ah-skins-open #heroFrame{
 .close-x { cursor:pointer; padding:6px 10px; border-radius:10px; border:1px solid var(--ring); background:#111; color:#fff; }
 
     /* =========================================================
-     âś… Equipment Icon Glow (UI-only)
+     Ă˘Ĺ›â€¦ Equipment Icon Glow (UI-only)
      - Master icons stay clean (no baked glow)
      - Glow is controlled by UI via classes + data-rarity
      ========================================================= */
@@ -1056,7 +1056,7 @@ html.ah-skins-open #heroFrame{
       drop-shadow(0 0 16px rgba(255,190,90,.11));
   }
 
-  /* selected/equipped keeps rarity feel but adds a touch of â€śactiveâ€ť */
+  /* selected/equipped keeps rarity feel but adds a touch of Ă˘â‚¬Ĺ›activeĂ˘â‚¬ĹĄ */
   .equip-slot.is-selected[data-rarity] img.item-icon,
   .equip-slot.is-equipped[data-rarity] img.item-icon{
     filter:
@@ -1066,7 +1066,7 @@ html.ah-skins-open #heroFrame{
   }
 
 
-/* PATCH: zamiast aspect-ratio -> realna wysokoĹ›Ä‡ mapy */
+/* PATCH: zamiast aspect-ratio -> realna wysokoÄąâ€şĂ„â€ˇ mapy */
 .map{
   position:relative;
   width:100%;
@@ -1539,19 +1539,19 @@ html.ah-skins-open #heroFrame{
 .skins-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0; }
 
 /* ==================== SAFETY NET (opcjonalne, ale polecam) ==================== */
-/* JeĹ›li jakiĹ› bug nadal dopnie .map-pin do overlay, to i tak overlay bÄ™dzie stabilny */
+/* JeÄąâ€şli jakiÄąâ€ş bug nadal dopnie .map-pin do overlay, to i tak overlay bĂ„â„˘dzie stabilny */
 #influenceModal { transform: none !important; }
 #influenceModal.map-pin { position: fixed !important; inset: 0 !important; transform: none !important; }
     
 
- /* === SKIN GALLERY UPGRADE v5 â€“ GALERIA PRZYWRĂ“CONA + ZERO DZIURY (28.02.2026) === */
+ /* === SKIN GALLERY UPGRADE v5 Ă˘â‚¬â€ś GALERIA PRZYWRÄ‚â€śCONA + ZERO DZIURY (28.02.2026) === */
 #skinPreviewImg, #skinCanvas {
     position: relative !important;
     width: 100% !important;
     max-width: 310px !important;
     height: auto !important;
     max-height: 460px !important;
-    margin: 12px auto 18px !important;           /* mocno Ĺ›ciĹ›niÄ™te */
+    margin: 12px auto 18px !important;           /* mocno Äąâ€şciÄąâ€şniĂ„â„˘te */
     border-radius: 18px !important;
     box-shadow: 0 0 50px rgba(255, 45, 45, 0.7) !important;
     transition: all 0.35s ease !important;
@@ -1564,7 +1564,7 @@ html.ah-skins-open #heroFrame{
     box-shadow: 0 0 70px rgba(255, 70, 70, 0.9) !important;
 }
 
-/* EQUIPPED badge â€“ zawsze w rogu */
+/* EQUIPPED badge Ă˘â‚¬â€ś zawsze w rogu */
 .avatar-sheet #skinPreviewImg::after,
 .avatar-sheet #skinCanvas::after {
     content: "EQUIPPED";
@@ -1581,7 +1581,7 @@ html.ah-skins-open #heroFrame{
     z-index: 10;
 }
 
-/* === PRZYWRACANIE I ĹšCIĹšNIÄCIE GALERII MAĹYCH SKĂ“REK === */
+/* === PRZYWRACANIE I ÄąĹˇCIÄąĹˇNIĂ„ÂCIE GALERII MAÄąÂYCH SKÄ‚â€śREK === */
 #skinButtons.skins-grid {
     display: grid !important;
     visibility: visible !important;
@@ -1605,9 +1605,9 @@ html.ah-skins-open #heroFrame{
     transform: translateY(-4px) !important;
 }
 
-/* opcjonalnie czyĹ›cimy blade napisy Alpha Lv.86 */
+/* opcjonalnie czyÄąâ€şcimy blade napisy Alpha Lv.86 */
 #avatarBack .sheet-card > div:not(#skinButtons):not(.btn-row) {
-    opacity: 0.15 !important;   /* przyciemnimy, jeĹ›li nadal widaÄ‡ */
+    opacity: 0.15 !important;   /* przyciemnimy, jeÄąâ€şli nadal widaĂ„â€ˇ */
 }
    <style id="factionhq-css">
 /* =========================
@@ -1616,7 +1616,7 @@ html.ah-skins-open #heroFrame{
 #factionHQBack{
   position: fixed;
   inset: 0;
-  z-index: 999990; /* poniĹĽej missionsBack (999999), ale nad resztÄ… UI */
+  z-index: 999990; /* poniÄąÄ˝ej missionsBack (999999), ale nad resztĂ„â€¦ UI */
   display: none;
   pointer-events: auto;
   overflow: hidden;
@@ -1645,7 +1645,7 @@ html.ah-skins-open #heroFrame{
   filter: saturate(1.05) contrast(1.05);
 }
 
-/* czytelnoĹ›Ä‡ UI na tle */
+/* czytelnoÄąâ€şĂ„â€ˇ UI na tle */
 #factionHQBack .hq-bg::after{
   content:"";
   position:absolute;
@@ -1668,7 +1668,7 @@ html.ah-skins-open #heroFrame{
 }
 
 /* =========================
-   FRONT WOJENNY FRAKCJI â€“ FAZA 1
+   FRONT WOJENNY FRAKCJI Ă˘â‚¬â€ś FAZA 1
    ========================= */
 .front-layer{
   position: absolute;
@@ -1862,7 +1862,7 @@ html.ah-skins-open #heroFrame{
 </style>
 
 <style id="siege-battle-css">
-/* === ALPHA HUSKY SIEGE BATTLE VIEWER â€“ SAFE VISUAL UPGRADE === */
+/* === ALPHA HUSKY SIEGE BATTLE VIEWER Ă˘â‚¬â€ś SAFE VISUAL UPGRADE === */
 
 .siege-battle-card{
   position:relative;
@@ -2015,7 +2015,7 @@ html.ah-skins-open #heroFrame{
   text-shadow:0 0 12px rgba(255,255,255,.40);
 }
 
-/* ===== GĹĂ“WNY STAGE ===== */
+/* ===== GÄąÂÄ‚â€śWNY STAGE ===== */
 .siege-battle-stage{
   position:relative;
   width:100%;
@@ -2158,13 +2158,13 @@ html.ah-skins-open #heroFrame{
   justify-content: center;
   padding: 12px;
   background: rgba(0,0,0,.78);
-  z-index: 999999 !important;   /* wyĹĽej niĹĽ bottom bar, map, itd */
+  z-index: 999999 !important;   /* wyÄąÄ˝ej niÄąÄ˝ bottom bar, map, itd */
   pointer-events: auto;
 }
 
 #missionsBack.is-open{ display:flex !important; }
 
-/* Tylko karta missions (nie ruszamy innych sheetĂłw) */
+/* Tylko karta missions (nie ruszamy innych sheetÄ‚Ĺ‚w) */
 #missionsBack .sheet-card{
   width: min(560px, 100%) !important;
   max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -2190,14 +2190,14 @@ html.ah-skins-open #heroFrame{
   padding: 12px 14px calc(14px + 84px + env(safe-area-inset-bottom)) !important;
 }
 
-/* Lock scroll tĹ‚a (opcjonalnie, ale polecam) */
+/* Lock scroll tÄąâ€ša (opcjonalnie, ale polecam) */
 body.missions-open{
   overflow: hidden !important;
   touch-action: none;
 }
     
   </style>
- <!-- â¬‡â¬‡â¬‡ Mission Board (inline CSS) -->
+ <!-- Ă˘Â¬â€ˇĂ˘Â¬â€ˇĂ˘Â¬â€ˇ Mission Board (inline CSS) -->
 <style id="quests-css">
   :root{
     /* assets */
@@ -2229,7 +2229,7 @@ body.missions-open{
     box-sizing:border-box;
   }
 
-  /* âś… waĹĽne: q-bg nie moĹĽe byÄ‡ flex-itemem */
+  /* Ă˘Ĺ›â€¦ waÄąÄ˝ne: q-bg nie moÄąÄ˝e byĂ„â€ˇ flex-itemem */
   .q-modal .q-bg{
     position:absolute;
     inset:0;
@@ -2243,7 +2243,7 @@ body.missions-open{
 
     width:min(720px,92vw);
     max-height:86vh;
-    overflow:auto;              /* âś… scroll dziaĹ‚a */
+    overflow:auto;              /* Ă˘Ĺ›â€¦ scroll dziaÄąâ€ša */
 
     border:1px solid rgba(92,120,150,.82);
     border-radius:14px;
@@ -2312,7 +2312,7 @@ body.missions-open{
     mix-blend-mode: screen;
   }
 
-  /* âś… content zawsze nad overlayami */
+  /* Ă˘Ĺ›â€¦ content zawsze nad overlayami */
   .q-modal-body > *{
     position: relative;
     z-index: 1;
@@ -2563,7 +2563,7 @@ body.missions-open{
   min-height: 0 !important;
 }
 
-/* jeĹ›li q-bg byĹ‚ flex-itemem i mieszaĹ‚ â€” to go unieruchamiamy */
+/* jeÄąâ€şli q-bg byÄąâ€š flex-itemem i mieszaÄąâ€š Ă˘â‚¬â€ť to go unieruchamiamy */
 .q-modal .q-bg{
   position: absolute !important;
   inset: 0 !important;
@@ -2719,7 +2719,7 @@ body.missions-open{
   box-shadow: 0 8px 26px rgba(80,8,22,.28);
 }
 
-/* Ĺ‚agodny styl, jeĹ›li kiedyĹ› region jednak wrĂłci jako locked */
+/* Äąâ€šagodny styl, jeÄąâ€şli kiedyÄąâ€ş region jednak wrÄ‚Ĺ‚ci jako locked */
 #pins .hotspot.theme-bloodmoon.is-preview-locked img,
 #pins .map-pin.theme-bloodmoon.is-preview-locked img{
   opacity: .92;
@@ -2816,7 +2816,7 @@ body.missions-open{
 
 <style id="stats-css">
 /* =========================
-   STATS â€” Premium Pack + Real Progress Bars
+   STATS Ă˘â‚¬â€ť Premium Pack + Real Progress Bars
    Scoped to #statsBack only
    ========================= */
 
@@ -2903,7 +2903,7 @@ body.missions-open{
   display:flex;
 <style id="stats-css">
 /* =========================
-   STATS â€” Alpha Husky AAA Edition 2026
+   STATS Ă˘â‚¬â€ť Alpha Husky AAA Edition 2026
    Na bazie Twojego oryginalnego CSS + frost glow upgrade
    ========================= */
 
@@ -2923,7 +2923,7 @@ body.missions-open{
               0 0 40px rgba(0,240,255,0.15);
 }
 
-/* Header â€“ dodajemy lekki frost */
+/* Header Ă˘â‚¬â€ś dodajemy lekki frost */
 #statsBack .ah-panel-hd{
   flex:0 0 auto;
   display:flex;
@@ -2945,7 +2945,7 @@ body.missions-open{
   padding: 10px 12px calc(110px + env(safe-area-inset-bottom)) 12px;
 }
 
-/* Text helpers â€“ podbiliĹ›my kontrast */
+/* Text helpers Ă˘â‚¬â€ś podbiliÄąâ€şmy kontrast */
 #statsBack .muted{ opacity: .78; color: #a0f0ff; }
 #statsBack .tiny{ font-size: 12px; opacity: .75; }
 #statsBack .k{ opacity:.85; font-size: 13px; letter-spacing:.2px; color: #88ccff; }
@@ -2958,7 +2958,7 @@ body.missions-open{
   color: #00f0ff;
 }
 
-/* Refresh button â€“ frost look */
+/* Refresh button Ă˘â‚¬â€ś frost look */
 #statsBack #btnStatsRefresh{
   border: 1px solid rgba(0,240,255,0.35);
   background: rgba(0,240,255,0.08);
@@ -2967,7 +2967,7 @@ body.missions-open{
 }
 #statsBack #btnStatsRefresh:active{ transform: translateY(1px); }
 
-/* Cards â€“ gĹ‚Ăłwny upgrade */
+/* Cards Ă˘â‚¬â€ś gÄąâ€šÄ‚Ĺ‚wny upgrade */
 #statsBack .card{
   margin: 10px 0;
   padding: 14px 14px;
@@ -3013,7 +3013,7 @@ body.missions-open{
   gap: 6px;
 }
 
-/* STR row â€“ zostawiamy TwojÄ… strukturÄ™ */
+/* STR row Ă˘â‚¬â€ś zostawiamy TwojĂ„â€¦ strukturĂ„â„˘ */
 #statsBack .srow{
   display:grid;
   grid-template-columns: 56px 1fr auto;
@@ -3058,7 +3058,7 @@ body.missions-open{
 #statsBack .miniRow b{ font-weight: 900; color: #00f0ff; }
 
 /* =========================
-   FROST PROGRESS BARS (najwiÄ™ksza zmiana)
+   FROST PROGRESS BARS (najwiĂ„â„˘ksza zmiana)
    ========================= */
 #statsBack .vline{
   display:flex;
@@ -3112,7 +3112,7 @@ body.missions-open{
   font-weight: 600;
 }
 
-/* Mobile tuning (TwĂłj oryginalny + lekkie poprawki) */
+/* Mobile tuning (TwÄ‚Ĺ‚j oryginalny + lekkie poprawki) */
 @media (max-width: 420px){
   #statsBack .ah-panel{ max-height: 88vh; }
   #statsRoot.ah-stats-root{ padding-left: 10px; padding-right: 10px; }
@@ -3179,10 +3179,10 @@ body.missions-open{
   }
   </style>
   
-  <!-- âś… Bottom Nav + Sheets -->
+  <!-- Ă˘Ĺ›â€¦ Bottom Nav + Sheets -->
 <style id="home-nav-css">
   /* =========================
-     âś… Bottom Nav â€” V2 (premium)
+     Ă˘Ĺ›â€¦ Bottom Nav Ă˘â‚¬â€ť V2 (premium)
      ========================= */
   :root{
     --ah-cyan: rgba(0,229,255,.85);
@@ -3215,7 +3215,7 @@ body.missions-open{
       0 18px 46px rgba(0,0,0,.58),
       inset 0 1px 0 rgba(255,255,255,.09);
 
-    z-index: 8000; /* poniĹĽej quests(9999) i missions(999999) */
+    z-index: 8000; /* poniÄąÄ˝ej quests(9999) i missions(999999) */
   }
 
   .ah-navbtn{
@@ -3255,7 +3255,7 @@ body.missions-open{
     font-weight: 800;
   }
 
-  /* â€śselectedâ€ť state */
+  /* Ă˘â‚¬Ĺ›selectedĂ˘â‚¬ĹĄ state */
   .ah-navbtn.is-active{
     border-color: rgba(0,229,255,.34);
     background:
@@ -3291,7 +3291,7 @@ body.missions-open{
   }
 
   /* =========================
-     Sheets (zostajÄ… jak byĹ‚y)
+     Sheets (zostajĂ„â€¦ jak byÄąâ€šy)
      ========================= */
   .ah-back{
     position: fixed;
@@ -3541,11 +3541,11 @@ body.missions-open{
 </style>
   <style id="inventory-css">
   :root{
-    --inv-bg: url("inventory_bg.png"); /* wrzuÄ‡ plik obok index.html albo zmieĹ„ Ĺ›cieĹĽkÄ™ */
-    --inv-dust: url("dust.png");       /* jeĹ›li masz dust.png (jak w Mission Board) */
+    --inv-bg: url("inventory_bg.png"); /* wrzuĂ„â€ˇ plik obok index.html albo zmieÄąâ€ž Äąâ€şcieÄąÄ˝kĂ„â„˘ */
+    --inv-dust: url("dust.png");       /* jeÄąâ€şli masz dust.png (jak w Mission Board) */
   }
 
-  /* Root Inventory ekranu (dodamy klasÄ™ w inventory.js) */
+  /* Root Inventory ekranu (dodamy klasĂ„â„˘ w inventory.js) */
   .inv-root{
     position: relative;
     min-height: 100vh;
@@ -3596,7 +3596,7 @@ body.missions-open{
     z-index: 1;
   }
 
-  /* Panel grid â€” bardziej â€śgame glassâ€ť, a nie czarna pĹ‚yta */
+  /* Panel grid Ă˘â‚¬â€ť bardziej Ă˘â‚¬Ĺ›game glassĂ˘â‚¬ĹĄ, a nie czarna pÄąâ€šyta */
   #inventory-grid{
     background: rgba(0,0,0,.22) !important; /* nadpisze inline */
     border: 1px solid rgba(255,255,255,.10) !important;
@@ -3604,7 +3604,7 @@ body.missions-open{
     box-shadow: 0 18px 40px rgba(0,0,0,.35);
   }
 
-  /* Mikro polish dla tabĂłw jeĹ›li chcesz */
+  /* Mikro polish dla tabÄ‚Ĺ‚w jeÄąâ€şli chcesz */
   .tab-btn{
     border: 1px solid rgba(255,255,255,.10);
     background: rgba(0,0,0,.28);
@@ -3618,13 +3618,13 @@ body.missions-open{
 </style>
 
 
-  <!-- FAQ styles (inline, jeĹ›li brak osobnego CSS) -->
+  <!-- FAQ styles (inline, jeÄąâ€şli brak osobnego CSS) -->
   <style id="faq-styles">
-  /* Floating FAQ button â€“ mocniej widoczny */
+  /* Floating FAQ button Ă˘â‚¬â€ś mocniej widoczny */
 .fab-faq{
   position: fixed;
   left: max(16px, env(safe-area-inset-left));
-  /* podnieĹ› nad przycisk Quests */
+  /* podnieÄąâ€ş nad przycisk Quests */
   bottom: max(48px, calc(env(safe-area-inset-bottom) + 20px));
   z-index: 1200;
 
@@ -3673,7 +3673,7 @@ body.missions-open{
   flex-shrink: 0;
   filter: drop-shadow(0 0 6px rgba(0,229,255,0.8));
 }
-/* Na bardzo maĹ‚ych ekranach tylko ikonka */
+/* Na bardzo maÄąâ€šych ekranach tylko ikonka */
 @media (max-width: 420px){
   .fab-faq span{ display:none; }
   .fab-faq{
@@ -3723,7 +3723,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </style>
 
   <style id="faction-badge-css">
-  /* âś… Faction badge (Topbar) */
+  /* Ă˘Ĺ›â€¦ Faction badge (Topbar) */
   .fac-badge{
     width:20px; height:20px;
     border-radius:999px;
@@ -3763,7 +3763,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   function initAnalytics() {
     const ta = window.telegramAnalytics;
     if (!ta?.init) {
-      console.error("âťŚ telegramAnalytics missing");
+      console.error("Ă˘ĹĄĹš telegramAnalytics missing");
       return;
     }
 
@@ -3772,9 +3772,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       appName: "the_alpha_husky"
     });
 
-    console.log("âś… telegramAnalytics.init OK");
+    console.log("Ă˘Ĺ›â€¦ telegramAnalytics.init OK");
 
-    // đź‘‡ po init odpalamy pewny event app-init
+    // Ä‘Ĺşâ€â€ˇ po init odpalamy pewny event app-init
     setTimeout(taForceAppInit, 800);
   }
 
@@ -3816,9 +3816,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <!-- /TELEGRAM ANALYTICS -->
 </head>
 <body>
-  <div id="dbg">initâ€¦</div>
+  <div id="dbg">initĂ˘â‚¬Â¦</div>
   
-  <!-- âś… FACTION HQ BACKDROP (WKLEJ TUTAJ) -->
+  <!-- Ă˘Ĺ›â€¦ FACTION HQ BACKDROP (WKLEJ TUTAJ) -->
   <div id="factionHQBack" style="display:none;">
     <div class="hq-bg"></div>
     <div id="factionHQModal"></div>
@@ -3836,16 +3836,16 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div id="player">Alpha Husky</div>
 
     <div class="badge faction-pill" id="faction">
-      <!-- âś… Faction badge (AAA crest) -->
+      <!-- Ă˘Ĺ›â€¦ Faction badge (AAA crest) -->
       <span id="factionBadge" class="fac-badge" style="display:none">
         <img id="factionBadgeImg" alt="Faction" />
       </span>
 
       <span id="factionTag" class="tag-badge tag-pack">PACK</span>
-      <span id="factionMeta" class="faction-meta">Lv 1 â€˘ 0đź¦´</span>
+      <span id="factionMeta" class="faction-meta">Lv 1 Ă˘â‚¬Ë 0Ä‘ĹşÂ¦Â´</span>
     </div>
 
-  <!-- âś… TON CONNECT placeholder (tu renderuje siÄ™ button) -->
+  <!-- Ă˘Ĺ›â€¦ TON CONNECT placeholder (tu renderuje siĂ„â„˘ button) -->
   <div id="ton-connect" class="ton-connect"></div>
   <div id="ton-wallet-status" class="ton-wallet-status"></div>
       </div>
@@ -3866,7 +3866,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <button class="btn howlboard" aria-label="Open Howlboard" type="button">Howlboard</button>
             <button class="btn profile" aria-label="Open Profile" type="button">Profile</button>
           </div>
-          <!-- ĹšRODEK â€“ SKIN / HERO -->
+          <!-- ÄąĹˇRODEK Ă˘â‚¬â€ś SKIN / HERO -->
 <div class="hero-center">
   <div class="hero-frame" id="heroFrame">
     <div id="heroAuraRing" class="hero-aura-ring"></div>
@@ -3879,7 +3879,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         alt="Alpha Husky skin">
     </div>
 
-    <!-- âś… FRAME OVERLAY (ramka na wierzchu) -->
+    <!-- Ă˘Ĺ›â€¦ FRAME OVERLAY (ramka na wierzchu) -->
     <img
       id="player-frame"
       class="hero-frame-overlay"
@@ -3890,7 +3890,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
   <div class="hero-caption">
     <span id="heroName">Alpha Husky</span>
-    <span>Â·</span>
+    <span>Ă‚Â·</span>
     <span id="heroLevel">Lv.1</span>
   </div>
 
@@ -3901,10 +3901,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <button class="btn share-mini" id="heroShareBtn" type="button" style="min-width:148px;">Share</button>
   </div>
 
-  <!-- âś… ACTIVE BUFFS (pod nickiem/levelem) -->
+  <!-- Ă˘Ĺ›â€¦ ACTIVE BUFFS (pod nickiem/levelem) -->
   <div id="buffsLine" class="buffs-line" style="display:none"></div>
 </div>
-          <!-- PRAWA KOLUMNA (toĹĽsamoĹ›Ä‡ / companions) -->
+          <!-- PRAWA KOLUMNA (toÄąÄ˝samoÄąâ€şĂ„â€ˇ / companions) -->
           <div class="hud-col hud-right" id="homeLegacyRight">
             <button class="btn avatar" aria-label="Open Avatar" type="button">Avatar</button>
             <button class="btn skins" aria-label="Open Skins" type="button">Skins</button>
@@ -3913,9 +3913,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <button class="btn arena" aria-label="Open Arena" type="button">Arena</button>
             <button class="btn adopt" aria-label="Open Adoption Center" type="button">Adopt</button>
             <button class="btn equipped" aria-label="Open Equipped" type="button" onclick="window.Equipped?.open?.()">Equipped</button>
-            <!-- âś… TU -->
+            <!-- Ă˘Ĺ›â€¦ TU -->
   <button class="btn whatsnew" id="btnWhatsNew" aria-label="Open What's New" type="button">
-    Whatâ€™s New
+    WhatĂ˘â‚¬â„˘s New
     <span id="whatsNewDot"
           style="display:none;width:8px;height:8px;border-radius:99px;margin-left:8px;vertical-align:middle;background:#ff3b30;"></span>
   </button>
@@ -3925,77 +3925,77 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </div>
         <div class="spacer"></div>
       </div>
-    <!-- âś… Bottom Nav -->
+    <!-- Ă˘Ĺ›â€¦ Bottom Nav -->
 <nav id="ahBottomNav" class="ah-bottomnav" aria-label="Primary">
   <button class="ah-navbtn" data-go="map" aria-label="Map" type="button">
-    <span class="ah-ico">đź—şď¸Ź</span><span class="ah-lbl">Map</span>
+    <span class="ah-ico">&#x1F5FA;&#xFE0F;</span><span class="ah-lbl">Map</span>
   </button>
 
   <button class="ah-navbtn" data-go="missions" aria-label="Missions" type="button">
-    <span class="ah-ico">âš”ď¸Ź</span><span class="ah-lbl">Missions</span>
+    <span class="ah-ico">&#x2694;&#xFE0F;</span><span class="ah-lbl">Missions</span>
   </button>
 
   <button class="ah-navbtn ah-primary" data-go="quests" aria-label="Quests" type="button">
-    <span class="ah-ico">đź“ś</span><span class="ah-lbl">Quests</span>
+    <span class="ah-ico">&#x1F4DC;</span><span class="ah-lbl">Quests</span>
     <span class="ah-badge" data-badge="quests" hidden></span>
   </button>
 
   <button class="ah-navbtn" data-go="inventory" aria-label="Inventory" type="button">
-    <span class="ah-ico">đźŽ’</span><span class="ah-lbl">Inventory</span>
+    <span class="ah-ico">&#x1F392;</span><span class="ah-lbl">Inventory</span>
   </button>
 
   <button class="ah-navbtn" data-go="hub" aria-label="Hub" type="button">
-    <span class="ah-ico">â°</span><span class="ah-lbl">Hub</span>
+    <span class="ah-ico">&#x2630;</span><span class="ah-lbl">Hub</span>
     <span class="ah-badge" data-badge="hub" hidden></span>
   </button>
 </nav>
 
 
 
-<!-- âś… Hub Sheet -->
+<!-- Ă˘Ĺ›â€¦ Hub Sheet -->
 <div id="hubBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Hub">
     <div class="ah-panel-hd">
       <div class="ah-title">Hub</div>
-      <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">âś•</button>
+      <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">Ă˘Ĺ›â€˘</button>
     </div>
     <div class="ah-panel-scroll">
     <div class="ah-grid">
-      <button class="ah-tile" data-action="shop" type="button"><span>đź›’</span><b>Shop</b></button>
-      <!-- âś… NEW: Support -->
-      <button class="ah-tile" data-action="support" type="button"><span>đź’Ž</span><b>Support</b></button>
-      <button class="ah-tile" data-action="faq" type="button"><span>âť“</span><b>FAQ</b></button>
-      <button class="ah-tile" data-action="adopt" type="button"><span>đźľ</span><b>Adopt</b></button>
-      <button class="ah-tile" data-action="arena" type="button"><span>đźŹ†</span><b>Arena</b></button>
-      <button class="ah-tile" data-action="referrals" type="button"><span>đź¤ť</span><b>Referrals</b></button>
-      <button class="ah-tile" data-action="howlboard" type="button"><span>đź“Ł</span><b>Howlboard</b></button>
-      <button class="ah-tile" data-action="profile" type="button"><span>đź‘¤</span><b>Profile</b></button>
-      <button class="ah-tile" data-action="mailbox" type="button"><span>âś‰ď¸Ź</span><b>Mailbox</b></button>
-      <button class="ah-tile" data-action="whatsnew" type="button"><span>đź“°</span><b>Whatâ€™s New</b></button>
-      <button class="ah-tile" data-action="feed" type="button"><span>đź§ľ</span><b>Feed</b></button>
-      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span>đź“˛</span><b>Add to Home</b></button>
-      <button class="ah-tile" data-action="share" type="button"><span>â¤´</span><b>Share</b></button>
+      <button class="ah-tile" data-action="shop" type="button"><span>Ä‘Ĺşâ€şâ€™</span><b>Shop</b></button>
+      <!-- Ă˘Ĺ›â€¦ NEW: Support -->
+      <button class="ah-tile" data-action="support" type="button"><span>Ä‘Ĺşâ€™Ĺ˝</span><b>Support</b></button>
+      <button class="ah-tile" data-action="faq" type="button"><span>Ă˘ĹĄâ€ś</span><b>FAQ</b></button>
+      <button class="ah-tile" data-action="adopt" type="button"><span>Ä‘ĹşÂÄľ</span><b>Adopt</b></button>
+      <button class="ah-tile" data-action="arena" type="button"><span>Ä‘ĹşĹąâ€ </span><b>Arena</b></button>
+      <button class="ah-tile" data-action="referrals" type="button"><span>Ä‘ĹşÂ¤ĹĄ</span><b>Referrals</b></button>
+      <button class="ah-tile" data-action="howlboard" type="button"><span>Ä‘Ĺşâ€śĹ</span><b>Howlboard</b></button>
+      <button class="ah-tile" data-action="profile" type="button"><span>Ä‘Ĺşâ€Â¤</span><b>Profile</b></button>
+      <button class="ah-tile" data-action="mailbox" type="button"><span>Ă˘Ĺ›â€°ÄŹÂ¸Ĺą</span><b>Mailbox</b></button>
+      <button class="ah-tile" data-action="whatsnew" type="button"><span>Ä‘Ĺşâ€śÂ°</span><b>WhatĂ˘â‚¬â„˘s New</b></button>
+      <button class="ah-tile" data-action="feed" type="button"><span>Ä‘ĹşÂ§Äľ</span><b>Feed</b></button>
+      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span>Ä‘Ĺşâ€śË›</span><b>Add to Home</b></button>
+      <button class="ah-tile" data-action="share" type="button"><span>Ă˘Â¤Â´</span><b>Share</b></button>
     </div>
     <div style="padding:0 14px 8px;opacity:.68;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Quick Access</div>
     <div class="ah-actions" id="ahStartAppLinks">
       <div style="display:flex;gap:8px;">
         <button class="ah-action" type="button" style="flex:1;" data-start-link-route="map" data-start-link-action="open">Open War Map</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="map" data-start-link-action="copy" aria-label="Copy War Map link">â§‰</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="map" data-start-link-action="copy" aria-label="Copy War Map link">Ă˘Â§â€°</button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="ah-action" type="button" style="flex:1;" data-start-link-route="bloodmoon" data-start-link-action="open">Enter Blood-Moon</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="bloodmoon" data-start-link-action="copy" aria-label="Copy Blood-Moon link">â§‰</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="bloodmoon" data-start-link-action="copy" aria-label="Copy Blood-Moon link">Ă˘Â§â€°</button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="ah-action" type="button" style="flex:1;" data-start-link-route="support" data-start-link-action="open">Support Alpha</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">â§‰</button>
+        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">Ă˘Â§â€°</button>
       </div>
     </div>
     </div>
   </div>
 </div>
 
-<!-- âś… Character Sheet (tap hero-frame) -->
+<!-- Ă˘Ĺ›â€¦ Character Sheet (tap hero-frame) -->
 <div id="charBack" class="ah-back" style="display:none">
   <div class="ah-panel ah-character-panel" role="dialog" aria-modal="true" aria-label="Character">
     <div class="ah-panel-hd">
@@ -4067,21 +4067,21 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="ah-title">Stats</div>
       <div style="display:flex; gap:10px; align-items:center;">
         <button id="btnStatsRefresh" class="ah-action" type="button" style="padding:6px 10px;">Refresh</button>
-        <button class="ah-x" data-close="statsBack" aria-label="Close" type="button">âś•</button>
+        <button class="ah-x" data-close="statsBack" aria-label="Close" type="button">Ă˘Ĺ›â€˘</button>
       </div>
     </div>
 
-    <!-- waĹĽne: root pod render z stats.js -->
+    <!-- waÄąÄ˝ne: root pod render z stats.js -->
     <div id="statsRoot" class="ah-stats-root"></div>
   </div>
 </div>
 
-<!-- âś… Share Sheet -->
+<!-- Ă˘Ĺ›â€¦ Share Sheet -->
 <div id="shareBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Share">
     <div class="ah-panel-hd">
       <div class="ah-title" id="shareCardTitle">Share</div>
-      <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">âś•</button>
+      <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">Ă˘Ĺ›â€˘</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;padding:0 14px 16px;">
       <div id="shareCardContext" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.58;">Main Hub preview</div>
@@ -4127,7 +4127,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
               <h2>Regions Map</h2>
               <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
             </div>
-            <button class="close-x" id="closeMap" type="button">Ă—</button>
+            <button class="close-x" id="closeMap" type="button">Ä‚â€”</button>
           </div>
           <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
             <div id="ctaCardRoot"></div>
@@ -4151,7 +4151,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="locked-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div style="font-weight:600;" id="lockedTitle">Locked</div>
-          <button class="btn" id="closeLocked" type="button">Ă—</button>
+          <button class="btn" id="closeLocked" type="button">Ä‚â€”</button>
         </div>
         <p id="lockedDesc" style="opacity:.85;font-size:14px;line-height:1.4;margin:8px 0 14px;"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -4167,7 +4167,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="sheet-card" style="width:min(92vw,720px);max-height:86vh;overflow:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
       <div style="font-weight:700;">Howlboard</div>
-      <button class="btn" id="closeBoard" type="button">Ă—</button>
+      <button class="btn" id="closeBoard" type="button">Ä‚â€”</button>
     </div>
 
     <div class="tabs" style="margin-top:10px;">
@@ -4189,12 +4189,12 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div id="boardRows" style="margin-top:12px;display:grid;gap:8px;"></div>
   </div>
 </div>
-    <!-- âś… Support Sheet -->
+    <!-- Ă˘Ĺ›â€¦ Support Sheet -->
 <div id="supportBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Support Alpha">
     <div class="ah-panel-hd">
       <div class="ah-title">Support Alpha</div>
-      <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">âś•</button>
+      <button class="ah-x" data-close="supportBack" aria-label="Close" type="button">Ă˘Ĺ›â€˘</button>
     </div>
     <div class="ah-panel-scroll">
     <div style="display:grid;gap:14px">
@@ -4205,13 +4205,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </div>
         <div class="ah-actions" style="gap:10px;margin-top:10px">
           <button class="ah-action" type="button" data-support-tier="supporter">
-            â­ Supporter â€” frame + tag
+            Ă˘Â­Â Supporter Ă˘â‚¬â€ť frame + tag
           </button>
           <button class="ah-action" type="button" data-support-tier="patron">
-            đź’Ž Patron â€” frame + tag
+            Ä‘Ĺşâ€™Ĺ˝ Patron Ă˘â‚¬â€ť frame + tag
           </button>
           <button class="ah-action" type="button" data-support-tier="founder" style="opacity:.7">
-            đź”Ą Founder (admin)
+            Ä‘Ĺşâ€ťÄ„ Founder (admin)
           </button>
         </div>
         <div style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
@@ -4256,7 +4256,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div id="regionTitle" style="font-weight:700;"></div>
-      <button class="btn" id="closeRegion" type="button">Ă—</button>
+      <button class="btn" id="closeRegion" type="button">Ä‚â€”</button>
     </div>
     <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
@@ -4271,7 +4271,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Skin Gallery</div>
-      <button class="btn" id="closeAvatar" type="button">Ă—</button>
+      <button class="btn" id="closeAvatar" type="button">Ä‚â€”</button>
     </div>
     <img id="skinPreviewImg"
      alt="Skin preview"
@@ -4283,14 +4283,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       style="display:block; margin:20px auto; border:1px solid var(--ring); border-radius:8px; background:rgba(0,0,0,.5);">
     </canvas>
 
-    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">â€”</div>
+    <div style="text-align:center; opacity:.8; font-size:12px;" id="skinDesc">Ă˘â‚¬â€ť</div>
 
     <div style="display:flex; gap:8px; justify-content:center; margin:10px 0;">
       <button class="btn primary" id="equipSkin" type="button">Equip Skin</button>
       <button class="btn" id="shareSkin" type="button">Share Flex</button>
     </div>
 
-    <!-- Galeria skinĂłw renderowana dynamicznie -->
+    <!-- Galeria skinÄ‚Ĺ‚w renderowana dynamicznie -->
     <div id="skinButtons" class="skins-grid"></div>
   </div>
 </div>
@@ -4300,11 +4300,11 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div id="buildingTitle" style="font-weight:700;">Building</div>
-      <button class="btn" id="closeBuilding" type="button">Ă—</button>
+      <button class="btn" id="closeBuilding" type="button">Ä‚â€”</button>
     </div>
     <p id="buildingDesc" class="muted" style="margin-top:8px;"></p>
     <div id="buildingState" style="display:grid;gap:8px;margin-top:6px;">
-      <div><b>Status:</b> <span id="buildingStatus">â€”</span></div>
+      <div><b>Status:</b> <span id="buildingStatus">Ă˘â‚¬â€ť</span></div>
       <div id="buildingTimerWrap" style="display:none;"><b>Time Left:</b> <span id="buildingTimer">0s</span></div>
       <div id="buildingRoutesWrap" style="display:none;">
         <label for="buildingRoute" class="muted" style="font-size:12px;">Route</label>
@@ -4320,7 +4320,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 </div>
 
     <!-- =========================
-     PATCH 2 â€” MODALS (robust)
+     PATCH 2 Ă˘â‚¬â€ť MODALS (robust)
      ========================= -->
 
 <!-- MISSIONS MODAL -->
@@ -4328,7 +4328,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Missions</div>
-      <button class="btn" id="closeMissions" type="button" aria-label="Close missions">Ă—</button>
+      <button class="btn" id="closeMissions" type="button" aria-label="Close missions">Ä‚â€”</button>
     </div>
 
     <div id="missionsRoot" style="margin-top:12px; display:grid; gap:10px;"></div>
@@ -4344,18 +4344,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
-<!-- Quests modal (STARY â€“ fallback Daily) -->
+<!-- Quests modal (STARY Ă˘â‚¬â€ś fallback Daily) -->
 <div class="sheet-back" id="questsBack" style="display:none;" role="dialog" aria-modal="true" aria-label="Daily Quests (fallback)">
   <div class="sheet-card">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:700;">Daily Quests</div>
-      <button class="btn" id="closeQuests" type="button" aria-label="Close daily quests">Ă—</button>
+      <button class="btn" id="closeQuests" type="button" aria-label="Close daily quests">Ä‚â€”</button>
     </div>
 
     <div id="questsList" style="margin-top:12px; display:grid; gap:10px;"></div>
 
     <p style="opacity:.7; font-size:12px; margin-top:10px;">
-      Quests resetujÄ… siÄ™ codziennie. KlikniÄ™cia wykonujÄ… te same akcje, co w bocie.
+      Quests resetujĂ„â€¦ siĂ„â„˘ codziennie. KlikniĂ„â„˘cia wykonujĂ„â€¦ te same akcje, co w bocie.
     </p>
   </div>
 </div>
@@ -4369,8 +4369,8 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <h3 class="q-title">Mission Board</h3>
 
       <div class="q-head-actions">
-        <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">â†»</button>
-        <button class="q-btn" id="qClose" type="button" title="Close" aria-label="Close">Ă—</button>
+        <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">Ă˘â€ Â»</button>
+        <button class="q-btn" id="qClose" type="button" title="Close" aria-label="Close">Ä‚â€”</button>
       </div>
     </div>
 
@@ -4968,12 +4968,12 @@ body.bc-open #ahCommunityBtn{
   <div class="faq-backdrop" data-close></div>
   <div class="faq-sheet" role="document">
     <header class="faq-header">
-      <h2 id="faqTitle">Alpha Husky â€” FAQ</h2>
-      <button class="faq-close" data-close aria-label="Close FAQ">âś•</button>
+      <h2 id="faqTitle">Alpha Husky Ă˘â‚¬â€ť FAQ</h2>
+      <button class="faq-close" data-close aria-label="Close FAQ">Ă˘Ĺ›â€˘</button>
     </header>
 
     <div class="faq-toolbar">
-      <input id="faqSearch" type="search" placeholder="Search FAQâ€¦" autocomplete="off" />
+      <input id="faqSearch" type="search" placeholder="Search FAQĂ˘â‚¬Â¦" autocomplete="off" />
       <div id="faqTabs" class="faq-tabs" role="tablist" aria-label="FAQ Sections"></div>
     </div>
 
@@ -4986,8 +4986,8 @@ body.bc-open #ahCommunityBtn{
   </div>
 </div>
 
-<!-- Floating launcher (đź“ś) -->
-<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">đź“ś</button>
+<!-- Floating launcher (Ä‘Ĺşâ€śĹ›) -->
+<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">Ä‘Ĺşâ€śĹ›</button>
 
 <button id="ahCommunityBtn" class="ah-community-btn" type="button" aria-label="Open Alpha Husky Telegram Community">
   <img src="/images/ui/ah-community-btn.png" alt="Alpha Husky Community" />
@@ -5012,7 +5012,7 @@ body.bc-open #ahCommunityBtn{
   <script src="/js/start_router.js?v=WEBAPP_VER"></script>
   
 
-  <!-- 3) ModuĹ‚y JS Ĺ‚adowane w ustalonej kolejnoĹ›ci -->
+  <!-- 3) ModuÄąâ€šy JS Äąâ€šadowane w ustalonej kolejnoÄąâ€şci -->
 
 
 
@@ -5031,7 +5031,7 @@ body.bc-open #ahCommunityBtn{
 </script>
 
   <script src="/js/boot_loaders.js?v=WEBAPP_VER"></script>
-  <!-- 4) GĹ‚Ăłwny skrypt aplikacji -->
+  <!-- 4) GÄąâ€šÄ‚Ĺ‚wny skrypt aplikacji -->
 <script>
   const DEBUG_UI = true;
   function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
@@ -5039,7 +5039,7 @@ body.bc-open #ahCommunityBtn{
 
   const start = () => {
     try {
-      dbg('bootâ€¦');
+      dbg('bootĂ˘â‚¬Â¦');
 
       window.addEventListener('error', e => {
         dbg('ERR: '+(e?.message||'error'));
@@ -5064,8 +5064,8 @@ body.bc-open #ahCommunityBtn{
       }
 
       // =====================
-      // âś… NAV HELPERS (global)
-      // (Quests.js i inne moduĹ‚y mogÄ… woĹ‚aÄ‡ window.navClose/navOpen)
+      // Ă˘Ĺ›â€¦ NAV HELPERS (global)
+      // (Quests.js i inne moduÄąâ€šy mogĂ„â€¦ woÄąâ€šaĂ„â€ˇ window.navClose/navOpen)
       // =====================
       window.AH_NAV = window.AH_NAV || { stack: [], inited: false };
       const AH_NAV = window.AH_NAV;
@@ -5100,7 +5100,7 @@ body.bc-open #ahCommunityBtn{
   const id = AH_NAV.stack.pop();
   if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
 
-  // âś… keep hero dim/blur in sync with stack
+  // Ă˘Ĺ›â€¦ keep hero dim/blur in sync with stack
   document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
 
   if (!id) return false;
@@ -5110,12 +5110,12 @@ body.bc-open #ahCommunityBtn{
   return true;
 }
 
-      // âś… expose globally
+      // Ă˘Ĺ›â€¦ expose globally
       window.navOpen = navOpen;
       window.navClose = navClose;
       window.navCloseTop = navCloseTop;
 
-      // âś… One BackButton handler (close top modal, else close webapp)
+      // Ă˘Ĺ›â€¦ One BackButton handler (close top modal, else close webapp)
       if (!AH_NAV.inited){
         AH_NAV.inited = true;
         try { tg?.BackButton?.hide?.(); } catch (_) {}
@@ -5127,7 +5127,7 @@ body.bc-open #ahCommunityBtn{
       }
 
       // =====================
-      // âś… HOME NAV WIRING (BottomNav + Hub/Char/Share)
+      // Ă˘Ĺ›â€¦ HOME NAV WIRING (BottomNav + Hub/Char/Share)
       // =====================
       (function(){
         window.__ahLegacyHomeNavBound = true;
@@ -5279,12 +5279,12 @@ window.openBadgeWallModal = openBadges;
     try { window.navClose?.(hubBack); } catch(_) {}
   }
 
-  // 3) pokaĹĽ FAQ modal (hard show)
+  // 3) pokaÄąÄ˝ FAQ modal (hard show)
   const m = document.getElementById("faqModal");
   if (!m) { console.warn("FAQ: missing #faqModal"); return; }
 
   m.hidden = false;
-  m.removeAttribute("hidden");   // na wypadek gdyby atrybut zostaĹ‚
+  m.removeAttribute("hidden");   // na wypadek gdyby atrybut zostaÄąâ€š
   m.style.display = "flex";      // na wypadek konfliktu CSS (display:none)
   m.style.zIndex = "100000";     // nad hub/nav/innymi modalami
 
@@ -5299,9 +5299,9 @@ function closeFaqModal(){
   if (!m) return;
 
   m.hidden = true;
-  m.setAttribute("hidden", "");  // spĂłjnie z HTML
-  m.style.display = "";          // wrĂłÄ‡ do CSS
-  m.style.zIndex = "";           // wrĂłÄ‡ do CSS
+  m.setAttribute("hidden", "");  // spÄ‚Ĺ‚jnie z HTML
+  m.style.display = "";          // wrÄ‚Ĺ‚Ă„â€ˇ do CSS
+  m.style.zIndex = "";           // wrÄ‚Ĺ‚Ă„â€ˇ do CSS
 
   document.body.classList.remove("ah-modal-open");
 }
@@ -5377,11 +5377,11 @@ function closeFaqModal(){
         $('#heroShareBtn')?.addEventListener('click', ()=>window.ShareCard?.open?.("hub"));
       })();
 
-      // âś… ONE global HOME â€” deterministic return to main menu/map
+      // Ă˘Ĺ›â€¦ ONE global HOME Ă˘â‚¬â€ť deterministic return to main menu/map
       window.goHome = function goHome() {
         try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
-        // âś… Clear nav stack when returning HOME (prevents "ghost" back closes)
+        // Ă˘Ĺ›â€¦ Clear nav stack when returning HOME (prevents "ghost" back closes)
         try { if (window.AH_NAV?.stack) window.AH_NAV.stack.length = 0; } catch (_) {}
 
         // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
@@ -5449,7 +5449,7 @@ function closeFaqModal(){
           const el = document.getElementById('player');
           if (el) el.textContent = name;
 
-          // Nick pod centralnym oknem skina (jeĹ›li istnieje)
+          // Nick pod centralnym oknem skina (jeÄąâ€şli istnieje)
           const heroName = document.getElementById('heroName');
           if (heroName) heroName.textContent = name;
         }
@@ -5464,9 +5464,9 @@ function closeFaqModal(){
 
         const init_data = window.Telegram?.WebApp?.initData || "";
 
-        // âś… Telegram MainButton OFF â€” uĹĽywamy wĹ‚asnego bottom-nav / launchera
+        // Ă˘Ĺ›â€¦ Telegram MainButton OFF Ă˘â‚¬â€ť uÄąÄ˝ywamy wÄąâ€šasnego bottom-nav / launchera
 try{
-  tg?.MainButton?.offClick?.();   // jeĹ›li byĹ‚a podpiÄ™ta akcja
+  tg?.MainButton?.offClick?.();   // jeÄąâ€şli byÄąâ€ša podpiĂ„â„˘ta akcja
   tg?.MainButton?.hide?.();
   tg?.MainButton?.setText?.("");
 }catch(_){}
@@ -5570,7 +5570,7 @@ async function apiPostRaw(path, payload){
   const res = await fetch(api(path), {
     method: "POST",
     headers,
-    // âś… init_data LAST so payload canâ€™t override it
+    // Ă˘Ĺ›â€¦ init_data LAST so payload canĂ˘â‚¬â„˘t override it
     body: JSON.stringify({ ...(payload||{}), init_data })
   });
 
@@ -5613,7 +5613,7 @@ const _dbg = !!window.DBG;
 // --- SKINS module loader (cache-bust via WEBAPP_VER) ---
 function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
-    // jeĹ›li juĹĽ jest w DOM, nie Ĺ‚aduj drugi raz
+    // jeÄąâ€şli juÄąÄ˝ jest w DOM, nie Äąâ€šaduj drugi raz
     const existing = [...document.scripts].find(s => (s.src || "").includes(src));
     if (existing) return resolve();
 
@@ -5628,7 +5628,7 @@ function loadScriptOnce(src) {
     document.head.appendChild(s);
   });
 }
-      // âś… TON Wallet (load + init) â€” Wklej tutaj
+      // Ă˘Ĺ›â€¦ TON Wallet (load + init) Ă˘â‚¬â€ť Wklej tutaj
 loadScriptOnce("js/tonwallet.js").then(() => {
   if (!window.TON_CONNECT_UI?.TonConnectUI) {
     console.warn("[TON] TonConnect UI CDN missing?");
@@ -5642,7 +5642,7 @@ loadScriptOnce("js/tonwallet.js").then(() => {
   });
 }).catch(console.warn);
 
-// run_id helper (wspĂłlny dla skins/adopt/shop)
+// run_id helper (wspÄ‚Ĺ‚lny dla skins/adopt/shop)
 window.AH_makeRunId = function(prefix, key) {
   const uid = String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
   const rnd = Math.random().toString(16).slice(2, 8);
@@ -5681,7 +5681,7 @@ if (window.AHBootLoaders?.init) {
   window.ensureSlotsLoaded = window.ensureSlotsLoaded || noopEnsure;
 }
  
-      // âś… PATCH A â€” auto-open missions when ?section=missions
+      // Ă˘Ĺ›â€¦ PATCH A Ă˘â‚¬â€ť auto-open missions when ?section=missions
 (function autoOpenSection() {
   const sp = new URLSearchParams(location.search);
   let sec = (sp.get("section") || "").toLowerCase();
@@ -5768,7 +5768,7 @@ document.addEventListener("click", async (e) => {
 });
 
    /* ===== MISSIONS: LAZY-LOAD (safe even if not in HTML) ===== */
-/* âś… Missions: delegated click (bo przycisk bywa rerenderowany) */
+/* Ă˘Ĺ›â€¦ Missions: delegated click (bo przycisk bywa rerenderowany) */
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='missions'], [data-action='mission']");
   if (!btn) return;
@@ -5786,7 +5786,7 @@ document.addEventListener("click", async (e) => {
     console.error("[Missions] load/open failed", err);
     try { window.tg?.showAlert?.("Missions failed to load/open"); } catch (_) {}
   }
-}, true); // <- capture, ĹĽeby nic nie zjadĹ‚o clicka   
+}, true); // <- capture, ÄąÄ˝eby nic nie zjadÄąâ€šo clicka   
       
 /* ===== Updates: open on button click (delegation-safe) ===== */
 document.addEventListener("click", async (e) => {
@@ -5993,10 +5993,10 @@ document.addEventListener("click", async (e) => {
 
   const base = (PROFILE && PROFILE.faction) ? PROFILE.faction : 'PACK';
 
-  /* âś… B) TAG: zamiast nadpisywaÄ‡ textContent base, uĹĽyj tier tagĂłw */
+  /* Ă˘Ĺ›â€¦ B) TAG: zamiast nadpisywaĂ„â€ˇ textContent base, uÄąÄ˝yj tier tagÄ‚Ĺ‚w */
   setTopTag(PROFILE?.tag, base);
 
-  if (metaEl) metaEl.textContent = `Lv ${lvl} â€˘ ${bones}đź¦´`;
+  if (metaEl) metaEl.textContent = `Lv ${lvl} Ă˘â‚¬Ë ${bones}Ä‘ĹşÂ¦Â´`;
 
   const heroLevel = document.getElementById('heroLevel');
   if (heroLevel) heroLevel.textContent = `Lv.${lvl}`;
@@ -6023,7 +6023,7 @@ function applyProfileSkin(skin){
   else delete skinImg.dataset.skinKey;
 }
 
-/* âś… FRAME + SKIN FIT HELPERS (front-only, minimal + extensible) */
+/* Ă˘Ĺ›â€¦ FRAME + SKIN FIT HELPERS (front-only, minimal + extensible) */
 const AH_HERO_SKIN_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
 const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
   unbroken_alpha: { scale: 1.02, offsetX: 0, offsetY: -2 }, // skin-aware example (tune per asset framing)
@@ -6232,7 +6232,7 @@ function applyHeroAura(aura){
   }
 
   const tone = getAuraToneStyle(aura?.faction);
-  const remain = Number(aura?.expiresInSec || 0) > 0 ? ` â€˘ ${formatHeroAuraRemain(aura.expiresInSec)}` : "";
+  const remain = Number(aura?.expiresInSec || 0) > 0 ? ` Ă˘â‚¬Ë ${formatHeroAuraRemain(aura.expiresInSec)}` : "";
 
   frame.classList.add("has-aura");
   frame.style.setProperty("--hero-aura-border", tone.border);
@@ -6329,10 +6329,10 @@ function setTopTag(tagKey, baseText="PACK"){
 
   if (!f) return;
 
-  // localStorage dla influence.js (front-only pamiÄ™Ä‡)
+  // localStorage dla influence.js (front-only pamiĂ„â„˘Ă„â€ˇ)
   try { localStorage.setItem("ah_faction", f); } catch(_){}
 
-  // jeĹ›li influence.js ma setFaction â€” ustaw
+  // jeÄąâ€şli influence.js ma setFaction Ă˘â‚¬â€ť ustaw
   try { window.Influence?.setFaction?.(f); } catch(_){}
       }
 
@@ -6342,7 +6342,7 @@ async function loadProfile() {
     const out = await apiPost("/webapp/profile", {});
     if (!out) return;
 
-    // âś… odporny picker na rĂłĹĽne wrappery backendu
+    // Ă˘Ĺ›â€¦ odporny picker na rÄ‚Ĺ‚ÄąÄ˝ne wrappery backendu
     const p = out?.profile || out?.data?.profile || out?.data || out || {};
 hydrateFactionFromPayload({ profile: p, ...out });
 
@@ -6358,7 +6358,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
 
     if (p.faction) PROFILE.faction = p.faction;
 
-    /* âś… A) TAG: pobierz tier tag z profilu */
+    /* Ă˘Ĺ›â€¦ A) TAG: pobierz tier tag z profilu */
     PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
     PROFILE.weeklyAura = p?.weeklyAura || p?.activeAura || null;
 
@@ -6400,14 +6400,14 @@ hydrateFactionFromPayload({ profile: p, ...out });
       window._profile = sharedProfile;
     } catch (_) {}
 
-    /* âś… FRAME â€” dynamic (z profilu) */
+    /* Ă˘Ĺ›â€¦ FRAME Ă˘â‚¬â€ť dynamic (z profilu) */
     setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "", PROFILE.skinKey || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
 
-    // âś… Topbar moĹĽe siÄ™ przebudowaÄ‡ â€“ ok
+    // Ă˘Ĺ›â€¦ Topbar moÄąÄ˝e siĂ„â„˘ przebudowaĂ„â€ˇ Ă˘â‚¬â€ś ok
     try { renderTopbar(); } catch (_) {}
 
-    // âś… KROK 3: buffy z backendu -> buffs.js
+    // Ă˘Ĺ›â€¦ KROK 3: buffy z backendu -> buffs.js
     try {
       window.setActiveBuffs?.(
         p.buffsLine || "",
@@ -6423,7 +6423,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
 }
 window.loadProfile = loadProfile;
 
-     /* âś… Faction badge renderer (Topbar) â€” self-heal (re-inject if topbar rebuilds) */
+     /* Ă˘Ĺ›â€¦ Faction badge renderer (Topbar) Ă˘â‚¬â€ť self-heal (re-inject if topbar rebuilds) */
 (function(){
   const BASE = "/images/factions/";
   const VER  = (window.WEBAPP_VER ? ("?v=" + window.WEBAPP_VER) : "");
@@ -6516,7 +6516,7 @@ window.loadProfile = loadProfile;
   };
 })();
       
-// âś… ONE global HOME â€” deterministic return to main menu/map
+// Ă˘Ĺ›â€¦ ONE global HOME Ă˘â‚¬â€ť deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
@@ -6575,24 +6575,24 @@ async function loadPlayerState() {
     }
 
     renderTopbar();
-    try { window.setActiveBuffs?.("âś¨ UI TEST BUFF", [{ desc: "UI TEST BUFF" }]); } catch (_) {}
+    try { window.setActiveBuffs?.("Ă˘Ĺ›Â¨ UI TEST BUFF", [{ desc: "UI TEST BUFF" }]); } catch (_) {}
 
-    // âś… KROK 4: jeĹ›li topbar przebudowaĹ‚ HUD, odmaluj buffy z buffs.js
+    // Ă˘Ĺ›â€¦ KROK 4: jeÄąâ€şli topbar przebudowaÄąâ€š HUD, odmaluj buffy z buffs.js
     try { window.paintBuffs?.(); } catch (_) {}
 
     if (mapBack.style.display === "flex" && DATA) {
       renderMap();
       updateUnlockProgress();
 
-      // âś… INFLUENCE: dociÄ…gnij leaders i naĹ‚ĂłĹĽ na mapÄ™
+      // Ă˘Ĺ›â€¦ INFLUENCE: dociĂ„â€¦gnij leaders i naÄąâ€šÄ‚Ĺ‚ÄąÄ˝ na mapĂ„â„˘
       try { await window.Influence?.refreshLeaders?.(true); } catch (e) { console.warn("leaders load failed", e); }
     }
 
-    // âś… na koniec doĹ‚aduj profil (to teĹĽ ustawi buffy przez setActiveBuffs)
+    // Ă˘Ĺ›â€¦ na koniec doÄąâ€šaduj profil (to teÄąÄ˝ ustawi buffy przez setActiveBuffs)
     try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
     try { window.renderFactionBadge?.(); } catch (_) {}
 
-    // âś… Onboarding (V0 smart) â€” pokaĹĽ raz po peĹ‚nym zaĹ‚adowaniu UI
+    // Ă˘Ĺ›â€¦ Onboarding (V0 smart) Ă˘â‚¬â€ť pokaÄąÄ˝ raz po peÄąâ€šnym zaÄąâ€šadowaniu UI
     try { window.maybeOpenOnboarding?.(); } catch (_) {}
 
   } catch (e) {
@@ -6604,7 +6604,7 @@ async function loadPlayerState() {
 async function loadPlayerStateLogged() {
   return loadPlayerState();
 }
-window.loadPlayerState = loadPlayerState; // âś… expose globally for goHome()
+window.loadPlayerState = loadPlayerState; // Ă˘Ĺ›â€¦ expose globally for goHome()
 
 
 function isRegionUnlocked(regionId){
@@ -6720,7 +6720,7 @@ function isRegionUnlocked(regionId){
     };
     btn.appendChild(img);
 
-    // CHIP musi byÄ‡ w DOM zanim decoratePin odpali
+    // CHIP musi byĂ„â€ˇ w DOM zanim decoratePin odpali
     const chip = document.createElement('div');
     chip.className = 'chip';
     chip.textContent = b.name || '';
@@ -6898,7 +6898,7 @@ function isRegionUnlocked(regionId){
     pinsEl.appendChild(btn);
   }
 
-  // resolveLabelCollisions(); // jeĹ›li uĹĽywasz anti-collision
+  // resolveLabelCollisions(); // jeÄąâ€şli uÄąÄ˝ywasz anti-collision
         }
 
         const canvas = document.getElementById('particlesCanvas');
@@ -7189,7 +7189,7 @@ function isRegionUnlocked(regionId){
         }
 
         async function verifyReadyAndMaybeResolve(){
-          bStatus.textContent = "Finalizingâ€¦";
+          bStatus.textContent = "FinalizingĂ˘â‚¬Â¦";
           bBtnRes.style.display = "none";
           bTimerW.style.display = "none";
           try{
@@ -7212,7 +7212,7 @@ function isRegionUnlocked(regionId){
           }
         }
 
-        /* helper do formatowania nagrĂłd z budynkĂłw (w tym item shards) */
+        /* helper do formatowania nagrÄ‚Ĺ‚d z budynkÄ‚Ĺ‚w (w tym item shards) */
         function formatBuildingRewards(rewardsRaw) {
           const rw = rewardsRaw || {};
           const lines = [];
@@ -7228,7 +7228,7 @@ function isRegionUnlocked(regionId){
             const amt  = rw.shards.amount;
             const label = (slot + " shards")
               .replace(/_/g, " ")
-              .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards â†’ Helmet Shards
+              .replace(/\b\w/g, c => c.toUpperCase()); // helmet_shards Ă˘â€ â€™ Helmet Shards
             lines.push(`+${amt} ${label}`);
           }
 
@@ -7306,8 +7306,8 @@ function isRegionUnlocked(regionId){
 
         /* === BUTTONS / ACTIONS === */
 const actions = {
-  ".btn.avatar": () => sendAction("avatar_open"),          // Avatar â€“ wraca do bota
-  // ".btn.skins" obsĹ‚ugujemy delegacjÄ… niĹĽej (bo przycisk bywa rerenderowany)
+  ".btn.avatar": () => sendAction("avatar_open"),          // Avatar Ă˘â‚¬â€ś wraca do bota
+  // ".btn.skins" obsÄąâ€šugujemy delegacjĂ„â€¦ niÄąÄ˝ej (bo przycisk bywa rerenderowany)
   ".btn.map": () => {
     try { window.requestTelegramFullscreen?.(); } catch (_) {}
     mapBack.style.display = "flex";
@@ -7359,7 +7359,7 @@ Object.entries(actions).forEach(([sel, fn]) => {
   });
 });
 
-/* âś… Skins: delegated click */
+/* Ă˘Ĺ›â€¦ Skins: delegated click */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest?.(".btn.skins");
   if (!btn) return;
@@ -7523,7 +7523,7 @@ function renderBoardRows(rows, sort) {
         <div style="min-width:0;">
           <div style="font-weight:700;">#${rank} ${name}</div>
           ${auraBadge ? `<div style="margin-top:4px;">${auraBadge}</div>` : ""}
-          <div style="opacity:.7;font-size:12px;">${faction ? faction + " Â· " : ""}${valueLabel}</div>
+          <div style="opacity:.7;font-size:12px;">${faction ? faction + " Ă‚Â· " : ""}${valueLabel}</div>
         </div>
         <div style="font-weight:700;white-space:nowrap;">${value}</div>
       </div>
@@ -7659,12 +7659,12 @@ const questsList = document.getElementById("questsList");
 
 document.getElementById("closeQuests")?.addEventListener("click", () => {
   questsBack.style.display = "none";
-  navClose("questsBack"); // âś…
+  navClose("questsBack"); // Ă˘Ĺ›â€¦
 });
 
 function openQuests(){
   questsBack.style.display = "flex";
-  navOpen("questsBack"); // âś…
+  navOpen("questsBack"); // Ă˘Ĺ›â€¦
   refreshQuests();
 }
 
@@ -7680,7 +7680,7 @@ async function refreshQuests(){
       wrap.innerHTML = `
         <div>
           <div style="font-weight:700">${label}</div>
-          <div style="opacity:.85">${q ? q.desc : "â€”"}</div>
+          <div style="opacity:.85">${q ? q.desc : "Ă˘â‚¬â€ť"}</div>
           <div style="opacity:.7;font-size:12px;margin-top:4px;">Reward: ${q ? q.rewardText : "-"}</div>
         </div>
         <div class="qa"></div>
@@ -7691,7 +7691,7 @@ async function refreshQuests(){
         return wrap;
       }
       if (q.availableActions.length === 0){
-        act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed âś…" : (q.done ? "Completed âś…" : "")}</span>`;
+        act.innerHTML = `<span style="opacity:.6">${q.claimed ? "Claimed Ă˘Ĺ›â€¦" : (q.done ? "Completed Ă˘Ĺ›â€¦" : "")}</span>`;
       } else {
         q.availableActions.forEach(a => {
           const b = document.createElement("button");
@@ -7740,13 +7740,13 @@ async function showSection(name){
     case "map":
       try { window.requestTelegramFullscreen?.(); } catch (_) {}
       mapBack.style.display = "flex";
-      navOpen("mapBack"); // âś…
+      navOpen("mapBack"); // Ă˘Ĺ›â€¦
       if (!DATA) loadMapData();
       loadPlayerState();
       break;
     case "quests":
       (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
-      // âś… ensure qBack is tracked if new quests opens it
+      // Ă˘Ĺ›â€¦ ensure qBack is tracked if new quests opens it
       try { if (document.getElementById("qBack")?.style?.display === "flex") navOpen("qBack"); } catch(_) {}
       break;
     case "mission":
@@ -7787,7 +7787,7 @@ if (!window.__ahQuestsLauncherBound) {
   window.__ahQuestsLauncherBound = true;
   document.getElementById('quests-launcher')?.addEventListener('click', () => {
     window.Quests?.open?.();
-    // âś… track mission board container
+    // Ă˘Ĺ›â€¦ track mission board container
     try { document.getElementById('qBack').style.display='flex'; } catch(_) {}
     navOpen("qBack");
   });
@@ -7815,9 +7815,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
   <script src="js/broken-contracts.js?v=20260422a" defer></script>
   
-  <!-- NATYCHMIASTOWE INIT â€“ bez czekania na fallback -->
+  <!-- NATYCHMIASTOWE INIT Ă˘â‚¬â€ś bez czekania na fallback -->
   <script>
-    // Natychmiastowe init Quests po zaĹ‚adowaniu strony
+    // Natychmiastowe init Quests po zaÄąâ€šadowaniu strony
     document.addEventListener('DOMContentLoaded', () => {
       if (window.Quests && typeof window.Quests.init === 'function') {
         const tg = window.Telegram?.WebApp;
@@ -7853,7 +7853,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     // Launcher is already wired during main boot.
   </script>
 
-  <!-- BOOT AUTH (MUSI BYÄ† PRZED WSZYSTKIMI INITAMI MODUĹĂ“W) -->
+  <!-- BOOT AUTH (MUSI BYĂ„â€  PRZED WSZYSTKIMI INITAMI MODUÄąÂÄ‚â€śW) -->
 <script>
 (function bootAuth(){
   const tg = window.Telegram?.WebApp || null;
@@ -7935,7 +7935,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         dbg: !!window.DBG
       });
       window.__siegeInited = true;
-      console.log("âś… Siege initialized");
+      console.log("Ă˘Ĺ›â€¦ Siege initialized");
     }
   }
 
@@ -8045,10 +8045,10 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         if (!window.__statsInited && window.Stats?.init) {
           window.Stats.init({ tg, apiPost, dbg: !!window.DBG });
           window.__statsInited = true;
-          console.log("âś… Stats initialized");
+          console.log("Ă˘Ĺ›â€¦ Stats initialized");
         }
       } catch (e) {
-        console.warn("âťŚ Stats.init failed", e);
+        console.warn("Ă˘ĹĄĹš Stats.init failed", e);
       }
     }).catch(() => console.warn("[Stats] apiPost not ready"));
   };
@@ -8072,10 +8072,10 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         if (!window.__factionsInited && window.Factions?.init) {
           window.Factions.init({ tg, apiPost, dbg: !!window.DBG });
           window.__factionsInited = true;
-          console.log("âś… Factions module initialized");
+          console.log("Ă˘Ĺ›â€¦ Factions module initialized");
         }
       } catch (e) {
-        console.warn("âťŚ Factions.init failed", e);
+        console.warn("Ă˘ĹĄĹš Factions.init failed", e);
       }
     }).catch(() => console.warn("[Factions] apiPost not ready"));
   };
@@ -8099,10 +8099,10 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         if (!window.__factionHQInited && window.FactionHQ?.init) {
           window.FactionHQ.init({ tg, apiPost, dbg: !!window.DBG });
           window.__factionHQInited = true;
-          console.log("âś… FactionHQ initialized");
+          console.log("Ă˘Ĺ›â€¦ FactionHQ initialized");
         }
       } catch (e) {
-        console.warn("âťŚ FactionHQ.init failed", e);
+        console.warn("Ă˘ĹĄĹš FactionHQ.init failed", e);
       }
     }).catch(() => console.warn("[FactionHQ] apiPost not ready"));
   };
@@ -8123,18 +8123,18 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   s.onload = () => {
     console.log("[Influence] script loaded:", s.src);
 
-    // âś… if syntax error happened, Influence won't exist
+    // Ă˘Ĺ›â€¦ if syntax error happened, Influence won't exist
     if (!window.Influence || typeof window.Influence.init !== "function") {
-      console.warn("âťŚ [Influence] module missing after load (syntax error?)");
+      console.warn("Ă˘ĹĄĹš [Influence] module missing after load (syntax error?)");
       return;
     }
 
     window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
         window.Influence.init({ tg, apiPost, dbg: !!window.DBG });
-        console.log("âś… [Influence] init OK");
+        console.log("Ă˘Ĺ›â€¦ [Influence] init OK");
       } catch (e) {
-        console.warn("âťŚ [Influence] init failed", e);
+        console.warn("Ă˘ĹĄĹš [Influence] init failed", e);
       }
     }).catch(() => console.warn("[Influence] apiPost not ready"));
   };
@@ -8157,7 +8157,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         if (M && typeof M.init === "function") {
           M.init();
           window.__mapInited = true;
-          console.log("âś… Map initialized");
+          console.log("Ă˘Ĺ›â€¦ Map initialized");
         } else {
           console.warn("[Map] init missing (AHMap/Map not found)");
         }
@@ -8168,7 +8168,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
       }
     } catch (e) {
-      console.warn("âťŚ Map init failed", e);
+      console.warn("Ă˘ĹĄĹš Map init failed", e);
     }
   }
 
@@ -8233,15 +8233,15 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       window.__leadersBootRequested = true;
       try {
         I.refreshLeaders(true);
-        console.log("âś… [Leaders] boot refresh done");
+        console.log("Ă˘Ĺ›â€¦ [Leaders] boot refresh done");
       } catch (e) {
-        console.warn("âťŚ [Leaders] boot refresh failed", e);
+        console.warn("Ă˘ĹĄĹš [Leaders] boot refresh failed", e);
       }
       return;
     }
 
     if (++tries >= MAX_TRIES) {
-      console.warn("âš ď¸Ź [Leaders] boot timeout", { apiOk, can });
+      console.warn("Ă˘ĹˇÂ ÄŹÂ¸Ĺą [Leaders] boot timeout", { apiOk, can });
       return;
     }
     setTimeout(tick, 250);
@@ -8273,9 +8273,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
         dbg: !!window.DBG
       });
       window.__supportInited = true;
-      console.log("Support initialized âś…");
+      console.log("Support initialized Ă˘Ĺ›â€¦");
     } catch (e) {
-      console.warn("Support init failed âťŚ", e);
+      console.warn("Support init failed Ă˘ĹĄĹš", e);
     }
   }
 
@@ -8314,12 +8314,12 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       if (window.Inventory) {
         window.Inventory.open();
       } else {
-        Telegram.WebApp.showAlert("Inventory jeszcze siÄ™ Ĺ‚aduje...");
+        Telegram.WebApp.showAlert("Inventory jeszcze siĂ„â„˘ Äąâ€šaduje...");
       }
     });
   });
 
-  // Equipped nie ruszamy tutaj, bo obsĹ‚uguje go actions wyĹĽej:
+  // Equipped nie ruszamy tutaj, bo obsÄąâ€šuguje go actions wyÄąÄ˝ej:
   // ".btn.equipped": () => window.Equipped?.open?.()
 </script>
 </body>
