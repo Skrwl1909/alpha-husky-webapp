@@ -6,12 +6,47 @@
   const CLOSE_ID = "bcClose";
   const REFRESH_ID = "bcRefresh";
 
+  const ORDER_SORT = {
+    faction_patrol_donate: 0,
+    missions_medium_plus: 1,
+    bones_real_sinks: 2
+  };
+
+  const ORDER_BRIEF = {
+    faction_patrol_donate: {
+      tier: "primary",
+      kicker: "Primary Faction Order",
+      directive: "Hold Frontline Nodes",
+      why: "Patrol and Donate actions on Phantom Nodes are the direct frontline input for this order.",
+      impact: "If your faction completes this before reset, qualifying contributors can claim cycle rewards.",
+      links: [
+        "Map / Phantom Nodes: Patrol and Donate feed this order directly.",
+        "CTA + Mailbox: reward-ready prompts route players back here.",
+        "Oracle escalation remains a follow-up phase."
+      ]
+    },
+    missions_medium_plus: {
+      tier: "secondary",
+      kicker: "Secondary Order",
+      directive: "Sustain Mission Pressure",
+      why: "Mission throughput keeps faction activity active across the whole cycle.",
+      impact: "Completion unlocks contributor rewards for eligible faction members."
+    },
+    bones_real_sinks: {
+      tier: "secondary",
+      kicker: "Secondary Order",
+      directive: "Fuel War Economy",
+      why: "Real resource spending proves active commitment, not passive holding.",
+      impact: "Completion unlocks contributor rewards for eligible faction members."
+    }
+  };
+
   const S = {
     apiPost: null,
     tg: null,
     dbg: null,
     state: null,
-    hideObserver: null,
+    hideObserver: null
   };
 
   function el(id) {
@@ -60,47 +95,78 @@
       }));
   }
 
-  function statusUi(contract) {
-  const claimable = !!contract?.claimable;
-  const claimed = Number(contract?.myClaimedAt || 0) > 0;
-  const pending = !!contract?.claimPending;
+  function normalizeFaction(v) {
+    const raw = String(v || "").trim().toLowerCase();
+    const map = {
+      rb: "rogue_byte",
+      rogue_byte: "rogue_byte",
+      ew: "echo_wardens",
+      echo_wardens: "echo_wardens",
+      pb: "pack_burners",
+      pack_burners: "pack_burners",
+      ih: "inner_howl",
+      inner_howl: "inner_howl"
+    };
+    return map[raw] || raw;
+  }
 
-  const factionProgress = Number(contract?.myFactionProgress || 0);
-  const goal = Math.max(1, Number(contract?.goal || 0));
-  const myContribution = Number(contract?.myContribution || 0);
-  const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
+  function factionCode(v) {
+    const fk = normalizeFaction(v);
+    const map = {
+      rogue_byte: "RB",
+      echo_wardens: "EW",
+      pack_burners: "PB",
+      inner_howl: "IH"
+    };
+    return map[fk] || String(v || "").slice(0, 4).toUpperCase() || "----";
+  }
 
-  const hasAnyProgress = factionProgress > 0 || myContribution > 0;
-  const factionDone = factionProgress >= goal;
-  const myDone = myContribution >= minContribution;
+  function pct(value, goal) {
+    const g = Math.max(1, Number(goal || 0));
+    const v = Math.max(0, Number(value || 0));
+    return Math.max(0, Math.min(100, Math.round((v / g) * 100)));
+  }
 
-  if (claimable) {
+  function metrics(contract) {
+    const factionProgress = Number(contract?.myFactionProgress || 0);
+    const goal = Math.max(1, Number(contract?.goal || 0));
+    const myContribution = Number(contract?.myContribution || 0);
+    const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
     return {
-      mode: "button",
-      label: "Claim",
-      cls: "primary bc-claim",
-      disabled: false
+      factionProgress,
+      goal,
+      myContribution,
+      minContribution,
+      factionPct: pct(factionProgress, goal),
+      contributionPct: pct(myContribution, minContribution)
     };
   }
 
-  if (claimed) {
-    return { mode: "badge", label: "Claimed", cls: "is-claimed" };
+  function statusUi(contract) {
+    const claimable = !!contract?.claimable;
+    const claimed = Number(contract?.myClaimedAt || 0) > 0;
+    const pending = !!contract?.claimPending;
+
+    const m = metrics(contract);
+    const hasAnyProgress = m.factionProgress > 0 || m.myContribution > 0;
+    const factionDone = m.factionProgress >= m.goal;
+    const myDone = m.myContribution >= m.minContribution;
+
+    if (claimable) {
+      return {
+        mode: "button",
+        label: "Claim",
+        cls: "primary bc-claim",
+        disabled: false
+      };
+    }
+    if (claimed) return { mode: "badge", label: "Claimed", cls: "is-claimed" };
+    if (pending) return { mode: "badge", label: "Pending", cls: "is-pending" };
+    if (factionDone && myDone) return { mode: "badge", label: "Ready", cls: "is-ready" };
+    if (hasAnyProgress) return { mode: "badge", label: "In Progress", cls: "is-progress" };
+    return { mode: "badge", label: "Locked", cls: "is-locked" };
   }
 
-  if (pending) {
-    return { mode: "badge", label: "Pending", cls: "is-pending" };
-  }
-
-  if (factionDone && myDone) {
-    return { mode: "badge", label: "Ready", cls: "is-ready" };
-  }
-
-  if (hasAnyProgress) {
-    return { mode: "badge", label: "In Progress", cls: "is-progress" };
-  }
-
-  return { mode: "badge", label: "Locked", cls: "is-locked" };
-}
   function renderBadgeOrButton(contract) {
     const ui = statusUi(contract);
     if (ui.mode === "button") {
@@ -124,22 +190,24 @@
   function setMeta(data) {
     const node = el(META_ID);
     if (!node) return;
-    const faction = data?.myFactionCode || data?.myFaction || "-";
+    const faction = data?.myFactionCode || factionCode(data?.myFaction) || "----";
     const dayKey = data?.dayKey || "-";
-    node.textContent = `Faction ${faction} - Reset in ${fmtReset(data?.secondsToReset)} - Day ${dayKey}`;
+    node.textContent = `Faction ${faction} War Orders - Reset in ${fmtReset(data?.secondsToReset)} - Cycle ${dayKey}`;
   }
 
   function renderLoading(msg) {
-    setStatus(msg || "Loading Broken Contracts...");
+    setStatus(msg || "Loading faction war orders...");
     setMeta(null);
     const root = el(ROOT_ID);
-    if (root) root.innerHTML = `<div class="bc-empty">${esc(msg || "Loading Broken Contracts...")}</div>`;
+    if (root) root.innerHTML = `<div class="bc-empty">${esc(msg || "Loading faction war orders...")}</div>`;
   }
 
   function renderError(msg) {
     setStatus("Error");
     const root = el(ROOT_ID);
-    if (root) root.innerHTML = `<div class="bc-empty" style="color:#ffb4b4;">${esc(msg || "Failed to load Broken Contracts")}</div>`;
+    if (root) {
+      root.innerHTML = `<div class="bc-empty" style="color:#ffb4b4;">${esc(msg || "Failed to load faction war orders")}</div>`;
+    }
   }
 
   function syncShellState(open) {
@@ -156,9 +224,225 @@
     }
   }
 
+  function orderBrief(contract) {
+    const id = String(contract?.id || "");
+    const base = ORDER_BRIEF[id] || {};
+    const tier = base.tier || "secondary";
+    return {
+      tier,
+      kicker: base.kicker || (tier === "primary" ? "Primary Faction Order" : "Secondary Order"),
+      directive: base.directive || "Faction Directive",
+      why: base.why || "Push faction progress before reset and secure your claim eligibility.",
+      impact: base.impact || "Completion unlocks contributor claims for eligible faction members.",
+      links: Array.isArray(base.links) ? base.links : []
+    };
+  }
+
+  function orderPriority(contract) {
+    const id = String(contract?.id || "");
+    const brief = orderBrief(contract);
+    const base = Number.isFinite(ORDER_SORT[id]) ? ORDER_SORT[id] : 999;
+    return brief.tier === "primary" ? base - 1000 : base;
+  }
+
+  function sortContracts(contracts) {
+    return [...contracts].sort((a, b) => {
+      const pa = orderPriority(a);
+      const pb = orderPriority(b);
+      if (pa !== pb) return pa - pb;
+      const ga = Number(a?.goal || 0);
+      const gb = Number(b?.goal || 0);
+      return gb - ga;
+    });
+  }
+
+  function raceSnapshot(contract, myFaction, myFactionCode) {
+    const progressByFaction = contract?.progressByFaction && typeof contract.progressByFaction === "object"
+      ? contract.progressByFaction
+      : null;
+    if (!progressByFaction) return null;
+
+    const table = Object.entries(progressByFaction)
+      .map(([faction, value]) => ({
+        faction: normalizeFaction(faction),
+        value: Math.max(0, Number(value || 0)),
+        code: factionCode(faction)
+      }))
+      .sort((a, b) => b.value - a.value);
+    if (!table.length) return null;
+
+    const leader = table[0];
+    const topValue = leader.value;
+    const topCount = table.filter((row) => row.value === topValue).length;
+    const myKey = normalizeFaction(myFaction);
+    const myRow = myKey ? table.find((row) => row.faction === myKey) : null;
+    const myCode = myFactionCode || (myRow ? myRow.code : "");
+    const myValue = myRow ? myRow.value : 0;
+
+    let status = "observer";
+    if (myRow) {
+      if (myValue === topValue && topCount === 1) status = "leading";
+      else if (myValue === topValue) status = "tied";
+      else status = "behind";
+    }
+
+    return {
+      leaderCode: leader.code,
+      leaderValue: leader.value,
+      myCode: myCode || "",
+      myValue,
+      gapToLeader: myRow ? Math.max(0, topValue - myValue) : topValue,
+      status
+    };
+  }
+
+  function renderProgress(label, value, goal, fillClass) {
+    const percent = pct(value, goal);
+    const fill = percent > 0 ? `${fillClass} has-progress` : fillClass;
+    return `
+      <div class="bc-section">
+        <div class="bc-row">
+          <span class="bc-row-label">${esc(label)}</span>
+          <span class="bc-row-value">${esc(value)}/${esc(goal)}<span class="bc-row-percent">${esc(percent)}%</span></span>
+        </div>
+        <div class="bc-bar">
+          <div class="${esc(fill)}" style="width:${esc(percent)}%;"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRewards(contract) {
+    const rewards = rewardChips(contract?.reward);
+    if (!rewards.length) {
+      return `<span class="bc-chip"><span class="bc-chip-key">Reward</span><span class="bc-chip-val">None</span></span>`;
+    }
+    return rewards.map((reward) => `
+      <span class="bc-chip">
+        <span class="bc-chip-key">${esc(reward.label)}</span>
+        <span class="bc-chip-val">+${esc(reward.value)}</span>
+      </span>
+    `).join("");
+  }
+
+  function renderRace(contract, data, compact) {
+    const race = raceSnapshot(contract, data?.myFaction, data?.myFactionCode);
+    const goal = Math.max(1, Number(contract?.goal || 0));
+    if (!race) return `<div class="bc-race-line">Race data unavailable.</div>`;
+
+    let context = "Join the race.";
+    if (race.status === "leading") context = `${race.myCode} is leading this order.`;
+    if (race.status === "tied") context = `${race.myCode} is tied for lead.`;
+    if (race.status === "behind") context = `${race.myCode} is behind by ${race.gapToLeader}.`;
+
+    if (compact) {
+      return `
+        <div class="bc-race-line">
+          Leader ${esc(race.leaderCode)} ${esc(race.leaderValue)}/${esc(goal)} · ${esc(context)}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="bc-race">
+        <div class="bc-race-title">Faction Race</div>
+        <div class="bc-race-line">Leader: ${esc(race.leaderCode)} ${esc(race.leaderValue)}/${esc(goal)}</div>
+        <div class="bc-race-line">Your side: ${race.myCode ? `${esc(race.myCode)} ${esc(race.myValue)}/${esc(goal)}` : "No faction selected"}</div>
+        <div class="bc-race-context">${esc(context)}</div>
+      </div>
+    `;
+  }
+
+  function renderPrimary(contract, data) {
+    const type = String(contract?.type || "generic").toLowerCase();
+    const m = metrics(contract);
+    const brief = orderBrief(contract);
+    const links = brief.links.length
+      ? `<div class="bc-links">${brief.links.map((line) => `<div class="bc-link-line">${esc(line)}</div>`).join("")}</div>`
+      : "";
+
+    return `
+      <section class="bc-order-hero">
+        <div class="bc-order-kicker">${esc(brief.kicker)} · Reset in ${esc(fmtReset(data?.secondsToReset))}</div>
+        <div class="bc-card bc-card-primary type-${esc(type)}">
+          <div class="bc-card-head">
+            <div class="bc-card-copy">
+              <div class="bc-card-title">${esc(contract?.title || contract?.id || "Order")}</div>
+              <div class="bc-card-desc">${esc(contract?.desc || "")}</div>
+            </div>
+            ${renderBadgeOrButton(contract)}
+          </div>
+
+          <div class="bc-callout">
+            <div class="bc-callout-title">Directive</div>
+            <div class="bc-callout-text">${esc(brief.directive)}</div>
+          </div>
+
+          ${renderProgress("Faction objective", m.factionProgress, m.goal, "bc-fill")}
+          ${renderProgress("My contribution (qualify for reward)", m.myContribution, m.minContribution, "bc-fill is-contrib")}
+
+          ${renderRace(contract, data, false)}
+
+          <div class="bc-callout">
+            <div class="bc-callout-title">Why it matters</div>
+            <div class="bc-callout-text">${esc(brief.why)}</div>
+          </div>
+
+          <div class="bc-impact">
+            <div class="bc-impact-title">Cycle impact on completion</div>
+            <div class="bc-impact-text">${esc(brief.impact)}</div>
+          </div>
+
+          ${links}
+
+          <div class="bc-rewards">${renderRewards(contract)}</div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderSecondary(contract, data) {
+    const type = String(contract?.type || "generic").toLowerCase();
+    const m = metrics(contract);
+    const brief = orderBrief(contract);
+    return `
+      <article class="bc-card bc-card-secondary type-${esc(type)}">
+        <div class="bc-card-head">
+          <div class="bc-card-copy">
+            <div class="bc-card-overline">${esc(brief.kicker)}</div>
+            <div class="bc-card-title">${esc(contract?.title || contract?.id || "Order")}</div>
+            <div class="bc-card-desc">${esc(contract?.desc || "")}</div>
+          </div>
+          ${renderBadgeOrButton(contract)}
+        </div>
+
+        ${renderProgress("Faction", m.factionProgress, m.goal, "bc-fill")}
+        ${renderProgress("You", m.myContribution, m.minContribution, "bc-fill is-contrib")}
+
+        <div class="bc-race-mini">${renderRace(contract, data, true)}</div>
+
+        <div class="bc-impact">
+          <div class="bc-impact-title">Why</div>
+          <div class="bc-impact-text">${esc(brief.why)}</div>
+        </div>
+
+        <div class="bc-rewards">${renderRewards(contract)}</div>
+      </article>
+    `;
+  }
+
+  function bindClaimButtons(root) {
+    root.querySelectorAll("[data-bc-claim]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const contractId = btn.getAttribute("data-bc-claim");
+        if (contractId) claim(contractId);
+      });
+    });
+  }
+
   function renderState(data) {
     S.state = data || {};
-    setStatus("Ready");
+    setStatus(`Orders active · ${fmtReset(data?.secondsToReset)} to reset`);
     setMeta(data);
 
     const contracts = Array.isArray(data?.contracts) ? data.contracts : [];
@@ -166,73 +450,33 @@
     if (!root) return;
 
     if (!contracts.length) {
-      root.innerHTML = `<div class="bc-empty">No Broken Contracts available.</div>`;
+      root.innerHTML = `<div class="bc-empty">No faction orders available.</div>`;
       return;
     }
 
-    root.innerHTML = contracts.map((contract) => {
-      const type = String(contract?.type || "generic").toLowerCase();
-      const progress = Number(contract?.myFactionProgress || 0);
-      const goal = Math.max(1, Number(contract?.goal || 0));
-      const progressPct = Math.max(0, Math.min(100, Math.round((progress / goal) * 100)));
-      const progressFillClass = progressPct > 0 ? "bc-fill has-progress" : "bc-fill";
-      const minContribution = Math.max(1, Number(contract?.minPersonalContribution || 0));
-      const myContribution = Number(contract?.myContribution || 0);
-      const contributionPct = Math.max(0, Math.min(100, Math.round((myContribution / minContribution) * 100)));
-      const contributionFillClass = contributionPct > 0 ? "bc-fill is-contrib has-progress" : "bc-fill is-contrib";
-      const rewards = rewardChips(contract?.reward);
+    const ordered = sortContracts(contracts);
+    const primary = ordered[0];
+    const secondary = ordered.slice(1);
 
-      return `
-        <div class="bc-card type-${esc(type)}">
-          <div class="bc-card-head">
-            <div class="bc-card-copy">
-              <div class="bc-card-title">${esc(contract?.title || contract?.id || "Contract")}</div>
-              <div class="bc-card-desc" title="${esc(contract?.desc || "")}">${esc(contract?.desc || "")}</div>
-            </div>
-            ${renderBadgeOrButton(contract)}
+    const secondaryHtml = secondary.length
+      ? `
+        <section class="bc-secondary-wrap">
+          <div class="bc-secondary-head">Supporting Orders</div>
+          <div class="bc-secondary-grid">
+            ${secondary.map((contract) => renderSecondary(contract, data)).join("")}
           </div>
+        </section>
+      `
+      : "";
 
-          <div class="bc-section">
-            <div class="bc-row">
-              <span class="bc-row-label">Faction progress</span>
-              <span class="bc-row-value">${progress}/${goal}<span class="bc-row-percent">${progressPct}%</span></span>
-            </div>
-            <div class="bc-bar">
-              <div class="${progressFillClass}" style="width:${progressPct}%;"></div>
-            </div>
-          </div>
+    root.innerHTML = `
+      <div class="bc-board">
+        ${renderPrimary(primary, data)}
+        ${secondaryHtml}
+      </div>
+    `;
 
-          <div class="bc-section">
-            <div class="bc-row">
-              <span class="bc-row-label">My contribution</span>
-              <span class="bc-row-value">${myContribution}/${minContribution}<span class="bc-row-percent">${contributionPct}%</span></span>
-            </div>
-            <div class="bc-bar">
-              <div class="${contributionFillClass}" style="width:${contributionPct}%;"></div>
-            </div>
-          </div>
-
-          <div class="bc-rewards">
-            ${rewards.length
-              ? rewards.map((reward) => `
-                <span class="bc-chip">
-                  <span class="bc-chip-key">${esc(reward.label)}</span>
-                  <span class="bc-chip-val">+${esc(reward.value)}</span>
-                </span>
-              `).join("")
-              : `<span class="bc-chip"><span class="bc-chip-key">Reward</span><span class="bc-chip-val">None</span></span>`
-            }
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    root.querySelectorAll("[data-bc-claim]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const contractId = btn.getAttribute("data-bc-claim");
-        if (contractId) claim(contractId);
-      });
-    });
+    bindClaimButtons(root);
   }
 
   async function api(path, payload) {
@@ -259,74 +503,84 @@
   }
 
   async function loadState() {
-    renderLoading("Loading Broken Contracts...");
+    renderLoading("Loading faction war orders...");
     try {
-      const out = await api("/webapp/brokencontracts/state", { includeStandings: false });
+      const out = await api("/webapp/brokencontracts/state", { includeStandings: true });
       const data = out?.data || out;
       renderState(data);
       return data;
     } catch (err) {
-      renderError(String(err?.message || err || "Failed to load Broken Contracts"));
+      renderError(String(err?.message || err || "Failed to load faction war orders"));
       throw err;
     }
   }
 
   async function claim(contractId) {
-  if (!contractId) return false;
-  setStatus(`Claiming ${contractId}...`);
-  try {
-    const out = await api("/webapp/brokencontracts/claim", {
-      contractId,
-      run_id: rid("bc:claim", contractId)
+    if (!contractId) return false;
+    setStatus(`Claiming ${contractId}...`);
+    try {
+      const out = await api("/webapp/brokencontracts/claim", {
+        contractId,
+        run_id: rid("bc:claim", contractId)
+      });
+      const data = out?.state || out?.data || S.state;
+      renderState(data);
+      try {
+        S.tg?.HapticFeedback?.notificationOccurred?.("success");
+      } catch (_) {}
+      return true;
+    } catch (err) {
+      setStatus("Claim failed");
+      try {
+        S.tg?.showAlert?.(String(err?.message || err || "Claim failed"));
+      } catch (_) {}
+      return false;
+    }
+  }
+
+  function close() {
+    const back = el(MODAL_ID);
+    syncShellState(false);
+    if (back) back.style.display = "none";
+    try {
+      global.navClose?.(MODAL_ID);
+    } catch (_) {}
+  }
+
+  async function open() {
+    BrokenContracts.init({
+      apiPost: global.S?.apiPost,
+      tg: global.Telegram?.WebApp,
+      dbg: global.dbg || console.debug
     });
-    const data = out?.state || out?.data || S.state;
-    renderState(data);
-    try { S.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    return true;
-  } catch (err) {
-    setStatus("Claim failed");
-    try { S.tg?.showAlert?.(String(err?.message || err || "Claim failed")); } catch (_) {}
-    return false;
+
+    const back = el(MODAL_ID);
+    syncShellState(true);
+    if (back) back.style.display = "flex";
+    const root = el(ROOT_ID);
+    if (root) root.scrollTop = 0;
+
+    try {
+      global.navOpen?.(MODAL_ID);
+    } catch (_) {}
+
+    try {
+      await loadState();
+      try {
+        el(CLOSE_ID)?.focus?.({ preventScroll: true });
+      } catch (_) {}
+      return true;
+    } catch (err) {
+      close();
+      throw err;
+    }
   }
-}
-
-function close() {
-  const back = el(MODAL_ID);
-  syncShellState(false);
-  if (back) back.style.display = "none";
-
-  try { global.navClose?.(MODAL_ID); } catch (_) {}
-}
-
-async function open() {
-  BrokenContracts.init({
-    apiPost: global.S?.apiPost,
-    tg: global.Telegram?.WebApp,
-    dbg: global.dbg || console.debug
-  });
-
-  const back = el(MODAL_ID);
-  syncShellState(true);
-  if (back) back.style.display = "flex";
-  const root = el(ROOT_ID);
-  if (root) root.scrollTop = 0;
-
-  try { global.navOpen?.(MODAL_ID); } catch (_) {}
-
-  try {
-    await loadState();
-    try { el(CLOSE_ID)?.focus?.({ preventScroll: true }); } catch (_) {}
-    return true;
-  } catch (err) {
-    close();
-    throw err;
-  }
-}
 
   function wire() {
     const back = el(MODAL_ID);
     const closeBtn = el(CLOSE_ID);
     const refreshBtn = el(REFRESH_ID);
+
     if (closeBtn && !closeBtn.dataset.bcBound) {
       closeBtn.dataset.bcBound = "1";
       closeBtn.addEventListener("click", close);
@@ -370,7 +624,7 @@ async function open() {
     open,
     close,
     reload: loadState,
-    claim,
+    claim
   };
 
   global.BrokenContracts = BrokenContracts;
