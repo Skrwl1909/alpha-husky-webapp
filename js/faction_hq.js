@@ -284,7 +284,7 @@ function _contribSummaryLegacy(c) {
     if (!rows.length) return "";
     return `
       <div class="hq-tag-row">
-        ${rows.map((tag) => `<span class="hq-tag">${esc(tag)}</span>`).join("")}
+        ${rows.map((tag) => `<span class="hq-tag rv-chip">${esc(tag)}</span>`).join("")}
       </div>
     `;
   }
@@ -392,6 +392,67 @@ function _contribSummaryLegacy(c) {
     return `<div class="hq-contrib-empty">Faction names will surface here as weekly activity starts to build.</div>`;
   }
 
+  function renderFactionRaceStrip(social, myPlace, myContribution) {
+    const top = Array.isArray(social?.topContributors) ? social.topContributors.slice(0, 3) : [];
+    const myScore = Number(myContribution?.weeklyScore || myPlace?.weeklyScore || 0);
+    const myName = myPlace?.name || "You";
+    const hasYou = top.some((row) => !!row?.isYou);
+
+    const lanes = [];
+    top.forEach((row, idx) => {
+      lanes.push({
+        label: row?.name || "Member",
+        score: Number(row?.score || 0),
+        note: row?.rank ? `Faction ${rankLabel(row.rank)}` : "Faction contributor",
+        isLeader: idx === 0,
+        isYou: !!row?.isYou
+      });
+    });
+
+    if (!hasYou && myScore > 0) {
+      lanes.push({
+        label: myName,
+        score: myScore,
+        note: myPlace?.rankBand || "Your line",
+        isLeader: false,
+        isYou: true
+      });
+    }
+
+    if (!lanes.length) {
+      return `<div class="hq-race-empty">Race lanes unlock once weekly score starts moving.</div>`;
+    }
+
+    const maxScore = Math.max(1, ...lanes.map((row) => Number(row.score || 0)));
+    const laneHtml = lanes.map((row) => {
+      const lanePct = Math.max(4, Math.round((Number(row.score || 0) / maxScore) * 100));
+      const laneClass = [
+        "rv-race-lane",
+        row.isLeader ? "is-leader" : "",
+        row.isYou ? "is-viewer" : ""
+      ].filter(Boolean).join(" ");
+      return `
+        <div class="${laneClass}">
+          <div class="rv-race-head">
+            <span>${esc(row.label)}${row.isYou ? " (YOU)" : ""}</span>
+            <span>${num(row.score || 0)}</span>
+          </div>
+          <div class="rv-track" style="margin-top:6px;">
+            <i class="rv-track-fill" style="width:${lanePct}%;"></i>
+          </div>
+          <div class="rv-race-sub">${esc(row.note || "Faction lane")}</div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="rv-race-board hq-race-board">
+        <div class="rv-race-title">Faction race lanes</div>
+        <div class="rv-race-lanes">${laneHtml}</div>
+      </div>
+    `;
+  }
+
   // ---------------------------
   // Theme / backgrounds
   // ---------------------------
@@ -416,6 +477,17 @@ function _contribSummaryLegacy(c) {
       inner_howl: "#c45cff",
     };
     return map[canon] || "#00eaff";
+  }
+
+  function _factionAccentRgbFor(faction) {
+    const canon = _canonFaction(faction);
+    const map = {
+      rogue_byte: "0,234,255",
+      echo_wardens: "91,255,154",
+      pack_burners: "255,122,47",
+      inner_howl: "196,92,255",
+    };
+    return map[canon] || "0,234,255";
   }
 
   function applyHqBg(faction) {
@@ -481,18 +553,22 @@ function _contribSummaryLegacy(c) {
   function applyHQTheme(faction) {
     const canon = _canonFaction(faction);
     const color = _factionColorFor(faction);
+    const accentRgb = _factionAccentRgbFor(faction);
 
     try {
       if (_back) {
         _back.style.setProperty("--faction-color", color);
+        _back.style.setProperty("--rv-accent-rgb", accentRgb);
         _back.setAttribute("data-faction", canon || "");
       }
       if (_root) {
         _root.style.setProperty("--faction-color", color);
+        _root.style.setProperty("--rv-accent-rgb", accentRgb);
         _root.setAttribute("data-faction", canon || "");
       }
       if (_modal) {
         _modal.style.setProperty("--faction-color", color);
+        _modal.style.setProperty("--rv-accent-rgb", accentRgb);
         _modal.setAttribute("data-faction", canon || "");
       }
     } catch (_) { }
@@ -511,6 +587,114 @@ function _contribSummaryLegacy(c) {
   // ---------------------------
   // Styles
   // ---------------------------
+  function ensureRivalryCoreStyles() {
+    if (typeof window.AH_ensureRivalryVisualStyles === "function") {
+      window.AH_ensureRivalryVisualStyles();
+      return;
+    }
+    if (document.getElementById("ah-rivalry-visual-core-css")) return;
+
+    const st = document.createElement("style");
+    st.id = "ah-rivalry-visual-core-css";
+    st.textContent = `
+      .ah-rivalry-layer{
+        --rv-accent-rgb:0,234,255;
+        --rv-accent:rgb(var(--rv-accent-rgb));
+        --rv-chip-bg:rgba(255,255,255,.055);
+        --rv-chip-border:rgba(255,255,255,.14);
+      }
+      .ah-rivalry-layer .rv-surface{
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.12);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.028));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      }
+      .ah-rivalry-layer .rv-surface-hero{
+        border-color:rgba(var(--rv-accent-rgb), .38);
+        background:
+          radial-gradient(circle at 90% 8%, rgba(var(--rv-accent-rgb), .16), transparent 45%),
+          linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      }
+      .ah-rivalry-layer .rv-chip{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:24px;
+        padding:4px 10px;
+        border-radius:999px;
+        border:1px solid var(--rv-chip-border);
+        background:var(--rv-chip-bg);
+        font-size:10px;
+        letter-spacing:.05em;
+        font-weight:800;
+        text-transform:uppercase;
+        line-height:1;
+      }
+      .ah-rivalry-layer .rv-race-board{
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.1);
+        background:rgba(255,255,255,.03);
+        padding:10px;
+      }
+      .ah-rivalry-layer .rv-race-title{
+        font-size:11px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.05em;
+        color:#d5e6fb;
+      }
+      .ah-rivalry-layer .rv-race-lanes{
+        margin-top:8px;
+        display:grid;
+        gap:7px;
+      }
+      .ah-rivalry-layer .rv-race-lane{
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.1);
+        background:rgba(255,255,255,.03);
+        padding:7px 8px;
+      }
+      .ah-rivalry-layer .rv-race-lane.is-leader{
+        border-color:rgba(255,211,127,.35);
+        box-shadow:0 0 0 1px rgba(255,211,127,.14) inset;
+      }
+      .ah-rivalry-layer .rv-race-lane.is-viewer{
+        box-shadow:0 0 0 1px rgba(var(--rv-accent-rgb), .22) inset;
+      }
+      .ah-rivalry-layer .rv-race-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        font-size:12px;
+        font-weight:800;
+        color:#e9f2ff;
+      }
+      .ah-rivalry-layer .rv-race-sub{
+        margin-top:4px;
+        font-size:10px;
+        color:#bfd2ea;
+      }
+      .ah-rivalry-layer .rv-track{
+        position:relative;
+        height:7px;
+        border-radius:999px;
+        overflow:hidden;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(0,0,0,.35);
+      }
+      .ah-rivalry-layer .rv-track-fill{
+        display:block;
+        height:100%;
+        border-radius:999px;
+        background:linear-gradient(90deg, rgba(var(--rv-accent-rgb), .95), rgba(255,255,255,.72));
+        box-shadow:0 0 14px rgba(var(--rv-accent-rgb), .24);
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
   function ensureStyles() {
     if (document.getElementById("factionhq-premium-css")) return;
 
@@ -643,6 +827,7 @@ function _contribSummaryLegacy(c) {
         font-size:12px;
         font-weight:900;
         letter-spacing:.5px;
+        text-transform:none;
         background:rgba(255,255,255,.07);
         border:1px solid color-mix(in srgb, var(--faction-color) 42%, rgba(255,255,255,.12));
         box-shadow:0 0 18px color-mix(in srgb, var(--faction-color) 18%, transparent);
@@ -657,6 +842,7 @@ function _contribSummaryLegacy(c) {
         font-size:11px;
         font-weight:900;
         letter-spacing:.45px;
+        text-transform:none;
         background:rgba(255,255,255,.06);
         border:1px solid rgba(255,255,255,.12);
       }
@@ -898,6 +1084,33 @@ function _contribSummaryLegacy(c) {
           inset 0 1px 0 rgba(255,255,255,.06),
           0 10px 24px rgba(0,0,0,.18);
       }
+      #factionHQRoot .hq-card-role{
+        border-color:rgba(var(--rv-accent-rgb), .22);
+      }
+      #factionHQRoot .hq-card-role-race{
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.06),
+          0 10px 24px rgba(0,0,0,.18),
+          0 0 0 1px rgba(var(--rv-accent-rgb), .12);
+      }
+      #factionHQRoot .hq-card-role-identity{
+        border-color:rgba(255,255,255,.12);
+      }
+      #factionHQRoot .hq-card-role-status{
+        border-color:rgba(var(--rv-accent-rgb), .28);
+      }
+      #factionHQRoot .hq-race-board{
+        margin-top:12px;
+      }
+      #factionHQRoot .hq-race-empty{
+        margin-top:12px;
+        border-radius:12px;
+        border:1px dashed rgba(255,255,255,.14);
+        background:rgba(255,255,255,.03);
+        padding:10px;
+        font-size:12px;
+        color:#bfd2e8;
+      }
       #factionHQRoot .hq-card::before{
         content:"";
         position:absolute;
@@ -993,6 +1206,7 @@ function _contribSummaryLegacy(c) {
         font-size:12px;
         font-weight:800;
         letter-spacing:.2px;
+        text-transform:none;
         background:rgba(255,255,255,.06);
         border:1px solid rgba(255,255,255,.12);
       }
@@ -1013,6 +1227,7 @@ function _contribSummaryLegacy(c) {
         border-radius:999px;
         font-size:12px;
         font-weight:800;
+        text-transform:none;
         background:rgba(255,255,255,.05);
         border:1px solid rgba(255,255,255,.10);
       }
@@ -1722,6 +1937,7 @@ function _contribSummaryLegacy(c) {
   // DOM
   // ---------------------------
   function ensureModal() {
+    ensureRivalryCoreStyles();
     ensureStyles();
 
     _back = document.getElementById("factionHQBack");
@@ -1754,6 +1970,7 @@ function _contribSummaryLegacy(c) {
       _root.id = "factionHQRoot";
       _modal.appendChild(_root);
     }
+    _root.classList.add("ah-rivalry-layer", "rv-faction-hq");
 
     ensureHQVignette();
 
@@ -2177,6 +2394,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const social = d.social || {};
     const meta = factionHomeMeta(fk);
     const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
+    const factionRaceStripHTML = renderFactionRaceStrip(social, myPlace, myContribution);
     const highlight = snapshot.recentHighlight || {};
     const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
       ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
@@ -2194,10 +2412,10 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     ` : "";
 
     _root.innerHTML = `
-      <div class="hq-head">
+      <div class="hq-head rv-surface rv-surface-hero">
         <div class="hq-topline">
-          <div class="hq-pill">HQ | ${esc(factionShort(fk))}</div>
-          <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
+          <div class="hq-pill rv-chip">HQ | ${esc(factionShort(fk))}</div>
+          <div class="hq-status-chip rv-chip ${canUpgrade ? "ready" : ""}">
             ${canUpgrade ? "UPGRADE READY" : "TREASURY BUILD"}
           </div>
         </div>
@@ -2208,9 +2426,9 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         <div class="hq-identity">${esc(meta.belonging)}</div>
         ${renderTags(meta.tags)}
         <div class="hq-head-strip">
-          <div class="hq-chip">Role <strong>${esc(myPlace.role || "Scout")}</strong></div>
-          <div class="hq-chip">Standing <strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
-          <div class="hq-chip">Members <strong>${num(membersCount)}</strong></div>
+          <div class="hq-chip rv-chip">Role <strong>${esc(myPlace.role || "Scout")}</strong></div>
+          <div class="hq-chip rv-chip">Standing <strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
+          <div class="hq-chip rv-chip">Members <strong>${num(membersCount)}</strong></div>
         </div>
         ${dbgLine}
 
@@ -2218,7 +2436,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       </div>
 
       <div class="hq-grid two">
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-race rv-surface">
           <div class="hq-card-title">
             <b>Faction Circle</b>
             <span class="hq-mini">Top 3 this week</span>
@@ -2227,12 +2445,13 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-note" style="margin-top:0;">
             Faces carrying the faction right now, with your own line kept in view.
           </div>
+          ${factionRaceStripHTML}
           <div style="margin-top:12px;">
             ${factionCircleHTML}
           </div>
         </div>
 
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-identity rv-surface">
           <div class="hq-card-title">
             <b>My Place</b>
             <span class="hq-mini">${esc(myPlace.rankBand || "Faction member")}</span>
@@ -2263,7 +2482,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-note">${myPlace.qualified ? "Weekly reward threshold is active for you right now." : "Current standing is built from live faction activity and HQ support."}</div>
         </div>
 
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-contrib rv-surface">
           <div class="hq-card-title">
             <b>My Contribution</b>
             <span class="hq-mini">${num(myContribution.activeDays || 0)} active days</span>
@@ -2278,7 +2497,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-note">${esc(contributionSupportNote)}</div>
         </div>
 
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-snapshot rv-surface">
           <div class="hq-card-title">
             <b>Faction Snapshot</b>
             <span class="hq-tone-pill" data-tone="${esc(snapshot.momentumTone || "calm")}">${esc(snapshot.momentumLabel || "Building presence")}</span>
@@ -2308,7 +2527,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       </div>
 
       <div class="hq-grid two">
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-status rv-surface">
         <div class="hq-card-title">
           <b>HQ Status</b>
           <span class="hq-mini">Lv ${num(curLevel)} -> ${num(nextLevel)}</span>
@@ -2369,7 +2588,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         </div>
         </div>
 
-        <div class="hq-card">
+        <div class="hq-card hq-card-role hq-card-role-support rv-surface">
           <div class="hq-card-title">
             <b>Support HQ</b>
             <span class="hq-mini">calm, shared boosts</span>
@@ -2381,8 +2600,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
             </div>
 
             <div class="hq-support-need">
-              <div class="hq-chip">Need <strong>${num(supportNeedBones)}</strong> bones</div>
-              <div class="hq-chip">Need <strong>${num(supportNeedScrap)}</strong> scrap</div>
+              <div class="hq-chip rv-chip">Need <strong>${num(supportNeedBones)}</strong> bones</div>
+              <div class="hq-chip rv-chip">Need <strong>${num(supportNeedScrap)}</strong> scrap</div>
             </div>
 
             <div class="hq-actions compact">
@@ -2411,7 +2630,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         </div>
       </div>
 
-      <div class="hq-card">
+      <div class="hq-card hq-card-role hq-card-role-log rv-surface">
         <div class="hq-card-title">
           <b>HQ Build Log</b>
           <button class="hq-btn ghost" style="width:auto;padding:10px 14px;" onclick="FactionHQ.open()">Refresh</button>
