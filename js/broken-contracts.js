@@ -41,6 +41,13 @@
     }
   };
 
+  const FACTION_ACCENT_RGB = {
+    rogue_byte: "109,116,255",
+    echo_wardens: "98,225,188",
+    pack_burners: "255,132,84",
+    inner_howl: "212,150,255"
+  };
+
   const S = {
     apiPost: null,
     tg: null,
@@ -121,6 +128,411 @@
     return map[fk] || String(v || "").slice(0, 4).toUpperCase() || "----";
   }
 
+  function factionAccentRgb(v) {
+    const fk = normalizeFaction(v);
+    return FACTION_ACCENT_RGB[fk] || "126,231,135";
+  }
+
+  function factionToneClass(v) {
+    const fk = normalizeFaction(v);
+    if (fk === "rogue_byte") return "is-rb";
+    if (fk === "echo_wardens") return "is-ew";
+    if (fk === "pack_burners") return "is-pb";
+    if (fk === "inner_howl") return "is-ih";
+    return "";
+  }
+
+  function ensureRivalryVisualStyles() {
+    if (typeof global.AH_ensureRivalryVisualStyles === "function") {
+      global.AH_ensureRivalryVisualStyles();
+      return;
+    }
+
+    global.AH_ensureRivalryVisualStyles = function AH_ensureRivalryVisualStyles() {
+      if (document.getElementById("ah-rivalry-visual-mvp-css")) return;
+
+      const style = document.createElement("style");
+      style.id = "ah-rivalry-visual-mvp-css";
+      style.textContent = `
+        .ah-rivalry-layer{
+          --rv-accent-rgb:126,231,135;
+          --rv-accent:rgb(var(--rv-accent-rgb));
+          --rv-surface-border:rgba(255,255,255,.12);
+          --rv-chip-bg:rgba(255,255,255,.055);
+          --rv-chip-border:rgba(255,255,255,.14);
+          --rv-chip-color:#dce8f7;
+        }
+        .ah-rivalry-layer .rv-kicker{
+          font-size:10px;
+          letter-spacing:.11em;
+          text-transform:uppercase;
+          font-weight:800;
+          color:rgba(226,239,255,.74);
+        }
+        .ah-rivalry-layer .rv-surface{
+          border-radius:14px;
+          border:1px solid var(--rv-surface-border);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.028));
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+        }
+        .ah-rivalry-layer .rv-surface-hero{
+          border-color:rgba(var(--rv-accent-rgb), .36);
+          background:
+            radial-gradient(circle at 90% 8%, rgba(var(--rv-accent-rgb), .16), transparent 45%),
+            linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+        }
+        .ah-rivalry-layer .rv-chip-row{
+          display:flex;
+          flex-wrap:wrap;
+          gap:6px;
+        }
+        .ah-rivalry-layer .rv-chip{
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          min-height:24px;
+          padding:4px 9px;
+          border-radius:999px;
+          font-size:10px;
+          line-height:1;
+          letter-spacing:.05em;
+          font-weight:800;
+          text-transform:uppercase;
+          color:var(--rv-chip-color);
+          background:var(--rv-chip-bg);
+          border:1px solid var(--rv-chip-border);
+          white-space:nowrap;
+        }
+        .ah-rivalry-layer .rv-chip.is-live{
+          color:#d8ffe8;
+          border-color:rgba(105,255,173,.4);
+          background:rgba(105,255,173,.12);
+        }
+        .ah-rivalry-layer .rv-chip.is-hot{
+          color:#ffe3d3;
+          border-color:rgba(255,129,88,.38);
+          background:rgba(255,129,88,.13);
+        }
+        .ah-rivalry-layer .rv-chip.is-safe{
+          color:#d6ecff;
+          border-color:rgba(122,188,255,.36);
+          background:rgba(122,188,255,.12);
+        }
+        .ah-rivalry-layer .rv-chip.is-muted{
+          opacity:.86;
+        }
+        .ah-rivalry-layer .rv-track{
+          position:relative;
+          height:7px;
+          border-radius:999px;
+          overflow:hidden;
+          border:1px solid rgba(255,255,255,.08);
+          background:rgba(0,0,0,.36);
+        }
+        .ah-rivalry-layer .rv-track-fill{
+          display:block;
+          height:100%;
+          border-radius:999px;
+          background:linear-gradient(90deg, rgba(var(--rv-accent-rgb), .95), rgba(255,255,255,.72));
+          box-shadow:0 0 14px rgba(var(--rv-accent-rgb), .24);
+        }
+        .ah-rivalry-layer .rv-race-board{
+          border-radius:12px;
+          border:1px solid rgba(255,255,255,.1);
+          background:rgba(255,255,255,.03);
+          padding:10px;
+        }
+        .ah-rivalry-layer .rv-race-title{
+          font-size:11px;
+          font-weight:800;
+          text-transform:uppercase;
+          letter-spacing:.05em;
+          color:#dbe7f7;
+        }
+        .ah-rivalry-layer .rv-race-lanes{
+          margin-top:8px;
+          display:grid;
+          gap:7px;
+        }
+        .ah-rivalry-layer .rv-race-lane{
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.1);
+          background:rgba(255,255,255,.03);
+          padding:7px 8px;
+        }
+        .ah-rivalry-layer .rv-race-lane.is-leader{
+          border-color:rgba(255,211,127,.38);
+          box-shadow:0 0 0 1px rgba(255,211,127,.16) inset;
+        }
+        .ah-rivalry-layer .rv-race-lane.is-viewer{
+          box-shadow:0 0 0 1px rgba(var(--rv-accent-rgb), .24) inset;
+        }
+        .ah-rivalry-layer .rv-race-lane.is-rb{ --rv-accent-rgb:109,116,255; }
+        .ah-rivalry-layer .rv-race-lane.is-ew{ --rv-accent-rgb:98,225,188; }
+        .ah-rivalry-layer .rv-race-lane.is-pb{ --rv-accent-rgb:255,132,84; }
+        .ah-rivalry-layer .rv-race-lane.is-ih{ --rv-accent-rgb:212,150,255; }
+        .ah-rivalry-layer .rv-race-head{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:8px;
+          font-size:12px;
+          font-weight:800;
+          color:#ebf4ff;
+        }
+        .ah-rivalry-layer .rv-race-sub{
+          margin-top:4px;
+          font-size:10px;
+          color:#bed0e7;
+          line-height:1.3;
+        }
+        .ah-rivalry-layer .rv-check-grid{
+          margin-top:8px;
+          display:grid;
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+          gap:6px;
+        }
+        .ah-rivalry-layer .rv-check{
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.11);
+          background:rgba(255,255,255,.04);
+          padding:7px 8px;
+          font-size:10px;
+          text-transform:uppercase;
+          letter-spacing:.05em;
+          color:#b8cae1;
+        }
+        .ah-rivalry-layer .rv-check strong{
+          display:block;
+          font-size:11px;
+          color:#ebf4ff;
+          margin-bottom:2px;
+        }
+        .ah-rivalry-layer .rv-check.is-ready{
+          border-color:rgba(105,255,173,.36);
+          background:rgba(105,255,173,.1);
+          color:#cbf6df;
+        }
+
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer{
+          border-color:rgba(var(--rv-accent-rgb), .24);
+          box-shadow:
+            0 22px 50px rgba(0,0,0,.44),
+            inset 0 1px 0 rgba(255,255,255,.05),
+            0 0 0 1px rgba(var(--rv-accent-rgb), .08);
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-head{
+          padding:2px 0 0;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-title{
+          font-size:20px;
+          letter-spacing:.02em;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-meta{
+          font-size:11px;
+          color:#c5d7ec;
+          opacity:.8;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-statusline{
+          font-size:11px;
+          letter-spacing:.04em;
+          text-transform:uppercase;
+          color:#d3e2f4;
+          border-color:rgba(var(--rv-accent-rgb), .24);
+          background:rgba(var(--rv-accent-rgb), .08);
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-board{
+          display:grid;
+          gap:14px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-order-hero{
+          display:grid;
+          gap:8px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-order-kicker{
+          padding:0 2px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-card{
+          padding:14px;
+          gap:10px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-card-head-hero{
+          align-items:center;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-card-title{
+          font-size:17px;
+          line-height:1.18;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-card-desc{
+          white-space:normal;
+          font-size:12px;
+          opacity:.8;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-zone{
+          display:grid;
+          grid-template-columns:minmax(0, 1fr) auto;
+          gap:10px;
+          padding:9px 10px;
+          border-radius:12px;
+          border:1px solid rgba(var(--rv-accent-rgb), .26);
+          background:rgba(var(--rv-accent-rgb), .08);
+          align-items:center;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-title{
+          font-size:10px;
+          text-transform:uppercase;
+          letter-spacing:.07em;
+          color:#c4d6ec;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-note{
+          margin-top:4px;
+          font-size:12px;
+          color:#e7f0fb;
+          line-height:1.32;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-callout,
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-impact{
+          border-radius:12px;
+          border:1px solid rgba(255,255,255,.1);
+          background:rgba(255,255,255,.03);
+          padding:9px 10px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-callout-title,
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-impact-title{
+          font-size:10px;
+          text-transform:uppercase;
+          letter-spacing:.07em;
+          color:#bdd0e8;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-callout-text,
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-impact-text{
+          margin-top:5px;
+          font-size:12px;
+          line-height:1.4;
+          color:#deebfb;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-race-context{
+          margin-top:8px;
+          font-size:11px;
+          color:#c4d6ec;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-race-mini{
+          margin-top:6px;
+          font-size:11px;
+          color:#ccddf2;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-reward-tracker{
+          padding:10px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-reward-head{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:8px;
+          flex-wrap:wrap;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-reward-title{
+          font-size:11px;
+          text-transform:uppercase;
+          letter-spacing:.07em;
+          font-weight:800;
+          color:#c4d7ec;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-row{
+          font-size:11px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-row-percent{
+          font-size:10px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-bar{
+          height:8px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-fill{
+          box-shadow:0 0 14px rgba(var(--rv-accent-rgb), .2);
+          background:linear-gradient(90deg, rgba(var(--rv-accent-rgb), .95), rgba(255,255,255,.76));
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-fill.is-contrib{
+          background:linear-gradient(90deg, rgba(255,255,255,.24), rgba(var(--rv-accent-rgb), .95));
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-rewards{
+          margin-top:7px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-chip{
+          border-color:rgba(var(--rv-accent-rgb), .26);
+          background:rgba(var(--rv-accent-rgb), .08);
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-badge{
+          min-height:30px;
+          padding:0 12px;
+          font-size:10px;
+          letter-spacing:.06em;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-claim{
+          min-width:118px;
+          min-height:34px;
+          border-radius:12px;
+          border:1px solid rgba(var(--rv-accent-rgb), .52);
+          background:linear-gradient(180deg, rgba(var(--rv-accent-rgb), .32), rgba(var(--rv-accent-rgb), .18));
+          color:#f7fbff;
+          font-weight:900;
+          letter-spacing:.03em;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-links{
+          display:grid;
+          gap:6px;
+          margin-top:2px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-link-line{
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,.1);
+          background:rgba(255,255,255,.03);
+          padding:7px 8px;
+          font-size:11px;
+          color:#cad9ed;
+          line-height:1.35;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-secondary-head{
+          font-size:11px;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+          color:#bbcee4;
+          opacity:.9;
+          padding:0 2px;
+        }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-secondary-grid{
+          display:grid;
+          gap:10px;
+        }
+
+        @media (max-width: 640px){
+          #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-zone{
+            grid-template-columns:minmax(0, 1fr);
+          }
+          #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-note{
+            font-size:11px;
+          }
+          #brokenContractsBack .bc-sheet.ah-rivalry-layer .rv-check-grid{
+            grid-template-columns:1fr;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    };
+
+    global.AH_ensureRivalryVisualStyles();
+  }
+
+  function applyRivalrySkin(data) {
+    const back = el(MODAL_ID);
+    const sheet = back ? back.querySelector(".bc-sheet") : null;
+    if (!sheet) return;
+
+    const accentRgb = factionAccentRgb(data?.myFaction || data?.myFactionCode);
+    sheet.classList.add("ah-rivalry-layer", "rv-orders-board");
+    sheet.style.setProperty("--rv-accent-rgb", accentRgb);
+  }
+
   function pct(value, goal) {
     const g = Math.max(1, Number(goal || 0));
     const v = Math.max(0, Number(value || 0));
@@ -167,9 +579,36 @@
     return { mode: "badge", label: "Locked", cls: "is-locked" };
   }
 
-  function renderBadgeOrButton(contract) {
+  function statusToneClass(ui) {
+    const cls = String(ui?.cls || "");
+    if (cls.includes("is-claimed")) return "is-safe";
+    if (cls.includes("is-ready")) return "is-live";
+    if (cls.includes("is-progress")) return "is-live";
+    if (cls.includes("is-pending")) return "is-hot";
+    if (cls.includes("is-locked")) return "is-muted";
+    return "is-muted";
+  }
+
+  function raceStateLabel(race) {
+    if (!race) return "Observer";
+    if (race.status === "leading") return "Leading";
+    if (race.status === "tied") return "Tied";
+    if (race.status === "behind") return "Chasing";
+    return "Observer";
+  }
+
+  function raceStateTone(race) {
+    if (!race) return "is-muted";
+    if (race.status === "leading") return "is-live";
+    if (race.status === "tied") return "is-hot";
+    if (race.status === "behind") return "is-muted";
+    return "is-muted";
+  }
+
+  function renderBadgeOrButton(contract, opts = {}) {
+    const badgeOnly = !!opts.badgeOnly;
     const ui = statusUi(contract);
-    if (ui.mode === "button") {
+    if (ui.mode === "button" && !badgeOnly) {
       return `
         <button
           class="btn ${esc(ui.cls || "")}"
@@ -179,7 +618,8 @@
         >${esc(ui.label)}</button>
       `;
     }
-    return `<span class="bc-badge ${esc(ui.cls || "")}">${esc(ui.label)}</span>`;
+    const badgeLabel = (badgeOnly && ui.mode === "button") ? "Ready" : ui.label;
+    return `<span class="bc-badge ${esc(ui.cls || "")} rv-chip ${esc(statusToneClass(ui))}">${esc(badgeLabel)}</span>`;
   }
 
   function setStatus(text) {
@@ -192,7 +632,7 @@
     if (!node) return;
     const faction = data?.myFactionCode || factionCode(data?.myFaction) || "----";
     const dayKey = data?.dayKey || "-";
-    node.textContent = `Faction ${faction} War Orders - Reset in ${fmtReset(data?.secondsToReset)} - Cycle ${dayKey}`;
+    node.textContent = `Faction ${faction} orders | reset in ${fmtReset(data?.secondsToReset)} | cycle ${dayKey}`;
   }
 
   function renderLoading(msg) {
@@ -292,7 +732,9 @@
       myCode: myCode || "",
       myValue,
       gapToLeader: myRow ? Math.max(0, topValue - myValue) : topValue,
-      status
+      status,
+      rows: table.slice(0, 4),
+      topValue
     };
   }
 
@@ -305,8 +747,8 @@
           <span class="bc-row-label">${esc(label)}</span>
           <span class="bc-row-value">${esc(value)}/${esc(goal)}<span class="bc-row-percent">${esc(percent)}%</span></span>
         </div>
-        <div class="bc-bar">
-          <div class="${esc(fill)}" style="width:${esc(percent)}%;"></div>
+        <div class="bc-bar rv-track">
+          <div class="${esc(fill)} rv-track-fill" style="width:${esc(percent)}%;"></div>
         </div>
       </div>
     `;
@@ -315,18 +757,61 @@
   function renderRewards(contract) {
     const rewards = rewardChips(contract?.reward);
     if (!rewards.length) {
-      return `<span class="bc-chip"><span class="bc-chip-key">Reward</span><span class="bc-chip-val">None</span></span>`;
+      return `<span class="bc-chip rv-chip is-muted"><span class="bc-chip-key">Reward</span><span class="bc-chip-val">None</span></span>`;
     }
     return rewards.map((reward) => `
-      <span class="bc-chip">
+      <span class="bc-chip rv-chip is-safe">
         <span class="bc-chip-key">${esc(reward.label)}</span>
         <span class="bc-chip-val">+${esc(reward.value)}</span>
       </span>
     `).join("");
   }
 
-  function renderRace(contract, data, compact) {
-    const race = raceSnapshot(contract, data?.myFaction, data?.myFactionCode);
+  function renderOrderSignalChips(contract, m, race) {
+    const ui = statusUi(contract);
+    const brief = orderBrief(contract);
+    const factionReady = m.factionProgress >= m.goal;
+    const myReady = m.myContribution >= m.minContribution;
+    const chips = [
+      `<span class="rv-chip ${esc(statusToneClass(ui))}">${esc(ui.label)}</span>`,
+      `<span class="rv-chip is-muted">${brief.tier === "primary" ? "Primary order" : "Support order"}</span>`,
+      `<span class="rv-chip ${esc(raceStateTone(race))}">${esc(raceStateLabel(race))}</span>`,
+      `<span class="rv-chip ${myReady ? "is-live" : "is-muted"}">${myReady ? "Qualified" : "Qualifying"}</span>`,
+      `<span class="rv-chip ${factionReady ? "is-live" : "is-hot"}">${factionReady ? "Objective live" : "Pressure rising"}</span>`
+    ];
+    return chips.join("");
+  }
+
+  function renderRewardTracker(contract, m) {
+    const ui = statusUi(contract);
+    const factionReady = m.factionProgress >= m.goal;
+    const myReady = m.myContribution >= m.minContribution;
+    const unlocked = ui.mode === "button" || (factionReady && myReady);
+    return `
+      <div class="bc-reward-tracker rv-surface">
+        <div class="bc-reward-head">
+          <div class="bc-reward-title">Reward Qualification</div>
+          <span class="rv-chip ${unlocked ? "is-live" : "is-muted"}">${unlocked ? "Ready to claim" : "In progress"}</span>
+        </div>
+        ${renderProgress("Faction objective", m.factionProgress, m.goal, "bc-fill")}
+        ${renderProgress("Your contribution", m.myContribution, m.minContribution, "bc-fill is-contrib")}
+        <div class="rv-check-grid">
+          <div class="rv-check ${factionReady ? "is-ready" : ""}">
+            <strong>${factionReady ? "Done" : "Pending"}</strong>
+            Faction objective
+          </div>
+          <div class="rv-check ${myReady ? "is-ready" : ""}">
+            <strong>${myReady ? "Done" : "Pending"}</strong>
+            Personal contribution
+          </div>
+        </div>
+        <div class="bc-rewards">${renderRewards(contract)}</div>
+      </div>
+    `;
+  }
+
+  function renderRace(contract, data, compact, snap = null) {
+    const race = snap || raceSnapshot(contract, data?.myFaction, data?.myFactionCode);
     const goal = Math.max(1, Number(contract?.goal || 0));
     if (!race) return `<div class="bc-race-line">Race data unavailable.</div>`;
 
@@ -338,16 +823,38 @@
     if (compact) {
       return `
         <div class="bc-race-line">
-          Leader ${esc(race.leaderCode)} ${esc(race.leaderValue)}/${esc(goal)} · ${esc(context)}
+          Leader ${esc(race.leaderCode)} ${esc(race.leaderValue)}/${esc(goal)} | ${esc(context)}
         </div>
       `;
     }
 
+    const rows = Array.isArray(race.rows) ? race.rows : [];
+    const laneMax = Math.max(goal, race.topValue || 0, 1);
+    const lanes = rows.map((row, idx) => {
+      const lanePct = pct(row.value, laneMax);
+      const isLeader = idx === 0;
+      const isViewer = race.myCode && row.code === race.myCode;
+      const classes = [factionToneClass(row.faction)];
+      if (isLeader) classes.push("is-leader");
+      if (isViewer) classes.push("is-viewer");
+      return `
+        <div class="rv-race-lane ${classes.filter(Boolean).join(" ")}">
+          <div class="rv-race-head">
+            <span>${esc(row.code)} ${isViewer ? "(YOU)" : ""}</span>
+            <span>${esc(row.value)}/${esc(goal)}</span>
+          </div>
+          <div class="rv-track" style="margin-top:6px;">
+            <i class="rv-track-fill" style="width:${esc(lanePct)}%;"></i>
+          </div>
+          <div class="rv-race-sub">${esc(isLeader ? "Current lead lane" : "Faction pressure lane")}</div>
+        </div>
+      `;
+    }).join("");
+
     return `
-      <div class="bc-race">
-        <div class="bc-race-title">Faction Race</div>
-        <div class="bc-race-line">Leader: ${esc(race.leaderCode)} ${esc(race.leaderValue)}/${esc(goal)}</div>
-        <div class="bc-race-line">Your side: ${race.myCode ? `${esc(race.myCode)} ${esc(race.myValue)}/${esc(goal)}` : "No faction selected"}</div>
+      <div class="bc-race rv-race-board">
+        <div class="rv-race-title">Faction Race Board</div>
+        <div class="rv-race-lanes">${lanes}</div>
         <div class="bc-race-context">${esc(context)}</div>
       </div>
     `;
@@ -357,45 +864,52 @@
     const type = String(contract?.type || "generic").toLowerCase();
     const m = metrics(contract);
     const brief = orderBrief(contract);
+    const race = raceSnapshot(contract, data?.myFaction, data?.myFactionCode);
     const links = brief.links.length
       ? `<div class="bc-links">${brief.links.map((line) => `<div class="bc-link-line">${esc(line)}</div>`).join("")}</div>`
       : "";
 
     return `
       <section class="bc-order-hero">
-        <div class="bc-order-kicker">${esc(brief.kicker)} · Reset in ${esc(fmtReset(data?.secondsToReset))}</div>
-        <div class="bc-card bc-card-primary type-${esc(type)}">
-          <div class="bc-card-head">
+        <div class="bc-order-kicker rv-kicker">${esc(brief.kicker)} | reset in ${esc(fmtReset(data?.secondsToReset))}</div>
+        <div class="bc-card bc-card-primary type-${esc(type)} rv-surface rv-surface-hero">
+          <div class="bc-card-head bc-card-head-hero">
             <div class="bc-card-copy">
               <div class="bc-card-title">${esc(contract?.title || contract?.id || "Order")}</div>
               <div class="bc-card-desc">${esc(contract?.desc || "")}</div>
             </div>
-            ${renderBadgeOrButton(contract)}
+            ${renderBadgeOrButton(contract, { badgeOnly: true })}
           </div>
 
-          <div class="bc-callout">
-            <div class="bc-callout-title">Directive</div>
-            <div class="bc-callout-text">${esc(brief.directive)}</div>
+          <div class="rv-chip-row">
+            ${renderOrderSignalChips(contract, m, race)}
           </div>
 
-          ${renderProgress("Faction objective", m.factionProgress, m.goal, "bc-fill")}
-          ${renderProgress("My contribution (qualify for reward)", m.myContribution, m.minContribution, "bc-fill is-contrib")}
+          <div class="bc-action-zone">
+            <div class="bc-action-copy">
+              <div class="bc-action-title">War Directive</div>
+              <div class="bc-action-note">${esc(brief.directive)}</div>
+            </div>
+            <div class="bc-action-slot">
+              ${renderBadgeOrButton(contract)}
+            </div>
+          </div>
 
-          ${renderRace(contract, data, false)}
+          ${renderRace(contract, data, false, race)}
 
           <div class="bc-callout">
-            <div class="bc-callout-title">Why it matters</div>
+            <div class="bc-callout-title">Intel</div>
             <div class="bc-callout-text">${esc(brief.why)}</div>
           </div>
 
+          ${renderRewardTracker(contract, m)}
+
           <div class="bc-impact">
-            <div class="bc-impact-title">Cycle impact on completion</div>
+            <div class="bc-impact-title">Cycle impact</div>
             <div class="bc-impact-text">${esc(brief.impact)}</div>
           </div>
 
           ${links}
-
-          <div class="bc-rewards">${renderRewards(contract)}</div>
         </div>
       </section>
     `;
@@ -405,24 +919,39 @@
     const type = String(contract?.type || "generic").toLowerCase();
     const m = metrics(contract);
     const brief = orderBrief(contract);
+    const race = raceSnapshot(contract, data?.myFaction, data?.myFactionCode);
     return `
-      <article class="bc-card bc-card-secondary type-${esc(type)}">
+      <article class="bc-card bc-card-secondary type-${esc(type)} rv-surface">
         <div class="bc-card-head">
           <div class="bc-card-copy">
-            <div class="bc-card-overline">${esc(brief.kicker)}</div>
+            <div class="bc-card-overline rv-kicker">${esc(brief.kicker)}</div>
             <div class="bc-card-title">${esc(contract?.title || contract?.id || "Order")}</div>
             <div class="bc-card-desc">${esc(contract?.desc || "")}</div>
           </div>
-          ${renderBadgeOrButton(contract)}
+          ${renderBadgeOrButton(contract, { badgeOnly: true })}
+        </div>
+
+        <div class="rv-chip-row">
+          ${renderOrderSignalChips(contract, m, race)}
+        </div>
+
+        <div class="bc-action-zone">
+          <div class="bc-action-copy">
+            <div class="bc-action-title">Directive</div>
+            <div class="bc-action-note">${esc(brief.directive)}</div>
+          </div>
+          <div class="bc-action-slot">
+            ${renderBadgeOrButton(contract)}
+          </div>
         </div>
 
         ${renderProgress("Faction", m.factionProgress, m.goal, "bc-fill")}
         ${renderProgress("You", m.myContribution, m.minContribution, "bc-fill is-contrib")}
 
-        <div class="bc-race-mini">${renderRace(contract, data, true)}</div>
+        <div class="bc-race-mini">${renderRace(contract, data, true, race)}</div>
 
         <div class="bc-impact">
-          <div class="bc-impact-title">Why</div>
+          <div class="bc-impact-title">Intel</div>
           <div class="bc-impact-text">${esc(brief.why)}</div>
         </div>
 
@@ -442,8 +971,9 @@
 
   function renderState(data) {
     S.state = data || {};
-    setStatus(`Orders active · ${fmtReset(data?.secondsToReset)} to reset`);
     setMeta(data);
+    setStatus(`Orders active | ${fmtReset(data?.secondsToReset)} to reset`);
+    applyRivalrySkin(data);
 
     const contracts = Array.isArray(data?.contracts) ? data.contracts : [];
     const root = el(ROOT_ID);
@@ -577,9 +1107,11 @@
   }
 
   function wire() {
+    ensureRivalryVisualStyles();
     const back = el(MODAL_ID);
     const closeBtn = el(CLOSE_ID);
     const refreshBtn = el(REFRESH_ID);
+    applyRivalrySkin(S.state);
 
     if (closeBtn && !closeBtn.dataset.bcBound) {
       closeBtn.dataset.bcBound = "1";

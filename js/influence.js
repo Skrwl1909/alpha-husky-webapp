@@ -1583,6 +1583,7 @@
   function ensureModal() {
     if (document.getElementById("influenceModal")) return;
     ensureModalStyles();
+    try { window.AH_ensureRivalryVisualStyles?.(); } catch (_) {}
 
     const wrap = document.createElement("div");
     wrap.id = "influenceModal";
@@ -1605,7 +1606,7 @@
     `;
 
     wrap.innerHTML = `
-      <div id="influenceCard" class="inf-modal-card">
+      <div id="influenceCard" class="inf-modal-card ah-rivalry-layer rv-node-frontline">
         <div class="inf-head">
           <div>
             <div id="infTitle" class="inf-title">Influence Frontline</div>
@@ -1614,7 +1615,7 @@
           <button data-close type="button" class="inf-close-btn">Close</button>
         </div>
 
-        <section id="infHero" class="inf-hero">
+        <section id="infHero" class="inf-hero rv-surface rv-surface-hero">
           <div class="inf-hero-grid">
             <div>
               <div class="inf-panel-kicker">Live Node Operations</div>
@@ -1627,17 +1628,17 @@
             </div>
           </div>
           <div class="inf-chip-row">
-            <span id="infUxStatus" class="inf-chip">Secured</span>
-            <span id="infUxControlChip" class="inf-chip inf-chip-muted">Controlled</span>
-            <span id="infUxAction" class="inf-chip inf-chip-muted">Pressure stable</span>
-            <span id="infUxValue" class="inf-chip" style="display:none;"></span>
-            <span id="infUxWatchChip" class="inf-chip inf-chip-muted" style="display:none;"></span>
+            <span id="infUxStatus" class="inf-chip rv-chip">Secured</span>
+            <span id="infUxControlChip" class="inf-chip inf-chip-muted rv-chip is-muted">Controlled</span>
+            <span id="infUxAction" class="inf-chip inf-chip-muted rv-chip is-muted">Pressure stable</span>
+            <span id="infUxValue" class="inf-chip rv-chip" style="display:none;"></span>
+            <span id="infUxWatchChip" class="inf-chip inf-chip-muted rv-chip is-muted" style="display:none;"></span>
           </div>
           <div id="infUxStatusText" class="inf-hero-status">This frontline is stable right now.</div>
           <div id="infContested" style="display:none;"></div>
         </section>
 
-        <section id="infOpsPanel" class="inf-panel inf-ops-panel">
+        <section id="infOpsPanel" class="inf-panel inf-ops-panel rv-surface">
           <div class="inf-panel-head">
             <div class="inf-panel-title">Action Zone</div>
             <span id="infOpsState" class="inf-chip">Actions available</span>
@@ -1665,7 +1666,7 @@
           <div id="infWatchHelp" class="inf-watch-line">Join watch when pressure rises to hold this frontline.</div>
         </section>
 
-        <section id="infIntelShell" class="inf-panel">
+        <section id="infIntelShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
             <div class="inf-panel-title">Local Operations</div>
             <span class="inf-chip inf-chip-muted">Live feed</span>
@@ -1693,7 +1694,7 @@
           </div>
         </section>
 
-        <section class="inf-panel">
+        <section class="inf-panel rv-surface">
           <div class="inf-panel-title">Operator Status</div>
           <div class="inf-status-grid">
             <article class="inf-tile">
@@ -1715,7 +1716,7 @@
           </div>
         </section>
 
-        <section id="infLoreShell" class="inf-panel">
+        <section id="infLoreShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
             <div class="inf-panel-title">Intel Card</div>
             <span class="inf-chip inf-chip-muted">Tactical</span>
