@@ -3462,6 +3462,96 @@ body.missions-open{
     cursor:pointer;
   }
 
+  .ah-wallet-modal{
+    position: fixed;
+    inset: 0;
+    z-index: 9800;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding:
+      calc(14px + var(--ah-safe-top))
+      calc(14px + var(--ah-safe-right))
+      calc(14px + var(--ah-safe-bottom))
+      calc(14px + var(--ah-safe-left));
+    background: rgba(0,0,0,.62);
+  }
+  .ah-wallet-modal[data-open="1"]{ display:flex; }
+  .ah-wallet-card{
+    width: min(420px, 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(216,229,248,.16);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(0,229,255,.12), transparent 46%),
+      linear-gradient(180deg, rgba(18,24,36,.96), rgba(8,12,20,.96));
+    box-shadow:
+      0 18px 52px rgba(0,0,0,.58),
+      inset 0 1px 0 rgba(255,255,255,.08);
+    color: rgba(242,248,255,.96);
+    overflow: hidden;
+  }
+  .ah-wallet-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    padding: 15px 15px 10px;
+  }
+  .ah-wallet-title{
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: .2px;
+  }
+  .ah-wallet-body{
+    padding: 0 15px 15px;
+    font-size: 13px;
+    line-height: 1.48;
+    color: rgba(222,235,248,.84);
+  }
+  .ah-wallet-body p{ margin: 0 0 10px; }
+  .ah-wallet-body ul{
+    margin: 0 0 12px;
+    padding-left: 18px;
+  }
+  .ah-wallet-actions{
+    display:flex;
+    flex-direction:column;
+    gap: 9px;
+    padding: 0 15px 15px;
+  }
+  .ah-wallet-actions .ah-action{
+    width: 100%;
+    border-radius: 16px;
+  }
+  .ah-wallet-primary{
+    border-color: rgba(0,229,255,.36);
+    background:
+      linear-gradient(180deg, rgba(0,229,255,.18), rgba(0,229,255,.06)),
+      rgba(10,15,24,.56);
+  }
+  .ah-wallet-toast{
+    position: fixed;
+    left: 50%;
+    bottom: calc(22px + var(--ah-safe-bottom));
+    z-index: 9900;
+    transform: translate(-50%, 12px);
+    opacity: 0;
+    pointer-events: none;
+    padding: 10px 13px;
+    border-radius: 14px;
+    border: 1px solid rgba(216,229,248,.16);
+    background: rgba(10,15,24,.94);
+    color: rgba(242,248,255,.96);
+    box-shadow: 0 12px 32px rgba(0,0,0,.42);
+    font-size: 12px;
+    font-weight: 800;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .ah-wallet-toast[data-show="1"]{
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
   /* Character sheet polish (scoped, UI-only) */
   #charBack{
     background:
@@ -4308,7 +4398,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <button class="ah-action" id="supportTokenClaim" type="button" disabled style="display:none">Weekly Claim</button>
         </div>
         <div id="supportTokenHint" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
-          For Solana holder verification and rewards: Open Support -> Connect Solana Wallet -> Sign message -> Refresh Holder Status -> Claim Weekly Reward if eligible.
+          Wallet connect works inside Phantom browser or desktop wallet extensions.
         </div>
       </section>
 
@@ -4325,6 +4415,28 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
   </div>
 </div>
+
+<div id="solanaWalletModal" class="ah-wallet-modal" role="dialog" aria-modal="true" aria-labelledby="solanaWalletTitle">
+  <div class="ah-wallet-card">
+    <div class="ah-wallet-head">
+      <div id="solanaWalletTitle" class="ah-wallet-title">No Solana wallet detected</div>
+      <button id="solanaWalletClose" class="ah-x" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="ah-wallet-body">
+      <p>To connect your wallet:</p>
+      <ul>
+        <li>Open Alpha Husky in Phantom browser</li>
+        <li>Or use a browser with a Solana wallet extension</li>
+      </ul>
+      <p>This is required for holder verification and rewards.</p>
+    </div>
+    <div class="ah-wallet-actions">
+      <button id="solanaWalletOpenPhantom" class="ah-action ah-wallet-primary" type="button">Open in Phantom</button>
+      <button id="solanaWalletCopyLink" class="ah-action" type="button">Copy App Link</button>
+    </div>
+  </div>
+</div>
+<div id="solanaWalletToast" class="ah-wallet-toast" role="status" aria-live="polite"></div>
 
    <!-- Region Sheet modal -->
 <div class="sheet-back region-sheet" id="regionBack">
