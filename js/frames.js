@@ -50,11 +50,44 @@
     return String(value || "").trim().toLowerCase();
   }
 
+  function frameAssetOverrides() {
+    const raw = window.__AH_FRAME_ASSET_OVERRIDES__;
+    return raw && typeof raw === "object" ? raw : {};
+  }
+
+  function frameAssetOverride(frameKey) {
+    const key = normKey(frameKey);
+    if (!key) return null;
+    const raw = frameAssetOverrides()[key];
+    if (!raw || typeof raw !== "object") return null;
+    return {
+      key,
+      displayName: String(raw.display_name || raw.displayName || raw.name || "").trim(),
+      source: String(raw.source || "").trim(),
+      base: String(raw.base || raw.frame_url || raw.frameUrl || raw.preview || "").trim(),
+      glow: String(raw.glow || "").trim(),
+      sweep: String(raw.sweep || "").trim(),
+      preview: String(raw.preview || raw.base || raw.frame_url || raw.frameUrl || "").trim(),
+    };
+  }
+
   function frameKeyFromUrl(url) {
     const input = String(url || "").trim();
     if (!input) return "";
     const m = input.match(/\/frames\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg)(?:[?#].*)?$/i);
-    return normKey(m?.[1] || "");
+    if (m?.[1]) return normKey(m[1]);
+    const lowered = input.toLowerCase();
+    const overrides = frameAssetOverrides();
+    for (const [key, raw] of Object.entries(overrides)) {
+      if (!raw || typeof raw !== "object") continue;
+      const candidates = [raw.base, raw.frame_url, raw.frameUrl, raw.preview, raw.glow, raw.sweep];
+      const matched = candidates.some((candidate) => {
+        const value = String(candidate || "").trim().toLowerCase();
+        return !!value && lowered.includes(value);
+      });
+      if (matched) return normKey(key);
+    }
+    return "";
   }
 
   function skinKeyFromUrl(url) {
@@ -447,6 +480,64 @@
     return frameKeyFromUrl(framePreviewUrl(item));
   }
 
+  function frameKeyFromItem(item) {
+    const direct =
+      item?.key ||
+      item?.frame_key ||
+      item?.frameKey ||
+      item?.frame ||
+      "";
+    const k = normKey(direct);
+    if (k && !k.includes("/") && !k.includes(".")) return k;
+    return frameKeyFromUrl(framePreviewUrl(item));
+  }
+
+  function applyFrameAssetOverride(item) {
+    const entry = item && typeof item === "object" ? { ...item } : {};
+    const key = frameKeyFromItem(entry);
+    if (!key || key === "default") return entry;
+    if (!entry.key) entry.key = key;
+    const override = frameAssetOverride(key);
+    if (!override) return entry;
+    if (!String(entry.display_name || entry.displayName || entry.name || "").trim() && override.displayName) {
+      entry.display_name = override.displayName;
+    }
+    if (!String(entry.source || entry.source_label || entry.sourceLabel || "").trim() && override.source) {
+      entry.source = override.source;
+    }
+    if (!String(entry.frame_url || entry.frameUrl || "").trim() && override.base) {
+      entry.frame_url = override.base;
+    }
+    if (!String(entry.preview_url || entry.previewUrl || entry.img || "").trim() && override.preview) {
+      entry.preview_url = override.preview;
+    }
+    return entry;
+  }
+
+  function mergeCatalogWithFrameOverrides(catalog, explicitKeys) {
+    const list = Array.isArray(catalog) ? catalog : [];
+    const merged = list.map((item) => applyFrameAssetOverride(item));
+    const presentKeys = new Set(
+      merged.map((item) => frameKeyFromItem(item)).filter(Boolean)
+    );
+    const keys = Array.isArray(explicitKeys) ? explicitKeys : [];
+    for (const rawKey of keys) {
+      const key = normKey(rawKey);
+      if (!key || key === "default" || presentKeys.has(key)) continue;
+      const override = frameAssetOverride(key);
+      if (!override || !override.base) continue;
+      merged.push({
+        key,
+        display_name: override.displayName || key,
+        source: override.source || "",
+        frame_url: override.base,
+        preview_url: override.preview || override.base,
+      });
+      presentKeys.add(key);
+    }
+    return merged;
+  }
+
   function getPreviewFrameFit(frameKey) {
     const cfg = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
     const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_FIT_DEFAULT);
@@ -495,6 +586,7 @@
     const src = frameSourceLabel(item);
     const source = src.toLowerCase();
     if (k === "default") return "Base";
+    if (k === "pioneer_frame" || source.includes("pioneer")) return "Pioneer";
     if (k === "founder_ember_mark" || source.includes("founder")) return "Founder";
     if (k === "believe_support_frame" || source.includes("support")) return "Support";
     if (k === "believe_holder_frame" || source.includes("holder") || source.includes("believe")) return "Believer";
@@ -684,7 +776,12 @@
     const out = await _apiPost("/webapp/frames", {});
     if (!out || !out.ok) throw new Error(out?.reason || "frames_get_failed");
 
-    _catalog = Array.isArray(out.frames) ? out.frames : [];
+    const explicitKeys = [
+      out?.equipped?.frame,
+      out?.active,
+      preferKey,
+    ];
+    _catalog = mergeCatalogWithFrameOverrides(out.frames, explicitKeys);
     _owned = Array.isArray(out.owned) ? out.owned.map(normKey) : ["default"];
     _equipped = (out.equipped && typeof out.equipped === "object")
       ? out.equipped
