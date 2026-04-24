@@ -253,20 +253,20 @@
 .hero-frame.is-pioneer-frame .hero-frame-overlay-sweep{
   display:block;
   z-index:5;
-  --pioneer-sweep-max-opacity: calc(.16 * var(--pioneer-sweep-enabled, 1));
+  --pioneer-sweep-max-opacity: calc(.14 * var(--pioneer-sweep-enabled, 1));
   animation: ahPioneerSweepPass 5.6s linear infinite;
 }
 
 @keyframes ahPioneerGlowPulse{
   0%, 100%{
-    opacity:.12;
+    opacity:.16;
     transform: var(--hero-frame-transform) scale(1);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(.98);
   }
   50%{
-    opacity:.22;
+    opacity:.28;
     transform: var(--hero-frame-transform) scale(1.003);
-    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.05);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.06);
   }
 }
 
@@ -5985,10 +5985,10 @@ const AH_FRAME_ASSET_OVERRIDES = Object.freeze({
     key: "pioneer_frame",
     display_name: "Pioneer Frame",
     source: "Pioneer",
-    base: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_base_transparent.png",
-    glow: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_glow_overlay.png",
-    sweep: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034355/frames/pioneer/pioneer_frame_sweep_overlay.png",
-    preview: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_base_transparent.png",
+    base: "/assets/frames/pioneer/pioneer_frame_base_transparent_v2.png",
+    glow: "/assets/frames/pioneer/pioneer_frame_glow_overlay_v2.png",
+    sweep: "/assets/frames/pioneer/pioneer_frame_sweep_overlay_v2.png",
+    preview: "/assets/frames/pioneer/pioneer_frame_base_transparent_v2.png",
   }),
 });
 
