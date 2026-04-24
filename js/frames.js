@@ -780,6 +780,7 @@
       out?.equipped?.frame,
       out?.active,
       preferKey,
+      ...(Array.isArray(out?.owned) ? out.owned : []),
     ];
     _catalog = mergeCatalogWithFrameOverrides(out.frames, explicitKeys);
     _owned = Array.isArray(out.owned) ? out.owned.map(normKey) : ["default"];
