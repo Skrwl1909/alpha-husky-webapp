@@ -108,6 +108,102 @@
     return null;
   }
 
+  function showWalletToast(message) {
+    const toast = el("solanaWalletToast");
+    if (!toast) {
+      try { window.toast?.(message); } catch (_) {}
+      return;
+    }
+    toast.textContent = message || "";
+    toast.dataset.show = "1";
+    clearTimeout(showWalletToast._timer);
+    showWalletToast._timer = setTimeout(() => {
+      toast.dataset.show = "0";
+    }, 1800);
+  }
+
+  async function copyText(text) {
+    const value = String(text || "");
+    if (!value) return false;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (_) {}
+
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return !!ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function closeWalletModal() {
+    const modal = el("solanaWalletModal");
+    if (!modal) return;
+    modal.dataset.open = "0";
+    modal.style.display = "none";
+  }
+
+  function openInPhantom() {
+    const currentUrl = window.location.href;
+    const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}`;
+    const tg = getTg();
+
+    try {
+      if (typeof tg?.openLink === "function") {
+        tg.openLink(phantomUrl, { try_instant_view: false });
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      window.open(phantomUrl, "_blank", "noopener");
+    } catch (_) {
+      window.location.href = phantomUrl;
+    }
+  }
+
+  function showWalletMissingModal() {
+    const modal = el("solanaWalletModal");
+    if (!modal) {
+      showWalletToast("Open Alpha Husky in Phantom browser or a desktop wallet browser.");
+      return;
+    }
+    wireWalletModal();
+    modal.style.display = "flex";
+    modal.dataset.open = "1";
+  }
+
+  function wireWalletModal() {
+    const modal = el("solanaWalletModal");
+    if (!modal || modal.__wired) return;
+    modal.__wired = true;
+
+    el("solanaWalletClose")?.addEventListener("click", closeWalletModal);
+    el("solanaWalletOpenPhantom")?.addEventListener("click", openInPhantom);
+    el("solanaWalletCopyLink")?.addEventListener("click", async () => {
+      const ok = await copyText(window.location.href);
+      showWalletToast(ok ? "App link copied." : "Could not copy app link.");
+    });
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeWalletModal();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.dataset.open === "1") closeWalletModal();
+    });
+  }
+
   async function createStarsInvoice(tier) {
     const apiPost = getApiPost();
     if (!apiPost) throw new Error("NO_API_POST");
@@ -468,6 +564,10 @@
       try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
+    if (!window.solana) {
+      showWalletMissingModal();
+      return;
+    }
     try {
       setButtonBusy("supportTokenConnect", true, "Linking...", "Connect Solana Wallet");
       await linkSolanaWallet();
@@ -581,7 +681,7 @@
     setText("supportStarsStatus", "Checking Stars support status...");
     setText("supportTokenStatus", "Believe holder lane is in preparation.");
     setText("supportTokenPerks", "Stars support is live now. Solana holder checks and weekly claim activate with the live mint rollout.");
-    setText("supportTokenHint", "For Solana holder verification and rewards: Open Support -> Connect Solana Wallet -> Sign message -> Refresh Holder Status -> Claim Weekly Reward if eligible.");
+    setText("supportTokenHint", "Wallet connect works inside Phantom browser or desktop wallet extensions.");
     setText("supportCombinedStatus", "Loading support status...");
 
     try {
