@@ -31,6 +31,23 @@
     pack_burners: "f-pb",
     inner_howl: "f-ih",
   };
+  const FACTION_UI = {
+    rogue_byte: { name: "Rogue Byte", tone: "rb", rgb: "255,82,82" },
+    echo_wardens: { name: "Echo Wardens", tone: "ew", rgb: "255,213,74" },
+    pack_burners: { name: "Pack Burners", tone: "pb", rgb: "255,159,67" },
+    inner_howl: { name: "Inner Howl", tone: "ih", rgb: "90,208,255" },
+  };
+  const DOMINANCE_EXPLICIT_KEYS = [
+    "dominantFaction",
+    "mapDominantFaction",
+    "currentLeaderFaction",
+    "leaderFaction",
+    "warLeaderFaction",
+    "leadingFaction",
+    "topFaction",
+    "leader",
+    "winnerFaction"
+  ];
 
   const CSS_ID = "ah-map-level1-css";
   const NODE_ID_ALIASES = {
@@ -480,6 +497,117 @@
   border-color:rgba(96,204,255,.24);
 }
 
+.map-pressure-mood.ah-dom-chip{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:1px;
+  min-height:24px;
+  padding:4px 9px;
+  border-radius:10px;
+  border:1px solid rgba(180,210,240,.14);
+  background:rgba(8,12,18,.66);
+  color:#e9f1ff;
+  text-transform:none;
+  letter-spacing:0;
+  box-shadow:0 6px 14px rgba(0,0,0,.20);
+}
+.map-pressure-mood.ah-dom-chip .ah-dom-main{
+  font-size:10px;
+  line-height:1.1;
+  font-weight:800;
+  letter-spacing:.015em;
+}
+.map-pressure-mood.ah-dom-chip .ah-dom-sub{
+  font-size:8px;
+  line-height:1.1;
+  font-weight:700;
+  color:rgba(220,232,248,.78);
+  letter-spacing:.015em;
+}
+.map-pressure-mood.ah-dom-chip[data-tone="rb"]{
+  border-color:rgba(255,96,96,.28);
+  background:rgba(44,14,18,.72);
+  color:#ffe0e0;
+}
+.map-pressure-mood.ah-dom-chip[data-tone="ew"]{
+  border-color:rgba(255,214,92,.26);
+  background:rgba(44,32,12,.70);
+  color:#fff1c8;
+}
+.map-pressure-mood.ah-dom-chip[data-tone="pb"]{
+  border-color:rgba(255,166,84,.28);
+  background:rgba(46,26,12,.72);
+  color:#ffe2c0;
+}
+.map-pressure-mood.ah-dom-chip[data-tone="ih"]{
+  border-color:rgba(96,205,255,.28);
+  background:rgba(12,28,44,.72);
+  color:#dff3ff;
+}
+.map-pressure-mood.ah-dom-chip[data-tone="contested"],
+.map-pressure-mood.ah-dom-chip[data-tone="neutral"]{
+  border-color:rgba(150,186,220,.18);
+  background:rgba(14,20,30,.66);
+  color:#dce7f6;
+}
+@media (max-width: 640px){
+  .map-pressure-mood.ah-dom-chip{ padding:3px 8px; }
+  .map-pressure-mood.ah-dom-chip .ah-dom-sub{ display:none; }
+}
+
+#map[data-dom-state]::before{
+  content:"";
+  position:absolute;
+  inset:-12%;
+  z-index:1;
+  pointer-events:none;
+  border-radius:inherit;
+  opacity:0;
+  transition:opacity .35s ease;
+  background:
+    radial-gradient(120% 76% at 50% -8%, rgba(var(--ah-dom-rgb, 162,185,208), var(--ah-dom-aura, .10)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 62%),
+    radial-gradient(72% 68% at 20% 100%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-aura, .10) * .70)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 72%);
+}
+#map[data-dom-state="leader"]::before{ opacity:.95; }
+#map[data-dom-state="contested"]::before{ opacity:.42; }
+
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence::after{
+  content:"";
+  position:absolute;
+  inset:-9px;
+  border-radius:999px;
+  pointer-events:none;
+  border:1px solid rgba(var(--ah-dom-rgb, 162,185,208), .22);
+  box-shadow:
+    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .08),
+    0 0 14px rgba(var(--ah-dom-rgb, 162,185,208), .20);
+  z-index:1;
+}
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-core::after{
+  inset:-12px;
+  border-width:1.2px;
+  box-shadow:
+    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .10),
+    0 0 20px rgba(var(--ah-dom-rgb, 162,185,208), .26);
+}
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence.siege-running::after,
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence.siege-forming::after,
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence.pressure-contested::after{
+  opacity:.28;
+}
+
+#map[data-dom-state="leader"] #pathsSVG .path.ah-dom-path{
+  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .42);
+  stroke-width:2.8;
+  filter:drop-shadow(0 0 5px rgba(var(--ah-dom-rgb, 162,185,208), .24));
+}
+#map[data-dom-state="leader"] #pathsSVG .path.glow.ah-dom-path{
+  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .20);
+  stroke-width:4.8;
+}
+
 @keyframes ahPinPulse{
   0%,100%{ transform:scale(1); opacity:.85; }
   50%{ transform:scale(1.08); opacity:1; }
@@ -564,7 +692,8 @@
       "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
       "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
       "family-rivalry", "family-legacy",
-      "tier-low", "tier-high", "tier-strategic"
+      "tier-low", "tier-high", "tier-strategic",
+      "dom-presence", "dom-core"
     );
   }
 
@@ -577,7 +706,6 @@
       "pressure-flashpoint"
     );
   }
-
   function _normFactionKey(raw) {
     const s = String(raw || "").toLowerCase().trim();
     if (!s) return "";
@@ -587,6 +715,56 @@
     if (s === "pb" || s.includes("pack") || s.includes("burn")) return "pack_burners";
     if (s === "ih" || s.includes("inner") || s.includes("iron") || s.includes("howl")) return "inner_howl";
     return "";
+  }
+
+  function _factionName(key) {
+    return FACTION_UI?.[key]?.name || "";
+  }
+
+  function _factionTone(key) {
+    return FACTION_UI?.[key]?.tone || "neutral";
+  }
+
+  function _factionRgb(key) {
+    return FACTION_UI?.[key]?.rgb || "162,185,208";
+  }
+
+  function _coerceFactionCandidate(raw) {
+    if (raw == null) return "";
+    if (typeof raw === "object") {
+      return _normFactionKey(
+        raw.faction ||
+        raw.factionKey ||
+        raw.leaderFaction ||
+        raw.key ||
+        raw.id ||
+        raw.code ||
+        raw.name ||
+        raw.leader ||
+        raw.owner ||
+        ""
+      );
+    }
+    return _normFactionKey(raw);
+  }
+
+  function _leadStrengthLabel(level) {
+    const key = String(level || "").trim().toLowerCase();
+    if (key === "strong") return "Strong";
+    if (key === "moderate") return "Moderate";
+    if (key === "narrow") return "Narrow";
+    return "Narrow";
+  }
+
+  function _leadStrengthLevel(topScore, rivalScore) {
+    const top = Number(topScore || 0);
+    const second = Number(rivalScore || 0);
+    if (!(top > 0)) return "narrow";
+    const margin = Math.max(0, top - second);
+    const ratio = top > 0 ? (margin / top) : 0;
+    if (ratio >= 0.34 && margin >= 1.20) return "strong";
+    if (ratio >= 0.20 && margin >= 0.65) return "moderate";
+    return "narrow";
   }
 
   function _getPinsSelector() {
@@ -1124,31 +1302,32 @@
     score += Math.min(18, Number(pressure.heat || 0));
     return score;
   }
-
-    function _updateMapPressureMood(summary) {
+  function _updateMapPressureMood(summary, dominance) {
     const el = document.getElementById("mapPressureMood");
     if (!el) return;
 
     const counts = summary || {};
-    const contested = Number(counts.contested || 0);
-    const hot = Number(counts.hot || 0);
-    const fortified = Number(counts.fortified || 0);
+    const dom = (dominance && typeof dominance === "object") ? dominance : {};
+    const faction = _normFactionKey(dom.faction || "");
+    const leadStrength = _leadStrengthLabel(dom.leadStrength || "narrow");
+    const hotNodes = Number(dom.hotNodes || 0) || Number(counts.hot || 0) || 0;
 
-    const parts = [];
-    if (contested > 0) parts.push(`${contested} contested`);
-    if (hot > 0) parts.push(`${hot} hot`);
-    if (!contested && fortified > 0) parts.push(`${fortified} fortified`);
+    const contested = !faction;
+    const mainText = contested
+      ? "Map Mood: Contested"
+      : ("Dominating: " + (_factionName(faction) || "Unknown"));
 
-    const tone = contested > 0
-      ? "contested"
-      : hot > 0
-        ? "hot"
-        : fortified > 0
-          ? "fortified"
-          : "calm";
+    const subParts = [];
+    if (contested) subParts.push("No dominant faction");
+    else subParts.push("Lead: " + leadStrength);
+    if (hotNodes > 0) subParts.push("Hot Nodes: " + hotNodes);
 
-    el.dataset.tone = tone;
-    el.textContent = parts.length ? parts.join(" · ").toUpperCase() : "CALM";
+    const subText = subParts.join(" | ");
+    el.classList.add("ah-dom-chip");
+    el.dataset.tone = contested ? "contested" : _factionTone(faction);
+    el.innerHTML =
+      '<span class="ah-dom-main">' + esc(mainText) + '</span>' +
+      (subText ? '<span class="ah-dom-sub">' + esc(subText) + '</span>' : '');
     el.hidden = false;
   }
 
@@ -1190,6 +1369,304 @@
       return;
     }
     line2El.textContent = "Fronts are stable for now; patrol windows decide who sets next pressure.";
+  }
+
+  function _dominanceTierWeight(valueTier) {
+    const key = String(valueTier || "").trim().toUpperCase();
+    if (key === "STRATEGIC") return 2.15;
+    if (key === "HIGH_VALUE") return 1.55;
+    return 1.0;
+  }
+
+  function _readExplicitDominance(leadersMap) {
+    const roots = [
+      leadersMap,
+      leadersMap?.meta,
+      leadersMap?.summary,
+      leadersMap?.global,
+      leadersMap?.world,
+      leadersMap?.war,
+      leadersMap?.state,
+      leadersMap?.data,
+      window.__AH_WAR_STATE,
+      window.__AH_MAP_STATE,
+      window.__AH_LEADERS_META
+    ];
+
+    for (const root of roots) {
+      if (!root || typeof root !== "object") continue;
+      for (const key of DOMINANCE_EXPLICIT_KEYS) {
+        const faction = _coerceFactionCandidate(root[key]);
+        if (faction) return { faction: faction, source: "explicit:" + key };
+      }
+    }
+
+    return { faction: "", source: "" };
+  }
+
+  function _dominanceScoresFromRows(rows) {
+    const out = {};
+    for (const fk of FACTION_KEYS) out[fk] = 0;
+
+    const list = Array.isArray(rows) ? rows : [];
+    for (const row of list) {
+      const weight = _dominanceTierWeight(row?.valueTier);
+      const owner = _normFactionKey(row?.owner || "");
+      const pressure = row?.pressureMeta || {};
+
+      if (owner) out[owner] += (0.92 * weight);
+
+      let sum = 0;
+      for (const fk of FACTION_KEYS) {
+        sum += Math.max(0, Number(row?.scores?.[fk] || 0));
+      }
+
+      if (sum > 0) {
+        for (const fk of FACTION_KEYS) {
+          const n = Math.max(0, Number(row?.scores?.[fk] || 0));
+          out[fk] += (n / sum) * (0.86 * weight);
+        }
+      }
+
+      if (owner && pressure.isFortified) out[owner] += (0.16 * weight);
+      if (owner && pressure.isHot) out[owner] += (0.10 * weight);
+      if (owner && (row?.contested || pressure.isPressureContested)) out[owner] -= (0.14 * weight);
+    }
+
+    for (const fk of FACTION_KEYS) {
+      out[fk] = Math.max(0, Number(out[fk] || 0));
+    }
+    return out;
+  }
+
+  function _dominanceSignalForRow(row, dominantFaction) {
+    if (!dominantFaction || !row || typeof row !== "object") return 0;
+
+    const faction = _normFactionKey(dominantFaction);
+    if (!faction) return 0;
+
+    const owner = _normFactionKey(row.owner || "");
+    const scores = (row.scores && typeof row.scores === "object") ? row.scores : {};
+
+    let total = 0;
+    for (const fk of FACTION_KEYS) {
+      total += Math.max(0, Number(scores[fk] || 0));
+    }
+
+    const dominantScore = Math.max(0, Number(scores[faction] || 0));
+    const share = total > 0 ? (dominantScore / total) : 0;
+    const weight = _dominanceTierWeight(row.valueTier);
+
+    const ownerBoost = owner === faction ? 0.58 : 0;
+    const fortifiedBoost = row?.pressureMeta?.isFortified ? 0.09 : 0;
+    const heatBoost = row?.pressureMeta?.isHot ? 0.05 : 0;
+    const contestedPenalty = (row?.contested || row?.pressureMeta?.isPressureContested) ? 0.22 : 0;
+    const siegeStatus = String(row?.siegeMeta?.siegeStatus || "");
+    const siegePenalty = (siegeStatus === "forming" || siegeStatus === "running") ? 0.10 : 0;
+
+    return Math.max(0, (share + ownerBoost + fortifiedBoost + heatBoost - contestedPenalty - siegePenalty) * weight);
+  }
+
+  function _resolveMapDominance(leadersMap, nodeRows) {
+    const rows = Array.isArray(nodeRows) ? nodeRows : [];
+    const explicit = _readExplicitDominance(leadersMap);
+    const totals = _dominanceScoresFromRows(rows);
+
+    const ranked = FACTION_KEYS
+      .map((fk) => ({ faction: fk, score: Number(totals[fk] || 0) }))
+      .sort((a, b) => b.score - a.score);
+
+    const top = ranked[0] || { faction: "", score: 0 };
+    const second = ranked[1] || { faction: "", score: 0 };
+    const derivedMargin = Math.max(0, Number(top.score || 0) - Number(second.score || 0));
+    const derivedRatio = Number(top.score || 0) > 0 ? (derivedMargin / Number(top.score || 0)) : 0;
+    const derivedContested = !(Number(top.score || 0) > 0) || derivedRatio < 0.115 || derivedMargin < 0.40;
+
+    let faction = "";
+    let source = "none";
+
+    if (explicit.faction) {
+      faction = explicit.faction;
+      source = explicit.source || "explicit";
+    } else if (!derivedContested && top.faction) {
+      faction = top.faction;
+      source = "derived";
+    }
+
+    let factionScore = 0;
+    let rivalScore = 0;
+    if (faction) {
+      factionScore = Number(totals[faction] || 0);
+      for (const fk of FACTION_KEYS) {
+        if (fk === faction) continue;
+        rivalScore = Math.max(rivalScore, Number(totals[fk] || 0));
+      }
+    }
+
+    const leadStrength = faction ? _leadStrengthLevel(factionScore, rivalScore) : "narrow";
+
+    const nodeSignals = {};
+    if (faction) {
+      for (const row of rows) {
+        const nodeId = _normalizeNodeId(row?.nodeId || row?.buildingId || "");
+        if (!nodeId) continue;
+        const signal = _dominanceSignalForRow(row, faction);
+        if (!(signal > 0)) continue;
+        nodeSignals[nodeId] = Math.max(Number(nodeSignals[nodeId] || 0), signal);
+      }
+    }
+
+    const rankedNodes = Object.keys(nodeSignals)
+      .map((nodeId) => ({ nodeId: nodeId, signal: Number(nodeSignals[nodeId] || 0) }))
+      .sort((a, b) => b.signal - a.signal);
+
+    const coreNodes = [];
+    for (const entry of rankedNodes) {
+      if (entry.signal < 1.28) continue;
+      coreNodes.push(entry.nodeId);
+      if (coreNodes.length >= 3) break;
+    }
+    if (!coreNodes.length && rankedNodes.length) {
+      coreNodes.push(rankedNodes[0].nodeId);
+    }
+
+    const coreSet = new Set(coreNodes);
+    const presenceNodes = [];
+    for (const entry of rankedNodes) {
+      if (!(entry.signal >= 0.82 || coreSet.has(entry.nodeId))) continue;
+      presenceNodes.push(entry.nodeId);
+      if (presenceNodes.length >= 6) break;
+    }
+
+    const hotNodes = rankedNodes.filter((entry) => entry.signal >= 1.0).length;
+
+    return {
+      faction: faction,
+      source: source,
+      contested: !faction,
+      leadStrength: leadStrength,
+      topScore: faction ? factionScore : Number(top.score || 0),
+      rivalScore: faction ? rivalScore : Number(second.score || 0),
+      margin: faction ? Math.max(0, factionScore - rivalScore) : derivedMargin,
+      marginRatio: faction && factionScore > 0 ? Math.max(0, factionScore - rivalScore) / factionScore : derivedRatio,
+      hotNodes: hotNodes,
+      coreNodes: coreNodes,
+      presenceNodes: presenceNodes,
+      nodeSignals: nodeSignals
+    };
+  }
+
+  function _clearDominancePinState(pins) {
+    (pins || []).forEach((pin) => {
+      if (!pin || !pin.classList) return;
+      pin.classList.remove("dom-presence", "dom-core");
+      if (pin.dataset) {
+        pin.dataset.domSignal = "";
+      }
+    });
+  }
+
+  function _applyDominanceNodeAccents(pins, dominance) {
+    _clearDominancePinState(pins);
+
+    const faction = _normFactionKey(dominance?.faction || "");
+    if (!faction) return;
+
+    const coreSet = new Set(Array.isArray(dominance?.coreNodes) ? dominance.coreNodes : []);
+    const presenceSet = new Set(Array.isArray(dominance?.presenceNodes) ? dominance.presenceNodes : []);
+    const signals = (dominance && typeof dominance === "object" && dominance.nodeSignals) ? dominance.nodeSignals : {};
+
+    (pins || []).forEach((pin) => {
+      if (!pin || !pin.classList) return;
+      const nodeId = _normalizeNodeId(_pinBuildingId(pin) || _pinNodeId(pin) || "");
+      if (!nodeId || !presenceSet.has(nodeId)) return;
+      pin.classList.add("dom-presence");
+      if (coreSet.has(nodeId)) pin.classList.add("dom-core");
+      if (pin.dataset) {
+        pin.dataset.domSignal = String(Number(signals[nodeId] || 0).toFixed(2));
+      }
+    });
+  }
+
+  function _clearDominancePathAccents() {
+    const pathsSvg = document.getElementById("pathsSVG");
+    if (!pathsSvg) return;
+    pathsSvg.querySelectorAll(".path.ah-dom-path").forEach((pathEl) => {
+      pathEl.classList.remove("ah-dom-path");
+    });
+  }
+
+  function _pathMetaById() {
+    const out = {};
+    const paths = Array.isArray(window.DATA?.paths) ? window.DATA.paths : [];
+    for (const p of paths) {
+      const id = String(p?.id || "").trim();
+      if (!id) continue;
+      out[id] = {
+        from: _normalizeNodeId(p?.from || ""),
+        to: _normalizeNodeId(p?.to || "")
+      };
+    }
+    return out;
+  }
+
+  function _applyDominancePathAccents(dominance) {
+    _clearDominancePathAccents();
+
+    const faction = _normFactionKey(dominance?.faction || "");
+    if (!faction) return;
+
+    const pathsSvg = document.getElementById("pathsSVG");
+    if (!pathsSvg) return;
+
+    const metaById = _pathMetaById();
+    const nodeSignals = (dominance && typeof dominance === "object" && dominance.nodeSignals) ? dominance.nodeSignals : {};
+    const coreSet = new Set(Array.isArray(dominance?.coreNodes) ? dominance.coreNodes : []);
+
+    const ranked = [];
+    pathsSvg.querySelectorAll(".path[data-id]").forEach((pathEl) => {
+      if (!pathEl || pathEl.classList.contains("locked")) return;
+      const pathId = String(pathEl.dataset?.id || "").trim();
+      if (!pathId) return;
+      const meta = metaById[pathId];
+      if (!meta) return;
+
+      const left = Number(nodeSignals[meta.from] || 0);
+      const right = Number(nodeSignals[meta.to] || 0);
+      const coreBoost = (coreSet.has(meta.from) ? 0.35 : 0) + (coreSet.has(meta.to) ? 0.35 : 0);
+      const score = left + right + coreBoost;
+
+      if (score < 1.05) return;
+      ranked.push({ pathEl: pathEl, score: score });
+    });
+
+    ranked.sort((a, b) => b.score - a.score);
+    const limit = Math.min(4, ranked.length);
+
+    for (let i = 0; i < limit; i += 1) {
+      const item = ranked[i];
+      if (!item) continue;
+      if (i > 0 && item.score < 1.20) continue;
+
+      item.pathEl.classList.add("ah-dom-path");
+      const glow = item.pathEl.previousElementSibling;
+      if (glow && glow.classList && glow.classList.contains("path") && glow.classList.contains("glow")) {
+        glow.classList.add("ah-dom-path");
+      }
+    }
+  }
+
+  function _applyMapDominanceMood(dominance) {
+    const mapEl = document.getElementById("map") || document.querySelector("[data-map-root]");
+    if (!mapEl) return;
+
+    const faction = _normFactionKey(dominance?.faction || "");
+    const hasLeader = !!faction;
+
+    mapEl.dataset.domState = hasLeader ? "leader" : "contested";
+    mapEl.dataset.domFaction = hasLeader ? faction : "neutral";
+    mapEl.style.setProperty("--ah-dom-rgb", _factionRgb(faction));
+    mapEl.style.setProperty("--ah-dom-aura", hasLeader ? ".14" : ".06");
   }
 
   function _applyPressureBadges(pinEl, pressureMeta, nodeUx) {
@@ -1375,7 +1852,8 @@
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
       "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
       "family-rivalry", "family-legacy",
-      "tier-low", "tier-high", "tier-strategic"
+      "tier-low", "tier-high", "tier-strategic",
+      "dom-presence", "dom-core"
     );
 
     if (m.faction) {
@@ -1609,15 +2087,15 @@
       : _findLeaderInfoByNodeId(nodeId, _lastLeadersMap) || { nodeId };
     return _extractNodeUx(info, _getViewerFaction());
   }
-
   function applyLeaders(leadersMap) {
     if (!leadersMap || typeof leadersMap !== "object") return;
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     _lastLeadersMap = leadersMap;
     try { API._leadersMap = leadersMap; } catch (_) {}
 
-    const pins = document.querySelectorAll(_getPinsSelector());
+    const pins = Array.from(document.querySelectorAll(_getPinsSelector()));
     const mood = { contested: 0, hot: 0, fortified: 0 };
+    const dominanceRows = [];
     let flashpointPin = null;
     let flashpointScore = 0;
 
@@ -1628,7 +2106,6 @@
     pins.forEach((pin) => {
       ensureLevel1(pin);
 
-      // hard gate: badges only for live faction nodes
       if (!_isLiveFactionNodeFromPin(pin)) {
         _clearLeader(pin, {
           nodeId: _pinNodeId(pin),
@@ -1664,6 +2141,18 @@
         flashpointPin = pin;
       }
 
+      const rawNodeId = _pinBuildingId(pin) || _pinNodeId(pin) || ex?.nodeUx?.nodeId || "";
+      dominanceRows.push({
+        nodeId: _normalizeNodeId(rawNodeId),
+        buildingId: _normalizeNodeId(_pinBuildingId(pin) || ""),
+        owner: _normFactionKey(ex.owner || ""),
+        scores: ex.scores || {},
+        contested: !!ex.contested,
+        pressureMeta: ex.pressureMeta || {},
+        siegeMeta: ex.siegeMeta || {},
+        valueTier: String(ex?.nodeUx?.valueTier || _fallbackValueTierForNodeId(rawNodeId)).trim().toUpperCase() || "LOW_VALUE"
+      });
+
       setLeader(pin, ex.owner || null, {
         contested: !!ex.contested,
         source: ex.source || "scores",
@@ -1677,9 +2166,18 @@
       flashpointPin.classList.add("pressure-flashpoint");
     }
 
-    _updateMapPressureMood(mood);
+    const dominance = _resolveMapDominance(leadersMap, dominanceRows);
+    _applyMapDominanceMood(dominance);
+    _applyDominanceNodeAccents(pins, dominance);
+    _applyDominancePathAccents(dominance);
+
+    _updateMapPressureMood(mood, dominance);
     _updateMapWorldBrief(mood);
-    window.__ahPerf?.log?.("AHMap.applyLeaders", perfT0, { pins: pins.length });
+    window.__ahPerf?.log?.("AHMap.applyLeaders", perfT0, {
+      pins: pins.length,
+      dominantFaction: dominance?.faction || "",
+      dominanceSource: dominance?.source || "none"
+    });
   }
 
   function _isMapVisible() {
