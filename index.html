@@ -184,6 +184,7 @@
   --frame-scale: 1.34;   /* founder frame trochę większy */
   --frame-x: 0px;        /* mikro przesunięcie */
   --frame-y: 3px;        /* lekkie opuszczenie overlay */
+  --pioneer-sweep-enabled: 1; /* set to 0 to disable sweep layer quickly */
 }
 
 /* ✅ NOWY viewport — skin siedzi w realnym "oknie" frame'a */
@@ -232,8 +233,70 @@
   z-index: 3;
 
   transform-origin: center;
-  transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
+  --hero-frame-transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
+  transform: var(--hero-frame-transform);
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.30));
+}
+
+.hero-frame .hero-frame-overlay-glow,
+.hero-frame .hero-frame-overlay-sweep{
+  display:none;
+  opacity:0;
+}
+
+.hero-frame.is-pioneer-frame .hero-frame-overlay-glow{
+  display:block;
+  z-index:4;
+  animation: ahPioneerGlowPulse 3.2s ease-in-out infinite;
+}
+
+.hero-frame.is-pioneer-frame .hero-frame-overlay-sweep{
+  display:block;
+  z-index:5;
+  --pioneer-sweep-max-opacity: calc(.16 * var(--pioneer-sweep-enabled, 1));
+  animation: ahPioneerSweepPass 5.6s linear infinite;
+}
+
+@keyframes ahPioneerGlowPulse{
+  0%, 100%{
+    opacity:.12;
+    transform: var(--hero-frame-transform) scale(1);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(.98);
+  }
+  50%{
+    opacity:.22;
+    transform: var(--hero-frame-transform) scale(1.003);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.05);
+  }
+}
+
+@keyframes ahPioneerSweepPass{
+  0%, 14%, 100%{
+    opacity:0;
+    transform: var(--hero-frame-transform) translateX(-1%);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1);
+  }
+  21%{
+    opacity:var(--pioneer-sweep-max-opacity);
+    transform: var(--hero-frame-transform) translateX(0);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.08);
+  }
+  30%{
+    opacity:0;
+    transform: var(--hero-frame-transform) translateX(1%);
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hero-frame.is-pioneer-frame .hero-frame-overlay-glow{
+    animation:none;
+    opacity:.16;
+  }
+  .hero-frame.is-pioneer-frame .hero-frame-overlay-sweep{
+    animation:none;
+    opacity:0;
+  }
 }
 
 .hero-frame.has-aura{
@@ -3886,6 +3949,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       src=""
       alt=""
       style="display:none">
+    <img
+      id="player-frame-glow"
+      class="hero-frame-overlay hero-frame-overlay-glow"
+      src=""
+      alt=""
+      style="display:none">
+    <img
+      id="player-frame-sweep"
+      class="hero-frame-overlay hero-frame-overlay-sweep"
+      src=""
+      alt=""
+      style="display:none">
   </div>
 
   <div class="hero-caption">
@@ -5905,6 +5980,23 @@ window.__AH_SKIN_FRAME_PREVIEW_COMBO_FIT__ = window.__AH_SKIN_FRAME_PREVIEW_COMB
 // backward-compat alias for previous preview frame map name
 window.__AH_FRAME_PREVIEW_SKIN_FIT__ = window.__AH_FRAME_PREVIEW_FIT__;
 
+const AH_FRAME_ASSET_OVERRIDES = Object.freeze({
+  pioneer_frame: Object.freeze({
+    key: "pioneer_frame",
+    display_name: "Pioneer Frame",
+    source: "Pioneer",
+    base: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_base_transparent.png",
+    glow: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_glow_overlay.png",
+    sweep: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034355/frames/pioneer/pioneer_frame_sweep_overlay.png",
+    preview: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777034356/frames/pioneer/pioneer_frame_base_transparent.png",
+  }),
+});
+
+window.__AH_FRAME_ASSET_OVERRIDES__ = {
+  ...AH_FRAME_ASSET_OVERRIDES,
+  ...(window.__AH_FRAME_ASSET_OVERRIDES__ || {}),
+};
+
 function ahNormFrameKey(v){
   return String(v || "").trim().toLowerCase();
 }
@@ -5924,7 +6016,19 @@ function ahFrameKeyFromUrl(frameUrl){
   const url = String(frameUrl || "").trim();
   if (!url) return "";
   const m = url.match(/\/frames\/([a-z0-9_:-]+)\.(?:webp|png|jpg|jpeg)(?:[?#].*)?$/i);
-  return ahNormFrameKey(m?.[1] || "");
+  if (m?.[1]) return ahNormFrameKey(m[1]);
+  const lowered = url.toLowerCase();
+  const overrides = window.__AH_FRAME_ASSET_OVERRIDES__ || {};
+  for (const [key, raw] of Object.entries(overrides)) {
+    if (!raw || typeof raw !== "object") continue;
+    const candidates = [raw.base, raw.frame_url, raw.frameUrl, raw.preview, raw.glow, raw.sweep];
+    const matched = candidates.some((candidate) => {
+      const value = String(candidate || "").trim().toLowerCase();
+      return !!value && lowered.includes(value);
+    });
+    if (matched) return ahNormFrameKey(key);
+  }
+  return "";
 }
 
 function ahSkinKeyFromUrl(skinUrl){
@@ -5994,19 +6098,53 @@ function applyHeroSkinFit(frameUrl, frameKey, skinUrl, skinKey){
   skinEl.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
 }
 
-function setHeroFrame(frameUrl, frameKey, skinKey){
-  const el = document.getElementById("player-frame");
-  if(!el) return;
+function ahFrameAssetOverride(frameKey){
+  const key = ahNormFrameKey(frameKey);
+  if (!key) return null;
+  const raw = (window.__AH_FRAME_ASSET_OVERRIDES__ || {})[key];
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    key,
+    displayName: String(raw.display_name || raw.displayName || raw.name || "").trim(),
+    source: String(raw.source || "").trim(),
+    base: String(raw.base || raw.frame_url || raw.frameUrl || raw.preview || "").trim(),
+    glow: String(raw.glow || "").trim(),
+    sweep: String(raw.sweep || "").trim(),
+    preview: String(raw.preview || raw.base || raw.frame_url || raw.frameUrl || "").trim(),
+  };
+}
 
-  applyHeroSkinFit(frameUrl, frameKey, null, skinKey);
-
-  if(frameUrl){
-    el.src = frameUrl;
+function ahSetHeroFrameLayer(el, src){
+  if (!el) return;
+  const value = String(src || "").trim();
+  if (value) {
+    if (el.getAttribute("src") !== value) el.src = value;
     el.style.display = "block";
-  }else{
-    el.removeAttribute("src");
-    el.style.display = "none";
+    return;
   }
+  el.removeAttribute("src");
+  el.style.display = "none";
+}
+
+function setHeroFrame(frameUrl, frameKey, skinKey){
+  const baseLayer = document.getElementById("player-frame");
+  if(!baseLayer) return;
+  const heroFrame = document.getElementById("heroFrame");
+  const glowLayer = document.getElementById("player-frame-glow");
+  const sweepLayer = document.getElementById("player-frame-sweep");
+  const resolvedKey = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const override = ahFrameAssetOverride(resolvedKey);
+  const resolvedFrameUrl = String(override?.base || frameUrl || "").trim();
+  const isPioneer = resolvedKey === "pioneer_frame";
+
+  applyHeroSkinFit(resolvedFrameUrl || frameUrl, resolvedKey, null, skinKey);
+  ahSetHeroFrameLayer(baseLayer, resolvedFrameUrl);
+  heroFrame?.classList?.toggle?.("is-pioneer-frame", isPioneer);
+
+  const glowUrl = isPioneer ? String(override?.glow || "").trim() : "";
+  const sweepUrl = isPioneer ? String(override?.sweep || "").trim() : "";
+  ahSetHeroFrameLayer(glowLayer, glowUrl);
+  ahSetHeroFrameLayer(sweepLayer, sweepUrl);
 }
 
 function formatHeroAuraRemain(sec){
