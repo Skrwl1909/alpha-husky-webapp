@@ -244,7 +244,7 @@
       if (Array.isArray(lane.skinUnlocks) && lane.skinUnlocks.length) {
         parts.push(`Support skins: ${lane.skinUnlocks.join(", ")}`);
       }
-      setText("supportStarsStatus", `Stars lane active. ${parts.join(" â€˘ ")}`);
+      setText("supportStarsStatus", `Stars lane active. ${parts.join(" | ")}`);
       return;
     }
 
@@ -314,7 +314,7 @@
     if (lane.linked) {
       setText(
         "supportTokenStatus",
-        `Wallet: ${wallet} â€˘ Tier ${tier} â€˘ Balance raw: ${lane.balanceRaw || "0"} â€˘ Last check: ${checked}`
+        `Wallet: ${wallet} | Tier ${tier} | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
       );
     } else {
       setText(
@@ -338,7 +338,7 @@
     if (lane.skin) perks.push(`Tier 3 skin: ${lane.skin}`);
     if (!perks.length) perks.push("Perks unlock by holder tier only.");
     perks.push(claim);
-    setText("supportTokenPerks", perks.join(" â€˘ "));
+    setText("supportTokenPerks", perks.join(" | "));
 
     const provider = getSolanaProvider();
     const providerAddr =
@@ -392,7 +392,7 @@
       );
       setText(
         "supportCombinedPerks",
-        `Stars tier: ${stars.tierKey || "active"} â€˘ Token tier: ${token.tier || 0} â€˘ Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}`
+        `Stars tier: ${stars.tierKey || "active"} | Token tier: ${token.tier || 0} | Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}`
       );
       return;
     }
@@ -410,7 +410,7 @@
 
     if (tokenEnabled && Number(token.tier || 0) > 0) {
       setText("supportCombinedStatus", "Token-only supporter. Believe holder lane is active.");
-      setText("supportCombinedPerks", `Holder tier: ${token.tier || 0} â€˘ Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}.`);
+      setText("supportCombinedPerks", `Holder tier: ${token.tier || 0} | Weekly claim: ${token.weeklyClaimAvailable ? "ready" : "not ready"}.`);
       return;
     }
 
