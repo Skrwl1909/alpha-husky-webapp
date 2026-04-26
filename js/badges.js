@@ -314,6 +314,23 @@
       }
       #badgeWallBack .ah-bw-icon img.ah-bw-emblem{ z-index:1; }
       #badgeWallBack .ah-bw-icon img.ah-bw-frame{ z-index:2; }
+      #badgeWallBack .ah-bw-icon img.ah-bw-pioneer-base{
+        position:relative;
+        inset:auto;
+        z-index:1;
+      }
+      #badgeWallBack .ah-bw-icon img.ah-bw-pioneer-glow{
+        position:absolute;
+        inset:0;
+        z-index:2;
+        pointer-events:none;
+        opacity:.18;
+        animation:ah-bw-pioneer-glow-pulse 3s ease-in-out infinite;
+      }
+      @keyframes ah-bw-pioneer-glow-pulse{
+        0%, 100%{ opacity:.18; }
+        50%{ opacity:.34; }
+      }
       #badgeWallBack .ah-bw-lock{
         position:absolute;
         left:3px;
@@ -547,6 +564,9 @@
   function badgeFrameSource(badge) {
     return String(badge?.frameUrl || badge?.frame_url || "").trim();
   }
+  function isPioneerBadgeKey(key) {
+    return toKey(key) === "PIONEER_BADGE";
+  }
   function isMasteryBadge(badge) {
     return String(badge?.badgeType || badge?.badge_type || "").trim().toLowerCase() === "mastery";
   }
@@ -566,10 +586,17 @@
     if (layeredMode) {
       const layers = [];
       const showLockedEmblem = !isMasteryBadge(badge);
+      const pioneer = isPioneerBadgeKey(key);
       if (emblem && (badge?.owned || showLockedEmblem)) {
-        layers.push({ src: emblem, className: "ah-bw-layer ah-bw-emblem" });
+        layers.push({
+          src: emblem,
+          className: pioneer ? "ah-bw-layer ah-bw-emblem ah-bw-pioneer-base" : "ah-bw-layer ah-bw-emblem",
+        });
       }
-      layers.push({ src: frame, className: "ah-bw-layer ah-bw-frame" });
+      layers.push({
+        src: frame,
+        className: pioneer ? "ah-bw-layer ah-bw-frame ah-bw-pioneer-glow" : "ah-bw-layer ah-bw-frame",
+      });
 
       let loadedCount = 0;
       for (const layer of layers) {
