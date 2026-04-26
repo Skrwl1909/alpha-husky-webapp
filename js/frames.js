@@ -24,10 +24,10 @@
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
     unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
   });
-  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.88, offsetX: 0, offsetY: 12 });
+  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.82, offsetX: 0, offsetY: 4 });
   const FRAME_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    pioneer_frame: { scale: 0.88, offsetX: 0, offsetY: 12 },
-    rogue_byte_overclock: { scale: 0.86, offsetX: 0, offsetY: 6 }, // map-influence frame tuning example
+    pioneer_frame: { scale: 0.82, offsetX: 0, offsetY: 4 },
+    rogue_byte_overclock: { scale: 0.82, offsetX: 0, offsetY: 4 }, // map-influence frame tuning example
   });
   const COMBO_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
   const COMBO_PREVIEW_FIT_OVERRIDES = Object.freeze({
@@ -167,29 +167,26 @@
       #framesBack .ah-frames-preview-skin,
       #framesBack .ah-frames-preview-frame{
         position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
         display:block;
         max-width:none;
+        object-fit:contain;
+        object-position:center center;
+        transform-origin:center center;
       }
       #framesBack .ah-frames-preview-skin{
-        inset:4% 7% 8%;
+        inset:6% 10% 6%;
         width:auto;
         height:auto;
         z-index:1;
-        object-fit:contain;
-        object-position:center 44%;
-        transform:scale(.88);
-        transform-origin:center center;
+        transform:scale(.82) translateY(4px);
         filter:drop-shadow(0 12px 18px rgba(0,0,0,.36));
       }
       #framesBack .ah-frames-preview-frame{
-        inset:1.5%;
-        width:auto;
-        height:auto;
         z-index:2;
-        object-fit:contain;
-        object-position:center center;
-        transform:scale(.96);
-        transform-origin:center center;
+        transform:none;
         filter:drop-shadow(0 8px 14px rgba(0,0,0,.30));
         pointer-events:none;
       }
@@ -569,22 +566,19 @@
   }
 
   function composePreviewFit(frameKey, skinKey) {
-    const resolvedSkinKey = normKey(skinKey);
     const resolvedFrameKey = normKey(frameKey);
-    const skinFit = getPreviewSkinBaseFit(resolvedSkinKey);
     const frameFit = getPreviewFrameFit(resolvedFrameKey);
-    const comboFit = getPreviewComboFit(resolvedSkinKey, resolvedFrameKey);
     return {
-      scale: skinFit.scale * frameFit.scale * comboFit.scale,
-      offsetX: skinFit.offsetX + frameFit.offsetX + comboFit.offsetX,
-      offsetY: skinFit.offsetY + frameFit.offsetY + comboFit.offsetY,
+      scale: frameFit.scale,
+      offsetX: frameFit.offsetX,
+      offsetY: frameFit.offsetY,
     };
   }
 
   function applyPreviewSkinFit(frameKey, skinKey) {
     if (!previewSkin) return;
     const fit = composePreviewFit(frameKey, skinKey);
-    previewSkin.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
+    previewSkin.style.transform = `scale(${fit.scale}) translate(${fit.offsetX}px, ${fit.offsetY}px)`;
   }
 
   function frameLaneLabel(item, key) {
