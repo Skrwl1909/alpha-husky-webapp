@@ -24,9 +24,10 @@
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
     unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
   });
-  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 }); // stage 3: neutral baseline
+  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.88, offsetX: 0, offsetY: 12 });
   const FRAME_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    rogue_byte_overclock: { scale: 0.96, offsetX: 0, offsetY: -6 }, // map-influence frame tuning example
+    pioneer_frame: { scale: 0.88, offsetX: 0, offsetY: 12 },
+    rogue_byte_overclock: { scale: 0.86, offsetX: 0, offsetY: 6 }, // map-influence frame tuning example
   });
   const COMBO_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
   const COMBO_PREVIEW_FIT_OVERRIDES = Object.freeze({
@@ -166,23 +167,28 @@
       #framesBack .ah-frames-preview-skin,
       #framesBack .ah-frames-preview-frame{
         position:absolute;
-        inset:0;
-        width:100%;
-        height:100%;
+        display:block;
+        max-width:none;
       }
       #framesBack .ah-frames-preview-skin{
+        inset:4% 7% 8%;
+        width:auto;
+        height:auto;
         z-index:1;
         object-fit:contain;
-        object-position:center 38%;
-        transform:scale(.9);
+        object-position:center 44%;
+        transform:scale(.88);
         transform-origin:center center;
         filter:drop-shadow(0 12px 18px rgba(0,0,0,.36));
       }
       #framesBack .ah-frames-preview-frame{
+        inset:1.5%;
+        width:auto;
+        height:auto;
         z-index:2;
         object-fit:contain;
         object-position:center center;
-        transform:scale(.95);
+        transform:scale(.96);
         transform-origin:center center;
         filter:drop-shadow(0 8px 14px rgba(0,0,0,.30));
         pointer-events:none;
@@ -350,9 +356,9 @@
           </div>
 
           <div class="ah-frames-preview-wrap">
-            <div class="ah-frames-preview">
-              <img id="framePreviewSkin" class="ah-frames-preview-skin" alt="Skin preview" />
-              <img id="framePreviewOverlay" class="ah-frames-preview-frame" alt="" style="display:none;" />
+            <div class="ah-frames-preview frame-preview-card">
+              <img id="framePreviewSkin" class="ah-frames-preview-skin frame-preview-portrait" alt="Skin preview" />
+              <img id="framePreviewOverlay" class="ah-frames-preview-frame frame-preview-frame" alt="" style="display:none;" />
             </div>
           </div>
 
