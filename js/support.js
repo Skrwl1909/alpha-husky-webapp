@@ -4,6 +4,7 @@
   let _apiPost = null;
   let _dbg = false;
   let _state = null;
+  let _openingPhantom = false;
 
   function log(...args) {
     if (_dbg) console.log("[Support]", ...args);
@@ -154,23 +155,71 @@
     modal.style.display = "none";
   }
 
+  function getWalletVerificationUrl() {
+    return String(window.location.href || "").trim();
+  }
+
+  function getWalletRefOrigin(verificationUrl) {
+    try {
+      const url = new URL(verificationUrl, window.location.href);
+      if (url.origin && url.origin !== "null") return url.origin;
+    } catch (_) {}
+    return String(window.location.origin || "").trim();
+  }
+
+  function buildPhantomBrowseLink(verificationUrl) {
+    const url = String(verificationUrl || "").trim();
+    if (!url) return "";
+    const ref = getWalletRefOrigin(url);
+    return `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
+  }
+
+  function ensureWalletSafetyCopy() {
+    const modal = el("solanaWalletModal");
+    const body = modal?.querySelector?.(".ah-wallet-body");
+    if (!body || body.querySelector("[data-wallet-safety-copy]")) return;
+
+    const copy = document.createElement("p");
+    copy.dataset.walletSafetyCopy = "1";
+    copy.textContent = "This only verifies wallet ownership. No seed phrase. No token transfer. Do not share the copied verification link. After signing, return here and tap Refresh Wallet.";
+    body.appendChild(copy);
+  }
+
   function openInPhantom() {
-    const currentUrl = window.location.href;
-    const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}`;
+    if (_openingPhantom) return;
+    _openingPhantom = true;
+
+    const phantomUrl = buildPhantomBrowseLink(getWalletVerificationUrl());
     const tg = getTg();
+    let opened = false;
+
+    window.setTimeout(() => {
+      _openingPhantom = false;
+    }, 1200);
+
+    if (!phantomUrl) {
+      showWalletToast("Could not prepare wallet link. Use Copy Verification Link.");
+      return;
+    }
 
     try {
       if (typeof tg?.openLink === "function") {
-        tg.openLink(phantomUrl, { try_instant_view: false });
-        return;
+        tg.openLink(phantomUrl);
+        opened = true;
       }
     } catch (_) {}
 
-    try {
-      window.open(phantomUrl, "_blank", "noopener");
-    } catch (_) {
-      window.location.href = phantomUrl;
+    if (!opened) {
+      try {
+        opened = !!window.open(phantomUrl, "_blank", "noopener,noreferrer");
+      } catch (_) {}
     }
+
+    showWalletToast(
+      opened
+        ? "After signing, return here and tap Refresh Wallet."
+        : "Could not open Phantom. Copy the link and open it in Phantom browser."
+    );
   }
 
   function showWalletMissingModal() {
@@ -179,6 +228,7 @@
       showWalletToast("Open Alpha Husky in Phantom browser or a desktop wallet browser.");
       return;
     }
+    ensureWalletSafetyCopy();
     wireWalletModal();
     modal.style.display = "flex";
     modal.dataset.open = "1";
@@ -192,8 +242,8 @@
     el("solanaWalletClose")?.addEventListener("click", closeWalletModal);
     el("solanaWalletOpenPhantom")?.addEventListener("click", openInPhantom);
     el("solanaWalletCopyLink")?.addEventListener("click", async () => {
-      const ok = await copyText(window.location.href);
-      showWalletToast(ok ? "App link copied." : "Could not copy app link.");
+      const ok = await copyText(getWalletVerificationUrl());
+      showWalletToast(ok ? "Private verification link copied. Open it in Phantom. Do not share it." : "Could not copy verification link.");
     });
 
     modal.addEventListener("click", (e) => {
@@ -564,7 +614,7 @@
       try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
-    if (!window.solana) {
+    if (!getSolanaProvider()) {
       showWalletMissingModal();
       return;
     }
