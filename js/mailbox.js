@@ -86,6 +86,10 @@
       const action = asText(target.action).toLowerCase();
       return action ? { type, action } : null;
     }
+    if (type === "send_howl" || type === "player_profile") {
+      const targetUid = asText(target.target_uid || target.targetUid || target.uid);
+      return targetUid ? { type, target_uid: targetUid, targetUid, source: asText(target.source) || "mailbox" } : null;
+    }
 
     return null;
   }
@@ -478,6 +482,20 @@
       if (action === "equipped") return !!window.Equipped?.open?.();
       if (action === "broken_contracts") return !!window.BrokenContracts?.open?.();
     }
+    if (type === "send_howl") {
+      const targetUid = asText(target?.target_uid || target?.targetUid);
+      const ok = await window.PlayerProfile?.sendHowl?.(targetUid, "mailbox");
+      showNotice(ok ? "Howl sent." : "Could not send Howl.");
+      if (ok) {
+        await load();
+        render();
+      }
+      return !!ok;
+    }
+    if (type === "player_profile") {
+      const targetUid = asText(target?.target_uid || target?.targetUid);
+      return !!window.PlayerProfile?.open?.(targetUid, { source: "mailbox" });
+    }
     if (type === "map_node") {
       try { window.showSection?.("map"); } catch (_) {}
       return true;
@@ -539,11 +557,17 @@
       const controls = (actionButton || dismissButton)
         ? `<div class="mailbox-actions">${actionButton}${dismissButton}</div>`
         : "";
+      const senderUid = asText(item?.meta?.sender_uid || item?.meta?.senderUid);
+      const senderName = asText(item?.meta?.sender_name || item?.meta?.senderName);
+      const profileButton = senderUid
+        ? `<button type="button" class="mailbox-dismiss mailbox-profile" data-profile-uid="${esc(senderUid)}">${esc(senderName || "View Profile")}</button>`
+        : "";
       const kicker = stamp ? `${kindIcon(item.kind)} · ${stamp}` : kindIcon(item.kind);
       row.innerHTML = `
         <div class="mailbox-left">
           <div class="mailbox-kicker"><span>${esc(kicker)}</span><span class="dot"></span><span>${esc(item.badge || "INFO")}</span></div>
           <div class="mailbox-item-title">${esc(item.title)}</div>
+          ${profileButton}
           <div class="mailbox-item-line">${esc(item.body || item.line)}</div>
         </div>
         ${controls}
@@ -562,10 +586,15 @@
         });
       }
 
-      row.querySelector(".mailbox-dismiss")?.addEventListener("click", (ev) => {
+      row.querySelector(".mailbox-dismiss:not(.mailbox-profile)")?.addEventListener("click", (ev) => {
         ev.stopPropagation();
         try { S.tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         void dismissItem(item.id);
+      });
+      row.querySelector(".mailbox-profile")?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const uid = asText(ev.currentTarget?.getAttribute("data-profile-uid"));
+        if (uid) window.PlayerProfile?.open?.(uid, { source: "mailbox" });
       });
 
       list.appendChild(row);

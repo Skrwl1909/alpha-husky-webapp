@@ -297,7 +297,7 @@ function _contribSummaryLegacy(c) {
       return {
         kicker: "Most active this week",
         rows: top.map((row, idx) => `
-          <div class="hq-spotlight-item">
+          <div class="hq-spotlight-item" ${row.uid ? `data-pack-profile-uid="${esc(row.uid)}"` : ""}>
             <div class="hq-rank-badge">#${idx + 1}</div>
             <div class="hq-spotlight-main">
               <div class="hq-spotlight-name">${esc(row.name || "Member")}${row.isYou ? ` <span class="hq-you-pill">YOU</span>` : ``}</div>
@@ -312,7 +312,7 @@ function _contribSummaryLegacy(c) {
       return {
         kicker: "Known names inside the faction",
         rows: notable.map((row, idx) => `
-          <div class="hq-spotlight-item">
+          <div class="hq-spotlight-item" ${row.uid ? `data-pack-profile-uid="${esc(row.uid)}"` : ""}>
             <div class="hq-rank-badge">${idx + 1}</div>
             <div class="hq-spotlight-main">
               <div class="hq-spotlight-name">${esc(row.name || "Member")}</div>
@@ -339,7 +339,7 @@ function _contribSummaryLegacy(c) {
 
     if (top.length) {
       const topHtml = top.map((row, idx) => `
-        <div class="hq-circle-rank-card ${row.isYou ? "is-you" : ""}" data-rank="${idx + 1}">
+        <div class="hq-circle-rank-card ${row.isYou ? "is-you" : ""}" data-rank="${idx + 1}" ${row.uid ? `data-pack-profile-uid="${esc(row.uid)}"` : ""}>
           <div class="hq-circle-rank-head">
             <span class="hq-circle-rank-pill">#${idx + 1}</span>
             ${row.isYou ? `<span class="hq-you-pill">YOU</span>` : ``}
@@ -377,7 +377,7 @@ function _contribSummaryLegacy(c) {
         <div class="hq-circle-topline">Known names inside the faction</div>
         <div class="hq-spotlight">
           ${notable.map((row, idx) => `
-            <div class="hq-spotlight-item">
+            <div class="hq-spotlight-item" ${row.uid ? `data-pack-profile-uid="${esc(row.uid)}"` : ""}>
               <div class="hq-rank-badge">${idx + 1}</div>
               <div class="hq-spotlight-main">
                 <div class="hq-spotlight-name">${esc(row.name || "Member")}</div>
@@ -1760,6 +1760,12 @@ function _contribSummaryLegacy(c) {
     if (!_back.__hq_click) {
       _back.__hq_click = true;
       _back.addEventListener("click", (e) => {
+        const profileEl = e.target?.closest?.("[data-pack-profile-uid]");
+        if (profileEl) {
+          const uid = String(profileEl.getAttribute("data-pack-profile-uid") || "").trim();
+          if (uid) window.PlayerProfile?.open?.(uid, { source: "faction" });
+          return;
+        }
         if (e.target === _back) return close();
         if (e.target?.classList?.contains("hq-bg")) return close();
         if (e.target?.classList?.contains("hq-vignette")) return close();
