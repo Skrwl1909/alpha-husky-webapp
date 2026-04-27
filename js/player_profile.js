@@ -34,7 +34,14 @@
     if (/\.(mp4|webm)(\?|#|$)/i.test(src)) {
       return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline></video>`;
     }
-    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt || "")}" loading="lazy">`;
+    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt || "")}" loading="lazy" onerror="this.hidden=true;">`;
+  }
+
+  function initials(name) {
+    const raw = asText(name) || "AH";
+    const parts = raw.split(/\s+/).filter(Boolean);
+    const text = (parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : raw.slice(0, 2)).toUpperCase();
+    return text || "AH";
   }
 
   function notice(text) {
@@ -61,7 +68,18 @@
     const style = document.createElement("style");
     style.id = "player-profile-css";
     style.textContent = `
+      #playerProfileBack{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1001000 !important;
+        align-items:center;
+        justify-content:center;
+        background:rgba(0,0,0,.66);
+        pointer-events:auto;
+      }
       #playerProfileBack .pp-sheet{
+        position:relative;
+        z-index:1001010 !important;
         width:min(94vw,540px);
         max-height:88vh;
         overflow:auto;
@@ -79,9 +97,31 @@
       .pp-hero{display:grid;grid-template-columns:154px minmax(0,1fr);gap:14px;align-items:center}
       .pp-visual{position:relative;width:154px;aspect-ratio:3/4;overflow:visible}
       .pp-skin-window{position:absolute;inset:11% 15% 16%;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-      .pp-skin{width:100%;height:100%;object-fit:cover;object-position:center 24%;display:block}
+      .pp-skin{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;object-position:center 24%;display:block}
       .pp-frame{position:absolute;inset:-5px;width:calc(100% + 10px);height:calc(100% + 10px);object-fit:contain;z-index:3;pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.34))}
-      .pp-avatar-fallback{width:100%;height:100%;object-fit:cover;border-radius:18px;background:rgba(255,255,255,.04)}
+      .pp-avatar-fallback{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:18px;background:rgba(255,255,255,.04)}
+      .pp-fallback-mark{
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:18px;
+        border:1px solid rgba(255,255,255,.10);
+        background:
+          radial-gradient(circle at 50% 24%, rgba(125,211,252,.18), transparent 36%),
+          linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+        color:rgba(245,248,255,.92);
+        font-size:30px;
+        font-weight:950;
+        letter-spacing:.03em;
+        z-index:0;
+      }
+      .pp-skin-window .pp-fallback-mark{
+        border:0;
+        border-radius:0;
+        font-size:22px;
+      }
       .pp-main{min-width:0}
       .pp-name{font-size:22px;font-weight:950;line-height:1.08;overflow-wrap:anywhere}
       .pp-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
@@ -113,27 +153,39 @@
   }
 
   function ensureModal() {
-    if (S.backEl && document.body.contains(S.backEl)) return S.backEl;
     ensureStyles();
-    const back = document.createElement("div");
-    back.className = "sheet-back";
-    back.id = "playerProfileBack";
-    back.style.display = "none";
-    back.innerHTML = `
-      <div class="sheet-card pp-sheet" role="dialog" aria-modal="true" aria-label="Pack Profile">
-        <div class="pp-head">
-          <div class="pp-title">Pack Profile</div>
-          <button type="button" class="pp-close" aria-label="Close profile">x</button>
+    let back = S.backEl || document.getElementById("playerProfileBack");
+    if (!back) {
+      back = document.createElement("div");
+      back.className = "sheet-back";
+      back.id = "playerProfileBack";
+      back.style.display = "none";
+      back.innerHTML = `
+        <div class="sheet-card pp-sheet" role="dialog" aria-modal="true" aria-label="Pack Profile">
+          <div class="pp-head">
+            <div class="pp-title">Pack Profile</div>
+            <button type="button" class="pp-close" aria-label="Close profile">x</button>
+          </div>
+          <div class="pp-notice" role="status" aria-live="polite"></div>
+          <div class="pp-body"></div>
         </div>
-        <div class="pp-notice" role="status" aria-live="polite"></div>
-        <div class="pp-body"></div>
-      </div>
-    `;
-    back.addEventListener("click", (ev) => {
-      if (ev.target === back) close();
-    });
-    back.querySelector(".pp-close")?.addEventListener("click", close);
-    document.body.appendChild(back);
+      `;
+    }
+    if (back.parentElement !== document.body) {
+      document.body.appendChild(back);
+    }
+    back.style.zIndex = "1001000";
+    if (!back.__playerProfileBound) {
+      back.__playerProfileBound = true;
+      back.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        if (ev.target === back) close();
+      });
+      back.querySelector(".pp-close")?.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        close();
+      });
+    }
     S.backEl = back;
     return back;
   }
@@ -148,7 +200,7 @@
     const src = asText(url);
     if (!src) return `<div class="${cls}">*</div>`;
     if (/^https?:\/\//i.test(src) || src.startsWith("/") || /\.(png|webp|jpg|jpeg|gif|svg)(\?|#|$)/i.test(src)) {
-      return `<img class="${cls}" src="${esc(src)}" alt="${esc(name || "")}" loading="lazy">`;
+      return `<img class="${cls}" src="${esc(src)}" alt="${esc(name || "")}" loading="lazy" onerror="this.replaceWith(document.createTextNode('*'));">`;
     }
     return `<div class="${cls}">${esc(src)}</div>`;
   }
@@ -165,6 +217,7 @@
     const frame = p.frame || {};
     const badges = Array.isArray(p.badges) ? p.badges : [];
     const loadout = Array.isArray(p.loadout) ? p.loadout : [];
+    const fallback = `<div class="pp-fallback-mark" aria-hidden="true">${esc(initials(p.name))}</div>`;
     const chips = [
       `Lv ${asInt(p.level, 1)}`,
       asText(p.faction) || "Unbound",
@@ -175,14 +228,15 @@
     const visual = asText(skin.url || skin.img)
       ? `
         <div class="pp-visual">
-          <div class="pp-skin-window">${mediaMarkup(skin.url || skin.img, "pp-skin", skin.name || p.name)}</div>
-          ${asText(frame.url) ? `<img class="pp-frame" src="${esc(frame.url)}" alt="">` : ""}
+          <div class="pp-skin-window">${fallback}${mediaMarkup(skin.url || skin.img, "pp-skin", skin.name || p.name)}</div>
+          ${asText(frame.url) ? `<img class="pp-frame" src="${esc(frame.url)}" alt="" onerror="this.hidden=true;">` : ""}
         </div>
       `
       : `
         <div class="pp-visual">
-          ${asText(p.avatar_url) ? `<img class="pp-avatar-fallback" src="${esc(p.avatar_url)}" alt="${esc(p.name || "Avatar")}">` : `<div class="pp-avatar-fallback"></div>`}
-          ${asText(frame.url) ? `<img class="pp-frame" src="${esc(frame.url)}" alt="">` : ""}
+          ${fallback}
+          ${asText(p.avatar_url) ? `<img class="pp-avatar-fallback" src="${esc(p.avatar_url)}" alt="${esc(p.name || "Avatar")}" onerror="this.hidden=true;">` : ""}
+          ${asText(frame.url) ? `<img class="pp-frame" src="${esc(frame.url)}" alt="" onerror="this.hidden=true;">` : ""}
         </div>
       `;
 
@@ -283,6 +337,7 @@
     const body = back.querySelector(".pp-body");
     if (body) body.innerHTML = `<div class="pp-empty">Loading profile...</div>`;
     back.style.display = "flex";
+    try { global.navOpen?.("playerProfileBack"); } catch (_) {}
     try {
       const player = await loadProfile(uid);
       renderProfile(player);
@@ -296,6 +351,7 @@
 
   function close() {
     if (S.backEl) S.backEl.style.display = "none";
+    try { global.navClose?.("playerProfileBack"); } catch (_) {}
   }
 
   function init({ apiPost, tg, dbg } = {}) {
