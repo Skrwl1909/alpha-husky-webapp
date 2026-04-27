@@ -25,6 +25,15 @@
       .replace(/'/g, "&#39;");
   }
 
+  function mediaTag(url, cls, alt = "") {
+    const src = String(url || "").trim();
+    if (!src) return "";
+    if (/\.(mp4|webm)(\?|#|$)/i.test(src)) {
+      return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline></video>`;
+    }
+    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy">`;
+  }
+
   function num(v) {
     const n = Number(v || 0);
     try { return n.toLocaleString(); } catch (_) { return String(n); }
@@ -390,6 +399,42 @@ function _contribSummaryLegacy(c) {
     }
 
     return `<div class="hq-contrib-empty">Faction names will surface here as weekly activity starts to build.</div>`;
+  }
+
+  function renderFactionMembersPreview(rows) {
+    const members = Array.isArray(rows)
+      ? rows.filter((row) => row && row.uid).slice(0, 10)
+      : [];
+    const otherCount = members.filter((row) => !row.isYou).length;
+    if (!members.length || otherCount <= 0) {
+      return `<div class="hq-contrib-empty">More faction members will appear here as the pack becomes active.</div>`;
+    }
+
+    return `
+      <div class="hq-member-list">
+        ${members.map((row) => {
+          const visual = row.skin_url || row.avatar_url || "";
+          const roleLine = row.title || row.role || "Faction member";
+          const score = Number(row.weeklyScore || 0);
+          return `
+            <button type="button" class="hq-member-row ${row.isYou ? "is-you" : ""}" data-pack-profile-uid="${esc(row.uid)}">
+              <span class="hq-member-visual">
+                ${mediaTag(visual, "hq-member-img", row.name || "Member")}
+                ${row.frame_url ? `<img class="hq-member-frame" src="${esc(row.frame_url)}" alt="">` : ""}
+              </span>
+              <span class="hq-member-main">
+                <span class="hq-member-name">${esc(row.name || "Member")}${row.isYou ? ` <span class="hq-you-pill">YOU</span>` : ``}</span>
+                <span class="hq-member-sub">Lv ${num(row.level || 1)} - ${esc(roleLine)}</span>
+              </span>
+              <span class="hq-member-score">
+                <strong>${num(score)}</strong>
+                <span>weekly</span>
+              </span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
 
   // ---------------------------
@@ -1158,6 +1203,108 @@ function _contribSummaryLegacy(c) {
         border-radius:14px;
         background:rgba(255,255,255,.05);
         border:1px solid rgba(255,255,255,.08);
+      }
+
+      #factionHQRoot [data-pack-profile-uid]{
+        cursor:pointer;
+      }
+
+      #factionHQRoot .hq-member-list{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+
+      #factionHQRoot .hq-member-row{
+        width:100%;
+        display:grid;
+        grid-template-columns:46px minmax(0, 1fr) auto;
+        align-items:center;
+        gap:10px;
+        padding:9px 10px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.045);
+        color:inherit;
+        font:inherit;
+        text-align:left;
+      }
+
+      #factionHQRoot .hq-member-row:active{
+        transform:translateY(1px);
+      }
+
+      #factionHQRoot .hq-member-row.is-you{
+        border-color:color-mix(in srgb, var(--faction-color) 32%, rgba(255,255,255,.10));
+      }
+
+      #factionHQRoot .hq-member-visual{
+        position:relative;
+        width:42px;
+        height:42px;
+        border-radius:12px;
+        overflow:visible;
+        background:rgba(0,0,0,.24);
+      }
+
+      #factionHQRoot .hq-member-img{
+        width:100%;
+        height:100%;
+        display:block;
+        object-fit:cover;
+        border-radius:12px;
+      }
+
+      #factionHQRoot .hq-member-frame{
+        position:absolute;
+        inset:-5px;
+        width:calc(100% + 10px);
+        height:calc(100% + 10px);
+        object-fit:contain;
+        pointer-events:none;
+      }
+
+      #factionHQRoot .hq-member-main{
+        min-width:0;
+      }
+
+      #factionHQRoot .hq-member-name{
+        display:block;
+        font-size:13px;
+        font-weight:900;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      #factionHQRoot .hq-member-sub{
+        display:block;
+        margin-top:3px;
+        font-size:12px;
+        opacity:.72;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      #factionHQRoot .hq-member-score{
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        gap:2px;
+        min-width:48px;
+      }
+
+      #factionHQRoot .hq-member-score strong{
+        font-size:14px;
+        line-height:1;
+      }
+
+      #factionHQRoot .hq-member-score span{
+        font-size:10px;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        opacity:.58;
       }
 
       #factionHQRoot .hq-rank-badge{
@@ -2183,6 +2330,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const social = d.social || {};
     const meta = factionHomeMeta(fk);
     const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
+    const membersPreviewHTML = renderFactionMembersPreview(d.factionMembersPreview || d.faction_members_preview || []);
     const highlight = snapshot.recentHighlight || {};
     const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
       ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
@@ -2226,7 +2374,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       <div class="hq-grid two">
         <div class="hq-card">
           <div class="hq-card-title">
-            <b>Faction Circle</b>
+            <b>Weekly Signal</b>
             <span class="hq-mini">Top 3 this week</span>
           </div>
 
@@ -2267,6 +2415,18 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           </div>
 
           <div class="hq-note">${myPlace.qualified ? "Weekly reward threshold is active for you right now." : "Current standing is built from live faction activity and HQ support."}</div>
+        </div>
+
+        <div class="hq-card">
+          <div class="hq-card-title">
+            <b>Faction Circle</b>
+            <span class="hq-mini">Pack Members</span>
+          </div>
+
+          <div class="hq-note" style="margin-top:0;">Members carrying the faction signal.</div>
+          <div style="margin-top:12px;">
+            ${membersPreviewHTML}
+          </div>
         </div>
 
         <div class="hq-card">
