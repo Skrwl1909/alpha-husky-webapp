@@ -8054,6 +8054,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script src="js/missions.js?v=WEBAPP_VER"></script>
 <script src="js/cta.js?v=WEBAPP_VER"></script>
+<script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
@@ -8086,6 +8087,18 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>
 (function initMailbox(){
   function tryInitMailbox(){
+    if (window.PlayerProfile && !window.__playerProfileInited) {
+      try {
+        window.PlayerProfile.init({
+          apiPost: window.apiPost,
+          tg: window.Telegram?.WebApp || window.tg || null,
+          dbg: !!window.DBG
+        });
+        window.__playerProfileInited = true;
+      } catch (e) {
+        if (window.DBG) console.warn("[PlayerProfile] init failed", e);
+      }
+    }
     if (!window.Mailbox || window.__mailboxInited) return;
     try {
       window.Mailbox.init({
