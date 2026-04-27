@@ -96,6 +96,7 @@
     const kind = asText(raw.kind).toLowerCase();
     const title = asText(raw.title);
     const line = asText(raw.line);
+    const body = asText(raw.body);
     const target = normalizeTarget(raw.target);
     if (!id || !kind || !title) return null;
     const hasAction = !!target;
@@ -106,6 +107,7 @@
       kind,
       title,
       line,
+      body,
       badge: asText(raw.badge).toUpperCase(),
       ts: Math.max(0, asInt(raw.ts, 0)),
       target,
@@ -304,6 +306,7 @@
         font-size:12px;
         line-height:1.35;
         opacity:.82;
+        white-space:pre-line;
       }
       .mailbox-act{
         flex-shrink:0;
@@ -343,6 +346,17 @@
         line-height:1.4;
         opacity:.74;
       }
+      .mailbox-notice{
+        display:none;
+        margin:0 0 10px;
+        border:1px solid rgba(255,255,255,.13);
+        background:rgba(0,0,0,.28);
+        border-radius:12px;
+        padding:8px 10px;
+        color:rgba(255,255,255,.88);
+        font-size:12px;
+        line-height:1.35;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -364,6 +378,7 @@
           </div>
           <button type="button" class="mailbox-close" aria-label="Close mailbox">×</button>
         </div>
+        <div id="mailboxNotice" class="mailbox-notice" role="status" aria-live="polite"></div>
         <div id="mailboxBody"></div>
       </div>
     `;
@@ -381,6 +396,23 @@
   async function api(path, body) {
     if (typeof S.apiPost !== "function") throw new Error("apiPost missing");
     return S.apiPost(path, body || {});
+  }
+
+  function showNotice(text) {
+    const back = ensureModal();
+    const notice = back.querySelector("#mailboxNotice");
+    if (!notice) return;
+    const msg = asText(text);
+    notice.textContent = msg;
+    notice.style.display = msg ? "block" : "none";
+    if (msg) {
+      window.setTimeout(() => {
+        if (notice.textContent === msg) {
+          notice.textContent = "";
+          notice.style.display = "none";
+        }
+      }, 2600);
+    }
   }
 
   async function load() {
@@ -464,11 +496,12 @@
     render();
     S.dismissing.add(id);
     try {
-      const out = await api("/webapp/mailbox/dismiss", { itemId: id });
+      const out = await api("/webapp/mailbox/dismiss", { message_id: id });
       if (!out || out.ok === false) {
         S.items = prevItems;
         applyHubUnreadBadge();
         render();
+        showNotice("Could not dismiss that message. Try again.");
         return false;
       }
       await load();
@@ -479,6 +512,7 @@
       S.items = prevItems;
       applyHubUnreadBadge();
       render();
+      showNotice("Could not dismiss that message. Try again.");
       return false;
     } finally {
       S.dismissing.delete(id);
@@ -510,7 +544,7 @@
         <div class="mailbox-left">
           <div class="mailbox-kicker"><span>${esc(kicker)}</span><span class="dot"></span><span>${esc(item.badge || "INFO")}</span></div>
           <div class="mailbox-item-title">${esc(item.title)}</div>
-          <div class="mailbox-item-line">${esc(item.line)}</div>
+          <div class="mailbox-item-line">${esc(item.body || item.line)}</div>
         </div>
         ${controls}
       `;
