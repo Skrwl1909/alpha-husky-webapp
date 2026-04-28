@@ -4004,7 +4004,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
 
   <!-- ✅ TON CONNECT placeholder (tu renderuje się button) -->
-  <div id="ton-connect" class="ton-connect"></div>
+  <div id="ton-connect" class="ton-connect">
+    <button id="supportTopWallet" type="button" title="Open Solana holder support">Connect Wallet</button>
+  </div>
   <div id="ton-wallet-status" class="ton-wallet-status"></div>
       </div>
       <div class="grid">
@@ -4401,9 +4403,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <button class="ah-action" id="supportTokenConnect" type="button" disabled>Preparing Lane</button>
           <button class="ah-action" id="supportTokenRefresh" type="button" disabled style="display:none">Refresh Holder Status</button>
           <button class="ah-action" id="supportTokenClaim" type="button" disabled style="display:none">Weekly Claim</button>
+          <button class="ah-action" id="supportTokenDisconnect" type="button" style="display:none">Disconnect Wallet</button>
         </div>
         <div id="supportTokenHint" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
-          Wallet connect works inside Phantom browser or desktop wallet extensions.
+          Connect Solana Wallet. Phantom recommended. This only verifies wallet ownership. No seed phrase. No token transfer.
         </div>
       </section>
 
@@ -4433,7 +4436,8 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <li>Open Alpha Husky in Phantom browser</li>
         <li>Or use a browser with a Solana wallet extension</li>
       </ul>
-      <p>This is required for holder verification and rewards.</p>
+      <p>Connect Solana Wallet. Phantom recommended.</p>
+      <p data-wallet-safety-copy="1">This only verifies wallet ownership. No seed phrase. No token transfer.</p>
     </div>
     <div class="ah-wallet-actions">
       <button id="solanaWalletOpenPhantom" class="ah-action ah-wallet-primary" type="button">Open in Phantom</button>
@@ -5646,18 +5650,7 @@ function loadScriptOnce(src) {
   });
 }
       // ✅ TON Wallet (load + init) — Wklej tutaj
-loadScriptOnce("js/tonwallet.js").then(() => {
-  if (!window.TON_CONNECT_UI?.TonConnectUI) {
-    console.warn("[TON] TonConnect UI CDN missing?");
-    return;
-  }
-  window.TonWallet?.init?.({
-    apiPost,
-    tg: _tg,
-    dbg: _dbg,
-    manifestUrl: location.origin + "/tonconnect-manifest.json"
-  });
-}).catch(console.warn);
+// Topbar wallet slot is handled by js/support.js for Solana holder verification.
 
 // run_id helper (wspólny dla skins/adopt/shop)
 window.AH_makeRunId = function(prefix, key) {
