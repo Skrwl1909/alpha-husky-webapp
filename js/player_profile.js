@@ -261,10 +261,13 @@
       .pp-howl{min-height:40px;padding:0 14px;border-radius:14px;border:1px solid rgba(125,211,252,.28);background:linear-gradient(180deg, rgba(46,126,255,.92), rgba(22,82,201,.92));color:#fff;font-weight:950;cursor:pointer}
       .pp-howl:disabled{opacity:.52;cursor:default;filter:saturate(.72)}
       .pp-left{font-size:12px;color:rgba(230,238,255,.68);line-height:1.3}
+      .pp-howl-help{margin-top:8px;font-size:12px;line-height:1.36;color:rgba(230,238,255,.72);white-space:pre-line}
       .pp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
       .pp-stat{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);border-radius:8px;padding:9px 8px;text-align:center;min-width:0}
       .pp-stat strong{display:block;font-size:17px;line-height:1.1}
       .pp-stat span{display:block;margin-top:3px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:rgba(230,238,255,.62)}
+      .pp-stat small{display:block;margin-top:5px;font-size:10px;line-height:1.25;color:rgba(230,238,255,.56);text-transform:none;letter-spacing:0}
+      .pp-social-note{margin-top:8px;font-size:11px;line-height:1.35;color:rgba(230,238,255,.62)}
       .pp-section{margin-top:14px}
       .pp-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(230,238,255,.62);margin-bottom:8px}
       .pp-badges,.pp-loadout{display:flex;gap:8px;overflow:auto;padding-bottom:2px}
@@ -397,13 +400,17 @@
             <button type="button" class="pp-howl" ${button.disabled ? "disabled" : ""} data-state="${esc(button.key)}">${esc(button.label)}</button>
             <span class="pp-left">Pack Signals left today: ${esc(left)} / ${esc(limit)}</span>
           </div>
+          <div class="pp-howl-help">Send a Howl to recognize another player.
+It appears in their mailbox and adds to social counters.
+No gameplay power — just recognition.</div>
         </div>
       </div>
       <div class="pp-stats">
-        <div class="pp-stat"><strong>${esc(asInt(social.howls_received_total, 0))}</strong><span>Received</span></div>
-        <div class="pp-stat"><strong>${esc(asInt(social.howls_sent_total, 0))}</strong><span>Sent</span></div>
-        <div class="pp-stat"><strong>${esc(asInt(social.pack_bonds_total, 0))}</strong><span>Pack Bonds</span></div>
+        <div class="pp-stat"><strong>${esc(asInt(social.howls_received_total, 0))}</strong><span>Howls Received</span><small>Signals from other players who noticed your trail.</small></div>
+        <div class="pp-stat"><strong>${esc(asInt(social.howls_sent_total, 0))}</strong><span>Howls Sent</span><small>Signals you sent to the pack.</small></div>
+        <div class="pp-stat"><strong>${esc(asInt(social.pack_bonds_total, 0))}</strong><span>Pack Bonds</span><small>Mutual Howls returned on the same day.</small></div>
       </div>
+      <div class="pp-social-note">Pack Signals are social recognition only. They never give gameplay power.</div>
       <div class="pp-section">
         <div class="pp-section-title">Displayed Badges</div>
         ${badges.length ? `<div class="pp-badges">${badges.map((b) => `
