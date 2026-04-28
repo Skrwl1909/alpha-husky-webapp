@@ -922,6 +922,104 @@ html.ah-skins-open #heroFrame{
   text-overflow:ellipsis !important;
   white-space:nowrap !important;
 }
+
+#ton-connect{
+  max-width: clamp(94px, 25vw, 132px);
+  overflow: visible;
+  isolation: isolate;
+}
+
+#ton-connect #supportTopWallet{
+  appearance:none;
+  -webkit-appearance:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: auto;
+  min-width: 94px !important;
+  max-width: clamp(94px, 25vw, 132px) !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,196,95,.28) !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,211,129,.18), transparent 34%),
+    linear-gradient(180deg, rgba(32,28,22,.86), rgba(8,11,18,.82)) !important;
+  color: rgba(255,241,214,.96) !important;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.34),
+    0 0 18px rgba(255,166,55,.10),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 10px rgba(0,0,0,.42);
+  cursor:pointer;
+  user-select:none;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+#ton-connect #supportTopWallet:hover,
+#ton-connect #supportTopWallet:focus-visible{
+  border-color: rgba(255,210,128,.50) !important;
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.38),
+    0 0 20px rgba(255,172,56,.18),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+  outline: none;
+}
+
+#ton-connect #supportTopWallet:active{
+  transform: translateY(1px) scale(.99);
+}
+
+#ton-connect #supportTopWallet.is-disconnected{
+  color: rgba(255,238,207,.94) !important;
+}
+
+#ton-connect #supportTopWallet.is-linked{
+  min-width: 88px !important;
+  border-color: rgba(202,177,123,.34) !important;
+  color: rgba(232,222,204,.96) !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,218,153,.12), transparent 34%),
+    linear-gradient(180deg, rgba(24,25,30,.88), rgba(8,11,18,.86)) !important;
+}
+
+#ton-connect #supportTopWallet.is-holder{
+  min-width: 78px !important;
+  border-color: rgba(255,197,88,.58) !important;
+  color: rgba(255,243,218,.98) !important;
+  background:
+    radial-gradient(circle at 22% 0%, rgba(255,209,113,.28), transparent 42%),
+    linear-gradient(180deg, rgba(55,38,20,.92), rgba(14,13,16,.90)) !important;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.36),
+    0 0 22px rgba(255,172,56,.18),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+@media (max-width: 420px){
+  #player{ max-width: 25vw; }
+  #faction .faction-meta{ display:none !important; }
+  #ton-connect #supportTopWallet{
+    min-width: 86px !important;
+    max-width: 112px !important;
+    padding: 0 10px !important;
+    font-size: 10.5px !important;
+  }
+}
+
+@media (max-width: 360px){
+  .topbar{ gap: 7px; padding-left: 9px; padding-right: 9px; }
+  #player{ max-width: 22vw; }
+  #faction .tag-badge{ padding: 6px 8px !important; }
+  #ton-connect #supportTopWallet{
+    min-width: 78px !important;
+    max-width: 102px !important;
+  }
+}
   .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--stroke); background:rgba(0,0,0,.35); color:#aef; font-weight:700; }
   .spacer { height: max(12px, var(--ah-inset-bottom)); }
     /* === TOPBAR TAG PILL (PACK / SUPPORTER etc.) === */
@@ -1590,8 +1688,8 @@ html.ah-skins-open #heroFrame{
 .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
 
 /* DEBUG banner (pojedynczy) */
-#dbg{position:fixed; right:8px; top:8px; z-index:9; font:600 11px system-ui;
-  background:rgba(0,0,0,.6); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none}
+#dbg{position:fixed; left:8px; bottom:8px; z-index:4; font:600 11px system-ui;
+  background:rgba(0,0,0,.56); color:#fff; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:none; pointer-events:none; max-width:160px; opacity:.72}
 
 /* Avatar/Skins modal */
 .avatar-sheet .sheet-card {
@@ -3467,6 +3565,143 @@ body.missions-open{
     cursor:pointer;
   }
 
+  #supportBack .ah-panel{
+    border-color: rgba(255,196,95,.18);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(255,176,62,.10), transparent 34%),
+      linear-gradient(180deg, rgba(13,17,25,.92), rgba(7,10,16,.92));
+  }
+
+  #supportBack .ah-panel-hd{
+    padding: 15px 16px 11px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  #supportBack .ah-panel-scroll > div{
+    padding: 12px 14px 16px;
+  }
+
+  #supportBack .ah-support-section{
+    position: relative;
+    padding: 13px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(220,232,249,.12) !important;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)),
+      rgba(5,8,14,.34) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+  }
+
+  #supportBack .ah-support-token{
+    border-color: rgba(255,196,95,.22) !important;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,176,62,.12), transparent 38%),
+      linear-gradient(180deg, rgba(20,18,18,.58), rgba(6,9,15,.42)) !important;
+  }
+
+  #supportBack.has-holder-active .ah-support-token{
+    border-color: rgba(255,196,95,.42) !important;
+    box-shadow:
+      0 0 22px rgba(255,164,52,.08),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
+  #supportBack .ah-support-section > div:first-child{
+    color: rgba(255,238,207,.96);
+    font-size: 13px;
+    letter-spacing: .18px;
+  }
+
+  #supportTokenStatus,
+  #supportCombinedStatus,
+  #supportStarsStatus{
+    margin-top: 8px !important;
+    padding: 10px 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(220,232,249,.10);
+    background: rgba(0,0,0,.18);
+    color: rgba(231,239,248,.90);
+    opacity: 1 !important;
+  }
+
+  #supportBack.has-holder-active #supportTokenStatus{
+    border-color: rgba(255,196,95,.34);
+    background:
+      linear-gradient(180deg, rgba(255,179,64,.10), rgba(0,0,0,.16)),
+      rgba(8,10,15,.22);
+    color: rgba(255,242,218,.96);
+  }
+
+  #supportTokenPerks{
+    margin-top: 10px !important;
+    padding: 10px 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(220,232,249,.09);
+    background: rgba(255,255,255,.025);
+    color: rgba(218,228,240,.82);
+    opacity: 1 !important;
+  }
+
+  #supportBack.has-holder-claim #supportTokenPerks{
+    border-color: rgba(255,196,95,.30);
+    background:
+      radial-gradient(circle at 8% 0%, rgba(255,190,74,.12), transparent 44%),
+      rgba(255,255,255,.035);
+  }
+
+  #supportTokenHint{
+    margin-top: 9px !important;
+    color: rgba(196,207,221,.76);
+    opacity: 1 !important;
+  }
+
+  #supportBack .ah-support-actions{
+    display:grid !important;
+    grid-template-columns: 1fr;
+    gap: 9px !important;
+    padding: 0 !important;
+    margin-top: 11px !important;
+  }
+
+  #supportBack .ah-support-actions .ah-action{
+    width: 100%;
+    height: 42px;
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)),
+      rgba(8,12,19,.46);
+  }
+
+  #supportBack .ah-support-actions #supportTokenConnect{
+    border-color: rgba(255,196,95,.28);
+  }
+
+  #supportBack .ah-support-actions #supportTokenClaim{
+    border-color: rgba(255,196,95,.38);
+    color: rgba(255,241,214,.98);
+    background:
+      radial-gradient(circle at 16% 0%, rgba(255,195,86,.18), transparent 40%),
+      linear-gradient(180deg, rgba(54,38,20,.70), rgba(12,13,17,.62));
+  }
+
+  #supportBack .ah-support-actions #supportTokenDisconnect{
+    border-color: rgba(220,232,249,.10);
+    color: rgba(207,218,232,.78);
+    background: rgba(8,12,19,.28);
+  }
+
+  #supportBack .ah-support-actions .ah-action:disabled{
+    cursor: default;
+    opacity: .55;
+    filter: saturate(.75);
+  }
+
+  @media (min-width: 430px){
+    #supportBack .ah-support-actions{
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   .ah-wallet-modal{
     position: fixed;
     inset: 0;
@@ -4005,7 +4240,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
   <!-- ✅ TON CONNECT placeholder (tu renderuje się button) -->
   <div id="ton-connect" class="ton-connect">
-    <button id="supportTopWallet" type="button" title="Open Solana holder support">Connect Wallet</button>
+    <button id="supportTopWallet" class="is-disconnected" type="button" aria-label="Connect Solana Wallet">Connect Wallet</button>
   </div>
   <div id="ton-wallet-status" class="ton-wallet-status"></div>
       </div>
@@ -4370,7 +4605,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
     <div class="ah-panel-scroll">
     <div style="display:grid;gap:14px">
-      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+      <section class="ah-support-section ah-support-stars" style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
         <div style="font-weight:700">Telegram Stars</div>
         <div id="supportStarsStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
           Checking Stars support status...
@@ -4391,7 +4626,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </div>
       </section>
 
-      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+      <section class="ah-support-section ah-support-token" style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
         <div style="font-weight:700">Believe / Solana Holder</div>
         <div id="supportTokenStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
           Believe holder lane is in preparation.
@@ -4399,7 +4634,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <div id="supportTokenPerks" style="opacity:.72;font-size:12px;line-height:1.35;margin-top:8px">
           Stars support is live now. Solana holder checks and weekly claim activate with the live mint rollout.
         </div>
-        <div class="ah-actions" style="gap:10px;margin-top:10px">
+        <div class="ah-actions ah-support-actions" style="gap:10px;margin-top:10px">
           <button class="ah-action" id="supportTokenConnect" type="button" disabled>Preparing Lane</button>
           <button class="ah-action" id="supportTokenRefresh" type="button" disabled style="display:none">Refresh Holder Status</button>
           <button class="ah-action" id="supportTokenClaim" type="button" disabled style="display:none">Weekly Claim</button>
@@ -4410,7 +4645,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </div>
       </section>
 
-      <section style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
+      <section class="ah-support-section ah-support-combined" style="padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)">
         <div style="font-weight:700">Combined Support Status</div>
         <div id="supportCombinedStatus" style="opacity:.82;font-size:12px;line-height:1.4;margin-top:6px">
           Loading combined support state...
