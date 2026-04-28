@@ -73,24 +73,29 @@
     const token = support?.token || {};
     const tier = Number(token.tier || 0);
     const linked = !!token.linked;
+    btn.classList.remove("is-disconnected", "is-linked", "is-holder");
+    btn.removeAttribute("title");
 
     if (tier > 0) {
-      btn.textContent = "Holder ✓";
+      btn.textContent = "HOWL ✓";
       btn.dataset.state = "holder";
-      btn.title = token.walletDisplay ? `Holder active: ${token.walletDisplay}` : "Holder active";
+      btn.classList.add("is-holder");
+      btn.setAttribute("aria-label", token.walletDisplay ? `Holder active: ${token.walletDisplay}` : "Holder active");
       return;
     }
 
     if (linked) {
       btn.textContent = token.walletDisplay || "Wallet Linked";
       btn.dataset.state = "linked";
-      btn.title = "Solana wallet linked. Open Support to refresh holder status.";
+      btn.classList.add("is-linked");
+      btn.setAttribute("aria-label", "Solana wallet linked. Open Support to refresh holder status.");
       return;
     }
 
     btn.textContent = "Connect Wallet";
     btn.dataset.state = "empty";
-    btn.title = "Connect Solana Wallet";
+    btn.classList.add("is-disconnected");
+    btn.setAttribute("aria-label", "Connect Solana Wallet");
   }
 
   function isTokenLaneEnabled(token) {
@@ -335,6 +340,14 @@
 
   function renderTokenState(token) {
     const lane = token || {};
+    const supportBack = el("supportBack");
+    if (supportBack) {
+      const laneTier = Number(lane.tier || 0);
+      supportBack.classList.toggle("has-holder-active", !!(lane.linked && laneTier > 0));
+      supportBack.classList.toggle("has-holder-linked", !!(lane.linked && laneTier <= 0));
+      supportBack.classList.toggle("has-holder-claim", !!lane.weeklyClaimAvailable);
+    }
+
     if (!isTokenLaneEnabled(lane)) {
       setText("supportTokenStatus", lane.message || "Believe holder lane is in preparation.");
       setText(
