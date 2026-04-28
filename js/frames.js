@@ -14,12 +14,28 @@
   let frameStateChip;
   let equipBtn;
   let clearBtn;
+  let howlBuyBtn;
+  let howlPayPanel;
+  let howlPayAmount;
+  let howlPayTimer;
+  let howlPayStatus;
+  let howlOpenBtn;
+  let howlCopyBtn;
+  let howlCheckBtn;
   let frameButtonsWrap;
 
   let _catalog = [];
   let _owned = [];
   let _equipped = { frame: "" };
   let _selectedKey = "";
+  let _selectedItem = null;
+  let _howlPayment = null;
+  let _howlPollTimer = null;
+  let _howlCountdownTimer = null;
+  let _howlPollStartedAt = 0;
+  const HOWL_GENESIS_FRAME_KEY = "genesis_frame";
+  const HOWL_POLL_MS = 9000;
+  const HOWL_POLL_TIMEOUT_MS = 12 * 60 * 1000;
   const SKIN_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
     unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
@@ -330,6 +346,62 @@
         background:rgba(255,255,255,.04);
         color:rgba(255,255,255,.7);
       }
+      #framesBack .ah-howl-buy{
+        display:none;
+      }
+      #framesBack .ah-howl-buy.is-visible{
+        display:inline-flex;
+      }
+      #framesBack .ah-howl-pay-panel{
+        display:none;
+        width:min(368px, 88vw);
+        margin:8px auto 10px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.14);
+        background:linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+      }
+      #framesBack .ah-howl-pay-panel.is-open{
+        display:block;
+      }
+      #framesBack .ah-howl-pay-top{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:8px;
+      }
+      #framesBack .ah-howl-pay-title{
+        font-size:13px;
+        font-weight:800;
+        color:rgba(247,251,255,.96);
+      }
+      #framesBack .ah-howl-pay-meta,
+      #framesBack .ah-howl-pay-status,
+      #framesBack .ah-howl-pay-safety{
+        font-size:11px;
+        line-height:1.35;
+        color:rgba(230,238,255,.74);
+      }
+      #framesBack .ah-howl-pay-status{
+        margin:7px 0;
+        color:rgba(240,249,255,.88);
+      }
+      #framesBack .ah-howl-pay-actions{
+        display:flex;
+        flex-wrap:wrap;
+        gap:7px;
+        margin:8px 0;
+      }
+      #framesBack .ah-howl-pay-actions .btn{
+        min-height:32px;
+        padding:7px 9px;
+        font-size:12px;
+      }
+      #framesBack .ah-howl-pay-safety{
+        margin-top:7px;
+        color:rgba(230,238,255,.68);
+      }
       @keyframes ahFrameStageIn{
         from{ opacity:.75; transform:translateY(4px) scale(.995); }
         to{ opacity:1; transform:translateY(0) scale(1); }
@@ -370,7 +442,28 @@
 
           <div style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
             <button class="btn primary" id="equipFrame" type="button">Equip Frame</button>
+            <button class="btn primary ah-howl-buy" id="buyHowlFrame" type="button">Buy with $HOWL</button>
             <button class="btn" id="clearFrame" type="button">Clear</button>
+          </div>
+
+          <div id="howlPayPanel" class="ah-howl-pay-panel" aria-live="polite">
+            <div class="ah-howl-pay-top">
+              <div>
+                <div class="ah-howl-pay-title">HOWL Genesis Frame</div>
+                <div class="ah-howl-pay-meta">Amount: <span id="howlPayAmount">-</span> $HOWL</div>
+              </div>
+              <div id="howlPayTimer" class="ah-howl-pay-meta"></div>
+            </div>
+            <div id="howlPayStatus" class="ah-howl-pay-status">Payment link ready.</div>
+            <div class="ah-howl-pay-actions">
+              <button class="btn primary" id="howlOpenPayment" type="button">Open Phantom</button>
+              <button class="btn" id="howlCopyPayment" type="button">Copy Payment Link</button>
+              <button class="btn" id="howlCheckPayment" type="button">Check Payment</button>
+            </div>
+            <div class="ah-howl-pay-safety">
+              Cosmetic only. No power. Only use the generated payment link. Never share your seed phrase.
+              Wrong token or wrong address cannot be auto-credited.
+            </div>
           </div>
 
           <div id="frameButtons" class="skins-grid"></div>
@@ -387,6 +480,14 @@
     frameStateChip = document.getElementById("frameStateChip");
     equipBtn = document.getElementById("equipFrame");
     clearBtn = document.getElementById("clearFrame");
+    howlBuyBtn = document.getElementById("buyHowlFrame");
+    howlPayPanel = document.getElementById("howlPayPanel");
+    howlPayAmount = document.getElementById("howlPayAmount");
+    howlPayTimer = document.getElementById("howlPayTimer");
+    howlPayStatus = document.getElementById("howlPayStatus");
+    howlOpenBtn = document.getElementById("howlOpenPayment");
+    howlCopyBtn = document.getElementById("howlCopyPayment");
+    howlCheckBtn = document.getElementById("howlCheckPayment");
     frameButtonsWrap = document.getElementById("frameButtons");
   }
 
@@ -614,6 +715,224 @@
     return { label: "Owned", className: "is-owned" };
   }
 
+  function isGenesisFrame(key) {
+    return normKey(key) === HOWL_GENESIS_FRAME_KEY;
+  }
+
+  function selectedGenesisLocked() {
+    const key = normKey(_selectedKey);
+    return isGenesisFrame(key) && !isOwnedKey(key);
+  }
+
+  function isHowlpayDisabled(out) {
+    const reason = normKey(out?.reason || out?.error || out?.code || "");
+    return reason === "howlpay_disabled" || reason === "feature_disabled" || reason === "coming_soon";
+  }
+
+  function setHowlStatus(message) {
+    if (howlPayStatus) howlPayStatus.textContent = String(message || "");
+  }
+
+  function terminalHowlStatus(status) {
+    return ["completed", "expired", "failed", "manual_review"].includes(normKey(status));
+  }
+
+  function paymentPanelOpen() {
+    return !!howlPayPanel?.classList?.contains("is-open");
+  }
+
+  function stopHowlPolling() {
+    if (_howlPollTimer) {
+      clearTimeout(_howlPollTimer);
+      _howlPollTimer = null;
+    }
+    if (_howlCountdownTimer) {
+      clearInterval(_howlCountdownTimer);
+      _howlCountdownTimer = null;
+    }
+  }
+
+  function formatSeconds(total) {
+    const sec = Math.max(0, Math.floor(Number(total) || 0));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function updateHowlCountdown() {
+    if (!howlPayTimer) return;
+    const expiresAt = Number(_howlPayment?.expires_at || _howlPayment?.expiresAt || 0);
+    if (!expiresAt) {
+      howlPayTimer.textContent = "";
+      return;
+    }
+    const left = expiresAt - Math.floor(Date.now() / 1000);
+    howlPayTimer.textContent = left > 0 ? `Expires ${formatSeconds(left)}` : "Expired";
+  }
+
+  function showHowlPanel(payment) {
+    _howlPayment = payment && typeof payment === "object" ? payment : null;
+    if (!howlPayPanel || !_howlPayment) return;
+    howlPayPanel.classList.add("is-open");
+    if (howlPayAmount) howlPayAmount.textContent = String(_howlPayment.amount || "-");
+    updateHowlCountdown();
+    setHowlStatus("Payment link ready. Use only this generated link.");
+    stopHowlPolling();
+    _howlPollStartedAt = Date.now();
+    _howlCountdownTimer = setInterval(updateHowlCountdown, 1000);
+    scheduleHowlPoll();
+  }
+
+  function hideHowlPanel() {
+    stopHowlPolling();
+    _howlPayment = null;
+    howlPayPanel?.classList?.remove("is-open");
+  }
+
+  function updateHowlControls() {
+    const showBuy = selectedGenesisLocked();
+    if (howlBuyBtn) {
+      howlBuyBtn.classList.toggle("is-visible", showBuy);
+      howlBuyBtn.disabled = !showBuy;
+    }
+    if (!showBuy && _howlPayment?.status !== "pending") {
+      hideHowlPanel();
+    }
+  }
+
+  function refreshAfterHowlUnlock() {
+    return reloadState(HOWL_GENESIS_FRAME_KEY)
+      .then(() => window.loadProfile?.())
+      .catch((err) => dbg("post unlock refresh failed", err));
+  }
+
+  function handleHowlStatus(out) {
+    const status = normKey(out?.status || (_howlPayment?.status || "pending"));
+    if (_howlPayment) _howlPayment.status = status;
+
+    if (status === "completed") {
+      stopHowlPolling();
+      setHowlStatus("Payment confirmed — HOWL Genesis Frame unlocked.");
+      refreshAfterHowlUnlock();
+      return status;
+    }
+    if (status === "expired") {
+      stopHowlPolling();
+      setHowlStatus("Payment expired. Start a new payment if you still want the frame.");
+      return status;
+    }
+    if (status === "manual_review") {
+      stopHowlPolling();
+      setHowlStatus("Payment received but needs review. Do not pay again yet.");
+      return status;
+    }
+    if (status === "failed") {
+      stopHowlPolling();
+      setHowlStatus("Payment could not be credited. Check the token, address, and amount before trying again.");
+      return status;
+    }
+
+    setHowlStatus("Waiting for payment confirmation...");
+    return "pending";
+  }
+
+  async function checkHowlPayment({ manual = false } = {}) {
+    if (!_apiPost || !_howlPayment?.payment_id) return "pending";
+    if (!paymentPanelOpen()) return "closed";
+    if ((Date.now() - _howlPollStartedAt) > HOWL_POLL_TIMEOUT_MS) {
+      stopHowlPolling();
+      setHowlStatus("Still pending. Use Check Payment if your wallet shows the transfer completed.");
+      return "timeout";
+    }
+    if (manual) setHowlStatus("Checking payment...");
+    const out = await _apiPost("/webapp/howlpay/status", { payment_id: _howlPayment.payment_id });
+    if (!out || !out.ok) throw new Error(out?.reason || "status_failed");
+    return handleHowlStatus(out);
+  }
+
+  function scheduleHowlPoll() {
+    if (!_howlPayment?.payment_id || !paymentPanelOpen()) return;
+    if (_howlPollTimer) clearTimeout(_howlPollTimer);
+    _howlPollTimer = setTimeout(async () => {
+      _howlPollTimer = null;
+      try {
+        const status = await checkHowlPayment();
+        if (!terminalHowlStatus(status) && status !== "timeout" && paymentPanelOpen()) {
+          scheduleHowlPoll();
+        }
+      } catch (err) {
+        dbg("howl poll failed", err);
+        if (paymentPanelOpen()) scheduleHowlPoll();
+      }
+    }, HOWL_POLL_MS);
+  }
+
+  async function beginHowlPurchase() {
+    if (!_apiPost) {
+      showAlert("Frames are not ready yet.");
+      return;
+    }
+    if (!selectedGenesisLocked()) return;
+    if (howlBuyBtn) howlBuyBtn.disabled = true;
+    setHowlStatus("Creating payment link...");
+    try {
+      const out = await _apiPost("/webapp/howlpay/init", {
+        item_type: "frame",
+        item_key: HOWL_GENESIS_FRAME_KEY,
+      });
+
+      if (out?.already_owned) {
+        showAlert("HOWL Genesis Frame already unlocked.");
+        await refreshAfterHowlUnlock();
+        return;
+      }
+
+      if (!out || !out.ok) {
+        if (isHowlpayDisabled(out)) {
+          setHowlStatus("HOWL payments are not live yet.");
+          if (howlPayPanel) howlPayPanel.classList.add("is-open");
+          return;
+        }
+        throw new Error(out?.reason || "payment_init_failed");
+      }
+
+      showHowlPanel(out);
+      haptic("medium");
+    } catch (err) {
+      dbg("howl init failed", err);
+      if (isHowlpayDisabled(err?.data || err)) {
+        if (howlPayPanel) howlPayPanel.classList.add("is-open");
+        setHowlStatus("HOWL payments are not live yet.");
+        return;
+      }
+      showAlert(err?.message || "Failed to create payment link.");
+    } finally {
+      if (howlBuyBtn) howlBuyBtn.disabled = !selectedGenesisLocked();
+    }
+  }
+
+  async function copyHowlPaymentLink() {
+    const url = String(_howlPayment?.payment_url || _howlPayment?.paymentUrl || "").trim();
+    if (!url) return;
+    try {
+      await navigator.clipboard?.writeText?.(url);
+      setHowlStatus("Payment link copied. Only use this generated link.");
+      haptic("light");
+    } catch (_) {
+      showAlert(url);
+    }
+  }
+
+  function openHowlPaymentLink() {
+    const url = String(_howlPayment?.payment_url || _howlPayment?.paymentUrl || "").trim();
+    if (!url) return;
+    try {
+      window.open(url, "_blank", "noopener");
+    } catch (_) {
+      window.location.href = url;
+    }
+  }
+
   function refreshButtonStates() {
     if (!frameButtonsWrap) return;
     const selectedKey = normKey(_selectedKey);
@@ -678,6 +997,7 @@
 
   function close() {
     if (!framesBack) return;
+    hideHowlPanel();
     framesBack.style.display = "none";
   }
 
@@ -704,10 +1024,12 @@
     if (isOwnedKey(k)) {
       equipBtn.disabled = false;
       equipBtn.textContent = "Equip Frame";
+      updateHowlControls();
       return;
     }
     equipBtn.disabled = true;
     equipBtn.textContent = "Locked";
+    updateHowlControls();
   }
 
   function buildButtons() {
@@ -754,10 +1076,12 @@
       button.appendChild(chip);
       button.addEventListener("click", () => {
         _selectedKey = key;
+        _selectedItem = item;
         refreshButtonStates();
         setFrameInfo(item, key, owned);
         setPreview(item);
         setPrimaryState();
+        updateHowlControls();
         haptic("light");
       });
       frameButtonsWrap.appendChild(button);
@@ -789,6 +1113,7 @@
       : { frame: (out.active || "") };
 
     buildButtons();
+    updateHowlControls();
     const wanted = normKey(preferKey);
     if (wanted && frameButtonsWrap) {
       const btn = [...frameButtonsWrap.querySelectorAll(".frame-btn")]
@@ -827,6 +1152,7 @@
       await reloadState();
       if (framesBack) framesBack.style.display = "flex";
       setPrimaryState();
+      updateHowlControls();
     } catch (err) {
       dbg("open failed", err);
       showAlert("Failed to load frames.");
@@ -847,6 +1173,19 @@
       if (e.target === framesBack) close();
     });
     closeBtn?.addEventListener("click", close);
+    howlBuyBtn?.addEventListener("click", () => {
+      beginHowlPurchase();
+    });
+    howlOpenBtn?.addEventListener("click", openHowlPaymentLink);
+    howlCopyBtn?.addEventListener("click", () => {
+      copyHowlPaymentLink();
+    });
+    howlCheckBtn?.addEventListener("click", () => {
+      checkHowlPayment({ manual: true }).catch((err) => {
+        dbg("howl status failed", err);
+        showAlert(err?.message || "Failed to check payment.");
+      });
+    });
     equipBtn?.addEventListener("click", () => {
       equipSelected().catch((err) => {
         dbg("equip failed", err);
