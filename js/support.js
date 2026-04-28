@@ -66,6 +66,33 @@
     node.style.display = visible ? "" : "none";
   }
 
+  function renderTopbarWallet(support) {
+    const btn = el("supportTopWallet");
+    if (!btn) return;
+
+    const token = support?.token || {};
+    const tier = Number(token.tier || 0);
+    const linked = !!token.linked;
+
+    if (tier > 0) {
+      btn.textContent = "Holder ✓";
+      btn.dataset.state = "holder";
+      btn.title = token.walletDisplay ? `Holder active: ${token.walletDisplay}` : "Holder active";
+      return;
+    }
+
+    if (linked) {
+      btn.textContent = token.walletDisplay || "Wallet Linked";
+      btn.dataset.state = "linked";
+      btn.title = "Solana wallet linked. Open Support to refresh holder status.";
+      return;
+    }
+
+    btn.textContent = "Connect Wallet";
+    btn.dataset.state = "empty";
+    btn.title = "Connect Solana Wallet";
+  }
+
   function isTokenLaneEnabled(token) {
     return !!(token && token.enabled !== false && token.comingSoon !== true);
   }
@@ -181,7 +208,7 @@
 
     const copy = document.createElement("p");
     copy.dataset.walletSafetyCopy = "1";
-    copy.textContent = "This only verifies wallet ownership. No seed phrase. No token transfer. Do not share the copied verification link. After signing, return here and tap Refresh Wallet.";
+    copy.textContent = "This only verifies wallet ownership. No seed phrase. No token transfer.";
     body.appendChild(copy);
   }
 
@@ -324,8 +351,10 @@
       setDisabled("supportTokenConnect", true);
       setDisabled("supportTokenRefresh", true);
       setDisabled("supportTokenClaim", true);
+      setDisabled("supportTokenDisconnect", true);
       setVisible("supportTokenRefresh", false);
       setVisible("supportTokenClaim", false);
+      setVisible("supportTokenDisconnect", false);
       return;
     }
 
@@ -351,20 +380,25 @@
       if (connectBtn) connectBtn.textContent = lane.linked ? "Reconnect Solana Wallet" : "Connect Solana Wallet";
       setVisible("supportTokenRefresh", true);
       setVisible("supportTokenClaim", !!lane.linked);
+      setVisible("supportTokenDisconnect", !!lane.linked);
       setDisabled("supportTokenRefresh", true);
       setDisabled("supportTokenClaim", true);
+      setDisabled("supportTokenDisconnect", !lane.linked);
       return;
     }
 
     const wallet = lane.walletDisplay || "Not linked";
     const tier = Number(lane.tier || 0);
     const checked = toLocal(lane.checkedAt);
-    const claim = lane.weeklyClaimAvailable ? "Weekly claim ready." : (lane.claimedWeekKey ? `Claimed for ${lane.claimedWeekKey}.` : "Weekly claim locked.");
+    const rewardName = lane.weeklyRewardName || "Holder Echo Pack";
+    const claim = lane.weeklyClaimAvailable ? `${rewardName} ready.` : (lane.claimedWeekKey ? `${rewardName} claimed for ${lane.claimedWeekKey}.` : `${rewardName} locked.`);
 
     if (lane.linked) {
       setText(
         "supportTokenStatus",
-        `Wallet: ${wallet} | Tier ${tier} | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
+        tier > 0
+          ? `Holder active: ${wallet} | Tier ${tier} | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
+          : `Connected: ${wallet} | Not holder yet | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
       );
     } else {
       setText(
@@ -418,8 +452,12 @@
 
     setVisible("supportTokenRefresh", true);
     setDisabled("supportTokenRefresh", !lane.linked);
+    const claimBtn = el("supportTokenClaim");
+    if (claimBtn) claimBtn.textContent = lane.weeklyClaimAvailable ? `Claim ${rewardName}` : "Weekly Claim";
     setDisabled("supportTokenClaim", !lane.weeklyClaimAvailable);
     setVisible("supportTokenClaim", !!lane.linked);
+    setVisible("supportTokenDisconnect", !!lane.linked);
+    setDisabled("supportTokenDisconnect", !lane.linked);
   }
 
   function renderCombinedState(support) {
@@ -478,6 +516,7 @@
     renderStarsState(support?.stars || {});
     renderTokenState(support?.token || {});
     renderCombinedState(support || {});
+    renderTopbarWallet(support || {});
   }
 
   async function handleTierClick(tier) {
@@ -596,7 +635,22 @@
     renderState(_state);
     await refreshProfileViews();
     try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    try { tg?.showAlert?.(`Weekly claim complete. Claimed ${res?.reward?.amount || 0} bones.`); } catch (_) {}
+    try { tg?.showAlert?.(`${res?.rewardName || "Holder Echo Pack"} claimed. +${res?.reward?.amount || 0} bones.`); } catch (_) {}
+    return res;
+  }
+
+  async function disconnectWallet() {
+    const apiPost = getApiPost();
+    const tg = getTg();
+    if (!apiPost) throw new Error("NO_API_POST");
+
+    const res = await apiPost("/webapp/supporter/unlink", { run_id: runId("supporter_unlink") });
+    if (!res || res.ok === false) throw new Error(res?.reason || "UNLINK_FAILED");
+
+    _state = res.support || _state || {};
+    renderState(_state);
+    await refreshProfileViews();
+    try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
     return res;
   }
 
@@ -682,7 +736,29 @@
     }
   }
 
+  async function onDisconnectClick() {
+    const tg = getTg();
+    try {
+      setButtonBusy("supportTokenDisconnect", true, "Disconnecting...", "Disconnect Wallet");
+      await disconnectWallet();
+    } catch (err) {
+      log("disconnectWallet failed:", err);
+      try { tg?.showAlert?.("Wallet disconnect failed. Please try again."); } catch (_) {}
+    } finally {
+      renderTokenState((_state || {}).token || {});
+    }
+  }
+
+  function wireTopbarButton() {
+    const btn = el("supportTopWallet");
+    if (!btn || btn.__supportWired) return;
+    btn.__supportWired = true;
+    btn.addEventListener("click", () => { void open(); });
+  }
+
   function wireClicks() {
+    wireTopbarButton();
+
     const back = el("supportBack");
     if (!back || back.__wired) return;
     back.__wired = true;
@@ -699,6 +775,7 @@
     el("supportTokenConnect")?.addEventListener("click", () => { void onConnectClick(); });
     el("supportTokenRefresh")?.addEventListener("click", () => { void onRefreshClick(); });
     el("supportTokenClaim")?.addEventListener("click", () => { void onClaimClick(); });
+    el("supportTokenDisconnect")?.addEventListener("click", () => { void onDisconnectClick(); });
   }
 
   function init({ tg, apiPost, dbg } = {}) {
@@ -706,6 +783,10 @@
     _apiPost = apiPost || _apiPost;
     _dbg = !!dbg;
     wireClicks();
+    renderTopbarWallet(_state || {});
+    if (!_state && getApiPost()) {
+      void refreshSupportState().catch((err) => log("initial support state failed:", err));
+    }
     return true;
   }
 
@@ -731,7 +812,7 @@
     setText("supportStarsStatus", "Checking Stars support status...");
     setText("supportTokenStatus", "Believe holder lane is in preparation.");
     setText("supportTokenPerks", "Stars support is live now. Solana holder checks and weekly claim activate with the live mint rollout.");
-    setText("supportTokenHint", "Wallet connect works inside Phantom browser or desktop wallet extensions.");
+    setText("supportTokenHint", "Connect Solana Wallet. Phantom recommended. This only verifies wallet ownership. No seed phrase. No token transfer.");
     setText("supportCombinedStatus", "Loading support status...");
 
     try {
