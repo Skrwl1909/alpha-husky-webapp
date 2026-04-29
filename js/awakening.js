@@ -735,7 +735,7 @@
     const slide = SLIDES[S.index] || SLIDES[0];
     const primary = S.back?.querySelector?.(".awakening-primary");
     if (!primary) return;
-    primary.disabled = S.busy || (slide.isOrigin && !S.selectedOrigin);
+    primary.disabled = S.busy || ((slide.isOrigin || slide.isFinal) && !S.selectedOrigin);
   }
 
   function selectOrigin(key) {
@@ -756,11 +756,13 @@
     const slide = SLIDES[S.index] || SLIDES[0];
     const panel = back.querySelector(".awakening-panel");
     const copy = back.querySelector(".awakening-copy");
+    const skipButton = back.querySelector(".awakening-skip");
     if (!copy) return;
 
     clearOriginRevealTimer();
     panel?.classList.toggle("is-origin", !!slide.isOrigin);
     panel?.classList.remove("origin-revealed");
+    if (skipButton) skipButton.hidden = !!(slide.isFinal && S.selectedOrigin);
     renderBackground(slide);
     copy.innerHTML = `
       <div class="awakening-step"><i></i><span>${esc(S.index + 1)} / ${esc(SLIDES.length)}</span></div>
@@ -798,11 +800,19 @@
     }
 
     if (slide.isOrigin) {
-      await complete(false);
+      S.index = Math.min(S.index + 1, SLIDES.length - 1);
+      haptic("light");
+      render();
       return;
     }
 
     if (slide.isFinal) {
+      if (!S.selectedOrigin) {
+        S.index = 2;
+        render();
+        setNotice("Choose an Origin Mark first.");
+        return;
+      }
       await complete(false);
       return;
     }
