@@ -359,6 +359,7 @@
     const skinUrl = asText(skin.url || skin.img || skin.preview_url || skin.previewUrl);
     const avatarUrl = asText(p.avatar_url || p.avatarUrl || p.avatar?.img || p.avatar?.url);
     const frameUrl = asText(frame.url || frame.img || frame.preview_url || frame.previewUrl);
+    const originLabel = asText(p.origin_label || p.originLabel);
     const visualClass = [
       "pp-visual",
       frameUrl ? "has-frame" : "has-default-frame",
@@ -368,6 +369,7 @@
     const chips = [
       `Lv ${asInt(p.level, 1)}`,
       asText(p.faction) || "Unbound",
+      originLabel ? `Origin: ${originLabel}` : "",
       asText(p.title),
       ...(Array.isArray(p.prestige_tags) ? p.prestige_tags.map(asText).filter(Boolean) : []),
     ].filter(Boolean);
