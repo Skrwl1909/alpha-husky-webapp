@@ -23,6 +23,13 @@
     { key: "unchained", label: "Unchained", desc: "A signal that refused to stay buried." }
   ];
 
+  const ORIGIN_ICONS = {
+    stray: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464117/awakening/origins/awakening_origin_stray.webp",
+    broken: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_broken.webp",
+    forgotten: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_forgotten.webp",
+    unchained: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464121/awakening/origins/awakening_origin_unchained.webp"
+  };
+
   const SLIDES = [
     {
       key: "signal",
@@ -68,7 +75,8 @@
     choices: DEFAULT_CHOICES,
     back: null,
     busy: false,
-    completeDone: false
+    completeDone: false,
+    originRevealTimer: null
   };
 
   function log(...args) {
@@ -189,6 +197,33 @@
         transition:opacity .45s ease;
       }
       .awakening-bg-video.is-ready{opacity:1}
+      .awakening-panel.is-origin .awakening-bg-image{
+        background-position:center 42%;
+        animation:awakeningOriginZoom 13s ease-out forwards;
+      }
+      .awakening-panel.is-origin.origin-revealed .awakening-bg-image{
+        filter:brightness(.78) saturate(1.12);
+      }
+      .awakening-panel.is-origin .awakening-bg::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:42%;
+        width:min(72vw,360px);
+        aspect-ratio:1;
+        border-radius:999px;
+        transform:translate(-50%,-50%);
+        pointer-events:none;
+        opacity:.48;
+        background:
+          radial-gradient(circle, rgba(88,241,255,.18) 0 18%, transparent 42%),
+          radial-gradient(circle, transparent 42%, rgba(88,241,255,.24) 46%, transparent 52%);
+        box-shadow:0 0 70px rgba(88,241,255,.18), inset 0 0 44px rgba(88,241,255,.12);
+        animation:awakeningOriginPulse 2.9s ease-in-out infinite;
+      }
+      .awakening-panel.is-origin.origin-revealed .awakening-bg::after{
+        opacity:.28;
+      }
       .awakening-shade{
         position:absolute;
         inset:0;
@@ -256,6 +291,17 @@
         box-shadow:0 22px 60px rgba(0,0,0,.42);
         backdrop-filter:blur(14px);
         animation:awakeningFade .28s ease both;
+        max-height:calc(100dvh - 86px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        overflow:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+      .awakening-copy.is-origin{
+        background:linear-gradient(180deg, rgba(7,9,13,.58), rgba(4,5,8,.80));
+        transition:background .45s ease, box-shadow .45s ease;
+      }
+      .awakening-panel.is-origin.origin-revealed .awakening-copy.is-origin{
+        background:linear-gradient(180deg, rgba(7,9,13,.78), rgba(4,5,8,.92));
+        box-shadow:0 24px 70px rgba(0,0,0,.50), 0 0 36px rgba(88,241,255,.10);
       }
       .awakening-step{
         display:flex;
@@ -290,36 +336,128 @@
       .awakening-origins{
         display:grid;
         grid-template-columns:1fr;
-        gap:8px;
+        gap:10px;
+        margin-top:0;
+        max-height:0;
+        opacity:0;
+        overflow:hidden;
+        pointer-events:none;
+        transition:max-height .55s ease, opacity .32s ease, margin-top .32s ease;
+      }
+      .awakening-origins[data-revealed="1"]{
         margin-top:14px;
+        max-height:620px;
+        opacity:1;
+        pointer-events:auto;
       }
       .awakening-origin{
-        display:block;
+        position:relative;
+        display:grid;
+        grid-template-columns:64px minmax(0,1fr);
+        align-items:center;
+        gap:11px;
+        min-height:86px;
         width:100%;
         text-align:left;
-        padding:11px 12px;
+        padding:10px 12px 10px 10px;
         border-radius:8px;
         border:1px solid rgba(255,255,255,.13);
-        background:rgba(255,255,255,.055);
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.025)),
+          rgba(5,8,13,.58);
         color:#f8faf5;
         cursor:pointer;
+        opacity:0;
+        transform:translateY(14px) scale(.985);
+        transition:
+          opacity .42s ease,
+          transform .42s ease,
+          border-color .2s ease,
+          background .2s ease,
+          box-shadow .2s ease;
+        transition-delay:var(--origin-delay,0ms);
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+      }
+      .awakening-origins[data-revealed="1"] .awakening-origin{
+        opacity:1;
+        transform:translateY(0) scale(1);
+      }
+      .awakening-origin:disabled{cursor:default}
+      .awakening-origin-icon{
+        position:relative;
+        width:64px;
+        height:64px;
+        border-radius:8px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border:1px solid rgba(255,255,255,.14);
+        background:
+          radial-gradient(circle at 50% 42%, rgba(88,241,255,.16), transparent 56%),
+          rgba(0,0,0,.24);
+        box-shadow:inset 0 0 22px rgba(0,0,0,.38);
+        overflow:hidden;
+      }
+      .awakening-origin-icon img{
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        display:block;
+        filter:drop-shadow(0 9px 16px rgba(0,0,0,.50));
+      }
+      .awakening-origin-check{
+        position:absolute;
+        top:6px;
+        right:6px;
+        width:21px;
+        height:21px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        opacity:0;
+        transform:scale(.7);
+        border:1px solid rgba(255,255,255,.34);
+        background:rgba(88,241,255,.88);
+        color:#031016;
+        font:950 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        box-shadow:0 0 18px rgba(88,241,255,.55);
+        transition:opacity .18s ease, transform .18s ease;
+      }
+      .awakening-origin-copy{
+        min-width:0;
       }
       .awakening-origin b{
         display:block;
-        font-size:14px;
+        font-size:15px;
         line-height:1.1;
+        letter-spacing:.04em;
+        text-transform:uppercase;
       }
-      .awakening-origin span{
+      .awakening-origin-copy > span{
         display:block;
-        margin-top:5px;
+        margin-top:6px;
         color:rgba(246,247,242,.68);
-        font-size:12px;
-        line-height:1.28;
+        font-size:12.5px;
+        line-height:1.32;
       }
       .awakening-origin[aria-pressed="true"]{
         border-color:rgba(88,241,255,.86);
-        background:linear-gradient(180deg, rgba(88,241,255,.18), rgba(255,183,77,.08));
-        box-shadow:0 0 0 1px rgba(88,241,255,.32), 0 0 26px rgba(88,241,255,.20);
+        background:
+          linear-gradient(135deg, rgba(88,241,255,.24), rgba(18,31,43,.72)),
+          rgba(5,8,13,.78);
+        box-shadow:
+          0 0 0 1px rgba(88,241,255,.38),
+          0 0 30px rgba(88,241,255,.28),
+          inset 0 0 28px rgba(88,241,255,.08);
+      }
+      .awakening-origin[aria-pressed="true"] .awakening-origin-check{
+        opacity:1;
+        transform:scale(1);
+      }
+      .awakening-origin[aria-pressed="true"] .awakening-origin-icon{
+        border-color:rgba(88,241,255,.56);
+        box-shadow:0 0 26px rgba(88,241,255,.22), inset 0 0 22px rgba(0,0,0,.34);
       }
       .awakening-actions{
         display:flex;
@@ -382,6 +520,14 @@
         from{transform:scale(1.03)}
         to{transform:scale(1.10)}
       }
+      @keyframes awakeningOriginZoom{
+        from{transform:scale(1.01)}
+        to{transform:scale(1.08)}
+      }
+      @keyframes awakeningOriginPulse{
+        0%,100%{transform:translate(-50%,-50%) scale(.96);opacity:.34}
+        50%{transform:translate(-50%,-50%) scale(1.05);opacity:.58}
+      }
       @keyframes awakeningStatic{
         0%{transform:translate3d(0,0,0)}
         25%{transform:translate3d(1px,-1px,0)}
@@ -396,10 +542,24 @@
         .awakening-origins{grid-template-columns:1fr 1fr}
         .awakening-primary{width:auto;min-width:178px}
       }
+      @media (max-height:720px){
+        .awakening-copy{padding:13px}
+        .awakening-title{font-size:24px}
+        .awakening-body{font-size:14px;line-height:1.34;margin-top:9px}
+        .awakening-origin{grid-template-columns:56px minmax(0,1fr);min-height:74px;padding:8px 10px 8px 8px}
+        .awakening-origin-icon{width:56px;height:56px}
+        .awakening-origin-copy > span{font-size:11.5px}
+      }
       @media (prefers-reduced-motion:reduce){
         .awakening-bg-image,
         .awakening-noise,
-        .awakening-copy{animation:none}
+        .awakening-copy,
+        .awakening-panel.is-origin .awakening-bg::after{animation:none}
+        .awakening-origin,
+        .awakening-origins,
+        .awakening-bg-video,
+        .awakening-origin-check,
+        .awakening-copy{transition:none}
       }
     `;
     document.head.appendChild(style);
@@ -497,21 +657,56 @@
 
   function originHtml() {
     return `
-      <div class="awakening-origins" role="list">
-        ${S.choices.map((choice) => `
+      <div class="awakening-origins" data-revealed="0" role="list">
+        ${S.choices.map((choice, index) => `
           <button
             type="button"
             class="awakening-origin"
             role="listitem"
             aria-pressed="${choice.key === S.selectedOrigin ? "true" : "false"}"
             data-origin="${esc(choice.key)}"
+            style="--origin-delay:${esc(index * 90)}ms"
           >
-            <b>${esc(choice.label)}</b>
-            <span>${esc(choice.desc)}</span>
+            <span class="awakening-origin-icon" aria-hidden="true">
+              <img src="${esc(ORIGIN_ICONS[choice.key] || "")}" alt="" loading="eager" decoding="async" onerror="this.hidden=true;">
+              <span class="awakening-origin-check">&#10003;</span>
+            </span>
+            <span class="awakening-origin-copy">
+              <b>${esc(choice.label)}</b>
+              <span>${esc(choice.desc)}</span>
+            </span>
           </button>
         `).join("")}
       </div>
     `;
+  }
+
+  function clearOriginRevealTimer() {
+    if (S.originRevealTimer) {
+      clearTimeout(S.originRevealTimer);
+      S.originRevealTimer = null;
+    }
+  }
+
+  function revealOriginsNow() {
+    const panel = S.back?.querySelector?.(".awakening-panel");
+    const origins = S.back?.querySelector?.(".awakening-origins");
+    if (!panel || !origins) return;
+    origins.setAttribute("data-revealed", "1");
+    panel.classList.add("origin-revealed");
+  }
+
+  function scheduleOriginReveal() {
+    clearOriginRevealTimer();
+    const reducedMotion = (() => {
+      try { return !!global.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches; }
+      catch (_) { return false; }
+    })();
+    const delay = reducedMotion ? 80 : 1350;
+    S.originRevealTimer = setTimeout(() => {
+      S.originRevealTimer = null;
+      revealOriginsNow();
+    }, delay);
   }
 
   function setNotice(message) {
@@ -543,12 +738,29 @@
     primary.disabled = S.busy || (slide.isOrigin && !S.selectedOrigin);
   }
 
+  function selectOrigin(key) {
+    const nextKey = asText(key).toLowerCase();
+    if (!nextKey || S.busy) return;
+    S.selectedOrigin = nextKey;
+    S.back?.querySelectorAll?.(".awakening-origin").forEach((button) => {
+      const isSelected = asText(button.getAttribute("data-origin")).toLowerCase() === nextKey;
+      button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+    });
+    setNotice("");
+    updatePrimaryState();
+    haptic("light");
+  }
+
   function render() {
     const back = ensureModal();
     const slide = SLIDES[S.index] || SLIDES[0];
+    const panel = back.querySelector(".awakening-panel");
     const copy = back.querySelector(".awakening-copy");
     if (!copy) return;
 
+    clearOriginRevealTimer();
+    panel?.classList.toggle("is-origin", !!slide.isOrigin);
+    panel?.classList.remove("origin-revealed");
     renderBackground(slide);
     copy.innerHTML = `
       <div class="awakening-step"><i></i><span>${esc(S.index + 1)} / ${esc(SLIDES.length)}</span></div>
@@ -560,19 +772,19 @@
       </div>
       <div class="awakening-notice" data-show="0" role="status" aria-live="polite"></div>
     `;
+    copy.classList.toggle("is-origin", !!slide.isOrigin);
 
     copy.querySelectorAll(".awakening-origin").forEach((button) => {
       button.addEventListener("click", () => {
         if (S.busy) return;
-        S.selectedOrigin = asText(button.getAttribute("data-origin")).toLowerCase();
-        haptic("light");
-        render();
+        selectOrigin(button.getAttribute("data-origin"));
       });
     });
 
     copy.querySelector(".awakening-primary")?.addEventListener("click", () => {
       void next();
     });
+    if (slide.isOrigin) scheduleOriginReveal();
     updatePrimaryState();
   }
 
@@ -582,6 +794,11 @@
 
     if (slide.isOrigin && !S.selectedOrigin) {
       setNotice("Choose an Origin Mark first.");
+      return;
+    }
+
+    if (slide.isOrigin) {
+      await complete(false);
       return;
     }
 
@@ -643,6 +860,7 @@
 
   function close() {
     const back = S.back;
+    clearOriginRevealTimer();
     S.open = false;
     S.busy = false;
     if (back) {
