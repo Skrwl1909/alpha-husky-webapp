@@ -8296,8 +8296,37 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
+<script src="js/awakening.js?v=WEBAPP_VER"></script>
   <script src="/js/community_btn.js?v=20260313b"></script>
 <script src="js/share_card.js?v=WEBAPP_VER"></script>
+<script>
+(function initAwakening(){
+  function boot(apiPost){
+    try {
+      if (!window.Awakening || window.__awakeningInited) return;
+      window.Awakening.init({
+        apiPost,
+        tg: window.Telegram?.WebApp || window.tg || null,
+        dbg: !!window.DBG
+      });
+      window.__awakeningInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[Awakening] init failed", e);
+    }
+  }
+
+  if (typeof window.apiPost === "function") {
+    boot(window.apiPost);
+    return;
+  }
+
+  window.waitForApiPostReady?.(6000)
+    .then(boot)
+    .catch(() => {
+      if (window.DBG) console.warn("[Awakening] apiPost not ready");
+    });
+})();
+</script>
 <script>
 (function initCTA(){
   function tryInitCTA(){
