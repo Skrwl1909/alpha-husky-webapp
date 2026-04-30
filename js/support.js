@@ -113,12 +113,41 @@
 
   function toLocal(ts) {
     const n = Number(ts || 0);
-    if (!n) return "Never";
+    if (!n) return "Not checked yet";
     try {
       return new Date(n * 1000).toLocaleString();
     } catch (_) {
-      return "Never";
+      return "Not checked yet";
     }
+  }
+
+  function holderRefreshErrorMessage(err) {
+    const reason = String(err?.data?.reason || err?.data?.code || err?.message || err || "").trim();
+    if (reason === "RPC_TIMEOUT" || reason === "HOLDER_CHECK_TIMEOUT") {
+      return "Solana RPC timed out. Your wallet is still linked. Try Refresh Holder Status again.";
+    }
+    if (reason === "RPC_UNAVAILABLE" || reason === "HOLDER_CHECK_FAILED") {
+      return "Solana RPC is unavailable right now. Your wallet is still linked. Try again in a moment.";
+    }
+    if (reason === "SUPPORT_RPC_NOT_CONFIGURED" || reason === "RPC_NOT_CONFIGURED") {
+      return "Holder refresh needs a Solana RPC URL before it can run.";
+    }
+    if (reason === "TOKEN_MINT_NOT_CONFIGURED") {
+      return "Holder refresh is disabled until the HOWL mint is configured.";
+    }
+    if (reason === "WALLET_NOT_LINKED") {
+      return "Connect a Solana wallet before refreshing holder status.";
+    }
+    return err?.data?.message || "Holder refresh failed. Please try again in a moment.";
+  }
+
+  function holderRefreshSuccessMessage(token) {
+    const lane = token || {};
+    const tier = Number(lane.tier || 0);
+    const checkedAt = Number(lane.checkedAt || 0);
+    if (tier > 0) return `Wallet checked. HOWL holder active: Tier ${tier}.`;
+    if (checkedAt > 0) return "Wallet checked. No HOWL balance found for this wallet.";
+    return "Wallet refresh finished.";
   }
 
   function encodeBase64(bytes) {
@@ -402,17 +431,19 @@
 
     const wallet = lane.walletDisplay || "Not linked";
     const tier = Number(lane.tier || 0);
-    const checked = toLocal(lane.checkedAt);
+    const checkedAt = Number(lane.checkedAt || 0);
+    const checked = toLocal(checkedAt);
     const rewardName = lane.weeklyRewardName || "Holder Echo Pack";
     const claim = lane.weeklyClaimAvailable ? `${rewardName} ready.` : (lane.claimedWeekKey ? `${rewardName} claimed for ${lane.claimedWeekKey}.` : `${rewardName} locked.`);
 
     if (lane.linked) {
-      setText(
-        "supportTokenStatus",
-        tier > 0
-          ? `Holder active: ${wallet} | Tier ${tier} | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
-          : `Connected: ${wallet} | Not holder yet | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`
-      );
+      let statusText = `Connected: ${wallet} | Not checked yet`;
+      if (tier > 0) {
+        statusText = `Holder active: ${wallet} | Tier ${tier} | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`;
+      } else if (checkedAt > 0) {
+        statusText = `Connected: ${wallet} | Not holder | Balance raw: ${lane.balanceRaw || "0"} | Last check: ${checked}`;
+      }
+      setText("supportTokenStatus", statusText);
     } else {
       setText(
         "supportTokenStatus",
@@ -710,18 +741,19 @@
       try { tg?.showAlert?.("Believe holder lane is in preparation. Stars support is fully live now."); } catch (_) {}
       return;
     }
+    let failMsg = "";
     try {
       setButtonBusy("supportTokenRefresh", true, "Refreshing...", "Refresh Holder Status");
-      await refreshHolderStatus();
+      const res = await refreshHolderStatus();
+      showWalletToast(holderRefreshSuccessMessage(res?.support?.token || _state?.token || {}));
     } catch (err) {
       log("refreshHolderStatus failed:", err);
-      const reason = String(err?.message || err || "");
-      const msg = reason === "TOKEN_MINT_NOT_CONFIGURED"
-        ? "Holder refresh is disabled until token mint config is set."
-        : "Holder refresh failed. Please try again in a moment.";
-      try { tg?.showAlert?.(msg); } catch (_) {}
+      failMsg = holderRefreshErrorMessage(err);
+      try { tg?.showAlert?.(failMsg); } catch (_) {}
     } finally {
+      setButtonBusy("supportTokenRefresh", false, null, "Refresh Holder Status");
       renderTokenState((_state || {}).token || {});
+      if (failMsg) setText("supportTokenHint", failMsg);
     }
   }
 
