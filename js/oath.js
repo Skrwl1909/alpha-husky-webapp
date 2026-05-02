@@ -72,6 +72,7 @@
     checked: false,
     open: false,
     busy: false,
+    preview: false,
     screen: "intro",
     selected: "",
     completedFaction: "",
@@ -285,6 +286,21 @@
         line-height:1;
         letter-spacing:0;
       }
+      .oath-dev-label{
+        display:none;
+        width:max-content;
+        margin-top:8px;
+        padding:4px 7px;
+        border:1px solid rgba(255,209,128,.28);
+        border-radius:999px;
+        background:rgba(255,209,128,.08);
+        color:rgba(255,223,164,.9);
+        font-size:10px;
+        line-height:1;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+      }
+      #oathBack[data-preview="1"] .oath-dev-label{display:block}
       .oath-close{
         width:38px;
         height:38px;
@@ -612,6 +628,7 @@
           <div>
             <div class="oath-kicker">Faction Oath</div>
             <div class="oath-title" id="oathTitle">THE OATH</div>
+            <div class="oath-dev-label">DEV PREVIEW</div>
           </div>
           <button type="button" class="oath-close" aria-label="Close The Oath">x</button>
         </div>
@@ -915,6 +932,12 @@
       setNotice("Choose a faction first.");
       return;
     }
+    if (S.preview) {
+      S.completedFaction = S.selected;
+      haptic("success");
+      renderConfirm(S.selected);
+      return;
+    }
     if (typeof S.apiPost !== "function") {
       setNotice("Connection is not ready. Try again.");
       return;
@@ -956,6 +979,7 @@
 
   function open(state) {
     if (S.open) return false;
+    S.preview = false;
     S.state = state && typeof state === "object" ? state : S.state || { factions: DEFAULT_FACTIONS };
     S.open = true;
     S.busy = false;
@@ -969,10 +993,28 @@
     return true;
   }
 
+  function preview(state) {
+    if (S.open) close();
+    S.preview = true;
+    S.state = state && typeof state === "object" ? state : { factions: DEFAULT_FACTIONS };
+    S.open = true;
+    S.busy = false;
+    S.screen = "intro";
+    S.selected = "";
+    S.completedFaction = "";
+    ensureModal();
+    if (S.back) S.back.setAttribute("data-preview", "1");
+    document.documentElement.classList.add("ah-modal-open");
+    document.body.classList.add("ah-oath-open");
+    renderIntro();
+    return true;
+  }
+
   function close() {
     const back = S.back;
     S.open = false;
     S.busy = false;
+    S.preview = false;
     S.screen = "intro";
     S.selected = "";
     S.completedFaction = "";
@@ -1034,7 +1076,7 @@
     return API;
   }
 
-  const API = { init, open, close, checkAndOpen };
+  const API = { init, open, close, checkAndOpen, preview, openPreview: preview };
   global.Oath = API;
   global.OATH_ASSETS = OATH_ASSETS;
 })(window);
