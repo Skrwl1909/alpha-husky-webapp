@@ -837,6 +837,10 @@
       close();
       toast("Awakening recorded.");
       haptic("success");
+      setTimeout(() => {
+        try { global.Oath?.checkAndOpen?.({ force: true, afterAwakening: true }); }
+        catch (err) { log("oath check skipped", err); }
+      }, 220);
     } catch (err) {
       log("complete failed", err);
       if (skipped) {
