@@ -139,6 +139,9 @@
         position:relative;
       }
       .adopt-img img{ width:100%; height:100%; object-fit:cover; display:block; }
+      .adopt-pet-sprite{ width:100%; height:100%; }
+      .adopt-pet-sprite canvas,
+      .adopt-pet-sprite img{ width:100%; height:100%; object-fit:contain; image-rendering:pixelated; display:block; }
 
       /* skeleton/shimmer */
       .adopt-skel{
@@ -278,7 +281,21 @@
     const skel = el("div", "adopt-skel");
     imgWrap.appendChild(skel);
 
-    if (p.img) {
+    let didMountSprite = false;
+    if (window.PetSprite?.hasSprite?.(p)) {
+      try {
+        skel.remove();
+        window.PetSprite.mount(imgWrap, p, {
+          state: "idle",
+          className: "adopt-pet-sprite",
+          fallbackUrl: p.img || "",
+          alt: p.name || petKey(p) || "pet"
+        });
+        didMountSprite = true;
+      } catch (_) {}
+    }
+
+    if (!didMountSprite && p.img) {
       const img = new Image();
       img.alt = p.name || petKey(p) || "pet";
       img.loading = "lazy";
@@ -290,7 +307,7 @@
       };
       img.src = p.img;
       imgWrap.appendChild(img);
-    } else {
+    } else if (!didMountSprite) {
       try { skel.remove(); } catch (_) {}
       imgWrap.appendChild(el("div", "adopt-desc", "🐾"));
     }

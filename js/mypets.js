@@ -47,6 +47,9 @@
       }
       .petRow.active{outline:2px solid rgba(137,255,254,.30)}
       .petImg{width:56px;height:56px;border-radius:12px;object-fit:cover;background:rgba(255,255,255,.06)}
+      .petImg.petSprite{object-fit:contain}
+      .petImg.petSprite canvas,
+      .petImg.petSprite img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block}
       .petMeta{flex:1;min-width:0}
       .petName{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .petSub{opacity:.82;font-size:12px;margin-top:3px}
@@ -148,6 +151,28 @@
     return Object.values(dict || {});
   }
 
+  function hydrateAnimatedActivePet(list, items, activeId) {
+    if (!list || !window.PetSprite?.hasSprite || !window.PetSprite?.replace) return;
+
+    items.forEach((p) => {
+      const isActive = !!p.is_active || (p.id === activeId);
+      if (!isActive || !window.PetSprite.hasSprite(p)) return;
+
+      const row = qa(".petRow", list).find((el) => el.getAttribute("data-row") === String(p.id || ""));
+      const target = row?.querySelector?.(".petImg");
+      if (!target) return;
+
+      try {
+        window.PetSprite.replace(target, p, {
+          state: "idle",
+          className: "petImg petSprite",
+          fallbackUrl: p.icon || p.img || "",
+          alt: p.name || "pet"
+        });
+      } catch (_) {}
+    });
+  }
+
   function render(state) {
     const list = document.getElementById("mypetsList");
     if (!list) return;
@@ -209,7 +234,9 @@
     });
 
     // fallback: ukryj obrazek jeśli 404
-    qa(".petImg", list).forEach(img => {
+    hydrateAnimatedActivePet(list, items, activeId);
+
+    qa("img.petImg", list).forEach(img => {
       img.addEventListener("error", () => { img.style.display = "none"; });
     });
   }

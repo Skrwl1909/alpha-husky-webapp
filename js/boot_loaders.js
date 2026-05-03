@@ -33,6 +33,7 @@
           (readyName === "combat.js" && !!global.Combat) ||
           (readyName === "skins.js" && !!global.Skins) ||
           (readyName === "frames.js" && !!global.Frames) ||
+          (readyName === "pet_sprite.js" && !!global.PetSprite) ||
           (readyName === "adopt.js" && !!global.Adopt) ||
           (readyName === "updates.js" && !!global.Updates) ||
           (readyName === "missions.js" && !!global.Missions) ||
@@ -118,6 +119,15 @@
     });
   }
 
+  async function ensurePetSpriteLoaded() {
+    if (global.PetSprite?.create) return true;
+    const loadScript = getLoadScript();
+    return await once("pet_sprite", async () => {
+      await loadScript("js/pet_sprite.js");
+      return true;
+    });
+  }
+
   async function ensureSkinsLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
     if (global.Skins?.open && global.Skins?.init) {
@@ -148,6 +158,7 @@
 
   async function ensureAdoptLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    try { await ensurePetSpriteLoaded(); } catch (_) {}
     if (global.Adopt?.open && global.Adopt?.init) {
       try { global.Adopt.init(deps); } catch (_) {}
       return true;
@@ -203,6 +214,7 @@
 
   async function ensureMyPetsLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    try { await ensurePetSpriteLoaded(); } catch (_) {}
     if (global.MyPets?.open && global.MyPets?.init) {
       try { global.MyPets.init(deps); } catch (_) {}
       return true;
@@ -312,6 +324,7 @@
 
   async function ensureArenaLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    try { await ensurePetSpriteLoaded(); } catch (_) {}
     if (global.Arena?.open) {
       global.Arena?.init?.(deps);
       return true;
@@ -348,6 +361,7 @@
 
     global.ensureSkinsLoaded = ensureSkinsLoaded;
     global.ensureFramesLoaded = ensureFramesLoaded;
+    global.ensurePetSpriteLoaded = ensurePetSpriteLoaded;
     global.ensureAdoptLoaded = ensureAdoptLoaded;
     global.ensureUpdatesLoaded = ensureUpdatesLoaded;
     global.ensureMissionsLoaded = ensureMissionsLoaded;
@@ -368,6 +382,7 @@
     init,
     ensureSkinsLoaded,
     ensureFramesLoaded,
+    ensurePetSpriteLoaded,
     ensureAdoptLoaded,
     ensureUpdatesLoaded,
     ensureMissionsLoaded,

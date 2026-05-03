@@ -128,6 +128,40 @@ try { window.__petUrlCandidatesFromPlayer = petUrlCandidatesFromPlayer; } catch(
   tryNext();
 }
 
+function petObjectFromPlayer(p) {
+  const root = p || {};
+  const nested = root.pet || root.active_pet || root.pet_state || null;
+  if (nested && window.PetSprite?.hasSprite?.(nested)) return nested;
+  return root;
+}
+
+function setAnimatedOrStaticPet(iconEl, player, mirror = false) {
+  const fallbackUrls = petUrlCandidatesFromPlayer(player);
+  const pet = petObjectFromPlayer(player);
+
+  if (iconEl) {
+    try { iconEl.querySelector?.("[data-pet-sprite]")?.__petSprite?.destroy?.(); } catch (_) {}
+    try { iconEl.innerHTML = ""; } catch (_) {}
+    iconEl.textContent = "";
+    try { iconEl.style.transform = ""; } catch (_) {}
+  }
+
+  if (window.PetSprite?.hasSprite?.(pet)) {
+    try {
+      return window.PetSprite.mount(iconEl, pet, {
+        state: "idle",
+        className: "arena-pet-sprite",
+        fallbackUrl: fallbackUrls[0] || "",
+        mirror,
+        alt: pet.pet_name || pet.petName || pet.name || "pet"
+      });
+    } catch (_) {}
+  }
+
+  setIconSprite(iconEl, fallbackUrls, mirror);
+  return null;
+}
+
   // ===================== Pixi dynamic loader (no index.html edits needed) =====================
   function loadScriptOnce(url, testFn) {
   return new Promise((resolve, reject) => {
@@ -204,6 +238,9 @@ try { window.__petUrlCandidatesFromPlayer = petUrlCandidatesFromPlayer; } catch(
           .bar{height:12px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);overflow:hidden;}
           .fill{height:100%;width:100%;transition:width .35s;}
           .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px;}
+          .arena-pet-sprite{width:120px;height:130px;max-width:34vw;max-height:28vh;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45));}
+          .arena-pet-sprite canvas,
+          .arena-pet-sprite img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block;}
         </style>
 
         <div style="padding:14px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;height:78vh;display:flex;flex-direction:column;gap:10px;">
@@ -320,16 +357,18 @@ try { window.__petUrlCandidatesFromPlayer = petUrlCandidatesFromPlayer; } catch(
       const foeIcon = el("foe-icon");
       const result = el("result");
       result.style.opacity = 0;
+      let youAnim = null;
+      let foeAnim = null;
 
       // ✅ DOM fallback sprite swap (safe; Pixi may hide these later)
       try {
-        setIconSprite(youIcon, petUrlCandidatesFromPlayer(you), false);
-setIconSprite(foeIcon, petUrlCandidatesFromPlayer(foe), true);
+        youAnim = setAnimatedOrStaticPet(youIcon, you, false);
+        foeAnim = setAnimatedOrStaticPet(foeIcon, foe, true);
       } catch (_) {}
 
       // ---- PIXI overlay (optional) ----
       const stageEl = el("arenaStage");
-      const usePixi = !!(stageEl && window.PIXI && window.ArenaPixi);
+      const usePixi = !!(stageEl && window.PIXI && window.ArenaPixi && !youAnim && !foeAnim);
 
       if (usePixi) {
         try {
@@ -354,6 +393,8 @@ setIconSprite(foeIcon, petUrlCandidatesFromPlayer(foe), true);
       const steps = data.steps || [];
       for (const st of steps) {
         const p = this._stepPerspective(st, youAreP1);
+        let attackerAnim = null;
+        let targetAnim = null;
 
         if (usePixi && window.ArenaPixi?.attack) {
           try { window.ArenaPixi.attack(p.youAttacked, p.dmg, p.crit); } catch(e){}
@@ -362,6 +403,11 @@ setIconSprite(foeIcon, petUrlCandidatesFromPlayer(foe), true);
           // --- DOM fallback (your original animations) ---
           const attacker = p.youAttacked ? youIcon : foeIcon;
           const target   = p.youAttacked ? foeIcon : youIcon;
+          attackerAnim = p.youAttacked ? youAnim : foeAnim;
+          targetAnim = p.youAttacked ? foeAnim : youAnim;
+
+          try { attackerAnim?.play?.("attack"); } catch(e){}
+          try { targetAnim?.play?.("hurt"); } catch(e){}
 
           attacker.classList.add(p.youAttacked ? "atkL" : "atkR");
           setTimeout(() => attacker.classList.remove(p.youAttacked ? "atkL" : "atkR"), 560);
@@ -394,9 +440,12 @@ setIconSprite(foeIcon, petUrlCandidatesFromPlayer(foe), true);
         try { this._tg?.HapticFeedback?.impactOccurred?.("light"); } catch(e){}
 
         await sleep(520);
+        try { attackerAnim?.play?.("idle"); } catch(e){}
+        try { targetAnim?.play?.("idle"); } catch(e){}
       }
 
       const youWon = String(data.winner_uid) === (youAreP1 ? String(data.p1_uid) : String(data.p2_uid));
+      try { (youWon ? youAnim : foeAnim)?.play?.("victory"); } catch(e){}
       result.textContent = youWon ? "🏆 VICTORY!" : "💀 DEFEAT";
       result.style.opacity = 1;
     }
