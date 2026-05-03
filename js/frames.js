@@ -39,6 +39,18 @@
   const HOWL_GENESIS_FRAME_KEY = "genesis_frame";
   const HOWL_POLL_MS = 9000;
   const HOWL_POLL_TIMEOUT_MS = 12 * 60 * 1000;
+  const HOWL_QR_TOTAL_CODEWORDS = Object.freeze([
+    0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346,
+    404, 466, 532, 581, 655, 733, 815, 901, 991, 1085,
+  ]);
+  const HOWL_QR_M_ECC_PER_BLOCK = Object.freeze([
+    0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26,
+    30, 22, 22, 24, 24, 28, 28, 26, 26, 26,
+  ]);
+  const HOWL_QR_M_BLOCKS = Object.freeze([
+    0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5,
+    5, 8, 9, 9, 10, 10, 11, 13, 14, 16,
+  ]);
   const SKIN_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
     unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
@@ -417,6 +429,7 @@
       #framesBack .ah-howl-pay-qr{
         display:flex;
         align-items:center;
+        flex-wrap:wrap;
         gap:9px;
         margin:8px 0;
         padding:8px;
@@ -424,10 +437,22 @@
         border:1px dashed rgba(255,255,255,.16);
         background:rgba(255,255,255,.035);
       }
+      #framesBack .ah-howl-pay-qr-svg{
+        flex:0 0 auto;
+        width:min(176px, 52vw);
+        max-width:176px;
+        min-width:132px;
+        aspect-ratio:1;
+        display:block;
+        border-radius:8px;
+        background:#fff;
+        padding:6px;
+        box-sizing:border-box;
+      }
       #framesBack .ah-howl-pay-qr-box{
         flex:0 0 auto;
-        width:54px;
-        height:54px;
+        width:132px;
+        height:132px;
         display:grid;
         place-items:center;
         border-radius:7px;
@@ -436,6 +461,10 @@
         color:rgba(255,255,255,.72);
         font-size:11px;
         font-weight:800;
+      }
+      #framesBack .ah-howl-pay-qr-copy{
+        flex:1 1 128px;
+        min-width:0;
       }
       #framesBack .ah-howl-pay-actions{
         display:flex;
@@ -842,23 +871,443 @@
     return String(raw || "").trim() || "-";
   }
 
+  function howlQrUtf8Bytes(value) {
+    const text = String(value || "");
+    if (typeof TextEncoder !== "undefined") {
+      return Array.from(new TextEncoder().encode(text));
+    }
+    return Array.from(text, (ch) => ch.charCodeAt(0) & 0xff);
+  }
+
+  function howlQrDataCodewords(version) {
+    return HOWL_QR_TOTAL_CODEWORDS[version] -
+      (HOWL_QR_M_ECC_PER_BLOCK[version] * HOWL_QR_M_BLOCKS[version]);
+  }
+
+  function howlQrChooseVersion(bytes) {
+    for (let version = 1; version < HOWL_QR_TOTAL_CODEWORDS.length; version += 1) {
+      const countBits = version < 10 ? 8 : 16;
+      const neededBits = 4 + countBits + (bytes.length * 8);
+      if (bytes.length < (1 << countBits) && neededBits <= howlQrDataCodewords(version) * 8) {
+        return version;
+      }
+    }
+    throw new Error("payment_url_too_long_for_qr");
+  }
+
+  function howlQrAppendBits(bits, value, length) {
+    for (let i = length - 1; i >= 0; i -= 1) {
+      bits.push(((value >>> i) & 1) === 1);
+    }
+  }
+
+  function howlQrDataBytes(bytes, version) {
+    const dataCodewords = howlQrDataCodewords(version);
+    const capacityBits = dataCodewords * 8;
+    const bits = [];
+    howlQrAppendBits(bits, 0x4, 4); // Byte mode.
+    howlQrAppendBits(bits, bytes.length, version < 10 ? 8 : 16);
+    bytes.forEach((byte) => howlQrAppendBits(bits, byte, 8));
+
+    const terminatorBits = Math.min(4, capacityBits - bits.length);
+    for (let i = 0; i < terminatorBits; i += 1) bits.push(false);
+    while (bits.length % 8) bits.push(false);
+
+    const out = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      let byte = 0;
+      for (let j = 0; j < 8; j += 1) byte = (byte << 1) | (bits[i + j] ? 1 : 0);
+      out.push(byte);
+    }
+    for (let pad = 0; out.length < dataCodewords; pad += 1) {
+      out.push((pad % 2) === 0 ? 0xec : 0x11);
+    }
+    return out;
+  }
+
+  let _howlQrExp = null;
+  let _howlQrLog = null;
+  const _howlQrRsCache = {};
+
+  function howlQrInitGf() {
+    if (_howlQrExp && _howlQrLog) return;
+    _howlQrExp = new Array(512);
+    _howlQrLog = new Array(256);
+    let x = 1;
+    for (let i = 0; i < 255; i += 1) {
+      _howlQrExp[i] = x;
+      _howlQrLog[x] = i;
+      x <<= 1;
+      if (x & 0x100) x ^= 0x11d;
+    }
+    for (let i = 255; i < 512; i += 1) {
+      _howlQrExp[i] = _howlQrExp[i - 255];
+    }
+  }
+
+  function howlQrGfMultiply(a, b) {
+    if (!a || !b) return 0;
+    howlQrInitGf();
+    return _howlQrExp[_howlQrLog[a] + _howlQrLog[b]];
+  }
+
+  function howlQrRsGenerator(degree) {
+    if (_howlQrRsCache[degree]) return _howlQrRsCache[degree];
+    const result = new Array(degree).fill(0);
+    result[degree - 1] = 1;
+    let root = 1;
+    for (let i = 0; i < degree; i += 1) {
+      for (let j = 0; j < degree; j += 1) {
+        result[j] = howlQrGfMultiply(result[j], root);
+        if (j + 1 < degree) result[j] ^= result[j + 1];
+      }
+      root = howlQrGfMultiply(root, 2);
+    }
+    _howlQrRsCache[degree] = result;
+    return result;
+  }
+
+  function howlQrRsRemainder(data, degree) {
+    const generator = howlQrRsGenerator(degree);
+    const result = new Array(degree).fill(0);
+    data.forEach((byte) => {
+      const factor = byte ^ result.shift();
+      result.push(0);
+      for (let i = 0; i < degree; i += 1) {
+        result[i] ^= howlQrGfMultiply(generator[i], factor);
+      }
+    });
+    return result;
+  }
+
+  function howlQrAddEcc(data, version) {
+    const eccPerBlock = HOWL_QR_M_ECC_PER_BLOCK[version];
+    const blockCount = HOWL_QR_M_BLOCKS[version];
+    const shortBlockLen = Math.floor(data.length / blockCount);
+    const longBlockCount = data.length % blockCount;
+    const blocks = [];
+    let offset = 0;
+
+    for (let i = 0; i < blockCount; i += 1) {
+      const dataLen = shortBlockLen + (i >= blockCount - longBlockCount ? 1 : 0);
+      const blockData = data.slice(offset, offset + dataLen);
+      offset += dataLen;
+      blocks.push({ data: blockData, ecc: howlQrRsRemainder(blockData, eccPerBlock) });
+    }
+
+    const result = [];
+    const maxDataLen = shortBlockLen + (longBlockCount ? 1 : 0);
+    for (let i = 0; i < maxDataLen; i += 1) {
+      blocks.forEach((block) => {
+        if (i < block.data.length) result.push(block.data[i]);
+      });
+    }
+    for (let i = 0; i < eccPerBlock; i += 1) {
+      blocks.forEach((block) => result.push(block.ecc[i]));
+    }
+    return result;
+  }
+
+  function howlQrBit(value, index) {
+    return ((value >>> index) & 1) === 1;
+  }
+
+  function howlQrAlignmentPositions(version) {
+    if (version === 1) return [];
+    const size = (version * 4) + 17;
+    const count = Math.floor(version / 7) + 2;
+    const step = Math.ceil(((version * 4) + 4) / ((count * 2) - 2)) * 2;
+    const result = [6];
+    for (let pos = size - 7; result.length < count; pos -= step) {
+      result.splice(1, 0, pos);
+    }
+    return result;
+  }
+
+  function howlQrFormatBits(mask) {
+    const data = mask; // Error correction level M has format bits 00.
+    let rem = data;
+    for (let i = 0; i < 10; i += 1) {
+      rem = (rem << 1) ^ (((rem >>> 9) & 1) ? 0x537 : 0);
+    }
+    return ((data << 10) | (rem & 0x3ff)) ^ 0x5412;
+  }
+
+  function howlQrVersionBits(version) {
+    let rem = version;
+    for (let i = 0; i < 12; i += 1) {
+      rem = (rem << 1) ^ (((rem >>> 11) & 1) ? 0x1f25 : 0);
+    }
+    return (version << 12) | (rem & 0xfff);
+  }
+
+  function howlQrMask(mask, x, y) {
+    switch (mask) {
+      case 0: return ((x + y) % 2) === 0;
+      case 1: return (y % 2) === 0;
+      case 2: return (x % 3) === 0;
+      case 3: return ((x + y) % 3) === 0;
+      case 4: return ((Math.floor(y / 2) + Math.floor(x / 3)) % 2) === 0;
+      case 5: return (((x * y) % 2) + ((x * y) % 3)) === 0;
+      case 6: return ((((x * y) % 2) + ((x * y) % 3)) % 2) === 0;
+      case 7: return ((((x + y) % 2) + ((x * y) % 3)) % 2) === 0;
+      default: return false;
+    }
+  }
+
+  function howlQrPenalty(matrix) {
+    const size = matrix.length;
+    let score = 0;
+    let dark = 0;
+
+    function runPenalty(line) {
+      let total = 0;
+      let runColor = line[0];
+      let runLen = 1;
+      for (let i = 1; i <= line.length; i += 1) {
+        if (i < line.length && line[i] === runColor) {
+          runLen += 1;
+        } else {
+          if (runLen >= 5) total += 3 + (runLen - 5);
+          runColor = line[i];
+          runLen = 1;
+        }
+      }
+      return total;
+    }
+
+    function finderPenalty(line) {
+      const text = line.map((bit) => (bit ? "1" : "0")).join("");
+      let total = 0;
+      for (let i = 0; i <= text.length - 11; i += 1) {
+        const chunk = text.slice(i, i + 11);
+        if (chunk === "10111010000" || chunk === "00001011101") total += 40;
+      }
+      return total;
+    }
+
+    for (let y = 0; y < size; y += 1) {
+      const row = matrix[y];
+      score += runPenalty(row) + finderPenalty(row);
+      row.forEach((bit) => { if (bit) dark += 1; });
+    }
+    for (let x = 0; x < size; x += 1) {
+      const col = [];
+      for (let y = 0; y < size; y += 1) col.push(matrix[y][x]);
+      score += runPenalty(col) + finderPenalty(col);
+    }
+    for (let y = 0; y < size - 1; y += 1) {
+      for (let x = 0; x < size - 1; x += 1) {
+        const color = matrix[y][x];
+        if (color === matrix[y][x + 1] && color === matrix[y + 1][x] && color === matrix[y + 1][x + 1]) {
+          score += 3;
+        }
+      }
+    }
+
+    const totalModules = size * size;
+    score += Math.floor(Math.abs((dark * 20) - (totalModules * 10)) / totalModules) * 10;
+    return score;
+  }
+
+  function howlQrMatrix(value) {
+    const bytes = howlQrUtf8Bytes(value);
+    const version = howlQrChooseVersion(bytes);
+    const data = howlQrDataBytes(bytes, version);
+    const codewords = howlQrAddEcc(data, version);
+    const size = (version * 4) + 17;
+    const modules = Array.from({ length: size }, () => Array(size).fill(false));
+    const isFunction = Array.from({ length: size }, () => Array(size).fill(false));
+
+    function setFunction(x, y, dark) {
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      modules[y][x] = !!dark;
+      isFunction[y][x] = true;
+    }
+
+    function setFormat(target, x, y, dark, mark) {
+      target[y][x] = !!dark;
+      if (mark) isFunction[y][x] = true;
+    }
+
+    function drawFinder(cx, cy) {
+      for (let dy = -4; dy <= 4; dy += 1) {
+        for (let dx = -4; dx <= 4; dx += 1) {
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          setFunction(cx + dx, cy + dy, dist === 3 || dist <= 1);
+        }
+      }
+    }
+
+    function drawAlignment(cx, cy) {
+      for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          setFunction(cx + dx, cy + dy, dist === 2 || dist === 0);
+        }
+      }
+    }
+
+    function drawFormat(target, mask, mark) {
+      const bits = howlQrFormatBits(mask);
+      for (let i = 0; i <= 5; i += 1) setFormat(target, 8, i, howlQrBit(bits, i), mark);
+      setFormat(target, 8, 7, howlQrBit(bits, 6), mark);
+      setFormat(target, 8, 8, howlQrBit(bits, 7), mark);
+      setFormat(target, 7, 8, howlQrBit(bits, 8), mark);
+      for (let i = 9; i < 15; i += 1) setFormat(target, 14 - i, 8, howlQrBit(bits, i), mark);
+      for (let i = 0; i < 8; i += 1) setFormat(target, size - 1 - i, 8, howlQrBit(bits, i), mark);
+      for (let i = 8; i < 15; i += 1) setFormat(target, 8, size - 15 + i, howlQrBit(bits, i), mark);
+      setFormat(target, 8, size - 8, true, mark);
+    }
+
+    drawFinder(3, 3);
+    drawFinder(size - 4, 3);
+    drawFinder(3, size - 4);
+
+    for (let i = 0; i < size; i += 1) {
+      if (!isFunction[6][i]) setFunction(i, 6, (i % 2) === 0);
+      if (!isFunction[i][6]) setFunction(6, i, (i % 2) === 0);
+    }
+
+    const align = howlQrAlignmentPositions(version);
+    align.forEach((x, xi) => {
+      align.forEach((y, yi) => {
+        const last = align.length - 1;
+        const overlapsFinder =
+          (xi === 0 && yi === 0) ||
+          (xi === last && yi === 0) ||
+          (xi === 0 && yi === last);
+        if (!overlapsFinder) drawAlignment(x, y);
+      });
+    });
+
+    drawFormat(modules, 0, true);
+    if (version >= 7) {
+      const bits = howlQrVersionBits(version);
+      for (let i = 0; i < 18; i += 1) {
+        const bit = howlQrBit(bits, i);
+        const a = size - 11 + (i % 3);
+        const b = Math.floor(i / 3);
+        setFunction(a, b, bit);
+        setFunction(b, a, bit);
+      }
+    }
+
+    let bitIndex = 0;
+    let upward = true;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert += 1) {
+        const y = upward ? size - 1 - vert : vert;
+        for (let j = 0; j < 2; j += 1) {
+          const x = right - j;
+          if (isFunction[y][x]) continue;
+          const byte = codewords[Math.floor(bitIndex / 8)] || 0;
+          modules[y][x] = bitIndex < codewords.length * 8 && howlQrBit(byte, 7 - (bitIndex % 8));
+          bitIndex += 1;
+        }
+      }
+      upward = !upward;
+    }
+
+    let bestMask = 0;
+    let bestScore = Infinity;
+    for (let mask = 0; mask < 8; mask += 1) {
+      const candidate = modules.map((row) => row.slice());
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+          if (!isFunction[y][x] && howlQrMask(mask, x, y)) candidate[y][x] = !candidate[y][x];
+        }
+      }
+      drawFormat(candidate, mask, false);
+      const score = howlQrPenalty(candidate);
+      if (score < bestScore) {
+        bestScore = score;
+        bestMask = mask;
+      }
+    }
+
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        if (!isFunction[y][x] && howlQrMask(bestMask, x, y)) modules[y][x] = !modules[y][x];
+      }
+    }
+    drawFormat(modules, bestMask, false);
+    return modules;
+  }
+
+  function buildHowlQrSvg(value) {
+    const matrix = howlQrMatrix(value);
+    const quiet = 4;
+    const size = matrix.length;
+    const svgNs = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("class", "ah-howl-pay-qr-svg");
+    svg.setAttribute("viewBox", `0 0 ${size + (quiet * 2)} ${size + (quiet * 2)}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Solana Pay QR code");
+    svg.setAttribute("focusable", "false");
+    svg.style.shapeRendering = "crispEdges";
+
+    const bg = document.createElementNS(svgNs, "rect");
+    bg.setAttribute("width", String(size + (quiet * 2)));
+    bg.setAttribute("height", String(size + (quiet * 2)));
+    bg.setAttribute("fill", "#fff");
+    svg.appendChild(bg);
+
+    let d = "";
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        if (matrix[y][x]) d += `M${x + quiet} ${y + quiet}h1v1h-1z`;
+      }
+    }
+    const path = document.createElementNS(svgNs, "path");
+    path.setAttribute("fill", "#111");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+    return svg;
+  }
+
   function renderHowlQr(payment) {
     if (!howlPayQr) return;
     const url = howlPaymentUrl(payment);
     howlPayQr.innerHTML = "";
 
-    const box = document.createElement("div");
-    box.className = "ah-howl-pay-qr-box";
-    box.textContent = "QR";
-
     const text = document.createElement("div");
-    text.className = "ah-howl-pay-meta";
-    text.textContent = url
-      ? "QR code is not bundled in this build. Copy the link or open it on mobile Phantom."
-      : "Payment link will appear after checkout starts.";
+    text.className = "ah-howl-pay-meta ah-howl-pay-qr-copy";
 
-    howlPayQr.appendChild(box);
+    if (!url) {
+      const box = document.createElement("div");
+      box.className = "ah-howl-pay-qr-box";
+      box.textContent = "QR";
+      text.textContent = "Payment link will appear after checkout starts.";
+      howlPayQr.appendChild(box);
+      howlPayQr.appendChild(text);
+      return;
+    }
+
+    try {
+      howlPayQr.appendChild(buildHowlQrSvg(url));
+      text.textContent = "Scan with mobile Phantom or another Solana Pay wallet.";
+    } catch (err) {
+      dbg("howl qr render failed", err);
+      const box = document.createElement("div");
+      box.className = "ah-howl-pay-qr-box";
+      box.textContent = "QR unavailable";
+      howlPayQr.appendChild(box);
+      text.textContent = "QR could not be generated. Copy the payment link instead.";
+    }
     howlPayQr.appendChild(text);
+  }
+
+  function showHowlDisabledState() {
+    stopHowlPolling();
+    _howlPayment = null;
+    if (howlPayPanel) howlPayPanel.classList.add("is-open");
+    if (howlPayAmount) howlPayAmount.textContent = "-";
+    if (howlPayLink) howlPayLink.value = "";
+    renderHowlQr(null);
+    setHowlStatus("HOWL payments are not live yet.");
   }
 
   function showHowlPanel(payment) {
@@ -997,8 +1446,7 @@
 
       if (!out || !out.ok) {
         if (isHowlpayDisabled(out)) {
-          setHowlStatus("HOWL payments are not live yet.");
-          if (howlPayPanel) howlPayPanel.classList.add("is-open");
+          showHowlDisabledState();
           return;
         }
         throw new Error(out?.reason || "payment_init_failed");
@@ -1009,8 +1457,7 @@
     } catch (err) {
       dbg("howl init failed", err);
       if (isHowlpayDisabled(err?.data || err)) {
-        if (howlPayPanel) howlPayPanel.classList.add("is-open");
-        setHowlStatus("HOWL payments are not live yet.");
+        showHowlDisabledState();
         return;
       }
       showAlert(err?.message || "Failed to create payment link.");
