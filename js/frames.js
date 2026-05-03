@@ -19,6 +19,8 @@
   let howlPayAmount;
   let howlPayTimer;
   let howlPayStatus;
+  let howlPayLink;
+  let howlPayQr;
   let howlOpenBtn;
   let howlCopyBtn;
   let howlCheckBtn;
@@ -33,6 +35,7 @@
   let _howlPollTimer = null;
   let _howlCountdownTimer = null;
   let _howlPollStartedAt = 0;
+  let _howlInitInFlight = false;
   const HOWL_GENESIS_FRAME_KEY = "genesis_frame";
   const HOWL_POLL_MS = 9000;
   const HOWL_POLL_TIMEOUT_MS = 12 * 60 * 1000;
@@ -387,6 +390,53 @@
         margin:7px 0;
         color:rgba(240,249,255,.88);
       }
+      #framesBack .ah-howl-pay-link-wrap{
+        margin:8px 0;
+      }
+      #framesBack .ah-howl-pay-label{
+        margin-bottom:4px;
+        font-size:10px;
+        line-height:1.25;
+        text-transform:uppercase;
+        letter-spacing:0;
+        color:rgba(230,238,255,.58);
+      }
+      #framesBack .ah-howl-pay-link{
+        width:100%;
+        min-height:54px;
+        resize:vertical;
+        border-radius:8px;
+        border:1px solid rgba(255,255,255,.14);
+        background:rgba(0,0,0,.22);
+        color:rgba(244,249,255,.9);
+        font-size:10px;
+        line-height:1.35;
+        padding:7px 8px;
+        box-sizing:border-box;
+      }
+      #framesBack .ah-howl-pay-qr{
+        display:flex;
+        align-items:center;
+        gap:9px;
+        margin:8px 0;
+        padding:8px;
+        border-radius:8px;
+        border:1px dashed rgba(255,255,255,.16);
+        background:rgba(255,255,255,.035);
+      }
+      #framesBack .ah-howl-pay-qr-box{
+        flex:0 0 auto;
+        width:54px;
+        height:54px;
+        display:grid;
+        place-items:center;
+        border-radius:7px;
+        border:1px solid rgba(255,255,255,.18);
+        background:rgba(0,0,0,.22);
+        color:rgba(255,255,255,.72);
+        font-size:11px;
+        font-weight:800;
+      }
       #framesBack .ah-howl-pay-actions{
         display:flex;
         flex-wrap:wrap;
@@ -450,19 +500,24 @@
             <div class="ah-howl-pay-top">
               <div>
                 <div class="ah-howl-pay-title">HOWL Genesis Frame</div>
-                <div class="ah-howl-pay-meta">Amount: <span id="howlPayAmount">-</span> $HOWL</div>
+                <div class="ah-howl-pay-meta">Amount: <span id="howlPayAmount">-</span> HOWL</div>
               </div>
               <div id="howlPayTimer" class="ah-howl-pay-meta"></div>
             </div>
             <div id="howlPayStatus" class="ah-howl-pay-status">Payment link ready.</div>
+            <div class="ah-howl-pay-link-wrap">
+              <div class="ah-howl-pay-label">Solana Pay link</div>
+              <textarea id="howlPayLink" class="ah-howl-pay-link" readonly rows="2" spellcheck="false"></textarea>
+            </div>
+            <div id="howlPayQr" class="ah-howl-pay-qr" aria-live="polite"></div>
             <div class="ah-howl-pay-actions">
               <button class="btn primary" id="howlOpenPayment" type="button">Open Phantom</button>
               <button class="btn" id="howlCopyPayment" type="button">Copy Payment Link</button>
               <button class="btn" id="howlCheckPayment" type="button">Check Payment</button>
             </div>
             <div class="ah-howl-pay-safety">
-              Cosmetic only. No power. Only use the generated payment link. Never share your seed phrase.
-              Wrong token or wrong address cannot be auto-credited.
+              Open with mobile Phantom or copy the payment link. Desktop Phantom may open the wallet without showing payment confirmation.
+              Cosmetic only. No power. Never share your seed phrase. Wrong token or wrong address cannot be auto-credited.
             </div>
           </div>
 
@@ -485,6 +540,8 @@
     howlPayAmount = document.getElementById("howlPayAmount");
     howlPayTimer = document.getElementById("howlPayTimer");
     howlPayStatus = document.getElementById("howlPayStatus");
+    howlPayLink = document.getElementById("howlPayLink");
+    howlPayQr = document.getElementById("howlPayQr");
     howlOpenBtn = document.getElementById("howlOpenPayment");
     howlCopyBtn = document.getElementById("howlCopyPayment");
     howlCheckBtn = document.getElementById("howlCheckPayment");
@@ -770,13 +827,49 @@
     howlPayTimer.textContent = left > 0 ? `Expires ${formatSeconds(left)}` : "Expired";
   }
 
+  function howlPaymentUrl(payment) {
+    return String(payment?.payment_url || payment?.paymentUrl || "").trim();
+  }
+
+  function howlPaymentAmount(payment) {
+    const raw =
+      payment?.amount_display ||
+      payment?.amountDisplay ||
+      payment?.amount_ui ||
+      payment?.amountUi ||
+      payment?.amount ||
+      "";
+    return String(raw || "").trim() || "-";
+  }
+
+  function renderHowlQr(payment) {
+    if (!howlPayQr) return;
+    const url = howlPaymentUrl(payment);
+    howlPayQr.innerHTML = "";
+
+    const box = document.createElement("div");
+    box.className = "ah-howl-pay-qr-box";
+    box.textContent = "QR";
+
+    const text = document.createElement("div");
+    text.className = "ah-howl-pay-meta";
+    text.textContent = url
+      ? "QR code is not bundled in this build. Copy the link or open it on mobile Phantom."
+      : "Payment link will appear after checkout starts.";
+
+    howlPayQr.appendChild(box);
+    howlPayQr.appendChild(text);
+  }
+
   function showHowlPanel(payment) {
     _howlPayment = payment && typeof payment === "object" ? payment : null;
     if (!howlPayPanel || !_howlPayment) return;
     howlPayPanel.classList.add("is-open");
-    if (howlPayAmount) howlPayAmount.textContent = String(_howlPayment.amount || "-");
+    if (howlPayAmount) howlPayAmount.textContent = howlPaymentAmount(_howlPayment);
+    if (howlPayLink) howlPayLink.value = howlPaymentUrl(_howlPayment);
+    renderHowlQr(_howlPayment);
     updateHowlCountdown();
-    setHowlStatus("Payment link ready. Use only this generated link.");
+    setHowlStatus("Payment link ready. Open with mobile Phantom or copy the link. Desktop Phantom may only open the wallet menu.");
     stopHowlPolling();
     _howlPollStartedAt = Date.now();
     _howlCountdownTimer = setInterval(updateHowlCountdown, 1000);
@@ -786,14 +879,18 @@
   function hideHowlPanel() {
     stopHowlPolling();
     _howlPayment = null;
+    if (howlPayLink) howlPayLink.value = "";
+    renderHowlQr(null);
     howlPayPanel?.classList?.remove("is-open");
   }
 
   function updateHowlControls() {
     const showBuy = selectedGenesisLocked();
+    const pending = !!(_howlPayment?.payment_id && normKey(_howlPayment?.status || "pending") === "pending");
     if (howlBuyBtn) {
       howlBuyBtn.classList.toggle("is-visible", showBuy);
-      howlBuyBtn.disabled = !showBuy;
+      howlBuyBtn.disabled = !showBuy || _howlInitInFlight;
+      howlBuyBtn.textContent = pending ? "View HOWL Payment" : "Buy with $HOWL";
     }
     if (!showBuy && _howlPayment?.status !== "pending") {
       hideHowlPanel();
@@ -813,22 +910,26 @@
     if (status === "completed") {
       stopHowlPolling();
       setHowlStatus("Payment confirmed — HOWL Genesis Frame unlocked.");
+      updateHowlControls();
       refreshAfterHowlUnlock();
       return status;
     }
     if (status === "expired") {
       stopHowlPolling();
       setHowlStatus("Payment expired. Start a new payment if you still want the frame.");
+      updateHowlControls();
       return status;
     }
     if (status === "manual_review") {
       stopHowlPolling();
-      setHowlStatus("Payment received but needs review. Do not pay again yet.");
+      setHowlStatus("Payment under manual review. Do not pay again yet.");
+      updateHowlControls();
       return status;
     }
     if (status === "failed") {
       stopHowlPolling();
       setHowlStatus("Payment could not be credited. Check the token, address, and amount before trying again.");
+      updateHowlControls();
       return status;
     }
 
@@ -873,6 +974,13 @@
       return;
     }
     if (!selectedGenesisLocked()) return;
+    if (_howlInitInFlight) return;
+    if (_howlPayment?.payment_id && normKey(_howlPayment?.status || "pending") === "pending") {
+      showHowlPanel(_howlPayment);
+      updateHowlControls();
+      return;
+    }
+    _howlInitInFlight = true;
     if (howlBuyBtn) howlBuyBtn.disabled = true;
     setHowlStatus("Creating payment link...");
     try {
@@ -907,16 +1015,17 @@
       }
       showAlert(err?.message || "Failed to create payment link.");
     } finally {
-      if (howlBuyBtn) howlBuyBtn.disabled = !selectedGenesisLocked();
+      _howlInitInFlight = false;
+      updateHowlControls();
     }
   }
 
   async function copyHowlPaymentLink() {
-    const url = String(_howlPayment?.payment_url || _howlPayment?.paymentUrl || "").trim();
+    const url = howlPaymentUrl(_howlPayment);
     if (!url) return;
     try {
       await navigator.clipboard?.writeText?.(url);
-      setHowlStatus("Payment link copied. Only use this generated link.");
+      setHowlStatus("Payment link copied. Open it with mobile Phantom if desktop Phantom does not show confirmation.");
       haptic("light");
     } catch (_) {
       showAlert(url);
@@ -924,8 +1033,9 @@
   }
 
   function openHowlPaymentLink() {
-    const url = String(_howlPayment?.payment_url || _howlPayment?.paymentUrl || "").trim();
+    const url = howlPaymentUrl(_howlPayment);
     if (!url) return;
+    setHowlStatus("Opening payment link. If desktop Phantom only opens the wallet, copy the link and use mobile Phantom.");
     try {
       window.open(url, "_blank", "noopener");
     } catch (_) {
