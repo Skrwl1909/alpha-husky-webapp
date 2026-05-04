@@ -371,6 +371,38 @@ html.ah-modal-open #heroFrame{
   z-index:4;
 }
 
+.hero-signal-badge{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  max-width:min(76vw, 300px);
+  padding:6px 11px;
+  border-radius:999px;
+  border:1px solid rgba(245,210,146,.30);
+  background:
+    radial-gradient(circle at 18% 50%, rgba(190,45,45,.22), transparent 42%),
+    rgba(7,10,16,.70);
+  color:rgba(255,235,194,.94);
+  font-size:11px;
+  font-weight:850;
+  line-height:1.2;
+  text-transform:uppercase;
+  text-align:center;
+  backdrop-filter:blur(10px);
+  box-shadow:0 10px 24px rgba(0,0,0,.24), 0 0 22px rgba(190,45,45,.12);
+  position:relative;
+  z-index:4;
+}
+.hero-signal-badge::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:rgba(245,210,146,.95);
+  box-shadow:0 0 0 4px rgba(190,45,45,.14), 0 0 16px rgba(245,210,146,.24);
+}
+
 /* ✅ HOME REBUILD PATCH (KROK A)
    - chowamy legacy kolumny (zostają w DOM dla fallback click)
    - chowamy shareRow (share idzie do Hub/Share sheet)
@@ -4302,6 +4334,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 
   <div id="heroAuraBadge" class="hero-aura-badge"></div>
+  <div id="heroSignalBadge" class="hero-signal-badge"></div>
 
   <div class="share-row" id="shareRow">
     <button class="btn share-mini" id="heroProfileBtn" type="button" style="min-width:132px;">Profile</button>
@@ -6559,6 +6592,20 @@ function applyHeroAura(aura){
   badge.textContent = `${label}${remain}`;
 }
 
+function applyHeroSignal(signal){
+  const badge = document.getElementById("heroSignalBadge");
+  if (!badge) return;
+  const sig = signal || {};
+  const active = !!sig.active;
+  if (!active) {
+    badge.style.display = "none";
+    badge.textContent = "";
+    return;
+  }
+  badge.style.display = "inline-flex";
+  badge.textContent = String(sig.stripText || "SIGNAL VERIFIED - HOWL").trim();
+}
+
 function pickFrameUrl(p){
   return (
     p?.frameUrl ||
@@ -6675,6 +6722,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     /* ✅ A) TAG: pobierz tier tag z profilu */
     PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
     PROFILE.weeklyAura = p?.weeklyAura || p?.activeAura || null;
+    PROFILE.howlSignal = p?.howlSignal || p?.signal || p?.cosmetics?.signal || null;
 
     PROFILE.avatar = p?.avatar || PROFILE.avatar || null;
     PROFILE.avatarImg = p?.avatar?.img || PROFILE.avatarImg || "";
@@ -6702,6 +6750,8 @@ hydrateFactionFromPayload({ profile: p, ...out });
         activeSkin: p?.skin || PROFILE.skin || null,
         weeklyAura: p?.weeklyAura || p?.activeAura || null,
         activeAura: p?.weeklyAura || p?.activeAura || null,
+        howlSignal: PROFILE.howlSignal || null,
+        signal: PROFILE.howlSignal || null,
         heroImg: heroImg,
         heroPng: heroImg,
         character: heroImg,
@@ -6717,6 +6767,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     /* ✅ FRAME — dynamic (z profilu) */
     setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "", PROFILE.skinKey || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
+    applyHeroSignal(PROFILE.howlSignal || null);
 
     // ✅ Topbar może się przebudować – ok
     try { renderTopbar(); } catch (_) {}
