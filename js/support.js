@@ -5,6 +5,8 @@
   let _dbg = false;
   let _state = null;
   let _openingPhantom = false;
+  let _howlPayBusy = "";
+  let _howlPayPollTimer = null;
 
   function log(...args) {
     if (_dbg) console.log("[Support]", ...args);
@@ -64,6 +66,226 @@
     const node = el(id);
     if (!node) return;
     node.style.display = visible ? "" : "none";
+  }
+
+  function signalProductFromSupport(support) {
+    const howlpay = support?.howlpay || {};
+    const signal = howlpay.signal || {};
+    const products = Array.isArray(howlpay.products) ? howlpay.products : [];
+    const product = products.find((item) => String(item?.productId || item?.product_id || "").trim() === "howl_signal") || {};
+    return { ...product, ...signal, productId: "howl_signal", itemType: "signal", itemKey: "howl_signal" };
+  }
+
+  function genesisProductFromSupport(support) {
+    const howlpay = support?.howlpay || {};
+    const genesis = howlpay.genesisFrame || {};
+    const products = Array.isArray(howlpay.products) ? howlpay.products : [];
+    const product = products.find((item) => {
+      const id = String(item?.productId || item?.product_id || "").trim();
+      return id === "genesis_frame";
+    }) || {};
+    return { ...product, ...genesis, productId: "genesis_frame", itemType: "frame", itemKey: "genesis_frame" };
+  }
+
+  function ensureHowlPayStyles() {
+    if (document.getElementById("ah-howlpay-support-style")) return;
+    const style = document.createElement("style");
+    style.id = "ah-howlpay-support-style";
+    style.textContent = `
+      #supportBack .ah-howlpay-console{
+        padding:12px;
+        border:1px solid rgba(245,210,146,.18);
+        border-radius:8px;
+        background:
+          radial-gradient(circle at 86% 0%, rgba(190,45,45,.18), transparent 42%),
+          linear-gradient(180deg, rgba(15,18,25,.78), rgba(7,9,14,.76));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      }
+      #supportBack .ah-howlpay-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+      }
+      #supportBack .ah-howlpay-title{
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:rgba(255,233,194,.88);
+      }
+      #supportBack .ah-howlpay-live{
+        flex:0 0 auto;
+        padding:4px 7px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(0,0,0,.26);
+        color:rgba(230,238,255,.68);
+        font-size:10px;
+        font-weight:850;
+        text-transform:uppercase;
+      }
+      #supportBack .ah-howlpay-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:10px;
+        margin-top:10px;
+      }
+      #supportBack .ah-howlpay-card{
+        position:relative;
+        overflow:hidden;
+        border-radius:8px;
+        border:1px solid rgba(255,255,255,.11);
+        background:rgba(4,7,12,.54);
+        padding:11px;
+      }
+      #supportBack .ah-howlpay-card::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:linear-gradient(90deg, transparent, rgba(245,210,146,.10), transparent);
+        opacity:.45;
+      }
+      #supportBack .ah-howlpay-card.is-active{
+        border-color:rgba(245,210,146,.34);
+        box-shadow:0 0 0 1px rgba(190,45,45,.10), 0 12px 32px rgba(0,0,0,.24);
+      }
+      #supportBack .ah-howlpay-top{
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+      #supportBack .ah-howlpay-name{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        min-width:0;
+        font-weight:900;
+        color:rgba(248,250,255,.94);
+      }
+      #supportBack .ah-signal-icon{
+        width:24px;
+        height:24px;
+        border-radius:999px;
+        border:1px solid rgba(245,210,146,.34);
+        background:
+          radial-gradient(circle at 50% 50%, rgba(245,210,146,.46), transparent 34%),
+          rgba(120,24,24,.28);
+        box-shadow:0 0 18px rgba(190,45,45,.22);
+      }
+      #supportBack .ah-signal-icon::after{
+        content:"";
+        display:block;
+        width:10px;
+        height:10px;
+        margin:6px auto 0;
+        border-radius:50%;
+        border:2px solid rgba(255,235,194,.82);
+        border-left-color:transparent;
+        border-bottom-color:transparent;
+        transform:rotate(-45deg);
+      }
+      #supportBack .ah-howlpay-state{
+        flex:0 0 auto;
+        padding:4px 7px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.055);
+        color:rgba(230,238,255,.78);
+        font-size:10px;
+        font-weight:850;
+        text-transform:uppercase;
+      }
+      #supportBack .ah-howlpay-card.is-active .ah-howlpay-state{
+        border-color:rgba(245,210,146,.35);
+        color:rgba(255,235,194,.96);
+        background:rgba(245,210,146,.09);
+      }
+      #supportBack .ah-howlpay-desc,
+      #supportBack .ah-howlpay-status{
+        position:relative;
+        margin-top:8px;
+        color:rgba(226,235,248,.72);
+        font-size:12px;
+        line-height:1.36;
+        white-space:pre-line;
+      }
+      #supportBack .ah-howlpay-status{
+        color:rgba(255,235,194,.82);
+      }
+      #supportBack .ah-howlpay-actions{
+        position:relative;
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        margin-top:10px;
+      }
+      #supportBack .ah-howlpay-actions .ah-action{
+        min-height:38px;
+        border-radius:8px;
+        border-color:rgba(245,210,146,.22);
+        background:
+          linear-gradient(180deg, rgba(245,210,146,.15), rgba(190,45,45,.08)),
+          rgba(0,0,0,.24);
+      }
+      #supportBack .ah-howlpay-actions .ah-action:disabled{
+        opacity:.58;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureHowlPaySection() {
+    ensureHowlPayStyles();
+    const back = el("supportBack");
+    if (!back) return null;
+    let section = el("supportHowlPayConsole");
+    if (section) return section;
+    section = document.createElement("section");
+    section.id = "supportHowlPayConsole";
+    section.className = "ah-support-section ah-howlpay-console";
+    section.innerHTML = `
+      <div class="ah-howlpay-head">
+        <div>
+          <div class="ah-howlpay-title">Treasury Console</div>
+          <div class="ah-howlpay-desc">Token-backed identity utilities. Cosmetic only. No gameplay power.</div>
+        </div>
+        <div id="supportHowlPayLive" class="ah-howlpay-live">Not live</div>
+      </div>
+      <div class="ah-howlpay-grid">
+        <article class="ah-howlpay-card" data-howlpay-card="genesis_frame">
+          <div class="ah-howlpay-top">
+            <div class="ah-howlpay-name"><span class="ah-signal-icon" aria-hidden="true"></span><span>HOWL Genesis Frame</span></div>
+            <span class="ah-howlpay-state" data-howlpay-state="genesis_frame">Locked</span>
+          </div>
+          <div class="ah-howlpay-desc" data-howlpay-desc="genesis_frame">A treasury support cosmetic frame for your Alpha Husky identity.</div>
+          <div class="ah-howlpay-status" data-howlpay-status="genesis_frame">HowlPay is not live yet.</div>
+          <div class="ah-howlpay-actions">
+            <button class="ah-action" type="button" data-howlpay-product="genesis_frame">Unlock with $HOWL</button>
+          </div>
+        </article>
+        <article class="ah-howlpay-card" data-howlpay-card="howl_signal">
+          <div class="ah-howlpay-top">
+            <div class="ah-howlpay-name"><span class="ah-signal-icon" aria-hidden="true"></span><span>HOWL Signal</span></div>
+            <span class="ah-howlpay-state" data-howlpay-state="howl_signal">Locked</span>
+          </div>
+          <div class="ah-howlpay-desc" data-howlpay-desc="howl_signal">A treasury-backed identity signal.
+It does not make you stronger.
+It makes your presence visible.</div>
+          <div class="ah-howlpay-status" data-howlpay-status="howl_signal">Signal locked. HowlPay is not live yet.</div>
+          <div class="ah-howlpay-actions">
+            <button class="ah-action" type="button" data-howlpay-product="howl_signal">Unlock with 500 $HOWL</button>
+          </div>
+        </article>
+      </div>
+    `;
+    const combined = back.querySelector(".ah-support-combined");
+    if (combined?.parentElement) combined.parentElement.insertBefore(section, combined);
+    else back.querySelector(".ah-panel-scroll > div")?.appendChild(section);
+    return section;
   }
 
   function renderTopbarWallet(support) {
@@ -504,6 +726,62 @@
     setDisabled("supportTokenDisconnect", !lane.linked);
   }
 
+  function productStatusText(product, howlpay) {
+    const item = product || {};
+    if (item.active) {
+      return item.statusText || (item.productId === "howl_signal" ? "Your HOWL Signal is now visible across the Pack." : "Unlocked.");
+    }
+    if (item.owned) return "Owned. Cosmetic identity only.";
+    if (!item.configured) return "Planned. Price env is not configured yet.";
+    if (!howlpay?.paymentEnabled && !howlpay?.enabled) return "HowlPay is not live yet.";
+    return "Ready when you choose to unlock.";
+  }
+
+  function renderHowlPayCard(product, howlpay) {
+    const item = product || {};
+    const productId = String(item.productId || item.product_id || "").trim();
+    if (!productId) return;
+    const card = document.querySelector(`[data-howlpay-card="${productId}"]`);
+    const state = document.querySelector(`[data-howlpay-state="${productId}"]`);
+    const desc = document.querySelector(`[data-howlpay-desc="${productId}"]`);
+    const status = document.querySelector(`[data-howlpay-status="${productId}"]`);
+    const btn = document.querySelector(`[data-howlpay-product="${productId}"]`);
+    const active = !!item.active;
+    const owned = !!item.owned;
+    const configured = item.configured !== false;
+    const paymentEnabled = !!(howlpay?.paymentEnabled || howlpay?.enabled);
+    const busy = _howlPayBusy === productId;
+
+    if (card) {
+      card.classList.toggle("is-active", active || owned);
+      card.classList.toggle("is-locked", !active && !owned);
+    }
+    if (state) {
+      state.textContent = active ? (item.statusTitle || "Active") : (owned ? "Owned" : "Locked");
+    }
+    if (desc && item.description) desc.textContent = item.description;
+    if (status) status.textContent = busy ? "Preparing payment..." : productStatusText(item, howlpay);
+    if (btn) {
+      btn.textContent = busy
+        ? "Preparing..."
+        : (owned || active)
+          ? (active ? "Active" : "Owned")
+          : (item.ctaLabel || (productId === "howl_signal" ? "Unlock with 500 $HOWL" : "Unlock with $HOWL"));
+      btn.disabled = !!(busy || owned || active || !configured || !paymentEnabled);
+      btn.title = !paymentEnabled ? "HowlPay is not live yet." : "";
+    }
+  }
+
+  function renderHowlPayState(support) {
+    const section = ensureHowlPaySection();
+    if (!section) return;
+    const howlpay = support?.howlpay || {};
+    const live = el("supportHowlPayLive");
+    if (live) live.textContent = (howlpay.paymentEnabled || howlpay.enabled) ? "Private test" : "Not live";
+    renderHowlPayCard(genesisProductFromSupport(support), howlpay);
+    renderHowlPayCard(signalProductFromSupport(support), howlpay);
+  }
+
   function renderCombinedState(support) {
     const stars = support?.stars || {};
     const token = support?.token || {};
@@ -557,8 +835,10 @@
   }
 
   function renderState(support) {
+    ensureHowlPaySection();
     renderStarsState(support?.stars || {});
     renderTokenState(support?.token || {});
+    renderHowlPayState(support || {});
     renderCombinedState(support || {});
     renderTopbarWallet(support || {});
   }
@@ -794,6 +1074,123 @@
     }
   }
 
+  function openHowlPayUrl(url) {
+    const link = String(url || "").trim();
+    if (!link) return false;
+    const tg = getTg();
+    try {
+      if (typeof tg?.openLink === "function") {
+        tg.openLink(link);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      window.open(link, "_blank", "noopener,noreferrer");
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function pollHowlPayStatus(paymentId, productId, attempt = 0) {
+    const apiPost = getApiPost();
+    const pid = String(productId || "").trim();
+    const status = document.querySelector(`[data-howlpay-status="${pid}"]`);
+    if (!apiPost || !paymentId || attempt > 18) {
+      _howlPayPollTimer = null;
+      return;
+    }
+    try {
+      const out = await apiPost("/webapp/howlpay/status", { payment_id: paymentId });
+      if (out?.status === "completed" || out?.unlocked) {
+        if (status) status.textContent = pid === "howl_signal"
+          ? "Signal Active. Your HOWL Signal is now visible across the Pack."
+          : "Unlocked. Refreshing identity.";
+        _howlPayBusy = "";
+        await refreshSupportState({ silent: true }).catch(() => {});
+        await refreshProfileViews();
+        try { getTg()?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+        return;
+      }
+      if (out?.status === "expired") {
+        if (status) status.textContent = "Payment expired. Start a new unlock when HowlPay is live.";
+        _howlPayBusy = "";
+        renderHowlPayState(_state || {});
+        return;
+      }
+      if (status) status.textContent = "Waiting for confirmed HOWL payment...";
+    } catch (err) {
+      if (status) status.textContent = err?.data?.reason === "HOWLPAY_DISABLED"
+        ? "HowlPay is not live yet."
+        : "Payment check unavailable. Try again shortly.";
+      _howlPayBusy = "";
+      renderHowlPayState(_state || {});
+      return;
+    }
+    _howlPayPollTimer = window.setTimeout(() => {
+      void pollHowlPayStatus(paymentId, pid, attempt + 1);
+    }, 3000);
+  }
+
+  async function onHowlPayProductClick(productId) {
+    const apiPost = getApiPost();
+    const tg = getTg();
+    const pid = String(productId || "").trim();
+    const support = _state || {};
+    const howlpay = support.howlpay || {};
+    const product = pid === "howl_signal" ? signalProductFromSupport(support) : genesisProductFromSupport(support);
+    const status = document.querySelector(`[data-howlpay-status="${pid}"]`);
+
+    if (!apiPost) return;
+    if (!howlpay.enabled && !howlpay.paymentEnabled) {
+      if (status) status.textContent = "HowlPay is not live yet.";
+      try { tg?.showAlert?.("HowlPay is not live yet."); } catch (_) {}
+      return;
+    }
+    if (product?.owned || product?.active) {
+      if (status) status.textContent = productStatusText(product, howlpay);
+      return;
+    }
+
+    _howlPayBusy = pid;
+    renderHowlPayState(support);
+    let keepStatus = false;
+    try {
+      const out = await apiPost("/webapp/howlpay/init", {
+        product_id: pid,
+        item_type: product.itemType || product.item_type || (pid === "howl_signal" ? "signal" : "frame"),
+        item_key: product.itemKey || product.item_key || pid,
+      });
+      if (out?.already_owned) {
+        _howlPayBusy = "";
+        if (status) status.textContent = pid === "howl_signal" ? "Signal Active." : "Already owned.";
+        await refreshSupportState({ silent: true }).catch(() => {});
+        await refreshProfileViews();
+        return;
+      }
+      const opened = openHowlPayUrl(out?.payment_url || out?.paymentUrl);
+      if (status) status.textContent = opened
+        ? "Payment opened. Confirm in your wallet, then return here."
+        : "Payment prepared. Open the wallet link from your Solana wallet.";
+      if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+      keepStatus = true;
+      void pollHowlPayStatus(out?.payment_id || out?.paymentId, pid);
+    } catch (err) {
+      const reason = String(err?.data?.reason || err?.message || "").trim();
+      const msg =
+        reason === "HOWLPAY_DISABLED"
+          ? "HowlPay is not live yet."
+          : reason === "CONFIG_MISSING"
+            ? "This unlock is not configured yet."
+            : "Could not prepare HowlPay unlock.";
+      if (status) status.textContent = msg;
+      try { tg?.showAlert?.(msg); } catch (_) {}
+    } finally {
+      if (_howlPayBusy === pid) _howlPayBusy = "";
+      if (!keepStatus) renderHowlPayState(_state || {});
+    }
+  }
+
   function wireTopbarButton() {
     const btn = el("supportTopWallet");
     if (!btn || btn.__supportWired) return;
@@ -809,6 +1206,13 @@
     back.__wired = true;
 
     back.addEventListener("click", (e) => {
+      const howlPayBtn = e.target.closest("[data-howlpay-product]");
+      if (howlPayBtn) {
+        const productId = String(howlPayBtn.getAttribute("data-howlpay-product") || "").trim();
+        if (productId) void onHowlPayProductClick(productId);
+        return;
+      }
+
       const tierBtn = e.target.closest("[data-support-tier]");
       if (tierBtn) {
         const tier = String(tierBtn.getAttribute("data-support-tier") || "").trim().toLowerCase();

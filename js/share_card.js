@@ -291,6 +291,7 @@
       skinUrl: proxifyAssetUrl($("player-skin")?.currentSrc || $("player-skin")?.src || profile?.heroImg || profile?.skin?.img || profile?.skin || ""),
       frameUrl: proxifyAssetUrl($("player-frame")?.currentSrc || $("player-frame")?.src || pickFrameUrl(profile)),
       auraText: textOf("heroAuraBadge", ""),
+      howlSignal: profile?.howlSignal || profile?.signal || profile?.cosmetics?.signal || null,
       equippedPreviewUrl: proxifyAssetUrl(equippedPreview),
       equippedStats: stats,
       equippedSlots: Array.isArray(equippedState?.slots) ? equippedState.slots : [],
@@ -429,6 +430,48 @@
     ctx.fillText(value, left + padX, y + height / 2);
     ctx.restore();
     return y + height + 10;
+  }
+
+  function isHowlSignalActive(signal) {
+    return !!(signal && typeof signal === "object" && signal.active);
+  }
+
+  function drawHowlSignalStrip(ctx, signal, x, y, w) {
+    if (!isHowlSignalActive(signal)) return 0;
+    const text = String(signal.stripText || "SIGNAL VERIFIED - HOWL").trim();
+    const h = 44;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.34)";
+    ctx.shadowBlur = 22;
+    ctx.shadowOffsetY = 10;
+    roundRect(ctx, x, y, w, h, 999);
+    const bg = ctx.createLinearGradient(x, y, x + w, y + h);
+    bg.addColorStop(0, "rgba(75,18,22,0.82)");
+    bg.addColorStop(0.52, "rgba(13,17,25,0.88)");
+    bg.addColorStop(1, "rgba(143,103,45,0.78)");
+    ctx.fillStyle = bg;
+    ctx.fill();
+    const rim = ctx.createLinearGradient(x, y, x + w, y);
+    rim.addColorStop(0, "rgba(245,210,146,0.24)");
+    rim.addColorStop(0.5, "rgba(255,235,194,0.48)");
+    rim.addColorStop(1, "rgba(190,45,45,0.22)");
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 30, y + h / 2, 7, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(245,210,146,0.95)";
+    ctx.fill();
+    ctx.shadowColor = "rgba(245,210,146,0.30)";
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,238,204,0.94)";
+    ctx.font = "800 18px system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + 50, y + h / 2 + 1);
+    ctx.restore();
+    return h;
   }
 
   function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -843,6 +886,7 @@
         metaRight: "Hub Presentation",
       });
       drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
+      drawHowlSignalStrip(ctx, presentation.howlSignal, 332, 872, CARD_WIDTH - 664);
 
       if (badgeImg) {
         drawFactionSeal(ctx, badgeImg, 106, 966, 124);
@@ -942,6 +986,7 @@
       metaRight: slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : "",
     });
     drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
+    drawHowlSignalStrip(ctx, presentation.howlSignal, 318, 850, CARD_WIDTH - 636);
 
     ctx.fillStyle = "rgba(223,232,244,0.74)";
     ctx.font = "600 20px system-ui, sans-serif";

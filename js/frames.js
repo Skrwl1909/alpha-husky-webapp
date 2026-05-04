@@ -17,13 +17,18 @@
   let howlBuyBtn;
   let howlPayPanel;
   let howlPayTitle;
+  let howlPayExact;
   let howlPayAmount;
+  let howlPayWallet;
+  let howlWalletNotice;
   let howlPayTimer;
   let howlPayStatus;
   let howlPayLink;
   let howlPayQr;
   let howlOpenBtn;
   let howlCopyBtn;
+  let howlCopyAmountBtn;
+  let howlCopyWalletBtn;
   let howlCheckBtn;
   let frameButtonsWrap;
 
@@ -57,10 +62,10 @@
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
     unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
   });
-  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.82, offsetX: 0, offsetY: 4 });
+  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.76, offsetX: 0, offsetY: 0 });
   const FRAME_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    pioneer_frame: { scale: 0.82, offsetX: 0, offsetY: 4 },
-    rogue_byte_overclock: { scale: 0.82, offsetX: 0, offsetY: 4 }, // map-influence frame tuning example
+    pioneer_frame: { scale: 0.76, offsetX: 0, offsetY: 0 },
+    rogue_byte_overclock: { scale: 0.76, offsetX: 0, offsetY: 0 }, // map-influence frame tuning example
   });
   const COMBO_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
   const COMBO_PREVIEW_FIT_OVERRIDES = Object.freeze({
@@ -157,27 +162,71 @@
     const style = document.createElement("style");
     style.id = "ah-frames-style";
     style.textContent = `
+      #framesBack{
+        align-items:center;
+        justify-content:center;
+      }
       #framesBack .sheet-card{
+        width:min(94vw, 420px);
+        max-height:calc((var(--vh, 1vh) * 100) - var(--ah-safe-top, 0px) - var(--ah-safe-bottom, 0px) - 20px);
+        display:flex;
+        flex-direction:column;
+        padding:0;
+        overflow:hidden;
+      }
+      #framesBack .ah-frames-head{
+        position:sticky;
+        top:0;
+        z-index:8;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        padding:12px 14px 10px;
+        border-bottom:1px solid rgba(255,255,255,.10);
+        background:linear-gradient(180deg, rgba(13,17,24,.98), rgba(10,14,20,.94));
+        backdrop-filter:blur(12px);
+      }
+      #framesBack .ah-frames-title{
+        font-weight:800;
+        font-size:14px;
+        line-height:1.15;
+      }
+      #framesBack .ah-frames-close{
+        flex:0 0 auto;
+        min-width:36px;
+        width:36px;
+        height:36px;
+        padding:0;
+        border-radius:12px;
+      }
+      #framesBack .ah-frames-body{
+        flex:1 1 auto;
+        min-height:0;
+        overflow-y:auto;
         overflow-x:hidden;
-        padding-bottom:calc(14px + var(--ah-safe-bottom, 0px));
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior:contain;
+        padding:8px 14px calc(24px + var(--ah-safe-bottom, 0px));
       }
       #framesBack .ah-frames-preview-wrap{
-        width:min(368px, 88vw);
-        margin:12px auto 8px;
+        width:clamp(220px, 64vw, 270px);
+        max-width:calc(100vw - 64px);
+        margin:8px auto 6px;
         animation:ahFrameStageIn .22s ease-out both;
       }
       #framesBack .ah-frames-preview{
         position:relative;
         width:100%;
         aspect-ratio: 2 / 3;
-        border-radius:18px;
+        border-radius:16px;
         overflow:hidden;
         isolation:isolate;
         border:1px solid rgba(255,255,255,.14);
         background:
           radial-gradient(130% 90% at 50% 18%, rgba(255,255,255,.11) 0%, rgba(255,255,255,0) 55%),
           linear-gradient(180deg, rgba(11,14,22,.96), rgba(3,5,10,.96));
-        box-shadow:0 18px 42px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06);
+        box-shadow:0 14px 30px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.06);
       }
       #framesBack .ah-frames-preview::before{
         content:"";
@@ -197,10 +246,19 @@
         pointer-events:none;
         z-index:3;
       }
+      #framesBack .ah-frame-gallery-skin-layer{
+        position:absolute;
+        inset:11% 14% 13%;
+        z-index:1;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        pointer-events:none;
+      }
       #framesBack .ah-frames-preview-skin,
       #framesBack .ah-frames-preview-frame{
         position:absolute;
-        inset:0;
         width:100%;
         height:100%;
         display:block;
@@ -210,22 +268,22 @@
         transform-origin:center center;
       }
       #framesBack .ah-frames-preview-skin{
-        inset:6% 10% 6%;
-        width:auto;
-        height:auto;
+        position:relative;
+        inset:auto;
         z-index:1;
-        transform:scale(.82) translateY(4px);
+        transform:scale(.76);
         filter:drop-shadow(0 12px 18px rgba(0,0,0,.36));
       }
       #framesBack .ah-frames-preview-frame{
+        inset:0;
         z-index:2;
         transform:none;
         filter:drop-shadow(0 8px 14px rgba(0,0,0,.30));
         pointer-events:none;
       }
       #framesBack .ah-frame-info{
-        width:min(368px, 88vw);
-        margin:8px auto 6px;
+        width:min(100%, 360px);
+        margin:8px auto 5px;
         padding:10px 12px;
         border-radius:12px;
         border:1px solid rgba(255,255,255,.11);
@@ -265,13 +323,25 @@
         text-align:center;
         opacity:.72;
         font-size:12px;
-        margin:4px 0 10px;
+        margin:4px 0 8px;
+      }
+      #framesBack .ah-frame-actions{
+        display:flex;
+        gap:8px;
+        justify-content:center;
+        margin:8px 0;
+        flex-wrap:wrap;
+      }
+      #framesBack .ah-frame-actions .btn{
+        min-height:40px;
+        padding:8px 12px;
+        white-space:normal;
       }
       #framesBack #frameButtons.skins-grid{
         display:grid;
         grid-template-columns:repeat(2, minmax(0,1fr));
         gap:8px;
-        margin:10px 0 2px;
+        margin:8px 0 2px;
       }
       #framesBack .frame-btn.ah-frame-tile{
         display:flex;
@@ -371,9 +441,9 @@
       }
       #framesBack .ah-howl-pay-panel{
         display:none;
-        width:min(368px, 88vw);
-        margin:8px auto 10px;
-        padding:10px 12px;
+        width:min(390px, calc(100vw - 24px));
+        margin:8px auto 12px;
+        padding:12px;
         border-radius:12px;
         border:1px solid rgba(255,255,255,.14);
         background:linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
@@ -389,7 +459,7 @@
         margin-bottom:8px;
       }
       #framesBack .ah-howl-pay-title{
-        font-size:13px;
+        font-size:14px;
         font-weight:800;
         color:rgba(247,251,255,.96);
       }
@@ -404,8 +474,51 @@
         margin:7px 0;
         color:rgba(240,249,255,.88);
       }
-      #framesBack .ah-howl-pay-link-wrap{
-        margin:8px 0;
+      #framesBack .ah-howl-pay-exact{
+        margin:10px 0 6px;
+        padding:10px;
+        border-radius:8px;
+        border:1px solid rgba(245,210,146,.22);
+        background:rgba(245,210,146,.075);
+        color:rgba(255,239,207,.96);
+        font-size:14px;
+        font-weight:850;
+        line-height:1.32;
+      }
+      #framesBack .ah-howl-pay-warning{
+        margin:0 0 10px;
+        color:rgba(255,214,214,.92);
+        font-size:12px;
+        font-weight:800;
+        line-height:1.35;
+      }
+      #framesBack .ah-howl-pay-wallet-notice{
+        margin:8px 0 10px;
+        padding:9px 10px;
+        border-radius:8px;
+        border:1px solid rgba(147,197,253,.22);
+        background:rgba(59,130,246,.10);
+        color:rgba(223,237,255,.94);
+        font-size:12px;
+        font-weight:750;
+        line-height:1.35;
+      }
+      #framesBack .ah-howl-pay-wallet-notice[hidden]{
+        display:none;
+      }
+      #framesBack .ah-howl-pay-copy-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+        margin:10px 0;
+      }
+      #framesBack .ah-howl-pay-copy-card{
+        display:grid;
+        gap:7px;
+        padding:10px;
+        border-radius:8px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(0,0,0,.20);
       }
       #framesBack .ah-howl-pay-label{
         margin-bottom:4px;
@@ -414,6 +527,19 @@
         text-transform:uppercase;
         letter-spacing:0;
         color:rgba(230,238,255,.58);
+      }
+      #framesBack .ah-howl-pay-value{
+        min-width:0;
+        color:rgba(247,251,255,.94);
+        font-size:13px;
+        font-weight:850;
+        line-height:1.32;
+        overflow-wrap:anywhere;
+        word-break:break-word;
+      }
+      #framesBack .ah-howl-pay-wallet{
+        font-size:11px;
+        font-weight:760;
       }
       #framesBack .ah-howl-pay-link{
         width:100%;
@@ -428,12 +554,38 @@
         padding:7px 8px;
         box-sizing:border-box;
       }
+      #framesBack .ah-howl-pay-steps{
+        margin:10px 0;
+        padding:10px 10px 10px 28px;
+        border-radius:8px;
+        border:1px solid rgba(255,255,255,.11);
+        background:rgba(255,255,255,.045);
+        color:rgba(230,238,255,.86);
+        font-size:12px;
+        line-height:1.45;
+      }
+      #framesBack .ah-howl-pay-steps li{
+        padding-left:2px;
+        margin:3px 0;
+      }
+      #framesBack .ah-howl-pay-qr-toggle{
+        margin:8px 0;
+      }
+      #framesBack .ah-howl-pay-qr-toggle summary{
+        min-height:38px;
+        display:flex;
+        align-items:center;
+        cursor:pointer;
+        color:rgba(230,238,255,.78);
+        font-size:12px;
+        font-weight:800;
+      }
       #framesBack .ah-howl-pay-qr{
         display:flex;
         align-items:center;
         flex-wrap:wrap;
         gap:9px;
-        margin:8px 0;
+        margin:0 0 8px;
         padding:8px;
         border-radius:8px;
         border:1px dashed rgba(255,255,255,.16);
@@ -469,19 +621,52 @@
         min-width:0;
       }
       #framesBack .ah-howl-pay-actions{
-        display:flex;
-        flex-wrap:wrap;
-        gap:7px;
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
         margin:8px 0;
       }
-      #framesBack .ah-howl-pay-actions .btn{
-        min-height:32px;
-        padding:7px 9px;
-        font-size:12px;
+      #framesBack .ah-howl-pay-actions .btn,
+      #framesBack .ah-howl-pay-copy-btn{
+        width:100%;
+        min-height:46px;
+        padding:10px 12px;
+        font-size:13px;
+        font-weight:850;
+        justify-content:center;
+        white-space:normal;
       }
       #framesBack .ah-howl-pay-safety{
         margin-top:7px;
         color:rgba(230,238,255,.68);
+      }
+      @media (min-width: 440px){
+        #framesBack .ah-howl-pay-actions{
+          grid-template-columns:1fr 1.35fr;
+        }
+      }
+      @media (max-width: 390px){
+        #framesBack .sheet-card{
+          width:min(96vw, 420px);
+          max-height:calc((var(--vh, 1vh) * 100) - var(--ah-safe-top, 0px) - var(--ah-safe-bottom, 0px) - 12px);
+        }
+        #framesBack .ah-frames-body{
+          padding:7px 12px calc(28px + var(--ah-safe-bottom, 0px));
+        }
+        #framesBack .ah-frames-preview-wrap{
+          width:clamp(220px, 68vw, 258px);
+          max-width:calc(100vw - 58px);
+          margin-top:7px;
+        }
+        #framesBack .ah-frame-gallery-skin-layer{
+          inset:12% 15% 14%;
+        }
+        #framesBack .ah-frame-info{
+          padding:9px 10px;
+        }
+        #framesBack .frame-btn.ah-frame-tile{
+          min-height:112px;
+        }
       }
       @keyframes ahFrameStageIn{
         from{ opacity:.75; transform:translateY(4px) scale(.995); }
@@ -499,15 +684,18 @@
       framesBack.className = "sheet-back avatar-sheet";
       framesBack.style.display = "none";
       framesBack.innerHTML = `
-        <div class="sheet-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-weight:700;">Frame Gallery</div>
-            <button class="btn" id="closeFrames" type="button">X</button>
+        <div class="sheet-card ah-frames-card">
+          <div class="ah-frames-head">
+            <div class="ah-frames-title">Frame Gallery</div>
+            <button class="btn ah-frames-close" id="closeFrames" type="button" aria-label="Close frame gallery">X</button>
           </div>
 
+          <div class="ah-frames-body">
           <div class="ah-frames-preview-wrap">
-            <div class="ah-frames-preview frame-preview-card">
-              <img id="framePreviewSkin" class="ah-frames-preview-skin frame-preview-portrait" alt="Skin preview" />
+            <div class="ah-frame-gallery-stage ah-frames-preview frame-preview-card">
+              <div class="ah-frame-gallery-skin-layer">
+                <img id="framePreviewSkin" class="ah-frames-preview-skin frame-preview-portrait" alt="Skin preview" />
+              </div>
               <img id="framePreviewOverlay" class="ah-frames-preview-frame frame-preview-frame" alt="" style="display:none;" />
             </div>
           </div>
@@ -521,7 +709,7 @@
           </div>
           <div class="ah-frames-help">Frames are cosmetic only. Previewed on your current hero skin.</div>
 
-          <div style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
+          <div class="ah-frame-actions">
             <button class="btn primary" id="equipFrame" type="button">Equip Frame</button>
             <button class="btn primary ah-howl-buy" id="buyHowlFrame" type="button">Buy with $HOWL</button>
             <button class="btn" id="clearFrame" type="button">Clear</button>
@@ -531,28 +719,48 @@
             <div class="ah-howl-pay-top">
               <div>
                 <div id="howlPayTitle" class="ah-howl-pay-title">HOWL Genesis Frame</div>
-                <div class="ah-howl-pay-meta">Amount: <span id="howlPayAmount">-</span> HOWL</div>
+                <div class="ah-howl-pay-meta">Manual mobile transfer</div>
               </div>
               <div id="howlPayTimer" class="ah-howl-pay-meta"></div>
             </div>
-            <div id="howlPayStatus" class="ah-howl-pay-status">Payment link ready.</div>
-            <div class="ah-howl-pay-link-wrap">
-              <div class="ah-howl-pay-label">Solana Pay link</div>
-              <textarea id="howlPayLink" class="ah-howl-pay-link" readonly rows="2" spellcheck="false"></textarea>
+            <div id="howlPayExact" class="ah-howl-pay-exact">Send exactly - $HOWL from your linked wallet.</div>
+            <div class="ah-howl-pay-warning">Do not send SOL. Do not change the amount.</div>
+            <div id="howlWalletNotice" class="ah-howl-pay-wallet-notice" hidden>Link your wallet first. This helps Alpha Husky detect your payment automatically.</div>
+            <div class="ah-howl-pay-copy-grid">
+              <div class="ah-howl-pay-copy-card">
+                <div class="ah-howl-pay-label">Amount</div>
+                <div id="howlPayAmount" class="ah-howl-pay-value">- $HOWL</div>
+                <button class="btn primary ah-howl-pay-copy-btn" id="howlCopyAmount" type="button">Copy amount</button>
+              </div>
+              <div class="ah-howl-pay-copy-card">
+                <div class="ah-howl-pay-label">Recipient wallet</div>
+                <div id="howlPayWallet" class="ah-howl-pay-value ah-howl-pay-wallet">-</div>
+                <button class="btn primary ah-howl-pay-copy-btn" id="howlCopyWallet" type="button">Copy wallet</button>
+              </div>
             </div>
-            <div id="howlPayQr" class="ah-howl-pay-qr" aria-live="polite"></div>
+            <ol class="ah-howl-pay-steps">
+              <li>Open Phantom</li>
+              <li>Tap Send</li>
+              <li>Choose $HOWL</li>
+              <li>Paste the wallet and exact amount</li>
+              <li>Return here and tap Check Payment</li>
+            </ol>
             <div class="ah-howl-pay-actions">
-              <button class="btn primary" id="howlOpenPayment" type="button">Open Phantom</button>
-              <button class="btn" id="howlCopyPayment" type="button">Copy Payment Link</button>
-              <button class="btn" id="howlCheckPayment" type="button">Check Payment</button>
+              <button class="btn" id="howlOpenPayment" type="button">Open Phantom</button>
+              <button class="btn primary" id="howlCheckPayment" type="button">I sent it — Check Payment</button>
             </div>
+            <details class="ah-howl-pay-qr-toggle">
+              <summary>Paying from another device? Show QR</summary>
+              <div id="howlPayQr" class="ah-howl-pay-qr" aria-live="polite"></div>
+            </details>
+            <div id="howlPayStatus" class="ah-howl-pay-status">Payment ready.</div>
             <div class="ah-howl-pay-safety">
-              Open with mobile Phantom or copy the payment link. Desktop Phantom may open the wallet without showing payment confirmation.
-              Cosmetic only. No power. Never share your seed phrase. Wrong token or wrong address cannot be auto-credited.
+              Cosmetic only. No power. Never share your seed phrase. Wrong token, recipient wallet, or amount cannot be auto-credited.
             </div>
           </div>
 
           <div id="frameButtons" class="skins-grid"></div>
+          </div>
         </div>
       `;
       document.body.appendChild(framesBack);
@@ -569,15 +777,59 @@
     howlBuyBtn = document.getElementById("buyHowlFrame");
     howlPayPanel = document.getElementById("howlPayPanel");
     howlPayTitle = document.getElementById("howlPayTitle");
+    howlPayExact = document.getElementById("howlPayExact");
     howlPayAmount = document.getElementById("howlPayAmount");
+    howlPayWallet = document.getElementById("howlPayWallet");
+    howlWalletNotice = document.getElementById("howlWalletNotice");
     howlPayTimer = document.getElementById("howlPayTimer");
     howlPayStatus = document.getElementById("howlPayStatus");
     howlPayLink = document.getElementById("howlPayLink");
     howlPayQr = document.getElementById("howlPayQr");
     howlOpenBtn = document.getElementById("howlOpenPayment");
     howlCopyBtn = document.getElementById("howlCopyPayment");
+    howlCopyAmountBtn = document.getElementById("howlCopyAmount");
+    howlCopyWalletBtn = document.getElementById("howlCopyWallet");
     howlCheckBtn = document.getElementById("howlCheckPayment");
     frameButtonsWrap = document.getElementById("frameButtons");
+
+    ensurePreviewLayout();
+  }
+
+  function ensurePreviewLayout() {
+    const card = framesBack?.querySelector?.(".sheet-card");
+    const stage = framesBack?.querySelector?.(".ah-frames-preview");
+    if (!card || !stage || !previewSkin) return;
+
+    card.classList.add("ah-frames-card");
+    const head = closeBtn?.parentElement;
+    head?.classList?.add?.("ah-frames-head");
+    closeBtn?.classList?.add?.("ah-frames-close");
+
+    if (!card.querySelector(".ah-frames-body")) {
+      const body = document.createElement("div");
+      body.className = "ah-frames-body";
+      let node = head?.nextSibling || card.firstChild;
+      while (node) {
+        const next = node.nextSibling;
+        body.appendChild(node);
+        node = next;
+      }
+      card.appendChild(body);
+    }
+
+    stage.classList.add("ah-frame-gallery-stage");
+    previewSkin.classList.add("ah-frames-preview-skin", "frame-preview-portrait");
+    previewFrame?.classList?.add?.("ah-frames-preview-frame", "frame-preview-frame");
+
+    let skinLayer = stage.querySelector(".ah-frame-gallery-skin-layer");
+    if (!skinLayer) {
+      skinLayer = document.createElement("div");
+      skinLayer.className = "ah-frame-gallery-skin-layer";
+      stage.insertBefore(skinLayer, previewFrame || stage.firstChild);
+    }
+    if (previewSkin.parentElement !== skinLayer) {
+      skinLayer.appendChild(previewSkin);
+    }
   }
 
   function currentHeroSkinUrl() {
@@ -732,10 +984,11 @@
   }
 
   function getPreviewFrameFit(frameKey) {
-    const cfg = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
+    const cfg = window.__AH_FRAME_GALLERY_FIT__ || window.__AH_FRAME_GALLERY_SKIN_FIT__ || {};
+    const legacyCfg = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
     const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_FIT_DEFAULT);
     const k = normKey(frameKey);
-    const override = k ? (cfg?.overrides?.[k] || FRAME_PREVIEW_FIT_OVERRIDES[k]) : null;
+    const override = k ? (cfg?.overrides?.[k] || legacyCfg?.gallery_overrides?.[k] || FRAME_PREVIEW_FIT_OVERRIDES[k]) : null;
     return normalizeFit(override, defaultFit);
   }
 
@@ -768,7 +1021,7 @@
   function applyPreviewSkinFit(frameKey, skinKey) {
     if (!previewSkin) return;
     const fit = composePreviewFit(frameKey, skinKey);
-    previewSkin.style.transform = `scale(${fit.scale}) translate(${fit.offsetX}px, ${fit.offsetY}px)`;
+    previewSkin.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
   }
 
   function frameLaneLabel(item, key) {
@@ -827,6 +1080,54 @@
     if (howlPayStatus) howlPayStatus.textContent = String(message || "");
   }
 
+  async function copyPlainText(text) {
+    const value = String(text || "").trim();
+    if (!value) return false;
+
+    try {
+      await navigator.clipboard?.writeText?.(value);
+      return true;
+    } catch (_) {}
+
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return !!ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function userHasLinkedHowlWallet() {
+    const topWallet = document.getElementById("supportTopWallet");
+    const topState = normKey(topWallet?.dataset?.state || "");
+    if (topState === "linked" || topState === "holder") return true;
+    if (topState === "empty") return false;
+    if (topWallet?.classList?.contains("is-linked") || topWallet?.classList?.contains("is-holder")) return true;
+    if (topWallet?.classList?.contains("is-disconnected")) return false;
+
+    const supportBack = document.getElementById("supportBack");
+    if (supportBack?.classList?.contains("has-holder-linked") || supportBack?.classList?.contains("has-holder-active")) return true;
+
+    const connectBtn = document.getElementById("supportTokenConnect");
+    const connectCopy = normKey(connectBtn?.textContent || "");
+    if (connectCopy.includes("reconnect")) return true;
+    if (connectCopy.includes("connect solana wallet")) return false;
+    return null;
+  }
+
+  function updateHowlWalletNotice() {
+    if (!howlWalletNotice) return;
+    howlWalletNotice.hidden = userHasLinkedHowlWallet() !== false;
+  }
+
   function terminalHowlStatus(status) {
     return ["completed", "expired", "failed", "manual_review"].includes(normKey(status));
   }
@@ -877,6 +1178,16 @@
       payment?.amount ||
       "";
     return String(raw || "").trim() || "-";
+  }
+
+  function howlPaymentWallet(payment) {
+    return String(
+      payment?.treasury ||
+      payment?.recipient_wallet ||
+      payment?.recipientWallet ||
+      payment?.wallet ||
+      ""
+    ).trim();
   }
 
   function howlPaymentFrameKey(payment) {
@@ -1298,7 +1609,7 @@
       const box = document.createElement("div");
       box.className = "ah-howl-pay-qr-box";
       box.textContent = "QR";
-      text.textContent = "Payment link will appear after checkout starts.";
+      text.textContent = "QR appears after payment starts.";
       howlPayQr.appendChild(box);
       howlPayQr.appendChild(text);
       return;
@@ -1306,14 +1617,14 @@
 
     try {
       howlPayQr.appendChild(buildHowlQrSvg(url));
-      text.textContent = "Scan with mobile Phantom or another Solana Pay wallet.";
+      text.textContent = "Scan from another device with Phantom or a Solana Pay wallet.";
     } catch (err) {
       dbg("howl qr render failed", err);
       const box = document.createElement("div");
       box.className = "ah-howl-pay-qr-box";
       box.textContent = "QR unavailable";
       howlPayQr.appendChild(box);
-      text.textContent = "QR could not be generated. Copy the payment link instead.";
+      text.textContent = "QR could not be generated. Use the manual transfer steps above.";
     }
     howlPayQr.appendChild(text);
   }
@@ -1323,8 +1634,11 @@
     _howlPayment = null;
     if (howlPayPanel) howlPayPanel.classList.add("is-open");
     if (howlPayTitle) howlPayTitle.textContent = "HOWL Payment";
-    if (howlPayAmount) howlPayAmount.textContent = "-";
+    if (howlPayExact) howlPayExact.textContent = "Send exactly - $HOWL from your linked wallet.";
+    if (howlPayAmount) howlPayAmount.textContent = "- $HOWL";
+    if (howlPayWallet) howlPayWallet.textContent = "-";
     if (howlPayLink) howlPayLink.value = "";
+    updateHowlWalletNotice();
     renderHowlQr(null);
     setHowlStatus("HOWL payments are not live yet.");
   }
@@ -1333,12 +1647,17 @@
     _howlPayment = payment && typeof payment === "object" ? payment : null;
     if (!howlPayPanel || !_howlPayment) return;
     howlPayPanel.classList.add("is-open");
+    const amount = howlPaymentAmount(_howlPayment);
+    const wallet = howlPaymentWallet(_howlPayment);
     if (howlPayTitle) howlPayTitle.textContent = howlPaymentTitle(_howlPayment);
-    if (howlPayAmount) howlPayAmount.textContent = howlPaymentAmount(_howlPayment);
+    if (howlPayExact) howlPayExact.textContent = `Send exactly ${amount} $HOWL from your linked wallet.`;
+    if (howlPayAmount) howlPayAmount.textContent = `${amount} $HOWL`;
+    if (howlPayWallet) howlPayWallet.textContent = wallet || "-";
     if (howlPayLink) howlPayLink.value = howlPaymentUrl(_howlPayment);
+    updateHowlWalletNotice();
     renderHowlQr(_howlPayment);
     updateHowlCountdown();
-    setHowlStatus("Payment link ready. Open with mobile Phantom or copy the link. Desktop Phantom may only open the wallet menu.");
+    setHowlStatus("Copy the amount and recipient wallet, send from Phantom, then return here.");
     stopHowlPolling();
     _howlPollStartedAt = Date.now();
     _howlCountdownTimer = setInterval(updateHowlCountdown, 1000);
@@ -1349,6 +1668,9 @@
     stopHowlPolling();
     _howlPayment = null;
     if (howlPayLink) howlPayLink.value = "";
+    if (howlPayExact) howlPayExact.textContent = "Send exactly - $HOWL from your linked wallet.";
+    if (howlPayAmount) howlPayAmount.textContent = "- $HOWL";
+    if (howlPayWallet) howlPayWallet.textContent = "-";
     renderHowlQr(null);
     howlPayPanel?.classList?.remove("is-open");
   }
@@ -1397,7 +1719,7 @@
     }
     if (status === "failed") {
       stopHowlPolling();
-      setHowlStatus("Payment could not be credited. Check the token, address, and amount before trying again.");
+      setHowlStatus("Payment could not be credited. Check the token, recipient wallet, and amount before trying again.");
       updateHowlControls();
       return status;
     }
@@ -1411,7 +1733,7 @@
     if (!paymentPanelOpen()) return "closed";
     if ((Date.now() - _howlPollStartedAt) > HOWL_POLL_TIMEOUT_MS) {
       stopHowlPolling();
-      setHowlStatus("Still pending. Use Check Payment if your wallet shows the transfer completed.");
+      setHowlStatus("Still pending. If Phantom shows completed, wait a moment and tap Check Payment again.");
       return "timeout";
     }
     if (manual) setHowlStatus("Checking payment...");
@@ -1451,7 +1773,7 @@
     }
     _howlInitInFlight = true;
     if (howlBuyBtn) howlBuyBtn.disabled = true;
-    setHowlStatus("Creating payment link...");
+    setHowlStatus("Preparing payment...");
     const frameKey = normKey(_selectedKey) || HOWL_GENESIS_FRAME_KEY;
     try {
       const out = await _apiPost("/webapp/howlpay/init", {
@@ -1481,7 +1803,7 @@
         showHowlDisabledState();
         return;
       }
-      showAlert(err?.message || "Failed to create payment link.");
+      showAlert(err?.message || "Failed to prepare payment.");
     } finally {
       _howlInitInFlight = false;
       updateHowlControls();
@@ -1492,18 +1814,35 @@
     const url = howlPaymentUrl(_howlPayment);
     if (!url) return;
     try {
-      await navigator.clipboard?.writeText?.(url);
-      setHowlStatus("Payment link copied. Open it with mobile Phantom if desktop Phantom does not show confirmation.");
+      const ok = await copyPlainText(url);
+      if (!ok) throw new Error("copy_failed");
+      setHowlStatus("Payment details copied.");
       haptic("light");
     } catch (_) {
       showAlert(url);
     }
   }
 
+  async function copyHowlAmount() {
+    const amount = howlPaymentAmount(_howlPayment);
+    if (!amount || amount === "-") return;
+    const ok = await copyPlainText(amount);
+    setHowlStatus(ok ? "Amount copied. Paste this exact $HOWL amount in Phantom." : "Could not copy amount.");
+    if (ok) haptic("light");
+  }
+
+  async function copyHowlWallet() {
+    const wallet = howlPaymentWallet(_howlPayment);
+    if (!wallet) return;
+    const ok = await copyPlainText(wallet);
+    setHowlStatus(ok ? "Recipient wallet copied. Paste it in Phantom Send." : "Could not copy recipient wallet.");
+    if (ok) haptic("light");
+  }
+
   function openHowlPaymentLink() {
     const url = howlPaymentUrl(_howlPayment);
     if (!url) return;
-    setHowlStatus("Opening payment link. If desktop Phantom only opens the wallet, copy the link and use mobile Phantom.");
+    setHowlStatus("Opening Phantom. If it does not prefill, tap Send and paste the copied wallet and amount.");
     try {
       window.open(url, "_blank", "noopener");
     } catch (_) {
@@ -1758,7 +2097,14 @@
     howlCopyBtn?.addEventListener("click", () => {
       copyHowlPaymentLink();
     });
+    howlCopyAmountBtn?.addEventListener("click", () => {
+      copyHowlAmount();
+    });
+    howlCopyWalletBtn?.addEventListener("click", () => {
+      copyHowlWallet();
+    });
     howlCheckBtn?.addEventListener("click", () => {
+      updateHowlWalletNotice();
       checkHowlPayment({ manual: true }).catch((err) => {
         dbg("howl status failed", err);
         showAlert(err?.message || "Failed to check payment.");

@@ -257,6 +257,8 @@
       .pp-name{font-size:22px;font-weight:950;line-height:1.08;overflow-wrap:anywhere}
       .pp-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
       .pp-chip{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:999px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);font-size:12px;font-weight:800;color:rgba(243,247,255,.9)}
+      .pp-chip.pp-signal{border-color:rgba(245,210,146,.32);background:linear-gradient(180deg,rgba(245,210,146,.12),rgba(190,45,45,.08));color:rgba(255,235,194,.96)}
+      .pp-chip.pp-signal::before{content:"";width:7px;height:7px;border-radius:50%;margin-right:6px;background:rgba(245,210,146,.94);box-shadow:0 0 12px rgba(245,210,146,.28)}
       .pp-action{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
       .pp-howl{min-height:40px;padding:0 14px;border-radius:14px;border:1px solid rgba(125,211,252,.28);background:linear-gradient(180deg, rgba(46,126,255,.92), rgba(22,82,201,.92));color:#fff;font-weight:950;cursor:pointer}
       .pp-howl:disabled{opacity:.52;cursor:default;filter:saturate(.72)}
@@ -351,6 +353,8 @@
     const isSelf = viewerUid && viewerUid === asText(p.uid);
     const skin = p.skin || {};
     const frame = p.frame || {};
+    const signal = p.howlSignal || p.signal || p.cosmetics?.signal || {};
+    const signalActive = !!signal.active;
     const badges = Array.isArray(p.badges) ? p.badges : [];
     const loadout = Array.isArray(p.loadout) ? p.loadout : [];
     const factionKey = normalizeFactionKey(p.faction);
@@ -372,7 +376,8 @@
       originLabel ? `Origin: ${originLabel}` : "",
       asText(p.title),
       ...(Array.isArray(p.prestige_tags) ? p.prestige_tags.map(asText).filter(Boolean) : []),
-    ].filter(Boolean);
+    ].filter(Boolean).map((label) => ({ label, signal: false }));
+    if (signalActive) chips.push({ label: asText(signal.title) || "HOWL Signal", signal: true });
     const limit = dailyLimit(social);
     const left = dailyLeft(social);
     const button = howlButtonState(social, isSelf);
@@ -397,7 +402,7 @@
         ${visual}
         <div class="pp-main">
           <div class="pp-name">${esc(p.name || "Howler")}</div>
-          <div class="pp-meta">${chips.map((x) => `<span class="pp-chip">${esc(x)}</span>`).join("")}</div>
+          <div class="pp-meta">${chips.map((x) => `<span class="pp-chip${x.signal ? " pp-signal" : ""}">${esc(x.label)}</span>`).join("")}</div>
           <div class="pp-action">
             <button type="button" class="pp-howl" ${button.disabled ? "disabled" : ""} data-state="${esc(button.key)}">${esc(button.label)}</button>
             <span class="pp-left">Pack Signals left today: ${esc(left)} / ${esc(limit)}</span>
