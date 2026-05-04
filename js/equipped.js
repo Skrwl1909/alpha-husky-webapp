@@ -138,6 +138,25 @@
         will-change: filter;
       }
 
+      .equip-hotspot .equip-icon .equip-pet-sprite{
+        position:absolute;
+        inset:-14%;
+        width:128%;
+        height:128%;
+      }
+      .equip-icon-box .equip-pet-sprite{
+        width:100%;
+        height:100%;
+      }
+      .equip-pet-sprite canvas,
+      .equip-pet-sprite img{
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        image-rendering:pixelated;
+        display:block;
+      }
+
       /* rarity ladder (hotspot) — mocniejszy baseline */
       .equip-hotspot[data-rarity="common"] .equip-icon{
         filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
@@ -489,6 +508,23 @@
     tryOne();
   }
 
+  function _mountPetSprite(container, pet, className) {
+    if (!container || !pet || !pet.isPet || !window.PetSprite?.hasSprite?.(pet)) return false;
+    try {
+      container.style.backgroundImage = "none";
+      container.textContent = "";
+      window.PetSprite.mount(container, pet, {
+        state: "idle",
+        className: className || "equip-pet-sprite",
+        fallbackUrl: pet.icon || pet.img || "",
+        alt: pet.name || pet.itemName || "pet"
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function toPctRatio(r) {
     return (r * 100).toFixed(4) + "%";
   }
@@ -735,6 +771,12 @@
             this.inspect(slotKey);
           };
         });
+
+        (this.state.slots || []).forEach((slotState) => {
+          if (!slotState?.isPet) return;
+          const iconBox = slotsBox.querySelector(`.equip-slot-btn[data-slot="${slotState.slot}"] .equip-icon-box`);
+          if (iconBox) _mountPetSprite(iconBox, slotState, "equip-pet-sprite equip-pet-sprite-list");
+        });
       }
 
       // --- ACTIVE SETS ---
@@ -816,7 +858,9 @@
         // ✅ IKONA jako osobna warstwa
         const icon = document.createElement("div");
         icon.className = "equip-icon";
-        _setBgWithFallback(icon, s || {});
+        if (!_mountPetSprite(icon, s || {}, "equip-pet-sprite equip-pet-sprite-hotspot")) {
+          _setBgWithFallback(icon, s || {});
+        }
         if (s.empty) icon.style.opacity = "0.35";
         btn.appendChild(icon);
 
