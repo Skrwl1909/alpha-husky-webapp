@@ -1657,7 +1657,9 @@
     updateHowlWalletNotice();
     renderHowlQr(_howlPayment);
     updateHowlCountdown();
-    setHowlStatus("Copy the amount and recipient wallet, send from Phantom, then return here.");
+    setHowlStatus(_howlPayment.reused_pending
+      ? "You already have a pending payment. Complete it or wait for it to expire."
+      : "Copy the amount and recipient wallet, send from Phantom, then return here.");
     stopHowlPolling();
     _howlPollStartedAt = Date.now();
     _howlCountdownTimer = setInterval(updateHowlCountdown, 1000);
@@ -1803,7 +1805,20 @@
         showHowlDisabledState();
         return;
       }
-      showAlert(err?.message || "Failed to prepare payment.");
+      const pendingMessage = "You already have a pending payment. Complete it or wait for it to expire.";
+      const data = err?.data || {};
+      if (data?.payment_id || data?.paymentId) {
+        showHowlPanel({ ...data, reused_pending: true });
+        updateHowlControls();
+        return;
+      }
+      const reason = normKey(data?.reason || err?.message || "");
+      if (reason === "pending_payment_limit" || reason === "too_many_pending_payments") {
+        setHowlStatus(pendingMessage);
+        showAlert(pendingMessage);
+        return;
+      }
+      showAlert(data?.message || err?.message || "Failed to prepare payment.");
     } finally {
       _howlInitInFlight = false;
       updateHowlControls();
