@@ -189,6 +189,17 @@
       .adopt-meta{ flex:1; min-width:0; }
       .adopt-name{ font-weight:750; font-size:13px; margin-bottom:4px; }
       .adopt-desc{ font-size:12px; opacity:.86; line-height:1.25; }
+      .adopt-debug{
+        margin-top:6px;
+        padding:6px 7px;
+        border-radius:8px;
+        background:rgba(0,0,0,.22);
+        border:1px solid rgba(255,255,255,.09);
+        font-size:10px;
+        line-height:1.35;
+        opacity:.78;
+        word-break:break-word;
+      }
 
       .adopt-actions{
         display:flex; align-items:center; justify-content:space-between;
@@ -245,9 +256,11 @@
   function offers(state) {
     // supporting multiple schemas
     const o = state?.offers || state?.catalog || state?.adopt || {};
+    const preview = o.preview || o.previews || o.animatedPreview || o.animated || [];
     const token = o.token || o.tokens || o.tokenPets || o.exclusive || o.exclusiveTokens || [];
     const bones = o.bones || o.bonePets || o.standard || o.free || [];
     return {
+      preview: Array.isArray(preview) ? preview : [],
       token: Array.isArray(token) ? token : [],
       bones: Array.isArray(bones) ? bones : [],
     };
@@ -269,12 +282,15 @@
     if (!S.body) return;
     S.body.querySelectorAll("button.adopt-btn").forEach((b) => {
       const owned = b.dataset.owned === "1";
-      b.disabled = !!disabled || owned;
+      const preview = b.dataset.preview === "1";
+      const canBuy = b.dataset.canBuy !== "0";
+      b.disabled = !!disabled || owned || preview || !canBuy;
     });
   }
 
   function petCard(p) {
     const card = el("div", "adopt-card");
+    const previewOnly = !!(p.previewOnly || p.preview_only || p.isPreviewOnly);
 
     // img + skeleton
     const imgWrap = el("div", "adopt-img");
@@ -325,18 +341,30 @@
 
     meta.appendChild(row);
     meta.appendChild(el("div", "adopt-desc", p.desc || ""));
+    if (S.dbg) {
+      const hasSpriteMeta = !!(p.spriteSheetUrl && p.sprite);
+      const spriteUrl = p.spriteSheetUrl ? "yes" : "no";
+      const petSpriteLoaded = window.PetSprite ? "yes" : "no";
+      meta.appendChild(el(
+        "div",
+        "adopt-debug",
+        `petKey=${petKey(p)} | petName=${p.petName || p.name || ""} | resolvedPetKey=${p.resolvedPetKey || p.petKey || petKey(p)} | hasSpriteMeta=${hasSpriteMeta} | spriteUrl=${spriteUrl} | PetSprite=${petSpriteLoaded}`
+      ));
+    }
 
     const actions = el("div", "adopt-actions");
     actions.appendChild(el("div", "adopt-price", priceText(p)));
 
     const owned = !!(p.owned || p.isOwned);
-    const btn = el("button", "adopt-btn", owned ? "Owned" : "Adopt");
+    const btn = el("button", "adopt-btn", previewOnly ? "Preview" : (owned ? "Owned" : "Adopt"));
     btn.type = "button";
     btn.dataset.owned = owned ? "1" : "0";
-    btn.disabled = S.busy || owned;
+    btn.dataset.preview = previewOnly ? "1" : "0";
+    btn.dataset.canBuy = p.canBuy === false ? "0" : "1";
+    btn.disabled = S.busy || owned || previewOnly || p.canBuy === false;
 
     btn.addEventListener("click", async () => {
-      if (S.busy) return;
+      if (S.busy || previewOnly || p.canBuy === false) return;
       await buyPet(petKey(p));
     });
 
@@ -373,7 +401,15 @@
     bal.appendChild(el("div", "adopt-chip", `Tokens: ${b.tokens}`));
     S.body.appendChild(bal);
 
-    const { token, bones } = offers(state);
+    const { preview, token, bones } = offers(state);
+
+    if (preview.length) {
+      S.body.appendChild(section(
+        "Animated Preview",
+        preview,
+        ""
+      ));
+    }
 
     S.body.appendChild(section(
       "Exclusive (Tokens)",

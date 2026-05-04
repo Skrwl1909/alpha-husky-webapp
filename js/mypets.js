@@ -53,6 +53,7 @@
       .petMeta{flex:1;min-width:0}
       .petName{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .petSub{opacity:.82;font-size:12px;margin-top:3px}
+      .petDebug{opacity:.72;font-size:10px;line-height:1.35;margin-top:5px;word-break:break-word}
       .petBtn{
         padding:8px 10px;border-radius:12px;
         border:1px solid rgba(255,255,255,.14);
@@ -198,12 +199,17 @@
       const img = p.icon || p.img || "";
       const sub = `${p.arena_label || p.arena_type || "Pet"} • Lv ${p.level || 1} • XP ${p.xp || 0}/${p.xp_needed || ((p.level||1)*20)}`;
       const desc = p.arena_desc ? ` — ${p.arena_desc}` : "";
+      const hasSpriteMeta = !!(p.spriteSheetUrl && p.sprite);
+      const debug = _dbg
+        ? `<div class="petDebug">${escapeHtml(`petKey=${p.pet_key || p.type || ""} | petName=${p.name || ""} | resolvedPetKey=${p.resolvedPetKey || p.pet_key || p.type || ""} | hasSpriteMeta=${hasSpriteMeta} | spriteUrl=${p.spriteSheetUrl ? "yes" : "no"} | PetSprite=${window.PetSprite ? "yes" : "no"}`)}</div>`
+        : "";
       return `
         <div class="petRow ${isA ? "active" : ""}" data-row="${escapeHtml(p.id)}">
           ${img ? `<img class="petImg" src="${img}" />` : `<div class="petImg"></div>`}
           <div class="petMeta">
             <div class="petName">${escapeHtml(p.name || "Pet")}</div>
             <div class="petSub">${escapeHtml(sub + desc)}</div>
+            ${debug}
           </div>
           <button class="petBtn" type="button" data-set="${escapeHtml(p.id)}" ${isA ? "disabled" : ""}>
             ${isA ? "Active" : "Set"}
