@@ -16,6 +16,7 @@
   let clearBtn;
   let howlBuyBtn;
   let howlPayPanel;
+  let howlPayTitle;
   let howlPayAmount;
   let howlPayTimer;
   let howlPayStatus;
@@ -37,6 +38,7 @@
   let _howlPollStartedAt = 0;
   let _howlInitInFlight = false;
   const HOWL_GENESIS_FRAME_KEY = "genesis_frame";
+  const HOWL_TEST_FRAME_KEY = "howlpay_test_frame";
   const HOWL_POLL_MS = 9000;
   const HOWL_POLL_TIMEOUT_MS = 12 * 60 * 1000;
   const HOWL_QR_TOTAL_CODEWORDS = Object.freeze([
@@ -528,7 +530,7 @@
           <div id="howlPayPanel" class="ah-howl-pay-panel" aria-live="polite">
             <div class="ah-howl-pay-top">
               <div>
-                <div class="ah-howl-pay-title">HOWL Genesis Frame</div>
+                <div id="howlPayTitle" class="ah-howl-pay-title">HOWL Genesis Frame</div>
                 <div class="ah-howl-pay-meta">Amount: <span id="howlPayAmount">-</span> HOWL</div>
               </div>
               <div id="howlPayTimer" class="ah-howl-pay-meta"></div>
@@ -566,6 +568,7 @@
     clearBtn = document.getElementById("clearFrame");
     howlBuyBtn = document.getElementById("buyHowlFrame");
     howlPayPanel = document.getElementById("howlPayPanel");
+    howlPayTitle = document.getElementById("howlPayTitle");
     howlPayAmount = document.getElementById("howlPayAmount");
     howlPayTimer = document.getElementById("howlPayTimer");
     howlPayStatus = document.getElementById("howlPayStatus");
@@ -805,9 +808,14 @@
     return normKey(key) === HOWL_GENESIS_FRAME_KEY;
   }
 
-  function selectedGenesisLocked() {
+  function isHowlPayFrame(key) {
+    const k = normKey(key);
+    return k === HOWL_GENESIS_FRAME_KEY || k === HOWL_TEST_FRAME_KEY;
+  }
+
+  function selectedHowlPayLocked() {
     const key = normKey(_selectedKey);
-    return isGenesisFrame(key) && !isOwnedKey(key);
+    return isHowlPayFrame(key) && !isOwnedKey(key);
   }
 
   function isHowlpayDisabled(out) {
@@ -869,6 +877,16 @@
       payment?.amount ||
       "";
     return String(raw || "").trim() || "-";
+  }
+
+  function howlPaymentFrameKey(payment) {
+    return normKey(payment?.frame_key || payment?.frameKey || payment?.item_key || payment?.itemKey || _selectedKey || "");
+  }
+
+  function howlPaymentTitle(payment) {
+    const explicit = String(payment?.item_name || payment?.itemName || payment?.name || "").trim();
+    if (explicit) return explicit;
+    return howlPaymentFrameKey(payment) === HOWL_TEST_FRAME_KEY ? "HOWL Test Frame" : "HOWL Genesis Frame";
   }
 
   function howlQrUtf8Bytes(value) {
@@ -1304,6 +1322,7 @@
     stopHowlPolling();
     _howlPayment = null;
     if (howlPayPanel) howlPayPanel.classList.add("is-open");
+    if (howlPayTitle) howlPayTitle.textContent = "HOWL Payment";
     if (howlPayAmount) howlPayAmount.textContent = "-";
     if (howlPayLink) howlPayLink.value = "";
     renderHowlQr(null);
@@ -1314,6 +1333,7 @@
     _howlPayment = payment && typeof payment === "object" ? payment : null;
     if (!howlPayPanel || !_howlPayment) return;
     howlPayPanel.classList.add("is-open");
+    if (howlPayTitle) howlPayTitle.textContent = howlPaymentTitle(_howlPayment);
     if (howlPayAmount) howlPayAmount.textContent = howlPaymentAmount(_howlPayment);
     if (howlPayLink) howlPayLink.value = howlPaymentUrl(_howlPayment);
     renderHowlQr(_howlPayment);
@@ -1334,7 +1354,7 @@
   }
 
   function updateHowlControls() {
-    const showBuy = selectedGenesisLocked();
+    const showBuy = selectedHowlPayLocked();
     const pending = !!(_howlPayment?.payment_id && normKey(_howlPayment?.status || "pending") === "pending");
     if (howlBuyBtn) {
       howlBuyBtn.classList.toggle("is-visible", showBuy);
@@ -1346,8 +1366,8 @@
     }
   }
 
-  function refreshAfterHowlUnlock() {
-    return reloadState(HOWL_GENESIS_FRAME_KEY)
+  function refreshAfterHowlUnlock(frameKey) {
+    return reloadState(normKey(frameKey) || HOWL_GENESIS_FRAME_KEY)
       .then(() => window.loadProfile?.())
       .catch((err) => dbg("post unlock refresh failed", err));
   }
@@ -1358,9 +1378,9 @@
 
     if (status === "completed") {
       stopHowlPolling();
-      setHowlStatus("Payment confirmed — HOWL Genesis Frame unlocked.");
+      setHowlStatus(`Payment confirmed - ${howlPaymentTitle(_howlPayment)} unlocked.`);
       updateHowlControls();
-      refreshAfterHowlUnlock();
+      refreshAfterHowlUnlock(out?.frame_key || out?.frameKey || howlPaymentFrameKey(_howlPayment));
       return status;
     }
     if (status === "expired") {
@@ -1422,7 +1442,7 @@
       showAlert("Frames are not ready yet.");
       return;
     }
-    if (!selectedGenesisLocked()) return;
+    if (!selectedHowlPayLocked()) return;
     if (_howlInitInFlight) return;
     if (_howlPayment?.payment_id && normKey(_howlPayment?.status || "pending") === "pending") {
       showHowlPanel(_howlPayment);
@@ -1432,15 +1452,16 @@
     _howlInitInFlight = true;
     if (howlBuyBtn) howlBuyBtn.disabled = true;
     setHowlStatus("Creating payment link...");
+    const frameKey = normKey(_selectedKey) || HOWL_GENESIS_FRAME_KEY;
     try {
       const out = await _apiPost("/webapp/howlpay/init", {
         item_type: "frame",
-        item_key: HOWL_GENESIS_FRAME_KEY,
+        item_key: frameKey,
       });
 
       if (out?.already_owned) {
-        showAlert("HOWL Genesis Frame already unlocked.");
-        await refreshAfterHowlUnlock();
+        showAlert(`${howlPaymentTitle(out)} already unlocked.`);
+        await refreshAfterHowlUnlock(out?.frame_key || out?.frameKey || frameKey);
         return;
       }
 
