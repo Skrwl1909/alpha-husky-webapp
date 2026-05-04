@@ -65,6 +65,20 @@
     return acc;
   }, {});
 
+  const FACTION_ECHO = {
+    rb: "A glitch whispers: Freedom is the only chain worth wearing.",
+    ew: "An ancient signal answers: We remember so you don’t have to.",
+    ih: "A low growl rises: The Pack survives. Everything else is noise.",
+    pb: "Embers crackle: Burn the old world. Build the new one from ash."
+  };
+
+  const ORIGIN_LABELS = {
+    stray: "Stray",
+    broken: "Broken",
+    forgotten: "Forgotten",
+    unchained: "Unchained"
+  };
+
   const S = {
     apiPost: null,
     tg: null,
@@ -78,7 +92,9 @@
     completedFaction: "",
     state: null,
     back: null,
-    pendingCheck: null
+    pendingCheck: null,
+    profileTimer: 0,
+    firstHowlTimer: 0
   };
 
   function log(...args) {
@@ -115,6 +131,36 @@
     return "";
   }
 
+  function normalizeOrigin(raw) {
+    const key = asText(raw).toLowerCase();
+    if (!key) return "";
+    if (key === "stray" || key.includes("stray")) return "stray";
+    if (key === "broken" || key.includes("broken")) return "broken";
+    if (key === "forgotten" || key.includes("forgotten")) return "forgotten";
+    if (key === "unchained" || key.includes("unchained")) return "unchained";
+    return "";
+  }
+
+  function currentOriginLabel() {
+    const state = S.state || {};
+    const raw =
+      state.currentOrigin ||
+      state.current_origin ||
+      state.origin_mark ||
+      state.originMark ||
+      state.origin ||
+      state.profile?.origin_mark ||
+      state.profile?.originMark ||
+      state.profile?.origin ||
+      global.AH_ORIGIN_MARK ||
+      (() => {
+        try { return localStorage.getItem("ah_origin_mark") || ""; }
+        catch (_) { return ""; }
+      })();
+    const key = normalizeOrigin(raw);
+    return ORIGIN_LABELS[key] || asText(raw) || "Not recorded";
+  }
+
   function normalizeFactions(raw) {
     const rows = Array.isArray(raw) ? raw : [];
     const out = rows
@@ -149,6 +195,10 @@
       card: OATH_ASSETS.cards[canon] || "",
       sigil: OATH_ASSETS.sigils[canon] || ""
     };
+  }
+
+  function factionEchoText(key) {
+    return FACTION_ECHO[normalizeFaction(key)] || "";
   }
 
   function haptic(kind) {
@@ -465,6 +515,27 @@
         font-size:12.5px;
         line-height:1.35;
       }
+      .oath-echo{
+        display:block;
+        max-height:0;
+        margin-top:0;
+        overflow:hidden;
+        opacity:0;
+        transform:translateY(-3px);
+        color:rgba(214,244,255,.88);
+        font-size:12px;
+        line-height:1.34;
+        text-shadow:0 0 14px rgba(var(--oath-accent),.14);
+        transition:max-height .2s ease, margin-top .2s ease, opacity .18s ease, transform .18s ease;
+      }
+      .oath-card[aria-pressed="true"] .oath-echo,
+      .oath-card:focus .oath-echo,
+      .oath-card:focus-visible .oath-echo{
+        max-height:56px;
+        margin-top:8px;
+        opacity:1;
+        transform:translateY(0);
+      }
       .oath-tags{
         display:flex;
         flex-wrap:wrap;
@@ -577,6 +648,76 @@
         text-transform:uppercase;
         letter-spacing:.08em;
       }
+      .oath-profile{
+        min-height:430px;
+        display:flex;
+        align-items:flex-end;
+      }
+      .oath-profile-card{
+        --oath-profile-accent:125,211,252;
+        width:100%;
+        padding:16px;
+        border:1px solid rgba(var(--oath-profile-accent),.32);
+        border-radius:8px;
+        background:
+          radial-gradient(circle at 14% 0%, rgba(var(--oath-profile-accent),.18), transparent 44%),
+          linear-gradient(180deg, rgba(7,10,14,.76), rgba(4,5,8,.92));
+        box-shadow:0 0 34px rgba(var(--oath-profile-accent),.12), inset 0 0 0 1px rgba(255,255,255,.035);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        animation:oathProfileBind .34s ease both;
+      }
+      .oath-profile-title{
+        color:#fffdf5;
+        font-size:22px;
+        font-weight:950;
+        line-height:1;
+        letter-spacing:0;
+      }
+      .oath-profile-rows{
+        display:grid;
+        gap:9px;
+        margin-top:15px;
+      }
+      .oath-profile-row{
+        display:grid;
+        grid-template-columns:82px minmax(0,1fr);
+        gap:10px;
+        align-items:center;
+        padding:9px 10px;
+        border-radius:8px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.045);
+      }
+      .oath-profile-label{
+        color:rgba(255,255,255,.58);
+        font-size:11px;
+        font-weight:850;
+        letter-spacing:.1em;
+        text-transform:uppercase;
+      }
+      .oath-profile-value{
+        min-width:0;
+        color:rgba(255,255,255,.92);
+        font-size:14px;
+        font-weight:850;
+        line-height:1.22;
+      }
+      .oath-first-howl-copy{
+        margin-top:16px;
+        padding:12px;
+        border:1px solid rgba(147,231,255,.20);
+        border-radius:8px;
+        background:rgba(147,231,255,.055);
+        color:rgba(230,248,255,.9);
+        font-size:13px;
+        font-weight:850;
+        line-height:1.38;
+      }
+      @keyframes oathProfileBind{
+        from{opacity:0;transform:translateY(10px);filter:brightness(.82)}
+        to{opacity:1;transform:translateY(0);filter:brightness(1)}
+      }
       @media (min-width:560px){
         #oathBack{align-items:center;padding:18px}
         .oath-sheet{
@@ -602,7 +743,9 @@
       @media (prefers-reduced-motion: reduce){
         .oath-video,
         .oath-card::after,
+        .oath-echo,
         .oath-sigil{transition:none}
+        .oath-profile-card{animation:none}
       }
     `;
     document.head.appendChild(style);
@@ -720,6 +863,17 @@
     if (nextEl) nextEl.setAttribute("data-show", nextActions ? "1" : "0");
   }
 
+  function clearSignalTimers() {
+    if (S.profileTimer) {
+      clearTimeout(S.profileTimer);
+      S.profileTimer = 0;
+    }
+    if (S.firstHowlTimer) {
+      clearTimeout(S.firstHowlTimer);
+      S.firstHowlTimer = 0;
+    }
+  }
+
   function renderIntro() {
     const back = ensureModal();
     const scroll = back.querySelector(".oath-scroll");
@@ -773,6 +927,7 @@
                 <span class="oath-lock">Signal locked</span>
               </span>
               <span class="oath-short">${esc(faction.short)}</span>
+              <span class="oath-echo">${esc(factionEchoText(faction.key))}</span>
               <span class="oath-tags">
                 ${faction.tags.map((tag) => `<span class="oath-tag">${esc(tag)}</span>`).join("")}
               </span>
@@ -789,6 +944,45 @@
     updatePrimary();
   }
 
+  function renderSignalProfile(factionKey) {
+    const back = ensureModal();
+    const scroll = back.querySelector(".oath-scroll");
+    const faction = factionByKey(factionKey);
+    if (!scroll) return;
+    clearSignalTimers();
+    S.screen = "profile";
+    setMedia("accepted");
+    scroll.innerHTML = `
+      <div class="oath-profile">
+        <div class="oath-profile-card" style="--oath-profile-accent:${esc(faction.accent)}">
+          <div class="oath-profile-title">Signal Profile</div>
+          <div class="oath-profile-rows">
+            <div class="oath-profile-row">
+              <div class="oath-profile-label">Origin</div>
+              <div class="oath-profile-value">${esc(currentOriginLabel())}</div>
+            </div>
+            <div class="oath-profile-row">
+              <div class="oath-profile-label">Faction</div>
+              <div class="oath-profile-value">${esc(faction.name)}</div>
+            </div>
+            <div class="oath-profile-row">
+              <div class="oath-profile-label">Status</div>
+              <div class="oath-profile-value">Bound to the Pack</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    setNotice("");
+    setFooter({ primary: "Binding Signal...", disabled: true, nextActions: false });
+    S.profileTimer = setTimeout(() => {
+      S.profileTimer = 0;
+      if (S.open && S.screen === "profile" && normalizeFaction(S.completedFaction) === faction.key) {
+        renderConfirm(faction.key);
+      }
+    }, 2400);
+  }
+
   function renderConfirm(factionKey) {
     const back = ensureModal();
     const scroll = back.querySelector(".oath-scroll");
@@ -803,8 +997,8 @@
             <img src="${esc(faction.sigil)}" alt="" onerror="this.hidden=true;">
           </div>
           <h2>Oath accepted.</h2>
-          <p>Your signal now belongs to ${esc(faction.name)}.</p>
-          <div class="oath-next-copy">Your faction heard the signal.</div>
+          <p>Your signal now carries the mark of ${esc(faction.name)}.<br>Alpha watches. The Pack listens.</p>
+          <div class="oath-first-howl-copy">The Pack is waiting.<br>Send your First Howl.</div>
         </div>
       </div>
     `;
@@ -861,12 +1055,20 @@
       void complete();
       return;
     }
+    if (S.screen === "profile" || S.screen === "first_howl") {
+      return;
+    }
     close();
   }
 
-  function openFirstHowl() {
-    close();
+  function launchHowlboard() {
     setTimeout(() => {
+      try {
+        if (typeof global.openBoard === "function") {
+          global.openBoard("howls");
+          return;
+        }
+      } catch (_) {}
       try {
         const howlboard = document.querySelector(".btn.howlboard");
         if (howlboard) {
@@ -876,6 +1078,44 @@
       } catch (_) {}
       toast("Open the Pack board to send your first signal.");
     }, 80);
+  }
+
+  function renderFirstHowlSent() {
+    const back = ensureModal();
+    const scroll = back.querySelector(".oath-scroll");
+    const faction = factionByKey(S.completedFaction || S.selected);
+    if (!scroll) return;
+    clearSignalTimers();
+    S.screen = "first_howl";
+    setMedia("accepted");
+    scroll.innerHTML = `
+      <div class="oath-confirm">
+        <div class="oath-confirm-box">
+          <div class="oath-confirm-mark" style="--oath-confirm-accent:${esc(faction.accent)}" aria-hidden="true">
+            <img src="${esc(faction.sigil)}" alt="" onerror="this.hidden=true;">
+          </div>
+          <h2>First Howl</h2>
+          <p>Your howl echoes across the broken chain.<br>The Pack has heard you.<br>Now the real work begins.</p>
+        </div>
+      </div>
+    `;
+    setNotice("");
+    setFooter({ primary: "Opening Howlboard...", disabled: true, nextActions: false });
+    S.firstHowlTimer = setTimeout(() => {
+      S.firstHowlTimer = 0;
+      close();
+      launchHowlboard();
+    }, 2200);
+  }
+
+  function openFirstHowl() {
+    if (S.open && S.completedFaction) {
+      haptic("light");
+      renderFirstHowlSent();
+      return;
+    }
+    close();
+    launchHowlboard();
   }
 
   function openFirstMission() {
@@ -935,7 +1175,7 @@
     if (S.preview) {
       S.completedFaction = S.selected;
       haptic("success");
-      renderConfirm(S.selected);
+      renderSignalProfile(S.selected);
       return;
     }
     if (typeof S.apiPost !== "function") {
@@ -959,7 +1199,7 @@
       updateFactionLocally(faction);
       haptic("success");
       setBusy(false);
-      renderConfirm(faction);
+      renderSignalProfile(faction);
     } catch (err) {
       log("complete failed", err);
       haptic("error");
@@ -979,6 +1219,7 @@
 
   function open(state) {
     if (S.open) return false;
+    clearSignalTimers();
     S.preview = false;
     S.state = state && typeof state === "object" ? state : S.state || { factions: DEFAULT_FACTIONS };
     S.open = true;
@@ -995,6 +1236,7 @@
 
   function preview(state) {
     if (S.open) close();
+    clearSignalTimers();
     S.preview = true;
     S.state = state && typeof state === "object" ? state : { factions: DEFAULT_FACTIONS };
     S.open = true;
@@ -1012,6 +1254,7 @@
 
   function close() {
     const back = S.back;
+    clearSignalTimers();
     S.open = false;
     S.busy = false;
     S.preview = false;

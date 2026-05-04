@@ -30,6 +30,13 @@
     unchained: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464121/awakening/origins/awakening_origin_unchained.webp"
   };
 
+  const ORIGIN_LORE = {
+    stray: "You wandered so long, the silence became your only companion.",
+    broken: "The fractures still hum. Alpha heard the pain in them.",
+    forgotten: "Even memory refused to keep you. Until now.",
+    unchained: "You broke your own chains once. This time, you choose who stands beside you."
+  };
+
   const SLIDES = [
     {
       key: "signal",
@@ -57,7 +64,7 @@
       key: "enter",
       assetKey: "enterPack",
       title: "THE HOWL BEGINS",
-      body: "Your signal has been recorded.\nNow choose where you stand,\nwho you answer to,\nand what kind of trail you leave behind.",
+      body: "Alpha’s signal stabilizes.\nThe broken chain around you tightens, but it is not yet whole.\nNow choose whose voice will finish what was started.",
       button: "Enter the Pack",
       isFinal: true
     }
@@ -459,6 +466,39 @@
         border-color:rgba(88,241,255,.56);
         box-shadow:0 0 26px rgba(88,241,255,.22), inset 0 0 22px rgba(0,0,0,.34);
       }
+      .awakening-origin-lore{
+        position:relative;
+        max-height:0;
+        margin-top:0;
+        padding:0 0 0 11px;
+        overflow:hidden;
+        opacity:0;
+        transform:translateY(6px);
+        border-left:1px solid rgba(88,241,255,.32);
+        color:rgba(230,249,255,.86);
+        font:750 12.5px/1.38 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        text-shadow:0 0 16px rgba(88,241,255,.12);
+        transition:max-height .28s ease, margin-top .22s ease, opacity .22s ease, transform .22s ease, padding-top .22s ease, padding-bottom .22s ease;
+      }
+      .awakening-origin-lore::before{
+        content:"";
+        position:absolute;
+        left:-1px;
+        top:0;
+        width:1px;
+        height:100%;
+        background:linear-gradient(180deg, transparent, rgba(88,241,255,.92), transparent);
+        opacity:.78;
+      }
+      .awakening-origin-lore[data-show="1"]{
+        max-height:74px;
+        margin-top:12px;
+        padding-top:1px;
+        padding-bottom:1px;
+        opacity:1;
+        transform:translateY(0);
+        animation:awakeningLoreGlitch .42s steps(2,end) both;
+      }
       .awakening-actions{
         display:flex;
         align-items:center;
@@ -535,6 +575,12 @@
         75%{transform:translate3d(1px,1px,0)}
         100%{transform:translate3d(0,0,0)}
       }
+      @keyframes awakeningLoreGlitch{
+        0%{filter:none;clip-path:inset(0 0 0 0)}
+        28%{filter:drop-shadow(1px 0 rgba(88,241,255,.32));clip-path:inset(0 0 22% 0)}
+        54%{filter:drop-shadow(-1px 0 rgba(255,183,77,.26));clip-path:inset(16% 0 0 0)}
+        100%{filter:none;clip-path:inset(0 0 0 0)}
+      }
       @media (min-width:440px){
         .awakening-copy{left:18px;right:18px;bottom:max(20px, env(safe-area-inset-bottom));padding:18px}
         .awakening-title{font-size:31px}
@@ -557,9 +603,11 @@
         .awakening-panel.is-origin .awakening-bg::after{animation:none}
         .awakening-origin,
         .awakening-origins,
+        .awakening-origin-lore,
         .awakening-bg-video,
         .awakening-origin-check,
         .awakening-copy{transition:none}
+        .awakening-origin-lore[data-show="1"]{animation:none}
       }
     `;
     document.head.appendChild(style);
@@ -656,6 +704,7 @@
   }
 
   function originHtml() {
+    const lore = originLoreText(S.selectedOrigin);
     return `
       <div class="awakening-origins" data-revealed="0" role="list">
         ${S.choices.map((choice, index) => `
@@ -678,7 +727,12 @@
           </button>
         `).join("")}
       </div>
+      <div class="awakening-origin-lore" data-show="${lore ? "1" : "0"}" role="status" aria-live="polite">${esc(lore)}</div>
     `;
+  }
+
+  function originLoreText(key) {
+    return ORIGIN_LORE[asText(key).toLowerCase()] || "";
   }
 
   function clearOriginRevealTimer() {
@@ -717,6 +771,22 @@
     el.setAttribute("data-show", text ? "1" : "0");
   }
 
+  function setOriginLore(key) {
+    const el = S.back?.querySelector?.(".awakening-origin-lore");
+    if (!el) return;
+    const text = originLoreText(key);
+    if (!text) {
+      el.textContent = "";
+      el.setAttribute("data-show", "0");
+      return;
+    }
+    el.setAttribute("data-show", "0");
+    el.textContent = text;
+    requestAnimationFrame(() => {
+      if (el.textContent === text) el.setAttribute("data-show", "1");
+    });
+  }
+
   function setBusy(on) {
     S.busy = !!on;
     const back = S.back;
@@ -746,6 +816,7 @@
       const isSelected = asText(button.getAttribute("data-origin")).toLowerCase() === nextKey;
       button.setAttribute("aria-pressed", isSelected ? "true" : "false");
     });
+    setOriginLore(nextKey);
     setNotice("");
     updatePrimaryState();
     haptic("light");
@@ -833,6 +904,10 @@
         : { origin_mark: S.selectedOrigin, skipped: false };
       const out = await S.apiPost("/webapp/awakening/complete", payload);
       if (!out || out.ok === false) throw new Error(out?.reason || "AWAKENING_COMPLETE_FAILED");
+      if (!skipped && S.selectedOrigin) {
+        try { localStorage.setItem("ah_origin_mark", S.selectedOrigin); } catch (_) {}
+        try { global.AH_ORIGIN_MARK = S.selectedOrigin; } catch (_) {}
+      }
       S.completeDone = true;
       close();
       toast("Awakening recorded.");
