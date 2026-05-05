@@ -91,6 +91,7 @@
     selected: "",
     completedFaction: "",
     state: null,
+    freshStartV1: null,
     back: null,
     pendingCheck: null,
     profileTimer: 0,
@@ -159,6 +160,13 @@
       })();
     const key = normalizeOrigin(raw);
     return ORIGIN_LABELS[key] || asText(raw) || "Not recorded";
+  }
+
+  function pickFreshStart(source) {
+    const out = source && typeof source === "object"
+      ? (source.fresh_start_v1 || source.freshStartV1)
+      : null;
+    return out && typeof out === "object" ? out : null;
   }
 
   function normalizeFactions(raw) {
@@ -714,6 +722,38 @@
         font-weight:850;
         line-height:1.38;
       }
+      .oath-trail-panel{
+        margin-top:16px;
+        padding:14px;
+        border-radius:18px;
+        border:1px solid rgba(125,211,252,.24);
+        background:
+          linear-gradient(180deg, rgba(4,10,18,.9), rgba(4,8,16,.76)),
+          radial-gradient(circle at 0% 0%, rgba(125,211,252,.12), transparent 42%);
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 18px 34px rgba(0,0,0,.24);
+      }
+      .oath-trail-kicker{
+        font-size:11px;
+        letter-spacing:.24em;
+        text-transform:uppercase;
+        color:rgba(125,211,252,.86);
+      }
+      .oath-trail-copy{
+        margin-top:10px;
+        font-size:13px;
+        line-height:1.65;
+        color:rgba(232,244,255,.84);
+      }
+      .oath-trail-actions{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:10px;
+        margin-top:14px;
+      }
+      .oath-trail-actions .oath-secondary{
+        min-width:0;
+        width:100%;
+      }
       @keyframes oathProfileBind{
         from{opacity:0;transform:translateY(10px);filter:brightness(.82)}
         to{opacity:1;transform:translateY(0);filter:brightness(1)}
@@ -739,6 +779,7 @@
         .oath-sigil{width:52px;height:52px}
         .oath-tag{font-size:10px;padding:4px 6px}
         .oath-next-actions{grid-template-columns:1fr}
+        .oath-trail-actions{grid-template-columns:1fr}
       }
       @media (prefers-reduced-motion: reduce){
         .oath-video,
@@ -850,6 +891,10 @@
 
   function factionsForRender() {
     return normalizeFactions(S.state && S.state.factions || DEFAULT_FACTIONS);
+  }
+
+  function setFreshStartState(source) {
+    S.freshStartV1 = pickFreshStart(source);
   }
 
   function setFooter({ primary, disabled, nextActions }) {
@@ -996,14 +1041,29 @@
           <div class="oath-confirm-mark" style="--oath-confirm-accent:${esc(faction.accent)}" aria-hidden="true">
             <img src="${esc(faction.sigil)}" alt="" onerror="this.hidden=true;">
           </div>
-          <h2>Oath accepted.</h2>
-          <p>Your signal now carries the mark of ${esc(faction.name)}.<br>Alpha watches. The Pack listens.</p>
-          <div class="oath-first-howl-copy">The Pack is waiting.<br>Send your First Howl.</div>
+          <h2>SIGNAL BOUND</h2>
+          <p>Your oath has been accepted.<br>Your faction now recognizes your signal.</p>
+          <div class="oath-trail-panel">
+            <div class="oath-trail-kicker">Fresh Start Trail unlocked.</div>
+            <div class="oath-trail-copy">
+              Complete your First Howl, link your wallet, and leave your first mark in the Alpha Husky world to become eligible for symbolic $HOWL rewards.
+            </div>
+            <div class="oath-trail-actions">
+              <button type="button" class="oath-secondary" data-oath-trail="howl">Share First Howl</button>
+              <button type="button" class="oath-secondary" data-oath-trail="wallet">Link Wallet</button>
+              <button type="button" class="oath-secondary" data-oath-trail="mission">Start First Mission</button>
+              <button type="button" class="oath-secondary" data-oath-trail="map">Open Map</button>
+            </div>
+          </div>
         </div>
       </div>
     `;
+    scroll.querySelector("[data-oath-trail='howl']")?.addEventListener("click", openFirstHowl);
+    scroll.querySelector("[data-oath-trail='wallet']")?.addEventListener("click", openWalletLink);
+    scroll.querySelector("[data-oath-trail='mission']")?.addEventListener("click", openFirstMission);
+    scroll.querySelector("[data-oath-trail='map']")?.addEventListener("click", openMapView);
     setNotice("");
-    setFooter({ primary: "Enter the Pack", disabled: false, nextActions: true });
+    setFooter({ primary: "Enter the Pack", disabled: false, nextActions: false });
   }
 
   function updatePrimary() {
@@ -1138,6 +1198,58 @@
     }, 80);
   }
 
+  function openWalletLink() {
+    close();
+    setTimeout(() => {
+      try {
+        if (global.Support && typeof global.Support.openWallet === "function") {
+          global.Support.openWallet();
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (global.Support && typeof global.Support.open === "function") {
+          global.Support.open("wallet");
+          return;
+        }
+      } catch (_) {}
+      try {
+        const wallet = document.querySelector(".btn.wallet, .btn.support, [data-action='wallet'], [data-action='support-wallet']");
+        if (wallet) {
+          wallet.click();
+          return;
+        }
+      } catch (_) {}
+      try { console.debug("[Oath] Link Wallet action unavailable"); } catch (_) {}
+    }, 80);
+  }
+
+  function openMapView() {
+    close();
+    setTimeout(() => {
+      try {
+        if (global.Map && typeof global.Map.open === "function") {
+          global.Map.open();
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (global.WorldMap && typeof global.WorldMap.open === "function") {
+          global.WorldMap.open();
+          return;
+        }
+      } catch (_) {}
+      try {
+        const map = document.querySelector(".btn.map, [data-action='map'], [data-nav='map']");
+        if (map) {
+          map.click();
+          return;
+        }
+      } catch (_) {}
+      try { console.debug("[Oath] Open Map action unavailable"); } catch (_) {}
+    }, 80);
+  }
+
   function updateFactionLocally(factionKey) {
     const key = normalizeFaction(factionKey);
     if (!key) return;
@@ -1193,6 +1305,8 @@
       });
       if (!out || out.ok === false) throw new Error(out && out.reason || "OATH_COMPLETE_FAILED");
 
+      S.state = Object.assign({}, S.state || {}, out);
+      setFreshStartState(out);
       const faction = normalizeFaction(out.currentFaction || out.faction || S.selected);
       S.completedFaction = faction;
       S.checked = true;
@@ -1222,6 +1336,7 @@
     clearSignalTimers();
     S.preview = false;
     S.state = state && typeof state === "object" ? state : S.state || { factions: DEFAULT_FACTIONS };
+    setFreshStartState(S.state);
     S.open = true;
     S.busy = false;
     S.screen = "intro";
@@ -1239,6 +1354,7 @@
     clearSignalTimers();
     S.preview = true;
     S.state = state && typeof state === "object" ? state : { factions: DEFAULT_FACTIONS };
+    setFreshStartState(S.state);
     S.open = true;
     S.busy = false;
     S.screen = "intro";
@@ -1261,6 +1377,7 @@
     S.screen = "intro";
     S.selected = "";
     S.completedFaction = "";
+    S.freshStartV1 = null;
     if (back) {
       back.querySelectorAll("video").forEach((video) => {
         try { video.pause(); } catch (_) {}
@@ -1291,6 +1408,7 @@
         const out = await fetchState();
         S.checked = true;
         S.state = out;
+        setFreshStartState(out);
         const current = normalizeFaction(out && out.currentFaction);
         if (current) updateFactionLocally(current);
         if (!out || !out.show) return false;
