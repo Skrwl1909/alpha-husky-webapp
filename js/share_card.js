@@ -3,7 +3,9 @@
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
   const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
-  const X_MANUAL_ATTACH_NOTE = "Image saved. To post on X, attach the saved image manually.";
+  const X_HELP_NOTE = "X opens a prefilled post. Attach the saved image manually.";
+  const X_MANUAL_ATTACH_NOTE = "Image saved. X will open with your caption - attach the saved image before posting.";
+  const X_NATIVE_SHARE_NOTE = "X will open with your caption. If the image is not already attached there, add it manually before posting.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
   const FEATURED_BADGES_MAX = 3;
@@ -104,6 +106,18 @@
       }
     } catch (_) {}
     global.open(href, "_blank", "noopener");
+  }
+
+  function setStatus(message) {
+    const el = $("shareCardStatus");
+    if (!el) return;
+    const value = String(message || "").trim();
+    el.textContent = value;
+    if (value) {
+      el.dataset.show = "1";
+    } else {
+      delete el.dataset.show;
+    }
   }
 
   async function fetchJsonWithTimeout(url, options, timeoutMs) {
@@ -1186,6 +1200,42 @@
     });
   }
 
+  function buildShareFile(blob) {
+    if (!blob || typeof File === "undefined") return null;
+    try {
+      return new File([blob], `alpha-husky-${STATE.variant}.png`, { type: blob.type || "image/png" });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function tryNativeFileShare(caption) {
+    if (!STATE.pngBlob) await ensureRendered();
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function" || typeof navigator.canShare !== "function") {
+      return false;
+    }
+    const file = buildShareFile(STATE.pngBlob);
+    if (!file) return false;
+    try {
+      if (!navigator.canShare({ files: [file] })) return false;
+    } catch (_) {
+      return false;
+    }
+    try {
+      await navigator.share({
+        files: [file],
+        title: "Alpha Husky share card",
+        text: String(caption || "").trim(),
+      });
+      return true;
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        log("x:native-share-failed", { message: String(err?.message || err || "") });
+      }
+      return false;
+    }
+  }
+
   function setBusy(isBusy) {
     STATE.busy = !!isBusy;
     ["shareCardTelegramBtn", "shareCardXBtn", "shareCardSaveBtn", "shareCardCopyBtn"].forEach((id) => {
@@ -1226,8 +1276,9 @@
         : "Rendered from the same live profile state shown in Hub.";
     }
     if (helpEl) {
-      helpEl.textContent = "X opens a prefilled compose screen. To post on X, attach the saved image manually.";
+      helpEl.textContent = X_HELP_NOTE;
     }
+    setStatus("");
 
     const tgBtn = $("shareCardTelegramBtn");
     const canNativeShare = !!(getTg()?.shareMessage);
@@ -1318,8 +1369,27 @@
   async function shareOnX() {
     const presentation = STATE.presentation || buildSharePresentation(STATE.variant);
     const caption = buildCaption(presentation);
+    if (!STATE.pngBlob) await ensureRendered();
+
+    let usedNativeFileShare = false;
+    try {
+      usedNativeFileShare = await tryNativeFileShare(caption);
+    } catch (_) {
+      usedNativeFileShare = false;
+    }
+
+    if (!usedNativeFileShare) {
+      await saveImage();
+    }
+
+    const copied = await copyText(caption);
     openLink(buildXIntent(caption, presentation.shareLink));
-    toast("X compose is open. Use Save Image, then attach it manually.", "Share on X");
+    const feedback = usedNativeFileShare ? X_NATIVE_SHARE_NOTE : X_MANUAL_ATTACH_NOTE;
+    setStatus(feedback);
+    toast(
+      copied ? feedback : `${feedback} If needed, use Copy Caption below.`,
+      "Share to X"
+    );
   }
 
   function hideModal() {
@@ -1389,6 +1459,7 @@
       setBusy(true);
       try {
         await saveImage();
+        setStatus(X_MANUAL_ATTACH_NOTE);
         toast(X_MANUAL_ATTACH_NOTE, "Save Image");
       } catch (err) {
         console.error("[ShareCard] save failed", err);
@@ -1400,16 +1471,23 @@
 
     $("shareCardCopyBtn")?.addEventListener("click", async () => {
       const ok = await copyText(buildCaption(STATE.presentation || buildSharePresentation(STATE.variant)));
-      if (!ok) toast("Caption copy failed. Please try again.");
+      if (ok) {
+        setStatus("Caption copied. X will open with the same text when you use Share to X.");
+      } else {
+        toast("Caption copy failed. Please try again.");
+      }
     });
 
     $("shareCardXBtn")?.addEventListener("click", async () => {
       if (STATE.busy) return;
+      setBusy(true);
       try {
         await shareOnX();
       } catch (err) {
         console.error("[ShareCard] x share failed", err);
         toast("X share link failed to open.");
+      } finally {
+        setBusy(false);
       }
     });
 
