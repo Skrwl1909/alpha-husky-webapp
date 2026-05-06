@@ -251,7 +251,10 @@
       awakening?.origin ||
       readStoredOrigin();
     const key = normalizeOriginKey(raw);
-    return key ? ORIGIN_META[key] : null;
+    if (!key) return null;
+    const meta = ORIGIN_META[key];
+    const overrideUrl = global.AH_ORIGIN_ART_URLS && global.AH_ORIGIN_ART_URLS[key];
+    return overrideUrl ? { ...meta, iconUrl: String(overrideUrl || "").trim() } : meta;
   }
 
   function proxifyAssetUrl(rawUrl) {
@@ -259,9 +262,11 @@
     if (!input) return "";
     if (/^blob:/i.test(input) || /^data:/i.test(input)) return input;
     try {
-      const url = new URL(input, global.location?.origin || DEFAULT_SHARE_LINK);
-      if (url.hostname === "res.cloudinary.com" && url.pathname.startsWith("/dnjwvxinh/image/upload/")) {
-        const proxied = new URL((getApiBase() || "") + "/webapp/img", global.location?.origin || DEFAULT_SHARE_LINK);
+      const baseUrl = global.location?.protocol === "file:" ? global.location.href : (global.location?.origin || DEFAULT_SHARE_LINK);
+      const url = new URL(input, baseUrl);
+      const apiBase = getApiBase();
+      if (apiBase && url.hostname === "res.cloudinary.com" && url.pathname.startsWith("/dnjwvxinh/image/upload/")) {
+        const proxied = new URL(apiBase + "/webapp/img", baseUrl);
         proxied.searchParams.set("u", url.toString());
         return proxied.toString();
       }
@@ -430,7 +435,7 @@
       const url = String(src || "").trim();
       if (!url) return resolve(null);
       const img = new Image();
-      if (!/^blob:/i.test(url) && !/^data:/i.test(url)) {
+      if (/^https?:\/\//i.test(url)) {
         img.crossOrigin = "anonymous";
       }
       img.onload = async () => {
@@ -475,6 +480,22 @@
     const dx = x + (w - dw) / 2;
     const dy = y + (h - dh) / 2;
     ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  function drawOriginSigil(ctx, img, x, y, w, h, scaleFactor) {
+    if (!img) return;
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const sx = iw * 0.16;
+    const sy = ih * 0.10;
+    const sw = iw * 0.68;
+    const sh = ih * 0.76;
+    const scale = Math.min(w / sw, h / sh) * Math.max(0.01, Number(scaleFactor || 1));
+    const dw = sw * scale;
+    const dh = sh * scale;
+    const dx = x + (w - dw) / 2;
+    const dy = y + (h - dh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
   }
 
   function drawCoverFocus(ctx, img, x, y, w, h, focusX, focusY, extraScale) {
@@ -675,43 +696,168 @@
     ctx.restore();
   }
 
-  function drawOriginMoodLayer(ctx, origin, originImg, x, y, w, h) {
+  function rgba(rgb, alpha) {
+    return `rgba(${rgb || "230,238,250"},${alpha})`;
+  }
+
+  function originAccentRgb(originImg) {
+    if (!originImg) return "230,238,250";
+    try {
+      const sample = typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(28, 28)
+        : document.createElement("canvas");
+      sample.width = 28;
+      sample.height = 28;
+      const sctx = sample.getContext("2d", { willReadFrequently: true });
+      if (!sctx) return "230,238,250";
+      sctx.drawImage(originImg, 0, 0, 28, 28);
+      const data = sctx.getImageData(0, 0, 28, 28).data;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let weightSum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3] / 255;
+        if (a < 0.18) continue;
+        const pr = data[i];
+        const pg = data[i + 1];
+        const pb = data[i + 2];
+        const max = Math.max(pr, pg, pb);
+        const min = Math.min(pr, pg, pb);
+        const brightness = (max + min) / 510;
+        const saturation = max ? (max - min) / max : 0;
+        if (brightness < 0.18) continue;
+        const weight = a * (0.35 + brightness) * (0.55 + saturation);
+        r += pr * weight;
+        g += pg * weight;
+        b += pb * weight;
+        weightSum += weight;
+      }
+      if (!weightSum) return "230,238,250";
+      return `${Math.round(r / weightSum)},${Math.round(g / weightSum)},${Math.round(b / weightSum)}`;
+    } catch (_) {
+      return "230,238,250";
+    }
+  }
+
+  function drawOriginBadge(ctx, originImg, x, y, size, accentRgb) {
+    if (!originImg) return;
+    ctx.save();
+    ctx.shadowColor = rgba(accentRgb, 0.68);
+    ctx.shadowBlur = 30;
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+    const badgePlate = ctx.createRadialGradient(
+      x + size / 2,
+      y + size / 2,
+      size * 0.10,
+      x + size / 2,
+      y + size / 2,
+      size * 0.55
+    );
+    badgePlate.addColorStop(0, "rgba(248,252,255,0.24)");
+    badgePlate.addColorStop(0.44, rgba(accentRgb, 0.34));
+    badgePlate.addColorStop(1, "rgba(8,13,22,0.96)");
+    ctx.fillStyle = badgePlate;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2 - 4, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.globalAlpha = 0.32;
+    ctx.fillStyle = rgba(accentRgb, 0.52);
+    ctx.fillRect(x, y, size, size);
+    ctx.globalAlpha = 0.96;
+    drawOriginSigil(ctx, originImg, x + 4, y + 4, size - 8, size - 8, 1.18);
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.62;
+    drawOriginSigil(ctx, originImg, x + 6, y + 6, size - 12, size - 12, 1.18);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.22;
+    drawOriginSigil(ctx, originImg, x + 8, y + 8, size - 16, size - 16, 1.18);
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = rgba(accentRgb, 0.88);
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2 - 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size / 2 - 7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawOriginMoodLayer(ctx, origin, originImg, x, y, w, h, accentRgb) {
     if (!origin) return;
     ctx.save();
 
+    const cx = x + w * 0.50;
+    const cy = y + h * 0.39;
+    const plate = ctx.createRadialGradient(cx, cy, w * 0.10, cx, cy, w * 0.56);
+    plate.addColorStop(0, "rgba(248,252,255,0.24)");
+    plate.addColorStop(0.22, rgba(accentRgb, 0.54));
+    plate.addColorStop(0.50, rgba(accentRgb, 0.28));
+    plate.addColorStop(0.78, "rgba(235,242,255,0.12)");
+    plate.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = plate;
+    ctx.fillRect(x, y, w, h);
+
+    ctx.globalAlpha = 0.42;
+    ctx.fillStyle = "rgba(235,242,255,0.055)";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w * 0.43, h * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 0.36;
+    ctx.strokeStyle = rgba(accentRgb, 0.52);
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w * 0.40, h * 0.25, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
     if (originImg) {
-      ctx.globalAlpha = 0.13;
-      ctx.filter = "blur(18px) saturate(1.12)";
-      drawCover(ctx, originImg, x - w * 0.04, y - h * 0.04, w * 1.08, h * 1.08);
-      ctx.filter = "none";
-
-      ctx.globalAlpha = 0.16;
-      ctx.filter = "blur(18px) saturate(1.22)";
-      drawContainScaled(ctx, originImg, x - w * 0.20, y + h * 0.03, w * 1.40, h * 0.78, 1.12, 0, 0);
-      ctx.filter = "none";
-
-      ctx.globalAlpha = 0.30;
-      ctx.shadowColor = "rgba(230,238,250,0.28)";
-      ctx.shadowBlur = 34;
-      drawContainScaled(ctx, originImg, x - w * 0.18, y + h * 0.04, w * 1.36, h * 0.76, 1.06, 0, 0);
+      ctx.globalAlpha = 0.22;
+      ctx.shadowColor = rgba(accentRgb, 0.28);
+      ctx.shadowBlur = 38;
+      drawOriginSigil(ctx, originImg, x - w * 0.04, y - h * 0.04, w * 1.08, h * 1.08, 1.06);
       ctx.shadowBlur = 0;
 
-      ctx.globalAlpha = 0.08;
-      ctx.filter = "blur(3px)";
-      drawContainScaled(ctx, originImg, x - w * 0.10, y + h * 0.07, w * 1.20, h * 0.68, 1.02, 0, 0);
-      ctx.filter = "none";
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.56;
+      ctx.shadowColor = rgba(accentRgb, 0.54);
+      ctx.shadowBlur = 34;
+      drawOriginSigil(ctx, originImg, x - w * 0.20, y + h * 0.03, w * 1.40, h * 0.78, 1.16);
+      ctx.shadowBlur = 0;
+
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.62;
+      ctx.shadowColor = rgba(accentRgb, 0.88);
+      ctx.shadowBlur = 64;
+      drawOriginSigil(ctx, originImg, x - w * 0.17, y + h * 0.04, w * 1.34, h * 0.76, 1.10);
+      ctx.shadowBlur = 0;
+
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.58;
+      drawOriginSigil(ctx, originImg, x - w * 0.08, y + h * 0.08, w * 1.16, h * 0.66, 1.04);
+      ctx.globalCompositeOperation = "source-over";
     }
 
     const glow = ctx.createRadialGradient(x + w * 0.50, y + h * 0.38, 24, x + w * 0.50, y + h * 0.38, w * 0.74);
-    glow.addColorStop(0, "rgba(230,238,250,0.22)");
-    glow.addColorStop(0.46, "rgba(130,168,220,0.10)");
+    glow.addColorStop(0, rgba(accentRgb, 0.36));
+    glow.addColorStop(0.46, "rgba(230,238,250,0.15)");
     glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.globalAlpha = 1;
     ctx.fillStyle = glow;
     ctx.fillRect(x, y, w, h);
 
-    ctx.globalAlpha = 0.12;
-    ctx.strokeStyle = "rgba(230,238,250,0.28)";
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = "rgba(230,238,250,0.34)";
     ctx.lineWidth = 1.25;
     for (let i = 0; i < 5; i += 1) {
       const yy = y + h * (0.18 + i * 0.13);
@@ -722,6 +868,20 @@
     }
 
     ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawOriginReadableEcho(ctx, origin, originImg, x, y, w, h, accentRgb) {
+    if (!origin || !originImg) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.44;
+    ctx.shadowColor = rgba(accentRgb, 0.58);
+    ctx.shadowBlur = 30;
+    drawOriginSigil(ctx, originImg, x - w * 0.18, y + h * 0.02, w * 1.36, h * 0.78, 1.08);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.10;
+    drawOriginSigil(ctx, originImg, x - w * 0.16, y + h * 0.04, w * 1.32, h * 0.74, 1.04);
     ctx.restore();
   }
 
@@ -750,8 +910,10 @@
     inner.addColorStop(1, "rgba(5,9,18,0.98)");
     ctx.fillStyle = inner;
     ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
-    drawOriginMoodLayer(ctx, origin, originImg, viewportX, viewportY, viewportW, viewportH);
+    const originAccent = originAccentRgb(originImg);
+    drawOriginMoodLayer(ctx, origin, originImg, viewportX, viewportY, viewportW, viewportH, originAccent);
     drawCoverFocus(ctx, artImg, viewportX, viewportY, viewportW, viewportH, 0.5, HUB_FRAME.skinFocusY, HUB_FRAME.skinScale);
+    drawOriginReadableEcho(ctx, origin, originImg, viewportX, viewportY, viewportW, viewportH, originAccent);
 
     const vignette = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
     vignette.addColorStop(0, "rgba(255,255,255,0)");
@@ -879,6 +1041,8 @@
     const subtitle = String(opts.subtitle || "ALPHA HUSKY COLLECTIBLE").trim();
     const metaLeft = String(opts.metaLeft || "").trim();
     const metaRight = String(opts.metaRight || "").trim();
+    const originImg = opts.originImg || null;
+    const originAccent = opts.originAccent || "230,238,250";
     const h = Number(opts.height || 178);
 
     ctx.save();
@@ -956,13 +1120,25 @@
     ctx.font = "600 20px system-ui, sans-serif";
     ctx.fillText(metaLeft || "Official collectible render", x + 34, y + h - 14);
     if (presentation.originLabel) {
+      const originValue = String(presentation.originLabel || "").toUpperCase();
+      ctx.font = "900 30px system-ui, sans-serif";
+      const valueW = ctx.measureText(originValue).width;
+      ctx.font = "800 14px system-ui, sans-serif";
+      const labelW = ctx.measureText("SIGNAL ORIGIN").width;
+      const originTextW = Math.max(valueW, labelW);
+      const badgeSize = 78;
+      const badgeX = x + w - 34 - originTextW - badgeSize - 18;
+      const badgeY = y + h - 82;
+      if (badgeX > x + 34) {
+        drawOriginBadge(ctx, originImg, badgeX, badgeY, badgeSize, originAccent);
+      }
       ctx.textAlign = "right";
       ctx.fillStyle = "rgba(245,218,165,0.72)";
-      ctx.font = "800 12px system-ui, sans-serif";
-      ctx.fillText("SIGNAL ORIGIN", x + w - 34, y + h - 27);
+      ctx.font = "800 14px system-ui, sans-serif";
+      ctx.fillText("SIGNAL ORIGIN", x + w - 34, y + h - 32);
       ctx.fillStyle = "#f6ead5";
-      ctx.font = "900 25px system-ui, sans-serif";
-      ctx.fillText(String(presentation.originLabel || "").toUpperCase(), x + w - 34, y + h - 7);
+      ctx.font = "900 30px system-ui, sans-serif";
+      ctx.fillText(originValue, x + w - 34, y + h - 6);
       ctx.textAlign = "left";
     } else if (metaRight) {
       ctx.textAlign = "right";
@@ -994,6 +1170,7 @@
     if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
 
     const artImg = presentation.variant === "equipped" ? (equippedImg || skinImg) : skinImg;
+    const originAccent = originAccentRgb(originImg);
     ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
     drawAmbientBackground(ctx);
 
@@ -1036,6 +1213,8 @@
         subtitle: "ALPHA HUSKY IDENTITY CARD",
         metaLeft: presentation.factionMeta || (presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "OATH-BOUND"),
         metaRight: presentation.originText || "OATH-BOUND",
+        originImg,
+        originAccent,
       });
       drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
       drawHowlSignalStrip(ctx, presentation.howlSignal, 332, 872, CARD_WIDTH - 664);
@@ -1086,7 +1265,7 @@
     artBg.addColorStop(1, "rgba(8,12,22,0.98)");
     ctx.fillStyle = artBg;
     ctx.fillRect(artX, artY, artW, artH);
-    drawOriginMoodLayer(ctx, presentation.origin, originImg, artX, artY, artW, artH);
+    drawOriginMoodLayer(ctx, presentation.origin, originImg, artX, artY, artW, artH, originAccent);
     drawCoverFocus(
       ctx,
       artImg,
@@ -1098,6 +1277,7 @@
       EQUIPPED_ART.focusY,
       EQUIPPED_ART.scale
     );
+    drawOriginReadableEcho(ctx, presentation.origin, originImg, artX, artY, artW, artH, originAccent);
     const artVignette = ctx.createLinearGradient(artX, artY, artX, artY + artH);
     artVignette.addColorStop(0, "rgba(255,255,255,0.02)");
     artVignette.addColorStop(0.58, "rgba(0,0,0,0)");
@@ -1137,6 +1317,8 @@
       subtitle: "EQUIPPED LOADOUT",
       metaLeft: presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "LIVE EQUIPPED STATE",
       metaRight: presentation.originText || (slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : ""),
+      originImg,
+      originAccent,
     });
     drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
     drawHowlSignalStrip(ctx, presentation.howlSignal, 318, 850, CARD_WIDTH - 636);
