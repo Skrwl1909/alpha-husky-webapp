@@ -3,9 +3,11 @@
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
   const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
-  const X_HELP_NOTE = "X opens a prefilled post. Attach the saved image manually.";
-  const X_MANUAL_ATTACH_NOTE = "Image saved. X will open with your caption - attach the saved image before posting.";
-  const X_NATIVE_SHARE_NOTE = "X will open with your caption. If the image is not already attached there, add it manually before posting.";
+  const SHARE_MOBILE_TIP = "If Save Image doesn't appear in your gallery, tap Share on Telegram, send it to Saved Messages, then save it from there.";
+  const X_HELP_NOTE = `${SHARE_MOBILE_TIP} X may not auto-attach the image. Save it first, then attach it manually if needed.`;
+  const X_MANUAL_ATTACH_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
+  const X_NATIVE_SHARE_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
+  const SAVE_IMAGE_NOTE = `${SHARE_MOBILE_TIP} The browser may save the file outside your visible gallery.`;
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
   const FEATURED_BADGES_MAX = 3;
@@ -1459,8 +1461,8 @@
       setBusy(true);
       try {
         await saveImage();
-        setStatus(X_MANUAL_ATTACH_NOTE);
-        toast(X_MANUAL_ATTACH_NOTE, "Save Image");
+        setStatus(SAVE_IMAGE_NOTE);
+        toast(SAVE_IMAGE_NOTE, "Save Image");
       } catch (err) {
         console.error("[ShareCard] save failed", err);
         toast(describeShareError(err, "save"));
