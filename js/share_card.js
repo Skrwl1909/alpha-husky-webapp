@@ -30,15 +30,41 @@
   const DEFAULT_CAPTION_VARIANT_INDEX = 0;
   const CAPTION_VARIANTS = [
     function premiumFounderCaption(presentation, modeLabel) {
-      return `${presentation.playerName} - Founder LV ${presentation.level}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
+      return `${presentation.playerName} - ${presentation.identityLine || `Founder LV ${presentation.level}`}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
     function statusFounderCaption(presentation, modeLabel) {
-      return `Founder ${presentation.playerName} - LV ${presentation.level}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
+      return `Founder ${presentation.playerName} - ${presentation.identityLine || `LV ${presentation.level}`}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
     function packCollectibleCaption(presentation, modeLabel) {
-      return `${presentation.playerName} // LV ${presentation.level}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
+      return `${presentation.playerName} // ${presentation.identityLine || `LV ${presentation.level}`}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
     },
   ];
+  const ORIGIN_META = {
+    stray: {
+      key: "stray",
+      label: "Stray",
+      desc: "A survivor found in the chain noise.",
+      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464117/awakening/origins/awakening_origin_stray.webp",
+    },
+    broken: {
+      key: "broken",
+      label: "Broken",
+      desc: "Something damaged, but not defeated.",
+      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_broken.webp",
+    },
+    forgotten: {
+      key: "forgotten",
+      label: "Forgotten",
+      desc: "A name the old world tried to erase.",
+      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_forgotten.webp",
+    },
+    unchained: {
+      key: "unchained",
+      label: "Unchained",
+      desc: "A signal that refused to stay buried.",
+      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464121/awakening/origins/awakening_origin_unchained.webp",
+    },
+  };
   const STATE = {
     variant: "hub",
     presentation: null,
@@ -192,6 +218,42 @@
     );
   }
 
+  function normalizeOriginKey(raw) {
+    const key = String(raw || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+    if (!key) return "";
+    if (key === "stray" || key.includes("stray")) return "stray";
+    if (key === "broken" || key.includes("broken")) return "broken";
+    if (key === "forgotten" || key.includes("forgotten")) return "forgotten";
+    if (key === "unchained" || key.includes("unchained")) return "unchained";
+    return "";
+  }
+
+  function readStoredOrigin() {
+    try {
+      return global.AH_ORIGIN_MARK || localStorage.getItem("ah_origin_mark") || "";
+    } catch (_) {
+      return global.AH_ORIGIN_MARK || "";
+    }
+  }
+
+  function pickOriginMeta(profile) {
+    const onboarding = profile?.onboarding_v1 || profile?.onboardingV1 || {};
+    const awakening = onboarding?.awakening || profile?.awakening || {};
+    const raw =
+      profile?.origin_mark ||
+      profile?.originMark ||
+      profile?.origin ||
+      profile?.profile?.origin_mark ||
+      profile?.profile?.originMark ||
+      profile?.profile?.origin ||
+      awakening?.origin_mark ||
+      awakening?.originMark ||
+      awakening?.origin ||
+      readStoredOrigin();
+    const key = normalizeOriginKey(raw);
+    return key ? ORIGIN_META[key] : null;
+  }
+
   function proxifyAssetUrl(rawUrl) {
     const input = String(rawUrl || "").trim();
     if (!input) return "";
@@ -293,17 +355,30 @@
     const heroLevelText = textOf("heroLevel", profile?.level ? `Lv.${profile.level}` : "Lv.1");
     const equippedPreview = $("equipped-character-img")?.currentSrc || $("equipped-character-img")?.src || global.__EquippedCharImgUrl || equippedState?.characterUrl || "";
     const stats = equippedState?.stats || {};
+    const origin = pickOriginMeta(profile);
+    const originLabel = origin?.label || "";
+    const factionLabel = textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || profile?.faction || "PACK");
 
     return {
       variant: mode,
       playerName: textOf("heroName", profile?.name || profile?.nickname || "Howler"),
       level: getLevelNumber(heroLevelText, profile?.level || stats?.level || 1),
       heroLevelText,
-      tag: textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || "PACK"),
-      title: textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || "PACK"),
+      tag: factionLabel,
+      title: factionLabel,
       factionMeta: textOf("factionMeta", ""),
       factionId: String(profile?.faction || "").trim(),
       factionBadgeUrl: proxifyAssetUrl($("factionBadgeImg")?.currentSrc || $("factionBadgeImg")?.src || ""),
+      origin,
+      originKey: origin?.key || "",
+      originLabel,
+      originText: originLabel ? `ORIGIN: ${originLabel.toUpperCase()}` : "",
+      originIconUrl: proxifyAssetUrl(origin?.iconUrl || ""),
+      identityLine: [
+        originLabel ? `Origin: ${originLabel}` : "",
+        factionLabel ? `Faction: ${factionLabel}` : "",
+        `LV ${getLevelNumber(heroLevelText, profile?.level || stats?.level || 1)}`,
+      ].filter(Boolean).join(" - "),
       skinUrl: proxifyAssetUrl($("player-skin")?.currentSrc || $("player-skin")?.src || profile?.heroImg || profile?.skin?.img || profile?.skin || ""),
       frameUrl: proxifyAssetUrl($("player-frame")?.currentSrc || $("player-frame")?.src || pickFrameUrl(profile)),
       auraText: textOf("heroAuraBadge", ""),
@@ -600,7 +675,44 @@
     ctx.restore();
   }
 
-  function drawFramePortrait(ctx, artImg, frameImg, x, y, w, h) {
+  function drawOriginMoodLayer(ctx, origin, originImg, x, y, w, h) {
+    if (!origin) return;
+    ctx.save();
+
+    if (originImg) {
+      ctx.globalAlpha = 0.20;
+      ctx.filter = "blur(14px) saturate(1.15)";
+      drawCover(ctx, originImg, x - w * 0.04, y - h * 0.04, w * 1.08, h * 1.08);
+      ctx.filter = "none";
+
+      ctx.globalAlpha = 0.10;
+      drawContainScaled(ctx, originImg, x + w * 0.10, y + h * 0.08, w * 0.80, h * 0.56, 1.08, 0, 0);
+    }
+
+    const glow = ctx.createRadialGradient(x + w * 0.50, y + h * 0.38, 24, x + w * 0.50, y + h * 0.38, w * 0.68);
+    glow.addColorStop(0, "rgba(230,238,250,0.16)");
+    glow.addColorStop(0.45, "rgba(130,168,220,0.08)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = glow;
+    ctx.fillRect(x, y, w, h);
+
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = "rgba(230,238,250,0.28)";
+    ctx.lineWidth = 1.25;
+    for (let i = 0; i < 5; i += 1) {
+      const yy = y + h * (0.18 + i * 0.13);
+      ctx.beginPath();
+      ctx.moveTo(x + w * 0.12, yy);
+      ctx.bezierCurveTo(x + w * 0.34, yy - 18, x + w * 0.62, yy + 26, x + w * 0.88, yy - 8);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawFramePortrait(ctx, artImg, frameImg, x, y, w, h, origin, originImg) {
     const bleed = Math.round(w * HUB_FRAME.frameBleed);
     const viewportX = x + Math.round(w * HUB_FRAME.viewportSide);
     const viewportY = y + Math.round(h * HUB_FRAME.viewportTop);
@@ -625,6 +737,7 @@
     inner.addColorStop(1, "rgba(5,9,18,0.98)");
     ctx.fillStyle = inner;
     ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
+    drawOriginMoodLayer(ctx, origin, originImg, viewportX, viewportY, viewportW, viewportH);
     drawCoverFocus(ctx, artImg, viewportX, viewportY, viewportW, viewportH, 0.5, HUB_FRAME.skinFocusY, HUB_FRAME.skinScale);
 
     const vignette = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
@@ -829,7 +942,16 @@
     ctx.fillStyle = "rgba(222,232,246,0.68)";
     ctx.font = "600 20px system-ui, sans-serif";
     ctx.fillText(metaLeft || "Official collectible render", x + 34, y + h - 14);
-    if (metaRight) {
+    if (presentation.originLabel) {
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(245,218,165,0.72)";
+      ctx.font = "800 12px system-ui, sans-serif";
+      ctx.fillText("SIGNAL ORIGIN", x + w - 34, y + h - 27);
+      ctx.fillStyle = "#f6ead5";
+      ctx.font = "900 25px system-ui, sans-serif";
+      ctx.fillText(String(presentation.originLabel || "").toUpperCase(), x + w - 34, y + h - 7);
+      ctx.textAlign = "left";
+    } else if (metaRight) {
       ctx.textAlign = "right";
       ctx.fillText(metaRight, x + w - 34, y + h - 14);
       ctx.textAlign = "left";
@@ -842,11 +964,12 @@
     await waitForFonts();
     const featuredBadges = Array.isArray(presentation.featuredBadges) ? presentation.featuredBadges.slice(0, FEATURED_BADGES_MAX) : [];
 
-    const [skinImg, frameImg, badgeImg, equippedImg] = await Promise.all([
+    const [skinImg, frameImg, badgeImg, equippedImg, originImg] = await Promise.all([
       loadImage(presentation.skinUrl).catch(() => null),
       loadImage(presentation.frameUrl).catch(() => null),
       loadImage(presentation.factionBadgeUrl).catch(() => null),
       loadImage(presentation.equippedPreviewUrl).catch(() => null),
+      loadImage(presentation.originIconUrl).catch(() => null),
     ]);
     const featuredBadgeImgs = await Promise.all(
       featuredBadges.map((badge) => loadImage(badge?.iconUrl).catch(() => null))
@@ -884,7 +1007,7 @@
         chipY = drawChip(ctx, auraText, CARD_WIDTH - 104, chipY, "right");
       }
 
-      drawFramePortrait(ctx, artImg, frameImg, portraitX, portraitY, portraitW, portraitH);
+      drawFramePortrait(ctx, artImg, frameImg, portraitX, portraitY, portraitW, portraitH, presentation.origin, originImg);
 
       if (!artImg) {
         ctx.fillStyle = "rgba(226,232,240,0.84)";
@@ -898,8 +1021,8 @@
 
       drawFooterNameplate(ctx, presentation, 128, 1022, CARD_WIDTH - 256, {
         subtitle: "ALPHA HUSKY IDENTITY CARD",
-        metaLeft: presentation.factionMeta || presentation.tag || "Pack Identity",
-        metaRight: "Hub Presentation",
+        metaLeft: presentation.factionMeta || (presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "OATH-BOUND"),
+        metaRight: presentation.originText || "OATH-BOUND",
       });
       drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
       drawHowlSignalStrip(ctx, presentation.howlSignal, 332, 872, CARD_WIDTH - 664);
@@ -950,6 +1073,7 @@
     artBg.addColorStop(1, "rgba(8,12,22,0.98)");
     ctx.fillStyle = artBg;
     ctx.fillRect(artX, artY, artW, artH);
+    drawOriginMoodLayer(ctx, presentation.origin, originImg, artX, artY, artW, artH);
     drawCoverFocus(
       ctx,
       artImg,
@@ -998,8 +1122,8 @@
 
     drawFooterNameplate(ctx, presentation, 122, 990, CARD_WIDTH - 244, {
       subtitle: "EQUIPPED LOADOUT",
-      metaLeft: "Live equipped state",
-      metaRight: slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : "",
+      metaLeft: presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "LIVE EQUIPPED STATE",
+      metaRight: presentation.originText || (slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : ""),
     });
     drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
     drawHowlSignalStrip(ctx, presentation.howlSignal, 318, 850, CARD_WIDTH - 636);
@@ -1058,6 +1182,7 @@
       playerName: String(source.playerName || "Howler").trim() || "Howler",
       level: Number(source.level) > 0 ? Number(source.level) : 1,
       variant: sanitizeVariant(source.variant),
+      identityLine: String(source.identityLine || "").trim(),
     };
     const modeLabel = captionModeLabel(normalized.variant);
     return CAPTION_VARIANTS.map((builder) => builder(normalized, modeLabel));
