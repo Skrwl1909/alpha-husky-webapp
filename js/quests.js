@@ -204,6 +204,10 @@ function _renderTrackReward(q) {
 
   function typeLabel(t) {
     t = String(t || "").toLowerCase();
+    if (t === "fresh_trail") return "Fresh Trail";
+    if (t === "daily_pack") return "Daily Pack Duties";
+    if (t === "faction_war") return "Faction War";
+    if (t === "weekly_long") return "Weekly / Long Trail";
     if (t === "daily") return "Daily";
     if (t === "story") return "Story";
     if (t === "chain") return "Story";
@@ -219,6 +223,7 @@ function _renderTrackReward(q) {
     if (s === "accepted") return "In progress";
     if (s === "available") return "Available";
     if (s === "cooldown") return "Cooldown";
+    if (s === "claimed") return "Claimed";
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
@@ -353,7 +358,9 @@ function _renderTrackReward(q) {
         const trackReady = Array.isArray(stepsArr) && stepsArr.length && anyLegendaryStepClaimable({ steps: stepsArr });
 
         const ready = trackReady ? true : ((q.ready === true) ? true : isComplete(q));
-        if (ready) out.ready.push({ ...q, status: q.status || "ready" });
+        const s = String(q.status || "").toLowerCase();
+        if (s === "claimed" || s === "cooldown") out.done.push({ ...q, status: s });
+        else if (ready) out.ready.push({ ...q, status: q.status || "ready" });
         else out.accepted.push({ ...q, status: q.status || "accepted" });
       }
 
@@ -362,6 +369,7 @@ function _renderTrackReward(q) {
         const s = String(q.status || "available").toLowerCase();
         if (s === "ready") out.ready.push({ ...q, status: "ready" });
         else if (s === "accepted") out.accepted.push({ ...q, status: "accepted" });
+        else if (s === "claimed") out.done.push({ ...q, status: "claimed" });
         else if (s === "cooldown" || s === "done") out.done.push({ ...q, status: "cooldown" });
         else out.available.push({ ...q, status: "available" });
       }
@@ -404,11 +412,11 @@ function _renderTrackReward(q) {
   }
 
   // ===== Rendering =====
-  const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, cooldown: 3 };
-  const TABS = ["all", "daily", "legendary", "story", "repeatable", "bounties"];
+  const STATUS_ORDER = { ready: 0, accepted: 1, available: 2, claimed: 3, cooldown: 4 };
+  const TABS = ["all", "fresh_trail", "daily_pack", "faction_war", "weekly_long"];
 
   function mergeBoard(board) {
-    const add = (arr, status) => (arr || []).map(q => ({ ...q, status }));
+    const add = (arr, status) => (arr || []).map(q => ({ ...q, status: q.status || status }));
     return [
       ...add(board.ready, "ready"),
       ...add(board.accepted, "accepted"),
@@ -424,6 +432,10 @@ function _renderTrackReward(q) {
   function matchTab(item, tab) {
     const cat = questCategory(item).toLowerCase();
     if (tab === "all") return true;
+    if (tab === "fresh_trail") return cat === "fresh_trail";
+    if (tab === "daily_pack") return cat === "daily_pack";
+    if (tab === "faction_war") return cat === "faction_war";
+    if (tab === "weekly_long") return cat === "weekly_long";
     if (tab === "daily") return cat === "daily";
     if (tab === "story") return (cat === "story" || cat === "chain");
     if (tab === "repeatable") return cat === "repeatable";
@@ -452,9 +464,15 @@ function _renderTrackReward(q) {
 
   function rewardBadges(rew) {
     const items = [];
+    const labels = {
+      xp: "XP",
+      bones: "Bones",
+      scrap: "Scrap",
+      rune_dust: "Rune Dust"
+    };
     for (const [k, v] of Object.entries(rew || {})) {
       if (v == null || v === 0) continue;
-      items.push(`<span class="q-badge">${esc(k)} +${esc(v)}</span>`);
+      items.push(`<span class="q-badge">${esc(labels[k] || k)} +${esc(v)}</span>`);
     }
     return items.join(" ");
   }
