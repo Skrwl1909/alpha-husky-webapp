@@ -3597,6 +3597,185 @@ body.missions-open{
     cursor:pointer;
   }
 
+  #shareBack{
+    align-items: center;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(118,162,214,.14), transparent 36%),
+      radial-gradient(circle at 50% 100%, rgba(255,196,120,.10), transparent 38%),
+      rgba(0,0,0,.64);
+  }
+  #shareBack .ah-panel{
+    width: min(560px, 100%);
+    max-height: calc(100vh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
+    max-height: calc(100dvh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-color: rgba(197,216,239,.18);
+    background:
+      radial-gradient(circle at 50% -18%, rgba(108,148,194,.14), transparent 46%),
+      linear-gradient(180deg, rgba(15,20,30,.96), rgba(8,11,18,.98));
+    box-shadow:
+      0 24px 60px rgba(0,0,0,.58),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  #shareBack .ah-panel-hd{
+    flex: 0 0 auto;
+    padding: 15px 16px 11px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+  }
+  #shareBack .ah-panel-scroll{
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 0 14px calc(18px + var(--ah-safe-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #shareBack .share-card-context{
+    padding-top: 2px;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(228,237,248,.62);
+  }
+  #shareBack .share-card-preview-shell{
+    position: relative;
+    border-radius: 24px;
+    padding: 14px;
+    background:
+      linear-gradient(180deg, rgba(24,33,49,.92), rgba(8,12,20,.96));
+    border: 1px solid rgba(245,210,146,.16);
+    box-shadow:
+      0 20px 44px rgba(0,0,0,.34),
+      0 0 26px rgba(113,149,196,.12),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    overflow: hidden;
+  }
+  #shareBack #shareCardCanvasWrap{
+    position: relative;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    padding: 0;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 16%, rgba(148,190,255,.08), transparent 34%),
+      rgba(3,7,14,.94);
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  #shareBack #shareCardCanvas{
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: min(58dvh, 680px);
+    object-fit: contain;
+    margin: 0 auto;
+    border-radius: 18px;
+    background: rgba(3,7,14,.92);
+  }
+  #shareBack #shareCardPreviewFx{
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 18px;
+  }
+  #shareBack #shareCardMeta{
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(236,243,255,.70);
+  }
+  #shareBack .share-card-actions{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0;
+  }
+  #shareBack .share-card-actions .ah-action{
+    height: 40px;
+    min-width: 0;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  #shareBack #shareCardXBtn{
+    grid-column: 1 / -1;
+    height: 44px;
+    border-color: rgba(245,210,146,.24);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)),
+      linear-gradient(180deg, rgba(54,68,88,.96), rgba(16,20,30,.98));
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.26),
+      inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  #shareBack .share-card-action-secondary{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)),
+      rgba(8,12,20,.72);
+  }
+  #shareBack .share-card-help,
+  #shareBack .share-card-status{
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(231,239,248,.72);
+  }
+  #shareBack .share-card-status{
+    display: none;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(245,210,146,.14);
+    background: rgba(245,210,146,.06);
+  }
+  #shareBack .share-card-status[data-show="1"]{
+    display: block;
+  }
+  #shareBack .share-card-caption{
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(8,12,20,.62);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  #shareBack .share-card-caption-label{
+    font-size: 11px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    opacity: .52;
+    margin-bottom: 8px;
+  }
+  #shareBack #shareCardCaptionPreview{
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    opacity: .90;
+  }
+  @media (max-width: 420px){
+    #shareBack .ah-panel-scroll{
+      padding-left: 12px;
+      padding-right: 12px;
+      gap: 11px;
+    }
+    #shareBack .share-card-preview-shell{
+      padding: 12px;
+      border-radius: 20px;
+    }
+    #shareBack .share-card-actions .ah-action{
+      height: 39px;
+      font-size: 12.5px;
+    }
+    #shareBack #shareCardXBtn{
+      height: 42px;
+    }
+  }
+
   #supportBack .ah-panel{
     border-color: rgba(255,196,95,.18);
     background:
@@ -4523,11 +4702,12 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div class="ah-title" id="shareCardTitle">Share</div>
       <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">✕</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px;padding:0 14px 16px;">
-      <div id="shareCardContext" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.58;">Main Hub preview</div>
-      <div id="shareCardCanvasWrap" style="position:relative;border-radius:24px;padding:14px;background:linear-gradient(180deg,rgba(18,26,41,.74),rgba(7,11,19,.84));border:1px solid rgba(245,210,146,.16);box-shadow:0 16px 34px rgba(0,0,0,.28);overflow:hidden;">
-        <canvas id="shareCardCanvas" width="1200" height="1500" style="position:relative;z-index:1;width:100%;height:auto;display:block;border-radius:18px;background:rgba(3,7,14,.92);"></canvas>
-        <div id="shareCardPreviewFx" aria-hidden="true" style="position:absolute;left:14px;right:14px;top:14px;bottom:14px;z-index:2;border-radius:18px;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .24s ease;">
+    <div class="ah-panel-scroll">
+      <div id="shareCardContext" class="share-card-context">Main Hub preview</div>
+      <div class="share-card-preview-shell">
+        <div id="shareCardCanvasWrap">
+          <canvas id="shareCardCanvas" width="1200" height="1500"></canvas>
+          <div id="shareCardPreviewFx" aria-hidden="true" style="position:absolute;z-index:2;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .24s ease;">
           <span data-fx="eyes" style="position:absolute;left:50%;top:28.5%;width:16%;height:4.8%;transform:translate(-50%,-50%);opacity:.10;background:
             radial-gradient(40% 68% at 34% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%),
             radial-gradient(40% 68% at 66% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%);"></span>
@@ -4535,23 +4715,25 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             radial-gradient(circle, rgba(255,214,146,.34) 0%, rgba(255,214,146,.18) 45%, rgba(255,214,146,0) 72%);"></span>
           <span data-fx="sheen" style="position:absolute;left:57%;top:74%;width:30%;height:10%;transform:translate(-16%,0) skewX(-16deg);opacity:0;background:
             linear-gradient(105deg, rgba(255,220,160,0) 14%, rgba(255,220,160,.34) 48%, rgba(255,220,160,0) 86%);"></span>
+          </div>
         </div>
       </div>
-      <div id="shareCardMeta" style="font-size:12px;line-height:1.5;opacity:.68;">
+      <div id="shareCardMeta">
         Rendered from the same live player presentation state visible in the app.
       </div>
-      <div style="border-radius:18px;padding:12px;background:rgba(8,12,20,.62);border:1px solid rgba(255,255,255,.08);">
-        <div style="font-size:11px;letter-spacing:.11em;text-transform:uppercase;opacity:.52;margin-bottom:8px;">Caption</div>
-        <div id="shareCardCaptionPreview" style="font-size:13px;line-height:1.5;white-space:pre-wrap;opacity:.90;"></div>
+      <div class="ah-actions share-card-actions">
+        <button class="ah-action" id="shareCardXBtn" type="button">Share to X</button>
+        <button class="ah-action share-card-action-secondary" id="shareCardTelegramBtn" type="button">Share on Telegram</button>
+        <button class="ah-action share-card-action-secondary" id="shareCardSaveBtn" type="button">Save Image</button>
+        <button class="ah-action share-card-action-secondary" id="shareCardCopyBtn" type="button">Copy Caption</button>
       </div>
-      <div class="ah-actions">
-        <button class="ah-action" id="shareCardTelegramBtn" type="button">Share on Telegram</button>
-        <button class="ah-action" id="shareCardXBtn" type="button">Share on X</button>
-        <button class="ah-action" id="shareCardSaveBtn" type="button">Save Image</button>
-        <button class="ah-action" id="shareCardCopyBtn" type="button">Copy Caption</button>
+      <div id="shareCardHelp" class="share-card-help">
+        X opens a prefilled post. Attach the saved image manually.
       </div>
-      <div id="shareCardHelp" style="font-size:12px;line-height:1.45;opacity:.56;">
-        X opens a compose screen only. Save the image first, then attach it manually in X.
+      <div id="shareCardStatus" class="share-card-status" role="status" aria-live="polite"></div>
+      <div class="share-card-caption">
+        <div class="share-card-caption-label">Caption</div>
+        <div id="shareCardCaptionPreview"></div>
       </div>
     </div>
   </div>
