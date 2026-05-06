@@ -1121,26 +1121,28 @@
     close();
   }
 
-  function launchHowlboard() {
+  function launchFirstHowlFlow() {
     setTimeout(() => {
       try {
-        if (typeof global.openBoard === "function") {
-          global.openBoard("howls");
+        if (global.FactionHQ && typeof global.FactionHQ.open === "function") {
+          global.FactionHQ.open();
           return;
         }
       } catch (_) {}
       try {
-        const howlboard = document.querySelector(".btn.howlboard");
-        if (howlboard) {
-          howlboard.click();
+        const hq = document.querySelector(
+          "[data-action='faction'], [data-action='faction_hq'], [data-action='hq'], [data-building-id='alpha_network_hq'], [data-building-id='faction_hq']"
+        );
+        if (hq) {
+          hq.click();
           return;
         }
       } catch (_) {}
-      toast("Open the Pack board to send your first signal.");
+      toast("Open Faction HQ, choose a pack member, then tap Send Howl.");
     }, 80);
   }
 
-  function renderFirstHowlSent() {
+  function renderFirstHowlEntry() {
     const back = ensureModal();
     const scroll = back.querySelector(".oath-scroll");
     const faction = factionByKey(S.completedFaction || S.selected);
@@ -1155,27 +1157,27 @@
             <img src="${esc(faction.sigil)}" alt="" onerror="this.hidden=true;">
           </div>
           <h2>First Howl</h2>
-          <p>Your howl echoes across the broken chain.<br>The Pack has heard you.<br>Now the real work begins.</p>
+          <p>Choose a pack member and send a real Howl.<br>The signal counts only after it lands.</p>
         </div>
       </div>
     `;
     setNotice("");
-    setFooter({ primary: "Opening Howlboard...", disabled: true, nextActions: false });
+    setFooter({ primary: "Opening Pack Profiles...", disabled: true, nextActions: false });
     S.firstHowlTimer = setTimeout(() => {
       S.firstHowlTimer = 0;
       close();
-      launchHowlboard();
-    }, 2200);
+      launchFirstHowlFlow();
+    }, 900);
   }
 
   function openFirstHowl() {
     if (S.open && S.completedFaction) {
       haptic("light");
-      renderFirstHowlSent();
+      renderFirstHowlEntry();
       return;
     }
     close();
-    launchHowlboard();
+    launchFirstHowlFlow();
   }
 
   function openFirstMission() {
