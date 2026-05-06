@@ -5535,7 +5535,15 @@ body.bc-open #ahCommunityBtn{
       // ✅ NAV HELPERS (global)
       // (Quests.js i inne moduły mogą wołać window.navClose/navOpen)
       // =====================
-      window.AH_NAV = window.AH_NAV || { stack: [], inited: false };
+      window.AH_NAV = window.AH_NAV || {
+        stack: [],
+        registry: Object.create(null),
+        inited: false,
+        historyArmed: false,
+        ignoreNextPop: false,
+        popClosing: false,
+        seq: 0,
+      };
       const AH_NAV = window.AH_NAV;
 
       function _navId(x){
@@ -5544,41 +5552,158 @@ body.bc-open #ahCommunityBtn{
         return x.id || null;
       }
 
-      function navOpen(x){
-        const id = _navId(x); if(!id) return;
-        const st = AH_NAV.stack;
-        if (st[st.length - 1] !== id) st.push(id);
-        try { tg?.BackButton?.show?.(); } catch (_) {}
+      function navDbg(...args){
+        if (!window.DBG) return;
+        try { console.debug("[AH_NAV]", ...args); } catch (_) {}
+      }
 
-        document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
+      function navEntry(id){
+        return (id && AH_NAV.registry && AH_NAV.registry[id]) || null;
+      }
+
+      function navRegister(x, meta){
+        const id = _navId(x);
+        if (!id) return null;
+        const prev = navEntry(id) || {};
+        AH_NAV.registry[id] = { ...prev, ...(meta || {}), id };
+        return AH_NAV.registry[id];
+      }
+
+      function navUnregister(x){
+        const id = _navId(x);
+        if (!id || !AH_NAV.registry) return;
+        delete AH_NAV.registry[id];
+      }
+
+      function navHasOpenState(id){
+        const entry = navEntry(id);
+        if (entry && typeof entry.isOpen === "function") {
+          try { return !!entry.isOpen(); } catch (_) {}
+        }
+        const el = document.getElementById(id);
+        if (!el) return false;
+        try {
+          const inline = el.style && el.style.display;
+          if (inline) return inline !== "none";
+          return window.getComputedStyle(el).display !== "none";
+        } catch (_) {
+          return true;
+        }
+      }
+
+      function navSyncUi(){
+        const hasStack = !!window.AH_NAV?.stack?.length;
+        try {
+          if (hasStack) tg?.BackButton?.show?.();
+          else tg?.BackButton?.hide?.();
+        } catch (_) {}
+        document.documentElement.classList.toggle("ah-modal-open", hasStack);
+      }
+
+      function navArmHistory(){
+        if (AH_NAV.historyArmed) return;
+        try {
+          const nextState = { ...(history.state || {}), __ahNav: 1, __ahNavSeq: ++AH_NAV.seq };
+          history.pushState(nextState, "", location.href);
+          AH_NAV.historyArmed = true;
+          navDbg("history:arm", nextState.__ahNavSeq);
+        } catch (_) {}
+      }
+
+      function navDisarmHistory(){
+        if (AH_NAV.popClosing) {
+          AH_NAV.historyArmed = false;
+          return;
+        }
+        if (!AH_NAV.historyArmed) return;
+        try {
+          if (history.state && history.state.__ahNav) {
+            AH_NAV.ignoreNextPop = true;
+            AH_NAV.historyArmed = false;
+            history.back();
+            navDbg("history:disarm");
+            return;
+          }
+        } catch (_) {}
+        AH_NAV.historyArmed = false;
+      }
+
+      function navOpen(x, meta){
+        const id = _navId(x); if(!id) return;
+        if (meta && typeof meta === "object") navRegister(id, meta);
+        const st = AH_NAV.stack;
+        const last = st[st.length - 1];
+        if (last === id && navHasOpenState(id)) {
+          navSyncUi();
+          return id;
+        }
+        const prevIdx = st.lastIndexOf(id);
+        if (prevIdx >= 0) st.splice(prevIdx, 1);
+        st.push(id);
+        if (st.length === 1) navArmHistory();
+        navSyncUi();
+        navDbg("open", id, st.slice());
+        return id;
       }
 
       function navClose(x){
         const id = _navId(x); if(!id) return;
         const st = AH_NAV.stack;
         const i = st.lastIndexOf(id);
-        if (i >= 0) st.splice(i, 1);
-        if (!st.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
-
-        document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
-
+        if (i < 0) return false;
+        st.splice(i, 1);
+        if (!st.length) navDisarmHistory();
+        navSyncUi();
+        navDbg("close", id, st.slice());
+        return true;
       }
 
-      function navCloseTop(){
-  const id = AH_NAV.stack.pop();
-  if (!AH_NAV.stack.length) { try { tg?.BackButton?.hide?.(); } catch (_) {} }
+      function navCloseTop(opts){
+        const meta = (opts && typeof opts === "object") ? opts : {};
+        const source = meta.source || "back";
+        const st = AH_NAV.stack;
 
-  // ✅ keep hero dim/blur in sync with stack
-  document.documentElement.classList.toggle("ah-modal-open", !!window.AH_NAV?.stack?.length);
+        while (st.length) {
+          const id = st[st.length - 1];
+          if (!navHasOpenState(id)) {
+            st.pop();
+            continue;
+          }
 
-  if (!id) return false;
+          const entry = navEntry(id);
+          const el = document.getElementById(id);
+          AH_NAV.popClosing = source === "history";
 
-  const el = document.getElementById(id);
-  if (el) el.style.display = "none";
-  return true;
-}
+          try {
+            if (entry && typeof entry.close === "function") {
+              entry.close({ source, id, el });
+            } else if (el) {
+              el.style.display = "none";
+            }
+          } catch (err) {
+            console.warn("[AH_NAV] close failed", id, err);
+            if (el) el.style.display = "none";
+          } finally {
+            AH_NAV.popClosing = false;
+          }
+
+          if (st.lastIndexOf(id) >= 0) {
+            navClose(id);
+          } else {
+            navSyncUi();
+          }
+
+          navDbg("closeTop", source, id, st.slice());
+          return true;
+        }
+
+        navSyncUi();
+        return false;
+      }
 
       // ✅ expose globally
+      window.navRegister = navRegister;
+      window.navUnregister = navUnregister;
       window.navOpen = navOpen;
       window.navClose = navClose;
       window.navCloseTop = navCloseTop;
@@ -5591,6 +5716,28 @@ body.bc-open #ahCommunityBtn{
         tg?.BackButton?.onClick?.(() => {
           if (navCloseTop()) return;
           try { tg?.close?.(); } catch(_) {}
+        });
+
+        window.addEventListener("popstate", (ev) => {
+          if (AH_NAV.ignoreNextPop) {
+            AH_NAV.ignoreNextPop = false;
+            AH_NAV.historyArmed = !!(history.state && history.state.__ahNav);
+            return;
+          }
+
+          if (!AH_NAV.stack.length) {
+            AH_NAV.historyArmed = !!(ev.state && ev.state.__ahNav);
+            return;
+          }
+
+          const handled = navCloseTop({ source: "history" });
+          if (!handled) {
+            AH_NAV.historyArmed = !!(ev.state && ev.state.__ahNav);
+            return;
+          }
+
+          if (AH_NAV.stack.length) navArmHistory();
+          else AH_NAV.historyArmed = false;
         });
       }
 
