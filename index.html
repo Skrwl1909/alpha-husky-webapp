@@ -5006,13 +5006,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
-<!-- NOWY MODAL: Mission Board -->
-<div id="qBack" class="q-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Mission Board">
+<!-- Quest Board v2 -->
+<div id="qBack" class="q-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Quest Board">
   <div class="q-bg" aria-hidden="true"></div>
 
   <div class="q-modal-body">
     <div class="q-modal-head">
-      <h3 class="q-title">Mission Board</h3>
+      <h3 class="q-title">Quest Board</h3>
 
       <div class="q-head-actions">
         <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
@@ -5026,20 +5026,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="q-tab q-tab--on" data-tab="all" role="tab" aria-selected="true" type="button">
         All <span data-count="all">0</span>
       </button>
-      <button class="q-tab" data-tab="daily" role="tab" aria-selected="false" type="button">
-        Daily <span data-count="daily">0</span>
+      <button class="q-tab" data-tab="fresh_trail" role="tab" aria-selected="false" type="button">
+        Fresh Trail <span data-count="fresh_trail">0</span>
       </button>
-      <button class="q-tab" data-tab="legendary" role="tab" aria-selected="false" type="button">
-        Legendary Path <span data-count="legendary">0</span>
+      <button class="q-tab" data-tab="daily_pack" role="tab" aria-selected="false" type="button">
+        Daily Pack Duties <span data-count="daily_pack">0</span>
       </button>
-      <button class="q-tab" data-tab="repeatable" role="tab" aria-selected="false" type="button">
-        Repeatable <span data-count="repeatable">0</span>
+      <button class="q-tab" data-tab="faction_war" role="tab" aria-selected="false" type="button">
+        Faction War <span data-count="faction_war">0</span>
       </button>
-      <button class="q-tab" data-tab="story" role="tab" aria-selected="false" type="button">
-        Story <span data-count="story">0</span>
-      </button>
-      <button class="q-tab" data-tab="bounties" role="tab" aria-selected="false" type="button">
-        Bounties <span data-count="bounties">0</span>
+      <button class="q-tab" data-tab="weekly_long" role="tab" aria-selected="false" type="button">
+        Weekly / Long Trail <span data-count="weekly_long">0</span>
       </button>
     </div>
 
@@ -5458,7 +5455,7 @@ body.bc-open #ahCommunityBtn{
 </div>
 
 <!-- Floating launcher (📜) -->
-<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Mission Board" title="Quests">📜</button>
+<button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Quest Board" title="Quests">📜</button>
 
 <button id="ahCommunityBtn" class="ah-community-btn" type="button" aria-label="Open Alpha Husky Telegram Community">
   <img src="/images/ui/ah-community-btn.png" alt="Alpha Husky Community" />
