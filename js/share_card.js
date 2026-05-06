@@ -680,24 +680,37 @@
     ctx.save();
 
     if (originImg) {
-      ctx.globalAlpha = 0.20;
-      ctx.filter = "blur(14px) saturate(1.15)";
+      ctx.globalAlpha = 0.13;
+      ctx.filter = "blur(18px) saturate(1.12)";
       drawCover(ctx, originImg, x - w * 0.04, y - h * 0.04, w * 1.08, h * 1.08);
       ctx.filter = "none";
 
-      ctx.globalAlpha = 0.10;
-      drawContainScaled(ctx, originImg, x + w * 0.10, y + h * 0.08, w * 0.80, h * 0.56, 1.08, 0, 0);
+      ctx.globalAlpha = 0.16;
+      ctx.filter = "blur(18px) saturate(1.22)";
+      drawContainScaled(ctx, originImg, x - w * 0.20, y + h * 0.03, w * 1.40, h * 0.78, 1.12, 0, 0);
+      ctx.filter = "none";
+
+      ctx.globalAlpha = 0.30;
+      ctx.shadowColor = "rgba(230,238,250,0.28)";
+      ctx.shadowBlur = 34;
+      drawContainScaled(ctx, originImg, x - w * 0.18, y + h * 0.04, w * 1.36, h * 0.76, 1.06, 0, 0);
+      ctx.shadowBlur = 0;
+
+      ctx.globalAlpha = 0.08;
+      ctx.filter = "blur(3px)";
+      drawContainScaled(ctx, originImg, x - w * 0.10, y + h * 0.07, w * 1.20, h * 0.68, 1.02, 0, 0);
+      ctx.filter = "none";
     }
 
-    const glow = ctx.createRadialGradient(x + w * 0.50, y + h * 0.38, 24, x + w * 0.50, y + h * 0.38, w * 0.68);
-    glow.addColorStop(0, "rgba(230,238,250,0.16)");
-    glow.addColorStop(0.45, "rgba(130,168,220,0.08)");
+    const glow = ctx.createRadialGradient(x + w * 0.50, y + h * 0.38, 24, x + w * 0.50, y + h * 0.38, w * 0.74);
+    glow.addColorStop(0, "rgba(230,238,250,0.22)");
+    glow.addColorStop(0.46, "rgba(130,168,220,0.10)");
     glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.globalAlpha = 1;
     ctx.fillStyle = glow;
     ctx.fillRect(x, y, w, h);
 
-    ctx.globalAlpha = 0.18;
+    ctx.globalAlpha = 0.12;
     ctx.strokeStyle = "rgba(230,238,250,0.28)";
     ctx.lineWidth = 1.25;
     for (let i = 0; i < 5; i += 1) {
