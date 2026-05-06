@@ -556,6 +556,30 @@
       } catch (_) {}
     },
 
+    closeInspect() {
+      const el = document.getElementById("equip-inspect");
+      if (!el) return false;
+      try { el.remove(); } catch (_) {}
+      try { window.navClose?.("equip-inspect"); } catch (_) {}
+      return true;
+    },
+
+    close() {
+      try { this.closeInspect(); } catch (_) {}
+      try { this._restoreContainer(); } catch (_) {}
+      try { window.navClose?.("equipped-root"); } catch (_) {}
+      try {
+        if (typeof window.goHome === "function") {
+          window.goHome();
+        } else {
+          window.location.reload();
+        }
+      } catch (_) {
+        window.location.reload();
+      }
+      return true;
+    },
+
     async open() {
       ensureEquippedStyles();
 
@@ -581,8 +605,13 @@
             <h2 style="margin:0;font-size:18px;">Character & Equipped</h2>
             <div style="display:flex;gap:8px;">
               <button type="button"
+                      style="border-radius:999px;border:0;background:rgba(255,255,255,.10);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
+                      onclick="window.Equipped && window.Equipped.close && window.Equipped.close()">
+                Back to Menu
+              </button>
+              <button type="button"
                       style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="try{ window.Equipped && window.Equipped._restoreContainer && window.Equipped._restoreContainer(); }catch(_){}; window.Inventory && window.Inventory.open && window.Inventory.open()">
+                      onclick="try{ window.navClose && window.navClose('equipped-root'); }catch(_){}; try{ window.Equipped && window.Equipped._restoreContainer && window.Equipped._restoreContainer(); }catch(_){}; window.Inventory && window.Inventory.open && window.Inventory.open()">
                 Inventory
               </button>
               <button type="button"
@@ -612,6 +641,14 @@
           <div id="equip-total" style="margin-top:4px;font-size:13px;opacity:.9;"></div>
         </div>
       `;
+
+      try {
+        window.navRegister?.("equipped-root", {
+          close: () => this.close(),
+          isOpen: () => !!document.getElementById("equipped-root"),
+        });
+        window.navOpen?.("equipped-root");
+      } catch (_) {}
 
       try {
         await this.refresh();
@@ -905,8 +942,7 @@
     },
 
     renderInspect(d) {
-      const old = document.getElementById("equip-inspect");
-      if (old) old.remove();
+      this.closeInspect();
 
       const wrapper = document.createElement("div");
       wrapper.id = "equip-inspect";
@@ -992,10 +1028,19 @@
 
       wrapper.appendChild(card);
       document.body.appendChild(wrapper);
+      wrapper.addEventListener("click", (e) => {
+        if (e.target === wrapper) this.closeInspect();
+      });
+      try {
+        window.navRegister?.("equip-inspect", {
+          close: () => this.closeInspect(),
+          isOpen: () => !!document.getElementById("equip-inspect"),
+        });
+        window.navOpen?.("equip-inspect");
+      } catch (_) {}
 
       document.getElementById("equip-close-btn").onclick = () => {
-        const el = document.getElementById("equip-inspect");
-        el && el.remove();
+        this.closeInspect();
       };
 
       document.getElementById("equip-unequip-btn").onclick = async () => {
@@ -1011,8 +1056,7 @@
           console.error("Equipped.unequip error", err);
           showAlert("Failed to unequip.");
         } finally {
-          const el = document.getElementById("equip-inspect");
-          el && el.remove();
+          this.closeInspect();
         }
       };
     },
