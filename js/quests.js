@@ -884,6 +884,7 @@ setOpen(wantOpen, true);
       },
 
       daily: async (action, raid, btn) => {
+        const perfT0 = global.__ahPerf?.now?.() || Date.now();
         try {
           if (btn) btn.disabled = true;
           setStatus("Doing…");
@@ -895,7 +896,10 @@ setOpen(wantOpen, true);
           state.debug(e);
           toast(e?.message || "Action failed");
           if (btn) btn.disabled = false;
-        } finally { setStatus(""); }
+        } finally {
+          setStatus("");
+          try { global.__ahPerf?.action?.(`daily_action:${String(action || "")}`, perfT0); } catch (_) {}
+        }
       }
     };
 

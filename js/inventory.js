@@ -51,6 +51,10 @@ window.Inventory = {
     }
   },
 
+  _perfAction(name, startedAt) {
+    try { window.__ahPerf?.action?.(name, startedAt); } catch (_) {}
+  },
+
   // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
   _bindTelegramBackButtonFallback() {
     try {
@@ -190,6 +194,7 @@ window.Inventory = {
   },
 
   async open() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     try {
       document
         .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
@@ -310,6 +315,8 @@ window.Inventory = {
         grid.innerHTML =
           `<p style="grid-column:1/-1;color:#f66;text-align:center;">Connection error</p>`;
       }
+    } finally {
+      this._perfAction("inventory_open", perfT0);
     }
   },
 
@@ -454,6 +461,7 @@ window.Inventory = {
 
   // === SALVAGE DUPES (killer) ===
   async salvageDupes() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const apiPost = window.S?.apiPost || window.apiPost;
 
     const keep = 1;
@@ -499,11 +507,13 @@ window.Inventory = {
       this._toast("Salvage failed: " + (e?.message || "Error"));
     } finally {
       if (btn) btn.disabled = false;
+      this._perfAction("inventory_salvage_dupes", perfT0);
     }
   },
 
   // === USE ITEM ===
 async use(key) {
+  const perfT0 = window.__ahPerf?.now?.() || Date.now();
   const item = this.findByKey(key);
   if (!item || this._normType(item) !== "consumable") return;
 
@@ -527,11 +537,14 @@ async use(key) {
   } catch (e) {
     Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
     Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
+  } finally {
+    this._perfAction("inventory_use", perfT0);
   }
 },
 
   // === DISCARD ITEM (safe remove v1) ===
   async removeItem(key, mode = "one") {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const item = this.findByKey(key);
     if (!item) return;
 
@@ -590,11 +603,13 @@ async use(key) {
       this._toast(String(e?.message || "Discard failed."));
     } finally {
       this._removePending.delete(pendingKey);
+      this._perfAction(`inventory_remove:${removeAll ? "all" : "one"}`, perfT0);
     }
   },
 
   // === EQUIP ===
   async equip(key) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const item = this.findByKey(key);
     if (!item || !this._isGear(item)) return;
 
@@ -613,11 +628,14 @@ async use(key) {
     } catch (e) {
       Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
       Telegram.WebApp.showAlert("Cannot equip: " + (e.message || "Error"));
+    } finally {
+      this._perfAction("inventory_equip", perfT0);
     }
   },
 
   // kept for compatibility (not used by inventory view anymore)
   async unequip(slot) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const s = String(slot || "").toLowerCase();
     if (!s) return;
 
@@ -636,11 +654,14 @@ async use(key) {
     } catch (e) {
       Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
       Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
+    } finally {
+      this._perfAction("inventory_unequip", perfT0);
     }
   },
 
   // kept for compatibility (upgrade should be in Equipped panel)
   async upgrade(slot) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const s = String(slot || "").toLowerCase();
     if (!s) return;
 
@@ -659,6 +680,8 @@ async use(key) {
     } catch (e) {
       Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
       Telegram.WebApp.showAlert("Upgrade failed:\n" + (e.message || "Error"));
+    } finally {
+      this._perfAction("inventory_upgrade", perfT0);
     }
   },
 };

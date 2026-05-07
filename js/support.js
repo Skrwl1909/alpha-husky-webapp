@@ -12,6 +12,10 @@
     if (_dbg) console.log("[Support]", ...args);
   }
 
+  function perfAction(name, startedAt) {
+    try { window.__ahPerf?.action?.(name, startedAt); } catch (_) {}
+  }
+
   function getTg() {
     return _tg || window.tg || window.Telegram?.WebApp || null;
   }
@@ -538,34 +542,49 @@ It makes your presence visible.</div>
   }
 
   async function createStarsInvoice(tier) {
-    const apiPost = getApiPost();
-    if (!apiPost) throw new Error("NO_API_POST");
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    try {
+      const apiPost = getApiPost();
+      if (!apiPost) throw new Error("NO_API_POST");
 
-    const run_id = runId(`supp_${tier || "x"}`);
-    const res = await apiPost("/webapp/support/invoice", { tier, run_id });
-    const link = res?.invoiceLink || res?.invoice_link || res?.data?.invoiceLink || "";
+      const run_id = runId(`supp_${tier || "x"}`);
+      const res = await apiPost("/webapp/support/invoice", { tier, run_id });
+      const link = res?.invoiceLink || res?.invoice_link || res?.data?.invoiceLink || "";
 
-    if (!link) throw new Error("NO_INVOICE_LINK");
-    return { link, payload: res?.payload || "", run_id };
+      if (!link) throw new Error("NO_INVOICE_LINK");
+      return { link, payload: res?.payload || "", run_id };
+    } finally {
+      perfAction(`support_invoice:${String(tier || "")}`, perfT0);
+    }
   }
 
   async function refreshProfileViews() {
-    try { await window.loadProfile?.(); } catch (_) {}
-    try { window.renderTopbar?.(); } catch (_) {}
-    try { window.paintBuffs?.(); } catch (_) {}
-    try { await window.loadPlayerState?.(); } catch (_) {}
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    try {
+      try { await window.loadProfile?.(); } catch (_) {}
+      try { window.renderTopbar?.(); } catch (_) {}
+      try { window.paintBuffs?.(); } catch (_) {}
+      try { await window.loadPlayerState?.(); } catch (_) {}
+    } finally {
+      perfAction("support_refresh_profile_views", perfT0);
+    }
   }
 
   async function refreshSupportState(opts = {}) {
-    const apiPost = getApiPost();
-    if (!apiPost) throw new Error("NO_API_POST");
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    try {
+      const apiPost = getApiPost();
+      if (!apiPost) throw new Error("NO_API_POST");
 
-    const out = await apiPost("/webapp/supporter/state", {});
-    if (!out || out.ok === false) throw new Error(out?.reason || "SUPPORT_STATE_FAILED");
+      const out = await apiPost("/webapp/supporter/state", {});
+      if (!out || out.ok === false) throw new Error(out?.reason || "SUPPORT_STATE_FAILED");
 
-    _state = out.support || {};
-    renderState(_state, opts);
-    return _state;
+      _state = out.support || {};
+      renderState(_state, opts);
+      return _state;
+    } finally {
+      perfAction("support_state", perfT0);
+    }
   }
 
   function renderStarsState(stars) {
@@ -880,6 +899,7 @@ It makes your presence visible.</div>
   }
 
   async function linkSolanaWallet() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const apiPost = getApiPost();
     const tg = getTg();
     const provider = getSolanaProvider();
@@ -924,30 +944,40 @@ It makes your presence visible.</div>
     }
 
     try {
-      await refreshHolderStatus({ silent: true });
-    } catch (refreshErr) {
-      log("initial holder refresh failed after link:", refreshErr);
-      try { await refreshSupportState(); } catch (_) {}
+      try {
+        await refreshHolderStatus({ silent: true });
+      } catch (refreshErr) {
+        log("initial holder refresh failed after link:", refreshErr);
+        try { await refreshSupportState(); } catch (_) {}
+      }
+      await refreshProfileViews();
+      try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      return res;
+    } finally {
+      perfAction("support_link_wallet", perfT0);
     }
-    await refreshProfileViews();
-    try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    return res;
   }
 
   async function refreshHolderStatus(opts = {}) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const apiPost = getApiPost();
     if (!apiPost) throw new Error("NO_API_POST");
 
     const res = await apiPost("/webapp/supporter/refresh", { run_id: runId("supporter_refresh") });
     if (!res || res.ok === false) throw new Error(res?.reason || "REFRESH_FAILED");
 
-    _state = res.support || _state || {};
-    renderState(_state);
-    if (!opts.silent) await refreshProfileViews();
-    return res;
+    try {
+      _state = res.support || _state || {};
+      renderState(_state);
+      if (!opts.silent) await refreshProfileViews();
+      return res;
+    } finally {
+      perfAction("support_refresh_holder_status", perfT0);
+    }
   }
 
   async function claimWeekly() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const apiPost = getApiPost();
     const tg = getTg();
     if (!apiPost) throw new Error("NO_API_POST");
@@ -955,15 +985,20 @@ It makes your presence visible.</div>
     const res = await apiPost("/webapp/supporter/claim", { run_id: runId("supporter_claim") });
     if (!res || res.ok === false) throw new Error(res?.reason || "CLAIM_FAILED");
 
-    _state = res.support || _state || {};
-    renderState(_state);
-    await refreshProfileViews();
-    try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    try { tg?.showAlert?.(`${res?.rewardName || "Holder Echo Pack"} claimed. +${res?.reward?.amount || 0} bones.`); } catch (_) {}
-    return res;
+    try {
+      _state = res.support || _state || {};
+      renderState(_state);
+      await refreshProfileViews();
+      try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      try { tg?.showAlert?.(`${res?.rewardName || "Holder Echo Pack"} claimed. +${res?.reward?.amount || 0} bones.`); } catch (_) {}
+      return res;
+    } finally {
+      perfAction("support_claim_weekly", perfT0);
+    }
   }
 
   async function disconnectWallet() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const apiPost = getApiPost();
     const tg = getTg();
     if (!apiPost) throw new Error("NO_API_POST");
@@ -971,11 +1006,15 @@ It makes your presence visible.</div>
     const res = await apiPost("/webapp/supporter/unlink", { run_id: runId("supporter_unlink") });
     if (!res || res.ok === false) throw new Error(res?.reason || "UNLINK_FAILED");
 
-    _state = res.support || _state || {};
-    renderState(_state);
-    await refreshProfileViews();
-    try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-    return res;
+    try {
+      _state = res.support || _state || {};
+      renderState(_state);
+      await refreshProfileViews();
+      try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      return res;
+    } finally {
+      perfAction("support_disconnect_wallet", perfT0);
+    }
   }
 
   function setButtonBusy(id, busy, busyLabel, idleLabel) {

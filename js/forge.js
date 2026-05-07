@@ -10,6 +10,10 @@
     _dbg = !!dbg;
   }
 
+  function logActionPerf(name, startedAt) {
+    try { window.__ahPerf?.action?.(name, startedAt); } catch (_) {}
+  }
+
   async function post(path, payload) {
     if (_apiPost) return await _apiPost(path, payload || {});
     const API_BASE = window.API_BASE || "";
@@ -1496,6 +1500,7 @@
 
     async function doUpgrade(it) {
       if (!it || _busy || !it.canUpgrade) return;
+      const perfT0 = window.__ahPerf?.now?.() || Date.now();
       _busy = true;
       draw();
 
@@ -1512,6 +1517,7 @@
       } finally {
         _busy = false;
         draw();
+        logActionPerf("forge_upgrade", perfT0);
       }
     }
 
@@ -1997,6 +2003,7 @@ slotField.right.appendChild(chipbar);
     refreshBtn.disabled = _busy;
     refreshBtn.addEventListener("click", async () => {
       if (_busy) return;
+      const perfT0 = window.__ahPerf?.now?.() || Date.now();
       _busy = true;
       draw();
       try {
@@ -2007,6 +2014,7 @@ slotField.right.appendChild(chipbar);
       } finally {
         _busy = false;
         draw();
+        logActionPerf("forge_refresh", perfT0);
       }
     });
 
@@ -2015,6 +2023,7 @@ slotField.right.appendChild(chipbar);
 
     btn.addEventListener("click", async () => {
       if (_busy) return;
+      const perfT0 = window.__ahPerf?.now?.() || Date.now();
 
       const slot = sel.value;
       const count = clampField(inpCount, 1, 50);
@@ -2136,6 +2145,7 @@ slotField.right.appendChild(chipbar);
       } finally {
         _busy = false;
         draw();
+        logActionPerf("forge_craft", perfT0);
       }
     });
 
@@ -2253,11 +2263,13 @@ slotField.right.appendChild(chipbar);
   }
 
   async function loadState() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const res = await post("/webapp/forge/state", {
       buildingId: _ctx.buildingId,
       run_id: rid("forge_state")
     });
     _state = (res && (res.data || res)) || null;
+    logActionPerf("forge_state", perfT0);
   }
 
   function mount() {
@@ -2318,6 +2330,7 @@ slotField.right.appendChild(chipbar);
   }
 
   async function open(ctx) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
     _ctx = {
       buildingId: ctx && ctx.buildingId ? ctx.buildingId : null,
       name: (ctx && ctx.name) || "Forgotten Tokens’ Vault",
@@ -2330,6 +2343,7 @@ slotField.right.appendChild(chipbar);
       toast(`Forge load failed: ${e.message}`);
     } finally {
       draw();
+      logActionPerf("forge_open", perfT0);
     }
   }
 
