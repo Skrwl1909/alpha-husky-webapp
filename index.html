@@ -7037,7 +7037,43 @@ function setTopTag(tagKey, baseText="PACK"){
   try { window.Influence?.setFaction?.(f); } catch(_){}
       }
 
+if (!window.__ahBootDefer) {
+  window.__ahBootDefer = {
+    ready: false,
+    queue: [],
+    markReady() {
+      if (this.ready) return;
+      this.ready = true;
+      const pending = Array.isArray(this.queue) ? this.queue.splice(0) : [];
+      pending.forEach(({ fn, delayMs }) => {
+        window.setTimeout(() => {
+          try { fn(); } catch (e) { console.warn("boot defer failed", e); }
+        }, Math.max(0, Number(delayMs || 0)));
+      });
+    },
+    defer(fn, delayMs = 0) {
+      if (typeof fn !== "function") return;
+      if (this.ready) {
+        window.setTimeout(() => {
+          try { fn(); } catch (e) { console.warn("boot defer failed", e); }
+        }, Math.max(0, Number(delayMs || 0)));
+        return;
+      }
+      this.queue.push({ fn, delayMs });
+    }
+  };
+}
+
+window.runAfterFirstProfileRender = function runAfterFirstProfileRender(fn, delayMs = 0) {
+  window.__ahBootDefer?.defer?.(fn, delayMs);
+};
+
+let __loadProfilePromise = null;
+let __loadPlayerStatePromise = null;
+
 async function loadProfile() {
+  if (__loadProfilePromise) return __loadProfilePromise;
+  const run = (async () => {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
     const requestPerfT0 = window.__ahPerf?.now?.() || Date.now();
@@ -7127,7 +7163,15 @@ hydrateFactionFromPayload({ profile: p, ...out });
   } catch (e) {
     console.warn("profile load failed", e);
   } finally {
+    window.__ahBootDefer?.markReady?.();
     window.__ahPerf?.boot?.("loadProfile.total", perfT0);
+  }
+  })();
+  __loadProfilePromise = run;
+  try {
+    return await run;
+  } finally {
+    if (__loadProfilePromise === run) __loadProfilePromise = null;
   }
 }
 window.loadProfile = loadProfile;
@@ -7268,6 +7312,8 @@ window.goHome = function goHome() {
 };
 
 async function loadPlayerState() {
+  if (__loadPlayerStatePromise) return __loadPlayerStatePromise;
+  const run = (async () => {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
     const statePerfT0 = window.__ahPerf?.now?.() || Date.now();
@@ -7306,12 +7352,24 @@ async function loadPlayerState() {
     try { window.renderFactionBadge?.(); } catch (_) {}
 
     // ✅ Onboarding (V0 smart) — pokaż raz po pełnym załadowaniu UI
-    try { window.maybeOpenOnboarding?.(); } catch (_) {}
+    if (!window.__ahOnboardingDeferred) {
+      window.__ahOnboardingDeferred = true;
+      window.runAfterFirstProfileRender?.(() => {
+        try { window.maybeOpenOnboarding?.(); } catch (_) {}
+      }, 900);
+    }
 
   } catch (e) {
     console.warn("state load failed", e);
   } finally {
     window.__ahPerf?.boot?.("loadPlayerState.total", perfT0);
+  }
+  })();
+  __loadPlayerStatePromise = run;
+  try {
+    return await run;
+  } finally {
+    if (__loadPlayerStatePromise === run) __loadPlayerStatePromise = null;
   }
 }
 async function loadPlayerStateLogged() {
@@ -8788,10 +8846,14 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     }
   }
 
+  function scheduleInitCTA(){
+    window.runAfterFirstProfileRender?.(() => tryInitCTA(), 350);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tryInitCTA, { once: true });
+    document.addEventListener("DOMContentLoaded", scheduleInitCTA, { once: true });
   } else {
-    tryInitCTA();
+    scheduleInitCTA();
   }
 })();
 </script>
@@ -8823,10 +8885,14 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     }
   }
 
+  function scheduleInitMailbox(){
+    window.runAfterFirstProfileRender?.(() => tryInitMailbox(), 700);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tryInitMailbox, { once: true });
+    document.addEventListener("DOMContentLoaded", scheduleInitMailbox, { once: true });
   } else {
-    tryInitMailbox();
+    scheduleInitMailbox();
   }
 })();
 </script>
@@ -9080,10 +9146,14 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     }
   }
 
+  function scheduleInitSupport(){
+    window.runAfterFirstProfileRender?.(() => tryInitSupport(), 1100);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tryInitSupport, { once: true });
+    document.addEventListener("DOMContentLoaded", scheduleInitSupport, { once: true });
   } else {
-    tryInitSupport();
+    scheduleInitSupport();
   }
 })();
 </script>
