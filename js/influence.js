@@ -656,6 +656,14 @@
     if (next) {
       backdrop.style.display = "block";
       sheet.style.display = "block";
+      try {
+        window.navRegister?.("infSignalSheet", {
+          close: () => setSignalCorePanelOpen(false),
+          isOpen: () => !!_signalCoreOpen && !!sheet && sheet.style.display !== "none",
+        });
+        window.navOpen?.("infSignalSheet");
+      } catch (_) {}
+      if (_dbg) console.debug("[Influence] signal-core open");
       requestAnimationFrame(() => {
         if (!_signalCoreOpen) return;
         backdrop.classList.add("is-open");
@@ -666,6 +674,8 @@
 
     backdrop.classList.remove("is-open");
     sheet.classList.remove("is-open");
+    try { window.navClose?.("infSignalSheet"); } catch (_) {}
+    if (_dbg) console.debug("[Influence] signal-core close");
     window.setTimeout(() => {
       if (_signalCoreOpen) return;
       backdrop.style.display = "none";
@@ -677,7 +687,7 @@
     const host = _qs("infSignalReadout");
     if (!host) return;
     const safeLines = Array.isArray(lines)
-      ? lines.map((line) => String(line || "").trim()).filter(Boolean).slice(0, 4)
+      ? lines.map((line) => String(line || "").trim()).filter(Boolean).slice(0, 3)
       : [];
     const out = safeLines.length ? safeLines : ["Signal feed syncing."];
     host.innerHTML = out.map((line) => `<div class="inf-signal-line">${esc(line)}</div>`).join("");
@@ -719,12 +729,19 @@
     const valueText = String(valueLabel || "").trim() || "Support";
     const subtitleRaw = String(nodeId || "").trim().replaceAll("_", " ") || "Frontline node core";
     const subtitle = subtitleRaw.replace(/\b\w/g, (ch) => ch.toUpperCase());
-    const statusCopy = uxStatusText(statusKey);
+    const statusCopy = ({
+      SIEGE_LIVE: "Live clash window.",
+      SIEGE_FORMING: "Pressure spike detected.",
+      SIEGE_COOLDOWN: "Reset window active.",
+      CONTESTED: "Control contested.",
+      HOT: "Threat level rising.",
+      FORTIFIED: "Outer ring fortified.",
+    })[statusKey] || "Signal stable.";
 
     let pulseText = "Recent pulse: low traffic.";
-    if (statusKey === "SIEGE_LIVE" || statusKey === "CONTESTED") pulseText = "Recent pulse: hostile spikes detected.";
-    else if (viewerPressure > 0) pulseText = "Recent pulse: allied signal packets rising.";
-    else if (watchUsed > 0) pulseText = "Recent pulse: watch deck pings holding.";
+    if (statusKey === "SIEGE_LIVE" || statusKey === "CONTESTED") pulseText = "Recent pulse: hostile spikes.";
+    else if (viewerPressure > 0) pulseText = "Recent pulse: allied packets rising.";
+    else if (watchUsed > 0) pulseText = "Recent pulse: watch pings holding.";
 
     if (sheetEl) {
       sheetEl.style.setProperty("--inf-signal-glow", mood.border);
@@ -743,16 +760,32 @@
     if (controlText) lines.push(controlText);
     lines.push(statusCopy);
     if (viewerPressure > 0 && leaderPressure > 0) {
-      lines.push(`Your faction pressure is ${viewerPressure} against lead ${leaderPressure}.`);
+      lines.push(`Pressure ${viewerPressure} vs lead ${leaderPressure}.`);
     } else if (viewerPressure > 0) {
-      lines.push(`Your faction pressure is active at ${viewerPressure}.`);
+      lines.push(`Your pressure active at ${viewerPressure}.`);
     } else if (leaderPressure > 0) {
-      lines.push(`Enemy pressure signal is ${leaderPressure}. Counter-pressure advised.`);
+      lines.push(`Enemy pressure ${leaderPressure}. Counter advised.`);
     } else {
-      lines.push("No active pressure packets in this cycle.");
+      lines.push("No pressure packets this cycle.");
     }
-    lines.push(watchMax > 0 ? `Watch slots ${watchText}.` : "Watch grid awaiting defenders.");
     renderSignalReadout(lines);
+  }
+
+  function triggerActionMicroReaction() {
+    const react = (id, cls, ttl = 460) => {
+      const el = _qs(id);
+      if (!el) return;
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
+      window.setTimeout(() => {
+        el.classList.remove(cls);
+      }, ttl);
+    };
+
+    react("infHero", "is-action-react", 460);
+    react("infSignalCoreBtn", "is-action-react", 520);
+    react("infUxStatus", "is-action-react", 360);
   }
 
   function _stopCooldownTick() {
@@ -1155,27 +1188,28 @@
         --inf-signal-glow: rgba(255,196,132,.32);
         --inf-signal-soft: rgba(255,172,112,.12);
         position:absolute;
-        left:8px;
-        right:8px;
+        left:50%;
+        right:auto;
+        width:min(92vw, 430px);
         bottom:8px;
         z-index:2;
-        border-radius:16px;
+        border-radius:14px;
         border:1px solid rgba(255,214,172,.22);
         background:
           radial-gradient(circle at 18% 0%, var(--inf-signal-soft), transparent 42%),
           linear-gradient(180deg, rgba(18,24,34,.98), rgba(10,15,24,.98));
-        box-shadow:0 18px 40px rgba(0,0,0,.52), inset 0 1px 0 rgba(255,255,255,.06);
-        padding:11px 11px 12px;
-        max-height:min(72dvh, 520px);
+        box-shadow:0 14px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+        padding:9px 9px 10px;
+        max-height:min(68dvh, 470px);
         overflow:auto;
         -webkit-overflow-scrolling:touch;
-        transform:translateY(14px);
+        transform:translate(-50%, 14px);
         opacity:0;
         pointer-events:none;
         transition:transform .2s ease, opacity .2s ease;
       }
       #influenceModal .inf-signal-sheet.is-open{
-        transform:translateY(0);
+        transform:translate(-50%, 0);
         opacity:1;
         pointer-events:auto;
       }
@@ -1204,15 +1238,15 @@
         border-radius:10px;
         background:rgba(255,255,255,.05);
         color:#edf5ff;
-        padding:7px 9px;
-        font-size:11px;
+        padding:6px 8px;
+        font-size:10px;
         font-weight:800;
         cursor:pointer;
       }
       #influenceModal .inf-signal-visual{
         position:relative;
-        margin-top:8px;
-        min-height:136px;
+        margin-top:7px;
+        min-height:114px;
         border-radius:12px;
         border:1px solid rgba(255,255,255,.13);
         background:
@@ -1227,8 +1261,8 @@
       #influenceModal .inf-signal-visual::before{
         content:"";
         position:absolute;
-        width:132px;
-        height:132px;
+        width:108px;
+        height:108px;
         border-radius:50%;
         border:1px solid rgba(255,240,214,.33);
         box-shadow:0 0 0 14px rgba(255,228,186,.055), 0 0 0 28px rgba(255,228,186,.028);
@@ -1236,19 +1270,19 @@
       #influenceModal .inf-signal-visual::after{
         content:"";
         position:absolute;
-        width:178px;
-        height:178px;
+        width:148px;
+        height:148px;
         border-radius:50%;
         border:1px dashed rgba(255,231,196,.26);
         animation:infSignalSpin 14s linear infinite;
       }
       #influenceModal .inf-signal-pulse-ring{
         position:absolute;
-        width:78px;
-        height:78px;
+        width:64px;
+        height:64px;
         border-radius:50%;
         border:1px solid var(--inf-signal-glow);
-        box-shadow:0 0 18px rgba(255,196,124,.18);
+        box-shadow:0 0 14px rgba(255,196,124,.18);
         animation:infSignalPulse 2.2s ease-out infinite;
       }
       #influenceModal .inf-signal-visual-copy{
@@ -1256,23 +1290,23 @@
         z-index:1;
       }
       #influenceModal .inf-signal-visual-state{
-        font-size:16px;
+        font-size:14px;
         font-weight:900;
         color:#f8fbff;
         letter-spacing:.06em;
         text-transform:uppercase;
       }
       #influenceModal .inf-signal-visual-hint{
-        margin-top:4px;
-        font-size:11px;
+        margin-top:3px;
+        font-size:10px;
         color:#d7e7fc;
         opacity:.9;
       }
       #influenceModal .inf-signal-grid{
-        margin-top:8px;
+        margin-top:7px;
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:7px;
+        gap:6px;
       }
       #influenceModal .inf-signal-tile{
         border-radius:10px;
@@ -1288,18 +1322,18 @@
         opacity:.82;
       }
       #influenceModal .inf-signal-tile-value{
-        margin-top:4px;
-        font-size:12px;
+        margin-top:3px;
+        font-size:11px;
         font-weight:800;
         color:#eaf3ff;
-        line-height:1.3;
+        line-height:1.25;
       }
       #influenceModal .inf-signal-readout{
-        margin-top:9px;
+        margin-top:7px;
         border-radius:11px;
         border:1px solid rgba(255,255,255,.12);
         background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-        padding:8px 9px;
+        padding:7px 8px;
       }
       #influenceModal .inf-signal-readout-title{
         font-size:9px;
@@ -1309,34 +1343,43 @@
         opacity:.84;
       }
       #influenceModal .inf-signal-lines{
-        margin-top:5px;
+        margin-top:4px;
         display:grid;
-        gap:4px;
+        gap:3px;
       }
       #influenceModal .inf-signal-line{
-        font-size:11px;
-        line-height:1.32;
+        font-size:10px;
+        line-height:1.28;
         color:#ddeafb;
       }
       #influenceModal .inf-signal-pulse{
-        margin-top:8px;
+        margin-top:7px;
         border-radius:10px;
         border:1px solid rgba(255,211,156,.22);
         background:rgba(255,199,138,.09);
-        padding:7px 8px;
-        font-size:11px;
+        padding:6px 8px;
+        font-size:10px;
         color:#ffe4c1;
       }
       #influenceModal .inf-signal-foot{
-        margin-top:10px;
+        margin-top:8px;
         display:flex;
         justify-content:flex-end;
       }
       #influenceModal .inf-signal-return{
-        margin-top:6px;
-        font-size:10px;
+        margin-top:5px;
+        font-size:9px;
         color:#afc3dc;
         opacity:.8;
+      }
+      #influenceModal .inf-hero.is-action-react{
+        animation:infHeroActionPulse .44s ease;
+      }
+      #influenceModal .inf-node-core.is-action-react::before{
+        animation:infCoreActionPulse .5s ease;
+      }
+      #influenceModal .inf-chip.is-action-react{
+        animation:infChipSnap .36s ease;
       }
       @keyframes infSignalSpin{
         from{ transform:rotate(0deg); }
@@ -1346,6 +1389,21 @@
         0%{ transform:scale(.85); opacity:.7; }
         70%{ transform:scale(1.22); opacity:0; }
         100%{ transform:scale(1.22); opacity:0; }
+      }
+      @keyframes infHeroActionPulse{
+        0%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+        45%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(255,214,146,.24); }
+        100%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+      }
+      @keyframes infCoreActionPulse{
+        0%{ transform:scale(.98); opacity:.72; }
+        55%{ transform:scale(1.12); opacity:.3; }
+        100%{ transform:scale(1.16); opacity:.08; }
+      }
+      @keyframes infChipSnap{
+        0%{ transform:scale(1); }
+        45%{ transform:scale(1.06); }
+        100%{ transform:scale(1); }
       }
       #influenceModal .inf-chip-row{
         margin-top:8px;
@@ -1927,6 +1985,11 @@
         #influenceModal .inf-signal-sheet{
           transition:none !important;
         }
+        #influenceModal .inf-hero.is-action-react,
+        #influenceModal .inf-node-core.is-action-react::before,
+        #influenceModal .inf-chip.is-action-react{
+          animation:none !important;
+        }
         #influenceModal .inf-signal-visual::after,
         #influenceModal .inf-signal-pulse-ring{
           animation:none !important;
@@ -1939,7 +2002,7 @@
         #influenceModal .inf-action-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-local-grid,
         #influenceModal .inf-status-grid{ grid-template-columns:minmax(0,1fr); }
-        #influenceModal .inf-signal-sheet{ left:6px; right:6px; bottom:6px; padding:10px 10px 11px; }
+        #influenceModal .inf-signal-sheet{ width:min(96vw,430px); left:50%; right:auto; bottom:6px; padding:9px 9px 10px; }
         #influenceModal .inf-signal-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-weekly-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-reward-checklist{ grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -2045,7 +2108,7 @@
 
         <section id="infIntelShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
-            <div class="inf-panel-title">Local Operations</div>
+            <div class="inf-panel-title">Node Status</div>
             <span class="inf-chip inf-chip-muted">Live feed</span>
           </div>
           <div class="inf-local-grid">
@@ -2059,36 +2122,40 @@
               <div class="inf-meter"><i id="infIntelWatchBar"></i></div>
             </article>
             <article class="inf-tile">
-              <div class="inf-tile-label">Your Presence</div>
-              <div id="infIntelPresence" class="inf-tile-value">No local actions recorded yet.</div>
-            </article>
-            <article class="inf-tile">
               <div class="inf-tile-label">Threat Meter</div>
               <div id="infIntelPressure" class="inf-tile-value">0</div>
               <div class="inf-meter"><i id="infIntelPressureBar"></i></div>
               <div id="infIntelPressureHint" class="inf-hint">Waiting for frontline pressure.</div>
             </article>
-          </div>
-        </section>
-
-        <section class="inf-panel rv-surface">
-          <div class="inf-panel-title">Operator Status</div>
-          <div class="inf-status-grid">
-            <article class="inf-tile">
-              <div class="inf-tile-label">Owner</div>
-              <div id="infLocalOwner" class="inf-tile-value">-</div>
-            </article>
-            <article class="inf-tile">
-              <div class="inf-tile-label">Watch</div>
-              <div id="infLocalWatch" class="inf-tile-value">-</div>
-            </article>
             <article class="inf-tile">
               <div class="inf-tile-label">Node State</div>
               <div id="infLocalOps" class="inf-tile-value">Awaiting frontline sync.</div>
+              <div id="infNodeStateHint" class="inf-hint">Signal cycle idle.</div>
+            </article>
+          </div>
+        </section>
+
+        <section id="infPresenceShell" class="inf-panel rv-surface">
+          <div class="inf-panel-head">
+            <div class="inf-panel-title">Your Presence</div>
+            <span class="inf-chip inf-chip-muted">Operator</span>
+          </div>
+          <div class="inf-status-grid">
+            <article class="inf-tile">
+              <div class="inf-tile-label">Your Pressure</div>
+              <div id="infIntelPresence" class="inf-tile-value">No local pressure yet.</div>
             </article>
             <article class="inf-tile">
               <div class="inf-tile-label">Your Position</div>
-              <div id="infLocalYou" class="inf-tile-value">No local actions recorded yet.</div>
+              <div id="infLocalYou" class="inf-tile-value">No rank recorded yet.</div>
+            </article>
+            <article class="inf-tile">
+              <div class="inf-tile-label">Active Days</div>
+              <div id="infLocalProgress" class="inf-tile-value">Progress syncing.</div>
+            </article>
+            <article class="inf-tile">
+              <div class="inf-tile-label">Participation</div>
+              <div id="infPresenceHint" class="inf-tile-value">Patrol once to start local trace.</div>
             </article>
           </div>
         </section>
@@ -2395,6 +2462,17 @@
 
     m.style.display = "flex";
     document.body.classList.add("ah-modal-open");
+    try {
+      window.navRegister?.("influenceModal", {
+        close,
+        isOpen: () => {
+          const modal = document.getElementById("influenceModal");
+          return !!modal && modal.style.display !== "none";
+        },
+      });
+      window.navOpen?.("influenceModal");
+    } catch (_) {}
+    if (_dbg) console.debug("[Influence] open", nodeId);
 
     // if cooldown running, render it immediately
     if (_cdUntilMs > Date.now()) {
@@ -2422,6 +2500,8 @@
     setSignalCorePanelOpen(false);
     m.style.display = "none";
     document.body.classList.remove("ah-modal-open");
+    try { window.navClose?.("influenceModal"); } catch (_) {}
+    if (_dbg) console.debug("[Influence] close");
 
     try {
       const card = document.getElementById("influenceCard");
@@ -2624,10 +2704,11 @@
     const intelPressureEl = document.getElementById("infIntelPressure");
     const intelPressureBarEl = document.getElementById("infIntelPressureBar");
     const intelPressureHintEl = document.getElementById("infIntelPressureHint");
-    const localOwnerEl = document.getElementById("infLocalOwner");
-    const localWatchEl = document.getElementById("infLocalWatch");
     const localYouEl = document.getElementById("infLocalYou");
     const localOpsEl = document.getElementById("infLocalOps");
+    const localProgressEl = document.getElementById("infLocalProgress");
+    const presenceHintEl = document.getElementById("infPresenceHint");
+    const nodeStateHintEl = document.getElementById("infNodeStateHint");
     const donateShellEl = document.getElementById("infDonateShell");
     const patrolHelpEl = document.getElementById("infPatrolHelp");
     const watchHelpEl = document.getElementById("infWatchHelp");
@@ -2679,15 +2760,16 @@
       if (coreStateEl) coreStateEl.textContent = "Stable";
       if (intelOwnerEl) intelOwnerEl.textContent = "-";
       if (intelWatchEl) intelWatchEl.textContent = "No watch roster";
-      if (intelPresenceEl) intelPresenceEl.textContent = "No local actions recorded yet.";
+      if (intelPresenceEl) intelPresenceEl.textContent = "No local pressure yet.";
       if (intelPressureEl) intelPressureEl.textContent = "0";
       if (intelWatchBarEl) intelWatchBarEl.style.width = "0%";
       if (intelPressureBarEl) intelPressureBarEl.style.width = "0%";
       if (intelPressureHintEl) intelPressureHintEl.textContent = "Waiting for frontline pressure.";
-      if (localOwnerEl) localOwnerEl.textContent = "-";
-      if (localWatchEl) localWatchEl.textContent = "No watch roster";
-      if (localYouEl) localYouEl.textContent = "No local actions recorded yet.";
+      if (localYouEl) localYouEl.textContent = "No rank recorded yet.";
       if (localOpsEl) localOpsEl.textContent = "Awaiting frontline sync.";
+      if (localProgressEl) localProgressEl.textContent = "Progress syncing.";
+      if (presenceHintEl) presenceHintEl.textContent = "Patrol once to start local trace.";
+      if (nodeStateHintEl) nodeStateHintEl.textContent = "Signal cycle idle.";
       if (patrolHelpEl) patrolHelpEl.textContent = "Patrol now to build pressure on this frontline.";
       if (watchHelpEl) watchHelpEl.textContent = "Watch opens when siege pressure spikes.";
       if (donateHelpEl) donateHelpEl.textContent = "Donate to reinforce your faction's weekly momentum.";
@@ -2807,8 +2889,6 @@
       loreEl.textContent = "";
     }
 
-    if (localOwnerEl) localOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
-    if (localWatchEl) localWatchEl.textContent = watchText;
     if (intelOwnerEl) intelOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
     if (intelWatchEl) intelWatchEl.textContent = watchText;
     if (intelWatchBarEl) {
@@ -2822,20 +2902,43 @@
       }
     }
 
+    const my = (_weekly && typeof _weekly.my === "object") ? _weekly.my : null;
     if (localYouEl) {
-      const my = (_weekly && typeof _weekly.my === "object") ? _weekly.my : null;
       if (my) {
-        const rankTxt = my.factionRank ? `#${my.factionRank}` : (my.overallRank ? `#${my.overallRank}` : "-");
-        localYouEl.textContent = `Score ${Number(my.score || 0)} | Rank ${rankTxt} | Days ${Number(my.activeDays || 0)}${viewerPressure > 0 ? ` | Pressure ${viewerPressure}` : ""}`;
+        const rankTxt = my.factionRank ? `Faction #${my.factionRank}` : (my.overallRank ? `Global #${my.overallRank}` : "Rank pending");
+        localYouEl.textContent = `${rankTxt} | Score ${Number(my.score || 0)}`;
       } else if (viewerPressure > 0) {
-        localYouEl.textContent = `Local pressure ${viewerPressure}.`;
+        localYouEl.textContent = "Position recording. Keep pressure active.";
       } else {
-        localYouEl.textContent = "Start with patrol to record local war contribution.";
+        localYouEl.textContent = "No rank recorded yet.";
       }
     }
     if (intelPresenceEl) {
-      if (viewerPressure > 0) intelPresenceEl.textContent = `Faction pressure active (${viewerPressure}).`;
+      if (viewerPressure > 0) intelPresenceEl.textContent = `Local pressure ${viewerPressure}`;
       else intelPresenceEl.textContent = "No local pressure yet.";
+    }
+    if (localProgressEl) {
+      const req = (_weekly && typeof _weekly.requirements === "object") ? _weekly.requirements : null;
+      if (my && req) {
+        const scoreNow = Number(my.score || 0);
+        const daysNow = Number(my.activeDays || 0);
+        const scoreReq = Math.max(0, Number(req.minScore || 0));
+        const daysReq = Math.max(0, Number(req.minActiveDays || 0));
+        const scoreOk = scoreReq <= 0 || scoreNow >= scoreReq;
+        const daysOk = daysReq <= 0 || daysNow >= daysReq;
+        const state = (scoreOk && daysOk) ? "Ready" : "Building";
+        const scoreTxt = scoreReq > 0 ? `${scoreNow}/${scoreReq}` : `${scoreNow}`;
+        const daysTxt = daysReq > 0 ? `${daysNow}/${daysReq}` : `${daysNow}`;
+        localProgressEl.textContent = `${state} | Days ${daysTxt} | Score ${scoreTxt}`;
+      } else if (my) {
+        localProgressEl.textContent = `Days ${Number(my.activeDays || 0)} active this cycle`;
+      } else {
+        localProgressEl.textContent = "Progress syncing.";
+      }
+    }
+    if (presenceHintEl) {
+      if (viewerPressure > 0) presenceHintEl.textContent = "You are on-grid. Keep patrol or donate to hold tempo.";
+      else presenceHintEl.textContent = "Patrol or donate to register local participation.";
     }
     if (intelPressureEl) {
       if (viewerPressure > 0 && leaderPressure > 0) {
@@ -2875,6 +2978,11 @@
     if (localOpsEl) {
       const valueTxt = valueLabel || "Support node";
       localOpsEl.textContent = `${primaryStatus} | ${valueTxt} | ${ux.actionHint || "Patrol"}`;
+    }
+    if (nodeStateHintEl) {
+      nodeStateHintEl.textContent = (displayStatus === "SIEGE_LIVE" || displayStatus === "CONTESTED")
+        ? "Contact live. Fast cycles matter."
+        : "Frontline stable. Maintain signal pressure.";
     }
     paintSignalCorePanel({
       nodeId,
@@ -2938,9 +3046,10 @@
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`+${r.gain} influence${hq}`);
       setStatus(`+${r.gain} influence${hq}`, "ok");
+      triggerActionMicroReaction();
 
       applyLeadersFromResponse(r, nodeId);
-      await refreshWeekly(nodeId);
+      window.setTimeout(() => { void refreshWeekly(nodeId); }, 120);
     } finally {
       // if cooldown active, keep disabled
       if (btn) {
@@ -2990,9 +3099,10 @@
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
       setStatus(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`, "ok");
+      triggerActionMicroReaction();
 
       applyLeadersFromResponse(r, nodeId);
-      await refreshWeekly(nodeId);
+      window.setTimeout(() => { void refreshWeekly(nodeId); }, 120);
     } finally {
       if (btn) btn.disabled = false;
     }
