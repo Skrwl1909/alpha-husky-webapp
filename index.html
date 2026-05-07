@@ -6090,29 +6090,34 @@ try{
         let _busy = false;
 
         async function sendAction(action, payload = {}) {
+          const perfT0 = window.__ahPerf?.now?.() || Date.now();
           const unsafe = tg?.initDataUnsafe || {};
           const hasQuery = !!unsafe.query_id;
 
-          if (hasQuery) {
-            try {
-              const res = await apiPost("/webapp/action", { action, payload });
-              if (res.ok) { try { tg?.close?.(); } catch(_){} }
-              else { tg?.showAlert?.(res.reason || "Action failed."); }
-            } catch (e) {
-              tg?.showAlert?.("Network error (inline). Try again.");
-              console.error(e);
+          try {
+            if (hasQuery) {
+              try {
+                const res = await apiPost("/webapp/action", { action, payload });
+                if (res.ok) { try { tg?.close?.(); } catch(_){} }
+                else { tg?.showAlert?.(res.reason || "Action failed."); }
+              } catch (e) {
+                tg?.showAlert?.("Network error (inline). Try again.");
+                console.error(e);
+              }
+            } else {
+              try {
+                if (_busy) return;
+                _busy = true; setTimeout(() => (_busy = false), 300);
+                tg?.HapticFeedback?.impactOccurred?.("light");
+                const data = { action, payload: { userId: (tg?.initDataUnsafe?.user?.id), ...payload } };
+                if (DEV_DEBUG && tg?.showAlert) tg.showAlert(action + "\n" + JSON.stringify(payload));
+                tg?.sendData?.(JSON.stringify(data));
+              } catch (err) {
+                tg?.showAlert?.("Send failed. Try again."); console.error(err);
+              }
             }
-          } else {
-            try {
-              if (_busy) return;
-              _busy = true; setTimeout(() => (_busy = false), 300);
-              tg?.HapticFeedback?.impactOccurred?.("light");
-              const data = { action, payload: { userId: (tg?.initDataUnsafe?.user?.id), ...payload } };
-              if (DEV_DEBUG && tg?.showAlert) tg.showAlert(action + "\n" + JSON.stringify(payload));
-              tg?.sendData?.(JSON.stringify(data));
-            } catch (err) {
-              tg?.showAlert?.("Send failed. Try again."); console.error(err);
-            }
+          } finally {
+            window.__ahPerf?.action?.(`sendAction:${String(action || "")}`, perfT0);
           }
         }
 
@@ -6124,34 +6129,43 @@ function perfNow() {
 
 function perfEnabled() {
   try {
-    return !!window.DBG || localStorage.getItem("ah_perf") === "1" || sessionStorage.getItem("ah_perf") === "1";
+    const q = new URLSearchParams(window.location.search || "");
+    return !!window.DBG || q.get("perf") === "1" || localStorage.getItem("ah_perf") === "1" || sessionStorage.getItem("ah_perf") === "1";
   } catch (_) {
     return !!window.DBG;
   }
 }
 
 function perfShouldLogApi(path) {
-  const p = String(path || "");
-  return p === "/webapp/state" ||
-         p === "/webapp/profile" ||
-         p === "/webapp/map/leaders" ||
-         p === "/webapp/faction/hq/state" ||
-         p === "/webapp/oracle/state";
+  return String(path || "").startsWith("/webapp/");
 }
 
-function perfLog(label, startedAt, extra) {
+function perfMs(startedAt) {
+  return Math.round((perfNow() - startedAt) * 10) / 10;
+}
+
+function perfApi(path, startedAt, ok) {
   if (!perfEnabled()) return;
-  const ms = Math.round((perfNow() - startedAt) * 10) / 10;
-  try {
-    if (extra && Object.keys(extra).length) console.info("[AH perf]", label, ms + "ms", extra);
-    else console.info("[AH perf]", label, ms + "ms");
-  } catch (_) {}
+  try { console.info(`[API_PERF] path=${String(path || "")} ms=${perfMs(startedAt)} ok=${!!ok}`); } catch (_) {}
+}
+
+function perfBoot(step, startedAt) {
+  if (!perfEnabled()) return;
+  try { console.info(`[BOOT_PERF] step=${String(step || "")} ms=${perfMs(startedAt)}`); } catch (_) {}
+}
+
+function perfAction(action, startedAt) {
+  if (!perfEnabled()) return;
+  try { console.info(`[ACTION_PERF] action=${String(action || "")} total_ms=${perfMs(startedAt)}`); } catch (_) {}
 }
 
 window.__ahPerf = window.__ahPerf || {
   enabled: perfEnabled,
   now: perfNow,
-  log: perfLog,
+  ms: perfMs,
+  api: perfApi,
+  boot: perfBoot,
+  action: perfAction,
   shouldApiLog: perfShouldLogApi
 };
 
@@ -6208,7 +6222,7 @@ async function apiPost(path, payload) {
     throw err;
   } finally {
     if (window.__ahPerf?.shouldApiLog?.(path)) {
-      window.__ahPerf.log("api " + String(path || ""), perfT0, { ok, status });
+      window.__ahPerf.api(path, perfT0, ok);
     }
   }
 }
@@ -7026,7 +7040,9 @@ function setTopTag(tagKey, baseText="PACK"){
 async function loadProfile() {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
+    const requestPerfT0 = window.__ahPerf?.now?.() || Date.now();
     const out = await apiPost("/webapp/profile", {});
+    window.__ahPerf?.boot?.("loadProfile.request", requestPerfT0);
     if (!out) return;
 
     // ✅ odporny picker na różne wrappery backendu
@@ -7057,6 +7073,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     PROFILE.skinKey = pickSkinKey(p) || PROFILE.skinKey || "";
     if (PROFILE.skin) applyProfileSkin(PROFILE.skin);
 
+    const renderPerfT0 = window.__ahPerf?.now?.() || Date.now();
     try {
       const heroImg =
         (typeof p?.skin === "string" ? p.skin : p?.skin?.img) ||
@@ -7105,11 +7122,12 @@ hydrateFactionFromPayload({ profile: p, ...out });
         Array.isArray(p.buffs) ? p.buffs : []
       );
     } catch (_) {}
+    window.__ahPerf?.boot?.("loadProfile.render", renderPerfT0);
 
   } catch (e) {
     console.warn("profile load failed", e);
   } finally {
-    window.__ahPerf?.log?.("loadProfile", perfT0);
+    window.__ahPerf?.boot?.("loadProfile.total", perfT0);
   }
 }
 window.loadProfile = loadProfile;
@@ -7252,7 +7270,9 @@ window.goHome = function goHome() {
 async function loadPlayerState() {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
+    const statePerfT0 = window.__ahPerf?.now?.() || Date.now();
     const state = await apiPost("/webapp/state");
+    window.__ahPerf?.boot?.("loadPlayerState.state", statePerfT0);
     PLAYER_STATE = state;
     applyStateToMap();
 
@@ -7280,7 +7300,9 @@ async function loadPlayerState() {
     }
 
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
+    const profilePerfT0 = window.__ahPerf?.now?.() || Date.now();
     try { await loadProfile(); } catch (e) { console.warn("loadProfile failed", e); }
+    finally { window.__ahPerf?.boot?.("loadPlayerState.profile", profilePerfT0); }
     try { window.renderFactionBadge?.(); } catch (_) {}
 
     // ✅ Onboarding (V0 smart) — pokaż raz po pełnym załadowaniu UI
@@ -7289,7 +7311,7 @@ async function loadPlayerState() {
   } catch (e) {
     console.warn("state load failed", e);
   } finally {
-    window.__ahPerf?.log?.("loadPlayerState", perfT0, { mapOpen: mapBack.style.display === "flex" });
+    window.__ahPerf?.boot?.("loadPlayerState.total", perfT0);
   }
 }
 async function loadPlayerStateLogged() {
@@ -7839,6 +7861,7 @@ function isRegionUnlocked(regionId){
 
         async function loadBuildingState(){
           if (!CURRENT_BID) return;
+          const perfT0 = window.__ahPerf?.now?.() || Date.now();
           try{
             const st = await apiPost("/webapp/building/state", { buildingId: CURRENT_BID });
             bTitle.textContent = st.name || bTitle.textContent;
@@ -7876,6 +7899,8 @@ function isRegionUnlocked(regionId){
           }catch(e){
             console.warn(e); dbg('building/state fail');
             try { window.Telegram?.WebApp?.showAlert?.("Failed to load building state"); } catch(_){}
+          } finally {
+            window.__ahPerf?.action?.(`building_state:${String(CURRENT_BID || "")}`, perfT0);
           }
         }
 
@@ -7936,41 +7961,47 @@ function isRegionUnlocked(regionId){
 
         async function resolveRun(maxRetries=0, silentRetries=false){
           if (!CURRENT_BID) return false;
-          for (let i=0; i<=maxRetries; i++){
-            try{
-              const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
-              const rw = out?.rewards || {};
-              const lines = formatBuildingRewards(rw);
-              const loreLine = formatBuildingLore(out?.lore, out?.route);
-              const rewardsText = lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.";
-              const resultText = loreLine ? `${rewardsText}\n\nField note:\n${loreLine}` : rewardsText;
-              try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
-              tg?.showAlert?.(resultText);
-              await loadPlayerState();
-              await loadBuildingState();
-              return true;
-            }catch(e){
-              const reason = (e && e.data && e.data.reason) || e?.message || "";
-              const R = String(reason).toUpperCase();
-              const isNotReady = R.includes("NOT_READY");
-              if (isNotReady && i < maxRetries){
-              await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
-              continue;
+          const perfT0 = window.__ahPerf?.now?.() || Date.now();
+          try {
+            for (let i=0; i<=maxRetries; i++){
+              try{
+                const out = await apiPost("/webapp/building/resolve", { buildingId: CURRENT_BID });
+                const rw = out?.rewards || {};
+                const lines = formatBuildingRewards(rw);
+                const loreLine = formatBuildingLore(out?.lore, out?.route);
+                const rewardsText = lines.length ? `Rewards:\n${lines.join(", ")}` : "No rewards this time.";
+                const resultText = loreLine ? `${rewardsText}\n\nField note:\n${loreLine}` : rewardsText;
+                try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch(_){}
+                tg?.showAlert?.(resultText);
+                await loadPlayerState();
+                await loadBuildingState();
+                return true;
+              }catch(e){
+                const reason = (e && e.data && e.data.reason) || e?.message || "";
+                const R = String(reason).toUpperCase();
+                const isNotReady = R.includes("NOT_READY");
+                if (isNotReady && i < maxRetries){
+                await new Promise(r => setTimeout(r, RETRY_INTERVAL_MS));
+                continue;
+                }
+                if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
+                bStatus.textContent = "Ready";
+                bBtnRes.style.display = "inline-block";
+                return false;
               }
-              if (!silentRetries) tg?.showAlert?.(reason || "Resolve failed");
-              bStatus.textContent = "Ready";
-              bBtnRes.style.display = "inline-block";
-              return false;
             }
+            bStatus.textContent = "Ready";
+            bBtnRes.style.display = "inline-block";
+            return false;
+          } finally {
+            window.__ahPerf?.action?.(`building_resolve:${String(CURRENT_BID || "")}`, perfT0);
           }
-          bStatus.textContent = "Ready";
-          bBtnRes.style.display = "inline-block";
-          return false;
         }
 
         bBtnRef && bBtnRef.addEventListener("click", loadBuildingState);
         bBtnStart && bBtnStart.addEventListener("click", async () => {
           if (!CURRENT_BID) return;
+          const perfT0 = window.__ahPerf?.now?.() || Date.now();
           try{
             const route = bRoute && bRoute.value || "";
             const out = await apiPost("/webapp/building/start", { buildingId: CURRENT_BID, route });
@@ -7991,6 +8022,8 @@ function isRegionUnlocked(regionId){
           }catch(e){
             const msg = (e && e.data && e.data.reason) || "Start failed";
             try { window.Telegram?.WebApp?.showAlert?.(msg); } catch(_){}
+          } finally {
+            window.__ahPerf?.action?.(`building_start:${String(CURRENT_BID || "")}`, perfT0);
           }
         });
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
@@ -8404,20 +8437,25 @@ async function refreshQuests(){
 }
 
 async function triggerDaily(action, raid){
+  const perfT0 = window.__ahPerf?.now?.() || Date.now();
   const unsafe = tg?.initDataUnsafe || {};
-  if (unsafe.query_id) {
-    try {
-      const ans = await apiPost("/webapp/daily/action", { action, raid });
-      if (!ans.ok) throw new Error(ans.error || "Action failed");
-      if (ans.message) tg?.showAlert?.(ans.message);
-    } catch (e) {
-      console.warn(e);
-      tg?.showAlert?.("Action failed. Try again.");
+  try {
+    if (unsafe.query_id) {
+      try {
+        const ans = await apiPost("/webapp/daily/action", { action, raid });
+        if (!ans.ok) throw new Error(ans.error || "Action failed");
+        if (ans.message) tg?.showAlert?.(ans.message);
+      } catch (e) {
+        console.warn(e);
+        tg?.showAlert?.("Action failed. Try again.");
+      }
+    } else {
+      tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } } ));
     }
-  } else {
-    tg?.sendData?.(JSON.stringify({ action: "daily_action", payload: { action, raid } } ));
+    refreshQuests();
+  } finally {
+    window.__ahPerf?.action?.(`daily_action:${String(action || "")}`, perfT0);
   }
-  refreshQuests();
 }
 
 /* Routing z URL */
@@ -8606,7 +8644,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
       return json;
     } finally {
       if (window.__ahPerf?.shouldApiLog?.(path)) {
-        window.__ahPerf.log("api " + String(path || ""), perfT0, { ok, status });
+        window.__ahPerf.api(path, perfT0, ok);
       }
     }
   });
