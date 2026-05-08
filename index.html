@@ -8176,25 +8176,6 @@ document.addEventListener("click", (e) => {
     });
 });
 
- document.addEventListener("click", async (e) => {
-  const btn = e.target.closest?.(".btn.mission, .btn.missions, [data-action='mission'], [data-action='missions']");
-  if (!btn) return;
-
-  e.preventDefault();
-  console.log("[Missions] open requested");
-
-  try { window.navCloseTop?.(); } catch (_) {}
-
-  try {
-    await ensureMissionsLoaded(apiPost, _tg, _dbg);
-    if (window.Missions?.open) return window.Missions.open();
-    if (typeof window.openMissions === "function") return window.openMissions();
-    console.warn("[Missions] open() missing after load");
-  } catch (err) {
-    console.error("[Missions] load/open failed", err);
-  }
-});    
-      
 /* === MAP close === */
 document.getElementById("closeMap")?.addEventListener("click", () => {
   mapBack.style.display = "none";
