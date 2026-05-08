@@ -474,6 +474,9 @@
   function open() {
     ensureModal();
     if (!_modal) return false;
+    if (_modal.style.display !== "none" && _modal.classList.contains("is-open")) {
+      return true;
+    }
     
     // ANALYTICS: gracz otworzył ekran misji
     track("missions_opened");
