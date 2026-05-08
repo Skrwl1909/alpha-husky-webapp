@@ -482,6 +482,12 @@
     _modal.classList.add("is-open");
     document.body.classList.add("missions-open");
 
+    try {
+      window.navRegister?.(_modal.id, {
+        close,
+        isOpen: () => !!_modal && _modal.style.display !== "none",
+      });
+    } catch (_) {}
     try { window.navOpen?.(_modal.id); } catch (_) {}
 
     renderLoading("Loading missions…");
@@ -492,13 +498,12 @@
   function close() {
     if (!_modal) return;
 
-    try { window.navClose?.(_modal.id); } catch (_) {}
-
     _modal.classList.remove("is-open");
     _modal.style.display = "none";
     document.body.classList.remove("missions-open");
 
     stopTick();
+    try { window.navClose?.(_modal.id); } catch (_) {}
   }
 
   // =========================
@@ -1304,7 +1309,16 @@ function _normalizeRareDropObj(obj) {
 
   async function doRefresh() {
     try {
-      await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
+      const res = await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
+      if (res && typeof res === "object") {
+        _state = res;
+        try {
+          window.__AH_MISSIONS_RAW = res;
+          window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+        } catch (_) {}
+        render();
+        return;
+      }
       await loadState();
     } catch (e) {
       renderError("Refresh failed", String(e?.message || e || ""));
@@ -1368,7 +1382,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
   async function doResolve() {
     try {
-      await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
+      const res = await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
       
       // ANALYTICS: ukończenie misji
       track("mission_resolved", {
@@ -1378,6 +1392,15 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
       _pendingStart = null;
+      if (res && typeof res === "object") {
+        _state = res;
+        try {
+          window.__AH_MISSIONS_RAW = res;
+          window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+        } catch (_) {}
+        render();
+        return;
+      }
       await loadState();
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
