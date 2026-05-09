@@ -8,11 +8,15 @@
     apiPost: null,
     tg: null,
     dbg: false,
+    inited: false,
+    initCount: 0,
     items: [],
     serverTs: 0,
     lastLoadAt: 0,
     loadSeq: 0,
+    loadPromise: null,
     pollTimer: null,
+    pollerCount: 0,
     visHandler: null,
     backEl: null,
     dismissing: new Set(),
@@ -25,6 +29,10 @@
 
   const log = (...args) => { if (S.dbg) console.log("[Mailbox]", ...args); };
   const warn = (...args) => { if (S.dbg) console.warn("[Mailbox]", ...args); };
+
+  function isOpen() {
+    return !!(S.backEl && S.backEl.style.display !== "none");
+  }
 
   function asText(v) {
     return String(v ?? "").trim();
@@ -429,40 +437,84 @@
     return !!(S.lastLoadAt && (Date.now() - S.lastLoadAt) < STATE_STALE_MS);
   }
 
-  function logFreshSkip(reason) {
-    log("skip mailbox/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - Number(S.lastLoadAt || 0)) });
+  function freshnessAgeMs() {
+    return Math.max(0, Date.now() - Number(S.lastLoadAt || 0));
+  }
+
+  function logFreshSkip(reason, force) {
+    log("skip mailbox/state; fresh cache", {
+      reason,
+      force: !!force,
+      ageMs: freshnessAgeMs(),
+      open: isOpen(),
+      pollerCount: S.pollTimer ? 1 : 0,
+    });
   }
 
   async function loadState(options = {}) {
     const { force = false, reason = "auto" } = options || {};
     if (!force && S.lastLoadAt && isFreshEnough()) {
-      logFreshSkip(reason);
+      logFreshSkip(reason, force);
       return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
     }
 
-    const reqSeq = ++S.loadSeq;
-    try {
-      const raw = await api("/webapp/mailbox/state", {});
-      if (reqSeq !== S.loadSeq) {
-        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
-      }
-      const normalized = normalizePayload(raw || {});
-      S.items = normalized.items;
-      S.serverTs = normalized.serverTs;
-      S.lastLoadAt = Date.now();
-      applyHubUnreadBadge();
-      if (S.backEl && S.backEl.style.display !== "none") {
-        render();
-      }
-      return normalized;
-    } catch (err) {
-      if (reqSeq !== S.loadSeq) {
-        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
-      }
-      warn("load failed", err);
-      applyHubUnreadBadge();
-      return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+    if (S.loadPromise) {
+      log("reuse mailbox/state in-flight", {
+        reason,
+        force: !!force,
+        ageMs: freshnessAgeMs(),
+        open: isOpen(),
+        pollerCount: S.pollTimer ? 1 : 0,
+      });
+      return S.loadPromise;
     }
+
+    const reqSeq = ++S.loadSeq;
+    log("load mailbox/state", {
+      reason,
+      force: !!force,
+      ageMs: freshnessAgeMs(),
+      open: isOpen(),
+      pollerCount: S.pollTimer ? 1 : 0,
+    });
+
+    S.loadPromise = (async () => {
+      try {
+        const raw = await api("/webapp/mailbox/state", {});
+        if (reqSeq !== S.loadSeq) {
+          return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+        }
+        const normalized = normalizePayload(raw || {});
+        S.items = normalized.items;
+        S.serverTs = normalized.serverTs;
+        S.lastLoadAt = Date.now();
+        log("mailbox/state loaded", {
+          reason,
+          force: !!force,
+          fresh: true,
+          ageMs: 0,
+          itemCount: Array.isArray(normalized.items) ? normalized.items.length : 0,
+          open: isOpen(),
+          pollerCount: S.pollTimer ? 1 : 0,
+        });
+        applyHubUnreadBadge();
+        if (isOpen()) {
+          render();
+        }
+        return normalized;
+      } catch (err) {
+        if (reqSeq !== S.loadSeq) {
+          return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+        }
+        warn("load failed", { reason, force: !!force, err });
+        applyHubUnreadBadge();
+        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+      } finally {
+        S.loadPromise = null;
+      }
+    })();
+
+    return S.loadPromise;
   }
 
   async function refresh() {
@@ -651,7 +703,16 @@
 
   async function open() {
     ensureModal();
-    await loadState({ force: true, reason: "open" });
+    const alreadyOpen = isOpen();
+    const shouldForce = !(S.lastLoadAt && isFreshEnough());
+    log("open", {
+      reason: alreadyOpen ? "open_already_visible" : "open",
+      force: shouldForce,
+      ageMs: freshnessAgeMs(),
+      open: alreadyOpen,
+      pollerCount: S.pollTimer ? 1 : 0,
+    });
+    await loadState({ force: shouldForce, reason: alreadyOpen ? "open_already_visible" : "open" });
     render();
     if (S.backEl) S.backEl.style.display = "flex";
     markSeenNow();
@@ -665,34 +726,56 @@
     if (S.pollTimer) {
       clearInterval(S.pollTimer);
       S.pollTimer = null;
+      S.pollerCount = 0;
+      log("poll stop", { pollerCount: 0 });
     }
+  }
+
+  function ensurePolling() {
+    if (S.pollTimer) {
+      log("duplicate poller blocked", { pollerCount: 1 });
+      return;
+    }
+    S.pollTimer = setInterval(() => { void loadState({ reason: "poll" }); }, POLL_MS);
+    S.pollerCount = 1;
+    log("poll start", { pollerCount: 1, intervalMs: POLL_MS });
   }
 
   function init({ apiPost, tg, dbg } = {}) {
     if (typeof apiPost === "function") S.apiPost = apiPost;
     if (tg) S.tg = tg;
     S.dbg = !!dbg;
+    S.initCount += 1;
 
     if (!S.apiPost) {
       warn("init skipped, apiPost missing");
       return;
     }
 
+    log("init", { initCount: S.initCount, alreadyInited: S.inited, pollerCount: S.pollTimer ? 1 : 0 });
+
     ensureModal();
-    void loadState({ reason: "init" });
-    clearPolling();
-    S.pollTimer = setInterval(() => { void loadState({ reason: "poll" }); }, POLL_MS);
+    if (!S.inited) {
+      void loadState({ reason: "init" });
+      S.inited = true;
+    } else {
+      void loadState({ reason: "init_reentry" });
+    }
+    ensurePolling();
 
     if (!S.visHandler) {
       S.visHandler = () => {
         if (document.visibilityState === "visible") void loadState({ reason: "visibilitychange" });
       };
       document.addEventListener("visibilitychange", S.visHandler);
+      log("visibility handler attached", { pollerCount: S.pollTimer ? 1 : 0 });
     }
   }
 
   function destroy() {
     clearPolling();
+    S.inited = false;
+    S.loadPromise = null;
     if (S.visHandler) {
       document.removeEventListener("visibilitychange", S.visHandler);
       S.visHandler = null;
