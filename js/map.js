@@ -8,6 +8,9 @@
   let _lastLeadersMap = null;
   let _observer = null;
   let _reapplyQueued = false;
+  let _leadersRefreshPromise = null;
+  let _leadersLastFetchMs = 0;
+  const MAP_LEADERS_AUTO_STALE_MS = 15000;
 
   const FACTIONS = {
     rogue_byte:   { cls: "f-rb", code: "RB" },
@@ -67,6 +70,10 @@
     "phantom_nodes",
     "broken_contracts",
   ]);
+
+  function logMap(...args) {
+    if (window.DBG) console.debug("[map]", ...args);
+  }
 
   function ensureCss() {
     if (document.getElementById(CSS_ID)) return;
@@ -502,110 +509,168 @@
   flex-direction:column;
   align-items:flex-start;
   justify-content:center;
-  gap:1px;
-  min-height:24px;
-  padding:4px 9px;
-  border-radius:10px;
-  border:1px solid rgba(180,210,240,.14);
-  background:rgba(8,12,18,.66);
-  color:#e9f1ff;
+  gap:2px;
+  min-height:30px;
+  padding:6px 11px 6px 10px;
+  border-radius:12px;
+  border:1px solid rgba(190,220,248,.22);
+  background:linear-gradient(180deg, rgba(13,18,28,.84), rgba(7,10,16,.78));
+  color:#f2f7ff;
   text-transform:none;
   letter-spacing:0;
-  box-shadow:0 6px 14px rgba(0,0,0,.20);
+  box-shadow:
+    0 9px 20px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  position:relative;
+  overflow:hidden;
+}
+.map-pressure-mood.ah-dom-chip::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:rgba(var(--ah-dom-rgb, 162,185,208), .72);
+  box-shadow:0 0 10px rgba(var(--ah-dom-rgb, 162,185,208), .28);
+}
+.map-pressure-mood.ah-dom-chip .ah-dom-mainline{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.map-pressure-mood.ah-dom-chip .ah-dom-mark{
+  min-width:16px;
+  height:16px;
+  padding:0 4px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.04em;
+  border:1px solid rgba(255,255,255,.26);
+  background:rgba(0,0,0,.28);
+  color:rgba(255,255,255,.96);
+}
+.map-pressure-mood.ah-dom-chip .ah-dom-mark.is-neutral{
+  border-color:rgba(180,200,220,.24);
+  color:rgba(220,232,245,.84);
 }
 .map-pressure-mood.ah-dom-chip .ah-dom-main{
-  font-size:10px;
-  line-height:1.1;
-  font-weight:800;
+  font-size:11px;
+  line-height:1.12;
+  font-weight:900;
   letter-spacing:.015em;
+  white-space:nowrap;
 }
 .map-pressure-mood.ah-dom-chip .ah-dom-sub{
-  font-size:8px;
-  line-height:1.1;
-  font-weight:700;
-  color:rgba(220,232,248,.78);
-  letter-spacing:.015em;
+  font-size:8.5px;
+  line-height:1.12;
+  font-weight:750;
+  color:rgba(222,236,252,.84);
+  letter-spacing:.012em;
+  white-space:nowrap;
 }
 .map-pressure-mood.ah-dom-chip[data-tone="rb"]{
-  border-color:rgba(255,96,96,.28);
-  background:rgba(44,14,18,.72);
-  color:#ffe0e0;
+  border-color:rgba(255,96,96,.36);
+  background:linear-gradient(180deg, rgba(52,16,18,.86), rgba(30,11,14,.78));
+  color:#ffe3e3;
 }
 .map-pressure-mood.ah-dom-chip[data-tone="ew"]{
-  border-color:rgba(255,214,92,.26);
-  background:rgba(44,32,12,.70);
-  color:#fff1c8;
+  border-color:rgba(255,214,92,.34);
+  background:linear-gradient(180deg, rgba(54,39,14,.84), rgba(30,22,8,.76));
+  color:#fff3d0;
 }
 .map-pressure-mood.ah-dom-chip[data-tone="pb"]{
-  border-color:rgba(255,166,84,.28);
-  background:rgba(46,26,12,.72);
-  color:#ffe2c0;
+  border-color:rgba(255,166,84,.36);
+  background:linear-gradient(180deg, rgba(54,29,12,.86), rgba(32,17,8,.78));
+  color:#ffe5c7;
 }
 .map-pressure-mood.ah-dom-chip[data-tone="ih"]{
-  border-color:rgba(96,205,255,.28);
-  background:rgba(12,28,44,.72);
-  color:#dff3ff;
+  border-color:rgba(96,205,255,.36);
+  background:linear-gradient(180deg, rgba(12,31,50,.86), rgba(8,18,31,.78));
+  color:#e5f5ff;
 }
 .map-pressure-mood.ah-dom-chip[data-tone="contested"],
 .map-pressure-mood.ah-dom-chip[data-tone="neutral"]{
-  border-color:rgba(150,186,220,.18);
-  background:rgba(14,20,30,.66);
-  color:#dce7f6;
+  border-color:rgba(150,186,220,.24);
+  background:linear-gradient(180deg, rgba(16,24,36,.82), rgba(9,14,22,.74));
+  color:#dde8f8;
 }
 @media (max-width: 640px){
-  .map-pressure-mood.ah-dom-chip{ padding:3px 8px; }
+  .map-pressure-mood.ah-dom-chip{
+    min-height:26px;
+    padding:4px 9px;
+    gap:1px;
+  }
+  .map-pressure-mood.ah-dom-chip .ah-dom-main{
+    font-size:10px;
+  }
   .map-pressure-mood.ah-dom-chip .ah-dom-sub{ display:none; }
 }
 
 #map[data-dom-state]::before{
   content:"";
   position:absolute;
-  inset:-12%;
+  inset:-10%;
   z-index:1;
   pointer-events:none;
   border-radius:inherit;
   opacity:0;
   transition:opacity .35s ease;
   background:
-    radial-gradient(120% 76% at 50% -8%, rgba(var(--ah-dom-rgb, 162,185,208), var(--ah-dom-aura, .10)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 62%),
-    radial-gradient(72% 68% at 20% 100%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-aura, .10) * .70)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 72%);
+    radial-gradient(140% 106% at 50% 50%, rgba(0,0,0,.20) 44%, rgba(0,0,0,.38) 80%, rgba(0,0,0,.56) 100%),
+    radial-gradient(118% 76% at 50% -8%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-aura, .14) * 1.18)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-aura, .14) * .56)) 34%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 68%),
+    radial-gradient(92% 78% at 16% 102%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-aura, .14) * .78)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 70%),
+    radial-gradient(74% var(--ah-dom-zone-r, 40%) at var(--ah-dom-zone-x, 50%) var(--ah-dom-zone-y, 52%), rgba(var(--ah-dom-rgb, 162,185,208), var(--ah-dom-zone-a, .18)) 0%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-zone-a, .18) * .58)) 28%, rgba(var(--ah-dom-rgb, 162,185,208), calc(var(--ah-dom-zone-a, .18) * .24)) 46%, rgba(var(--ah-dom-rgb, 162,185,208), 0) 72%);
 }
-#map[data-dom-state="leader"]::before{ opacity:.95; }
-#map[data-dom-state="contested"]::before{ opacity:.42; }
+#map[data-dom-state="leader"]::before{ opacity:1; }
+#map[data-dom-state="contested"]::before{ opacity:.46; }
 
 #map[data-dom-state="leader"] #pins .map-pin.dom-presence::after{
   content:"";
   position:absolute;
-  inset:-9px;
+  inset:-10px;
   border-radius:999px;
   pointer-events:none;
-  border:1px solid rgba(var(--ah-dom-rgb, 162,185,208), .22);
+  border:1.2px solid rgba(var(--ah-dom-rgb, 162,185,208), .32);
   box-shadow:
-    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .08),
-    0 0 14px rgba(var(--ah-dom-rgb, 162,185,208), .20);
+    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .14),
+    0 0 20px rgba(var(--ah-dom-rgb, 162,185,208), .30);
   z-index:1;
 }
 #map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-core::after{
-  inset:-12px;
-  border-width:1.2px;
+  inset:-13px;
+  border-width:1.35px;
   box-shadow:
-    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .10),
-    0 0 20px rgba(var(--ah-dom-rgb, 162,185,208), .26);
+    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .20),
+    0 0 24px rgba(var(--ah-dom-rgb, 162,185,208), .36);
+}
+#map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-primary::after{
+  inset:-15px;
+  border-width:1.45px;
+  box-shadow:
+    0 0 0 1px rgba(var(--ah-dom-rgb, 162,185,208), .24),
+    0 0 30px rgba(var(--ah-dom-rgb, 162,185,208), .46);
 }
 #map[data-dom-state="leader"] #pins .map-pin.dom-presence.siege-running::after,
 #map[data-dom-state="leader"] #pins .map-pin.dom-presence.siege-forming::after,
 #map[data-dom-state="leader"] #pins .map-pin.dom-presence.pressure-contested::after{
-  opacity:.28;
+  opacity:.34;
 }
 
 #map[data-dom-state="leader"] #pathsSVG .path.ah-dom-path{
-  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .42);
-  stroke-width:2.8;
-  filter:drop-shadow(0 0 5px rgba(var(--ah-dom-rgb, 162,185,208), .24));
+  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .62);
+  stroke-width:3.2;
+  filter:drop-shadow(0 0 7px rgba(var(--ah-dom-rgb, 162,185,208), .36));
 }
 #map[data-dom-state="leader"] #pathsSVG .path.glow.ah-dom-path{
-  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .20);
-  stroke-width:4.8;
+  stroke:rgba(var(--ah-dom-rgb, 162,185,208), .30);
+  stroke-width:5.8;
 }
 
 @keyframes ahPinPulse{
@@ -693,7 +758,7 @@
       "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
-      "dom-presence", "dom-core"
+      "dom-presence", "dom-core", "dom-primary"
     );
   }
 
@@ -1309,24 +1374,31 @@
     const counts = summary || {};
     const dom = (dominance && typeof dominance === "object") ? dominance : {};
     const faction = _normFactionKey(dom.faction || "");
+    const factionName = _factionName(faction);
     const leadStrength = _leadStrengthLabel(dom.leadStrength || "narrow");
     const hotNodes = Number(dom.hotNodes || 0) || Number(counts.hot || 0) || 0;
 
     const contested = !faction;
     const mainText = contested
-      ? "Map Mood: Contested"
-      : ("Dominating: " + (_factionName(faction) || "Unknown"));
+      ? "War Mood: Contested"
+      : ("War Mood: " + (factionName || "Unknown") + " Lead");
 
     const subParts = [];
     if (contested) subParts.push("No dominant faction");
-    else subParts.push("Lead: " + leadStrength);
+    subParts.push("Lead: " + (contested ? "Narrow" : leadStrength));
     if (hotNodes > 0) subParts.push("Hot Nodes: " + hotNodes);
 
+    const markText = contested ? "?" : (CODE[faction] || "X");
     const subText = subParts.join(" | ");
+
     el.classList.add("ah-dom-chip");
     el.dataset.tone = contested ? "contested" : _factionTone(faction);
+    el.style.setProperty("--ah-dom-rgb", _factionRgb(faction));
     el.innerHTML =
-      '<span class="ah-dom-main">' + esc(mainText) + '</span>' +
+      '<span class="ah-dom-mainline">' +
+        '<span class="ah-dom-mark' + (contested ? ' is-neutral' : '') + '">' + esc(markText) + '</span>' +
+        '<span class="ah-dom-main">' + esc(mainText) + '</span>' +
+      '</span>' +
       (subText ? '<span class="ah-dom-sub">' + esc(subText) + '</span>' : '');
     el.hidden = false;
   }
@@ -1520,25 +1592,37 @@
       .map((nodeId) => ({ nodeId: nodeId, signal: Number(nodeSignals[nodeId] || 0) }))
       .sort((a, b) => b.signal - a.signal);
 
+    const primaryNodeId = rankedNodes.length ? rankedNodes[0].nodeId : "";
+
     const coreNodes = [];
+    const coreLimit = leadStrength === "strong" ? 3 : 2;
     for (const entry of rankedNodes) {
-      if (entry.signal < 1.28) continue;
+      if (!(entry.signal >= 1.06 || coreNodes.length < 1)) continue;
       coreNodes.push(entry.nodeId);
-      if (coreNodes.length >= 3) break;
+      if (coreNodes.length >= coreLimit) break;
     }
-    if (!coreNodes.length && rankedNodes.length) {
-      coreNodes.push(rankedNodes[0].nodeId);
+    if (!coreNodes.length && primaryNodeId) {
+      coreNodes.push(primaryNodeId);
     }
 
     const coreSet = new Set(coreNodes);
     const presenceNodes = [];
     for (const entry of rankedNodes) {
-      if (!(entry.signal >= 0.82 || coreSet.has(entry.nodeId))) continue;
+      if (presenceNodes.length >= 4) break;
+      if (!(entry.signal >= 0.78 || presenceNodes.length < 2 || coreSet.has(entry.nodeId))) continue;
       presenceNodes.push(entry.nodeId);
-      if (presenceNodes.length >= 6) break;
+    }
+    if (!presenceNodes.length && primaryNodeId) {
+      presenceNodes.push(primaryNodeId);
+    }
+    if (presenceNodes.length === 1 && rankedNodes.length > 1) {
+      presenceNodes.push(rankedNodes[1].nodeId);
     }
 
-    const hotNodes = rankedNodes.filter((entry) => entry.signal >= 1.0).length;
+    const hotNodes = rankedNodes.filter((entry) => entry.signal >= 0.92).length;
+    const zoneStrength = faction
+      ? (leadStrength === "strong" ? 0.24 : (leadStrength === "moderate" ? 0.19 : 0.15))
+      : 0.04;
 
     return {
       faction: faction,
@@ -1550,8 +1634,10 @@
       margin: faction ? Math.max(0, factionScore - rivalScore) : derivedMargin,
       marginRatio: faction && factionScore > 0 ? Math.max(0, factionScore - rivalScore) / factionScore : derivedRatio,
       hotNodes: hotNodes,
+      primaryNodeId: primaryNodeId,
       coreNodes: coreNodes,
       presenceNodes: presenceNodes,
+      zoneStrength: zoneStrength,
       nodeSignals: nodeSignals
     };
   }
@@ -1559,7 +1645,7 @@
   function _clearDominancePinState(pins) {
     (pins || []).forEach((pin) => {
       if (!pin || !pin.classList) return;
-      pin.classList.remove("dom-presence", "dom-core");
+      pin.classList.remove("dom-presence", "dom-core", "dom-primary");
       if (pin.dataset) {
         pin.dataset.domSignal = "";
       }
@@ -1574,6 +1660,7 @@
 
     const coreSet = new Set(Array.isArray(dominance?.coreNodes) ? dominance.coreNodes : []);
     const presenceSet = new Set(Array.isArray(dominance?.presenceNodes) ? dominance.presenceNodes : []);
+    const primaryNodeId = _normalizeNodeId(dominance?.primaryNodeId || "");
     const signals = (dominance && typeof dominance === "object" && dominance.nodeSignals) ? dominance.nodeSignals : {};
 
     (pins || []).forEach((pin) => {
@@ -1582,6 +1669,7 @@
       if (!nodeId || !presenceSet.has(nodeId)) return;
       pin.classList.add("dom-presence");
       if (coreSet.has(nodeId)) pin.classList.add("dom-core");
+      if (primaryNodeId && nodeId === primaryNodeId) pin.classList.add("dom-primary");
       if (pin.dataset) {
         pin.dataset.domSignal = String(Number(signals[nodeId] || 0).toFixed(2));
       }
@@ -1622,6 +1710,7 @@
     const metaById = _pathMetaById();
     const nodeSignals = (dominance && typeof dominance === "object" && dominance.nodeSignals) ? dominance.nodeSignals : {};
     const coreSet = new Set(Array.isArray(dominance?.coreNodes) ? dominance.coreNodes : []);
+    const primaryNodeId = _normalizeNodeId(dominance?.primaryNodeId || "");
 
     const ranked = [];
     pathsSvg.querySelectorAll(".path[data-id]").forEach((pathEl) => {
@@ -1633,20 +1722,21 @@
 
       const left = Number(nodeSignals[meta.from] || 0);
       const right = Number(nodeSignals[meta.to] || 0);
-      const coreBoost = (coreSet.has(meta.from) ? 0.35 : 0) + (coreSet.has(meta.to) ? 0.35 : 0);
-      const score = left + right + coreBoost;
+      const coreBoost = (coreSet.has(meta.from) ? 0.32 : 0) + (coreSet.has(meta.to) ? 0.32 : 0);
+      const primaryBoost = (meta.from === primaryNodeId ? 0.42 : 0) + (meta.to === primaryNodeId ? 0.42 : 0);
+      const score = left + right + coreBoost + primaryBoost;
 
-      if (score < 1.05) return;
+      if (score < 1.12) return;
       ranked.push({ pathEl: pathEl, score: score });
     });
 
     ranked.sort((a, b) => b.score - a.score);
-    const limit = Math.min(4, ranked.length);
+    const limit = Math.min(2, ranked.length);
 
     for (let i = 0; i < limit; i += 1) {
       const item = ranked[i];
       if (!item) continue;
-      if (i > 0 && item.score < 1.20) continue;
+      if (i === 1 && item.score < 1.48) continue;
 
       item.pathEl.classList.add("ah-dom-path");
       const glow = item.pathEl.previousElementSibling;
@@ -1656,17 +1746,81 @@
     }
   }
 
-  function _applyMapDominanceMood(dominance) {
+  function _applyMapDominanceMood(dominance, pins) {
     const mapEl = document.getElementById("map") || document.querySelector("[data-map-root]");
     if (!mapEl) return;
 
     const faction = _normFactionKey(dominance?.faction || "");
     const hasLeader = !!faction;
+    const leadStrength = String(dominance?.leadStrength || "narrow").trim().toLowerCase();
+
+    let aura = hasLeader ? ".17" : ".06";
+    let zoneA = hasLeader ? ".14" : ".04";
+    let zoneR = hasLeader ? "38%" : "48%";
+
+    if (hasLeader) {
+      if (leadStrength === "strong") {
+        aura = ".24";
+        zoneA = ".23";
+        zoneR = "34%";
+      } else if (leadStrength === "moderate") {
+        aura = ".20";
+        zoneA = ".18";
+        zoneR = "36%";
+      } else {
+        aura = ".16";
+        zoneA = ".13";
+        zoneR = "40%";
+      }
+    }
+
+    const zoneHint = Number(dominance?.zoneStrength || 0);
+    if (zoneHint > 0) {
+      const clamped = Math.max(0.03, Math.min(0.30, zoneHint));
+      zoneA = clamped.toFixed(2);
+    }
+
+    let zoneX = "50%";
+    let zoneY = "52%";
+    if (hasLeader && Array.isArray(pins)) {
+      const targetId = _normalizeNodeId(
+        dominance?.primaryNodeId ||
+        dominance?.coreNodes?.[0] ||
+        dominance?.presenceNodes?.[0] ||
+        ""
+      );
+
+      if (targetId) {
+        for (const pin of pins) {
+          if (!pin) continue;
+          const nodeId = _normalizeNodeId(_pinBuildingId(pin) || _pinNodeId(pin) || "");
+          if (nodeId !== targetId) continue;
+
+          const leftMatch = String(pin.style?.left || "").match(/(-?\d+(?:\.\d+)?)%/);
+          const topMatch = String(pin.style?.top || "").match(/(-?\d+(?:\.\d+)?)%/);
+
+          if (leftMatch) {
+            const leftPct = Math.max(8, Math.min(92, Number(leftMatch[1]) || 50));
+            zoneX = leftPct.toFixed(2).replace(/\.00$/, "") + "%";
+          }
+          if (topMatch) {
+            const topPct = Math.max(10, Math.min(90, Number(topMatch[1]) || 52));
+            zoneY = topPct.toFixed(2).replace(/\.00$/, "") + "%";
+          }
+          break;
+        }
+      }
+    }
 
     mapEl.dataset.domState = hasLeader ? "leader" : "contested";
     mapEl.dataset.domFaction = hasLeader ? faction : "neutral";
+    mapEl.dataset.domLead = hasLeader ? leadStrength : "contested";
     mapEl.style.setProperty("--ah-dom-rgb", _factionRgb(faction));
-    mapEl.style.setProperty("--ah-dom-aura", hasLeader ? ".14" : ".06");
+    mapEl.style.setProperty("--ah-dom-aura", aura);
+    mapEl.style.setProperty("--ah-dom-zone-x", zoneX);
+    mapEl.style.setProperty("--ah-dom-zone-y", zoneY);
+    mapEl.style.setProperty("--ah-dom-zone-a", zoneA);
+    mapEl.style.setProperty("--ah-dom-zone-r", zoneR);
   }
 
   function _applyPressureBadges(pinEl, pressureMeta, nodeUx) {
@@ -1853,7 +2007,7 @@
       "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
-      "dom-presence", "dom-core"
+      "dom-presence", "dom-core", "dom-primary"
     );
 
     if (m.faction) {
@@ -2091,6 +2245,7 @@
     if (!leadersMap || typeof leadersMap !== "object") return;
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     _lastLeadersMap = leadersMap;
+    _leadersLastFetchMs = Date.now();
     try { API._leadersMap = leadersMap; } catch (_) {}
 
     const pins = Array.from(document.querySelectorAll(_getPinsSelector()));
@@ -2167,7 +2322,7 @@
     }
 
     const dominance = _resolveMapDominance(leadersMap, dominanceRows);
-    _applyMapDominanceMood(dominance);
+    _applyMapDominanceMood(dominance, pins);
     _applyDominanceNodeAccents(pins, dominance);
     _applyDominancePathAccents(dominance);
 
@@ -2233,33 +2388,61 @@
     }, { capture: true, passive: true });
   }
 
-  async function refreshLeaders() {
-    if (window.Influence?.refreshLeaders) {
-      return window.Influence.refreshLeaders(true);
+  async function refreshLeaders(options = {}) {
+    const force = !!(typeof options === "object" ? options.force : options);
+    const reason = String((typeof options === "object" ? options.reason : "") || "auto");
+    const now = Date.now();
+
+    if (_leadersRefreshPromise) {
+      logMap("load leaders reused", { reason });
+      return _leadersRefreshPromise;
     }
-    try {
-      const apiPost = getApiPost();
-      if (!apiPost) return null;
 
-      const out = await apiPost("/webapp/map/leaders", {
-        run_id: rid("lead")
-      });
+    if (!force && _lastLeadersMap && _leadersLastFetchMs && (now - _leadersLastFetchMs) < MAP_LEADERS_AUTO_STALE_MS) {
+      logMap("load leaders skipped", { reason, ageMs: now - _leadersLastFetchMs });
+      applyLeaders(_lastLeadersMap);
+      return _lastLeadersMap;
+    }
 
-      const leaders =
-        out?.leadersMap ||
-        out?.data?.leadersMap ||
-        out?.state?.leadersMap ||
-        out?.data ||
-        out;
-
-      if (leaders && typeof leaders === "object") {
-        applyLeaders(leaders);
-        return leaders;
+    logMap("load leaders fresh", { reason, force });
+    const run = (async () => {
+      if (window.Influence?.refreshLeaders) {
+        return window.Influence.refreshLeaders({ applyToMap: true, force, reason: `map:${reason}` });
       }
-    } catch (err) {
-      console.warn("[AHMap] refreshLeaders failed:", err);
+      try {
+        const apiPost = getApiPost();
+        if (!apiPost) return null;
+
+        const out = await apiPost("/webapp/map/leaders", {
+          run_id: rid("lead")
+        });
+
+        const leaders =
+          out?.leadersMap ||
+          out?.data?.leadersMap ||
+          out?.state?.leadersMap ||
+          out?.data ||
+          out;
+
+        if (leaders && typeof leaders === "object") {
+          applyLeaders(leaders);
+          _leadersLastFetchMs = Date.now();
+          return leaders;
+        }
+      } catch (err) {
+        console.warn("[AHMap] refreshLeaders failed:", err);
+      }
+      return null;
+    })();
+
+    _leadersRefreshPromise = run;
+    try {
+      const leaders = await run;
+      if (leaders) _leadersLastFetchMs = Date.now();
+      return leaders;
+    } finally {
+      if (_leadersRefreshPromise === run) _leadersRefreshPromise = null;
     }
-    return null;
   }
 
   function init() {

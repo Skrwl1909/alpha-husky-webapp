@@ -10,8 +10,20 @@
   let _leadersMap = null;
   let _leadersRefreshPromise = null;
   let _leadersLastFetchMs = 0;
+  let _nodeStateRefreshPromise = null;
+  let _nodeStateRefreshNodeId = "";
+  let _nodeStateLastFetchMs = 0;
+  let _nodeStateLastNodeId = "";
+  let _nodeStateCache = null;
+  let _openNodeId = "";
+  let _openLoadPromise = null;
+  let _openLoadNodeId = "";
+  let _pollTimer = null;
   let _inited = false;
   const LEADERS_MIN_REFRESH_MS = 2500;
+  const LEADERS_AUTO_STALE_MS = 15000;
+  const NODE_STATE_AUTO_STALE_MS = 10000;
+  const INFLUENCE_POLL_MS = 30000;
 
   // -------------------------
   // Faction memory (cache only)
@@ -574,6 +586,50 @@
   let _signalCoreOpen = false;
 
   function _qs(id) { return document.getElementById(id); }
+  function _logDbg(...args) {
+    if (_dbg) console.debug("[Influence]", ...args);
+  }
+  function _isModalOpen() {
+    const m = document.getElementById("influenceModal");
+    return !!m && m.style.display !== "none";
+  }
+  function _parseRefreshLeadersArgs(applyToMapOrOptions, maybeOptions) {
+    if (applyToMapOrOptions && typeof applyToMapOrOptions === "object") {
+      return {
+        applyToMap: applyToMapOrOptions.applyToMap !== false,
+        force: !!applyToMapOrOptions.force,
+        reason: String(applyToMapOrOptions.reason || "auto"),
+      };
+    }
+    return {
+      applyToMap: applyToMapOrOptions !== false,
+      force: !!maybeOptions?.force,
+      reason: String(maybeOptions?.reason || "auto"),
+    };
+  }
+  function _startPoll() {
+    if (!_isModalOpen() || !_openNodeId) return;
+    if (_pollTimer) {
+      _logDbg("duplicate interval blocked", { nodeId: _openNodeId });
+      return;
+    }
+    _logDbg("poll start", { nodeId: _openNodeId, intervalMs: INFLUENCE_POLL_MS });
+    _pollTimer = window.setInterval(() => {
+      if (!_isModalOpen() || !_openNodeId) {
+        _stopPoll("hidden");
+        return;
+      }
+      void refreshLeaders({ applyToMap: false, reason: "poll" });
+      void refreshWeekly(_openNodeId, { reason: "poll" });
+    }, INFLUENCE_POLL_MS);
+  }
+  function _stopPoll(reason = "close") {
+    if (_pollTimer) {
+      clearInterval(_pollTimer);
+      _pollTimer = null;
+      _logDbg("poll stop", { reason, nodeId: _openNodeId || "" });
+    }
+  }
 
   function setStatus(msg, kind = "info") {
     const el = _qs("infStatus");
@@ -2312,8 +2368,9 @@
     });
   }
 
-  async function refreshLeaders(applyToMap = true) {
+  async function refreshLeaders(applyToMapOrOptions = true, maybeOptions = null) {
     if (!_apiPost) return null;
+    const { applyToMap, force, reason } = _parseRefreshLeadersArgs(applyToMapOrOptions, maybeOptions);
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const now = Date.now();
     let cacheHit = false;
@@ -2336,13 +2393,15 @@
       }
     }
 
-    if (_leadersMap && (now - _leadersLastFetchMs) < LEADERS_MIN_REFRESH_MS) {
+    if (!force && _leadersMap && (now - _leadersLastFetchMs) < LEADERS_AUTO_STALE_MS) {
       cacheHit = true;
+      _logDbg("load leaders skipped", { reason, ageMs: now - _leadersLastFetchMs });
       applyCurrentLeaders(_leadersMap);
       window.__ahPerf?.log?.("Influence.refreshLeaders", perfT0, { applyToMap, cacheHit, deduped });
       return _leadersMap;
     }
 
+    _logDbg(_leadersMap ? "load leaders fresh" : "load leaders initial", { reason, force });
     const run = (async () => {
       const r = await _apiPost("/webapp/map/leaders", { run_id: rid("lead") });
       const ok = r?.ok !== false;
@@ -2375,14 +2434,62 @@
     }
   }
 
-  async function refreshWeekly(nodeId) {
+  async function refreshWeekly(nodeId, options = {}) {
     if (!_apiPost) return;
+    const safeNodeId = normalizeNodeId(nodeId) || String(nodeId || "");
+    const { force = false, reason = "auto" } = options || {};
+    const now = Date.now();
 
-    try {
+    if (
+      force &&
+      _nodeStateRefreshPromise &&
+      _nodeStateRefreshNodeId === safeNodeId
+    ) {
+      try { await _nodeStateRefreshPromise; } catch (_) {}
+    } else if (
+      _nodeStateRefreshPromise &&
+      _nodeStateRefreshNodeId === safeNodeId
+    ) {
+      return _nodeStateRefreshPromise;
+    }
+
+    if (
+      !force &&
+      _nodeStateCache &&
+      _nodeStateLastNodeId === safeNodeId &&
+      (now - _nodeStateLastFetchMs) < NODE_STATE_AUTO_STALE_MS
+    ) {
+      _logDbg("skipped fresh state", { nodeId: safeNodeId, reason, ageMs: now - _nodeStateLastFetchMs });
+      const cached = _nodeStateCache;
+      const info = cached?.info || cached?.data?.info || null;
+      if (info && typeof info === "object") {
+        const youFaction = normalizeFaction(
+          info?.youFaction ||
+          cached?.youFaction ||
+          cached?.you?.faction ||
+          getCanonicalFaction()
+        );
+        if (youFaction) setFaction(youFaction);
+        _nodeInfoById[safeNodeId] = {
+          ...(_nodeInfoById[safeNodeId] || {}),
+          ...info,
+          youFaction,
+        };
+        paintLeader(safeNodeId);
+      }
+      _weekly = extractWeekly(cached);
+      renderWeekly();
+      return cached;
+    }
+
+    const run = (async () => {
       const r = await _apiPost("/webapp/influence/state", {
-        nodeId,
+        nodeId: safeNodeId,
         run_id: rid("infstate"),
       });
+      _nodeStateCache = r;
+      _nodeStateLastNodeId = safeNodeId;
+      _nodeStateLastFetchMs = Date.now();
 
       const responseFaction = normalizeFaction(
         r?.youFaction ||
@@ -2404,18 +2511,31 @@
 
         if (youFaction) setFaction(youFaction);
 
-        _nodeInfoById[nodeId] = {
-          ...(_nodeInfoById[nodeId] || {}),
+        _nodeInfoById[safeNodeId] = {
+          ...(_nodeInfoById[safeNodeId] || {}),
           ...info,
           youFaction,
         };
-        paintLeader(nodeId);
+        paintLeader(safeNodeId);
       }
 
       _weekly = extractWeekly(r);
       renderWeekly();
+      return r;
+    })();
+
+    _nodeStateRefreshPromise = run;
+    _nodeStateRefreshNodeId = safeNodeId;
+    try {
+      return await run;
     } catch (e) {
       if (_dbg) console.warn("refreshWeekly failed", e);
+      return _nodeStateCache;
+    } finally {
+      if (_nodeStateRefreshPromise === run) {
+        _nodeStateRefreshPromise = null;
+        _nodeStateRefreshNodeId = "";
+      }
     }
   }
 
@@ -2423,6 +2543,7 @@
     ensureModal();
     const m = document.getElementById("influenceModal");
     if (!m) return;
+    const safeNodeId = normalizeNodeId(nodeId) || String(nodeId || "");
 
     clearStatus();
     setSignalCorePanelOpen(false);
@@ -2432,13 +2553,14 @@
 
     try { (_tg || window.Telegram?.WebApp)?.expand?.(); } catch (_) {}
 
-    m.dataset.nodeId = nodeId;
+    m.dataset.nodeId = safeNodeId;
+    _openNodeId = safeNodeId;
 
     const titleEl = document.getElementById("infTitle");
     const subEl = document.getElementById("infSub");
     if (titleEl) titleEl.textContent = title || nodeId;
     if (subEl) {
-      const prettyNodeId = String(nodeId || "").trim().replaceAll("_", " ");
+      const prettyNodeId = String(safeNodeId || "").trim().replaceAll("_", " ");
       subEl.textContent = prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective";
     }
 
@@ -2449,16 +2571,27 @@
     _weekly = null;
     renderWeekly();
 
-    (async () => {
-      await refreshLeaders(false);
-      paintLeader(nodeId);
-      await refreshWeekly(nodeId);
-    })();
+    if (_openLoadPromise && _openLoadNodeId === safeNodeId) {
+      _logDbg("open node", { nodeId: safeNodeId, reused: true, inFlight: true });
+    } else {
+      _openLoadNodeId = safeNodeId;
+      const run = (async () => {
+        await refreshLeaders({ applyToMap: false, reason: "open" });
+        paintLeader(safeNodeId);
+        await refreshWeekly(safeNodeId, { reason: "open" });
+      })();
+      _openLoadPromise = run;
+      run.finally(() => {
+        if (_openLoadNodeId === safeNodeId) _openLoadNodeId = "";
+        if (_openLoadPromise === run) _openLoadPromise = null;
+      });
+      _logDbg("open node", { nodeId: safeNodeId, reused: false, inFlight: false });
+    }
 
     const patrolBtn = document.getElementById("infPatrolBtn");
     const donateBtn = document.getElementById("infDonateBtn");
-    if (patrolBtn) patrolBtn.onclick = () => doPatrol(nodeId);
-    if (donateBtn) donateBtn.onclick = () => doDonate(nodeId);
+    if (patrolBtn) patrolBtn.onclick = () => doPatrol(safeNodeId);
+    if (donateBtn) donateBtn.onclick = () => doDonate(safeNodeId);
 
     m.style.display = "flex";
     document.body.classList.add("ah-modal-open");
@@ -2472,7 +2605,7 @@
       });
       window.navOpen?.("influenceModal");
     } catch (_) {}
-    if (_dbg) console.debug("[Influence] open", nodeId);
+    _startPoll();
 
     // if cooldown running, render it immediately
     if (_cdUntilMs > Date.now()) {
@@ -2498,6 +2631,7 @@
     if (!m) return;
 
     setSignalCorePanelOpen(false);
+    _stopPoll("close");
     m.style.display = "none";
     document.body.classList.remove("ah-modal-open");
     try { window.navClose?.("influenceModal"); } catch (_) {}
@@ -2509,6 +2643,7 @@
     } catch (_) {}
 
     _modalHost().style.display = "none";
+    _openNodeId = "";
   }
 
   function mergedNodeInfo(nodeId) {
@@ -3049,7 +3184,7 @@
       triggerActionMicroReaction();
 
       applyLeadersFromResponse(r, nodeId);
-      window.setTimeout(() => { void refreshWeekly(nodeId); }, 120);
+      window.setTimeout(() => { void refreshWeekly(nodeId, { force: true, reason: "action_followup" }); }, 120);
     } finally {
       // if cooldown active, keep disabled
       if (btn) {
@@ -3102,7 +3237,7 @@
       triggerActionMicroReaction();
 
       applyLeadersFromResponse(r, nodeId);
-      window.setTimeout(() => { void refreshWeekly(nodeId); }, 120);
+      window.setTimeout(() => { void refreshWeekly(nodeId, { force: true, reason: "action_followup" }); }, 120);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -3125,7 +3260,7 @@
     _inited = true;
 
     ensureModal();
-    refreshLeaders(true);
+    refreshLeaders({ applyToMap: true, reason: "init" });
     syncFactionFromFrontendState();
   };
 
