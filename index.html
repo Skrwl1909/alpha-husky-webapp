@@ -7396,7 +7396,7 @@ async function loadPlayerState() {
       updateUnlockProgress();
 
       // ✅ INFLUENCE: dociągnij leaders i nałóż na mapę
-      try { await window.Influence?.refreshLeaders?.(true); } catch (e) { console.warn("leaders load failed", e); }
+      try { await window.AHMap?.refreshLeaders?.({ reason: "loadPlayerState" }); } catch (e) { console.warn("leaders load failed", e); }
     }
 
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
@@ -8146,6 +8146,7 @@ const actions = {
   // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
   ".btn.map": () => {
     try { window.requestTelegramFullscreen?.(); } catch (_) {}
+    if (window.DBG) console.debug("[map] open", { source: "button" });
     mapBack.style.display = "flex";
     navOpen("mapBack");
     if (!DATA) loadMapData();
@@ -8561,6 +8562,7 @@ async function showSection(name){
   switch(name){
     case "map":
       try { window.requestTelegramFullscreen?.(); } catch (_) {}
+      if (window.DBG) console.debug("[map] open", { source: "showSection" });
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
       if (!DATA) loadMapData();
@@ -9067,7 +9069,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
       if (!window.__leadersBootRequested) {
         window.__leadersBootRequested = true;
-        try { window.Influence?.refreshLeaders?.(true); } catch (_) {}
+        try { window.AHMap?.refreshLeaders?.({ reason: "leadersBootInit" }); } catch (_) {}
       }
     } catch (e) {
       console.warn("❌ Map init failed", e);
@@ -9134,7 +9136,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     if (apiOk && can) {
       window.__leadersBootRequested = true;
       try {
-        I.refreshLeaders(true);
+        window.AHMap?.refreshLeaders?.({ reason: "leadersBootTick" });
         console.log("✅ [Leaders] boot refresh done");
       } catch (e) {
         console.warn("❌ [Leaders] boot refresh failed", e);
