@@ -5472,7 +5472,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-05-08a";
+    window.WEBAPP_VER = "2026-03-18a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -6208,21 +6208,75 @@ async function apiPostRaw(path, payload){
   return data;
 }
 
+const READ_ONLY_STATE_DEDUPE_PATHS = new Set([
+  "/webapp/cta/state",
+  "/webapp/mailbox/state",
+  "/webapp/missions/state",
+  "/webapp/supporter/state",
+]);
+
+const readOnlyStateInFlight = new Map();
+
+function normalizeApiPath(path) {
+  return String(path || "").split("?")[0];
+}
+
+function shouldCoalesceReadOnlyState(path) {
+  return READ_ONLY_STATE_DEDUPE_PATHS.has(normalizeApiPath(path));
+}
+
+function logReadOnlyStateReuse(path) {
+  if (!window.DBG) return;
+  try {
+    console.debug("[apiPost] reusing in-flight read-only state call", normalizeApiPath(path));
+  } catch (_) {}
+}
+
 async function apiPost(path, payload) {
   const perfT0 = perfNow();
   let ok = false;
   let status = 0;
+  const safePath = normalizeApiPath(path);
+  const useInFlightGuard = shouldCoalesceReadOnlyState(safePath);
+  const requestBody = payload || {};
+  const key = safePath;
+
+  if (useInFlightGuard) {
+    const inFlight = readOnlyStateInFlight.get(key);
+    if (inFlight) {
+      logReadOnlyStateReuse(safePath);
+      return inFlight;
+    }
+  }
+
+  const requestPromise = (async () => {
+    try {
+      const out = await apiPostRaw(path, requestBody);
+      ok = !!(out && out.ok !== false);
+      status = ok ? 200 : 0;
+      return out;
+    } catch (err) {
+      status = Number(err?.status || 0);
+      throw err;
+    } finally {
+      if (window.__ahPerf?.shouldApiLog?.(path)) {
+        window.__ahPerf.api(path, perfT0, ok);
+      }
+    }
+  })();
+
+  if (useInFlightGuard) {
+    readOnlyStateInFlight.set(key, requestPromise);
+  }
+
   try {
-    const out = await apiPostRaw(path, payload);
-    ok = !!(out && out.ok !== false);
-    status = ok ? 200 : 0;
-    return out;
-  } catch (err) {
-    status = Number(err?.status || 0);
-    throw err;
+    return await requestPromise;
   } finally {
-    if (window.__ahPerf?.shouldApiLog?.(path)) {
-      window.__ahPerf.api(path, perfT0, ok);
+    if (useInFlightGuard) {
+      const current = readOnlyStateInFlight.get(key);
+      if (current === requestPromise) {
+        readOnlyStateInFlight.delete(key);
+      }
     }
   }
 }
