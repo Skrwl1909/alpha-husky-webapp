@@ -14,6 +14,7 @@
     pollTimer: 0,
     initDone: false,
     lastData: null,
+    lastLoadAt: 0,
     visHandler: null,
     pageShowHandler: null,
   };
@@ -37,6 +38,8 @@
   function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  const STATE_STALE_MS = 45 * 1000;
 
   function getApiPost() {
     const fn = STATE.apiPost || window.apiPost || window.S?.apiPost || null;
@@ -1022,8 +1025,23 @@
     return safe;
   }
 
-  async function load() {
+  function isFreshEnough() {
+    return !!(STATE.lastLoadAt && (Date.now() - STATE.lastLoadAt) < STATE_STALE_MS);
+  }
+
+  function logFreshSkip(reason) {
+    log("skip cta/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - Number(STATE.lastLoadAt || 0)) });
+  }
+
+  async function load(options = {}) {
+    const { force = false, reason = "auto" } = options || {};
     if (!mount()) return null;
+
+    if (!force && STATE.lastData && isFreshEnough()) {
+      logFreshSkip(reason);
+      render(STATE.lastData);
+      return STATE.lastData;
+    }
 
     const apiPost = getApiPost();
     if (!apiPost) {
@@ -1036,6 +1054,7 @@
       const raw = await apiPost("/webapp/cta/state", {});
       const data = normalize(raw);
       STATE.lastData = data;
+      STATE.lastLoadAt = Date.now();
       render(data);
       return data;
     } catch (err) {
@@ -1046,7 +1065,7 @@
   }
 
   function refresh() {
-    return load();
+    return load({ force: true, reason: "manual_refresh" });
   }
 
   function clearPolling() {
@@ -1059,7 +1078,7 @@
   function startPolling() {
     clearPolling();
     STATE.pollTimer = window.setInterval(() => {
-      void load();
+      void load({ reason: "poll" });
     }, POLL_MS);
   }
 
@@ -1322,14 +1341,14 @@
     if (!STATE.visHandler) {
       STATE.visHandler = () => {
         if (document.visibilityState === "visible") {
-          void load();
+          void load({ reason: "visibilitychange" });
         }
       };
       document.addEventListener("visibilitychange", STATE.visHandler);
     }
 
     if (!STATE.pageShowHandler) {
-      STATE.pageShowHandler = () => { void load(); };
+      STATE.pageShowHandler = () => { void load({ reason: "pageshow" }); };
       window.addEventListener("pageshow", STATE.pageShowHandler);
     }
   }
@@ -1359,7 +1378,7 @@
 
     if (STATE.initDone) {
       if (!mount()) return window.CTA;
-      void load();
+      void load({ reason: "init_reentry" });
       return window.CTA;
     }
 
@@ -1371,7 +1390,7 @@
     STATE.initDone = true;
     bindLifecycleRefresh();
     startPolling();
-    void load();
+    void load({ reason: "init" });
     return window.CTA;
   }
 

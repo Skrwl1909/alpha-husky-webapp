@@ -40,6 +40,8 @@
   let _root = null;  // #missionsRoot
   let _tick = null;
   let _state = null;
+  let _stateLoadedAt = 0;
+  const MISSIONS_STATE_STALE_MS = 10 * 1000;
 
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
@@ -419,7 +421,7 @@
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "resolve") return void doResolve();
       if (act === "close")   return void close();
-      if (act === "back_to_offers") { _pendingStart = null; stopTick(); return void loadState(); }
+      if (act === "back_to_offers") { _pendingStart = null; stopTick(); return void loadState({ force: true, reason: "back_to_offers" }); }
     });
 
     const closeBtn = el("closeMissions");
@@ -494,7 +496,7 @@
     try { window.navOpen?.(_modal.id); } catch (_) {}
 
     renderLoading("Loading missions…");
-    loadState();
+    loadState({ reason: "open" });
     return true;
   }
 
@@ -1279,11 +1281,18 @@ function _normalizeRareDropObj(obj) {
   // =========================
   // Actions
   // =========================
-  async function loadStateBase() {
+  async function loadStateBase(options = {}) {
+    const { force = false, reason = "auto" } = options || {};
+    if (!force && _state && _stateLoadedAt && (Date.now() - _stateLoadedAt) < MISSIONS_STATE_STALE_MS) {
+      log("skip missions/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - _stateLoadedAt) });
+      render();
+      return _state;
+    }
     renderLoading("Loading missions…");
     try {
       const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
       _state = res;
+      _stateLoadedAt = Date.now();
 
       // debug snapshots
       try {
@@ -1303,9 +1312,9 @@ function _normalizeRareDropObj(obj) {
     }
   }
 
-  async function loadState() {
+  async function loadState(options = {}) {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
-    const out = await loadStateBase();
+    const out = await loadStateBase(options);
     window.__ahPerf?.log?.("Missions.loadState", perfT0, { ok: !!out });
     return out;
   }
@@ -1315,6 +1324,7 @@ function _normalizeRareDropObj(obj) {
       const res = await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
       if (res && typeof res === "object") {
         _state = res;
+        _stateLoadedAt = Date.now();
         try {
           window.__AH_MISSIONS_RAW = res;
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
@@ -1322,7 +1332,7 @@ function _normalizeRareDropObj(obj) {
         render();
         return;
       }
-      await loadState();
+      await loadState({ force: true, reason: "refresh_fallback" });
     } catch (e) {
       renderError("Refresh failed", String(e?.message || e || ""));
     }
@@ -1358,6 +1368,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       // if backend returned state with active, great — but still poll to confirm
       if (startRes && typeof startRes === "object") {
         _state = startRes;
+        _stateLoadedAt = Date.now();
         try {
           window.__AH_MISSIONS_RAW = startRes;
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(startRes);
@@ -1375,7 +1386,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     } catch (e) {
       const msg = String(e?.message || e || "");
       if (msg.toUpperCase() === "ACTIVE") {
-        await loadState();
+        await loadState({ force: true, reason: "start_active" });
         return;
       }
       _pendingStart = null;
@@ -1397,6 +1408,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       _pendingStart = null;
       if (res && typeof res === "object") {
         _state = res;
+        _stateLoadedAt = Date.now();
         try {
           window.__AH_MISSIONS_RAW = res;
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
@@ -1404,7 +1416,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         render();
         return;
       }
-      await loadState();
+      await loadState({ force: true, reason: "resolve_fallback" });
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
     }

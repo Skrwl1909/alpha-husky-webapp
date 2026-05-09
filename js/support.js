@@ -4,9 +4,11 @@
   let _apiPost = null;
   let _dbg = false;
   let _state = null;
+  let _stateLoadedAt = 0;
   let _openingPhantom = false;
   let _howlPayBusy = "";
   let _howlPayPollTimer = null;
+  const SUPPORT_STATE_STALE_MS = 30 * 1000;
 
   function log(...args) {
     if (_dbg) console.log("[Support]", ...args);
@@ -573,6 +575,13 @@ It makes your presence visible.</div>
   async function refreshSupportState(opts = {}) {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     try {
+      const { force = false, reason = "auto" } = opts || {};
+      if (!force && _state && _stateLoadedAt && (Date.now() - _stateLoadedAt) < SUPPORT_STATE_STALE_MS) {
+        log("skip supporter/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - _stateLoadedAt) });
+        renderState(_state, opts);
+        return _state;
+      }
+
       const apiPost = getApiPost();
       if (!apiPost) throw new Error("NO_API_POST");
 
@@ -580,6 +589,7 @@ It makes your presence visible.</div>
       if (!out || out.ok === false) throw new Error(out?.reason || "SUPPORT_STATE_FAILED");
 
       _state = out.support || {};
+      _stateLoadedAt = Date.now();
       renderState(_state, opts);
       return _state;
     } finally {
@@ -876,7 +886,7 @@ It makes your presence visible.</div>
           if (status === "paid") {
             try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
             await refreshProfileViews();
-            try { await refreshSupportState(); } catch (_) {}
+            try { await refreshSupportState({ force: true, reason: "stars_paid" }); } catch (_) {}
             try { tg?.showAlert?.("Support unlocked. Thank you, Howler."); } catch (_) {}
           } else if (status === "cancelled") {
             try { tg?.showAlert?.("Payment cancelled."); } catch (_) {}
@@ -948,7 +958,7 @@ It makes your presence visible.</div>
         await refreshHolderStatus({ silent: true });
       } catch (refreshErr) {
         log("initial holder refresh failed after link:", refreshErr);
-        try { await refreshSupportState(); } catch (_) {}
+        try { await refreshSupportState({ force: true, reason: "link_fallback" }); } catch (_) {}
       }
       await refreshProfileViews();
       try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
@@ -968,6 +978,7 @@ It makes your presence visible.</div>
 
     try {
       _state = res.support || _state || {};
+      _stateLoadedAt = Date.now();
       renderState(_state);
       if (!opts.silent) await refreshProfileViews();
       return res;
@@ -987,6 +998,7 @@ It makes your presence visible.</div>
 
     try {
       _state = res.support || _state || {};
+      _stateLoadedAt = Date.now();
       renderState(_state);
       await refreshProfileViews();
       try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
@@ -1008,6 +1020,7 @@ It makes your presence visible.</div>
 
     try {
       _state = res.support || _state || {};
+      _stateLoadedAt = Date.now();
       renderState(_state);
       await refreshProfileViews();
       try { tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
@@ -1146,7 +1159,7 @@ It makes your presence visible.</div>
           ? "Signal Active. Your HOWL Signal is now visible across the Pack."
           : "Unlocked. Refreshing identity.";
         _howlPayBusy = "";
-        await refreshSupportState({ silent: true }).catch(() => {});
+        await refreshSupportState({ silent: true, force: true, reason: "howlpay_completed" }).catch(() => {});
         await refreshProfileViews();
         try { getTg()?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
         return;
@@ -1203,7 +1216,7 @@ It makes your presence visible.</div>
       if (out?.already_owned) {
         _howlPayBusy = "";
         if (status) status.textContent = pid === "howl_signal" ? "Signal Active." : "Already owned.";
-        await refreshSupportState({ silent: true }).catch(() => {});
+        await refreshSupportState({ silent: true, force: true, reason: "howlpay_already_owned" }).catch(() => {});
         await refreshProfileViews();
         return;
       }
@@ -1273,7 +1286,7 @@ It makes your presence visible.</div>
     wireClicks();
     renderTopbarWallet(_state || {});
     if (!_state && getApiPost()) {
-      void refreshSupportState().catch((err) => log("initial support state failed:", err));
+      void refreshSupportState({ reason: "init" }).catch((err) => log("initial support state failed:", err));
     }
     return true;
   }
@@ -1304,7 +1317,7 @@ It makes your presence visible.</div>
     setText("supportCombinedStatus", "Loading support status...");
 
     try {
-      await refreshSupportState();
+      await refreshSupportState({ reason: "open" });
     } catch (err) {
       log("refreshSupportState failed:", err);
       setText("supportStarsStatus", "Support state unavailable right now.");

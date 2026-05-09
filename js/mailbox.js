@@ -10,6 +10,7 @@
     dbg: false,
     items: [],
     serverTs: 0,
+    lastLoadAt: 0,
     loadSeq: 0,
     pollTimer: null,
     visHandler: null,
@@ -20,6 +21,7 @@
   const SEEN_KEY = "ah_mailbox_seen_ts_v1";
   const POLL_MS = 90 * 1000;
   const MAX_ITEMS = 8;
+  const STATE_STALE_MS = 25 * 1000;
 
   const log = (...args) => { if (S.dbg) console.log("[Mailbox]", ...args); };
   const warn = (...args) => { if (S.dbg) console.warn("[Mailbox]", ...args); };
@@ -420,6 +422,24 @@
   }
 
   async function load() {
+    return loadState();
+  }
+
+  function isFreshEnough() {
+    return !!(S.lastLoadAt && (Date.now() - S.lastLoadAt) < STATE_STALE_MS);
+  }
+
+  function logFreshSkip(reason) {
+    log("skip mailbox/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - Number(S.lastLoadAt || 0)) });
+  }
+
+  async function loadState(options = {}) {
+    const { force = false, reason = "auto" } = options || {};
+    if (!force && S.lastLoadAt && isFreshEnough()) {
+      logFreshSkip(reason);
+      return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+    }
+
     const reqSeq = ++S.loadSeq;
     try {
       const raw = await api("/webapp/mailbox/state", {});
@@ -429,6 +449,7 @@
       const normalized = normalizePayload(raw || {});
       S.items = normalized.items;
       S.serverTs = normalized.serverTs;
+      S.lastLoadAt = Date.now();
       applyHubUnreadBadge();
       if (S.backEl && S.backEl.style.display !== "none") {
         render();
@@ -445,7 +466,7 @@
   }
 
   async function refresh() {
-    return load();
+    return loadState({ force: true, reason: "manual_refresh" });
   }
 
   function markSeenNow() {
@@ -487,7 +508,7 @@
       const ok = await window.PlayerProfile?.sendHowl?.(targetUid, "mailbox");
       showNotice(ok ? "Howl sent." : "Could not send Howl.");
       if (ok) {
-        await load();
+        await loadState({ force: true, reason: "send_howl" });
         render();
       }
       return !!ok;
@@ -522,7 +543,8 @@
         showNotice("Could not dismiss that message. Try again.");
         return false;
       }
-      await load();
+      S.lastLoadAt = 0;
+      await loadState({ force: true, reason: "dismiss" });
       render();
       return true;
     } catch (err) {
@@ -629,7 +651,7 @@
 
   async function open() {
     ensureModal();
-    await load();
+    await loadState({ force: true, reason: "open" });
     render();
     if (S.backEl) S.backEl.style.display = "flex";
     markSeenNow();
@@ -657,13 +679,13 @@
     }
 
     ensureModal();
-    void load();
+    void loadState({ reason: "init" });
     clearPolling();
-    S.pollTimer = setInterval(() => { void load(); }, POLL_MS);
+    S.pollTimer = setInterval(() => { void loadState({ reason: "poll" }); }, POLL_MS);
 
     if (!S.visHandler) {
       S.visHandler = () => {
-        if (document.visibilityState === "visible") void load();
+        if (document.visibilityState === "visible") void loadState({ reason: "visibilitychange" });
       };
       document.addEventListener("visibilitychange", S.visHandler);
     }
