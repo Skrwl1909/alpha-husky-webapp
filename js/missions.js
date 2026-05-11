@@ -215,6 +215,30 @@
 
       #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
       #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
+      #missionsRoot .m-kicker{
+        font-size: 11px;
+        letter-spacing: .45px;
+        text-transform: uppercase;
+        opacity: .72;
+      }
+      #missionsRoot .m-tag-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+        margin-top:8px;
+      }
+      #missionsRoot .m-tag{
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:0 8px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.10);
+        background: rgba(255,255,255,.05);
+        font-size:11px;
+        line-height:1;
+        opacity:.9;
+      }
 
       #missionsRoot .m-row{
         display:flex;
@@ -821,6 +845,11 @@ function _normalizeRareDropObj(obj) {
     if (!am || typeof am !== "object") return { status: "NONE" };
 
     const title = am.title || am.name || am.label || "Mission";
+    const subtitle = String(am.subtitle || "");
+    const lore = String(am.lore || am.desc || "");
+    const modifierLabel = String(am.modifierLabel || "");
+    const rareHint = String(am.rareHint || "");
+    const rewardIntent = Array.isArray(am.rewardIntent) ? am.rewardIntent : [];
 
     const started = Number(am.started_ts || am.start_ts || am.start_time || am.startTime || 0);
     const dur = Number(am.duration_sec || am.duration || am.durationSec || 0);
@@ -838,6 +867,11 @@ function _normalizeRareDropObj(obj) {
       return {
         status: remaining > 0 ? "RUNNING" : "READY",
         title,
+        subtitle,
+        lore,
+        modifierLabel,
+        rareHint,
+        rewardIntent,
         started_ts: started,
         duration_sec: dur || total,
         ends_ts: ends,
@@ -866,11 +900,11 @@ function _normalizeRareDropObj(obj) {
       const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
       const total = Math.max(1, Number(am.duration_sec || am.duration || _legacyAnchor.left || 1));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-      return { status: remaining > 0 ? "RUNNING" : "READY", title, remaining, total, pct, readyAt: am.readyAt || "", __raw: am };
+      return { status: remaining > 0 ? "RUNNING" : "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, remaining, total, pct, readyAt: am.readyAt || "", __raw: am };
     }
 
     if (status === "READY") {
-      return { status: "READY", title, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", __raw: am };
+      return { status: "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", __raw: am };
     }
 
     return { status: "NONE" };
@@ -887,6 +921,11 @@ function _normalizeRareDropObj(obj) {
     return {
       status: remaining > 0 ? "RUNNING" : "READY",
       title: _pendingStart.title || "Mission",
+      subtitle: _pendingStart.subtitle || "",
+      lore: _pendingStart.lore || "",
+      modifierLabel: _pendingStart.modifierLabel || "",
+      rareHint: _pendingStart.rareHint || "",
+      rewardIntent: Array.isArray(_pendingStart.rewardIntent) ? _pendingStart.rewardIntent : [],
       started_ts: started,
       duration_sec: dur,
       ends_ts: ends,
@@ -996,6 +1035,14 @@ function _normalizeRareDropObj(obj) {
     return res;
   }
 
+  function renderTags(parts = []) {
+    const tags = parts
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+    if (!tags.length) return "";
+    return `<div class="m-tag-row">${tags.map((tag) => `<span class="m-tag">${esc(tag)}</span>`).join("")}</div>`;
+  }
+
   // =========================
   // Rendering
   // =========================
@@ -1030,8 +1077,14 @@ function _normalizeRareDropObj(obj) {
   function renderOffer(o, active) {
     const tier  = String(o?.tier || "");
     const label = String(o?.label || tier || "Tier");
-    const title = String(o?.title || "");
+    const subtitle = String(o?.subtitle || o?.archetype || "");
+    const title = String(o?.title || o?.name || "");
+    const lore = String(o?.lore || "");
     const desc  = String(o?.desc || "");
+    const modifierLabel = String(o?.modifierLabel || "");
+    const rewardIntent = Array.isArray(o?.rewardIntent) ? o.rewardIntent.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    const rareHint = String(o?.rareHint || "");
+    const body = lore || desc;
 
     const durSec = Number(o?.durationSec || o?.duration_sec || 0);
     const dur =
@@ -1048,14 +1101,20 @@ function _normalizeRareDropObj(obj) {
 
     const hasActive = !!(active?.status && active.status !== "NONE");
     const disabled = hasActive ? "disabled" : "";
+    const flavorTags = [];
+    if (modifierLabel) flavorTags.push(modifierLabel);
+    if (rewardIntent.length) flavorTags.push(`Reward: ${rewardIntent.join(" · ")}`);
+    if (rareHint) flavorTags.push(`Rare: ${rareHint}`);
 
     return `
       <div class="m-offer">
         <div class="m-row">
           <div style="min-width:0;">
             <div class="m-title">${esc(label)} <span class="m-muted">(${esc(dur)})</span></div>
-            ${title ? `<div class="m-muted" style="margin-top:6px;"><b>${esc(title)}</b></div>` : ""}
-            ${desc ? `<div class="m-muted" style="margin-top:4px;">${esc(desc)}</div>` : ""}
+            ${subtitle ? `<div class="m-kicker" style="margin-top:6px;">${esc(subtitle)}</div>` : ""}
+            ${title ? `<div class="m-title" style="margin-top:4px;">${esc(title)}</div>` : ""}
+            ${body ? `<div class="m-muted" style="margin-top:6px;">${esc(body)}</div>` : ""}
+            ${renderTags(flavorTags)}
             <div class="m-muted" style="margin-top:8px;">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
             </div>
@@ -1076,6 +1135,9 @@ function _normalizeRareDropObj(obj) {
     const result = String(last?.result || "");
     const victory = (result === "victory" || last?.victory) ? "✅ Victory" : "❌ Defeat";
     const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
+    const title = String(last?.title || last?.name || "");
+    const subtitle = String(last?.subtitle || "");
+    const report = String(last?.report || "");
 
     const rewardMsg = String(last?.rewardMsg || last?.reward_msg || "");
     const lootMsg = String(last?.lootMsg || last?.loot_msg || "");
@@ -1084,9 +1146,12 @@ function _normalizeRareDropObj(obj) {
     return `
       <div class="m-card" style="margin-top:10px;">
         <div class="m-title">Last Resolve</div>
+        ${subtitle ? `<div class="m-kicker" style="margin-top:8px;">${esc(subtitle)}</div>` : ""}
+        ${title ? `<div class="m-title" style="margin-top:4px;">${esc(title)}</div>` : ""}
         <div class="m-muted" style="margin-top:8px;">
           ${esc(victory)} ${ts ? `· <b>${esc(ts)}</b>` : ""}
         </div>
+        ${report ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(report)}</div>` : ""}
         ${rewardMsg ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(rewardMsg)}</div>` : ""}
         ${lootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(lootMsg)}</div>` : ""}
         ${tokenLootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(tokenLootMsg)}</div>` : ""}
@@ -1141,6 +1206,11 @@ function _normalizeRareDropObj(obj) {
       startedClientSec: started,
       durationSec: durSec,
       title,
+      subtitle: String(o?.subtitle || o?.archetype || ""),
+      lore: String(o?.lore || o?.desc || ""),
+      modifierLabel: String(o?.modifierLabel || ""),
+      rewardIntent: Array.isArray(o?.rewardIntent) ? o.rewardIntent : [],
+      rareHint: String(o?.rareHint || ""),
       rareDrop,
       // ✅ keep optimistic timer until mission would be ready (+30s buffer)
       untilMs: Date.now() + (durSec * 1000) + 30000,
@@ -1173,11 +1243,20 @@ function _normalizeRareDropObj(obj) {
         _extractRareDrop(active.__raw) ||
         _extractRareDrop(_primaryActive(payload)) ||
         null;
+      const activeTags = [];
+      if (active.modifierLabel) activeTags.push(active.modifierLabel);
+      if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) {
+        activeTags.push(`Reward: ${active.rewardIntent.join(" · ")}`);
+      }
+      if (active.rareHint) activeTags.push(`Rare: ${active.rareHint}`);
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
           <div class="m-wait-center">
-            <div class="m-muted">${esc(active.title || "Mission")}</div>
+            ${active.subtitle ? `<div class="m-kicker">${esc(active.subtitle)}</div>` : ""}
+            <div class="m-title">${esc(active.title || "Mission")}</div>
+            ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
+            ${renderTags(activeTags)}
             <div id="mClock" class="m-clock">—</div>
             <div id="mClockSub" class="m-clock-sub">—</div>
 
