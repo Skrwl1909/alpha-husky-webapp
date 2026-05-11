@@ -1367,9 +1367,26 @@
     setTimeout(() => t.remove(), 2400);
   }
 
+  const FORGE_MODAL_ID = "ahForgeBack";
+  let _scrollLockRestore = null;
+
   function lockScroll(lock) {
-    document.body.style.overflow = lock ? "hidden" : "";
-    document.body.style.touchAction = lock ? "none" : "";
+    if (lock) {
+      if (!_scrollLockRestore) {
+        _scrollLockRestore = {
+          overflow: document.body.style.overflow || "",
+          touchAction: document.body.style.touchAction || "",
+        };
+      }
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+      return;
+    }
+
+    const prev = _scrollLockRestore;
+    _scrollLockRestore = null;
+    document.body.style.overflow = prev ? prev.overflow : "";
+    document.body.style.touchAction = prev ? prev.touchAction : "";
   }
 
   let _root = null;
@@ -2273,10 +2290,18 @@ slotField.right.appendChild(chipbar);
   }
 
   function mount() {
+    if (_root && _root.isConnected) return;
+
     ensureStyles();
     lockScroll(true);
 
+    const stale = document.getElementById(FORGE_MODAL_ID);
+    if (stale && stale !== _root) {
+      try { stale.remove(); } catch (_) {}
+    }
+
     const backdrop = el("div", "ah-forge-backdrop");
+    backdrop.id = FORGE_MODAL_ID;
     const modal = el("div", "ah-forge");
 
     const head = el("div", "ah-forge-head");
@@ -2318,9 +2343,11 @@ slotField.right.appendChild(chipbar);
 
     _root = backdrop;
     document.body.appendChild(backdrop);
+    try { window.navOpen?.(FORGE_MODAL_ID); } catch (_) {}
   }
 
   function unmount() {
+    try { window.navClose?.(FORGE_MODAL_ID); } catch (_) {}
     lockScroll(false);
     if (_root) _root.remove();
     _root = null;
@@ -2336,6 +2363,9 @@ slotField.right.appendChild(chipbar);
       name: (ctx && ctx.name) || "Forgotten Tokens’ Vault",
     };
 
+    if (_root && _root.isConnected) {
+      unmount();
+    }
     mount();
     try {
       await loadState();
