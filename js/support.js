@@ -82,6 +82,23 @@
     return { ...product, ...signal, productId: "howl_signal", itemType: "signal", itemKey: "howl_signal" };
   }
 
+  function keepAlphaOnlinePackFromSupport(support) {
+    const howlpay = support?.howlpay || {};
+    const pack = howlpay.keepAlphaOnlinePack || {};
+    const products = Array.isArray(howlpay.products) ? howlpay.products : [];
+    const product = products.find((item) => {
+      const id = String(item?.productId || item?.product_id || "").trim();
+      return id === "keep_alpha_online_pack";
+    }) || {};
+    return {
+      ...product,
+      ...pack,
+      productId: "keep_alpha_online_pack",
+      itemType: "support_pack",
+      itemKey: "keep_alpha_online_pack",
+    };
+  }
+
   function genesisProductFromSupport(support) {
     const howlpay = support?.howlpay || {};
     const genesis = howlpay.genesisFrame || {};
@@ -256,12 +273,25 @@
     section.innerHTML = `
       <div class="ah-howlpay-head">
         <div>
-          <div class="ah-howlpay-title">Treasury Console</div>
-          <div class="ah-howlpay-desc">Token-backed identity utilities. Cosmetic only. No gameplay power.</div>
+          <div class="ah-howlpay-title">HOWL Vault</div>
+          <div class="ah-howlpay-desc">Real $HOWL support cosmetics. Cosmetic only. No gameplay power.</div>
         </div>
         <div id="supportHowlPayLive" class="ah-howlpay-live">Not live</div>
       </div>
       <div class="ah-howlpay-grid">
+        <article class="ah-howlpay-card" data-howlpay-card="keep_alpha_online_pack">
+          <div class="ah-howlpay-top">
+            <div class="ah-howlpay-name"><span class="ah-signal-icon" aria-hidden="true"></span><span>Keep Alpha Online Pack</span></div>
+            <span class="ah-howlpay-state" data-howlpay-state="keep_alpha_online_pack">Locked</span>
+          </div>
+          <div class="ah-howlpay-desc" data-howlpay-desc="keep_alpha_online_pack">Help keep the Alpha signal online.
+Includes Server Signal Frame, Alpha Signal Core aura, and a limited badge.
+Cosmetic only. No power. No pay-to-win.</div>
+          <div class="ah-howlpay-status" data-howlpay-status="keep_alpha_online_pack">HowlPay is not live yet.</div>
+          <div class="ah-howlpay-actions">
+            <button class="ah-action" type="button" data-howlpay-product="keep_alpha_online_pack">Support with HOWL</button>
+          </div>
+        </article>
         <article class="ah-howlpay-card" data-howlpay-card="genesis_frame">
           <div class="ah-howlpay-top">
             <div class="ah-howlpay-name"><span class="ah-signal-icon" aria-hidden="true"></span><span>HOWL Genesis Frame</span></div>
@@ -795,7 +825,7 @@ It makes your presence visible.</div>
         ? "Preparing..."
         : (owned || active)
           ? (active ? "Active" : "Owned")
-          : (item.ctaLabel || (productId === "howl_signal" ? "Unlock with 500 $HOWL" : "Unlock with $HOWL"));
+          : (item.ctaLabel || (productId === "howl_signal" ? "Unlock with 500 $HOWL" : (productId === "keep_alpha_online_pack" ? "Support with HOWL" : "Unlock with $HOWL")));
       btn.disabled = !!(busy || owned || active || !configured || !paymentEnabled);
       btn.title = !paymentEnabled ? "HowlPay is not live yet." : "";
     }
@@ -807,6 +837,7 @@ It makes your presence visible.</div>
     const howlpay = support?.howlpay || {};
     const live = el("supportHowlPayLive");
     if (live) live.textContent = (howlpay.paymentEnabled || howlpay.enabled) ? "Private test" : "Not live";
+    renderHowlPayCard(keepAlphaOnlinePackFromSupport(support), howlpay);
     renderHowlPayCard(genesisProductFromSupport(support), howlpay);
     renderHowlPayCard(signalProductFromSupport(support), howlpay);
   }
@@ -1157,7 +1188,9 @@ It makes your presence visible.</div>
       if (out?.status === "completed" || out?.unlocked) {
         if (status) status.textContent = pid === "howl_signal"
           ? "Signal Active. Your HOWL Signal is now visible across the Pack."
-          : "Unlocked. Refreshing identity.";
+          : (pid === "keep_alpha_online_pack"
+            ? "Signal strengthened. Your support cosmetic has been unlocked. Thank you for helping keep Alpha online."
+            : "Unlocked. Refreshing identity.");
         _howlPayBusy = "";
         await refreshSupportState({ silent: true, force: true, reason: "howlpay_completed" }).catch(() => {});
         await refreshProfileViews();
@@ -1190,7 +1223,9 @@ It makes your presence visible.</div>
     const pid = String(productId || "").trim();
     const support = _state || {};
     const howlpay = support.howlpay || {};
-    const product = pid === "howl_signal" ? signalProductFromSupport(support) : genesisProductFromSupport(support);
+    const product = pid === "howl_signal"
+      ? signalProductFromSupport(support)
+      : (pid === "keep_alpha_online_pack" ? keepAlphaOnlinePackFromSupport(support) : genesisProductFromSupport(support));
     const status = document.querySelector(`[data-howlpay-status="${pid}"]`);
 
     if (!apiPost) return;
@@ -1210,12 +1245,12 @@ It makes your presence visible.</div>
     try {
       const out = await apiPost("/webapp/howlpay/init", {
         product_id: pid,
-        item_type: product.itemType || product.item_type || (pid === "howl_signal" ? "signal" : "frame"),
+        item_type: product.itemType || product.item_type || (pid === "howl_signal" ? "signal" : (pid === "keep_alpha_online_pack" ? "support_pack" : "frame")),
         item_key: product.itemKey || product.item_key || pid,
       });
       if (out?.already_owned) {
         _howlPayBusy = "";
-        if (status) status.textContent = pid === "howl_signal" ? "Signal Active." : "Already owned.";
+        if (status) status.textContent = pid === "howl_signal" ? "Signal Active." : (pid === "keep_alpha_online_pack" ? "Support cosmetic already unlocked." : "Already owned.");
         await refreshSupportState({ silent: true, force: true, reason: "howlpay_already_owned" }).catch(() => {});
         await refreshProfileViews();
         return;

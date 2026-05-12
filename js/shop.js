@@ -88,6 +88,11 @@
     return String(Math.round(v * 100) / 100);
   }
 
+  function displayTokenLabel(raw) {
+    const label = String(raw || "").trim();
+    return (!label || label === "$TOKEN") ? "$HOWL Credits" : label;
+  }
+
   // Accept many backend schemas:
   function getPrices(it) {
     const priceObj =
@@ -198,7 +203,7 @@
     const reason =
       missingPrice ? "No price configured yet."
       : hitLimit ? "Daily limit reached."
-      : notEnoughToken ? "Not enough token."
+    : notEnoughToken ? "Not enough HOWL Credits."
       : notEnoughBones ? "Not enough bones."
       : "";
 
@@ -253,6 +258,8 @@
       .ah-shop-wrap{ padding:14px;color:#fff;max-width:680px;margin:0 auto;font-family:system-ui;height:78vh;display:flex;flex-direction:column; }
       .ah-shop-title{ text-align:center;margin:0 0 8px 0;font-weight:900;letter-spacing:.2px; }
       .ah-shop-meta{ text-align:center;opacity:.9;margin-bottom:10px;flex:0 0 auto;font-size:13px; }
+      .ah-shop-vault{ margin:0 0 10px 0;display:flex;justify-content:center; }
+      .ah-shop-vault-btn{ min-height:38px;padding:10px 14px;border-radius:999px;border:1px solid rgba(123,225,255,.28);background:linear-gradient(180deg, rgba(123,225,255,.16), rgba(15,18,25,.82));color:#e8fbff;font-weight:800;letter-spacing:.04em;cursor:pointer; }
       .ah-shop-list{ flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-right:6px; }
       .ah-shop-card{ background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;cursor:pointer; }
       .ah-shop-card:active{ transform: translateY(1px); }
@@ -342,6 +349,9 @@
           <div id="shop-meta" class="ah-shop-meta">
             loading…
           </div>
+          <div class="ah-shop-vault">
+            <button id="shop-howl-vault" class="ah-shop-vault-btn" type="button">Open HOWL Vault</button>
+          </div>
 
           <!-- SCROLL AREA -->
           <div id="shop-list" class="ah-shop-list"></div>
@@ -364,6 +374,14 @@
       const pvBack = el("shop-preview-back");
       if (pvBack) {
         pvBack.onclick = (e) => { if (e.target === pvBack) this.closePreview(); };
+      }
+      const vaultBtn = el("shop-howl-vault");
+      if (vaultBtn) {
+        vaultBtn.onclick = () => {
+          try {
+            window.Support?.open?.();
+          } catch (_) {}
+        };
       }
 
       // close: cleanup + unlock body + return to map
@@ -412,7 +430,7 @@
 
     metaLine() {
       const r = this._state?.resources || {};
-      const sym = r.tokenSymbol || "$TOKEN";
+      const sym = displayTokenLabel(r.tokenSymbol || "$TOKEN");
       const left = this._state?.refreshInSec ?? 0;
       const m = Math.floor(left / 60), s = left % 60;
       return `🦴 ${r.bones ?? 0}  •  Scrap ${r.scrap ?? 0}  •  Dust ${r.rune_dust ?? 0}  •  🪙 ${r.token ?? 0} ${sym}  •  Refresh in ${m}m ${s}s`;
