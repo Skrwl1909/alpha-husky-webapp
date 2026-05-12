@@ -17,13 +17,12 @@
     style.textContent = `
       #petQuickActions{
         position:fixed;
-        right:14px;
-        bottom:calc(78px + env(safe-area-inset-bottom));
+        left:12px;
+        top:calc(env(safe-area-inset-top) + 88px);
         z-index:7000;
         display:none;
         flex-direction:column;
-        align-items:flex-end;
-        gap:8px;
+        align-items:flex-start;
         pointer-events:none;
       }
       #petQuickActions .pqa-panel,
@@ -34,36 +33,35 @@
       #petQuickActions .pqa-toggle,
       #petQuickActions .pqa-action{
         border:1px solid rgba(255,255,255,.14);
-        background:rgba(9,15,22,.92);
+        background:linear-gradient(180deg, rgba(18,28,40,.94), rgba(8,14,22,.94));
         color:#f3f8ff;
         box-shadow:0 14px 30px rgba(0,0,0,.28);
       }
       #petQuickActions .pqa-toggle{
-        min-width:56px;
-        height:56px;
+        width:42px;
+        height:42px;
         border-radius:999px;
-        padding:0 14px;
+        padding:0;
         display:flex;
         align-items:center;
         justify-content:center;
-        gap:8px;
-        font:800 12px/1 system-ui,sans-serif;
+        font:700 18px/1 system-ui,sans-serif;
+        backdrop-filter:blur(10px);
       }
       #petQuickActions .pqa-toggle[data-open="1"]{
-        background:rgba(14,22,31,.96);
+        background:linear-gradient(180deg, rgba(24,38,54,.97), rgba(10,18,28,.97));
       }
-      #petQuickActions .pqa-pulse{
-        width:10px;
-        height:10px;
-        border-radius:999px;
-        background:#7cf3ae;
-        box-shadow:0 0 0 6px rgba(124,243,174,.14);
+      #petQuickActions .pqa-icon{
+        display:block;
+        line-height:1;
+        filter:drop-shadow(0 0 10px rgba(124,243,174,.18));
       }
       #petQuickActions .pqa-panel{
         display:none;
-        width:min(190px,calc(100vw - 28px));
-        padding:10px;
-        border-radius:16px;
+        width:min(156px,calc(100vw - 24px));
+        margin-top:8px;
+        padding:8px;
+        border-radius:14px;
         background:rgba(7,11,17,.94);
         border:1px solid rgba(255,255,255,.10);
         box-shadow:0 18px 36px rgba(0,0,0,.30);
@@ -76,10 +74,10 @@
       }
       #petQuickActions .pqa-action{
         width:100%;
-        min-height:40px;
+        min-height:36px;
         border-radius:12px;
-        padding:9px 12px;
-        font:800 13px/1.1 system-ui,sans-serif;
+        padding:8px 10px;
+        font:800 12px/1.1 system-ui,sans-serif;
         text-align:left;
       }
       #petQuickActions .pqa-action[disabled]{
@@ -93,8 +91,8 @@
       }
       @media (max-width: 640px){
         #petQuickActions{
-          right:12px;
-          bottom:calc(84px + env(safe-area-inset-bottom));
+          left:12px;
+          top:calc(env(safe-area-inset-top) + 84px);
         }
       }
     `;
@@ -108,15 +106,14 @@
     el = document.createElement("div");
     el.id = "petQuickActions";
     el.innerHTML = `
+      <button type="button" class="pqa-toggle" data-open="0" aria-label="Pet actions">
+        <span class="pqa-icon" aria-hidden="true">&#128062;</span>
+      </button>
       <div class="pqa-panel">
         <button type="button" class="pqa-action" data-action="feed">Feed Pet</button>
         <button type="button" class="pqa-action" data-action="pet">Pet Pet</button>
         <div class="pqa-status" id="petQuickActionsStatus"></div>
       </div>
-      <button type="button" class="pqa-toggle" data-open="0" aria-label="Pet actions">
-        <span class="pqa-pulse"></span>
-        <span>Pet</span>
-      </button>
     `;
     document.body.appendChild(el);
 
@@ -194,11 +191,11 @@
 
     if (feedBtn) {
       feedBtn.disabled = _busy === "feed" || feedCd.remainingSec > 0;
-      feedBtn.textContent = feedCd.remainingSec > 0 ? `Feed ${feedCd.remainingSec}s` : (_busy === "feed" ? "Feeding..." : "Feed Pet");
+      feedBtn.textContent = feedCd.remainingSec > 0 ? `Feed ${feedCd.remainingSec}s` : (_busy === "feed" ? "Feeding..." : "Feed Ready");
     }
     if (petBtn) {
       petBtn.disabled = _busy === "pet" || petCd.remainingSec > 0;
-      petBtn.textContent = petCd.remainingSec > 0 ? `Pet ${petCd.remainingSec}s` : (_busy === "pet" ? "Petting..." : "Pet Pet");
+      petBtn.textContent = petCd.remainingSec > 0 ? `Pet ${petCd.remainingSec}s` : (_busy === "pet" ? "Petting..." : "Pet Ready");
     }
   }
 
