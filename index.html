@@ -326,6 +326,29 @@
   opacity:1;
 }
 
+.hero-frame[data-aura-key="alpha_signal_core"] .hero-aura-ring{
+  inset:8px;
+  border-color:rgba(123,225,255,.42);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(123,225,255,.12), rgba(123,225,255,0) 62%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.08), rgba(255,255,255,0) 74%);
+  box-shadow:
+    0 0 20px rgba(123,225,255,.22),
+    0 0 40px rgba(255,255,255,.10);
+  animation:ahSignalCorePulse 4.6s ease-in-out infinite;
+}
+
+@keyframes ahSignalCorePulse{
+  0%, 100%{
+    opacity:.58;
+    transform:scale(.985);
+  }
+  50%{
+    opacity:.92;
+    transform:scale(1.01);
+  }
+}
+
 html.ah-modal-open #heroFrame{
   opacity: 0 !important;
   filter: none !important;
@@ -6937,8 +6960,12 @@ function formatHeroAuraRemain(sec){
   return `${m}m`;
 }
 
-function getAuraToneStyle(faction){
-  const key = String(faction || "").trim().toLowerCase();
+function getAuraToneStyle(aura){
+  const source = (aura && typeof aura === "object") ? (aura.faction || aura.key || aura.auraKey || "") : aura;
+  const key = String(source || "").trim().toLowerCase();
+  if (key === "alpha_signal_core") {
+    return { bg: "rgba(123,225,255,.14)", border: "rgba(123,225,255,.34)", glow: "rgba(123,225,255,.26)", color: "#e4fbff" };
+  }
   if (key === "rogue_byte") {
     return { bg: "rgba(255,96,150,.12)", border: "rgba(255,96,150,.28)", glow: "rgba(255,96,150,.24)", color: "#ffd8e8" };
   }
@@ -6962,6 +6989,7 @@ function applyHeroAura(aura){
   const label = String(aura?.label || aura?.key || "").trim();
   if (!aura || !label) {
     frame.classList.remove("has-aura");
+    frame.removeAttribute("data-aura-key");
     frame.style.removeProperty("--hero-aura-border");
     frame.style.removeProperty("--hero-aura-glow");
     badge.style.display = "none";
@@ -6972,10 +7000,11 @@ function applyHeroAura(aura){
     return;
   }
 
-  const tone = getAuraToneStyle(aura?.faction);
+  const tone = getAuraToneStyle(aura);
   const remain = Number(aura?.expiresInSec || 0) > 0 ? ` • ${formatHeroAuraRemain(aura.expiresInSec)}` : "";
 
   frame.classList.add("has-aura");
+  frame.setAttribute("data-aura-key", String(aura?.key || aura?.auraKey || aura?.faction || "").trim().toLowerCase());
   frame.style.setProperty("--hero-aura-border", tone.border);
   frame.style.setProperty("--hero-aura-glow", tone.glow);
 
