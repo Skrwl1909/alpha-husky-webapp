@@ -1,4 +1,4 @@
-﻿// js/support.js - Unified Support Alpha sheet (Stars + Solana holder lane)
+// js/support.js - Unified Support Alpha sheet (Stars + Solana holder lane)
 (function () {
   let _tg = null;
   let _apiPost = null;
@@ -256,6 +256,70 @@
       }
       #supportBack .ah-howlpay-actions .ah-action:disabled{
         opacity:.58;
+      }
+      #supportBack .howlpay-manual-panel{
+        position:relative;
+        margin-top:12px;
+        padding:12px;
+        border:1px solid rgba(245,210,146,.34);
+        border-radius:8px;
+        background:
+          radial-gradient(circle at 100% 0%, rgba(65,211,255,.14), transparent 42%),
+          rgba(245,210,146,.055);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.055);
+      }
+      #supportBack .howlpay-manual-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:10px;
+      }
+      #supportBack .howlpay-manual-label{
+        font-size:10px;
+        font-weight:850;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+        color:rgba(226,235,248,.60);
+      }
+      #supportBack .howlpay-manual-value{
+        margin-top:3px;
+        color:rgba(255,235,194,.96);
+        font-size:14px;
+        font-weight:900;
+        line-height:1.25;
+        word-break:break-all;
+      }
+      #supportBack .howlpay-manual-wallet{
+        color:rgba(248,250,255,.92);
+        font-size:11px;
+        font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      #supportBack .howlpay-manual-copy{
+        flex:0 0 auto;
+        min-height:28px;
+        padding:0 10px;
+        border-radius:7px;
+      }
+      #supportBack .howlpay-manual-check{
+        width:100%;
+        margin-top:2px;
+        min-height:36px;
+        border-color:rgba(245,210,146,.34);
+      }
+      #supportBack .howlpay-manual-msg{
+        margin-top:8px;
+        min-height:16px;
+        color:rgba(226,235,248,.72);
+        font-size:11px;
+        line-height:1.35;
+        text-align:center;
+      }
+      #supportBack .howlpay-error{
+        margin-top:9px;
+        color:#ff7b7b;
+        font-size:11px;
+        line-height:1.35;
       }
     `;
     document.head.appendChild(style);
@@ -810,23 +874,32 @@ It makes your presence visible.</div>
     const configured = item.configured !== false;
     const paymentEnabled = !!(howlpay?.paymentEnabled || howlpay?.enabled);
     const busy = _howlPayBusy === productId;
+    const manual = card?.querySelector?.(".howlpay-manual-panel") || null;
+    const hasManual = !!manual;
 
     if (card) {
       card.classList.toggle("is-active", active || owned);
       card.classList.toggle("is-locked", !active && !owned);
+      if (active || owned) clearHowlPayManualPanel(productId);
     }
     if (state) {
       state.textContent = active ? (item.statusTitle || "Active") : (owned ? "Owned" : "Locked");
     }
     if (desc && item.description) desc.textContent = item.description;
-    if (status) status.textContent = busy ? "Preparing payment..." : productStatusText(item, howlpay);
+    if (status) {
+      if (busy) status.textContent = "Preparing payment...";
+      else if (!hasManual || active || owned) status.textContent = productStatusText(item, howlpay);
+      else if (!String(status.textContent || "").trim()) status.textContent = "Payment prepared. Send exact HOWL manually.";
+    }
     if (btn) {
+      if (!busy && !hasManual) btn.style.display = "";
+      if (hasManual && !active && !owned) btn.style.display = "none";
       btn.textContent = busy
         ? "Preparing..."
         : (owned || active)
           ? (active ? "Active" : "Owned")
           : (item.ctaLabel || (productId === "howl_signal" ? "Unlock with 500 $HOWL" : (productId === "keep_alpha_online_pack" ? "Support with HOWL" : "Unlock with $HOWL")));
-      btn.disabled = !!(busy || owned || active || !configured || !paymentEnabled);
+      btn.disabled = !!(busy || owned || active || !configured || !paymentEnabled || (hasManual && !active && !owned));
       btn.title = !paymentEnabled ? "HowlPay is not live yet." : "";
     }
   }
@@ -1175,6 +1248,197 @@ It makes your presence visible.</div>
     }
   }
 
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function normalizeHowlPayPayment(out) {
+    const root = out || {};
+    const data = root.data || {};
+    const payment = root.payment || root.pending || data.payment || data.pending || root;
+    const paymentId =
+      payment?.payment_id || payment?.paymentId || payment?.id ||
+      root.payment_id || root.paymentId || data.payment_id || data.paymentId || "";
+    const paymentUrl =
+      payment?.payment_url || payment?.paymentUrl ||
+      root.payment_url || root.paymentUrl || data.payment_url || data.paymentUrl || "";
+    const treasury =
+      payment?.treasury_wallet || payment?.treasuryWallet || payment?.treasury || payment?.wallet ||
+      root.treasury_wallet || root.treasuryWallet || root.treasury || root.wallet ||
+      data.treasury_wallet || data.treasuryWallet || data.treasury || data.wallet || "";
+    const tokenDecimals = Number(
+      payment?.token_decimals ?? payment?.tokenDecimals ?? root.token_decimals ?? root.tokenDecimals ?? data.token_decimals ?? data.tokenDecimals ?? 9
+    ) || 9;
+    const amountRaw =
+      payment?.amount_raw ?? payment?.amountRaw ?? root.amount_raw ?? root.amountRaw ?? data.amount_raw ?? data.amountRaw ?? null;
+    const amountDisplay =
+      payment?.amount_display ?? payment?.amountDisplay ?? payment?.amount_ui ?? payment?.amountUi ?? payment?.amount ??
+      root.amount_display ?? root.amountDisplay ?? root.amount_ui ?? root.amountUi ?? root.amount ??
+      data.amount_display ?? data.amountDisplay ?? data.amount_ui ?? data.amountUi ?? data.amount ?? "";
+    return { root, payment, paymentId: String(paymentId || ""), paymentUrl: String(paymentUrl || ""), treasury: String(treasury || ""), tokenDecimals, amountRaw, amountDisplay };
+  }
+
+  function decimalFromRaw(rawValue, decimals) {
+    const raw = String(rawValue == null ? "" : rawValue).trim();
+    if (!raw || !/^\d+$/.test(raw)) return "";
+    const d = Math.max(0, Number(decimals || 0) || 0);
+    try {
+      const scale = 10n ** BigInt(d);
+      const value = BigInt(raw);
+      if (!d) return value.toString();
+      const whole = value / scale;
+      const frac = value % scale;
+      const fracStr = frac.toString().padStart(d, "0").replace(/0+$/, "");
+      return fracStr ? `${whole.toString()}.${fracStr}` : whole.toString();
+    } catch (_) {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return "";
+      return String(n / Math.pow(10, d));
+    }
+  }
+
+  function cleanHowlAmount(value) {
+    const text = String(value == null ? "" : value).trim();
+    if (!text) return "";
+    return text.replace(/\s*HOWL\s*$/i, "").replace(/,/g, "").trim();
+  }
+
+  function getHowlPaymentAmount(paymentInfo) {
+    const display = cleanHowlAmount(paymentInfo?.amountDisplay);
+    if (display && display !== "0") return display;
+    return decimalFromRaw(paymentInfo?.amountRaw, paymentInfo?.tokenDecimals || 9);
+  }
+
+  function clearHowlPayManualPanel(productId) {
+    const pid = String(productId || "").trim();
+    const card = document.querySelector(`[data-howlpay-card="${pid}"]`);
+    if (!card) return;
+    card.querySelectorAll(".howlpay-manual-panel,.howlpay-error").forEach((node) => node.remove());
+    const btn = card.querySelector(`[data-howlpay-product="${pid}"]`);
+    if (btn) btn.style.display = "";
+  }
+
+  function setHowlPayManualMessage(productId, message, tone = "") {
+    const pid = String(productId || "").trim();
+    const msg = document.querySelector(`[data-howlpay-manual-msg="${pid}"]`);
+    if (!msg) return;
+    msg.textContent = message || "";
+    msg.dataset.tone = tone || "";
+    msg.style.color = tone === "success"
+      ? "#78ff9a"
+      : (tone === "error" ? "#ff7b7b" : (tone === "warn" ? "rgba(245,210,146,.96)" : "rgba(226,235,248,.72)"));
+  }
+
+  async function checkHowlPayPaymentNow(paymentId, productId) {
+    const apiPost = getApiPost();
+    const pid = String(productId || "").trim();
+    const checkBtn = document.querySelector(`[data-howlpay-check="${pid}"]`);
+    if (!apiPost || !paymentId || !pid) return;
+
+    if (checkBtn) {
+      checkBtn.disabled = true;
+      checkBtn.textContent = "Checking...";
+    }
+    setHowlPayManualMessage(pid, "Checking payment status...");
+
+    try {
+      const out = await apiPost("/webapp/howlpay/status", { payment_id: paymentId });
+      const status = String(out?.status || out?.data?.status || "").trim().toLowerCase();
+      if (status === "completed" || out?.unlocked || out?.data?.unlocked) {
+        setHowlPayManualMessage(pid, pid === "keep_alpha_online_pack"
+          ? "Signal strengthened. Your support cosmetic has been unlocked."
+          : "Payment completed. Unlock applied.", "success");
+        clearHowlPayManualPanel(pid);
+        _howlPayBusy = "";
+        await refreshSupportState({ silent: true, force: true, reason: "howlpay_manual_completed" }).catch(() => {});
+        await refreshProfileViews();
+        try { getTg()?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+        return;
+      }
+      if (status === "expired") {
+        setHowlPayManualMessage(pid, "Payment expired. Start a new unlock when ready.", "error");
+        window.setTimeout(() => {
+          clearHowlPayManualPanel(pid);
+          _howlPayBusy = "";
+          renderHowlPayState(_state || {});
+        }, 900);
+        return;
+      }
+      setHowlPayManualMessage(pid, "Payment not detected yet. Try again in a few seconds.", "warn");
+    } catch (err) {
+      log("manual HowlPay status check failed:", err);
+      setHowlPayManualMessage(pid, "Payment check unavailable. Try again shortly.", "error");
+    } finally {
+      if (checkBtn) {
+        checkBtn.disabled = false;
+        checkBtn.textContent = "I sent it — Check Payment";
+      }
+    }
+  }
+
+  function renderHowlPayManualPanel(productId, rawPayment) {
+    const pid = String(productId || "").trim();
+    const info = normalizeHowlPayPayment(rawPayment || {});
+    const paymentId = info.paymentId;
+    const amount = getHowlPaymentAmount(info);
+    const treasury = info.treasury;
+    const card = document.querySelector(`[data-howlpay-card="${pid}"]`);
+    const status = document.querySelector(`[data-howlpay-status="${pid}"]`);
+    const btn = document.querySelector(`[data-howlpay-product="${pid}"]`);
+    if (!card || !paymentId || !amount || !treasury) return false;
+
+    card.querySelectorAll(".howlpay-manual-panel,.howlpay-error").forEach((node) => node.remove());
+    if (btn) btn.style.display = "none";
+    if (status) status.textContent = "Payment prepared. Send exact HOWL manually.";
+
+    const safeAmount = escapeHtml(amount);
+    const safeTreasury = escapeHtml(treasury);
+    const panel = document.createElement("div");
+    panel.className = "howlpay-manual-panel";
+    panel.dataset.paymentId = paymentId;
+    panel.innerHTML = `
+      <div class="howlpay-manual-row">
+        <div>
+          <div class="howlpay-manual-label">Send exactly</div>
+          <div class="howlpay-manual-value">${safeAmount} HOWL</div>
+        </div>
+        <button class="ah-action howlpay-manual-copy" type="button" data-howlpay-copy-amount="${pid}">Copy</button>
+      </div>
+      <div class="howlpay-manual-row">
+        <div style="min-width:0;">
+          <div class="howlpay-manual-label">To Treasury Wallet</div>
+          <div class="howlpay-manual-value howlpay-manual-wallet">${safeTreasury}</div>
+        </div>
+        <button class="ah-action howlpay-manual-copy" type="button" data-howlpay-copy-wallet="${pid}">Copy</button>
+      </div>
+      <button class="ah-action howlpay-manual-check" type="button" data-howlpay-check="${pid}">I sent it — Check Payment</button>
+      <div class="howlpay-manual-msg" data-howlpay-manual-msg="${pid}">Waiting for confirmed HOWL payment...</div>
+    `;
+
+    const actions = card.querySelector(".ah-howlpay-actions");
+    if (actions?.parentElement === card) actions.insertAdjacentElement("afterend", panel);
+    else card.appendChild(panel);
+
+    panel.querySelector(`[data-howlpay-copy-amount="${pid}"]`)?.addEventListener("click", async () => {
+      const ok = await copyText(amount);
+      showWalletToast(ok ? "HOWL amount copied." : "Could not copy amount.");
+    });
+    panel.querySelector(`[data-howlpay-copy-wallet="${pid}"]`)?.addEventListener("click", async () => {
+      const ok = await copyText(treasury);
+      showWalletToast(ok ? "Treasury wallet copied." : "Could not copy wallet.");
+    });
+    panel.querySelector(`[data-howlpay-check="${pid}"]`)?.addEventListener("click", () => {
+      void checkHowlPayPaymentNow(paymentId, pid);
+    });
+
+    return { paymentId, paymentUrl: info.paymentUrl, amount, treasury };
+  }
+
   async function pollHowlPayStatus(paymentId, productId, attempt = 0) {
     const apiPost = getApiPost();
     const pid = String(productId || "").trim();
@@ -1192,6 +1456,7 @@ It makes your presence visible.</div>
             ? "Signal strengthened. Your support cosmetic has been unlocked. Thank you for helping keep Alpha online."
             : "Unlocked. Refreshing identity.");
         _howlPayBusy = "";
+        clearHowlPayManualPanel(pid);
         await refreshSupportState({ silent: true, force: true, reason: "howlpay_completed" }).catch(() => {});
         await refreshProfileViews();
         try { getTg()?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
@@ -1200,6 +1465,7 @@ It makes your presence visible.</div>
       if (out?.status === "expired") {
         if (status) status.textContent = "Payment expired. Start a new unlock when HowlPay is live.";
         _howlPayBusy = "";
+        clearHowlPayManualPanel(pid);
         renderHowlPayState(_state || {});
         return;
       }
@@ -1239,6 +1505,7 @@ It makes your presence visible.</div>
       return;
     }
 
+    clearHowlPayManualPanel(pid);
     _howlPayBusy = pid;
     renderHowlPayState(support);
     let keepStatus = false;
@@ -1255,13 +1522,31 @@ It makes your presence visible.</div>
         await refreshProfileViews();
         return;
       }
-      const opened = openHowlPayUrl(out?.payment_url || out?.paymentUrl);
-      if (status) status.textContent = opened
-        ? "Payment opened. Confirm in your wallet, then return here."
-        : "Payment prepared. Open the wallet link from your Solana wallet.";
+
+      const info = normalizeHowlPayPayment(out);
+      const paymentUrl = info.paymentUrl;
+      const paymentId = info.paymentId;
+
+      if (paymentUrl) {
+        const opened = openHowlPayUrl(paymentUrl);
+        if (status) status.textContent = opened
+          ? "Payment opened. Confirm in your wallet, then return here."
+          : "Payment prepared. Open the wallet link from your Solana wallet.";
+        if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+        keepStatus = true;
+        _howlPayBusy = "";
+        void pollHowlPayStatus(paymentId, pid);
+        return;
+      }
+
+      const rendered = renderHowlPayManualPanel(pid, out);
+      if (!rendered) {
+        throw new Error("MISSING_PAYMENT_DETAILS");
+      }
       if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
       keepStatus = true;
-      void pollHowlPayStatus(out?.payment_id || out?.paymentId, pid);
+      _howlPayBusy = "";
+      void pollHowlPayStatus(rendered.paymentId, pid);
     } catch (err) {
       const reason = String(err?.data?.reason || err?.message || "").trim();
       const msg =
@@ -1269,8 +1554,17 @@ It makes your presence visible.</div>
           ? "HowlPay is not live yet."
           : reason === "CONFIG_MISSING"
             ? "This unlock is not configured yet."
-            : "Could not prepare HowlPay unlock.";
+            : reason === "MISSING_PAYMENT_DETAILS"
+              ? "Payment was prepared, but the wallet instructions were missing. Refresh and try again."
+              : "Could not prepare HowlPay unlock.";
       if (status) status.textContent = msg;
+      const card = document.querySelector(`[data-howlpay-card="${pid}"]`);
+      if (card && !card.querySelector(".howlpay-error")) {
+        const errEl = document.createElement("div");
+        errEl.className = "howlpay-error";
+        errEl.textContent = msg;
+        card.appendChild(errEl);
+      }
       try { tg?.showAlert?.(msg); } catch (_) {}
     } finally {
       if (_howlPayBusy === pid) _howlPayBusy = "";
