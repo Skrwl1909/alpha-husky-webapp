@@ -1524,29 +1524,34 @@ It makes your presence visible.</div>
       }
 
       const info = normalizeHowlPayPayment(out);
-      const paymentUrl = info.paymentUrl;
-      const paymentId = info.paymentId;
+const paymentUrl = info.paymentUrl;
+const paymentId = info.paymentId;
 
-      if (paymentUrl) {
-        const opened = openHowlPayUrl(paymentUrl);
-        if (status) status.textContent = opened
-          ? "Payment opened. Confirm in your wallet, then return here."
-          : "Payment prepared. Open the wallet link from your Solana wallet.";
-        if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
-        keepStatus = true;
-        _howlPayBusy = "";
-        void pollHowlPayStatus(paymentId, pid);
-        return;
-      }
+// Manual payment is primary for HOWL Vault.
+// Phantom / payment_url can be unreliable inside Telegram WebView and may only open the wallet home screen.
+const rendered = renderHowlPayManualPanel(pid, out);
+if (rendered) {
+  if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+  keepStatus = true;
+  _howlPayBusy = "";
+  void pollHowlPayStatus(rendered.paymentId, pid);
+  return;
+}
 
-      const rendered = renderHowlPayManualPanel(pid, out);
-      if (!rendered) {
-        throw new Error("MISSING_PAYMENT_DETAILS");
-      }
-      if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
-      keepStatus = true;
-      _howlPayBusy = "";
-      void pollHowlPayStatus(rendered.paymentId, pid);
+// Fallback only: use payment URL if backend did not provide enough manual payment data.
+if (paymentUrl) {
+  const opened = openHowlPayUrl(paymentUrl);
+  if (status) status.textContent = opened
+    ? "Payment link opened. If Phantom only opens the wallet home screen, send manually from your wallet."
+    : "Payment prepared. Open your Solana wallet and send manually.";
+  if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+  keepStatus = true;
+  _howlPayBusy = "";
+  void pollHowlPayStatus(paymentId, pid);
+  return;
+}
+
+throw new Error("MISSING_PAYMENT_DETAILS");
     } catch (err) {
       const reason = String(err?.data?.reason || err?.message || "").trim();
       const msg =
