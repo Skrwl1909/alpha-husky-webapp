@@ -1667,6 +1667,16 @@ function renderBattlePanelHTML(raw, node, cur) {
       }
 
       render(rawOut);
+      try {
+        const leaders =
+          rawOut?.leadersMap ||
+          rawOut?.data?.leadersMap ||
+          rawOut?.state?.leadersMap ||
+          null;
+        if (leaders && typeof leaders === "object") {
+          window.AHMap?.applyLeaders?.(leaders);
+        }
+      } catch (_) {}
 
       if (successAlert && (rawOut?.ctaSent || rawOut?.data?.ctaSent)) {
         showAlert(successAlert);
@@ -1678,7 +1688,19 @@ function renderBattlePanelHTML(raw, node, cur) {
       showAlert(`Siege action failed. Refresh and try again.`);
     } finally {
       setBusyState(false);
-      await loadState(true);
+      const state = await loadState(true);
+      try {
+        const leaders =
+          state?.leadersMap ||
+          state?.data?.leadersMap ||
+          state?.state?.leadersMap ||
+          null;
+        if (leaders && typeof leaders === "object") {
+          window.AHMap?.applyLeaders?.(leaders);
+        } else {
+          window.AHMap?.refreshLeaders?.({ force: true, reason: "siege_action" });
+        }
+      } catch (_) {}
     }
   }
 

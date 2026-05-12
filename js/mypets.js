@@ -266,6 +266,7 @@
     try { typeof window.loadProfile === "function" && window.loadProfile(); } catch (_) {}
     try { typeof window.loadPlayerState === "function" && window.loadPlayerState(); } catch (_) {}
     try { typeof window.renderMap === "function" && window.renderMap(); } catch (_) {}
+    try { typeof window.PetQuickActions?.refresh === "function" && window.PetQuickActions.refresh(); } catch (_) {}
 
     toast("Active pet updated ✅");
 
