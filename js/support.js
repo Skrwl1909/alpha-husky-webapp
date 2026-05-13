@@ -9,6 +9,12 @@
   let _howlPayBusy = "";
   let _howlPayPollTimer = null;
   const SUPPORT_STATE_STALE_MS = 30 * 1000;
+  const KEEP_ALPHA_ONLINE_PACK_REWARDS_TEXT = [
+    "Owned rewards:",
+    "- Server Signal Frame",
+    "- Alpha Signal Core aura",
+    "- Kept the Signal Alive badge",
+  ].join("\n");
 
   function log(...args) {
     if (_dbg) console.log("[Support]", ...args);
@@ -108,6 +114,26 @@
       return id === "genesis_frame";
     }) || {};
     return { ...product, ...genesis, productId: "genesis_frame", itemType: "frame", itemKey: "genesis_frame" };
+  }
+
+  function formatHowlAmountForCard(value) {
+    const raw = String(value == null ? "" : value).trim();
+    if (!raw) return "";
+    const match = raw.match(/^(\d+)(?:\.(\d+))?$/);
+    if (!match) return raw;
+    const whole = match[1].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return match[2] ? `${whole}.${match[2]}` : whole;
+  }
+
+  function keepAlphaOnlinePackDescription(item) {
+    if (item?.owned || item?.active) return KEEP_ALPHA_ONLINE_PACK_REWARDS_TEXT;
+    const price = formatHowlAmountForCard(item?.amountDisplay || item?.amount || "");
+    const priceLine = price ? `\nPrice: ${price} HOWL` : "";
+    return [
+      "Help keep the Alpha signal online.",
+      "Includes Server Signal Frame, Alpha Signal Core aura, and a limited badge.",
+      "Cosmetic only. No power. No pay-to-win.",
+    ].join("\n") + priceLine;
   }
 
   function ensureHowlPayStyles() {
@@ -851,6 +877,9 @@ It makes your presence visible.</div>
 
   function productStatusText(product, howlpay) {
     const item = product || {};
+    if (item.productId === "keep_alpha_online_pack" && (item.active || item.owned)) {
+      return item.statusText || "You already own the Keep Alpha Online Pack.\nThank you for helping keep Alpha online.";
+    }
     if (item.active) {
       return item.statusText || (item.productId === "howl_signal" ? "Your HOWL Signal is now visible across the Pack." : "Unlocked.");
     }
@@ -885,13 +914,22 @@ It makes your presence visible.</div>
     if (state) {
       state.textContent = active ? (item.statusTitle || "Active") : (owned ? "Owned" : "Locked");
     }
-    if (desc && item.description) desc.textContent = item.description;
+    if (desc) {
+      if (productId === "keep_alpha_online_pack") desc.textContent = keepAlphaOnlinePackDescription(item);
+      else if (item.description) desc.textContent = item.description;
+    }
     if (status) {
       if (busy) status.textContent = "Preparing payment...";
       else if (!hasManual || active || owned) status.textContent = productStatusText(item, howlpay);
       else if (!String(status.textContent || "").trim()) status.textContent = "Payment prepared. Send exact HOWL manually.";
     }
     if (btn) {
+      if (productId === "keep_alpha_online_pack" && (owned || active)) {
+        btn.style.display = "none";
+        btn.disabled = true;
+        btn.title = "";
+        return;
+      }
       if (!busy && !hasManual) btn.style.display = "";
       if (hasManual && !active && !owned) btn.style.display = "none";
       btn.textContent = busy
@@ -1351,7 +1389,7 @@ It makes your presence visible.</div>
       const status = String(out?.status || out?.data?.status || "").trim().toLowerCase();
       if (status === "completed" || out?.unlocked || out?.data?.unlocked) {
         setHowlPayManualMessage(pid, pid === "keep_alpha_online_pack"
-          ? "Signal strengthened. Your support cosmetic has been unlocked."
+          ? "Signal strengthened. Thank you for helping keep Alpha online."
           : "Payment completed. Unlock applied.", "success");
         clearHowlPayManualPanel(pid);
         _howlPayBusy = "";
@@ -1517,41 +1555,40 @@ It makes your presence visible.</div>
       });
       if (out?.already_owned) {
         _howlPayBusy = "";
-        if (status) status.textContent = pid === "howl_signal" ? "Signal Active." : (pid === "keep_alpha_online_pack" ? "Support cosmetic already unlocked." : "Already owned.");
+        if (status) status.textContent = pid === "howl_signal"
+          ? "Signal Active."
+          : (pid === "keep_alpha_online_pack"
+            ? "You already own the Keep Alpha Online Pack.\nThank you for helping keep Alpha online."
+            : "Already owned.");
         await refreshSupportState({ silent: true, force: true, reason: "howlpay_already_owned" }).catch(() => {});
         await refreshProfileViews();
         return;
       }
 
       const info = normalizeHowlPayPayment(out);
-const paymentUrl = info.paymentUrl;
-const paymentId = info.paymentId;
+      const paymentUrl = info.paymentUrl;
+      const paymentId = info.paymentId;
 
-// Manual payment is primary for HOWL Vault.
-// Phantom / payment_url can be unreliable inside Telegram WebView and may only open the wallet home screen.
-const rendered = renderHowlPayManualPanel(pid, out);
-if (rendered) {
-  if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
-  keepStatus = true;
-  _howlPayBusy = "";
-  void pollHowlPayStatus(rendered.paymentId, pid);
-  return;
-}
+      if (paymentUrl) {
+        const opened = openHowlPayUrl(paymentUrl);
+        if (status) status.textContent = opened
+          ? "Payment opened. Confirm in your wallet, then return here."
+          : "Payment prepared. Open the wallet link from your Solana wallet.";
+        if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+        keepStatus = true;
+        _howlPayBusy = "";
+        void pollHowlPayStatus(paymentId, pid);
+        return;
+      }
 
-// Fallback only: use payment URL if backend did not provide enough manual payment data.
-if (paymentUrl) {
-  const opened = openHowlPayUrl(paymentUrl);
-  if (status) status.textContent = opened
-    ? "Payment link opened. If Phantom only opens the wallet home screen, send manually from your wallet."
-    : "Payment prepared. Open your Solana wallet and send manually.";
-  if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
-  keepStatus = true;
-  _howlPayBusy = "";
-  void pollHowlPayStatus(paymentId, pid);
-  return;
-}
-
-throw new Error("MISSING_PAYMENT_DETAILS");
+      const rendered = renderHowlPayManualPanel(pid, out);
+      if (!rendered) {
+        throw new Error("MISSING_PAYMENT_DETAILS");
+      }
+      if (_howlPayPollTimer) window.clearTimeout(_howlPayPollTimer);
+      keepStatus = true;
+      _howlPayBusy = "";
+      void pollHowlPayStatus(rendered.paymentId, pid);
     } catch (err) {
       const reason = String(err?.data?.reason || err?.message || "").trim();
       const msg =
@@ -1666,4 +1703,3 @@ throw new Error("MISSING_PAYMENT_DETAILS");
   window.Support.init = init;
   window.Support.open = open;
 })();
-
