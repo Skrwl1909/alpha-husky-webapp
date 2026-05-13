@@ -243,6 +243,15 @@
   transform-origin:center center;
 }
 
+.hero-frame .hero-frame-overlay[data-frame-key="server_signal_frame"]{
+  transform: var(--hero-frame-transform) translateY(1px) scale(.975) scaleY(.945);
+  transform-origin:center 54%;
+  filter:
+    drop-shadow(0 10px 18px rgba(0,0,0,.30))
+    drop-shadow(0 0 14px rgba(80,184,255,.18))
+    brightness(1.03);
+}
+
 .hero-frame .hero-frame-overlay-glow,
 .hero-frame .hero-frame-overlay-sweep{
   display:none;
@@ -6727,6 +6736,7 @@ const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
 const AH_HERO_FRAME_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
 const AH_HERO_FRAME_FIT_OVERRIDES = Object.freeze({
   pioneer_frame: { scale: 1.03, offsetX: 0, offsetY: 8 },
+  server_signal_frame: { scale: 0.99, offsetX: 0, offsetY: 1 },
   rogue_byte_overclock: { scale: 1.08, offsetX: 0, offsetY: -6 }, // map-influence frame example
 });
 const AH_HERO_COMBO_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
