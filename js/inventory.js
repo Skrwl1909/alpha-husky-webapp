@@ -165,6 +165,12 @@ window.Inventory = {
     );
   },
 
+  _excerpt(text, maxLen = 78) {
+    const raw = this._safeText(text, "");
+    if (!raw || raw.length <= maxLen) return raw;
+    return `${raw.slice(0, Math.max(0, maxLen - 1)).trimEnd()}…`;
+  },
+
   // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
   _bindTelegramBackButtonFallback() {
     try {
@@ -324,9 +330,9 @@ window.Inventory = {
     padding:20px;
     padding-top:calc(20px + var(--tg-safe-area-inset-top, 0px));
     color:#fff;
-    max-width:680px;
+    max-width:760px;
     margin:0 auto;
-    font-family:system-ui;
+    font-family:'Segoe UI',system-ui,sans-serif;
     position:relative;
   ">
 
@@ -363,7 +369,13 @@ window.Inventory = {
       </div>
     </div>
 
-    <div id="stats-bar" style="text-align:center;margin:8px 0 16px 0;opacity:0.9;font-size:16px;">
+    <div id="stats-bar" style="
+      text-align:center;margin:10px 0 16px 0;font-size:14px;line-height:1.5;
+      color:#cfd7e8;padding:12px 14px;border-radius:18px;
+      background:linear-gradient(180deg,rgba(19,24,38,.92),rgba(10,13,24,.9));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 32px rgba(0,0,0,.18);
+    ">
       loading...
     </div>
 
@@ -380,7 +392,15 @@ window.Inventory = {
       </button>
     </div>
 
-    <div id="inventory-grid" style="max-height:64vh;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:16px;padding:16px;background:rgba(0,0,0,0.5);border-radius:20px;">
+    <div id="inventory-grid" style="
+      max-height:64vh;overflow-y:auto;display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:14px;padding:14px;
+      background:linear-gradient(180deg,rgba(10,13,24,.92),rgba(5,8,16,.88));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 24px 48px rgba(0,0,0,.22);
+    ">
       <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
     </div>
 
@@ -391,9 +411,9 @@ window.Inventory = {
     ">
       <div style="
         width:min(680px,100%);max-height:82vh;overflow:auto;
-        background:linear-gradient(180deg,rgba(20,25,42,.98),rgba(9,12,22,.98));
+        background:linear-gradient(180deg,rgba(20,25,42,.98),rgba(9,12,22,.985));
         border:1px solid rgba(255,255,255,.12);border-radius:28px 28px 22px 22px;
-        box-shadow:0 24px 70px rgba(0,0,0,.45);
+        box-shadow:0 26px 70px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.05);
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px 18px;border-bottom:1px solid rgba(255,255,255,.07);">
           <div>
@@ -591,6 +611,12 @@ window.Inventory = {
       `;
     }
 
+    body.innerHTML = this._renderDetailSheet(item);
+    back.style.display = "flex";
+    back.dataset.open = "1";
+    try { window.navOpen?.("invItemBack"); } catch (_) {}
+    return;
+
     body.innerHTML = `
       <div style="display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start;">
         <img src="${this._esc(item?.icon || item?.image || item?.image_path || "/assets/items/unknown.png")}"
@@ -707,6 +733,167 @@ window.Inventory = {
     }).join("");
   },
 
+  _renderCardsPremium(filtered) {
+    return (filtered || []).map((item) => {
+      const key = item.key || item.item_key || item.item;
+      const amountNum = this._qty(item);
+      const level = Math.max(1, this._toInt(item?.level ?? item?.data?.level, 1));
+      const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
+      const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
+      const name = this._safeText(item.name, key || "Unknown Item");
+      const rarityMeta = this._rarityMeta(item?.rarity || "common");
+      const typeLabel = this._safeText(item?.type || item?.category, "Misc");
+      const slotLabel = this._slotLabel(item);
+      const description = this._excerpt(this._itemDescription(item), 72);
+      const isGear = this._isGear(item);
+      const statChips = this._orderedStatKeys(stats)
+        .slice(0, 4)
+        .map((statKey) => `
+          <span style="padding:5px 8px;border-radius:999px;background:rgba(154,179,255,.11);border:1px solid rgba(154,179,255,.16);font-size:11px;color:#edf3ff;font-weight:700;line-height:1;">
+            ${this._esc(this._statLabel(statKey))} +${this._esc(String(this._toInt(stats[statKey], 0)))}
+          </span>
+        `)
+        .join("");
+
+      const keyEsc = String(key || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+
+      return `
+        <button type="button"
+             onclick="Inventory.openItem('${keyEsc}')"
+             style="background:
+               radial-gradient(circle at top right, rgba(91,121,255,.10), transparent 34%),
+               linear-gradient(180deg,rgba(23,29,47,.96),rgba(8,11,20,.97));
+               border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:14px 15px;text-align:left;position:relative;transition:0.22s;cursor:pointer;color:#fff;box-shadow:0 16px 28px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.05);">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px;">
+            <span style="padding:5px 9px;border-radius:999px;background:${rarityMeta.glow};color:${rarityMeta.color};font-size:10px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;border:1px solid rgba(255,255,255,.06);">
+              ${this._esc(rarityMeta.label)}
+            </span>
+            <span style="padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:#f7fbff;font-size:10px;font-weight:800;letter-spacing:.45px;border:1px solid rgba(255,255,255,.05);">
+              ×${this._esc(String(amountNum))}
+            </span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:start;">
+            <img src="${this._esc(icon)}" width="92" height="92"
+               style="border:2px solid ${rarityMeta.color};box-shadow:0 0 0 4px ${rarityMeta.glow};border-radius:20px;background:rgba(255,255,255,.04);object-fit:cover;flex-shrink:0;"
+               onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
+
+            <div style="min-width:0;">
+              <div style="font-size:16px;font-weight:900;color:#f7fbff;line-height:1.22;min-height:40px;word-break:break-word;">
+                ${this._esc(name)}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                <span style="padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:10px;letter-spacing:.45px;color:#d2dbea;text-transform:uppercase;border:1px solid rgba(255,255,255,.05);">
+                  ${this._esc(typeLabel)}
+                </span>
+                ${slotLabel ? `<span style="padding:4px 8px;border-radius:999px;background:rgba(91,121,255,.18);font-size:10px;letter-spacing:.45px;color:#c6d4ff;text-transform:uppercase;border:1px solid rgba(91,121,255,.22);">${this._esc(slotLabel)}</span>` : ""}
+                ${isGear ? `<span style="padding:4px 8px;border-radius:999px;background:rgba(255,215,106,.13);font-size:10px;letter-spacing:.45px;color:#ffd76a;border:1px solid rgba(255,215,106,.18);">EQUIP · ★ ${this._esc(String(level))}</span>` : ""}
+              </div>
+              ${statChips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">${statChips}</div>` : ""}
+              <div style="margin-top:10px;font-size:11px;line-height:1.45;color:${description ? "#99a8bf" : "#7f8a9c"};min-height:31px;">
+                ${this._esc(description || (isGear ? "Equipment item." : "Misc item."))}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;font-size:10px;letter-spacing:.6px;color:#7d8aa3;text-transform:uppercase;opacity:.92;">
+            Tap to inspect${isGear ? " · compare equipped" : ""}
+          </div>
+        </button>
+      `;
+    }).join("");
+  },
+
+  _renderDetailSheet(item) {
+    const rarity = this._rarityMeta(item?.rarity);
+    const qty = this._qty(item);
+    const typeLabel = this._safeText(item?.type || item?.category, "Misc");
+    const slotLabel = this._slotLabel(item);
+    const description = this._itemDescription(item);
+    const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
+    const statKeys = this._orderedStatKeys(stats);
+    const compare = this._compareState(item);
+    const eq = compare.equipped;
+
+    const statCards = statKeys.length
+      ? statKeys.map((key) => `
+          <div style="padding:12px 12px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.08);min-width:90px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+            <div style="font-size:11px;letter-spacing:.55px;color:#91a0bb;">${this._esc(this._statLabel(key))}</div>
+            <div style="margin-top:4px;font-size:19px;font-weight:900;color:#f5fbff;">+${this._esc(String(this._toInt(stats[key], 0)))}</div>
+          </div>
+        `).join("")
+      : `<div style="padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.10);font-size:12px;color:#9aa7bb;">no stats available</div>`;
+
+    let compareBlock = "";
+    if (this._isGear(item)) {
+      const compareRows = compare.rows.length
+        ? compare.rows.map((row) => {
+            const tone = this._deltaTone(row.delta);
+            return `
+              <div style="display:grid;grid-template-columns:minmax(54px,72px) minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border-radius:15px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.07);">
+                <div style="font-size:12px;letter-spacing:.45px;color:#91a0bb;">${this._esc(row.label)}</div>
+                <div style="font-size:13px;color:#dbe7ff;line-height:1.35;min-width:0;">
+                  <span style="font-weight:800;color:#f4f8ff;">${this._esc(`+${row.selected}`)}</span>
+                  ${eq ? `<span style="color:#90a1be;"> vs ${this._esc(`${row.equipped >= 0 ? "+" : ""}${row.equipped}`)}</span>` : ""}
+                </div>
+                <div style="padding:6px 10px;border-radius:999px;background:${tone.bg};border:1px solid ${tone.border};color:${tone.fg};font-size:12px;font-weight:900;letter-spacing:.35px;">
+                  ${this._esc(this._fmtDelta(row.delta))}
+                </div>
+              </div>
+            `;
+          }).join("")
+        : `<div style="padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.10);font-size:12px;color:#9aa7bb;">no stats available</div>`;
+
+      compareBlock = `
+        <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="min-width:0;">
+              <div style="font-size:11px;letter-spacing:.65px;color:#7d8aa3;text-transform:uppercase;">Equipment Compare</div>
+              <div style="font-size:16px;font-weight:900;color:#f4f8ff;line-height:1.25;">${eq ? this._esc(eq.name || eq.key || "Equipped item") : "No item equipped in this slot."}</div>
+            </div>
+            ${slotLabel ? `<div style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.06);font-size:11px;color:#d5dded;letter-spacing:.4px;border:1px solid rgba(255,255,255,.05);">${this._esc(slotLabel)}</div>` : ""}
+          </div>
+          <div style="display:grid;gap:8px;">${compareRows}</div>
+        </section>
+      `;
+    }
+
+    return `
+      <div style="display:grid;grid-template-columns:108px minmax(0,1fr);gap:16px;align-items:start;">
+        <img src="${this._esc(item?.icon || item?.image || item?.image_path || "/assets/items/unknown.png")}"
+             alt=""
+             style="width:108px;height:108px;border-radius:24px;border:2px solid ${rarity.color};box-shadow:0 0 0 4px ${rarity.glow}, 0 12px 28px rgba(0,0,0,.25);background:rgba(255,255,255,.04);object-fit:cover;"
+             onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
+        <div style="min-width:0;">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <span style="padding:6px 10px;border-radius:999px;background:${rarity.glow};color:${rarity.color};font-size:11px;letter-spacing:.5px;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,.06);">${this._esc(rarity.label)}</span>
+            <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#d6dceb;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border:1px solid rgba(255,255,255,.05);">${this._esc(typeLabel)}</span>
+            ${slotLabel ? `<span style="padding:6px 10px;border-radius:999px;background:rgba(76,95,165,.22);color:#b4c6ff;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border:1px solid rgba(76,95,165,.22);">${this._esc(slotLabel)}</span>` : ""}
+            <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#f8fbff;font-size:11px;letter-spacing:.5px;border:1px solid rgba(255,255,255,.05);">QTY ${this._esc(String(qty))}</span>
+          </div>
+          <div style="font-size:24px;line-height:1.08;font-weight:900;color:#f6fbff;word-break:break-word;">${this._esc(item?.name || item?.key || "Unknown Item")}</div>
+          <div style="margin-top:12px;max-width:44ch;font-size:13px;line-height:1.62;color:#b8c3d6;">
+            ${this._esc(description || "No description available.")}
+          </div>
+          ${item?.usedFor ? `<div style="margin-top:8px;font-size:12px;color:#8ad1ff;">Use: ${this._esc(item.usedFor)}</div>` : ""}
+        </div>
+      </div>
+
+      <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Readout</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">${statCards}</div>
+      </section>
+
+      ${compareBlock}
+
+      <section style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+        ${this._detailActions(item)}
+      </section>
+    `;
+  },
+
   showTab(type) {
     this.currentTab = type;
 
@@ -733,7 +920,7 @@ window.Inventory = {
       return;
     }
 
-    grid.innerHTML = this._renderCards(filtered);
+    grid.innerHTML = this._renderCardsPremium(filtered);
     return;
 
     grid.innerHTML = filtered
