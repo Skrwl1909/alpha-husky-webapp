@@ -43,7 +43,7 @@
     inner_howl: "IH",
   };
   const FACTION_SIGILS = {
-    rogue_byte: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_rb.webp",
+    rogue_byte: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777729147/factions/sigil_rb.webp",
     echo_wardens: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_ew.webp",
     inner_howl: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_ih.webp",
     pack_burners: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_pb.webp",
@@ -508,6 +508,51 @@
     }
     openTooltip(next, anchorEl);
   }
+  function setSignalCoreSigil(owner, url) {
+    const sigilEl = _qs("infSignalSigil");
+    const fallbackEl = _qs("infSignalSigilFallback");
+    if (!sigilEl || !fallbackEl) return;
+
+    const ownerCode = owner ? factionCode(owner) : "--";
+    const nextUrl = String(url || "").trim();
+    fallbackEl.textContent = ownerCode;
+    fallbackEl.style.display = "flex";
+
+    sigilEl.style.display = "none";
+    sigilEl.style.opacity = "0";
+    sigilEl.removeAttribute("aria-hidden");
+
+    if (!nextUrl) {
+      sigilEl.removeAttribute("src");
+      sigilEl.dataset.sigilUrl = "";
+      return;
+    }
+
+    sigilEl.dataset.sigilUrl = nextUrl;
+    sigilEl.onload = () => {
+      if (sigilEl.dataset.sigilUrl !== nextUrl) return;
+      if (!(sigilEl.naturalWidth > 0 && sigilEl.naturalHeight > 0)) return;
+      fallbackEl.style.display = "none";
+      sigilEl.style.display = "block";
+      sigilEl.style.opacity = "0.84";
+    };
+    sigilEl.onerror = () => {
+      if (sigilEl.dataset.sigilUrl !== nextUrl) return;
+      sigilEl.style.display = "none";
+      sigilEl.style.opacity = "0";
+      fallbackEl.style.display = "flex";
+    };
+
+    if (sigilEl.getAttribute("src") !== nextUrl) {
+      sigilEl.src = nextUrl;
+      return;
+    }
+    if (sigilEl.complete && sigilEl.naturalWidth > 0) {
+      fallbackEl.style.display = "none";
+      sigilEl.style.display = "block";
+      sigilEl.style.opacity = "0.84";
+    }
+  }
   function _isModalOpen() {
     const m = document.getElementById("influenceModal");
     return !!m && m.style.display !== "none";
@@ -717,8 +762,6 @@
     const subtitleEl = _qs("infSignalSubtitle");
     const visualStateEl = _qs("infSignalVisualState");
     const visualHintEl = _qs("infSignalVisualHint");
-    const sigilEl = _qs("infSignalSigil");
-    const sigilFallbackEl = _qs("infSignalSigilFallback");
     const tileControlEl = _qs("infSignalControlState");
     const tilePressureEl = _qs("infSignalPressure");
     const watchTileEl = _qs("infSignalWatchTile");
@@ -733,7 +776,6 @@
       : (primaryStatus === "SECURED" ? "CALM" : primaryStatus);
     const mood = uxMoodTokens(statusKey);
     const ownerLabel = owner ? fmtFaction(owner) : "Neutral";
-    const ownerCode = owner ? factionCode(owner) : "--";
     const sigilUrl = factionSigilUrl(owner);
     const watchSlots = watchMax > 0
       ? `${Math.max(0, Number(watchUsed || 0))}/${Math.max(0, Number(watchMax || 0))}`
@@ -757,19 +799,7 @@
     if (subtitleEl) subtitleEl.textContent = subtitle;
     if (visualStateEl) visualStateEl.textContent = primaryStatus;
     if (visualHintEl) visualHintEl.textContent = owner ? `${ownerLabel} signature active` : "Node signal unstable";
-    if (sigilEl) {
-      if (sigilUrl) {
-        sigilEl.src = sigilUrl;
-        sigilEl.style.display = "block";
-      } else {
-        sigilEl.removeAttribute("src");
-        sigilEl.style.display = "none";
-      }
-    }
-    if (sigilFallbackEl) {
-      sigilFallbackEl.textContent = ownerCode;
-      sigilFallbackEl.style.display = sigilUrl ? "none" : "flex";
-    }
+    setSignalCoreSigil(owner, sigilUrl);
     if (tileControlEl) tileControlEl.textContent = `${primaryStatus} | ${ownerLabel}`;
     if (tilePressureEl) tilePressureEl.textContent = pressureText;
     if (watchTileEl) watchTileEl.style.display = (watchMax > 0 || watchUsed > 0) ? "flex" : "none";
@@ -1341,10 +1371,11 @@
         margin-top:7px;
         min-height:178px;
         border-radius:12px;
-        border:1px solid rgba(255,255,255,.13);
+        border:1px solid rgba(173,201,236,.14);
         background:
-          radial-gradient(circle at 50% 50%, rgba(255,255,255,.12) 0 14%, rgba(255,255,255,.03) 38%, transparent 64%),
-          linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+          radial-gradient(circle at 50% 44%, rgba(10,18,30,.92) 0 18%, rgba(8,14,24,.74) 40%, transparent 68%),
+          linear-gradient(180deg, rgba(17,26,38,.92), rgba(8,13,22,.98));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04), inset 0 -10px 24px rgba(0,0,0,.34);
         overflow:hidden;
         display:flex;
         align-items:center;
@@ -1356,9 +1387,9 @@
         position:absolute;
         inset:0;
         background:
-          repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 2px, transparent 2px 6px);
-        opacity:.35;
-        mix-blend-mode:screen;
+          repeating-linear-gradient(180deg, rgba(142,196,255,.035) 0 1px, transparent 1px 6px);
+        opacity:.2;
+        mix-blend-mode:plus-lighter;
         pointer-events:none;
       }
       #influenceModal .inf-signal-visual::after{
@@ -1366,10 +1397,10 @@
         position:absolute;
         inset:0;
         background:
-          linear-gradient(120deg, transparent 0 36%, rgba(255,255,255,.1) 50%, transparent 64% 100%);
+          linear-gradient(120deg, transparent 0 34%, rgba(126,194,255,.08) 50%, transparent 66% 100%);
         transform:translateX(-90%);
         animation:infSignalSweep 5.8s linear infinite;
-        opacity:.42;
+        opacity:.24;
         pointer-events:none;
       }
       #influenceModal .inf-signal-sheet[data-signal-state="HOT"] .inf-signal-visual::after{
@@ -1391,54 +1422,63 @@
       #influenceModal .inf-signal-sigil-core{
         position:relative;
         z-index:2;
-        width:94px;
-        height:94px;
+        width:136px;
+        height:136px;
         border-radius:50%;
         display:flex;
         align-items:center;
         justify-content:center;
         background:
-          radial-gradient(circle at 50% 50%, rgba(255,255,255,.2), rgba(255,255,255,.05) 58%, transparent 72%);
-        box-shadow:0 0 34px rgba(0,0,0,.28), 0 0 40px color-mix(in srgb, var(--inf-signal-glow) 58%, transparent);
+          radial-gradient(circle at 50% 50%, rgba(18,28,44,.96) 0 34%, rgba(10,16,26,.88) 58%, rgba(5,10,18,.26) 76%, transparent 100%);
+        box-shadow:0 0 34px rgba(0,0,0,.42), 0 0 28px color-mix(in srgb, var(--inf-signal-glow) 34%, transparent);
+        overflow:hidden;
       }
       #influenceModal .inf-signal-sigil-core::before{
         content:"";
         position:absolute;
         inset:-10px;
         border-radius:50%;
-        border:1px solid rgba(255,255,255,.18);
-        box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;
+        border:1px solid rgba(188,220,255,.16);
+        box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 0 20px color-mix(in srgb, var(--inf-signal-glow) 24%, transparent);
       }
       #influenceModal .inf-signal-sigil{
-        position:absolute;
-        inset:16px;
-        width:auto;
-        height:auto;
+        position:relative;
+        z-index:2;
+        width:min(74%, 132px);
+        height:min(74%, 132px);
+        max-width:132px;
+        max-height:132px;
         object-fit:contain;
-        filter:drop-shadow(0 0 10px rgba(255,255,255,.12)) drop-shadow(0 0 24px color-mix(in srgb, var(--inf-signal-glow) 64%, transparent));
-        opacity:.96;
+        background:transparent !important;
+        filter:drop-shadow(0 0 10px rgba(0,0,0,.28)) drop-shadow(0 0 16px color-mix(in srgb, var(--inf-signal-glow) 34%, transparent));
+        opacity:.84;
+        mix-blend-mode:screen;
+        image-rendering:auto;
       }
       #influenceModal .inf-signal-sigil-fallback{
-        position:absolute;
-        inset:0;
+        position:relative;
+        z-index:2;
+        width:100%;
+        height:100%;
         display:flex;
         align-items:center;
         justify-content:center;
-        font-size:24px;
+        font-size:30px;
         font-weight:900;
         letter-spacing:.12em;
-        color:#eef7ff;
+        color:#dcecff;
         text-transform:uppercase;
+        text-shadow:0 0 10px rgba(0,0,0,.32), 0 0 18px color-mix(in srgb, var(--inf-signal-glow) 28%, transparent);
       }
       #influenceModal .inf-signal-energy{
         position:absolute;
-        width:126px;
-        height:126px;
+        width:154px;
+        height:154px;
         border-radius:50%;
         background:
-          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--inf-signal-glow) 50%, transparent) 0 24%, transparent 68%);
-        filter:blur(6px);
-        opacity:.85;
+          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--inf-signal-glow) 22%, transparent) 0 24%, rgba(10,16,28,.12) 44%, transparent 72%);
+        filter:blur(10px);
+        opacity:.62;
         animation:infSignalHalo 2.8s ease-in-out infinite;
       }
       #influenceModal .inf-signal-reticle{
@@ -1449,14 +1489,14 @@
       #influenceModal .inf-signal-reticle.is-outer{
         width:154px;
         height:154px;
-        border:1px dashed rgba(224,238,255,var(--inf-signal-ring-opacity));
+        border:1px dashed color-mix(in srgb, var(--inf-signal-glow) 66%, rgba(188,220,255,var(--inf-signal-ring-opacity)));
         animation:infSignalSpin var(--inf-signal-ring-speed) linear infinite;
       }
       #influenceModal .inf-signal-reticle.is-inner{
         width:118px;
         height:118px;
-        border:1px solid rgba(255,255,255,.24);
-        box-shadow:0 0 0 14px rgba(255,255,255,.03), 0 0 0 28px rgba(255,255,255,.02);
+        border:1px solid rgba(188,220,255,.2);
+        box-shadow:0 0 0 14px rgba(124,182,255,.025), 0 0 0 28px rgba(124,182,255,.015);
       }
       #influenceModal .inf-signal-reticle.is-crosshair{
         width:168px;
@@ -1468,7 +1508,7 @@
         position:absolute;
         left:50%;
         top:50%;
-        background:rgba(255,255,255,.14);
+        background:rgba(151,201,255,.09);
         transform:translate(-50%, -50%);
       }
       #influenceModal .inf-signal-reticle.is-crosshair::before{
@@ -1483,7 +1523,7 @@
         position:absolute;
         inset:0;
         background:
-          repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 2px, transparent 2px 8px);
+          repeating-linear-gradient(135deg, rgba(135,192,255,.06) 0 2px, transparent 2px 8px);
         opacity:0;
         mix-blend-mode:screen;
         pointer-events:none;
