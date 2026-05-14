@@ -42,6 +42,12 @@
     pack_burners: "PB",
     inner_howl: "IH",
   };
+  const FACTION_SIGILS = {
+    rogue_byte: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_rb.webp",
+    echo_wardens: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_ew.webp",
+    inner_howl: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_ih.webp",
+    pack_burners: "https://res.cloudinary.com/dnjwvxinh/image/upload/factions/sigil_pb.webp",
+  };
   const FACTION_ACCENTS = {
     rogue_byte: "255,118,102",
     echo_wardens: "134,194,255",
@@ -169,6 +175,10 @@
   function factionAccentRgb(f) {
     const key = normalizeFaction(f);
     return FACTION_ACCENTS[key] || "165,184,214";
+  }
+  function factionSigilUrl(f) {
+    const key = normalizeFaction(f);
+    return FACTION_SIGILS[key] || "";
   }
 
   function normalizeNodeId(raw) {
@@ -707,16 +717,24 @@
     const subtitleEl = _qs("infSignalSubtitle");
     const visualStateEl = _qs("infSignalVisualState");
     const visualHintEl = _qs("infSignalVisualHint");
+    const sigilEl = _qs("infSignalSigil");
+    const sigilFallbackEl = _qs("infSignalSigilFallback");
     const tileControlEl = _qs("infSignalControlState");
     const tilePressureEl = _qs("infSignalPressure");
+    const watchTileEl = _qs("infSignalWatchTile");
     const tileWatchEl = _qs("infSignalWatch");
     const tileValueEl = _qs("infSignalValue");
     const pulseEl = _qs("infSignalPulseValue");
 
     const statusKey = String(displayStatus || "CALM").trim().toUpperCase() || "CALM";
     const primaryStatus = uxPrimaryStatusLabel(statusKey, displayLabel);
+    const chamberState = primaryStatus === "UNDER WATCH"
+      ? "FORTIFIED"
+      : (primaryStatus === "SECURED" ? "CALM" : primaryStatus);
     const mood = uxMoodTokens(statusKey);
     const ownerLabel = owner ? fmtFaction(owner) : "Neutral";
+    const ownerCode = owner ? factionCode(owner) : "--";
+    const sigilUrl = factionSigilUrl(owner);
     const watchSlots = watchMax > 0
       ? `${Math.max(0, Number(watchUsed || 0))}/${Math.max(0, Number(watchMax || 0))}`
       : (watchUsed > 0 ? `${watchUsed} active` : "Open");
@@ -724,47 +742,44 @@
       ? `${viewerPressure} vs ${leaderPressure}`
       : (viewerPressure > 0 ? `${viewerPressure} allied` : (leaderPressure > 0 ? `Lead ${leaderPressure}` : "Quiet"));
     const valueText = String(valueLabel || "").trim() || "Support";
-    const subtitleRaw = String(nodeId || "").trim().replaceAll("_", " ") || "Frontline node core";
-    const subtitle = subtitleRaw.replace(/\b\w/g, (ch) => ch.toUpperCase());
-    const statusCopy = ({
-      SIEGE_LIVE: "Live clash window.",
-      SIEGE_FORMING: "Pressure spike detected.",
-      SIEGE_COOLDOWN: "Reset window active.",
-      CONTESTED: "Control contested.",
-      HOT: "Threat level rising.",
-      FORTIFIED: "Outer ring fortified.",
-    })[statusKey] || "Signal stable.";
-
-    let pulseText = "Recent pulse: low traffic.";
-    if (statusKey === "SIEGE_LIVE" || statusKey === "CONTESTED") pulseText = "Recent pulse: hostile spikes.";
-    else if (viewerPressure > 0) pulseText = "Recent pulse: allied packets rising.";
-    else if (watchUsed > 0) pulseText = "Recent pulse: watch pings holding.";
+    const subtitle = owner ? `${ownerLabel} signature active` : "Node signal unstable";
+    let pulseText = "Signal stable. Patrol from Orders to build local pressure.";
+    if (statusKey === "CONTESTED") pulseText = "Another faction holds control. Push now to contest the relay.";
+    else if (statusKey === "HOT" || statusKey === "SIEGE_LIVE") pulseText = "Enemy movement is active. Fast actions carry more weight.";
+    else if (statusKey === "FORTIFIED" || statusKey === "SIEGE_COOLDOWN") pulseText = "One faction has built strong pressure. Stronger support is needed to break it.";
+    else if (viewerPressure > 0) pulseText = "Your faction has pressure here. Hold tempo to keep the relay steady.";
 
     if (sheetEl) {
       sheetEl.style.setProperty("--inf-signal-glow", mood.border);
       sheetEl.style.setProperty("--inf-signal-soft", mood.panel);
+      sheetEl.dataset.signalState = chamberState;
     }
     if (subtitleEl) subtitleEl.textContent = subtitle;
     if (visualStateEl) visualStateEl.textContent = primaryStatus;
-    if (visualHintEl) visualHintEl.textContent = owner ? `${ownerLabel} signature active` : "Neutral spectrum";
+    if (visualHintEl) visualHintEl.textContent = owner ? `${ownerLabel} signature active` : "Node signal unstable";
+    if (sigilEl) {
+      if (sigilUrl) {
+        sigilEl.src = sigilUrl;
+        sigilEl.style.display = "block";
+      } else {
+        sigilEl.removeAttribute("src");
+        sigilEl.style.display = "none";
+      }
+    }
+    if (sigilFallbackEl) {
+      sigilFallbackEl.textContent = ownerCode;
+      sigilFallbackEl.style.display = sigilUrl ? "none" : "flex";
+    }
     if (tileControlEl) tileControlEl.textContent = `${primaryStatus} | ${ownerLabel}`;
     if (tilePressureEl) tilePressureEl.textContent = pressureText;
+    if (watchTileEl) watchTileEl.style.display = (watchMax > 0 || watchUsed > 0) ? "flex" : "none";
     if (tileWatchEl) tileWatchEl.textContent = watchSlots;
     if (tileValueEl) tileValueEl.textContent = valueText;
     if (pulseEl) pulseEl.textContent = pulseText;
 
     const lines = [];
     if (controlText) lines.push(controlText);
-    lines.push(statusCopy);
-    if (viewerPressure > 0 && leaderPressure > 0) {
-      lines.push(`Pressure ${viewerPressure} vs lead ${leaderPressure}.`);
-    } else if (viewerPressure > 0) {
-      lines.push(`Your pressure active at ${viewerPressure}.`);
-    } else if (leaderPressure > 0) {
-      lines.push(`Enemy pressure ${leaderPressure}. Counter advised.`);
-    } else {
-      lines.push("No pressure packets this cycle.");
-    }
+    else lines.push(pulseText);
     renderSignalReadout(lines);
   }
 
@@ -1241,6 +1256,10 @@
       #influenceModal .inf-signal-sheet{
         --inf-signal-glow: rgba(255,196,132,.32);
         --inf-signal-soft: rgba(255,172,112,.12);
+        --inf-signal-ring-speed: 14s;
+        --inf-signal-ring-opacity: .42;
+        --inf-signal-flicker: 0;
+        --inf-signal-interference: 0;
         position:absolute;
         left:50%;
         right:auto;
@@ -1251,9 +1270,10 @@
         border:1px solid rgba(255,214,172,.22);
         background:
           radial-gradient(circle at 18% 0%, var(--inf-signal-soft), transparent 42%),
+          radial-gradient(circle at 50% 18%, rgba(255,255,255,.05), transparent 40%),
           linear-gradient(180deg, rgba(18,24,34,.98), rgba(10,15,24,.98));
         box-shadow:0 14px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
-        padding:9px 9px 10px;
+        padding:10px 10px 11px;
         max-height:min(68dvh, 470px);
         overflow:auto;
         -webkit-overflow-scrolling:touch;
@@ -1261,6 +1281,24 @@
         opacity:0;
         pointer-events:none;
         transition:transform .2s ease, opacity .2s ease;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="HOT"]{
+        --inf-signal-ring-speed: 7.5s;
+        --inf-signal-ring-opacity: .68;
+        --inf-signal-flicker: 1;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="CONTESTED"]{
+        --inf-signal-ring-speed: 9.2s;
+        --inf-signal-ring-opacity: .54;
+        --inf-signal-interference: 1;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="FORTIFIED"]{
+        --inf-signal-ring-speed: 18s;
+        --inf-signal-ring-opacity: .78;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="CALM"]{
+        --inf-signal-ring-speed: 16s;
+        --inf-signal-ring-opacity: .34;
       }
       #influenceModal .inf-signal-sheet.is-open{
         transform:translate(-50%, 0);
@@ -1278,11 +1316,12 @@
         font-weight:900;
         line-height:1.12;
         color:#f2f8ff;
+        letter-spacing:.08em;
+        text-transform:uppercase;
       }
       #influenceModal .inf-signal-sub{
         margin-top:2px;
         font-size:10px;
-        text-transform:uppercase;
         letter-spacing:.08em;
         color:#bdcfe6;
         opacity:.9;
@@ -1300,11 +1339,11 @@
       #influenceModal .inf-signal-visual{
         position:relative;
         margin-top:7px;
-        min-height:114px;
+        min-height:178px;
         border-radius:12px;
         border:1px solid rgba(255,255,255,.13);
         background:
-          radial-gradient(circle at 50% 50%, rgba(255,255,255,.19) 0 12%, rgba(255,255,255,.04) 34%, transparent 58%),
+          radial-gradient(circle at 50% 50%, rgba(255,255,255,.12) 0 14%, rgba(255,255,255,.03) 38%, transparent 64%),
           linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
         overflow:hidden;
         display:flex;
@@ -1315,36 +1354,170 @@
       #influenceModal .inf-signal-visual::before{
         content:"";
         position:absolute;
-        width:108px;
-        height:108px;
-        border-radius:50%;
-        border:1px solid rgba(255,240,214,.33);
-        box-shadow:0 0 0 14px rgba(255,228,186,.055), 0 0 0 28px rgba(255,228,186,.028);
+        inset:0;
+        background:
+          repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 2px, transparent 2px 6px);
+        opacity:.35;
+        mix-blend-mode:screen;
+        pointer-events:none;
       }
       #influenceModal .inf-signal-visual::after{
         content:"";
         position:absolute;
-        width:148px;
-        height:148px;
+        inset:0;
+        background:
+          linear-gradient(120deg, transparent 0 36%, rgba(255,255,255,.1) 50%, transparent 64% 100%);
+        transform:translateX(-90%);
+        animation:infSignalSweep 5.8s linear infinite;
+        opacity:.42;
+        pointer-events:none;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="HOT"] .inf-signal-visual::after{
+        animation-duration:3.8s;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="CONTESTED"] .inf-signal-visual::after{
+        opacity:.28;
+        animation-duration:4.5s;
+      }
+      #influenceModal .inf-signal-chamber{
+        position:relative;
+        width:100%;
+        min-height:178px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+      }
+      #influenceModal .inf-signal-sigil-core{
+        position:relative;
+        z-index:2;
+        width:94px;
+        height:94px;
         border-radius:50%;
-        border:1px dashed rgba(255,231,196,.26);
-        animation:infSignalSpin 14s linear infinite;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:
+          radial-gradient(circle at 50% 50%, rgba(255,255,255,.2), rgba(255,255,255,.05) 58%, transparent 72%);
+        box-shadow:0 0 34px rgba(0,0,0,.28), 0 0 40px color-mix(in srgb, var(--inf-signal-glow) 58%, transparent);
+      }
+      #influenceModal .inf-signal-sigil-core::before{
+        content:"";
+        position:absolute;
+        inset:-10px;
+        border-radius:50%;
+        border:1px solid rgba(255,255,255,.18);
+        box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;
+      }
+      #influenceModal .inf-signal-sigil{
+        position:absolute;
+        inset:16px;
+        width:auto;
+        height:auto;
+        object-fit:contain;
+        filter:drop-shadow(0 0 10px rgba(255,255,255,.12)) drop-shadow(0 0 24px color-mix(in srgb, var(--inf-signal-glow) 64%, transparent));
+        opacity:.96;
+      }
+      #influenceModal .inf-signal-sigil-fallback{
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:24px;
+        font-weight:900;
+        letter-spacing:.12em;
+        color:#eef7ff;
+        text-transform:uppercase;
+      }
+      #influenceModal .inf-signal-energy{
+        position:absolute;
+        width:126px;
+        height:126px;
+        border-radius:50%;
+        background:
+          radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--inf-signal-glow) 50%, transparent) 0 24%, transparent 68%);
+        filter:blur(6px);
+        opacity:.85;
+        animation:infSignalHalo 2.8s ease-in-out infinite;
+      }
+      #influenceModal .inf-signal-reticle{
+        position:absolute;
+        border-radius:50%;
+        pointer-events:none;
+      }
+      #influenceModal .inf-signal-reticle.is-outer{
+        width:154px;
+        height:154px;
+        border:1px dashed rgba(224,238,255,var(--inf-signal-ring-opacity));
+        animation:infSignalSpin var(--inf-signal-ring-speed) linear infinite;
+      }
+      #influenceModal .inf-signal-reticle.is-inner{
+        width:118px;
+        height:118px;
+        border:1px solid rgba(255,255,255,.24);
+        box-shadow:0 0 0 14px rgba(255,255,255,.03), 0 0 0 28px rgba(255,255,255,.02);
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair{
+        width:168px;
+        height:168px;
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair::before,
+      #influenceModal .inf-signal-reticle.is-crosshair::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:50%;
+        background:rgba(255,255,255,.14);
+        transform:translate(-50%, -50%);
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair::before{
+        width:1px;
+        height:168px;
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair::after{
+        width:168px;
+        height:1px;
+      }
+      #influenceModal .inf-signal-interference{
+        position:absolute;
+        inset:0;
+        background:
+          repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 2px, transparent 2px 8px);
+        opacity:0;
+        mix-blend-mode:screen;
+        pointer-events:none;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="CONTESTED"] .inf-signal-interference{
+        opacity:.16;
+        animation:infSignalNoise 1.1s steps(2, end) infinite;
       }
       #influenceModal .inf-signal-pulse-ring{
         position:absolute;
-        width:64px;
-        height:64px;
+        width:98px;
+        height:98px;
         border-radius:50%;
         border:1px solid var(--inf-signal-glow);
-        box-shadow:0 0 14px rgba(255,196,124,.18);
+        box-shadow:0 0 20px rgba(255,196,124,.18);
         animation:infSignalPulse 2.2s ease-out infinite;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="HOT"] .inf-signal-pulse-ring{
+        animation-duration:1.45s;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="FORTIFIED"] .inf-signal-pulse-ring{
+        animation-duration:3.1s;
+      }
+      #influenceModal .inf-signal-sheet[data-signal-state="CALM"] .inf-signal-pulse-ring{
+        animation-duration:3.6s;
       }
       #influenceModal .inf-signal-visual-copy{
         position:relative;
         z-index:1;
+        margin-top:116px;
+        padding-bottom:10px;
       }
       #influenceModal .inf-signal-visual-state{
-        font-size:14px;
+        font-size:13px;
         font-weight:900;
         color:#f8fbff;
         letter-spacing:.06em;
@@ -1359,14 +1532,18 @@
       #influenceModal .inf-signal-grid{
         margin-top:7px;
         display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
+        grid-template-columns:minmax(0,1fr);
         gap:6px;
       }
       #influenceModal .inf-signal-tile{
         border-radius:10px;
         border:1px solid rgba(255,255,255,.1);
         background:rgba(255,255,255,.03);
-        padding:7px 8px 8px;
+        padding:7px 9px 8px;
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
       }
       #influenceModal .inf-signal-tile-label{
         font-size:9px;
@@ -1374,20 +1551,21 @@
         letter-spacing:.08em;
         color:#aec3de;
         opacity:.82;
+        flex:0 0 auto;
       }
       #influenceModal .inf-signal-tile-value{
-        margin-top:3px;
         font-size:11px;
         font-weight:800;
         color:#eaf3ff;
         line-height:1.25;
+        text-align:right;
       }
       #influenceModal .inf-signal-readout{
         margin-top:7px;
         border-radius:11px;
         border:1px solid rgba(255,255,255,.12);
         background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-        padding:7px 8px;
+        padding:8px 9px;
       }
       #influenceModal .inf-signal-readout-title{
         font-size:9px;
@@ -1402,9 +1580,9 @@
         gap:3px;
       }
       #influenceModal .inf-signal-line{
-        font-size:10px;
-        line-height:1.28;
-        color:#ddeafb;
+        font-size:11px;
+        line-height:1.34;
+        color:#e5f0fd;
       }
       #influenceModal .inf-signal-pulse{
         margin-top:7px;
@@ -1426,6 +1604,19 @@
         color:#afc3dc;
         opacity:.8;
       }
+      #influenceModal .inf-signal-return-btn{
+        min-width:160px;
+        border:1px solid rgba(255,255,255,.16);
+        border-radius:11px;
+        background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+        color:#edf7ff;
+        padding:9px 12px;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        cursor:pointer;
+      }
       #influenceModal .inf-hero.is-action-react{
         animation:infHeroActionPulse .44s ease;
       }
@@ -1439,10 +1630,24 @@
         from{ transform:rotate(0deg); }
         to{ transform:rotate(360deg); }
       }
+      @keyframes infSignalSweep{
+        0%{ transform:translateX(-90%); }
+        100%{ transform:translateX(120%); }
+      }
       @keyframes infSignalPulse{
         0%{ transform:scale(.85); opacity:.7; }
         70%{ transform:scale(1.22); opacity:0; }
         100%{ transform:scale(1.22); opacity:0; }
+      }
+      @keyframes infSignalHalo{
+        0%,100%{ transform:scale(.96); opacity:.68; }
+        50%{ transform:scale(1.08); opacity:.94; }
+      }
+      @keyframes infSignalNoise{
+        0%,100%{ transform:translate3d(0,0,0); opacity:.08; }
+        25%{ transform:translate3d(-3px, 1px, 0); opacity:.14; }
+        50%{ transform:translate3d(2px, -2px, 0); opacity:.2; }
+        75%{ transform:translate3d(1px, 3px, 0); opacity:.12; }
       }
       @keyframes infHeroActionPulse{
         0%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
@@ -2130,7 +2335,10 @@
           animation:none !important;
         }
         #influenceModal .inf-signal-visual::after,
-        #influenceModal .inf-signal-pulse-ring{
+        #influenceModal .inf-signal-pulse-ring,
+        #influenceModal .inf-signal-energy,
+        #influenceModal .inf-signal-reticle.is-outer,
+        #influenceModal .inf-signal-interference{
           animation:none !important;
         }
       }
@@ -2361,28 +2569,39 @@
       <section id="infSignalSheet" class="inf-signal-sheet" style="display:none;" aria-hidden="true" role="dialog" aria-label="Signal Core Inspect Panel">
         <div class="inf-signal-head">
           <div>
-            <div class="inf-signal-title">Signal Core</div>
-            <div id="infSignalSubtitle" class="inf-signal-sub">Phantom Nodes</div>
+            <div class="inf-signal-title">SIGNAL CORE</div>
+            <div id="infSignalSubtitle" class="inf-signal-sub">Node signal unstable</div>
           </div>
           <button type="button" class="inf-signal-close" data-signal-close>Close</button>
         </div>
         <div class="inf-signal-visual">
-          <div class="inf-signal-pulse-ring"></div>
-          <div class="inf-signal-visual-copy">
-            <div id="infSignalVisualState" class="inf-signal-visual-state">Secured</div>
-            <div id="infSignalVisualHint" class="inf-signal-visual-hint">Neutral spectrum</div>
+          <div class="inf-signal-chamber">
+            <div class="inf-signal-energy"></div>
+            <div class="inf-signal-reticle is-crosshair"></div>
+            <div class="inf-signal-reticle is-outer"></div>
+            <div class="inf-signal-reticle is-inner"></div>
+            <div class="inf-signal-pulse-ring"></div>
+            <div class="inf-signal-sigil-core">
+              <img id="infSignalSigil" class="inf-signal-sigil" alt="" loading="eager" decoding="async" style="display:none;" onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+              <div id="infSignalSigilFallback" class="inf-signal-sigil-fallback">--</div>
+            </div>
+            <div class="inf-signal-interference"></div>
+            <div class="inf-signal-visual-copy">
+              <div id="infSignalVisualState" class="inf-signal-visual-state">CALM</div>
+              <div id="infSignalVisualHint" class="inf-signal-visual-hint">Node signal unstable</div>
+            </div>
           </div>
         </div>
         <div class="inf-signal-grid">
           <article class="inf-signal-tile">
             <div class="inf-signal-tile-label">Control State</div>
-            <div id="infSignalControlState" class="inf-signal-tile-value">SECURED | Neutral</div>
+            <div id="infSignalControlState" class="inf-signal-tile-value">CALM | Neutral</div>
           </article>
           <article class="inf-signal-tile">
             <div class="inf-signal-tile-label">Pressure</div>
             <div id="infSignalPressure" class="inf-signal-tile-value">Quiet</div>
           </article>
-          <article class="inf-signal-tile">
+          <article id="infSignalWatchTile" class="inf-signal-tile">
             <div class="inf-signal-tile-label">Watch Slots</div>
             <div id="infSignalWatch" class="inf-signal-tile-value">Open</div>
           </article>
@@ -2400,9 +2619,9 @@
         <div class="inf-signal-pulse">
           <span id="infSignalPulseValue">Recent pulse: low traffic.</span>
         </div>
-        <div class="inf-signal-return">Return to Actions to patrol or donate.</div>
+        <div class="inf-signal-return">Return to orders to patrol or donate.</div>
         <div class="inf-signal-foot">
-          <button type="button" class="inf-signal-close" data-signal-close>Close</button>
+          <button type="button" class="inf-signal-return-btn" data-signal-close>RETURN TO ORDERS</button>
         </div>
       </section>
     `;
