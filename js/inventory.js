@@ -5,6 +5,7 @@
 window.Inventory = {
   items: [],
   equipped: {}, // unused here now (kept for compatibility)
+  equippedBySlot: {},
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
   currentTab: "all",
   _tgBackHandler: null,
@@ -53,6 +54,115 @@ window.Inventory = {
 
   _perfAction(name, startedAt) {
     try { window.__ahPerf?.action?.(name, startedAt); } catch (_) {}
+  },
+
+  _esc(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  },
+
+  _safeText(value, fallback = "") {
+    const text = String(value ?? "").trim();
+    return text || String(fallback || "");
+  },
+
+  _toInt(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.trunc(num) : Math.trunc(Number(fallback) || 0);
+  },
+
+  _qty(item) {
+    return Math.max(
+      1,
+      this._toInt(
+        item?.quantity ?? item?.amount ?? item?.stackQty ?? item?.qty ?? 1,
+        1
+      )
+    );
+  },
+
+  _rarityMeta(rarity) {
+    const key = String(rarity || "common").toLowerCase();
+    return {
+      common: { color: "#9aa0aa", glow: "rgba(154,160,170,.28)", label: "Common" },
+      uncommon: { color: "#5fe3a1", glow: "rgba(95,227,161,.30)", label: "Uncommon" },
+      rare: { color: "#64b5ff", glow: "rgba(100,181,255,.30)", label: "Rare" },
+      epic: { color: "#b286ff", glow: "rgba(178,134,255,.30)", label: "Epic" },
+      legendary: { color: "#ffd76a", glow: "rgba(255,215,106,.34)", label: "Legendary" },
+      mythic: { color: "#ff79c8", glow: "rgba(255,121,200,.32)", label: "Mythic" },
+    }[key] || { color: "#9aa0aa", glow: "rgba(154,160,170,.28)", label: this._safeText(rarity, "Common") };
+  },
+
+  _statLabel(key) {
+    const norm = String(key || "").trim().toLowerCase();
+    const map = {
+      strength: "STR",
+      str: "STR",
+      defense: "DEF",
+      def: "DEF",
+      vitality: "VIT",
+      vit: "VIT",
+      agility: "AGI",
+      agi: "AGI",
+      intelligence: "INT",
+      int: "INT",
+      luck: "LCK",
+      hp: "HP",
+      dmg: "DMG",
+      atk: "ATK",
+      crit_chance: "CRIT",
+      crit_dmg: "CRIT DMG",
+      dodge: "DODGE",
+      speed: "SPD",
+    };
+    return map[norm] || String(key || "").slice(0, 12).toUpperCase();
+  },
+
+  _normalizeStats(stats) {
+    const src = (stats && typeof stats === "object") ? stats : {};
+    const out = {};
+    for (const [k, v] of Object.entries(src)) {
+      const num = Number(v);
+      if (!Number.isFinite(num)) continue;
+      out[String(k)] = Math.trunc(num);
+    }
+    return out;
+  },
+
+  _orderedStatKeys(statsA, statsB = {}) {
+    const pref = ["hp", "strength", "str", "defense", "def", "vitality", "vit", "agility", "agi", "intelligence", "int", "luck", "dmg", "atk", "crit_chance", "crit_dmg", "dodge", "speed"];
+    const prefIdx = new Map(pref.map((k, i) => [k, i]));
+    return Array.from(new Set([...Object.keys(statsA || {}), ...Object.keys(statsB || {})])).sort((a, b) => {
+      const ia = prefIdx.has(String(a).toLowerCase()) ? prefIdx.get(String(a).toLowerCase()) : 999;
+      const ib = prefIdx.has(String(b).toLowerCase()) ? prefIdx.get(String(b).toLowerCase()) : 999;
+      if (ia !== ib) return ia - ib;
+      return String(a).localeCompare(String(b));
+    });
+  },
+
+  _fmtDelta(value) {
+    const num = this._toInt(value, 0);
+    if (num > 0) return `+${num}`;
+    if (num < 0) return `${num}`;
+    return "0";
+  },
+
+  _deltaTone(value) {
+    const num = this._toInt(value, 0);
+    if (num > 0) return { bg: "rgba(80, 220, 160, .14)", fg: "#7ef2bf", border: "rgba(80,220,160,.28)" };
+    if (num < 0) return { bg: "rgba(255, 99, 132, .14)", fg: "#ff98ac", border: "rgba(255,99,132,.26)" };
+    return { bg: "rgba(255,255,255,.06)", fg: "#c8cfdb", border: "rgba(255,255,255,.08)" };
+  },
+
+  _itemDescription(item) {
+    return this._safeText(
+      item?.description || item?.desc || item?.flavor || item?.usedFor,
+      ""
+    );
   },
 
   // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
@@ -137,6 +247,12 @@ window.Inventory = {
     setTimeout(() => (this._backLock = false), 500);
 
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+    const detailBack = document.getElementById("invItemBack");
+    if (detailBack?.dataset?.open === "1") {
+      this.closeItem();
+      return;
+    }
 
     const fromNav = (source === "nav"); // called by nav stack onClose
     const stack = window.AH_NAV?.stack;
@@ -268,6 +384,31 @@ window.Inventory = {
       <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
     </div>
 
+    <div id="invItemBack" onclick="if(event.target===this) Inventory.closeItem()" style="
+      display:none;position:fixed;inset:0;z-index:12000;
+      background:rgba(4,8,15,.84);backdrop-filter:blur(10px);
+      align-items:flex-end;justify-content:center;padding:18px;
+    ">
+      <div style="
+        width:min(680px,100%);max-height:82vh;overflow:auto;
+        background:linear-gradient(180deg,rgba(20,25,42,.98),rgba(9,12,22,.98));
+        border:1px solid rgba(255,255,255,.12);border-radius:28px 28px 22px 22px;
+        box-shadow:0 24px 70px rgba(0,0,0,.45);
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px 18px;border-bottom:1px solid rgba(255,255,255,.07);">
+          <div>
+            <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Inventory Detail</div>
+            <div style="font-size:20px;font-weight:900;color:#f6fbff;">Signal Readout</div>
+          </div>
+          <button onclick="Inventory.closeItem()" type="button" style="
+            width:42px;height:42px;border-radius:14px;border:none;
+            background:rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;
+          ">×</button>
+        </div>
+        <div id="invItemBody" style="padding:18px;"></div>
+      </div>
+    </div>
+
     <div style="text-align:center;margin-top:24px;">
       <button onclick="Telegram.WebApp.close()" type="button"
               style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;cursor:pointer;">
@@ -287,6 +428,7 @@ window.Inventory = {
       // slots = UNEQUIPPED ONLY
       this.items = res.slots || [];
       this.equipped = {}; // no equipped fallback in this view
+      this.equippedBySlot = (res.equippedBySlot && typeof res.equippedBySlot === "object") ? res.equippedBySlot : {};
 
       this.resources = {
         bones: parseInt(res.bones || 0, 10) || 0,
@@ -334,6 +476,237 @@ window.Inventory = {
     return false;
   },
 
+  _slotLabel(item) {
+    return this._safeText(item?.slotLabel || item?.slot, "");
+  },
+
+  _compareState(item) {
+    const slot = this._normSlot(item);
+    const equipped = slot ? (this.equippedBySlot?.[slot] || item?.compareTarget || null) : null;
+    const selectedStats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
+    const equippedStats = this._normalizeStats(equipped?.stats || equipped?.data?.stat_bonus || {});
+    const keys = this._orderedStatKeys(selectedStats, equippedStats);
+    const rows = keys.map((key) => ({
+      key,
+      label: this._statLabel(key),
+      selected: this._toInt(selectedStats[key], 0),
+      equipped: this._toInt(equippedStats[key], 0),
+      delta: this._toInt(selectedStats[key], 0) - this._toInt(equippedStats[key], 0),
+    }));
+    return { slot, equipped, rows };
+  },
+
+  _detailActions(item) {
+    const key = this._safeText(item?.key || item?.item_key || item?.item, "");
+    const qty = this._qty(item);
+    const actions = [];
+    if (this._isConsumable(item)) {
+      actions.push(`
+        <button onclick="event.stopPropagation(); Inventory.use('${this._esc(key)}')" type="button"
+                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#5fe3a1,#1b9e67);color:#08110d;font-weight:900;letter-spacing:.4px;cursor:pointer;">
+          USE
+        </button>
+      `);
+    }
+    if (this._isGear(item)) {
+      actions.push(`
+        <button onclick="event.stopPropagation(); Inventory.equip('${this._esc(key)}')" type="button"
+                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#6caeff,#2d65ff);color:#f5f9ff;font-weight:900;letter-spacing:.4px;cursor:pointer;">
+          EQUIP
+        </button>
+      `);
+    }
+    actions.push(`
+      <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
+              style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
+        DISCARD 1
+      </button>
+    `);
+    if (qty > 1) {
+      actions.push(`
+        <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','all')" type="button"
+                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.28);background:rgba(124,18,30,.92);color:#fff3f5;font-weight:900;letter-spacing:.3px;cursor:pointer;">
+          DISCARD ALL
+        </button>
+      `);
+    }
+    return actions.join("");
+  },
+
+  openItem(key) {
+    const item = this.findByKey(key);
+    if (!item) return;
+    try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+    const back = document.getElementById("invItemBack");
+    const body = document.getElementById("invItemBody");
+    if (!back || !body) return;
+
+    const rarity = this._rarityMeta(item?.rarity);
+    const qty = this._qty(item);
+    const typeLabel = this._safeText(item?.type || item?.category, "Misc");
+    const slotLabel = this._slotLabel(item);
+    const description = this._itemDescription(item);
+    const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
+    const statKeys = this._orderedStatKeys(stats);
+    const compare = this._compareState(item);
+    const eq = compare.equipped;
+
+    const statCards = statKeys.length
+      ? statKeys.map((key) => `
+          <div style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);min-width:84px;">
+            <div style="font-size:11px;letter-spacing:.5px;color:#91a0bb;">${this._esc(this._statLabel(key))}</div>
+            <div style="font-size:18px;font-weight:900;color:#f5fbff;">+${this._esc(String(this._toInt(stats[key], 0)))}</div>
+          </div>
+        `).join("")
+      : `<div style="padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.10);font-size:12px;color:#9aa7bb;">no stats available</div>`;
+
+    let compareBlock = "";
+    if (this._isGear(item)) {
+      const compareRows = compare.rows.length
+        ? compare.rows.map((row) => {
+            const tone = this._deltaTone(row.delta);
+            return `
+              <div style="display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);">
+                <div style="font-size:12px;letter-spacing:.45px;color:#91a0bb;">${this._esc(row.label)}</div>
+                <div style="font-size:13px;color:#dbe7ff;">${this._esc(`+${row.selected}`)}${eq ? ` vs ${row.equipped >= 0 ? "+" : ""}${row.equipped}` : ""}</div>
+                <div style="padding:6px 10px;border-radius:999px;background:${tone.bg};border:1px solid ${tone.border};color:${tone.fg};font-size:12px;font-weight:900;letter-spacing:.35px;">
+                  ${this._esc(this._fmtDelta(row.delta))}
+                </div>
+              </div>
+            `;
+          }).join("")
+        : `<div style="padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.10);font-size:12px;color:#9aa7bb;">no stats available</div>`;
+
+      compareBlock = `
+        <section style="margin-top:18px;padding:16px;border-radius:20px;background:rgba(8,12,24,.88);border:1px solid rgba(255,255,255,.08);">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px;">
+            <div>
+              <div style="font-size:11px;letter-spacing:.65px;color:#7d8aa3;text-transform:uppercase;">Equipment Compare</div>
+              <div style="font-size:16px;font-weight:900;color:#f4f8ff;">${eq ? this._esc(eq.name || eq.key || "Equipped item") : "No item equipped in this slot."}</div>
+            </div>
+            ${slotLabel ? `<div style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.06);font-size:11px;color:#d5dded;letter-spacing:.4px;">${this._esc(slotLabel)}</div>` : ""}
+          </div>
+          ${compareRows}
+        </section>
+      `;
+    }
+
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start;">
+        <img src="${this._esc(item?.icon || item?.image || item?.image_path || "/assets/items/unknown.png")}"
+             alt=""
+             style="width:96px;height:96px;border-radius:22px;border:2px solid ${rarity.color};box-shadow:0 0 0 4px ${rarity.glow};background:rgba(255,255,255,.04);object-fit:cover;"
+             onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
+        <div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <span style="padding:6px 10px;border-radius:999px;background:${rarity.glow};color:${rarity.color};font-size:11px;letter-spacing:.5px;font-weight:900;text-transform:uppercase;">${this._esc(rarity.label)}</span>
+            <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#d6dceb;font-size:11px;letter-spacing:.5px;text-transform:uppercase;">${this._esc(typeLabel)}</span>
+            ${slotLabel ? `<span style="padding:6px 10px;border-radius:999px;background:rgba(76,95,165,.22);color:#b4c6ff;font-size:11px;letter-spacing:.5px;text-transform:uppercase;">${this._esc(slotLabel)}</span>` : ""}
+            <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#f8fbff;font-size:11px;letter-spacing:.5px;">QTY ${this._esc(String(qty))}</span>
+          </div>
+          <div style="font-size:22px;line-height:1.1;font-weight:900;color:#f6fbff;">${this._esc(item?.name || item?.key || "Unknown Item")}</div>
+          <div style="margin-top:10px;font-size:13px;line-height:1.55;color:#b8c3d6;">
+            ${this._esc(description || "No description available.")}
+          </div>
+          ${item?.usedFor ? `<div style="margin-top:8px;font-size:12px;color:#8ad1ff;">Use: ${this._esc(item.usedFor)}</div>` : ""}
+        </div>
+      </div>
+
+      <section style="margin-top:18px;padding:16px;border-radius:20px;background:rgba(8,12,24,.88);border:1px solid rgba(255,255,255,.08);">
+        <div style="font-size:11px;letter-spacing:.65px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Readout</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">${statCards}</div>
+      </section>
+
+      ${compareBlock}
+
+      <section style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+        ${this._detailActions(item)}
+      </section>
+    `;
+
+    back.style.display = "flex";
+    back.dataset.open = "1";
+    try { window.navOpen?.("invItemBack"); } catch (_) {}
+  },
+
+  closeItem() {
+    const back = document.getElementById("invItemBack");
+    if (!back) return;
+    back.style.display = "none";
+    delete back.dataset.open;
+    try { window.navClose?.("invItemBack"); } catch (_) {}
+  },
+
+  _renderCards(filtered) {
+    return (filtered || []).map((item) => {
+      const key = item.key || item.item_key || item.item;
+      const amountNum = this._qty(item);
+      const level = Math.max(1, this._toInt(item?.level ?? item?.data?.level, 1));
+      const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
+      const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
+      const name = this._safeText(item.name, key || "Unknown Item");
+      const rarityMeta = this._rarityMeta(item?.rarity || "common");
+      const typeLabel = this._safeText(item?.type || item?.category, "Misc");
+      const slotLabel = this._slotLabel(item);
+      const description = this._itemDescription(item);
+      const isGear = this._isGear(item);
+      const statChips = this._orderedStatKeys(stats)
+        .slice(0, 3)
+        .map((statKey) => `
+          <span style="padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:11px;color:#dce7f9;">
+            ${this._esc(this._statLabel(statKey))} +${this._esc(String(this._toInt(stats[statKey], 0)))}
+          </span>
+        `)
+        .join("");
+
+      const keyEsc = String(key || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+
+      return `
+        <button type="button"
+             onclick="Inventory.openItem('${keyEsc}')"
+             style="background:linear-gradient(180deg,rgba(23,29,47,.94),rgba(9,12,22,.94));border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:14px;text-align:left;position:relative;transition:0.22s;cursor:pointer;color:#fff;box-shadow:0 12px 26px rgba(0,0,0,.18);">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:12px;">
+            <span style="padding:5px 9px;border-radius:999px;background:${rarityMeta.glow};color:${rarityMeta.color};font-size:10px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;">
+              ${this._esc(rarityMeta.label)}
+            </span>
+            <span style="padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:#f7fbff;font-size:10px;font-weight:800;letter-spacing:.45px;">
+              ×${this._esc(String(amountNum))}
+            </span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:86px 1fr;gap:12px;align-items:start;">
+            <img src="${this._esc(icon)}" width="86" height="86"
+               style="border:2px solid ${rarityMeta.color};box-shadow:0 0 0 4px ${rarityMeta.glow};border-radius:18px;background:rgba(255,255,255,.04);object-fit:cover;"
+               onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
+
+            <div>
+              <div style="font-size:15px;font-weight:900;color:#f7fbff;line-height:1.25;min-height:38px;">
+                ${this._esc(name)}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                <span style="padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:10px;letter-spacing:.45px;color:#d2dbea;text-transform:uppercase;">
+                  ${this._esc(typeLabel)}
+                </span>
+                ${slotLabel ? `<span style="padding:4px 8px;border-radius:999px;background:rgba(91,121,255,.16);font-size:10px;letter-spacing:.45px;color:#b8c8ff;text-transform:uppercase;">${this._esc(slotLabel)}</span>` : ""}
+                ${isGear ? `<span style="padding:4px 8px;border-radius:999px;background:rgba(255,215,106,.13);font-size:10px;letter-spacing:.45px;color:#ffd76a;">★ ${this._esc(String(level))}</span>` : ""}
+              </div>
+              ${statChips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">${statChips}</div>` : ""}
+              <div style="margin-top:10px;font-size:11px;line-height:1.45;color:${description ? "#99a8bf" : "#7f8a9c"};">
+                ${this._esc(description || (isGear ? "Equipment item." : "Misc item."))}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;font-size:11px;letter-spacing:.55px;color:#7d8aa3;text-transform:uppercase;">
+            Tap for details${isGear ? " and compare" : ""}
+          </div>
+        </button>
+      `;
+    }).join("");
+  },
+
   showTab(type) {
     this.currentTab = type;
 
@@ -360,35 +733,31 @@ window.Inventory = {
       return;
     }
 
+    grid.innerHTML = this._renderCards(filtered);
+    return;
+
     grid.innerHTML = filtered
       .map((item) => {
         const key = item.key || item.item_key || item.item;
-        const data = item.data || {};
-        const amount = item.amount || 1;
-        const amountNum = Math.max(1, Number(amount || 1) || 1);
-        const level = data.level || 1;
-        const stats = data.stat_bonus || {};
+        const amountNum = this._qty(item);
+        const level = Math.max(1, this._toInt(item?.level ?? item?.data?.level, 1));
+        const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
 
         const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
-        const name = item.name || key;
-        const rarity = (item.rarity || "common").toLowerCase();
-
+        const name = this._safeText(item.name, key || "Unknown Item");
+        const rarityMeta = this._rarityMeta(item?.rarity || "common");
         const isGear = this._isGear(item);
-        const isConsumable = this._isConsumable(item);
-
-        const rarityColor =
-          {
-            common: "#888",
-            uncommon: "#0f8",
-            rare: "#08f",
-            epic: "#a0f",
-            legendary: "#ff0",
-            mythic: "#f0f",
-          }[rarity] || "#888";
-
-        const statLines = Object.entries(stats)
-          .map(([k, v]) => `${k.slice(0, 3).toUpperCase()}: +${v}`)
-          .join("  ");
+        const typeLabel = this._safeText(item?.type || item?.category, "Misc");
+        const slotLabel = this._slotLabel(item);
+        const description = this._itemDescription(item);
+        const statChips = this._orderedStatKeys(stats)
+          .slice(0, 3)
+          .map((statKey) => `
+            <span style="padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:11px;color:#dce7f9;">
+              ${this._esc(this._statLabel(statKey))} +${this._esc(String(this._toInt(stats[statKey], 0)))}
+            </span>
+          `)
+          .join("");
 
         const keyEsc = String(key || "")
           .replace(/\\/g, "\\\\")
