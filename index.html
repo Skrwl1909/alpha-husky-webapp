@@ -3601,6 +3601,7 @@ body.missions-open{
     align-items:center;
     gap: 10px;
     padding: 14px 12px;
+    position: relative;
     border-radius: 18px;
     border: 1px solid rgba(220,232,249,.14);
     background: rgba(10,15,24,.34);
@@ -3610,6 +3611,37 @@ body.missions-open{
   }
   .ah-tile span{ font-size: 18px; filter: drop-shadow(0 1px 8px rgba(0,0,0,.28)); }
   .ah-tile b{ font-size: 13px; letter-spacing:.2px; color: rgba(236,246,255,.96); }
+  .ah-tile .ah-tile-ico{ flex: 0 0 auto; }
+  .ah-tile .ah-tile-copy{
+    display:flex;
+    flex:1;
+    min-width:0;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    filter:none;
+  }
+  .ah-tile .ah-tile-status{
+    font-size:10px;
+    line-height:1.25;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color: rgba(173,213,255,.76);
+    filter:none;
+  }
+  .ah-tile .ah-tile-status[data-campaign-status="incoming"]{ color: rgba(145,226,255,.94); }
+  .ah-tile .ah-tile-status[data-campaign-status="confirmed"]{ color: rgba(174,255,199,.92); }
+  .ah-tile .ah-tile-badge{
+    top: 9px;
+    right: 10px;
+    background: linear-gradient(180deg, rgba(144,234,255,.98), rgba(67,190,255,.98));
+    box-shadow: 0 0 0 4px rgba(92,198,255,.12), 0 0 14px rgba(84,206,255,.55);
+    animation: ahCampaignPulse 1.9s ease-in-out infinite;
+  }
+  @keyframes ahCampaignPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.24); opacity: .75; }
+  }
 
   .ah-actions{
     display:flex;
@@ -4623,7 +4655,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-tile" data-action="profile" type="button"><span>👤</span><b>Profile</b></button>
       <button class="ah-tile" data-action="mailbox" type="button"><span>✉️</span><b>Mailbox</b></button>
       <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
-      <button class="ah-tile" data-action="feed" type="button"><span>🧾</span><b>Feed</b></button>
+      <button class="ah-tile" data-action="campaign" data-campaign-tile type="button">
+        <span class="ah-tile-ico">📡</span>
+        <span class="ah-tile-copy">
+          <b>Campaign</b>
+          <span class="ah-tile-status" data-campaign-status hidden></span>
+        </span>
+        <span class="ah-badge ah-tile-badge" data-campaign-badge hidden></span>
+      </button>
       <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span>📲</span><b>Add to Home</b></button>
       <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
     </div>
@@ -5986,9 +6025,9 @@ function closeFaqModal(){
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
           profile:   ()=>document.querySelector('.btn.profile')?.click(),
           mailbox:   ()=>window.Mailbox?.open?.(),
+          campaign:  ()=>window.Campaign?.open?.(),
           faq: () => openFaqModal(),
           whatsnew:  ()=>document.getElementById('btnWhatsNew')?.click() || document.querySelector('.btn.whatsnew')?.click(),
-          feed:      ()=>document.querySelector('.btn.feed')?.click(),
           share:     ()=>{ hide(hubBack); window.ShareCard?.open?.("hub"); },
 
           // character sheet actions
@@ -6241,6 +6280,7 @@ async function apiPostRaw(path, payload){
 }
 
 const READ_ONLY_STATE_DEDUPE_PATHS = new Set([
+  "/webapp/campaign/state",
   "/webapp/cta/state",
   "/webapp/mailbox/state",
   "/webapp/missions/state",
@@ -8842,6 +8882,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/cta.js?v=WEBAPP_VER"></script>
 <script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
+<script src="js/campaign.js?v=WEBAPP_VER"></script>
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/pet_sprite.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
@@ -8970,6 +9011,33 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     document.addEventListener("DOMContentLoaded", scheduleInitMailbox, { once: true });
   } else {
     scheduleInitMailbox();
+  }
+})();
+</script>
+<script>
+(function initCampaign(){
+  function tryInitCampaign(){
+    if (!window.Campaign || window.__campaignInited) return;
+    try {
+      window.Campaign.init({
+        apiPost: window.apiPost,
+        tg: window.Telegram?.WebApp || window.tg || null,
+        dbg: !!window.DBG
+      });
+      window.__campaignInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[Campaign] init failed", e);
+    }
+  }
+
+  function scheduleInitCampaign(){
+    window.runAfterFirstProfileRender?.(() => tryInitCampaign(), 520);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleInitCampaign, { once: true });
+  } else {
+    scheduleInitCampaign();
   }
 })();
 </script>
