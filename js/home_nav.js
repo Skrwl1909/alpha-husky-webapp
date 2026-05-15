@@ -195,6 +195,14 @@
         else clickLegacy(".btn.mailbox") || clickLegacy("button.btn.mailbox");
         break;
 
+      case "campaign":
+        if (typeof window.Campaign?.open === "function") window.Campaign.open();
+        else {
+          const tg = window.Telegram?.WebApp;
+          tg?.showAlert?.("Campaign signal is still syncing.");
+        }
+        break;
+
       case "faq":
         if (typeof window.openFaqModal === "function") window.openFaqModal();
         else clickLegacy(".btn.faq") || clickLegacy("button.btn.faq");
@@ -282,15 +290,19 @@
     if (typeof window.navCloseTop !== "function") return;
 
     const orig = window.navCloseTop;
-    window.navCloseTop = function () {
+    window.navCloseTop = function (opts) {
+      const meta = (opts && typeof opts === "object") ? opts : {};
+      const source = meta.source || "back";
       const st = window.AH_NAV?.stack;
       const topId = st && st.length ? st[st.length - 1] : null;
 
       if (topId && IS_OUR_SHEET(topId)) {
+        if (window.AH_NAV) window.AH_NAV.popClosing = source === "history";
         closeBack(topId);
+        if (window.AH_NAV) window.AH_NAV.popClosing = false;
         return true;
       }
-      return orig();
+      return orig(meta);
     };
   }
 
