@@ -5,7 +5,7 @@
   const ROOT_ID = "howlTreasuryBack";
   const WALLET = "CNowyAyXYPYeMLHQxLfcWMVowF52f9HmABueSQnmGX6R";
   const HOWL_TREASURY_EMBLEM_URL =
-    "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_emblem.webp";
+    "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778939844/howl_treasury/howl_treasury_emblem.webp";
   const HOWL_TREASURY_CARD_URL =
     "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_card.webp";
   const HOWL_TREASURY_BANNER_URL =
@@ -259,42 +259,42 @@
 
     els.root.innerHTML = `
       <section class="ht-shell">
-        <header class="ht-topbar">
-          <div class="ht-title-wrap">
-            <div class="ht-emblem-wrap">
-              <img class="ht-emblem" src="${esc(s.emblemUrl)}" alt="HOWL Treasury emblem" loading="lazy" decoding="async" />
+        <section class="ht-hero">
+          <img class="ht-hero-banner" src="${esc(s.bannerUrl)}" alt="HOWL Treasury banner" loading="lazy" decoding="async" />
+          <div class="ht-hero-shade"></div>
+          <div class="ht-hero-grid">
+            <button type="button" class="ht-close" id="howlTreasuryClose" aria-label="Close Treasury">x</button>
+            <div class="ht-hero-emblem-wrap">
+              <div class="ht-emblem-wrap">
+                <img class="ht-emblem" src="${esc(s.emblemUrl)}" alt="HOWL Treasury emblem" loading="lazy" decoding="async" />
+              </div>
             </div>
             <div class="ht-heading">
-              <div class="ht-kicker">${esc(s.subtitle || "Official public treasury & support vault.")}</div>
+              <div class="ht-kicker">PUBLIC SIGNAL VAULT</div>
               <h2>HOWL TREASURY</h2>
               <p>${esc(s.headline)}</p>
+              <div class="ht-chip-row">
+                <span class="ht-chip">PUBLIC</span>
+                <span class="ht-chip">SECURE</span>
+                <span class="ht-chip is-amber">ON-CHAIN</span>
+              </div>
             </div>
           </div>
-          <button type="button" class="ht-close" id="howlTreasuryClose" aria-label="Close Treasury">x</button>
-        </header>
-
-        <div class="ht-chip-row">
-          <span class="ht-chip">PUBLIC</span>
-          <span class="ht-chip">SECURE</span>
-          <span class="ht-chip is-amber">ON-CHAIN</span>
-        </div>
-
-        <section class="ht-banner-panel">
-          <img class="ht-banner" src="${esc(s.bannerUrl)}" alt="HOWL Treasury banner" loading="lazy" decoding="async" />
         </section>
 
         <section class="ht-panel">
           <div class="ht-panel-head">
             <div>
               <div class="ht-panel-kicker">Alpha Treasury</div>
-              <h3>${esc(s.subtitle || "Official public treasury & support vault.")}</h3>
+              <h3>Official public Alpha Treasury wallet</h3>
             </div>
-            <span class="ht-mini-chip">READ ONLY</span>
+            <span class="ht-mini-chip">VAULT ONLINE</span>
           </div>
           <div class="ht-wallet-block">
-            <div class="ht-wallet-label">Official wallet</div>
+            <div class="ht-wallet-label">Secure public wallet field</div>
             <div class="ht-wallet-value">${esc(s.wallet)}</div>
           </div>
+          <p class="ht-copy ht-copy-tight">Official public Alpha Treasury wallet</p>
           <div class="ht-actions">
             <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
           </div>
@@ -306,12 +306,12 @@
               <div class="ht-panel-kicker">Support the Pack</div>
               <h3>Reinforce the Treasury</h3>
             </div>
-            <span class="ht-mini-chip is-muted">PHASE 1</span>
+            <span class="ht-mini-chip is-muted">COMING ONLINE</span>
           </div>
           <p class="ht-copy">
-            Verified support signals will later leave a mark in the Treasury feed, mailbox, and Telegram CTA.
+            Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
           </p>
-          <button type="button" class="ht-btn is-disabled" disabled aria-disabled="true">SUPPORT TREASURY</button>
+          <button type="button" class="ht-btn is-disabled" disabled aria-disabled="true">Signal support coming online</button>
         </section>
 
         <section class="ht-grid">
@@ -319,7 +319,7 @@
             <div class="ht-panel-head">
               <div>
                 <div class="ht-panel-kicker">Recent Signals</div>
-                <h3>Treasury feed</h3>
+                <h3>Signal chamber</h3>
               </div>
             </div>
             ${renderRecentSignals(s.recentSignals)}
@@ -329,7 +329,7 @@
             <div class="ht-panel-head">
               <div>
                 <div class="ht-panel-kicker">Your Signal</div>
-                <h3>Personal recognition</h3>
+                <h3>Your mark</h3>
               </div>
             </div>
             ${renderUserSignal(s.userSignal)}
@@ -340,7 +340,7 @@
           <div class="ht-panel-head">
             <div>
               <div class="ht-panel-kicker">Community Milestones</div>
-              <h3>Read-only world markers</h3>
+              <h3>Locked world markers</h3>
             </div>
           </div>
           ${renderMilestones(s.milestones)}
@@ -354,7 +354,7 @@
               <div class="ht-panel-kicker">Visual Recognition</div>
               <h3>Treasury Signal Received</h3>
             </div>
-            <span class="ht-mini-chip is-muted">PREVIEW</span>
+            <span class="ht-mini-chip is-muted">ARCHIVE PREVIEW</span>
           </div>
           <p class="ht-copy">The Pack remembers.</p>
           ${renderVisualCard(s.cardUrl)}
@@ -362,7 +362,6 @@
 
         ${renderPending()}
         ${renderSuccess()}
-        ${renderLeaderboard()}
 
         <section class="ht-note">
           <div class="ht-note-title">Transparency note</div>
@@ -377,7 +376,7 @@
   function renderRecentSignals(items) {
     const list = Array.isArray(items) ? items : [];
     if (!list.length) {
-      return `<div class="ht-empty">No verified Treasury signals yet.</div>`;
+      return `<div class="ht-empty">No Treasury signals received yet.</div>`;
     }
 
     return list.map((item) => `
@@ -391,7 +390,7 @@
   function renderUserSignal(item) {
     const signal = item && typeof item === "object" ? item : null;
     if (!signal) {
-      return `<div class="ht-empty">Your Treasury signal will appear here after verified support.</div>`;
+      return `<div class="ht-empty">Your mark will appear here after verified support.</div>`;
     }
 
     return `
@@ -414,16 +413,19 @@
       <div class="ht-milestones">
         ${list.map((item) => {
           const progress = Math.max(0, Math.min(100, Math.round(Number(item.progress || 0) * 100)));
+          const status = progress >= 60 ? "forming" : (progress >= 25 ? "dormant" : "sealed");
+          const statusLabel = status === "forming" ? "FORMING" : (status === "dormant" ? "DORMANT" : "SEALED");
           return `
-            <article class="ht-milestone">
+            <article class="ht-milestone is-${status}">
               <div class="ht-milestone-head">
-                <div class="ht-milestone-title">${esc(item.label || "Milestone")}</div>
-                <div class="ht-milestone-value">${progress}%</div>
+                <div>
+                  <div class="ht-milestone-kicker">World Marker</div>
+                  <div class="ht-milestone-title">${esc(item.label || "Milestone")}</div>
+                </div>
+                <div class="ht-milestone-value">${statusLabel}</div>
               </div>
               <p class="ht-milestone-copy">${esc(item.copy || "")}</p>
-              <div class="ht-progress">
-                <span class="ht-progress-fill" style="width:${progress}%;"></span>
-              </div>
+              <div class="ht-milestone-foot">Signal density ${progress}%</div>
             </article>
           `;
         }).join("")}
@@ -644,46 +646,86 @@
       .ht-shell{
         display:flex;
         flex-direction:column;
-        gap:12px;
+        gap:14px;
         max-height:calc(min(calc(var(--vh, 1vh) * 100), 100dvh) - 24px - max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
         overflow:auto;
-        padding:16px;
+        padding:12px;
         color:#edf7ff;
       }
-      .ht-topbar{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:12px;
+      .ht-hero{
+        position:relative;
+        overflow:hidden;
+        min-height:236px;
+        border-radius:24px;
+        border:1px solid rgba(96,227,255,.18);
+        background:#071117;
+        box-shadow:
+          0 24px 48px rgba(0,0,0,.28),
+          inset 0 1px 0 rgba(255,255,255,.04);
       }
-      .ht-title-wrap{
-        display:flex;
-        align-items:center;
+      .ht-hero-banner{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center;
+      }
+      .ht-hero-shade{
+        position:absolute;
+        inset:0;
+        background:
+          linear-gradient(180deg, rgba(3,9,13,.18) 0%, rgba(3,9,13,.42) 28%, rgba(4,8,12,.82) 100%),
+          radial-gradient(circle at 22% 20%, rgba(80,230,255,.20), transparent 34%),
+          radial-gradient(circle at 82% 18%, rgba(255,176,74,.14), transparent 26%);
+      }
+      .ht-hero-grid{
+        position:relative;
+        display:grid;
+        grid-template-columns:1fr auto;
         gap:12px;
-        min-width:0;
+        min-height:236px;
+        padding:14px;
+        align-items:start;
+      }
+      .ht-hero-emblem-wrap{
+        grid-column:1 / -1;
+        display:flex;
+        justify-content:center;
+        margin-top:28px;
+        pointer-events:none;
       }
       .ht-emblem-wrap{
         flex:0 0 auto;
-        width:52px;
-        height:52px;
-        border-radius:16px;
+        width:74px;
+        height:74px;
+        border-radius:22px;
         display:grid;
         place-items:center;
-        background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
-        border:1px solid rgba(122,230,255,.18);
-        box-shadow:0 0 0 1px rgba(122,230,255,.06), 0 10px 24px rgba(0,0,0,.22);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03)),
+          rgba(7,18,24,.78);
+        border:1px solid rgba(122,230,255,.26);
+        box-shadow:
+          0 0 0 1px rgba(122,230,255,.08),
+          0 0 26px rgba(66,220,255,.18),
+          0 16px 34px rgba(0,0,0,.28);
       }
       .ht-emblem{
-        width:34px;
-        height:34px;
+        width:50px;
+        height:50px;
         object-fit:contain;
       }
       .ht-heading{
+        grid-column:1 / -1;
         min-width:0;
+        align-self:end;
+        padding-top:10px;
       }
       .ht-kicker,
       .ht-panel-kicker,
-      .ht-note-title{
+      .ht-note-title,
+      .ht-milestone-kicker{
         font-size:10px;
         line-height:1.15;
         font-weight:800;
@@ -692,27 +734,35 @@
         color:rgba(179,228,240,.72);
       }
       .ht-heading h2{
-        margin:4px 0 0;
-        font-size:26px;
+        margin:6px 0 0;
+        font-size:29px;
         line-height:1.05;
-        letter-spacing:.04em;
+        letter-spacing:.06em;
+        text-shadow:0 10px 28px rgba(0,0,0,.44);
       }
       .ht-heading p{
         margin:6px 0 0;
-        color:#cde4ee;
+        color:#e2f1f7;
         font-size:13px;
         line-height:1.45;
+        max-width:260px;
+      }
+      .ht-heading .ht-chip-row{
+        margin-top:12px;
       }
       .ht-close{
         flex:0 0 auto;
         width:40px;
         height:40px;
         border-radius:14px;
-        border:1px solid rgba(255,255,255,.12);
-        background:rgba(255,255,255,.04);
+        justify-self:end;
+        border:1px solid rgba(255,255,255,.14);
+        background:rgba(7,14,19,.56);
         color:#f2f8ff;
         font-size:18px;
         font-weight:700;
+        box-shadow:0 10px 22px rgba(0,0,0,.24);
+        backdrop-filter:blur(10px);
       }
       .ht-chip-row{
         display:flex;
@@ -728,13 +778,14 @@
         padding:4px 10px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.12);
-        background:rgba(255,255,255,.04);
+        background:rgba(7,16,21,.58);
         color:#dff5ff;
         font-size:10px;
         font-weight:800;
         letter-spacing:.08em;
         text-transform:uppercase;
         white-space:nowrap;
+        backdrop-filter:blur(10px);
       }
       .ht-chip.is-amber,
       .ht-mini-chip.is-amber{
@@ -745,23 +796,14 @@
       .ht-mini-chip.is-muted{
         color:rgba(220,231,242,.72);
       }
-      .ht-banner-panel,
       .ht-panel,
       .ht-note{
         border-radius:20px;
         border:1px solid rgba(255,255,255,.09);
-        background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.028));
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.028)),
+          rgba(7,13,18,.84);
         box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-      }
-      .ht-banner-panel{
-        overflow:hidden;
-        padding:0;
-      }
-      .ht-banner{
-        display:block;
-        width:100%;
-        aspect-ratio:16/7;
-        object-fit:cover;
       }
       .ht-panel{
         padding:14px;
@@ -783,14 +825,22 @@
         font-size:13px;
         line-height:1.5;
       }
+      .ht-copy-tight{
+        margin-top:10px;
+        color:#abc4d1;
+      }
       .ht-wallet-block{
         margin-top:12px;
         padding:12px;
-        border-radius:16px;
+        border-radius:18px;
         background:
-          linear-gradient(180deg, rgba(76,226,255,.08), rgba(255,255,255,.02)),
-          rgba(6,10,15,.58);
-        border:1px solid rgba(76,226,255,.14);
+          linear-gradient(180deg, rgba(76,226,255,.10), rgba(255,255,255,.02)),
+          linear-gradient(90deg, rgba(255,176,74,.06), transparent 42%),
+          rgba(6,10,15,.70);
+        border:1px solid rgba(76,226,255,.16);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          0 0 18px rgba(76,226,255,.08);
       }
       .ht-wallet-label{
         font-size:11px;
@@ -802,8 +852,8 @@
       .ht-wallet-value{
         margin-top:8px;
         font-family:ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size:13px;
-        line-height:1.45;
+        font-size:12px;
+        line-height:1.55;
         color:#f6fbff;
         word-break:break-all;
       }
@@ -828,8 +878,8 @@
       }
       .ht-btn.is-disabled{
         border-color:rgba(255,255,255,.10);
-        background:rgba(255,255,255,.04);
-        color:rgba(217,228,236,.54);
+        background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+        color:rgba(217,228,236,.60);
         box-shadow:none;
       }
       .ht-grid{
@@ -891,14 +941,27 @@
         margin-top:12px;
       }
       .ht-milestone{
-        padding:12px;
-        border-radius:16px;
+        padding:13px;
+        border-radius:18px;
         border:1px solid rgba(255,255,255,.08);
-        background:rgba(7,12,18,.44);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+          rgba(7,12,18,.44);
+      }
+      .ht-milestone.is-sealed{
+        border-color:rgba(255,255,255,.08);
+      }
+      .ht-milestone.is-dormant{
+        border-color:rgba(76,226,255,.18);
+        box-shadow:0 0 0 1px rgba(76,226,255,.04);
+      }
+      .ht-milestone.is-forming{
+        border-color:rgba(255,176,74,.20);
+        box-shadow:0 0 0 1px rgba(255,176,74,.05), 0 0 18px rgba(255,176,74,.08);
       }
       .ht-milestone-head{
         display:flex;
-        align-items:center;
+        align-items:flex-start;
         justify-content:space-between;
         gap:10px;
       }
@@ -911,6 +974,7 @@
         font-size:12px;
         font-weight:800;
         color:#ffd89e;
+        letter-spacing:.08em;
       }
       .ht-milestone-copy{
         margin:8px 0 0;
@@ -918,20 +982,12 @@
         font-size:12px;
         line-height:1.45;
       }
-      .ht-progress{
+      .ht-milestone-foot{
         margin-top:10px;
-        height:8px;
-        border-radius:999px;
-        overflow:hidden;
-        border:1px solid rgba(255,255,255,.10);
-        background:rgba(255,255,255,.05);
-      }
-      .ht-progress-fill{
-        display:block;
-        height:100%;
-        border-radius:999px;
-        background:linear-gradient(90deg, rgba(62,226,255,.95), rgba(255,176,74,.92));
-        box-shadow:0 0 18px rgba(62,226,255,.18);
+        color:rgba(185,206,218,.72);
+        font-size:11px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
       }
       .ht-card-shell{
         display:grid;
@@ -1027,6 +1083,11 @@
       }
       @media (max-width: 420px){
         .ht-shell{ padding:14px; }
+        .ht-hero{ min-height:224px; }
+        .ht-hero-grid{ min-height:224px; padding:12px; }
+        .ht-hero-emblem-wrap{ margin-top:24px; }
+        .ht-emblem-wrap{ width:66px; height:66px; }
+        .ht-emblem{ width:44px; height:44px; }
         .ht-heading h2{ font-size:24px; }
         .ht-panel{ padding:13px; }
         .ht-wallet-value{ font-size:12px; }
