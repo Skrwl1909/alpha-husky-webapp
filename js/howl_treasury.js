@@ -10,6 +10,11 @@
     "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_card.webp";
   const HOWL_TREASURY_BANNER_URL =
     "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_banner.webp";
+  const SUPPORT_PRESETS = [
+    { presetKey: "250k", label: "250K HOWL", amountDisplay: "250,000 $HOWL" },
+    { presetKey: "500k", label: "500K HOWL", amountDisplay: "500,000 $HOWL" },
+    { presetKey: "1m", label: "1M HOWL", amountDisplay: "1,000,000 $HOWL" },
+  ];
 
   let _apiPost = null;
   let _tg = null;
@@ -18,6 +23,11 @@
   let _mounted = false;
   let _isOpen = false;
   let _state = null;
+  let _selectedPresetKey = SUPPORT_PRESETS[0].presetKey;
+  let _publicSupport = true;
+  let _selectionTouched = false;
+  let _startingSupport = false;
+  let _pendingCountdownTimer = 0;
 
   const els = {
     back: null,
@@ -85,6 +95,7 @@
 
   function close() {
     if (!els.back) return;
+    stopPendingCountdown();
 
     _isOpen = false;
     els.back.classList.remove("show");
@@ -148,6 +159,7 @@
       ],
       visualCardsEnabled: false,
       paymentsEnabled: false,
+      pendingPayment: null,
       bannerUrl: HOWL_TREASURY_BANNER_URL,
       emblemUrl: HOWL_TREASURY_EMBLEM_URL,
       cardUrl: HOWL_TREASURY_CARD_URL,
@@ -190,9 +202,31 @@
       topSupporters: normalizeTopSupporters(src.topSupporters),
       userSignal: normalizeUserSignal(src.userSignal, base.userSignal),
       milestones: normalizeMilestones(src.milestones, base.milestones),
+      pendingPayment: normalizePendingPayment(src.pendingPayment),
       bannerUrl: String(src.bannerUrl || base.bannerUrl || HOWL_TREASURY_BANNER_URL).trim() || HOWL_TREASURY_BANNER_URL,
       emblemUrl: String(src.emblemUrl || base.emblemUrl || HOWL_TREASURY_EMBLEM_URL).trim() || HOWL_TREASURY_EMBLEM_URL,
       cardUrl: String(src.cardUrl || base.cardUrl || HOWL_TREASURY_CARD_URL).trim() || HOWL_TREASURY_CARD_URL,
+    };
+  }
+
+  function normalizePendingPayment(item) {
+    const src = item && typeof item === "object" ? item : null;
+    if (!src) return null;
+    const wallet = String(src.wallet || WALLET).trim() || WALLET;
+    const amountDisplay = String(src.amountDisplay || "0 $HOWL").trim() || "0 $HOWL";
+    const status = String(src.status || "pending").trim().toLowerCase() || "pending";
+    if (status !== "pending") return null;
+    return {
+      paymentId: String(src.paymentId || src.payment_id || "").trim(),
+      amountRaw: safeInt(src.amountRaw || src.amount_raw, 0),
+      amountDisplay,
+      wallet,
+      mint: String(src.mint || "").trim(),
+      expiresAt: safeInt(src.expiresAt || src.expires_at, 0),
+      expiresInSec: safeInt(src.expiresInSec || src.expires_in_sec, 0),
+      isPublic: src.isPublic == null ? true : !!src.isPublic,
+      status,
+      presetKey: String(src.presetKey || src.preset_key || "").trim().toLowerCase(),
     };
   }
 
@@ -255,6 +289,7 @@
 
   function render(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
+    syncUiState(s);
     ensureDom();
 
     els.root.innerHTML = `
@@ -306,12 +341,9 @@
               <div class="ht-panel-kicker">Support the Pack</div>
               <h3>Reinforce the Treasury</h3>
             </div>
-            <span class="ht-mini-chip is-muted">COMING ONLINE</span>
+            <span class="ht-mini-chip ${s.pendingPayment ? "is-amber" : "is-muted"}">${s.pendingPayment ? "PENDING" : (s.paymentsEnabled ? "SIGNAL READY" : "COMING ONLINE")}</span>
           </div>
-          <p class="ht-copy">
-            Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
-          </p>
-          <button type="button" class="ht-btn is-disabled" disabled aria-disabled="true">Signal support coming online</button>
+          ${renderSupportPanel(s)}
         </section>
 
         <section class="ht-grid">
@@ -371,6 +403,7 @@
     `;
 
     els.closeBtn = els.root.querySelector("#howlTreasuryClose");
+    syncPendingCountdownDom();
   }
 
   function renderRecentSignals(items) {
@@ -450,9 +483,105 @@
     `;
   }
 
-  function renderPending() {
-    // Phase 2: pending support states will render here after payment flow exists.
-    return "";
+  function renderSupportPanel(state) {
+    const s = state && typeof state === "object" ? state : buildStaticState();
+    if (s.pendingPayment) return renderPending(s.pendingPayment);
+    if (!s.paymentsEnabled) {
+      return `
+        <p class="ht-copy">
+          Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
+        </p>
+        <button type="button" class="ht-btn is-disabled" disabled aria-disabled="true">Signal support coming online</button>
+      `;
+    }
+
+    return `
+      <p class="ht-copy">
+        Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
+      </p>
+      <div class="ht-preset-grid" role="group" aria-label="Treasury support presets">
+        ${SUPPORT_PRESETS.map((preset) => `
+          <button
+            type="button"
+            class="ht-preset-btn ${preset.presetKey === _selectedPresetKey ? "is-active" : ""}"
+            data-ht-preset="${esc(preset.presetKey)}"
+          >
+            <span>${esc(preset.label)}</span>
+            <small>${esc(preset.amountDisplay)}</small>
+          </button>
+        `).join("")}
+      </div>
+      <div class="ht-toggle-shell">
+        <div class="ht-toggle-row" role="group" aria-label="Treasury support visibility">
+          <button
+            type="button"
+            class="ht-toggle-btn ${_publicSupport ? "is-active" : ""}"
+            data-ht-public="1"
+          >
+            Public
+          </button>
+          <button
+            type="button"
+            class="ht-toggle-btn ${!_publicSupport ? "is-active" : ""}"
+            data-ht-public="0"
+          >
+            Anonymous
+          </button>
+        </div>
+        <p class="ht-copy ht-copy-tight">
+          Public means your name can appear in a future Treasury feed and Pack broadcasts. Anonymous support will surface later as Anonymous Pack member.
+        </p>
+      </div>
+      <div class="ht-actions">
+        <button
+          type="button"
+          class="ht-btn"
+          data-ht-start-support
+          ${_startingSupport ? 'disabled aria-disabled="true"' : ""}
+        >
+          ${_startingSupport ? "Opening signal lane..." : "Reinforce the Treasury"}
+        </button>
+      </div>
+    `;
+  }
+
+  function renderPending(pending) {
+    const row = pending && typeof pending === "object" ? pending : null;
+    if (!row) return "";
+
+    return `
+      <div class="ht-pending-shell">
+        <div class="ht-pending-head">
+          <div class="ht-pending-title">Treasury Signal Pending</div>
+          <div class="ht-pending-chip">VAULT LINK OPEN</div>
+        </div>
+        <p class="ht-copy">
+          The Pack will remember verified signals.
+        </p>
+        <div class="ht-field-grid">
+          <div class="ht-field-block">
+            <div class="ht-wallet-label">Send exactly</div>
+            <div class="ht-field-value">${esc(row.amountDisplay || "0 $HOWL")}</div>
+          </div>
+          <div class="ht-field-block">
+            <div class="ht-wallet-label">To wallet</div>
+            <div class="ht-field-value">${esc(row.wallet || WALLET)}</div>
+          </div>
+        </div>
+        <div class="ht-countdown-row">
+          <span>Signal window</span>
+          <strong data-ht-countdown>${esc(formatCountdown(row.expiresAt))}</strong>
+        </div>
+        <div class="ht-actions">
+          <button type="button" class="ht-btn" data-ht-copy-amount>Copy Amount</button>
+          <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
+        </div>
+        <div class="ht-actions">
+          <button type="button" class="ht-btn is-disabled" data-ht-check-placeholder disabled aria-disabled="true">I sent it - Check Payment</button>
+        </div>
+        <p class="ht-copy ht-copy-tight">Verification coming online next.</p>
+      </div>
+    `;
   }
 
   function renderSuccess() {
@@ -504,13 +633,169 @@
         return;
       }
 
-      const copyBtn = event.target.closest("[data-ht-copy-wallet]");
-      if (!copyBtn) return;
+      const presetBtn = event.target.closest("[data-ht-preset]");
+      if (presetBtn) {
+        event.preventDefault();
+        _selectedPresetKey = String(presetBtn.getAttribute("data-ht-preset") || SUPPORT_PRESETS[0].presetKey).trim().toLowerCase();
+        _selectionTouched = true;
+        render(_state || buildStaticState());
+        return;
+      }
 
-      event.preventDefault();
-      const ok = await copyText((_state && _state.wallet) || WALLET);
-      toast(ok ? "Treasury wallet copied." : "Wallet copy failed.");
+      const publicBtn = event.target.closest("[data-ht-public]");
+      if (publicBtn) {
+        event.preventDefault();
+        _publicSupport = publicBtn.getAttribute("data-ht-public") !== "0";
+        _selectionTouched = true;
+        render(_state || buildStaticState());
+        return;
+      }
+
+      const startBtn = event.target.closest("[data-ht-start-support]");
+      if (startBtn) {
+        event.preventDefault();
+        void startSupport();
+        return;
+      }
+
+      const copyAmountBtn = event.target.closest("[data-ht-copy-amount]");
+      if (copyAmountBtn) {
+        event.preventDefault();
+        const ok = await copyText(_state && _state.pendingPayment ? _state.pendingPayment.amountDisplay : "");
+        toast(ok ? "HOWL amount copied." : "Could not copy amount.");
+        return;
+      }
+
+      const copyBtn = event.target.closest("[data-ht-copy-wallet]");
+      if (copyBtn) {
+        event.preventDefault();
+        const ok = await copyText((_state && _state.pendingPayment && _state.pendingPayment.wallet) || (_state && _state.wallet) || WALLET);
+        toast(ok ? "Treasury wallet copied." : "Wallet copy failed.");
+        return;
+      }
+
+      const checkBtn = event.target.closest("[data-ht-check-placeholder]");
+      if (checkBtn) {
+        event.preventDefault();
+        toast("Verification coming online next.");
+      }
     });
+  }
+
+  function syncUiState(state) {
+    const s = state && typeof state === "object" ? state : null;
+    const pending = s && s.pendingPayment ? s.pendingPayment : null;
+    if (pending) {
+      _publicSupport = pending.isPublic !== false;
+      if (pending.presetKey) _selectedPresetKey = pending.presetKey;
+      _selectionTouched = true;
+      startPendingCountdown();
+      return;
+    }
+    stopPendingCountdown();
+    if (!_selectionTouched) {
+      _publicSupport = !!(s && s.userSignal ? s.userSignal.publicSupport : true);
+    }
+  }
+
+  function makeRunId(prefix, key) {
+    if (typeof window.AH_makeRunId === "function") return window.AH_makeRunId(prefix, key);
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+    } catch (_) {}
+    return `rid_${String(prefix || "treasury")}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}_${String(key || "").slice(0, 24)}`;
+  }
+
+  async function startSupport() {
+    if (_startingSupport) return;
+    if (!_state || !_state.paymentsEnabled) {
+      toast("Treasury support is coming online.");
+      return;
+    }
+
+    const apiPost = getApiPost();
+    if (!apiPost) {
+      toast("Treasury support is coming online.");
+      return;
+    }
+
+    _startingSupport = true;
+    render(_state || buildStaticState());
+
+    const presetKey = _selectedPresetKey || SUPPORT_PRESETS[0].presetKey;
+    try {
+      const out = await apiPost("/webapp/treasury/support/start", {
+        presetKey,
+        isPublic: !!_publicSupport,
+        run_id: makeRunId("treasury_support", presetKey),
+      });
+      if (!out || out.ok === false || !out.pending) {
+        throw new Error(String(out && (out.message || out.reason || out.code) || "TREASURY_START_FAILED"));
+      }
+
+      _state = normalizeState(
+        {
+          ...(_state || buildStaticState()),
+          paymentsEnabled: out.paymentsEnabled !== false,
+          pendingPayment: out.pending,
+        },
+        buildStaticState()
+      );
+      toast("Treasury signal pending.");
+    } catch (err) {
+      const data = err && err.response && err.response.data ? err.response.data : null;
+      const message = String(
+        (data && (data.message || data.reason || data.code))
+          || (err && err.message)
+          || "Treasury support is coming online."
+      ).trim();
+      toast(message || "Treasury support is coming online.");
+      if (data && data.code === "TREASURY_PAYMENTS_DISABLED") {
+        _state = normalizeState(
+          {
+            ...(_state || buildStaticState()),
+            paymentsEnabled: false,
+            pendingPayment: null,
+          },
+          buildStaticState()
+        );
+      }
+    } finally {
+      _startingSupport = false;
+      render(_state || buildStaticState());
+    }
+  }
+
+  function startPendingCountdown() {
+    if (_pendingCountdownTimer) return;
+    _pendingCountdownTimer = window.setInterval(syncPendingCountdownDom, 1000);
+  }
+
+  function stopPendingCountdown() {
+    if (!_pendingCountdownTimer) return;
+    window.clearInterval(_pendingCountdownTimer);
+    _pendingCountdownTimer = 0;
+  }
+
+  function syncPendingCountdownDom() {
+    if (!els.root) return;
+    const row = _state && _state.pendingPayment ? _state.pendingPayment : null;
+    const value = formatCountdown(row && row.expiresAt);
+    els.root.querySelectorAll("[data-ht-countdown]").forEach((node) => {
+      node.textContent = value;
+    });
+  }
+
+  function formatCountdown(expiresAt) {
+    const ts = safeInt(expiresAt, 0);
+    if (!ts) return "Awaiting timer";
+    const remain = Math.max(0, ts - Math.floor(Date.now() / 1000));
+    if (remain <= 0) return "Expired";
+    const minutes = Math.floor(remain / 60);
+    const seconds = remain % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")} remaining`;
   }
 
   async function copyText(text) {
@@ -886,6 +1171,123 @@
         display:grid;
         gap:12px;
       }
+      .ht-preset-grid{
+        display:grid;
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+        gap:10px;
+        margin-top:12px;
+      }
+      .ht-preset-btn,
+      .ht-toggle-btn{
+        min-width:0;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(8,15,20,.46);
+        color:#e8f4fb;
+      }
+      .ht-preset-btn{
+        display:grid;
+        gap:4px;
+        padding:12px 10px;
+        text-align:left;
+      }
+      .ht-preset-btn span{
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+      }
+      .ht-preset-btn small{
+        color:#b8d0dc;
+        font-size:11px;
+        line-height:1.35;
+      }
+      .ht-preset-btn.is-active,
+      .ht-toggle-btn.is-active{
+        border-color:rgba(76,226,255,.34);
+        background:
+          linear-gradient(180deg, rgba(33,206,197,.18), rgba(8,15,20,.58)),
+          rgba(8,15,20,.56);
+        box-shadow:0 0 0 1px rgba(76,226,255,.08), 0 0 22px rgba(76,226,255,.10);
+      }
+      .ht-toggle-shell{
+        margin-top:12px;
+      }
+      .ht-toggle-row{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:10px;
+      }
+      .ht-toggle-btn{
+        min-height:40px;
+        padding:0 12px;
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:.05em;
+        text-transform:uppercase;
+      }
+      .ht-pending-shell{
+        margin-top:10px;
+      }
+      .ht-pending-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+      .ht-pending-title{
+        font-size:15px;
+        font-weight:800;
+        color:#eef7ff;
+      }
+      .ht-pending-chip{
+        flex:0 0 auto;
+        padding:5px 9px;
+        border-radius:999px;
+        border:1px solid rgba(255,176,74,.24);
+        background:rgba(255,176,74,.10);
+        color:#ffe1af;
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+      }
+      .ht-field-grid{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+      .ht-field-block{
+        padding:12px;
+        border-radius:18px;
+        border:1px solid rgba(76,226,255,.14);
+        background:
+          linear-gradient(180deg, rgba(76,226,255,.08), rgba(255,255,255,.02)),
+          rgba(6,10,15,.60);
+      }
+      .ht-field-value{
+        margin-top:8px;
+        color:#f5fbff;
+        font-family:ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size:12px;
+        line-height:1.55;
+        word-break:break-all;
+      }
+      .ht-countdown-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-top:12px;
+        color:#d4e2ea;
+        font-size:12px;
+      }
+      .ht-countdown-row strong{
+        color:#ffe1aa;
+        font-size:12px;
+        font-weight:800;
+        white-space:nowrap;
+      }
       .ht-empty{
         margin-top:10px;
         padding:14px;
@@ -1091,6 +1493,9 @@
         .ht-heading h2{ font-size:24px; }
         .ht-panel{ padding:13px; }
         .ht-wallet-value{ font-size:12px; }
+        .ht-preset-grid{
+          grid-template-columns:1fr;
+        }
         .ht-btn{ width:100%; }
       }
     `;
