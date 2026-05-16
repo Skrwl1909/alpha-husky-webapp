@@ -27,7 +27,10 @@
   let _publicSupport = true;
   let _selectionTouched = false;
   let _startingSupport = false;
+  let _checkingSupport = false;
   let _pendingCountdownTimer = 0;
+  let _supportNotice = "";
+  let _successSignal = null;
 
   const els = {
     back: null,
@@ -96,6 +99,9 @@
   function close() {
     if (!els.back) return;
     stopPendingCountdown();
+    _checkingSupport = false;
+    _supportNotice = "";
+    _successSignal = null;
 
     _isOpen = false;
     els.back.classList.remove("show");
@@ -485,9 +491,11 @@
 
   function renderSupportPanel(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
+    if (_successSignal) return renderSuccess(_successSignal);
     if (s.pendingPayment) return renderPending(s.pendingPayment);
     if (!s.paymentsEnabled) {
       return `
+        ${renderSupportNotice()}
         <p class="ht-copy">
           Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
         </p>
@@ -496,6 +504,7 @@
     }
 
     return `
+      ${renderSupportNotice()}
       <p class="ht-copy">
         Verified support signals will soon leave a mark in the Treasury feed, mailbox, and Pack broadcasts.
       </p>
@@ -551,6 +560,7 @@
 
     return `
       <div class="ht-pending-shell">
+        ${renderSupportNotice()}
         <div class="ht-pending-head">
           <div class="ht-pending-title">Treasury Signal Pending</div>
           <div class="ht-pending-chip">VAULT LINK OPEN</div>
@@ -577,16 +587,67 @@
           <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
         </div>
         <div class="ht-actions">
-          <button type="button" class="ht-btn is-disabled" data-ht-check-placeholder disabled aria-disabled="true">I sent it - Check Payment</button>
+          <button
+            type="button"
+            class="ht-btn ${(!_state || !_state.paymentsEnabled) ? "is-disabled" : ""}"
+            data-ht-check-payment
+            ${(!_state || !_state.paymentsEnabled || _checkingSupport) ? 'disabled aria-disabled="true"' : ""}
+          >
+            ${_checkingSupport ? "Checking Treasury signal..." : "I sent it - Check Payment"}
+          </button>
         </div>
-        <p class="ht-copy ht-copy-tight">Verification coming online next.</p>
+        <p class="ht-copy ht-copy-tight">${_checkingSupport ? "Verification is in progress." : "Verification coming online next."}</p>
       </div>
     `;
   }
 
-  function renderSuccess() {
-    // Phase 2: success state, recognition summary, and future cardUrl handling will render here.
-    return "";
+  function renderSuccess(signal) {
+    const row = signal && typeof signal === "object" ? signal : null;
+    if (!row) return "";
+    const sideEffects = row.sideEffects && typeof row.sideEffects === "object" ? row.sideEffects : {};
+    return `
+      <div class="ht-success-shell">
+        <div class="ht-pending-head">
+          <div class="ht-pending-title">Treasury Signal Received</div>
+          <div class="ht-pending-chip">VERIFIED</div>
+        </div>
+        <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
+        <div class="ht-field-grid">
+          <div class="ht-field-block">
+            <div class="ht-wallet-label">Verified amount</div>
+            <div class="ht-field-value">${esc(row.amountDisplay || "0 $HOWL")}</div>
+          </div>
+          <div class="ht-field-block">
+            <div class="ht-wallet-label">Signal name</div>
+            <div class="ht-field-value">${esc(row.displayName || "Pack member")}</div>
+          </div>
+          ${row.txSignature ? `
+            <div class="ht-field-block">
+              <div class="ht-wallet-label">Transaction</div>
+              <div class="ht-field-value">${esc(shortSignature(row.txSignature))}</div>
+            </div>
+          ` : ""}
+        </div>
+        <div class="ht-actions">
+          <button type="button" class="ht-btn" data-ht-success-back>Back to Treasury</button>
+          <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
+        </div>
+        ${(sideEffects.mailboxSent || sideEffects.telegramCtaSent) ? `
+          <p class="ht-copy ht-copy-tight">
+            ${[
+              sideEffects.mailboxSent ? "Mailbox signal sent." : "",
+              sideEffects.telegramCtaSent ? "Pack broadcast sent." : "",
+            ].filter(Boolean).join(" ")}
+          </p>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function renderSupportNotice() {
+    const text = String(_supportNotice || "").trim();
+    if (!text) return "";
+    return `<div class="ht-support-note">${esc(text)}</div>`;
   }
 
   function renderLeaderboard(items) {
@@ -678,6 +739,22 @@
       if (checkBtn) {
         event.preventDefault();
         toast("Verification coming online next.");
+        return;
+      }
+
+      const verifyBtn = event.target.closest("[data-ht-check-payment]");
+      if (verifyBtn) {
+        event.preventDefault();
+        void checkSupport();
+        return;
+      }
+
+      const successBackBtn = event.target.closest("[data-ht-success-back]");
+      if (successBackBtn) {
+        event.preventDefault();
+        _successSignal = null;
+        _supportNotice = "";
+        render(_state || buildStaticState());
       }
     });
   }
@@ -722,6 +799,8 @@
     }
 
     _startingSupport = true;
+    _supportNotice = "";
+    _successSignal = null;
     render(_state || buildStaticState());
 
     const presetKey = _selectedPresetKey || SUPPORT_PRESETS[0].presetKey;
@@ -743,6 +822,7 @@
         },
         buildStaticState()
       );
+      _supportNotice = "";
       toast("Treasury signal pending.");
     } catch (err) {
       const data = err && err.response && err.response.data ? err.response.data : null;
@@ -766,6 +846,90 @@
       _startingSupport = false;
       render(_state || buildStaticState());
     }
+  }
+
+  async function checkSupport() {
+    if (_checkingSupport) return;
+    const pending = _state && _state.pendingPayment ? _state.pendingPayment : null;
+    if (!pending || !_state || !_state.paymentsEnabled) return;
+
+    const apiPost = getApiPost();
+    if (!apiPost) {
+      _supportNotice = "Verification is temporarily unavailable. Try again shortly.";
+      render(_state || buildStaticState());
+      return;
+    }
+
+    _checkingSupport = true;
+    _supportNotice = "";
+    render(_state || buildStaticState());
+
+    try {
+      const out = await apiPost("/webapp/treasury/support/check", {
+        paymentId: pending.paymentId,
+      });
+      if (!out || out.ok === false || !out.completed || !out.signal) {
+        throw new Error(String(out && (out.message || out.reason || out.code) || "TREASURY_CHECK_FAILED"));
+      }
+      _successSignal = normalizeSuccessSignal({
+        ...out.signal,
+        sideEffects: out.sideEffects || {},
+      });
+      _supportNotice = "";
+      await refresh({ silent: true });
+    } catch (err) {
+      const data = err && err.response && err.response.data ? err.response.data : null;
+      const code = String((data && data.code) || "").trim();
+      _successSignal = null;
+      if (code === "PAYMENT_NOT_FOUND") {
+        _supportNotice = "No matching Treasury transfer found yet. If you just sent it, wait a moment and try again.";
+      } else if (code === "WALLET_REQUIRED") {
+        _supportNotice = "Link your wallet to verify Treasury support automatically.";
+      } else if (code === "PAYMENT_EXPIRED") {
+        _supportNotice = "This Treasury signal expired. Start a new signal to continue.";
+        await refresh({ silent: true });
+      } else if (code === "RPC_UNAVAILABLE") {
+        _supportNotice = "Verification is temporarily unavailable. Try again shortly.";
+      } else {
+        _supportNotice = String(
+          (data && (data.message || data.reason || data.code))
+            || (err && err.message)
+            || "Verification is temporarily unavailable. Try again shortly."
+        ).trim();
+      }
+    } finally {
+      _checkingSupport = false;
+      render(_state || buildStaticState());
+    }
+  }
+
+  function normalizeSuccessSignal(item) {
+    const src = item && typeof item === "object" ? item : {};
+    return {
+      signalId: String(src.signalId || src.signal_id || "").trim(),
+      displayName: String(src.displayName || src.display_name || "Pack member").trim() || "Pack member",
+      amountRaw: safeInt(src.amountRaw || src.amount_raw, 0),
+      amountDisplay: String(src.amountDisplay || src.amount_display || "0 $HOWL").trim() || "0 $HOWL",
+      txSignature: String(src.txSignature || src.tx_signature || "").trim(),
+      isPublic: src.isPublic == null ? true : !!src.isPublic,
+      createdAt: safeInt(src.createdAt || src.created_at, 0),
+      cardUrl: String(src.cardUrl || src.card_url || "").trim(),
+      sideEffects: normalizeSideEffects(src.sideEffects || src.side_effects),
+    };
+  }
+
+  function normalizeSideEffects(item) {
+    const src = item && typeof item === "object" ? item : {};
+    return {
+      mailboxSent: !!src.mailboxSent,
+      telegramCtaSent: !!src.telegramCtaSent,
+    };
+  }
+
+  function shortSignature(value) {
+    const text = String(value || "").trim();
+    if (text.length <= 14) return text;
+    return `${text.slice(0, 7)}...${text.slice(-7)}`;
   }
 
   function startPendingCountdown() {
@@ -1213,6 +1377,16 @@
       .ht-toggle-shell{
         margin-top:12px;
       }
+      .ht-support-note{
+        margin-top:12px;
+        padding:12px;
+        border-radius:16px;
+        border:1px solid rgba(255,176,74,.20);
+        background:rgba(255,176,74,.08);
+        color:#ffe2b2;
+        font-size:12px;
+        line-height:1.5;
+      }
       .ht-toggle-row{
         display:grid;
         grid-template-columns:repeat(2, minmax(0, 1fr));
@@ -1227,6 +1401,9 @@
         text-transform:uppercase;
       }
       .ht-pending-shell{
+        margin-top:10px;
+      }
+      .ht-success-shell{
         margin-top:10px;
       }
       .ht-pending-head{
