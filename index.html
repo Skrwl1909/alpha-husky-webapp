@@ -3042,6 +3042,50 @@ body.missions-open{
     saturate(1.04)
     drop-shadow(0 0 10px rgba(255,120,72,.16));
 }
+
+/* ---------- HOWL TREASURY ---------- */
+#pins .hotspot.theme-treasury::before,
+#pins .map-pin.theme-treasury::before{
+  content: "";
+  position: absolute;
+  inset: -13px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(46,220,255,.18) 0%, rgba(26,198,183,.12) 42%, rgba(255,176,74,.08) 62%, transparent 78%);
+  pointer-events: none;
+}
+
+#pins .hotspot.theme-treasury .ping,
+#pins .map-pin.theme-treasury .ping{
+  border: 2px solid rgba(76,226,255,.42);
+  box-shadow:
+    0 0 0 2px rgba(76,226,255,.10),
+    0 0 18px rgba(76,226,255,.18),
+    0 0 30px rgba(255,176,74,.10);
+}
+
+#pins .hotspot.theme-treasury img,
+#pins .map-pin.theme-treasury img{
+  filter:
+    brightness(1.05)
+    saturate(1.10)
+    drop-shadow(0 0 12px rgba(62,220,255,.22))
+    drop-shadow(0 3px 10px rgba(0,0,0,.30));
+}
+
+#pins .hotspot.theme-treasury .chip,
+#pins .map-pin.theme-treasury .chip{
+  border-color: rgba(76,226,255,.20);
+}
+
+#pins .hotspot.theme-treasury.active .chip,
+#pins .map-pin.theme-treasury.active .chip{
+  background: rgba(8,18,24,.82);
+  border-color: rgba(76,226,255,.28);
+  box-shadow:
+    0 8px 26px rgba(0,0,0,.26),
+    0 0 22px rgba(46,220,255,.12);
+}
   </style>
 
 <style id="stats-css">
@@ -6398,6 +6442,7 @@ window.Quests?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Missions?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.BrokenContracts?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 window.Influence?.init?.({ apiPost, tg: _tg, dbg: _dbg });
+window.HowlTreasury?.init?.({ apiPost, tg: _tg, dbg: _dbg });
 
 if (window.AHBootLoaders?.init) {
   window.AHBootLoaders.init({
@@ -7574,6 +7619,11 @@ function isRegionUnlocked(regionId){
       b.id === "edge_of_chain" ||
       b.action === "open_siege";
 
+    const isTreasury =
+      b.buildingId === "howl_treasury" ||
+      b.id === "howl_treasury" ||
+      b.action === "open_howl_treasury";
+
     const isHeroLandmark = isBloodMoon || isOracle || isEdge;
     const previewable = isOracle || isBloodMoon || isPhantom;
 
@@ -7604,6 +7654,9 @@ function isRegionUnlocked(regionId){
     } else if (isEdge) {
       btn.classList.add('theme-edge', 'is-hero-landmark');
       btn.dataset.theme = 'edge';
+    } else if (isTreasury) {
+      btn.classList.add('theme-treasury');
+      btn.dataset.theme = 'treasury';
     }
 
     if (b.raidEnabled) btn.dataset.raidNode = "1";
@@ -7706,6 +7759,16 @@ function isRegionUnlocked(regionId){
         } catch (err) {
           console.warn("[Oracle] load/open failed", err);
         }
+        return openBuilding(bid, b.name, b.desc);
+      }
+
+      if (
+        bid === "howl_treasury" ||
+        b.buildingId === "howl_treasury" ||
+        b.id === "howl_treasury" ||
+        b.action === "open_howl_treasury"
+      ) {
+        if (window.HowlTreasury?.open) return window.HowlTreasury.open();
         return openBuilding(bid, b.name, b.desc);
       }
 
@@ -8887,6 +8950,35 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/pet_sprite.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
+<script src="js/howl_treasury.js?v=WEBAPP_VER"></script>
+<script>
+(function initHowlTreasury(){
+  function boot(apiPost){
+    try {
+      if (!window.HowlTreasury || window.__howlTreasuryInited) return;
+      window.HowlTreasury.init({
+        apiPost,
+        tg: window.Telegram?.WebApp || window.tg || null,
+        dbg: !!window.DBG
+      });
+      window.__howlTreasuryInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[HowlTreasury] init failed", e);
+    }
+  }
+
+  if (typeof window.apiPost === "function") {
+    boot(window.apiPost);
+    return;
+  }
+
+  window.waitForApiPostReady?.(6000)
+    .then(boot)
+    .catch(() => {
+      if (window.DBG) console.warn("[HowlTreasury] apiPost not ready");
+    });
+})();
+</script>
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
 <script src="js/awakening.js?v=WEBAPP_VER"></script>
 <script src="js/oath.js?v=WEBAPP_VER"></script>
