@@ -300,6 +300,32 @@
       "tags": ["risk", "puzzle", "combat", "daily"]
     },
     {
+      "id": "howl_treasury",
+      "name": "HOWL TREASURY",
+      "label": "HOWL TREASURY",
+      "type": "treasury",
+      "region": "chain",
+      "x": 29,
+      "y": 80,
+      "asset": "images/map/building/howl_treasury.webp",
+      "icon": "images/map/building/howl_treasury.webp",
+      "previewAsset": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_card.webp",
+      "bannerUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_banner.webp",
+      "emblemUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_emblem.webp",
+      "wallet": "CNowyAyXYPYeMLHQxLfcWMVowF52f9HmABueSQnmGX6R",
+      "desc": "Official public treasury and support vault. A place the Pack can recognize before live support flows open.",
+      "lore": {
+        "identity": "A sealed treasury vault wired to keep Alpha online while the world grows.",
+        "stakes": "Verified support signals will later leave a mark in the Treasury feed, mailbox, and world memory."
+      },
+      "action": "open_howl_treasury",
+      "buildingId": "howl_treasury",
+      "labelOffset": { "x": -88, "y": -44 },
+      "valueTier": "HIGH_VALUE",
+      "actionHint": "Public support vault",
+      "tags": ["treasury", "support", "public", "read-only"]
+    },
+    {
       "id": "moon_lab",
       "name": "Moon Lab",
       "region": "moon_lab",
@@ -495,6 +521,18 @@
       "to": "oracle_void_doorway",
       "points": [[31, 18], [37, 15], [45, 13], [53, 11]],
       "lockForRegion": "edge_chain"
+    },
+    {
+      "id": "p12",
+      "from": "broken_contracts",
+      "to": "howl_treasury",
+      "points": [[33, 58], [31, 65], [30, 73], [29, 80]]
+    },
+    {
+      "id": "p13",
+      "from": "howl_treasury",
+      "to": "vault_forge",
+      "points": [[29, 80], [35, 80], [41, 80], [47, 79]]
     }
   ],
   "lore": {
