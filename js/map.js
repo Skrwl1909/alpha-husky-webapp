@@ -61,7 +61,7 @@
     moonlab_fortress: "moon_lab",
   };
   const STRATEGIC_NODE_IDS = new Set(["alpha_network_hq", "blood_moon_tower", "edge_of_chain"]);
-  const HIGH_VALUE_NODE_IDS = new Set(["phantom_nodes", "broken_contracts"]);
+  const HIGH_VALUE_NODE_IDS = new Set(["phantom_nodes", "broken_contracts", "howl_treasury"]);
   const LEGACY_NODE_IDS = new Set(["abandoned_wallets", "moon_lab", "testnet_wastes_dojo"]);
   const RIVALRY_NODE_IDS = new Set([
     "alpha_network_hq",
@@ -224,6 +224,22 @@
     brightness(1.03)
     saturate(1.10)
     drop-shadow(0 0 10px rgba(88,166,255,.20));
+}
+
+.map-pin.type-treasury.is-neutral .pin-ring{
+  border-color:rgba(86,232,255,.42);
+  box-shadow:
+    0 0 0 1px rgba(86,232,255,.10),
+    0 0 18px rgba(86,232,255,.16),
+    0 0 30px rgba(255,176,74,.08);
+}
+.map-pin.type-treasury .pin-icon,
+.map-pin.type-treasury > img{
+  filter:
+    brightness(1.05)
+    saturate(1.12)
+    drop-shadow(0 0 12px rgba(76,220,255,.22))
+    drop-shadow(0 8px 14px rgba(0,0,0,.24));
 }
 
 /* pressure badges */
@@ -755,7 +771,7 @@
       "is-contested", "is-controlled",
       "siege-forming", "siege-running", "siege-cooldown",
       "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
@@ -884,6 +900,7 @@
     const key = _normalizeNodeId(id);
     const tier = String(valueTier || "").trim().toUpperCase();
     if (key === "oracle" || key === "oracle_void_doorway" || type === "oracle") return "";
+    if (key === "howl_treasury" || type === "treasury") return "";
     if (RIVALRY_NODE_IDS.has(key) || type === "hq" || type === "siege" || type === "bloodmoon" || type === "phantom" || type === "contracts") {
       return "rivalry";
     }
@@ -1971,6 +1988,7 @@
     else if (id === "blood_moon_tower") type = "bloodmoon";
     else if (id === "oracle" || id === "oracle_void_doorway") type = "oracle";
     else if (id === "edge_of_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
+    else if (id === "howl_treasury") type = "treasury";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
     else if (id === "broken_contracts") type = "contracts";
 
@@ -2004,7 +2022,7 @@
     pinEl.classList.remove(
       "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral", "is-controlled",
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
