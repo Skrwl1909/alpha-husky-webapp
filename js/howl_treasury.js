@@ -102,12 +102,12 @@
     try { window.navClose?.("howlTreasuryBack"); } catch (_) {}
   }
 
-  function refresh(opts) {
+  async function refresh(opts) {
     const cfg = opts && typeof opts === "object" ? opts : {};
-    _state = buildStaticState();
+    _state = await loadState();
     render(_state);
     if (!cfg.silent) toast("HOWL Treasury synced.");
-    return Promise.resolve(_state);
+    return _state;
   }
 
   function buildStaticState() {
@@ -117,7 +117,15 @@
       headline: "The Pack keeps Alpha online.",
       subtitle: "Official public treasury & support vault.",
       recentSignals: [],
-      userSignal: null,
+      topSupporters: [],
+      userSignal: {
+        totalSupportedRaw: 0,
+        totalSupportedDisplay: "0 $HOWL",
+        supportCount: 0,
+        tier: "none",
+        tierLabel: "No signal yet",
+        publicSupport: true,
+      },
       milestones: [
         {
           id: "signal_feed",
@@ -146,6 +154,105 @@
     };
   }
 
+  function getApiPost() {
+    const fn = _apiPost || window.apiPost || window.S?.apiPost || null;
+    return typeof fn === "function" ? fn : null;
+  }
+
+  async function loadState() {
+    const fallback = buildStaticState();
+    const apiPost = getApiPost();
+    if (!apiPost) return fallback;
+
+    try {
+      const out = await apiPost("/webapp/treasury/state", {});
+      if (!out || out.ok === false) {
+        throw new Error(String(out && (out.reason || out.error || out.message) || "TREASURY_STATE_FAILED"));
+      }
+      return normalizeState(out, fallback);
+    } catch (err) {
+      dbg("loadState fallback", err && err.message ? err.message : err);
+      return fallback;
+    }
+  }
+
+  function normalizeState(raw, fallback) {
+    const base = fallback && typeof fallback === "object" ? fallback : buildStaticState();
+    const src = raw && typeof raw === "object" ? raw : {};
+    return {
+      enabled: !!src.enabled,
+      wallet: String(src.wallet || base.wallet || WALLET).trim() || WALLET,
+      headline: String(src.headline || base.headline || "The Pack keeps Alpha online.").trim() || "The Pack keeps Alpha online.",
+      subtitle: String(src.subtitle || base.subtitle || "Official public treasury & support vault.").trim() || "Official public treasury & support vault.",
+      paymentsEnabled: !!src.paymentsEnabled,
+      visualCardsEnabled: !!src.visualCardsEnabled,
+      recentSignals: normalizeRecentSignals(src.recentSignals),
+      topSupporters: normalizeTopSupporters(src.topSupporters),
+      userSignal: normalizeUserSignal(src.userSignal, base.userSignal),
+      milestones: normalizeMilestones(src.milestones, base.milestones),
+      bannerUrl: String(src.bannerUrl || base.bannerUrl || HOWL_TREASURY_BANNER_URL).trim() || HOWL_TREASURY_BANNER_URL,
+      emblemUrl: String(src.emblemUrl || base.emblemUrl || HOWL_TREASURY_EMBLEM_URL).trim() || HOWL_TREASURY_EMBLEM_URL,
+      cardUrl: String(src.cardUrl || base.cardUrl || HOWL_TREASURY_CARD_URL).trim() || HOWL_TREASURY_CARD_URL,
+    };
+  }
+
+  function normalizeRecentSignals(items) {
+    const list = Array.isArray(items) ? items : [];
+    return list.map((item) => {
+      const row = item && typeof item === "object" ? item : {};
+      return {
+        title: String(row.title || row.label || "Signal").trim() || "Signal",
+        copy: String(row.copy || row.desc || row.text || "").trim(),
+        badge: String(row.badge || "").trim(),
+      };
+    }).filter((row) => row.title || row.copy);
+  }
+
+  function normalizeTopSupporters(items) {
+    const list = Array.isArray(items) ? items : [];
+    return list.map((item) => {
+      const row = item && typeof item === "object" ? item : {};
+      return {
+        name: String(row.name || row.title || "Supporter").trim() || "Supporter",
+        amountDisplay: String(row.amountDisplay || row.amount || "0 $HOWL").trim() || "0 $HOWL",
+        tierLabel: String(row.tierLabel || row.tier || "").trim(),
+      };
+    }).filter((row) => row.name || row.amountDisplay);
+  }
+
+  function normalizeUserSignal(item, fallback) {
+    const base = fallback && typeof fallback === "object" ? fallback : buildStaticState().userSignal;
+    const src = item && typeof item === "object" ? item : {};
+    return {
+      totalSupportedRaw: safeInt(src.totalSupportedRaw, base.totalSupportedRaw || 0),
+      totalSupportedDisplay: String(src.totalSupportedDisplay || base.totalSupportedDisplay || "0 $HOWL").trim() || "0 $HOWL",
+      supportCount: safeInt(src.supportCount, base.supportCount || 0),
+      tier: String(src.tier || base.tier || "none").trim().toLowerCase() || "none",
+      tierLabel: String(src.tierLabel || base.tierLabel || "No signal yet").trim() || "No signal yet",
+      publicSupport: src.publicSupport == null ? !!base.publicSupport : !!src.publicSupport,
+    };
+  }
+
+  function normalizeMilestones(items, fallback) {
+    const list = Array.isArray(items) && items.length ? items : (Array.isArray(fallback) ? fallback : []);
+    return list.map((item, idx) => {
+      const row = item && typeof item === "object" ? item : {};
+      const progress = Math.max(0, Math.min(1, Number(row.progress || 0) || 0));
+      return {
+        id: String(row.id || ("milestone_" + idx)).trim() || ("milestone_" + idx),
+        label: String(row.label || row.title || "Milestone").trim() || "Milestone",
+        copy: String(row.copy || row.desc || "").trim(),
+        progress,
+      };
+    });
+  }
+
+  function safeInt(value, fallback) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return Number(fallback || 0) || 0;
+    return Math.max(0, Math.round(n));
+  }
+
   function render(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
     ensureDom();
@@ -158,7 +265,7 @@
               <img class="ht-emblem" src="${esc(s.emblemUrl)}" alt="HOWL Treasury emblem" loading="lazy" decoding="async" />
             </div>
             <div class="ht-heading">
-              <div class="ht-kicker">Official public treasury &amp; support vault.</div>
+              <div class="ht-kicker">${esc(s.subtitle || "Official public treasury & support vault.")}</div>
               <h2>HOWL TREASURY</h2>
               <p>${esc(s.headline)}</p>
             </div>
@@ -180,7 +287,7 @@
           <div class="ht-panel-head">
             <div>
               <div class="ht-panel-kicker">Alpha Treasury</div>
-              <h3>Official public treasury &amp; support vault.</h3>
+              <h3>${esc(s.subtitle || "Official public treasury & support vault.")}</h3>
             </div>
             <span class="ht-mini-chip">READ ONLY</span>
           </div>
@@ -239,6 +346,8 @@
           ${renderMilestones(s.milestones)}
         </section>
 
+        ${renderLeaderboard(s.topSupporters)}
+
         <section class="ht-panel">
           <div class="ht-panel-head">
             <div>
@@ -273,21 +382,24 @@
 
     return list.map((item) => `
       <article class="ht-feed-row">
-        <div class="ht-feed-title">${esc(item.title || "Signal")}</div>
+        <div class="ht-feed-title">${esc(item.title || "Signal")}${item.badge ? ` <span class="ht-inline-badge">${esc(item.badge)}</span>` : ""}</div>
         <div class="ht-feed-copy">${esc(item.copy || "")}</div>
       </article>
     `).join("");
   }
 
   function renderUserSignal(item) {
-    if (!item) {
+    const signal = item && typeof item === "object" ? item : null;
+    if (!signal) {
       return `<div class="ht-empty">Your Treasury signal will appear here after verified support.</div>`;
     }
 
     return `
       <article class="ht-signal-card">
-        <div class="ht-signal-title">${esc(item.title || "Your signal")}</div>
-        <div class="ht-signal-copy">${esc(item.copy || "")}</div>
+        <div class="ht-signal-title">${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
+        <div class="ht-signal-copy">Tier: ${esc(signal.tierLabel || "No signal yet")}</div>
+        <div class="ht-signal-copy">Verified supports: ${esc(String(signal.supportCount || 0))}</div>
+        <div class="ht-signal-copy">${signal.publicSupport ? "Public support is enabled for this lane." : "Anonymous support will be supported in a later phase."}</div>
       </article>
     `;
   }
@@ -346,9 +458,33 @@
     return "";
   }
 
-  function renderLeaderboard() {
-    // Phase 3+: supporter tiers and public ranking views can mount here without reshaping the shell.
-    return "";
+  function renderLeaderboard(items) {
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) {
+      return "";
+    }
+
+    return `
+      <section class="ht-panel">
+        <div class="ht-panel-head">
+          <div>
+            <div class="ht-panel-kicker">Top Supporters</div>
+            <h3>Read-only recognition board</h3>
+          </div>
+        </div>
+        <div class="ht-leaderboard">
+          ${list.map((item) => `
+            <article class="ht-leader-row">
+              <div class="ht-leader-copy">
+                <div class="ht-leader-name">${esc(item.name || "Supporter")}</div>
+                <div class="ht-leader-tier">${esc(item.tierLabel || "Supporter")}</div>
+              </div>
+              <div class="ht-leader-amount">${esc(item.amountDisplay || "0 $HOWL")}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+    `;
   }
 
   function bindEvents() {
@@ -370,7 +506,7 @@
       if (!copyBtn) return;
 
       event.preventDefault();
-      const ok = await copyText(WALLET);
+      const ok = await copyText((_state && _state.wallet) || WALLET);
       toast(ok ? "Treasury wallet copied." : "Wallet copy failed.");
     });
   }
@@ -710,6 +846,45 @@
         font-size:13px;
         line-height:1.5;
       }
+      .ht-feed-row,
+      .ht-signal-card,
+      .ht-leader-row{
+        margin-top:10px;
+        padding:12px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(7,12,18,.44);
+      }
+      .ht-feed-title,
+      .ht-signal-title,
+      .ht-leader-name{
+        font-size:14px;
+        font-weight:800;
+        color:#eef7ff;
+      }
+      .ht-feed-copy,
+      .ht-signal-copy,
+      .ht-leader-tier{
+        margin-top:6px;
+        color:#cedde7;
+        font-size:12px;
+        line-height:1.45;
+      }
+      .ht-inline-badge{
+        display:inline-flex;
+        align-items:center;
+        min-height:18px;
+        margin-left:6px;
+        padding:2px 7px;
+        border-radius:999px;
+        border:1px solid rgba(255,176,74,.24);
+        background:rgba(255,176,74,.10);
+        color:#ffe1b0;
+        font-size:9px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        vertical-align:middle;
+      }
       .ht-milestones{
         display:grid;
         gap:10px;
@@ -783,6 +958,27 @@
         font-size:12px;
         font-weight:500;
         line-height:1.5;
+      }
+      .ht-leaderboard{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+      .ht-leader-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+      }
+      .ht-leader-copy{
+        min-width:0;
+      }
+      .ht-leader-amount{
+        flex:0 0 auto;
+        color:#ffe1aa;
+        font-size:13px;
+        font-weight:800;
+        white-space:nowrap;
       }
       .ht-note{
         padding:14px;
