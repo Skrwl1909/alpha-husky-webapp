@@ -146,6 +146,9 @@
         supportCount: 0,
         tier: "none",
         tierLabel: "No signal yet",
+        nextTier: "signal_supporter",
+        nextTierLabel: "Signal Supporter",
+        progressToNext: 0,
         publicSupport: true,
       },
       milestones: [
@@ -274,6 +277,9 @@
       supportCount: safeInt(src.supportCount, base.supportCount || 0),
       tier: String(src.tier || base.tier || "none").trim().toLowerCase() || "none",
       tierLabel: String(src.tierLabel || base.tierLabel || "No signal yet").trim() || "No signal yet",
+      nextTier: String(src.nextTier || base.nextTier || "").trim().toLowerCase(),
+      nextTierLabel: String(src.nextTierLabel || base.nextTierLabel || "").trim(),
+      progressToNext: Math.max(0, Math.min(1, Number(src.progressToNext != null ? src.progressToNext : base.progressToNext || 0) || 0)),
       publicSupport: src.publicSupport == null ? !!base.publicSupport : !!src.publicSupport,
     };
   }
@@ -474,12 +480,16 @@
     if (!signal) {
       return `<div class="ht-empty">Your mark will appear here after verified support.</div>`;
     }
+    const hasNextTier = !!String(signal.nextTierLabel || "").trim();
+    const progressPct = Math.max(0, Math.min(100, Math.round(Number(signal.progressToNext || 0) * 100)));
 
     return `
       <article class="ht-signal-card">
-        <div class="ht-signal-title">${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
-        <div class="ht-signal-copy">Tier: ${esc(signal.tierLabel || "No signal yet")}</div>
+        <div class="ht-signal-title">${esc(signal.tierLabel || "No signal yet")}</div>
+        <div class="ht-signal-copy">Total support: ${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
         <div class="ht-signal-copy">Verified supports: ${esc(String(signal.supportCount || 0))}</div>
+        ${hasNextTier ? `<div class="ht-signal-copy">Next rank: ${esc(signal.nextTierLabel)}</div>` : ""}
+        ${hasNextTier ? `<div class="ht-signal-copy">Progress to next Treasury rank: ${esc(String(progressPct))}%</div>` : ""}
         <div class="ht-signal-copy">${signal.publicSupport ? "Public support is enabled for this lane." : "Anonymous support will be supported in a later phase."}</div>
       </article>
     `;
@@ -666,6 +676,14 @@
     if (!row) return "";
     const sideEffects = row.sideEffects && typeof row.sideEffects === "object" ? row.sideEffects : {};
     const cardPreview = row.cardUrl ? renderVisualCard(row.cardUrl) : "";
+    const tierCardPreview = row.tierCardUrl ? renderVisualCard(row.tierCardUrl) : "";
+    const tierUnlockedBlock = row.tierUnlocked ? `
+      <div class="ht-support-note">
+        <strong>Treasury Rank Unlocked</strong><br>
+        ${esc(row.tierLabel || "Treasury rank unlocked")}<br>
+        The vault recognized your signal.
+      </div>
+    ` : "";
     return `
       <div class="ht-success-shell">
         <div class="ht-pending-head">
@@ -673,15 +691,17 @@
           <div class="ht-pending-chip">VERIFIED</div>
         </div>
         <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
+        ${tierUnlockedBlock}
         ${cardPreview}
+        ${tierCardPreview}
         <div class="ht-field-grid">
           <div class="ht-field-block">
             <div class="ht-wallet-label">Verified amount</div>
             <div class="ht-field-value">${esc(row.amountDisplay || "0 $HOWL")}</div>
           </div>
           <div class="ht-field-block">
-            <div class="ht-wallet-label">Signal name</div>
-            <div class="ht-field-value">${esc(row.displayName || "Pack member")}</div>
+            <div class="ht-wallet-label">Treasury Rank</div>
+            <div class="ht-field-value">${esc(row.tierLabel || "No signal yet")}</div>
           </div>
           ${row.txSignature ? `
             <div class="ht-field-block">
@@ -1002,6 +1022,10 @@
       isPublic: src.isPublic == null ? true : !!src.isPublic,
       createdAt: safeInt(src.createdAt || src.created_at, 0),
       cardUrl: String(src.cardUrl || src.card_url || "").trim(),
+      tier: String(src.tier || "none").trim().toLowerCase() || "none",
+      tierLabel: String(src.tierLabel || src.tier_label || "No signal yet").trim() || "No signal yet",
+      tierUnlocked: !!src.tierUnlocked,
+      tierCardUrl: String(src.tierCardUrl || src.tier_card_url || "").trim(),
       sideEffects: normalizeSideEffects(src.sideEffects || src.side_effects),
     };
   }
