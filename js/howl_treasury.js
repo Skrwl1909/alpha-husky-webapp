@@ -143,6 +143,7 @@
       verifiedSignalsCount: 0,
       uniqueSupportersCount: 0,
       currentUserRank: 0,
+      walletExplorerUrl: "",
       recentSignals: [],
       topSupporters: [],
       unlockedMilestones: [],
@@ -211,6 +212,7 @@
       verifiedSignalsCount: safeInt(src.verifiedSignalsCount, base.verifiedSignalsCount || 0),
       uniqueSupportersCount: safeInt(src.uniqueSupportersCount, base.uniqueSupportersCount || 0),
       currentUserRank: safeInt(src.currentUserRank, base.currentUserRank || 0),
+      walletExplorerUrl: String(src.walletExplorerUrl || base.walletExplorerUrl || "").trim(),
       recentSignals: normalizeRecentSignals(src.recentSignals),
       topSupporters: normalizeTopSupporters(src.topSupporters),
       unlockedMilestones: normalizeUnlockedMilestones(src.unlockedMilestones, src.milestones, base.unlockedMilestones),
@@ -241,6 +243,7 @@
       isPublic: src.isPublic == null ? true : !!src.isPublic,
       status,
       presetKey: String(src.presetKey || src.preset_key || "").trim().toLowerCase(),
+      walletExplorerUrl: String(src.walletExplorerUrl || src.wallet_explorer_url || "").trim(),
     };
   }
 
@@ -419,6 +422,7 @@
             <div class="ht-wallet-value">${esc(s.wallet)}</div>
           </div>
           <p class="ht-copy ht-copy-tight">Official public Alpha Treasury wallet</p>
+          ${s.walletExplorerUrl ? `<a class="ht-explorer-link" href="${esc(s.walletExplorerUrl)}" target="_blank" rel="noopener noreferrer">View on explorer</a>` : ""}
           <div class="ht-actions">
             <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
           </div>
@@ -716,6 +720,7 @@
           <span>Signal window</span>
           <strong data-ht-countdown>${esc(formatCountdown(row.expiresAt))}</strong>
         </div>
+        ${row.walletExplorerUrl ? `<a class="ht-explorer-link" href="${esc(row.walletExplorerUrl)}" target="_blank" rel="noopener noreferrer">View treasury wallet on explorer</a>` : ""}
         <div class="ht-actions">
           <button type="button" class="ht-btn" data-ht-copy-amount>Copy Amount</button>
           <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
@@ -785,6 +790,7 @@
           <button type="button" class="ht-btn" data-ht-success-back>Back to Treasury</button>
           <button type="button" class="ht-btn" data-ht-copy-wallet>Copy Wallet</button>
         </div>
+        ${row.txExplorerUrl ? `<a class="ht-explorer-link" href="${esc(row.txExplorerUrl)}" target="_blank" rel="noopener noreferrer">View transaction</a>` : ""}
         ${(sideEffects.mailboxSent || sideEffects.telegramCtaSent) ? `
           <p class="ht-copy ht-copy-tight">
             ${[
@@ -1132,6 +1138,7 @@
       amountRaw: safeInt(src.amountRaw || src.amount_raw, 0),
       amountDisplay: String(src.amountDisplay || src.amount_display || "0 $HOWL").trim() || "0 $HOWL",
       txSignature: String(src.txSignature || src.tx_signature || "").trim(),
+      txExplorerUrl: String(src.txExplorerUrl || src.tx_explorer_url || "").trim(),
       isPublic: src.isPublic == null ? true : !!src.isPublic,
       createdAt: safeInt(src.createdAt || src.created_at, 0),
       cardUrl: String(src.cardUrl || src.card_url || "").trim(),
@@ -1549,6 +1556,22 @@
         flex-wrap:wrap;
         gap:10px;
         margin-top:12px;
+      }
+      .ht-explorer-link{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        margin-top:10px;
+        color:#8fe8ff;
+        font-size:12px;
+        font-weight:700;
+        line-height:1.4;
+        text-decoration:none;
+        overflow-wrap:anywhere;
+      }
+      .ht-explorer-link:hover,
+      .ht-explorer-link:focus-visible{
+        text-decoration:underline;
       }
       .ht-btn{
         flex:1 1 180px;
