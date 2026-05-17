@@ -10,10 +10,14 @@
     "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_card.webp";
   const HOWL_TREASURY_BANNER_URL =
     "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_banner.webp";
+  const CUSTOM_PRESET_KEY = "custom";
+  const CUSTOM_AMOUNT_MIN = 50000;
+  const CUSTOM_AMOUNT_MAX = 10000000;
   const SUPPORT_PRESETS = [
     { presetKey: "250k", label: "250K HOWL", amountDisplay: "250,000 $HOWL" },
     { presetKey: "500k", label: "500K HOWL", amountDisplay: "500,000 $HOWL" },
     { presetKey: "1m", label: "1M HOWL", amountDisplay: "1,000,000 $HOWL" },
+    { presetKey: CUSTOM_PRESET_KEY, label: "Custom", amountDisplay: "Choose your own amount" },
   ];
 
   let _apiPost = null;
@@ -31,6 +35,7 @@
   let _pendingCountdownTimer = 0;
   let _supportNotice = "";
   let _successSignal = null;
+  let _customAmountHowl = "";
 
   const els = {
     back: null,
@@ -293,6 +298,44 @@
     return Math.max(0, Math.round(n));
   }
 
+  function isCustomPresetSelected() {
+    return _selectedPresetKey === CUSTOM_PRESET_KEY;
+  }
+
+  function normalizeWholeHowlInput(value) {
+    const raw = String(value == null ? "" : value).trim();
+    if (!raw) return { ok: false, code: "INVALID_CUSTOM_AMOUNT" };
+    if (!/^\d+$/.test(raw)) return { ok: false, code: "INVALID_CUSTOM_AMOUNT" };
+    const amount = Number(raw);
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return { ok: false, code: "INVALID_CUSTOM_AMOUNT" };
+    }
+    if (amount < CUSTOM_AMOUNT_MIN) {
+      return { ok: false, code: "TOO_SMALL_CUSTOM_AMOUNT" };
+    }
+    if (amount > CUSTOM_AMOUNT_MAX) {
+      return { ok: false, code: "TOO_LARGE_CUSTOM_AMOUNT" };
+    }
+    return { ok: true, amount, raw };
+  }
+
+  function supportErrorMessage(code, fallback) {
+    const normalized = String(code || "").trim().toUpperCase();
+    if (normalized === "TOO_SMALL_CUSTOM_AMOUNT") {
+      return `Custom support starts at ${CUSTOM_AMOUNT_MIN.toLocaleString()} HOWL.`;
+    }
+    if (normalized === "TOO_LARGE_CUSTOM_AMOUNT") {
+      return `Custom support is capped at ${CUSTOM_AMOUNT_MAX.toLocaleString()} HOWL for now.`;
+    }
+    if (normalized === "INVALID_CUSTOM_AMOUNT") {
+      return "Enter a whole HOWL amount.";
+    }
+    if (normalized === "PAYMENTS_DISABLED" || normalized === "TREASURY_PAYMENTS_DISABLED") {
+      return "Treasury support is currently offline.";
+    }
+    return String(fallback || "").trim() || "Treasury support is coming online.";
+  }
+
   function render(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
     syncUiState(s);
@@ -520,6 +563,23 @@
           </button>
         `).join("")}
       </div>
+      ${isCustomPresetSelected() ? `
+        <div class="ht-custom-shell">
+          <label class="ht-wallet-label" for="htCustomAmountInput">Enter a custom support signal. Whole HOWL only.</label>
+          <input
+            id="htCustomAmountInput"
+            class="ht-custom-input"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="100000"
+            value="${esc(_customAmountHowl)}"
+            data-ht-custom-amount
+          />
+          <p class="ht-copy ht-copy-tight">Minimum ${CUSTOM_AMOUNT_MIN.toLocaleString()} HOWL. Maximum ${CUSTOM_AMOUNT_MAX.toLocaleString()} HOWL.</p>
+        </div>
+      ` : ""}
       <div class="ht-toggle-shell">
         <div class="ht-toggle-row" role="group" aria-label="Treasury support visibility">
           <button
@@ -757,6 +817,13 @@
         render(_state || buildStaticState());
       }
     });
+
+    els.back.addEventListener("input", (event) => {
+      const customInput = event.target.closest("[data-ht-custom-amount]");
+      if (!customInput) return;
+      _customAmountHowl = String(customInput.value || "");
+      _selectionTouched = true;
+    });
   }
 
   function syncUiState(state) {
@@ -765,6 +832,9 @@
     if (pending) {
       _publicSupport = pending.isPublic !== false;
       if (pending.presetKey) _selectedPresetKey = pending.presetKey;
+      if (pending.presetKey === CUSTOM_PRESET_KEY && pending.amountDisplay) {
+        _customAmountHowl = String(pending.amountDisplay).replace(/[^\d]/g, "");
+      }
       _selectionTouched = true;
       startPendingCountdown();
       return;
@@ -804,12 +874,26 @@
     render(_state || buildStaticState());
 
     const presetKey = _selectedPresetKey || SUPPORT_PRESETS[0].presetKey;
+    const payload = {
+      isPublic: !!_publicSupport,
+      run_id: makeRunId("treasury_support", presetKey === CUSTOM_PRESET_KEY ? `${presetKey}_${_customAmountHowl}` : presetKey),
+    };
+    if (presetKey === CUSTOM_PRESET_KEY) {
+      const customAmount = normalizeWholeHowlInput(_customAmountHowl);
+      if (!customAmount.ok) {
+        const message = supportErrorMessage(customAmount.code, "");
+        _supportNotice = message;
+        toast(message);
+        _startingSupport = false;
+        render(_state || buildStaticState());
+        return;
+      }
+      payload.customAmountHowl = customAmount.raw;
+    } else {
+      payload.presetKey = presetKey;
+    }
     try {
-      const out = await apiPost("/webapp/treasury/support/start", {
-        presetKey,
-        isPublic: !!_publicSupport,
-        run_id: makeRunId("treasury_support", presetKey),
-      });
+      const out = await apiPost("/webapp/treasury/support/start", payload);
       if (!out || out.ok === false || !out.pending) {
         throw new Error(String(out && (out.message || out.reason || out.code) || "TREASURY_START_FAILED"));
       }
@@ -826,13 +910,15 @@
       toast("Treasury signal pending.");
     } catch (err) {
       const data = err && err.response && err.response.data ? err.response.data : null;
-      const message = String(
+      const message = supportErrorMessage(
+        data && data.code,
         (data && (data.message || data.reason || data.code))
           || (err && err.message)
           || "Treasury support is coming online."
-      ).trim();
+      );
+      _supportNotice = message;
       toast(message || "Treasury support is coming online.");
-      if (data && data.code === "TREASURY_PAYMENTS_DISABLED") {
+      if (data && (data.code === "TREASURY_PAYMENTS_DISABLED" || data.code === "PAYMENTS_DISABLED")) {
         _state = normalizeState(
           {
             ...(_state || buildStaticState()),
@@ -1373,6 +1459,34 @@
           linear-gradient(180deg, rgba(33,206,197,.18), rgba(8,15,20,.58)),
           rgba(8,15,20,.56);
         box-shadow:0 0 0 1px rgba(76,226,255,.08), 0 0 22px rgba(76,226,255,.10);
+      }
+      .ht-custom-shell{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        margin-top:10px;
+        padding:12px;
+        border-radius:18px;
+        border:1px solid rgba(96,227,255,.14);
+        background:rgba(5,12,18,.72);
+      }
+      .ht-custom-input{
+        width:100%;
+        min-height:46px;
+        border-radius:14px;
+        border:1px solid rgba(112,230,255,.18);
+        background:rgba(4,10,15,.9);
+        color:#edf7ff;
+        padding:0 14px;
+        font:600 15px/1.2 inherit;
+        outline:none;
+      }
+      .ht-custom-input:focus{
+        border-color:rgba(96,227,255,.48);
+        box-shadow:0 0 0 1px rgba(96,227,255,.24);
+      }
+      .ht-custom-input::placeholder{
+        color:rgba(214,234,245,.42);
       }
       .ht-toggle-shell{
         margin-top:12px;
