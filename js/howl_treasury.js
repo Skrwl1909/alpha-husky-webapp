@@ -1115,6 +1115,12 @@
       } else if (code === "PAYMENT_EXPIRED") {
         _supportNotice = "This Treasury signal expired. Start a new signal to continue.";
         await refresh({ silent: true });
+      } else if (code === "AMOUNT_MISMATCH") {
+        _supportNotice = "The Treasury transfer amount does not match this pending support. Double-check the exact HOWL amount and try again.";
+      } else if (code === "WRONG_TREASURY") {
+        _supportNotice = "The transfer destination does not match the official Treasury wallet for this pending support.";
+      } else if (code === "WRONG_MINT") {
+        _supportNotice = "The transfer mint does not match the Treasury HOWL token for this pending support.";
       } else if (code === "RPC_UNAVAILABLE") {
         _supportNotice = "Verification is temporarily unavailable. Try again shortly.";
       } else {
