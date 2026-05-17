@@ -151,26 +151,7 @@
         progressToNext: 0,
         publicSupport: true,
       },
-      milestones: [
-        {
-          id: "signal_feed",
-          label: "Treasury feed",
-          copy: "Recent verified support marks will surface here first.",
-          progress: 0.22,
-        },
-        {
-          id: "mailbox_marks",
-          label: "Mailbox marks",
-          copy: "Future thank-you drops and recognition notes will connect here.",
-          progress: 0.36,
-        },
-        {
-          id: "world_memory",
-          label: "World memory",
-          copy: "Verified support signals will leave a mark in the world.",
-          progress: 0.14,
-        },
-      ],
+      milestones: [],
       visualCardsEnabled: false,
       paymentsEnabled: false,
       pendingPayment: null,
@@ -289,10 +270,20 @@
     return list.map((item, idx) => {
       const row = item && typeof item === "object" ? item : {};
       const progress = Math.max(0, Math.min(1, Number(row.progress || 0) || 0));
+      const status = String(row.status || "").trim().toLowerCase();
       return {
         id: String(row.id || ("milestone_" + idx)).trim() || ("milestone_" + idx),
         label: String(row.label || row.title || "Milestone").trim() || "Milestone",
-        copy: String(row.copy || row.desc || "").trim(),
+        description: String(row.description || row.copy || row.desc || "").trim(),
+        metric: String(row.metric || "").trim(),
+        status: status || (progress >= 1 ? "completed" : progress > 0 ? "active" : "locked"),
+        completed: !!row.completed || progress >= 1,
+        currentRaw: row.currentRaw == null ? null : safeInt(row.currentRaw, 0),
+        targetRaw: row.targetRaw == null ? null : safeInt(row.targetRaw, 0),
+        current: row.current == null ? null : safeInt(row.current, 0),
+        target: row.target == null ? null : safeInt(row.target, 0),
+        currentDisplay: String(row.currentDisplay || "").trim(),
+        targetDisplay: String(row.targetDisplay || "").trim(),
         progress,
       };
     });
@@ -427,7 +418,8 @@
           <div class="ht-panel-head">
             <div>
               <div class="ht-panel-kicker">Community Milestones</div>
-              <h3>Locked world markers</h3>
+              <h3>Community Milestones</h3>
+              <div class="ht-copy ht-copy-tight">The Pack’s verified Treasury signals unlock visible marks in Alpha.</div>
             </div>
           </div>
           ${renderMilestones(s.milestones)}
@@ -485,12 +477,13 @@
 
     return `
       <article class="ht-signal-card">
-        <div class="ht-signal-title">${esc(signal.tierLabel || "No signal yet")}</div>
+        <div class="ht-signal-title">Treasury Rank</div>
+        <div class="ht-signal-copy">${esc(signal.tierLabel || "No signal yet")}</div>
         <div class="ht-signal-copy">Total support: ${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
         <div class="ht-signal-copy">Verified supports: ${esc(String(signal.supportCount || 0))}</div>
         ${hasNextTier ? `<div class="ht-signal-copy">Next rank: ${esc(signal.nextTierLabel)}</div>` : ""}
         ${hasNextTier ? `<div class="ht-signal-copy">Progress to next Treasury rank: ${esc(String(progressPct))}%</div>` : ""}
-        <div class="ht-signal-copy">${signal.publicSupport ? "Public support is enabled for this lane." : "Anonymous support will be supported in a later phase."}</div>
+        <div class="ht-signal-copy">${signal.publicSupport ? "Public recognition is enabled for this lane." : "Anonymous recognition is active for this lane."}</div>
       </article>
     `;
   }
@@ -498,26 +491,30 @@
   function renderMilestones(items) {
     const list = Array.isArray(items) ? items : [];
     if (!list.length) {
-      return `<div class="ht-empty">Milestones will appear here as the Treasury system expands.</div>`;
+      return `<div class="ht-empty">Milestones are coming online.</div>`;
     }
 
     return `
       <div class="ht-milestones">
         ${list.map((item) => {
           const progress = Math.max(0, Math.min(100, Math.round(Number(item.progress || 0) * 100)));
-          const status = progress >= 60 ? "forming" : (progress >= 25 ? "dormant" : "sealed");
-          const statusLabel = status === "forming" ? "FORMING" : (status === "dormant" ? "DORMANT" : "SEALED");
+          const status = String(item.status || "").trim().toLowerCase() || (progress >= 100 ? "completed" : progress > 0 ? "active" : "locked");
+          const statusLabel = status === "completed" ? "COMPLETED" : (status === "active" ? "ACTIVE" : "LOCKED");
+          const metricLine = item.currentDisplay && item.targetDisplay
+            ? `${item.currentDisplay} / ${item.targetDisplay}`
+            : "";
           return `
             <article class="ht-milestone is-${status}">
               <div class="ht-milestone-head">
                 <div>
-                  <div class="ht-milestone-kicker">World Marker</div>
+                  <div class="ht-milestone-kicker">Treasury Marker</div>
                   <div class="ht-milestone-title">${esc(item.label || "Milestone")}</div>
                 </div>
                 <div class="ht-milestone-value">${statusLabel}</div>
               </div>
-              <p class="ht-milestone-copy">${esc(item.copy || "")}</p>
-              <div class="ht-milestone-foot">Signal density ${progress}%</div>
+              <p class="ht-milestone-copy">${esc(item.description || "")}</p>
+              ${metricLine ? `<div class="ht-milestone-metric">${esc(metricLine)}</div>` : ""}
+              <div class="ht-milestone-progress" aria-hidden="true"><span style="width:${progress}%"></span></div>
             </article>
           `;
         }).join("")}
@@ -1667,14 +1664,14 @@
           linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
           rgba(7,12,18,.44);
       }
-      .ht-milestone.is-sealed{
+      .ht-milestone.is-locked{
         border-color:rgba(255,255,255,.08);
       }
-      .ht-milestone.is-dormant{
+      .ht-milestone.is-active{
         border-color:rgba(76,226,255,.18);
         box-shadow:0 0 0 1px rgba(76,226,255,.04);
       }
-      .ht-milestone.is-forming{
+      .ht-milestone.is-completed{
         border-color:rgba(255,176,74,.20);
         box-shadow:0 0 0 1px rgba(255,176,74,.05), 0 0 18px rgba(255,176,74,.08);
       }
@@ -1701,12 +1698,27 @@
         font-size:12px;
         line-height:1.45;
       }
-      .ht-milestone-foot{
+      .ht-milestone-metric{
         margin-top:10px;
         color:rgba(185,206,218,.72);
         font-size:11px;
         letter-spacing:.08em;
         text-transform:uppercase;
+      }
+      .ht-milestone-progress{
+        margin-top:10px;
+        height:8px;
+        border-radius:999px;
+        background:rgba(255,255,255,.08);
+        overflow:hidden;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.35);
+      }
+      .ht-milestone-progress span{
+        display:block;
+        height:100%;
+        border-radius:inherit;
+        background:linear-gradient(90deg, rgba(76,226,255,.9), rgba(255,176,74,.88));
+        box-shadow:0 0 12px rgba(76,226,255,.18);
       }
       .ht-card-shell{
         display:grid;
