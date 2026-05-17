@@ -525,8 +525,8 @@
       <div class="ht-card-shell">
         ${preview}
         <div class="ht-card-copy">
-          Treasury Signal Received
-          <span>The Pack remembers. Personalized visual cards and cardUrl support land in a later phase.</span>
+          Alpha Treasury Transmission
+          <span>${src ? "Official recognition card linked to a verified Treasury signal." : "Recognition card preview unavailable."}</span>
         </div>
       </div>
     `;
@@ -665,6 +665,7 @@
     const row = signal && typeof signal === "object" ? signal : null;
     if (!row) return "";
     const sideEffects = row.sideEffects && typeof row.sideEffects === "object" ? row.sideEffects : {};
+    const cardPreview = row.cardUrl ? renderVisualCard(row.cardUrl) : "";
     return `
       <div class="ht-success-shell">
         <div class="ht-pending-head">
@@ -672,6 +673,7 @@
           <div class="ht-pending-chip">VERIFIED</div>
         </div>
         <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
+        ${cardPreview}
         <div class="ht-field-grid">
           <div class="ht-field-block">
             <div class="ht-wallet-label">Verified amount</div>
