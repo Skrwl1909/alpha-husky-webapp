@@ -138,8 +138,14 @@
       wallet: WALLET,
       headline: "The Pack keeps Alpha online.",
       subtitle: "Official public treasury & support vault.",
+      totalSupportedRaw: 0,
+      totalSupportedDisplay: "0 $HOWL",
+      verifiedSignalsCount: 0,
+      uniqueSupportersCount: 0,
+      currentUserRank: 0,
       recentSignals: [],
       topSupporters: [],
+      unlockedMilestones: [],
       userSignal: {
         totalSupportedRaw: 0,
         totalSupportedDisplay: "0 $HOWL",
@@ -149,6 +155,13 @@
         nextTier: "signal_supporter",
         nextTierLabel: "Signal Supporter",
         progressToNext: 0,
+        currentTierMinRaw: 0,
+        currentTierMinDisplay: "0 $HOWL",
+        nextTierTargetRaw: 0,
+        nextTierTargetDisplay: "",
+        remainingToNextRaw: 0,
+        remainingToNextDisplay: "",
+        currentRank: 0,
         publicSupport: true,
       },
       milestones: [],
@@ -193,8 +206,14 @@
       subtitle: String(src.subtitle || base.subtitle || "Official public treasury & support vault.").trim() || "Official public treasury & support vault.",
       paymentsEnabled: !!src.paymentsEnabled,
       visualCardsEnabled: !!src.visualCardsEnabled,
+      totalSupportedRaw: safeInt(src.totalSupportedRaw, base.totalSupportedRaw || 0),
+      totalSupportedDisplay: String(src.totalSupportedDisplay || base.totalSupportedDisplay || "0 $HOWL").trim() || "0 $HOWL",
+      verifiedSignalsCount: safeInt(src.verifiedSignalsCount, base.verifiedSignalsCount || 0),
+      uniqueSupportersCount: safeInt(src.uniqueSupportersCount, base.uniqueSupportersCount || 0),
+      currentUserRank: safeInt(src.currentUserRank, base.currentUserRank || 0),
       recentSignals: normalizeRecentSignals(src.recentSignals),
       topSupporters: normalizeTopSupporters(src.topSupporters),
+      unlockedMilestones: normalizeUnlockedMilestones(src.unlockedMilestones, src.milestones, base.unlockedMilestones),
       userSignal: normalizeUserSignal(src.userSignal, base.userSignal),
       milestones: normalizeMilestones(src.milestones, base.milestones),
       pendingPayment: normalizePendingPayment(src.pendingPayment),
@@ -242,9 +261,11 @@
     return list.map((item) => {
       const row = item && typeof item === "object" ? item : {};
       return {
+        rank: safeInt(row.rank, 0),
         name: String(row.name || row.title || "Supporter").trim() || "Supporter",
         amountDisplay: String(row.amountDisplay || row.amount || "0 $HOWL").trim() || "0 $HOWL",
         tierLabel: String(row.tierLabel || row.tier || "").trim(),
+        isCurrentUser: !!row.isCurrentUser,
       };
     }).filter((row) => row.name || row.amountDisplay);
   }
@@ -261,8 +282,30 @@
       nextTier: String(src.nextTier || base.nextTier || "").trim().toLowerCase(),
       nextTierLabel: String(src.nextTierLabel || base.nextTierLabel || "").trim(),
       progressToNext: Math.max(0, Math.min(1, Number(src.progressToNext != null ? src.progressToNext : base.progressToNext || 0) || 0)),
+      currentTierMinRaw: safeInt(src.currentTierMinRaw, base.currentTierMinRaw || 0),
+      currentTierMinDisplay: String(src.currentTierMinDisplay || base.currentTierMinDisplay || "0 $HOWL").trim() || "0 $HOWL",
+      nextTierTargetRaw: safeInt(src.nextTierTargetRaw, base.nextTierTargetRaw || 0),
+      nextTierTargetDisplay: String(src.nextTierTargetDisplay || base.nextTierTargetDisplay || "").trim(),
+      remainingToNextRaw: safeInt(src.remainingToNextRaw, base.remainingToNextRaw || 0),
+      remainingToNextDisplay: String(src.remainingToNextDisplay || base.remainingToNextDisplay || "").trim(),
+      currentRank: safeInt(src.currentRank, base.currentRank || 0),
       publicSupport: src.publicSupport == null ? !!base.publicSupport : !!src.publicSupport,
     };
+  }
+
+  function normalizeUnlockedMilestones(items, milestoneSource, fallback) {
+    const list = Array.isArray(items) && items.length
+      ? items
+      : Array.isArray(milestoneSource)
+        ? milestoneSource.filter((item) => item && typeof item === "object" && item.completed)
+        : (Array.isArray(fallback) ? fallback : []);
+    return list.map((item, idx) => {
+      const row = item && typeof item === "object" ? item : {};
+      return {
+        id: String(row.id || `milestone_${idx}`).trim() || `milestone_${idx}`,
+        label: String(row.label || row.title || "Milestone").trim() || "Milestone",
+      };
+    }).filter((row) => row.label);
   }
 
   function normalizeMilestones(items, fallback) {
@@ -396,7 +439,7 @@
           <div class="ht-panel">
             <div class="ht-panel-head">
               <div>
-                <div class="ht-panel-kicker">Recent Signals</div>
+                <div class="ht-panel-kicker">Recent Treasury Activity</div>
                 <h3>Signal chamber</h3>
               </div>
             </div>
@@ -425,7 +468,7 @@
           ${renderMilestones(s.milestones)}
         </section>
 
-        ${renderLeaderboard(s.topSupporters)}
+        ${renderLeaderboard(s)}
 
         <section class="ht-panel">
           <div class="ht-panel-head">
@@ -456,7 +499,7 @@
   function renderRecentSignals(items) {
     const list = Array.isArray(items) ? items : [];
     if (!list.length) {
-      return `<div class="ht-empty">No Treasury signals received yet.</div>`;
+      return `<div class="ht-empty">No important Treasury activity recorded yet.</div>`;
     }
 
     return list.map((item) => `
@@ -474,15 +517,39 @@
     }
     const hasNextTier = !!String(signal.nextTierLabel || "").trim();
     const progressPct = Math.max(0, Math.min(100, Math.round(Number(signal.progressToNext || 0) * 100)));
+    const rankLabel = signal.currentRank > 0 ? `#${signal.currentRank}` : "Unranked";
 
     return `
       <article class="ht-signal-card">
-        <div class="ht-signal-title">Treasury Rank</div>
-        <div class="ht-signal-copy">${esc(signal.tierLabel || "No signal yet")}</div>
-        <div class="ht-signal-copy">Total support: ${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
-        <div class="ht-signal-copy">Verified supports: ${esc(String(signal.supportCount || 0))}</div>
-        ${hasNextTier ? `<div class="ht-signal-copy">Next rank: ${esc(signal.nextTierLabel)}</div>` : ""}
-        ${hasNextTier ? `<div class="ht-signal-copy">Progress to next Treasury rank: ${esc(String(progressPct))}%</div>` : ""}
+        <div class="ht-signal-head">
+          <div>
+            <div class="ht-signal-title">Treasury Rank</div>
+            <div class="ht-signal-tier">${esc(signal.tierLabel || "No signal yet")}</div>
+          </div>
+          <div class="ht-signal-total">${esc(signal.totalSupportedDisplay || "0 $HOWL")}</div>
+        </div>
+        <div class="ht-signal-metrics">
+          <div class="ht-signal-metric">
+            <span>Your position</span>
+            <strong>${esc(rankLabel)}</strong>
+          </div>
+          <div class="ht-signal-metric">
+            <span>Verified supports</span>
+            <strong>${esc(String(signal.supportCount || 0))}</strong>
+          </div>
+        </div>
+        ${hasNextTier ? `
+          <div class="ht-signal-progress-head">
+            <span>Next rank: ${esc(signal.nextTierLabel)}</span>
+            <strong>${esc(String(progressPct))}%</strong>
+          </div>
+          <div class="ht-signal-progress" aria-hidden="true"><span style="width:${progressPct}%"></span></div>
+          <div class="ht-signal-copy">
+            ${signal.remainingToNextDisplay
+              ? `Need ${esc(signal.remainingToNextDisplay)} more to reach ${esc(signal.nextTierLabel)}.`
+              : `Progress toward ${esc(signal.nextTierLabel)} is active.`}
+          </div>
+        ` : `<div class="ht-signal-copy">Top Treasury rank reached.</div>`}
         <div class="ht-signal-copy">${signal.publicSupport ? "Public recognition is enabled for this lane." : "Anonymous recognition is active for this lane."}</div>
       </article>
     `;
@@ -681,6 +748,12 @@
         The vault recognized your signal.
       </div>
     ` : "";
+    const milestoneUnlockedBlock = row.milestoneUnlocked && row.milestoneLabels && row.milestoneLabels.length ? `
+      <div class="ht-support-note">
+        <strong>Milestone Unlocked</strong><br>
+        ${esc(row.milestoneLabels.join(", "))}
+      </div>
+    ` : "";
     return `
       <div class="ht-success-shell">
         <div class="ht-pending-head">
@@ -689,6 +762,7 @@
         </div>
         <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
         ${tierUnlockedBlock}
+        ${milestoneUnlockedBlock}
         ${cardPreview}
         ${tierCardPreview}
         <div class="ht-field-grid">
@@ -718,7 +792,7 @@
               sideEffects.telegramCtaSent ? "Pack broadcast sent." : "",
             ].filter(Boolean).join(" ")}
           </p>
-        ` : ""}
+        ` : sideEffects.telegramCtaDigestReady ? `<p class="ht-copy ht-copy-tight">Treasury digest queue updated.</p>` : ""}
       </div>
     `;
   }
@@ -729,23 +803,64 @@
     return `<div class="ht-support-note">${esc(text)}</div>`;
   }
 
-  function renderLeaderboard(items) {
-    const list = Array.isArray(items) ? items : [];
-    if (!list.length) {
-      return "";
-    }
+  function renderLeaderboard(state) {
+    const s = state && typeof state === "object" ? state : buildStaticState();
+    const list = Array.isArray(s.topSupporters) ? s.topSupporters : [];
+    const milestones = Array.isArray(s.unlockedMilestones) ? s.unlockedMilestones : [];
+    const userSignal = s.userSignal && typeof s.userSignal === "object" ? s.userSignal : buildStaticState().userSignal;
+    const rankLabel = s.currentUserRank > 0 ? `#${s.currentUserRank}` : (userSignal.currentRank > 0 ? `#${userSignal.currentRank}` : "Unranked");
+    const nextTierLabel = String(userSignal.nextTierLabel || "").trim();
+    const progressPct = Math.max(0, Math.min(100, Math.round(Number(userSignal.progressToNext || 0) * 100)));
 
     return `
       <section class="ht-panel">
         <div class="ht-panel-head">
           <div>
-            <div class="ht-panel-kicker">Top Supporters</div>
+            <div class="ht-panel-kicker">Treasury Board</div>
             <h3>Read-only recognition board</h3>
+            <div class="ht-copy ht-copy-tight">Community total, your standing, and the strongest verified signals.</div>
           </div>
         </div>
-        <div class="ht-leaderboard">
+        <div class="ht-board-stats">
+          <article class="ht-board-stat">
+            <span>Total HOWL supported</span>
+            <strong>${esc(s.totalSupportedDisplay || "0 $HOWL")}</strong>
+          </article>
+          <article class="ht-board-stat">
+            <span>Your support</span>
+            <strong>${esc(userSignal.totalSupportedDisplay || "0 $HOWL")}</strong>
+          </article>
+          <article class="ht-board-stat">
+            <span>Your Treasury rank</span>
+            <strong>${esc(userSignal.tierLabel || "No signal yet")}</strong>
+          </article>
+          <article class="ht-board-stat">
+            <span>Your board position</span>
+            <strong>${esc(rankLabel)}</strong>
+          </article>
+        </div>
+        ${nextTierLabel ? `
+          <div class="ht-board-progress">
+            <div class="ht-board-progress-head">
+              <span>Progress to ${esc(nextTierLabel)}</span>
+              <strong>${esc(String(progressPct))}%</strong>
+            </div>
+            <div class="ht-signal-progress" aria-hidden="true"><span style="width:${progressPct}%"></span></div>
+          </div>
+        ` : ""}
+        ${milestones.length ? `
+          <div class="ht-board-milestones">
+            <div class="ht-wallet-label">Unlocked milestones</div>
+            <div class="ht-board-pill-row">
+              ${milestones.map((item) => `<span class="ht-board-pill">${esc(item.label || "Milestone")}</span>`).join("")}
+            </div>
+          </div>
+        ` : ""}
+        ${list.length ? `
+          <div class="ht-leaderboard">
           ${list.map((item) => `
-            <article class="ht-leader-row">
+            <article class="ht-leader-row ${item.isCurrentUser ? "is-current" : ""}">
+              <div class="ht-leader-rank">${esc(item.rank > 0 ? `#${item.rank}` : "--")}</div>
               <div class="ht-leader-copy">
                 <div class="ht-leader-name">${esc(item.name || "Supporter")}</div>
                 <div class="ht-leader-tier">${esc(item.tierLabel || "Supporter")}</div>
@@ -753,7 +868,8 @@
               <div class="ht-leader-amount">${esc(item.amountDisplay || "0 $HOWL")}</div>
             </article>
           `).join("")}
-        </div>
+          </div>
+        ` : `<div class="ht-empty">Leaderboard fills as verified Treasury support comes in.</div>`}
       </section>
     `;
   }
@@ -1023,6 +1139,8 @@
       tierLabel: String(src.tierLabel || src.tier_label || "No signal yet").trim() || "No signal yet",
       tierUnlocked: !!src.tierUnlocked,
       tierCardUrl: String(src.tierCardUrl || src.tier_card_url || "").trim(),
+      milestoneUnlocked: !!src.milestoneUnlocked,
+      milestoneLabels: Array.isArray(src.milestoneLabels) ? src.milestoneLabels.map((item) => String(item || "").trim()).filter(Boolean) : [],
       sideEffects: normalizeSideEffects(src.sideEffects || src.side_effects),
     };
   }
@@ -1032,6 +1150,7 @@
     return {
       mailboxSent: !!src.mailboxSent,
       telegramCtaSent: !!src.telegramCtaSent,
+      telegramCtaDigestReady: !!src.telegramCtaDigestReady,
     };
   }
 
@@ -1178,9 +1297,9 @@
         max-height:min(calc(var(--vh, 1vh) * 100), 100dvh);
         padding:
           max(12px, env(safe-area-inset-top, 0px))
-          12px
+          calc(12px + max(var(--ah-inset-right, 0px), env(safe-area-inset-right, 0px)))
           calc(12px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)))
-          12px;
+          calc(12px + max(var(--ah-inset-left, 0px), env(safe-area-inset-left, 0px)));
         transform:translateY(18px);
         opacity:0;
         transition:transform .18s ease, opacity .18s ease;
@@ -1190,6 +1309,8 @@
         opacity:1;
       }
       .ht-root{
+        display:flex;
+        flex-direction:column;
         border-radius:26px 26px 22px 22px;
         overflow:hidden;
         border:1px solid rgba(120,226,255,.18);
@@ -1207,8 +1328,11 @@
         gap:14px;
         max-height:calc(min(calc(var(--vh, 1vh) * 100), 100dvh) - 24px - max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
         overflow:auto;
-        padding:12px;
+        padding:12px 12px calc(20px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
         color:#edf7ff;
+        overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch;
+        scroll-padding-bottom:calc(32px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
       }
       .ht-hero{
         position:relative;
@@ -1371,6 +1495,10 @@
         align-items:flex-start;
         justify-content:space-between;
         gap:12px;
+        flex-wrap:wrap;
+      }
+      .ht-panel-head > *{
+        min-width:0;
       }
       .ht-panel h3{
         margin:4px 0 0;
@@ -1413,7 +1541,8 @@
         font-size:12px;
         line-height:1.55;
         color:#f6fbff;
-        word-break:break-all;
+        word-break:break-word;
+        overflow-wrap:anywhere;
       }
       .ht-actions{
         display:flex;
@@ -1422,6 +1551,8 @@
         margin-top:12px;
       }
       .ht-btn{
+        flex:1 1 180px;
+        min-width:0;
         min-height:42px;
         padding:0 14px;
         border-radius:14px;
@@ -1585,13 +1716,15 @@
         font-family:ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size:12px;
         line-height:1.55;
-        word-break:break-all;
+        word-break:break-word;
+        overflow-wrap:anywhere;
       }
       .ht-countdown-row{
         display:flex;
         align-items:center;
         justify-content:space-between;
         gap:12px;
+        flex-wrap:wrap;
         margin-top:12px;
         color:#d4e2ea;
         font-size:12px;
@@ -1635,6 +1768,82 @@
         color:#cedde7;
         font-size:12px;
         line-height:1.45;
+      }
+      .ht-signal-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+      }
+      .ht-signal-tier{
+        margin-top:6px;
+        color:#eef7ff;
+        font-size:16px;
+        font-weight:800;
+        line-height:1.2;
+      }
+      .ht-signal-total{
+        color:#ffe1aa;
+        font-size:14px;
+        font-weight:800;
+        text-align:right;
+      }
+      .ht-signal-metrics,
+      .ht-board-stats{
+        display:grid;
+        gap:10px;
+        margin-top:12px;
+      }
+      .ht-signal-metric,
+      .ht-board-stat{
+        min-width:0;
+        padding:12px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(7,12,18,.40);
+      }
+      .ht-signal-metric span,
+      .ht-board-stat span{
+        display:block;
+        color:rgba(194,224,236,.72);
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+      }
+      .ht-signal-metric strong,
+      .ht-board-stat strong{
+        display:block;
+        margin-top:8px;
+        color:#eef7ff;
+        font-size:14px;
+        line-height:1.3;
+        overflow-wrap:anywhere;
+      }
+      .ht-signal-progress-head,
+      .ht-board-progress-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-top:12px;
+        color:#d4e2ea;
+        font-size:12px;
+      }
+      .ht-signal-progress{
+        margin-top:10px;
+        height:8px;
+        border-radius:999px;
+        background:rgba(255,255,255,.08);
+        overflow:hidden;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.35);
+      }
+      .ht-signal-progress span{
+        display:block;
+        height:100%;
+        border-radius:inherit;
+        background:linear-gradient(90deg, rgba(76,226,255,.9), rgba(255,176,74,.88));
+        box-shadow:0 0 12px rgba(76,226,255,.18);
       }
       .ht-inline-badge{
         display:inline-flex;
@@ -1720,6 +1929,29 @@
         background:linear-gradient(90deg, rgba(76,226,255,.9), rgba(255,176,74,.88));
         box-shadow:0 0 12px rgba(76,226,255,.18);
       }
+      .ht-board-milestones{
+        margin-top:12px;
+      }
+      .ht-board-pill-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:10px;
+      }
+      .ht-board-pill{
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:4px 10px;
+        border-radius:999px;
+        border:1px solid rgba(255,176,74,.24);
+        background:rgba(255,176,74,.10);
+        color:#ffe1b0;
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+      }
       .ht-card-shell{
         display:grid;
         gap:12px;
@@ -1727,6 +1959,8 @@
       }
       .ht-card-preview{
         width:100%;
+        max-width:100%;
+        height:auto;
         display:block;
         border-radius:16px;
         border:1px solid rgba(255,255,255,.08);
@@ -1757,15 +1991,29 @@
         justify-content:space-between;
         gap:12px;
       }
+      .ht-leader-row.is-current{
+        border-color:rgba(76,226,255,.20);
+        box-shadow:0 0 0 1px rgba(76,226,255,.05);
+      }
+      .ht-leader-rank{
+        flex:0 0 auto;
+        min-width:38px;
+        color:rgba(194,224,236,.72);
+        font-size:11px;
+        font-weight:800;
+        letter-spacing:.06em;
+      }
       .ht-leader-copy{
         min-width:0;
+        flex:1 1 auto;
       }
       .ht-leader-amount{
-        flex:0 0 auto;
+        flex:0 1 auto;
         color:#ffe1aa;
         font-size:13px;
         font-weight:800;
-        white-space:nowrap;
+        text-align:right;
+        overflow-wrap:anywhere;
       }
       .ht-note{
         padding:14px;
@@ -1811,6 +2059,10 @@
         .ht-grid{
           grid-template-columns:repeat(2, minmax(0, 1fr));
         }
+        .ht-board-stats,
+        .ht-signal-metrics{
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+        }
       }
       @media (max-width: 420px){
         .ht-shell{ padding:14px; }
@@ -1826,6 +2078,19 @@
           grid-template-columns:1fr;
         }
         .ht-btn{ width:100%; }
+        .ht-pending-head,
+        .ht-signal-head,
+        .ht-board-progress-head{
+          flex-direction:column;
+          align-items:flex-start;
+        }
+        .ht-leader-row{
+          align-items:flex-start;
+        }
+        .ht-leader-amount{
+          width:100%;
+          text-align:left;
+        }
       }
     `;
 
