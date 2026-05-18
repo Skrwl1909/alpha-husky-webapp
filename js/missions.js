@@ -32,6 +32,101 @@
     return p;
   }
 
+  function textOrEmpty(v) {
+    if (v == null) return "";
+    if (typeof v === "string") return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    if (typeof v === "boolean") return v ? "Yes" : "No";
+    return "";
+  }
+
+  function titleizeWord(v) {
+    const s = textOrEmpty(v).toLowerCase();
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function normalizeModifierLabel(v) {
+    return textOrEmpty(v);
+  }
+
+  function normalizeOutcomeTier(last) {
+    const direct = textOrEmpty(last?.outcomeTier || last?.outcome_tier);
+    if (direct) return direct;
+    const result = textOrEmpty(last?.result);
+    if (result === "victory") return "Success";
+    if (result === "defeat" || result === "failure" || result === "failed") return "Failed";
+    return "";
+  }
+
+  function normalizeOutcomeTone(outcomeTier) {
+    const key = textOrEmpty(outcomeTier).toLowerCase();
+    if (key === "critical success") return "critical";
+    if (key === "partial success") return "partial";
+    if (key === "failed") return "failed";
+    return "success";
+  }
+
+  function normalizeStatsText(v) {
+    if (Array.isArray(v)) {
+      const parts = v.map((x) => textOrEmpty(x).toUpperCase()).filter(Boolean);
+      return parts.join(" / ");
+    }
+    return textOrEmpty(v).toUpperCase();
+  }
+
+  function normalizePetMatchLabel(last) {
+    const direct = textOrEmpty(last?.activePetMatchLabel || last?.petMatchLabel);
+    if (direct) return direct;
+    const assist = textOrEmpty(last?.activePetAssistLabel || last?.petAssistLabel);
+    if (assist) return assist.replace(/\s+match$/i, "");
+    const matchKey = textOrEmpty(last?.activePetMatch || last?.petMatch);
+    return matchKey ? titleizeWord(matchKey) : "";
+  }
+
+  function normalizePercentNumber(v) {
+    if (typeof v === "number" && Number.isFinite(v)) return Math.max(0, Math.min(100, Math.round(v)));
+    const s = textOrEmpty(v);
+    if (!s) return null;
+    const m = s.match(/-?\d+/);
+    if (!m) return null;
+    const n = Number(m[0]);
+    if (!Number.isFinite(n)) return null;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
+  function normalizeProgressLine(last) {
+    const direct = textOrEmpty(last?.progressLine);
+    if (direct) return direct;
+    const pct = normalizePercentNumber(last?.progressPercent);
+    return pct == null ? "" : `Progress: ${pct}%`;
+  }
+
+  function normalizeShortfallLine(last) {
+    const direct = textOrEmpty(last?.shortfallLine);
+    if (direct) return direct;
+    const pct = normalizePercentNumber(last?.shortByPercent);
+    return pct == null || pct <= 0 ? "" : `Short by: ${pct}%`;
+  }
+
+  function normalizeRewardList(v) {
+    if (Array.isArray(v)) {
+      return v
+        .map((item) => {
+          if (typeof item === "string") return item.trim();
+          if (typeof item === "number" && Number.isFinite(item)) return String(item);
+          if (item && typeof item === "object") {
+            const label = textOrEmpty(item.label || item.name || item.text || item.value);
+            return label;
+          }
+          return "";
+        })
+        .filter(Boolean);
+    }
+    const text = textOrEmpty(v);
+    return text ? [text] : [];
+  }
+
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
@@ -213,13 +308,25 @@
         box-shadow: 0 16px 34px rgba(0,0,0,.32);
       }
 
-      #missionsRoot .m-title{ font-weight:900; letter-spacing:.2px; }
-      #missionsRoot .m-muted{ opacity:.78; font-size:12.5px; line-height:1.35; }
+      #missionsRoot .m-title{
+        font-weight:900;
+        letter-spacing:.2px;
+        overflow-wrap:anywhere;
+        word-break:break-word;
+      }
+      #missionsRoot .m-muted{
+        opacity:.78;
+        font-size:12.5px;
+        line-height:1.35;
+        overflow-wrap:anywhere;
+        word-break:break-word;
+      }
       #missionsRoot .m-kicker{
         font-size: 11px;
         letter-spacing: .45px;
         text-transform: uppercase;
         opacity: .72;
+        overflow-wrap:anywhere;
       }
       #missionsRoot .m-tag-row{
         display:flex;
@@ -236,8 +343,11 @@
         border:1px solid rgba(255,255,255,.10);
         background: rgba(255,255,255,.05);
         font-size:11px;
-        line-height:1;
+        line-height:1.2;
         opacity:.9;
+        white-space:normal;
+        max-width:100%;
+        overflow-wrap:anywhere;
       }
 
       #missionsRoot .m-row{
@@ -245,6 +355,7 @@
         align-items:flex-start;
         justify-content:space-between;
         gap:10px;
+        min-width:0;
       }
 
       #missionsRoot .m-hr{
@@ -259,6 +370,7 @@
         background: rgba(0,0,0,.18);
         border-radius:14px;
         padding:12px;
+        overflow:hidden;
       }
       #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
       #missionsRoot .m-offer:hover{
@@ -418,6 +530,123 @@
         flex-wrap:wrap;
         justify-content:center;
         margin-top: 10px;
+      }
+
+      #missionsRoot .m-report{
+        border:1px solid rgba(120,160,190,.16);
+        background:
+          linear-gradient(180deg, rgba(6,10,14,.42), rgba(6,10,14,.70)),
+          radial-gradient(circle at top right, rgba(0,229,255,.08), transparent 42%);
+      }
+      #missionsRoot .m-outcome-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:24px;
+        padding:4px 10px;
+        border-radius:999px;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.45px;
+        text-transform:uppercase;
+        border:1px solid rgba(255,255,255,.14);
+        background:rgba(255,255,255,.06);
+        color:rgba(255,255,255,.95);
+        max-width:100%;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-outcome-badge[data-tone="critical"]{
+        border-color:rgba(255,208,96,.38);
+        background:rgba(255,176,0,.12);
+        color:rgba(255,232,188,.98);
+      }
+      #missionsRoot .m-outcome-badge[data-tone="success"]{
+        border-color:rgba(92,222,180,.28);
+        background:rgba(47,161,125,.14);
+      }
+      #missionsRoot .m-outcome-badge[data-tone="partial"]{
+        border-color:rgba(120,188,255,.28);
+        background:rgba(52,108,168,.16);
+      }
+      #missionsRoot .m-outcome-badge[data-tone="failed"]{
+        border-color:rgba(255,128,128,.28);
+        background:rgba(122,48,48,.18);
+      }
+      #missionsRoot .m-report-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+        min-width:0;
+      }
+      #missionsRoot .m-report-title{
+        font-size:15px;
+        font-weight:900;
+        letter-spacing:.15px;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-report-sub{
+        margin-top:4px;
+        font-size:12px;
+        opacity:.78;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-report-line{
+        margin-top:8px;
+        font-size:12.5px;
+        line-height:1.42;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-report-chipline{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+        margin-top:8px;
+      }
+      #missionsRoot .m-report-chip{
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:0 8px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.05);
+        font-size:11px;
+        line-height:1.2;
+        white-space:normal;
+        max-width:100%;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-report-section{
+        margin-top:10px;
+        padding-top:10px;
+        border-top:1px solid rgba(255,255,255,.08);
+      }
+      #missionsRoot .m-report-label{
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.45px;
+        text-transform:uppercase;
+        opacity:.72;
+      }
+      #missionsRoot .m-report-values{
+        margin-top:6px;
+        font-size:12.5px;
+        line-height:1.42;
+        overflow-wrap:anywhere;
+      }
+
+      @media (max-width: 520px){
+        #missionsRoot .m-row,
+        #missionsRoot .m-report-head{
+          flex-direction:column;
+        }
+        #missionsRoot .m-offer button.btn.primary{
+          width:100%;
+        }
+        #missionsRoot .m-clock{
+          font-size:42px;
+        }
       }
     `;
     document.head.appendChild(st);
@@ -1081,9 +1310,9 @@ function _normalizeRareDropObj(obj) {
     const title = String(o?.title || o?.name || "");
     const lore = String(o?.lore || "");
     const desc  = String(o?.desc || "");
-    const modifierLabel = String(o?.modifierLabel || "");
+    const modifierLabel = normalizeModifierLabel(o?.modifierLabel);
     const rewardIntent = Array.isArray(o?.rewardIntent) ? o.rewardIntent.map((x) => String(x || "").trim()).filter(Boolean) : [];
-    const rareHint = String(o?.rareHint || "");
+    const rareHint = textOrEmpty(o?.rareHint);
     const body = lore || desc;
 
     const durSec = Number(o?.durationSec || o?.duration_sec || 0);
@@ -1096,6 +1325,12 @@ function _normalizeRareDropObj(obj) {
     const xp = (reward.xp ?? o?.xp ?? "?");
     const bones = (reward.bones ?? o?.bones ?? "?");
     const rolls = (o?.lootRolls ?? o?.loot_rolls ?? reward.rolls ?? reward.loot_rolls ?? "?");
+    const petMatchLabel = normalizePetMatchLabel(o);
+    const compactHint = textOrEmpty(o?.compactHint) ||
+      (petMatchLabel ? `Pet Match: ${petMatchLabel}` : "") ||
+      (normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)
+        ? `Recommended: ${normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)}`
+        : "");
 
     const offerId = String(o?.offerId || o?.id || o?.offer_id || "");
 
@@ -1115,6 +1350,7 @@ function _normalizeRareDropObj(obj) {
             ${title ? `<div class="m-title" style="margin-top:4px;">${esc(title)}</div>` : ""}
             ${body ? `<div class="m-muted" style="margin-top:6px;">${esc(body)}</div>` : ""}
             ${renderTags(flavorTags)}
+            ${compactHint ? `<div class="m-muted" style="margin-top:6px;">${esc(compactHint)}</div>` : ""}
             <div class="m-muted" style="margin-top:8px;">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
             </div>
@@ -1138,6 +1374,13 @@ function _normalizeRareDropObj(obj) {
     const title = String(last?.title || last?.name || "");
     const subtitle = String(last?.subtitle || "");
     const report = String(last?.report || "");
+    const outcomeTier = String(last?.outcomeTier || last?.outcome_tier || ((result === "victory" || last?.victory) ? "Success" : "Failed"));
+    const modifierLabel = String(last?.modifierLabel || "");
+    const progressLine = String(last?.progressLine || "");
+    const shortfallLine = String(last?.shortfallLine || "");
+    const petLine = String(last?.activePetContribution || last?.petAssistLine || "");
+    const recoveredRewards = Array.isArray(last?.recoveredRewards) ? last.recoveredRewards.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    const missedRewards = Array.isArray(last?.missedRewards) ? last.missedRewards.map((x) => String(x || "").trim()).filter(Boolean) : [];
 
     const rewardMsg = String(last?.rewardMsg || last?.reward_msg || "");
     const lootMsg = String(last?.lootMsg || last?.loot_msg || "");
@@ -1152,9 +1395,76 @@ function _normalizeRareDropObj(obj) {
           ${esc(victory)} ${ts ? `· <b>${esc(ts)}</b>` : ""}
         </div>
         ${report ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(report)}</div>` : ""}
+        ${outcomeTier ? `<div class="m-muted" style="margin-top:6px;"><b>${esc(outcomeTier)}</b>${modifierLabel ? ` · ${esc(modifierLabel)}` : ""}</div>` : ""}
+        ${progressLine ? `<div class="m-muted" style="margin-top:6px;">${esc(progressLine)}</div>` : ""}
+        ${shortfallLine ? `<div class="m-muted" style="margin-top:4px;">${esc(shortfallLine)}</div>` : ""}
+        ${petLine ? `<div class="m-muted" style="margin-top:6px;">${esc(petLine)}</div>` : ""}
+        ${recoveredRewards.length ? `<div class="m-muted" style="margin-top:8px;">Recovered: ${esc(recoveredRewards.join(" · "))}</div>` : ""}
+        ${missedRewards.length ? `<div class="m-muted" style="margin-top:4px;">Missed: ${esc(missedRewards.join(" · "))}</div>` : ""}
         ${rewardMsg ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(rewardMsg)}</div>` : ""}
         ${lootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(lootMsg)}</div>` : ""}
         ${tokenLootMsg ? `<div class="m-muted" style="margin-top:6px; white-space:pre-wrap;">${esc(tokenLootMsg)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderLast(last) {
+    const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
+    const title = textOrEmpty(last?.title || last?.name) || "Mission";
+    const subtitle = textOrEmpty(last?.subtitle);
+    const narrative = textOrEmpty(last?.narrativeLine || last?.report);
+    const outcomeTier = normalizeOutcomeTier(last);
+    const outcomeTone = normalizeOutcomeTone(outcomeTier);
+    const modifierLabel = normalizeModifierLabel(last?.modifierLabel);
+    const progressLine = normalizeProgressLine(last);
+    const shortfallLine = normalizeShortfallLine(last);
+    const petMatchLabel = normalizePetMatchLabel(last);
+    const petArchetype = titleizeWord(last?.activePetArchetype);
+    const petLine = textOrEmpty(last?.activePetContribution || last?.petAssistLine);
+    const recoveredRewards = normalizeRewardList(last?.recoveredRewards);
+    const missedRewards = normalizeRewardList(last?.missedRewards);
+    const rareHint = textOrEmpty(last?.rareHint);
+    const rareHit = !!last?.rareHit;
+    const rewardMsg = textOrEmpty(last?.rewardMsg || last?.reward_msg);
+    const lootMsg = textOrEmpty(last?.lootMsg || last?.loot_msg);
+    const tokenLootMsg = textOrEmpty(last?.tokenLootMsg || last?.token_loot_msg);
+
+    const metaBits = [];
+    if (modifierLabel) metaBits.push(modifierLabel);
+    if (ts) metaBits.push(ts);
+
+    const chipLines = [];
+    if (progressLine) chipLines.push(progressLine);
+    if (shortfallLine && shortfallLine !== progressLine) chipLines.push(shortfallLine);
+    if (petMatchLabel) chipLines.push(`Pet Match: ${petMatchLabel}${petArchetype ? ` · ${petArchetype} assist` : ""}`);
+    if (rareHit) chipLines.push("Rare cache recovered");
+    else if (rareHint) chipLines.push(`Rare: ${rareHint}`);
+
+    const fallbackRecovered = [];
+    if (!recoveredRewards.length) {
+      if (rewardMsg) fallbackRecovered.push(rewardMsg);
+      if (lootMsg) fallbackRecovered.push(lootMsg);
+      if (tokenLootMsg) fallbackRecovered.push(tokenLootMsg);
+    }
+
+    const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
+    const showMissed = missedRewards.filter((x) => x && !(rareHit && /rare/i.test(x)));
+
+    return `
+      <div class="m-card m-report" style="margin-top:10px;">
+        <div class="m-report-head">
+          <div style="min-width:0;">
+            <div class="m-title">Last Resolve</div>
+            <div class="m-report-title" style="margin-top:8px;">${esc(title)}</div>
+            ${(subtitle || metaBits.length) ? `<div class="m-report-sub">${esc([subtitle, ...metaBits].filter(Boolean).join(" · "))}</div>` : ""}
+          </div>
+          ${outcomeTier ? `<div class="m-outcome-badge" data-tone="${esc(outcomeTone)}">${esc(outcomeTier)}</div>` : ""}
+        </div>
+        ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
+        ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
+        ${petLine ? `<div class="m-report-line">${esc(petLine)}</div>` : ""}
+        ${showRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(showRecovered.join(" · "))}</div></div>` : ""}
+        ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" · "))}</div></div>` : ""}
       </div>
     `;
   }
@@ -1249,6 +1559,8 @@ function _normalizeRareDropObj(obj) {
         activeTags.push(`Reward: ${active.rewardIntent.join(" · ")}`);
       }
       if (active.rareHint) activeTags.push(`Rare: ${active.rareHint}`);
+      const activeMatchLabel = normalizePetMatchLabel(active);
+      const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet Match: ${activeMatchLabel}` : "");
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -1257,6 +1569,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-title">${esc(active.title || "Mission")}</div>
             ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
             ${renderTags(activeTags)}
+            ${activeHint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(activeHint)}</div>` : ""}
             <div id="mClock" class="m-clock">—</div>
             <div id="mClockSub" class="m-clock-sub">—</div>
 
