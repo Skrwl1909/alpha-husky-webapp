@@ -52,6 +52,12 @@
     };
   }
 
+  function formatPendingLabel(points) {
+    const count = Math.max(0, Number(points || 0));
+    if (count === 1) return "1 stat point available";
+    return `Pending points: ${count}`;
+  }
+
   function ensureStyles() {
     if (document.getElementById("mypets-style")) return;
     const s = document.createElement("style");
@@ -61,62 +67,87 @@
       #mypetsModal .panel{
         position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
         width:min(520px,calc(100% - 24px));max-height:82vh;overflow:auto;
-        border-radius:16px;background:#0b0f16;border:1px solid rgba(255,255,255,.10)
+        border-radius:16px;background:linear-gradient(180deg,#0f1621 0%,#0b1017 100%);
+        border:1px solid rgba(162,217,255,.14);
+        box-shadow:0 18px 44px rgba(0,0,0,.34)
       }
       #mypetsModal .head{
         display:flex;align-items:center;justify-content:space-between;
-        padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)
+        padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.10)
       }
-      #mypetsModal .head .t{font-weight:800;letter-spacing:.2px}
-      #mypetsModal .head button{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
-      #mypetsModal .sub{padding:0 14px 10px;opacity:.85;font-size:12px}
+      #mypetsModal .head .t{font-weight:800;letter-spacing:.2px;color:#f5fbff}
+      #mypetsModal .head button{
+        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#f7fcff;
+        font-size:15px;cursor:pointer;border-radius:10px;min-width:32px;min-height:32px
+      }
+      #mypetsModal .sub{padding:0 14px 10px;color:rgba(229,242,255,.8);font-size:12px;line-height:1.45}
       #mypetsModal .list{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
       .petRow{
         display:flex;gap:12px;align-items:center;
-        padding:10px;border-radius:14px;
-        border:1px solid rgba(255,255,255,.10);
-        background:rgba(255,255,255,.03)
+        padding:11px;border-radius:14px;
+        border:1px solid rgba(208,229,255,.12);
+        background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.045) 100%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
       }
-      .petRow.active{outline:2px solid rgba(137,255,254,.30)}
-      .petImg{width:56px;height:56px;border-radius:12px;object-fit:cover;background:rgba(255,255,255,.06)}
+      .petRow.active{
+        outline:1px solid rgba(137,255,254,.42);
+        border-color:rgba(137,255,254,.26);
+        background:linear-gradient(180deg,rgba(96,165,250,.14) 0%,rgba(255,255,255,.06) 100%)
+      }
+      .petImg{
+        width:56px;height:56px;border-radius:12px;object-fit:cover;
+        background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08)
+      }
       .petImg.petSprite{object-fit:contain}
       .petImg.petSprite canvas,
       .petImg.petSprite img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block}
       .petMeta{flex:1;min-width:0}
-      .petName{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .petSub{opacity:.82;font-size:12px;margin-top:3px}
-      .petBadges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+      .petName{
+        font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        color:#f6fbff;font-size:14px;letter-spacing:.01em
+      }
+      .petSub{color:rgba(223,237,255,.88);font-size:12px;line-height:1.4;margin-top:4px}
+      .petBadges{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
       .petBadge{
         display:inline-flex;align-items:center;gap:4px;
-        padding:4px 8px;border-radius:999px;font-size:11px;
-        background:rgba(137,255,254,.12);border:1px solid rgba(137,255,254,.18);color:#d8ffff
+        padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;
+        background:rgba(137,255,254,.18);border:1px solid rgba(137,255,254,.28);color:#efffff;
+        box-shadow:0 0 0 1px rgba(137,255,254,.06) inset
       }
       .petStats{
         display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:6px;margin-top:8px
+        gap:8px;margin-top:9px
       }
       .petStat{
         display:flex;align-items:center;justify-content:space-between;gap:6px;
-        min-width:0;padding:6px 8px;border-radius:10px;
-        background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06)
+        min-width:0;padding:7px 9px;border-radius:11px;
+        background:rgba(163,191,224,.12);border:1px solid rgba(207,226,248,.14)
       }
       .petStatText{display:flex;align-items:center;gap:6px;min-width:0}
-      .petStatLabel{font-size:11px;opacity:.72}
-      .petStatValue{font-size:12px;font-weight:800}
+      .petStatLabel{font-size:11px;color:rgba(222,236,249,.82);font-weight:700;letter-spacing:.03em}
+      .petStatValue{font-size:13px;font-weight:800;color:#f6fbff}
       .petStatAdd{
-        width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;
-        border-radius:999px;border:1px solid rgba(137,255,254,.25);
-        background:rgba(137,255,254,.14);color:#fff;cursor:pointer;font-weight:800;flex:0 0 auto
+        width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+        border-radius:999px;border:1px solid rgba(137,255,254,.42);
+        background:linear-gradient(180deg,rgba(84,203,255,.34) 0%,rgba(60,171,235,.22) 100%);
+        color:#f9feff;cursor:pointer;font-weight:900;font-size:16px;flex:0 0 auto;
+        box-shadow:0 4px 12px rgba(54,158,217,.18)
       }
-      .petStatAdd[disabled]{opacity:.45;cursor:default}
+      .petStatAdd[disabled]{opacity:.45;cursor:default;box-shadow:none}
       .petDebug{opacity:.72;font-size:10px;line-height:1.35;margin-top:5px;word-break:break-word}
       .petBtn{
-        padding:8px 10px;border-radius:12px;
-        border:1px solid rgba(255,255,255,.14);
-        background:rgba(255,255,255,.06);color:#fff;cursor:pointer
+        padding:9px 11px;border-radius:12px;min-width:62px;
+        border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.08);color:#f8fcff;cursor:pointer;font-weight:700
       }
-      .petBtn[disabled]{opacity:.6;cursor:default}
-      .petErr{padding:14px;opacity:.85}
+      .petBtn[disabled]{opacity:.72;cursor:default}
+      .petErr{padding:14px;color:rgba(235,244,255,.86)}
+      @media (max-width: 420px){
+        #mypetsModal .panel{width:min(520px,calc(100% - 18px));bottom:10px}
+        #mypetsModal .list{padding:10px 12px}
+        .petRow{gap:10px;padding:10px}
+        .petStats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      }
     `;
     document.head.appendChild(s);
   }
@@ -271,7 +302,7 @@
         </div>
       `).join("");
       const badges = pending > 0
-        ? `<div class="petBadges"><div class="petBadge">Pending Points: ${pending}</div></div>`
+        ? `<div class="petBadges"><div class="petBadge">${escapeHtml(formatPendingLabel(pending))}</div></div>`
         : "";
       const hasSpriteMeta = !!(pet.spriteSheetUrl && pet.sprite);
       const debug = _dbg
