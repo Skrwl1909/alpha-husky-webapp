@@ -58,19 +58,9 @@
     0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5,
     5, 8, 9, 9, 10, 10, 11, 13, 14, 16,
   ]);
-  const SKIN_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+  const SKIN_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, x: 0, y: 0 });
   const SKIN_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    unbroken_alpha: { scale: 1.03, offsetX: 0, offsetY: -3 },
-  });
-  const FRAME_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 0.76, offsetX: 0, offsetY: 0 });
-  const FRAME_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    pioneer_frame: { scale: 0.76, offsetX: 0, offsetY: 0 },
-    rogue_byte_overclock: { scale: 0.76, offsetX: 0, offsetY: 0 }, // map-influence frame tuning example
-  });
-  const COMBO_PREVIEW_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
-  const COMBO_PREVIEW_FIT_OVERRIDES = Object.freeze({
-    "unbroken_alpha::founder_ember_mark": { scale: 1.01, offsetX: 0, offsetY: -2 },
-    "unbroken_alpha::rogue_byte_overclock": { scale: 1.04, offsetX: 0, offsetY: 5 },
+    unbroken_alpha: { scale: 1.02, x: 0, y: -2 },
   });
 
   function dbg(msg, obj) {
@@ -142,11 +132,11 @@
   }
 
   function normalizeFit(raw, fallback) {
-    const base = fallback || FRAME_PREVIEW_FIT_DEFAULT;
+    const base = fallback || SKIN_PREVIEW_FIT_DEFAULT;
     return {
       scale: fitNum(raw?.scale, base.scale),
-      offsetX: fitNum(raw?.offsetX, base.offsetX),
-      offsetY: fitNum(raw?.offsetY, base.offsetY),
+      x: fitNum(raw?.x ?? raw?.offsetX, base.x ?? base.offsetX ?? 0),
+      y: fitNum(raw?.y ?? raw?.offsetY, base.y ?? base.offsetY ?? 0),
     };
   }
 
@@ -219,6 +209,9 @@
         position:relative;
         width:100%;
         aspect-ratio: 2 / 3;
+        --skin-scale:1;
+        --skin-x:0px;
+        --skin-y:0px;
         border-radius:16px;
         overflow:hidden;
         isolation:isolate;
@@ -250,9 +243,6 @@
         position:absolute;
         inset:11% 14% 13%;
         z-index:1;
-        display:flex;
-        align-items:center;
-        justify-content:center;
         overflow:hidden;
         pointer-events:none;
       }
@@ -265,13 +255,14 @@
         max-width:none;
         object-fit:contain;
         object-position:center center;
-        transform-origin:center center;
       }
       #framesBack .ah-frames-preview-skin{
-        position:relative;
-        inset:auto;
+        left:50%;
+        bottom:0;
         z-index:1;
-        transform:scale(.76);
+        object-position:center bottom;
+        transform:translateX(-50%) translate(var(--skin-x), var(--skin-y)) scale(var(--skin-scale));
+        transform-origin:bottom center;
         filter:drop-shadow(0 12px 18px rgba(0,0,0,.36));
       }
       #framesBack .ah-frames-preview-frame{
@@ -881,9 +872,8 @@
   function setPreview(item) {
     if (!previewSkin || !previewFrame) return;
     const frameUrl = framePreviewUrl(item);
-    const frameKey = frameKeyForFit(item);
     const skinKey = currentHeroSkinKey();
-    applyPreviewSkinFit(frameKey, skinKey);
+    applyPreviewSkinFit(skinKey);
     setPreviewSkinSource();
     if (frameUrl) {
       previewFrame.src = frameUrl;
@@ -983,45 +973,21 @@
     return merged;
   }
 
-  function getPreviewFrameFit(frameKey) {
-    const cfg = window.__AH_FRAME_GALLERY_FIT__ || window.__AH_FRAME_GALLERY_SKIN_FIT__ || {};
-    const legacyCfg = window.__AH_FRAME_PREVIEW_FIT__ || window.__AH_FRAME_PREVIEW_SKIN_FIT__ || {};
-    const defaultFit = normalizeFit(cfg.default, FRAME_PREVIEW_FIT_DEFAULT);
-    const k = normKey(frameKey);
-    const override = k ? (cfg?.overrides?.[k] || legacyCfg?.gallery_overrides?.[k] || FRAME_PREVIEW_FIT_OVERRIDES[k]) : null;
-    return normalizeFit(override, defaultFit);
-  }
-
   function getPreviewSkinBaseFit(skinKey) {
-    const cfg = window.__AH_SKIN_PREVIEW_FIT__ || {};
+    const cfg = window.__AH_PROFILE_CARD_SKIN_FIT__ || window.__AH_SKIN_PREVIEW_FIT__ || {};
     const defaultFit = normalizeFit(cfg.default, SKIN_PREVIEW_FIT_DEFAULT);
     const k = normKey(skinKey);
     const override = k ? (cfg?.overrides?.[k] || SKIN_PREVIEW_FIT_OVERRIDES[k]) : null;
     return normalizeFit(override, defaultFit);
   }
 
-  function getPreviewComboFit(skinKey, frameKey) {
-    const cfg = window.__AH_SKIN_FRAME_PREVIEW_COMBO_FIT__ || window.__AH_SKIN_FRAME_COMBO_FIT__ || {};
-    const defaultFit = normalizeFit(cfg.default, COMBO_PREVIEW_FIT_DEFAULT);
-    const comboKey = skinFrameComboKey(skinKey, frameKey);
-    const override = comboKey ? (cfg?.overrides?.[comboKey] || COMBO_PREVIEW_FIT_OVERRIDES[comboKey]) : null;
-    return normalizeFit(override, defaultFit);
-  }
-
-  function composePreviewFit(frameKey, skinKey) {
-    const resolvedFrameKey = normKey(frameKey);
-    const frameFit = getPreviewFrameFit(resolvedFrameKey);
-    return {
-      scale: frameFit.scale,
-      offsetX: frameFit.offsetX,
-      offsetY: frameFit.offsetY,
-    };
-  }
-
-  function applyPreviewSkinFit(frameKey, skinKey) {
-    if (!previewSkin) return;
-    const fit = composePreviewFit(frameKey, skinKey);
-    previewSkin.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
+  function applyPreviewSkinFit(skinKey) {
+    const stage = framesBack?.querySelector?.(".ah-frames-preview");
+    if (!previewSkin || !stage) return;
+    const fit = getPreviewSkinBaseFit(skinKey);
+    stage.style.setProperty("--skin-scale", String(fit.scale));
+    stage.style.setProperty("--skin-x", `${fit.x}px`);
+    stage.style.setProperty("--skin-y", `${fit.y}px`);
   }
 
   function frameLaneLabel(item, key) {
@@ -1931,6 +1897,7 @@
     if (!framesBack) return;
     hideHowlPanel();
     framesBack.style.display = "none";
+    try { window.navClose?.("framesBack"); } catch (_) {}
   }
 
   function setPrimaryState() {
@@ -2082,7 +2049,16 @@
     }
     try {
       await reloadState();
-      if (framesBack) framesBack.style.display = "flex";
+      if (framesBack) {
+        framesBack.style.display = "flex";
+        try {
+          window.navRegister?.("framesBack", {
+            close,
+            isOpen: () => !!framesBack && framesBack.style.display !== "none",
+          });
+          window.navOpen?.("framesBack");
+        } catch (_) {}
+      }
       setPrimaryState();
       updateHowlControls();
     } catch (err) {
