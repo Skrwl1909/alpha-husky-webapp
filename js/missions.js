@@ -136,6 +136,7 @@
   let _tick = null;
   let _state = null;
   let _stateLoadedAt = 0;
+  let _missionsHelpOpen = false;
   const MISSIONS_STATE_STALE_MS = 10 * 1000;
 
   // ✅ start sync guard (prevents "blink back to offers")
@@ -365,6 +366,12 @@
         gap:3px;
         margin-bottom:8px;
       }
+      #missionsRoot .m-shell-top{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+      }
       #missionsRoot .m-shell-sub{
         font-size:12px;
         opacity:.76;
@@ -383,6 +390,32 @@
         min-height:34px;
         padding:7px 12px;
         font-size:12px;
+      }
+      #missionsRoot .m-help-btn{
+        min-width:34px;
+        padding:7px 10px;
+        border-radius:999px;
+        font-weight:900;
+      }
+      #missionsRoot .m-help{
+        margin-top:8px;
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:12px;
+        padding:10px;
+        background:rgba(255,255,255,.04);
+      }
+      #missionsRoot .m-help-title{
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.4px;
+        text-transform:uppercase;
+        opacity:.88;
+      }
+      #missionsRoot .m-help-copy{
+        margin-top:7px;
+        font-size:12px;
+        line-height:1.38;
+        opacity:.84;
       }
 
       /* Offers */
@@ -709,7 +742,8 @@
 
       @media (max-width: 520px){
         #missionsRoot .m-row,
-        #missionsRoot .m-report-head{
+        #missionsRoot .m-report-head,
+        #missionsRoot .m-shell-top{
           flex-direction:column;
         }
         #missionsRoot .m-offer-main{
@@ -751,6 +785,7 @@
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "resolve") return void doResolve();
       if (act === "close")   return void close();
+      if (act === "toggle_help") { _missionsHelpOpen = !_missionsHelpOpen; return void render(); }
       if (act === "back_to_offers") { _pendingStart = null; stopTick(); return void loadState({ force: true, reason: "back_to_offers" }); }
     });
 
@@ -1349,6 +1384,20 @@ function _normalizeRareDropObj(obj) {
     return `<div class="m-tag-row">${tags.map((tag) => `<span class="m-tag">${esc(tag)}</span>`).join("")}</div>`;
   }
 
+  function renderHelpPanel() {
+    if (!_missionsHelpOpen) return "";
+    return `
+      <div class="m-help">
+        <div class="m-help-title">How Missions Work</div>
+        <div class="m-help-copy">Pick a route. Each mission has a difficulty, reward focus and sometimes a special condition.</div>
+        <div class="m-help-copy">Recommended stats: Stats like AGI / DEF show what helps on that route. They are not required, but they can improve the result.</div>
+        <div class="m-help-copy">Pet Match: Your active pet can slightly help if its stats or type fit the mission. It can improve progress, recovery and rare chance, but it does not guarantee success.</div>
+        <div class="m-help-copy">Rare Cache: A rare cache is a special bonus find. Some missions have a small chance to uncover one, especially on better outcomes.</div>
+        <div class="m-help-copy">Outcomes: Critical Success = best result. Success = normal clear. Partial Success = you recovered something, but missed part of the reward. Failed = the route held. Return stronger.</div>
+      </div>
+    `;
+  }
+
   // =========================
   // Rendering
   // =========================
@@ -1686,9 +1735,13 @@ function _normalizeRareDropObj(obj) {
     _root.innerHTML = `
       <div class="m-stage">
         <div class="m-shell-head">
-          <div class="m-title">Missions</div>
+          <div class="m-shell-top">
+            <div class="m-title">Missions</div>
+            <button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button>
+          </div>
           <div class="m-shell-sub">Pick a route. Start → Wait → Resolve.</div>
           <div class="m-inline-status">No active mission. Pick an offer to start.</div>
+          ${renderHelpPanel()}
         </div>
 
         <div class="m-card">
