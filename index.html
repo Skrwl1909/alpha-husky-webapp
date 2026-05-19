@@ -163,11 +163,9 @@
    + ✅ dim/blur hero when any modal/sheet is open (ah-modal-open)
    ========================= */
 
-.hero-frame,
-.profile-card-portrait{
+.hero-frame{
   width:min(55vw, 238px);
   aspect-ratio:3/4;
-  max-width:100%;
 
   position: relative;
   border-radius: 24px;
@@ -177,41 +175,36 @@
   border:0;
   box-shadow:none;
 
-  overflow: hidden;
+  /* ✅ ważne: ramka może “wyjść” poza boxa */
+  overflow: visible;
   isolation: isolate;
 
-  --skin-scale: 1;
-  --skin-x: 0px;
-  --skin-y: 0px;
+  /* 🎛️ TUNING */
+  --frame-bleed: 4px;    /* ile ramka może wyjść poza kadr */
+  --frame-scale: 1.34;   /* founder frame trochę większy */
+  --frame-x: 0px;        /* mikro przesunięcie */
+  --frame-y: 3px;        /* lekkie opuszczenie overlay */
   --pioneer-sweep-enabled: 1; /* set to 0 to disable sweep layer quickly */
 }
 
 /* ✅ NOWY viewport — skin siedzi w realnym "oknie" frame'a */
-.hero-frame .hero-skin-viewport,
-.profile-card-stage{
+.hero-frame .hero-skin-viewport{
   position:absolute;
   inset:11% 15% 16% 15%;
   border-radius:16px;
   overflow:hidden;
   z-index:1;
   background:transparent;
-  pointer-events:none;
 }
 
 /* ✅ SKIN siedzi w viewport i nie wychodzi poza ramkę */
-.hero-frame .hero-skin,
-.profile-card-skin{
-  position:absolute;
-  left:50%;
-  bottom:0;
-  width:100%;
-  height:100%;
-  max-width:none;
-  display:block;
-  object-fit:contain;
-  object-position:center bottom;
-  transform: translateX(-50%) translate(var(--skin-x), var(--skin-y)) scale(var(--skin-scale));
-  transform-origin:bottom center;
+.hero-frame .hero-skin{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 25%;
+  transform: scale(1.06);
   border-radius: 0;
   clip-path: none;
 }
@@ -228,18 +221,35 @@
 }
 
 /* ✅ RAMKA — pełna, nieucięta, na wierzchu */
-.hero-frame .hero-frame-overlay,
-.profile-card-frame{
+.hero-frame .hero-frame-overlay{
   position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
+  inset: calc(-1 * var(--frame-bleed));
+  width: calc(100% + (2 * var(--frame-bleed)));
+  height: calc(100% + (2 * var(--frame-bleed)));
+
   display:block;
-  object-fit:contain;
-  object-position:center;
+  object-fit: contain;
   pointer-events:none;
   z-index: 3;
+
+  transform-origin: center;
+  --hero-frame-transform: translate(var(--frame-x), var(--frame-y)) scale(var(--frame-scale));
+  transform: var(--hero-frame-transform);
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.30));
+}
+
+.hero-frame .hero-frame-overlay[data-frame-key="dual_supporter_frame"]{
+  transform: var(--hero-frame-transform) scale(.94) scaleY(.96);
+  transform-origin:center center;
+}
+
+.hero-frame .hero-frame-overlay[data-frame-key="server_signal_frame"]{
+  transform: var(--hero-frame-transform) translateY(1px) scale(.975) scaleY(.945);
+  transform-origin:center 54%;
+  filter:
+    drop-shadow(0 10px 18px rgba(0,0,0,.30))
+    drop-shadow(0 0 14px rgba(80,184,255,.18))
+    brightness(1.03);
 }
 
 .hero-frame .hero-frame-overlay-glow,
@@ -264,12 +274,12 @@
 @keyframes ahPioneerGlowPulse{
   0%, 100%{
     opacity:.16;
-    transform:scale(1);
+    transform: var(--hero-frame-transform) scale(1);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(.98);
   }
   50%{
     opacity:.28;
-    transform:scale(1.003);
+    transform: var(--hero-frame-transform) scale(1.003);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.06);
   }
 }
@@ -277,17 +287,17 @@
 @keyframes ahPioneerSweepPass{
   0%, 14%, 100%{
     opacity:0;
-    transform:translateX(-1%);
+    transform: var(--hero-frame-transform) translateX(-1%);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1);
   }
   21%{
     opacity:var(--pioneer-sweep-max-opacity);
-    transform:translateX(0);
+    transform: var(--hero-frame-transform) translateX(0);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1.08);
   }
   30%{
     opacity:0;
-    transform:translateX(1%);
+    transform: var(--hero-frame-transform) translateX(1%);
     filter: drop-shadow(0 10px 18px rgba(0,0,0,.30)) brightness(1);
   }
 }
@@ -460,12 +470,18 @@ html.ah-modal-open #heroFrame{
 
   .hero-frame{
     width:min(55vw, 230px);
+    --frame-scale: 1.38;
+    --frame-y: 3px;
   }
 
-  .hero-frame .hero-skin-viewport,
-  .profile-card-stage{
+  .hero-frame .hero-skin-viewport{
     inset:12% 16% 17% 16%;
     border-radius:14px;
+  }
+
+  .hero-frame .hero-skin{
+    object-position:center 24%;
+    transform:scale(1.06);
   }
 
   .hero-center .share-row{
@@ -4566,13 +4582,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           </div>
           <!-- ŚRODEK – SKIN / HERO -->
 <div class="hero-center">
-  <div class="hero-frame profile-card-portrait" id="heroFrame">
+  <div class="hero-frame" id="heroFrame">
     <div id="heroAuraRing" class="hero-aura-ring"></div>
 
-    <div class="hero-skin-viewport profile-card-stage">
+    <div class="hero-skin-viewport">
       <img
         id="player-skin"
-        class="hero-skin profile-card-skin"
+        class="hero-skin"
         src="/assets/skins/lunarhowl_skin.webp"
         alt="Alpha Husky skin">
     </div>
@@ -4580,19 +4596,19 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <!-- ✅ FRAME OVERLAY (ramka na wierzchu) -->
     <img
       id="player-frame"
-      class="hero-frame-overlay profile-card-frame"
+      class="hero-frame-overlay"
       src=""
       alt=""
       style="display:none">
     <img
       id="player-frame-glow"
-      class="hero-frame-overlay hero-frame-overlay-glow profile-card-frame"
+      class="hero-frame-overlay hero-frame-overlay-glow"
       src=""
       alt=""
       style="display:none">
     <img
       id="player-frame-sweep"
-      class="hero-frame-overlay hero-frame-overlay-sweep profile-card-frame"
+      class="hero-frame-overlay hero-frame-overlay-sweep"
       src=""
       alt=""
       style="display:none">
@@ -6785,7 +6801,6 @@ function applyProfileSkin(skin){
     const parsed = ahSkinKeyFromUrl(skin);
     if (parsed) skinImg.dataset.skinKey = parsed;
     else delete skinImg.dataset.skinKey;
-    applyHeroSkinFit(skin, parsed);
     return;
   }
 
@@ -6795,21 +6810,41 @@ function applyProfileSkin(skin){
   const parsed = explicitKey || ahSkinKeyFromUrl(skin.img || "");
   if (parsed) skinImg.dataset.skinKey = parsed;
   else delete skinImg.dataset.skinKey;
-  applyHeroSkinFit(skin.img || "", parsed);
 }
 
 /* ✅ FRAME + SKIN FIT HELPERS (front-only, minimal + extensible) */
-const AH_PROFILE_CARD_SKIN_FIT = Object.freeze({
-  default: Object.freeze({ scale: 1, x: 0, y: 0 }),
-  overrides: Object.freeze({
-    unbroken_alpha: { scale: 1.02, x: 0, y: -2 },
-  }),
+const AH_HERO_SKIN_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
+  unbroken_alpha: { scale: 1.02, offsetX: 0, offsetY: -2 }, // skin-aware example (tune per asset framing)
 });
 
-window.__AH_PROFILE_CARD_SKIN_FIT__ = window.__AH_PROFILE_CARD_SKIN_FIT__ || AH_PROFILE_CARD_SKIN_FIT;
+const AH_HERO_FRAME_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
+const AH_HERO_FRAME_FIT_OVERRIDES = Object.freeze({
+  pioneer_frame: { scale: 1.03, offsetX: 0, offsetY: 8 },
+  server_signal_frame: { scale: 0.99, offsetX: 0, offsetY: 1 },
+  rogue_byte_overclock: { scale: 1.08, offsetX: 0, offsetY: -6 }, // map-influence frame example
+});
+const AH_HERO_COMBO_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
+const AH_HERO_COMBO_FIT_OVERRIDES = Object.freeze({
+  "unbroken_alpha::founder_ember_mark": { scale: 1.01, offsetX: 0, offsetY: -2 },
+  "unbroken_alpha::rogue_byte_overclock": { scale: 1.04, offsetX: 0, offsetY: 5 }, // stage 3 combo exception example
+});
+
 window.__AH_SKIN_FIT__ = window.__AH_SKIN_FIT__ || {
-  default: AH_PROFILE_CARD_SKIN_FIT.default,
-  overrides: AH_PROFILE_CARD_SKIN_FIT.overrides,
+  default: AH_HERO_SKIN_FIT_DEFAULT,
+  overrides: AH_HERO_SKIN_FIT_OVERRIDES,
+};
+
+window.__AH_FRAME_FIT__ = window.__AH_FRAME_FIT__ || window.__AH_FRAME_SKIN_FIT__ || {
+  default: AH_HERO_FRAME_FIT_DEFAULT,
+  overrides: AH_HERO_FRAME_FIT_OVERRIDES,
+};
+
+// backward-compat alias for previous frame-only integration
+window.__AH_FRAME_SKIN_FIT__ = window.__AH_FRAME_FIT__;
+window.__AH_SKIN_FRAME_COMBO_FIT__ = window.__AH_SKIN_FRAME_COMBO_FIT__ || {
+  default: AH_HERO_COMBO_FIT_DEFAULT,
+  overrides: AH_HERO_COMBO_FIT_OVERRIDES,
 };
 
 window.__AH_SKIN_PREVIEW_FIT__ = window.__AH_SKIN_PREVIEW_FIT__ || {
@@ -6900,32 +6935,59 @@ function ahFitNum(value, fallback){
   return Number.isFinite(n) ? n : fallback;
 }
 
-function ahNormalizeSkinFit(raw, fallback){
-  const base = fallback || AH_PROFILE_CARD_SKIN_FIT.default;
+function ahNormalizeFit(raw, fallback){
+  const base = fallback || AH_HERO_SKIN_FIT_DEFAULT;
   return {
     scale: ahFitNum(raw?.scale, base.scale),
-    x: ahFitNum(raw?.x ?? raw?.offsetX, base.x ?? base.offsetX ?? 0),
-    y: ahFitNum(raw?.y ?? raw?.offsetY, base.y ?? base.offsetY ?? 0),
+    offsetX: ahFitNum(raw?.offsetX, base.offsetX),
+    offsetY: ahFitNum(raw?.offsetY, base.offsetY),
   };
 }
 
-function getHeroSkinBaseFit(skinUrl, skinKey){
-  const cfg = window.__AH_PROFILE_CARD_SKIN_FIT__ || window.__AH_SKIN_FIT__ || {};
-  const defaultFit = ahNormalizeSkinFit(cfg.default, AH_PROFILE_CARD_SKIN_FIT.default);
-  const key = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
-  const override = key ? (cfg?.overrides?.[key] || AH_PROFILE_CARD_SKIN_FIT.overrides[key]) : null;
-  return ahNormalizeSkinFit(override, defaultFit);
+function getHeroSkinFit(frameUrl, frameKey){
+  const cfg = window.__AH_FRAME_FIT__ || window.__AH_FRAME_SKIN_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_FRAME_FIT_DEFAULT);
+  const key = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const override = key ? (cfg?.overrides?.[key] || AH_HERO_FRAME_FIT_OVERRIDES[key]) : null;
+  return ahNormalizeFit(override, defaultFit);
 }
 
-function applyHeroSkinFit(skinUrl, skinKey){
-  const heroFrame = document.getElementById("heroFrame");
+function getHeroSkinBaseFit(skinUrl, skinKey){
+  const cfg = window.__AH_SKIN_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_SKIN_FIT_DEFAULT);
+  const key = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
+  const override = key ? (cfg?.overrides?.[key] || AH_HERO_SKIN_FIT_OVERRIDES[key]) : null;
+  return ahNormalizeFit(override, defaultFit);
+}
+
+function getHeroComboFit(skinKey, frameKey){
+  const cfg = window.__AH_SKIN_FRAME_COMBO_FIT__ || {};
+  const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_COMBO_FIT_DEFAULT);
+  const comboKey = ahSkinFrameComboKey(skinKey, frameKey);
+  const override = comboKey ? (cfg?.overrides?.[comboKey] || AH_HERO_COMBO_FIT_OVERRIDES[comboKey]) : null;
+  return ahNormalizeFit(override, defaultFit);
+}
+
+function composeHeroFit(frameUrl, frameKey, skinUrl, skinKey){
+  const resolvedSkinKey = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
+  const resolvedFrameKey = ahNormFrameKey(frameKey || ahFrameKeyFromUrl(frameUrl));
+  const skinFit = getHeroSkinBaseFit(skinUrl, resolvedSkinKey);
+  const frameFit = getHeroSkinFit(frameUrl, resolvedFrameKey);
+  const comboFit = getHeroComboFit(resolvedSkinKey, resolvedFrameKey);
+  return {
+    scale: skinFit.scale * frameFit.scale * comboFit.scale,
+    offsetX: skinFit.offsetX + frameFit.offsetX + comboFit.offsetX,
+    offsetY: skinFit.offsetY + frameFit.offsetY + comboFit.offsetY,
+  };
+}
+
+function applyHeroSkinFit(frameUrl, frameKey, skinUrl, skinKey){
   const skinEl = document.getElementById("player-skin");
-  if (!heroFrame || !skinEl) return;
+  if (!skinEl) return;
   const src = String(skinUrl || skinEl.currentSrc || skinEl.src || "").trim();
-  const fit = getHeroSkinBaseFit(src, skinKey);
-  heroFrame.style.setProperty("--skin-scale", String(fit.scale));
-  heroFrame.style.setProperty("--skin-x", `${fit.x}px`);
-  heroFrame.style.setProperty("--skin-y", `${fit.y}px`);
+  const fit = composeHeroFit(frameUrl, frameKey, src, skinKey);
+  skinEl.style.objectFit = "contain";
+  skinEl.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
 }
 
 function ahFrameAssetOverride(frameKey){
@@ -6971,7 +7033,7 @@ function setHeroFrame(frameUrl, frameKey, skinKey){
   const resolvedFrameUrl = String(override?.base || frameUrl || "").trim();
   const isPioneer = resolvedKey === "pioneer_frame";
 
-  applyHeroSkinFit(null, skinKey);
+  applyHeroSkinFit(resolvedFrameUrl || frameUrl, resolvedKey, null, skinKey);
   ahSetHeroFrameLayer(baseLayer, resolvedFrameUrl, resolvedKey);
   heroFrame?.classList?.toggle?.("is-pioneer-frame", isPioneer);
 
