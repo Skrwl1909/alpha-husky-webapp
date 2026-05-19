@@ -219,17 +219,12 @@
         min-height:0 !important;
         overflow-y:auto !important;
         -webkit-overflow-scrolling:touch;
-        padding: 14px 14px calc(18px + env(safe-area-inset-bottom)) 14px !important;
+        padding: 10px 10px calc(12px + env(safe-area-inset-bottom)) 10px !important;
       }
 
       /* if you have a bottom button row from index, keep it sticky */
       #missionsBack .btn-row{
-        position:sticky !important;
-        bottom:0 !important;
-        padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) 14px !important;
-        background: rgba(0,0,0,.22) !important;
-        backdrop-filter: blur(12px);
-        border-top: 1px solid rgba(255,255,255,.08) !important;
+        display:none !important;
       }
 
       /* Base stage (offers screen) */
@@ -237,7 +232,7 @@
         position:relative;
         border:1px solid rgba(36,50,68,.95);
         border-radius:16px;
-        padding:14px;
+        padding:10px;
         background:
           radial-gradient(circle at 18% 10%, rgba(0,229,255,.10), transparent 55%),
           radial-gradient(circle at 82% 92%, rgba(255,176,0,.10), transparent 58%),
@@ -300,12 +295,12 @@
 
       #missionsRoot .m-card{
         border: 1px solid rgba(255,255,255,.10);
-        border-radius: 14px;
-        padding: 12px;
+        border-radius: 12px;
+        padding: 10px;
         background: rgba(0,0,0,.20);
         color: rgba(255,255,255,.92);
         backdrop-filter: blur(10px);
-        box-shadow: 0 16px 34px rgba(0,0,0,.32);
+        box-shadow: 0 12px 28px rgba(0,0,0,.28);
       }
 
       #missionsRoot .m-title{
@@ -331,18 +326,18 @@
       #missionsRoot .m-tag-row{
         display:flex;
         flex-wrap:wrap;
-        gap:6px;
-        margin-top:8px;
+        gap:5px;
+        margin-top:6px;
       }
       #missionsRoot .m-tag{
         display:inline-flex;
         align-items:center;
-        min-height:22px;
-        padding:0 8px;
+        min-height:19px;
+        padding:0 7px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.10);
         background: rgba(255,255,255,.05);
-        font-size:11px;
+        font-size:10.5px;
         line-height:1.2;
         opacity:.9;
         white-space:normal;
@@ -354,28 +349,104 @@
         display:flex;
         align-items:flex-start;
         justify-content:space-between;
-        gap:10px;
+        gap:8px;
         min-width:0;
       }
 
       #missionsRoot .m-hr{
         height:1px;
         background: rgba(255,255,255,.08);
-        margin:10px 0;
+        margin:8px 0;
+      }
+
+      #missionsRoot .m-shell-head{
+        display:flex;
+        flex-direction:column;
+        gap:3px;
+        margin-bottom:8px;
+      }
+      #missionsRoot .m-shell-sub{
+        font-size:12px;
+        opacity:.76;
+        line-height:1.3;
+      }
+      #missionsRoot .m-inline-status{
+        margin-top:2px;
+        font-size:12px;
+        opacity:.82;
+        line-height:1.3;
+      }
+      #missionsRoot .m-head-btn{
+        flex:0 0 auto;
+      }
+      #missionsRoot .m-compact-btn{
+        min-height:34px;
+        padding:7px 12px;
+        font-size:12px;
       }
 
       /* Offers */
       #missionsRoot .m-offer{
         border:1px solid rgba(255,255,255,.10);
         background: rgba(0,0,0,.18);
-        border-radius:14px;
-        padding:12px;
+        border-radius:12px;
+        padding:9px 10px;
         overflow:hidden;
       }
-      #missionsRoot .m-offer + .m-offer{ margin-top:10px; }
+      #missionsRoot .m-offer + .m-offer{ margin-top:8px; }
       #missionsRoot .m-offer:hover{
         border-color: rgba(0,229,255,.18);
-        box-shadow: 0 12px 26px rgba(0,0,0,.30);
+        box-shadow: 0 10px 22px rgba(0,0,0,.26);
+      }
+      #missionsRoot .m-offer-main{
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+        min-width:0;
+      }
+      #missionsRoot .m-offer-copy{
+        flex:1 1 auto;
+        min-width:0;
+      }
+      #missionsRoot .m-offer-top{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+        margin-bottom:4px;
+      }
+      #missionsRoot .m-offer-title{
+        font-size:15px;
+        font-weight:900;
+        line-height:1.18;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-offer-body{
+        margin-top:4px;
+        display:-webkit-box;
+        -webkit-box-orient:vertical;
+        -webkit-line-clamp:2;
+        overflow:hidden;
+      }
+      #missionsRoot .m-offer-helper{
+        margin-top:5px;
+        font-size:11.5px;
+        opacity:.82;
+        line-height:1.3;
+      }
+      #missionsRoot .m-offer-reward{
+        margin-top:5px;
+        font-size:11.5px;
+        opacity:.8;
+        line-height:1.3;
+      }
+      #missionsRoot .m-offer-cta{
+        flex:0 0 auto;
+        align-self:center;
+      }
+      #missionsRoot .m-offer-cta .btn{
+        min-height:34px;
+        padding:7px 12px;
       }
       #missionsRoot button[disabled]{ opacity:.55; cursor:not-allowed; }
 
@@ -641,7 +712,13 @@
         #missionsRoot .m-report-head{
           flex-direction:column;
         }
+        #missionsRoot .m-offer-main{
+          flex-direction:column;
+        }
         #missionsRoot .m-offer button.btn.primary{
+          width:100%;
+        }
+        #missionsRoot .m-offer-cta{
           width:100%;
         }
         #missionsRoot .m-clock{
@@ -1277,6 +1354,8 @@ function _normalizeRareDropObj(obj) {
   // =========================
   function renderLoading(msg) {
     if (!_root) return;
+    const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
+    if (row) row.style.display = "none";
     _root.innerHTML = `
       <div class="m-stage">
         <div class="m-card">
@@ -1288,13 +1367,17 @@ function _normalizeRareDropObj(obj) {
 
   function renderError(title, detail) {
     if (!_root) return;
+    const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
+    if (row) row.style.display = "none";
+    const safeTitle = "Mission signal unavailable. Try again.";
+    const safeDetail = _dbg ? textOrEmpty(detail) : "";
     _root.innerHTML = `
       <div class="m-stage">
         <div class="m-card">
-          <div class="m-title">${esc(title)}</div>
-          <div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(detail || "")}</div>
-          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" class="btn" data-act="refresh">Retry</button>
+          <div class="m-title">${esc(safeTitle)}</div>
+          ${safeDetail ? `<div class="m-muted" style="margin-top:8px; white-space:pre-wrap;">${esc(safeDetail)}</div>` : ""}
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn m-compact-btn" data-act="refresh">Retry</button>
             <button type="button" class="btn" data-act="close">Close</button>
           </div>
         </div>
@@ -1343,25 +1426,30 @@ function _normalizeRareDropObj(obj) {
 
     return `
       <div class="m-offer">
-        <div class="m-row">
-          <div style="min-width:0;">
-            <div class="m-title">${esc(label)} <span class="m-muted">(${esc(dur)})</span></div>
-            ${subtitle ? `<div class="m-kicker" style="margin-top:6px;">${esc(subtitle)}</div>` : ""}
-            ${title ? `<div class="m-title" style="margin-top:4px;">${esc(title)}</div>` : ""}
-            ${body ? `<div class="m-muted" style="margin-top:6px;">${esc(body)}</div>` : ""}
+        <div class="m-offer-main">
+          <div class="m-offer-copy">
+            <div class="m-offer-top">
+              <span class="m-tag">${esc(label)}</span>
+              <span class="m-tag">${esc(dur)}</span>
+            </div>
+            ${title ? `<div class="m-offer-title">${esc(title)}</div>` : ""}
+            ${subtitle ? `<div class="m-kicker" style="margin-top:4px;">${esc(subtitle)}</div>` : ""}
+            ${body ? `<div class="m-muted m-offer-body">${esc(body)}</div>` : ""}
             ${renderTags(flavorTags)}
-            ${compactHint ? `<div class="m-muted" style="margin-top:6px;">${esc(compactHint)}</div>` : ""}
-            <div class="m-muted" style="margin-top:8px;">
+            ${compactHint ? `<div class="m-offer-helper">${esc(compactHint)}</div>` : ""}
+            <div class="m-offer-reward">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
             </div>
           </div>
 
-          <button type="button" class="btn primary"
-            data-act="start"
-            data-tier="${esc(tier)}"
-            data-offer="${esc(offerId)}"
-            ${disabled}
-          >Start</button>
+          <div class="m-offer-cta">
+            <button type="button" class="btn primary"
+              data-act="start"
+              data-tier="${esc(tier)}"
+              data-offer="${esc(offerId)}"
+              ${disabled}
+            >Start</button>
+          </div>
         </div>
       </div>
     `;
@@ -1578,10 +1666,8 @@ function _normalizeRareDropObj(obj) {
             ${rare ? renderRareDropCard(rare) : ""}
 
             <div class="m-actions">
-              <button type="button" class="btn" data-act="refresh">Refresh</button>
               <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
               ${active.__pending ? `<button type="button" class="btn" data-act="back_to_offers">Back</button>` : ``}
-              <button type="button" class="btn" data-act="close">Close</button>
             </div>
           </div>
         </div>
@@ -1595,30 +1681,23 @@ function _normalizeRareDropObj(obj) {
     stopTick();
 
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
-    if (row) row.style.display = "";
+    if (row) row.style.display = "none";
 
     _root.innerHTML = `
       <div class="m-stage">
+        <div class="m-shell-head">
+          <div class="m-title">Missions</div>
+          <div class="m-shell-sub">Pick a route. Start → Wait → Resolve.</div>
+          <div class="m-inline-status">No active mission. Pick an offer to start.</div>
+        </div>
+
         <div class="m-card">
           <div class="m-row">
             <div style="min-width:0;">
-              <div class="m-title">No active mission</div>
-              <div class="m-muted" style="margin-top:6px;">Pick an offer to start.</div>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn" data-act="refresh">Refresh</button>
-              <button type="button" class="btn" data-act="close">Close</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="m-card" style="margin-top:10px;">
-          <div class="m-row">
-            <div style="min-width:0;">
               <div class="m-title">Offers</div>
-              <div class="m-muted" style="margin-top:6px;">Pick a tier — Start → Wait → Resolve.</div>
+              <div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward focus, and rare cache signals.</div>
             </div>
-            <button type="button" class="btn" data-act="refresh">Refresh</button>
+            <button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button>
           </div>
 
           <div class="m-hr"></div>
@@ -1627,16 +1706,12 @@ function _normalizeRareDropObj(obj) {
             ${
               offers.length
                 ? offers.map(o => renderOffer(o, realActive)).join("")
-                : `<div class="m-muted">No offers yet. Tap Refresh.</div>`
+                : `<div class="m-muted">No offers yet. Refresh to scan for routes.</div>`
             }
           </div>
         </div>
 
-        ${last ? renderLast(last) : ""}
-
-        <div class="m-muted" style="text-align:center; opacity:.85; margin-top:10px;">
-          Missions are backend-driven. If backend is offline you’ll see an error here.
-        </div>
+        ${last ? renderLast(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
       </div>
     `;
   }
