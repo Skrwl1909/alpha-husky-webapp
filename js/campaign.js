@@ -346,6 +346,16 @@
       || "UNBOUND";
   }
 
+  function archiveFactionLabel(raw) {
+    var key = asText(raw).toLowerCase();
+    if (!key || key === "unbound") return "UNBOUND";
+    if (key === "rb" || key === "rogue_byte") return "Rogue Byte";
+    if (key === "ew" || key === "echo_wardens") return "Echo Wardens";
+    if (key === "ih" || key === "inner_howl" || key === "inner_howlers") return "Inner Howlers";
+    if (key === "pb" || key === "pack_burners") return "Pack Burners";
+    return asText(raw) || "UNBOUND";
+  }
+
   function archiveBestSummary(archive) {
     var best = archive && archive.ownFactionBest && typeof archive.ownFactionBest === "object"
       ? archive.ownFactionBest
@@ -498,7 +508,7 @@
     var archive = archiveState();
     if (!archive) return "";
 
-    var faction = archiveFaction(archive);
+    var faction = archiveFactionLabel(archiveFaction(archive));
     var attempts = archiveAttemptCount(archive);
     var breachLine = archiveBreachLine(archive);
     var breached = archiveBreached(archive);
@@ -533,6 +543,7 @@
       + "    <div class=\"campaign-archive-keyline\"><span>Spent today</span><strong>" + esc(spentToday == null ? "--" : String(spentToday)) + "</strong></div>"
       + "  </div>"
       + "  <div class=\"campaign-archive-help\">Hits = correct directive in the correct slot. Missed = directive exists but sits in the wrong slot. Use the faction log to deduce the next move.</div>"
+      + "  <div class=\"campaign-archive-tip\">Tap slots to cycle directives.</div>"
       + "  <div class=\"campaign-archive-slots\">" + renderArchiveSlots(archive) + "</div>"
       + "  <button type=\"button\" class=\"campaign-archive-submit\" data-archive-submit" + (disabled ? " disabled" : "") + ">"
       + (STATE.busyAction === "submit_archive_attempt" ? "Submitting..." : "Submit Attempt")
@@ -668,6 +679,7 @@
       + ".campaign-archive-keyvalue span{font-size:13px;font-weight:900;letter-spacing:0;color:#edf7ff;text-transform:none;}"
       + ".campaign-archive-keyicon{width:18px;height:18px;display:block;object-fit:contain;filter:drop-shadow(0 0 10px rgba(124,208,255,.32));}"
       + ".campaign-archive-help{margin-top:12px;font-size:12px;line-height:1.42;color:rgba(213,232,247,.80);}"
+      + ".campaign-archive-tip{margin-top:8px;font-size:11px;line-height:1.35;color:rgba(188,207,222,.68);}"
       + ".campaign-archive-slots{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}"
       + ".campaign-archive-slot{appearance:none;padding:11px 10px;border-radius:14px;border:1px solid rgba(144,226,255,.16);background:linear-gradient(180deg, rgba(24,44,61,.60), rgba(9,18,29,.82));color:#eaf7ff;cursor:pointer;text-align:left;}"
       + ".campaign-archive-slot.is-set{border-color:rgba(123,223,255,.28);box-shadow:inset 0 0 0 1px rgba(145,226,255,.07);}"
