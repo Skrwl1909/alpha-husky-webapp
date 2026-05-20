@@ -7614,6 +7614,11 @@ function isRegionUnlocked(regionId){
       b.buildingId === "phantom_nodes" ||
       b.id === "phantom_nodes";
 
+    const isArchive =
+      b.buildingId === "burned_archive" ||
+      b.id === "burned_archive" ||
+      b.action === "open_burned_archive";
+
     const isEdge =
       b.buildingId === "edge_of_chain" ||
       b.id === "edge_of_chain" ||
@@ -7625,7 +7630,7 @@ function isRegionUnlocked(regionId){
       b.action === "open_howl_treasury";
 
     const isHeroLandmark = isBloodMoon || isOracle || isEdge;
-    const previewable = isOracle || isBloodMoon || isPhantom;
+    const previewable = isOracle || isBloodMoon || isPhantom || isArchive;
 
     const unlocked = isOracle ? true : isRegionUnlocked(b.region);
 
@@ -7651,6 +7656,8 @@ function isRegionUnlocked(regionId){
     } else if (isPhantom) {
       btn.classList.add('theme-phantom');
       btn.dataset.theme = 'phantom';
+    } else if (isArchive) {
+      btn.dataset.theme = 'archive';
     } else if (isEdge) {
       btn.classList.add('theme-edge', 'is-hero-landmark');
       btn.dataset.theme = 'edge';
@@ -7770,6 +7777,15 @@ function isRegionUnlocked(regionId){
       ) {
         if (window.HowlTreasury?.open) return window.HowlTreasury.open();
         return openBuilding(bid, b.name, b.desc);
+      }
+
+      if (
+        bid === "burned_archive" ||
+        b.buildingId === "burned_archive" ||
+        b.id === "burned_archive" ||
+        b.action === "open_burned_archive"
+      ) {
+        return openArchiveNodeSheet(b);
       }
 
       if (!unlocked) return await openLocked(b);
@@ -7982,7 +7998,10 @@ function isRegionUnlocked(regionId){
         const regionDesc  = document.getElementById('regionDesc');
         const btnRegionGo = document.getElementById('regionGo');
         const btnRegionLo = document.getElementById('regionLore');
-        document.getElementById('closeRegion')?.addEventListener('click', () => regionBack.style.display='none');
+        document.getElementById('closeRegion')?.addEventListener('click', () => {
+          regionBack.style.display='none';
+          regionBack.dataset.sheet = '';
+        });
 
         function openRegionSheet(node, reg){
           const mapNode = findMapNodeByRef(node) || node || {};
@@ -7991,6 +8010,9 @@ function isRegionUnlocked(regionId){
           const defaultLoreLine = loreLines.length ? [loreLines[0]] : [];
           const extraLoreLines = loreLines.length > 1 ? loreLines.slice(1) : [];
           let loreExpanded = false;
+          regionBack.dataset.sheet = 'region';
+          btnRegionGo.disabled = false;
+          btnRegionGo.textContent = 'Travel';
 
           function paintRegionDesc(){
             if (!defaultLoreLine.length){
@@ -8051,6 +8073,77 @@ function isRegionUnlocked(regionId){
             }
           }
           regionBack.style.display = 'flex';
+        }
+
+        function openArchiveNodeSheet(node){
+          const mapNode = findMapNodeByRef(node) || node || {};
+          const archiveEmblemUrl = 'https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282199/burned_archive/burned_archive_emblem.webp';
+          const archiveSignalMarkerUrl = 'https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282501/burned_archive/archive_signal_marker.webp';
+          regionBack.dataset.sheet = "burned_archive";
+          regionTitle.textContent = "BURNED ARCHIVE";
+          btnRegionLo.style.display = 'none';
+          btnRegionLo.onclick = null;
+
+          function paintArchiveSheet(){
+            const archive = window.AHMap?.getArchiveNodeState?.() || null;
+            const status = String(archive?.statusLabel || "Signal Dormant").trim() || "Signal Dormant";
+            const faction = String(archive?.faction || "UNBOUND").trim() || "UNBOUND";
+            const best = String(archive?.bestText || "H0 / M0").trim() || "H0 / M0";
+            const attempts = Number(archive?.attempts || 0) || 0;
+            const hasCampaignOpen = typeof window.Campaign?.open === "function";
+            const body = [
+              '<div style="display:flex;align-items:flex-start;gap:12px;">',
+              `  <div style="width:56px;height:56px;flex:0 0 56px;border-radius:16px;overflow:hidden;border:1px solid rgba(145,226,255,.16);background:radial-gradient(circle at 50% 40%, rgba(143,222,255,.20), rgba(11,22,35,.78));box-shadow:0 10px 22px rgba(0,0,0,.24);"><img src="${archiveEmblemUrl}" alt="" aria-hidden="true" loading="lazy" style="display:block;width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.remove();"></div>`,
+              '  <div style="min-width:0;flex:1;">',
+              '    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.68;">Signal Intelligence Front</div>',
+              '    <div style="margin-top:8px;">RELAY-7 detected a corrupted archive stream.</div>',
+              '  </div>',
+              '</div>',
+              '<div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:grid;gap:6px;font-size:12px;line-height:1.38;">',
+              `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><b>Status:</b><img src="${archiveSignalMarkerUrl}" alt="" aria-hidden="true" loading="lazy" style="width:16px;height:16px;display:block;object-fit:contain;filter:drop-shadow(0 0 9px rgba(124,208,255,.28));" onerror="this.remove();"><span>${escMapHtml(status)}</span></div>`,
+              `<div><b>Your faction:</b> ${escMapHtml(faction)}</div>`,
+              `<div><b>Best alignment:</b> ${escMapHtml(best)}</div>`,
+              `<div><b>Attempts today:</b> ${escMapHtml(String(attempts))}</div>`,
+              '</div>',
+              (!archive?.present
+                ? '<div style="margin-top:8px;font-size:12px;opacity:.76;">Signal dormant. Open Campaign from Hub if the Archive has not initialized yet.</div>'
+                : ''),
+              (!hasCampaignOpen
+                ? '<div style="margin-top:8px;font-size:12px;opacity:.76;">Open Campaign from Hub.</div>'
+                : '')
+            ].join('');
+
+            regionDesc.innerHTML = body;
+            btnRegionGo.textContent = hasCampaignOpen ? 'Open Archive' : 'Open Campaign from Hub';
+            btnRegionGo.disabled = !hasCampaignOpen;
+            btnRegionGo.onclick = async () => {
+              if (!hasCampaignOpen) return;
+              regionBack.style.display = 'none';
+              mapBack.style.display = 'none';
+              navClose("mapBack");
+              try {
+                await window.Campaign.open();
+              } catch (err) {
+                console.warn("[Campaign] open from archive node failed", err);
+                try { _tg?.showAlert?.("Open Campaign from Hub."); } catch (_) {}
+              }
+            };
+          }
+
+          paintArchiveSheet();
+          regionBack.style.display = 'flex';
+
+          Promise.resolve()
+            .then(() => window.Campaign?.load?.({ force: true, reason: "map_archive_node" }))
+            .then(() => {
+              try { if (typeof window.renderMap === "function") window.renderMap(); } catch (_) {}
+              if (regionBack.style.display === 'flex' && regionBack.dataset.sheet === "burned_archive") {
+                paintArchiveSheet();
+              }
+            })
+            .catch((err) => {
+              console.warn("[Campaign] archive node refresh failed", err);
+            });
         }
 
         const bBack   = $("#buildingBack");
