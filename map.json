@@ -300,6 +300,27 @@
       "tags": ["risk", "puzzle", "combat", "daily"]
     },
     {
+      "id": "burned_archive",
+      "name": "Burned Archive",
+      "label": "Burned Archive",
+      "type": "archive",
+      "region": "chain",
+      "x": 53,
+      "y": 54,
+      "icon": "images/map/building/burned_archive.webp",
+      "desc": "A corrupted archive relay flickering just under the public map. RELAY-7 keeps catching the same signal there.",
+      "lore": {
+        "identity": "A sealed intelligence vault still spitting damaged directive patterns into the Network.",
+        "stakes": "If your faction aligns the signal first, the Archive opens before the trail burns out."
+      },
+      "action": "open_burned_archive",
+      "buildingId": "burned_archive",
+      "labelOffset": { "x": -68, "y": 34 },
+      "actionHint": "Archive Signal",
+      "valueTier": "HIGH_VALUE",
+      "tags": ["archive", "signal", "front", "read-only"]
+    },
+    {
       "id": "howl_treasury",
       "name": "HOWL TREASURY",
       "label": "HOWL TREASURY",
