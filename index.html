@@ -1749,6 +1749,149 @@ html.ah-skins-open #heroFrame{
 .progress-bar>i{display:block;height:100%;width:0%;
   background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
 .region-sheet .sheet-card{width:min(92vw,520px)}
+#regionBack[data-sheet="burned_archive"] .sheet-card{
+  width:min(92vw, 500px);
+  border-radius:22px;
+  border:1px solid rgba(178,214,232,.14);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(116,165,194,.12), transparent 36%),
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,.05), transparent 28%),
+    linear-gradient(180deg, rgba(8,12,18,.96), rgba(5,8,13,.98));
+  box-shadow:
+    0 28px 74px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 0 0 1px rgba(126,174,200,.04);
+}
+#regionBack[data-sheet="burned_archive"] #regionTitle{
+  letter-spacing:.12em;
+  font-size:14px;
+  font-weight:900;
+  color:rgba(239,245,250,.96);
+}
+#regionBack[data-sheet="burned_archive"] #regionDesc{
+  margin-top:10px;
+  opacity:1;
+}
+#regionBack[data-sheet="burned_archive"] #regionGo{
+  min-height:44px;
+  border:1px solid rgba(186,217,233,.16);
+  background:
+    linear-gradient(180deg, rgba(41,58,71,.92), rgba(17,23,31,.98));
+  color:#eef4f8;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 12px 28px rgba(0,0,0,.32);
+}
+#regionBack[data-sheet="burned_archive"] #regionGo[disabled]{
+  opacity:.62;
+  box-shadow:none;
+}
+.archive-node-card{
+  display:grid;
+  gap:12px;
+  color:rgba(228,235,241,.92);
+}
+.archive-node-hero{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+.archive-node-emblem{
+  width:58px;
+  height:58px;
+  flex:0 0 58px;
+  border-radius:17px;
+  overflow:hidden;
+  border:1px solid rgba(178,214,232,.14);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(140,177,198,.18), rgba(10,15,22,.94));
+  box-shadow:
+    0 16px 32px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+.archive-node-emblem img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.archive-node-copy{
+  min-width:0;
+  flex:1;
+}
+.archive-node-subtitle{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(183,197,207,.72);
+}
+.archive-node-line{
+  margin-top:8px;
+  font-size:13px;
+  line-height:1.46;
+  color:rgba(233,239,244,.88);
+}
+.archive-node-status{
+  display:grid;
+  gap:8px;
+  padding:12px 13px;
+  border-radius:16px;
+  border:1px solid rgba(178,214,232,.12);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+}
+.archive-node-stat{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.archive-node-stat-label{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:rgba(183,197,207,.66);
+}
+.archive-node-stat-value{
+  text-align:right;
+  font-size:13px;
+  font-weight:800;
+  color:#eef4f8;
+}
+.archive-node-stat-value.is-status{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.archive-node-marker{
+  width:16px;
+  height:16px;
+  display:block;
+  object-fit:contain;
+  filter:drop-shadow(0 0 10px rgba(124,176,208,.22));
+}
+.archive-node-hint{
+  font-size:12px;
+  line-height:1.42;
+  color:rgba(196,209,219,.72);
+}
+@media (max-width: 520px){
+  .archive-node-hero{gap:10px;}
+  .archive-node-emblem{
+    width:52px;
+    height:52px;
+    flex-basis:52px;
+    border-radius:15px;
+  }
+  .archive-node-line{
+    font-size:12px;
+  }
+  .archive-node-stat-value{
+    font-size:12px;
+  }
+}
 .muted { color: var(--tg-theme-hint-color, #9aa4ad); }
 
 /* DEBUG banner (pojedynczy) */
@@ -5019,7 +5162,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <div id="regionTitle" style="font-weight:700;"></div>
       <button class="btn" id="closeRegion" type="button">×</button>
     </div>
-    <p id="regionDesc" style="opacity:.85;margin-top:8px;"></p>
+    <div id="regionDesc" style="opacity:.85;margin-top:8px;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn primary" id="regionGo" type="button">Travel</button>
       <button class="btn linklike" id="regionLore" type="button">Lore</button>
@@ -8084,33 +8227,55 @@ function isRegionUnlocked(regionId){
           btnRegionLo.style.display = 'none';
           btnRegionLo.onclick = null;
 
+          function archiveFactionLabel(raw){
+            const key = String(raw || '').trim().toLowerCase();
+            if (!key || key === 'unbound') return 'UNBOUND';
+            if (key === 'rb' || key === 'rogue_byte') return 'Rogue Byte';
+            if (key === 'ew' || key === 'echo_wardens') return 'Echo Wardens';
+            if (key === 'ih' || key === 'inner_howl' || key === 'inner_howlers') return 'Inner Howlers';
+            if (key === 'pb' || key === 'pack_burners') return 'Pack Burners';
+            return String(raw || 'UNBOUND').trim() || 'UNBOUND';
+          }
+
+          function archiveStatusLabel(raw){
+            const key = String(raw || '').trim().toUpperCase();
+            if (key === 'LIVE') return 'Live';
+            if (key === 'CLOSE TO BREACH') return 'Close to Breach';
+            if (key === 'BREACHED') return 'Breached';
+            if (key === 'ARCHIVE SIGNAL') return 'Archive Signal';
+            if (key === 'SIGNAL DORMANT') return 'Signal Dormant';
+            return String(raw || 'Signal Dormant').trim() || 'Signal Dormant';
+          }
+
           function paintArchiveSheet(){
             const archive = window.AHMap?.getArchiveNodeState?.() || null;
-            const status = String(archive?.statusLabel || "Signal Dormant").trim() || "Signal Dormant";
-            const faction = String(archive?.faction || "UNBOUND").trim() || "UNBOUND";
+            const status = archiveStatusLabel(archive?.statusLabel || "Signal Dormant");
+            const faction = archiveFactionLabel(archive?.faction || "UNBOUND");
             const best = String(archive?.bestText || "H0 / M0").trim() || "H0 / M0";
             const attempts = Number(archive?.attempts || 0) || 0;
             const hasCampaignOpen = typeof window.Campaign?.open === "function";
             const body = [
-              '<div style="display:flex;align-items:flex-start;gap:12px;">',
-              `  <div style="width:56px;height:56px;flex:0 0 56px;border-radius:16px;overflow:hidden;border:1px solid rgba(145,226,255,.16);background:radial-gradient(circle at 50% 40%, rgba(143,222,255,.20), rgba(11,22,35,.78));box-shadow:0 10px 22px rgba(0,0,0,.24);"><img src="${archiveEmblemUrl}" alt="" aria-hidden="true" loading="lazy" style="display:block;width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.remove();"></div>`,
-              '  <div style="min-width:0;flex:1;">',
-              '    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.68;">Signal Intelligence Front</div>',
-              '    <div style="margin-top:8px;">RELAY-7 detected a corrupted archive stream.</div>',
+              '<div class="archive-node-card">',
+              '  <div class="archive-node-hero">',
+              `    <div class="archive-node-emblem"><img src="${archiveEmblemUrl}" alt="" aria-hidden="true" loading="lazy" onerror="this.parentNode.remove();"></div>`,
+              '    <div class="archive-node-copy">',
+              '      <div class="archive-node-subtitle">Signal Intelligence Front</div>',
+              '      <div class="archive-node-line">RELAY-7 detected a corrupted archive stream.</div>',
+              '    </div>',
               '  </div>',
-              '</div>',
-              '<div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:grid;gap:6px;font-size:12px;line-height:1.38;">',
-              `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><b>Status:</b><img src="${archiveSignalMarkerUrl}" alt="" aria-hidden="true" loading="lazy" style="width:16px;height:16px;display:block;object-fit:contain;filter:drop-shadow(0 0 9px rgba(124,208,255,.28));" onerror="this.remove();"><span>${escMapHtml(status)}</span></div>`,
-              `<div><b>Your faction:</b> ${escMapHtml(faction)}</div>`,
-              `<div><b>Best alignment:</b> ${escMapHtml(best)}</div>`,
-              `<div><b>Attempts today:</b> ${escMapHtml(String(attempts))}</div>`,
-              '</div>',
+              '  <div class="archive-node-status">',
+              `    <div class="archive-node-stat"><span class="archive-node-stat-label">Status</span><span class="archive-node-stat-value is-status"><img class="archive-node-marker" src="${archiveSignalMarkerUrl}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span>${escMapHtml(status)}</span></span></div>`,
+              `    <div class="archive-node-stat"><span class="archive-node-stat-label">Your faction</span><span class="archive-node-stat-value">${escMapHtml(faction)}</span></div>`,
+              `    <div class="archive-node-stat"><span class="archive-node-stat-label">Best alignment</span><span class="archive-node-stat-value">${escMapHtml(best)}</span></div>`,
+              `    <div class="archive-node-stat"><span class="archive-node-stat-label">Attempts today</span><span class="archive-node-stat-value">${escMapHtml(String(attempts))}</span></div>`,
+              '  </div>',
               (!archive?.present
-                ? '<div style="margin-top:8px;font-size:12px;opacity:.76;">Signal dormant. Open Campaign from Hub if the Archive has not initialized yet.</div>'
+                ? '<div class="archive-node-hint">Signal dormant. Open Campaign from Hub if the Archive has not initialized yet.</div>'
                 : ''),
               (!hasCampaignOpen
-                ? '<div style="margin-top:8px;font-size:12px;opacity:.76;">Open Campaign from Hub.</div>'
+                ? '<div class="archive-node-hint">Open Campaign from Hub.</div>'
                 : '')
+              ,'</div>'
             ].join('');
 
             regionDesc.innerHTML = body;

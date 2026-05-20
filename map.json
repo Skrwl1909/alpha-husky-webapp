@@ -305,8 +305,8 @@
       "label": "Burned Archive",
       "type": "archive",
       "region": "chain",
-      "x": 53,
-      "y": 54,
+      "x": 68,
+      "y": 74,
       "icon": "images/map/building/burned_archive.webp",
       "desc": "A corrupted archive relay flickering just under the public map. RELAY-7 keeps catching the same signal there.",
       "lore": {
