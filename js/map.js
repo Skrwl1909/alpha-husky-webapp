@@ -60,6 +60,7 @@
     alpha_network_hq_shop: "alpha_network_hq",
     moonlab_fortress: "moon_lab",
   };
+  const ARCHIVE_NODE_IDS = new Set(["burned_archive"]);
   const STRATEGIC_NODE_IDS = new Set(["alpha_network_hq", "blood_moon_tower", "edge_of_chain"]);
   const HIGH_VALUE_NODE_IDS = new Set(["phantom_nodes", "broken_contracts", "howl_treasury"]);
   const LEGACY_NODE_IDS = new Set(["abandoned_wallets", "moon_lab", "testnet_wastes_dojo"]);
@@ -224,6 +225,50 @@
     brightness(1.03)
     saturate(1.10)
     drop-shadow(0 0 10px rgba(88,166,255,.20));
+}
+
+.map-pin.type-archive .pin-ring{
+  border-color:rgba(118,215,255,.58);
+  box-shadow:
+    0 0 0 1px rgba(118,215,255,.10),
+    0 0 18px rgba(72,181,255,.20);
+}
+.map-pin.type-archive .pin-icon,
+.map-pin.type-archive > img{
+  filter:
+    brightness(1.02)
+    saturate(1.08)
+    hue-rotate(12deg)
+    drop-shadow(0 0 12px rgba(91,203,255,.22))
+    drop-shadow(0 8px 14px rgba(0,0,0,.24));
+}
+.map-pin.type-archive::before{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:999px;
+  pointer-events:none;
+  z-index:1;
+  border:1px solid rgba(118,215,255,.14);
+  background:radial-gradient(circle, rgba(91,203,255,.12), rgba(91,203,255,0) 68%);
+}
+.map-pin.type-archive.is-live .pin-ring{
+  border-color:rgba(80,236,182,.76);
+  box-shadow:
+    0 0 0 1px rgba(80,236,182,.12),
+    0 0 18px rgba(80,236,182,.24);
+}
+.map-pin.type-archive.is-threatened .pin-ring{
+  border-color:rgba(255,188,96,.82);
+  box-shadow:
+    0 0 0 1px rgba(255,188,96,.14),
+    0 0 18px rgba(255,140,40,.24);
+}
+.map-pin.type-archive.is-fortified .pin-ring{
+  border-color:rgba(198,118,255,.76);
+  box-shadow:
+    0 0 0 1px rgba(198,118,255,.12),
+    0 0 18px rgba(198,118,255,.22);
 }
 
 .map-pin.type-treasury.is-neutral .pin-ring{
@@ -771,7 +816,7 @@
       "is-contested", "is-controlled",
       "siege-forming", "siege-running", "siege-cooldown",
       "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
@@ -891,6 +936,7 @@
 
   function _fallbackValueTierForNodeId(nodeId) {
     const key = _normalizeNodeId(nodeId);
+    if (ARCHIVE_NODE_IDS.has(key)) return "HIGH_VALUE";
     if (STRATEGIC_NODE_IDS.has(key)) return "STRATEGIC";
     if (HIGH_VALUE_NODE_IDS.has(key)) return "HIGH_VALUE";
     return "LOW_VALUE";
@@ -901,7 +947,7 @@
     const tier = String(valueTier || "").trim().toUpperCase();
     if (key === "oracle" || key === "oracle_void_doorway" || type === "oracle") return "";
     if (key === "howl_treasury" || type === "treasury") return "";
-    if (RIVALRY_NODE_IDS.has(key) || type === "hq" || type === "siege" || type === "bloodmoon" || type === "phantom" || type === "contracts") {
+    if (RIVALRY_NODE_IDS.has(key) || type === "hq" || type === "siege" || type === "bloodmoon" || type === "phantom" || type === "contracts" || type === "archive") {
       return "rivalry";
     }
     if (LEGACY_NODE_IDS.has(key)) return "legacy";
@@ -1160,6 +1206,100 @@
     return _readViewerFactionFallback();
   }
 
+  function _campaignArchivePayload() {
+    try {
+      return window.Campaign?.state?.()?.signalReport?.burnedArchive || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function _archiveHitsValue(archive) {
+    const best = archive?.ownFactionBest && typeof archive.ownFactionBest === "object"
+      ? archive.ownFactionBest
+      : archive?.factionProgress && typeof archive.factionProgress === "object"
+        ? archive.factionProgress
+        : {};
+    return Number(best?.hits || best?.bestHits || 0) || 0;
+  }
+
+  function _archiveMissedValue(archive) {
+    const best = archive?.ownFactionBest && typeof archive.ownFactionBest === "object"
+      ? archive.ownFactionBest
+      : archive?.factionProgress && typeof archive.factionProgress === "object"
+        ? archive.factionProgress
+        : {};
+    return Number(best?.missed || best?.bestMissed || 0) || 0;
+  }
+
+  function _archiveAttemptsValue(archive) {
+    const progress = archive?.factionProgress && typeof archive.factionProgress === "object"
+      ? archive.factionProgress
+      : {};
+    const recent = Array.isArray(archive?.recentFactionAttempts) ? archive.recentFactionAttempts : [];
+    return Number(progress?.attempts || 0) || recent.length || 0;
+  }
+
+  function _archiveFactionLabel(archive) {
+    return String(
+      archive?.playerFaction ||
+      archive?.factionProgress?.faction ||
+      ""
+    ).trim().toUpperCase();
+  }
+
+  function _archiveSignalModel() {
+    const archive = _campaignArchivePayload();
+    const faction = _archiveFactionLabel(archive);
+    const bestHits = _archiveHitsValue(archive);
+    const bestMissed = _archiveMissedValue(archive);
+    const attempts = _archiveAttemptsValue(archive);
+    const breached = !!(archive?.breached || archive?.factionProgress?.breached);
+    const isLive = String(archive?.status || "").trim().toLowerCase() === "live";
+
+    let chip = "SIGNAL DORMANT";
+    let visualStatus = "generic";
+    let statusLabel = "Signal Dormant";
+    if (breached) {
+      chip = "BREACHED";
+      visualStatus = "fortified";
+      statusLabel = "Breached";
+    } else if (bestHits >= 3) {
+      chip = "CLOSE TO BREACH";
+      visualStatus = "threatened";
+      statusLabel = "Close to Breach";
+    } else if (isLive) {
+      chip = "LIVE";
+      visualStatus = "live";
+      statusLabel = "Live";
+    } else if (archive) {
+      chip = "ARCHIVE SIGNAL";
+      visualStatus = "active";
+      statusLabel = "Archive Signal";
+    }
+
+    return {
+      present: !!archive,
+      chip,
+      visualStatus,
+      statusLabel,
+      faction: faction || "UNBOUND",
+      bestHits,
+      bestMissed,
+      bestText: `H${bestHits} / M${bestMissed}`,
+      attempts,
+      breached,
+      breachedByLabel: String(archive?.breachedByLabel || "").trim(),
+      breachedAt: Number(archive?.breachedAt || 0) || 0,
+      archiveStatus: String(archive?.status || "").trim(),
+      nodeLabel: String(archive?.nodeLabel || archive?.nodeName || archive?.nodeId || "Burned Archive").trim(),
+      actionHint: archive ? "Archive Signal" : "Signal Dormant",
+      descText: archive
+        ? "RELAY-7 detected a corrupted archive stream."
+        : "No archive telemetry is reaching this node right now.",
+    };
+  }
+
   function _normalizeDisplayStatus(raw) {
     const key = String(raw || "").trim().toUpperCase();
     if (!key) return "";
@@ -1302,8 +1442,28 @@
 
   function _extractNodeUx(info, viewerFaction) {
     const src = (info && typeof info === "object") ? info : {};
-    const displayStatus = _normalizeDisplayStatus(src?.displayStatus) || _fallbackDisplayStatus(src);
     const nodeId = _resolveNodeId(src);
+    if (ARCHIVE_NODE_IDS.has(nodeId)) {
+      const archive = _archiveSignalModel();
+      return {
+        displayStatus: archive.breached ? "FORTIFIED" : archive.visualStatus === "threatened" ? "HOT" : archive.visualStatus === "live" ? "LIVE" : "CALM",
+        displayLabel: archive.chip,
+        displayClass: archive.breached ? "p-fortified" : archive.visualStatus === "threatened" ? "p-hot" : archive.visualStatus === "live" ? "s-live" : "p-calm",
+        statusText: archive.descText,
+        actionHint: archive.actionHint,
+        urgency: archive.breached ? "low" : archive.visualStatus === "threatened" ? "high" : archive.visualStatus === "live" ? "medium" : "low",
+        nodeId,
+        valueTier: "HIGH_VALUE",
+        valueMultiplier: 1.5,
+        valueLabel: "Signal Front",
+        valueText: "A read-only intelligence front linked to the Campaign Archive panel.",
+        ownerFaction: "",
+        reasonText: archive.descText,
+        rewardText: "Use Campaign to work the archive signal."
+      };
+    }
+
+    const displayStatus = _normalizeDisplayStatus(src?.displayStatus) || _fallbackDisplayStatus(src);
     const valueTier = String(src?.valueTier || _fallbackValueTierForNodeId(nodeId)).trim().toUpperCase() || "LOW_VALUE";
     const ownerFaction = _nodeOwnerFaction(src);
     const viewer = _normFactionKey(src?.youFaction || viewerFaction || _getViewerFaction());
@@ -1987,12 +2147,27 @@
     if (id === "phantom_nodes") type = "phantom";
     else if (id === "blood_moon_tower") type = "bloodmoon";
     else if (id === "oracle" || id === "oracle_void_doorway") type = "oracle";
+    else if (ARCHIVE_NODE_IDS.has(id)) type = "archive";
     else if (id === "edge_of_chain" || siegeStatus === "forming" || siegeStatus === "running" || siegeStatus === "cooldown") type = "siege";
     else if (id === "howl_treasury") type = "treasury";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
     else if (id === "broken_contracts") type = "contracts";
 
     let status = "";
+    if (type === "archive") {
+      const archive = _archiveSignalModel();
+      status = archive.visualStatus || "";
+      return {
+        faction: "",
+        type,
+        status,
+        chip: archive.chip,
+        family: _nodeFamilyFor(id, type, valueTier),
+        valueTier,
+        tierClass: _valueTierClass(valueTier)
+      };
+    }
+
     if (displayStatus === "CONTESTED") status = "contested";
     else if (displayStatus === "SIEGE_LIVE") status = "live";
     else if (displayStatus === "SIEGE_FORMING" || displayStatus === "HOT") status = "threatened";
@@ -2022,7 +2197,7 @@
     pinEl.classList.remove(
       "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral", "is-controlled",
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
@@ -2484,6 +2659,7 @@
     getPressureNote,
     getPressureSummary,
     getNodeUx,
+    getArchiveNodeState: _archiveSignalModel,
     getViewerFaction: _getViewerFaction,
     reapplyLastLeaders: () => {
       if (_lastLeadersMap) applyLeaders(_lastLeadersMap);

@@ -617,11 +617,22 @@
   }
 
   function clearStatus() { setStatus(""); }
+  const ARCHIVE_KEY_ICON_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282500/burned_archive/archive_key_icon.webp";
+  function archiveKeyFeedback(payload = {}) {
+    if (!payload || payload.archiveKeyGranted !== true) return null;
+    const left = Number(payload.archiveKeysLeft);
+    const parts = [String(payload.archiveKeyMessage || "Archive Key gained.").trim()];
+    if (Number.isFinite(left)) parts.push(`Keys left: ${left}`);
+    return {
+      html: `<span class="inf-result-keyline"><img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span>${esc(parts.join(" "))}</span></span>`
+    };
+  }
   function setActionResult(kind, payload = {}) {
     const el = _qs("infStatus");
     if (!el) return;
     const gain = Number(payload?.gain || 0) || 0;
     const refunded = Number(payload?.refunded || 0) || 0;
+    const archiveKeyLine = archiveKeyFeedback(payload);
     const isPatrol = kind === "patrol";
     const title = isPatrol ? "SIGNAL HELD" : "SUPPLIES DEPLOYED";
     const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
@@ -629,10 +640,12 @@
       ? [
           "Weekly score increased.",
           "Patrol cooldown started.",
+          archiveKeyLine,
         ]
       : [
           "Pressure reinforced.",
           refunded > 0 ? `Overflow refunded: ${refunded}` : "",
+          archiveKeyLine,
         ];
 
     el.className = "inf-status inf-status-result";
@@ -644,7 +657,12 @@
       <div class="inf-result-title">${title}</div>
       <div class="inf-result-gain">${esc(lead)}</div>
       <div class="inf-result-lines">
-        ${lines.filter(Boolean).map((line) => `<div class="inf-result-line">${esc(line)}</div>`).join("")}
+        ${lines.filter(Boolean).map((line) => {
+          if (line && typeof line === "object" && typeof line.html === "string") {
+            return `<div class="inf-result-line is-archive-key">${line.html}</div>`;
+          }
+          return `<div class="inf-result-line">${esc(line)}</div>`;
+        }).join("")}
       </div>
     `;
   }
@@ -2055,6 +2073,18 @@
       #influenceModal .inf-result-line{
         font-size:11px;
         color:#d7e8f7;
+      }
+      #influenceModal .inf-result-keyline{
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+      }
+      #influenceModal .inf-result-keyicon{
+        width:16px;
+        height:16px;
+        display:block;
+        object-fit:contain;
+        filter:drop-shadow(0 0 9px rgba(124,208,255,.32));
       }
       #influenceModal .inf-foot{
         margin-top:10px;
@@ -3644,7 +3674,12 @@
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`+${r.gain} influence${hq}`);
-      setActionResult("patrol", { gain: r.gain });
+      setActionResult("patrol", {
+        gain: r.gain,
+        archiveKeyGranted: r.archiveKeyGranted,
+        archiveKeyMessage: r.archiveKeyMessage,
+        archiveKeysLeft: r.archiveKeysLeft,
+      });
       if (Number(r?.cooldownLeftSec || 0) > 0) startCooldown(r.cooldownLeftSec);
       triggerActionMicroReaction();
 
@@ -3698,7 +3733,13 @@
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
-      setActionResult("donate", { gain: r.gain, refunded: r.refunded });
+      setActionResult("donate", {
+        gain: r.gain,
+        refunded: r.refunded,
+        archiveKeyGranted: r.archiveKeyGranted,
+        archiveKeyMessage: r.archiveKeyMessage,
+        archiveKeysLeft: r.archiveKeysLeft,
+      });
       triggerActionMicroReaction();
 
       applyLeadersFromResponse(r, nodeId);

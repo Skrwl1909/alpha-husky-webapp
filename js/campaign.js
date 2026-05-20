@@ -21,10 +21,19 @@
     briefingKey: "",
     briefingNotice: "",
     lastOpenedDirective: "",
+    archiveDraft: ["", "", "", ""],
+    archiveFeedback: null,
     visHandler: null,
   };
 
   var STATE_STALE_MS = 20000;
+  var ARCHIVE_DIRECTIVE_ORDER = ["trace_signal", "secure_node", "red_static", "watch_edge"];
+  var ARCHIVE_DIRECTIVE_META = {
+    trace_signal: { label: "TRACE", short: "T" },
+    secure_node: { label: "SECURE", short: "S" },
+    red_static: { label: "RED", short: "R" },
+    watch_edge: { label: "WATCH", short: "W" }
+  };
   var DIRECTIVE_META = {
     trace_signal: {
       label: "Trace the Signal",
@@ -80,6 +89,8 @@
   var CAMPAIGN_TILE_BG_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778846841/awakening/relay7/campaign_hub_tile_bg_v1.webp";
   var RELAY7_AVATAR_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778846885/awakening/relay7/relay7_avatar_v1.webp";
   var RELAY7_MODAL_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778846885/awakening/relay7/relay7_modal_v1.webp";
+  var ARCHIVE_EMBLEM_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282199/burned_archive/burned_archive_emblem.webp";
+  var ARCHIVE_KEY_ICON_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282500/burned_archive/archive_key_icon.webp";
   var RELAY7_AVATAR_ERROR = "this.parentNode.classList.remove('has-image');this.remove();";
   var RELAY7_VISUAL_ERROR = "this.parentNode.classList.add('is-fallback');this.remove();";
 
@@ -135,6 +146,16 @@
       ? STATE.payload.campaign
       : null;
     return data;
+  }
+
+  function archiveState() {
+    var report = STATE.payload && STATE.payload.signalReport && typeof STATE.payload.signalReport === "object"
+      ? STATE.payload.signalReport
+      : null;
+    var archive = report && report.burnedArchive && typeof report.burnedArchive === "object"
+      ? report.burnedArchive
+      : null;
+    return archive;
   }
 
   function activeBriefingKey() {
@@ -269,6 +290,264 @@
     });
   }
 
+  function archiveDirectiveMeta(key) {
+    var safeKey = asText(key).toLowerCase();
+    return ARCHIVE_DIRECTIVE_META[safeKey] || null;
+  }
+
+  function emptyArchiveDraft() {
+    return ["", "", "", ""];
+  }
+
+  function normalizedArchiveSequence(sequence) {
+    if (!Array.isArray(sequence)) return emptyArchiveDraft();
+    return [0, 1, 2, 3].map(function normalizeSlot(idx) {
+      var key = asText(sequence[idx]).toLowerCase();
+      return archiveDirectiveMeta(key) ? key : "";
+    });
+  }
+
+  function archiveDraftReady(sequence) {
+    return normalizedArchiveSequence(sequence).every(function isSet(key) {
+      return !!archiveDirectiveMeta(key);
+    });
+  }
+
+  function cycleArchiveDirective(current) {
+    var safeKey = asText(current).toLowerCase();
+    var idx = ARCHIVE_DIRECTIVE_ORDER.indexOf(safeKey);
+    return ARCHIVE_DIRECTIVE_ORDER[idx >= 0 ? ((idx + 1) % ARCHIVE_DIRECTIVE_ORDER.length) : 0];
+  }
+
+  function archiveSlotLabel(key) {
+    var meta = archiveDirectiveMeta(key);
+    return meta ? meta.label : "SET";
+  }
+
+  function archiveSequenceShort(sequence) {
+    var out = normalizedArchiveSequence(sequence).map(function mapDirective(key) {
+      var meta = archiveDirectiveMeta(key);
+      return meta ? meta.short : "-";
+    });
+    return out.join(" ");
+  }
+
+  function archiveStatusLabel(archive) {
+    return asText(archive && archive.status).toUpperCase() || "UNKNOWN";
+  }
+
+  function archiveIsLive(archive) {
+    return asText(archive && archive.status).toLowerCase() === "live";
+  }
+
+  function archiveFaction(archive) {
+    return asText(archive && archive.playerFaction)
+      || asText(archive && archive.factionProgress && archive.factionProgress.faction)
+      || "UNBOUND";
+  }
+
+  function archiveBestSummary(archive) {
+    var best = archive && archive.ownFactionBest && typeof archive.ownFactionBest === "object"
+      ? archive.ownFactionBest
+      : archive && archive.factionProgress && typeof archive.factionProgress === "object"
+        ? archive.factionProgress
+        : {};
+    return "H" + (parseInt(best.hits, 10) || 0) + " / M" + (parseInt(best.missed, 10) || 0);
+  }
+
+  function archiveAttemptCount(archive) {
+    var progress = archive && archive.factionProgress && typeof archive.factionProgress === "object"
+      ? archive.factionProgress
+      : {};
+    var recent = archive && Array.isArray(archive.recentFactionAttempts) ? archive.recentFactionAttempts : [];
+    return parseInt(progress.attempts, 10) || recent.length || 0;
+  }
+
+  function archiveBreached(archive) {
+    if (!archive || typeof archive !== "object") return false;
+    if (archive.breached === true) return true;
+    return !!(archive.factionProgress && archive.factionProgress.breached);
+  }
+
+  function archiveNodeLabel(archive) {
+    var raw = asText(archive && (archive.nodeLabel || archive.nodeName || archive.nodeId));
+    if (!raw) return "Archive Node";
+    return raw.indexOf("_") >= 0
+      ? raw.replaceAll("_", " ").replace(/\b\w/g, function upper(m) { return m.toUpperCase(); })
+      : raw;
+  }
+
+  function archiveActiveDateLabel(archive) {
+    return asText(archive && archive.activeDate) || "--";
+  }
+
+  function archiveBreachLine(archive) {
+    if (!archiveBreached(archive)) return "";
+    var label = asText(archive && archive.breachedByLabel) || "Pack Member";
+    var when = formatArchiveTimestamp(archive && archive.breachedAt);
+    return when ? (label + " \u00b7 " + when) : label;
+  }
+
+  function formatArchiveTimestamp(raw) {
+    var num = parseInt(raw, 10);
+    if (!num) return "";
+    try {
+      return new Date(num * 1000).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function archiveErrorText(reason) {
+    var code = asText(reason).toUpperCase();
+    if (code === "INVALID_SEQUENCE") return "Build a full 4-slot directive chain first.";
+    if (code === "NO_FACTION") return "Choose a faction before entering the Archive.";
+    if (code === "NO_ARCHIVE_KEY") return "No Archive Keys left. Patrol or Donate at Phantom Nodes to gain more.";
+    if (code === "ARCHIVE_NOT_LIVE") return "Burned Archive is dark right now.";
+    if (code === "ALREADY_BREACHED") return "Your faction already breached this Archive today.";
+    if (code) return code.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, function upper(m) { return m.toUpperCase(); }) + ".";
+    return "Archive signal failed to update.";
+  }
+
+  function archiveNumberOrNull(value) {
+    if (value == null || value === "") return null;
+    var num = parseInt(value, 10);
+    return isNaN(num) ? null : num;
+  }
+
+  function archiveKeysLeft(archive) {
+    return archiveNumberOrNull(archive && archive.archiveKeysLeft);
+  }
+
+  function archiveKeysEarnedToday(archive) {
+    return archiveNumberOrNull(archive && archive.archiveKeysEarnedToday);
+  }
+
+  function archiveKeysSpentToday(archive) {
+    return archiveNumberOrNull(archive && archive.archiveKeysSpentToday);
+  }
+
+  function archiveHasNoKeys(archive) {
+    var left = archiveKeysLeft(archive);
+    return left != null && left <= 0;
+  }
+
+  function archiveKeyHintHtml(archive) {
+    if (!archiveHasNoKeys(archive)) return "";
+    return "<div class=\"campaign-archive-feedback is-info\">No Archive Keys left. Patrol or Donate at Phantom Nodes to gain more.</div>";
+  }
+
+  function archiveFeedbackHtml() {
+    var feedback = STATE.archiveFeedback && typeof STATE.archiveFeedback === "object" ? STATE.archiveFeedback : null;
+    if (!feedback || !feedback.text) return "";
+    return "<div class=\"campaign-archive-feedback is-" + esc(feedback.kind || "info") + "\">" + esc(feedback.text) + "</div>";
+  }
+
+  function archiveSubmitDisabled(archive) {
+    return !archive
+      || !archiveFaction(archive)
+      || archiveFaction(archive) === "UNBOUND"
+      || !archiveIsLive(archive)
+      || archiveBreached(archive)
+      || archiveHasNoKeys(archive)
+      || !archiveDraftReady(STATE.archiveDraft)
+      || !!STATE.busyAction;
+  }
+
+  function renderArchiveRecentAttempts(archive) {
+    var attempts = archive && Array.isArray(archive.recentFactionAttempts) ? archive.recentFactionAttempts : [];
+    if (!attempts.length) {
+      return "<div class=\"campaign-archive-empty\">No faction attempts logged yet.</div>";
+    }
+    return attempts.map(function buildAttemptRow(item) {
+      var row = item && typeof item === "object" ? item : {};
+      var label = asText(row.byLabel) || "Pack Member";
+      var seq = archiveSequenceShort(row.sequence || []);
+      var hits = parseInt(row.hits, 10) || 0;
+      var missed = parseInt(row.missed, 10) || 0;
+      return ""
+        + "<div class=\"campaign-archive-log-row\">"
+        + "  <span class=\"campaign-archive-log-label\">" + esc(label) + "</span>"
+        + "  <span class=\"campaign-archive-log-seq\">" + esc(seq) + "</span>"
+        + "  <span class=\"campaign-archive-log-score\">H" + hits + " M" + missed + "</span>"
+        + "</div>";
+    }).join("");
+  }
+
+  function renderArchiveSlots(archive) {
+    return normalizedArchiveSequence(STATE.archiveDraft).map(function buildSlot(key, idx) {
+      var meta = archiveDirectiveMeta(key);
+      return ""
+        + "<button type=\"button\" class=\"campaign-archive-slot" + (meta ? " is-set" : "") + "\""
+        + " data-archive-slot=\"" + idx + "\""
+        + (archiveSubmitDisabled(archive) && !archiveIsLive(archive) ? " disabled" : "")
+        + (STATE.busyAction ? " disabled" : "")
+        + ">"
+        + "  <span class=\"campaign-archive-slot-no\">SLOT " + (idx + 1) + "</span>"
+        + "  <span class=\"campaign-archive-slot-val\">" + esc(archiveSlotLabel(key)) + "</span>"
+        + "</button>";
+    }).join("");
+  }
+
+  function renderArchivePanel() {
+    var archive = archiveState();
+    if (!archive) return "";
+
+    var faction = archiveFaction(archive);
+    var attempts = archiveAttemptCount(archive);
+    var breachLine = archiveBreachLine(archive);
+    var breached = archiveBreached(archive);
+    var disabled = archiveSubmitDisabled(archive);
+    var keysLeft = archiveKeysLeft(archive);
+    var earnedToday = archiveKeysEarnedToday(archive);
+    var spentToday = archiveKeysSpentToday(archive);
+
+    return ""
+      + "<div class=\"campaign-archive\">"
+      + "  <div class=\"campaign-archive-head\">"
+      + "    <div class=\"campaign-archive-headcopy\">"
+      + "      <div class=\"campaign-archive-emblem\">"
+      + "        <img src=\"" + ARCHIVE_EMBLEM_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.parentNode.remove();\">"
+      + "      </div>"
+      + "      <div class=\"campaign-archive-heading\">"
+      + "        <div class=\"campaign-archive-kicker\">Burned Archive</div>"
+      + "        <div class=\"campaign-archive-title\">" + esc(archiveNodeLabel(archive)) + "</div>"
+      + "      </div>"
+      + "    </div>"
+      + "    <div class=\"campaign-archive-status" + (archiveIsLive(archive) ? " is-live" : " is-offline") + "\">" + esc(archiveStatusLabel(archive)) + "</div>"
+      + "  </div>"
+      + "  <div class=\"campaign-archive-grid\">"
+      + "    <div class=\"campaign-archive-meta\"><span>Active</span><strong>" + esc(archiveActiveDateLabel(archive)) + "</strong></div>"
+      + "    <div class=\"campaign-archive-meta\"><span>Faction</span><strong>" + esc(faction) + "</strong></div>"
+      + "    <div class=\"campaign-archive-meta\"><span>Best</span><strong>" + esc(archiveBestSummary(archive)) + "</strong></div>"
+      + "    <div class=\"campaign-archive-meta\"><span>Attempts</span><strong>" + attempts + "</strong></div>"
+      + "  </div>"
+      + "  <div class=\"campaign-archive-keys\">"
+      + "    <div class=\"campaign-archive-keyline\"><span>Archive Keys</span><strong class=\"campaign-archive-keyvalue\"><img class=\"campaign-archive-keyicon\" src=\"" + ARCHIVE_KEY_ICON_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.remove();\"><span>" + esc(keysLeft == null ? "--" : String(keysLeft)) + "</span></strong></div>"
+      + "    <div class=\"campaign-archive-keyline\"><span>Earned today</span><strong>" + esc(earnedToday == null ? "-- / 3" : (String(earnedToday) + " / 3")) + "</strong></div>"
+      + "    <div class=\"campaign-archive-keyline\"><span>Spent today</span><strong>" + esc(spentToday == null ? "--" : String(spentToday)) + "</strong></div>"
+      + "  </div>"
+      + "  <div class=\"campaign-archive-help\">Hits = correct directive in the correct slot. Missed = directive exists but sits in the wrong slot. Use the faction log to deduce the next move.</div>"
+      + "  <div class=\"campaign-archive-slots\">" + renderArchiveSlots(archive) + "</div>"
+      + "  <button type=\"button\" class=\"campaign-archive-submit\" data-archive-submit" + (disabled ? " disabled" : "") + ">"
+      + (STATE.busyAction === "submit_archive_attempt" ? "Submitting..." : "Submit Attempt")
+      + "</button>"
+      +      archiveKeyHintHtml(archive)
+      +      archiveFeedbackHtml()
+      + "  <div class=\"campaign-archive-breach" + (breached ? " is-live" : "") + "\">"
+      + "    <span>Breach</span><strong>" + (breached ? "OPEN" : "SEALED") + "</strong>"
+      + (breachLine ? "<em>" + esc(breachLine) + "</em>" : "")
+      + "  </div>"
+      + "  <div class=\"campaign-archive-log-head\">Faction Log</div>"
+      + "  <div class=\"campaign-archive-log\">" + renderArchiveRecentAttempts(archive) + "</div>"
+      + "</div>";
+  }
+
   function ensureStyles() {
     if (document.getElementById("campaign-css")) return;
 
@@ -365,6 +644,54 @@
       + ".campaign-briefing-back{min-width:96px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(233,243,255,.88);}"
       + ".campaign-briefing-primary[disabled],.campaign-briefing-back[disabled]{opacity:.64;cursor:default;}"
       + ".campaign-briefing-notice{margin-top:10px;font-size:12px;line-height:1.38;color:rgba(255,214,214,.88);}"
+      + ".campaign-archive{margin-top:16px;padding:14px;border-radius:18px;border:1px solid rgba(142,227,255,.16);"
+      + "background:linear-gradient(180deg, rgba(9,21,33,.92), rgba(5,12,20,.94));box-shadow:inset 0 0 0 1px rgba(117,203,255,.05);}"
+      + ".campaign-archive-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}"
+      + ".campaign-archive-headcopy{display:flex;align-items:center;gap:11px;min-width:0;flex:1;}"
+      + ".campaign-archive-heading{min-width:0;}"
+      + ".campaign-archive-emblem{width:48px;height:48px;flex:0 0 48px;border-radius:14px;overflow:hidden;border:1px solid rgba(145,226,255,.16);background:radial-gradient(circle at 50% 40%, rgba(143,222,255,.20), rgba(11,22,35,.78));box-shadow:0 10px 22px rgba(0,0,0,.24);}"
+      + ".campaign-archive-emblem img{display:block;width:100%;height:100%;object-fit:cover;}"
+      + ".campaign-archive-kicker{font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.68);}"
+      + ".campaign-archive-title{margin-top:5px;font-size:16px;font-weight:900;letter-spacing:.03em;color:#eef8ff;}"
+      + ".campaign-archive-status{padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(226,237,247,.74);background:rgba(255,255,255,.04);}"
+      + ".campaign-archive-status.is-live{border-color:rgba(123,231,175,.24);color:rgba(191,255,222,.88);background:rgba(31,96,69,.24);}"
+      + ".campaign-archive-status.is-offline{border-color:rgba(255,155,155,.18);color:rgba(255,215,215,.86);background:rgba(111,39,39,.18);}"
+      + ".campaign-archive-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}"
+      + ".campaign-archive-meta{padding:10px 11px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);}"
+      + ".campaign-archive-meta span{display:block;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:rgba(153,210,244,.62);}"
+      + ".campaign-archive-meta strong{display:block;margin-top:6px;font-size:13px;font-weight:900;color:#edf7ff;}"
+      + ".campaign-archive-keys{display:grid;gap:7px;margin-top:12px;padding:11px 12px;border-radius:14px;border:1px solid rgba(145,226,255,.10);background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));}"
+      + ".campaign-archive-keyline{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;line-height:1.35;color:rgba(214,231,247,.84);}"
+      + ".campaign-archive-keyline span{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:rgba(153,210,244,.62);}"
+      + ".campaign-archive-keyline strong{font-size:13px;font-weight:900;color:#edf7ff;}"
+      + ".campaign-archive-keyvalue{display:inline-flex;align-items:center;gap:8px;}"
+      + ".campaign-archive-keyvalue span{font-size:13px;font-weight:900;letter-spacing:0;color:#edf7ff;text-transform:none;}"
+      + ".campaign-archive-keyicon{width:18px;height:18px;display:block;object-fit:contain;filter:drop-shadow(0 0 10px rgba(124,208,255,.32));}"
+      + ".campaign-archive-help{margin-top:12px;font-size:12px;line-height:1.42;color:rgba(213,232,247,.80);}"
+      + ".campaign-archive-slots{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}"
+      + ".campaign-archive-slot{appearance:none;padding:11px 10px;border-radius:14px;border:1px solid rgba(144,226,255,.16);background:linear-gradient(180deg, rgba(24,44,61,.60), rgba(9,18,29,.82));color:#eaf7ff;cursor:pointer;text-align:left;}"
+      + ".campaign-archive-slot.is-set{border-color:rgba(123,223,255,.28);box-shadow:inset 0 0 0 1px rgba(145,226,255,.07);}"
+      + ".campaign-archive-slot[disabled]{opacity:.64;cursor:default;}"
+      + ".campaign-archive-slot-no{display:block;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(153,210,244,.62);}"
+      + ".campaign-archive-slot-val{display:block;margin-top:6px;font-size:14px;font-weight:900;letter-spacing:.06em;}"
+      + ".campaign-archive-submit{appearance:none;width:100%;margin-top:12px;padding:13px 14px;border-radius:14px;border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
+      + ".campaign-archive-submit[disabled]{opacity:.58;cursor:default;}"
+      + ".campaign-archive-feedback{margin-top:10px;padding:10px 11px;border-radius:14px;font-size:12px;line-height:1.38;border:1px solid rgba(255,255,255,.10);}"
+      + ".campaign-archive-feedback.is-success{background:rgba(34,92,66,.26);border-color:rgba(131,231,183,.18);color:rgba(213,255,235,.92);}"
+      + ".campaign-archive-feedback.is-error{background:rgba(112,36,36,.20);border-color:rgba(255,135,135,.18);color:rgba(255,226,226,.92);}"
+      + ".campaign-archive-feedback.is-info{background:rgba(255,255,255,.04);color:rgba(229,239,249,.88);}"
+      + ".campaign-archive-breach{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);}"
+      + ".campaign-archive-breach span{font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(153,210,244,.62);}"
+      + ".campaign-archive-breach strong{font-size:13px;font-weight:900;color:rgba(235,244,252,.88);}"
+      + ".campaign-archive-breach.is-live strong{color:rgba(198,255,225,.94);}"
+      + ".campaign-archive-breach em{font-style:normal;font-size:12px;color:rgba(205,224,239,.76);}"
+      + ".campaign-archive-log-head{margin-top:13px;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.68);}"
+      + ".campaign-archive-log{display:grid;gap:7px;margin-top:8px;}"
+      + ".campaign-archive-log-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);font-size:12px;}"
+      + ".campaign-archive-log-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(229,240,250,.92);}"
+      + ".campaign-archive-log-seq{font-weight:900;letter-spacing:.12em;color:rgba(178,231,255,.86);}"
+      + ".campaign-archive-log-score{font-weight:900;color:rgba(238,246,255,.88);}"
+      + ".campaign-archive-empty{padding:8px 2px 2px;font-size:12px;color:rgba(201,220,236,.70);}"
       + ".campaign-last-opened{margin-top:10px;font-size:11px;line-height:1.35;color:rgba(177,216,245,.72);}"
       + ".campaign-foot{margin-top:10px;font-size:11px;line-height:1.35;color:rgba(189,213,235,.62);}"
       + ".campaign-empty{padding:10px 0 2px;font-size:14px;line-height:1.45;color:rgba(230,243,255,.82);}"
@@ -551,6 +878,7 @@
       + "  <div class=\"campaign-question\">Choose your first Signal Directive.</div>"
       + "  <div class=\"campaign-directives\">" + renderDirectiveChoices(campaign) + "</div>"
       +      afterChoiceHtml
+      +      renderArchivePanel()
       + "  <div class=\"campaign-guidance\">"
       + "    <div class=\"campaign-guidance-head\">Move With Purpose</div>"
       + "    <div class=\"campaign-guidance-lead\">Then don't click blindly. Move with purpose.</div>"
@@ -587,6 +915,7 @@
       + "    </div>"
       + (STATE.briefingNotice ? "<div class=\"campaign-briefing-notice\">" + esc(STATE.briefingNotice) + "</div>" : "")
       + "  </div>"
+      +      renderArchivePanel()
       + "  <div class=\"campaign-foot\">Guidance only. This handoff explains why RELAY-7 is sending you there first.</div>"
       + "</div>";
   }
@@ -686,6 +1015,24 @@
         openBriefing(btn.getAttribute("data-campaign-guide"));
       });
     });
+
+    [].slice.call(STATE.rootEl.querySelectorAll("[data-archive-slot]")).forEach(function attachSlot(btn) {
+      btn.addEventListener("click", function onSlot() {
+        var idx = parseInt(btn.getAttribute("data-archive-slot"), 10);
+        if (!(idx >= 0 && idx < 4) || STATE.busyAction) return;
+        STATE.archiveDraft = normalizedArchiveSequence(STATE.archiveDraft);
+        STATE.archiveDraft[idx] = cycleArchiveDirective(STATE.archiveDraft[idx]);
+        STATE.archiveFeedback = null;
+        render();
+      });
+    });
+
+    var archiveSubmitBtn = STATE.rootEl.querySelector("[data-archive-submit]");
+    if (archiveSubmitBtn) {
+      archiveSubmitBtn.addEventListener("click", function onArchiveSubmit() {
+        void submitArchiveAttempt();
+      });
+    }
   }
 
   function api(path, body) {
@@ -744,6 +1091,56 @@
       STATE.payload = STATE.payload || { ok: false, reason: asText(err && err.message) || "ACTION_FAILED" };
       render();
       try { STATE.tg && STATE.tg.showAlert && STATE.tg.showAlert("Campaign signal failed to update."); } catch (_) {}
+      return false;
+    } finally {
+      STATE.busyAction = "";
+      render();
+    }
+  }
+
+  async function submitArchiveAttempt() {
+    var archive = archiveState();
+    if (!archive || STATE.busyAction || archiveSubmitDisabled(archive)) return false;
+
+    STATE.busyAction = "submit_archive_attempt";
+    STATE.archiveFeedback = null;
+    render();
+
+    try {
+      var payload = {
+        action: "submit_archive_attempt",
+        sequence: normalizedArchiveSequence(STATE.archiveDraft)
+      };
+      var out = await api("/webapp/campaign/action", payload);
+
+      if (out && out.ok === false) {
+        STATE.archiveFeedback = {
+          kind: "error",
+          text: archiveErrorText(out.reason)
+        };
+        render();
+        return false;
+      }
+
+      if (out && typeof out === "object") {
+        STATE.payload = out;
+        STATE.lastLoadAt = Date.now();
+      }
+      STATE.archiveFeedback = {
+        kind: "success",
+        text: "H" + (parseInt(out && out.hits, 10) || 0) + " / M" + (parseInt(out && out.missed, 10) || 0)
+      };
+      updateTile();
+      render();
+      await loadState({ force: true, reason: "archive_submit" });
+      return true;
+    } catch (err) {
+      warn("archive submit failed", err);
+      STATE.archiveFeedback = {
+        kind: "error",
+        text: archiveErrorText(err && ((err.data && err.data.reason) || err.reason || err.message))
+      };
+      render();
       return false;
     } finally {
       STATE.busyAction = "";
@@ -862,6 +1259,8 @@
     setBodyLock(true);
     STATE.briefingKey = "";
     STATE.briefingNotice = "";
+    STATE.archiveFeedback = null;
+    STATE.archiveDraft = emptyArchiveDraft();
     if (STATE.backEl) STATE.backEl.style.display = "flex";
     try { global.navOpen && global.navOpen("campaignBack"); } catch (_) {}
 
