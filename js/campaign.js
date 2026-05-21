@@ -25,6 +25,7 @@
     archiveFeedback: null,
     archiveCelebration: null,
     archiveCelebrationSeenKey: "",
+    archiveReportOpen: false,
     visHandler: null,
   };
 
@@ -610,6 +611,37 @@
       + "</div>";
   }
 
+  function renderArchiveReportModal() {
+    var archive = archiveState();
+    if (!STATE.archiveReportOpen || !archiveBreached(archive)) return "";
+
+    var faction = archiveFactionLabel(archiveFaction(archive));
+    var cracker = asText(archive && archive.breachedByLabel) || "Recorded by RELAY-7";
+    var attempts = archiveAttemptCount(archive);
+    var attemptsLabel = attempts > 0 ? String(attempts) : "Not recorded";
+
+    return ""
+      + "<div class=\"campaign-archive-report-backdrop\" data-archive-report-close>"
+      + "  <div class=\"campaign-archive-report\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Archive Report\">"
+      + "    <button type=\"button\" class=\"campaign-archive-report-close\" data-archive-report-close aria-label=\"Close archive report\">x</button>"
+      + "    <div class=\"campaign-archive-report-emblem\">"
+      + "      <img src=\"" + ARCHIVE_EMBLEM_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.parentNode.remove();\">"
+      + "    </div>"
+      + "    <div class=\"campaign-archive-report-kicker\">Archive Report</div>"
+      + "    <div class=\"campaign-archive-report-title\">ARCHIVE REPORT</div>"
+      + "    <div class=\"campaign-archive-report-grid\">"
+      + "      <div class=\"campaign-archive-report-row\"><span>Status</span><strong>Breach Confirmed</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Faction</span><strong>" + esc(faction || "Faction record sealed") + "</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Cracker</span><strong>" + esc(cracker) + "</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Final Result</span><strong>4 Perfect Slots</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Attempts</span><strong>" + esc(attemptsLabel) + "</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Oracle</span><strong>RELAY-7 confirmed the Archive breach.</strong></div>"
+      + "      <div class=\"campaign-archive-report-row\"><span>Reward</span><strong>Recognition only. No direct economy boost.</strong></div>"
+      + "    </div>"
+      + "  </div>"
+      + "</div>";
+  }
+
   function renderArchiveCelebrationModal() {
     var celebration = STATE.archiveCelebration && typeof STATE.archiveCelebration === "object"
       ? STATE.archiveCelebration
@@ -635,6 +667,19 @@
       + "    <button type=\"button\" class=\"campaign-archive-celebration-cta\" data-archive-celebration-report>Read Archive Report</button>"
       + "  </div>"
       + "</div>";
+  }
+
+  function openArchiveReport() {
+    var archive = archiveState();
+    if (!archiveBreached(archive)) return false;
+    STATE.archiveReportOpen = true;
+    render();
+    return true;
+  }
+
+  function closeArchiveReport() {
+    STATE.archiveReportOpen = false;
+    render();
   }
 
   function renderArchiveKeyHint() {
@@ -965,6 +1010,19 @@
       + ".campaign-archive-breached-title{margin-top:6px;font-size:16px;font-weight:900;letter-spacing:.05em;color:#eef8ff;}"
       + ".campaign-archive-breached-copy{margin-top:7px;font-size:12px;line-height:1.45;color:rgba(224,237,248,.86);}"
       + ".campaign-archive-breached-reward{margin-top:9px;font-size:12px;font-weight:900;color:rgba(220,247,255,.94);}"
+      + ".campaign-archive-report-backdrop{position:fixed;inset:0;z-index:1500002;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at top, rgba(81,166,214,.16), transparent 28%), rgba(2,6,12,.78);backdrop-filter:blur(6px);}"
+      + ".campaign-archive-report{position:relative;width:min(420px,92vw);padding:18px 16px 16px;border-radius:22px;border:1px solid rgba(145,226,255,.18);background:linear-gradient(180deg, rgba(8,18,29,.98), rgba(4,10,18,.98));box-shadow:0 26px 80px rgba(0,0,0,.58), inset 0 0 0 1px rgba(145,226,255,.05);overflow:hidden;}"
+      + ".campaign-archive-report::before{content:'';position:absolute;inset:-18% -10% auto -10%;height:128px;background:radial-gradient(circle at 50% 50%, rgba(115,212,255,.14), transparent 60%);pointer-events:none;}"
+      + ".campaign-archive-report::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg, transparent 0 8px, rgba(121,212,255,.03) 8px 9px, transparent 9px 17px);opacity:.4;pointer-events:none;mix-blend-mode:screen;}"
+      + ".campaign-archive-report-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:#f2f8ff;cursor:pointer;font-size:18px;z-index:1;}"
+      + ".campaign-archive-report-emblem{position:relative;width:64px;height:64px;margin:0 auto 12px;border-radius:18px;overflow:hidden;border:1px solid rgba(145,226,255,.18);background:radial-gradient(circle at 50% 40%, rgba(143,222,255,.20), rgba(11,22,35,.78));box-shadow:0 14px 34px rgba(0,0,0,.34);z-index:1;}"
+      + ".campaign-archive-report-emblem img{display:block;width:100%;height:100%;object-fit:cover;}"
+      + ".campaign-archive-report-kicker{position:relative;z-index:1;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.76);text-align:center;}"
+      + ".campaign-archive-report-title{position:relative;z-index:1;margin-top:8px;font-size:22px;font-weight:900;letter-spacing:.08em;color:#f4fbff;text-align:center;}"
+      + ".campaign-archive-report-grid{position:relative;z-index:1;display:grid;gap:8px;margin-top:14px;}"
+      + ".campaign-archive-report-row{display:grid;gap:5px;padding:10px 11px;border-radius:14px;border:1px solid rgba(145,226,255,.10);background:rgba(255,255,255,.04);}"
+      + ".campaign-archive-report-row span{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:rgba(159,222,255,.70);}"
+      + ".campaign-archive-report-row strong{font-size:13px;line-height:1.42;color:rgba(234,244,252,.92);}"
       + ".campaign-archive-celebration-backdrop{position:fixed;inset:0;z-index:1500002;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at top, rgba(81,166,214,.18), transparent 28%), rgba(2,6,12,.78);backdrop-filter:blur(6px);}"
       + ".campaign-archive-celebration{position:relative;width:min(420px,92vw);padding:18px 16px 16px;border-radius:22px;border:1px solid rgba(145,226,255,.18);background:linear-gradient(180deg, rgba(8,18,29,.98), rgba(4,10,18,.98));box-shadow:0 26px 80px rgba(0,0,0,.58), inset 0 0 0 1px rgba(145,226,255,.05);overflow:hidden;}"
       + ".campaign-archive-celebration::before{content:'';position:absolute;inset:-20% -10% auto -10%;height:140px;background:radial-gradient(circle at 50% 50%, rgba(115,212,255,.16), transparent 60%);pointer-events:none;}"
@@ -1184,6 +1242,7 @@
       + "    <div class=\"campaign-guidance-list\">" + renderGuidance(campaign) + "</div>"
       + "    <div class=\"campaign-foot\">Guidance only. These routes open existing systems and do not fake completion or rewards.</div>"
       + "  </div>"
+      +      renderArchiveReportModal()
       +      renderArchiveCelebrationModal()
       + "</div>";
   }
@@ -1217,6 +1276,7 @@
       + "  </div>"
       +      renderArchivePanel()
       + "  <div class=\"campaign-foot\">Guidance only. This handoff explains why RELAY-7 is sending you there first.</div>"
+      +      renderArchiveReportModal()
       +      renderArchiveCelebrationModal()
       + "</div>";
   }
@@ -1345,7 +1405,7 @@
           return;
         }
         if (action === "read_report") {
-          scrollArchiveSection("report");
+          openArchiveReport();
         }
       });
     }
@@ -1358,7 +1418,7 @@
           return;
         }
         if (action === "read_report") {
-          scrollArchiveSection("report");
+          openArchiveReport();
           return;
         }
         if (action === "earn_key") {
@@ -1378,9 +1438,16 @@
     if (archiveCelebrationReport) {
       archiveCelebrationReport.addEventListener("click", function onArchiveCelebrationReport() {
         closeArchiveCelebration();
-        scrollArchiveSection("report");
+        openArchiveReport();
       });
     }
+
+    [].slice.call(STATE.rootEl.querySelectorAll("[data-archive-report-close]")).forEach(function attachArchiveReportClose(btn) {
+      btn.addEventListener("click", function onArchiveReportClose(ev) {
+        if (ev.target !== btn && btn !== ev.currentTarget) return;
+        closeArchiveReport();
+      });
+    });
   }
 
   function api(path, body) {
@@ -1653,6 +1720,7 @@
     STATE.briefingNotice = "";
     STATE.archiveFeedback = null;
     STATE.archiveCelebration = null;
+    STATE.archiveReportOpen = false;
     STATE.archiveDraft = emptyArchiveDraft();
     if (STATE.backEl) STATE.backEl.style.display = "flex";
     try { global.navOpen && global.navOpen("campaignBack"); } catch (_) {}
@@ -1671,6 +1739,7 @@
     if (!STATE.backEl) return;
     STATE.briefingKey = "";
     STATE.briefingNotice = "";
+    STATE.archiveReportOpen = false;
     STATE.backEl.style.display = "none";
     setBodyLock(false);
     try { global.navClose && global.navClose("campaignBack"); } catch (_) {}
