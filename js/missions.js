@@ -1310,8 +1310,10 @@ function _normalizeRareDropObj(obj) {
     const res = await _apiPost(path, body);
 
     if (res && typeof res === "object" && res.ok === false) {
-      const reason = res.reason || res.error || "NOT_OK";
-      throw new Error(String(reason));
+      const msg = res.message || res.reason || res.error || "NOT_OK";
+      const err = new Error(String(msg));
+      err.data = res;
+      throw err;
     }
     return res;
   }
@@ -1850,11 +1852,17 @@ function _normalizeRareDropObj(obj) {
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
         } catch (_) {}
         render();
+        if (res.message) {
+          try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+          try { _tg?.showAlert?.(String(res.message)); } catch (_) {}
+        }
         return;
       }
       await loadState({ force: true, reason: "refresh_fallback" });
     } catch (e) {
-      renderError("Refresh failed", String(e?.message || e || ""));
+      const msg = String(e?.data?.message || e?.message || e || "Refresh failed");
+      try { _tg?.HapticFeedback?.notificationOccurred?.("error"); } catch (_) {}
+      try { _tg?.showAlert?.(msg); } catch (_) {}
     }
   }
 
