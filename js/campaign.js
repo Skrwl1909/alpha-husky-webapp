@@ -23,6 +23,8 @@
     lastOpenedDirective: "",
     archiveDraft: ["", "", "", ""],
     archiveFeedback: null,
+    archiveCelebration: null,
+    archiveCelebrationSeenKey: "",
     visHandler: null,
   };
 
@@ -409,6 +411,15 @@
     return when ? (label + " \u00b7 " + when) : label;
   }
 
+  function archiveCelebrationKey(archive) {
+    if (!archive || typeof archive !== "object") return "";
+    return [
+      asText(archive && archive.campaignKey),
+      asText(archive && archive.activeDate),
+      asText(archiveFaction(archive))
+    ].filter(Boolean).join(":");
+  }
+
   function formatArchiveTimestamp(raw) {
     var num = parseInt(raw, 10);
     if (!num) return "";
@@ -585,6 +596,107 @@
       + "</div>";
   }
 
+  function renderArchiveBreachedState(archive) {
+    if (!archiveBreached(archive)) return "";
+    return ""
+      + "<div class=\"campaign-archive-breached-card\">"
+      + "  <div class=\"campaign-archive-breached-kicker\">Archive Breached</div>"
+      + "  <div class=\"campaign-archive-breached-title\">ARCHIVE BREACHED</div>"
+      + "  <div class=\"campaign-archive-breached-copy\">RELAY-7 confirmed this faction breach.</div>"
+      + "  <div class=\"campaign-archive-breached-copy\">The Archive report is sealed in the Campaign record.</div>"
+      + "  <div class=\"campaign-archive-breached-reward\">No direct economy boost.</div>"
+      + "  <div class=\"campaign-archive-breached-copy\">This breach grants recognition, Oracle report, Campaign record and future SITREP spotlight.</div>"
+      + "  <div class=\"campaign-archive-breached-copy\">The cracker is recorded in the Archive report.</div>"
+      + "</div>";
+  }
+
+  function renderArchiveCelebrationModal() {
+    var celebration = STATE.archiveCelebration && typeof STATE.archiveCelebration === "object"
+      ? STATE.archiveCelebration
+      : null;
+    if (!celebration || !celebration.open) return "";
+
+    return ""
+      + "<div class=\"campaign-archive-celebration-backdrop\">"
+      + "  <div class=\"campaign-archive-celebration\">"
+      + "    <button type=\"button\" class=\"campaign-archive-celebration-close\" data-archive-celebration-close aria-label=\"Close breach confirmation\">x</button>"
+      + "    <div class=\"campaign-archive-celebration-emblem\">"
+      + "      <img src=\"" + ARCHIVE_EMBLEM_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.parentNode.remove();\">"
+      + "    </div>"
+      + "    <div class=\"campaign-archive-celebration-kicker\">Breach Confirmed</div>"
+      + "    <div class=\"campaign-archive-celebration-title\">BREACH CONFIRMED</div>"
+      + "    <div class=\"campaign-archive-celebration-copy\">RELAY-7 confirmed the Archive breach.</div>"
+      + "    <div class=\"campaign-archive-celebration-copy\">You cracked the Burned Archive for " + esc(celebration.factionName || "your faction") + ".</div>"
+      + "    <div class=\"campaign-archive-celebration-copy\">Your name is now recorded in the Archive report.</div>"
+      + "    <div class=\"campaign-archive-celebration-score\">"
+      + "      <strong>" + esc(String(celebration.hits || 4)) + " Perfect Slots</strong>"
+      + "      <span>" + esc(String(celebration.missed || 0)) + " Close Signals</span>"
+      + "    </div>"
+      + "    <button type=\"button\" class=\"campaign-archive-celebration-cta\" data-archive-celebration-report>Read Archive Report</button>"
+      + "  </div>"
+      + "</div>";
+  }
+
+  function renderArchiveKeyHint() {
+    return ""
+      + "<details class=\"campaign-archive-inlinehint\">"
+      + "  <summary class=\"campaign-archive-hintbtn\" aria-label=\"Archive Key help\">?</summary>"
+      + "  <div class=\"campaign-archive-hintcard\">"
+      + "    <p>Archive Keys let you test the Burned Archive signal.</p>"
+      + "    <p>1 key = 1 attempt.</p>"
+      + "    <p>Gain keys from Phantom Node Patrol / Donate.</p>"
+      + "    <p>Daily gained key limit: 3.</p>"
+      + "    <p>Existing keys can still be spent.</p>"
+      + "  </div>"
+      + "</details>";
+  }
+
+  function renderArchiveRulesHint() {
+    return ""
+      + "<details class=\"campaign-archive-rules\">"
+      + "  <summary class=\"campaign-archive-rules-summary\">"
+      + "    <span class=\"campaign-archive-rules-title\">BURNED ARCHIVE RULES ?</span>"
+      + "    <span class=\"campaign-archive-rules-sub\">Crack a 4-signal faction code.</span>"
+      + "  </summary>"
+      + "  <div class=\"campaign-archive-rules-body\">"
+      + "    <p>Spend 1 Archive Key to test one sequence.</p>"
+      + "    <p>Perfect Slot = correct signal + correct position.</p>"
+      + "    <p>Close Signal = correct signal, wrong position.</p>"
+      + "    <p>Archive does not reveal which slot was correct.</p>"
+      + "    <p>Use Recent Attempts to deduce the next move.</p>"
+      + "    <p>Reach 4 Perfect Slots to breach.</p>"
+      + "  </div>"
+      + "</details>";
+  }
+
+  function openArchiveCelebration(archive, result) {
+    var safeArchive = archive && typeof archive === "object" ? archive : null;
+    var key = archiveCelebrationKey(safeArchive);
+    if (!safeArchive || !archiveBreached(safeArchive) || !key || STATE.archiveCelebrationSeenKey === key) {
+      return false;
+    }
+
+    STATE.archiveCelebration = {
+      key: key,
+      open: true,
+      factionName: archiveFactionLabel(archiveFaction(safeArchive)),
+      hits: Math.max(4, parseInt(result && result.hits, 10) || 4),
+      missed: parseInt(result && result.missed, 10) || 0
+    };
+    return true;
+  }
+
+  function closeArchiveCelebration() {
+    var celebration = STATE.archiveCelebration && typeof STATE.archiveCelebration === "object"
+      ? STATE.archiveCelebration
+      : null;
+    if (celebration && celebration.key) {
+      STATE.archiveCelebrationSeenKey = celebration.key;
+    }
+    STATE.archiveCelebration = null;
+    render();
+  }
+
   function renderArchiveRecentAttempts(archive) {
     var attempts = archive && Array.isArray(archive.recentFactionAttempts) ? archive.recentFactionAttempts : [];
     if (!attempts.length) {
@@ -661,30 +773,12 @@
       + "    <div class=\"campaign-archive-meta\"><span>Attempts</span><strong>" + attempts + "</strong></div>"
       + "  </div>"
       + "  <div class=\"campaign-archive-keys\">"
-      + "    <div class=\"campaign-archive-keyline\"><span>Archive Keys</span><strong class=\"campaign-archive-keyvalue\"><img class=\"campaign-archive-keyicon\" src=\"" + ARCHIVE_KEY_ICON_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.remove();\"><span>" + esc(keysLeft == null ? "--" : String(keysLeft)) + "</span></strong></div>"
-      + "    <div class=\"campaign-archive-keyline\"><span>Earned today</span><strong>" + esc(earnedToday == null ? "-- / 3" : (String(earnedToday) + " / 3")) + "</strong></div>"
+      + "    <div class=\"campaign-archive-keyline\"><span class=\"campaign-archive-keylabel\">Archive Keys " + renderArchiveKeyHint() + "</span><strong class=\"campaign-archive-keyvalue\"><img class=\"campaign-archive-keyicon\" src=\"" + ARCHIVE_KEY_ICON_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.remove();\"><span>" + esc(keysLeft == null ? "--" : String(keysLeft)) + "</span></strong></div>"
+      + "    <div class=\"campaign-archive-keyline\"><span class=\"campaign-archive-keylabel\">Earned Today: " + esc(earnedToday == null ? "--/3" : (String(earnedToday) + "/3")) + " " + renderArchiveKeyHint() + "</span></div>"
+      + "    <div class=\"campaign-archive-explain\">Keys gained today from Phantom Node actions.</div>"
       + "    <div class=\"campaign-archive-keyline\"><span>Spent today</span><strong>" + esc(spentToday == null ? "--" : String(spentToday)) + "</strong></div>"
       + "  </div>"
-      + "  <div class=\"campaign-archive-explain\">Earned Today shows how many Archive Keys you gained today from front actions. Daily earned key limit: 3.</div>"
-      + "  <div class=\"campaign-archive-info-grid\">"
-      + "    <div class=\"campaign-archive-info-card\">"
-      + "      <div class=\"campaign-archive-info-head\">Burned Archive Rules</div>"
-      + "      <p>Your faction is trying to crack an encrypted 4-signal Archive code.</p>"
-      + "      <p>Spend 1 Archive Key to test one sequence.</p>"
-      + "      <p>Perfect Slot = correct signal in the correct position.</p>"
-      + "      <p>Close Signal = correct signal, but in the wrong position.</p>"
-      + "      <p>The Archive will not reveal which slot was correct. Use your faction's Recent Attempts to deduce the next move.</p>"
-      + "      <p>Reach 4 Perfect Slots to confirm the breach.</p>"
-      + "    </div>"
-      + "    <div class=\"campaign-archive-info-card\">"
-      + "      <div class=\"campaign-archive-info-head\">How to Earn Archive Keys</div>"
-      + "      <p>Archive Keys come from Phantom Node front actions.</p>"
-      + "      <p>Patrol and Donate can grant Archive Keys.</p>"
-      + "      <p>You can earn up to 3 keys per day.</p>"
-      + "      <p>Keys are used to test the Burned Archive signal. 1 key = 1 attempt.</p>"
-      + "      <p>If you hit today's key limit, you can still spend keys you already have.</p>"
-      + "    </div>"
-      + "  </div>"
+      +      renderArchiveRulesHint()
       + "  <div class=\"campaign-archive-tip\">Tap each slot to cycle through Trace, Secure, Red, and Watch.</div>"
       + "  <div class=\"campaign-archive-slots\">" + renderArchiveSlots(archive) + "</div>"
       +      renderArchivePrimaryCta(archive)
@@ -694,6 +788,7 @@
       + "    <span>Archive Report</span><strong>" + (breached ? "BREACH CONFIRMED" : "BREACH SEALED") + "</strong>"
       + (breachLine ? "<em>" + esc(breachLine) + "</em>" : "")
       + "  </div>"
+      +      renderArchiveBreachedState(archive)
       + "  <div class=\"campaign-archive-log-head\">Recent Attempts</div>"
       + "  <div class=\"campaign-archive-log-sub\">Faction log. Read the tested sequence, then compare Perfect Slots and Close Signals.</div>"
       + "  <div class=\"campaign-archive-log\" data-archive-log-anchor>" + renderArchiveRecentAttempts(archive) + "</div>"
@@ -816,15 +911,27 @@
       + ".campaign-archive-keyline{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;line-height:1.35;color:rgba(214,231,247,.84);}"
       + ".campaign-archive-keyline span{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:rgba(153,210,244,.62);}"
       + ".campaign-archive-keyline strong{font-size:13px;font-weight:900;color:#edf7ff;}"
+      + ".campaign-archive-keylabel{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}"
       + ".campaign-archive-keyvalue{display:inline-flex;align-items:center;gap:8px;}"
       + ".campaign-archive-keyvalue span{font-size:13px;font-weight:900;letter-spacing:0;color:#edf7ff;text-transform:none;}"
       + ".campaign-archive-keyicon{width:18px;height:18px;display:block;object-fit:contain;filter:drop-shadow(0 0 10px rgba(124,208,255,.32));}"
-      + ".campaign-archive-explain{margin-top:10px;font-size:12px;line-height:1.45;color:rgba(214,232,246,.82);}"
-      + ".campaign-archive-info-grid{display:grid;gap:8px;margin-top:12px;}"
-      + ".campaign-archive-info-card{padding:12px;border-radius:14px;border:1px solid rgba(145,226,255,.10);background:rgba(255,255,255,.03);}"
-      + ".campaign-archive-info-head{font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(159,222,255,.72);margin-bottom:8px;}"
-      + ".campaign-archive-info-card p{margin:0;font-size:12px;line-height:1.45;color:rgba(229,239,249,.88);}"
-      + ".campaign-archive-info-card p + p{margin-top:7px;}"
+      + ".campaign-archive-inlinehint{position:relative;display:inline-block;}"
+      + ".campaign-archive-inlinehint summary{list-style:none;}"
+      + ".campaign-archive-inlinehint summary::-webkit-details-marker{display:none;}"
+      + ".campaign-archive-hintbtn{display:grid;place-items:center;width:18px;height:18px;border-radius:999px;border:1px solid rgba(145,226,255,.20);background:rgba(255,255,255,.05);color:rgba(226,241,255,.92);font-size:11px;font-weight:900;cursor:pointer;}"
+      + ".campaign-archive-hintcard{margin-top:8px;padding:10px 11px;border-radius:12px;border:1px solid rgba(145,226,255,.14);background:rgba(11,21,33,.96);font-size:12px;line-height:1.42;color:rgba(229,239,249,.88);text-transform:none;letter-spacing:0;min-width:220px;}"
+      + ".campaign-archive-hintcard p{margin:0;}"
+      + ".campaign-archive-hintcard p + p{margin-top:6px;}"
+      + ".campaign-archive-explain{margin-top:-1px;font-size:11px;line-height:1.4;color:rgba(214,232,246,.74);text-transform:none;letter-spacing:0;}"
+      + ".campaign-archive-rules{margin-top:12px;border-radius:14px;border:1px solid rgba(145,226,255,.10);background:rgba(255,255,255,.03);overflow:hidden;}"
+      + ".campaign-archive-rules summary{list-style:none;cursor:pointer;}"
+      + ".campaign-archive-rules summary::-webkit-details-marker{display:none;}"
+      + ".campaign-archive-rules-summary{display:flex;flex-direction:column;gap:5px;padding:12px;}"
+      + ".campaign-archive-rules-title{font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.76);}"
+      + ".campaign-archive-rules-sub{font-size:12px;line-height:1.4;color:rgba(226,239,250,.88);text-transform:none;letter-spacing:0;}"
+      + ".campaign-archive-rules-body{padding:0 12px 12px;}"
+      + ".campaign-archive-rules-body p{margin:0;font-size:12px;line-height:1.45;color:rgba(229,239,249,.88);}"
+      + ".campaign-archive-rules-body p + p{margin-top:7px;}"
       + ".campaign-archive-tip{margin-top:8px;font-size:11px;line-height:1.35;color:rgba(188,207,222,.68);}"
       + ".campaign-archive-slots{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}"
       + ".campaign-archive-slot{appearance:none;padding:11px 10px;border-radius:14px;border:1px solid rgba(144,226,255,.16);background:linear-gradient(180deg, rgba(24,44,61,.60), rgba(9,18,29,.82));color:#eaf7ff;cursor:pointer;text-align:left;}"
@@ -853,6 +960,25 @@
       + ".campaign-archive-breach strong{font-size:13px;font-weight:900;color:rgba(235,244,252,.88);}"
       + ".campaign-archive-breach.is-live strong{color:rgba(198,255,225,.94);}"
       + ".campaign-archive-breach em{font-style:normal;font-size:12px;color:rgba(205,224,239,.76);}"
+      + ".campaign-archive-breached-card{margin-top:10px;padding:12px;border-radius:14px;border:1px solid rgba(145,226,255,.14);background:linear-gradient(180deg, rgba(28,63,88,.22), rgba(8,17,28,.48));box-shadow:inset 0 0 0 1px rgba(145,226,255,.05);}"
+      + ".campaign-archive-breached-kicker{font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(159,222,255,.74);}"
+      + ".campaign-archive-breached-title{margin-top:6px;font-size:16px;font-weight:900;letter-spacing:.05em;color:#eef8ff;}"
+      + ".campaign-archive-breached-copy{margin-top:7px;font-size:12px;line-height:1.45;color:rgba(224,237,248,.86);}"
+      + ".campaign-archive-breached-reward{margin-top:9px;font-size:12px;font-weight:900;color:rgba(220,247,255,.94);}"
+      + ".campaign-archive-celebration-backdrop{position:fixed;inset:0;z-index:1500002;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at top, rgba(81,166,214,.18), transparent 28%), rgba(2,6,12,.78);backdrop-filter:blur(6px);}"
+      + ".campaign-archive-celebration{position:relative;width:min(420px,92vw);padding:18px 16px 16px;border-radius:22px;border:1px solid rgba(145,226,255,.18);background:linear-gradient(180deg, rgba(8,18,29,.98), rgba(4,10,18,.98));box-shadow:0 26px 80px rgba(0,0,0,.58), inset 0 0 0 1px rgba(145,226,255,.05);overflow:hidden;}"
+      + ".campaign-archive-celebration::before{content:'';position:absolute;inset:-20% -10% auto -10%;height:140px;background:radial-gradient(circle at 50% 50%, rgba(115,212,255,.16), transparent 60%);pointer-events:none;}"
+      + ".campaign-archive-celebration::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg, transparent 0 8px, rgba(121,212,255,.035) 8px 9px, transparent 9px 17px);opacity:.45;pointer-events:none;mix-blend-mode:screen;}"
+      + ".campaign-archive-celebration-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:#f2f8ff;cursor:pointer;font-size:18px;z-index:1;}"
+      + ".campaign-archive-celebration-emblem{position:relative;width:68px;height:68px;margin:0 auto 12px;border-radius:18px;overflow:hidden;border:1px solid rgba(145,226,255,.18);background:radial-gradient(circle at 50% 40%, rgba(143,222,255,.20), rgba(11,22,35,.78));box-shadow:0 14px 34px rgba(0,0,0,.34);z-index:1;}"
+      + ".campaign-archive-celebration-emblem img{display:block;width:100%;height:100%;object-fit:cover;}"
+      + ".campaign-archive-celebration-kicker{position:relative;z-index:1;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.76);text-align:center;}"
+      + ".campaign-archive-celebration-title{position:relative;z-index:1;margin-top:8px;font-size:22px;font-weight:900;letter-spacing:.08em;color:#f4fbff;text-align:center;}"
+      + ".campaign-archive-celebration-copy{position:relative;z-index:1;margin-top:8px;font-size:13px;line-height:1.45;color:rgba(227,238,248,.88);text-align:center;}"
+      + ".campaign-archive-celebration-score{position:relative;z-index:1;display:grid;gap:4px;margin-top:14px;padding:12px;border-radius:16px;border:1px solid rgba(145,226,255,.14);background:rgba(255,255,255,.04);text-align:center;}"
+      + ".campaign-archive-celebration-score strong{font-size:16px;color:#eff9ff;}"
+      + ".campaign-archive-celebration-score span{font-size:12px;font-weight:900;color:rgba(205,239,255,.82);}"
+      + ".campaign-archive-celebration-cta{position:relative;z-index:1;appearance:none;width:100%;margin-top:14px;padding:13px 14px;border-radius:14px;border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
       + ".campaign-archive-log-head{margin-top:13px;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:rgba(159,222,255,.68);}"
       + ".campaign-archive-log-sub{margin-top:6px;font-size:12px;line-height:1.4;color:rgba(205,224,239,.76);}"
       + ".campaign-archive-log{display:grid;gap:7px;margin-top:8px;}"
@@ -869,7 +995,7 @@
       + ".campaign-empty{padding:10px 0 2px;font-size:14px;line-height:1.45;color:rgba(230,243,255,.82);}"
       + ".campaign-error{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(138,40,40,.20);"
       + "border:1px solid rgba(255,120,120,.18);font-size:12px;color:rgba(255,226,226,.92);}"
-      + "@media (max-width:420px){.campaign-archive-grid,.campaign-archive-slots{grid-template-columns:1fr;}.campaign-archive-head{flex-direction:column;}.campaign-archive-log-time{margin-left:0;}}";
+      + "@media (max-width:420px){.campaign-archive-grid,.campaign-archive-slots{grid-template-columns:1fr;}.campaign-archive-head{flex-direction:column;}.campaign-archive-log-time{margin-left:0;}.campaign-archive-hintcard{min-width:0;}}";
 
     document.head.appendChild(style);
   }
@@ -1058,6 +1184,7 @@
       + "    <div class=\"campaign-guidance-list\">" + renderGuidance(campaign) + "</div>"
       + "    <div class=\"campaign-foot\">Guidance only. These routes open existing systems and do not fake completion or rewards.</div>"
       + "  </div>"
+      +      renderArchiveCelebrationModal()
       + "</div>";
   }
 
@@ -1090,6 +1217,7 @@
       + "  </div>"
       +      renderArchivePanel()
       + "  <div class=\"campaign-foot\">Guidance only. This handoff explains why RELAY-7 is sending you there first.</div>"
+      +      renderArchiveCelebrationModal()
       + "</div>";
   }
 
@@ -1238,6 +1366,21 @@
         }
       });
     });
+
+    var archiveCelebrationClose = STATE.rootEl.querySelector("[data-archive-celebration-close]");
+    if (archiveCelebrationClose) {
+      archiveCelebrationClose.addEventListener("click", function onArchiveCelebrationClose() {
+        closeArchiveCelebration();
+      });
+    }
+
+    var archiveCelebrationReport = STATE.rootEl.querySelector("[data-archive-celebration-report]");
+    if (archiveCelebrationReport) {
+      archiveCelebrationReport.addEventListener("click", function onArchiveCelebrationReport() {
+        closeArchiveCelebration();
+        scrollArchiveSection("report");
+      });
+    }
   }
 
   function api(path, body) {
@@ -1342,6 +1485,10 @@
       updateTile();
       render();
       await loadState({ force: true, reason: "archive_submit" });
+      if ((parseInt(out && out.hits, 10) || 0) >= 4 || archiveBreached(archiveState())) {
+        openArchiveCelebration(archiveState(), out || {});
+      }
+      render();
       return true;
     } catch (err) {
       warn("archive submit failed", err);
@@ -1505,6 +1652,7 @@
     STATE.briefingKey = "";
     STATE.briefingNotice = "";
     STATE.archiveFeedback = null;
+    STATE.archiveCelebration = null;
     STATE.archiveDraft = emptyArchiveDraft();
     if (STATE.backEl) STATE.backEl.style.display = "flex";
     try { global.navOpen && global.navOpen("campaignBack"); } catch (_) {}
@@ -1516,6 +1664,10 @@
   }
 
   function close() {
+    if (STATE.archiveCelebration && STATE.archiveCelebration.key) {
+      STATE.archiveCelebrationSeenKey = STATE.archiveCelebration.key;
+      STATE.archiveCelebration = null;
+    }
     if (!STATE.backEl) return;
     STATE.briefingKey = "";
     STATE.briefingNotice = "";
