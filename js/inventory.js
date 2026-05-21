@@ -1088,11 +1088,12 @@ async use(key) {
 
       await this.open();
     } else {
-      throw new Error(res.reason || "Failed");
+      throw new Error(res?.message || res?.reason || "Failed");
     }
   } catch (e) {
     Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
-    Telegram.WebApp.showAlert("Failed: " + (e.message || "Error"));
+    const msg = e?.data?.message || e?.message || e?.data?.reason || "Error";
+    Telegram.WebApp.showAlert("Failed: " + msg);
   } finally {
     this._perfAction("inventory_use", perfT0);
   }
