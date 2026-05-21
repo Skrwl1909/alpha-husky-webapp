@@ -105,6 +105,91 @@
     return out;
   }
 
+  function statLabel(key) {
+    const raw = String(key || "").trim();
+    if (!raw) return "Stat";
+    const map = {
+      str: "Strength",
+      strength: "Strength",
+      agi: "Agility",
+      agility: "Agility",
+      def: "Defense",
+      defense: "Defense",
+      vit: "Vitality",
+      vitality: "Vitality",
+      luck: "Luck",
+      int: "Intelligence",
+      intelligence: "Intelligence",
+    };
+    return map[raw.toLowerCase()] || cap(raw);
+  }
+
+  function orderedStatKeys(stats) {
+    const preferred = ["strength", "str", "agility", "agi", "defense", "def", "vitality", "vit", "luck", "intelligence", "int"];
+    const seen = new Set();
+    const keys = [];
+    preferred.forEach((key) => {
+      if (stats && Object.prototype.hasOwnProperty.call(stats, key) && !seen.has(key)) {
+        seen.add(key);
+        keys.push(key);
+      }
+    });
+    Object.keys(stats || {}).sort().forEach((key) => {
+      if (!seen.has(key)) keys.push(key);
+    });
+    return keys;
+  }
+
+  function renderCurrentStats(stats) {
+    const keys = orderedStatKeys(stats || {});
+    if (!keys.length) {
+      return `<div class="ah-small">No item stats on this piece.</div>`;
+    }
+    return keys.map((key) => `
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span class="ah-small">${esc(statLabel(key))}</span>
+        <b>${esc(String((stats || {})[key] ?? 0))}</b>
+      </div>
+    `).join("");
+  }
+
+  function renderProjectedRanges(ranges) {
+    const keys = orderedStatKeys(ranges || {});
+    if (!keys.length) return "";
+    return keys.map((key) => {
+      const row = (ranges || {})[key] || {};
+      const min = Number(row.min ?? 0);
+      const max = Number(row.max ?? min);
+      const value = (min === max) ? `${min}` : `${min}-${max}`;
+      return `
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+          <span class="ah-small">${esc(statLabel(key))}</span>
+          <b>${esc(value)}</b>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderMaterialAvailability(materials) {
+    if (!materials || !materials.have || !materials.need) return "";
+    const order = [
+      ["bones", "Bones"],
+      ["scrap", "Scrap"],
+      ["rune_dust", "Rune Dust"],
+    ];
+    return order.map(([asset, label]) => {
+      const have = Number(materials.have[asset] || 0);
+      const need = Number(materials.need[asset] || 0);
+      const ok = !!(materials.enough && materials.enough[asset]);
+      return `
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+          <span class="ah-small">${esc(label)}</span>
+          <b style="color:${ok ? "#8ef0b0" : "#ffb0ae"}">${esc(`${have} / ${need}`)}</b>
+        </div>
+      `;
+    }).join("");
+  }
+
   function ensureStyles() {
   if (document.getElementById("ah-forge-styles")) return;
 
@@ -1548,11 +1633,42 @@
     return;
   }
 
-  const cost = it.costNext || null;
+  const preview = it.upgradePreview || {};
+  const cost = preview.cost || it.costNext || null;
   const miss = cost ? missingForCost(cost) : [];
-  const isMaxed = Number(it.stars || 0) >= Number(it.maxStars || 0);
+  const isMaxed = Number(preview.atCap ? 1 : 0) === 1 || Number(it.stars || 0) >= Number(it.maxStars || 0);
   const rKey = rarityKey(it.rarity);
-  const nextStars = Math.min(Number(it.maxStars || 0), Number(it.stars || 0) + 1);
+  const nextStars = Number(preview.nextLevel || Math.min(Number(it.maxStars || 0), Number(it.stars || 0) + 1));
+  const currentStats = preview.currentStats || it.currentStats || {};
+  const projectedStats = preview.projectedStats || null;
+  const projectedRanges = preview.projectedRanges || {};
+  const materials = preview.materials || null;
+  const statPool = Array.isArray(preview.statPool) ? preview.statPool : [];
+  const gainType = String(preview.gainType || "");
+  const previewMessage = String(preview.message || "");
+
+  let gainHtml = `<div class="ah-small">${esc(previewMessage || "No upgrade preview available.")}</div>`;
+  if (gainType === "exact") {
+    const exactGain = preview.exactGain || {};
+    const exactKeys = orderedStatKeys(exactGain);
+    gainHtml = exactKeys.map((key) => `
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span class="ah-small">${esc(statLabel(key))}</span>
+        <b>+${esc(String(exactGain[key] || 0))}</b>
+      </div>
+    `).join("");
+  } else if (gainType === "random") {
+    gainHtml = `
+      <div class="ah-small" style="margin-bottom:8px;">${esc(previewMessage || "Upgrade will increase 1-2 item stats.")}</div>
+      ${statPool.length ? `<div class="ah-small" style="margin-bottom:8px;">Possible stat pool: <b>${esc(statPool.map((key) => statLabel(key)).join(", "))}</b></div>` : ""}
+      <div class="ah-small">Total gain: +1 to +${esc(String((preview.possibleGain && preview.possibleGain.totalPointsMax) || 2))} across the pool above.</div>
+    `;
+  }
+
+  const projectedHtml = projectedStats
+    ? renderCurrentStats(projectedStats)
+    : renderProjectedRanges(projectedRanges);
+  const materialHtml = renderMaterialAvailability(materials);
 
   detailPanel.className = `ah-panel ${rarityClass(rKey)}`;
   detailPanel.innerHTML = `
@@ -1610,6 +1726,30 @@
     </div>
 
     ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
+
+    <div class="ah-divider"></div>
+
+    <div class="ah-detail-grid" style="margin-top:12px">
+      <div class="ah-statbox">
+        <div class="k">Current Stats</div>
+        <div class="v">${renderCurrentStats(currentStats)}</div>
+      </div>
+
+      <div class="ah-statbox">
+        <div class="k">Next Upgrade Gain</div>
+        <div class="v">${gainHtml}</div>
+      </div>
+
+      <div class="ah-statbox">
+        <div class="k">${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</div>
+        <div class="v">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div>
+      </div>
+
+      <div class="ah-statbox">
+        <div class="k">Material Availability</div>
+        <div class="v">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div>
+      </div>
+    </div>
 
     <div class="ah-divider"></div>
 

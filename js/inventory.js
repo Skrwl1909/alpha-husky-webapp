@@ -20,24 +20,63 @@ window.Inventory = {
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   },
 
-  _discardReasonText(reason, name = "item") {
+  _salvageYieldByRarity: {
+    common: { scrap: 1, rune_dust: 0 },
+    uncommon: { scrap: 2, rune_dust: 0 },
+    rare: { scrap: 4, rune_dust: 1 },
+    epic: { scrap: 8, rune_dust: 2 },
+    legendary: { scrap: 16, rune_dust: 4 },
+    mythic: { scrap: 24, rune_dust: 6 },
+  },
+
+  _salvageReasonText(reason, name = "item") {
     const r = String(reason || "").trim();
     const label = String(name || "item");
     const map = {
-      locked_item: `${label} is locked and cannot be discarded.`,
-      protected_unique: `${label} is protected and cannot be discarded.`,
-      protected_exclusive: `${label} is protected and cannot be discarded.`,
-      protected_event: `${label} is protected and cannot be discarded.`,
-      protected_limited: `${label} is protected and cannot be discarded.`,
-      protected_type: `${label} is protected and cannot be discarded.`,
-      protected_category: `${label} is protected and cannot be discarded.`,
-      protected_pet: `Pets cannot be discarded from Inventory.`,
-      equipped_protected: `This item is currently equipped and cannot be discarded.`,
-      unknown_item_protected: `${label} is not removable right now.`,
+      locked_item: `${label} is locked and cannot be salvaged.`,
+      equipped_item: `${label} is equipped and cannot be salvaged.`,
+      slot_pet_blocked: `Pet slot items cannot be salvaged.`,
+      slot_rune_blocked: `Rune items cannot be salvaged.`,
+      slot_badge_blocked: `Badge items cannot be salvaged.`,
+      moonstone_orb_blocked: `Moonstone Orb cannot be salvaged.`,
+      type_consumable_blocked: `Consumables cannot be salvaged.`,
+      type_box_blocked: `Boxes cannot be salvaged.`,
+      type_material_blocked: `Materials cannot be salvaged.`,
+      type_materials_blocked: `Materials cannot be salvaged.`,
+      type_shard_blocked: `Shards cannot be salvaged.`,
+      type_shards_blocked: `Shards cannot be salvaged.`,
+      type_cosmetic_blocked: `Cosmetics cannot be salvaged.`,
+      type_status_blocked: `Status items cannot be salvaged.`,
+      type_support_blocked: `Support items cannot be salvaged.`,
+      type_holder_blocked: `Holder items cannot be salvaged.`,
+      type_founder_blocked: `Founder items cannot be salvaged.`,
+      type_exclusive_blocked: `Exclusive items cannot be salvaged.`,
+      category_consumable_blocked: `Consumables cannot be salvaged.`,
+      category_box_blocked: `Boxes cannot be salvaged.`,
+      category_material_blocked: `Materials cannot be salvaged.`,
+      category_materials_blocked: `Materials cannot be salvaged.`,
+      category_shard_blocked: `Shards cannot be salvaged.`,
+      category_shards_blocked: `Shards cannot be salvaged.`,
+      category_cosmetic_blocked: `Cosmetics cannot be salvaged.`,
+      category_status_blocked: `Status items cannot be salvaged.`,
+      category_support_blocked: `Support items cannot be salvaged.`,
+      category_holder_blocked: `Holder items cannot be salvaged.`,
+      category_founder_blocked: `Founder items cannot be salvaged.`,
+      category_exclusive_blocked: `Exclusive items cannot be salvaged.`,
+      exclusive_flag_blocked: `Exclusive items cannot be salvaged.`,
+      founder_flag_blocked: `Founder items cannot be salvaged.`,
+      holder_flag_blocked: `Holder items cannot be salvaged.`,
+      supporter_flag_blocked: `Support items cannot be salvaged.`,
+      support_flag_blocked: `Support items cannot be salvaged.`,
+      not_salvageable_slot: `${label} cannot be salvaged.`,
+      not_salvageable_type: `${label} cannot be salvaged.`,
+      not_salvageable_rarity: `${label} cannot be salvaged.`,
+      unknown_item: `${label} cannot be salvaged.`,
+      malformed_item: `${label} cannot be salvaged.`,
       not_owned: `${label} is no longer in inventory.`,
-      invalid_count: `Invalid discard amount.`,
+      ledger_error: `Salvage failed. Please try again.`,
     };
-    return map[r] || `Discard failed (${r || "unknown_reason"}).`;
+    return map[r] || `${label} cannot be salvaged.`;
   },
 
   _toast(msg) {
@@ -379,17 +418,12 @@ window.Inventory = {
       loading...
     </div>
 
-    <!-- Tabs + Salvage -->
+    <!-- Tabs -->
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
       <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all" type="button">All</button>
       <button onclick="Inventory.showTab('gear')" class="tab-btn" data-type="gear" type="button">Gear</button>
       <button onclick="Inventory.showTab('consumable')" class="tab-btn" data-type="consumable" type="button">Consumables</button>
       <button onclick="Inventory.showTab('utility')" class="tab-btn" data-type="utility" type="button">Utility</button>
-
-      <button onclick="Inventory.salvageDupes()" id="btnSalvageDupes" type="button"
-              style="padding:10px 14px;border-radius:14px;background:linear-gradient(180deg,#ff4d4d,#c81d1d);color:#fff;border:none;font-weight:800;font-size:12px;letter-spacing:0.6px;cursor:pointer;">
-        SALVAGE DUPES
-      </button>
     </div>
 
     <div id="inventory-grid" style="
@@ -496,6 +530,42 @@ window.Inventory = {
     return false;
   },
 
+  _salvagePreview(item) {
+    const rarity = String(item?.rarity || "common").toLowerCase();
+    const slot = this._normSlot(item);
+    const type = this._normType(item);
+    const category = String(item?.category || "").toLowerCase();
+    const key = String(item?.key || item?.item_key || item?.item || "").trim().toLowerCase();
+    const name = String(item?.name || key || "item").trim();
+
+    if (!key || !name) return { ok: false, reason: "unknown_item", scrap: 0, runeDust: 0 };
+    if (key === "moonstone_orb" || name.toLowerCase() === "moonstone orb") return { ok: false, reason: "moonstone_orb_blocked", scrap: 0, runeDust: 0 };
+    if (item?.locked) return { ok: false, reason: "locked_item", scrap: 0, runeDust: 0 };
+    if (slot === "pet") return { ok: false, reason: "slot_pet_blocked", scrap: 0, runeDust: 0 };
+    if (slot === "rune") return { ok: false, reason: "slot_rune_blocked", scrap: 0, runeDust: 0 };
+    if (slot === "badge") return { ok: false, reason: "slot_badge_blocked", scrap: 0, runeDust: 0 };
+    if (!this._gearSlots.has(slot)) return { ok: false, reason: "not_salvageable_slot", scrap: 0, runeDust: 0 };
+
+    const blocked = new Set(["consumable", "box", "material", "materials", "shard", "shards", "cosmetic", "status", "support", "holder", "founder", "exclusive", "pet", "rune", "badge", "token"]);
+    if (blocked.has(type)) return { ok: false, reason: `type_${type}_blocked`, scrap: 0, runeDust: 0 };
+    if (blocked.has(category)) return { ok: false, reason: `category_${category}_blocked`, scrap: 0, runeDust: 0 };
+    if (item?.exclusive || item?.founder || item?.holder || item?.support || item?.supporter) {
+      if (item?.founder) return { ok: false, reason: "founder_flag_blocked", scrap: 0, runeDust: 0 };
+      if (item?.holder) return { ok: false, reason: "holder_flag_blocked", scrap: 0, runeDust: 0 };
+      if (item?.support || item?.supporter) return { ok: false, reason: "support_flag_blocked", scrap: 0, runeDust: 0 };
+      return { ok: false, reason: "exclusive_flag_blocked", scrap: 0, runeDust: 0 };
+    }
+
+    const yieldRow = this._salvageYieldByRarity[rarity];
+    if (!yieldRow) return { ok: false, reason: "not_salvageable_rarity", scrap: 0, runeDust: 0 };
+    return {
+      ok: true,
+      reason: "ok",
+      scrap: Number(yieldRow.scrap || 0),
+      runeDust: Number(yieldRow.rune_dust || 0),
+    };
+  },
+
   _slotLabel(item) {
     return this._safeText(item?.slotLabel || item?.slot, "");
   },
@@ -518,7 +588,7 @@ window.Inventory = {
 
   _detailActions(item) {
     const key = this._safeText(item?.key || item?.item_key || item?.item, "");
-    const qty = this._qty(item);
+    const salvage = this._salvagePreview(item);
     const actions = [];
     if (this._isConsumable(item)) {
       actions.push(`
@@ -536,17 +606,11 @@ window.Inventory = {
         </button>
       `);
     }
-    actions.push(`
-      <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
-              style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
-        DISCARD 1
-      </button>
-    `);
-    if (qty > 1) {
+    if (salvage.ok) {
       actions.push(`
-        <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','all')" type="button"
-                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.28);background:rgba(124,18,30,.92);color:#fff3f5;font-weight:900;letter-spacing:.3px;cursor:pointer;">
-          DISCARD ALL
+        <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
+                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
+          SALVAGE
         </button>
       `);
     }
@@ -570,6 +634,7 @@ window.Inventory = {
     const statKeys = this._orderedStatKeys(stats);
     const compare = this._compareState(item);
     const eq = compare.equipped;
+    const salvage = this._salvagePreview(item);
 
     const statCards = statKeys.length
       ? statKeys.map((key) => `
@@ -644,6 +709,19 @@ window.Inventory = {
       </section>
 
       ${compareBlock}
+
+      <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Salvage Readout</div>
+        ${salvage.ok ? `
+          <div style="font-size:13px;line-height:1.6;color:#d8e4f8;">
+            Salvage yield: <b>+${this._esc(String(salvage.scrap))} scrap</b>, <b>+${this._esc(String(salvage.runeDust))} rune dust</b>.
+          </div>
+        ` : `
+          <div style="font-size:13px;line-height:1.6;color:#b8c3d6;">
+            ${this._esc(this._salvageReasonText(salvage.reason, item?.name || item?.key || "This item"))}
+          </div>
+        `}
+      </section>
 
       <section style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
         ${this._detailActions(item)}
@@ -1099,26 +1177,21 @@ async use(key) {
   }
 },
 
-  // === DISCARD ITEM (safe remove v1) ===
+  // === SALVAGE ITEM (single item only) ===
   async removeItem(key, mode = "one") {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const item = this.findByKey(key);
     if (!item) return;
 
-    if (item?.equipped || item?.equippedSlot) {
-      this._toast("Equipped items cannot be discarded here.");
+    const itemName = String(item.name || key || "item");
+    const salvage = this._salvagePreview(item);
+    if (!salvage.ok) {
+      this._toast(this._salvageReasonText(salvage.reason, itemName));
       return;
     }
 
-    const amountNow = Math.max(1, Number(item.amount || 1) || 1);
-    const removeAll = String(mode || "").toLowerCase() === "all";
-    const removeCount = removeAll ? amountNow : 1;
-    const itemName = String(item.name || key || "item");
-
     const ok = confirm(
-      removeAll
-        ? `Discard ALL ${amountNow}x ${itemName}?\n\nThis permanently removes the item(s).`
-        : `Discard 1x ${itemName}?\n\nThis permanently removes the item.`
+      `Salvage ${itemName} for ${salvage.scrap} scrap and ${salvage.runeDust} rune dust?`
     );
     if (!ok) return;
 
@@ -1130,7 +1203,7 @@ async use(key) {
       return;
     }
 
-    const pendingKey = `${String(key)}:${removeAll ? "all" : "one"}`;
+    const pendingKey = `${String(key)}:salvage`;
     this._removePending = this._removePending || new Set();
     if (this._removePending.has(pendingKey)) return;
     this._removePending.add(pendingKey);
@@ -1138,29 +1211,28 @@ async use(key) {
     try {
       const res = await apiPost("/webapp/inventory/remove", {
         key: String(key),
-        mode: removeAll ? "all" : "count",
-        count: removeCount,
-        run_id: this._mkRunId(removeAll ? "w_inv_remove_all" : "w_inv_remove_one"),
+        run_id: this._mkRunId("w_inv_salvage_one"),
       });
 
       if (!res?.ok) {
         throw new Error(
-          String(res?.message || this._discardReasonText(res?.reason, itemName) || "Discard failed")
+          String(res?.message || this._salvageReasonText(res?.reason, itemName) || "Salvage failed")
         );
       }
 
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
-      const removed = Math.max(1, Number(res?.removed || removeCount) || removeCount);
       this._toast(
-        res?.message || `Discarded ${removed}x ${itemName}.`
+        res?.message || `Salvaged ${itemName}: +${salvage.scrap} scrap, +${salvage.runeDust} rune dust.`
       );
       await this.open();
     } catch (e) {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
-      this._toast(String(e?.message || "Discard failed."));
+      const reason = e?.data?.reason || e?.message || "";
+      const message = e?.data?.message || this._salvageReasonText(reason, itemName) || "Salvage failed.";
+      this._toast(String(message));
     } finally {
       this._removePending.delete(pendingKey);
-      this._perfAction(`inventory_remove:${removeAll ? "all" : "one"}`, perfT0);
+      this._perfAction("inventory_salvage_one", perfT0);
     }
   },
 
