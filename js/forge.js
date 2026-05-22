@@ -2238,7 +2238,10 @@ slotField.right.appendChild(chipbar);
         if (pityMap && pityMap[slot] != null) _pityOverride[slot] = Number(pityMap[slot]);
         else if (pity != null) _pityOverride[slot] = Number(pity);
 
-        if (spent != null && Number(spent) !== Number(total)) {
+        const craftMessage = String(pick(res, "message", "") || pick(res, "result.message", "") || "");
+        if (craftMessage) {
+          toast(craftMessage);
+        } else if (spent != null && Number(spent) !== Number(total)) {
           const eCnt = echo && echo.count != null ? `count=${echo.count}` : `count=${count}`;
           const eRef = echo && echo.refine != null ? `refine=${echo.refine}` : `refine=${refine}`;
           toast(`Server spent ${spent} (preview ${total}) · ${eCnt} ${eRef}`);

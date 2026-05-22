@@ -1902,6 +1902,9 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(startRes);
         } catch (_) {}
         render();
+        if (startRes.message) {
+          try { _tg?.showAlert?.(String(startRes.message)); } catch (_) {}
+        }
       }
 
       // poll state until backend confirms active (or timeout)
