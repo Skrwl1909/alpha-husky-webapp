@@ -27,6 +27,14 @@
     siegeNext: "Next Fight"
   };
 
+  const SIEGE_ACTION_HINTS = {
+    siegeWatch: "+5 base Siege Participation. Holds a defensive slot.",
+    siegeJoin: "+12 base Siege Participation. Joins the clash.",
+    siegeLaunch: "+10 base Siege Participation. Starts the fight.",
+    siegeNext: "+10 base Siege Participation. Advances the clash.",
+    result: "+25 base result credit for eligible fighters."
+  };
+
   let _lastRaw = null;
   let _busy = false;
   let _busyBtnId = "";
@@ -305,6 +313,22 @@
     return Array.isArray(cur?.defenders) ? cur.defenders : [];
   }
 
+  function fatigueLabel(entity) {
+    return String(entity?.fatigueLabel || "").trim();
+  }
+
+  function fatigueAgeMinutes(entity) {
+    const n = Number(entity?.fatigueAgeMinutes);
+    return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : null;
+  }
+
+  function fatigueSuffix(entity) {
+    const label = fatigueLabel(entity);
+    if (!label) return "";
+    const ageMin = fatigueAgeMinutes(entity);
+    return ageMin != null ? `${label} · ${ageMin}m` : label;
+  }
+
   function fightsList(node) {
     const cur = getCurrentSiege(node);
     return Array.isArray(cur?.fightHistory) ? cur.fightHistory : [];
@@ -560,6 +584,7 @@
     el.disabled = !visible;
     el.textContent = nextLabel;
     el.dataset.baseLabel = nextLabel;
+    el.title = SIEGE_ACTION_HINTS[id] || "";
   }
 
   function applyBusyState() {
@@ -613,6 +638,27 @@
     setBtn("siegeCTA", false, "Call to Arms");
     setBtn("siegeNext", false, "Next Fight");
     applyBusyState();
+    updateActionHints();
+  }
+
+  function updateActionHints() {
+    const primaryEl = qs("siegeActionHint");
+    const resultEl = qs("siegeResultHint");
+    if (resultEl) resultEl.textContent = SIEGE_ACTION_HINTS.result;
+    if (!primaryEl) return;
+
+    const priority = ["siegeWatch", "siegeJoin", "siegeLaunch", "siegeNext"];
+    let text = "";
+    for (const id of priority) {
+      const el = qs(id);
+      if (el && !el.hidden && el.style.display !== "none" && !el.disabled) {
+        text = SIEGE_ACTION_HINTS[id] || "";
+        break;
+      }
+    }
+
+    primaryEl.textContent = text;
+    primaryEl.style.display = text ? "block" : "none";
   }
 
   function updateActionBar(raw) {
@@ -686,6 +732,7 @@
   setBtn("siegeNext", showNext, "Next Fight");
 
   applyBusyState();
+  updateActionHints();
 }
 
   function getLastReplay(raw, node, cur) {
@@ -1071,6 +1118,10 @@ function renderBattlePanelHTML(raw, node, cur) {
           <button id="siegeCTA" class="siege-btn">Call to Arms</button>
           <button id="siegeNext" class="siege-btn">Next Fight</button>
         </div>
+        <div class="siege-hint-stack">
+          <div id="siegeActionHint" class="siege-hint"></div>
+          <div id="siegeResultHint" class="siege-hint">${SIEGE_ACTION_HINTS.result}</div>
+        </div>
       </div>
     `;
     document.body.appendChild(wrap);
@@ -1130,6 +1181,20 @@ function renderBattlePanelHTML(raw, node, cur) {
         font-size:12px;
         line-height:1.35;
         opacity:.82;
+      }
+      .siege-hint-stack{
+        display:grid;
+        gap:6px;
+        padding:0 12px 12px;
+      }
+      .siege-hint{
+        font-size:12px;
+        line-height:1.35;
+        color:rgba(221,238,255,.82);
+        padding:8px 10px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.03);
       }
 
       .siege-battle-card{
@@ -1326,6 +1391,17 @@ function renderBattlePanelHTML(raw, node, cur) {
       .slot-icon { font-size:28px; margin-bottom:6px; }
       .slot-name { font-weight:700; font-size:13px; color:#fff; }
       .slot-status { font-size:11px; opacity:.7; }
+      .slot-fatigue{
+        margin-top:5px;
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.04em;
+        color:#c9fff0;
+      }
+      .siege-pill-fatigue{
+        opacity:.88;
+        font-size:11px;
+      }
 
       .status-badge {
         text-align:center;
@@ -1479,11 +1555,13 @@ function renderBattlePanelHTML(raw, node, cur) {
         : "";
 
       if (occupant) {
+        const fatigueText = fatigueSuffix(occupant);
         return `
           <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
             <div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "A" : "+"))}</div>
             <div class="slot-name">${esc(occupant.name || occupant.displayName || occupant.uid || "Unknown")}</div>
             <div class="slot-status">${esc(slotCfg.statusText || (slotMode === "attacker" ? "JOINED ASSAULT" : "WATCHING"))}</div>
+            ${fatigueText ? `<div class="slot-fatigue">${esc(fatigueText)}</div>` : ""}
           </div>
         `;
       }
@@ -1522,13 +1600,13 @@ function renderBattlePanelHTML(raw, node, cur) {
         ? "No watch roster yet. Neutral node."
         : "No defenders assigned yet.";
     const rosterHtml = slotPool.length
-      ? `<ul class="siege-list">${slotPool.map(x => `<li>${esc(x?.name || x?.displayName || x?.uid || "Unknown")}</li>`).join("")}</ul>`
+      ? `<ul class="siege-list">${slotPool.map(x => `<li>${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${fatigueSuffix(x) ? ` - ${esc(fatigueSuffix(x))}` : ""}</li>`).join("")}</ul>`
       : `<div class="siege-muted">${esc(rosterEmptyText)}</div>`;
     const attackersHtml = attackers.length
       ? `<div class="siege-row">${attackers.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " OUT" : ""}</span>`).join("")}</div>`
       : `<div class="siege-muted">No attackers yet.</div>`;
     const curDefsHtml = curDefs.length
-      ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " OUT" : ""}</span>`).join("")}</div>`
+      ? `<div class="siege-row">${curDefs.map(x => `<span class="siege-pill">${esc(x?.name || x?.displayName || x?.uid || "Unknown")}${x?.alive === false ? " OUT" : ""}</span>${fatigueSuffix(x) ? `<span class="siege-pill siege-pill-fatigue">${esc(fatigueSuffix(x))}</span>` : ""}`).join("")}</div>`
       : `<div class="siege-muted">${neutral ? "Neutral node. Defenders may stay empty." : "Defenders will lock in on launch."}</div>`;
     const fightsHtml = fights.length
       ? `<ul class="siege-list">${fights.slice(-8).reverse().map(f => `<li>Fight ${Number(f?.fightNo || 0)} - winner: ${esc(f?.winnerName || f?.winnerUid || "-")}</li>`).join("")}</ul>`

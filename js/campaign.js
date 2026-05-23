@@ -585,10 +585,14 @@
 
   function renderArchivePrimaryCta(archive) {
     var state = archivePrimaryCtaState(archive);
+    var actionHint = archiveBreached(archive)
+      ? ""
+      : "Uses Archive Key. Adds Archive Progress, not War Contribution.";
     return ""
       + "<div class=\"campaign-archive-action\">"
       + "  <div class=\"campaign-archive-action-title\">" + esc(state.title) + "</div>"
       + "  <div class=\"campaign-archive-action-copy\">" + esc(state.detail) + "</div>"
+      + (actionHint ? "  <div class=\"campaign-archive-action-hint\">" + esc(actionHint) + "</div>" : "")
       + "  <button type=\"button\" class=\"campaign-archive-submit\" data-archive-submit data-archive-action=\"" + esc(state.action) + "\""
       + (state.disabled ? " disabled" : "")
       + ">"
@@ -805,7 +809,7 @@
       + "        <img src=\"" + ARCHIVE_EMBLEM_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.parentNode.remove();\">"
       + "      </div>"
       + "      <div class=\"campaign-archive-heading\">"
-      + "        <div class=\"campaign-archive-kicker\">Burned Archive</div>"
+        + "        <div class=\"campaign-archive-kicker\">Archive Progress</div>"
       + "        <div class=\"campaign-archive-title\">" + esc(archiveNodeLabel(archive)) + "</div>"
       + "      </div>"
       + "    </div>"
@@ -820,7 +824,7 @@
       + "  <div class=\"campaign-archive-keys\">"
       + "    <div class=\"campaign-archive-keyline\"><span class=\"campaign-archive-keylabel\">Archive Keys " + renderArchiveKeyHint() + "</span><strong class=\"campaign-archive-keyvalue\"><img class=\"campaign-archive-keyicon\" src=\"" + ARCHIVE_KEY_ICON_URL + "\" alt=\"\" aria-hidden=\"true\" loading=\"lazy\" onerror=\"this.remove();\"><span>" + esc(keysLeft == null ? "--" : String(keysLeft)) + "</span></strong></div>"
       + "    <div class=\"campaign-archive-keyline\"><span class=\"campaign-archive-keylabel\">Earned Today: " + esc(earnedToday == null ? "--/3" : (String(earnedToday) + "/3")) + " " + renderArchiveKeyHint() + "</span></div>"
-      + "    <div class=\"campaign-archive-explain\">Keys gained today from Phantom Node actions.</div>"
+      + "    <div class=\"campaign-archive-explain\">Archive Progress comes from faction attempts at Burned Archive.</div>"
       + "    <div class=\"campaign-archive-keyline\"><span>Spent today</span><strong>" + esc(spentToday == null ? "--" : String(spentToday)) + "</strong></div>"
       + "  </div>"
       +      renderArchiveRulesHint()
@@ -835,7 +839,7 @@
       + "  </div>"
       +      renderArchiveBreachedState(archive)
       + "  <div class=\"campaign-archive-log-head\">Recent Attempts</div>"
-      + "  <div class=\"campaign-archive-log-sub\">Faction log. Read the tested sequence, then compare Perfect Slots and Close Signals.</div>"
+      + "  <div class=\"campaign-archive-log-sub\">Archive Progress is faction-wide. Read the tested sequence, then compare Perfect Slots and Close Signals.</div>"
       + "  <div class=\"campaign-archive-log\" data-archive-log-anchor>" + renderArchiveRecentAttempts(archive) + "</div>"
       + "</div>";
   }
@@ -987,6 +991,7 @@
       + ".campaign-archive-action{margin-top:12px;padding:12px;border-radius:14px;border:1px solid rgba(145,226,255,.12);background:linear-gradient(180deg, rgba(38,72,98,.22), rgba(10,20,31,.34));}"
       + ".campaign-archive-action-title{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:rgba(203,238,255,.92);}"
       + ".campaign-archive-action-copy{margin-top:6px;font-size:12px;line-height:1.42;color:rgba(217,232,246,.82);}"
+      + ".campaign-archive-action-hint{margin-top:7px;font-size:12px;line-height:1.38;color:rgba(182,232,255,.82);}"
       + ".campaign-archive-submit{appearance:none;width:100%;margin-top:12px;padding:13px 14px;border-radius:14px;border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
       + ".campaign-archive-submit[disabled]{opacity:.58;cursor:default;}"
       + ".campaign-archive-feedback{margin-top:10px;padding:10px 11px;border-radius:14px;font-size:12px;line-height:1.38;border:1px solid rgba(255,255,255,.10);}"
@@ -1794,3 +1799,5 @@
     state: function getState() { return STATE.payload; }
   };
 })(window);
+
+

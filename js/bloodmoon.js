@@ -447,6 +447,12 @@
 .bm-cta[disabled]::before{
   display:none;
 }
+.bm-action-hint{
+  margin-top:8px;
+  font-size:12px;
+  line-height:1.38;
+  color:rgba(255,224,230,.84);
+}
 
 .bm-mini-grid{
   display:grid;
@@ -1965,9 +1971,10 @@
       </div>
 
       <div style="margin-top:18px">
-        <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>
+        <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
           ${esc(cta.label || "RIP THROUGH THE VEIL")}
         </button>
+        <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
       </div>
 
       <div class="bm-meta-row">

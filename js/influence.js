@@ -413,6 +413,8 @@
   let _signalCoreOpen = false;
   let _tooltipKey = "";
 
+  const PATROL_ACTION_HINT = "+6 base War Contribution. Reinforces Faction Control.";
+  const DONATE_ACTION_HINT = "+4 base War Contribution. Reinforces Faction Control based on donation.";
   const LOCAL_TOOLTIP_COPY = {
     pressure: "Pressure shows where conflict is rising. It does not directly decide capture.",
     hot: "HOT means active enemy movement. Actions here matter more.",
@@ -420,8 +422,8 @@
     fortified: "FORTIFIED means one faction has strong pressure here.",
     defend: "Defend means your faction has something to protect.",
     push: "Push means another faction controls the node. Your actions help contest it.",
-    patrol: "Patrol is a free action with cooldown. It supports Faction Control and War Contribution.",
-    donate: "Donate spends materials for stronger node impact. It also adds War Contribution.",
+    patrol: PATROL_ACTION_HINT,
+    donate: DONATE_ACTION_HINT,
     weekly_score: "War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.",
     eligibility: "War Contribution and Active Days determine weekly reward eligibility.",
   };
@@ -2546,7 +2548,7 @@
                 <span id="infPatrolLabel" class="inf-action-title">PATROL NODE</span>
                 <span id="infPatrolTimer" class="inf-chip inf-action-tag" style="display:none;"></span>
               </span>
-              <span id="infPatrolHelp" class="inf-action-effect">Free action - cooldown based. Supports Faction Control and War Contribution.</span>
+              <span id="infPatrolHelp" class="inf-action-effect">${PATROL_ACTION_HINT}</span>
               <span class="inf-action-chip">Patrol</span>
             </button>
 
@@ -2555,7 +2557,7 @@
                 <span class="inf-action-icon">[D]</span>
                 <span class="inf-action-title">DONATE SUPPLIES</span>
               </span>
-              <span id="infDonateHelp" class="inf-action-effect">Spend materials for stronger node impact. Useful for Faction Control and War Contribution.</span>
+              <span id="infDonateHelp" class="inf-action-effect">${DONATE_ACTION_HINT}</span>
               <span class="inf-action-chip">Donate</span>
             </button>
           </div>
@@ -2578,7 +2580,7 @@
             <button class="infAmt" type="button" data-v="50">+50</button>
             <button class="infAmt" type="button" data-v="100">+100</button>
           </div>
-          <div class="inf-donate-note">Donation supports Faction Control and War Contribution.</div>
+          <div class="inf-donate-note">${DONATE_ACTION_HINT}</div>
           <button id="infDonateBtn" type="button" class="inf-donate-confirm">Confirm donate</button>
         </div>
 
@@ -3361,9 +3363,9 @@
       if (localProgressEl) localProgressEl.textContent = "Progress syncing.";
       if (presenceHintEl) presenceHintEl.textContent = "Patrol once to start local trace.";
       if (nodeStateHintEl) nodeStateHintEl.textContent = "Recommended order will update from local pressure.";
-      if (patrolHelpEl) patrolHelpEl.textContent = "Free action - cooldown based. Supports Faction Control and War Contribution.";
+      if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
       if (watchHelpEl) watchHelpEl.textContent = "Patrol is live. Move now to support Faction Control here.";
-      if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful for Faction Control and War Contribution.";
+      if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
       if (ordersLeadEl) ordersLeadEl.textContent = "Recommended order: STABILIZE the relay.";
       if (warSummaryEl) warSummaryEl.textContent = "Faction Control data is syncing.";
       if (warChipEl) warChipEl.textContent = "Live feed";
@@ -3644,9 +3646,9 @@
       controlText: warSummaryEl?.textContent || controlText,
     });
 
-    if (patrolHelpEl) patrolHelpEl.textContent = "Free action - cooldown based. Supports Faction Control and War Contribution.";
+    if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
     if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol supports Faction Control and War Contribution.`;
-    if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful for Faction Control and War Contribution.";
+    if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
 
     if (_cdUntilMs > Date.now()) {
       setOrdersCooldownText(`Patrol ready in ${fmtCooldownHint(Math.ceil((_cdUntilMs - Date.now()) / 1000))}.`, "cooldown");

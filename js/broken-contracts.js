@@ -391,6 +391,12 @@
           color:#e7f0fb;
           line-height:1.32;
         }
+        #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-action-hint{
+          margin-top:6px;
+          font-size:11px;
+          line-height:1.34;
+          color:#c7def6;
+        }
         #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-callout,
         #brokenContractsBack .bc-sheet.ah-rivalry-layer .bc-impact{
           border-radius:12px;
@@ -889,6 +895,7 @@
             <div class="bc-action-copy">
               <div class="bc-action-title">War Directive</div>
               <div class="bc-action-note">${esc(brief.directive)}</div>
+              <div class="bc-action-hint">Adds Contract Contribution only for active contract goals.</div>
             </div>
             <div class="bc-action-slot">
               ${renderBadgeOrButton(contract)}
@@ -939,6 +946,7 @@
           <div class="bc-action-copy">
             <div class="bc-action-title">Directive</div>
             <div class="bc-action-note">${esc(brief.directive)}</div>
+            <div class="bc-action-hint">Adds Contract Contribution only for active contract goals.</div>
           </div>
           <div class="bc-action-slot">
             ${renderBadgeOrButton(contract)}
