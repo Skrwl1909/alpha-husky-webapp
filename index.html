@@ -7257,8 +7257,6 @@ document.addEventListener("click", async (e) => {
             mapPanState.originY = mapPanState.y;
             mapPanState.dragging = true;
             mapPanState.dragMoved = false;
-            mapStageEl.classList.add("is-panning");
-            try { mapRoot.setPointerCapture(event.pointerId); } catch (_) {}
           });
 
           mapRoot.addEventListener("pointermove", (event) => {
@@ -7267,6 +7265,8 @@ document.addEventListener("click", async (e) => {
             const dy = event.clientY - mapPanState.startY;
             if (!mapPanState.dragMoved && Math.hypot(dx, dy) >= MAP_PAN_DRAG_THRESHOLD) {
               mapPanState.dragMoved = true;
+              mapStageEl.classList.add("is-panning");
+              try { mapRoot.setPointerCapture(event.pointerId); } catch (_) {}
             }
             if (!mapPanState.dragMoved) return;
             event.preventDefault();
@@ -7280,7 +7280,9 @@ document.addEventListener("click", async (e) => {
             mapPanState.dragging = false;
             mapPanState.dragMoved = false;
             mapStageEl.classList.remove("is-panning");
-            try { mapRoot.releasePointerCapture(event.pointerId); } catch (_) {}
+            try {
+              if (mapRoot.hasPointerCapture?.(event.pointerId)) mapRoot.releasePointerCapture(event.pointerId);
+            } catch (_) {}
             if (dragged) {
               // Suppress the synthetic click that browsers dispatch after a real drag.
               mapPanState.suppressClickUntil = performance.now() + 220;
