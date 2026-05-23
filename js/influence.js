@@ -623,46 +623,55 @@
   }
   function archiveKeyFeedback(payload = {}) {
     if (!isArchiveKeyEligibleAction(payload)) return null;
-    const earnedToday = Number(payload.archiveKeysEarnedToday);
-    const capReached = payload.archiveKeyCapReached === true
-      || String(payload.archiveKeyReason || "").trim().toUpperCase() === "ARCHIVE_KEY_CAP_REACHED";
-    const parts = [];
-
-    if (payload.archiveKeyGranted === true) {
-      parts.push("+1 Archive Key gained.");
-      if (Number.isFinite(earnedToday)) parts.push(`Daily key limit: ${Math.max(0, earnedToday)}/3`);
-    } else if (capReached) {
-      parts.push("No Archive Key gained.");
-      parts.push("Daily key limit reached: 3/3.");
-    } else {
-      parts.push("No Archive Key found.");
-      parts.push("Archive Keys come from Phantom Node Patrol and Donate.");
-    }
+    if (payload.archiveKeyGranted !== true) return null;
+    const parts = ["Archive Key gained."];
 
     return {
       html: `<span class="inf-result-keyline"><img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span class="inf-result-keycopy">${parts.map((part) => `<span>${esc(part)}</span>`).join("")}</span></span>`
     };
   }
+  function warContributionFeedback(payload = {}) {
+    const points = Number(payload?.weeklyPoints);
+    if (!Number.isFinite(points) || points <= 0) return "";
+    return `War Contribution +${points}`;
+  }
+  function contractContributionFeedback(payload = {}) {
+    if (payload?.contractContributionChanged !== true) return "";
+    const delta = Number(payload?.contractContributionDelta);
+    if (Number.isFinite(delta) && delta > 0) return `Contract Contribution +${delta}`;
+    return "Contract Contribution updated.";
+  }
   function setActionResult(kind, payload = {}) {
     const el = _qs("infStatus");
     if (!el) return;
     const gain = Number(payload?.gain || 0) || 0;
+    const spent = Number(payload?.spent || 0) || 0;
     const refunded = Number(payload?.refunded || 0) || 0;
+    const asset = String(payload?.asset || "").trim();
     const archiveKeyLine = archiveKeyFeedback(payload);
+    const warContributionLine = warContributionFeedback(payload);
+    const contractContributionLine = contractContributionFeedback(payload);
+    const spendRefundLine = spent > 0 && asset
+      ? `Spent ${spent} ${asset}${refunded > 0 ? ` · Refunded ${refunded}` : ""}.`
+      : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
     const isPatrol = kind === "patrol";
     const title = isPatrol ? "SIGNAL HELD" : "SUPPLIES DEPLOYED";
     const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
     const lines = isPatrol
       ? [
-          "War Contribution increased.",
-          "Patrol cooldown started.",
+          "Faction Control reinforced.",
+          warContributionLine,
+          contractContributionLine,
           archiveKeyLine,
         ]
       : [
           "Faction Control reinforced.",
-          refunded > 0 ? `Overflow refunded: ${refunded}` : "",
+          warContributionLine,
+          contractContributionLine,
+          spendRefundLine,
           archiveKeyLine,
         ];
+    const visibleLines = lines.filter(Boolean).slice(0, 4);
 
     el.className = "inf-status inf-status-result";
     el.style.display = "block";
@@ -673,7 +682,7 @@
       <div class="inf-result-title">${title}</div>
       <div class="inf-result-gain">${esc(lead)}</div>
       <div class="inf-result-lines">
-        ${lines.filter(Boolean).map((line) => {
+        ${visibleLines.map((line) => {
           if (line && typeof line === "object" && typeof line.html === "string") {
             return `<div class="inf-result-line is-archive-key">${line.html}</div>`;
           }
@@ -3699,6 +3708,9 @@
       toast(`+${r.gain} influence${hq}`);
       setActionResult("patrol", {
         gain: r.gain,
+        weeklyPoints: r.weeklyPoints,
+        contractContributionChanged: r.contractContributionChanged,
+        contractContributionDelta: r.contractContributionDelta,
         archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
@@ -3762,7 +3774,12 @@
       toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
       setActionResult("donate", {
         gain: r.gain,
+        spent: r.spent,
+        asset: r.asset || asset,
         refunded: r.refunded,
+        weeklyPoints: r.weeklyPoints,
+        contractContributionChanged: r.contractContributionChanged,
+        contractContributionDelta: r.contractContributionDelta,
         archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
