@@ -1158,7 +1158,35 @@ html.ah-skins-open #heroFrame{
 
 .map-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 2px 6px; flex:0 0 auto; }
 .map-head-main{ display:flex; align-items:center; gap:8px; min-width:0; }
+.map-head-actions{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-zoom-controls{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(8,12,16,.42);
+}
+.map-zoom-btn{
+  min-width:34px;
+  height:30px;
+  padding:0 10px;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  color:#eef6ff;
+  font:800 12px/1 system-ui, sans-serif;
+  cursor:pointer;
+}
+.map-zoom-btn[disabled]{
+  opacity:.42;
+  cursor:default;
+}
+.map-zoom-btn:not([disabled]):active{
+  transform:translateY(1px);
+}
 .map-world-brief{
   margin:0 4px 4px;
   padding:1px 0 2px;
@@ -1351,7 +1379,7 @@ html.ah-skins-open #heroFrame{
   background:
     url("images/map/base/map.2.0.webp") center/cover no-repeat,
     url("images/map/base/wasteland.jpg") center/cover no-repeat;
-  transform:translate3d(0,0,0);
+  transform:translate3d(0,0,0) scale(1);
   transform-origin:top left;
   will-change:transform;
   cursor:grab;
@@ -1384,8 +1412,8 @@ html.ah-skins-open #heroFrame{
 .map-territory{
   position:absolute;
   border-radius:999px;
-  border:1px solid rgba(255,255,255,.08);
-  opacity:.72;
+  border:1px solid rgba(255,255,255,.04);
+  opacity:.60;
   filter:blur(.2px);
   box-shadow:inset 0 0 40px rgba(255,255,255,.02), 0 0 30px rgba(0,0,0,.10);
 }
@@ -1395,8 +1423,8 @@ html.ah-skins-open #heroFrame{
   position:absolute;
   inset:8% 10%;
   border-radius:inherit;
-  border:1px dashed rgba(255,255,255,.06);
-  opacity:.75;
+  border:1px dashed rgba(255,255,255,.03);
+  opacity:.45;
 }
 
 .map-territory-label{
@@ -1624,15 +1652,22 @@ html.ah-skins-open #heroFrame{
 /* paths */
 .path{
   fill:none;
-  stroke:rgba(255,255,255,.25);
-  stroke-width:2.2;
+  stroke:rgba(214,228,245,.18);
+  stroke-width:2;
   stroke-linecap:round;
   stroke-linejoin:round;
-  filter:drop-shadow(0 0 2px rgba(0,0,0,.6));
+  filter:drop-shadow(0 0 1px rgba(0,0,0,.42));
 }
 
-.path.locked{ stroke:rgba(255,255,255,.25); }
-.path.glow{ stroke-width:4; stroke:rgba(255,0,0,.08); }
+.path.locked{
+  stroke:rgba(186,198,214,.10);
+  stroke-dasharray:6 8;
+  filter:none;
+}
+.path.glow{
+  stroke-width:4;
+  stroke:rgba(120,196,255,.08);
+}
 
 /* neutral */
 .hotspot.is-neutral{
@@ -5239,7 +5274,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
               <h2>Regions Map</h2>
               <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
             </div>
-            <button class="close-x" id="closeMap" type="button">×</button>
+            <div class="map-head-actions">
+              <div class="map-zoom-controls" aria-label="Map zoom controls">
+                <button class="map-zoom-btn" id="mapZoomOut" type="button" aria-label="Zoom out">-</button>
+                <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map zoom and center">Reset</button>
+                <button class="map-zoom-btn" id="mapZoomIn" type="button" aria-label="Zoom in">+</button>
+              </div>
+              <button class="close-x" id="closeMap" type="button">×</button>
+            </div>
           </div>
           <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
             <div id="ctaCardRoot"></div>
@@ -6980,9 +7022,13 @@ document.addEventListener("click", async (e) => {
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
         const MAP_STAGE_SCALE = 1.65;
+        const MAP_ZOOM_LEVELS = [0.75, 1.0, 1.25];
         const MAP_PAN_DRAG_THRESHOLD = 10;
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
         const mapStageEl = ensureMapStage(mapRoot);
+        const mapZoomOutBtn = document.getElementById("mapZoomOut");
+        const mapZoomInBtn = document.getElementById("mapZoomIn");
+        const mapZoomResetBtn = document.getElementById("mapZoomReset");
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapStageEl);
         let DATA = null;
@@ -7000,6 +7046,7 @@ document.addEventListener("click", async (e) => {
           maxX: 0,
           minY: 0,
           maxY: 0,
+          zoom: 1,
           pointerId: null,
           startX: 0,
           startY: 0,
@@ -7042,11 +7089,31 @@ document.addEventListener("click", async (e) => {
           root.appendChild(layer); return layer;
         }
 
+        function mapZoomIndex(){
+          const current = Number(mapPanState.zoom || 1);
+          const idx = MAP_ZOOM_LEVELS.findIndex((level) => Math.abs(level - current) < 0.001);
+          return idx >= 0 ? idx : 1;
+        }
+
+        function scaledStageSize(){
+          const viewportWidth = mapRoot?.clientWidth || 0;
+          const viewportHeight = mapRoot?.clientHeight || 0;
+          const baseWidth = mapStageEl?.offsetWidth || viewportWidth;
+          const baseHeight = mapStageEl?.offsetHeight || viewportHeight;
+          return {
+            baseWidth,
+            baseHeight,
+            scaledWidth: baseWidth * Number(mapPanState.zoom || 1),
+            scaledHeight: baseHeight * Number(mapPanState.zoom || 1)
+          };
+        }
+
         function clampMapPan(nextX, nextY){
           const viewportWidth = mapRoot?.clientWidth || 0;
           const viewportHeight = mapRoot?.clientHeight || 0;
-          const stageWidth = mapStageEl?.offsetWidth || viewportWidth;
-          const stageHeight = mapStageEl?.offsetHeight || viewportHeight;
+          const sizes = scaledStageSize();
+          const stageWidth = sizes.scaledWidth || viewportWidth;
+          const stageHeight = sizes.scaledHeight || viewportHeight;
 
           const minX = Math.min(0, viewportWidth - stageWidth);
           const minY = Math.min(0, viewportHeight - stageHeight);
@@ -7069,7 +7136,44 @@ document.addEventListener("click", async (e) => {
           const clamped = clampMapPan(nextX, nextY);
           mapPanState.x = clamped.x;
           mapPanState.y = clamped.y;
-          mapStageEl.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+          mapStageEl.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0) scale(${Number(mapPanState.zoom || 1)})`;
+        }
+
+        function updateMapZoomControls(){
+          const idx = mapZoomIndex();
+          if (mapZoomOutBtn) mapZoomOutBtn.disabled = idx <= 0;
+          if (mapZoomInBtn) mapZoomInBtn.disabled = idx >= (MAP_ZOOM_LEVELS.length - 1);
+        }
+
+        function setMapZoom(nextZoom, options = {}){
+          if (!mapRoot || !mapStageEl) return;
+          const zoom = MAP_ZOOM_LEVELS.includes(nextZoom) ? nextZoom : 1;
+          const currentZoom = Number(mapPanState.zoom || 1);
+          if (Math.abs(currentZoom - zoom) < 0.001 && !options.recenter) {
+            updateMapZoomControls();
+            return;
+          }
+
+          const viewportWidth = mapRoot.clientWidth || 0;
+          const viewportHeight = mapRoot.clientHeight || 0;
+          const sizes = scaledStageSize();
+          const oldScaledWidth = sizes.scaledWidth || viewportWidth;
+          const oldScaledHeight = sizes.scaledHeight || viewportHeight;
+          const focusX = oldScaledWidth > 0 ? ((viewportWidth * 0.5) - mapPanState.x) / oldScaledWidth : 0.5;
+          const focusY = oldScaledHeight > 0 ? ((viewportHeight * 0.5) - mapPanState.y) / oldScaledHeight : 0.5;
+
+          mapPanState.zoom = zoom;
+
+          if (options.recenter) {
+            centerMapOn(getInitialMapFocusPoint());
+          } else {
+            const nextSizes = scaledStageSize();
+            const desiredX = (viewportWidth * 0.5) - (nextSizes.scaledWidth * focusX);
+            const desiredY = (viewportHeight * 0.5) - (nextSizes.scaledHeight * focusY);
+            applyMapPan(desiredX, desiredY);
+          }
+
+          updateMapZoomControls();
         }
 
         function getInitialMapFocusPoint(){
@@ -7094,8 +7198,9 @@ document.addEventListener("click", async (e) => {
           if (!mapRoot || !mapStageEl) return;
           const viewportWidth = mapRoot.clientWidth || 0;
           const viewportHeight = mapRoot.clientHeight || 0;
-          const stageWidth = mapStageEl.offsetWidth || viewportWidth;
-          const stageHeight = mapStageEl.offsetHeight || viewportHeight;
+          const sizes = scaledStageSize();
+          const stageWidth = sizes.scaledWidth || viewportWidth;
+          const stageHeight = sizes.scaledHeight || viewportHeight;
           const targetX = Number(point?.x || 0) / 100;
           const targetY = Number(point?.y || 0) / 100;
           const desiredX = (viewportWidth * 0.5) - (stageWidth * targetX);
@@ -7106,12 +7211,37 @@ document.addEventListener("click", async (e) => {
         function refreshMapStage(options = {}){
           if (!mapRoot || !mapStageEl) return;
           mapRoot.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+          updateMapZoomControls();
           if (options.recenter) {
             centerMapOn(getInitialMapFocusPoint());
             mapPanState.hasCenteredOnce = true;
             return;
           }
           applyMapPan(mapPanState.x, mapPanState.y);
+        }
+
+        function bindMapZoomControls(){
+          if (!mapRoot || mapRoot.dataset.zoomBound === "1") return;
+          mapRoot.dataset.zoomBound = "1";
+
+          mapZoomOutBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            const idx = mapZoomIndex();
+            if (idx <= 0) return;
+            setMapZoom(MAP_ZOOM_LEVELS[idx - 1]);
+          });
+
+          mapZoomInBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            const idx = mapZoomIndex();
+            if (idx >= (MAP_ZOOM_LEVELS.length - 1)) return;
+            setMapZoom(MAP_ZOOM_LEVELS[idx + 1]);
+          });
+
+          mapZoomResetBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            setMapZoom(1, { recenter: true });
+          });
         }
 
         function bindMapPan(){
@@ -9110,6 +9240,7 @@ const actions = {
     mapBack.style.display = "flex";
     navOpen("mapBack");
     bindMapPan();
+    bindMapZoomControls();
     requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
     if (!DATA) loadMapData();
     loadPlayerState();
@@ -9528,6 +9659,7 @@ async function showSection(name){
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
       bindMapPan();
+      bindMapZoomControls();
       requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
       if (!DATA) loadMapData();
       loadPlayerState();
