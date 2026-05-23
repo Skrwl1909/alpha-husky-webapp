@@ -72,8 +72,8 @@
       "id": "abandoned_wallets",
       "name": "Abandoned Wallets",
       "region": "chain",
-      "x": 9,
-      "y": 25,
+      "x": 14,
+      "y": 33,
       "icon": "images/map/building/abandoned_wallets.png",
       "desc": "Ghost towns of lost keys and forgotten treasures.",
       "lore": {
@@ -88,8 +88,8 @@
       "id": "phantom_nodes",
       "name": "Phantom Nodes",
       "region": "shadow_layers",
-      "x": 50,
-      "y": 42,
+      "x": 48,
+      "y": 37,
       "icon": "images/map/building/phantom_nodes.png",
       "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
       "lore": {
@@ -119,8 +119,8 @@
       "id": "blood_moon_tower",
       "name": "Blood-Moon Tower",
       "region": "shadow_layers",
-      "x": 78,
-      "y": 36,
+      "x": 75,
+      "y": 30,
       "icon": "images/map/building/blood_moon_tower.png",
       "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
       "lore": {
@@ -151,8 +151,8 @@
       "id": "edge_of_chain",
       "name": "Edge of the Chain",
       "region": "edge_chain",
-      "x": 22,
-      "y": 38,
+      "x": 84,
+      "y": 56,
       "icon": "images/map/building/edge_of_chain.png",
       "desc": "Where the code frays and stars flicker like dying nodes.",
       "lore": {
@@ -184,8 +184,8 @@
       "id": "oracle_void_doorway",
       "name": "The Oracle’s Void Doorway",
       "region": "edge_chain",
-      "x": 56,
-      "y": 9,
+      "x": 60,
+      "y": 11,
       "icon": "images/map/building/void_doorway.png",
       "desc": "A doorway not coded, not mapped. Just… waiting.",
       "lore": {
@@ -202,7 +202,7 @@
       "id": "alpha_network_hq",
       "name": "Faction HQ",
       "region": "chain",
-      "x": 11,
+      "x": 24,
       "y": 58,
       "icon": "images/map/building/alpha_network_hq.webp",
       "desc": "Your faction’s command hub. Donate to the treasury and upgrade HQ together.",
@@ -226,8 +226,8 @@
       "id": "chain_gate",
       "name": "The Chain Gate",
       "region": "chain",
-      "x": 17,
-      "y": 73,
+      "x": 18,
+      "y": 72,
       "icon": "images/map/building/the_chain.png",
       "desc": "Long-haul expeditions through dead chain fragments. Small but steady scrap, rune dust, and a tiny chance for item shards.",
       "lore": {
@@ -248,8 +248,8 @@
       "id": "vault_forge",
       "name": "Forgotten Tokens’ Vault",
       "region": "chain",
-      "x": 56,
-      "y": 78,
+      "x": 50,
+      "y": 80,
       "icon": "images/map/building/vault_forge.webp",
       "desc": "Forge & Upgrade Workshop — upgrade, reforge, fuse, shards.",
       "lore": {
@@ -266,8 +266,8 @@
       "id": "broken_contracts",
       "name": "Broken Contracts",
       "region": "chain",
-      "x": 38,
-      "y": 62,
+      "x": 44,
+      "y": 57,
       "icon": "images/map/building/broken_contracts.png",
       "desc": "Shattered smart contracts spilling glitches and danger.",
       "lore": {
@@ -305,8 +305,8 @@
       "label": "Burned Archive",
       "type": "archive",
       "region": "chain",
-      "x": 68,
-      "y": 74,
+      "x": 69,
+      "y": 73,
       "icon": "images/map/building/burned_archive.webp",
       "desc": "A corrupted archive relay flickering just under the public map. RELAY-7 keeps catching the same signal there.",
       "lore": {
@@ -326,8 +326,8 @@
       "label": "HOWL TREASURY",
       "type": "treasury",
       "region": "chain",
-      "x": 29,
-      "y": 80,
+      "x": 28,
+      "y": 82,
       "asset": "images/map/building/howl_treasury.webp",
       "icon": "images/map/building/howl_treasury.webp",
       "previewAsset": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778922822/howl_treasury/howl_treasury_card.webp",
@@ -350,8 +350,8 @@
       "id": "moon_lab",
       "name": "Moon Lab",
       "region": "moon_lab",
-      "x": 34,
-      "y": 14,
+      "x": 35,
+      "y": 19,
       "icon": "images/map/building/moon_lab.png",
       "desc": "Three-floor fortress: 10 sequential single-fights per floor. Win → next encounter after cooldown; lose → retry same encounter.",
       "lore": {
@@ -447,8 +447,8 @@
       "id": "testnet_wastes_dojo",
       "name": "Testnet Wastes — Dojo",
       "region": "testnet_wastes",
-      "x": 81,
-      "y": 62,
+      "x": 90,
+      "y": 72,
       "icon": "images/map/building/testnet_wastes.png",
       "desc": "Training Dojo — spawn a high-HP dummy and measure your DPS/crit rate. No costs or rewards; just practice rotations.",
       "lore": {
@@ -471,32 +471,32 @@
       "id": "p1",
       "from": "alpha_network_hq",
       "to": "broken_contracts",
-      "points": [[14, 55], [20, 55], [27, 56], [33, 58]]
+      "points": [[27, 58], [32, 58], [38, 57], [42, 57]]
     },
     {
       "id": "p2",
       "from": "broken_contracts",
       "to": "chain_gate",
-      "points": [[33, 58], [29, 62], [23, 67], [17, 73]]
+      "points": [[40, 60], [34, 63], [27, 67], [20, 71]]
     },
     {
       "id": "p3",
       "from": "broken_contracts",
       "to": "vault_forge",
-      "points": [[33, 58], [38, 64], [43, 71], [47, 79]]
+      "points": [[45, 62], [47, 68], [49, 74], [50, 79]]
     },
     {
       "id": "p4",
       "from": "vault_forge",
       "to": "testnet_wastes_dojo",
-      "points": [[47, 79], [58, 77], [70, 71], [81, 62]],
+      "points": [[58, 80], [68, 79], [79, 76], [88, 73]],
       "lockForRegion": "testnet_wastes"
     },
     {
       "id": "p5",
       "from": "broken_contracts",
       "to": "edge_of_chain",
-      "points": [[33, 58], [30, 52], [26, 46], [21, 39]],
+      "points": [[53, 57], [63, 57], [73, 57], [81, 56]],
       "lockForRegion": "edge_chain",
       "emphasis": true
     },
@@ -504,7 +504,7 @@
       "id": "p6",
       "from": "edge_of_chain",
       "to": "phantom_nodes",
-      "points": [[21, 39], [29, 39], [38, 41], [47, 43]],
+      "points": [[78, 53], [68, 48], [58, 42], [50, 38]],
       "lockForRegion": "shadow_layers",
       "emphasis": true
     },
@@ -512,7 +512,7 @@
       "id": "p7",
       "from": "phantom_nodes",
       "to": "blood_moon_tower",
-      "points": [[47, 43], [56, 42], [65, 40], [74, 38]],
+      "points": [[55, 36], [62, 35], [69, 33], [73, 30]],
       "lockForRegion": "shadow_layers",
       "emphasis": true
     },
@@ -520,40 +520,40 @@
       "id": "p8",
       "from": "phantom_nodes",
       "to": "moon_lab",
-      "points": [[47, 43], [43, 36], [37, 27], [31, 18]],
+      "points": [[45, 33], [41, 28], [38, 24], [35, 20]],
       "lockForRegion": "moon_lab"
     },
     {
       "id": "p9",
       "from": "phantom_nodes",
       "to": "oracle_void_doorway",
-      "points": [[47, 43], [49, 34], [51, 23], [53, 11]],
+      "points": [[51, 30], [54, 24], [57, 17], [59, 12]],
       "lockForRegion": "edge_chain"
     },
     {
       "id": "p10",
       "from": "alpha_network_hq",
       "to": "abandoned_wallets",
-      "points": [[14, 55], [12, 47], [10, 36], [9, 25]]
+      "points": [[21, 53], [18, 47], [16, 40], [14, 34]]
     },
     {
       "id": "p11",
       "from": "moon_lab",
       "to": "oracle_void_doorway",
-      "points": [[31, 18], [37, 15], [45, 13], [53, 11]],
+      "points": [[40, 18], [46, 16], [53, 14], [58, 12]],
       "lockForRegion": "edge_chain"
     },
     {
       "id": "p12",
       "from": "broken_contracts",
       "to": "howl_treasury",
-      "points": [[33, 58], [31, 65], [30, 73], [29, 80]]
+      "points": [[40, 63], [36, 69], [32, 75], [29, 81]]
     },
     {
       "id": "p13",
       "from": "howl_treasury",
       "to": "vault_forge",
-      "points": [[29, 80], [35, 80], [41, 80], [47, 79]]
+      "points": [[34, 82], [39, 82], [44, 81], [49, 80]]
     }
   ],
   "lore": {
