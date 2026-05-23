@@ -1151,6 +1151,7 @@ html.ah-skins-open #heroFrame{
   width:100%;
   height:min(88dvh, calc(100dvh - 24px));
   max-height: calc(100dvh - 24px);
+  position:relative;
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -1160,6 +1161,19 @@ html.ah-skins-open #heroFrame{
 .map-head-main{ display:flex; align-items:center; gap:8px; min-width:0; }
 .map-head-actions{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-intel-btn{
+  min-height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  border:1px solid rgba(173,222,255,.20);
+  background:linear-gradient(180deg, rgba(20,32,42,.84), rgba(9,15,22,.84));
+  color:#eef7ff;
+  font:800 11px/1 system-ui, sans-serif;
+  letter-spacing:.04em;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.map-intel-btn:active{ transform:translateY(1px); }
 .map-zoom-controls{
   display:inline-flex;
   align-items:center;
@@ -1169,8 +1183,19 @@ html.ah-skins-open #heroFrame{
   border:1px solid rgba(255,255,255,.08);
   background:rgba(8,12,16,.42);
 }
+.map-zoom-slider{
+  width:72px;
+  height:28px;
+  margin:0;
+  accent-color:#93ffd8;
+  cursor:pointer;
+}
+.map-zoom-slider:focus-visible{
+  outline:2px solid rgba(147,255,216,.45);
+  outline-offset:2px;
+}
 .map-zoom-btn{
-  min-width:34px;
+  min-width:48px;
   height:30px;
   padding:0 10px;
   border-radius:9px;
@@ -1217,6 +1242,237 @@ html.ah-skins-open #heroFrame{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+.war-intel-back{
+  position:absolute;
+  inset:0;
+  z-index:12;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  background:rgba(4,8,14,.74);
+  backdrop-filter:blur(10px);
+}
+.war-intel-back[hidden]{
+  display:none !important;
+}
+.war-intel-sheet{
+  width:min(100%, 640px);
+  max-height:100%;
+  overflow:auto;
+  border-radius:18px;
+  border:1px solid rgba(165,215,255,.18);
+  background:
+    radial-gradient(circle at top left, rgba(112,179,255,.10), transparent 34%),
+    linear-gradient(180deg, rgba(10,15,23,.98), rgba(8,11,18,.98));
+  box-shadow:0 24px 60px rgba(0,0,0,.46);
+  color:#eef6ff;
+}
+.war-intel-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 16px 12px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.war-intel-kicker{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(160,214,255,.74);
+}
+.war-intel-title{
+  margin:5px 0 0;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.01em;
+}
+.war-intel-close{
+  flex:0 0 auto;
+  min-width:36px;
+  height:36px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  font-size:18px;
+  cursor:pointer;
+}
+.war-intel-body{
+  padding:14px 16px 16px;
+}
+.war-intel-intro{
+  margin:0 0 12px;
+  color:rgba(228,239,249,.80);
+  font-size:13px;
+  line-height:1.45;
+}
+.war-intel-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+.war-intel-card{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+  padding:11px 12px;
+}
+.war-intel-card h4{
+  margin:0 0 5px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.03em;
+}
+.war-intel-card p{
+  margin:0;
+  color:rgba(223,235,247,.80);
+  font-size:12px;
+  line-height:1.45;
+}
+.war-intel-section{
+  margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:14px;
+}
+.war-intel-section h4{
+  margin:0 0 8px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(255,226,192,.90);
+}
+.war-intel-list{
+  margin:0;
+  padding-left:18px;
+  color:rgba(232,242,250,.84);
+  font-size:12px;
+  line-height:1.5;
+}
+.war-intel-list li + li{
+  margin-top:6px;
+}
+.war-intel-rules{
+  margin-top:14px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:15px;
+  background:rgba(255,255,255,.03);
+  overflow:hidden;
+}
+.war-intel-rules summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+}
+.war-intel-rules summary::-webkit-details-marker{
+  display:none;
+}
+.war-intel-rules-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.war-intel-rules-title{
+  margin:0;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.03em;
+}
+.war-intel-rules-sub{
+  margin:4px 0 0;
+  color:rgba(223,235,247,.68);
+  font-size:11px;
+  line-height:1.4;
+}
+.war-intel-rules-caret{
+  flex:0 0 auto;
+  color:rgba(255,230,193,.86);
+  font-size:12px;
+  font-weight:900;
+  transition:transform .18s ease;
+}
+.war-intel-rules[open] .war-intel-rules-caret{
+  transform:rotate(180deg);
+}
+.war-intel-rules-body{
+  padding:0 14px 14px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.war-intel-rules-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.war-intel-rule-card{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background:rgba(255,255,255,.028);
+  padding:10px 11px;
+}
+.war-intel-rule-card h5{
+  margin:0 0 8px;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(255,226,192,.90);
+}
+.war-intel-rule-rows{
+  display:grid;
+  gap:6px;
+}
+.war-intel-rule-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  font-size:12px;
+  line-height:1.35;
+}
+.war-intel-rule-row span:first-child{
+  color:rgba(225,236,248,.78);
+}
+.war-intel-rule-row strong{
+  flex:0 0 auto;
+  color:#fff2d8;
+  font-weight:900;
+}
+.war-intel-chip-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.war-intel-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:5px 9px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.05);
+  color:#edf6ff;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.2;
+  text-align:center;
+}
+.war-intel-chip.is-strong{
+  border-color:rgba(255,214,150,.24);
+  background:rgba(255,214,150,.08);
+  color:#fff0d1;
+}
+.war-intel-rule-note{
+  margin-top:8px;
+  color:rgba(223,235,247,.72);
+  font-size:11px;
+  line-height:1.45;
+}
 .map-world-brief[data-mode="selection"]{
   padding:5px 10px 7px;
   border-radius:12px;
@@ -1239,8 +1495,30 @@ html.ah-skins-open #heroFrame{
   text-overflow:clip;
 }
 @media (max-width: 640px){
+  .map-head{
+    align-items:flex-start;
+  }
+  .map-head-actions{
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
   .map-world-brief-line-1{ display:none; }
   .map-world-brief[data-mode="selection"] .map-world-brief-line-1{ display:block; }
+  .war-intel-grid{
+    grid-template-columns:1fr;
+  }
+  .war-intel-rules-grid{
+    grid-template-columns:1fr;
+  }
+  .war-intel-back{
+    padding:10px;
+  }
+  .war-intel-head{
+    padding:14px 14px 10px;
+  }
+  .war-intel-body{
+    padding:12px 14px 14px;
+  }
 }
 .map-pressure-mood{
   display:inline-flex;
@@ -5275,10 +5553,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
               <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
             </div>
             <div class="map-head-actions">
+              <button class="map-intel-btn" id="openWarIntel" type="button" aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">War Intel ?</button>
               <div class="map-zoom-controls" aria-label="Map zoom controls">
-                <button class="map-zoom-btn" id="mapZoomOut" type="button" aria-label="Zoom out">-</button>
+                <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="2" step="1" value="1" aria-label="Map zoom level">
                 <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map zoom and center">Reset</button>
-                <button class="map-zoom-btn" id="mapZoomIn" type="button" aria-label="Zoom in">+</button>
               </div>
               <button class="close-x" id="closeMap" type="button">×</button>
             </div>
@@ -5290,6 +5568,132 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <div id="mapWorldBrief" class="map-world-brief">
             <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
             <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+          </div>
+          <div class="war-intel-back" id="warIntelBack" hidden aria-hidden="true">
+            <div class="war-intel-sheet" role="dialog" aria-modal="true" aria-labelledby="warIntelTitle">
+              <div class="war-intel-head">
+                <div>
+                  <div class="war-intel-kicker">Map War Guide</div>
+                  <h3 class="war-intel-title" id="warIntelTitle">War Intel</h3>
+                </div>
+                <button class="war-intel-close" id="closeWarIntel" type="button" aria-label="Close War Intel">&times;</button>
+              </div>
+              <div class="war-intel-body">
+                <p class="war-intel-intro">This panel explains the current map-war labels without exposing hidden formulas or backend-only values.</p>
+
+                <div class="war-intel-grid">
+                  <article class="war-intel-card">
+                    <h4>War Contribution</h4>
+                    <p>Your personal weekly war activity from Patrol, Donate, and some Siege actions.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Faction Control</h4>
+                    <p>Who is currently winning or holding a node on the map.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Pressure</h4>
+                    <p>A conflict signal only. It shows where fighting is rising, but it does not directly decide capture.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Siege Participation</h4>
+                    <p>Siege-specific actions and results at active siege nodes.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Blood-Moon Damage</h4>
+                    <p>Damage dealt inside the Blood-Moon event only.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Archive Progress</h4>
+                    <p>Burned Archive progress for your faction. It is progress, not points.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>Contract Contribution</h4>
+                    <p>Progress inside Broken Contracts only.</p>
+                  </article>
+                  <article class="war-intel-card">
+                    <h4>War Rewards</h4>
+                    <p>Rewards from war-adjacent systems. They are not one universal currency.</p>
+                  </article>
+                </div>
+
+                <section class="war-intel-section">
+                  <h4>What Your Actions Usually Affect</h4>
+                  <ul class="war-intel-list">
+                    <li>Patrol and Donate can affect Faction Control and War Contribution.</li>
+                    <li>Siege affects Siege Participation and can affect control outcomes.</li>
+                    <li>Blood-Moon attacks affect Blood-Moon Damage and event progress.</li>
+                    <li>Burned Archive attempts affect Archive Progress.</li>
+                  </ul>
+                </section>
+
+                <details class="war-intel-rules">
+                  <summary>
+                    <div class="war-intel-rules-head">
+                      <div>
+                        <div class="war-intel-rules-title">Exact Rules</div>
+                        <div class="war-intel-rules-sub">Base values before bonuses, caps, and node multipliers.</div>
+                      </div>
+                      <span class="war-intel-rules-caret" aria-hidden="true">v</span>
+                    </div>
+                  </summary>
+                  <div class="war-intel-rules-body">
+                    <div class="war-intel-rules-grid">
+                      <article class="war-intel-rule-card">
+                        <h5>Weekly War Contribution</h5>
+                        <div class="war-intel-rule-rows">
+                          <div class="war-intel-rule-row"><span>Patrol</span><strong>+6</strong></div>
+                          <div class="war-intel-rule-row"><span>Donate</span><strong>+4</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Watch</span><strong>+5</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Join</span><strong>+12</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Launch</span><strong>+10</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Next Fight</span><strong>+10</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Capture</span><strong>+25</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Defense</span><strong>+25</strong></div>
+                        </div>
+                        <div class="war-intel-rule-note">Weekly qualification: <strong>60+ War Contribution</strong> and <strong>2 active days</strong>.</div>
+                      </article>
+
+                      <article class="war-intel-rule-card">
+                        <h5>Node Multipliers</h5>
+                        <div class="war-intel-chip-row">
+                          <span class="war-intel-chip">Low x1.0</span>
+                          <span class="war-intel-chip">High x1.5</span>
+                          <span class="war-intel-chip is-strong">Strategic x2.0</span>
+                        </div>
+                      </article>
+
+                      <article class="war-intel-rule-card">
+                        <h5>Daily Caps</h5>
+                        <div class="war-intel-rule-rows">
+                          <div class="war-intel-rule-row"><span>Patrol</span><strong>8/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Donate</span><strong>10/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Watch</span><strong>6/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Join</span><strong>3/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Launch</span><strong>3/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Next Fight</span><strong>12/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Capture</span><strong>3/day</strong></div>
+                          <div class="war-intel-rule-row"><span>Siege Defense</span><strong>3/day</strong></div>
+                        </div>
+                      </article>
+
+                      <article class="war-intel-rule-card">
+                        <h5>Event Notes</h5>
+                        <div class="war-intel-chip-row">
+                          <span class="war-intel-chip">Pressure does not directly decide capture</span>
+                          <span class="war-intel-chip">Blood-Moon Damage is separate from War Contribution</span>
+                          <span class="war-intel-chip">Blood-Moon attacks: 5/day</span>
+                          <span class="war-intel-chip">Blood-Moon cooldown: 60s</span>
+                          <span class="war-intel-chip">Burned Archive uses Archive Keys</span>
+                          <span class="war-intel-chip">Burned Archive gives no War Contribution</span>
+                          <span class="war-intel-chip">Phantom Nodes can grant Archive Keys</span>
+                          <span class="war-intel-chip">Archive Keys cap at 3/day</span>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </div>
           </div>
           <div id="map" class="map" data-map-root>
             <div class="map-territories" aria-hidden="true">
@@ -7026,8 +7430,7 @@ document.addEventListener("click", async (e) => {
         const MAP_PAN_DRAG_THRESHOLD = 10;
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
         const mapStageEl = ensureMapStage(mapRoot);
-        const mapZoomOutBtn = document.getElementById("mapZoomOut");
-        const mapZoomInBtn = document.getElementById("mapZoomIn");
+        const mapZoomSlider = document.getElementById("mapZoomSlider");
         const mapZoomResetBtn = document.getElementById("mapZoomReset");
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapStageEl);
@@ -7141,8 +7544,7 @@ document.addEventListener("click", async (e) => {
 
         function updateMapZoomControls(){
           const idx = mapZoomIndex();
-          if (mapZoomOutBtn) mapZoomOutBtn.disabled = idx <= 0;
-          if (mapZoomInBtn) mapZoomInBtn.disabled = idx >= (MAP_ZOOM_LEVELS.length - 1);
+          if (mapZoomSlider) mapZoomSlider.value = String(idx);
         }
 
         function setMapZoom(nextZoom, options = {}){
@@ -7224,18 +7626,9 @@ document.addEventListener("click", async (e) => {
           if (!mapRoot || mapRoot.dataset.zoomBound === "1") return;
           mapRoot.dataset.zoomBound = "1";
 
-          mapZoomOutBtn?.addEventListener("click", (event) => {
-            event.preventDefault();
-            const idx = mapZoomIndex();
-            if (idx <= 0) return;
-            setMapZoom(MAP_ZOOM_LEVELS[idx - 1]);
-          });
-
-          mapZoomInBtn?.addEventListener("click", (event) => {
-            event.preventDefault();
-            const idx = mapZoomIndex();
-            if (idx >= (MAP_ZOOM_LEVELS.length - 1)) return;
-            setMapZoom(MAP_ZOOM_LEVELS[idx + 1]);
+          mapZoomSlider?.addEventListener("input", (event) => {
+            const idx = Math.max(0, Math.min(MAP_ZOOM_LEVELS.length - 1, Number(event.target?.value ?? 1)));
+            setMapZoom(MAP_ZOOM_LEVELS[idx]);
           });
 
           mapZoomResetBtn?.addEventListener("click", (event) => {
@@ -7376,12 +7769,12 @@ document.addEventListener("click", async (e) => {
           if (pinEl?.classList?.contains("siege-forming")) return "Siege forming - join or watch the clash.";
           if (pinEl?.classList?.contains("siege-running")) return "Siege live - join or watch the clash.";
           if (pinEl?.classList?.contains("pressure-contested") || pinEl?.classList?.contains("is-contested")) return "Contested zone - patrol, donate or join the fight.";
-          if (pinEl?.classList?.contains("pressure-hot") || pinEl?.classList?.contains("is-threatened")) return "High activity - act here to push pressure.";
-          if (pinEl?.classList?.contains("pressure-fortified") || pinEl?.classList?.contains("is-fortified")) return "Fortified - defend or keep pressure stable.";
+          if (pinEl?.classList?.contains("pressure-hot") || pinEl?.classList?.contains("is-threatened")) return "High activity - Pressure is rising here.";
+          if (pinEl?.classList?.contains("pressure-fortified") || pinEl?.classList?.contains("is-fortified")) return "Fortified - one side is holding this frontline.";
           if (bid === "blood_moon_tower" || action === "open_bloodmoon" || pinEl?.classList?.contains("type-bloodmoon")) return "PvE threat - push tower progress.";
           if (bid === "burned_archive" || action === "open_burned_archive" || pinEl?.classList?.contains("type-archive")) return "Signal anomaly - investigate archive activity.";
           if (bid === "howl_treasury" || action === "open_howl_treasury" || pinEl?.classList?.contains("type-treasury")) return "Support signal - check treasury activity.";
-          if (bid === "phantom_nodes" || pinEl?.classList?.contains("type-phantom")) return "Network front - check relay pressure here.";
+          if (bid === "phantom_nodes" || pinEl?.classList?.contains("type-phantom")) return "Network front - monitor Pressure here.";
           if (bid === "edge_of_chain" || action === "open_siege" || pinEl?.classList?.contains("type-siege")) return "Frontline breach - watch the edge pressure.";
           if (pinEl?.classList?.contains("is-live")) return "Live pressure - move here while the window is open.";
           if (pinEl?.classList?.contains("is-active")) return "Active node - check the current world pulse.";
@@ -10351,6 +10744,51 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
 
+<script>
+(function () {
+  function initWarIntel() {
+    const mapBack = document.getElementById("mapBack");
+    const openBtn = document.getElementById("openWarIntel");
+    const back = document.getElementById("warIntelBack");
+    const closeBtn = document.getElementById("closeWarIntel");
+    const closeMapBtn = document.getElementById("closeMap");
+    if (!mapBack || !openBtn || !back || !closeBtn) return;
+    if (openBtn.dataset.warIntelBound === "1") return;
+
+    const setOpen = (open) => {
+      back.hidden = !open;
+      back.setAttribute("aria-hidden", open ? "false" : "true");
+      openBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+
+    openBtn.addEventListener("click", () => setOpen(true));
+    closeBtn.addEventListener("click", () => setOpen(false));
+    back.addEventListener("click", (event) => {
+      if (event.target === back) setOpen(false);
+    });
+    closeMapBtn?.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !back.hidden) setOpen(false);
+    });
+
+    const observer = new MutationObserver(() => {
+      const visible = mapBack.style.display === "flex";
+      if (!visible) setOpen(false);
+    });
+    observer.observe(mapBack, { attributes: true, attributeFilter: ["style"] });
+
+    openBtn.dataset.warIntelBound = "1";
+    setOpen(false);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initWarIntel, { once: true });
+  } else {
+    initWarIntel();
+  }
+})();
+</script>
+
 
   <!-- ====================== INVENTORY + EQUIPPED ROUTING ====================== -->
   <script>
@@ -10388,6 +10826,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
+
+
 
 
 
