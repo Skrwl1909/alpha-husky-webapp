@@ -652,7 +652,7 @@
     const warContributionLine = warContributionFeedback(payload);
     const contractContributionLine = contractContributionFeedback(payload);
     const spendRefundLine = spent > 0 && asset
-      ? `Spent ${spent} ${asset}${refunded > 0 ? ` · Refunded ${refunded}` : ""}.`
+      ? `Spent ${spent} ${asset}${refunded > 0 ? `; refunded ${refunded}` : ""}.`
       : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
     const isPatrol = kind === "patrol";
     const title = isPatrol ? "SIGNAL HELD" : "SUPPLIES DEPLOYED";
@@ -3830,6 +3830,7 @@
 
   window.Influence = Influence;
 })();
+
 
 
 

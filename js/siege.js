@@ -69,6 +69,38 @@
     }
   }
 
+  function getSiegeParticipationPoints(payload) {
+    const candidates = [
+      payload?.siegeParticipationPoints,
+      payload?.data?.siegeParticipationPoints,
+      payload?.siegeNode?.siegeParticipationPoints,
+      payload?.state?.siegeParticipationPoints
+    ];
+    for (const value of candidates) {
+      if (Number.isFinite(Number(value))) {
+        return Number(value);
+      }
+    }
+    return null;
+  }
+
+  function buildSiegeSuccessFeedback(prefix, payload) {
+    if (!["siege_watch", "siege_join", "siege_launch", "siege_next"].includes(String(prefix || ""))) {
+      return "";
+    }
+    const points = getSiegeParticipationPoints(payload);
+    const line1 = points > 0
+      ? `Siege Participation +${Math.trunc(points)}`
+      : "Siege Participation updated.";
+    const line2Map = {
+      siege_watch: "Watch confirmed.",
+      siege_join: "Joined the siege.",
+      siege_launch: "Siege launched.",
+      siege_next: "Next fight advanced."
+    };
+    return `${line1}\n${line2Map[prefix] || "Siege status refreshed."}`;
+  }
+
   function normFaction(v) {
   const s = String(v || "").trim().toLowerCase();
   if (!s) return "";
@@ -1681,6 +1713,10 @@ function renderBattlePanelHTML(raw, node, cur) {
       if (successAlert && (rawOut?.ctaSent || rawOut?.data?.ctaSent)) {
         showAlert(successAlert);
       } else {
+        const feedback = buildSiegeSuccessFeedback(prefix, rawOut);
+        if (feedback) {
+          showAlert(feedback);
+        }
         try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       }
     } catch (err) {
