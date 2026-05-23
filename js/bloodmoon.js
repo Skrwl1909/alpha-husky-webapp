@@ -1070,7 +1070,7 @@
             <div id="bloodMoonTitle">Blood-Moon Tower</div>
             <button id="bloodMoonClose" type="button">✕</button>
           </div>
-          <div id="bloodMoonSub">Faction PvE raid • shared progress • live pressure</div>
+          <div id="bloodMoonSub">Faction PvE raid - shared wave progress - Blood-Moon Damage tracked here</div>
         </div>
 
         <div id="bloodMoonBody">
@@ -1996,12 +1996,12 @@
     </div>
 
     <div class="bm-card">
-      <div class="bm-label">FACTION WAR • LIVE RACE</div>
+      <div class="bm-label">FACTION PROGRESS - LIVE RACE</div>
       ${renderRace(sortedFactions, dominancePct)}
     </div>
 
     <div class="bm-card">
-      <div class="bm-label">YOUR CARNAGE</div>
+      <div class="bm-label">BLOOD-MOON DAMAGE</div>
       <div class="bm-mini-grid">
         <div class="bm-stat">
           <div class="bm-label">Total Damage</div>
@@ -2028,7 +2028,7 @@
     </div>
 
     <div class="bm-card">
-      <div class="bm-label">CLAIMABLE BLOOD REWARDS</div>
+      <div class="bm-label">BLOOD-MOON WAR REWARDS</div>
       ${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}
     </div>
 
@@ -2154,3 +2154,5 @@
 
   window.BloodMoon = BloodMoon;
 })();
+
+

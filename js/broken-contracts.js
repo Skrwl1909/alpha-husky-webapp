@@ -790,11 +790,11 @@
     return `
       <div class="bc-reward-tracker rv-surface">
         <div class="bc-reward-head">
-          <div class="bc-reward-title">Reward Qualification</div>
+          <div class="bc-reward-title">War Rewards</div>
           <span class="rv-chip ${unlocked ? "is-live" : "is-muted"}">${unlocked ? "Ready to claim" : "In progress"}</span>
         </div>
         ${renderProgress("Faction objective", m.factionProgress, m.goal, "bc-fill")}
-        ${renderProgress("Your contribution", m.myContribution, m.minContribution, "bc-fill is-contrib")}
+        ${renderProgress("Contract Contribution", m.myContribution, m.minContribution, "bc-fill is-contrib")}
         <div class="rv-check-grid">
           <div class="rv-check ${factionReady ? "is-ready" : ""}">
             <strong>${factionReady ? "Done" : "Pending"}</strong>
@@ -802,7 +802,7 @@
           </div>
           <div class="rv-check ${myReady ? "is-ready" : ""}">
             <strong>${myReady ? "Done" : "Pending"}</strong>
-            Personal contribution
+            Contract contribution
           </div>
         </div>
         <div class="bc-rewards">${renderRewards(contract)}</div>
@@ -1162,3 +1162,4 @@
   global.BrokenContracts = BrokenContracts;
   global.openBrokenContracts = () => BrokenContracts.open();
 })(window);
+

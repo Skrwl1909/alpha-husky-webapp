@@ -289,12 +289,12 @@
         rewardStateChipEl.style.border = "1px solid rgba(255,190,90,.26)";
         rewardStateChipEl.style.color = "#ffe0ab";
       }
-      if (rewardStateTextEl) rewardStateTextEl.textContent = "Reach the weekly score and activity requirements to qualify.";
+      if (rewardStateTextEl) rewardStateTextEl.textContent = "War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.";
       if (rewardScoreValueEl) rewardScoreValueEl.textContent = "0/60";
       if (rewardScoreBarEl) rewardScoreBarEl.style.width = "0%";
       if (rewardDaysValueEl) rewardDaysValueEl.textContent = "0/2";
       if (rewardDaysBarEl) rewardDaysBarEl.style.width = "0%";
-      if (rewardHintEl) rewardHintEl.textContent = "Weekly rewards may include aura, frame, skin, or raffle entry.";
+      if (rewardHintEl) rewardHintEl.textContent = "War Rewards may include aura, frame, skin, or raffle entry.";
     };
 
     const w = _weekly || null;
@@ -304,7 +304,7 @@
       previewHost.innerHTML = `
         <section class="inf-weekly-preview">
           <div style="min-width:0;">
-            <div class="inf-panel-kicker">Weekly War</div>
+            <div class="inf-panel-kicker">War Contribution</div>
             <div class="inf-weekly-title">Rivalry feed syncing</div>
             <div class="inf-weekly-sub">Faction standings will update here once the relay cache responds.</div>
           </div>
@@ -334,9 +334,9 @@
     const scoreMissing = Math.max(0, reqScore - myScore);
     const daysMissing = Math.max(0, reqDays - myDays);
     const rewardLabel = myQualified ? "Eligible" : "Not eligible";
-    let rewardCopy = "Weekly rewards may include aura, frame, skin, or raffle entry.";
+    let rewardCopy = "War Rewards may include aura, frame, skin, or raffle entry.";
     if (myQualified) {
-      rewardCopy = "You qualify this cycle. More weekly score helps your faction hold rank.";
+      rewardCopy = "You qualify this cycle. More War Contribution helps your faction hold rank.";
     } else if (scoreMissing > 0 || daysMissing > 0) {
       rewardCopy = `Need ${scoreMissing > 0 ? `${scoreMissing} score` : "score ready"}${scoreMissing > 0 && daysMissing > 0 ? " and " : ""}${daysMissing > 0 ? `${daysMissing} active day${daysMissing === 1 ? "" : "s"}` : ""} to qualify.`;
     }
@@ -349,7 +349,7 @@
     }
     if (rewardStateTextEl) rewardStateTextEl.textContent = myQualified
       ? "Threshold reached. Stay active to strengthen your faction finish."
-      : "Eligibility depends on weekly score and active-day progress.";
+      : "War Contribution and Active Days determine weekly reward eligibility.";
     if (rewardScoreValueEl) rewardScoreValueEl.textContent = `${myScore}/${reqScore}`;
     if (rewardScoreBarEl) rewardScoreBarEl.style.width = `${scorePct}%`;
     if (rewardDaysValueEl) rewardDaysValueEl.textContent = `${myDays}/${reqDays}`;
@@ -362,9 +362,9 @@
     previewHost.innerHTML = `
       <section class="inf-weekly-preview">
         <div style="min-width:0;">
-          <div class="inf-panel-kicker">Weekly War</div>
+          <div class="inf-panel-kicker">War Contribution</div>
           <div class="inf-weekly-title">${esc(leadFactionText)} leads the rivalry</div>
-          <div class="inf-weekly-sub">Control here affects faction pressure and weekly rivalry progress.</div>
+          <div class="inf-weekly-sub">Patrol and Donate shape Faction Control here and add War Contribution.</div>
         </div>
         <div class="inf-weekly-mini-grid">
           <article class="inf-weekly-mini-card">
@@ -376,7 +376,7 @@
             <div class="inf-weekly-mini-value">${esc(rankText)}</div>
           </article>
           <article class="inf-weekly-mini-card">
-            <div class="inf-weekly-mini-label">Your weekly score</div>
+            <div class="inf-weekly-mini-label">Your War Contribution</div>
             <div class="inf-weekly-mini-value">${esc(`${myScore}/${reqScore}`)}</div>
           </article>
         </div>
@@ -414,16 +414,16 @@
   let _tooltipKey = "";
 
   const LOCAL_TOOLTIP_COPY = {
-    pressure: "Pressure shows how much force each faction has on this node.",
+    pressure: "Pressure shows where conflict is rising. It does not directly decide capture.",
     hot: "HOT means active enemy movement. Actions here matter more.",
     contested: "CONTESTED means control is unstable.",
     fortified: "FORTIFIED means one faction has strong pressure here.",
     defend: "Defend means your faction has something to protect.",
     push: "Push means another faction controls the node. Your actions help contest it.",
-    patrol: "Patrol is a free action with cooldown. It adds influence and weekly score.",
-    donate: "Donate spends materials for stronger node impact.",
-    weekly_score: "Weekly score helps your faction climb the rivalry cycle.",
-    eligibility: "Reach the score and active-day requirement to qualify for rewards.",
+    patrol: "Patrol is a free action with cooldown. It supports Faction Control and War Contribution.",
+    donate: "Donate spends materials for stronger node impact. It also adds War Contribution.",
+    weekly_score: "War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.",
+    eligibility: "War Contribution and Active Days determine weekly reward eligibility.",
   };
 
   function _qs(id) { return document.getElementById(id); }
@@ -618,13 +618,29 @@
 
   function clearStatus() { setStatus(""); }
   const ARCHIVE_KEY_ICON_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1779282500/burned_archive/archive_key_icon.webp";
+  function isArchiveKeyEligibleAction(payload = {}) {
+    return payload && payload.archiveKeyEligible === true;
+  }
   function archiveKeyFeedback(payload = {}) {
-    if (!payload || payload.archiveKeyGranted !== true) return null;
-    const left = Number(payload.archiveKeysLeft);
-    const parts = [String(payload.archiveKeyMessage || "Archive Key gained.").trim()];
-    if (Number.isFinite(left)) parts.push(`Keys left: ${left}`);
+    if (!isArchiveKeyEligibleAction(payload)) return null;
+    const earnedToday = Number(payload.archiveKeysEarnedToday);
+    const capReached = payload.archiveKeyCapReached === true
+      || String(payload.archiveKeyReason || "").trim().toUpperCase() === "ARCHIVE_KEY_CAP_REACHED";
+    const parts = [];
+
+    if (payload.archiveKeyGranted === true) {
+      parts.push("+1 Archive Key gained.");
+      if (Number.isFinite(earnedToday)) parts.push(`Daily key limit: ${Math.max(0, earnedToday)}/3`);
+    } else if (capReached) {
+      parts.push("No Archive Key gained.");
+      parts.push("Daily key limit reached: 3/3.");
+    } else {
+      parts.push("No Archive Key found.");
+      parts.push("Archive Keys come from Phantom Node Patrol and Donate.");
+    }
+
     return {
-      html: `<span class="inf-result-keyline"><img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span>${esc(parts.join(" "))}</span></span>`
+      html: `<span class="inf-result-keyline"><img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span class="inf-result-keycopy">${parts.map((part) => `<span>${esc(part)}</span>`).join("")}</span></span>`
     };
   }
   function setActionResult(kind, payload = {}) {
@@ -638,12 +654,12 @@
     const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
     const lines = isPatrol
       ? [
-          "Weekly score increased.",
+          "War Contribution increased.",
           "Patrol cooldown started.",
           archiveKeyLine,
         ]
       : [
-          "Pressure reinforced.",
+          "Faction Control reinforced.",
           refunded > 0 ? `Overflow refunded: ${refunded}` : "",
           archiveKeyLine,
         ];
@@ -2079,6 +2095,13 @@
         align-items:center;
         gap:7px;
       }
+      #influenceModal .inf-result-keycopy{
+        display:grid;
+        gap:2px;
+      }
+      #influenceModal .inf-result-keycopy span{
+        display:block;
+      }
       #influenceModal .inf-result-keyicon{
         width:16px;
         height:16px;
@@ -2514,7 +2537,7 @@
                 <span id="infPatrolLabel" class="inf-action-title">PATROL NODE</span>
                 <span id="infPatrolTimer" class="inf-chip inf-action-tag" style="display:none;"></span>
               </span>
-              <span id="infPatrolHelp" class="inf-action-effect">Free action · cooldown based. Adds influence, pressure, and weekly rivalry score.</span>
+              <span id="infPatrolHelp" class="inf-action-effect">Free action - cooldown based. Supports Faction Control and War Contribution.</span>
               <span class="inf-action-chip">Patrol</span>
             </button>
 
@@ -2523,11 +2546,11 @@
                 <span class="inf-action-icon">[D]</span>
                 <span class="inf-action-title">DONATE SUPPLIES</span>
               </span>
-              <span id="infDonateHelp" class="inf-action-effect">Spend materials for stronger node impact. Useful to hold or push control.</span>
+              <span id="infDonateHelp" class="inf-action-effect">Spend materials for stronger node impact. Useful for Faction Control and War Contribution.</span>
               <span class="inf-action-chip">Donate</span>
             </button>
           </div>
-          <div id="infWatchHelp" class="inf-watch-line">Patrol is live. Move now to shape this relay.</div>
+          <div id="infWatchHelp" class="inf-watch-line">Patrol is live. Move now to support Faction Control here.</div>
           <div id="infOrdersCooldown" class="inf-orders-cooldown">Patrol ready now. Free action is back online.</div>
         </section>
 
@@ -2546,16 +2569,16 @@
             <button class="infAmt" type="button" data-v="50">+50</button>
             <button class="infAmt" type="button" data-v="100">+100</button>
           </div>
-          <div class="inf-donate-note">Donation contributes to node pressure and weekly faction race.</div>
+          <div class="inf-donate-note">Donation supports Faction Control and War Contribution.</div>
           <button id="infDonateBtn" type="button" class="inf-donate-confirm">Confirm donate</button>
         </div>
 
         <section id="infIntelShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infWarTitle" class="inf-panel-title">War State</div>
+            <div id="infWarTitle" class="inf-panel-title">Faction Control</div>
             <span id="infWarChip" class="inf-chip inf-chip-muted">Live feed</span>
           </div>
-          <div id="infWarSummary" class="inf-hero-status">Frontline data is syncing.</div>
+          <div id="infWarSummary" class="inf-hero-status">Faction Control data is syncing.</div>
           <div class="inf-local-grid">
             <article class="inf-tile">
               <div class="inf-tile-label">Owner</div>
@@ -2563,7 +2586,7 @@
             </article>
             <article class="inf-tile">
               <div class="inf-tile-label">
-                <span class="inf-label-row">Pressure State <button type="button" class="inf-help" data-tip-key="pressure" aria-label="Pressure help">?</button></span>
+                <span class="inf-label-row">Pressure <button type="button" class="inf-help" data-tip-key="pressure" aria-label="Pressure help">?</button></span>
               </div>
               <div id="infIntelWatch" class="inf-tile-value">No pressure trace</div>
               <div class="inf-meter"><i id="infIntelWatchBar"></i></div>
@@ -2588,13 +2611,13 @@
 
         <section id="infPresenceShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infRewardTitle" class="inf-panel-title">Reward Tracker</div>
+            <div id="infRewardTitle" class="inf-panel-title">War Contribution</div>
             <span id="infRewardStateChip" class="inf-chip inf-chip-muted">Not eligible</span>
           </div>
-          <div id="infRewardStateText" class="inf-hero-status">Eligibility depends on weekly score and active-day progress.</div>
+          <div id="infRewardStateText" class="inf-hero-status">War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.</div>
           <div class="inf-reward-metric">
             <div class="inf-reward-metric-head">
-              <span class="inf-label-row">Weekly Score <button type="button" class="inf-help" data-tip-key="weekly_score" aria-label="Weekly score help">?</button></span>
+              <span class="inf-label-row">War Contribution <button type="button" class="inf-help" data-tip-key="weekly_score" aria-label="War Contribution help">?</button></span>
               <span id="infRewardScoreValue">0/60</span>
             </div>
             <div class="inf-reward-track"><i id="infRewardScoreBar" style="width:0%;"></i></div>
@@ -2606,7 +2629,7 @@
             </div>
             <div class="inf-reward-track inf-reward-track-days"><i id="infRewardDaysBar" style="width:0%;"></i></div>
           </div>
-          <div id="infRewardHint" class="inf-hint">Weekly rewards may include aura, frame, skin, or raffle entry.</div>
+          <div id="infRewardHint" class="inf-hint">War Rewards may include aura, frame, skin, or raffle entry.</div>
           <div id="infLocalYou" style="display:none;"></div>
           <div id="infLocalProgress" style="display:none;"></div>
           <div id="infPresenceHint" style="display:none;"></div>
@@ -3329,11 +3352,11 @@
       if (localProgressEl) localProgressEl.textContent = "Progress syncing.";
       if (presenceHintEl) presenceHintEl.textContent = "Patrol once to start local trace.";
       if (nodeStateHintEl) nodeStateHintEl.textContent = "Recommended order will update from local pressure.";
-      if (patrolHelpEl) patrolHelpEl.textContent = "Free action · cooldown based. Adds influence, pressure, and weekly rivalry score.";
-      if (watchHelpEl) watchHelpEl.textContent = "Patrol is live. Move now to shape this relay.";
-      if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful to hold or push control.";
+      if (patrolHelpEl) patrolHelpEl.textContent = "Free action - cooldown based. Supports Faction Control and War Contribution.";
+      if (watchHelpEl) watchHelpEl.textContent = "Patrol is live. Move now to support Faction Control here.";
+      if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful for Faction Control and War Contribution.";
       if (ordersLeadEl) ordersLeadEl.textContent = "Recommended order: STABILIZE the relay.";
-      if (warSummaryEl) warSummaryEl.textContent = "Frontline data is syncing.";
+      if (warSummaryEl) warSummaryEl.textContent = "Faction Control data is syncing.";
       if (warChipEl) warChipEl.textContent = "Live feed";
       if (conditionHelpEl) {
         conditionHelpEl.dataset.tipKey = "pressure";
@@ -3362,7 +3385,7 @@
         watchText: "No watch roster",
         viewerPressure: 0,
         leaderPressure: 0,
-        controlText: "Frontline data is syncing.",
+        controlText: "Faction Control data is syncing.",
       });
       setOrdersCooldownText("Patrol ready now. Free action is back online.", "ready");
     };
@@ -3371,7 +3394,7 @@
       leaderEl.textContent = phantomMode ? "Unknown Control" : "-";
       contEl.style.display = "none";
       contEl.textContent = "";
-      controlLineEl.textContent = phantomMode ? "Relay under pressure" : "Frontline data is syncing.";
+      controlLineEl.textContent = phantomMode ? "Relay under pressure" : "Faction Control data is syncing.";
       foot.textContent = "";
 
       paintUxPill(statusEl, phantomMode ? "CALM" : "Secured", uxToneStyles("CALM"));
@@ -3612,9 +3635,9 @@
       controlText: warSummaryEl?.textContent || controlText,
     });
 
-    if (patrolHelpEl) patrolHelpEl.textContent = "Free action · cooldown based. Adds influence, pressure, and weekly rivalry score.";
-    if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol builds influence, pressure, and weekly rivalry score.`;
-    if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful to hold or push control.";
+    if (patrolHelpEl) patrolHelpEl.textContent = "Free action - cooldown based. Supports Faction Control and War Contribution.";
+    if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol supports Faction Control and War Contribution.`;
+    if (donateHelpEl) donateHelpEl.textContent = "Spend materials for stronger node impact. Useful for Faction Control and War Contribution.";
 
     if (_cdUntilMs > Date.now()) {
       setOrdersCooldownText(`Patrol ready in ${fmtCooldownHint(Math.ceil((_cdUntilMs - Date.now()) / 1000))}.`, "cooldown");
@@ -3676,9 +3699,13 @@
       toast(`+${r.gain} influence${hq}`);
       setActionResult("patrol", {
         gain: r.gain,
+        archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
         archiveKeysLeft: r.archiveKeysLeft,
+        archiveKeysEarnedToday: r.archiveKeysEarnedToday,
+        archiveKeyCapReached: r.archiveKeyCapReached,
+        archiveKeyReason: r.archiveKeyReason,
       });
       if (Number(r?.cooldownLeftSec || 0) > 0) startCooldown(r.cooldownLeftSec);
       triggerActionMicroReaction();
@@ -3736,9 +3763,13 @@
       setActionResult("donate", {
         gain: r.gain,
         refunded: r.refunded,
+        archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
         archiveKeysLeft: r.archiveKeysLeft,
+        archiveKeysEarnedToday: r.archiveKeysEarnedToday,
+        archiveKeyCapReached: r.archiveKeyCapReached,
+        archiveKeyReason: r.archiveKeyReason,
       });
       triggerActionMicroReaction();
 
@@ -3782,5 +3813,7 @@
 
   window.Influence = Influence;
 })();
+
+
 
 

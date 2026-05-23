@@ -448,7 +448,7 @@
       urgency: String(node?.urgency || "").trim().toLowerCase(),
       valueTier,
       reasonText: String(node?.reasonText || "This node is a key frontline position.").trim(),
-      rewardText: String(node?.rewardText || "Helping here supports faction territory control.").trim(),
+      rewardText: String(node?.rewardText || "Helping here supports Siege Participation and Faction Control.").trim(),
       statusText: uxStatusText(displayStatus),
     };
   }
@@ -488,7 +488,7 @@
     const rows = Array.isArray(feed) ? feed : [];
     return `
       <div class="siege-card">
-        <div style="font-weight:800;margin-bottom:8px">Siege Feed</div>
+        <div style="font-weight:800;margin-bottom:8px">Siege Participation Feed</div>
         ${
           rows.length
             ? `
@@ -1021,7 +1021,7 @@ function renderBattlePanelHTML(raw, node, cur) {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08)">
           <div>
             <div style="font-weight:800;font-size:17px">Edge of the Chain</div>
-            <div id="siegeSub" style="opacity:.72;font-size:12px">Siege control node</div>
+            <div id="siegeSub" style="opacity:.72;font-size:12px">Siege Participation - control node</div>
           </div>
           <button id="closeSiege" style="
             border:0; border-radius:10px; padding:8px 10px; cursor:pointer;
@@ -1390,7 +1390,7 @@ function renderBattlePanelHTML(raw, node, cur) {
     const fail = findFailure(raw);
     if (fail) {
       const reason = fail.reason || "UNKNOWN";
-      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege control node";
+      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege Participation - control node";
       root.innerHTML = `
         <div class="siege-card">
           Failed to load siege state.<br>
@@ -1419,7 +1419,7 @@ function renderBattlePanelHTML(raw, node, cur) {
     const cooldownText = cooldownLabel(node);
     const ux = getNodeUx(raw, node);
 
-    if (qs("siegeSub")) qs("siegeSub").textContent = `${ux.displayLabel} - ${ux.actionHint}`;
+    if (qs("siegeSub")) qs("siegeSub").textContent = `Siege Participation - ${ux.displayLabel} / ${ux.actionHint}`;
 
     const factionShort = (f) => {
       const key = normFaction(f);
@@ -1528,7 +1528,7 @@ function renderBattlePanelHTML(raw, node, cur) {
         </div>
         <div style="margin-top:9px;font-size:14px;font-weight:700;color:#f6f8ff;">${esc(ux.statusText)}</div>
         <div style="margin-top:6px;font-size:12px;line-height:1.35;opacity:.92;">${esc(`Why: ${ux.reasonText}`)}</div>
-        <div style="margin-top:4px;font-size:12px;line-height:1.35;opacity:.76;">${esc(`Gain: ${ux.rewardText}`)}</div>
+        <div style="margin-top:4px;font-size:12px;line-height:1.35;opacity:.76;">${esc(`Impact: ${ux.rewardText}`)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
           ${frontlineMetaHtml}
         </div>
@@ -1631,7 +1631,7 @@ function renderBattlePanelHTML(raw, node, cur) {
           </div>
         `;
       }
-      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege control node";
+      if (qs("siegeSub")) qs("siegeSub").textContent = "Siege Participation - control node";
       resetActionBar();
       return null;
     }
@@ -1730,4 +1730,5 @@ function renderBattlePanelHTML(raw, node, cur) {
 
   window.Siege = Siege;
 })();
+
 
