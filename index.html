@@ -41,7 +41,7 @@
     --ah-inset-right: max(var(--ah-safe-right), env(safe-area-inset-right, 0px));
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
+  html, body { height: 100%; margin: 0; overflow-x:hidden; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
   a { color: var(--tg-theme-link-color, #aef); }
   /* twarde nadpisanie „black” */
   .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
@@ -1189,8 +1189,30 @@ html.ah-skins-open #heroFrame{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+.map-world-brief[data-mode="selection"]{
+  padding:5px 10px 7px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(180deg, rgba(14,18,28,.72), rgba(9,12,20,.58));
+}
+.map-world-brief[data-mode="selection"] .map-world-brief-line-1{
+  display:block;
+  color:rgba(240,246,255,.96);
+  font-size:11.5px;
+  font-weight:800;
+  letter-spacing:.02em;
+  text-transform:none;
+}
+.map-world-brief[data-mode="selection"] .map-world-brief-line-2{
+  color:rgba(200,221,250,.84);
+  font-size:10px;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+}
 @media (max-width: 640px){
   .map-world-brief-line-1{ display:none; }
+  .map-world-brief[data-mode="selection"] .map-world-brief-line-1{ display:block; }
 }
 .map-pressure-mood{
   display:inline-flex;
@@ -1304,15 +1326,42 @@ html.ah-skins-open #heroFrame{
   min-height: clamp(300px, 54dvh, 500px);
   max-height: min(72dvh, 700px);
   height:auto;
-  background: url("images/map/base/wasteland.jpg") center/cover no-repeat;
   border-radius:16px;
   overflow:hidden;
   box-shadow:0 0 0 1px var(--ring) inset;
   isolation:isolate;
   min-width:0;
+  background:linear-gradient(180deg, rgba(6,9,14,.82), rgba(4,6,10,.92));
+  touch-action:none;
+  user-select:none;
 }
 
 .map::after{
+  content:none;
+}
+
+.map-stage{
+  position:absolute;
+  inset:0 auto auto 0;
+  width:calc(100% * var(--ah-map-stage-scale, 1.65));
+  height:calc(100% * var(--ah-map-stage-scale, 1.65));
+  min-width:100%;
+  min-height:100%;
+  z-index:1;
+  background:
+    url("images/map/base/map.2.0.webp") center/cover no-repeat,
+    url("images/map/base/wasteland.jpg") center/cover no-repeat;
+  transform:translate3d(0,0,0);
+  transform-origin:top left;
+  will-change:transform;
+  cursor:grab;
+}
+
+.map-stage.is-panning{
+  cursor:grabbing;
+}
+
+.map-stage::after{
   content:"";
   position:absolute;
   inset:0;
@@ -1324,7 +1373,115 @@ html.ah-skins-open #heroFrame{
   opacity:.50;
 }
 
-.paths-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+.map-territories{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  user-select:none;
+}
+
+.map-territory{
+  position:absolute;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  opacity:.72;
+  filter:blur(.2px);
+  box-shadow:inset 0 0 40px rgba(255,255,255,.02), 0 0 30px rgba(0,0,0,.10);
+}
+
+.map-territory::after{
+  content:"";
+  position:absolute;
+  inset:8% 10%;
+  border-radius:inherit;
+  border:1px dashed rgba(255,255,255,.06);
+  opacity:.75;
+}
+
+.map-territory-label{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(9,12,18,.20);
+  color:rgba(215,228,245,.34);
+  font:800 10px/1 system-ui, sans-serif;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  text-shadow:0 1px 10px rgba(0,0,0,.34);
+}
+
+.map-territory-core{
+  left:4%;
+  top:45%;
+  width:40%;
+  height:30%;
+  background:
+    radial-gradient(circle at 45% 44%, rgba(132,176,255,.10), rgba(58,82,128,.04) 48%, rgba(10,12,18,0) 74%);
+}
+
+.map-territory-phantom{
+  left:31%;
+  top:24%;
+  width:30%;
+  height:28%;
+  background:
+    radial-gradient(circle at 48% 50%, rgba(84,164,255,.12), rgba(42,84,148,.05) 46%, rgba(10,12,18,0) 74%);
+}
+
+.map-territory-bloodmoon{
+  left:58%;
+  top:18%;
+  width:28%;
+  height:27%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255,74,98,.13), rgba(132,30,52,.05) 50%, rgba(10,12,18,0) 76%);
+}
+
+.map-territory-archive{
+  left:56%;
+  top:63%;
+  width:26%;
+  height:20%;
+  background:
+    radial-gradient(circle at 52% 50%, rgba(110,206,255,.10), rgba(38,92,126,.04) 50%, rgba(10,12,18,0) 76%);
+}
+
+.map-territory-treasury{
+  left:16%;
+  top:70%;
+  width:24%;
+  height:18%;
+  background:
+    radial-gradient(circle at 48% 50%, rgba(255,208,92,.12), rgba(122,96,34,.04) 52%, rgba(10,12,18,0) 78%);
+}
+
+.map-territory-outer{
+  left:68%;
+  top:55%;
+  width:28%;
+  height:30%;
+  background:
+    radial-gradient(circle at 46% 48%, rgba(186,196,210,.08), rgba(70,76,88,.03) 52%, rgba(10,12,18,0) 80%);
+}
+
+@media (max-width: 760px){
+  .map-territory{
+    opacity:.48;
+  }
+
+  .map-territory-label{
+    opacity:.0;
+    transform:translate(-50%,-50%) scale(.96);
+  }
+}
+
+.paths-layer{ position:absolute; inset:0; z-index:1; pointer-events:none; }
 .paths-layer svg{ width:100%; height:100%; }
 
 .pins{ position:absolute; inset:0; z-index:3; }
@@ -3018,6 +3175,81 @@ body.missions-open{
   .chip .chip-faction.f-ew{ color:rgba(255,210,90,1); border-color:rgba(255,210,90,.35); box-shadow:0 0 12px rgba(255,210,90,.18); }
   .chip .chip-faction.f-pb{ color:rgba(255,160,70,1); border-color:rgba(255,160,70,.35); box-shadow:0 0 12px rgba(255,160,70,.18); }
   .chip .chip-faction.f-ih{ color:rgba(90,235,255,1); border-color:rgba(90,235,255,.35); box-shadow:0 0 12px rgba(90,235,255,.16); }
+
+  @media (max-width: 760px){
+    /* Mobile clarity: keep tactical signal, suppress passive text noise. */
+    #map .map-pin .pin-pressure-badges{
+      display:none !important;
+    }
+
+    #map .map-pin.pressure-contested .pin-pressure-badges,
+    #map .map-pin.pressure-hot .pin-pressure-badges,
+    #map .map-pin.pressure-fortified .pin-pressure-badges,
+    #map .map-pin.siege-forming .pin-pressure-badges,
+    #map .map-pin.siege-running .pin-pressure-badges,
+    #map .map-pin.pressure-flashpoint .pin-pressure-badges,
+    #map .map-pin.type-bloodmoon.is-live .pin-pressure-badges,
+    #map .map-pin.type-bloodmoon.is-threatened .pin-pressure-badges,
+    #map .map-pin.type-bloodmoon.is-contested .pin-pressure-badges,
+    #map .map-pin.type-archive.is-live .pin-pressure-badges,
+    #map .map-pin.type-archive.is-threatened .pin-pressure-badges,
+    #map .map-pin.type-archive.is-fortified .pin-pressure-badges,
+    #map .map-pin.type-treasury.pressure-hot .pin-pressure-badges,
+    #map .map-pin.type-treasury.pressure-contested .pin-pressure-badges{
+      display:flex !important;
+    }
+
+    #map .map-pin .chip{
+      max-width:138px;
+    }
+
+    #map .map-pin:not(.active) .chip{
+      display:none !important;
+      padding:4px 8px;
+      gap:4px;
+      background:rgba(8,12,18,.56);
+      border-color:rgba(220,233,250,.12);
+      box-shadow:0 5px 14px rgba(0,0,0,.24);
+      opacity:.92;
+    }
+
+    #map .map-pin.is-live .chip,
+    #map .map-pin.siege-forming .chip,
+    #map .map-pin.siege-running .chip,
+    #map .map-pin.pressure-flashpoint .chip,
+    #map .map-pin.type-bloodmoon.is-live .chip,
+    #map .map-pin.type-bloodmoon.is-threatened .chip,
+    #map .map-pin.type-bloodmoon.is-contested .chip,
+    #map .map-pin.type-archive.is-live .chip,
+    #map .map-pin.type-archive.is-threatened .chip,
+    #map .map-pin.type-archive.is-fortified .chip,
+    #map .map-pin.type-treasury.is-live .chip,
+    #map .map-pin.type-treasury.is-active .chip,
+    #map .map-pin.type-treasury.pressure-hot .chip,
+    #map .map-pin.type-treasury.pressure-contested .chip{
+      display:flex !important;
+    }
+
+    #map .map-pin:not(.active) .chip::before,
+    #map .map-pin:not(.active) .chip .chip-subrow{
+      display:none !important;
+    }
+
+    #map .map-pin:not(.active) .chip .chip-name{
+      max-width:92px;
+      font-size:10px;
+    }
+
+    #map .map-pin.active .chip{
+      max-width:min(70vw, 250px);
+      white-space:normal;
+    }
+
+    #map .map-pin.active .chip .chip-name{
+      max-width:none;
+      white-space:normal;
+    }
+  }
 </style>
   <style id="map-landmark-themes-css">
 /* =========================
@@ -5018,6 +5250,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
           </div>
           <div id="map" class="map" data-map-root>
+            <div class="map-territories" aria-hidden="true">
+              <div class="map-territory map-territory-core"><span class="map-territory-label">Core Ruins</span></div>
+              <div class="map-territory map-territory-phantom"><span class="map-territory-label">Phantom Front</span></div>
+              <div class="map-territory map-territory-bloodmoon"><span class="map-territory-label">Blood-Moon Sector</span></div>
+              <div class="map-territory map-territory-archive"><span class="map-territory-label">Burned Archive Sector</span></div>
+              <div class="map-territory map-territory-treasury"><span class="map-territory-label">Treasury Signal Zone</span></div>
+              <div class="map-territory map-territory-outer"><span class="map-territory-label">Outer Wasteland / Future Region</span></div>
+            </div>
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
 <div class="pins" id="pins"></div>
 <canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
@@ -5730,7 +5970,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-03-18a";
+    window.WEBAPP_VER = "2026-05-23a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -6739,8 +6979,12 @@ document.addEventListener("click", async (e) => {
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
-        const pinsEl = document.getElementById("pins") || createPinsLayer(mapRoot);
-        const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapRoot);
+        const MAP_STAGE_SCALE = 1.65;
+        const MAP_PAN_DRAG_THRESHOLD = 10;
+        const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
+        const mapStageEl = ensureMapStage(mapRoot);
+        const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
+        const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapStageEl);
         let DATA = null;
         const VIEW_W = 1000, VIEW_H = 562;
         let regionsUnlocked = new Set();
@@ -6749,6 +6993,39 @@ document.addEventListener("click", async (e) => {
         let PLAYER_STATE = null;
         let PROFILE = null;
         let ACTIVE_PIN_ID = null;
+        const mapPanState = {
+          x: 0,
+          y: 0,
+          minX: 0,
+          maxX: 0,
+          minY: 0,
+          maxY: 0,
+          pointerId: null,
+          startX: 0,
+          startY: 0,
+          originX: 0,
+          originY: 0,
+          dragging: false,
+          dragMoved: false,
+          suppressClickUntil: 0,
+          hasCenteredOnce: false
+        };
+
+        function ensureMapStage(root){
+          if (!root) return null;
+          let stage = document.getElementById("mapStage");
+          if (stage && root.contains(stage)) {
+            root.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+            return stage;
+          }
+          stage = document.createElement("div");
+          stage.id = "mapStage";
+          stage.className = "map-stage";
+          while (root.firstChild) stage.appendChild(root.firstChild);
+          root.appendChild(stage);
+          root.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+          return stage;
+        }
 
         function createPathsLayer(root){
           const layer = document.createElement("div");
@@ -6763,6 +7040,286 @@ document.addEventListener("click", async (e) => {
           const layer = document.createElement("div");
           layer.className = "pins"; layer.id = "pins";
           root.appendChild(layer); return layer;
+        }
+
+        function clampMapPan(nextX, nextY){
+          const viewportWidth = mapRoot?.clientWidth || 0;
+          const viewportHeight = mapRoot?.clientHeight || 0;
+          const stageWidth = mapStageEl?.offsetWidth || viewportWidth;
+          const stageHeight = mapStageEl?.offsetHeight || viewportHeight;
+
+          const minX = Math.min(0, viewportWidth - stageWidth);
+          const minY = Math.min(0, viewportHeight - stageHeight);
+          const maxX = 0;
+          const maxY = 0;
+
+          mapPanState.minX = minX;
+          mapPanState.maxX = maxX;
+          mapPanState.minY = minY;
+          mapPanState.maxY = maxY;
+
+          return {
+            x: Math.min(maxX, Math.max(minX, nextX)),
+            y: Math.min(maxY, Math.max(minY, nextY))
+          };
+        }
+
+        function applyMapPan(nextX, nextY){
+          if (!mapStageEl) return;
+          const clamped = clampMapPan(nextX, nextY);
+          mapPanState.x = clamped.x;
+          mapPanState.y = clamped.y;
+          mapStageEl.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+        }
+
+        function getInitialMapFocusPoint(){
+          const nodes = Array.isArray(DATA?.nodes) ? DATA.nodes : [];
+          if (!nodes.length) return { x: 38, y: 58 };
+          const focusNodes = MAP_INITIAL_FOCUS_IDS
+            .map((id) => nodes.find((node) => String(node?.id || node?.buildingId || "") === id))
+            .filter(Boolean);
+          const list = focusNodes.length ? focusNodes : nodes;
+          const sum = list.reduce((acc, node) => {
+            acc.x += Number(node?.x || 0);
+            acc.y += Number(node?.y || 0);
+            return acc;
+          }, { x: 0, y: 0 });
+          return {
+            x: sum.x / list.length,
+            y: sum.y / list.length
+          };
+        }
+
+        function centerMapOn(point){
+          if (!mapRoot || !mapStageEl) return;
+          const viewportWidth = mapRoot.clientWidth || 0;
+          const viewportHeight = mapRoot.clientHeight || 0;
+          const stageWidth = mapStageEl.offsetWidth || viewportWidth;
+          const stageHeight = mapStageEl.offsetHeight || viewportHeight;
+          const targetX = Number(point?.x || 0) / 100;
+          const targetY = Number(point?.y || 0) / 100;
+          const desiredX = (viewportWidth * 0.5) - (stageWidth * targetX);
+          const desiredY = (viewportHeight * 0.5) - (stageHeight * targetY);
+          applyMapPan(desiredX, desiredY);
+        }
+
+        function refreshMapStage(options = {}){
+          if (!mapRoot || !mapStageEl) return;
+          mapRoot.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+          if (options.recenter) {
+            centerMapOn(getInitialMapFocusPoint());
+            mapPanState.hasCenteredOnce = true;
+            return;
+          }
+          applyMapPan(mapPanState.x, mapPanState.y);
+        }
+
+        function bindMapPan(){
+          if (!mapRoot || !mapStageEl || mapRoot.dataset.panBound === "1") return;
+          mapRoot.dataset.panBound = "1";
+
+          mapRoot.addEventListener("pointerdown", (event) => {
+            if (!event.isPrimary || mapPanState.pointerId !== null) return;
+            mapPanState.pointerId = event.pointerId;
+            mapPanState.startX = event.clientX;
+            mapPanState.startY = event.clientY;
+            mapPanState.originX = mapPanState.x;
+            mapPanState.originY = mapPanState.y;
+            mapPanState.dragging = true;
+            mapPanState.dragMoved = false;
+            mapStageEl.classList.add("is-panning");
+            try { mapRoot.setPointerCapture(event.pointerId); } catch (_) {}
+          });
+
+          mapRoot.addEventListener("pointermove", (event) => {
+            if (!mapPanState.dragging || event.pointerId !== mapPanState.pointerId) return;
+            const dx = event.clientX - mapPanState.startX;
+            const dy = event.clientY - mapPanState.startY;
+            if (!mapPanState.dragMoved && Math.hypot(dx, dy) >= MAP_PAN_DRAG_THRESHOLD) {
+              mapPanState.dragMoved = true;
+            }
+            if (!mapPanState.dragMoved) return;
+            event.preventDefault();
+            applyMapPan(mapPanState.originX + dx, mapPanState.originY + dy);
+          });
+
+          function endMapDrag(event){
+            if (event.pointerId !== mapPanState.pointerId) return;
+            const dragged = mapPanState.dragMoved;
+            mapPanState.pointerId = null;
+            mapPanState.dragging = false;
+            mapPanState.dragMoved = false;
+            mapStageEl.classList.remove("is-panning");
+            try { mapRoot.releasePointerCapture(event.pointerId); } catch (_) {}
+            if (dragged) {
+              // Suppress the synthetic click that browsers dispatch after a real drag.
+              mapPanState.suppressClickUntil = performance.now() + 220;
+            }
+          }
+
+          mapRoot.addEventListener("pointerup", endMapDrag);
+          mapRoot.addEventListener("pointercancel", endMapDrag);
+          mapRoot.addEventListener("pointerleave", (event) => {
+            if (event.pointerId === mapPanState.pointerId && !mapRoot.hasPointerCapture?.(event.pointerId)) {
+              endMapDrag(event);
+            }
+          });
+
+          mapRoot.addEventListener("click", (event) => {
+            if (performance.now() > mapPanState.suppressClickUntil) return;
+            if (!event.target?.closest?.(".hotspot, .map-pin")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }, true);
+
+          window.addEventListener("resize", () => {
+            if (mapBack?.style?.display !== "flex") return;
+            refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
+          });
+        }
+
+        function selectedMapNode(){
+          const activeId = String(ACTIVE_PIN_ID || "").trim();
+          if (!activeId || !Array.isArray(DATA?.nodes)) return null;
+          return DATA.nodes.find((node) => String(node?.id || "").trim() === activeId) || null;
+        }
+
+        function selectedMapPin(){
+          const activeId = String(ACTIVE_PIN_ID || "").trim();
+          if (!activeId || !pinsEl) return null;
+          return Array.from(pinsEl.querySelectorAll(".map-pin")).find((pin) => String(pin?.dataset?.nodeId || "").trim() === activeId) || null;
+        }
+
+        function normalizeSelectionStatus(raw){
+          const key = String(raw || "").trim().toUpperCase();
+          if (!key) return "";
+          if (key === "SIEGE_LIVE") return "LIVE";
+          if (key === "SIEGE_FORMING") return "SIEGE FORMING";
+          if (key === "SIEGE_COOLDOWN") return "SIEGE COOLDOWN";
+          return key.replaceAll("_", " ");
+        }
+
+        function selectedNodeStatusLabel(pinEl){
+          if (!pinEl) return "";
+          const chipState = String(pinEl.querySelector(".chip-state.node-visual-state")?.textContent || "").trim();
+          if (chipState) return chipState;
+
+          const direct = normalizeSelectionStatus(pinEl.dataset.displayStatus || pinEl.dataset.pressureDerivedStatus);
+          if (direct) return direct;
+          if (pinEl.classList.contains("siege-running")) return "LIVE";
+          if (pinEl.classList.contains("siege-forming")) return "SIEGE FORMING";
+          if (pinEl.classList.contains("pressure-contested") || pinEl.classList.contains("is-contested")) return "CONTESTED";
+          if (pinEl.classList.contains("pressure-hot") || pinEl.classList.contains("is-threatened")) return "HOT";
+          if (pinEl.classList.contains("pressure-fortified") || pinEl.classList.contains("is-fortified")) return "FORTIFIED";
+          if (pinEl.classList.contains("is-live")) return "LIVE";
+          if (pinEl.classList.contains("is-active")) return "ACTIVE";
+          return "";
+        }
+
+        function selectedNodeActionLabel(node, pinEl){
+          const bid = String(node?.buildingId || node?.id || "").trim();
+          const action = String(node?.action || "").trim();
+          const actionHint = String(pinEl?.dataset?.actionHint || "").trim();
+
+          if (bid === "phantom_nodes") return "Open Phantom Nodes";
+          if (bid === "blood_moon_tower" || action === "open_bloodmoon") return "Open Blood-Moon";
+          if (bid === "edge_of_chain" || action === "open_siege") return "Open Siege";
+          if (bid === "burned_archive" || action === "open_burned_archive") return "Open Burned Archive";
+          if (bid === "howl_treasury" || action === "open_howl_treasury") return "Open HOWL Treasury";
+          if (bid === "oracle_void_doorway" || action === "open_oracle") return "Open Oracle";
+          if (bid === "alpha_network_hq" || action === "open_faction_hq") return "Open Faction HQ";
+          if (action === "open_campaign") return "Open Campaign";
+          if (action === "open_missions") return "Open Missions";
+          if (action === "building_enter") return "Enter node";
+          if (action === "coming_soon") return "Coming soon";
+          if (actionHint) return actionHint;
+          return "Open node";
+        }
+
+        function selectedNodeGuidanceHint(node, pinEl){
+          const bid = String(node?.buildingId || node?.id || "").trim();
+          const action = String(node?.action || "").trim();
+
+          if (pinEl?.classList?.contains("siege-forming")) return "Siege forming - join or watch the clash.";
+          if (pinEl?.classList?.contains("siege-running")) return "Siege live - join or watch the clash.";
+          if (pinEl?.classList?.contains("pressure-contested") || pinEl?.classList?.contains("is-contested")) return "Contested zone - patrol, donate or join the fight.";
+          if (pinEl?.classList?.contains("pressure-hot") || pinEl?.classList?.contains("is-threatened")) return "High activity - act here to push pressure.";
+          if (pinEl?.classList?.contains("pressure-fortified") || pinEl?.classList?.contains("is-fortified")) return "Fortified - defend or keep pressure stable.";
+          if (bid === "blood_moon_tower" || action === "open_bloodmoon" || pinEl?.classList?.contains("type-bloodmoon")) return "PvE threat - push tower progress.";
+          if (bid === "burned_archive" || action === "open_burned_archive" || pinEl?.classList?.contains("type-archive")) return "Signal anomaly - investigate archive activity.";
+          if (bid === "howl_treasury" || action === "open_howl_treasury" || pinEl?.classList?.contains("type-treasury")) return "Support signal - check treasury activity.";
+          if (bid === "phantom_nodes" || pinEl?.classList?.contains("type-phantom")) return "Network front - check relay pressure here.";
+          if (bid === "edge_of_chain" || action === "open_siege" || pinEl?.classList?.contains("type-siege")) return "Frontline breach - watch the edge pressure.";
+          if (pinEl?.classList?.contains("is-live")) return "Live pressure - move here while the window is open.";
+          if (pinEl?.classList?.contains("is-active")) return "Active node - check the current world pulse.";
+          return "Tap again to open this location.";
+        }
+
+        function __updateMapSelectionBriefLegacy(){
+          const root = document.getElementById("mapWorldBrief");
+          if (!root) return;
+          const line1El = root.querySelector('[data-line="1"]');
+          const line2El = root.querySelector('[data-line="2"]');
+          if (!line1El || !line2El) return;
+
+          const node = selectedMapNode();
+          const pinEl = selectedMapPin();
+          if (!node || !pinEl) {
+            delete root.dataset.mode;
+            return;
+          }
+
+          const statusLabel = selectedNodeStatusLabel(pinEl);
+          const actionLabel = selectedNodeActionLabel(node, pinEl);
+
+          root.dataset.mode = "selection";
+          line1El.textContent = String(node?.name || "Selected node");
+          line2El.textContent = [statusLabel, `Second tap: ${actionLabel}`].filter(Boolean).join(" • ");
+        }
+
+        function __updateMapSelectionBriefGuidanceOld(){
+          const root = document.getElementById("mapWorldBrief");
+          if (!root) return;
+          const line1El = root.querySelector('[data-line="1"]');
+          const line2El = root.querySelector('[data-line="2"]');
+          if (!line1El || !line2El) return;
+
+          const node = selectedMapNode();
+          const pinEl = selectedMapPin();
+          if (!node || !pinEl) {
+            delete root.dataset.mode;
+            return;
+          }
+
+          const statusLabel = selectedNodeStatusLabel(pinEl);
+          const guidanceHint = selectedNodeGuidanceHint(node, pinEl);
+
+          root.dataset.mode = "selection";
+          line1El.textContent = String(node?.name || "Selected node");
+          line2El.textContent = [statusLabel, guidanceHint].filter(Boolean).join(" • ");
+        }
+
+        function updateMapSelectionBrief(){
+          const root = document.getElementById("mapWorldBrief");
+          if (!root) return;
+          const line1El = root.querySelector('[data-line="1"]');
+          const line2El = root.querySelector('[data-line="2"]');
+          if (!line1El || !line2El) return;
+
+          const node = selectedMapNode();
+          const pinEl = selectedMapPin();
+          if (!node || !pinEl) {
+            delete root.dataset.mode;
+            return;
+          }
+
+          const statusLabel = selectedNodeStatusLabel(pinEl);
+          const guidanceHint = selectedNodeGuidanceHint(node, pinEl);
+
+          root.dataset.mode = "selection";
+          line1El.textContent = String(node?.name || "Selected node");
+          line2El.textContent = [statusLabel, guidanceHint].filter(Boolean).join(" - ");
         }
 
         function resolveLabelCollisions(){
@@ -6801,6 +7358,7 @@ document.addEventListener("click", async (e) => {
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
           window.DATA = DATA;
           renderMap();
+          refreshMapStage({ recenter: !mapPanState.hasCenteredOnce });
         }
 
         function escMapHtml(value){
@@ -7664,6 +8222,7 @@ async function loadPlayerState() {
 
       // ✅ INFLUENCE: dociągnij leaders i nałóż na mapę
       try { await window.AHMap?.refreshLeaders?.({ reason: "loadPlayerState" }); } catch (e) { console.warn("leaders load failed", e); }
+      updateMapSelectionBrief();
     }
 
     // ✅ na koniec doładuj profil (to też ustawi buffy przez setActiveBuffs)
@@ -7864,6 +8423,7 @@ function isRegionUnlocked(regionId){
       if (String(ACTIVE_PIN_ID || "") !== id) {
         ACTIVE_PIN_ID = id;
         renderPins();
+        updateMapSelectionBrief();
         return;
       }
 
@@ -8084,7 +8644,7 @@ function isRegionUnlocked(regionId){
           try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
         }
 
-        function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); }
+        function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); updateMapSelectionBrief(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
@@ -8549,6 +9109,8 @@ const actions = {
     if (window.DBG) console.debug("[map] open", { source: "button" });
     mapBack.style.display = "flex";
     navOpen("mapBack");
+    bindMapPan();
+    requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
     if (!DATA) loadMapData();
     loadPlayerState();
   },
@@ -8641,7 +9203,7 @@ function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId
 
 mapRoot?.addEventListener("click", (e) => {
   if (e.target !== mapRoot) return;
-  const r = mapRoot.getBoundingClientRect();
+  const r = (mapStageEl || mapRoot).getBoundingClientRect();
   const x = ((e.clientX - r.left)/r.width*100).toFixed(1);
   const y = ((e.clientY - r.top) /r.height*100).toFixed(1);
   console.log("coords:", x, y);
@@ -8965,6 +9527,8 @@ async function showSection(name){
       if (window.DBG) console.debug("[map] open", { source: "showSection" });
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
+      bindMapPan();
+      requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
       if (!DATA) loadMapData();
       loadPlayerState();
       break;
