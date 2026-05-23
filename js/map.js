@@ -1592,6 +1592,7 @@
   function _updateMapWorldBrief(summary) {
     const root = document.getElementById("mapWorldBrief");
     if (!root) return;
+    if (root.dataset.mode === "selection") return;
 
     const line1El = root.querySelector('[data-line="1"]');
     const line2El = root.querySelector('[data-line="2"]');
