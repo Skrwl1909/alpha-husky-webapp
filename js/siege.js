@@ -39,6 +39,7 @@
   let _busy = false;
   let _busyBtnId = "";
   let _busyBtnLabel = "Processing...";
+  let _inlineResultHint = "";
 
   function getApiPost() {
     const fn =
@@ -107,6 +108,12 @@
       siege_next: "Next fight advanced."
     };
     return `${line1}\n${line2Map[prefix] || "Siege status refreshed."}`;
+  }
+
+  function setInlineResultHint(text) {
+    _inlineResultHint = String(text || "").trim();
+    const resultEl = qs("siegeResultHint");
+    if (resultEl) resultEl.textContent = _inlineResultHint || SIEGE_ACTION_HINTS.result;
   }
 
   function normFaction(v) {
@@ -644,7 +651,7 @@
   function updateActionHints() {
     const primaryEl = qs("siegeActionHint");
     const resultEl = qs("siegeResultHint");
-    if (resultEl) resultEl.textContent = SIEGE_ACTION_HINTS.result;
+    if (resultEl) resultEl.textContent = _inlineResultHint || SIEGE_ACTION_HINTS.result;
     if (!primaryEl) return;
 
     const priority = ["siegeWatch", "siegeJoin", "siegeLaunch", "siegeNext"];
@@ -1190,6 +1197,7 @@ function renderBattlePanelHTML(raw, node, cur) {
       .siege-hint{
         font-size:12px;
         line-height:1.35;
+        white-space:pre-line;
         color:rgba(221,238,255,.82);
         padding:8px 10px;
         border-radius:12px;
@@ -1476,12 +1484,14 @@ function renderBattlePanelHTML(raw, node, cur) {
 
   function open() {
     ensureModal();
+    setInlineResultHint("");
     const back = qs("siegeBack");
     if (back) back.style.display = "flex";
     loadState();
   }
 
   function close() {
+    setInlineResultHint("");
     cleanupBattleStage();
     const el = qs("siegeBack");
     if (el) el.style.display = "none";
@@ -1793,7 +1803,7 @@ function renderBattlePanelHTML(raw, node, cur) {
       } else {
         const feedback = buildSiegeSuccessFeedback(prefix, rawOut);
         if (feedback) {
-          showAlert(feedback);
+          setInlineResultHint(feedback);
         }
         try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       }

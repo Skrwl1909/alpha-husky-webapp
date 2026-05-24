@@ -1544,8 +1544,29 @@
     score += Math.min(18, Number(pressure.heat || 0));
     return score;
   }
-  function _updateMapPressureMood(summary, dominance) {
+
+  function _ensureMapPressureMoodRow() {
     const el = document.getElementById("mapPressureMood");
+    const head = document.querySelector("#mapBack .map-head");
+    if (!el || !head) return { el, wrap: null };
+
+    let wrap = document.getElementById("mapHeadStatus");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "mapHeadStatus";
+      wrap.className = "map-head-status";
+      wrap.hidden = true;
+      head.appendChild(wrap);
+    } else if (wrap.parentElement !== head) {
+      head.appendChild(wrap);
+    }
+
+    if (el.parentElement !== wrap) wrap.appendChild(el);
+    return { el, wrap };
+  }
+
+  function _updateMapPressureMood(summary, dominance) {
+    const { el, wrap } = _ensureMapPressureMoodRow();
     if (!el) return;
 
     const counts = summary || {};
@@ -1577,6 +1598,7 @@
         '<span class="ah-dom-main">' + esc(mainText) + '</span>' +
       '</span>' +
       (subText ? '<span class="ah-dom-sub">' + esc(subText) + '</span>' : '');
+    if (wrap) wrap.hidden = false;
     el.hidden = false;
   }
 
