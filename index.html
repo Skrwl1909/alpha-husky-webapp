@@ -753,56 +753,7 @@ html.ah-skins-open #heroFrame{
   }
 }
 
-/* =========================
-   Active Buffs line — overlay
-   (NIE wpływa na layout kolumn)
-   ========================= */
-#buffsLine.buffs-line{
-  position: fixed;
-  left: 14px;
-  bottom: calc(86px + env(safe-area-inset-bottom)); /* ✅ nad navem */
-  z-index: 6;
-
-  width: max-content;
-  max-width: min(72vw, 240px);
-
-  margin: 0;
-  padding: 6px 10px;
-  border-radius: 12px;
-
-  font-size: 12px;
-  line-height: 1.2;
-  color: #d9f2ff;
-
-  background: rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.10);
-  backdrop-filter: blur(8px);
-
-  text-align: center;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  cursor: pointer;
-  user-select: none;
-  box-shadow: 0 8px 18px rgba(0,0,0,.35);
-
-  box-sizing: border-box;
-  transition: opacity .15s ease, transform .08s ease;
-  opacity: .95;
-}
-
-#buffsLine.buffs-line:hover{ opacity: 1; }
-#buffsLine.buffs-line:active{ transform: translateY(1px); }
-
-.buffs-line:hover{ opacity: 1; }
-
 .hero-center{ min-width: 0; }
-
-.buffs-line:active{
-  transform: translateY(1px);
-}
 
 .btn {
   appearance:none; border:none; padding:12px 16px; border-radius:16px; color:var(--txt);
@@ -1157,9 +1108,20 @@ html.ah-skins-open #heroFrame{
   overflow:hidden;
 }
 
-.map-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 2px 6px; flex:0 0 auto; }
-.map-head-main{ display:flex; align-items:center; gap:8px; min-width:0; }
-.map-head-actions{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+.map-head {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:
+    "main actions"
+    "status status";
+  align-items:center;
+  gap:8px;
+  padding:4px 2px 6px;
+  flex:0 0 auto;
+}
+.map-head-main{ grid-area:main; display:flex; align-items:center; gap:8px; min-width:0; }
+.map-head-actions{ grid-area:actions; display:flex; align-items:center; gap:6px; flex:0 0 auto; min-width:0; }
+.map-head-status{ grid-area:status; display:flex; justify-content:flex-end; min-width:0; }
 .map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
 .map-intel-btn{
   min-height:30px;
@@ -1500,13 +1462,18 @@ html.ah-skins-open #heroFrame{
 }
 @media (max-width: 640px){
   .map-head{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:
+      "main main"
+      "actions actions"
+      "status status";
     align-items:flex-start;
     gap:6px;
     padding:3px 2px 4px;
   }
   .map-head-main{
-    flex:1 1 100%;
-    justify-content:space-between;
+    width:100%;
+    justify-content:flex-start;
     gap:6px;
   }
   .map-head-actions{
@@ -1538,6 +1505,10 @@ html.ah-skins-open #heroFrame{
     align-items:center;
     gap:4px;
     padding:3px;
+  }
+  .map-head-status{
+    width:100%;
+    justify-content:flex-start;
   }
   .map-zoom-btn{
     min-width:34px;
@@ -1631,6 +1602,7 @@ html.ah-skins-open #heroFrame{
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  max-width:100%;
   min-height:20px;
   padding:3px 8px;
   border-radius:999px;
@@ -5341,6 +5313,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div id="app" class="ui">
   <div class="topbar">
     <div id="player">Alpha Husky</div>
+    <div id="topbarSignals" class="topbar-signals-slot" hidden></div>
 
     <div class="badge faction-pill" id="faction">
       <!-- ✅ Faction badge (AAA crest) -->
@@ -8666,7 +8639,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
     try {
       window.setActiveBuffs?.(
         p.buffsLine || "",
-        Array.isArray(p.buffs) ? p.buffs : []
+        Array.isArray(p.activeBuffs) ? p.activeBuffs : (Array.isArray(p.buffs) ? p.buffs : [])
       );
     } catch (_) {}
     window.__ahPerf?.boot?.("loadProfile.render", renderPerfT0);
@@ -8843,8 +8816,6 @@ async function loadPlayerState() {
     }
 
     renderTopbar();
-    try { window.setActiveBuffs?.("✨ UI TEST BUFF", [{ desc: "UI TEST BUFF" }]); } catch (_) {}
-
     // ✅ KROK 4: jeśli topbar przebudował HUD, odmaluj buffy z buffs.js
     try { window.paintBuffs?.(); } catch (_) {}
 
