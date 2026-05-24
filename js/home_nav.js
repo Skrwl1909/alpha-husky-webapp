@@ -134,6 +134,17 @@
     openBack("shareBack");
   }
 
+  function syncBadgeMenuCopy() {
+    const row = document.querySelector('#charBack [data-action="badges"]');
+    if (!row) return;
+
+    const title = row.querySelector(".ah-character-title");
+    const sub = row.querySelector(".ah-character-sub");
+
+    if (title) title.textContent = "Badges & Titles";
+    if (sub) sub.textContent = "Manage prestige badges and active title";
+  }
+
   // ---------- Hub/Char actions ----------
   function routeAction(action) {
     const A = String(action || "").toLowerCase();
@@ -307,6 +318,8 @@
   }
 
   function init() {
+    syncBadgeMenuCopy();
+
     // backdrops
     wireBackdropClose("hubBack");
     wireBackdropClose("charBack");

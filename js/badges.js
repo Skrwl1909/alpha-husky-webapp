@@ -14,14 +14,23 @@
   let ownedPill;
   let activePill;
   let featuredPill;
+  let titlePanelValue;
+  let titlePanelButton;
   let statusBox;
   let gridBox;
   let emptyBox;
   let detailBox;
+  let titlePickerBack;
+  let titlePickerCloseBtn;
+  let titlePickerStatus;
+  let titlePickerList;
+  let titlePickerEmpty;
   let _selectedBadgeKey = "";
   let _draftFeaturedBadgeKeys = [];
   let _featuredDirty = false;
   let _savingFeatured = false;
+  let _loadingTitleState = false;
+  let _settingTitleState = false;
 
   let _state = {
     badges: [],
@@ -29,7 +38,18 @@
     activeBadgeKey: "",
     featuredBadgeKeys: [],
   };
+  let _titleState = {
+    activeTitle: "",
+    displayTitle: "",
+    titles: [],
+  };
   const MAX_FEATURED_BADGES = 3;
+  const INVALID_TITLE_VALUES = new Set(["", "NO TITLE", "NO ACTIVE TITLE"]);
+  const TITLE_SOURCE_CLASS = {
+    quest: "is-quest",
+    legacy: "is-legacy",
+    badge_prestige: "is-badge-prestige",
+  };
 
   const RARITY_CLASS = {
     common: "is-common",
@@ -86,6 +106,70 @@
     return String(value || "").trim().toUpperCase();
   }
 
+  function normalizeTitleText(value) {
+    const text = String(value || "").trim();
+    return INVALID_TITLE_VALUES.has(text.toUpperCase()) ? "" : text;
+  }
+
+  function titleMatch(option, activeTitle) {
+    const active = normalizeTitleText(activeTitle);
+    if (!active || !option) return false;
+    return toKey(option.key) === toKey(active) || toKey(option.label) === toKey(active);
+  }
+
+  function normalizeTitleState(payload) {
+    const rawTitles = Array.isArray(payload?.titles) ? payload.titles : [];
+    const out = [];
+    const seen = new Set();
+    const activeTitle = normalizeTitleText(payload?.activeTitle || payload?.active_title || "");
+    let displayTitle = normalizeTitleText(payload?.displayTitle || payload?.display_title || activeTitle);
+
+    for (const raw of rawTitles) {
+      const key = normalizeTitleText(raw?.key);
+      const label = normalizeTitleText(raw?.label) || key;
+      if (!key || !label) continue;
+
+      const norm = toKey(key);
+      if (seen.has(norm)) continue;
+      seen.add(norm);
+
+      const source = TITLE_SOURCE_CLASS[String(raw?.source || "").trim()] ? String(raw.source).trim() : "legacy";
+      out.push({
+        key,
+        label,
+        source,
+        active: !!raw?.active,
+      });
+    }
+
+    let activeFound = false;
+    for (const option of out) {
+      const isActive = !!option.active || titleMatch(option, activeTitle);
+      option.active = isActive;
+      if (isActive) {
+        activeFound = true;
+        if (!displayTitle) displayTitle = option.label;
+      }
+    }
+
+    if (!activeFound && activeTitle) {
+      for (const option of out) {
+        if (titleMatch(option, activeTitle)) {
+          option.active = true;
+          activeFound = true;
+          if (!displayTitle) displayTitle = option.label;
+          break;
+        }
+      }
+    }
+
+    return {
+      activeTitle,
+      displayTitle,
+      titles: out,
+    };
+  }
+
   function normalizeFeaturedKeys(list) {
     const input = Array.isArray(list) ? list : [];
     const out = [];
@@ -127,6 +211,7 @@
           rgba(2,5,10,.78);
       }
       #badgeWallBack .ah-bw-card{
+        position:relative;
         width:min(96vw, 560px);
         max-height:88vh;
         overflow:hidden;
@@ -179,6 +264,46 @@
         display:flex;
         flex-wrap:wrap;
         gap:6px;
+      }
+      #badgeWallBack .ah-bw-title-panel{
+        border:1px solid rgba(165,196,226,.18);
+        border-radius:12px;
+        background:rgba(10,18,30,.72);
+        padding:10px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+      #badgeWallBack .ah-bw-title-copy{
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:3px;
+      }
+      #badgeWallBack .ah-bw-title-label{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.16px;
+        text-transform:uppercase;
+        color:rgba(185,208,230,.78);
+      }
+      #badgeWallBack .ah-bw-title-value{
+        font-size:13px;
+        line-height:1.25;
+        font-weight:900;
+        color:#f2f8ff;
+        word-break:break-word;
+      }
+      #badgeWallBack .ah-bw-title-value.is-empty{
+        color:rgba(189,211,232,.72);
+      }
+      #badgeWallBack .ah-bw-title-panel .btn{
+        min-width:108px;
+        min-height:32px;
+        border-radius:10px;
+        white-space:nowrap;
+        flex-shrink:0;
       }
       #badgeWallBack .ah-bw-pill{
         display:inline-flex;
@@ -400,6 +525,155 @@
         min-height:30px;
         border-radius:9px;
       }
+      #badgeWallBack .ah-bw-picker-back{
+        position:absolute;
+        inset:0;
+        z-index:2;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+        padding:12px;
+        background:rgba(2,5,10,.54);
+      }
+      #badgeWallBack .ah-bw-picker-back[hidden]{
+        display:none;
+      }
+      #badgeWallBack .ah-bw-picker{
+        width:min(100%, 520px);
+        max-height:min(72vh, 560px);
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+        border-radius:16px;
+        border:1px solid rgba(179,208,234,.2);
+        background:
+          radial-gradient(circle at 10% -20%, rgba(119,156,206,.14), transparent 52%),
+          linear-gradient(180deg, rgba(18,24,36,.98), rgba(10,13,20,.98));
+        box-shadow:0 18px 46px rgba(0,0,0,.46);
+      }
+      #badgeWallBack .ah-bw-picker-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        padding:12px 12px 8px;
+      }
+      #badgeWallBack .ah-bw-picker-title{
+        margin:0;
+        font-size:15px;
+        font-weight:900;
+        color:#f3f8ff;
+      }
+      #badgeWallBack .ah-bw-picker-close{
+        min-width:42px;
+        min-height:30px;
+        border-radius:10px;
+      }
+      #badgeWallBack .ah-bw-picker-status{
+        margin:0 12px 8px;
+        padding:7px 9px;
+        border-radius:10px;
+        border:1px solid rgba(165,196,226,.16);
+        background:rgba(11,17,27,.58);
+        color:rgba(210,229,246,.86);
+        font-size:11px;
+        line-height:1.3;
+      }
+      #badgeWallBack .ah-bw-picker-status[data-kind="error"]{
+        border-color:rgba(224,104,104,.3);
+        color:#ffc4c4;
+        background:rgba(45,16,21,.6);
+      }
+      #badgeWallBack .ah-bw-picker-list{
+        overflow:auto;
+        padding:0 12px 12px;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      #badgeWallBack .ah-bw-picker-empty{
+        margin:0 12px 12px;
+        border:1px dashed rgba(174,199,224,.2);
+        border-radius:12px;
+        padding:16px 12px;
+        text-align:center;
+        font-size:11px;
+        color:rgba(196,217,236,.72);
+        background:rgba(11,17,27,.58);
+      }
+      #badgeWallBack .ah-bw-title-option{
+        width:100%;
+        appearance:none;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(178,202,226,.18);
+        background:rgba(12,20,34,.7);
+        color:#eff7ff;
+        text-align:left;
+        cursor:pointer;
+      }
+      #badgeWallBack .ah-bw-title-option.is-active{
+        border-color:rgba(247,203,124,.42);
+        box-shadow:0 0 0 1px rgba(247,203,124,.18);
+      }
+      #badgeWallBack .ah-bw-title-option:disabled{
+        cursor:default;
+        opacity:.72;
+      }
+      #badgeWallBack .ah-bw-title-option-copy{
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+      }
+      #badgeWallBack .ah-bw-title-option-label{
+        font-size:13px;
+        line-height:1.25;
+        font-weight:800;
+        color:#eff7ff;
+        word-break:break-word;
+      }
+      #badgeWallBack .ah-bw-title-option-meta{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+      }
+      #badgeWallBack .ah-bw-title-chip{
+        display:inline-flex;
+        align-items:center;
+        min-height:20px;
+        padding:2px 8px;
+        border-radius:999px;
+        border:1px solid rgba(190,217,242,.16);
+        background:rgba(255,255,255,.04);
+        color:rgba(203,224,243,.84);
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.12px;
+      }
+      #badgeWallBack .ah-bw-title-chip.is-quest{
+        border-color:rgba(132,210,164,.26);
+        color:#cff3db;
+      }
+      #badgeWallBack .ah-bw-title-chip.is-legacy{
+        border-color:rgba(162,195,230,.24);
+        color:#d9ecff;
+      }
+      #badgeWallBack .ah-bw-title-chip.is-badge-prestige{
+        border-color:rgba(247,203,124,.3);
+        color:#ffe3ae;
+      }
+      #badgeWallBack .ah-bw-title-active{
+        flex-shrink:0;
+        font-size:11px;
+        font-weight:900;
+        color:#ffe0a1;
+      }
       @media (min-width: 560px){
         #badgeWallBack .ah-bw-grid{
           grid-template-columns:repeat(6, minmax(0, 1fr));
@@ -417,11 +691,11 @@
       wallBack.className = "sheet-back avatar-sheet";
       wallBack.style.display = "none";
       wallBack.innerHTML = `
-        <div class="sheet-card ah-bw-card" role="dialog" aria-modal="true" aria-label="Badge Wall">
+        <div class="sheet-card ah-bw-card" role="dialog" aria-modal="true" aria-label="Badges & Titles">
           <div class="ah-bw-head">
             <div>
-              <h2 class="ah-bw-title">Badge Wall</h2>
-              <div class="ah-bw-sub">Compact trophy atlas from your live badge profile.</div>
+              <h2 class="ah-bw-title">Badges & Titles</h2>
+              <div class="ah-bw-sub">Manage prestige badges and active title.</div>
             </div>
             <div class="ah-bw-head-actions">
               <button class="btn" id="badgeWallRefresh" type="button">Refresh</button>
@@ -436,10 +710,30 @@
             <span class="ah-bw-pill is-muted" id="badgeWallFeatured">Featured 0/3</span>
           </div>
 
+          <div class="ah-bw-title-panel">
+            <div class="ah-bw-title-copy">
+              <span class="ah-bw-title-label">Active Title</span>
+              <span class="ah-bw-title-value is-empty" id="badgeWallTitleValue">No Title Equipped</span>
+            </div>
+            <button class="btn" id="badgeWallTitleButton" type="button">Choose Title</button>
+          </div>
+
           <div class="ah-bw-status" id="badgeWallStatus" hidden></div>
           <div class="ah-bw-grid" id="badgeWallGrid"></div>
           <div class="ah-bw-empty" id="badgeWallEmpty" hidden>No badges available yet.</div>
           <div class="ah-bw-detail" id="badgeWallDetail" hidden></div>
+
+          <div class="ah-bw-picker-back" id="badgeTitlePickerBack" hidden>
+            <div class="ah-bw-picker" role="dialog" aria-modal="true" aria-label="Choose Title">
+              <div class="ah-bw-picker-head">
+                <h3 class="ah-bw-picker-title">Choose Title</h3>
+                <button class="btn ah-bw-picker-close" id="badgeTitlePickerClose" type="button">Close</button>
+              </div>
+              <div class="ah-bw-picker-status" id="badgeTitlePickerStatus" hidden></div>
+              <div class="ah-bw-picker-list" id="badgeTitlePickerList"></div>
+              <div class="ah-bw-picker-empty" id="badgeTitlePickerEmpty" hidden>No titles unlocked yet.</div>
+            </div>
+          </div>
         </div>
       `;
       document.body.appendChild(wallBack);
@@ -451,10 +745,17 @@
     ownedPill = document.getElementById("badgeWallOwned");
     activePill = document.getElementById("badgeWallActive");
     featuredPill = document.getElementById("badgeWallFeatured");
+    titlePanelValue = document.getElementById("badgeWallTitleValue");
+    titlePanelButton = document.getElementById("badgeWallTitleButton");
     statusBox = document.getElementById("badgeWallStatus");
     gridBox = document.getElementById("badgeWallGrid");
     emptyBox = document.getElementById("badgeWallEmpty");
     detailBox = document.getElementById("badgeWallDetail");
+    titlePickerBack = document.getElementById("badgeTitlePickerBack");
+    titlePickerCloseBtn = document.getElementById("badgeTitlePickerClose");
+    titlePickerStatus = document.getElementById("badgeTitlePickerStatus");
+    titlePickerList = document.getElementById("badgeTitlePickerList");
+    titlePickerEmpty = document.getElementById("badgeTitlePickerEmpty");
   }
 
   function setStatus(message, kind) {
@@ -472,10 +773,49 @@
     else statusBox.removeAttribute("data-kind");
   }
 
+  function setTitlePickerStatus(message, kind) {
+    if (!titlePickerStatus) return;
+    const text = String(message || "").trim();
+    if (!text) {
+      titlePickerStatus.hidden = true;
+      titlePickerStatus.textContent = "";
+      titlePickerStatus.removeAttribute("data-kind");
+      return;
+    }
+    titlePickerStatus.hidden = false;
+    titlePickerStatus.textContent = text;
+    if (kind) titlePickerStatus.setAttribute("data-kind", kind);
+    else titlePickerStatus.removeAttribute("data-kind");
+  }
+
+  function closeTitlePicker() {
+    if (titlePickerBack) titlePickerBack.hidden = true;
+    setTitlePickerStatus("");
+  }
+
+  function openTitlePickerShell() {
+    if (titlePickerBack) titlePickerBack.hidden = false;
+  }
+
   function updateSaveButtonState() {
     if (!saveFeaturedBtn) return;
     saveFeaturedBtn.disabled = _savingFeatured || !_featuredDirty;
     saveFeaturedBtn.textContent = _savingFeatured ? "Saving..." : "Save Featured";
+  }
+
+  function updateTitlePanel() {
+    if (titlePanelValue) {
+      const displayTitle = normalizeTitleText(_titleState.displayTitle || _titleState.activeTitle);
+      const hasTitle = !!displayTitle;
+      titlePanelValue.textContent = hasTitle ? displayTitle : "No Title Equipped";
+      titlePanelValue.classList.toggle("is-empty", !hasTitle);
+    }
+
+    if (titlePanelButton) {
+      const displayTitle = normalizeTitleText(_titleState.displayTitle || _titleState.activeTitle);
+      titlePanelButton.textContent = displayTitle ? "Change Title" : "Choose Title";
+      titlePanelButton.disabled = _loadingTitleState || _settingTitleState || !_apiPost;
+    }
   }
 
   function updateSummary() {
@@ -488,8 +828,12 @@
     }
 
     if (activePill) {
+      const displayTitle = normalizeTitleText(_titleState.displayTitle || _titleState.activeTitle);
       const activeKey = toKey(_state.activeBadgeKey);
-      if (!activeKey) {
+      if (displayTitle) {
+        activePill.textContent = "Displayed: " + displayTitle;
+        activePill.classList.remove("is-muted");
+      } else if (!activeKey) {
         activePill.textContent = "No active title";
         activePill.classList.add("is-muted");
       } else {
@@ -511,6 +855,7 @@
     }
 
     updateSaveButtonState();
+    updateTitlePanel();
   }
 
   function newEl(tag, className, text) {
@@ -523,6 +868,125 @@
   function clearEl(node) {
     if (!node) return;
     while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function createTitleOption(option) {
+    const row = newEl("button", "ah-bw-title-option" + (option.active ? " is-active" : ""));
+    row.type = "button";
+    row.disabled = _settingTitleState;
+    row.setAttribute("data-title-key", option.key);
+
+    const copy = newEl("div", "ah-bw-title-option-copy");
+    copy.appendChild(newEl("div", "ah-bw-title-option-label", option.label));
+
+    const meta = newEl("div", "ah-bw-title-option-meta");
+    const chip = newEl("span", "ah-bw-title-chip " + TITLE_SOURCE_CLASS[option.source], option.source);
+    meta.appendChild(chip);
+    copy.appendChild(meta);
+    row.appendChild(copy);
+
+    if (option.active) {
+      row.appendChild(newEl("span", "ah-bw-title-active", "Equipped"));
+    }
+
+    row.addEventListener("click", () => {
+      equipTitle(option.key).catch(() => {});
+    });
+
+    return row;
+  }
+
+  function renderTitlePicker() {
+    if (!titlePickerList || !titlePickerEmpty) return;
+    clearEl(titlePickerList);
+
+    const titles = Array.isArray(_titleState.titles) ? _titleState.titles : [];
+    if (!titles.length) {
+      titlePickerEmpty.hidden = false;
+      return;
+    }
+
+    titlePickerEmpty.hidden = true;
+    const frag = document.createDocumentFragment();
+    for (const option of titles) {
+      frag.appendChild(createTitleOption(option));
+    }
+    titlePickerList.appendChild(frag);
+  }
+
+  async function loadTitleState() {
+    if (!_apiPost) throw new Error("API_NOT_READY");
+    const out = await _apiPost("/webapp/player/title/state", {});
+    if (!out || out.ok === false) throw new Error(out?.reason || "TITLE_STATE_FAILED");
+    return normalizeTitleState(out);
+  }
+
+  async function refreshTitleState({ silent = false } = {}) {
+    _loadingTitleState = true;
+    updateTitlePanel();
+    if (!silent) setTitlePickerStatus("Loading titles...", "");
+    try {
+      const next = await loadTitleState();
+      _titleState = next;
+      updateSummary();
+      renderTitlePicker();
+      if (!silent) setTitlePickerStatus("");
+      return next;
+    } catch (err) {
+      dbg("title state failed", err);
+      if (!silent) setTitlePickerStatus("Failed to load titles. Try again.", "error");
+      throw err;
+    } finally {
+      _loadingTitleState = false;
+      updateTitlePanel();
+      renderTitlePicker();
+    }
+  }
+
+  async function equipTitle(selectedKey) {
+    const titleKey = normalizeTitleText(selectedKey);
+    const titles = Array.isArray(_titleState.titles) ? _titleState.titles : [];
+    const allowed = titles.find((option) => toKey(option.key) === toKey(titleKey));
+    if (!_apiPost || !allowed || _settingTitleState) return;
+
+    _settingTitleState = true;
+    updateTitlePanel();
+    setTitlePickerStatus("Equipping title...", "");
+    renderTitlePicker();
+
+    try {
+      const out = await _apiPost("/webapp/player/title/state", {
+        action: "set_active_title",
+        title_key: allowed.key,
+      });
+      if (!out || out.ok === false) throw new Error(out?.reason || "TITLE_SET_FAILED");
+
+      _titleState = normalizeTitleState(out);
+      updateSummary();
+      renderTitlePicker();
+      closeTitlePicker();
+      setStatus("Title equipped.", "");
+      haptic("light");
+    } catch (err) {
+      dbg("set title failed", err);
+      setTitlePickerStatus("Failed to equip title. Try again.", "error");
+      haptic("light");
+      throw err;
+    } finally {
+      _settingTitleState = false;
+      updateTitlePanel();
+      renderTitlePicker();
+    }
+  }
+
+  async function openTitlePicker() {
+    openTitlePickerShell();
+    renderTitlePicker();
+    setTitlePickerStatus("Loading titles...", "");
+    try {
+      await refreshTitleState();
+      haptic("light");
+    } catch (_) {}
   }
 
   function findBadge(rawKey) {
@@ -914,14 +1378,22 @@
   }
 
   async function refresh() {
-    setStatus("Loading Badge Wall...", "");
+    setStatus("Loading Badges & Titles...", "");
     try {
-      const next = await loadState();
+      const [next, titleState] = await Promise.all([
+        loadState(),
+        loadTitleState().catch((err) => {
+          dbg("initial title load failed", err);
+          return _titleState;
+        }),
+      ]);
       _state = next;
+      _titleState = normalizeTitleState(titleState);
       _draftFeaturedBadgeKeys = normalizeFeaturedKeys(next.featuredBadgeKeys);
       _featuredDirty = false;
       updateSummary();
       renderBadges();
+      renderTitlePicker();
       setStatus("");
     } catch (err) {
       dbg("refresh failed", err);
@@ -929,11 +1401,13 @@
       if (!Array.isArray(_state.badges) || !_state.badges.length) {
         renderBadges();
       }
+      renderTitlePicker();
       throw err;
     }
   }
 
   function close() {
+    closeTitlePicker();
     if (wallBack) wallBack.style.display = "none";
     unbindTgBackButton();
   }
@@ -943,7 +1417,7 @@
       init();
     }
     if (!_apiPost) {
-      showAlert("Badge Wall is not ready yet.");
+      showAlert("Badges & Titles is not ready yet.");
       return;
     }
 
@@ -966,14 +1440,25 @@
     saveFeaturedBtn?.addEventListener("click", () => {
       saveFeaturedBadges().catch(() => {});
     });
+    titlePanelButton?.addEventListener("click", () => {
+      openTitlePicker().catch(() => {});
+    });
+    titlePickerCloseBtn?.addEventListener("click", closeTitlePicker);
 
     wallBack?.addEventListener("click", (e) => {
       if (e.target === wallBack) close();
+    });
+    titlePickerBack?.addEventListener("click", (e) => {
+      if (e.target === titlePickerBack) closeTitlePicker();
     });
 
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
       if (!wallBack || wallBack.style.display === "none") return;
+      if (titlePickerBack && !titlePickerBack.hidden) {
+        closeTitlePicker();
+        return;
+      }
       close();
     });
   }
