@@ -124,6 +124,56 @@
     alert((t ? t + "\n\n" : "") + m);
   }
 
+  function normalizeDisplayTitle(value) {
+    const text = String(value || "").trim();
+    const upper = text.toUpperCase();
+    if (!text || upper === "NO TITLE" || upper === "NO ACTIVE TITLE") return "";
+    return text;
+  }
+
+  function normalizeFactionKey(raw) {
+    const value = String(raw || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+    if (!value) return "";
+    if (value === "rb" || value === "rogue_byte" || value === "rogue_bytes" || value === "roguebyte" || value === "rogue byte") return "rb";
+    if (value === "ew" || value === "echo_wardens" || value === "echowardens" || value === "echo wardens") return "ew";
+    if (value === "ih" || value === "inner_howl" || value === "inner_howlers" || value === "innerhowlers" || value === "inner howlers") return "ih";
+    if (value === "pb" || value === "pack_burners" || value === "packburners" || value === "pack burners") return "pb";
+    return "";
+  }
+
+  function factionLabelFromKey(key) {
+    const norm = normalizeFactionKey(key);
+    if (norm === "rb") return "Rogue Byte";
+    if (norm === "ew") return "Echo Wardens";
+    if (norm === "ih") return "Inner Howlers";
+    if (norm === "pb") return "Pack Burners";
+    return "";
+  }
+
+  function resolveProfileFactionLabel(profile) {
+    const onboarding = profile?.onboarding_v1 || profile?.onboardingV1 || {};
+    const oath = onboarding?.oath || profile?.oath || {};
+    const raw = (
+      profile?.faction ||
+      profile?.faction_id ||
+      profile?.factionId ||
+      profile?.factionKey ||
+      profile?.faction_key ||
+      profile?.profile?.faction ||
+      profile?.profile?.faction_id ||
+      profile?.profile?.factionId ||
+      profile?.profile?.factionKey ||
+      profile?.profile?.faction_key ||
+      oath?.faction ||
+      oath?.faction_id ||
+      oath?.factionId ||
+      oath?.factionKey ||
+      oath?.faction_key ||
+      ""
+    );
+    return factionLabelFromKey(raw);
+  }
+
   function openLink(url) {
     const href = String(url || "").trim();
     if (!href) return;
@@ -357,16 +407,21 @@
     const stats = equippedState?.stats || {};
     const origin = pickOriginMeta(profile);
     const originLabel = origin?.label || "";
-    const factionLabel = textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || profile?.faction || "PACK");
+    const factionLabel = resolveProfileFactionLabel(profile);
+    const visualTag = textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || "");
+    const displayTitle = normalizeDisplayTitle(
+      profile?.title || profile?.active_title || profile?.activeTitle || profile?.displayTitle || ""
+    );
 
     return {
       variant: mode,
       playerName: textOf("heroName", profile?.name || profile?.nickname || "Howler"),
       level: getLevelNumber(heroLevelText, profile?.level || stats?.level || 1),
       heroLevelText,
-      tag: factionLabel,
-      title: factionLabel,
-      factionMeta: textOf("factionMeta", ""),
+      tag: visualTag,
+      title: displayTitle || factionLabel,
+      factionLabel,
+      factionMeta: factionLabel ? `FACTION: ${factionLabel}` : textOf("factionMeta", ""),
       factionId: String(profile?.faction || "").trim(),
       factionBadgeUrl: proxifyAssetUrl($("factionBadgeImg")?.currentSrc || $("factionBadgeImg")?.src || ""),
       origin,
@@ -375,6 +430,7 @@
       originText: originLabel ? `ORIGIN: ${originLabel.toUpperCase()}` : "",
       originIconUrl: proxifyAssetUrl(origin?.iconUrl || ""),
       identityLine: [
+        displayTitle ? `Title: ${displayTitle}` : "",
         originLabel ? `Origin: ${originLabel}` : "",
         factionLabel ? `Faction: ${factionLabel}` : "",
         `LV ${getLevelNumber(heroLevelText, profile?.level || stats?.level || 1)}`,
@@ -1034,7 +1090,7 @@
 
       drawFooterNameplate(ctx, presentation, 128, 1022, CARD_WIDTH - 256, {
         subtitle: "ALPHA HUSKY IDENTITY CARD",
-        metaLeft: presentation.factionMeta || (presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "OATH-BOUND"),
+        metaLeft: presentation.factionMeta || (presentation.factionLabel ? `FACTION: ${presentation.factionLabel}` : "OATH-BOUND"),
         metaRight: presentation.originText || "OATH-BOUND",
       });
       drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
@@ -1135,7 +1191,7 @@
 
     drawFooterNameplate(ctx, presentation, 122, 990, CARD_WIDTH - 244, {
       subtitle: "EQUIPPED LOADOUT",
-      metaLeft: presentation.tag ? `FACTION SIGNAL: ${presentation.tag}` : "LIVE EQUIPPED STATE",
+      metaLeft: presentation.factionMeta || (presentation.factionLabel ? `FACTION: ${presentation.factionLabel}` : "LIVE EQUIPPED STATE"),
       metaRight: presentation.originText || (slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : ""),
     });
     drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
