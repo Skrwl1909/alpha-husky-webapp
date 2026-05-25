@@ -419,7 +419,7 @@
       level: getLevelNumber(heroLevelText, profile?.level || stats?.level || 1),
       heroLevelText,
       tag: visualTag,
-      title: displayTitle || factionLabel,
+      title: displayTitle || "",
       factionLabel,
       factionMeta: factionLabel ? `FACTION: ${factionLabel}` : textOf("factionMeta", ""),
       factionId: String(profile?.faction || "").trim(),
@@ -430,7 +430,7 @@
       originText: originLabel ? `ORIGIN: ${originLabel.toUpperCase()}` : "",
       originIconUrl: proxifyAssetUrl(origin?.iconUrl || ""),
       identityLine: [
-        displayTitle ? `Title: ${displayTitle}` : "",
+        displayTitle || "",
         originLabel ? `Origin: ${originLabel}` : "",
         factionLabel ? `Faction: ${factionLabel}` : "",
         `LV ${getLevelNumber(heroLevelText, profile?.level || stats?.level || 1)}`,
@@ -936,6 +936,7 @@
     const metaLeft = String(opts.metaLeft || "").trim();
     const metaRight = String(opts.metaRight || "").trim();
     const h = Number(opts.height || 178);
+    const displayTitle = normalizeDisplayTitle(presentation?.title || "");
 
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.36)";
@@ -998,6 +999,12 @@
       nameSize -= 2;
     } while (nameSize > 42);
     ctx.fillText(presentation.playerName, x + 34, y + 112);
+
+    if (displayTitle) {
+      ctx.fillStyle = "rgba(245,218,165,0.92)";
+      ctx.font = "700 30px system-ui, sans-serif";
+      ctx.fillText(displayTitle, x + 34, y + 146);
+    }
 
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,0.10)";

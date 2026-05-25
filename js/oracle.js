@@ -74,7 +74,13 @@
     lockScroll(true);
     _isOpen = true;
 
-    showBackButton(true);
+    try {
+      window.navRegister?.("oracleBack", {
+        close,
+        isOpen: () => !!_isOpen && !!els.back && els.back.style.display !== "none",
+      });
+      window.navOpen?.("oracleBack");
+    } catch (_) {}
     startAutoRefresh();
 
     if (!_state) {
@@ -99,7 +105,7 @@
   }, 180);
 
   lockScroll(false);
-  showBackButton(false);
+  try { window.navClose?.("oracleBack"); } catch (_) {}
   stopAutoRefresh();
 
   document.documentElement.classList.remove("ah-oracle-open");
@@ -138,26 +144,6 @@
       null;
 
     return typeof fn === "function" ? fn : null;
-  }
-
-  function showBackButton(show) {
-    const bb = _tg?.BackButton;
-    if (!bb) return;
-
-    try {
-      bb.offClick(close);
-    } catch (_) {}
-
-    if (show) {
-      try {
-        bb.onClick(close);
-        bb.show();
-      } catch (_) {}
-    } else {
-      try {
-        bb.hide();
-      } catch (_) {}
-    }
   }
 
   function startAutoRefresh() {
@@ -621,6 +607,7 @@
     const type = prettifyType(row?.type || "signal");
     const age = formatAge(row?.ageSec, row?.ts);
     const text = row?.text || "Unknown echo";
+    const title = String(row?.title || "").trim();
     const isHighlighted = !!row?.highlighted;
     const highlightLevel = safeClass(row?.highlightLevel || "");
     const highlightTag = isHighlighted
@@ -649,6 +636,7 @@
           <div class="oracle-echo-meta">
             ${highlightTag}
             ${row?.name ? `<span class="oracle-tag">${escapeHtml(row.name)}</span>` : ""}
+            ${row?.name && title ? `<span class="oracle-tag prestige">${escapeHtml(title)}</span>` : ""}
             ${difficulty}
             ${rarity}
             ${itemName}
@@ -1057,6 +1045,7 @@
   const lvl = intOr(row?.level, 0);
   const xp = intOr(row?.xp, 0);
   const rank = idx + 1;
+  const title = String(row?.title || "").trim();
   const aura = renderAuraPill(row?.aura, { compact: true, showTimer: false });
 
   return `
@@ -1066,7 +1055,8 @@
         ${renderFactionBadge(faction)}
         <div>
           <div class="oracle-rank-name">${escapeHtml(row?.name || "Unknown")}</div>
-          <div class="oracle-rank-sub">${escapeHtml(fm.label)}</div>
+          <div class="oracle-rank-sub">${escapeHtml(title || fm.label)}</div>
+          ${title ? `<div class="oracle-rank-faction">${escapeHtml(fm.label)}</div>` : ""}
           ${aura ? `<div class="oracle-rank-aura">${aura}</div>` : ""}
         </div>
       </div>
@@ -1732,6 +1722,11 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         border-color:rgba(92,170,255,.24);
         color:#d3e8ff;
       }
+      .oracle-tag.prestige{
+        border-color:rgba(245,210,146,.28);
+        background:rgba(245,210,146,.10);
+        color:#f6deab;
+      }
       .oracle-inline-note{
         display:inline-flex;
         align-items:center;
@@ -1888,6 +1883,13 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         margin-top:2px;
         font-size:11px;
         color:#96a4d8;
+      }
+      .oracle-rank-faction{
+        margin-top:3px;
+        font-size:10px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:rgba(170,185,221,.62);
       }
       .oracle-rank-right{
         text-align:right;

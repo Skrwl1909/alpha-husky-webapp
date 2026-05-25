@@ -152,6 +152,28 @@
           padding:12px 14px 14px;
           overflow:auto;
         }
+        .ah-buffs-note{
+          display:none;
+          margin:12px 14px 0;
+          padding:10px 12px;
+          border-radius:12px;
+          border:1px solid rgba(255,255,255,.08);
+          background:rgba(255,255,255,.04);
+          color:rgba(210,226,244,.82);
+          font-size:11px;
+          line-height:1.35;
+        }
+        .ah-buffs-note.is-visible{
+          display:block;
+        }
+        .ah-buffs-note.is-success{
+          border-color:rgba(126,198,255,.24);
+          color:#dff4ff;
+        }
+        .ah-buffs-note.is-error{
+          border-color:rgba(255,123,123,.24);
+          color:#ffd6d6;
+        }
         .ah-buffs-item{
           display:flex;
           align-items:flex-start;
@@ -196,6 +218,28 @@
           font-size:11px;
           font-weight:900;
           white-space:nowrap;
+        }
+        .ah-buffs-actions{
+          flex:0 0 auto;
+          display:flex;
+          flex-direction:column;
+          align-items:flex-end;
+          gap:8px;
+        }
+        .ah-buffs-end{
+          appearance:none;
+          border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.04);
+          color:#eef7ff;
+          border-radius:10px;
+          min-height:28px;
+          padding:0 10px;
+          font:800 11px/1 system-ui, sans-serif;
+          cursor:pointer;
+        }
+        .ah-buffs-end[disabled]{
+          opacity:.58;
+          cursor:default;
         }
         .ah-buffs-empty{
           padding:14px 12px;
@@ -252,6 +296,19 @@
       if (hours > 0) return `${hours}h ${mins}m`;
       if (mins > 0) return `${mins}m`;
       return `${sec}s`;
+    }
+
+    function getApiBase() {
+      return String(window.API_BASE || "");
+    }
+
+    function getInitData() {
+      return String(
+        window.Telegram?.WebApp?.initData ||
+        window.INIT_DATA ||
+        window.__INIT_DATA__ ||
+        ""
+      );
     }
 
     function parseExpiresAt(value) {
@@ -360,6 +417,8 @@
           expiresAt: exp ? Math.trunc(exp / 1000) : null,
           remainingUses,
           effectLabel,
+          cancellable: !!x.cancellable,
+          cancelHint: String(x.cancelHint || x.cancel_hint || "").trim(),
           _expiresAt: exp,
         };
 
@@ -433,6 +492,78 @@
       setActiveBuffs(line, full);
     }
 
+    function setModalNotice(text, tone) {
+      const root = ensureModal();
+      const note = root.querySelector(".ah-buffs-note");
+      if (!note) return;
+      const msg = String(text || "").trim();
+      note.textContent = msg;
+      note.className = "ah-buffs-note";
+      if (!msg) return;
+      note.classList.add("is-visible");
+      if (tone === "error") note.classList.add("is-error");
+      if (tone === "success") note.classList.add("is-success");
+    }
+
+    async function apiPost(path, payload) {
+      const initData = getInitData();
+      if (!initData) throw new Error("NO_INIT_DATA");
+
+      const resp = await fetch(getApiBase() + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({ initData }, payload || {})),
+      });
+
+      let data = null;
+      try {
+        data = await resp.json();
+      } catch (_) {}
+
+      if (!resp.ok) {
+        return data || { ok: false, reason: `http_${resp.status}` };
+      }
+      return data || { ok: false, reason: "empty_response" };
+    }
+
+    async function cancelSignal(buff) {
+      const key = String(buff?.key || "").trim();
+      if (!key) {
+        setModalNotice("This signal could not be ended.", "error");
+        return;
+      }
+
+      const prompt = "End this signal early? The item will not be refunded and this signal cannot be activated again for 1 hour.";
+      if (!window.confirm(prompt)) return;
+
+      const inflight = window.AH_BUFFS._canceling || (window.AH_BUFFS._canceling = Object.create(null));
+      if (inflight[key]) return;
+
+      inflight[key] = true;
+      setModalNotice("", "");
+      renderModalList();
+
+      try {
+        const res = await apiPost("/webapp/buffs/cancel", {
+          key,
+          run_id: `buff_cancel:${key}:${Date.now()}`,
+        });
+        if (!res || res.ok !== true) {
+          setModalNotice(String(res?.message || "This signal could not be ended.").trim(), "error");
+          return;
+        }
+
+        setActiveBuffs(res.buffsLine || "", res.activeBuffs || res.buffs || []);
+        setModalNotice("Signal ended. No item was refunded.", "success");
+        renderModalList();
+      } catch (_) {
+        setModalNotice("This signal could not be ended.", "error");
+      } finally {
+        delete inflight[key];
+        renderModalList();
+      }
+    }
+
     function ensureModal() {
       ensureStyles();
       let root = document.getElementById("ahBuffsModal");
@@ -450,6 +581,7 @@
             </div>
             <button type="button" class="ah-buffs-close">Close</button>
           </div>
+          <div class="ah-buffs-note" aria-live="polite"></div>
           <div class="ah-buffs-list"></div>
         </div>
       `;
@@ -516,8 +648,30 @@
         left.appendChild(copy);
 
         const right = document.createElement("div");
-        right.className = "ah-buffs-right";
-        right.textContent = remain;
+        right.className = "ah-buffs-actions";
+
+        if (remain) {
+          const remainEl = document.createElement("div");
+          remainEl.className = "ah-buffs-right";
+          remainEl.textContent = remain;
+          right.appendChild(remainEl);
+        }
+
+        if (buff.cancellable) {
+          const endBtn = document.createElement("button");
+          const isEnding = !!(window.AH_BUFFS._canceling && window.AH_BUFFS._canceling[buff.key]);
+          endBtn.type = "button";
+          endBtn.className = "ah-buffs-end";
+          endBtn.textContent = isEnding ? "Ending..." : "End";
+          endBtn.disabled = isEnding;
+          if (buff.cancelHint) endBtn.title = buff.cancelHint;
+          endBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isEnding) cancelSignal(buff);
+          });
+          right.appendChild(endBtn);
+        }
 
         row.appendChild(left);
         row.appendChild(right);
@@ -527,6 +681,7 @@
 
     function openModal() {
       const root = ensureModal();
+      setModalNotice("", "");
       renderModalList();
       window.__AH_BUFFS_MODAL_OPEN__ = true;
       root.classList.add("is-open");
