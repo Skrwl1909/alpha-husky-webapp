@@ -99,7 +99,11 @@
     const direct = textOrEmpty(last?.progressLine);
     if (direct) return direct;
     const pct = normalizePercentNumber(last?.progressPercent);
-    return pct == null ? "" : `Progress: ${pct}%`;
+    if (pct == null) return "";
+    if (pct >= 100 && normalizeOutcomeTone(normalizeOutcomeTier(last)) !== "partial" && normalizeOutcomeTone(normalizeOutcomeTier(last)) !== "failed") {
+      return "";
+    }
+    return `Recovery secured: ${pct}%`;
   }
 
   function normalizeShortfallLine(last) {
@@ -107,6 +111,44 @@
     if (direct) return direct;
     const pct = normalizePercentNumber(last?.shortByPercent);
     return pct == null || pct <= 0 ? "" : `Short by: ${pct}%`;
+  }
+
+  function normalizeRareChanceLabel(v) {
+    const raw = textOrEmpty(v).replace(/\s+/g, " ").trim();
+    if (!raw) return "";
+    let core = raw.replace(/\s+chance$/i, "").trim();
+    if (core && !/cache/i.test(core) && /vault/i.test(core)) core = `${core} cache`;
+    return core;
+  }
+
+  function normalizeRecommendedLine(last) {
+    const stats = normalizeStatsText(last?.recommendedStatsText || last?.recommendedStatLabels || last?.recommendedStats);
+    return stats ? `Recommended: ${stats}` : "";
+  }
+
+  function normalizePetFitEffect(last) {
+    const direct = textOrEmpty(last?.petFitEffect);
+    if (direct) return `Effect: ${direct}`;
+    const matchKey = textOrEmpty(last?.activePetMatch || last?.petMatch).toLowerCase();
+    if (matchKey === "strong") return "Effect: stronger pet assist";
+    if (matchKey === "neutral") return "Effect: steady pet assist";
+    if (matchKey === "weak") return "Effect: weaker pet assist";
+    return "";
+  }
+
+  function normalizeBonusFoundChip(last) {
+    if (!(last?.bonusFound || last?.rareHit)) return "";
+    const label = textOrEmpty(last?.bonusFoundLabel) || "Rare Cache";
+    const details = normalizeRewardList(last?.bonusFoundDetails);
+    return details.length
+      ? `Bonus found: ${label} (${details.join(", ")})`
+      : `Bonus found: ${label}`;
+  }
+
+  function normalizeCacheSignalChip(last) {
+    if (last?.bonusFound || last?.rareHit) return "";
+    if (last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) return "Vault trace detected";
+    return "";
   }
 
   function normalizeRewardList(v) {
@@ -1393,8 +1435,11 @@ function _normalizeRareDropObj(obj) {
         <div class="m-help-title">How Missions Work</div>
         <div class="m-help-copy">Pick a route. Each mission has a difficulty, reward focus and sometimes a special condition.</div>
         <div class="m-help-copy">Recommended stats: Stats like AGI / DEF show what helps on that route. They are not required, but they can improve the result.</div>
-        <div class="m-help-copy">Pet Match: Your active pet can slightly help if its stats or type fit the mission. It can improve progress, recovery and rare chance, but it does not guarantee success.</div>
-        <div class="m-help-copy">Rare Cache: A rare cache is a special bonus find. Some missions have a small chance to uncover one, especially on better outcomes.</div>
+        <div class="m-help-copy">Mission completed = mission finished and rewards were resolved.</div>
+        <div class="m-help-copy">Pet fit = how well your active pet matched recommended mission traits.</div>
+        <div class="m-help-copy">Rare chance = possible rare outcome, not guaranteed.</div>
+        <div class="m-help-copy">Bonus found = extra result actually recovered during resolve.</div>
+        <div class="m-help-copy">Cache signal = route contained a cache trace, but not necessarily a bonus reward.</div>
         <div class="m-help-copy">Outcomes: Critical Success = best result. Success = normal clear. Partial Success = you recovered something, but missed part of the reward. Failed = the route held. Return stronger.</div>
       </div>
     `;
@@ -1461,7 +1506,7 @@ function _normalizeRareDropObj(obj) {
     const rolls = (o?.lootRolls ?? o?.loot_rolls ?? reward.rolls ?? reward.loot_rolls ?? "?");
     const petMatchLabel = normalizePetMatchLabel(o);
     const compactHint = textOrEmpty(o?.compactHint) ||
-      (petMatchLabel ? `Pet Match: ${petMatchLabel}` : "") ||
+      (petMatchLabel ? `Pet fit: ${petMatchLabel}` : "") ||
       (normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)
         ? `Recommended: ${normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)}`
         : "");
@@ -1472,8 +1517,8 @@ function _normalizeRareDropObj(obj) {
     const disabled = hasActive ? "disabled" : "";
     const flavorTags = [];
     if (modifierLabel) flavorTags.push(modifierLabel);
-    if (rewardIntent.length) flavorTags.push(`Reward: ${rewardIntent.join(" · ")}`);
-    if (rareHint) flavorTags.push(`Rare: ${rareHint}`);
+    if (rewardIntent.length) flavorTags.push(`Reward intent: ${rewardIntent.join(" · ")}`);
+    if (rareHint) flavorTags.push(`Rare chance: ${normalizeRareChanceLabel(rareHint)}`);
 
     return `
       <div class="m-offer">
@@ -1558,15 +1603,18 @@ function _normalizeRareDropObj(obj) {
     const progressLine = normalizeProgressLine(last);
     const shortfallLine = normalizeShortfallLine(last);
     const petMatchLabel = normalizePetMatchLabel(last);
-    const petArchetype = titleizeWord(last?.activePetArchetype);
-    const petLine = textOrEmpty(last?.activePetContribution || last?.petAssistLine);
+    const recommendedLine = normalizeRecommendedLine(last);
+    const petFitEffect = normalizePetFitEffect(last);
     const recoveredRewards = normalizeRewardList(last?.recoveredRewards);
     const missedRewards = normalizeRewardList(last?.missedRewards);
-    const rareHint = textOrEmpty(last?.rareHint);
-    const rareHit = !!last?.rareHit;
     const rewardMsg = textOrEmpty(last?.rewardMsg || last?.reward_msg);
     const lootMsg = textOrEmpty(last?.lootMsg || last?.loot_msg);
     const tokenLootMsg = textOrEmpty(last?.tokenLootMsg || last?.token_loot_msg);
+    const bonusFoundChip = normalizeBonusFoundChip(last);
+    const cacheSignalChip = normalizeCacheSignalChip(last);
+    const petArchetype = "";
+    const rareHint = "";
+    const rareHit = false;
 
     const metaBits = [];
     if (modifierLabel) metaBits.push(modifierLabel);
@@ -1579,6 +1627,25 @@ function _normalizeRareDropObj(obj) {
     if (rareHit) chipLines.push("Rare cache recovered");
     else if (rareHint) chipLines.push(`Rare: ${rareHint}`);
 
+    const petDetailLines = [];
+    if (petMatchLabel && recommendedLine) petDetailLines.push(recommendedLine);
+    if (petMatchLabel && petFitEffect) petDetailLines.push(petFitEffect);
+
+    if (outcomeTone === "success" || outcomeTone === "critical") chipLines.unshift("Mission completed");
+    for (let i = 0; i < chipLines.length; i += 1) {
+      if (/^Pet Match:/i.test(chipLines[i])) chipLines[i] = `Pet fit: ${petMatchLabel}`;
+    }
+    if (bonusFoundChip) chipLines.push(bonusFoundChip);
+    else if (cacheSignalChip) chipLines.push(cacheSignalChip);
+
+    chipLines.length = 0;
+    if (outcomeTone === "success" || outcomeTone === "critical") chipLines.push("Mission completed");
+    if (progressLine) chipLines.push(progressLine);
+    if (shortfallLine && shortfallLine !== progressLine) chipLines.push(shortfallLine);
+    if (petMatchLabel) chipLines.push(`Pet fit: ${petMatchLabel}`);
+    if (bonusFoundChip) chipLines.push(bonusFoundChip);
+    else if (cacheSignalChip) chipLines.push(cacheSignalChip);
+
     const fallbackRecovered = [];
     if (!recoveredRewards.length) {
       if (rewardMsg) fallbackRecovered.push(rewardMsg);
@@ -1587,7 +1654,11 @@ function _normalizeRareDropObj(obj) {
     }
 
     const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
-    const showMissed = missedRewards.filter((x) => x && !(rareHit && /rare/i.test(x)));
+    const showMissed = missedRewards.filter((x) => {
+      if (!x) return false;
+      if ((bonusFoundChip || cacheSignalChip) && /cache/i.test(x)) return false;
+      return true;
+    });
 
     return `
       <div class="m-card m-report" style="margin-top:10px;">
@@ -1601,7 +1672,7 @@ function _normalizeRareDropObj(obj) {
         </div>
         ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
         ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
-        ${petLine ? `<div class="m-report-line">${esc(petLine)}</div>` : ""}
+        ${petDetailLines.length ? petDetailLines.map((line) => `<div class="m-report-line">${esc(line)}</div>`).join("") : ""}
         ${showRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(showRecovered.join(" · "))}</div></div>` : ""}
         ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" · "))}</div></div>` : ""}
       </div>
@@ -1695,11 +1766,11 @@ function _normalizeRareDropObj(obj) {
       const activeTags = [];
       if (active.modifierLabel) activeTags.push(active.modifierLabel);
       if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) {
-        activeTags.push(`Reward: ${active.rewardIntent.join(" · ")}`);
+        activeTags.push(`Reward intent: ${active.rewardIntent.join(" · ")}`);
       }
-      if (active.rareHint) activeTags.push(`Rare: ${active.rareHint}`);
+      if (active.rareHint) activeTags.push(`Rare chance: ${normalizeRareChanceLabel(active.rareHint)}`);
       const activeMatchLabel = normalizePetMatchLabel(active);
-      const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet Match: ${activeMatchLabel}` : "");
+      const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet fit: ${activeMatchLabel}` : "");
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -1750,7 +1821,7 @@ function _normalizeRareDropObj(obj) {
           <div class="m-row">
             <div style="min-width:0;">
               <div class="m-title">Offers</div>
-              <div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward focus, and rare cache signals.</div>
+              <div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div>
             </div>
             <button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button>
           </div>
