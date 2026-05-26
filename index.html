@@ -1461,71 +1461,95 @@ html.ah-skins-open #heroFrame{
   text-overflow:clip;
 }
 @media (max-width: 640px){
+  .map-wrap{
+    width:100vw;
+    padding:
+      calc(6px + var(--ah-safe-top))
+      calc(6px + var(--ah-safe-right))
+      calc(6px + var(--ah-safe-bottom))
+      calc(6px + var(--ah-safe-left));
+  }
+  .map-card{
+    padding:8px;
+  }
   .map-head{
     grid-template-columns:minmax(0,1fr) auto;
-    grid-template-areas:
-      "main main"
-      "actions actions"
-      "status status";
+    grid-template-areas:"main actions";
     align-items:flex-start;
-    gap:6px;
-    padding:3px 2px 4px;
+    gap:4px;
+    padding:1px 0 3px;
   }
   .map-head-main{
     width:100%;
+    flex-wrap:wrap;
+    align-items:center;
     justify-content:flex-start;
-    gap:6px;
+    gap:4px;
+  }
+  .map-head-main .map-pressure-mood{
+    margin-left:auto;
   }
   .map-head-actions{
-    width:100%;
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto auto;
-    align-items:center;
-    gap:6px;
+    width:auto;
+    display:flex;
+    align-items:flex-start;
+    gap:4px;
   }
   .map-head h2{
-    font-size:15px;
+    font-size:14px;
+    line-height:1.05;
   }
   .map-intel-btn{
-    order:2;
+    order:1;
     justify-self:end;
-    min-height:28px;
+    min-height:24px;
     min-width:0;
-    padding:0 10px;
-    font-size:10px;
+    padding:0 8px;
+    font-size:9.5px;
     letter-spacing:.03em;
   }
   .map-zoom-controls{
-    order:1;
-    grid-column:1 / -1;
+    order:2;
+    grid-column:auto;
     min-width:0;
-    width:100%;
-    display:grid;
-    grid-template-columns:auto minmax(0,1fr) auto auto;
+    width:auto;
+    display:inline-flex;
     align-items:center;
-    gap:4px;
-    padding:3px;
+    gap:2px;
+    padding:2px 4px;
   }
   .map-head-status{
     width:100%;
     justify-content:flex-start;
   }
   .map-zoom-btn{
-    min-width:34px;
-    padding:0 8px;
-    font-size:11px;
+    display:none;
   }
   .map-zoom-slider{
-    width:100%;
-    min-width:0;
+    width:36px;
+    min-width:36px;
   }
   #closeMap{
     order:3;
     justify-self:end;
-    min-width:32px;
-    height:28px;
-    padding:0 9px;
+    min-width:28px;
+    height:24px;
+    padding:0 8px;
     align-self:stretch;
+  }
+  #ctaSurface{
+    margin:0 0 2px !important;
+  }
+  .map-world-brief{
+    margin:0 2px 2px;
+    padding:0;
+    gap:5px;
+  }
+  .map-pressure-mood{
+    min-height:18px;
+    padding:2px 7px;
+    font-size:9px;
+    letter-spacing:.05em;
   }
   .map-world-brief-line-1{ display:none; }
   .map-world-brief[data-mode="selection"] .map-world-brief-line-1{ display:block; }
@@ -7507,6 +7531,7 @@ document.addEventListener("click", async (e) => {
         const mapRoot = document.getElementById("map");
         const MAP_STAGE_SCALE = 1.65;
         const MAP_ZOOM_LEVELS = [0.75, 1.0, 1.25];
+        const MAP_MOBILE_MEDIA = window.matchMedia("(max-width: 640px)");
         const MAP_PAN_DRAG_THRESHOLD = 10;
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
         const mapStageEl = ensureMapStage(mapRoot);
@@ -7522,6 +7547,14 @@ document.addEventListener("click", async (e) => {
         let PLAYER_STATE = null;
         let PROFILE = null;
         let ACTIVE_PIN_ID = null;
+        function isMobileMapViewport(){
+          return !!MAP_MOBILE_MEDIA?.matches;
+        }
+
+        function defaultMapZoom(){
+          return isMobileMapViewport() ? MAP_ZOOM_LEVELS[0] : 1;
+        }
+
         const mapPanState = {
           x: 0,
           y: 0,
@@ -7529,7 +7562,7 @@ document.addEventListener("click", async (e) => {
           maxX: 0,
           minY: 0,
           maxY: 0,
-          zoom: 1,
+          zoom: defaultMapZoom(),
           pointerId: null,
           startX: 0,
           startY: 0,
@@ -7575,7 +7608,7 @@ document.addEventListener("click", async (e) => {
         function mapZoomIndex(){
           const current = Number(mapPanState.zoom || 1);
           const idx = MAP_ZOOM_LEVELS.findIndex((level) => Math.abs(level - current) < 0.001);
-          return idx >= 0 ? idx : 1;
+          return idx >= 0 ? idx : (isMobileMapViewport() ? 0 : 1);
         }
 
         function scaledStageSize(){
@@ -7629,7 +7662,7 @@ document.addEventListener("click", async (e) => {
 
         function setMapZoom(nextZoom, options = {}){
           if (!mapRoot || !mapStageEl) return;
-          const zoom = MAP_ZOOM_LEVELS.includes(nextZoom) ? nextZoom : 1;
+          const zoom = MAP_ZOOM_LEVELS.includes(nextZoom) ? nextZoom : defaultMapZoom();
           const currentZoom = Number(mapPanState.zoom || 1);
           if (Math.abs(currentZoom - zoom) < 0.001 && !options.recenter) {
             updateMapZoomControls();
@@ -7711,10 +7744,10 @@ document.addEventListener("click", async (e) => {
             setMapZoom(MAP_ZOOM_LEVELS[idx]);
           });
 
-          mapZoomResetBtn?.addEventListener("click", (event) => {
-            event.preventDefault();
-            setMapZoom(1, { recenter: true });
-          });
+        mapZoomResetBtn?.addEventListener("click", (event) => {
+          event.preventDefault();
+          setMapZoom(defaultMapZoom(), { recenter: true });
+        });
         }
 
         function bindMapPan(){
@@ -9712,6 +9745,7 @@ const actions = {
     if (window.DBG) console.debug("[map] open", { source: "button" });
     mapBack.style.display = "flex";
     navOpen("mapBack");
+    if (!mapPanState.hasCenteredOnce) mapPanState.zoom = defaultMapZoom();
     bindMapPan();
     bindMapZoomControls();
     requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
@@ -10131,6 +10165,7 @@ async function showSection(name){
       if (window.DBG) console.debug("[map] open", { source: "showSection" });
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
+      if (!mapPanState.hasCenteredOnce) mapPanState.zoom = defaultMapZoom();
       bindMapPan();
       bindMapZoomControls();
       requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
