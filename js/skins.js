@@ -759,6 +759,22 @@
     return { label: "Owned", className: "is-owned" };
   }
 
+  function skinDetailCopy(meta, key, owned) {
+    const k = normKey(key);
+    if (k === "default") return "Default - clean Alpha.";
+    const name = String(meta?.name || meta?.key || "Skin").trim() || "Skin";
+    const desc = String(meta?.description || "").trim();
+    const safety = String(meta?.safetyLine || meta?.safety_line || "").trim();
+    if (owned && desc) return safety ? `${desc} ${safety}` : desc;
+    if (owned) return `${name} - available.`;
+    if (meta && (isSpinsOnly(meta) || isPreviewOnly(meta) || isCodeUnlock(meta) || isSupportStars(meta) || isEarnOnly(meta))) {
+      return desc ? `${desc} ${lockDesc(meta)}` : `${name} - ${lockDesc(meta)}`;
+    }
+    const cost = getCost(k);
+    const label = fmtCostLabel(cost);
+    return label ? `${name} - locked. Buy to unlock (${label}).` : `${name} - locked.`;
+  }
+
   function refreshSkinButtonStates() {
     if (!skinButtonsWrap) return;
     const selectedKey = normKey(_selectedKey);
@@ -795,7 +811,12 @@
     if (skinInfoName) skinInfoName.textContent = k === "default" ? "Default" : (meta?.name || meta?.key || "Skin");
 
     if (skinInfoMeta) {
-      const parts = [lane, "Cosmetic skin"];
+      const parts = [lane];
+      const rarity = String(meta?.rarity || "").trim();
+      const source = String(meta?.source || meta?.sourceLabel || "").trim();
+      parts.push(rarity || "Cosmetic");
+      parts.push(meta?.cosmeticOnly === false ? "Skin" : "Cosmetic only");
+      if (source) parts.push(source);
       if (!owned && meta) {
         if (isSpinsOnly(meta) || isPreviewOnly(meta)) {
           parts.push(lockDesc(meta));
@@ -943,7 +964,12 @@
       avatarBack?.classList.add("is-animated-preview");
       _useImgPreview(true);
       skinPreviewImg.onerror = () => {
-        if (fallbackUrl && fallbackUrl !== imgUrl) skinPreviewImg.src = fallbackUrl;
+        if (fallbackUrl && fallbackUrl !== imgUrl) {
+          skinPreviewImg.onerror = () => drawPlaceholder(name || "Skin preview unavailable");
+          skinPreviewImg.src = fallbackUrl;
+          return;
+        }
+        drawPlaceholder(name || "Skin preview unavailable");
       };
       skinPreviewImg.src = imgUrl;
       return;
@@ -967,7 +993,12 @@
         if (animated && skinPreviewImg) {
           _useImgPreview(true);
           skinPreviewImg.onerror = () => {
-            if (fallbackUrl && fallbackUrl !== imgUrl) skinPreviewImg.src = fallbackUrl;
+            if (fallbackUrl && fallbackUrl !== imgUrl) {
+              skinPreviewImg.onerror = () => drawPlaceholder(name || "Skin preview unavailable");
+              skinPreviewImg.src = fallbackUrl;
+              return;
+            }
+            drawPlaceholder(name || "Skin preview unavailable");
           };
           skinPreviewImg.src = imgUrl;
           return;
@@ -1216,6 +1247,13 @@
         const thumbImg = document.createElement("img");
         thumbImg.src = thumbUrl;
         thumbImg.alt = "";
+        thumbImg.onerror = () => {
+          thumbImg.remove();
+          const empty = document.createElement("div");
+          empty.className = "ah-skin-thumb-empty";
+          empty.textContent = owned ? "Owned" : "Preview";
+          thumb.replaceChildren(empty);
+        };
         thumb.appendChild(thumbImg);
       } else {
         const empty = document.createElement("div");
@@ -1247,25 +1285,7 @@
         showClaimUI(shouldShowClaim);
 
         if (skinDesc) {
-          if (key === "default") {
-            skinDesc.textContent = "Default - clean Alpha.";
-          } else if (isEffectivelyOwned(key)) {
-            skinDesc.textContent = `${s.name || s.key} - available.`;
-          } else if (meta && (isSpinsOnly(meta) || isPreviewOnly(meta))) {
-            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
-          } else if (meta && isCodeUnlock(meta)) {
-            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
-          } else if (meta && isSupportStars(meta)) {
-            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(meta)}`;
-          } else if (isEarnOnly(s)) {
-            skinDesc.textContent = `${s.name || s.key} - ${lockDesc(s)}`;
-          } else {
-            const cost = getCost(key);
-            const label = fmtCostLabel(cost);
-            skinDesc.textContent = label
-              ? `${s.name || s.key} - locked. Buy to unlock (${label}).`
-              : `${s.name || s.key} - locked.`;
-          }
+          skinDesc.textContent = skinDetailCopy(meta, key, owned);
         }
 
         syncCurrentFrameOverlay();

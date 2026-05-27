@@ -1214,6 +1214,24 @@
         }
         return false;
 
+      case "skins":
+        try {
+          if (typeof window.Skins?.open === "function") {
+            window.Skins.open();
+            return true;
+          }
+        } catch (err) {
+          warn("Skins open failed", err);
+        }
+        {
+          const btn = document.querySelector('.ah-action[data-action="skins"], .btn.skins, button.btn.skins');
+          if (btn) {
+            btn.click();
+            return true;
+          }
+        }
+        return false;
+
       case "broken_contracts":
       case "contracts":
         try {

@@ -168,6 +168,7 @@
       milestones: [],
       visualCardsEnabled: false,
       paymentsEnabled: false,
+      eventProducts: [],
       pendingPayment: null,
       bannerUrl: HOWL_TREASURY_BANNER_URL,
       emblemUrl: HOWL_TREASURY_EMBLEM_URL,
@@ -218,6 +219,7 @@
       unlockedMilestones: normalizeUnlockedMilestones(src.unlockedMilestones, src.milestones, base.unlockedMilestones),
       userSignal: normalizeUserSignal(src.userSignal, base.userSignal),
       milestones: normalizeMilestones(src.milestones, base.milestones),
+      eventProducts: normalizeEventProducts(src.eventProducts),
       pendingPayment: normalizePendingPayment(src.pendingPayment),
       bannerUrl: String(src.bannerUrl || base.bannerUrl || HOWL_TREASURY_BANNER_URL).trim() || HOWL_TREASURY_BANNER_URL,
       emblemUrl: String(src.emblemUrl || base.emblemUrl || HOWL_TREASURY_EMBLEM_URL).trim() || HOWL_TREASURY_EMBLEM_URL,
@@ -243,8 +245,55 @@
       isPublic: src.isPublic == null ? true : !!src.isPublic,
       status,
       presetKey: String(src.presetKey || src.preset_key || "").trim().toLowerCase(),
+      productId: String(src.productId || src.product_id || "").trim().toLowerCase(),
       walletExplorerUrl: String(src.walletExplorerUrl || src.wallet_explorer_url || "").trim(),
     };
+  }
+
+  function normalizeEventProducts(items) {
+    const list = Array.isArray(items) ? items : [];
+    return list.map((item) => {
+      const row = item && typeof item === "object" ? item : {};
+      return {
+        id: String(row.id || "").trim().toLowerCase(),
+        name: String(row.name || "Vault Box").trim() || "Vault Box",
+        title: String(row.title || row.name || "Vault Box").trim() || "Vault Box",
+        subtitle: String(row.subtitle || "").trim(),
+        priceHowl: safeInt(row.priceHowl || row.price_howl, 0),
+        priceRaw: safeInt(row.priceRaw || row.price_raw, 0),
+        priceDisplay: String(row.priceDisplay || row.price_display || "0 $HOWL").trim() || "0 $HOWL",
+        presetKey: String(row.presetKey || row.preset_key || "").trim().toLowerCase(),
+        limitTotal: safeInt(row.limitTotal || row.limit_total, 0),
+        limitPerUser: safeInt(row.limitPerUser || row.limit_per_user, 0),
+        limitDisplay: String(row.limitDisplay || row.limit_display || "").trim(),
+        claimedCount: safeInt(row.claimedCount || row.claimed_count, 0),
+        remainingCount: safeInt(row.remainingCount || row.remaining_count, 0),
+        userClaimedCount: safeInt(row.userClaimedCount || row.user_claimed_count, 0),
+        kind: String(row.kind || "treasury_event_product").trim() || "treasury_event_product",
+        source: String(row.source || "howl_treasury").trim() || "howl_treasury",
+        cosmeticOnly: row.cosmeticOnly == null ? true : !!row.cosmeticOnly,
+        assetUrl: String(row.assetUrl || row.asset_url || "").trim(),
+        contents: Array.isArray(row.contents) ? row.contents.map((entry) => String(entry || "").trim()).filter(Boolean) : [],
+        safetyLine: String(row.safetyLine || row.safety_line || "").trim(),
+        supportLine: String(row.supportLine || row.support_line || "").trim(),
+        ctaLabel: String(row.ctaLabel || row.cta_label || "Support the Pack").trim() || "Support the Pack",
+        soldOutCopy: String(row.soldOutCopy || row.sold_out_copy || "").trim(),
+        enabled: !!row.enabled,
+        disabled: row.disabled == null ? !row.enabled : !!row.disabled,
+        soldOut: !!row.soldOut,
+        hasPending: !!row.hasPending,
+        userLimitReached: !!row.userLimitReached,
+        blockedByPending: !!row.blockedByPending,
+        claimed: !!row.claimed,
+        fulfilled: !!row.fulfilled,
+        fulfilledAt: safeInt(row.fulfilledAt || row.fulfilled_at, 0),
+        claimedCopy: String(row.claimedCopy || row.claimed_copy || "").trim(),
+        fulfilledCopy: String(row.fulfilledCopy || row.fulfilled_copy || "").trim(),
+        openSkins: !!row.openSkins,
+        skinRecordedOnly: !!row.skinRecordedOnly,
+        status: String(row.status || "").trim().toLowerCase(),
+      };
+    }).filter((row) => row.id);
   }
 
   function normalizeRecentSignals(items) {
@@ -376,6 +425,15 @@
     if (normalized === "PAYMENTS_DISABLED" || normalized === "TREASURY_PAYMENTS_DISABLED") {
       return "Treasury support is currently offline.";
     }
+    if (normalized === "PRODUCT_SOLD_OUT") {
+      return "The Blue-Moon Hunter signal is closed. All limited Vault Boxes have been claimed.";
+    }
+    if (normalized === "PRODUCT_LIMIT_REACHED") {
+      return "Your Blue-Moon Hunter Vault Box claim is already recorded.";
+    }
+    if (normalized === "PENDING_SIGNAL_EXISTS") {
+      return "Finish or let your current Treasury signal expire before starting another one.";
+    }
     return String(fallback || "").trim() || "Treasury support is coming online.";
   }
 
@@ -438,6 +496,8 @@
           </div>
           ${renderSupportPanel(s)}
         </section>
+
+        ${renderEventProducts(s)}
 
         <section class="ht-grid">
           <div class="ht-panel">
@@ -610,6 +670,111 @@
     `;
   }
 
+  function renderEventProducts(state) {
+    const s = state && typeof state === "object" ? state : buildStaticState();
+    const list = Array.isArray(s.eventProducts) ? s.eventProducts : [];
+    if (!list.length) return "";
+
+    return `
+      <section class="ht-panel">
+        <div class="ht-panel-head">
+          <div>
+            <div class="ht-panel-kicker">Limited Cosmetic Signal</div>
+            <h3>Vault Box window</h3>
+          </div>
+          <span class="ht-mini-chip is-amber">LIMITED</span>
+        </div>
+        <div class="ht-event-list">
+          ${list.map((item) => renderEventProduct(item)).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderEventProduct(item) {
+    const row = item && typeof item === "object" ? item : null;
+    if (!row) return "";
+    const media = row.assetUrl
+      ? `<img class="ht-event-media" src="${esc(row.assetUrl)}" alt="${esc(row.name || row.title || "Vault Box")}" loading="lazy" decoding="async" />`
+      : `<div class="ht-event-media is-empty"><span>Cosmetic vault signal</span></div>`;
+    const statusLabel = row.userLimitReached
+      ? "CLAIMED"
+      : row.soldOut
+        ? "SOLD OUT"
+        : row.hasPending
+          ? "PENDING"
+        : row.blockedByPending
+          ? "SIGNAL OPEN"
+          : row.enabled
+            ? "LIVE"
+            : "OFFLINE";
+    const canOpenSkins = !!row.userLimitReached && !!row.fulfilled && !!row.openSkins;
+    const disabled = canOpenSkins ? false : !row.enabled;
+    const buttonLabel = canOpenSkins
+      ? "Open Skins"
+      : row.userLimitReached
+        ? "Claimed"
+      : row.soldOut
+        ? "Sold Out"
+        : row.hasPending
+          ? "Pending"
+        : row.blockedByPending
+          ? "Current Signal Open"
+          : (row.ctaLabel || "Support the Pack");
+    const claimedStateBlock = row.userLimitReached
+      ? `
+        <div class="ht-support-note">
+          <strong>${esc(row.claimedCopy || "Blue Signal received.")}</strong>
+          ${row.fulfilledCopy ? `<br>${esc(row.fulfilledCopy)}` : ""}
+        </div>
+      `
+      : "";
+    const footerCopy = row.userLimitReached
+      ? ""
+      : row.soldOut
+        ? (row.soldOutCopy || "")
+        : row.blockedByPending
+          ? "Finish or let your current Treasury signal expire before opening this Vault Box."
+        : (row.supportLine || "");
+
+    return `
+      <article class="ht-event-card">
+        ${media}
+        <div class="ht-event-body">
+          <div class="ht-event-head">
+            <div>
+              <div class="ht-event-title">${esc(row.title || row.name || "Vault Box")}</div>
+              ${row.subtitle ? `<p class="ht-copy ht-copy-tight">${esc(row.subtitle)}</p>` : ""}
+            </div>
+            <span class="ht-mini-chip ${row.userLimitReached ? "is-amber" : row.soldOut ? "is-muted" : "is-amber"}">${esc(statusLabel)}</span>
+          </div>
+          <div class="ht-event-meta">
+            <span>${esc(row.priceDisplay || "0 $HOWL")}</span>
+            <span>${esc(row.limitDisplay || "")}</span>
+          </div>
+          ${row.contents.length ? `
+            <div class="ht-event-contents">
+              ${row.contents.map((entry) => `<span class="ht-inline-badge">${esc(entry)}</span>`).join("")}
+            </div>
+          ` : ""}
+          ${row.safetyLine ? `<div class="ht-support-note">${esc(row.safetyLine)}</div>` : ""}
+          ${claimedStateBlock}
+          ${footerCopy ? `<p class="ht-copy">${esc(footerCopy)}</p>` : ""}
+          <div class="ht-actions">
+            <button
+              type="button"
+              class="ht-btn ${disabled ? "is-disabled" : ""}"
+              ${canOpenSkins ? 'data-ht-open-skins="1"' : `data-ht-start-product="${esc(row.id)}"`}
+              ${disabled ? 'disabled aria-disabled="true"' : ""}
+            >
+              ${esc(buttonLabel)}
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
   function renderSupportPanel(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
     if (_successSignal) return renderSuccess(_successSignal);
@@ -746,6 +911,13 @@
     const sideEffects = row.sideEffects && typeof row.sideEffects === "object" ? row.sideEffects : {};
     const cardPreview = row.cardUrl ? renderVisualCard(row.cardUrl) : "";
     const tierCardPreview = row.tierCardUrl ? renderVisualCard(row.tierCardUrl) : "";
+    const productFulfilled = !!sideEffects.productFulfilled;
+    const productBlock = row.productId === "blue_moon_hunter_vault_box" ? `
+      <div class="ht-support-note">
+        <strong>${productFulfilled ? "Blue Signal received." : "Vault Box Recorded"}</strong><br>
+        ${productFulfilled ? "Your Blue-Moon Hunter Vault Box has been unlocked." : "Blue-Moon Hunter Vault Box"}
+      </div>
+    ` : "";
     const tierUnlockedBlock = row.tierUnlocked ? `
       <div class="ht-support-note">
         <strong>Treasury Rank Unlocked</strong><br>
@@ -762,12 +934,13 @@
     return `
       <div class="ht-success-shell">
         <div class="ht-pending-head">
-          <div class="ht-pending-title">Treasury Signal Received</div>
-          <div class="ht-pending-chip">VERIFIED</div>
-        </div>
-        <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
-        ${tierUnlockedBlock}
-        ${milestoneUnlockedBlock}
+        <div class="ht-pending-title">Treasury Signal Received</div>
+        <div class="ht-pending-chip">VERIFIED</div>
+      </div>
+      <p class="ht-copy">Your support was verified.<br>The Pack remembers.</p>
+      ${productBlock}
+      ${tierUnlockedBlock}
+      ${milestoneUnlockedBlock}
         ${cardPreview}
         ${tierCardPreview}
         <div class="ht-field-grid">
@@ -920,6 +1093,25 @@
         return;
       }
 
+      const productBtn = event.target.closest("[data-ht-start-product]");
+      if (productBtn) {
+        event.preventDefault();
+        void startSupport({ productId: productBtn.getAttribute("data-ht-start-product") || "" });
+        return;
+      }
+
+      const openSkinsBtn = event.target.closest("[data-ht-open-skins]");
+      if (openSkinsBtn) {
+        event.preventDefault();
+        close();
+        if (typeof window.Skins?.open === "function") {
+          void window.Skins.open();
+        } else {
+          toast("Skins are not ready yet.");
+        }
+        return;
+      }
+
       const copyAmountBtn = event.target.closest("[data-ht-copy-amount]");
       if (copyAmountBtn) {
         event.preventDefault();
@@ -996,7 +1188,7 @@
     return `rid_${String(prefix || "treasury")}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}_${String(key || "").slice(0, 24)}`;
   }
 
-  async function startSupport() {
+  async function startSupport(opts) {
     if (_startingSupport) return;
     if (!_state || !_state.paymentsEnabled) {
       toast("Treasury support is coming online.");
@@ -1014,12 +1206,19 @@
     _successSignal = null;
     render(_state || buildStaticState());
 
+    const cfg = opts && typeof opts === "object" ? opts : {};
+    const productId = String(cfg.productId || "").trim().toLowerCase();
     const presetKey = _selectedPresetKey || SUPPORT_PRESETS[0].presetKey;
     const payload = {
       isPublic: !!_publicSupport,
-      run_id: makeRunId("treasury_support", presetKey === CUSTOM_PRESET_KEY ? `${presetKey}_${_customAmountHowl}` : presetKey),
+      run_id: makeRunId(
+        productId ? "treasury_product" : "treasury_support",
+        productId || (presetKey === CUSTOM_PRESET_KEY ? `${presetKey}_${_customAmountHowl}` : presetKey)
+      ),
     };
-    if (presetKey === CUSTOM_PRESET_KEY) {
+    if (productId) {
+      payload.productId = productId;
+    } else if (presetKey === CUSTOM_PRESET_KEY) {
       const customAmount = normalizeWholeHowlInput(_customAmountHowl);
       if (!customAmount.ok) {
         const message = supportErrorMessage(customAmount.code, "");
@@ -1147,6 +1346,9 @@
       txExplorerUrl: String(src.txExplorerUrl || src.tx_explorer_url || "").trim(),
       isPublic: src.isPublic == null ? true : !!src.isPublic,
       createdAt: safeInt(src.createdAt || src.created_at, 0),
+      completedAt: safeInt(src.completedAt || src.completed_at, 0),
+      uid: String(src.uid || "").trim(),
+      productId: String(src.productId || src.product_id || "").trim().toLowerCase(),
       cardUrl: String(src.cardUrl || src.card_url || "").trim(),
       tier: String(src.tier || "none").trim().toLowerCase() || "none",
       tierLabel: String(src.tierLabel || src.tier_label || "No signal yet").trim() || "No signal yet",
@@ -1985,6 +2187,77 @@
         display:grid;
         gap:12px;
         margin-top:12px;
+      }
+      .ht-event-list{
+        display:grid;
+        gap:12px;
+        margin-top:12px;
+      }
+      .ht-event-card{
+        display:grid;
+        gap:12px;
+        padding:12px;
+        border-radius:18px;
+        border:1px solid rgba(111,201,238,.16);
+        background:
+          linear-gradient(180deg, rgba(70,134,164,.12), rgba(7,13,18,.12)),
+          rgba(5,10,14,.72);
+      }
+      .ht-event-media{
+        width:100%;
+        min-height:132px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(5,10,14,.66);
+        object-fit:cover;
+        display:block;
+      }
+      .ht-event-media.is-empty{
+        display:grid;
+        place-items:center;
+        padding:18px;
+        background:
+          radial-gradient(circle at top, rgba(121,219,255,.18), transparent 58%),
+          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+          rgba(8,14,20,.9);
+        color:#d7edf5;
+        text-transform:uppercase;
+        letter-spacing:.16em;
+        font-size:11px;
+        font-weight:800;
+      }
+      .ht-event-body{
+        display:grid;
+        gap:10px;
+      }
+      .ht-event-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        flex-wrap:wrap;
+      }
+      .ht-event-title{
+        font-size:16px;
+        line-height:1.2;
+        font-weight:800;
+        letter-spacing:.05em;
+        color:#f2f9ff;
+      }
+      .ht-event-meta{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        flex-wrap:wrap;
+        color:#b8d0dc;
+        font-size:12px;
+        line-height:1.4;
+      }
+      .ht-event-contents{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
       }
       .ht-card-preview{
         width:100%;

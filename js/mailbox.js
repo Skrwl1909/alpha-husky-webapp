@@ -553,6 +553,7 @@
       const action = asText(target?.action).toLowerCase();
       if (action === "factions") return !!window.Factions?.openPicker?.() || !!window.Factions?.open?.({ mode: "select" });
       if (action === "equipped") return !!window.Equipped?.open?.();
+      if (action === "skins") return !!window.Skins?.open?.();
       if (action === "broken_contracts") return !!window.BrokenContracts?.open?.();
     }
     if (type === "send_howl") {
