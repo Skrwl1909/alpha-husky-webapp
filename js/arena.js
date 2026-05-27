@@ -248,6 +248,7 @@ function setAnimatedOrStaticPet(iconEl, player, mirror = false) {
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
               <div style="min-width:0">
                 <div style="font-weight:800">Pet Arena Replay</div>
+                <div style="font-size:11px;opacity:.72;margin-top:2px;line-height:1.3">Pet Arena uses your pet’s effective stats as the base, then applies archetype rules. Feral, Trickster, and Mystic can turn stats into combat power differently.</div>
                 <div id="arena-meta" style="opacity:.85;font-size:13px;margin-top:2px;">loading…</div>
               </div>
               <button id="arena-close" type="button" style="padding:10px 12px;border-radius:12px;border:0;cursor:pointer;">Close</button>
