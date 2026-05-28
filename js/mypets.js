@@ -55,7 +55,7 @@
   function formatPendingLabel(points) {
     const count = Math.max(0, Number(points || 0));
     if (count === 1) return "1 stat point available";
-    return `Pending points: ${count}`;
+    return `${count} stat points available`;
   }
 
   function ensureStyles() {
@@ -67,36 +67,41 @@
       #mypetsModal .panel{
         position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
         width:min(520px,calc(100% - 24px));max-height:82vh;overflow:auto;
-        border-radius:16px;background:linear-gradient(180deg,#0f1621 0%,#0b1017 100%);
-        border:1px solid rgba(162,217,255,.14);
-        box-shadow:0 18px 44px rgba(0,0,0,.34)
+        border-radius:18px;background:linear-gradient(180deg,#121924 0%,#0b1118 100%);
+        border:1px solid rgba(172,212,242,.14);
+        box-shadow:0 22px 52px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.03)
       }
       #mypetsModal .head{
         display:flex;align-items:center;justify-content:space-between;
-        padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.10)
+        padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.08)
       }
-      #mypetsModal .head .t{font-weight:800;letter-spacing:.2px;color:#f5fbff}
+      #mypetsModal .head .t{font-weight:800;letter-spacing:.2px;color:#f2f8ff}
       #mypetsModal .head button{
-        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#f7fcff;
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#edf5fc;
         font-size:15px;cursor:pointer;border-radius:10px;min-width:32px;min-height:32px
       }
-      #mypetsModal .sub{padding:0 14px 10px;color:rgba(229,242,255,.8);font-size:12px;line-height:1.45}
+      #mypetsModal .sub{padding:0 14px 11px;color:rgba(214,228,241,.8);font-size:12px;line-height:1.45}
       #mypetsModal .list{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
       .petRow{
         display:flex;gap:12px;align-items:center;
-        padding:11px;border-radius:14px;
-        border:1px solid rgba(208,229,255,.12);
-        background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.045) 100%);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+        padding:12px;border-radius:16px;
+        border:1px solid rgba(201,221,241,.11);
+        background:linear-gradient(180deg,rgba(30,39,53,.96) 0%,rgba(16,22,31,.98) 100%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.035), 0 10px 24px rgba(0,0,0,.16)
       }
       .petRow.active{
-        outline:1px solid rgba(137,255,254,.42);
-        border-color:rgba(137,255,254,.26);
-        background:linear-gradient(180deg,rgba(96,165,250,.14) 0%,rgba(255,255,255,.06) 100%)
+        border-color:rgba(134,191,231,.32);
+        background:
+          linear-gradient(180deg,rgba(80,121,163,.18) 0%,rgba(18,25,35,.98) 100%);
+        box-shadow:
+          inset 0 0 0 1px rgba(206,234,255,.06),
+          0 14px 30px rgba(0,0,0,.22)
       }
       .petImg{
         width:56px;height:56px;border-radius:12px;object-fit:cover;
-        background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08)
+        background:linear-gradient(180deg,rgba(42,53,67,.95) 0%,rgba(22,29,39,.96) 100%);
+        border:1px solid rgba(205,223,242,.12);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
       }
       .petImg.petSprite{object-fit:contain}
       .petImg.petSprite canvas,
@@ -104,49 +109,63 @@
       .petMeta{flex:1;min-width:0}
       .petName{
         font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        color:#f6fbff;font-size:14px;letter-spacing:.01em
+        color:#f5f9ff;font-size:15px;letter-spacing:.01em
       }
-      .petSub{color:rgba(223,237,255,.88);font-size:12px;line-height:1.4;margin-top:4px}
-      .petBadges{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+      .petSub{color:rgba(214,228,241,.9);font-size:12px;line-height:1.45;margin-top:4px}
+      .petBadges{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
       .petBadge{
         display:inline-flex;align-items:center;gap:4px;
-        padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;
-        background:rgba(137,255,254,.18);border:1px solid rgba(137,255,254,.28);color:#efffff;
-        box-shadow:0 0 0 1px rgba(137,255,254,.06) inset
+        padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;
+        background:rgba(73,102,132,.24);border:1px solid rgba(162,201,232,.24);color:#edf7ff;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+      }
+      .petBadgeUpgrade{
+        background:linear-gradient(180deg,rgba(76,116,150,.34) 0%,rgba(42,65,88,.28) 100%);
+        border-color:rgba(167,208,240,.34);
+        color:#f6fbff;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 8px 18px rgba(11,19,29,.18)
       }
       .petStats{
         display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:8px;margin-top:9px
+        gap:8px;margin-top:10px
       }
       .petStat{
-        display:flex;align-items:center;justify-content:space-between;gap:6px;
-        min-width:0;padding:7px 9px;border-radius:11px;
-        background:rgba(163,191,224,.12);border:1px solid rgba(207,226,248,.14)
+        display:flex;align-items:center;justify-content:space-between;gap:8px;
+        min-width:0;padding:8px 10px;border-radius:12px;
+        background:linear-gradient(180deg,rgba(36,47,60,.96) 0%,rgba(23,31,41,.98) 100%);
+        border:1px solid rgba(188,211,233,.13);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
       }
-      .petStatText{display:flex;align-items:center;gap:6px;min-width:0}
-      .petStatLabel{font-size:11px;color:rgba(222,236,249,.82);font-weight:700;letter-spacing:.03em}
-      .petStatValue{font-size:13px;font-weight:800;color:#f6fbff}
+      .petStatText{display:flex;align-items:baseline;gap:7px;min-width:0;flex-wrap:wrap}
+      .petStatLabel{font-size:11px;color:rgba(208,223,238,.88);font-weight:800;letter-spacing:.05em}
+      .petStatValue{font-size:14px;font-weight:800;color:#f7fbff}
       .petStatAdd{
-        width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
-        border-radius:999px;border:1px solid rgba(137,255,254,.42);
-        background:linear-gradient(180deg,rgba(84,203,255,.34) 0%,rgba(60,171,235,.22) 100%);
-        color:#f9feff;cursor:pointer;font-weight:900;font-size:16px;flex:0 0 auto;
-        box-shadow:0 4px 12px rgba(54,158,217,.18)
+        width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+        border-radius:10px;border:1px solid rgba(176,212,240,.34);
+        background:linear-gradient(180deg,rgba(70,101,131,.94) 0%,rgba(45,66,87,.96) 100%);
+        color:#f4fbff;cursor:pointer;font-weight:900;font-size:17px;line-height:1;flex:0 0 auto;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.18)
       }
       .petStatAdd[disabled]{opacity:.45;cursor:default;box-shadow:none}
       .petDebug{opacity:.72;font-size:10px;line-height:1.35;margin-top:5px;word-break:break-word}
       .petBtn{
-        padding:9px 11px;border-radius:12px;min-width:62px;
-        border:1px solid rgba(255,255,255,.16);
-        background:rgba(255,255,255,.08);color:#f8fcff;cursor:pointer;font-weight:700
+        padding:10px 12px;border-radius:12px;min-width:68px;
+        border:1px solid rgba(201,220,240,.16);
+        background:linear-gradient(180deg,rgba(40,52,67,.95) 0%,rgba(25,33,43,.98) 100%);
+        color:#f4f9fd;cursor:pointer;font-weight:700;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
       }
-      .petBtn[disabled]{opacity:.72;cursor:default}
+      .petBtn[disabled]{opacity:.82;cursor:default;background:linear-gradient(180deg,rgba(57,86,112,.94) 0%,rgba(39,60,78,.96) 100%)}
       .petErr{padding:14px;color:rgba(235,244,255,.86)}
       @media (max-width: 420px){
         #mypetsModal .panel{width:min(520px,calc(100% - 18px));bottom:10px}
         #mypetsModal .list{padding:10px 12px}
-        .petRow{gap:10px;padding:10px}
+        .petRow{gap:10px;padding:11px}
+        .petName{font-size:14px}
         .petStats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+        .petStat{padding:8px 9px}
+        .petStatAdd{width:28px;height:28px}
+        .petBtn{min-width:60px;padding:9px 11px}
       }
     `;
     document.head.appendChild(s);
@@ -165,6 +184,7 @@
           <button type="button" data-close aria-label="Close">X</button>
         </div>
         <div class="sub">Tap a pet to set it active. Spend pending points below when they appear.</div>
+        <details style="margin:0 14px 4px"><summary style="cursor:pointer;font-size:11px;color:rgba(214,228,241,.8);outline:none">Pet Stats Scheme</summary><div style="font-size:11px;color:rgba(214,228,241,.72);margin-top:2px;line-height:1.3">Base = natural start. Allocated = your spent points. Pending = unspent level-ups. Effective = shown power (current total). Full guide in FAQ → Stats Scheme.</div></details>
         <div class="list" id="mypetsList"></div>
       </div>
     `;
@@ -302,7 +322,7 @@
         </div>
       `).join("");
       const badges = pending > 0
-        ? `<div class="petBadges"><div class="petBadge">${escapeHtml(formatPendingLabel(pending))}</div></div>`
+        ? `<div class="petBadges"><div class="petBadge petBadgeUpgrade">${escapeHtml(formatPendingLabel(pending))}</div></div>`
         : "";
       const hasSpriteMeta = !!(pet.spriteSheetUrl && pet.sprite);
       const debug = _dbg

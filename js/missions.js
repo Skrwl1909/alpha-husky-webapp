@@ -826,6 +826,8 @@
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "resolve") return void doResolve();
+      if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
+      if (act === "open_frames") return void openFrames();
       if (act === "close")   return void close();
       if (act === "toggle_help") { _missionsHelpOpen = !_missionsHelpOpen; return void render(); }
       if (act === "back_to_offers") { _pendingStart = null; stopTick(); return void loadState({ force: true, reason: "back_to_offers" }); }
@@ -1428,6 +1430,62 @@ function _normalizeRareDropObj(obj) {
     return `<div class="m-tag-row">${tags.map((tag) => `<span class="m-tag">${esc(tag)}</span>`).join("")}</div>`;
   }
 
+  function blueSignalHuntProgress(payload) {
+    const raw = payload?.blueSignalHunt || payload?.blue_signal_hunt || payload?.lastResolve?.blueSignalHunt || null;
+    return raw && typeof raw === "object" ? raw : null;
+  }
+
+  function renderBlueSignalHuntCard(progress) {
+    if (!progress || typeof progress !== "object") return "";
+    const eventEnabled = !!progress.eventEnabled;
+    const fragments = Number(progress.fragments || 0);
+    const frameRequirement = Number(progress.frameRequirement || 10);
+    const fragmentCap = Number(progress.fragmentCap || 20);
+    const frameClaimed = !!progress.frameClaimed;
+    const canClaimFrame = !!progress.canClaimFrame;
+    const body = textOrEmpty(progress.body) || "Fragments of a broken transmission are surfacing through missions and the Blood-Moon Tower. Collect 10 before the signal fades.";
+    const safetyLine = textOrEmpty(progress.safetyLine) || "Cosmetic only. No combat power.";
+    const title = textOrEmpty(progress.eventName) || "Blue Signal Hunt";
+    const shouldShow = eventEnabled || fragments > 0 || frameClaimed;
+    if (!shouldShow) return "";
+
+    let cta = "";
+    if (frameClaimed) {
+      cta = `<button type="button" class="btn primary" data-act="open_frames">Open Frames</button>`;
+    } else if (canClaimFrame) {
+      cta = `<button type="button" class="btn primary" data-act="claim_blue_signal_frame">Claim Frame</button>`;
+    } else if (eventEnabled) {
+      cta = `<button type="button" class="btn" disabled>Need ${frameRequirement} Fragments</button>`;
+    } else {
+      cta = `<button type="button" class="btn" disabled>Signal inactive</button>`;
+    }
+
+    const progressText = `${fragments} / ${frameRequirement} fragments`;
+    const subline = frameClaimed
+      ? "Blue Signal Frame unlocked."
+      : `Cap: ${fragmentCap} max fragments`;
+
+    return `
+      <div class="m-card" style="margin-top:10px;">
+        <div class="m-row" style="align-items:flex-start; gap:12px;">
+          <div style="min-width:0; flex:1;">
+            <div class="m-title">${esc(title)}</div>
+            <div class="m-muted" style="margin-top:6px;">${esc(body)}</div>
+            <div class="m-tag-row" style="margin-top:10px;">
+              <span class="m-tag">${esc(progressText)}</span>
+              <span class="m-tag">${frameClaimed ? "Frame claimed" : "Frame reward: Blue Signal Frame"}</span>
+            </div>
+            <div class="m-muted" style="margin-top:8px;">${esc(subline)}</div>
+            <div class="m-muted" style="margin-top:4px;">${esc(safetyLine)}</div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:flex-end;">
+            ${cta}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderHelpPanel() {
     if (!_missionsHelpOpen) return "";
     return `
@@ -1755,6 +1813,7 @@ function _normalizeRareDropObj(obj) {
     const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive;
 
     const last = payload.lastResolve || payload.last_resolve || null;
+    const blueSignalHunt = blueSignalHuntProgress(payload);
 
     if (active.status && active.status !== "NONE") {
       // ✅ rare drop source order: pending.offer → active raw mission → payload (fallback)
@@ -1786,6 +1845,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
 
             ${rare ? renderRareDropCard(rare) : ""}
+            ${renderBlueSignalHuntCard(blueSignalHunt)}
 
             <div class="m-actions">
               <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
@@ -1837,6 +1897,7 @@ function _normalizeRareDropObj(obj) {
           </div>
         </div>
 
+        ${renderBlueSignalHuntCard(blueSignalHunt)}
         ${last ? renderLast(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
       </div>
     `;
@@ -2022,6 +2083,37 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     } catch (e) {
       renderError("Resolve failed", String(e?.message || e || ""));
     }
+  }
+
+  async function doClaimBlueSignalFrame() {
+    try {
+      const res = await api("/webapp/blue-signal-hunt/claim", { run_id: rid("m:blue-signal-claim") });
+      const progress = (res && (res.progress || res.blueSignalHunt || res.blue_signal_hunt)) || null;
+      _state = { ...(_state || {}) };
+      if (progress && typeof progress === "object") {
+        _state.blueSignalHunt = progress;
+      }
+      _stateLoadedAt = Date.now();
+      try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      render();
+    } catch (e) {
+      const progress = e?.data?.progress;
+      if (progress && typeof progress === "object") {
+        _state = { ...(_state || {}), blueSignalHunt: progress };
+        _stateLoadedAt = Date.now();
+        render();
+        return;
+      }
+      renderError("Claim failed", String(e?.message || e || ""));
+    }
+  }
+
+  function openFrames() {
+    if (!window.Frames?.open) return;
+    close();
+    setTimeout(() => {
+      try { window.Frames.open(); } catch (_) {}
+    }, 30);
   }
 
   // =========================

@@ -272,7 +272,17 @@
         kind: String(row.kind || "treasury_event_product").trim() || "treasury_event_product",
         source: String(row.source || "howl_treasury").trim() || "howl_treasury",
         cosmeticOnly: row.cosmeticOnly == null ? true : !!row.cosmeticOnly,
-        assetUrl: String(row.assetUrl || row.asset_url || "").trim(),
+        assetUrl: String(
+          row.assetUrl
+          || row.asset_url
+          || row.image
+          || row.img
+          || row.mediaUrl
+          || row.media_url
+          || row.skinAssetUrl
+          || row.skin_asset_url
+          || ""
+        ).trim(),
         contents: Array.isArray(row.contents) ? row.contents.map((entry) => String(entry || "").trim()).filter(Boolean) : [],
         safetyLine: String(row.safetyLine || row.safety_line || "").trim(),
         supportLine: String(row.supportLine || row.support_line || "").trim(),
@@ -691,12 +701,33 @@
     `;
   }
 
+  function renderEventMediaPlaceholder() {
+    return `<div class="ht-event-media-fallback"><span>Cosmetic vault signal</span></div>`;
+  }
+
+  function renderEventMedia(row) {
+    if (!row || !row.assetUrl) {
+      return `<div class="ht-event-media-shell is-fallback">${renderEventMediaPlaceholder()}</div>`;
+    }
+    return `
+      <div class="ht-event-media-shell">
+        <img
+          class="ht-event-media"
+          src="${esc(row.assetUrl)}"
+          alt="${esc(row.name || row.title || "Vault Box")}"
+          loading="lazy"
+          decoding="async"
+          data-ht-event-media-img="1"
+        />
+        ${renderEventMediaPlaceholder()}
+      </div>
+    `;
+  }
+
   function renderEventProduct(item) {
     const row = item && typeof item === "object" ? item : null;
     if (!row) return "";
-    const media = row.assetUrl
-      ? `<img class="ht-event-media" src="${esc(row.assetUrl)}" alt="${esc(row.name || row.title || "Vault Box")}" loading="lazy" decoding="async" />`
-      : `<div class="ht-event-media is-empty"><span>Cosmetic vault signal</span></div>`;
+    const media = renderEventMedia(row);
     const statusLabel = row.userLimitReached
       ? "CLAIMED"
       : row.soldOut
@@ -1151,6 +1182,15 @@
       }
     });
 
+    els.back.addEventListener("error", (event) => {
+      const img = event.target instanceof HTMLImageElement ? event.target : null;
+      if (!img || img.getAttribute("data-ht-event-media-img") !== "1") return;
+      const shell = img.closest(".ht-event-media-shell");
+      if (!shell) return;
+      shell.classList.add("is-fallback");
+      img.removeAttribute("src");
+    }, true);
+
     els.back.addEventListener("input", (event) => {
       const customInput = event.target.closest("[data-ht-custom-amount]");
       if (!customInput) return;
@@ -1511,7 +1551,7 @@
         width:min(100%, 560px);
         max-height:min(calc(var(--vh, 1vh) * 100), 100dvh);
         padding:
-          max(12px, env(safe-area-inset-top, 0px))
+          calc(18px + max(var(--ah-inset-top, 0px), env(safe-area-inset-top, 0px)))
           calc(12px + max(var(--ah-inset-right, 0px), env(safe-area-inset-right, 0px)))
           calc(12px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)))
           calc(12px + max(var(--ah-inset-left, 0px), env(safe-area-inset-left, 0px)));
@@ -1541,12 +1581,18 @@
         display:flex;
         flex-direction:column;
         gap:14px;
-        max-height:calc(min(calc(var(--vh, 1vh) * 100), 100dvh) - 24px - max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
+        max-height:calc(
+          min(calc(var(--vh, 1vh) * 100), 100dvh)
+          - 30px
+          - max(var(--ah-inset-top, 0px), env(safe-area-inset-top, 0px))
+          - max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))
+        );
         overflow:auto;
-        padding:12px 12px calc(20px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
+        padding:16px 12px calc(20px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
         color:#edf7ff;
         overscroll-behavior:contain;
         -webkit-overflow-scrolling:touch;
+        scroll-padding-top:24px;
         scroll-padding-bottom:calc(32px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));
       }
       .ht-hero{
@@ -2203,6 +2249,10 @@
           linear-gradient(180deg, rgba(70,134,164,.12), rgba(7,13,18,.12)),
           rgba(5,10,14,.72);
       }
+      .ht-event-media-shell{
+        position:relative;
+        width:100%;
+      }
       .ht-event-media{
         width:100%;
         min-height:132px;
@@ -2212,10 +2262,13 @@
         object-fit:cover;
         display:block;
       }
-      .ht-event-media.is-empty{
+      .ht-event-media-fallback{
         display:grid;
         place-items:center;
+        min-height:132px;
         padding:18px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.08);
         background:
           radial-gradient(circle at top, rgba(121,219,255,.18), transparent 58%),
           linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
@@ -2225,6 +2278,15 @@
         letter-spacing:.16em;
         font-size:11px;
         font-weight:800;
+      }
+      .ht-event-media-shell .ht-event-media-fallback{
+        display:none;
+      }
+      .ht-event-media-shell.is-fallback .ht-event-media{
+        display:none;
+      }
+      .ht-event-media-shell.is-fallback .ht-event-media-fallback{
+        display:grid;
       }
       .ht-event-body{
         display:grid;
@@ -2367,7 +2429,10 @@
         }
       }
       @media (max-width: 420px){
-        .ht-shell{ padding:14px; }
+        .ht-modal{
+          padding-top:calc(24px + max(var(--ah-inset-top, 0px), env(safe-area-inset-top, 0px)));
+        }
+        .ht-shell{ padding:18px 14px calc(20px + max(var(--ah-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))); }
         .ht-hero{ min-height:224px; }
         .ht-hero-grid{ min-height:224px; padding:12px; }
         .ht-hero-emblem-wrap{ margin-top:24px; }

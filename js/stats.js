@@ -690,6 +690,8 @@
               </div>
             </div>
 
+            <details style="margin:4px 0 2px 0"><summary style="cursor:pointer;font-size:11px;color:#9fb6d9;outline:none">Stats Scheme (tap for guide)</summary><div style="font-size:11px;color:rgba(220,230,255,.72);margin-top:3px;line-height:1.3">Full details in FAQ → Stats Scheme. STR hits harder • AGI helps dodge • DEF/ VIT for survival • INT pierces • LUCK for crits.</div></details>
+
             <div class="ahs-grid-3">
               ${renderBarBlock("HP", hpCur, hpMax, "-hp", hpPct, `${hpPct.toFixed(0)}%`)}
               ${renderBarBlock("XP", xpCur, xpNeed, "-xp", xpPct, `${xpPct.toFixed(0)}%`)}

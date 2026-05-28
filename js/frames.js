@@ -876,6 +876,11 @@
     applyPreviewSkinFit(skinKey);
     setPreviewSkinSource();
     if (frameUrl) {
+      previewFrame.onerror = () => {
+        previewFrame.onerror = null;
+        previewFrame.removeAttribute("src");
+        previewFrame.style.display = "none";
+      };
       previewFrame.src = frameUrl;
       previewFrame.style.display = "block";
     } else {
@@ -1955,6 +1960,14 @@
         const thumbImg = document.createElement("img");
         thumbImg.src = previewUrl;
         thumbImg.alt = "";
+        thumbImg.onerror = () => {
+          thumbImg.onerror = null;
+          thumb.innerHTML = "";
+          const empty = document.createElement("div");
+          empty.className = "ah-frame-thumb-empty";
+          empty.textContent = "Preview";
+          thumb.appendChild(empty);
+        };
         thumb.appendChild(thumbImg);
       } else {
         const empty = document.createElement("div");

@@ -218,6 +218,15 @@
       { q:"📄 Beta disclaimer",
         a:"This is a live MVP/Beta. Systems tune, numbers change, bugs happen. We patch fast and ship — that’s the deal." },
     ]},
+
+    { key:"statsscheme", title:"Stats Scheme", items:[
+      { q:"Character Stats (STR / AGI / DEF / VIT / INT / LUCK)",
+        a:"STR — Hit harder. Main attack power.\nAGI — Dodge more. Helps you avoid attacks.\nDEF — Take less damage. Better toughness and survival.\nVIT — More HP. Best stat for staying alive.\nINT — Pierce defense and counter evasive enemies.\nLUCK — Higher critical hit chance." },
+      { q:"Pet Stats",
+        a:"Base Stats — The pet’s natural starting strengths.\nAllocated Stats — Points you chose to spend on this pet.\nPending Stat Points — Unspent points gained from leveling.\nEffective Stats — Current pet power after base stats, level growth, allocations, and old growth bonuses.\nPet Arena Profile — The real combat numbers used in an Arena fight after archetype rules are applied." },
+      { q:"Pet Arena note",
+        a:"Pet Arena uses effective pet stats as the base, then applies archetype rules. Feral, Trickster, and Mystic can turn stats into combat power differently." }
+    ]},
   ];
 
   // export content

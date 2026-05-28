@@ -250,6 +250,7 @@ function setAnimatedOrStaticPet(iconEl, player, mirror = false) {
                 <div style="font-weight:800">Pet Arena Replay</div>
                 <div style="font-size:11px;opacity:.72;margin-top:2px;line-height:1.3">Pet Arena uses your pet’s effective stats as the base, then applies archetype rules. Feral, Trickster, and Mystic can turn stats into combat power differently.</div>
                 <div id="arena-meta" style="opacity:.85;font-size:13px;margin-top:2px;">loading…</div>
+                <div id="arena-fight-stats" style="margin-top:4px;font-size:11px;opacity:.78;line-height:1.25;"></div>
               </div>
               <button id="arena-close" type="button" style="padding:10px 12px;border-radius:12px;border:0;cursor:pointer;">Close</button>
             </div>
@@ -343,6 +344,39 @@ function setAnimatedOrStaticPet(iconEl, player, mirror = false) {
 
       const wager = Number(data.match_wager || 0);
       el("arena-meta").textContent = `Wager: ${wager} • Turns: ${(data.steps||[]).length}`;
+
+      // Arena Fight Stats (compact, optional, only for new replays with arenaProfileUsed)
+      const fs = el("arena-fight-stats");
+      if (fs) {
+        const p = data?.arenaProfileUsed;
+        const p1p = p?.p1 || {};
+        const p2p = p?.p2 || {};
+        const yP = youAreP1 ? p1p : p2p;
+        const oP = youAreP1 ? p2p : p1p;
+        const g = (o, ...ks) => { for (const k of ks) { const v = o && o[k]; if (v != null) return v; } return ""; };
+        const fp = (v) => { if (v == null || v === "") return ""; let n = Number(v); if (!isFinite(n)) return ""; if (n <= 1) n *= 100; return n.toFixed(1).replace(/\.0$/,"") + "%"; };
+        const row = (lab, pr) => {
+          const a = g(pr,"archetype","archetype_name","type","class");
+          const at = g(pr,"attack_power","attackPower","attack","atk","power");
+          const h  = g(pr,"max_hp","maxHp","hp_max","hpMax","hp");
+          const c  = fp(g(pr,"crit_chance","critChance","crit_rate","crit","critical_chance"));
+          const d  = fp(g(pr,"dodge_chance","dodgeChance","dodge_rate","dodge"));
+          const ps = [];
+          if (a) ps.push(String(a));
+          if (at !== "") ps.push("Attack " + at);
+          if (h !== "") ps.push("HP " + h);
+          if (c) ps.push("Crit " + c);
+          if (d) ps.push("Dodge " + d);
+          return ps.length ? lab + ": " + ps.join(" • ") : "";
+        };
+        const yR = row("You", yP);
+        const oR = row("Opponent", oP);
+        if (yR || oR) {
+          fs.innerHTML = `<details style="margin-top:2px"><summary style="cursor:pointer;user-select:none;font-size:11px">Arena Fight Stats</summary><div style="margin-top:3px;font-size:11px;line-height:1.3;max-height:120px;overflow:auto;padding:4px 6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px">${yR ? "<div>" + esc(yR) + "</div>" : ""}${oR ? "<div>" + esc(oR) + "</div>" : ""}</div></details>`;
+        } else {
+          fs.innerHTML = "";
+        }
+      }
 
       // HP setup
       const youMax = Math.max(1, Number(you?.hpMax || 100));
