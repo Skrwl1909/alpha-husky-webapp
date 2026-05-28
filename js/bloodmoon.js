@@ -11,6 +11,7 @@
   let _battlePixiLoadPromise = null;
   let _battlePixiRunId = 0;
   let _feedExpanded = false;
+  let _lastResolvedBattle = null;
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
@@ -113,6 +114,24 @@
       if (window.toast) return window.toast(msg);
     } catch (_) {}
     alert(msg);
+  }
+
+  function renderLoadingShell(message = "Syncing tower state...") {
+    return `
+      <div class="bm-loading-shell" aria-live="polite">
+        <div class="bm-loading-card hero"></div>
+        <div class="bm-card">
+          <div class="bm-battle-head">
+            <div class="bm-battle-head-main">
+              <div class="bm-battle-title">Battle Watch</div>
+              <div class="bm-battle-sub">${esc(message)}</div>
+            </div>
+            <div class="bm-battle-chip">Syncing</div>
+          </div>
+          <div class="bm-loading-card battle"></div>
+        </div>
+      </div>
+    `;
   }
 
   function factionLabel(f) {
@@ -733,7 +752,10 @@
 }
 .bm-battle-stage.is-empty{
   display:block;
-  min-height:220px;
+  min-height:148px;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255,94,112,.10), transparent 34%),
+    linear-gradient(180deg, rgba(20,10,14,.92), rgba(10,10,16,.94));
 }
 .bm-battle-stage.is-pixi-active{
   border-color:rgba(255,255,255,.10);
@@ -920,7 +942,7 @@
   100%{ opacity:1; transform:translateY(0); }
 }
 .bm-battle-placeholder{
-  min-height:156px;
+  min-height:118px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -928,6 +950,12 @@
   text-align:center;
   gap:10px;
   color:rgba(255,255,255,.74);
+}
+@media (prefers-reduced-motion: reduce){
+  .bm-loading-card::after{
+    animation:none;
+    transform:none;
+  }
 }
 .bm-battle-placeholder-core{
   width:82px;
@@ -1029,22 +1057,26 @@
 #bloodMoonLoader{
   display:none;
   position:absolute;
-  inset:0;
-  background:rgba(8,10,16,.42);
-  backdrop-filter: blur(4px);
+  top:16px;
+  right:64px;
   align-items:center;
   justify-content:center;
-  z-index:3;
+  z-index:4;
+  pointer-events:none;
 }
 #bloodMoonLoader.show{
   display:flex;
 }
 #bloodMoonLoader > div{
-  padding:10px 14px;
-  border-radius:14px;
-  background:rgba(0,0,0,.44);
-  border:1px solid rgba(255,255,255,.08);
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(10,12,18,.76);
+  border:1px solid rgba(255,255,255,.10);
   font-weight:800;
+  font-size:11px;
+  letter-spacing:.04em;
+  color:#f4f0f2;
+  box-shadow:0 10px 24px rgba(0,0,0,.22);
 }
 
 .bm-empty{
@@ -1052,6 +1084,33 @@
   text-align:center;
   color:rgba(255,255,255,.62);
   font-size:13px;
+}
+.bm-loading-shell{
+  display:grid;
+  gap:12px;
+}
+.bm-loading-card{
+  position:relative;
+  overflow:hidden;
+  min-height:92px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+  box-shadow:0 10px 28px rgba(0,0,0,.22);
+}
+.bm-loading-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(100deg, transparent 18%, rgba(255,255,255,.08) 48%, transparent 78%);
+  transform:translateX(-55%);
+  animation:bmLoadingSweep 1.8s ease-in-out infinite;
+}
+.bm-loading-card.hero{ min-height:184px; }
+.bm-loading-card.battle{ min-height:142px; }
+@keyframes bmLoadingSweep{
+  0%{ transform:translateX(-55%); }
+  100%{ transform:translateX(55%); }
 }
     `.trim();
 
@@ -1080,7 +1139,7 @@
         </div>
 
         <div id="bloodMoonBody">
-          <div class="bm-empty">Loading…</div>
+          ${renderLoadingShell("Loading Blood-Moon Tower...")}
         </div>
       </div>
     `;
@@ -1112,6 +1171,8 @@
     _busy = !!flag;
     const ld = loaderEl();
     if (ld) ld.classList.toggle("show", _busy);
+    const body = bodyEl();
+    if (body) body.setAttribute("aria-busy", _busy ? "true" : "false");
   }
 
   function show() {
@@ -1135,13 +1196,22 @@
   }
 
   function getLastBattle() {
-    const battle = _state?.lastBattle;
+    const battle = _state?.lastBattle || _lastResolvedBattle;
     if (!battle || typeof battle !== "object" || Array.isArray(battle)) return null;
     try {
       return JSON.parse(JSON.stringify(battle));
     } catch (_) {
       return battle;
     }
+  }
+
+  function resolveDisplayBattle(data, preferredBattle) {
+    const battle = preferredBattle || data?.lastBattle || _lastResolvedBattle || null;
+    if (battle && typeof battle === "object" && !Array.isArray(battle)) {
+      _lastResolvedBattle = battle;
+      return battle;
+    }
+    return null;
   }
 
   function battleStageSlotEl() {
@@ -1156,7 +1226,7 @@
     return battleLiteStageEl()?.querySelector("[data-bm-pixi-host]") || null;
   }
 
-  function stopBattlePlayback(hard = false) {
+  function stopBattlePlayback(hard = false, preserveDom = false) {
     _battlePixiRunId += 1;
 
     if (_battleReplayTimer) {
@@ -1164,7 +1234,7 @@
       _battleReplayTimer = 0;
     }
 
-    const stage = battleLiteStageEl();
+    const stage = preserveDom ? null : battleLiteStageEl();
     if (stage) stage.classList.remove("is-replaying");
 
     if (hard && stage) stage.classList.remove("is-pixi-active");
@@ -1177,9 +1247,9 @@
     }
 
     if (hard) {
-      const host = pixiHostEl();
-      if (host) host.innerHTML = "";
-    }
+    const host = preserveDom ? null : pixiHostEl();
+    if (host) host.innerHTML = "";
+  }
   }
 
   function loadScriptOnce(url, readyCheck) {
@@ -1922,9 +1992,8 @@
     bindFeedToggle();
   }
 
-  function render(data) {
+  function render(data, opts = {}) {
   _state = data || {};
-  stopBattlePlayback(true);
   const body = bodyEl();
   if (!body) return;
 
@@ -1941,7 +2010,7 @@
 
   const cta = _state.cta || {};
   const my = _state.myContribution || {};
-  const lastBattle = getLastBattle();
+  const lastBattle = resolveDisplayBattle(_state, opts.preferredBattle);
   const attemptsLeft = Number(my.attemptsLeft || 0);
   const cooldownLeftSec = Number(my.cooldownLeftSec || 0);
 
@@ -1954,6 +2023,8 @@
     (topScore > 0 || secondScore > 0)
       ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
       : 0;
+
+  stopBattlePlayback(true, true);
 
   body.innerHTML = `
     <div class="bm-card bm-card-hero" style="z-index:2">
@@ -2084,11 +2155,12 @@
 
       if (!res || res.ok !== true) {
         const nextData = res?.data;
-        if (nextData) render(nextData);
+        if (nextData) render(nextData, { preferredBattle: res?.result?.battle || null });
         throw new Error((res && res.reason) || "ATTACK_FAILED");
       }
 
-      if (res.data) render(res.data);
+      if (res?.result?.battle) _lastResolvedBattle = res.result.battle;
+      if (res.data) render(res.data, { preferredBattle: res?.result?.battle || null });
       if (res?.result?.battle && !res?.duplicate) {
         const kick = () => playLastBattle({ battle: res.result.battle, haptic: true });
         if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
