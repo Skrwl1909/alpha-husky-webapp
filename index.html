@@ -7,11 +7,11 @@
   <title>Alpha Husky Dashboard</title>
   <meta name="color-scheme" content="dark light" />
 
-  <!-- background2: video + fallback -->
-  <link rel="preload" as="image" href="background2.webp">
-  <link rel="preload" as="video" href="background2.webm" type="video/webm">
-  <link rel="preload" as="video" href="background2.mp4" type="video/mp4">
-  <link rel="preload" as="video" href="shop_scene.mp4" type="video/mp4">
+  <!-- Lightweight Cloudinary visual stack -->
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dnjwvxinh/image/upload/v1779987927/alpha_ui/visual_v1/backgrounds/alpha_bg_far_city_signal_v1.webp">
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988186/alpha_ui/visual_v1/backgrounds/alpha_bg_mid_structures_transparent_v1.png">
+  <link rel="preload" as="image" href="https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988294/alpha_ui/visual_v1/boot/alpha_signal_boot_screen_v1.webp">
   <link rel="preload" as="image" href="shop_scene.webp">
   <link rel="preload" as="image" href="mission_bg.webp">
   <link rel="preload" as="image" href="mission_waiting_bg.webp">
@@ -39,15 +39,22 @@
     --ah-inset-bottom: max(var(--ah-safe-bottom), env(safe-area-inset-bottom, 0px));
     --ah-inset-left: max(var(--ah-safe-left), env(safe-area-inset-left, 0px));
     --ah-inset-right: max(var(--ah-safe-right), env(safe-area-inset-right, 0px));
+    --ah-visual-far: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779987927/alpha_ui/visual_v1/backgrounds/alpha_bg_far_city_signal_v1.webp");
+    --ah-visual-mid: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988186/alpha_ui/visual_v1/backgrounds/alpha_bg_mid_structures_transparent_v1.png");
+    --ah-visual-particles: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988205/alpha_ui/visual_v1/backgrounds/alpha_bg_signal_particles_screen_v1.webp");
+    --ah-visual-noise: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988660/alpha_ui/visual_v1/overlays/alpha_ui_signal_noise_v1.webp");
+    --ah-visual-boot: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988294/alpha_ui/visual_v1/boot/alpha_signal_boot_screen_v1.webp");
+    --ah-visual-corner: url("https://res.cloudinary.com/dnjwvxinh/image/upload/v1779988730/alpha_ui/visual_v1/accents/alpha_ui_corner_signal_accent_v1.png");
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; overflow-x:hidden; background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
+  html, body { height: 100%; margin: 0; overflow-x:hidden; background: #04070d; color: var(--tg-theme-text-color, #fff); overscroll-behavior:none; }
+  body { position: relative; min-height: 100%; }
   a { color: var(--tg-theme-link-color, #aef); }
   /* twarde nadpisanie „black” */
   .text-black, .text-[#000], .text-[black] { color: var(--tg-theme-text-color, #ffffff) !important; }
   .bg-black, .bg-[#000], .bg-[black] { background: var(--tg-theme-secondary-bg-color, #12171d) !important; }
-  .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
-  .bg { position: absolute; inset: 0; z-index: 0; }
+  .app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); z-index: 1; background: transparent; isolation:isolate; }
+  .bg { display:none; }
   .bg video, .bg .poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .bg video { filter: contrast(1.08) brightness(.9); }
 
@@ -60,6 +67,146 @@
 }
 
 .ui { position: absolute; inset: 0; z-index: 2; }
+
+.ah-visual-bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(2,5,10,.88), rgba(4,8,14,.96)),
+    #03060b;
+}
+.ah-bg-layer{
+  position:absolute;
+  inset:-3%;
+  background-repeat:no-repeat;
+  background-position:center;
+  transform:translate3d(0,0,0);
+}
+.ah-bg-far{
+  background-image:
+    linear-gradient(180deg, rgba(4,9,16,.12), rgba(2,4,8,.40)),
+    var(--ah-visual-far);
+  background-size:cover;
+  opacity:.95;
+  will-change:transform, opacity;
+  animation: ahBgDriftFar 38s ease-in-out infinite alternate;
+}
+.ah-bg-mid{
+  background-image:var(--ah-visual-mid);
+  background-size:cover;
+  background-position:center bottom;
+  opacity:.58;
+  will-change:transform, opacity;
+  animation: ahBgDriftMid 54s ease-in-out infinite alternate;
+}
+.ah-bg-particles{
+  background-image:var(--ah-visual-particles);
+  background-size:cover;
+  opacity:.16;
+  mix-blend-mode:screen;
+  will-change:transform, opacity;
+  animation: ahBgDriftParticles 62s ease-in-out infinite alternate;
+}
+.ah-bg-noise{
+  inset:0;
+  background-image:var(--ah-visual-noise);
+  background-size:cover;
+  background-position:center;
+  opacity:.03;
+  mix-blend-mode:screen;
+}
+.ah-bg-vignette{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(96,164,214,.13), transparent 34%),
+    linear-gradient(180deg, rgba(4,8,14,.06) 0%, rgba(4,8,14,.22) 36%, rgba(1,3,7,.74) 100%),
+    radial-gradient(circle at center, rgba(0,0,0,0) 48%, rgba(0,0,0,.28) 76%, rgba(0,0,0,.60) 100%);
+}
+@keyframes ahBgDriftFar{
+  0%{ transform:translate3d(0,0,0) scale(1.02); }
+  100%{ transform:translate3d(-1.2%, -0.9%, 0) scale(1.05); }
+}
+@keyframes ahBgDriftMid{
+  0%{ transform:translate3d(0,0,0) scale(1.01); opacity:.53; }
+  100%{ transform:translate3d(1.1%, -1.4%, 0) scale(1.04); opacity:.61; }
+}
+@keyframes ahBgDriftParticles{
+  0%{ transform:translate3d(0,0,0) scale(1.01); opacity:.12; }
+  100%{ transform:translate3d(-1.6%, 1.3%, 0) scale(1.05); opacity:.19; }
+}
+
+.ah-boot-screen{
+  position:fixed;
+  inset:0;
+  z-index:6;
+  display:grid;
+  place-items:center;
+  padding:
+    calc(28px + var(--ah-inset-top))
+    calc(18px + var(--ah-inset-right))
+    calc(28px + var(--ah-inset-bottom))
+    calc(18px + var(--ah-inset-left));
+  pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(3,8,14,.18), rgba(3,8,14,.84)),
+    var(--ah-visual-boot) center/cover no-repeat;
+  opacity:1;
+  visibility:visible;
+  transition: opacity .42s ease, visibility .42s ease;
+  animation: ahBootFallbackHide .001s linear 2600ms forwards;
+}
+.ah-boot-screen::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,0) 28%, rgba(0,0,0,.22) 70%, rgba(0,0,0,.56) 100%);
+}
+.ah-boot-shell{
+  position:relative;
+  z-index:1;
+  width:min(100%, 420px);
+  padding:24px 22px 20px;
+  border-radius:24px;
+  border:1px solid rgba(151,210,255,.16);
+  background:
+    linear-gradient(180deg, rgba(13,20,31,.82), rgba(6,10,17,.88));
+  box-shadow:
+    0 28px 64px rgba(0,0,0,.44),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  text-align:center;
+}
+.ah-boot-title{
+  margin-top:10px;
+  font-size:clamp(28px, 8vw, 40px);
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#f3f8ff;
+  text-shadow:0 8px 24px rgba(0,0,0,.40);
+}
+.ah-boot-subtitle{
+  margin-top:10px;
+  font-size:12px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:rgba(200,223,246,.76);
+}
+html.ah-boot-skip .ah-boot-screen{ display:none; }
+html.ah-boot-ready .ah-boot-screen{
+  opacity:0;
+  visibility:hidden;
+}
+@keyframes ahBootFallbackHide{
+  to{
+    opacity:0;
+    visibility:hidden;
+  }
+}
 
 /* ✅ PATCH 1A: keep HUD inside viewport + safe-area (fix right column overflow) */
 .grid{
@@ -2795,6 +2942,98 @@ html.ah-skins-open #heroFrame{
   opacity: .45;
   filter: saturate(.6);
 }
+
+.ah-premium-card,
+.ah-signal-card,
+.ah-event-card,
+#ctaSurface .cta-card:not(.is-bloodmoon-compact),
+#warIntelBack .war-intel-card,
+#howlTreasuryBack .ht-event-card,
+#oracleBack .oracle-standout-card,
+#oracleBack .oracle-echo-card.is-highlighted,
+#factionHQBack .hq-card{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border-color:rgba(122,190,235,.18);
+  background:
+    linear-gradient(180deg, rgba(13,20,31,.84), rgba(7,11,18,.92));
+  box-shadow:
+    0 18px 38px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.ah-premium-card::before,
+.ah-signal-card::before,
+.ah-event-card::before,
+#ctaSurface .cta-card:not(.is-bloodmoon-compact)::before,
+#warIntelBack .war-intel-card::before,
+#howlTreasuryBack .ht-event-card::before,
+#oracleBack .oracle-standout-card::before,
+#oracleBack .oracle-echo-card.is-highlighted::before,
+#factionHQBack .hq-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:
+    var(--ah-visual-corner) left top / 138px auto no-repeat,
+    linear-gradient(140deg, rgba(126,198,255,.12), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  opacity:.34;
+}
+
+.ah-premium-card::after,
+.ah-signal-card::after,
+.ah-event-card::after,
+#ctaSurface .cta-card:not(.is-bloodmoon-compact)::after,
+#warIntelBack .war-intel-card::after,
+#howlTreasuryBack .ht-event-card::after,
+#oracleBack .oracle-standout-card::after,
+#oracleBack .oracle-echo-card.is-highlighted::after,
+#factionHQBack .hq-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  box-shadow:
+    inset 0 0 0 1px rgba(158,224,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 26px rgba(44,126,185,.08);
+  opacity:.78;
+  animation: ahCardSignalGlow 7.2s ease-in-out infinite alternate;
+}
+
+@keyframes ahCardSignalGlow{
+  0%{ opacity:.58; transform:translate3d(0,0,0); }
+  100%{ opacity:.88; transform:translate3d(0,-1px,0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg video,
+  .ah-bg-far,
+  .ah-bg-mid,
+  .ah-bg-particles,
+  .ah-premium-card::after,
+  .ah-signal-card::after,
+  .ah-event-card::after,
+  #ctaSurface .cta-card:not(.is-bloodmoon-compact)::after,
+  #warIntelBack .war-intel-card::after,
+  #howlTreasuryBack .ht-event-card::after,
+  #oracleBack .oracle-standout-card::after,
+  #oracleBack .oracle-echo-card.is-highlighted::after,
+  #factionHQBack .hq-card::after{
+    animation:none !important;
+    transform:none !important;
+  }
+
+  .ah-boot-screen{
+    transition:none;
+    animation: ahBootFallbackHide .01s linear 1400ms forwards;
+  }
+}
 </style>
 
 <style id="factionhq-debug-override">
@@ -5326,13 +5565,39 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="hq-bg"></div>
     <div id="factionHQModal"></div>
   </div>
+  <div class="ah-visual-bg" aria-hidden="true">
+    <div class="ah-bg-layer ah-bg-far"></div>
+    <div class="ah-bg-layer ah-bg-mid"></div>
+    <div class="ah-bg-layer ah-bg-particles"></div>
+    <div class="ah-bg-layer ah-bg-noise"></div>
+    <div class="ah-bg-vignette"></div>
+  </div>
+  <div class="ah-boot-screen" aria-hidden="true">
+    <div class="ah-boot-shell">
+      <div class="ah-boot-title">ALPHA SIGNAL</div>
+      <div class="ah-boot-subtitle">BOOTING PACK INTERFACE</div>
+    </div>
+  </div>
+  <script>
+  (function bootVisualGate() {
+    const root = document.documentElement;
+    const seenKey = "ah_boot_visual_v1_seen";
+    try {
+      if (sessionStorage.getItem(seenKey) === "1") {
+        root.classList.add("ah-boot-skip");
+      } else {
+        sessionStorage.setItem(seenKey, "1");
+      }
+    } catch (_) {}
+
+    const dismiss = () => root.classList.add("ah-boot-ready");
+    window.addEventListener("ah:boot-ready", dismiss, { once: true });
+    window.setTimeout(dismiss, 3200);
+  })();
+  </script>
 <div class="app">
   <div class="bg">
-    <video autoplay muted loop playsinline poster="background2.webp" preload="metadata">
-      <source src="background2.webm" type="video/webm" />
-      <source src="background2.mp4" type="video/mp4" />
-    </video>
-    <div class="poster" style="background-image:url('background2.webp');"></div>
+    <!-- Mobile-first layered visuals replace the old looping video background for lower Telegram render cost. -->
   </div>
   <div id="app" class="ui">
   <div class="topbar">
@@ -6520,7 +6785,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-05-23a";
+    window.WEBAPP_VER = "2026-05-28a";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -8561,6 +8826,8 @@ if (!window.__ahBootDefer) {
     markReady() {
       if (this.ready) return;
       this.ready = true;
+      document.documentElement.classList.add("ah-boot-ready");
+      try { window.dispatchEvent(new Event("ah:boot-ready")); } catch (_) {}
       const pending = Array.isArray(this.queue) ? this.queue.splice(0) : [];
       pending.forEach(({ fn, delayMs }) => {
         window.setTimeout(() => {
@@ -8587,6 +8854,8 @@ window.runAfterFirstProfileRender = function runAfterFirstProfileRender(fn, dela
 
 let __loadProfilePromise = null;
 let __loadPlayerStatePromise = null;
+let __lastPlayerStateLoadedAt = 0;
+const MAP_PLAYER_STATE_FRESH_MS = 15000;
 
 async function loadProfile() {
   if (__loadProfilePromise) return __loadProfilePromise;
@@ -8837,6 +9106,7 @@ async function loadPlayerState() {
     const state = await apiPost("/webapp/state");
     window.__ahPerf?.boot?.("loadPlayerState.state", statePerfT0);
     PLAYER_STATE = state;
+    __lastPlayerStateLoadedAt = Date.now();
     applyStateToMap();
 
     if (state && state.profile && state.profile.nickname) {
@@ -10170,7 +10440,17 @@ async function showSection(name){
       bindMapZoomControls();
       requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
       if (!DATA) loadMapData();
-      loadPlayerState();
+      if (PLAYER_STATE) {
+        applyStateToMap();
+        if (DATA) {
+          renderMap();
+          updateUnlockProgress();
+          updateMapSelectionBrief();
+        }
+      }
+      if (!PLAYER_STATE || (Date.now() - __lastPlayerStateLoadedAt) > MAP_PLAYER_STATE_FRESH_MS) {
+        void loadPlayerState();
+      }
       break;
     case "quests":
       (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
