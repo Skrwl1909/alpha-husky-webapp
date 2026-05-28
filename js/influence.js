@@ -284,12 +284,12 @@
 
     const applyRewardDefaults = () => {
       if (rewardStateChipEl) {
-        rewardStateChipEl.textContent = "Not eligible";
+        rewardStateChipEl.textContent = "Not qualified";
         rewardStateChipEl.style.background = "rgba(255,190,90,.16)";
         rewardStateChipEl.style.border = "1px solid rgba(255,190,90,.26)";
         rewardStateChipEl.style.color = "#ffe0ab";
       }
-      if (rewardStateTextEl) rewardStateTextEl.textContent = "War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.";
+      if (rewardStateTextEl) rewardStateTextEl.textContent = "Your Faction Support is your personal weekly activity from Patrol, Donate, and some Siege actions.";
       if (rewardScoreValueEl) rewardScoreValueEl.textContent = "0/60";
       if (rewardScoreBarEl) rewardScoreBarEl.style.width = "0%";
       if (rewardDaysValueEl) rewardDaysValueEl.textContent = "0/2";
@@ -304,7 +304,7 @@
       previewHost.innerHTML = `
         <section class="inf-weekly-preview">
           <div style="min-width:0;">
-            <div class="inf-panel-kicker">War Contribution</div>
+            <div class="inf-panel-kicker">Your Faction Support</div>
             <div class="inf-weekly-title">Rivalry feed syncing</div>
             <div class="inf-weekly-sub">Faction standings will update here once the relay cache responds.</div>
           </div>
@@ -333,7 +333,7 @@
       : 0;
     const scoreMissing = Math.max(0, reqScore - myScore);
     const daysMissing = Math.max(0, reqDays - myDays);
-    const rewardLabel = myQualified ? "Eligible" : "Not eligible";
+    const rewardLabel = myQualified ? "Qualified" : "Not qualified";
     let rewardCopy = "War Rewards may include aura, frame, skin, or raffle entry.";
     if (myQualified) {
       rewardCopy = "You qualify this cycle. More War Contribution helps your faction hold rank.";
@@ -348,8 +348,8 @@
       rewardStateChipEl.style.color = myQualified ? "#b7ffd0" : "#ffe0ab";
     }
     if (rewardStateTextEl) rewardStateTextEl.textContent = myQualified
-      ? "Threshold reached. Stay active to strengthen your faction finish."
-      : "War Contribution and Active Days determine weekly reward eligibility.";
+      ? "Reward progress reached. Keep helping to improve your faction’s standing."
+      : "Your Faction Support and active days determine weekly reward progress.";
     if (rewardScoreValueEl) rewardScoreValueEl.textContent = `${myScore}/${reqScore}`;
     if (rewardScoreBarEl) rewardScoreBarEl.style.width = `${scorePct}%`;
     if (rewardDaysValueEl) rewardDaysValueEl.textContent = `${myDays}/${reqDays}`;
@@ -364,7 +364,7 @@
         <div style="min-width:0;">
           <div class="inf-panel-kicker">War Contribution</div>
           <div class="inf-weekly-title">${esc(leadFactionText)} leads the rivalry</div>
-          <div class="inf-weekly-sub">Patrol and Donate shape Faction Control here and add War Contribution.</div>
+          <div class="inf-weekly-sub">Patrol and Donate shape Faction Control here and add to your faction support.</div>
         </div>
         <div class="inf-weekly-mini-grid">
           <article class="inf-weekly-mini-card">
@@ -376,7 +376,7 @@
             <div class="inf-weekly-mini-value">${esc(rankText)}</div>
           </article>
           <article class="inf-weekly-mini-card">
-            <div class="inf-weekly-mini-label">Your War Contribution</div>
+            <div class="inf-weekly-mini-label">Your Effort</div>
             <div class="inf-weekly-mini-value">${esc(`${myScore}/${reqScore}`)}</div>
           </article>
         </div>
@@ -413,8 +413,8 @@
   let _signalCoreOpen = false;
   let _tooltipKey = "";
 
-  const PATROL_ACTION_HINT = "+6 base War Contribution. Reinforces Faction Control.";
-  const DONATE_ACTION_HINT = "+4 base War Contribution. Reinforces Faction Control based on donation.";
+  const PATROL_ACTION_HINT = "Scout the relay and reinforce control.";
+  const DONATE_ACTION_HINT = "Spend supplies to strengthen your faction’s hold.";
   const LOCAL_TOOLTIP_COPY = {
     pressure: "Pressure shows where conflict is rising. It does not directly decide capture.",
     hot: "HOT means active enemy movement. Actions here matter more.",
@@ -424,8 +424,8 @@
     push: "Push means another faction controls the node. Your actions help contest it.",
     patrol: PATROL_ACTION_HINT,
     donate: DONATE_ACTION_HINT,
-    weekly_score: "War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.",
-    eligibility: "War Contribution and Active Days determine weekly reward eligibility.",
+    weekly_score: "Your Faction Support is your personal weekly activity from Patrol, Donate, and some Siege actions.",
+    eligibility: "Your Faction Support and active days determine weekly reward progress.",
   };
 
   function _qs(id) { return document.getElementById(id); }
@@ -461,6 +461,31 @@
     if (condition === "HOT") return "Enemy movement is active. Fast actions carry more weight.";
     if (condition === "FORTIFIED") return "One side has built strong pressure on the relay.";
     return "The relay is quiet for now, but pressure can swing it fast.";
+  }
+
+  function deriveControlStatus(viewerP, oppP, yourName) {
+    const v = Math.max(0, Number(viewerP || 0));
+    const o = Math.max(0, Number(oppP || 0));
+    const yName = yourName || "Your faction";
+    const eName = "Enemy";
+    if (v === 0 && o === 0) {
+      return { headline: "This node is active. Choose an action to support your faction.", detail: "", advice: "" };
+    }
+    if (v === o && v > 0) {
+      return { headline: "CONTROL IS TIED", detail: `${yName}: ${v} • ${eName}: ${o}`, advice: "Defend now to push your faction ahead." };
+    }
+    if (v > o) {
+      return { headline: "YOUR FACTION IS HOLDING", detail: `${yName}: ${v} • ${eName}: ${o}`, advice: "Keep defending to secure the node." };
+    }
+    return { headline: "ENEMY PRESSURE IS AHEAD", detail: `${yName}: ${v} • ${eName}: ${o}`, advice: "Push back to protect this node." };
+  }
+
+  function explainNodeCondition(condition) {
+    const c = String(condition || "").toUpperCase();
+    if (c === "HOT") return "Enemy activity is high. Fast actions matter more.";
+    if (c === "CONTESTED") return "Both sides are fighting for control.";
+    if (c === "FORTIFIED") return "Your faction has a stronger hold here.";
+    return "";
   }
   function setOrdersCooldownText(text = "", tone = "idle") {
     const el = _qs("infOrdersCooldown");
@@ -635,7 +660,7 @@
   function warContributionFeedback(payload = {}) {
     const points = Number(payload?.weeklyPoints);
     if (!Number.isFinite(points) || points <= 0) return "";
-    return `War Contribution +${points}`;
+    return `Your Faction Support +${points}`;
   }
   function contractContributionFeedback(payload = {}) {
     if (payload?.contractContributionChanged !== true) return "";
@@ -657,17 +682,21 @@
       ? `Spent ${spent} ${asset}${refunded > 0 ? `; refunded ${refunded}` : ""}.`
       : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
     const isPatrol = kind === "patrol";
-    const title = isPatrol ? "SIGNAL HELD" : "SUPPLIES DEPLOYED";
+    // Player-facing action result (Phantom Nodes uses "defend / push" language)
+    const title = isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED";
     const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
+    const baseLine = isPatrol
+      ? "You helped defend this node. Control updates with faction pressure over the cycle."
+      : "Your faction’s hold is stronger. Control updates with faction pressure over the cycle.";
     const lines = isPatrol
       ? [
-          "Faction Control reinforced.",
+          baseLine,
           warContributionLine,
           contractContributionLine,
           archiveKeyLine,
         ]
       : [
-          "Faction Control reinforced.",
+          baseLine,
           warContributionLine,
           contractContributionLine,
           spendRefundLine,
@@ -826,8 +855,8 @@
       ? `${Math.max(0, Number(watchUsed || 0))}/${Math.max(0, Number(watchMax || 0))}`
       : (watchUsed > 0 ? `${watchUsed} active` : "Open");
     const pressureText = viewerPressure > 0 && leaderPressure > 0
-      ? `${viewerPressure} vs ${leaderPressure}`
-      : (viewerPressure > 0 ? `${viewerPressure} allied` : (leaderPressure > 0 ? `Lead ${leaderPressure}` : "Quiet"));
+      ? `${viewerPressure} / ${leaderPressure}`
+      : (viewerPressure > 0 ? `${viewerPressure} yours` : (leaderPressure > 0 ? `Enemy ${leaderPressure}` : "Quiet"));
     const valueText = String(valueLabel || "").trim() || "Support";
     const subtitle = owner ? `${ownerLabel} signature active` : "Node signal unstable";
     let pulseText = "Signal stable. Patrol from Orders to build local pressure.";
@@ -2446,6 +2475,69 @@
           animation:none !important;
         }
       }
+      /* Phantom Nodes Control Clash meter (compact, game-like, code-only) */
+      #influenceModal .inf-clash-meter{
+        border:1px solid rgba(255,255,255,.12);
+        border-radius:10px;
+        background:rgba(255,255,255,.025);
+        padding:6px 8px;
+        font-size:11px;
+        line-height:1.25;
+      }
+      #influenceModal .inf-clash-head{
+        font-weight:800;
+        font-size:12px;
+        color:#f0f6ff;
+        margin-bottom:4px;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+      }
+      #influenceModal .inf-clash-sides{
+        display:flex;
+        justify-content:space-between;
+        font-size:10px;
+        margin-bottom:3px;
+        color:#c6d8ee;
+      }
+      #influenceModal .inf-clash-side.your .name{ color:#7af0c8; }
+      #influenceModal .inf-clash-side.enemy .name{ color:#ff9a8a; }
+      #influenceModal .inf-clash-bar{
+        height:6px;
+        background:rgba(255,255,255,.08);
+        border-radius:999px;
+        overflow:hidden;
+        display:flex;
+      }
+      #influenceModal .inf-clash-bar > div.your{
+        background:linear-gradient(90deg, #7af0c8, #4fd1a8);
+        min-height:100%;
+      }
+      #influenceModal .inf-clash-bar > div.enemy{
+        background:linear-gradient(90deg, #ff9a8a, #ff6b6b);
+        min-height:100%;
+      }
+
+      /* De-emphasize dense Intel/Faction Control tiles for Phantom Nodes (make feel like details) */
+      #influenceModal.is-phantom-node .inf-local-grid{
+        opacity:.82;
+        gap:3px;
+      }
+      #influenceModal.is-phantom-node .inf-tile{
+        padding:5px 6px 6px;
+        background:rgba(255,255,255,.02);
+        border-color:rgba(255,255,255,.08);
+      }
+      #influenceModal.is-phantom-node .inf-tile-label{
+        font-size:9px;
+        opacity:.7;
+      }
+      #influenceModal.is-phantom-node .inf-tile-value{
+        font-size:11px;
+      }
+      #influenceModal.is-phantom-node .inf-hint{
+        font-size:9px;
+      }
+
       @media (max-width: 520px){
         #influenceModal .inf-modal-card{ padding:12px 10px 11px; }
         #influenceModal .inf-hero-grid{ grid-template-columns:minmax(0,1fr); }
@@ -2528,6 +2620,7 @@
           </div>
           <div id="infHeroFlavor" class="inf-hero-flavor">Old relay spines control signal routes, patrol response, and faction pressure.</div>
           <div id="infUxStatusText" class="inf-hero-status">This frontline is stable right now.</div>
+          <div id="infClashMeter" class="inf-clash-meter" style="display:none;margin-top:6px;"></div>
           <div id="infContested" style="display:none;"></div>
         </section>
 
@@ -2622,13 +2715,13 @@
 
         <section id="infPresenceShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infRewardTitle" class="inf-panel-title">War Contribution</div>
-            <span id="infRewardStateChip" class="inf-chip inf-chip-muted">Not eligible</span>
+            <div id="infRewardTitle" class="inf-panel-title">Your Faction Support</div>
+            <span id="infRewardStateChip" class="inf-chip inf-chip-muted">Not qualified</span>
           </div>
           <div id="infRewardStateText" class="inf-hero-status">War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.</div>
           <div class="inf-reward-metric">
             <div class="inf-reward-metric-head">
-              <span class="inf-label-row">War Contribution <button type="button" class="inf-help" data-tip-key="weekly_score" aria-label="War Contribution help">?</button></span>
+              <span class="inf-label-row">Your Faction Support <button type="button" class="inf-help" data-tip-key="weekly_score" aria-label="Your Faction Support help">?</button></span>
               <span id="infRewardScoreValue">0/60</span>
             </div>
             <div class="inf-reward-track"><i id="infRewardScoreBar" style="width:0%;"></i></div>
@@ -3008,9 +3101,7 @@
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
     }
     if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Faction War Relay" : "Live Node Operations";
-    if (heroFlavorEl) heroFlavorEl.textContent = phantomMode
-      ? "Old relay spines control signal routes, patrol response, and faction pressure."
-      : "Frontline conditions update from live faction pressure.";
+    if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
 
     // close donate box at start
     const donateBox = document.getElementById("infDonateBox");
@@ -3374,9 +3465,7 @@
         conditionHelpEl.style.display = "inline-flex";
       }
       if (actionHelpEl) actionHelpEl.style.display = "none";
-      if (heroFlavorEl) heroFlavorEl.textContent = phantomMode
-        ? "Old relay spines control signal routes, patrol response, and faction pressure."
-        : "Frontline conditions update from live faction pressure.";
+      if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
       if (subEl && phantomMode) subEl.textContent = "Relay under pressure";
       paintUxPill(controlChipEl, "Neutral", {
         background: "rgba(255,255,255,.05)",
@@ -3462,6 +3551,8 @@
     const primaryStatus = phantomMode ? condition : uxPrimaryStatusLabel(ux.displayStatus, ux.displayLabel);
     const pressureChipLabel = recommendedAction;
     const pressureNarrative = statusNarrative(condition);
+    const yourFactionName = fmtFaction ? fmtFaction(viewerFaction) : (viewerFaction || "Your faction");
+    const controlStatus = phantomMode ? deriveControlStatus(viewerPressure, leaderPressure, yourFactionName) : null;
     const captureTier = Math.max(0, Number(info?.captureTier || 0) || 0);
     const maxPressure = Math.max(
       1,
@@ -3479,11 +3570,55 @@
     leaderEl.textContent = phantomMode
       ? (owner ? ownerLabel : "Neutral Control")
       : (leaderName ? `${leaderName}${leaderValue > 0 ? ` (${leaderValue})` : ""}` : ownerLabel);
-    controlLineEl.textContent = phantomMode
-      ? `${ownerLabel} relay under pressure`
-      : controlText;
-    if (subEl && phantomMode) subEl.textContent = owner ? `${ownerLabel} relay under pressure` : "Unclaimed relay under pressure";
+    if (phantomMode && controlStatus) {
+      // Top hero / War Brief — player-facing, not technical
+      controlLineEl.textContent = controlStatus.headline;
+      if (subEl) subEl.textContent = controlStatus.detail || (owner ? `${ownerLabel} relay under pressure` : "Unclaimed relay under pressure");
+      if (heroFlavorEl) {
+        const brief = controlStatus.advice || controlStatus.headline;
+        heroFlavorEl.textContent = brief ? `${brief} ${controlStatus.detail ? "" : "Choose an action to support your faction."}`.trim() : "This node is active. Choose an action to support your faction.";
+      }
+    } else {
+      controlLineEl.textContent = phantomMode
+        ? `${ownerLabel} relay under pressure`
+        : controlText;
+      if (subEl && phantomMode) subEl.textContent = owner ? `${ownerLabel} relay under pressure` : "Unclaimed relay under pressure";
+      if (heroFlavorEl && !phantomMode) {
+        heroFlavorEl.textContent = (ux.valueText || "This node supports steady faction pressure.");
+      }
+    }
     if (coreStateEl) coreStateEl.textContent = primaryStatus;
+
+    // Compact Control Clash meter for Phantom Nodes (in hero, after brief, before dense Intel)
+    const clashEl = document.getElementById("infClashMeter");
+    if (clashEl) {
+      if (phantomMode && controlStatus && (viewerPressure > 0 || leaderPressure > 0)) {
+        const v = Math.max(0, Number(viewerPressure));
+        const o = Math.max(0, Number(leaderPressure));
+        const total = Math.max(1, v + o);
+        const yourPct = Math.round((v / total) * 100);
+        const enemyPct = 100 - yourPct;
+        const yourName = yourFactionName || "Your faction";
+        clashEl.style.display = "block";
+        clashEl.innerHTML = `
+          <div class="inf-clash-head">${controlStatus.headline}</div>
+          <div class="inf-clash-sides">
+            <div class="inf-clash-side your"><span class="name">${yourName}</span> <span class="score">${v}</span></div>
+            <div class="inf-clash-side enemy"><span class="name">Enemy</span> <span class="score">${o}</span></div>
+          </div>
+          <div class="inf-clash-bar">
+            <div class="your" style="width:${yourPct}%"></div>
+            <div class="enemy" style="width:${enemyPct}%"></div>
+          </div>
+        `;
+      } else if (phantomMode) {
+        clashEl.style.display = "block";
+        clashEl.innerHTML = `<div style="font-size:11px;color:#c6d8ee;opacity:.9;">This node is active. Choose an action to support your faction.</div>`;
+      } else {
+        clashEl.style.display = "none";
+        clashEl.innerHTML = "";
+      }
+    }
     paintUxPill(statusEl, primaryStatus, uxToneStyles(paintStatus));
     statusEl.classList.toggle("is-hot", primaryStatus === "HOT");
     paintUxPill(controlChipEl, owner ? ownerLabel : "Neutral", {
@@ -3504,10 +3639,8 @@
     paintUxPill(watchChipEl, "", {}, false);
 
     statusTextEl.textContent = pressureNarrative;
-    if (heroFlavorEl) {
-      heroFlavorEl.textContent = phantomMode
-        ? "Old relay spines control signal routes, patrol response, and faction pressure."
-        : (ux.valueText || "This node supports steady faction pressure.");
+    if (heroFlavorEl && !phantomMode) {
+      heroFlavorEl.textContent = (ux.valueText || "This node supports steady faction pressure.");
     }
     if (warChipEl) {
       warChipEl.textContent = primaryStatus;
@@ -3557,9 +3690,10 @@
 
     if (intelOwnerEl) intelOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
     if (intelWatchEl) {
-      if (viewerPressure > 0 && leaderPressure > 0) intelWatchEl.textContent = `${viewerPressure} allied vs ${leaderPressure} lead`;
-      else if (leaderPressure > 0) intelWatchEl.textContent = `Lead pressure ${leaderPressure}`;
-      else if (viewerPressure > 0) intelWatchEl.textContent = `Allied pressure ${viewerPressure}`;
+      // Intel / deeper details: keep numbers but use player language, never "lead" for opposing side in control context
+      if (viewerPressure > 0 && leaderPressure > 0) intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${leaderPressure}`;
+      else if (leaderPressure > 0) intelWatchEl.textContent = `Enemy pressure ${leaderPressure}`;
+      else if (viewerPressure > 0) intelWatchEl.textContent = `Your pressure ${viewerPressure}`;
       else intelWatchEl.textContent = "Quiet pressure band";
     }
     if (intelWatchBarEl) {
@@ -3619,11 +3753,17 @@
         intelPressureBarEl.style.width = `${pressurePct}%`;
       }
       if (intelPressureHintEl) {
-        intelPressureHintEl.textContent = pressureNarrative;
+        const extra = phantomMode ? explainNodeCondition(condition) : "";
+        intelPressureHintEl.textContent = extra ? `${pressureNarrative} ${extra}` : pressureNarrative;
       }
     }
     if (localOpsEl) {
-      localOpsEl.textContent = recommendedAction;
+      // Recommended Action — direct player language
+      if (phantomMode && controlStatus) {
+        localOpsEl.textContent = controlStatus.headline.includes("HOLDING") ? "DEFEND" : (controlStatus.headline.includes("TIED") ? "DEFEND" : "PUSH");
+      } else {
+        localOpsEl.textContent = recommendedAction;
+      }
     }
     if (nodeStateHintEl) {
       nodeStateHintEl.textContent = recommendedAction === "DEFEND"
@@ -3647,7 +3787,7 @@
     });
 
     if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
-    if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol supports Faction Control and War Contribution.`;
+    if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol supports Faction Control and your faction support.`;
     if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
 
     if (_cdUntilMs > Date.now()) {

@@ -268,6 +268,7 @@
 
   function humanReason(reason) {
     const R = String(reason || "").toUpperCase();
+    if (R.includes("SENTINEL_SET_REQUIRED")) return "Full Sentinel set required.";
     if (R.includes("NOT_ENOUGH_TOKENS") || R.includes("NOT_ENOUGH_FUNDS")) return "Not enough tokens.";
     if (R.includes("NOT_ENOUGH_BONES")) return "Not enough bones.";
     if (R.includes("ALREADY_OWNED")) return "You already own this pet.";
