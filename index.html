@@ -8094,6 +8094,19 @@ document.addEventListener("click", async (e) => {
           return Array.from(pinsEl.querySelectorAll(".map-pin")).find((pin) => String(pin?.dataset?.nodeId || "").trim() === activeId) || null;
         }
 
+        function syncActiveMapPinSelection(){
+          if (!pinsEl) return;
+          const activeId = String(ACTIVE_PIN_ID || "").trim();
+          const pins = Array.from(pinsEl.querySelectorAll(".map-pin"));
+          pins.forEach((pin) => {
+            const isActive = !!activeId && String(pin?.dataset?.nodeId || "").trim() === activeId;
+            pin.classList.toggle("active", isActive);
+            const chip = pin.querySelector(".chip");
+            if (chip) chip.style.display = isActive ? "flex" : "none";
+          });
+          try { window.AHMap?.reapplyLastLeaders?.(); } catch (_) {}
+        }
+
         function normalizeSelectionStatus(raw){
           const key = String(raw || "").trim().toUpperCase();
           if (!key) return "";
@@ -9328,7 +9341,7 @@ function isRegionUnlocked(regionId){
       // TAP 1 = focus
       if (String(ACTIVE_PIN_ID || "") !== id) {
         ACTIVE_PIN_ID = id;
-        renderPins();
+        syncActiveMapPinSelection();
         updateMapSelectionBrief();
         return;
       }
