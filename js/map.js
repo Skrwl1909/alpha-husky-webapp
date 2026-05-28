@@ -2558,8 +2558,13 @@
     return display !== "none";
   }
 
+  function _isSelectionOnlySyncActive() {
+    return Number(window.__AH_MAP_SELECTION_SYNC_UNTIL || 0) > Date.now();
+  }
+
   function _scheduleReapply() {
     if (!_isMapVisible() || !_lastLeadersMap) return;
+    if (_isSelectionOnlySyncActive()) return;
     if (_reapplyQueued) return;
     _reapplyQueued = true;
 
