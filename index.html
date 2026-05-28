@@ -8096,6 +8096,7 @@ document.addEventListener("click", async (e) => {
 
         function syncActiveMapPinSelection(){
           if (!pinsEl) return;
+          window.__AH_MAP_SELECTION_SYNC_UNTIL = Date.now() + 180;
           const activeId = String(ACTIVE_PIN_ID || "").trim();
           const pins = Array.from(pinsEl.querySelectorAll(".map-pin"));
           pins.forEach((pin) => {
@@ -8104,7 +8105,6 @@ document.addEventListener("click", async (e) => {
             const chip = pin.querySelector(".chip");
             if (chip) chip.style.display = isActive ? "flex" : "none";
           });
-          try { window.AHMap?.reapplyLastLeaders?.(); } catch (_) {}
         }
 
         function normalizeSelectionStatus(raw){
