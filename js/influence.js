@@ -3540,6 +3540,33 @@
     const viewerFaction = normalizeFaction(_faction || getCanonicalFaction() || info?.youFaction || "");
     const viewerPressure = viewerFaction ? Number(s?.[viewerFaction] || 0) : 0;
     const leaderPressure = Number(info?.leaderValue || 0);
+
+    // Phantom Nodes only: compute true opposing (enemy) pressure from scores excluding viewer faction.
+    // Defensive fallback to leaderPressure if no other faction scores available or on error.
+    let enemyPressure = leaderPressure;
+    let isRealEnemyFromScores = false;
+    if (phantomMode) {
+      try {
+        const scoreObj = s || {};
+        let maxOther = 0;
+        for (const [fkey, val] of Object.entries(scoreObj)) {
+          const norm = normalizeFaction ? normalizeFaction(fkey) : null;
+          if (norm && norm !== viewerFaction) {
+            const n = Number(val || 0);
+            if (Number.isFinite(n) && n > maxOther) {
+              maxOther = n;
+            }
+          }
+        }
+        if (maxOther > 0) {
+          enemyPressure = maxOther;
+          isRealEnemyFromScores = true;
+        }
+      } catch (_) {
+        // keep fallback to leaderPressure
+      }
+    }
+
     const watchUsed = Number(info?.guardSlotsUsed || info?.watchCount || 0);
     const watchMax = Number(info?.guardSlotsMax || info?.maxDefenders || 0);
     const watchText = watchMax > 0
@@ -3552,7 +3579,7 @@
     const pressureChipLabel = recommendedAction;
     const pressureNarrative = statusNarrative(condition);
     const yourFactionName = fmtFaction ? fmtFaction(viewerFaction) : (viewerFaction || "Your faction");
-    const controlStatus = phantomMode ? deriveControlStatus(viewerPressure, leaderPressure, yourFactionName) : null;
+    const controlStatus = phantomMode ? deriveControlStatus(viewerPressure, enemyPressure, yourFactionName) : null;
     const captureTier = Math.max(0, Number(info?.captureTier || 0) || 0);
     const maxPressure = Math.max(
       1,
@@ -3592,19 +3619,20 @@
     // Compact Control Clash meter for Phantom Nodes (in hero, after brief, before dense Intel)
     const clashEl = document.getElementById("infClashMeter");
     if (clashEl) {
-      if (phantomMode && controlStatus && (viewerPressure > 0 || leaderPressure > 0)) {
+      if (phantomMode && controlStatus && (viewerPressure > 0 || enemyPressure > 0)) {
         const v = Math.max(0, Number(viewerPressure));
-        const o = Math.max(0, Number(leaderPressure));
+        const o = Math.max(0, Number(enemyPressure));
         const total = Math.max(1, v + o);
         const yourPct = Math.round((v / total) * 100);
         const enemyPct = 100 - yourPct;
         const yourName = yourFactionName || "Your faction";
+        const secondLabel = (phantomMode && isRealEnemyFromScores) ? "Enemy" : "Lead";
         clashEl.style.display = "block";
         clashEl.innerHTML = `
           <div class="inf-clash-head">${controlStatus.headline}</div>
           <div class="inf-clash-sides">
             <div class="inf-clash-side your"><span class="name">${yourName}</span> <span class="score">${v}</span></div>
-            <div class="inf-clash-side enemy"><span class="name">Enemy</span> <span class="score">${o}</span></div>
+            <div class="inf-clash-side enemy"><span class="name">${secondLabel}</span> <span class="score">${o}</span></div>
           </div>
           <div class="inf-clash-bar">
             <div class="your" style="width:${yourPct}%"></div>
@@ -3690,11 +3718,27 @@
 
     if (intelOwnerEl) intelOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
     if (intelWatchEl) {
-      // Intel / deeper details: keep numbers but use player language, never "lead" for opposing side in control context
-      if (viewerPressure > 0 && leaderPressure > 0) intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${leaderPressure}`;
-      else if (leaderPressure > 0) intelWatchEl.textContent = `Enemy pressure ${leaderPressure}`;
-      else if (viewerPressure > 0) intelWatchEl.textContent = `Your pressure ${viewerPressure}`;
-      else intelWatchEl.textContent = "Quiet pressure band";
+      if (phantomMode) {
+        // Phantom: use corrected enemyPressure from other factions' scores (fallback to leaderPressure keeps "Faction pressure" copy)
+        const ep = enemyPressure;
+        const hasReal = isRealEnemyFromScores;
+        if (viewerPressure > 0 && ep > 0) {
+          intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${ep}`;
+        } else if (ep > 0) {
+          const pfx = hasReal ? "Enemy pressure" : "Lead pressure";
+          intelWatchEl.textContent = `${pfx} ${ep}`;
+        } else if (viewerPressure > 0) {
+          intelWatchEl.textContent = `Your pressure ${viewerPressure}`;
+        } else {
+          intelWatchEl.textContent = "Quiet pressure band";
+        }
+      } else {
+        // non-Phantom: original behavior unchanged
+        if (viewerPressure > 0 && leaderPressure > 0) intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${leaderPressure}`;
+        else if (leaderPressure > 0) intelWatchEl.textContent = `Enemy pressure ${leaderPressure}`;
+        else if (viewerPressure > 0) intelWatchEl.textContent = `Your pressure ${viewerPressure}`;
+        else intelWatchEl.textContent = "Quiet pressure band";
+      }
     }
     if (intelWatchBarEl) {
       intelWatchBarEl.style.width = `${pressurePct}%`;

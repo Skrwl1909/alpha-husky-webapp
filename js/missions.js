@@ -145,9 +145,10 @@
       : `Bonus found: ${label}`;
   }
 
-  function normalizeCacheSignalChip(last) {
+  function normalizeMissionSignalNote(last) {
     if (last?.bonusFound || last?.rareHit) return "";
-    if (last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) return "Vault trace detected";
+    const rareHint = normalizeRareChanceLabel(last?.rareHint);
+    if (rareHint) return `Route signal: ${rareHint}. Possible rare bonus only, not stored progress.`;
     return "";
   }
 
@@ -167,6 +168,29 @@
     }
     const text = textOrEmpty(v);
     return text ? [text] : [];
+  }
+
+  function splitLastResolveRewards(list) {
+    const baseRewards = [];
+    const eventRewards = [];
+    const extraRecovered = [];
+
+    (Array.isArray(list) ? list : []).forEach((raw) => {
+      const item = textOrEmpty(raw);
+      if (!item) return;
+      const lower = item.toLowerCase();
+      if (lower.includes("blue signal fragment")) {
+        eventRewards.push(item);
+        return;
+      }
+      if (/\bxp\b/i.test(item) || /\bbones\b/i.test(item)) {
+        baseRewards.push(item);
+        return;
+      }
+      extraRecovered.push(item);
+    });
+
+    return { baseRewards, eventRewards, extraRecovered };
   }
 
   let _apiPost = null;
@@ -1497,7 +1521,7 @@ function _normalizeRareDropObj(obj) {
         <div class="m-help-copy">Pet fit = how well your active pet matched recommended mission traits.</div>
         <div class="m-help-copy">Rare chance = possible rare outcome, not guaranteed.</div>
         <div class="m-help-copy">Bonus found = extra result actually recovered during resolve.</div>
-        <div class="m-help-copy">Cache signal = route contained a cache trace, but not necessarily a bonus reward.</div>
+        <div class="m-help-copy">Mission signal = route carried a possible rare bonus. It is not loot and it does not store progress by itself.</div>
         <div class="m-help-copy">Outcomes: Critical Success = best result. Success = normal clear. Partial Success = you recovered something, but missed part of the reward. Failed = the route held. Return stronger.</div>
       </div>
     `;
@@ -1669,11 +1693,10 @@ function _normalizeRareDropObj(obj) {
     const lootMsg = textOrEmpty(last?.lootMsg || last?.loot_msg);
     const tokenLootMsg = textOrEmpty(last?.tokenLootMsg || last?.token_loot_msg);
     const bonusFoundChip = normalizeBonusFoundChip(last);
-    const cacheSignalChip = normalizeCacheSignalChip(last);
+    const missionSignalNote = normalizeMissionSignalNote(last);
     const petArchetype = "";
     const rareHint = "";
     const rareHit = false;
-
     const metaBits = [];
     if (modifierLabel) metaBits.push(modifierLabel);
     if (ts) metaBits.push(ts);
@@ -1693,16 +1716,12 @@ function _normalizeRareDropObj(obj) {
     for (let i = 0; i < chipLines.length; i += 1) {
       if (/^Pet Match:/i.test(chipLines[i])) chipLines[i] = `Pet fit: ${petMatchLabel}`;
     }
-    if (bonusFoundChip) chipLines.push(bonusFoundChip);
-    else if (cacheSignalChip) chipLines.push(cacheSignalChip);
-
     chipLines.length = 0;
     if (outcomeTone === "success" || outcomeTone === "critical") chipLines.push("Mission completed");
     if (progressLine) chipLines.push(progressLine);
     if (shortfallLine && shortfallLine !== progressLine) chipLines.push(shortfallLine);
     if (petMatchLabel) chipLines.push(`Pet fit: ${petMatchLabel}`);
     if (bonusFoundChip) chipLines.push(bonusFoundChip);
-    else if (cacheSignalChip) chipLines.push(cacheSignalChip);
 
     const fallbackRecovered = [];
     if (!recoveredRewards.length) {
@@ -1712,9 +1731,10 @@ function _normalizeRareDropObj(obj) {
     }
 
     const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
+    const { baseRewards, eventRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
     const showMissed = missedRewards.filter((x) => {
       if (!x) return false;
-      if ((bonusFoundChip || cacheSignalChip) && /cache/i.test(x)) return false;
+      if ((bonusFoundChip || missionSignalNote || last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) && /cache/i.test(x)) return false;
       return true;
     });
 
@@ -1731,7 +1751,10 @@ function _normalizeRareDropObj(obj) {
         ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
         ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
         ${petDetailLines.length ? petDetailLines.map((line) => `<div class="m-report-line">${esc(line)}</div>`).join("") : ""}
-        ${showRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(showRecovered.join(" · "))}</div></div>` : ""}
+        ${baseRewards.length ? `<div class="m-report-section"><div class="m-report-label">Base rewards</div><div class="m-report-values">${esc(baseRewards.join(" · "))}</div></div>` : ""}
+        ${eventRewards.length ? `<div class="m-report-section"><div class="m-report-label">Event rewards</div><div class="m-report-values">${esc(eventRewards.join(" · "))}</div></div>` : ""}
+        ${extraRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(extraRecovered.join(" · "))}</div></div>` : ""}
+        ${missionSignalNote ? `<div class="m-report-section"><div class="m-report-label">Mission signal</div><div class="m-report-values">${esc(missionSignalNote)}</div></div>` : ""}
         ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" · "))}</div></div>` : ""}
       </div>
     `;

@@ -96,6 +96,9 @@
       const action = asText(target.action).toLowerCase();
       return action ? { type, action } : null;
     }
+    if (type === "open_treasury") {
+      return { type: "open_action", action: "treasury" };
+    }
     if (type === "send_howl" || type === "player_profile") {
       const targetUid = asText(target.target_uid || target.targetUid || target.uid);
       return targetUid ? { type, target_uid: targetUid, targetUid, source: asText(target.source) || "mailbox" } : null;

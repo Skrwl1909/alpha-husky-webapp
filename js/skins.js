@@ -89,9 +89,9 @@
         inset:0;
         pointer-events:none;
         background:
-          radial-gradient(120% 110% at 50% 110%, rgba(0,0,0,0) 48%, rgba(0,0,0,.45) 100%),
-          linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.26));
-        z-index:3;
+          radial-gradient(120% 112% at 50% 118%, rgba(0,0,0,0) 54%, rgba(0,0,0,.22) 100%),
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.10));
+        z-index:0;
       }
       #avatarBack #skinPreviewImg.ah-skin-preview-media,
       #avatarBack #skinCanvas.ah-skin-preview-media{
@@ -107,6 +107,7 @@
         box-shadow:none !important;
         background:transparent !important;
         z-index:1;
+        filter:drop-shadow(0 10px 18px rgba(0,0,0,.20));
       }
       #avatarBack #skinPreviewImg.ah-skin-preview-media{
         object-fit:contain !important;
