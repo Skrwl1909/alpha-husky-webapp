@@ -538,12 +538,14 @@
   function setSignalCoreSigil(owner, url) {
     const sigilEl = _qs("infSignalSigil");
     const fallbackEl = _qs("infSignalSigilFallback");
-    if (!sigilEl || !fallbackEl) return;
+    const coreEl = _qs(".inf-signal-sigil-core");
+    if (!sigilEl || !fallbackEl || !coreEl) return;
 
     const ownerCode = owner ? factionCode(owner) : "--";
     const nextUrl = String(url || "").trim();
     fallbackEl.textContent = ownerCode;
     fallbackEl.style.display = "flex";
+    coreEl.dataset.sigilMode = "fallback";
 
     sigilEl.style.display = "none";
     sigilEl.style.opacity = "0";
@@ -561,13 +563,15 @@
       if (!(sigilEl.naturalWidth > 0 && sigilEl.naturalHeight > 0)) return;
       fallbackEl.style.display = "none";
       sigilEl.style.display = "block";
-      sigilEl.style.opacity = "0.84";
+      sigilEl.style.opacity = "0.92";
+      coreEl.dataset.sigilMode = "image";
     };
     sigilEl.onerror = () => {
       if (sigilEl.dataset.sigilUrl !== nextUrl) return;
       sigilEl.style.display = "none";
       sigilEl.style.opacity = "0";
       fallbackEl.style.display = "flex";
+      coreEl.dataset.sigilMode = "fallback";
     };
 
     if (sigilEl.getAttribute("src") !== nextUrl) {
@@ -577,7 +581,8 @@
     if (sigilEl.complete && sigilEl.naturalWidth > 0) {
       fallbackEl.style.display = "none";
       sigilEl.style.display = "block";
-      sigilEl.style.opacity = "0.84";
+      sigilEl.style.opacity = "0.92";
+      coreEl.dataset.sigilMode = "image";
     }
   }
   function _isModalOpen() {
@@ -1419,6 +1424,7 @@
         max-height:min(68dvh, 470px);
         overflow:auto;
         -webkit-overflow-scrolling:touch;
+        overscroll-behavior:contain;
         transform:translate(-50%, 14px);
         opacity:0;
         pointer-events:none;
@@ -1452,6 +1458,12 @@
         align-items:flex-start;
         justify-content:space-between;
         gap:10px;
+        position:sticky;
+        top:-12px;
+        z-index:6;
+        margin:-12px -12px 0;
+        padding:12px 12px 10px;
+        background:linear-gradient(180deg, rgba(13,20,31,.98), rgba(13,20,31,.92) 72%, rgba(13,20,31,0));
       }
       #influenceModal .inf-signal-title{
         font-size:14px;
@@ -1553,19 +1565,68 @@
         border:1px solid rgba(188,220,255,.16);
         box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 0 20px color-mix(in srgb, var(--inf-signal-glow) 24%, transparent);
       }
+      #influenceModal .inf-signal-sigil-core::after{
+        content:"";
+        position:absolute;
+        inset:20px;
+        border-radius:24px;
+        border:1px solid rgba(157,196,240,.08);
+        background:
+          radial-gradient(circle at 50% 22%, rgba(174,216,255,.08), transparent 56%),
+          linear-gradient(180deg, rgba(11,16,26,.28), rgba(5,8,14,.08));
+        pointer-events:none;
+      }
+      #influenceModal .inf-signal-sigil-lens{
+        position:relative;
+        z-index:2;
+        width:74%;
+        height:74%;
+        border-radius:24px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        background:
+          radial-gradient(circle at 50% 28%, rgba(34,48,68,.92), rgba(11,16,25,.98) 68%),
+          linear-gradient(180deg, rgba(11,16,26,.96), rgba(6,9,14,.98));
+        border:1px solid rgba(145,185,236,.14);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.05),
+          inset 0 -10px 18px rgba(0,0,0,.34);
+        isolation:isolate;
+      }
+      #influenceModal .inf-signal-sigil-lens::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(174,216,255,.12), transparent 40%),
+          radial-gradient(circle at 50% 100%, rgba(0,0,0,.34), transparent 54%);
+        pointer-events:none;
+      }
       #influenceModal .inf-signal-sigil{
         position:relative;
         z-index:2;
-        width:min(74%, 132px);
-        height:min(74%, 132px);
-        max-width:132px;
-        max-height:132px;
+        width:100%;
+        height:100%;
         object-fit:contain;
+        padding:14px;
+        border-radius:20px;
         background:transparent !important;
-        filter:drop-shadow(0 0 10px rgba(0,0,0,.28)) drop-shadow(0 0 16px color-mix(in srgb, var(--inf-signal-glow) 34%, transparent));
-        opacity:.84;
-        mix-blend-mode:screen;
+        filter:
+          grayscale(1)
+          contrast(1.18)
+          brightness(1.26)
+          drop-shadow(0 0 8px rgba(0,0,0,.26))
+          drop-shadow(0 0 12px color-mix(in srgb, var(--inf-signal-glow) 24%, transparent));
+        opacity:.92;
+        mix-blend-mode:multiply;
         image-rendering:auto;
+      }
+      #influenceModal .inf-signal-sigil-core[data-sigil-mode="image"] .inf-signal-sigil-lens{
+        background:
+          radial-gradient(circle at 50% 28%, rgba(40,54,76,.94), rgba(10,15,24,.99) 70%),
+          linear-gradient(180deg, rgba(11,16,26,.97), rgba(6,9,14,.99));
       }
       #influenceModal .inf-signal-sigil-fallback{
         position:relative;
@@ -1577,10 +1638,13 @@
         justify-content:center;
         font-size:30px;
         font-weight:900;
-        letter-spacing:.12em;
+        letter-spacing:.2em;
         color:#dcecff;
         text-transform:uppercase;
         text-shadow:0 0 10px rgba(0,0,0,.32), 0 0 18px color-mix(in srgb, var(--inf-signal-glow) 28%, transparent);
+        background:
+          radial-gradient(circle at 50% 34%, rgba(132,210,255,.14), transparent 44%),
+          linear-gradient(180deg, rgba(7,12,20,.18), rgba(7,12,20,0));
       }
       #influenceModal .inf-signal-energy{
         position:absolute;
@@ -1782,6 +1846,7 @@
           inset 0 1px 0 rgba(255,255,255,.05);
         padding:12px 12px 13px;
         max-height:min(72dvh, 560px);
+        overflow:auto;
       }
       #influenceModal .inf-signal-head{
         align-items:center;
@@ -1958,6 +2023,9 @@
         inset:-12px;
         border-color:rgba(188,220,255,.14);
       }
+      #influenceModal .inf-signal-sigil-core::after{
+        inset:22px;
+      }
       #influenceModal .inf-signal-energy{
         width:172px;
         height:172px;
@@ -2128,6 +2196,7 @@
         #influenceModal .inf-signal-sheet{
           width:min(96vw,430px);
           padding:10px 10px 11px;
+          max-height:min(78dvh, calc(100dvh - 20px));
         }
         #influenceModal .inf-signal-summary{
           gap:6px;
@@ -3232,9 +3301,11 @@
             <div class="inf-signal-reticle is-outer"></div>
             <div class="inf-signal-reticle is-inner"></div>
             <div class="inf-signal-pulse-ring"></div>
-            <div class="inf-signal-sigil-core">
-              <img id="infSignalSigil" class="inf-signal-sigil" alt="" loading="eager" decoding="async" style="display:none;" onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
-              <div id="infSignalSigilFallback" class="inf-signal-sigil-fallback">--</div>
+            <div class="inf-signal-sigil-core" data-sigil-mode="fallback">
+              <div class="inf-signal-sigil-lens">
+                <img id="infSignalSigil" class="inf-signal-sigil" alt="" loading="eager" decoding="async" style="display:none;" onerror="this.style.display='none'; if (this.closest('.inf-signal-sigil-core')) this.closest('.inf-signal-sigil-core').dataset.sigilMode='fallback'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                <div id="infSignalSigilFallback" class="inf-signal-sigil-fallback">--</div>
+              </div>
             </div>
             <div class="inf-signal-interference"></div>
             <div class="inf-signal-visual-copy">
