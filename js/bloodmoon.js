@@ -957,6 +957,100 @@
     transform:none;
   }
 }
+
+/* Telegram mobile performance safeguard:
+   keep Blood-Moon readable, but strip the heaviest glow/blur/pulse
+   layers on coarse-pointer mobile WebViews. */
+html.ah-perf-lite #${ROOT_ID},
+body.ah-perf-lite #${ROOT_ID}{
+  background:rgba(7,8,14,.96);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+
+html.ah-perf-lite #bloodMoonModal,
+body.ah-perf-lite #bloodMoonModal{
+  box-shadow:0 -18px 40px rgba(80,8,18,.36);
+}
+
+html.ah-perf-lite #bloodMoonModal::before,
+body.ah-perf-lite #bloodMoonModal::before,
+html.ah-perf-lite #bloodMoonModal::after,
+body.ah-perf-lite #bloodMoonModal::after,
+html.ah-perf-lite #bloodMoonTitle::after,
+body.ah-perf-lite #bloodMoonTitle::after,
+html.ah-perf-lite .bm-card-hero::before,
+body.ah-perf-lite .bm-card-hero::before,
+html.ah-perf-lite .bm-cta::before,
+body.ah-perf-lite .bm-cta::before,
+html.ah-perf-lite .bm-boss-fill::after,
+body.ah-perf-lite .bm-boss-fill::after,
+html.ah-perf-lite .bm-loading-card::after,
+body.ah-perf-lite .bm-loading-card::after,
+html.ah-perf-lite .bm-battle-stage::before,
+body.ah-perf-lite .bm-battle-stage::before{
+  display:none !important;
+  animation:none !important;
+}
+
+html.ah-perf-lite #bloodMoonTitle,
+body.ah-perf-lite #bloodMoonTitle{
+  text-shadow:none !important;
+}
+
+html.ah-perf-lite .bm-card,
+body.ah-perf-lite .bm-card{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.18) !important;
+}
+
+html.ah-perf-lite .bm-card-hero,
+body.ah-perf-lite .bm-card-hero,
+html.ah-perf-lite .bm-battle-stage,
+body.ah-perf-lite .bm-battle-stage,
+html.ah-perf-lite .bm-battle-stage.is-crit,
+body.ah-perf-lite .bm-battle-stage.is-crit{
+  box-shadow:0 10px 22px rgba(0,0,0,.22) !important;
+}
+
+html.ah-perf-lite .bm-progress > i,
+body.ah-perf-lite .bm-progress > i,
+html.ah-perf-lite .bm-cta,
+body.ah-perf-lite .bm-cta,
+html.ah-perf-lite .bm-cta:hover,
+body.ah-perf-lite .bm-cta:hover,
+html.ah-perf-lite .bm-battle-placeholder-core,
+body.ah-perf-lite .bm-battle-placeholder-core,
+html.ah-perf-lite .bm-battle-hp-before,
+body.ah-perf-lite .bm-battle-hp-before,
+html.ah-perf-lite .bm-battle-hp-current,
+body.ah-perf-lite .bm-battle-hp-current{
+  box-shadow:none !important;
+}
+
+html.ah-perf-lite .bm-cta:hover,
+body.ah-perf-lite .bm-cta:hover{
+  transform:none !important;
+}
+
+html.ah-perf-lite .bm-battle-hit-value,
+body.ah-perf-lite .bm-battle-hit-value,
+html.ah-perf-lite .bm-battle-hit-value.is-crit,
+body.ah-perf-lite .bm-battle-hit-value.is-crit{
+  text-shadow:0 8px 20px rgba(0,0,0,.26) !important;
+}
+
+html.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hit-value,
+body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hit-value,
+html.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hit-sub,
+body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hit-sub,
+html.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hp-before,
+body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-hp-before,
+html.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item,
+body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
+  animation:none !important;
+}
 .bm-battle-placeholder-core{
   width:82px;
   height:82px;

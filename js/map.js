@@ -758,6 +758,83 @@
   0%,100%{ transform:scale(1); filter:brightness(1); }
   50%{ transform:scale(1.04); filter:brightness(1.08); }
 }
+
+/* Telegram mobile performance safeguard:
+   preserve map state readability while removing the most expensive
+   pin/path glow work on mobile WebViews. */
+html.ah-perf-lite #map[data-dom-state="leader"]::before,
+body.ah-perf-lite #map[data-dom-state="leader"]::before,
+html.ah-perf-lite #map[data-dom-state="contested"]::before,
+body.ah-perf-lite #map[data-dom-state="contested"]::before{
+  opacity:.18 !important;
+}
+
+html.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence::after,
+body.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence::after,
+html.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-core::after,
+body.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-core::after,
+html.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-primary::after,
+body.ah-perf-lite #map[data-dom-state="leader"] #pins .map-pin.dom-presence.dom-primary::after{
+  display:none !important;
+}
+
+html.ah-perf-lite #map[data-dom-state="leader"] #pathsSVG .path.ah-dom-path,
+body.ah-perf-lite #map[data-dom-state="leader"] #pathsSVG .path.ah-dom-path{
+  filter:none !important;
+  stroke-width:2.2 !important;
+}
+
+html.ah-perf-lite #map[data-dom-state="leader"] #pathsSVG .path.glow.ah-dom-path,
+body.ah-perf-lite #map[data-dom-state="leader"] #pathsSVG .path.glow.ah-dom-path{
+  display:none !important;
+}
+
+html.ah-perf-lite .map-pin .pin-ring,
+body.ah-perf-lite .map-pin .pin-ring,
+html.ah-perf-lite .map-pin.pressure-flashpoint .pin-ring,
+body.ah-perf-lite .map-pin.pressure-flashpoint .pin-ring,
+html.ah-perf-lite .map-pin.pressure-flashpoint .pin-pressure-chip,
+body.ah-perf-lite .map-pin.pressure-flashpoint .pin-pressure-chip,
+html.ah-perf-lite .map-pin.pressure-hot:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+body.ah-perf-lite .map-pin.pressure-hot:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+html.ah-perf-lite .map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+body.ah-perf-lite .map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+html.ah-perf-lite .map-pin.pressure-fortified:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+body.ah-perf-lite .map-pin.pressure-fortified:not(.pressure-contested):not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+html.ah-perf-lite .map-pin.f-rb .pin-ring,
+body.ah-perf-lite .map-pin.f-rb .pin-ring,
+html.ah-perf-lite .map-pin.f-ew .pin-ring,
+body.ah-perf-lite .map-pin.f-ew .pin-ring,
+html.ah-perf-lite .map-pin.f-pb .pin-ring,
+body.ah-perf-lite .map-pin.f-pb .pin-ring,
+html.ah-perf-lite .map-pin.f-ih .pin-ring,
+body.ah-perf-lite .map-pin.f-ih .pin-ring,
+html.ah-perf-lite .map-pin.siege-forming .pin-ring,
+body.ah-perf-lite .map-pin.siege-forming .pin-ring,
+html.ah-perf-lite .map-pin.siege-running .pin-ring,
+body.ah-perf-lite .map-pin.siege-running .pin-ring,
+html.ah-perf-lite .map-pin.siege-cooldown .pin-ring,
+body.ah-perf-lite .map-pin.siege-cooldown .pin-ring{
+  box-shadow:none !important;
+}
+
+html.ah-perf-lite .map-pin.is-contested .pin-ring,
+body.ah-perf-lite .map-pin.is-contested .pin-ring,
+html.ah-perf-lite .map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+body.ah-perf-lite .map-pin.pressure-contested:not(.siege-forming):not(.siege-running):not(.siege-cooldown) .pin-ring,
+html.ah-perf-lite .map-pin.siege-forming .pin-ring,
+body.ah-perf-lite .map-pin.siege-forming .pin-ring,
+html.ah-perf-lite .map-pin.siege-running .pin-ring,
+body.ah-perf-lite .map-pin.siege-running .pin-ring{
+  animation:none !important;
+}
+
+html.ah-perf-lite .map-pin .pin-pressure-chip,
+body.ah-perf-lite .map-pin .pin-pressure-chip{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:none !important;
+}
 `;
     document.head.appendChild(s);
   }
