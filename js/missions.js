@@ -1706,7 +1706,7 @@ function _normalizeRareDropObj(obj) {
     if (!_root) return;
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
     if (row) row.style.display = "none";
-    const safeTitle = "Mission signal unavailable. Try again.";
+    const safeTitle = "Can't reach missions right now.";
     const safeDetail = _dbg ? textOrEmpty(detail) : "";
     _root.innerHTML = `
       <div class="m-stage">

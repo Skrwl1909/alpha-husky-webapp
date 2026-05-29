@@ -54,8 +54,8 @@
 
   function formatPendingLabel(points) {
     const count = Math.max(0, Number(points || 0));
-    if (count === 1) return "1 stat point available";
-    return `${count} stat points available`;
+    if (count === 1) return "1 point ready";
+    return `${count} points ready`;
   }
 
   function ensureStyles() {
@@ -183,8 +183,8 @@
           <div class="t">My Pets</div>
           <button type="button" data-close aria-label="Close">X</button>
         </div>
-        <div class="sub">Tap a pet to set it active. Spend pending points below when they appear.</div>
-        <details style="margin:0 14px 4px"><summary style="cursor:pointer;font-size:11px;color:rgba(214,228,241,.8);outline:none">Pet Stats Scheme</summary><div style="font-size:11px;color:rgba(214,228,241,.72);margin-top:2px;line-height:1.3">Base = natural start. Allocated = your spent points. Pending = unspent level-ups. Effective = shown power (current total). Full guide in FAQ → Stats Scheme.</div></details>
+        <div class="sub">Tap a pet to set it active. Unspent points ready. Tap + to spend.</div>
+        <details style="margin:0 14px 4px"><summary style="cursor:pointer;font-size:11px;color:rgba(214,228,241,.8);outline:none">Pet Stats Scheme</summary><div style="font-size:11px;color:rgba(214,228,241,.72);margin-top:2px;line-height:1.3">Natural = starting numbers. Spent = points you added. Ready = points waiting. Current = total power now. Full guide in FAQ.</div></details>
         <div class="list" id="mypetsList"></div>
       </div>
     `;

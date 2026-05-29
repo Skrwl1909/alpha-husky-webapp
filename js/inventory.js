@@ -4,6 +4,7 @@
 
 window.Inventory = {
   items: [],
+  activeEffects: [],
   equipped: {}, // unused here now (kept for compatibility)
   equippedBySlot: {},
   resources: { bones: 0, scrap: 0, rune_dust: 0 },
@@ -208,6 +209,66 @@ window.Inventory = {
     const raw = this._safeText(text, "");
     if (!raw || raw.length <= maxLen) return raw;
     return `${raw.slice(0, Math.max(0, maxLen - 1)).trimEnd()}…`;
+  },
+
+  _useMeta(item) {
+    return (item && typeof item.useMeta === "object" && item.useMeta) ? item.useMeta : {};
+  },
+
+  _activeEffectsFromResponse(res) {
+    return Array.isArray(res?.activeEffects) ? res.activeEffects : [];
+  },
+
+  _effectPill(effect) {
+    const label = this._safeText(effect?.name, "Effect");
+    const desc = this._safeText(effect?.description, label);
+    const uses = this._toInt(effect?.remainingUses, 0);
+    const remain = this._toInt(effect?.remainingSec, 0);
+    let tail = "";
+    if (uses > 0) tail = `${uses} use${uses === 1 ? "" : "s"} left`;
+    else if (remain > 0) tail = `${remain}s left`;
+
+    return `
+      <div style="padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,rgba(20,32,48,.96),rgba(10,17,28,.94));border:1px solid rgba(126,198,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+          <div style="min-width:0;">
+            <div style="font-size:12px;font-weight:900;color:#f2f8ff;letter-spacing:.03em;">${this._esc(label)}</div>
+            <div style="margin-top:4px;font-size:11px;line-height:1.45;color:#bcd4ea;">${this._esc(desc)}</div>
+          </div>
+          ${tail ? `<div style="flex:0 0 auto;padding:5px 8px;border-radius:999px;background:rgba(126,198,255,.12);border:1px solid rgba(126,198,255,.18);font-size:10px;font-weight:800;color:#dff4ff;">${this._esc(tail)}</div>` : ""}
+        </div>
+      </div>
+    `;
+  },
+
+  _renderActiveEffectsPanel() {
+    const host = document.getElementById("inventoryEffectsPanel");
+    if (!host) return;
+
+    const effects = Array.isArray(this.activeEffects) ? this.activeEffects : [];
+    if (!effects.length) {
+      host.style.display = "none";
+      host.innerHTML = "";
+      return;
+    }
+
+    host.style.display = "block";
+    host.innerHTML = `
+      <div style="margin:0 0 16px 0;padding:14px;border-radius:20px;background:linear-gradient(180deg,rgba(18,28,44,.94),rgba(8,13,23,.92));border:1px solid rgba(126,198,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 16px 30px rgba(0,0,0,.18);">
+        <div style="font-size:11px;letter-spacing:.7px;color:#8fb9dd;text-transform:uppercase;margin-bottom:10px;">Active Effects</div>
+        <div style="display:grid;gap:8px;">${effects.map((effect) => this._effectPill(effect)).join("")}</div>
+      </div>
+    `;
+  },
+
+  _handleRedirectTarget(target, message) {
+    const key = this._safeText(target, "").toLowerCase();
+    if (key === "pet_passive") {
+      try { window.MyPets?.open?.(); } catch (_) {}
+      if (message) this._toast(message);
+      return true;
+    }
+    return false;
   },
 
   // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
@@ -418,6 +479,8 @@ window.Inventory = {
       loading...
     </div>
 
+    <div id="inventoryEffectsPanel" style="display:none;"></div>
+
     <!-- Tabs -->
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
       <button onclick="Inventory.showTab('all')" class="tab-btn active" data-type="all" type="button">All</button>
@@ -451,8 +514,8 @@ window.Inventory = {
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px 18px;border-bottom:1px solid rgba(255,255,255,.07);">
           <div>
-            <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Inventory Detail</div>
-            <div style="font-size:20px;font-weight:900;color:#f6fbff;">Signal Readout</div>
+            <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Item</div>
+            <div style="font-size:20px;font-weight:900;color:#f6fbff;">Item Details</div>
           </div>
           <button onclick="Inventory.closeItem()" type="button" style="
             width:42px;height:42px;border-radius:14px;border:none;
@@ -481,6 +544,7 @@ window.Inventory = {
 
       // slots = UNEQUIPPED ONLY
       this.items = res.slots || [];
+      this.activeEffects = this._activeEffectsFromResponse(res);
       this.equipped = {}; // no equipped fallback in this view
       this.equippedBySlot = (res.equippedBySlot && typeof res.equippedBySlot === "object") ? res.equippedBySlot : {};
 
@@ -498,6 +562,9 @@ window.Inventory = {
           Rune Dust: <b style="color:#f8f;">${this.resources.rune_dust.toLocaleString()}</b>
         `;
       }
+
+      this._renderActiveEffectsPanel();
+      try { window.renderBuffs?.(res); } catch (_) {}
 
       if (!["all", "gear", "consumable", "utility"].includes(this.currentTab)) {
         this.currentTab = "all";
@@ -586,17 +653,67 @@ window.Inventory = {
     return { slot, equipped, rows };
   },
 
+  _consumableStatusTone(state) {
+    const key = this._safeText(state, "").toLowerCase();
+    if (key === "live") return { bg: "rgba(84,210,148,.14)", fg: "#cffff0", border: "rgba(84,210,148,.24)", label: "Live" };
+    if (key === "redirect") return { bg: "rgba(120,188,255,.14)", fg: "#d9ecff", border: "rgba(120,188,255,.24)", label: "Redirect" };
+    if (key === "passive") return { bg: "rgba(255,215,106,.12)", fg: "#ffe5a4", border: "rgba(255,215,106,.22)", label: "Passive" };
+    if (key === "blocked") return { bg: "rgba(255,120,120,.13)", fg: "#ffd2d2", border: "rgba(255,120,120,.26)", label: "Blocked" };
+    return { bg: "rgba(255,255,255,.07)", fg: "#d4deec", border: "rgba(255,255,255,.10)", label: "Unknown" };
+  },
+
+  _renderConsumableAudit(item) {
+    if (!this._isConsumable(item)) return "";
+    const meta = this._useMeta(item);
+    const state = this._safeText(meta.state, "unknown");
+    const tone = this._consumableStatusTone(state);
+    const message = this._safeText(meta.message, item?.usedFor || item?.description || "");
+    const activeLine = meta.active && meta.activeDescription
+      ? `<div style="margin-top:8px;font-size:12px;line-height:1.55;color:#dff4ff;">${this._esc(meta.activeDescription)}</div>`
+      : "";
+
+    return `
+      <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Consumable</div>
+          <div style="padding:6px 10px;border-radius:999px;background:${tone.bg};border:1px solid ${tone.border};font-size:11px;font-weight:900;color:${tone.fg};letter-spacing:.4px;text-transform:uppercase;">${this._esc(tone.label)}</div>
+        </div>
+        <div style="margin-top:10px;font-size:13px;line-height:1.6;color:#d7e6f7;">${this._esc(message || "No consumable metadata available.")}</div>
+        ${activeLine}
+      </section>
+    `;
+  },
+
   _detailActions(item) {
     const key = this._safeText(item?.key || item?.item_key || item?.item, "");
     const salvage = this._salvagePreview(item);
     const actions = [];
     if (this._isConsumable(item)) {
-      actions.push(`
-        <button onclick="event.stopPropagation(); Inventory.use('${this._esc(key)}')" type="button"
-                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#5fe3a1,#1b9e67);color:#08110d;font-weight:900;letter-spacing:.4px;cursor:pointer;">
-          USE
-        </button>
-      `);
+      const meta = this._useMeta(item);
+      const state = this._safeText(meta.state, "unknown").toLowerCase();
+      if (state === "live") {
+        actions.push(`
+          <button onclick="event.stopPropagation(); Inventory.use('${this._esc(key)}')" type="button"
+                  style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#5fe3a1,#1b9e67);color:#08110d;font-weight:900;letter-spacing:.4px;cursor:pointer;">
+            USE
+          </button>
+        `);
+      } else if (state === "redirect") {
+        actions.push(`
+          <button onclick="event.stopPropagation(); Inventory.use('${this._esc(key)}')" type="button"
+                  style="flex:1 1 180px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#7fc3ff,#407de0);color:#08111b;font-weight:900;letter-spacing:.4px;cursor:pointer;">
+            ${this._esc(this._safeText(meta.redirectLabel, "OPEN SCREEN"))}
+          </button>
+        `);
+      } else {
+        const label = state === "passive" ? "PASSIVE" : "BLOCKED";
+        actions.push(`
+          <button type="button" disabled
+                  style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#a9b6c8;font-weight:900;letter-spacing:.4px;cursor:default;">
+            ${label}
+          </button>
+        `);
+      }
     }
     if (this._isGear(item)) {
       actions.push(`
@@ -704,14 +821,14 @@ window.Inventory = {
       </div>
 
       <section style="margin-top:18px;padding:16px;border-radius:20px;background:rgba(8,12,24,.88);border:1px solid rgba(255,255,255,.08);">
-        <div style="font-size:11px;letter-spacing:.65px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Readout</div>
+        <div style="font-size:11px;letter-spacing:.65px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Stats</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;">${statCards}</div>
       </section>
 
       ${compareBlock}
 
       <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
-        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Salvage Readout</div>
+        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Salvage Yield</div>
         ${salvage.ok ? `
           <div style="font-size:13px;line-height:1.6;color:#d8e4f8;">
             Salvage yield: <b>+${this._esc(String(salvage.scrap))} scrap</b>, <b>+${this._esc(String(salvage.runeDust))} rune dust</b>.
@@ -960,9 +1077,11 @@ window.Inventory = {
       </div>
 
       <section style="margin-top:18px;padding:16px;border-radius:22px;background:linear-gradient(180deg,rgba(8,12,24,.92),rgba(8,12,24,.84));border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
-        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Readout</div>
+        <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;margin-bottom:12px;">Item Stats</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;">${statCards}</div>
       </section>
+
+      ${this._renderConsumableAudit(item)}
 
       ${compareBlock}
 
@@ -1150,28 +1269,57 @@ async use(key) {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   const item = this.findByKey(key);
   if (!item || this._normType(item) !== "consumable") return;
+  const meta = this._useMeta(item);
+  const state = this._safeText(meta.state, "unknown").toLowerCase();
 
-  Telegram.WebApp.HapticFeedback?.impactOccurred?.("medium");
+  if (state === "redirect") {
+    Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
+    if (!this._handleRedirectTarget(meta.redirectTarget, meta.message)) {
+      this._toast(meta.message || "Open the required screen to use this item.");
+    }
+    this._perfAction("inventory_use", perfT0);
+    return;
+  }
+
+  if (state === "blocked" || state === "passive" || state === "unknown") {
+    Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("warning");
+    this._toast(meta.message || "This item can't be used right now.");
+    this._perfAction("inventory_use", perfT0);
+    return;
+  }
+
+  Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
   const apiPost = window.S?.apiPost || window.apiPost;
 
   try {
     const res = await apiPost("/webapp/inventory/use", { key });
     if (res.ok) {
-      Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+      this.activeEffects = this._activeEffectsFromResponse(res);
+      this._renderActiveEffectsPanel();
 
       // ✅ UPDATE BUFFS LINE INSTANTLY
-      try { window.renderBuffs?.(res.profile || res); } catch (e) {}
+      try { window.renderBuffs?.(res.profile || res); } catch (_) {}
 
-      if (res.message) Telegram.WebApp.showAlert(res.message);
+      if (res?.redirectTarget) {
+        this._handleRedirectTarget(res.redirectTarget, res.message);
+      }
+
+      if (res.message) this._toast(res.message);
 
       await this.open();
     } else {
-      throw new Error(res?.message || res?.reason || "Failed");
+      throw Object.assign(new Error(res?.message || res?.reason || "Failed"), { data: res });
     }
   } catch (e) {
-    Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
-    const msg = e?.data?.message || e?.message || e?.data?.reason || "Error";
-    Telegram.WebApp.showAlert("Failed: " + msg);
+    const data = e?.data || {};
+    const msg = data?.message || e?.message || data?.reason || "Error";
+    if (data?.redirectTarget && this._handleRedirectTarget(data.redirectTarget, data.message || msg)) {
+      return;
+    }
+    const failureState = this._safeText(data?.useMeta?.state, "").toLowerCase();
+    Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.(failureState === "blocked" ? "warning" : "error");
+    this._toast(msg);
   } finally {
     this._perfAction("inventory_use", perfT0);
   }
@@ -1199,7 +1347,7 @@ async use(key) {
 
     const apiPost = window.S?.apiPost || window.apiPost;
     if (typeof apiPost !== "function") {
-      this._toast("Inventory API not ready.");
+      this._toast("Can't reach inventory right now.");
       return;
     }
 

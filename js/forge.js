@@ -1791,7 +1791,7 @@
     doUpgrade(it);
   });
 
-  const secondary = el("button", "ah-btn subtle", "Refresh State");
+  const secondary = el("button", "ah-btn subtle", "Refresh");
   secondary.type = "button";
   secondary.disabled = _busy;
   secondary.addEventListener("click", async (ev) => {
@@ -1802,7 +1802,7 @@
     draw();
     try {
       await loadState();
-      toast("Forge state refreshed.");
+      toast("Forge updated.");
     } catch (e) {
       toast(`Refresh failed: ${e.message}`);
     } finally {
@@ -2165,7 +2165,7 @@ slotField.right.appendChild(chipbar);
       draw();
       try {
         await loadState();
-        toast("Forge state refreshed.");
+        toast("Forge updated.");
       } catch (e) {
         toast(`Refresh failed: ${e.message}`);
       } finally {
