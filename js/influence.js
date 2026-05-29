@@ -816,7 +816,7 @@
       ? lines.map((line) => String(line || "").trim()).filter(Boolean).slice(0, 3)
       : [];
     const out = safeLines.length ? safeLines : ["Signal feed syncing."];
-    host.innerHTML = out.map((line) => `<div class="inf-signal-line">${esc(line)}</div>`).join("");
+    host.innerHTML = out.map((line, idx) => `<div class="inf-signal-line${idx === 0 ? " is-primary" : ""}">${esc(line)}</div>`).join("");
   }
 
   function paintSignalCorePanel({
@@ -834,6 +834,16 @@
   } = {}) {
     const sheetEl = _qs("infSignalSheet");
     const subtitleEl = _qs("infSignalSubtitle");
+    const ownerSummaryEl = _qs("infSignalOwner");
+    const statusSummaryEl = _qs("infSignalStatus");
+    const pressureSummaryEl = _qs("infSignalPressureSummary");
+    const valueSummaryEl = _qs("infSignalValueSummary");
+    const ownerMiniEl = _qs("infSignalOwnerMini");
+    const pressureMiniEl = _qs("infSignalPressureMini");
+    const ownerChipEl = _qs("infSignalOwnerChip");
+    const valueChipEl = _qs("infSignalValueChip");
+    const statusChipEl = _qs("infSignalStatusChip");
+    const readoutBadgeEl = _qs("infSignalReadoutBadge");
     const visualStateEl = _qs("infSignalVisualState");
     const visualHintEl = _qs("infSignalVisualHint");
     const tileControlEl = _qs("infSignalControlState");
@@ -858,7 +868,10 @@
       ? `${viewerPressure} / ${leaderPressure}`
       : (viewerPressure > 0 ? `${viewerPressure} yours` : (leaderPressure > 0 ? `Enemy ${leaderPressure}` : "Quiet"));
     const valueText = String(valueLabel || "").trim() || "Support";
-    const subtitle = owner ? `${ownerLabel} signature active` : "Node signal unstable";
+    const subtitle = owner ? `${ownerLabel} signature active` : "Unclaimed relay signature";
+    const visualHintParts = [valueText];
+    if (watchMax > 0 || watchUsed > 0) visualHintParts.push(`Watch ${watchSlots}`);
+    const visualHint = visualHintParts.join(" • ");
     let pulseText = "Signal stable. Patrol from Orders to build local pressure.";
     if (statusKey === "CONTESTED") pulseText = "Another faction holds control. Push now to contest the relay.";
     else if (statusKey === "HOT" || statusKey === "SIEGE_LIVE") pulseText = "Enemy movement is active. Fast actions carry more weight.";
@@ -869,21 +882,46 @@
       sheetEl.style.setProperty("--inf-signal-glow", mood.border);
       sheetEl.style.setProperty("--inf-signal-soft", mood.panel);
       sheetEl.dataset.signalState = chamberState;
+      sheetEl.dataset.signalOwner = owner ? String(owner).toLowerCase() : "neutral";
     }
     if (subtitleEl) subtitleEl.textContent = subtitle;
+    if (ownerSummaryEl) ownerSummaryEl.textContent = ownerLabel;
+    if (statusSummaryEl) statusSummaryEl.textContent = primaryStatus;
+    if (pressureSummaryEl) pressureSummaryEl.textContent = pressureText;
+    if (valueSummaryEl) valueSummaryEl.textContent = valueText;
+    if (ownerMiniEl) ownerMiniEl.textContent = ownerLabel;
+    if (pressureMiniEl) pressureMiniEl.textContent = pressureText;
+    if (ownerChipEl) ownerChipEl.textContent = ownerLabel;
+    if (valueChipEl) valueChipEl.textContent = valueText;
+    if (statusChipEl) statusChipEl.textContent = primaryStatus;
+    if (readoutBadgeEl) readoutBadgeEl.textContent = primaryStatus;
     if (visualStateEl) visualStateEl.textContent = primaryStatus;
-    if (visualHintEl) visualHintEl.textContent = owner ? `${ownerLabel} signature active` : "Node signal unstable";
+    if (visualHintEl) visualHintEl.textContent = visualHint;
     setSignalCoreSigil(owner, sigilUrl);
-    if (tileControlEl) tileControlEl.textContent = `${primaryStatus} | ${ownerLabel}`;
+    if (tileControlEl) tileControlEl.textContent = `${primaryStatus} • ${ownerLabel}`;
     if (tilePressureEl) tilePressureEl.textContent = pressureText;
     if (watchTileEl) watchTileEl.style.display = (watchMax > 0 || watchUsed > 0) ? "flex" : "none";
     if (tileWatchEl) tileWatchEl.textContent = watchSlots;
     if (tileValueEl) tileValueEl.textContent = valueText;
     if (pulseEl) pulseEl.textContent = pulseText;
 
+    if (statusChipEl) {
+      statusChipEl.style.background = mood.panel;
+      statusChipEl.style.border = `1px solid ${mood.border}`;
+      statusChipEl.style.color = mood.text;
+    }
+    if (readoutBadgeEl) {
+      readoutBadgeEl.style.background = mood.panel;
+      readoutBadgeEl.style.border = `1px solid ${mood.border}`;
+      readoutBadgeEl.style.color = mood.text;
+    }
+
     const lines = [];
     if (controlText) lines.push(controlText);
     else lines.push(pulseText);
+    lines.push(`Pressure: ${pressureText}`);
+    if (watchMax > 0 || watchUsed > 0) lines.push(`Watch slots: ${watchSlots}`);
+    else lines.push(`Node value: ${valueText}`);
     renderSignalReadout(lines);
   }
 
@@ -1730,6 +1768,388 @@
         letter-spacing:.08em;
         text-transform:uppercase;
         cursor:pointer;
+      }
+      #influenceModal .inf-signal-sheet{
+        width:min(94vw, 448px);
+        border-radius:18px;
+        border:1px solid rgba(130,185,245,.18);
+        background:
+          radial-gradient(circle at 18% 0%, rgba(92,164,255,.14), transparent 28%),
+          radial-gradient(circle at 82% 12%, rgba(255,172,112,.10), transparent 24%),
+          linear-gradient(180deg, rgba(15,22,34,.99), rgba(7,12,20,.99));
+        box-shadow:
+          0 18px 42px rgba(0,0,0,.56),
+          inset 0 1px 0 rgba(255,255,255,.05);
+        padding:12px 12px 13px;
+        max-height:min(72dvh, 560px);
+      }
+      #influenceModal .inf-signal-head{
+        align-items:center;
+        gap:12px;
+      }
+      #influenceModal .inf-signal-head-copy{
+        min-width:0;
+        flex:1 1 auto;
+      }
+      #influenceModal .inf-signal-overline{
+        font-size:9px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#91b8e7;
+        opacity:.78;
+      }
+      #influenceModal .inf-signal-title-row{
+        margin-top:4px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        flex-wrap:wrap;
+      }
+      #influenceModal .inf-signal-title{
+        font-size:15px;
+        letter-spacing:.12em;
+      }
+      #influenceModal .inf-signal-sub{
+        margin-top:4px;
+        font-size:10px;
+        line-height:1.35;
+        color:#d5e4f7;
+      }
+      #influenceModal .inf-signal-state-chip,
+      #influenceModal .inf-signal-chip,
+      #influenceModal .inf-signal-readout-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:22px;
+        padding:0 9px;
+        border-radius:999px;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        border:1px solid rgba(255,255,255,.14);
+        background:rgba(255,255,255,.06);
+        color:#eef6ff;
+      }
+      #influenceModal .inf-signal-summary{
+        margin-top:10px;
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        gap:8px;
+      }
+      #influenceModal .inf-signal-summary-item{
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.09);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+          rgba(8,12,20,.72);
+        padding:8px 9px 9px;
+        min-width:0;
+      }
+      #influenceModal .inf-signal-summary-label{
+        font-size:9px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#90add0;
+        opacity:.84;
+      }
+      #influenceModal .inf-signal-summary-value{
+        margin-top:4px;
+        font-size:12px;
+        font-weight:900;
+        color:#f1f7ff;
+        line-height:1.28;
+        overflow-wrap:anywhere;
+      }
+      #influenceModal .inf-signal-visual{
+        margin-top:10px;
+        min-height:240px;
+        border-radius:16px;
+        border:1px solid rgba(149,197,255,.12);
+        background:
+          radial-gradient(circle at 50% 44%, rgba(16,29,45,.96) 0 18%, rgba(8,14,24,.86) 38%, rgba(7,12,20,.96) 100%),
+          linear-gradient(180deg, rgba(17,26,38,.96), rgba(8,13,22,.98));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.04),
+          inset 0 -18px 28px rgba(0,0,0,.34);
+        padding:14px 12px 18px;
+      }
+      #influenceModal .inf-signal-gridlines{
+        position:absolute;
+        left:14px;
+        right:14px;
+        top:14px;
+        height:52px;
+        border-top:1px solid rgba(155,201,255,.12);
+        border-bottom:1px solid rgba(155,201,255,.06);
+        background:
+          repeating-linear-gradient(90deg, rgba(132,184,248,.08) 0 1px, transparent 1px 28px);
+        opacity:.58;
+        pointer-events:none;
+      }
+      #influenceModal .inf-signal-visual::before{
+        opacity:.24;
+      }
+      #influenceModal .inf-signal-visual::after{
+        opacity:.18;
+      }
+      #influenceModal .inf-signal-visual-top{
+        position:absolute;
+        top:14px;
+        left:14px;
+        right:14px;
+        z-index:2;
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+      }
+      #influenceModal .inf-signal-visual-topline{
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:3px;
+        padding:6px 8px;
+        border-radius:11px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(7,13,22,.54);
+      }
+      #influenceModal .inf-signal-mini-label{
+        font-size:8px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#89a9cf;
+      }
+      #influenceModal .inf-signal-mini-value{
+        font-size:10px;
+        font-weight:800;
+        color:#edf5ff;
+        overflow-wrap:anywhere;
+      }
+      #influenceModal .inf-signal-chamber{
+        min-height:240px;
+        padding-top:40px;
+        padding-bottom:56px;
+      }
+      #influenceModal .inf-signal-dais{
+        position:absolute;
+        left:50%;
+        bottom:34px;
+        width:min(82%, 280px);
+        height:46px;
+        transform:translateX(-50%);
+        border-radius:50%;
+        background:
+          radial-gradient(circle at 50% 50%, rgba(92,164,255,.12) 0 20%, rgba(10,16,28,.92) 54%, rgba(6,10,18,.26) 76%, transparent 100%);
+        box-shadow:
+          0 16px 24px rgba(0,0,0,.36),
+          0 0 0 1px rgba(151,201,255,.08);
+      }
+      #influenceModal .inf-signal-sigil-core{
+        width:148px;
+        height:148px;
+        background:
+          radial-gradient(circle at 50% 50%, rgba(18,30,47,.98) 0 30%, rgba(10,17,28,.94) 56%, rgba(6,10,18,.26) 78%, transparent 100%);
+        box-shadow:
+          0 18px 34px rgba(0,0,0,.42),
+          0 0 28px color-mix(in srgb, var(--inf-signal-glow) 26%, transparent);
+      }
+      #influenceModal .inf-signal-sigil-core::before{
+        inset:-12px;
+        border-color:rgba(188,220,255,.14);
+      }
+      #influenceModal .inf-signal-energy{
+        width:172px;
+        height:172px;
+        opacity:.54;
+      }
+      #influenceModal .inf-signal-reticle.is-outer{
+        width:170px;
+        height:170px;
+      }
+      #influenceModal .inf-signal-reticle.is-inner{
+        width:128px;
+        height:128px;
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair{
+        width:188px;
+        height:188px;
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair::before{
+        height:188px;
+      }
+      #influenceModal .inf-signal-reticle.is-crosshair::after{
+        width:188px;
+      }
+      #influenceModal .inf-signal-pulse-ring{
+        width:108px;
+        height:108px;
+      }
+      #influenceModal .inf-signal-visual-copy{
+        position:absolute;
+        left:50%;
+        bottom:78px;
+        width:min(82%, 280px);
+        transform:translateX(-50%);
+        margin-top:0;
+        padding-bottom:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        text-align:center;
+      }
+      #influenceModal .inf-signal-visual-state{
+        font-size:15px;
+        letter-spacing:.12em;
+      }
+      #influenceModal .inf-signal-visual-hint{
+        margin-top:5px;
+        font-size:10px;
+        line-height:1.35;
+        max-width:100%;
+      }
+      #influenceModal .inf-signal-chamber-status{
+        position:absolute;
+        left:14px;
+        right:14px;
+        bottom:14px;
+        z-index:2;
+        display:flex;
+        justify-content:center;
+        gap:8px;
+        flex-wrap:wrap;
+      }
+      #influenceModal .inf-signal-chip{
+        background:rgba(9,14,24,.74);
+      }
+      #influenceModal .inf-signal-chip.is-value{
+        border-color:rgba(255,214,142,.20);
+        color:#ffe8ba;
+      }
+      #influenceModal .inf-signal-grid{
+        margin-top:10px;
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        gap:8px;
+      }
+      #influenceModal .inf-signal-tile{
+        min-height:72px;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        padding:9px 10px 10px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.08);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+          rgba(8,12,20,.68);
+      }
+      #influenceModal .inf-signal-tile-label{
+        font-size:9px;
+        letter-spacing:.12em;
+        color:#91add0;
+      }
+      #influenceModal .inf-signal-tile-value{
+        margin-top:8px;
+        font-size:12px;
+        line-height:1.35;
+        text-align:left;
+        overflow-wrap:anywhere;
+      }
+      #influenceModal .inf-signal-readout{
+        margin-top:10px;
+        padding:10px 10px 11px 13px;
+        border-radius:13px;
+        border:1px solid rgba(255,255,255,.10);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+          rgba(9,13,22,.74);
+        position:relative;
+        overflow:hidden;
+      }
+      #influenceModal .inf-signal-readout::before{
+        content:"";
+        position:absolute;
+        left:0;
+        top:10px;
+        bottom:10px;
+        width:3px;
+        border-radius:999px;
+        background:linear-gradient(180deg, rgba(115,220,255,.95), rgba(255,160,102,.88));
+      }
+      #influenceModal .inf-signal-readout-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+      }
+      #influenceModal .inf-signal-readout-title{
+        font-size:9px;
+        letter-spacing:.14em;
+      }
+      #influenceModal .inf-signal-lines{
+        margin-top:6px;
+        gap:5px;
+      }
+      #influenceModal .inf-signal-line{
+        font-size:11px;
+        color:#dce8f7;
+      }
+      #influenceModal .inf-signal-line.is-primary{
+        font-size:12px;
+        font-weight:800;
+        color:#f3f8ff;
+      }
+      #influenceModal .inf-signal-pulse{
+        margin-top:9px;
+        border-radius:12px;
+        border:1px solid rgba(255,214,156,.16);
+        background:
+          linear-gradient(180deg, rgba(255,206,148,.10), rgba(255,168,108,.06)),
+          rgba(16,12,12,.52);
+        padding:8px 10px;
+        font-size:10px;
+        line-height:1.4;
+      }
+      #influenceModal .inf-signal-return{
+        margin-top:7px;
+        font-size:10px;
+        line-height:1.35;
+      }
+      #influenceModal .inf-signal-foot{
+        margin-top:10px;
+      }
+      #influenceModal .inf-signal-return-btn{
+        width:100%;
+        min-width:0;
+        border-radius:12px;
+        padding:10px 12px;
+      }
+      @media (max-width: 520px){
+        #influenceModal .inf-signal-sheet{
+          width:min(96vw,430px);
+          padding:10px 10px 11px;
+        }
+        #influenceModal .inf-signal-summary{
+          gap:6px;
+        }
+        #influenceModal .inf-signal-visual{
+          min-height:224px;
+          padding:12px 10px 16px;
+        }
+        #influenceModal .inf-signal-chamber{
+          min-height:224px;
+          padding-top:42px;
+          padding-bottom:52px;
+        }
+        #influenceModal .inf-signal-grid{
+          grid-template-columns:minmax(0,1fr);
+        }
+        #influenceModal .inf-signal-visual-top{
+          gap:6px;
+        }
+        #influenceModal .inf-signal-visual-topline{
+          padding:5px 7px;
+        }
       }
       #influenceModal .inf-hero.is-action-react{
         animation:infHeroActionPulse .44s ease;
@@ -2765,14 +3185,48 @@
       <button id="infSignalBackdrop" type="button" class="inf-signal-backdrop" style="display:none;" data-signal-close aria-label="Close Signal Core panel"></button>
       <section id="infSignalSheet" class="inf-signal-sheet" style="display:none;" aria-hidden="true" role="dialog" aria-label="Signal Core Inspect Panel">
         <div class="inf-signal-head">
-          <div>
-            <div class="inf-signal-title">SIGNAL CORE</div>
+          <div class="inf-signal-head-copy">
+            <div class="inf-signal-overline">Signal Core Chamber</div>
+            <div class="inf-signal-title-row">
+              <div class="inf-signal-title">SIGNAL CORE</div>
+              <span id="infSignalStatusChip" class="inf-signal-state-chip">CALM</span>
+            </div>
             <div id="infSignalSubtitle" class="inf-signal-sub">Node signal unstable</div>
           </div>
           <button type="button" class="inf-signal-close" data-signal-close>Close</button>
         </div>
+        <div class="inf-signal-summary">
+          <article class="inf-signal-summary-item">
+            <div class="inf-signal-summary-label">Owner</div>
+            <div id="infSignalOwner" class="inf-signal-summary-value">Neutral</div>
+          </article>
+          <article class="inf-signal-summary-item">
+            <div class="inf-signal-summary-label">Status</div>
+            <div id="infSignalStatus" class="inf-signal-summary-value">CALM</div>
+          </article>
+          <article class="inf-signal-summary-item">
+            <div class="inf-signal-summary-label">Pressure</div>
+            <div id="infSignalPressureSummary" class="inf-signal-summary-value">Quiet</div>
+          </article>
+          <article class="inf-signal-summary-item">
+            <div class="inf-signal-summary-label">Node Value</div>
+            <div id="infSignalValueSummary" class="inf-signal-summary-value">Support</div>
+          </article>
+        </div>
         <div class="inf-signal-visual">
+          <div class="inf-signal-gridlines" aria-hidden="true"></div>
+          <div class="inf-signal-visual-top">
+            <div class="inf-signal-visual-topline">
+              <span class="inf-signal-mini-label">Owner Signature</span>
+              <span id="infSignalOwnerMini" class="inf-signal-mini-value">Neutral</span>
+            </div>
+            <div class="inf-signal-visual-topline">
+              <span class="inf-signal-mini-label">Pressure Band</span>
+              <span id="infSignalPressureMini" class="inf-signal-mini-value">Quiet</span>
+            </div>
+          </div>
           <div class="inf-signal-chamber">
+            <div class="inf-signal-dais" aria-hidden="true"></div>
             <div class="inf-signal-energy"></div>
             <div class="inf-signal-reticle is-crosshair"></div>
             <div class="inf-signal-reticle is-outer"></div>
@@ -2787,6 +3241,10 @@
               <div id="infSignalVisualState" class="inf-signal-visual-state">CALM</div>
               <div id="infSignalVisualHint" class="inf-signal-visual-hint">Node signal unstable</div>
             </div>
+          </div>
+          <div class="inf-signal-chamber-status">
+            <span id="infSignalOwnerChip" class="inf-signal-chip">Neutral</span>
+            <span id="infSignalValueChip" class="inf-signal-chip is-value">Support</span>
           </div>
         </div>
         <div class="inf-signal-grid">
@@ -2808,7 +3266,10 @@
           </article>
         </div>
         <div class="inf-signal-readout">
-          <div class="inf-signal-readout-title">Tactical Readout</div>
+          <div class="inf-signal-readout-head">
+            <div class="inf-signal-readout-title">Tactical Readout</div>
+            <div id="infSignalReadoutBadge" class="inf-signal-readout-badge">Live</div>
+          </div>
           <div id="infSignalReadout" class="inf-signal-lines">
             <div class="inf-signal-line">Signal feed syncing.</div>
           </div>

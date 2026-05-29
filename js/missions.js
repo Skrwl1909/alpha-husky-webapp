@@ -22,6 +22,10 @@
   // Assets (Cloudinary mapping for /assets/*)
   // ===========
   const CLOUD_BASE = (window.CLOUDINARY_BASE || "https://res.cloudinary.com/dnjwvxinh/image/upload/");
+  const MISSIONS_UI_ICONS = Object.freeze({
+    blue_signal_fragment: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_blue_signal_fragment_v1_128.png",
+    rare_bonus_signal: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_rare_bonus_signal_v1_128.png"
+  });
 
   function assetUrl(p) {
     p = String(p || "");
@@ -30,6 +34,17 @@
     if (p.startsWith("data:")) return p;
     if (p.startsWith("/assets/")) return CLOUD_BASE + p.slice("/assets/".length);
     return p;
+  }
+
+  function missionUiIconUrl(key) {
+    return assetUrl(MISSIONS_UI_ICONS[String(key || "")] || "");
+  }
+
+  function renderDecorativeIcon(iconKey, className = "") {
+    const url = missionUiIconUrl(iconKey);
+    if (!url) return "";
+    const klass = ["m-ui-icon", className].filter(Boolean).join(" ");
+    return `<span class="${klass}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" onerror="this.parentNode && this.parentNode.remove && this.parentNode.remove();" /></span>`;
   }
 
   function textOrEmpty(v) {
@@ -148,7 +163,7 @@
   function normalizeMissionSignalNote(last) {
     if (last?.bonusFound || last?.rareHit) return "";
     const rareHint = normalizeRareChanceLabel(last?.rareHint);
-    if (rareHint) return `Route signal: ${rareHint}. Possible rare bonus only, not stored progress.`;
+    if (rareHint) return `Route signal: ${rareHint}. Rare Bonus Signal only - route hint, not loot and not stored progress.`;
     return "";
   }
 
@@ -191,6 +206,46 @@
     });
 
     return { baseRewards, eventRewards, extraRecovered };
+  }
+
+  function rewardIconKeyFromLabel(label) {
+    const lower = textOrEmpty(label).toLowerCase();
+    if (!lower) return "";
+    if (lower.includes("blue signal fragment")) return "blue_signal_fragment";
+    return "";
+  }
+
+  function renderTagWithIcon(text, iconKey = "") {
+    const label = textOrEmpty(text);
+    if (!label) return "";
+    return `<span class="m-tag m-tag-with-icon">${renderDecorativeIcon(iconKey, "m-tag-icon")}<span>${esc(label)}</span></span>`;
+  }
+
+  function renderClarityHint(opts = {}) {
+    const eyebrow = textOrEmpty(opts.eyebrow);
+    const title = textOrEmpty(opts.title);
+    const body = textOrEmpty(opts.body);
+    const tone = textOrEmpty(opts.tone);
+    if (!title && !body) return "";
+    return `
+      <div class="m-clarity${tone ? ` is-${esc(tone)}` : ""}">
+        ${renderDecorativeIcon(opts.iconKey, "m-clarity-icon")}
+        <div class="m-clarity-copy">
+          ${eyebrow ? `<div class="m-clarity-eyebrow">${esc(eyebrow)}</div>` : ""}
+          ${title ? `<div class="m-clarity-title">${esc(title)}</div>` : ""}
+          ${body ? `<div class="m-clarity-body">${esc(body)}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRewardRows(list) {
+    const items = Array.isArray(list) ? list.map((item) => textOrEmpty(item)).filter(Boolean) : [];
+    if (!items.length) return "";
+    return `<div class="m-reward-list">${items.map((item) => {
+      const iconKey = rewardIconKeyFromLabel(item);
+      return `<div class="m-reward-row">${renderDecorativeIcon(iconKey, "m-reward-icon")}<span class="m-reward-text">${esc(item)}</span></div>`;
+    }).join("")}</div>`;
   }
 
   let _apiPost = null;
@@ -409,6 +464,93 @@
         opacity:.9;
         white-space:normal;
         max-width:100%;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-tag-with-icon{
+        gap:6px;
+        padding:3px 8px 3px 5px;
+      }
+      #missionsRoot .m-ui-icon{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        flex:0 0 auto;
+        pointer-events:none;
+      }
+      #missionsRoot .m-ui-icon img{
+        display:block;
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        transform:translateZ(0);
+      }
+      #missionsRoot .m-tag-icon{
+        width:16px;
+        height:16px;
+      }
+      #missionsRoot .m-clarity{
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+        margin-top:10px;
+        padding:9px 10px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.04);
+      }
+      #missionsRoot .m-clarity.is-fragment{
+        border-color:rgba(76,176,255,.22);
+      }
+      #missionsRoot .m-clarity.is-signal{
+        border-color:rgba(120,196,255,.18);
+      }
+      #missionsRoot .m-clarity-icon{
+        width:34px;
+        height:34px;
+      }
+      #missionsRoot .m-clarity-copy{
+        min-width:0;
+        flex:1 1 auto;
+      }
+      #missionsRoot .m-clarity-eyebrow{
+        font-size:10.5px;
+        font-weight:900;
+        letter-spacing:.38px;
+        text-transform:uppercase;
+        opacity:.74;
+      }
+      #missionsRoot .m-clarity-title{
+        margin-top:2px;
+        font-size:12.5px;
+        font-weight:900;
+        line-height:1.28;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-clarity-body{
+        margin-top:3px;
+        font-size:11.5px;
+        line-height:1.35;
+        opacity:.84;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-reward-list{
+        display:grid;
+        gap:8px;
+        margin-top:6px;
+      }
+      #missionsRoot .m-reward-row{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      }
+      #missionsRoot .m-reward-icon{
+        width:30px;
+        height:30px;
+      }
+      #missionsRoot .m-reward-text{
+        min-width:0;
+        line-height:1.42;
         overflow-wrap:anywhere;
       }
 
@@ -823,6 +965,14 @@
         }
         #missionsRoot .m-clock{
           font-size:42px;
+        }
+        #missionsRoot .m-clarity-icon{
+          width:30px;
+          height:30px;
+        }
+        #missionsRoot .m-reward-icon{
+          width:28px;
+          height:28px;
         }
       }
     `;
@@ -1488,6 +1638,13 @@ function _normalizeRareDropObj(obj) {
     const subline = frameClaimed
       ? "Blue Signal Frame unlocked."
       : `Cap: ${fragmentCap} max fragments`;
+    const fragmentClarity = renderClarityHint({
+      iconKey: "blue_signal_fragment",
+      eyebrow: "Event progress",
+      title: "Blue Signal Fragment",
+      body: `${progressText}. Real event reward and progress item.`,
+      tone: "fragment"
+    });
 
     return `
       <div class="m-card" style="margin-top:10px;">
@@ -1495,8 +1652,9 @@ function _normalizeRareDropObj(obj) {
           <div style="min-width:0; flex:1;">
             <div class="m-title">${esc(title)}</div>
             <div class="m-muted" style="margin-top:6px;">${esc(body)}</div>
+            ${fragmentClarity}
             <div class="m-tag-row" style="margin-top:10px;">
-              <span class="m-tag">${esc(progressText)}</span>
+              ${renderTagWithIcon(progressText, "blue_signal_fragment")}
               <span class="m-tag">${frameClaimed ? "Frame claimed" : "Frame reward: Blue Signal Frame"}</span>
             </div>
             <div class="m-muted" style="margin-top:8px;">${esc(subline)}</div>
@@ -1519,7 +1677,8 @@ function _normalizeRareDropObj(obj) {
         <div class="m-help-copy">Recommended stats: Stats like AGI / DEF show what helps on that route. They are not required, but they can improve the result.</div>
         <div class="m-help-copy">Mission completed = mission finished and rewards were resolved.</div>
         <div class="m-help-copy">Pet fit = how well your active pet matched recommended mission traits.</div>
-        <div class="m-help-copy">Rare chance = possible rare outcome, not guaranteed.</div>
+        <div class="m-help-copy">Blue Signal Fragment = real event reward and progress item.</div>
+        <div class="m-help-copy">Rare Bonus Signal = route hint only. It can point to a rare route, but it is not loot by itself.</div>
         <div class="m-help-copy">Bonus found = extra result actually recovered during resolve.</div>
         <div class="m-help-copy">Mission signal = route carried a possible rare bonus. It is not loot and it does not store progress by itself.</div>
         <div class="m-help-copy">Outcomes: Critical Success = best result. Success = normal clear. Partial Success = you recovered something, but missed part of the reward. Failed = the route held. Return stronger.</div>
@@ -1600,7 +1759,13 @@ function _normalizeRareDropObj(obj) {
     const flavorTags = [];
     if (modifierLabel) flavorTags.push(modifierLabel);
     if (rewardIntent.length) flavorTags.push(`Reward intent: ${rewardIntent.join(" · ")}`);
-    if (rareHint) flavorTags.push(`Rare chance: ${normalizeRareChanceLabel(rareHint)}`);
+    const rareSignalHint = rareHint ? renderClarityHint({
+      iconKey: "rare_bonus_signal",
+      eyebrow: "Signal detected",
+      title: "Rare Bonus Signal",
+      body: `${normalizeRareChanceLabel(rareHint)}. Route hint only, not guaranteed loot.`,
+      tone: "signal"
+    }) : "";
 
     return `
       <div class="m-offer">
@@ -1614,6 +1779,7 @@ function _normalizeRareDropObj(obj) {
             ${subtitle ? `<div class="m-kicker" style="margin-top:4px;">${esc(subtitle)}</div>` : ""}
             ${body ? `<div class="m-muted m-offer-body">${esc(body)}</div>` : ""}
             ${renderTags(flavorTags)}
+            ${rareSignalHint}
             ${compactHint ? `<div class="m-offer-helper">${esc(compactHint)}</div>` : ""}
             <div class="m-offer-reward">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
@@ -1760,6 +1926,78 @@ function _normalizeRareDropObj(obj) {
     `;
   }
 
+  function renderLastClarity(last) {
+    const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
+    const title = textOrEmpty(last?.title || last?.name) || "Mission";
+    const subtitle = textOrEmpty(last?.subtitle);
+    const narrative = textOrEmpty(last?.narrativeLine || last?.report);
+    const outcomeTier = normalizeOutcomeTier(last);
+    const outcomeTone = normalizeOutcomeTone(outcomeTier);
+    const modifierLabel = normalizeModifierLabel(last?.modifierLabel);
+    const progressLine = normalizeProgressLine(last);
+    const shortfallLine = normalizeShortfallLine(last);
+    const petMatchLabel = normalizePetMatchLabel(last);
+    const recommendedLine = normalizeRecommendedLine(last);
+    const petFitEffect = normalizePetFitEffect(last);
+    const recoveredRewards = normalizeRewardList(last?.recoveredRewards);
+    const missedRewards = normalizeRewardList(last?.missedRewards);
+    const rewardMsg = textOrEmpty(last?.rewardMsg || last?.reward_msg);
+    const lootMsg = textOrEmpty(last?.lootMsg || last?.loot_msg);
+    const tokenLootMsg = textOrEmpty(last?.tokenLootMsg || last?.token_loot_msg);
+    const bonusFoundChip = normalizeBonusFoundChip(last);
+    const missionSignalNote = normalizeMissionSignalNote(last);
+    const metaBits = [];
+    if (modifierLabel) metaBits.push(modifierLabel);
+    if (ts) metaBits.push(ts);
+
+    const chipLines = [];
+    if (outcomeTone === "success" || outcomeTone === "critical") chipLines.push("Mission completed");
+    if (progressLine) chipLines.push(progressLine);
+    if (shortfallLine && shortfallLine !== progressLine) chipLines.push(shortfallLine);
+    if (petMatchLabel) chipLines.push(`Pet fit: ${petMatchLabel}`);
+    if (bonusFoundChip) chipLines.push(bonusFoundChip);
+
+    const petDetailLines = [];
+    if (petMatchLabel && recommendedLine) petDetailLines.push(recommendedLine);
+    if (petMatchLabel && petFitEffect) petDetailLines.push(petFitEffect);
+
+    const fallbackRecovered = [];
+    if (!recoveredRewards.length) {
+      if (rewardMsg) fallbackRecovered.push(rewardMsg);
+      if (lootMsg) fallbackRecovered.push(lootMsg);
+      if (tokenLootMsg) fallbackRecovered.push(tokenLootMsg);
+    }
+
+    const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
+    const { baseRewards, eventRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
+    const showMissed = missedRewards.filter((x) => {
+      if (!x) return false;
+      if ((bonusFoundChip || missionSignalNote || last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) && /cache/i.test(x)) return false;
+      return true;
+    });
+
+    return `
+      <div class="m-card m-report" style="margin-top:10px;">
+        <div class="m-report-head">
+          <div style="min-width:0;">
+            <div class="m-title">Last Resolve</div>
+            <div class="m-report-title" style="margin-top:8px;">${esc(title)}</div>
+            ${(subtitle || metaBits.length) ? `<div class="m-report-sub">${esc([subtitle, ...metaBits].filter(Boolean).join(" - "))}</div>` : ""}
+          </div>
+          ${outcomeTier ? `<div class="m-outcome-badge" data-tone="${esc(outcomeTone)}">${esc(outcomeTier)}</div>` : ""}
+        </div>
+        ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
+        ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
+        ${petDetailLines.length ? petDetailLines.map((line) => `<div class="m-report-line">${esc(line)}</div>`).join("") : ""}
+        ${baseRewards.length ? `<div class="m-report-section"><div class="m-report-label">Base rewards</div><div class="m-report-values">${esc(baseRewards.join(" - "))}</div></div>` : ""}
+        ${eventRewards.length ? `<div class="m-report-section"><div class="m-report-label">Event rewards</div><div class="m-report-values">${renderRewardRows(eventRewards)}</div></div>` : ""}
+        ${extraRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(extraRecovered.join(" - "))}</div></div>` : ""}
+        ${missionSignalNote ? `<div class="m-report-section"><div class="m-report-label">Mission signal</div>${renderClarityHint({ iconKey: "rare_bonus_signal", eyebrow: "Signal detected", title: "Rare Bonus Signal", body: missionSignalNote, tone: "signal" })}</div>` : ""}
+        ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" - "))}</div></div>` : ""}
+      </div>
+    `;
+  }
+
   function paintWaiting(a) {
     const clockEl = el("mClock");
     const subEl = el("mClockSub");
@@ -1850,9 +2088,15 @@ function _normalizeRareDropObj(obj) {
       if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) {
         activeTags.push(`Reward intent: ${active.rewardIntent.join(" · ")}`);
       }
-      if (active.rareHint) activeTags.push(`Rare chance: ${normalizeRareChanceLabel(active.rareHint)}`);
       const activeMatchLabel = normalizePetMatchLabel(active);
       const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet fit: ${activeMatchLabel}` : "");
+      const activeRareSignalHint = active.rareHint ? renderClarityHint({
+        iconKey: "rare_bonus_signal",
+        eyebrow: "Signal detected",
+        title: "Rare Bonus Signal",
+        body: `${normalizeRareChanceLabel(active.rareHint)}. Route hint only, not guaranteed loot.`,
+        tone: "signal"
+      }) : "";
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -1861,6 +2105,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-title">${esc(active.title || "Mission")}</div>
             ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
             ${renderTags(activeTags)}
+            ${activeRareSignalHint}
             ${activeHint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(activeHint)}</div>` : ""}
             <div id="mClock" class="m-clock">—</div>
             <div id="mClockSub" class="m-clock-sub">—</div>
@@ -1921,7 +2166,7 @@ function _normalizeRareDropObj(obj) {
         </div>
 
         ${renderBlueSignalHuntCard(blueSignalHunt)}
-        ${last ? renderLast(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
+        ${last ? renderLastClarity(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
       </div>
     `;
   }

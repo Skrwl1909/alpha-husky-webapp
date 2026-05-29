@@ -12,11 +12,16 @@
   let _battlePixiRunId = 0;
   let _feedExpanded = false;
   let _lastResolvedBattle = null;
+  let _lastClaimFeedback = null;
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
   const BATTLE_STAGE_ID = "bloodMoonBattleStage";
   const FEED_MOUNT_ID = "bloodMoonFeedMount";
+  const BLOODMOON_UI_ICONS = Object.freeze({
+    tower_marks: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780055683/alpha_ui/icons/blood_moon_tower/alpha_icon_tower_marks_v1_128.png",
+    blood_moon_dust: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780055681/alpha_ui/icons/blood_moon_tower/alpha_icon_blood_moon_dust_v1_128.png"
+  });
 
   function dbg(...args) {
     if (_dbg) console.log("[BloodMoon]", ...args);
@@ -68,34 +73,117 @@
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
   }
+
+  function towerRewardIconUrl(key) {
+    return BLOODMOON_UI_ICONS[String(key || "").trim().toLowerCase()] || "";
+  }
+
+  function normalizeTowerRewardIconKey(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "";
+    if (raw.includes("tower_marks") || raw.includes("tower marks")) return "tower_marks";
+    if (raw.includes("blood_moon_dust") || raw.includes("blood moon dust")) return "blood_moon_dust";
+    return "";
+  }
+
+  function titleizeRewardLabel(value) {
+    return String(value || "")
+      .trim()
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  function renderTowerRewardIcon(iconKey, className = "") {
+    const url = towerRewardIconUrl(iconKey);
+    if (!url) return "";
+    const cls = ["bm-reward-icon", className].filter(Boolean).join(" ");
+    return `<span class="${cls}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" onerror="this.parentNode && this.parentNode.remove && this.parentNode.remove();" /></span>`;
+  }
+
+  function normalizeGrantEntry(raw) {
+    if (!raw || typeof raw !== "object") return null;
+
+    const type = String(raw.type || "").trim().toLowerCase();
+    const key = String(raw.key || "").trim().toLowerCase();
+    const amount = Number(raw.amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+
+    if (type === "bones") {
+      return { type, key, amount, label: "Bones", iconKey: "", text: `${fmtNum(amount)} Bones` };
+    }
+    if (type === "tower_marks") {
+      return { type, key, amount, label: "Tower Marks", iconKey: "tower_marks", text: `${fmtNum(amount)} Tower Marks` };
+    }
+    if (type === "material") {
+      const iconKey = normalizeTowerRewardIconKey(key);
+      const label = iconKey === "blood_moon_dust" ? "Blood Moon Dust" : (key ? titleizeRewardLabel(key) : "Material");
+      return { type, key, amount, label, iconKey, text: `${fmtNum(amount)} ${label}` };
+    }
+
+    const iconKey = normalizeTowerRewardIconKey(key || type);
+    const label = titleizeRewardLabel(key || type || "Reward");
+    return { type, key, amount, label, iconKey, text: `${fmtNum(amount)} ${label}` };
+  }
+
+  function extractRewardGrants(source) {
+    if (!source) return [];
+    if (Array.isArray(source)) return source;
+    if (Array.isArray(source.grants)) return source.grants;
+    if (source.reward && Array.isArray(source.reward.grants)) return source.reward.grants;
+    if (source.rewardPreview && Array.isArray(source.rewardPreview.grants)) return source.rewardPreview.grants;
+    if (source.reward_preview && Array.isArray(source.reward_preview.grants)) return source.reward_preview.grants;
+    if (Array.isArray(source.rewardPreview)) return source.rewardPreview;
+    if (Array.isArray(source.reward_preview)) return source.reward_preview;
+    return [];
+  }
+
+  function renderRewardTextSummary(summary, className = "") {
+    const text = String(summary || "").trim();
+    if (!text) return "";
+
+    const parts = text
+      .split(/\s*(?:•|·|,|;|\u2022)\s*|\s+â€˘\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (!parts.length) return "";
+    if (!parts.some((part) => normalizeTowerRewardIconKey(part))) return "";
+
+    const cls = ["bm-reward-stack", className].filter(Boolean).join(" ");
+    return `
+      <div class="${cls}">
+        ${parts.map((part) => `<div class="bm-reward-line">${renderTowerRewardIcon(normalizeTowerRewardIconKey(part), "is-inline")}<span class="bm-reward-line-text">${esc(part)}</span></div>`).join("")}
+      </div>
+    `;
+  }
+
+  function renderGrantList(grants, className = "") {
+    const entries = (Array.isArray(grants) ? grants : [])
+      .map((grant) => normalizeGrantEntry(grant))
+      .filter(Boolean);
+    if (!entries.length) return "";
+
+    const cls = ["bm-reward-stack", className].filter(Boolean).join(" ");
+    return `
+      <div class="${cls}">
+        ${entries.map((entry) => `<div class="bm-reward-line">${renderTowerRewardIcon(entry.iconKey, "is-inline")}<span class="bm-reward-line-text">${esc(entry.text)}</span></div>`).join("")}
+      </div>
+    `;
+  }
+
+  function rewardPreviewMarkup(source, fallbackSummary = "", className = "") {
+    const grants = extractRewardGrants(source);
+    return renderGrantList(grants, className) || renderRewardTextSummary(fallbackSummary, className);
+  }
   
    function fmtGrantList(grants) {
     grants = Array.isArray(grants) ? grants : [];
     const parts = [];
 
     for (const g of grants) {
-      if (!g || typeof g !== "object") continue;
-
-      const type = String(g.type || "").trim().toLowerCase();
-      const key = String(g.key || "").trim();
-      const amount = Number(g.amount || 0);
-      if (!Number.isFinite(amount) || amount <= 0) continue;
-
-      if (type === "bones") {
-        parts.push(`${fmtNum(amount)} Bones`);
-        continue;
-      }
-      if (type === "tower_marks") {
-        parts.push(`${fmtNum(amount)} Tower Marks`);
-        continue;
-      }
-      if (type === "material") {
-        const label = key ? key.replaceAll("_", " ") : "material";
-        parts.push(`${fmtNum(amount)} ${label}`);
-        continue;
-      }
-
-      parts.push(`${fmtNum(amount)} ${key || type}`);
+      const entry = normalizeGrantEntry(g);
+      if (!entry) continue;
+      parts.push(entry.text);
     }
 
     return parts.join(" • ");
@@ -529,6 +617,50 @@
   color:rgba(255,255,255,.62);
   margin-top:2px;
 }
+.bm-reward-stack{
+  display:grid;
+  gap:6px;
+  margin-top:6px;
+}
+.bm-reward-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.bm-reward-line-text{
+  min-width:0;
+  font-size:12px;
+  line-height:1.35;
+  color:rgba(255,255,255,.78);
+  overflow-wrap:anywhere;
+}
+.bm-reward-icon{
+  width:32px;
+  height:32px;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+.bm-reward-icon.is-inline{
+  width:28px;
+  height:28px;
+}
+.bm-reward-icon img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.bm-claim-feedback{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+}
 .bm-feed{
   align-items:flex-start;
   padding:9px 11px;
@@ -728,6 +860,14 @@
     0 18px 34px rgba(0,0,0,.28);
 }
 @media (max-width:639px){
+  .bm-reward-icon{
+    width:28px;
+    height:28px;
+  }
+  .bm-reward-icon.is-inline{
+    width:24px;
+    height:24px;
+  }
   .bm-battle-stage{
     min-height:252px;
   }
@@ -1278,6 +1418,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 
   function close() {
     stopBattlePlayback(true);
+    _lastClaimFeedback = null;
     rootEl()?.classList.remove("show");
     document.documentElement.classList.remove("ah-bloodmoon-open");
     document.body.style.overflow = "";
@@ -1864,23 +2005,42 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     return true;
   }
 
+  function renderClaimFeedback(feedback) {
+    if (!feedback || typeof feedback !== "object") return "";
+
+    const label = String(feedback.label || "Reward claimed").trim();
+    const summary = String(feedback.summary || "").trim();
+    const details = rewardPreviewMarkup(feedback, `${label} ${summary}`.trim(), "is-claim-feedback");
+
+    return `
+      <div class="bm-claim-feedback" aria-live="polite">
+        <div class="bm-standing-name">${esc(label)}</div>
+        ${details || `<div class="bm-standing-sub">${esc(summary || "Reward claimed.")}</div>`}
+      </div>
+    `;
+  }
+
   function renderFactionStandings(rows) {
     rows = Array.isArray(rows) ? rows : [];
     if (!rows.length) return `<div class="bm-empty">No faction standings yet.</div>`;
 
     return `
       <div class="bm-list">
-        ${rows.map((row) => `
+        ${rows.map((row) => {
+          const preview = rewardPreviewMarkup(row, `${row?.rewardSummary || row?.summary || ""}`.trim(), "is-standings");
+          return `
           <div class="bm-standing">
             <div class="bm-standing-left">
               <div class="bm-standing-name">${esc(factionLabel(row.faction))}</div>
               <div class="bm-standing-sub">
                 Score ${fmtNum(row.score)} • Damage ${fmtNum(row.totalDamage || row.score)} • Players ${fmtNum(row.playersCount)}
               </div>
+              ${preview}
             </div>
             <div class="bm-chip">#${esc(row.place || "?")}</div>
           </div>
-        `).join("")}
+        `;
+        }).join("")}
       </div>
     `;
   }
@@ -2011,12 +2171,18 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
           const summary = isObj
             ? String(row.summary || fmtGrantList(row.grants || row.reward?.grants || []))
             : "Wave milestone reward ready to claim";
+          const rewardDetails = rewardPreviewMarkup(
+            isObj ? row : { rewardKey, label: title },
+            `${title} ${summary || "Reward ready to claim"}`.trim(),
+            "is-claimable"
+          );
 
           return `
             <div class="bm-reward">
               <div>
                 <div class="bm-standing-name">${esc(title)}</div>
                 <div class="bm-standing-sub">${esc(summary || "Reward ready to claim")}</div>
+                ${rewardDetails}
               </div>
               <button class="bm-claim-btn" data-bm-claim="${esc(rewardKey)}" type="button">Claim</button>
             </div>
@@ -2117,6 +2283,11 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     (topScore > 0 || secondScore > 0)
       ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
       : 0;
+  const myRewardPreview = rewardPreviewMarkup(
+    my,
+    `${my.rewardSummary || my.claimableSummary || ""}`.trim(),
+    "is-my-rewards"
+  );
 
   stopBattlePlayback(true, true);
 
@@ -2192,6 +2363,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
           <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY TO KILL"}</div>
         </div>
       </div>
+      ${myRewardPreview}
     </div>
 
     <div class="bm-card">
@@ -2201,6 +2373,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 
     <div class="bm-card">
       <div class="bm-label">BLOOD-MOON WAR REWARDS</div>
+      ${renderClaimFeedback(_lastClaimFeedback)}
       ${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}
     </div>
 
@@ -2288,6 +2461,13 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       const reward = res?.result?.reward || {};
       const label = rewardLabel(res?.result?.rewardKey || rewardKey);
       const summary = fmtGrantList(granted.length ? granted : (reward?.grants || []));
+      _lastClaimFeedback = {
+        label: `${label} claimed`,
+        summary,
+        grants: granted.length ? granted : (reward?.grants || []),
+        reward,
+        rewardKey: res?.result?.rewardKey || rewardKey
+      };
 
       if (res.data) render(res.data);
 
@@ -2312,6 +2492,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 
   async function open() {
     ensureMounted();
+    _lastClaimFeedback = null;
     show();
     return await loadState();
   }
