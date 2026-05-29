@@ -3034,6 +3034,134 @@ html.ah-skins-open #heroFrame{
     animation: ahBootFallbackHide .01s linear 1400ms forwards;
   }
 }
+
+/* Telegram mobile performance safeguard:
+   keep the dark Alpha Husky atmosphere, but remove the heaviest
+   full-screen motion/blur/glow layers on coarse-pointer devices. */
+html.ah-perf-lite .ah-bg-far,
+body.ah-perf-lite .ah-bg-far,
+html.ah-perf-lite .ah-bg-mid,
+body.ah-perf-lite .ah-bg-mid,
+html.ah-perf-lite .ah-bg-particles,
+body.ah-perf-lite .ah-bg-particles,
+html.ah-perf-lite .ah-bg-noise,
+body.ah-perf-lite .ah-bg-noise,
+html.ah-perf-lite .hero-frame.is-pioneer-frame .hero-frame-overlay-glow,
+body.ah-perf-lite .hero-frame.is-pioneer-frame .hero-frame-overlay-glow,
+html.ah-perf-lite .hero-frame.is-pioneer-frame .hero-frame-overlay-sweep,
+body.ah-perf-lite .hero-frame.is-pioneer-frame .hero-frame-overlay-sweep,
+html.ah-perf-lite .hero-frame[data-aura-key="alpha_signal_core"] .hero-aura-ring,
+body.ah-perf-lite .hero-frame[data-aura-key="alpha_signal_core"] .hero-aura-ring{
+  animation:none !important;
+  transform:none !important;
+  will-change:auto !important;
+}
+
+html.ah-perf-lite .ah-bg-particles,
+body.ah-perf-lite .ah-bg-particles,
+html.ah-perf-lite .ah-bg-noise,
+body.ah-perf-lite .ah-bg-noise{
+  display:none !important;
+}
+
+html.ah-perf-lite .ah-bg-far,
+body.ah-perf-lite .ah-bg-far{
+  opacity:.82 !important;
+}
+
+html.ah-perf-lite .ah-bg-mid,
+body.ah-perf-lite .ah-bg-mid{
+  opacity:.32 !important;
+}
+
+html.ah-perf-lite .ah-bg-vignette,
+body.ah-perf-lite .ah-bg-vignette{
+  background:
+    linear-gradient(180deg, rgba(4,8,14,.12) 0%, rgba(1,3,7,.78) 100%),
+    radial-gradient(circle at center, rgba(0,0,0,0) 56%, rgba(0,0,0,.28) 80%, rgba(0,0,0,.52) 100%);
+}
+
+html.ah-perf-lite .hero-frame.has-aura,
+body.ah-perf-lite .hero-frame.has-aura{
+  box-shadow:none !important;
+}
+
+html.ah-perf-lite .hero-frame .hero-aura-ring,
+body.ah-perf-lite .hero-frame .hero-aura-ring{
+  box-shadow:none !important;
+}
+
+html.ah-perf-lite .hotspot,
+body.ah-perf-lite .hotspot,
+html.ah-perf-lite .hotspot:hover,
+body.ah-perf-lite .hotspot:hover{
+  transition:none !important;
+  transform:translate(-50%,-50%) !important;
+}
+
+html.ah-perf-lite .hotspot::before,
+body.ah-perf-lite .hotspot::before,
+html.ah-perf-lite .ping,
+body.ah-perf-lite .ping,
+html.ah-perf-lite .hotspot.type-bloodmoon::after,
+body.ah-perf-lite .hotspot.type-bloodmoon::after,
+html.ah-perf-lite .hotspot.type-siege.is-contested::after,
+body.ah-perf-lite .hotspot.type-siege.is-contested::after{
+  display:none !important;
+  animation:none !important;
+}
+
+html.ah-perf-lite .hotspot.is-live,
+body.ah-perf-lite .hotspot.is-live,
+html.ah-perf-lite .hotspot.is-active img,
+body.ah-perf-lite .hotspot.is-active img,
+html.ah-perf-lite .hotspot.is-threatened,
+body.ah-perf-lite .hotspot.is-threatened,
+html.ah-perf-lite .hotspot.is-contested img,
+body.ah-perf-lite .hotspot.is-contested img,
+html.ah-perf-lite .hotspot.is-fortified,
+body.ah-perf-lite .hotspot.is-fortified,
+html.ah-perf-lite .hotspot.type-oracle img,
+body.ah-perf-lite .hotspot.type-oracle img,
+html.ah-perf-lite .hotspot.type-hq.is-contested,
+body.ah-perf-lite .hotspot.type-hq.is-contested{
+  animation:none !important;
+}
+
+html.ah-perf-lite .hotspot img,
+body.ah-perf-lite .hotspot img,
+html.ah-perf-lite .hotspot.unlocked img,
+body.ah-perf-lite .hotspot.unlocked img,
+html.ah-perf-lite .hotspot.locked img,
+body.ah-perf-lite .hotspot.locked img,
+html.ah-perf-lite .hotspot.type-bloodmoon img,
+body.ah-perf-lite .hotspot.type-bloodmoon img,
+html.ah-perf-lite .hotspot.type-hq img,
+body.ah-perf-lite .hotspot.type-hq img{
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.42)) !important;
+}
+
+html.ah-perf-lite .chip,
+body.ah-perf-lite .chip{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:0 4px 10px rgba(0,0,0,.20) !important;
+}
+
+html.ah-perf-lite .path,
+body.ah-perf-lite .path{
+  filter:none !important;
+}
+
+html.ah-perf-lite .path.glow,
+body.ah-perf-lite .path.glow{
+  display:none !important;
+}
+
+html.ah-perf-lite .map-stage::after,
+body.ah-perf-lite .map-stage::after{
+  opacity:.28 !important;
+}
 </style>
 
 <style id="factionhq-debug-override">
@@ -5558,6 +5686,30 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <!-- /TELEGRAM ANALYTICS -->
 </head>
 <body>
+<script>
+(() => {
+  function shouldUsePerfLite() {
+    try {
+      return (
+        window.matchMedia("(pointer: coarse)").matches ||
+        window.matchMedia("(max-width: 768px)").matches ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      );
+    } catch (_) {
+      return (window.innerWidth || 0) <= 768;
+    }
+  }
+
+  function applyPerfLiteMode() {
+    const enabled = shouldUsePerfLite();
+    document.documentElement.classList.toggle("ah-perf-lite", enabled);
+    document.body.classList.toggle("ah-perf-lite", enabled);
+  }
+
+  applyPerfLiteMode();
+  window.addEventListener("resize", applyPerfLiteMode, { passive: true });
+})();
+</script>
   <div id="dbg">init…</div>
   
   <!-- ✅ FACTION HQ BACKDROP (WKLEJ TUTAJ) -->
@@ -10033,7 +10185,17 @@ const actions = {
     bindMapZoomControls();
     requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
     if (!DATA) loadMapData();
-    loadPlayerState();
+    if (PLAYER_STATE) {
+      applyStateToMap();
+      if (DATA) {
+        renderMap();
+        updateUnlockProgress();
+        updateMapSelectionBrief();
+      }
+    }
+    if (!PLAYER_STATE || (Date.now() - __lastPlayerStateLoadedAt) > MAP_PLAYER_STATE_FRESH_MS) {
+      void loadPlayerState();
+    }
   },
   ".btn.inventory": () => window.Inventory?.open?.(),
   ".btn.char": () => sendAction("char_open"),
