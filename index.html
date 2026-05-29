@@ -2074,6 +2074,7 @@ html.ah-skins-open #heroFrame{
   --node-chip-color: rgba(255,255,255,.92);
   --node-chip-border: rgba(255,255,255,.16);
   --node-chip-bg: rgba(10,12,16,.88);
+  --tap-accent: rgba(90,235,255,.52);
 }
 
 .hotspot:hover{
@@ -2209,24 +2210,90 @@ html.ah-skins-open #heroFrame{
   --node-glow-1: rgba(255,82,82,.30);
   --node-glow-2: rgba(255,130,130,.18);
   --node-ping: rgba(255,82,82,.14);
+  --tap-accent: rgba(255,96,96,.54);
 }
 
 .hotspot.f-ew{
   --node-glow-1: rgba(255,213,74,.30);
   --node-glow-2: rgba(255,232,140,.18);
   --node-ping: rgba(255,213,74,.14);
+  --tap-accent: rgba(255,220,108,.56);
 }
 
 .hotspot.f-pb{
   --node-glow-1: rgba(255,159,67,.30);
   --node-glow-2: rgba(255,196,120,.18);
   --node-ping: rgba(255,159,67,.14);
+  --tap-accent: rgba(255,168,86,.54);
 }
 
 .hotspot.f-ih{
   --node-glow-1: rgba(64,196,255,.30);
   --node-glow-2: rgba(140,224,255,.18);
   --node-ping: rgba(64,196,255,.14);
+  --tap-accent: rgba(96,220,255,.56);
+}
+
+.node-tap-fx{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:clamp(44px, 4vw, 74px);
+  height:clamp(44px, 4vw, 74px);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  z-index:4;
+}
+
+.hotspot.type-bloodmoon .node-tap-fx{ width:clamp(54px, 4.7vw, 84px); height:clamp(54px, 4.7vw, 84px); }
+.hotspot.type-hq .node-tap-fx{ width:clamp(64px, 5.3vw, 94px); height:clamp(64px, 5.3vw, 94px); }
+
+.node-tap-outline{
+  position:absolute;
+  inset:2px;
+  border-radius:999px;
+  border:1px solid var(--tap-accent);
+  opacity:0;
+  transform:scale(.94);
+  transition:opacity .14s ease, transform .14s ease;
+}
+
+.hotspot.active .node-tap-outline,
+.map-pin.active .node-tap-outline{
+  opacity:.72;
+  transform:scale(1);
+}
+
+.node-tap-scan{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:76%;
+  height:2px;
+  border-radius:999px;
+  opacity:0;
+  transform:translate(-50%,-50%) translateY(-12px) scaleX(.68);
+  background:linear-gradient(90deg, rgba(0,0,0,0), var(--tap-accent), rgba(0,0,0,0));
+}
+
+.hotspot.signal-scan-lock .node-tap-scan,
+.map-pin.signal-scan-lock .node-tap-scan{
+  animation:ahNodeSignalSweep .56s ease-out both;
+}
+
+@keyframes ahNodeSignalSweep{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) translateY(-12px) scaleX(.68);
+  }
+  22%{
+    opacity:.92;
+    transform:translate(-50%,-50%) translateY(-6px) scaleX(.92);
+  }
+  100%{
+    opacity:0;
+    transform:translate(-50%,-50%) translateY(12px) scaleX(1.04);
+  }
 }
 
 /* status chip colors */
@@ -3033,6 +3100,16 @@ html.ah-skins-open #heroFrame{
     transition:none;
     animation: ahBootFallbackHide .01s linear 1400ms forwards;
   }
+
+  .node-tap-outline{
+    transition:none !important;
+  }
+
+  .hotspot.signal-scan-lock .node-tap-scan,
+  .map-pin.signal-scan-lock .node-tap-scan{
+    animation:none !important;
+    opacity:0 !important;
+  }
 }
 
 /* Telegram mobile performance safeguard:
@@ -3097,6 +3174,13 @@ html.ah-perf-lite .hotspot:hover,
 body.ah-perf-lite .hotspot:hover{
   transition:none !important;
   transform:translate(-50%,-50%) !important;
+}
+
+html.ah-perf-lite .hotspot.active .node-tap-outline,
+body.ah-perf-lite .hotspot.active .node-tap-outline,
+html.ah-perf-lite .map-pin.active .node-tap-outline,
+body.ah-perf-lite .map-pin.active .node-tap-outline{
+  opacity:.58 !important;
 }
 
 html.ah-perf-lite .hotspot::before,
@@ -4333,7 +4417,6 @@ body.missions-open{
 /* Rows inside cards */
 #statsBack .row{
   display:flex;
-<style id="stats-css">
 /* =========================
    STATS — Alpha Husky AAA Edition 2026
    Na bazie Twojego oryginalnego CSS + frost glow upgrade
@@ -6227,7 +6310,6 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             </div>
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
 <div class="pins" id="pins"></div>
-<canvas id="particlesCanvas" class="particles-layer" width="1600" height="900" style="position:absolute; inset:0; pointer-events:none; display:none;"></canvas>
           </div>
         </div>
       </div>
@@ -8246,6 +8328,29 @@ document.addEventListener("click", async (e) => {
           return Array.from(pinsEl.querySelectorAll(".map-pin")).find((pin) => String(pin?.dataset?.nodeId || "").trim() === activeId) || null;
         }
 
+        function clearMapPinSignalScan(pin){
+          if (!pin) return;
+          if (pin.__ahSignalScanTimer) {
+            clearTimeout(pin.__ahSignalScanTimer);
+            pin.__ahSignalScanTimer = 0;
+          }
+          pin.classList.remove("signal-scan-lock");
+        }
+
+        function triggerMapPinSignalScan(pin, isUnlocked = true){
+          if (!pin || !pinsEl) return;
+          Array.from(pinsEl.querySelectorAll(".map-pin.signal-scan-lock")).forEach((other) => {
+            if (other !== pin) clearMapPinSignalScan(other);
+          });
+          clearMapPinSignalScan(pin);
+          void pin.offsetWidth;
+          pin.classList.add("signal-scan-lock");
+          pin.__ahSignalScanTimer = window.setTimeout(() => {
+            clearMapPinSignalScan(pin);
+          }, 560);
+          try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch (_) {}
+        }
+
         function syncActiveMapPinSelection(){
           if (!pinsEl) return;
           window.__AH_MAP_SELECTION_SYNC_UNTIL = Date.now() + 180;
@@ -8256,6 +8361,7 @@ document.addEventListener("click", async (e) => {
             pin.classList.toggle("active", isActive);
             const chip = pin.querySelector(".chip");
             if (chip) chip.style.display = isActive ? "flex" : "none";
+            if (!isActive) clearMapPinSignalScan(pin);
           });
         }
 
@@ -9446,6 +9552,11 @@ function isRegionUnlocked(regionId){
     ring.className = 'ping';
     btn.appendChild(ring);
 
+    const tapFx = document.createElement('span');
+    tapFx.className = 'node-tap-fx';
+    tapFx.innerHTML = '<span class="node-tap-outline"></span><span class="node-tap-scan"></span>';
+    btn.appendChild(tapFx);
+
     const img = document.createElement('img');
     img.className = 'pin-icon';
     img.src = b.icon;
@@ -9488,7 +9599,7 @@ function isRegionUnlocked(regionId){
 
       const id = String(b.id || "");
 
-      try { createBurst(parseFloat(btn.style.left), parseFloat(btn.style.top), unlocked); } catch(_) {}
+      triggerMapPinSignalScan(btn, unlocked);
 
       // TAP 1 = focus
       if (String(ACTIVE_PIN_ID || "") !== id) {
@@ -9656,63 +9767,6 @@ function isRegionUnlocked(regionId){
   }
 
   // resolveLabelCollisions(); // jeśli używasz anti-collision
-        }
-
-        const canvas = document.getElementById('particlesCanvas');
-        const ctx = canvas ? canvas.getContext('2d') : null;
-
-        function createBurst(xPercent, yPercent, isUnlocked = true) {
-          if (!ctx) return;
-          canvas.style.display = 'block';
-          canvas.style.opacity = '1';
-          const x = (xPercent / 100) * VIEW_W;
-          const y = (yPercent / 100) * VIEW_H;
-          const particles = [];
-          const numParticles = 12;
-          const colors = isUnlocked ? ['#00E5FF', '#9B4DFF'] : ['#9483B4'];
-
-          for (let i = 0; i < numParticles; i++) {
-            particles.push({
-              x, y,
-              vx: (Math.random() - 0.5) * 8,
-              vy: (Math.random() - 0.5) * 8,
-              size: Math.random() * 3 + 1,
-              color: colors[Math.floor(Math.random() * colors.length)],
-              life: 1,
-              decay: Math.random() * 0.02 + 0.01
-            });
-          }
-
-          let animId;
-          function animate() {
-            ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-            let alive = 0;
-            for (let i = 0; i < particles.length; i++){
-              const p = particles[i];
-              if (!p) continue;
-              p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= p.decay;
-              if (p.life > 0) {
-                alive++;
-                ctx.save();
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-                ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill();
-                ctx.restore();
-              } else {
-                particles.splice(i,1); i--;
-              }
-            }
-            if (alive > 0) {
-              animId = requestAnimationFrame(animate);
-            } else {
-              canvas.style.opacity = '0';
-              setTimeout(() => { canvas.style.display = 'none'; }, 200);
-              if (animId) cancelAnimationFrame(animId);
-            }
-          }
-          animate();
-          try { tg?.HapticFeedback?.impactOccurred?.(isUnlocked ? "medium" : "light"); } catch(e) {}
         }
 
         function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); updateMapSelectionBrief(); }
