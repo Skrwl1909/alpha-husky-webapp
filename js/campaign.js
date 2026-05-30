@@ -17,6 +17,9 @@
     payload: null,
     lastLoadAt: 0,
     loadPromise: null,
+    sitrep: null,
+    sitrepLastLoadAt: 0,
+    sitrepLoadPromise: null,
     busyAction: "",
     briefingKey: "",
     briefingNotice: "",
@@ -159,6 +162,107 @@
       ? report.burnedArchive
       : null;
     return archive;
+  }
+
+  function sitrepState() {
+    return STATE.sitrep && typeof STATE.sitrep === "object" ? STATE.sitrep : null;
+  }
+
+  function sitrepBurnedArchive() {
+    var s = sitrepState();
+    if (!s || !s.ok) return null;
+    var fronts = s.fronts && typeof s.fronts === "object" ? s.fronts : null;
+    var ba = fronts && fronts.burnedArchive && typeof fronts.burnedArchive === "object" ? fronts.burnedArchive : null;
+    if (ba && ba.exists === false) return null;
+    return ba || null;
+  }
+
+  function sitrepHasBurnedArchive() {
+    var ba = sitrepBurnedArchive();
+    return !!(ba && (ba.exists !== false));
+  }
+
+  function sitrepRecentWorldSignals() {
+    var s = sitrepState();
+    if (!s || !s.ok || !Array.isArray(s.recentWorldSignals)) return [];
+    return s.recentWorldSignals.slice(0, 3);
+  }
+
+  function sitrepSuggestedLines() {
+    var s = sitrepState();
+    if (!s || !s.ok || !Array.isArray(s.suggestedSitrepLines)) return [];
+    return s.suggestedSitrepLines.slice(0, 3);
+  }
+
+  function sitrepActiveDate() {
+    var s = sitrepState();
+    return asText(s && s.activeDate) || "";
+  }
+
+  function sitrepGeneratedLabel() {
+    var s = sitrepState();
+    var ts = s && s.generatedAt;
+    if (!ts) return "";
+    var num = parseInt(ts, 10);
+    if (!num) return "";
+    try {
+      return new Date(num * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    } catch (_) { return ""; }
+  }
+
+  function sitrepArchiveStatus(ba) {
+    var raw = asText(ba && ba.status).toLowerCase();
+    if (raw === "live") return "LIVE";
+    if (raw === "close_to_breach" || raw === "closetobreach") return "CLOSE TO BREACH";
+    if (raw === "breach_confirmed" || raw === "breached") return "BREACH CONFIRMED";
+    if (raw) return raw.replace(/_/g, " ").toUpperCase();
+    return "UNRESOLVED";
+  }
+
+  function sitrepArchiveNode(ba) {
+    var raw = asText(ba && (ba.activeNodeName || ba.nodeName || ba.nodeLabel || ba.nodeId));
+    if (!raw) return "";
+    return raw.indexOf("_") >= 0 ? raw.replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : raw;
+  }
+
+  function sitrepLeadingFaction(ba) {
+    var f = asText(ba && (ba.leadingFaction || ba.bestFaction || ba.faction || ba.playerFaction));
+    if (!f || f.toLowerCase() === "unbound") return "UNBOUND";
+    if (f === "rb" || f === "rogue_byte") return "Rogue Byte";
+    if (f === "ew" || f === "echo_wardens") return "Echo Wardens";
+    if (f === "ih" || f === "inner_howl" || f === "inner_howlers") return "Inner Howlers";
+    if (f === "pb" || f === "pack_burners") return "Pack Burners";
+    return f || "UNBOUND";
+  }
+
+  function sitrepBestAlignment(ba) {
+    var a = asText(ba && (ba.bestAlignment || ba.leadingAlignment || ba.alignment));
+    if (!a) return "";
+    var u = a.toUpperCase();
+    if (u === "XH" || u === "X_HOUND" || u === "XHOUND") return "XH";
+    if (u === "YM" || u === "YELLOW_MOON" || u === "YELLOWMOON") return "YM";
+    return u;
+  }
+
+  function sitrepAttemptsToday(ba) {
+    var n = parseInt(ba && (ba.attemptsToday || ba.attempts || ba.factionAttempts), 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function sitrepBreachedBy(ba) {
+    if (!ba) return "";
+    if (ba.breached !== true && !(ba.factionProgress && ba.factionProgress.breached)) return "";
+    return asText(ba.breachedByLabel || ba.breachedBy || ba.cracker) || "Faction";
+  }
+
+  function sitrepIsBreached(ba) {
+    if (!ba) return false;
+    return ba.breached === true || !!(ba.factionProgress && ba.factionProgress.breached);
+  }
+
+  function sitrepIsLive(ba) {
+    var st = asText(ba && ba.status).toLowerCase();
+    return st === "live" || st === "close_to_breach" || st === "closetobreach";
   }
 
   function activeBriefingKey() {
@@ -1058,6 +1162,28 @@
       + ".campaign-empty{padding:10px 0 2px;font-size:14px;line-height:1.45;color:rgba(230,243,255,.82);}"
       + ".campaign-error{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(138,40,40,.20);"
       + "border:1px solid rgba(255,120,120,.18);font-size:12px;color:rgba(255,226,226,.92);}"
+      + ".campaign-sitrep{margin:12px 0 4px;padding:9px 10px;border-radius:14px;border:1px solid rgba(145,226,255,.14);background:linear-gradient(180deg,rgba(12,22,34,.92),rgba(6,14,24,.96));}"
+      + ".campaign-sitrep.is-fallback{border-color:rgba(255,200,120,.18);background:rgba(255,255,255,.02);}"
+      + ".campaign-sitrep-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;}"
+      + ".campaign-sitrep-kicker{font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:rgba(160,220,255,.65);}"
+      + ".campaign-sitrep-title{font-size:12px;font-weight:900;color:#e8f4ff;letter-spacing:.01em;}"
+      + ".campaign-sitrep-time{font-size:10px;font-weight:700;color:rgba(170,210,245,.6);margin-left:6px;}"
+      + ".campaign-sitrep-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin:4px 0 6px;}"
+      + ".campaign-sitrep-row{font-size:10px;line-height:1.25;color:rgba(215,235,255,.82);}"
+      + ".campaign-sitrep-row span{font-weight:700;color:rgba(155,195,235,.6);margin-right:4px;}"
+      + ".campaign-sitrep-row strong{font-weight:800;color:#d6eaff;}"
+      + ".campaign-sitrep-row strong.is-live{color:#a5f0c8;}"
+      + ".campaign-sitrep-row strong.is-breached{color:#f2a8a8;}"
+      + ".campaign-sitrep-align{font-size:9px;font-weight:800;color:rgba(255,220,140,.9);margin-left:3px;}"
+      + ".campaign-sitrep-lines{margin:4px 0 2px;padding:4px 0;border-top:1px solid rgba(145,226,255,.08);}"
+      + ".campaign-sitrep-line{font-size:10px;line-height:1.3;color:rgba(210,232,255,.88);margin:1px 0;}"
+      + ".campaign-sitrep-signals{margin-top:4px;padding-top:4px;border-top:1px solid rgba(145,226,255,.08);}"
+      + ".campaign-sitrep-sig{font-size:9.5px;line-height:1.3;color:rgba(195,220,255,.72);margin:1px 0;}"
+      + ".campaign-sitrep-fallback{font-size:10px;line-height:1.35;color:rgba(230,225,200,.82);padding:2px 0;}"
+      + ".campaign-sitrep-cta{margin-top:7px;}"
+      + ".campaign-sitrep-btn{appearance:none;width:100%;padding:7px 10px;border-radius:10px;border:1px solid rgba(145,226,255,.22);background:rgba(40,90,140,.28);color:#e6f4ff;font-size:11px;font-weight:800;letter-spacing:.01em;cursor:pointer;}"
+      + ".campaign-sitrep-btn.is-front{background:linear-gradient(180deg,rgba(50,140,90,.35),rgba(20,70,50,.45));border-color:rgba(130,225,170,.28);}"
+      + ".campaign-sitrep-btn.is-report{background:linear-gradient(180deg,rgba(140,80,60,.32),rgba(70,35,30,.45));border-color:rgba(230,170,130,.26);}"
       + "@media (max-width:420px){.campaign-archive-grid,.campaign-archive-slots{grid-template-columns:1fr;}.campaign-archive-head{flex-direction:column;}.campaign-archive-log-time{margin-left:0;}.campaign-archive-hintcard{min-width:0;}}";
 
     document.head.appendChild(style);
@@ -1197,6 +1323,112 @@
     }).join("");
   }
 
+  function renderSitrepPanel() {
+    var s = sitrepState();
+    var hasData = !!(s && s.ok);
+    var ba = sitrepBurnedArchive();
+    var hasArchive = sitrepHasBurnedArchive();
+    var signals = sitrepRecentWorldSignals();
+    var lines = sitrepSuggestedLines();
+    var genLabel = sitrepGeneratedLabel();
+
+    if (!hasData) {
+      return ""
+        + "<div class=\"campaign-sitrep is-fallback\">"
+        + "  <div class=\"campaign-sitrep-head\">"
+        + "    <div class=\"campaign-sitrep-kicker\">RELAY-7 SITREP</div>"
+        + "    <div class=\"campaign-sitrep-title\">CURRENT SITREP</div>"
+        + "  </div>"
+        + "  <div class=\"campaign-sitrep-fallback\">SITREP signal unavailable. RELAY-7 is still online.</div>"
+        + "</div>";
+    }
+
+    var body = "";
+
+    if (hasArchive && ba) {
+      var status = sitrepArchiveStatus(ba);
+      var node = sitrepArchiveNode(ba);
+      var faction = sitrepLeadingFaction(ba);
+      var align = sitrepBestAlignment(ba);
+      var attempts = sitrepAttemptsToday(ba);
+      var breached = sitrepIsBreached(ba);
+      var live = sitrepIsLive(ba);
+      var breachBy = breached ? sitrepBreachedBy(ba) : "";
+
+      body += ""
+        + "<div class=\"campaign-sitrep-grid\">"
+        + "  <div class=\"campaign-sitrep-row\"><span>Front</span><strong>Burned Archive</strong></div>"
+        + "  <div class=\"campaign-sitrep-row\"><span>Status</span><strong class=\"" + (breached ? "is-breached" : (live ? "is-live" : "")) + "\">" + esc(status) + "</strong></div>"
+        + (node ? "  <div class=\"campaign-sitrep-row\"><span>Node</span><strong>" + esc(node) + "</strong></div>" : "")
+        + "  <div class=\"campaign-sitrep-row\"><span>Leading</span><strong>" + esc(faction) + (align ? " <span class=\"campaign-sitrep-align\">" + esc(align) + "</span>" : "") + "</strong></div>"
+        + (attempts > 0 ? "  <div class=\"campaign-sitrep-row\"><span>Attempts</span><strong>" + attempts + " today</strong></div>" : "")
+        + (breached && breachBy ? "  <div class=\"campaign-sitrep-row\"><span>Breached</span><strong>" + esc(breachBy) + "</strong></div>" : "")
+        + "</div>";
+    } else {
+      body += ""
+        + "<div class=\"campaign-sitrep-grid\">"
+        + "  <div class=\"campaign-sitrep-row\"><span>Front</span><strong>No active breach</strong></div>"
+        + "  <div class=\"campaign-sitrep-row\"><span>Status</span><strong>AWAITING SIGNAL</strong></div>"
+        + "</div>";
+    }
+
+    if (lines.length) {
+      body += "<div class=\"campaign-sitrep-lines\">";
+      lines.forEach(function (ln) {
+        body += "<div class=\"campaign-sitrep-line\">" + esc(asText(ln)) + "</div>";
+      });
+      body += "</div>";
+    }
+
+    if (signals.length) {
+      body += "<div class=\"campaign-sitrep-signals\">";
+      signals.slice(0, 2).forEach(function (sig) {
+        var txt = asText(typeof sig === "string" ? sig : (sig && (sig.text || sig.message || sig.line)));
+        if (txt) body += "<div class=\"campaign-sitrep-sig\">" + esc(txt) + "</div>";
+      });
+      body += "</div>";
+    }
+
+    var ctaHtml = renderSitrepCta(ba, hasArchive);
+
+    return ""
+      + "<div class=\"campaign-sitrep\">"
+      + "  <div class=\"campaign-sitrep-head\">"
+      + "    <div class=\"campaign-sitrep-kicker\">RELAY-7 SITREP</div>"
+      + "    <div class=\"campaign-sitrep-title\">CURRENT SITREP" + (genLabel ? " <span class=\"campaign-sitrep-time\">" + esc(genLabel) + "</span>" : "") + "</div>"
+      + "  </div>"
+      +   body
+      +   ctaHtml
+      + "</div>";
+  }
+
+  function renderSitrepCta(ba, hasArchive) {
+    if (!hasArchive || !ba) {
+      return ""
+        + "<div class=\"campaign-sitrep-cta\">"
+        + "  <button type=\"button\" class=\"campaign-sitrep-btn\" data-sitrep-cta=\"orders\">Check Current Orders</button>"
+        + "</div>";
+    }
+    var breached = sitrepIsBreached(ba);
+    var live = sitrepIsLive(ba);
+    if (breached) {
+      return ""
+        + "<div class=\"campaign-sitrep-cta\">"
+        + "  <button type=\"button\" class=\"campaign-sitrep-btn is-report\" data-sitrep-cta=\"report\">Read Archive Report</button>"
+        + "</div>";
+    }
+    if (live) {
+      return ""
+        + "<div class=\"campaign-sitrep-cta\">"
+        + "  <button type=\"button\" class=\"campaign-sitrep-btn is-front\" data-sitrep-cta=\"front\">Open Archive Front</button>"
+        + "</div>";
+    }
+    return ""
+      + "<div class=\"campaign-sitrep-cta\">"
+      + "  <button type=\"button\" class=\"campaign-sitrep-btn\" data-sitrep-cta=\"orders\">Check Current Orders</button>"
+      + "</div>";
+  }
+
   function renderSignalCard(campaign) {
     var selected = asText(campaign.playerDirective).toLowerCase();
     var meta = resolveDirectiveMeta(selected, campaign) || null;
@@ -1226,6 +1458,7 @@
       + "<div class=\"campaign-card\">"
       +      renderRelayVisual()
       +      renderRelayHeader()
+      +      renderSitrepPanel()
       + "  <div class=\"campaign-beat\">"
       + "    <p class=\"campaign-line\">Can you hear me?</p>"
       + "    <p class=\"campaign-line\">If this signal is hitting your node... you're still alive.</p>"
@@ -1264,6 +1497,7 @@
       + "<div class=\"campaign-card\">"
       +      renderRelayVisual()
       +      renderRelayHeader()
+      +      renderSitrepPanel()
       + "  <div class=\"campaign-briefing\">"
       + "    <div class=\"campaign-briefing-kicker\">Signal Directive Handoff</div>"
       + "    <div class=\"campaign-briefing-title\">" + esc(briefing.title) + "</div>"
@@ -1453,6 +1687,23 @@
         closeArchiveReport();
       });
     });
+
+    [].slice.call(STATE.rootEl.querySelectorAll("[data-sitrep-cta]")).forEach(function attachSitrepCta(btn) {
+      btn.addEventListener("click", function onSitrepCta() {
+        var action = asText(btn.getAttribute("data-sitrep-cta")).toLowerCase();
+        if (action === "report") {
+          openArchiveReport();
+          return;
+        }
+        if (action === "front") {
+          scrollArchiveSection("report") || scrollArchiveSection("log");
+          return;
+        }
+        // orders or fallback: keep user in Campaign, show a small notice
+        STATE.briefingNotice = "SITREP: Use RELAY-7 Guidance or Archive controls below for current directives.";
+        render();
+      });
+    });
   }
 
   function api(path, body) {
@@ -1489,6 +1740,41 @@
     });
 
     return STATE.loadPromise;
+  }
+
+  var SITREP_STALE_MS = 45000;
+
+  function isSitrepFreshEnough() {
+    return !!(STATE.sitrepLastLoadAt && (Date.now() - STATE.sitrepLastLoadAt) < SITREP_STALE_MS);
+  }
+
+  async function loadSitrepState(options) {
+    var force = !!(options && options.force);
+    var reason = asText(options && options.reason) || "sitrep";
+
+    if (!force && STATE.sitrep && isSitrepFreshEnough()) {
+      return STATE.sitrep;
+    }
+    if (STATE.sitrepLoadPromise) return STATE.sitrepLoadPromise;
+
+    log("load sitrep", { force: force, reason: reason });
+    STATE.sitrepLoadPromise = api("/webapp/sitrep/state", {}).then(function onSitrepLoaded(out) {
+      STATE.sitrep = out || { ok: false, reason: "EMPTY" };
+      STATE.sitrepLastLoadAt = Date.now();
+      if (isOpen()) render();
+      return STATE.sitrep;
+    }).catch(function onSitrepErr(err) {
+      warn("sitrep load failed", err);
+      if (!STATE.sitrep) {
+        STATE.sitrep = { ok: false, reason: asText(err && err.message) || "SITREP_LOAD_FAILED" };
+      }
+      if (isOpen()) render();
+      return STATE.sitrep;
+    }).finally(function done() {
+      STATE.sitrepLoadPromise = null;
+    });
+
+    return STATE.sitrepLoadPromise;
   }
 
   async function postAction(action, extra) {
@@ -1731,6 +2017,7 @@
     try { global.navOpen && global.navOpen("campaignBack"); } catch (_) {}
 
     await loadState({ force: !isFreshEnough(), reason: "open" });
+    void loadSitrepState({ force: !isSitrepFreshEnough(), reason: "open" });
     render();
     void markIntroSeenIfNeeded();
     return true;
