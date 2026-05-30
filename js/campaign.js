@@ -1695,15 +1695,35 @@
       btn.addEventListener("click", function onSitrepCta() {
         var action = asText(btn.getAttribute("data-sitrep-cta")).toLowerCase();
         if (action === "report") {
-          openArchiveReport();
+          if (openArchiveReport()) {
+            return;
+          }
+          // Fallback: surface suggested SITREP lines or status inside Campaign (visible via Archive area)
+          var lines = sitrepSuggestedLines();
+          var fbText = lines.length
+            ? "Archive Report lines: " + lines.slice(0, 2).join(" • ")
+            : "Burned Archive report not yet available. Check front status and attempts in the section below.";
+          STATE.briefingNotice = fbText;
+          STATE.archiveFeedback = { kind: "info", text: fbText };
+          render();
           return;
         }
         if (action === "front") {
-          scrollArchiveSection("report") || scrollArchiveSection("log");
+          var didScroll = scrollArchiveSection("report") || scrollArchiveSection("log");
+          if (didScroll) {
+            return;
+          }
+          // Friendly in-Campaign notice when Archive section anchors not immediately found
+          var fb = "Burned Archive front is here. Scroll or use the signal slots and Test controls below to act on the front.";
+          STATE.briefingNotice = fb;
+          STATE.archiveFeedback = { kind: "info", text: fb };
+          render();
           return;
         }
-        // orders or fallback: keep user in Campaign, show a small notice
-        STATE.briefingNotice = "SITREP: Use RELAY-7 Guidance or Archive controls below for current directives.";
+        // Check Current Orders: keep player in Campaign and surface actionable notice in the Archive / guidance area
+        var ordersMsg = "Current orders: Use RELAY-7 Guidance buttons or the Burned Archive front controls below.";
+        STATE.briefingNotice = ordersMsg;
+        STATE.archiveFeedback = { kind: "info", text: ordersMsg };
         render();
       });
     });
