@@ -185,7 +185,7 @@
   function sitrepRecentWorldSignals() {
     var s = sitrepState();
     if (!s || !s.ok || !Array.isArray(s.recentWorldSignals)) return [];
-    return s.recentWorldSignals.slice(0, 3);
+    return s.recentWorldSignals.slice(0, 2);
   }
 
   function sitrepSuggestedLines() {
@@ -222,6 +222,8 @@
   function sitrepArchiveNode(ba) {
     var raw = asText(ba && (ba.activeNodeName || ba.nodeName || ba.nodeLabel || ba.nodeId));
     if (!raw) return "";
+    var low = raw.toLowerCase().replace(/[_ -]/g, "");
+    if (low === "burnedarchive" || low === "burnedarch" || low === "archivefront" || low === "archive") return "";
     return raw.indexOf("_") >= 0 ? raw.replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : raw;
   }
 
@@ -1358,8 +1360,9 @@
       body += ""
         + "<div class=\"campaign-sitrep-grid\">"
         + "  <div class=\"campaign-sitrep-row\"><span>Front</span><strong>Burned Archive</strong></div>"
-        + "  <div class=\"campaign-sitrep-row\"><span>Status</span><strong class=\"" + (breached ? "is-breached" : (live ? "is-live" : "")) + "\">" + esc(status) + "</strong></div>"
-        + (node ? "  <div class=\"campaign-sitrep-row\"><span>Node</span><strong>" + esc(node) + "</strong></div>" : "")
+        + "  <div class=\"campaign-sitrep-row\"><span>Front Status</span><strong class=\"" + (breached ? "is-breached" : (live ? "is-live" : "")) + "\">" + esc(status) + "</strong></div>"
+        + "  <div class=\"campaign-sitrep-row\"><span>Breach</span><strong>" + (breached ? "Confirmed" : "Not confirmed") + "</strong></div>"
+        + "  <div class=\"campaign-sitrep-row\"><span>Location</span><strong>" + esc(node || "Archive Front") + "</strong></div>"
         + "  <div class=\"campaign-sitrep-row\"><span>Leading</span><strong>" + esc(faction) + (align ? " <span class=\"campaign-sitrep-align\">" + esc(align) + "</span>" : "") + "</strong></div>"
         + (attempts > 0 ? "  <div class=\"campaign-sitrep-row\"><span>Attempts</span><strong>" + attempts + " today</strong></div>" : "")
         + (breached && breachBy ? "  <div class=\"campaign-sitrep-row\"><span>Breached</span><strong>" + esc(breachBy) + "</strong></div>" : "")
@@ -1382,7 +1385,7 @@
 
     if (signals.length) {
       body += "<div class=\"campaign-sitrep-signals\">";
-      signals.slice(0, 2).forEach(function (sig) {
+      signals.forEach(function (sig) {
         var txt = asText(typeof sig === "string" ? sig : (sig && (sig.text || sig.message || sig.line)));
         if (txt) body += "<div class=\"campaign-sitrep-sig\">" + esc(txt) + "</div>";
       });
