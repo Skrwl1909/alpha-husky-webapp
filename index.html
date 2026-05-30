@@ -8671,6 +8671,7 @@ function applyProfileSkin(skin){
   if (!skinImg || !skin) return;
 
   if (typeof skin === 'string') {
+    ahSetProfileSkinVisualFit(skinImg, null);
     skinImg.src = skin;
     skinImg.alt = 'Active skin';
     const parsed = ahSkinKeyFromUrl(skin);
@@ -8679,6 +8680,7 @@ function applyProfileSkin(skin){
     return;
   }
 
+  ahSetProfileSkinVisualFit(skinImg, skin.visualFit || skin.visual_fit || null);
   if (skin.img) skinImg.src = skin.img;
   if (skin.name) skinImg.alt = skin.name;
   const explicitKey = ahNormSkinKey(skin.key || skin.skinKey || skin.skin_key || "");
@@ -8819,6 +8821,33 @@ function ahNormalizeFit(raw, fallback){
   };
 }
 
+function ahNormalizeVisualFit(raw, fallback){
+  const base = fallback || AH_HERO_SKIN_FIT_DEFAULT;
+  return {
+    scale: ahFitNum(raw?.scale, base.scale),
+    offsetX: ahFitNum(raw?.offsetX ?? raw?.x, base.offsetX),
+    offsetY: ahFitNum(raw?.offsetY ?? raw?.y, base.offsetY),
+  };
+}
+
+function ahSetProfileSkinVisualFit(el, raw){
+  if (!el) return;
+  if (raw && typeof raw === "object") {
+    el.__ahVisualFit = ahNormalizeVisualFit(raw, AH_HERO_SKIN_FIT_DEFAULT);
+    return;
+  }
+  delete el.__ahVisualFit;
+}
+
+function ahGetProfileSkinVisualFit(skinUrl, skinKey){
+  const skinEl = document.getElementById("player-skin");
+  if (!skinEl || !skinEl.__ahVisualFit || typeof skinEl.__ahVisualFit !== "object") return null;
+  const requestedKey = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
+  const activeKey = ahNormSkinKey(skinEl.dataset.skinKey || ahSkinKeyFromUrl(skinEl.currentSrc || skinEl.src || ""));
+  if (requestedKey && activeKey && requestedKey !== activeKey) return null;
+  return ahNormalizeFit(skinEl.__ahVisualFit, AH_HERO_SKIN_FIT_DEFAULT);
+}
+
 function getHeroSkinFit(frameUrl, frameKey){
   const cfg = window.__AH_FRAME_FIT__ || window.__AH_FRAME_SKIN_FIT__ || {};
   const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_FRAME_FIT_DEFAULT);
@@ -8828,6 +8857,8 @@ function getHeroSkinFit(frameUrl, frameKey){
 }
 
 function getHeroSkinBaseFit(skinUrl, skinKey){
+  const visualFit = ahGetProfileSkinVisualFit(skinUrl, skinKey);
+  if (visualFit) return visualFit;
   const cfg = window.__AH_SKIN_FIT__ || {};
   const defaultFit = ahNormalizeFit(cfg.default, AH_HERO_SKIN_FIT_DEFAULT);
   const key = ahNormSkinKey(skinKey || ahSkinKeyFromUrl(skinUrl));
