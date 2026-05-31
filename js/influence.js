@@ -655,11 +655,31 @@
   }
   function archiveKeyFeedback(payload = {}) {
     if (!isArchiveKeyEligibleAction(payload)) return null;
-    if (payload.archiveKeyGranted !== true) return null;
-    const parts = ["Archive Key gained."];
-
+    const gained = payload.archiveKeyGained === true || payload.archiveKeyGranted === true;
+    const capReached = payload.archiveKeyCapReached === true;
+    const msg = String(payload.archiveKeyMessage || "").trim();
+    let count = null;
+    const nested = payload && payload.archiveKeys;
+    if (nested && typeof nested === "object") {
+      if (nested.left != null) count = nested.left;
+      else if (nested.earnedToday != null) count = nested.earnedToday;
+    }
+    if (count == null && payload.archiveKeysLeft != null) count = payload.archiveKeysLeft;
+    if (count == null && payload.archiveKeysEarnedToday != null) count = payload.archiveKeysEarnedToday;
+    if (count == null && payload.archiveKeysSpentToday != null) count = payload.archiveKeysSpentToday;
+    const parts = [];
+    if (gained) {
+      parts.push(msg || "Archive Key gained. Use it in Campaign → Burned Archive");
+      if (count != null) parts.push(`Archive Keys: ${Number(count)}`);
+    } else if (capReached) {
+      parts.push(msg || "Archive Key cap reached");
+    } else {
+      return null;
+    }
+    if (!parts.length) return null;
+    const iconHtml = gained ? `<img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();">` : "";
     return {
-      html: `<span class="inf-result-keyline"><img class="inf-result-keyicon" src="${ARCHIVE_KEY_ICON_URL}" alt="" aria-hidden="true" loading="lazy" onerror="this.remove();"><span class="inf-result-keycopy">${parts.map((part) => `<span>${esc(part)}</span>`).join("")}</span></span>`
+      html: `<span class="inf-result-keyline">${iconHtml}<span class="inf-result-keycopy">${parts.map((part) => `<span>${esc(part)}</span>`).join("")}</span></span>`
     };
   }
   function warContributionFeedback(payload = {}) {
@@ -3625,7 +3645,7 @@
     const heroFlavorEl = document.getElementById("infHeroFlavor");
     const cardEl = document.getElementById("influenceCard");
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
-    if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODES" : (title || nodeId);
+    if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODE" : (title || nodeId);
     if (subEl) {
       const prettyNodeId = String(safeNodeId || "").trim().replaceAll("_", " ");
       subEl.textContent = phantomMode
@@ -4042,7 +4062,7 @@
         ? "The relay is quiet for now, but pressure can swing it fast."
         : "Node secured for now. Keep pressure to prevent a swing.";
       reasonEl.textContent = phantomMode
-        ? "Phantom Nodes are old relay spines of the Alpha Network."
+        ? "Phantom Node is an old relay spine of the Alpha Network."
         : "Control here sets the local frontline tempo.";
       rewardEl.textContent = phantomMode
         ? "Control here affects faction pressure and weekly rivalry progress."
@@ -4230,7 +4250,7 @@
         : `No faction owns the node. ${pressureNarrative} ${recommendedAction === "PUSH" ? "Push first to establish pressure." : "Stabilize the line before it swings."}`;
     }
     reasonEl.textContent = phantomMode
-      ? "Phantom Nodes are old relay spines of the Alpha Network."
+      ? "Phantom Node is an old relay spine of the Alpha Network."
       : (ux.reasonText || "Control here shapes the local rivalry line.");
     rewardEl.textContent = phantomMode
       ? "Control here affects faction pressure and weekly rivalry progress."
@@ -4430,10 +4450,13 @@
         contractContributionChanged: r.contractContributionChanged,
         contractContributionDelta: r.contractContributionDelta,
         archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
+        archiveKeyGained: r.archiveKeyGained,
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
+        archiveKeys: r.archiveKeys,
         archiveKeysLeft: r.archiveKeysLeft,
         archiveKeysEarnedToday: r.archiveKeysEarnedToday,
+        archiveKeysSpentToday: r.archiveKeysSpentToday,
         archiveKeyCapReached: r.archiveKeyCapReached,
         archiveKeyReason: r.archiveKeyReason,
       });
@@ -4499,10 +4522,13 @@
         contractContributionChanged: r.contractContributionChanged,
         contractContributionDelta: r.contractContributionDelta,
         archiveKeyEligible: normalizeNodeId(nodeId) === "phantom_nodes",
+        archiveKeyGained: r.archiveKeyGained,
         archiveKeyGranted: r.archiveKeyGranted,
         archiveKeyMessage: r.archiveKeyMessage,
+        archiveKeys: r.archiveKeys,
         archiveKeysLeft: r.archiveKeysLeft,
         archiveKeysEarnedToday: r.archiveKeysEarnedToday,
+        archiveKeysSpentToday: r.archiveKeysSpentToday,
         archiveKeyCapReached: r.archiveKeyCapReached,
         archiveKeyReason: r.archiveKeyReason,
       });
