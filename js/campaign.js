@@ -546,7 +546,7 @@
     var code = asText(reason).toUpperCase();
     if (code === "INVALID_SEQUENCE") return "Build a full 4-slot directive chain first.";
     if (code === "NO_FACTION") return "Choose a faction before entering the Archive.";
-    if (code === "NO_ARCHIVE_KEY") return "No Archive Keys left. Patrol or Donate at Phantom Nodes to gain more.";
+    if (code === "NO_ARCHIVE_KEY") return "You need an Archive Key. Earn one through Patrol or Donate on Phantom Node while the Archive front is live.";
     if (code === "ARCHIVE_NOT_LIVE") return "Burned Archive is dark right now.";
     if (code === "ALREADY_BREACHED") return "Your faction already breached this Archive today.";
     if (code) return code.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, function upper(m) { return m.toUpperCase(); }) + ".";
@@ -586,15 +586,21 @@
   }
 
   function archiveKeysLeft(archive) {
-    return archiveNumberOrNull(archive && archive.archiveKeysLeft);
+    if (!archive) return null;
+    const n = archive.archiveKeys && typeof archive.archiveKeys === "object" ? archive.archiveKeys.left : null;
+    return archiveNumberOrNull(n != null ? n : archive.archiveKeysLeft);
   }
 
   function archiveKeysEarnedToday(archive) {
-    return archiveNumberOrNull(archive && archive.archiveKeysEarnedToday);
+    if (!archive) return null;
+    const n = archive.archiveKeys && typeof archive.archiveKeys === "object" ? archive.archiveKeys.earnedToday : null;
+    return archiveNumberOrNull(n != null ? n : archive.archiveKeysEarnedToday);
   }
 
   function archiveKeysSpentToday(archive) {
-    return archiveNumberOrNull(archive && archive.archiveKeysSpentToday);
+    if (!archive) return null;
+    const n = archive.archiveKeys && typeof archive.archiveKeys === "object" ? archive.archiveKeys.spentToday : null;
+    return archiveNumberOrNull(n != null ? n : archive.archiveKeysSpentToday);
   }
 
   function archiveHasNoKeys(archive) {
@@ -604,7 +610,7 @@
 
   function archiveKeyHintHtml(archive) {
     if (!archiveHasNoKeys(archive)) return "";
-    return "<div class=\"campaign-archive-feedback is-info\">No Archive Keys left. Patrol or Donate at Phantom Nodes to gain more.</div>";
+    return "<div class=\"campaign-archive-feedback is-info\">You need an Archive Key. Earn one through Patrol or Donate on Phantom Node while the Archive front is live.</div>";
   }
 
   function archiveFeedbackHtml() {
@@ -1971,7 +1977,7 @@
     }
 
     STATE.briefingNotice = key === "secure_node"
-      ? "Open the Map and choose Phantom Nodes."
+      ? "Open the Map and choose Phantom Node."
       : "RELAY-7 could not open that route here. Use the matching system from Hub or the bottom nav.";
     render();
     try { STATE.tg && STATE.tg.showAlert && STATE.tg.showAlert(STATE.briefingNotice); } catch (_) {}
@@ -1995,7 +2001,7 @@
       warn("archive key source open failed", err);
     }
 
-    STATE.briefingNotice = "Open the Map and move to Phantom Nodes. Patrol and Donate can grant Archive Keys.";
+    STATE.briefingNotice = "Open the Map and move to Phantom Node. Patrol and Donate can grant Archive Keys.";
     STATE.archiveFeedback = {
       kind: "info",
       text: STATE.briefingNotice
