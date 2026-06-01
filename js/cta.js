@@ -331,6 +331,12 @@
     return type === "bloodmoon" || kind.startsWith("bloodmoon_");
   }
 
+  function isFortressPrimary(primary) {
+    const kind = asText(primary?.kind).toLowerCase();
+    const type = asText(primary?.target?.type).toLowerCase();
+    return type === "fortress" || kind === "fortress_ready";
+  }
+
   function bloodmoonCompactLine(primary, guide) {
     const kind = asText(primary?.kind).toLowerCase();
     if (kind === "bloodmoon_claim_ready") {
@@ -349,6 +355,14 @@
     if (kind === "bloodmoon_live") return "Watch Raid";
     if (kind === "bloodmoon_claim_ready") return "Open Tower";
     return asText(guide?.go) || "Open Tower";
+  }
+
+  function fortressCompactLine(primary, guide) {
+    return asText(primary?.subtitle) || guide.now || "Moon Lab Raid";
+  }
+
+  function fortressCompactAction(primary, guide) {
+    return "Enter";
   }
 
   function injectStyles() {
@@ -862,9 +876,11 @@
 
     const guide = buildPrimaryGuide(primary);
     const bloodmoonCompact = isBloodmoonPrimary(primary) && !guide.stakes;
+    const fortressCompact = isFortressPrimary(primary);
+    const compactPrimary = bloodmoonCompact || fortressCompact;
 
     const card = document.createElement("article");
-    card.className = "cta-card" + (bloodmoonCompact ? " is-bloodmoon-compact" : "");
+    card.className = "cta-card" + (compactPrimary ? " is-bloodmoon-compact" : "");
     card.setAttribute("role", "button");
     card.tabIndex = 0;
     const aria = [guide.now, guide.why, guide.stakes].filter(Boolean).join(". ");
@@ -875,21 +891,25 @@
       void openTarget(primary.target);
     };
 
-    if (bloodmoonCompact) {
+    if (compactPrimary) {
       const strip = document.createElement("div");
       strip.className = "cta-bm-strip";
 
-      strip.appendChild(createBadge(primary.badge || "TOWER"));
+      strip.appendChild(createBadge(primary.badge || (fortressCompact ? "RAID" : "TOWER")));
 
       const text = document.createElement("span");
       text.className = "cta-bm-strip-text";
-      text.textContent = bloodmoonCompactLine(primary, guide);
+      text.textContent = fortressCompact
+        ? fortressCompactLine(primary, guide)
+        : bloodmoonCompactLine(primary, guide);
       strip.appendChild(text);
 
       const goBtn = document.createElement("button");
       goBtn.type = "button";
       goBtn.className = "cta-go-btn cta-go-btn-compact";
-      goBtn.textContent = bloodmoonCompactAction(primary, guide);
+      goBtn.textContent = fortressCompact
+        ? fortressCompactAction(primary, guide)
+        : bloodmoonCompactAction(primary, guide);
       goBtn.setAttribute("aria-label", `${goBtn.textContent}. ${text.textContent}`);
       goBtn.addEventListener("click", (event) => {
         event.preventDefault();
