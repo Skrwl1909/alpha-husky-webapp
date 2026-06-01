@@ -8,7 +8,7 @@
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
-  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinStateChip, skinFramePreviewToggle;
+  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinInfoTip, skinStateChip, skinFramePreviewToggle;
 
   // claim UI (dynamic)
   let claimWrap, claimInput, claimBtn;
@@ -180,6 +180,12 @@
         margin-top:4px;
         font-size:12px;
         color:rgba(230,238,255,.74);
+      }
+      #avatarBack .ah-skin-info-tip{
+        margin-top:4px;
+        font-size:11px;
+        line-height:1.35;
+        color:rgba(214,236,255,.88);
       }
       #avatarBack .ah-skin-chip{
         flex:0 0 auto;
@@ -360,12 +366,14 @@
           <span id="skinStateChip" class="ah-skin-chip">Base</span>
         </div>
         <div id="skinInfoMeta" class="ah-skin-info-meta">Base | Cosmetic skin</div>
+        <div id="skinInfoTip" class="ah-skin-info-tip">Owned: Available now.</div>
       `;
       card.insertBefore(info, skinDesc || null);
     }
 
     skinInfoName = document.getElementById("skinInfoName");
     skinInfoMeta = document.getElementById("skinInfoMeta");
+    skinInfoTip = document.getElementById("skinInfoTip");
     skinStateChip = document.getElementById("skinStateChip");
 
     let previewControls = document.getElementById("skinPreviewControls");
@@ -776,6 +784,37 @@
     return label ? `${name} - locked. Buy to unlock (${label}).` : `${name} - locked.`;
   }
 
+  function cleanSkinTipLabel(raw) {
+    return String(raw || "")
+      .replace(/\s+/g, " ")
+      .replace(/^unlock:\s*/i, "")
+      .replace(/^owned:\s*/i, "")
+      .replace(/^locked\.\s*/i, "")
+      .replace(/[.]+$/g, "")
+      .trim();
+  }
+
+  function skinTipCopy(meta, key, owned) {
+    const k = normKey(key);
+    if (k === "default" || owned) return "Owned: Available now.";
+    if (!meta) return "Unlock: Special event or future milestone.";
+    if (isPreviewOnly(meta)) return "Preview: Not unlockable yet.";
+
+    const source = cleanSkinTipLabel(meta?.source || meta?.sourceLabel || "");
+    if (source) return `Unlock: ${source}.`;
+
+    const lockedLabel = cleanSkinTipLabel(meta?.locked_label || "");
+    if (lockedLabel && lockedLabel.length <= 42) return `Unlock: ${lockedLabel}.`;
+
+    const have = unlockHave(meta);
+    const need = unlockNeed(meta);
+    if (have != null && need != null && need > 0) {
+      return `Unlock: ${Math.min(have, need)}/${need} progress.`;
+    }
+
+    return "Unlock: Special event or future milestone.";
+  }
+
   function refreshSkinButtonStates() {
     if (!skinButtonsWrap) return;
     const selectedKey = normKey(_selectedKey);
@@ -831,6 +870,10 @@
         }
       }
       skinInfoMeta.textContent = parts.join(" | ");
+    }
+
+    if (skinInfoTip) {
+      skinInfoTip.textContent = skinTipCopy(meta, k, owned);
     }
 
     if (skinStateChip) {
