@@ -663,6 +663,7 @@
     if (nested && typeof nested === "object") {
       if (nested.left != null) count = nested.left;
       else if (nested.earnedToday != null) count = nested.earnedToday;
+      else if (nested.spentToday != null) count = nested.spentToday;
     }
     if (count == null && payload.archiveKeysLeft != null) count = payload.archiveKeysLeft;
     if (count == null && payload.archiveKeysEarnedToday != null) count = payload.archiveKeysEarnedToday;
