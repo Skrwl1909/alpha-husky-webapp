@@ -10,6 +10,8 @@
   let _reapplyQueued = false;
   let _leadersRefreshPromise = null;
   let _leadersLastFetchMs = 0;
+  let _sitrepTried = false;
+  let _sitrepLoading = false;
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
 
   const FACTIONS = {
@@ -1720,6 +1722,50 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     line2El.textContent = "Fronts are stable for now; patrol windows decide who sets next pressure.";
   }
 
+  function _tryShowMapSitrepChip() {
+    if (_sitrepTried) return;
+    if (_sitrepLoading) return;
+    const existing = document.getElementById("mapSitrepChip");
+    if (existing) {
+      _sitrepTried = true;
+      return;
+    }
+    const apiPost = getApiPost();
+    if (!apiPost) return;
+    const root = document.getElementById("mapWorldBrief");
+    if (!root || !root.parentNode) return;
+    _sitrepLoading = true;
+    // non-blocking, never fails the map
+    (async () => {
+      try {
+        const r = await apiPost("/webapp/sitrep/state", { run_id: rid("sitrep") });
+        const s = (r && (r.state || r.data?.state || r.sitrep || r)) || {};
+        const root = document.getElementById("mapWorldBrief");
+        if (!root || !root.parentNode) return;
+        const status = s.frontStatus || s.status || "LIVE";
+        const br = s.breach != null ? (s.breach ? "OPEN" : "SECURE") : (s.breached ? "BREACHED" : "");
+        const loc = s.activeNodeName || s.location || "Burned Archive";
+        const chip = document.getElementById("mapSitrepChip") || document.createElement("div");
+        chip.id = "mapSitrepChip";
+        chip.style.cssText = "margin:4px 0 0;font-size:10px;line-height:1.3;opacity:.92;border:1px solid rgba(255,255,255,.12);background:rgba(8,10,16,.65);padding:3px 6px;border-radius:3px;max-width:180px;";
+        let html = `<div style="font-weight:700;letter-spacing:.04em;">SITREP LIVE</div><div>Front: Burned Archive</div><div>Status: ${esc(status)}</div>`;
+        if (br) html += `<div>Breach: ${esc(br)}</div>`;
+        html += `<div style="font-size:9px;opacity:.72;">Location: ${esc(loc)}</div><div><a href="#" style="color:#8ab4ff;font-size:9px;text-decoration:none;" class="sitrep-cta">Open Campaign Report</a></div>`;
+        chip.innerHTML = html;
+        if (!chip.parentNode) root.parentNode.insertBefore(chip, root.nextSibling);
+        const cta = chip.querySelector(".sitrep-cta");
+        if (cta) {
+          cta.onclick = (e) => { e.preventDefault(); try { window.Campaign?.open?.(); } catch (_) {} };
+        }
+        _sitrepTried = true;
+      } catch (_) {
+        /* map continues normally */
+      } finally {
+        _sitrepLoading = false;
+      }
+    })();
+  }
+
   function _dominanceTierWeight(valueTier) {
     const key = String(valueTier || "").trim().toUpperCase();
     if (key === "STRATEGIC") return 2.15;
@@ -2621,6 +2667,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
     _updateMapPressureMood(mood, dominance);
     _updateMapWorldBrief(mood);
+    _tryShowMapSitrepChip();
     window.__ahPerf?.log?.("AHMap.applyLeaders", perfT0, {
       pins: pins.length,
       dominantFaction: dominance?.faction || "",
