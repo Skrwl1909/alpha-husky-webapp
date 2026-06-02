@@ -288,9 +288,12 @@
         supportLine: String(row.supportLine || row.support_line || "").trim(),
         ctaLabel: String(row.ctaLabel || row.cta_label || "Support the Pack").trim() || "Support the Pack",
         soldOutCopy: String(row.soldOutCopy || row.sold_out_copy || "").trim(),
+        archiveCopy: String(row.archiveCopy || row.archive_copy || "").trim(),
         enabled: !!row.enabled,
         disabled: row.disabled == null ? !row.enabled : !!row.disabled,
         soldOut: !!row.soldOut,
+        archived: !!row.archived,
+        eventEnded: !!row.eventEnded || !!row.event_ended,
         hasPending: !!row.hasPending,
         userLimitReached: !!row.userLimitReached,
         blockedByPending: !!row.blockedByPending,
@@ -437,6 +440,9 @@
     }
     if (normalized === "PRODUCT_SOLD_OUT") {
       return "The Blue-Moon Hunter signal is closed. All limited Vault Boxes have been claimed.";
+    }
+    if (normalized === "PRODUCT_ARCHIVED") {
+      return "Event ended. Archived reward. No longer available.";
     }
     if (normalized === "PRODUCT_LIMIT_REACHED") {
       return "Your Blue-Moon Hunter Vault Box claim is already recorded.";
@@ -684,15 +690,16 @@
     const s = state && typeof state === "object" ? state : buildStaticState();
     const list = Array.isArray(s.eventProducts) ? s.eventProducts : [];
     if (!list.length) return "";
+    const archivedOnly = list.every((row) => row && (row.archived || row.eventEnded || row.userLimitReached || row.hasPending));
 
     return `
       <section class="ht-panel">
         <div class="ht-panel-head">
           <div>
-            <div class="ht-panel-kicker">Limited Cosmetic Signal</div>
-            <h3>Vault Box window</h3>
+            <div class="ht-panel-kicker">${archivedOnly ? "Archived Cosmetic Signal" : "Limited Cosmetic Signal"}</div>
+            <h3>${archivedOnly ? "Vault Box archive" : "Vault Box window"}</h3>
           </div>
-          <span class="ht-mini-chip is-amber">LIMITED</span>
+          <span class="ht-mini-chip ${archivedOnly ? "is-muted" : "is-amber"}">${archivedOnly ? "ARCHIVED" : "LIMITED"}</span>
         </div>
         <div class="ht-event-list">
           ${list.map((item) => renderEventProduct(item)).join("")}
@@ -730,6 +737,8 @@
     const media = renderEventMedia(row);
     const statusLabel = row.userLimitReached
       ? "CLAIMED"
+      : row.archived || row.eventEnded
+        ? "ARCHIVED"
       : row.soldOut
         ? "SOLD OUT"
         : row.hasPending
@@ -745,6 +754,8 @@
       ? "Open Skins"
       : row.userLimitReached
         ? "Claimed"
+      : row.archived || row.eventEnded
+        ? "Event ended"
       : row.soldOut
         ? "Sold Out"
         : row.hasPending
@@ -762,10 +773,14 @@
       : "";
     const footerCopy = row.userLimitReached
       ? ""
+      : row.hasPending
+        ? (row.archived || row.eventEnded ? (row.archiveCopy || "Event ended. Archived reward. No longer available.") : (row.supportLine || ""))
       : row.soldOut
         ? (row.soldOutCopy || "")
-        : row.blockedByPending
+      : row.blockedByPending
           ? "Finish or let your current Treasury signal expire before opening this Vault Box."
+        : row.archived || row.eventEnded
+          ? (row.archiveCopy || "Event ended. Archived reward. No longer available.")
         : (row.supportLine || "");
 
     return `
@@ -777,7 +792,7 @@
               <div class="ht-event-title">${esc(row.title || row.name || "Vault Box")}</div>
               ${row.subtitle ? `<p class="ht-copy ht-copy-tight">${esc(row.subtitle)}</p>` : ""}
             </div>
-            <span class="ht-mini-chip ${row.userLimitReached ? "is-amber" : row.soldOut ? "is-muted" : "is-amber"}">${esc(statusLabel)}</span>
+            <span class="ht-mini-chip ${row.userLimitReached ? "is-amber" : row.soldOut || row.archived || row.eventEnded ? "is-muted" : "is-amber"}">${esc(statusLabel)}</span>
           </div>
           <div class="ht-event-meta">
             <span>${esc(row.priceDisplay || "0 $HOWL")}</span>
@@ -947,6 +962,11 @@
       <div class="ht-support-note">
         <strong>${productFulfilled ? "Blue Signal received." : "Vault Box Recorded"}</strong><br>
         ${productFulfilled ? "Your Blue-Moon Hunter Vault Box has been unlocked." : "Blue-Moon Hunter Vault Box"}
+      </div>
+    ` : row.productId === "alpha_prime_vault_pack" ? `
+      <div class="ht-support-note">
+        <strong>${productFulfilled ? "Prime signal unlocked." : "Prime Pack Recorded"}</strong><br>
+        ${productFulfilled ? "Your Alpha Prime Vault Pack has been unlocked." : "Alpha Prime Vault Pack"}
       </div>
     ` : "";
     const tierUnlockedBlock = row.tierUnlocked ? `

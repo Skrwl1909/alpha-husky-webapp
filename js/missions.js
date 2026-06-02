@@ -1612,15 +1612,17 @@ function _normalizeRareDropObj(obj) {
   function renderBlueSignalHuntCard(progress) {
     if (!progress || typeof progress !== "object") return "";
     const eventEnabled = !!progress.eventEnabled;
+    const eventArchived = !!progress.eventArchived || !eventEnabled;
     const fragments = Number(progress.fragments || 0);
     const frameRequirement = Number(progress.frameRequirement || 10);
     const fragmentCap = Number(progress.fragmentCap || 20);
     const frameClaimed = !!progress.frameClaimed;
-    const canClaimFrame = !!progress.canClaimFrame;
-    const body = textOrEmpty(progress.body) || "Fragments of a broken transmission are surfacing through missions and the Blood-Moon Tower. Collect 10 before the signal fades.";
+    const canClaimFrame = !!progress.canClaimFrame && !eventArchived;
+    const body = textOrEmpty(progress.body) || "Event ended. Blue Signal Hunt is now archived. Existing progress, claims, and history remain recorded.";
+    const archiveCopy = textOrEmpty(progress.archiveCopy) || "Event ended. Blue Signal Hunt archived. No new Blue Signals can be earned.";
     const safetyLine = textOrEmpty(progress.safetyLine) || "Cosmetic only. No combat power.";
     const title = textOrEmpty(progress.eventName) || "Blue Signal Hunt";
-    const shouldShow = eventEnabled || fragments > 0 || frameClaimed;
+    const shouldShow = eventEnabled || eventArchived || fragments > 0 || frameClaimed;
     if (!shouldShow) return "";
 
     let cta = "";
@@ -1628,21 +1630,27 @@ function _normalizeRareDropObj(obj) {
       cta = `<button type="button" class="btn primary" data-act="open_frames">Open Frames</button>`;
     } else if (canClaimFrame) {
       cta = `<button type="button" class="btn primary" data-act="claim_blue_signal_frame">Claim Frame</button>`;
+    } else if (eventArchived) {
+      cta = `<button type="button" class="btn" disabled>Event ended</button>`;
     } else if (eventEnabled) {
       cta = `<button type="button" class="btn" disabled>Need ${frameRequirement} Fragments</button>`;
     } else {
-      cta = `<button type="button" class="btn" disabled>Signal inactive</button>`;
+      cta = `<button type="button" class="btn" disabled>Event ended</button>`;
     }
 
     const progressText = `${fragments} / ${frameRequirement} fragments`;
     const subline = frameClaimed
       ? "Blue Signal Frame unlocked."
-      : `Cap: ${fragmentCap} max fragments`;
+      : eventArchived
+        ? archiveCopy
+        : `Cap: ${fragmentCap} max fragments`;
     const fragmentClarity = renderClarityHint({
       iconKey: "blue_signal_fragment",
-      eyebrow: "Event progress",
-      title: "Blue Signal Fragment",
-      body: `${progressText}. Real event reward and progress item.`,
+      eyebrow: eventArchived ? "Archived reward" : "Event progress",
+      title: eventArchived ? "Blue Signal Hunt archived" : "Blue Signal Fragment",
+      body: eventArchived
+        ? "Event ended. No new Blue Signals can be earned. Existing progress and ownership remain recorded."
+        : `${progressText}. Real event reward and progress item.`,
       tone: "fragment"
     });
 
@@ -1656,6 +1664,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-tag-row" style="margin-top:10px;">
               ${renderTagWithIcon(progressText, "blue_signal_fragment")}
               <span class="m-tag">${frameClaimed ? "Frame claimed" : "Frame reward: Blue Signal Frame"}</span>
+              ${eventArchived ? `<span class="m-tag">Event ended</span>` : ""}
             </div>
             <div class="m-muted" style="margin-top:8px;">${esc(subline)}</div>
             <div class="m-muted" style="margin-top:4px;">${esc(safetyLine)}</div>
@@ -1677,7 +1686,7 @@ function _normalizeRareDropObj(obj) {
         <div class="m-help-copy">Recommended stats: Stats like AGI / DEF show what helps on that route. They are not required, but they can improve the result.</div>
         <div class="m-help-copy">Mission completed = mission finished and rewards were resolved.</div>
         <div class="m-help-copy">Pet fit = how well your active pet matched recommended mission traits.</div>
-        <div class="m-help-copy">Blue Signal Fragment = real event reward and progress item.</div>
+        <div class="m-help-copy">Blue Signal Hunt archived = historical event card only. No new Blue Signals can be earned.</div>
         <div class="m-help-copy">Rare Bonus Signal = route hint only. It can point to a rare route, but it is not loot by itself.</div>
         <div class="m-help-copy">Bonus found = extra result actually recovered during resolve.</div>
         <div class="m-help-copy">Mission signal = route carried a possible rare bonus. It is not loot and it does not store progress by itself.</div>
