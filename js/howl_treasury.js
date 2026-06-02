@@ -453,6 +453,17 @@
     return String(fallback || "").trim() || "Treasury support is coming online.";
   }
 
+  function findEventProductById(productId) {
+    const wanted = String(productId || "").trim().toLowerCase();
+    const list = Array.isArray(_state && _state.eventProducts) ? _state.eventProducts : [];
+    if (!wanted || !list.length) return null;
+    return list.find((row) => row && String(row.id || "").trim().toLowerCase() === wanted) || null;
+  }
+
+  function isArchivedEventProduct(row) {
+    return !!(row && (row.archived || row.eventEnded || String(row.status || "").trim().toLowerCase() === "archived"));
+  }
+
   function render(state) {
     const s = state && typeof state === "object" ? state : buildStaticState();
     syncUiState(s);
@@ -1147,7 +1158,16 @@
       const productBtn = event.target.closest("[data-ht-start-product]");
       if (productBtn) {
         event.preventDefault();
-        void startSupport({ productId: productBtn.getAttribute("data-ht-start-product") || "" });
+        const productId = productBtn.getAttribute("data-ht-start-product") || "";
+        const row = findEventProductById(productId);
+        if (isArchivedEventProduct(row) || (row && row.enabled === false)) {
+          const message = (row && row.archiveCopy) || "Event ended. Archived reward. No longer available.";
+          _supportNotice = message;
+          toast(message);
+          render(_state || buildStaticState());
+          return;
+        }
+        void startSupport({ productId });
         return;
       }
 
@@ -1268,6 +1288,14 @@
 
     const cfg = opts && typeof opts === "object" ? opts : {};
     const productId = String(cfg.productId || "").trim().toLowerCase();
+    const currentProduct = productId ? findEventProductById(productId) : null;
+    if (productId && (isArchivedEventProduct(currentProduct) || (currentProduct && currentProduct.enabled === false))) {
+      const message = (currentProduct && currentProduct.archiveCopy) || "Event ended. Archived reward. No longer available.";
+      _supportNotice = message;
+      toast(message);
+      render(_state || buildStaticState());
+      return;
+    }
     const presetKey = _selectedPresetKey || SUPPORT_PRESETS[0].presetKey;
     const payload = {
       isPublic: !!_publicSupport,
