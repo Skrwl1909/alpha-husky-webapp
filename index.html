@@ -8036,10 +8036,11 @@ document.addEventListener("click", async (e) => {
         const mapStageEl = ensureMapStage(mapRoot);
         const mapZoomSlider = document.getElementById("mapZoomSlider");
         const mapZoomResetBtn = document.getElementById("mapZoomReset");
+        const DEFAULT_MAP_VIEWBOX = Object.freeze({ width: 1600, height: 900 });
+        let mapViewBox = { ...DEFAULT_MAP_VIEWBOX };
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapStageEl);
         let DATA = null;
-        const VIEW_W = 1000, VIEW_H = 562;
         let regionsUnlocked = new Set();
         let keys = new Set();
         let fragments = {};
@@ -8094,7 +8095,7 @@ document.addEventListener("click", async (e) => {
           layer.className = "paths-layer";
           const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
           svg.setAttribute("id","pathsSVG");
-          svg.setAttribute("viewBox","0 0 1000 562");
+          svg.setAttribute("viewBox",`0 0 ${mapViewBox.width} ${mapViewBox.height}`);
           svg.setAttribute("preserveAspectRatio","xMidYMid meet");
           layer.appendChild(svg); root.appendChild(layer); return svg;
         }
@@ -8102,6 +8103,33 @@ document.addEventListener("click", async (e) => {
           const layer = document.createElement("div");
           layer.className = "pins"; layer.id = "pins";
           root.appendChild(layer); return layer;
+        }
+
+        function resolveMapViewBox(){
+          const rawMeta = Array.isArray(DATA?.meta?.viewBox) ? DATA.meta.viewBox : null;
+          if (rawMeta && rawMeta.length >= 2) {
+            const width = Number(rawMeta[0] || 0);
+            const height = Number(rawMeta[1] || 0);
+            if (width > 0 && height > 0) return { width, height };
+          }
+
+          const rawAttr = String(pathsSVG?.getAttribute?.("viewBox") || "").trim().split(/\s+/);
+          if (rawAttr.length === 4) {
+            const width = Number(rawAttr[2] || 0);
+            const height = Number(rawAttr[3] || 0);
+            if (width > 0 && height > 0) return { width, height };
+          }
+
+          return { ...DEFAULT_MAP_VIEWBOX };
+        }
+
+        function syncMapPathViewBox(){
+          mapViewBox = resolveMapViewBox();
+          if (pathsSVG) {
+            pathsSVG.setAttribute("viewBox", `0 0 ${mapViewBox.width} ${mapViewBox.height}`);
+            pathsSVG.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          }
+          return mapViewBox;
         }
 
         function mapZoomIndex(){
@@ -9481,10 +9509,47 @@ function isRegionUnlocked(regionId){
   return false;
 }
 
-        const toXY = (xp,yp) => ({ x: Math.round((xp/100)*VIEW_W), y: Math.round((yp/100)*VIEW_H) });
+        const toXY = (xp,yp) => ({ x: Math.round((xp/100)*mapViewBox.width), y: Math.round((yp/100)*mapViewBox.height) });
+
+        function isNodePreviewAccessible(node){
+          const bid = String(node?.buildingId || node?.id || "").trim();
+          const action = String(node?.action || "").trim();
+          return (
+            bid === "phantom_nodes" ||
+            bid === "blood_moon_tower" ||
+            bid === "oracle_void_doorway" ||
+            bid === "burned_archive" ||
+            bid === "edge_of_chain" ||
+            action === "open_oracle" ||
+            action === "open_burned_archive" ||
+            action === "open_siege"
+          );
+        }
+
+        function previewNodeStatusLabel(node){
+          const bid = String(node?.buildingId || node?.id || "").trim();
+          const action = String(node?.action || "").trim();
+          if (bid === "edge_of_chain" || action === "open_siege") return "Open";
+          if (action === "coming_soon") return "In development";
+          if (bid === "oracle_void_doorway" || action === "open_oracle") return "Open";
+          return "Available";
+        }
+
+        function resolveNodeDisplayState(node){
+          const regionUnlocked = isRegionUnlocked(node?.region);
+          const previewAccessible = isNodePreviewAccessible(node);
+          const displayLocked = !regionUnlocked && !previewAccessible;
+          return {
+            regionUnlocked,
+            previewAccessible,
+            displayLocked,
+            titleSuffix: displayLocked ? "Locked" : (!regionUnlocked && previewAccessible ? previewNodeStatusLabel(node) : "")
+          };
+        }
 
         function drawPaths(){
           if (!DATA) return;
+          syncMapPathViewBox();
           pathsSVG.innerHTML = '';
           for (const p of (DATA.paths || [])){
             const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
@@ -9540,16 +9605,15 @@ function isRegionUnlocked(regionId){
       b.action === "open_howl_treasury";
 
     const isHeroLandmark = isBloodMoon || isOracle || isEdge;
-    const previewable = isOracle || isBloodMoon || isPhantom || isArchive;
-
     const unlocked = isOracle ? true : isRegionUnlocked(b.region);
+    const displayState = resolveNodeDisplayState(b);
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'hotspot map-pin ' + (unlocked ? 'unlocked' : 'locked');
+    btn.className = 'hotspot map-pin ' + (displayState.displayLocked ? 'locked' : 'unlocked');
     btn.style.left = b.x + '%';
     btn.style.top  = b.y + '%';
-    btn.title = b.name + (unlocked ? '' : ' (locked)');
+    btn.title = b.name + (displayState.titleSuffix ? ` (${displayState.titleSuffix})` : '');
 
     // dataset
     btn.dataset.nodeId = String(b.id || '');
@@ -9610,16 +9674,16 @@ function isRegionUnlocked(regionId){
     btn.classList.toggle('active', isActive);
     chip.style.display = isActive ? 'flex' : 'none';
 
-    if (!unlocked){
+    if (displayState.displayLocked){
       const lock = document.createElement('span');
       lock.className = 'lock-badge';
       lock.innerHTML = `<img src="${((DATA.ui && DATA.ui.pin && DATA.ui.pin.badgeLock) || 'images/ui/lock.svg')}" alt="locked">`;
       btn.appendChild(lock);
     }
 
-    // locked / preview-locked
-    btn.classList.toggle('is-locked', !unlocked && !previewable);
-    btn.classList.toggle('is-preview-locked', !unlocked && previewable);
+    // Only truly gated nodes should carry lock styling.
+    btn.classList.toggle('is-locked', displayState.displayLocked);
+    btn.classList.remove('is-preview-locked');
 
     // dekoruj (frakcja / contested / itd.)
     try { window.AHMap?.decoratePin?.(btn, b); } catch(e){ console.warn('decoratePin error', e); }
@@ -9630,7 +9694,7 @@ function isRegionUnlocked(regionId){
 
       const id = String(b.id || "");
 
-      triggerMapPinSignalScan(btn, unlocked);
+      triggerMapPinSignalScan(btn, !displayState.displayLocked);
 
       // TAP 1 = focus
       if (String(ACTIVE_PIN_ID || "") !== id) {
