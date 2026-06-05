@@ -65,6 +65,108 @@
     return textOrEmpty(v);
   }
 
+  function n(v, d = 0) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : d;
+  }
+
+  function toText(v, fallback = "") {
+    const s = textOrEmpty(v);
+    return s || String(fallback || "");
+  }
+
+  function getStatsPayload(res) {
+    if (!res || typeof res !== "object") return null;
+    if (res.ok === true && res.data && typeof res.data === "object") return res.data;
+    if (res.data && typeof res.data === "object") return res.data;
+    if (res.stats && typeof res.stats === "object") return res.stats;
+    if (res.state && typeof res.state === "object") return res.state;
+    return null;
+  }
+
+  const SIGNAL_THRESHOLDS = [
+    { value: 500, label: "MoonLab Stabilization" },
+    { value: 1000, label: "First Wall Break" },
+    { value: 1500, label: "Elite Missions Tier I Preview" },
+    { value: 2500, label: "Iron Siege Bracket Preview" },
+    { value: 3500, label: "Relay Directive Missions Preview" },
+    { value: 5000, label: "Deep Signal Interference" },
+    { value: 6500, label: "Corrupted Signal Wall" },
+    { value: 8000, label: "False Alpha Signal Prestige Wall" },
+  ];
+
+  function getNextThreshold(signalPower) {
+    for (const item of SIGNAL_THRESHOLDS) {
+      if (signalPower < item.value) return item;
+    }
+    return SIGNAL_THRESHOLDS[SIGNAL_THRESHOLDS.length - 1];
+  }
+
+  function normalizeProgressionV1(raw) {
+    if (!raw || typeof raw !== "object") return null;
+
+    const breakdown = (raw.breakdown && typeof raw.breakdown === "object") ? raw.breakdown : {};
+    const fallbackThreshold = getNextThreshold(Math.max(0, n(raw.signalPower ?? breakdown.total, 0)));
+    const wall = (raw.moonlabWall && typeof raw.moonlabWall === "object") ? raw.moonlabWall : {};
+    const signalPower = Math.max(0, n(raw.signalPower ?? breakdown.total, 0));
+    const nextThreshold = Math.max(0, n(raw.nextThreshold, fallbackThreshold.value));
+    const missingPower = Math.max(0, n(raw.missingPower, Math.max(0, nextThreshold - signalPower)));
+
+    return {
+      signalPower,
+      nextThreshold,
+      missingPower,
+      nextUnlockLabel: toText(raw.nextUnlockLabel, fallbackThreshold.label),
+      recommendedAction: toText(raw.recommendedAction, "Complete missions to stabilize your signal."),
+      breakdown: {
+        levelPower: Math.max(0, n(breakdown.levelPower, 0)),
+        badgePower: Math.max(0, n(breakdown.badgePower, 0)),
+        petPower: Math.max(0, n(breakdown.petPower, 0)),
+        total: signalPower,
+      },
+      moonlabWall: {
+        available: !!wall.available,
+        currentFloor: Math.max(0, n(wall.currentFloor ?? wall.floor, 0)),
+        bestFloor: Math.max(0, n(wall.bestFloor, 0)),
+        bossName: toText(wall.bossName, ""),
+        bossPower: Math.max(0, n(wall.bossPower, 0)),
+        bossDanger: Math.max(0, n(wall.bossDanger ?? wall.danger, 0)),
+        cooldownLeftSec: Math.max(0, n(wall.cooldownLeftSec ?? wall.cooldown, 0)),
+        ready: !!wall.ready,
+      },
+    };
+  }
+
+  function getMoonlabBossPressure(wall) {
+    if (!wall || !wall.available) return 0;
+    return Math.max(0, n(wall.bossPower, 0), n(wall.bossDanger, 0));
+  }
+
+  function formatBossPrepStatus(wall, signalPower) {
+    if (!wall || !wall.available) return "Syncing";
+    if (Math.max(0, n(wall.cooldownLeftSec, 0)) > 0) return "Cooling Down";
+    if (getMoonlabBossPressure(wall) > Math.max(0, n(signalPower, 0))) return "Locked";
+    if (wall.ready) return "Ready";
+    return "Preview";
+  }
+
+  function resolveBossPrepBestMove(wall, signalPower, recommendedAction) {
+    const fallback = toText(recommendedAction, "Complete standard routes and strengthen your profile.");
+    if (!wall || !wall.available) return fallback;
+    if (Math.max(0, n(wall.cooldownLeftSec, 0)) > 0) return fallback;
+    if (getMoonlabBossPressure(wall) > Math.max(0, n(signalPower, 0))) {
+      return "Build Signal Power before your next MoonLab run.";
+    }
+    if (wall.ready) return "Enter MoonLab and clear the wall.";
+    return fallback;
+  }
+
+  function elitePreviewCtaLabel(status, locked) {
+    if (locked || status === "Locked") return "Locked Preview";
+    if (status === "Ready") return "Read-only Preview";
+    return "Preview";
+  }
+
   function normalizeOutcomeTier(last) {
     const direct = textOrEmpty(last?.outcomeTier || last?.outcome_tier);
     if (direct) return direct;
@@ -259,6 +361,11 @@
   let _stateLoadedAt = 0;
   let _missionsHelpOpen = false;
   const MISSIONS_STATE_STALE_MS = 10 * 1000;
+
+  const ELITE_HUNT_SIGNAL_THRESHOLD = 1500;
+  let _progressionV1 = null;
+  let _progressionStatus = "syncing";
+  let _progressionLoadedAt = 0;
 
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
@@ -948,6 +1055,107 @@
         overflow-wrap:anywhere;
       }
 
+      #missionsRoot .m-elite-wrap{
+        margin-top:10px;
+        border-color:rgba(255,176,0,.14);
+        box-shadow:0 12px 28px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,176,0,.05);
+      }
+      #missionsRoot .m-elite-kicker{
+        font-size:11px;
+        letter-spacing:.42px;
+        text-transform:uppercase;
+        opacity:.72;
+      }
+      #missionsRoot .m-elite-safety{
+        margin-top:6px;
+        font-size:11.5px;
+        opacity:.76;
+        line-height:1.35;
+      }
+      #missionsRoot .m-elite-sync{
+        margin-top:10px;
+        padding:9px 10px;
+        border-radius:10px;
+        border:1px dashed rgba(255,255,255,.12);
+        background:rgba(255,255,255,.03);
+        font-size:12px;
+        opacity:.82;
+      }
+      #missionsRoot .m-elite-cards{
+        display:grid;
+        gap:8px;
+        margin-top:10px;
+      }
+      #missionsRoot .m-elite-card{
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:12px;
+        padding:9px 10px;
+        background:rgba(0,0,0,.16);
+      }
+      #missionsRoot .m-elite-card.is-locked{
+        opacity:.88;
+        border-color:rgba(255,255,255,.08);
+      }
+      #missionsRoot .m-elite-card-top{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:8px;
+        min-width:0;
+      }
+      #missionsRoot .m-elite-card-title{
+        font-size:14px;
+        font-weight:900;
+        line-height:1.22;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-elite-status{
+        flex:0 0 auto;
+        font-size:10.5px;
+        font-weight:900;
+        letter-spacing:.35px;
+        text-transform:uppercase;
+        padding:3px 7px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.05);
+        opacity:.92;
+        white-space:nowrap;
+      }
+      #missionsRoot .m-elite-status.is-ready{
+        border-color:rgba(92,222,180,.28);
+        background:rgba(47,161,125,.14);
+      }
+      #missionsRoot .m-elite-status.is-locked{
+        border-color:rgba(255,128,128,.22);
+        background:rgba(122,48,48,.14);
+      }
+      #missionsRoot .m-elite-status.is-recommended{
+        border-color:rgba(120,188,255,.24);
+        background:rgba(52,108,168,.14);
+      }
+      #missionsRoot .m-elite-line{
+        margin-top:6px;
+        font-size:11.5px;
+        line-height:1.35;
+        opacity:.86;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-elite-line b{
+        opacity:.95;
+      }
+      #missionsRoot .m-elite-cta{
+        margin-top:8px;
+        display:flex;
+        justify-content:flex-end;
+      }
+      #missionsRoot .m-elite-cta .btn{
+        min-height:32px;
+        padding:6px 11px;
+        font-size:11.5px;
+        pointer-events:none;
+      }
+
       @media (max-width: 520px){
         #missionsRoot .m-row,
         #missionsRoot .m-report-head,
@@ -973,6 +1181,12 @@
         #missionsRoot .m-reward-icon{
           width:28px;
           height:28px;
+        }
+        #missionsRoot .m-elite-card-top{
+          flex-direction:column;
+        }
+        #missionsRoot .m-elite-cta .btn{
+          width:100%;
         }
       }
     `;
@@ -1609,6 +1823,7 @@ function _normalizeRareDropObj(obj) {
     return raw && typeof raw === "object" ? raw : null;
   }
 
+  // Blue Signal event is archived; keep helper/data compatibility but do not render in Missions.
   function renderBlueSignalHuntCard(progress) {
     if (!progress || typeof progress !== "object") return "";
     const eventEnabled = !!progress.eventEnabled;
@@ -1686,13 +1901,181 @@ function _normalizeRareDropObj(obj) {
         <div class="m-help-copy">Recommended stats: Stats like AGI / DEF show what helps on that route. They are not required, but they can improve the result.</div>
         <div class="m-help-copy">Mission completed = mission finished and rewards were resolved.</div>
         <div class="m-help-copy">Pet fit = how well your active pet matched recommended mission traits.</div>
-        <div class="m-help-copy">Blue Signal Hunt archived = historical event card only. No new Blue Signals can be earned.</div>
-        <div class="m-help-copy">Rare Bonus Signal = route hint only. It can point to a rare route, but it is not loot by itself.</div>
         <div class="m-help-copy">Bonus found = extra result actually recovered during resolve.</div>
-        <div class="m-help-copy">Mission signal = route carried a possible rare bonus. It is not loot and it does not store progress by itself.</div>
         <div class="m-help-copy">Outcomes: Critical Success = best result. Success = normal clear. Partial Success = you recovered something, but missed part of the reward. Failed = the route held. Return stronger.</div>
       </div>
     `;
+  }
+
+  function buildElitePreviewCards(progression) {
+    if (!progression || typeof progression !== "object") return [];
+
+    const sp = Math.max(0, n(progression.signalPower, 0));
+    const wall = progression.moonlabWall || { available: false };
+    const recommended = toText(progression.recommendedAction, "Complete standard routes and strengthen your profile.");
+    const nextUnlock = toText(progression.nextUnlockLabel, "Next Signal threshold");
+    const missingPower = Math.max(0, n(progression.missingPower, 0));
+    const cards = [];
+
+    if (wall.available) {
+      const bossName = toText(wall.bossName, "Unknown Boss");
+      const floorNum = Math.max(1, n(wall.currentFloor, 1));
+      const bossStatus = formatBossPrepStatus(wall, sp);
+      const bossLocked = bossStatus === "Locked";
+      cards.push({
+        title: `Boss Prep: ${bossName} Pattern`,
+        requires: "MoonLab Boss Wall active",
+        purpose: "Study the current wall before entering MoonLab.",
+        link: `MoonLab Floor ${floorNum} · ${bossName}`,
+        status: bossStatus,
+        bestMove: resolveBossPrepBestMove(wall, sp, recommended),
+        ctaLabel: elitePreviewCtaLabel(bossStatus, bossLocked),
+        locked: bossLocked,
+      });
+    } else {
+      cards.push({
+        title: "Boss Prep: MoonLab Wall Pattern",
+        requires: "MoonLab wall syncing",
+        purpose: "Study the current wall before entering MoonLab.",
+        link: "MoonLab wall syncing…",
+        status: "Syncing",
+        bestMove: "Complete standard routes while MoonLab data loads.",
+        ctaLabel: "Preview",
+        locked: false,
+      });
+    }
+
+    const eliteLocked = sp < ELITE_HUNT_SIGNAL_THRESHOLD;
+    cards.push({
+      title: "Elite Hunt: Red Static Trail",
+      requires: `${ELITE_HUNT_SIGNAL_THRESHOLD} Signal Power`,
+      purpose: "Prepare for the Red Static Warden.",
+      link: `Next Signal Unlock — ${nextUnlock}`,
+      status: eliteLocked ? "Locked" : "Ready",
+      bestMove: "Build Signal Power through routes, badges, pets, and MoonLab progress.",
+      ctaLabel: elitePreviewCtaLabel(eliteLocked ? "Locked" : "Ready", eliteLocked),
+      locked: eliteLocked,
+    });
+
+    const recoveryRequires = missingPower > 0
+      ? `Build ${missingPower} more Signal Power`
+      : "Build more Signal Power";
+    cards.push({
+      title: "Signal Recovery: Broken Relay Cache",
+      requires: recoveryRequires,
+      purpose: "Strengthen your signal before the next wall.",
+      link: `Signal Power ${sp} · growth path`,
+      status: "Recommended",
+      bestMove: recommended,
+      ctaLabel: "Preview",
+      locked: false,
+    });
+
+    const chainLocked = sp < Math.max(0, n(progression.nextThreshold, 0));
+    const chainRequires = missingPower > 0
+      ? `${Math.max(0, n(progression.nextThreshold, 0))} Signal Power`
+      : "Higher Signal Power";
+    cards.push({
+      title: "Chain Noise Interference: Jammed Signal",
+      requires: chainRequires,
+      purpose: "Clear the noise around your next progression target.",
+      link: `Future Signal threshold — ${nextUnlock}`,
+      status: chainLocked ? "Locked" : "Preview",
+      bestMove: "Keep building Signal Power.",
+      ctaLabel: elitePreviewCtaLabel(chainLocked ? "Locked" : "Preview", chainLocked),
+      locked: chainLocked,
+    });
+
+    return cards.slice(0, 4);
+  }
+
+  function eliteStatusClass(status) {
+    const key = toText(status, "").toLowerCase();
+    if (key === "ready") return "is-ready";
+    if (key === "locked" || key === "cooling down") return "is-locked";
+    if (key === "recommended") return "is-recommended";
+    return "";
+  }
+
+  function renderElitePreviewCard(card) {
+    if (!card || typeof card !== "object") return "";
+    const title = toText(card.title, "Elite Preview");
+    const requires = toText(card.requires, "");
+    const purpose = toText(card.purpose, "");
+    const link = toText(card.link, "");
+    const status = toText(card.status, "Preview");
+    const bestMove = toText(card.bestMove, "");
+    const ctaLabel = toText(card.ctaLabel, "Preview");
+    const locked = !!card.locked;
+
+    return `
+      <div class="m-elite-card${locked ? " is-locked" : ""}">
+        <div class="m-elite-card-top">
+          <div class="m-elite-card-title">${esc(title)}</div>
+          <div class="m-elite-status ${eliteStatusClass(status)}">${esc(status)}</div>
+        </div>
+        ${requires ? `<div class="m-elite-line"><b>Requires:</b> ${esc(requires)}</div>` : ""}
+        ${purpose ? `<div class="m-elite-line"><b>Purpose:</b> ${esc(purpose)}</div>` : ""}
+        ${link ? `<div class="m-elite-line"><b>Progression Link:</b> ${esc(link)}</div>` : ""}
+        ${bestMove ? `<div class="m-elite-line"><b>Best Move:</b> ${esc(bestMove)}</div>` : ""}
+        <div class="m-elite-cta">
+          <button type="button" class="btn" disabled aria-disabled="true">${esc(ctaLabel)}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEliteMissionsPreview() {
+    const ready = _progressionStatus === "ready" && !!_progressionV1;
+    const cards = ready ? buildElitePreviewCards(_progressionV1) : [];
+    const signalHint = ready ? `Signal Power ${Math.max(0, n(_progressionV1.signalPower, 0))}` : "";
+
+    return `
+      <div class="m-card m-elite-wrap">
+        <div class="m-elite-kicker">ELITE MISSIONS</div>
+        <div class="m-muted" style="margin-top:6px;">High-risk operations tied to your Signal Power, MoonLab wall, and long-term path.</div>
+        <div class="m-elite-safety">Preview only — standard routes below still handle rewards.</div>
+        ${signalHint ? `<div class="m-muted" style="margin-top:6px;">${esc(signalHint)}</div>` : ""}
+        ${
+          ready && cards.length
+            ? `<div class="m-elite-cards">${cards.map((card) => renderElitePreviewCard(card)).join("")}</div>`
+            : `<div class="m-elite-sync">Syncing progression link… Standard routes below are still live.</div>`
+        }
+      </div>
+    `;
+  }
+
+  async function loadProgressionV1(options = {}) {
+    const { force = false } = options || {};
+    if (!force && _progressionV1 && _progressionLoadedAt && (Date.now() - _progressionLoadedAt) < MISSIONS_STATE_STALE_MS) {
+      return _progressionV1;
+    }
+
+    if (!_apiPost) {
+      _progressionV1 = null;
+      _progressionStatus = "syncing";
+      return null;
+    }
+
+    try {
+      const res = await api("/webapp/stats/state", { run_id: rid("m:stats") });
+      const stats = getStatsPayload(res);
+      const progression = normalizeProgressionV1(stats?.progression_v1);
+      if (progression) {
+        _progressionV1 = progression;
+        _progressionStatus = "ready";
+        _progressionLoadedAt = Date.now();
+        return progression;
+      }
+      _progressionV1 = null;
+      _progressionStatus = "syncing";
+      return null;
+    } catch (e) {
+      log("progression_v1 load failed", e?.message || e);
+      _progressionV1 = null;
+      _progressionStatus = "syncing";
+      return null;
+    }
   }
 
   // =========================
@@ -1768,14 +2151,6 @@ function _normalizeRareDropObj(obj) {
     const flavorTags = [];
     if (modifierLabel) flavorTags.push(modifierLabel);
     if (rewardIntent.length) flavorTags.push(`Reward intent: ${rewardIntent.join(" · ")}`);
-    const rareSignalHint = rareHint ? renderClarityHint({
-      iconKey: "rare_bonus_signal",
-      eyebrow: "Signal detected",
-      title: "Rare Bonus Signal",
-      body: `${normalizeRareChanceLabel(rareHint)}. Route hint only, not guaranteed loot.`,
-      tone: "signal"
-    }) : "";
-
     return `
       <div class="m-offer">
         <div class="m-offer-main">
@@ -1788,7 +2163,6 @@ function _normalizeRareDropObj(obj) {
             ${subtitle ? `<div class="m-kicker" style="margin-top:4px;">${esc(subtitle)}</div>` : ""}
             ${body ? `<div class="m-muted m-offer-body">${esc(body)}</div>` : ""}
             ${renderTags(flavorTags)}
-            ${rareSignalHint}
             ${compactHint ? `<div class="m-offer-helper">${esc(compactHint)}</div>` : ""}
             <div class="m-offer-reward">
               XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
@@ -1906,7 +2280,7 @@ function _normalizeRareDropObj(obj) {
     }
 
     const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
-    const { baseRewards, eventRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
+    const { baseRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
     const showMissed = missedRewards.filter((x) => {
       if (!x) return false;
       if ((bonusFoundChip || missionSignalNote || last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) && /cache/i.test(x)) return false;
@@ -1927,9 +2301,7 @@ function _normalizeRareDropObj(obj) {
         ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
         ${petDetailLines.length ? petDetailLines.map((line) => `<div class="m-report-line">${esc(line)}</div>`).join("") : ""}
         ${baseRewards.length ? `<div class="m-report-section"><div class="m-report-label">Base rewards</div><div class="m-report-values">${esc(baseRewards.join(" · "))}</div></div>` : ""}
-        ${eventRewards.length ? `<div class="m-report-section"><div class="m-report-label">Event rewards</div><div class="m-report-values">${esc(eventRewards.join(" · "))}</div></div>` : ""}
         ${extraRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(extraRecovered.join(" · "))}</div></div>` : ""}
-        ${missionSignalNote ? `<div class="m-report-section"><div class="m-report-label">Mission signal</div><div class="m-report-values">${esc(missionSignalNote)}</div></div>` : ""}
         ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" · "))}</div></div>` : ""}
       </div>
     `;
@@ -1978,7 +2350,7 @@ function _normalizeRareDropObj(obj) {
     }
 
     const showRecovered = recoveredRewards.length ? recoveredRewards : fallbackRecovered;
-    const { baseRewards, eventRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
+    const { baseRewards, extraRecovered } = splitLastResolveRewards(showRecovered);
     const showMissed = missedRewards.filter((x) => {
       if (!x) return false;
       if ((bonusFoundChip || missionSignalNote || last?.cacheSignalDetected || textOrEmpty(last?.rareHint)) && /cache/i.test(x)) return false;
@@ -1999,9 +2371,7 @@ function _normalizeRareDropObj(obj) {
         ${chipLines.length ? `<div class="m-report-chipline">${chipLines.map((chip) => `<span class="m-report-chip">${esc(chip)}</span>`).join("")}</div>` : ""}
         ${petDetailLines.length ? petDetailLines.map((line) => `<div class="m-report-line">${esc(line)}</div>`).join("") : ""}
         ${baseRewards.length ? `<div class="m-report-section"><div class="m-report-label">Base rewards</div><div class="m-report-values">${esc(baseRewards.join(" - "))}</div></div>` : ""}
-        ${eventRewards.length ? `<div class="m-report-section"><div class="m-report-label">Event rewards</div><div class="m-report-values">${renderRewardRows(eventRewards)}</div></div>` : ""}
         ${extraRecovered.length ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(extraRecovered.join(" - "))}</div></div>` : ""}
-        ${missionSignalNote ? `<div class="m-report-section"><div class="m-report-label">Mission signal</div>${renderClarityHint({ iconKey: "rare_bonus_signal", eyebrow: "Signal detected", title: "Rare Bonus Signal", body: missionSignalNote, tone: "signal" })}</div>` : ""}
         ${showMissed.length ? `<div class="m-report-section"><div class="m-report-label">Missed</div><div class="m-report-values">${esc(showMissed.join(" - "))}</div></div>` : ""}
       </div>
     `;
@@ -2083,7 +2453,7 @@ function _normalizeRareDropObj(obj) {
     const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive;
 
     const last = payload.lastResolve || payload.last_resolve || null;
-    const blueSignalHunt = blueSignalHuntProgress(payload);
+    blueSignalHuntProgress(payload);
 
     if (active.status && active.status !== "NONE") {
       // ✅ rare drop source order: pending.offer → active raw mission → payload (fallback)
@@ -2099,13 +2469,6 @@ function _normalizeRareDropObj(obj) {
       }
       const activeMatchLabel = normalizePetMatchLabel(active);
       const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet fit: ${activeMatchLabel}` : "");
-      const activeRareSignalHint = active.rareHint ? renderClarityHint({
-        iconKey: "rare_bonus_signal",
-        eyebrow: "Signal detected",
-        title: "Rare Bonus Signal",
-        body: `${normalizeRareChanceLabel(active.rareHint)}. Route hint only, not guaranteed loot.`,
-        tone: "signal"
-      }) : "";
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -2114,7 +2477,6 @@ function _normalizeRareDropObj(obj) {
             <div class="m-title">${esc(active.title || "Mission")}</div>
             ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
             ${renderTags(activeTags)}
-            ${activeRareSignalHint}
             ${activeHint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(activeHint)}</div>` : ""}
             <div id="mClock" class="m-clock">—</div>
             <div id="mClockSub" class="m-clock-sub">—</div>
@@ -2122,7 +2484,6 @@ function _normalizeRareDropObj(obj) {
             <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
 
             ${rare ? renderRareDropCard(rare) : ""}
-            ${renderBlueSignalHuntCard(blueSignalHunt)}
 
             <div class="m-actions">
               <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
@@ -2154,6 +2515,8 @@ function _normalizeRareDropObj(obj) {
           ${renderHelpPanel()}
         </div>
 
+        ${renderEliteMissionsPreview()}
+
         <div class="m-card">
           <div class="m-row">
             <div style="min-width:0;">
@@ -2173,8 +2536,6 @@ function _normalizeRareDropObj(obj) {
             }
           </div>
         </div>
-
-        ${renderBlueSignalHuntCard(blueSignalHunt)}
         ${last ? renderLastClarity(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
       </div>
     `;
@@ -2221,7 +2582,10 @@ function _normalizeRareDropObj(obj) {
     }
     renderLoading("Loading missions…");
     try {
-      const res = await api("/webapp/missions/state", { run_id: rid("m:state") });
+      const [res] = await Promise.all([
+        api("/webapp/missions/state", { run_id: rid("m:state") }),
+        loadProgressionV1({ force }),
+      ]);
       _state = res;
       _stateLoadedAt = Date.now();
 
@@ -2252,7 +2616,10 @@ function _normalizeRareDropObj(obj) {
 
   async function doRefresh() {
     try {
-      const res = await api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
+      const refreshPromise = api("/webapp/missions/action", { action: "refresh_offers", run_id: rid("m:refresh") });
+      const progressionPromise = loadProgressionV1({ force: true });
+      const res = await refreshPromise;
+      await progressionPromise.catch(() => null);
       if (res && typeof res === "object") {
         _state = res;
         _stateLoadedAt = Date.now();
