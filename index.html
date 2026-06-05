@@ -1051,6 +1051,7 @@ html.ah-skins-open #heroFrame{
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
 #faction .tag-believe{ background: rgba(99,255,214,.14); border-color: rgba(99,255,214,.30); }
 #faction .tag-dual{ background: rgba(255,221,109,.14); border-color: rgba(255,221,109,.30); }
+#faction .tag-prime{ background: rgba(255,197,92,.16); border-color: rgba(255,197,92,.34); color:#ffe5b0; }
 
 /* =========================
    TON CONNECT (small)
@@ -1220,6 +1221,7 @@ html.ah-skins-open #heroFrame{
 #faction .tag-patron{ background: rgba(255,60,150,.12); border-color: rgba(255,60,150,.28); }
 #faction .tag-believe{ background: rgba(99,255,214,.14); border-color: rgba(99,255,214,.30); }
 #faction .tag-dual{ background: rgba(255,221,109,.14); border-color: rgba(255,221,109,.30); }
+#faction .tag-prime{ background: rgba(255,197,92,.16); border-color: rgba(255,197,92,.34); color:#ffe5b0; }
   @media (prefers-reduced-motion: reduce) { .bg video { display:none; } .bg .poster { display:block; } }
   .fallback {
     position: absolute; inset: 0; display:none; z-index: 3;
@@ -5979,6 +5981,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
     </div>
     <div class="ah-panel-scroll">
+    <div id="hubGoalRoot"></div>
     <div class="ah-grid">
       <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
       <!-- ✅ NEW: Support -->
@@ -8992,6 +8995,9 @@ function formatHeroAuraRemain(sec){
 function getAuraToneStyle(aura){
   const source = (aura && typeof aura === "object") ? (aura.faction || aura.key || aura.auraKey || "") : aura;
   const key = String(source || "").trim().toLowerCase();
+  if (key === "prime_signal_aura") {
+    return { bg: "rgba(255,197,92,.14)", border: "rgba(255,197,92,.34)", glow: "rgba(255,197,92,.28)", color: "#ffe7bf" };
+  }
   if (key === "alpha_signal_core") {
     return { bg: "rgba(123,225,255,.14)", border: "rgba(123,225,255,.34)", glow: "rgba(123,225,255,.26)", color: "#e4fbff" };
   }
@@ -9105,7 +9111,7 @@ function setTopTag(tagKey, baseText="PACK"){
   const tagEl = document.getElementById("factionTag");
   if(!tagEl) return;
 
-  tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron","tag-believe","tag-dual");
+  tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron","tag-believe","tag-dual","tag-prime");
 
   const t = String(tagKey || "").toLowerCase();
 
@@ -9124,6 +9130,9 @@ function setTopTag(tagKey, baseText="PACK"){
   }else if(t === "dual_supporter" || t === "dual"){
     tagEl.textContent = "DUAL";
     tagEl.classList.add("tag-dual");
+  }else if(t === "prime"){
+    tagEl.textContent = "PRIME";
+    tagEl.classList.add("tag-prime");
   }else{
     tagEl.textContent = String(baseText || "PACK");
     tagEl.classList.add("tag-pack");
