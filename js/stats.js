@@ -6,6 +6,25 @@
   let _apiPost = null, _tg = null, _dbg = false;
   let _loading = false;
   let _inited = false;
+  let _loadSeq = 0;
+  let _hubGoalSeq = 0;
+  let _lastStats = null;
+  let _lastMystats = null;
+  let _progressionExtras = {
+    badgeCount: 0,
+    fortress: null,
+  };
+
+  const SIGNAL_THRESHOLDS = [
+    { value: 500, label: "MoonLab Stabilization" },
+    { value: 1000, label: "First Wall Break" },
+    { value: 1500, label: "Elite Missions Tier I Preview" },
+    { value: 2500, label: "Iron Siege Bracket Preview" },
+    { value: 3500, label: "Relay Directive Missions Preview" },
+    { value: 5000, label: "CNC Interference Preview" },
+    { value: 6500, label: "Chain Noise Pressure" },
+    { value: 8000, label: "False Alpha Signal Prestige Wall" },
+  ];
 
   function qs(id){ return document.getElementById(id); }
 
@@ -26,6 +45,150 @@
 
   function clampPct(v){
     return Math.max(0, Math.min(100, n(v, 0)));
+  }
+
+  function asArray(v){
+    return Array.isArray(v) ? v : [];
+  }
+
+  function toText(v, fallback = ""){
+    return String(v ?? fallback).trim();
+  }
+
+  function getOkPayload(res){
+    if (!res || typeof res !== "object") return null;
+    if (res.ok === true && res.data && typeof res.data === "object") return res.data;
+    if (res.data && typeof res.data === "object") return res.data;
+    return res.ok === false ? null : res;
+  }
+
+  function normalizeBadgeCount(res){
+    const payload = getOkPayload(res);
+    if (!payload || typeof payload !== "object") return 0;
+    if (Number.isFinite(Number(payload.total))) return Math.max(0, Number(payload.total));
+    const list = asArray(payload.badges);
+    return list.reduce((acc, badge) => acc + (badge?.owned === false ? 0 : 1), 0);
+  }
+
+  function normalizeFortressState(res){
+    const st = getOkPayload(res);
+    if (!st || typeof st !== "object") return null;
+
+    const currentFloor = Math.max(1, n(st.currentFloor, 1));
+    const bestFloor = Math.max(0, n(st.highestClearedFloor ?? st.bestFloor, 0));
+    const maxFloor = Math.max(0, n(st.maxFloor, 30));
+    const sector = Math.max(1, n(st.sector, currentFloor > 20 ? 3 : currentFloor > 10 ? 2 : 1));
+    const sectorFloor = Math.max(1, n(st.sectorFloor, ((currentFloor - 1) % 10) + 1));
+    const boss = (st.boss && typeof st.boss === "object") ? st.boss : {};
+    const bossName = toText(
+      boss.name || st.nextEncounterName || st.bossName || st.nextName || st.nextId || "Unknown"
+    );
+    const bossPower = Math.max(0, n(boss.power ?? boss.danger, 0));
+    const bossDanger = Math.max(0, n(boss.danger ?? boss.power, 0));
+    const cooldownLeftSec = Math.max(0, n(st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown, 0));
+    return {
+      ready: !!(st.ready ?? st.canFight ?? st.canStart ?? cooldownLeftSec <= 0),
+      cooldownLeftSec,
+      currentFloor,
+      bestFloor,
+      maxFloor,
+      sector,
+      sectorFloor,
+      bossName,
+      bossPower,
+      bossDanger,
+      bossFloorNumber: Math.max(1, n(boss.floorNumber ?? currentFloor, currentFloor)),
+      rewardPreview: st.rewardPreview && typeof st.rewardPreview === "object" ? st.rewardPreview : null,
+    };
+  }
+
+  function getNextThreshold(signalPower){
+    for (const item of SIGNAL_THRESHOLDS) {
+      if (signalPower < item.value) return item;
+    }
+    return SIGNAL_THRESHOLDS[SIGNAL_THRESHOLDS.length - 1];
+  }
+
+  function summarizeRewardPreview(rewardPreview){
+    if (!rewardPreview || typeof rewardPreview !== "object") return "No reward preview exposed yet.";
+    const parts = [];
+    const addItems = (items) => {
+      for (const item of asArray(items)) {
+        const text = toText(item);
+        if (!text || parts.includes(text)) continue;
+        parts.push(text);
+        if (parts.length >= 4) break;
+      }
+    };
+
+    addItems(rewardPreview.summary);
+    addItems(rewardPreview.firstClear);
+    addItems(rewardPreview.possibleDrops);
+    addItems(rewardPreview.milestone);
+    addItems(rewardPreview.replay);
+
+    return parts.length ? parts.join(" / ") : "Reward preview ready in MoonLab.";
+  }
+
+  function getSignalBreakdown(stats, extras){
+    const level = Math.max(0, n(stats?.level, 0));
+    const pet = (stats && typeof stats.pet === "object") ? stats.pet : {};
+    const petName = toText(pet?.name, "None");
+    const petLevel = Math.max(0, n(pet?.level, 0));
+    const hasActivePet = petName.toLowerCase() !== "none";
+    const badgeCount = Math.max(0, n(extras?.badgeCount, 0));
+    const fortress = extras?.fortress || null;
+
+    const levelPower = level * 10;
+    const badgePower = badgeCount * 15;
+    const petPower = hasActivePet ? petLevel * 5 : 0;
+    const signalPower = levelPower + badgePower + petPower;
+
+    return {
+      levelPower,
+      badgePower,
+      petPower,
+      signalPower,
+      hasActivePet,
+      petLevel,
+      badgeCount,
+    };
+  }
+
+  function buildGoalState(stats, extras){
+    const breakdown = getSignalBreakdown(stats, extras);
+    const fortress = extras?.fortress || null;
+
+    const nextThreshold = getNextThreshold(breakdown.signalPower);
+    const missingPower = Math.max(0, nextThreshold.value - breakdown.signalPower);
+    const bossPower = Math.max(0, n(fortress?.bossPower ?? fortress?.bossDanger, 0));
+    const moonlabCoolingDown = Math.max(0, n(fortress?.cooldownLeftSec, 0)) > 0;
+
+    let bestMove = "Complete missions to stabilize your signal.";
+    if (missingPower <= 150) {
+      bestMove = "You are close. Push one more mission cycle.";
+    } else if (moonlabCoolingDown) {
+      bestMove = "MoonLab is cooling down. Run missions while the chamber stabilizes.";
+    } else if (bossPower > signalPower) {
+      bestMove = "MoonLab boss is stronger than your current signal. Build power before the next run.";
+    } else if (hasActivePet) {
+      bestMove = "Complete missions or upgrade your active pet.";
+    }
+
+    const nextWallFloor = Math.max(1, n(fortress?.bossFloorNumber ?? fortress?.currentFloor, 1));
+    const nextWallLabel = fortress
+      ? `MoonLab Floor ${nextWallFloor} - ${toText(fortress.bossName, "Unknown")}`
+      : "MoonLab wall syncing...";
+
+    return {
+      ...breakdown,
+      nextThreshold,
+      missingPower,
+      bestMove,
+      fortress,
+      nextWallLabel,
+      rewardPreviewText: summarizeRewardPreview(fortress?.rewardPreview),
+    };
   }
 
   function statLabel(k){
@@ -488,6 +651,245 @@
         color:rgba(255,235,190,.72);
       }
 
+      .ahs-breakdown{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+
+      .ahs-breakdown-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:10px 12px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:12px;
+        background:rgba(255,255,255,.03);
+      }
+
+      .ahs-breakdown-row span{
+        font-size:12px;
+        color:#c7d7f2;
+      }
+
+      .ahs-breakdown-row b{
+        font-size:13px;
+        color:#f3f7ff;
+        text-align:right;
+      }
+
+      #hubGoalRoot{
+        padding:0 14px 12px;
+      }
+
+      .ahg-card{
+        position:relative;
+        overflow:hidden;
+        border-radius:16px;
+        border:1px solid rgba(173,206,242,.16);
+        background:
+          radial-gradient(circle at 12% -10%, rgba(97,140,194,.18), transparent 42%),
+          radial-gradient(circle at 100% 120%, rgba(118,92,52,.14), transparent 50%),
+          linear-gradient(180deg, rgba(14,20,31,.92), rgba(9,13,21,.96));
+        box-shadow:
+          0 12px 28px rgba(0,0,0,.28),
+          inset 0 1px 0 rgba(255,255,255,.05);
+      }
+
+      .ahg-card::before{
+        content:"";
+        position:absolute;
+        inset:0 0 auto 0;
+        height:1px;
+        background:linear-gradient(90deg, transparent, rgba(120,180,255,.26), transparent);
+        pointer-events:none;
+      }
+
+      .ahg-pad{
+        padding:14px;
+      }
+
+      .ahg-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:10px;
+      }
+
+      .ahg-kicker{
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#9fb6d9;
+      }
+
+      .ahg-sub{
+        margin-top:4px;
+        font-size:11px;
+        color:rgba(220,230,255,.56);
+      }
+
+      .ahg-tag{
+        flex:0 0 auto;
+        min-height:28px;
+        padding:0 10px;
+        border-radius:999px;
+        border:1px solid rgba(110,174,255,.20);
+        background:linear-gradient(180deg, rgba(44,81,126,.34), rgba(21,38,64,.28));
+        color:#dcebff;
+        font-size:12px;
+        font-weight:900;
+        display:inline-flex;
+        align-items:center;
+      }
+
+      .ahg-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+
+      .ahg-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.03);
+      }
+
+      .ahg-row span{
+        flex:1 1 auto;
+        font-size:12px;
+        color:#c7d7f2;
+      }
+
+      .ahg-row b{
+        flex:0 1 58%;
+        font-size:13px;
+        line-height:1.35;
+        color:#f3f7ff;
+        text-align:right;
+        overflow-wrap:anywhere;
+      }
+
+      .ahg-move{
+        margin-top:10px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(255,214,140,.16);
+        background:linear-gradient(180deg, rgba(82,60,24,.28), rgba(42,30,10,.20));
+        color:#ffe7b6;
+        font-size:12px;
+        line-height:1.4;
+      }
+
+      .ahs-goal-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:10px;
+      }
+
+      .ahs-goal-kicker{
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#9fb6d9;
+      }
+
+      .ahs-goal-sub{
+        margin-top:4px;
+        font-size:11px;
+        color:rgba(220,230,255,.58);
+      }
+
+      .ahs-goal-tag{
+        flex:0 0 auto;
+        min-height:28px;
+        padding:0 10px;
+        border-radius:999px;
+        border:1px solid rgba(110,174,255,.20);
+        background:linear-gradient(180deg, rgba(44,81,126,.34), rgba(21,38,64,.28));
+        color:#dcebff;
+        font-size:12px;
+        font-weight:900;
+        display:inline-flex;
+        align-items:center;
+      }
+
+      .ahs-goal-grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+
+      .ahs-goal-row{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        padding:10px 12px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:12px;
+        background:rgba(255,255,255,.03);
+      }
+
+      .ahs-goal-row span{
+        flex:1 1 auto;
+        font-size:12px;
+        color:#c7d7f2;
+      }
+
+      .ahs-goal-row b{
+        flex:0 1 58%;
+        font-size:13px;
+        color:#f3f7ff;
+        text-align:right;
+        line-height:1.35;
+        overflow-wrap:anywhere;
+      }
+
+      .ahs-goal-wall{
+        margin-top:10px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:14px;
+        background:rgba(255,255,255,.03);
+        padding:12px;
+      }
+
+      .ahs-goal-wall-title{
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+        color:#dcebff;
+        margin-bottom:8px;
+      }
+
+      .ahs-goal-empty{
+        font-size:12px;
+        color:rgba(220,230,255,.58);
+      }
+
+      .ahs-goal-move{
+        margin-top:10px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px solid rgba(255,214,140,.16);
+        background:linear-gradient(180deg, rgba(82,60,24,.28), rgba(42,30,10,.20));
+        color:#ffe7b6;
+        font-size:12px;
+        line-height:1.4;
+      }
+
       .ahs-error{
         padding:14px;
       }
@@ -532,8 +934,69 @@
     `;
   }
 
-  function render(stats, mystats){
+  function renderHubGoalLoading(msg){
+    const root = qs("hubGoalRoot");
+    if (!root) return;
+    root.innerHTML = `
+      <div class="ahg-card">
+        <div class="ahg-pad">
+          <div class="ahg-kicker">Next Alpha Goal</div>
+          <div class="ahg-sub">${esc(msg || "Loading your next objective...")}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHubGoalCard(stats, extras){
+    const root = qs("hubGoalRoot");
+    if (!root || !stats) return;
+
+    const goal = buildGoalState(stats, extras);
+    root.innerHTML = `
+      <div class="ahg-card">
+        <div class="ahg-pad">
+          <div class="ahg-head">
+            <div>
+              <div class="ahg-kicker">Next Alpha Goal</div>
+              <div class="ahg-sub">Why return, what to push next.</div>
+            </div>
+            <div class="ahg-tag">Signal ${esc(goal.signalPower)}</div>
+          </div>
+
+          <div class="ahg-grid">
+            <div class="ahg-row"><span>Signal Power</span><b>${esc(goal.signalPower)}</b></div>
+            <div class="ahg-row"><span>Next Wall</span><b>${esc(goal.nextWallLabel)}</b></div>
+            <div class="ahg-row"><span>Missing</span><b>+${esc(goal.missingPower)}</b></div>
+          </div>
+
+          <div class="ahg-move"><b>Best Move:</b> ${esc(goal.bestMove)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSignalBreakdownCard(stats, extras){
+    const breakdown = getSignalBreakdown(stats, extras);
+    return `
+      <div class="ahs-card">
+        <div class="ahs-pad">
+          <div class="ahs-section-title">Signal Power Breakdown</div>
+          <div class="ahs-breakdown">
+            <div class="ahs-breakdown-row"><span>Level</span><b>+${esc(breakdown.levelPower)}</b></div>
+            <div class="ahs-breakdown-row"><span>Badges</span><b>+${esc(breakdown.badgePower)}</b></div>
+            <div class="ahs-breakdown-row"><span>Active Pet</span><b>+${esc(breakdown.petPower)}</b></div>
+            <div class="ahs-breakdown-row"><span>Total</span><b>${esc(breakdown.signalPower)}</b></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function render(stats, mystats, extras = _progressionExtras){
     ensureStyles();
+
+    _lastStats = stats || null;
+    _lastMystats = mystats || null;
 
     const root = qs("statsRoot");
     if (!root) return;
@@ -702,6 +1165,8 @@
           </div>
         </div>
 
+        ${renderSignalBreakdownCard(stats, extras)}
+
         <div class="ahs-card">
           <div class="ahs-pad">
             <div class="ahs-section-title">Attributes</div>
@@ -754,7 +1219,7 @@
         return;
       }
 
-      render(nextStats, nextMystats);
+      render(nextStats, nextMystats, _progressionExtras);
       try { _tg?.HapticFeedback?.impactOccurred?.("medium"); } catch (_) {}
     } catch (e) {
       if (_dbg) console.error("[Stats] upgrade failed", e);
@@ -763,10 +1228,72 @@
       _loading = false;
     }
   }
+
+  async function refreshHubGoal(){
+    const root = qs("hubGoalRoot");
+    if (!root) return;
+
+    if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
+    if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
+
+    if (_lastStats) renderHubGoalCard(_lastStats, _progressionExtras);
+    else renderHubGoalLoading("Loading your next objective...");
+
+    if (typeof _apiPost !== "function") {
+      renderHubGoalLoading("Next goal is not ready yet.");
+      return;
+    }
+
+    const hubGoalSeq = ++_hubGoalSeq;
+    const now = Date.now();
+    const badgesPromise = _apiPost("/webapp/badges/state", { t: now }).catch(() => null);
+    const fortressPromise = _apiPost("/webapp/building/state", {
+      buildingId: "moonlab_fortress",
+      t: now,
+    }).catch(() => null);
+
+    try {
+      const statsRes = await _apiPost("/webapp/stats/state", { t: now });
+      const stats = getPayload(statsRes);
+      if (!stats) {
+        if (_lastStats) {
+          renderHubGoalCard(_lastStats, _progressionExtras);
+        } else {
+          renderHubGoalLoading("Next goal is syncing right now.");
+        }
+        return;
+      }
+
+      if (hubGoalSeq !== _hubGoalSeq) return;
+
+      _lastStats = stats;
+      renderHubGoalCard(stats, _progressionExtras);
+
+      Promise.all([badgesPromise, fortressPromise]).then(([badgesRes, fortressRes]) => {
+        if (hubGoalSeq !== _hubGoalSeq) return;
+
+        _progressionExtras = {
+          badgeCount: normalizeBadgeCount(badgesRes),
+          fortress: normalizeFortressState(fortressRes),
+        };
+
+        renderHubGoalCard(_lastStats, _progressionExtras);
+
+        const statsBack = qs("statsBack");
+        if (statsBack && statsBack.dataset.open === "1" && _lastStats) {
+          render(_lastStats, _lastMystats, _progressionExtras);
+        }
+      }).catch(() => {});
+    } catch (_) {
+      if (_lastStats) renderHubGoalCard(_lastStats, _progressionExtras);
+      else renderHubGoalLoading("Next goal is syncing right now.");
+    }
+  }
   
   async function load(){
     if (_loading) return;
     _loading = true;
+    const loadSeq = ++_loadSeq;
 
     ensureStyles();
 
@@ -795,8 +1322,13 @@
     }
 
     try {
-      const statsRes = await _apiPost("/webapp/stats/state", { t: Date.now() });
-      const myRes = await _apiPost("/webapp/mystats/state", { t: Date.now() }).catch(() => null);
+      const now = Date.now();
+      const badgesPromise = _apiPost("/webapp/badges/state", { t: now }).catch(() => null);
+
+      const [statsRes, myRes] = await Promise.all([
+        _apiPost("/webapp/stats/state", { t: now }),
+        _apiPost("/webapp/mystats/state", { t: now }).catch(() => null),
+      ]);
 
       if (_dbg) {
         console.log("[Stats] statsRes =", statsRes);
@@ -805,6 +1337,10 @@
 
       const stats = getPayload(statsRes);
       const mystats = getPayload(myRes);
+      _progressionExtras = {
+        badgeCount: 0,
+        fortress: null,
+      };
 
       if (!stats) {
         const reason = statsRes?.reason || "No data.";
@@ -816,8 +1352,27 @@
         return;
       }
 
-      render(stats, mystats);
+      render(stats, mystats, _progressionExtras);
       try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+
+      badgesPromise.then((badgesRes) => {
+        if (_dbg) {
+          console.log("[Stats] badgesRes =", badgesRes);
+        }
+
+        if (loadSeq !== _loadSeq) return;
+
+        _progressionExtras = {
+          badgeCount: normalizeBadgeCount(badgesRes),
+          fortress: _progressionExtras?.fortress || null,
+        };
+
+        const back = qs("statsBack");
+        if (!back || back.dataset.open !== "1") return;
+        if (!_lastStats) return;
+
+        render(_lastStats, _lastMystats, _progressionExtras);
+      }).catch(() => {});
     } catch (e) {
       if (_dbg) console.error("[Stats] load failed", e);
       renderError("Failed to load stats.");
@@ -828,6 +1383,7 @@
   }
 
   Stats.refresh = load;
+  Stats.refreshHubGoal = refreshHubGoal;
   Stats.open = function(){ show(); load(); };
   Stats.close = function(){ hide(); };
 
@@ -859,6 +1415,8 @@
 
     window.openStats = Stats.open;
     window.closeStats = Stats.close;
+
+    if (qs("hubGoalRoot")) renderHubGoalLoading("Open Hub to see your next objective.");
   };
 
   window.Stats = Stats;

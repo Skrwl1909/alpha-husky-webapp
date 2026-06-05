@@ -126,7 +126,10 @@
     return clickLegacy(".btn.inventory") || clickLegacy("button.btn.inventory");
   }
 
-  function openHub() { openBack("hubBack"); }
+  function openHub() {
+    openBack("hubBack");
+    try { window.Stats?.refreshHubGoal?.(); } catch (_) {}
+  }
   function openCharSheet() { openBack("charBack"); }
   function openShareSheet() {
     closeBack("hubBack");
