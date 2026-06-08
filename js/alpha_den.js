@@ -1,0 +1,999 @@
+(function () {
+  const STORAGE_KEY = "alpha_husky_den_preview_v1";
+  const ROOT_ID = "alphaDenRoot";
+  const STYLE_ID = "alphaDenStyles";
+  const BUILDING_ORDER = ["signal_core", "pet_kennel", "war_table"];
+
+  const DEFAULT_STATE = {
+    denLevel: 1,
+    buildings: {
+      signal_core: { level: 0 },
+      pet_kennel: { level: 0 },
+      war_table: { level: 0 }
+    }
+  };
+
+  const DEN_BUILDINGS = {
+    signal_core: {
+      id: "signal_core",
+      name: "Signal Core",
+      unbuiltName: "Empty Signal Conduit",
+      level1Name: "Primitive Signal Core",
+      unbuiltCopy: "An empty relay point waiting for its first signal engine.",
+      level1Copy: "Primitive Signal Core online. Future scans and signal charge will connect here.",
+      role: "Future source of signal charge, scans, and Den energy.",
+      buildTimeLabel: "Future build time: 30 min",
+      costPreview: "Future cost: Bones + materials",
+      positionLabel: "Back wall cable relay point",
+      x: 56,
+      y: 41,
+      overlayStyle: "left:55%; top:34%; width:20%;",
+      glyph: "SC"
+    },
+    pet_kennel: {
+      id: "pet_kennel",
+      name: "Pet Kennel",
+      unbuiltName: "Empty Pack Corner",
+      level1Name: "Scrap Pet Kennel",
+      unbuiltCopy: "An empty pack corner. Your active pet will eventually rest and train here.",
+      level1Copy: "Scrap Pet Kennel built. Future pet training and expeditions will connect here.",
+      role: "Future pet resting, training, and expedition space.",
+      buildTimeLabel: "Future build time: 30 min",
+      costPreview: "Future cost: Bones + materials",
+      positionLabel: "Lower-left pack corner",
+      x: 18,
+      y: 73,
+      overlayStyle: "left:17%; top:72%; width:30%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.02);",
+      glyph: "PK"
+    },
+    war_table: {
+      id: "war_table",
+      name: "War Table",
+      unbuiltName: "Empty Tactical Floor",
+      level1Name: "Field War Table",
+      unbuiltCopy: "An empty command spot. Future faction orders will be planned here.",
+      level1Copy: "Field War Table assembled. Future SITREP orders and strategy will connect here.",
+      role: "Future faction orders, SITREP planning, and map strategy space.",
+      buildTimeLabel: "Future build time: 30 min",
+      costPreview: "Future cost: Bones + materials",
+      positionLabel: "Right-side table surface",
+      x: 74,
+      y: 61,
+      overlayStyle: "left:74%; top:61%; width:27%; transform:translate(-50%, -50%) rotate(-2deg);",
+      glyph: "WT"
+    }
+  };
+
+  const DEN_ASSETS = {
+    roomBackground: "images/alpha_den/den_background_empty.webp",
+    signal_core: {
+      unbuilt: "",
+      primitive: "images/alpha_den/signal_core_l1.png",
+      reinforced: "",
+      advanced: "",
+      alpha: "",
+      legendary: ""
+    },
+    pet_kennel: {
+      unbuilt: "",
+      primitive: "images/alpha_den/pet_kennel_l1.png",
+      reinforced: "",
+      advanced: "",
+      alpha: "",
+      legendary: ""
+    },
+    war_table: {
+      unbuilt: "",
+      primitive: "images/alpha_den/war_table_l1.png",
+      reinforced: "",
+      advanced: "",
+      alpha: "",
+      legendary: ""
+    }
+  };
+
+  let currentState = null;
+  let memoryState = cloneState(DEFAULT_STATE);
+  let selectedBuildingId = BUILDING_ORDER[0];
+  let isOpen = false;
+  let domReadyQueued = false;
+
+  function cloneState(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function normalizeLevel(raw) {
+    const level = Number(raw);
+    if (!Number.isFinite(level) || level < 0) return 0;
+    return Math.floor(level);
+  }
+
+  function sanitizeState(raw) {
+    const next = cloneState(DEFAULT_STATE);
+    if (!raw || typeof raw !== "object") return next;
+
+    next.denLevel = normalizeLevel(raw.denLevel) || 1;
+    for (const id of BUILDING_ORDER) {
+      next.buildings[id].level = normalizeLevel(raw?.buildings?.[id]?.level);
+    }
+    return next;
+  }
+
+  function readStoredState() {
+    try {
+      if (!window.localStorage) return null;
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return sanitizeState(JSON.parse(raw));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function ensureState() {
+    if (!currentState) {
+      currentState = sanitizeState(readStoredState() || memoryState);
+    }
+    return currentState;
+  }
+
+  function persistState() {
+    memoryState = sanitizeState(currentState);
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryState));
+      }
+    } catch (_) {}
+  }
+
+  function clearStoredState() {
+    try {
+      window.localStorage?.removeItem(STORAGE_KEY);
+    } catch (_) {}
+  }
+
+  function getTierForLevel(level) {
+    if (level <= 0) return "unbuilt";
+    if (level <= 2) return "primitive";
+    if (level <= 4) return "reinforced";
+    if (level <= 6) return "advanced";
+    if (level <= 8) return "alpha";
+    return "legendary";
+  }
+
+  function getAssetForLevel(buildingId, level) {
+    const tier = getTierForLevel(level);
+    const buildingAssets = DEN_ASSETS?.[buildingId];
+    if (!buildingAssets) return "";
+    if (level <= 0) return buildingAssets.unbuilt || "";
+    return buildingAssets[tier] || buildingAssets.primitive || "";
+  }
+
+  function queueForDom(callback) {
+    if (document.body) {
+      callback();
+      return true;
+    }
+    if (domReadyQueued) return false;
+    domReadyQueued = true;
+    document.addEventListener("DOMContentLoaded", () => {
+      domReadyQueued = false;
+      callback();
+    }, { once: true });
+    return false;
+  }
+
+  function ensureStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+#${ROOT_ID}{
+  position:fixed;
+  inset:0;
+  z-index:1400;
+  pointer-events:none;
+}
+#${ROOT_ID}[data-open="1"]{
+  pointer-events:auto;
+}
+.alpha-den-overlay{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  transition:opacity .18s ease;
+}
+#${ROOT_ID}[data-open="1"] .alpha-den-overlay{
+  opacity:1;
+}
+.alpha-den-shell{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  padding:18px;
+}
+.alpha-den-shell::before,
+.alpha-den-shell::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+}
+.alpha-den-shell::before{
+  top:18px;
+  right:22px;
+  width:96px;
+  height:96px;
+  border-top:1px solid rgba(105,192,255,.26);
+  border-right:1px solid rgba(105,192,255,.26);
+  opacity:.7;
+}
+.alpha-den-shell::after{
+  left:22px;
+  bottom:18px;
+  width:112px;
+  height:112px;
+  border-left:1px solid rgba(255,111,77,.20);
+  border-bottom:1px solid rgba(255,111,77,.20);
+  opacity:.6;
+}
+.alpha-den-backdrop{
+  position:absolute;
+  inset:0;
+  border:0;
+  background:rgba(2,5,9,.78);
+  backdrop-filter:blur(8px);
+}
+.alpha-den-panel{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  width:min(100%, 980px);
+  min-height:min(88vh, 820px);
+  margin:auto;
+  padding:18px;
+  border:1px solid rgba(127,164,196,.22);
+  border-radius:24px;
+  background:
+    linear-gradient(180deg, rgba(8,13,21,.98), rgba(5,9,15,.98)),
+    #050910;
+  box-shadow:0 28px 90px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+.alpha-den-frame{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  height:100%;
+}
+.alpha-den-topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.alpha-den-heading{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+.alpha-den-kicker{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:#8ea6bf;
+}
+.alpha-den-title{
+  margin:0;
+  font-size:clamp(28px, 5vw, 40px);
+  line-height:1;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#f2f6ff;
+}
+.alpha-den-subtitle{
+  margin:0;
+  font-size:14px;
+  color:#b9c8d8;
+}
+.alpha-den-topbar-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-shrink:0;
+}
+.alpha-den-btn{
+  border:1px solid rgba(154,183,212,.22);
+  border-radius:999px;
+  background:rgba(10,16,25,.82);
+  color:#eff6ff;
+  font:inherit;
+  cursor:pointer;
+  transition:transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.alpha-den-btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(130,191,247,.34);
+}
+.alpha-den-btn:disabled{
+  opacity:.62;
+  cursor:default;
+  transform:none;
+}
+.alpha-den-btn--ghost{
+  padding:8px 12px;
+  font-size:12px;
+  background:rgba(11,17,26,.62);
+}
+.alpha-den-btn--close{
+  width:38px;
+  height:38px;
+  font-size:20px;
+  line-height:1;
+}
+.alpha-den-btn--primary{
+  min-height:46px;
+  padding:12px 16px;
+  font-weight:700;
+  letter-spacing:.03em;
+  background:
+    linear-gradient(180deg, rgba(42,103,149,.92), rgba(20,62,96,.96));
+  border-color:rgba(115,193,255,.28);
+}
+.alpha-den-btn--passive{
+  min-height:46px;
+  padding:12px 16px;
+  background:rgba(16,22,30,.82);
+}
+.alpha-den-status{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.alpha-den-status__pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:32px;
+  padding:7px 12px;
+  border-radius:999px;
+  border:1px solid rgba(117,148,178,.20);
+  background:rgba(10,17,26,.74);
+  color:#dce7f5;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.alpha-den-status__pill strong{
+  color:#f7fbff;
+}
+.alpha-den-room{
+  display:grid;
+  grid-template-columns:minmax(0, 1.4fr) minmax(280px, .86fr);
+  gap:16px;
+  min-height:0;
+  flex:1;
+}
+.alpha-den-room__scene{
+  position:relative;
+  min-height:360px;
+  aspect-ratio:16 / 9;
+  border-radius:24px;
+  overflow:hidden;
+  border:1px solid rgba(136,162,190,.18);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(77,132,168,.18), transparent 30%),
+    linear-gradient(180deg, rgba(8,14,23,.94), rgba(5,8,13,.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 -80px 120px rgba(0,0,0,.38);
+}
+.alpha-den-room__background,
+.alpha-den-room__layer,
+.alpha-den-room__overlays{
+  position:absolute;
+  inset:0;
+}
+.alpha-den-room__background{
+  background:
+    linear-gradient(180deg, rgba(18,28,39,.88), rgba(7,10,16,.98)),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size:cover, 56px 56px, 56px 56px;
+  background-position:center, center, center;
+}
+.alpha-den-room__background::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(5,8,13,.12) 0%, rgba(5,8,13,.06) 26%, rgba(5,8,13,.38) 74%, rgba(2,4,7,.64) 100%),
+    radial-gradient(circle at 52% 15%, rgba(255,230,170,.22), rgba(255,230,170,0) 20%),
+    linear-gradient(90deg, rgba(2,4,7,.28), rgba(2,4,7,.02) 28%, rgba(2,4,7,.18) 100%);
+  opacity:1;
+}
+.alpha-den-room__background::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), transparent 22%),
+    radial-gradient(circle at center, rgba(255,245,214,.10), rgba(255,245,214,0) 58%);
+  mix-blend-mode:screen;
+  opacity:.55;
+}
+.alpha-den-room__scene::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0) 56%, rgba(0,0,0,.22) 80%, rgba(0,0,0,.46) 100%),
+    radial-gradient(circle at 50% 55%, rgba(255,255,255,.04), rgba(255,255,255,0) 42%);
+}
+.alpha-den-room__overlays{
+  z-index:1;
+  pointer-events:none;
+}
+.alpha-den-room__overlay{
+  position:absolute;
+  transform:translate(-50%, -50%);
+  transform-origin:center;
+}
+.alpha-den-room__overlay img{
+  display:block;
+  width:100%;
+  height:auto;
+  user-select:none;
+  filter:drop-shadow(0 14px 24px rgba(0,0,0,.38));
+}
+.alpha-den-room__overlay--signal-core{
+  z-index:3;
+}
+.alpha-den-room__overlay--signal-core img{
+  filter:drop-shadow(0 10px 16px rgba(0,0,0,.34)) drop-shadow(0 0 14px rgba(255,191,87,.20));
+}
+.alpha-den-room__overlay--pet-kennel{
+  z-index:2;
+}
+.alpha-den-room__overlay--war-table{
+  z-index:4;
+}
+.alpha-den-room__overlay--war-table img{
+  filter:drop-shadow(0 10px 14px rgba(0,0,0,.26));
+}
+.alpha-den-room__layer{
+  z-index:2;
+}
+.alpha-den-room__layer--details{
+  pointer-events:none;
+}
+.alpha-den-room__layer--hotspots{
+  z-index:5;
+}
+.alpha-den-room__layer--details::before,
+.alpha-den-room__layer--details::after{
+  display:none;
+}
+.alpha-den-zone{
+  position:absolute;
+  transform:translate(-50%, -50%);
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  width:auto;
+  max-width:min(38vw, 210px);
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#eff6ff;
+  text-align:left;
+  cursor:pointer;
+}
+.alpha-den-zone::before,
+.alpha-den-zone::after{
+  content:none;
+}
+.alpha-den-zone > *{
+  position:relative;
+  z-index:1;
+}
+.alpha-den-zone.is-selected .alpha-den-zone__marker{
+  box-shadow:0 0 0 1px rgba(100,196,255,.30), 0 0 20px rgba(100,196,255,.22);
+}
+.alpha-den-zone__marker{
+  position:relative;
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  border:1px solid rgba(197,223,247,.42);
+  background:rgba(5,10,16,.72);
+  box-shadow:0 8px 18px rgba(0,0,0,.24);
+}
+.alpha-den-zone__marker::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:999px;
+  background:rgba(226,237,247,.88);
+}
+.alpha-den-zone__marker::after{
+  content:"";
+  position:absolute;
+  border-radius:999px;
+  inset:-6px;
+  border:1px solid rgba(190,221,246,.24);
+  opacity:.65;
+}
+.alpha-den-zone__labelwrap{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:8px 12px;
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(8,13,20,.84), rgba(5,9,14,.90));
+  border:1px solid rgba(125,156,185,.18);
+  box-shadow:0 12px 20px rgba(0,0,0,.26);
+  backdrop-filter:blur(6px);
+}
+.alpha-den-zone__label{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  color:#edf5ff;
+}
+.alpha-den-zone__state{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:#a9bdd3;
+}
+.alpha-den-zone__state::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:999px;
+  background:rgba(111,156,192,.56);
+}
+.den-building--unbuilt .alpha-den-zone__marker::before{
+  background:rgba(161,180,198,.68);
+}
+.den-building--unbuilt .alpha-den-zone__labelwrap{
+  border-style:dashed;
+  color:#d5e0ec;
+}
+.den-building--primitive .alpha-den-zone__marker{
+  border-color:rgba(99,179,255,.48);
+}
+.den-building--primitive .alpha-den-zone__marker::before{
+  background:rgba(112,201,255,.96);
+}
+.den-building--primitive .alpha-den-zone__marker::after{
+  border-color:rgba(99,179,255,.38);
+}
+.den-building--primitive .alpha-den-zone__labelwrap{
+  border-color:rgba(99,179,255,.26);
+  box-shadow:0 12px 22px rgba(0,0,0,.28), 0 0 0 1px rgba(99,179,255,.06);
+}
+.alpha-den-drawer{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-height:0;
+}
+.alpha-den-card{
+  border:1px solid rgba(131,160,189,.16);
+  border-radius:22px;
+  background:rgba(9,14,21,.82);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.alpha-den-card--summary{
+  padding:16px;
+}
+.alpha-den-card--detail{
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  flex:1;
+}
+.alpha-den-detail__eyebrow{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:#8ea6bf;
+}
+.alpha-den-detail__title{
+  margin:0;
+  font-size:22px;
+  color:#f4f8ff;
+}
+.alpha-den-detail__state{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.alpha-den-detail__pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(129,164,198,.20);
+  background:rgba(10,16,24,.76);
+  color:#d8e5f3;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.alpha-den-detail__copy{
+  margin:0;
+  color:#cad7e5;
+  line-height:1.55;
+}
+.alpha-den-detail__meta{
+  display:grid;
+  gap:8px;
+}
+.alpha-den-detail__meta-row{
+  padding:10px 12px;
+  border-radius:16px;
+  background:rgba(13,19,29,.78);
+  border:1px solid rgba(128,160,189,.12);
+}
+.alpha-den-detail__meta-label{
+  display:block;
+  margin-bottom:4px;
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#879ab0;
+}
+.alpha-den-detail__meta-value{
+  font-size:13px;
+  color:#eff5ff;
+}
+.alpha-den-detail__actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:auto;
+}
+.alpha-den-detail__note{
+  margin:0;
+  color:#93a7bf;
+  line-height:1.5;
+  font-size:12px;
+}
+.alpha-den-footnote{
+  padding:14px 16px;
+  font-size:12px;
+  line-height:1.5;
+  color:#a5b7cb;
+}
+@media (max-width: 860px){
+  .alpha-den-room{
+    grid-template-columns:1fr;
+  }
+  .alpha-den-zone{
+    max-width:min(42vw, 190px);
+  }
+}
+@media (max-width: 640px){
+  .alpha-den-shell{
+    padding:0;
+  }
+  .alpha-den-panel{
+    width:100%;
+    min-height:100vh;
+    border-radius:0;
+    border-left:0;
+    border-right:0;
+    padding:14px;
+  }
+  .alpha-den-room__scene{
+    min-height:320px;
+    aspect-ratio:4 / 3;
+  }
+  .alpha-den-zone{
+    max-width:min(48vw, 170px);
+    gap:8px;
+  }
+  .alpha-den-zone__marker{
+    width:18px;
+    height:18px;
+  }
+  .alpha-den-zone__labelwrap{
+    padding:7px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  .alpha-den-overlay,
+  .alpha-den-btn{
+    transition:none;
+  }
+}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureRoot() {
+    if (!queueForDom(() => ensureRoot())) return null;
+
+    ensureStyles();
+
+    let root = document.getElementById(ROOT_ID);
+    if (!root) {
+      root = document.createElement("div");
+      root.id = ROOT_ID;
+      root.setAttribute("data-open", "0");
+      document.body.appendChild(root);
+      root.addEventListener("click", onRootClick);
+      document.addEventListener("keydown", onKeyDown);
+    }
+    return root;
+  }
+
+  function onKeyDown(event) {
+    if (!isOpen) return;
+    if (event.key === "Escape") close();
+  }
+
+  function onRootClick(event) {
+    const actionEl = event.target.closest("[data-alpha-den-action]");
+    if (!actionEl) return;
+
+    const action = String(actionEl.getAttribute("data-alpha-den-action") || "").trim();
+    const buildingId = String(actionEl.getAttribute("data-building-id") || "").trim();
+
+    if (action === "close") {
+      close();
+      return;
+    }
+    if (action === "reset") {
+      resetPreview();
+      return;
+    }
+    if (action === "select" && buildingId) {
+      selectedBuildingId = buildingId;
+      render(buildingId);
+      return;
+    }
+    if (action === "build" && buildingId) {
+      buildPreview(buildingId);
+    }
+  }
+
+  function getBuildingLevel(buildingId) {
+    return normalizeLevel(ensureState()?.buildings?.[buildingId]?.level);
+  }
+
+  function getBuildingDisplay(config, level) {
+    const built = level > 0;
+    return {
+      level,
+      built,
+      tier: getTierForLevel(level),
+      stateLabel: built ? `Level ${level}` : "Unbuilt",
+      title: built ? config.level1Name : config.unbuiltName,
+      copy: built ? config.level1Copy : config.unbuiltCopy,
+      buttonLabel: built ? "Function coming later" : "Build Preview",
+      buttonDisabled: built,
+      helperCopy: built
+        ? "Real upgrade costs, timers, and functions will be added in a later patch."
+        : "Local preview only. Real build flow unlocks later."
+    };
+  }
+
+  function renderZone(config, level, activeId) {
+    const display = getBuildingDisplay(config, level);
+    const tierClass = `den-building--${display.tier}`;
+    const selectedClass = activeId === config.id ? " is-selected" : "";
+
+    return `
+<button
+  type="button"
+  class="alpha-den-zone ${tierClass}${selectedClass}"
+  style="left:${config.x}%; top:${config.y}%"
+  data-alpha-den-action="select"
+  data-building-id="${config.id}"
+  aria-pressed="${activeId === config.id ? "true" : "false"}"
+>
+  <span class="alpha-den-zone__marker" aria-hidden="true"></span>
+  <span class="alpha-den-zone__labelwrap">
+    <span class="alpha-den-zone__label">${escapeHtml(config.name)}</span>
+    <span class="alpha-den-zone__state">${escapeHtml(display.stateLabel)}</span>
+  </span>
+</button>`;
+  }
+
+  function renderStructureOverlay(config, level) {
+    const assetUrl = getAssetForLevel(config.id, level);
+    if (!assetUrl || level <= 0) return "";
+
+    return `
+<div
+  class="alpha-den-room__overlay alpha-den-room__overlay--${config.id.replace(/_/g, "-")} den-building--${escapeHtml(getTierForLevel(level))}"
+  style="${config.overlayStyle || ""}"
+  aria-hidden="true"
+>
+  <img src="${escapeHtml(assetUrl)}" alt="">
+</div>`;
+  }
+
+  function renderDetail(buildingId) {
+    const config = DEN_BUILDINGS[buildingId] || DEN_BUILDINGS[BUILDING_ORDER[0]];
+    const display = getBuildingDisplay(config, getBuildingLevel(config.id));
+    const buttonClass = display.buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
+
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Selected zone</div>
+  <h2 class="alpha-den-detail__title">${escapeHtml(config.name)}</h2>
+  <div class="alpha-den-detail__state">
+    <span class="alpha-den-detail__pill">${escapeHtml(display.stateLabel)}</span>
+    <span class="alpha-den-detail__pill">${escapeHtml(display.title)}</span>
+  </div>
+  <p class="alpha-den-detail__copy">${escapeHtml(display.copy)}</p>
+  <div class="alpha-den-detail__meta">
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Future role</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(config.role)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Room position</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(config.positionLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Later build flow</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(config.buildTimeLabel)} | ${escapeHtml(config.costPreview)}</span>
+    </div>
+  </div>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${buttonClass}"
+      data-alpha-den-action="${display.buttonDisabled ? "noop" : "build"}"
+      data-building-id="${config.id}"
+      ${display.buttonDisabled ? "disabled" : ""}
+    >${escapeHtml(display.buttonLabel)}</button>
+    <p class="alpha-den-detail__note">${escapeHtml(display.helperCopy)}</p>
+  </div>
+</section>`;
+  }
+
+  function render(buildingId) {
+    const root = ensureRoot();
+    if (!root) return null;
+
+    ensureState();
+
+    if (buildingId && DEN_BUILDINGS[buildingId]) {
+      selectedBuildingId = buildingId;
+    } else if (!DEN_BUILDINGS[selectedBuildingId]) {
+      selectedBuildingId = BUILDING_ORDER[0];
+    }
+
+    const backgroundStyle = DEN_ASSETS.roomBackground
+      ? ` style="background-image:linear-gradient(180deg, rgba(6,10,16,.10), rgba(6,10,16,.28)), url('${escapeHtml(DEN_ASSETS.roomBackground)}');"`
+      : "";
+
+    root.setAttribute("data-open", isOpen ? "1" : "0");
+    root.innerHTML = `
+<div class="alpha-den-overlay">
+  <div class="alpha-den-shell">
+    <button type="button" class="alpha-den-backdrop" data-alpha-den-action="close" aria-label="Close Alpha Den"></button>
+    <section class="alpha-den-panel" role="dialog" aria-modal="true" aria-label="Alpha Den">
+      <div class="alpha-den-frame">
+        <div class="alpha-den-topbar">
+          <div class="alpha-den-heading">
+            <div class="alpha-den-kicker">Personal command room</div>
+            <h1 class="alpha-den-title">ALPHA DEN</h1>
+            <p class="alpha-den-subtitle">Build the first pieces of your Den. Functions unlock in later phases.</p>
+          </div>
+          <div class="alpha-den-topbar-actions">
+            <button type="button" class="alpha-den-btn alpha-den-btn--ghost" data-alpha-den-action="reset">Reset Preview</button>
+            <button type="button" class="alpha-den-btn alpha-den-btn--close" data-alpha-den-action="close" aria-label="Close Alpha Den">x</button>
+          </div>
+        </div>
+
+        <div class="alpha-den-status">
+          <span class="alpha-den-status__pill"><strong>Den Level 1</strong></span>
+          <span class="alpha-den-status__pill">Foundation stage</span>
+          <span class="alpha-den-status__pill">Preview build</span>
+        </div>
+
+        <div class="alpha-den-room">
+          <section class="alpha-den-room__scene">
+            <div class="alpha-den-room__background"${backgroundStyle}></div>
+            <div class="alpha-den-room__overlays">
+              ${BUILDING_ORDER.map((id) => renderStructureOverlay(DEN_BUILDINGS[id], getBuildingLevel(id))).join("")}
+            </div>
+            <div class="alpha-den-room__layer alpha-den-room__layer--details">
+            </div>
+            <div class="alpha-den-room__layer alpha-den-room__layer--hotspots">
+              ${BUILDING_ORDER.map((id) => renderZone(DEN_BUILDINGS[id], getBuildingLevel(id), selectedBuildingId)).join("")}
+            </div>
+          </section>
+
+          <aside class="alpha-den-drawer">
+            <section class="alpha-den-card alpha-den-card--summary">
+              <div class="alpha-den-detail__eyebrow">Den status</div>
+              <p class="alpha-den-detail__copy">This bunker shell is local preview only. The room stays fixed. Future patches swap in real structure layers, costs, timers, and backend state.</p>
+            </section>
+            ${renderDetail(selectedBuildingId)}
+            <section class="alpha-den-card alpha-den-footnote">Preview state is local only. Real Den progression will be backend-backed later.</section>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>`;
+
+    return root;
+  }
+
+  function open(buildingId) {
+    if (!queueForDom(() => open(buildingId))) return;
+    isOpen = true;
+    render(buildingId || selectedBuildingId);
+  }
+
+  function close() {
+    const root = ensureRoot();
+    if (!root) return;
+    isOpen = false;
+    render(selectedBuildingId);
+    root.setAttribute("data-open", "0");
+  }
+
+  function resetPreview() {
+    currentState = cloneState(DEFAULT_STATE);
+    memoryState = cloneState(DEFAULT_STATE);
+    clearStoredState();
+    render(selectedBuildingId);
+  }
+
+  function getState() {
+    return cloneState(ensureState());
+  }
+
+  function buildPreview(buildingId) {
+    if (!DEN_BUILDINGS[buildingId]) return getState();
+
+    const state = ensureState();
+    state.buildings[buildingId].level = Math.max(1, normalizeLevel(state?.buildings?.[buildingId]?.level));
+    currentState = sanitizeState(state);
+    persistState();
+    render(buildingId);
+    return getState();
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  window.AlphaDen = {
+    open,
+    close,
+    render,
+    resetPreview,
+    getState,
+    buildPreview
+  };
+})();
