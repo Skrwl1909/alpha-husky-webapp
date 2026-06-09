@@ -1546,9 +1546,10 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     const valueTier = String(src?.valueTier || _fallbackValueTierForNodeId(nodeId)).trim().toUpperCase() || "LOW_VALUE";
     const ownerFaction = _nodeOwnerFaction(src);
     const viewer = _normFactionKey(src?.youFaction || viewerFaction || _getViewerFaction());
+    const preserveActionHint = nodeId === "alpha_den" || String(src?.action || "").trim() === "open_alpha_den";
 
     let actionHint = String(src?.actionHint || "").trim();
-    if (!actionHint || viewer) {
+    if (!(preserveActionHint && actionHint) && (!actionHint || viewer)) {
       actionHint = _deriveActionHint(displayStatus, ownerFaction, viewer);
     }
 
@@ -2484,6 +2485,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
     if (node?.id) pinEl.dataset.nodeId = node.id;
     if (node?.buildingId) pinEl.dataset.buildingId = node.buildingId;
+    pinEl.dataset.action = node?.action ? String(node.action) : "";
     if (node?.name) pinEl.dataset.nodeName = node.name;
 
     const liveFactionNode = _isLiveFactionNodeFromNode(node);
@@ -2717,6 +2719,83 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   }
 
   function _bindReapplyHooks() {
+    window.addEventListener("click", (event) => {
+      const mapBack = document.getElementById("mapBack");
+      const target = event?.target || null;
+      if (!mapBack || !target || !mapBack.contains(target)) return;
+      if (!_isMapVisible()) return;
+
+      const pinEl = typeof target.closest === "function"
+        ? target.closest('.map-pin, .hotspot, [data-node-id], [data-building-id], [data-action]')
+        : null;
+      if (!pinEl) return;
+
+      const nodeId = _normalizeNodeId(
+        _pinNodeId(pinEl) ||
+        target?.dataset?.nodeId ||
+        target?.getAttribute?.("data-node-id") ||
+        ""
+      );
+      const buildingId = _normalizeNodeId(
+        _pinBuildingId(pinEl) ||
+        target?.dataset?.buildingId ||
+        target?.getAttribute?.("data-building-id") ||
+        ""
+      );
+      const action = String(
+        pinEl?.dataset?.action ||
+        pinEl?.getAttribute?.("data-action") ||
+        target?.dataset?.action ||
+        target?.getAttribute?.("data-action") ||
+        ""
+      ).trim();
+
+      if (nodeId !== "alpha_den" && buildingId !== "alpha_den" && action !== "open_alpha_den") {
+        return;
+      }
+
+      event.preventDefault?.();
+      event.stopImmediatePropagation?.();
+      event.stopPropagation?.();
+
+      const denOpen = window.AlphaDen?.open;
+      if (typeof denOpen === "function") {
+        try {
+          denOpen.call(window.AlphaDen);
+          return;
+        } catch (_) {}
+      }
+
+      const msg = "Alpha Den is unavailable right now.";
+      try {
+        if (typeof window.showToast === "function") {
+          window.showToast(msg);
+          return;
+        }
+        if (typeof window.toast === "function") {
+          window.toast(msg);
+          return;
+        }
+        if (typeof window.notify === "function") {
+          window.notify(msg);
+          return;
+        }
+        if (typeof window.showNotice === "function") {
+          window.showNotice(msg);
+          return;
+        }
+        if (typeof window.notice === "function") {
+          window.notice(msg);
+          return;
+        }
+        if (window.Telegram?.WebApp?.showAlert) {
+          window.Telegram.WebApp.showAlert(msg);
+          return;
+        }
+      } catch (_) {}
+
+      try { console.warn(msg); } catch (_) {}
+    }, true);
     // po kliknięciu / focusie na mapie UI czasem przebudowuje piny
     document.addEventListener("click", (event) => {
       const mapBack = document.getElementById("mapBack");
