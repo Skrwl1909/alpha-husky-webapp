@@ -1373,7 +1373,7 @@
         <div class="ahs-pad">
           <div class="ahs-section-title">Mobile App Sync</div>
           <div class="ahs-mobile-sync-copy">Generate a one-time code to link your Telegram profile with the Alpha Husky mobile app.</div>
-          <button type="button" class="ahs-mobile-sync-btn" id="ahs-mobile-sync-btn"${busy}>Generate mobile sync code</button>
+          <button type="button" class="ahs-mobile-sync-btn" data-action="generate-mobile-sync-code"${busy}>Generate mobile sync code</button>
           ${mobileSyncPanelHtml()}
         </div>
       </div>
@@ -1383,7 +1383,7 @@
   function syncMobileSyncPanelDom(){
     const card = qs("ahs-mobile-sync-card");
     if (!card) return;
-    const btn = card.querySelector("#ahs-mobile-sync-btn");
+    const btn = card.querySelector('[data-action="generate-mobile-sync-code"]');
     if (btn) btn.disabled = !!_mobileSyncLoading;
     const oldPanel = card.querySelector(".ahs-mobile-sync-panel");
     const wrap = document.createElement("div");
@@ -1886,6 +1886,14 @@
     bindClickOnce(qs("closeStats"), Stats.close);
 
     bindClickOnce(qs("statsRoot"), (e) => {
+      const syncBtn = e.target.closest('[data-action="generate-mobile-sync-code"]');
+      if (syncBtn) {
+        e.preventDefault();
+        if (_mobileSyncLoading) return;
+        requestMobileLinkCode();
+        return;
+      }
+
       const btn = e.target.closest(".ahs-plus");
       if (!btn) return;
 
