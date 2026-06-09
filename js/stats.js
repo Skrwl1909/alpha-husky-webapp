@@ -5,6 +5,8 @@
   const Stats = {};
   let _apiPost = null, _tg = null, _dbg = false;
   let _loading = false;
+  let _mobileSyncLoading = false;
+  let _mobileSyncPanel = { state: "idle", code: "", expiryNote: "", message: "" };
   let _inited = false;
   let _loadSeq = 0;
   let _hubGoalSeq = 0;
@@ -1097,6 +1099,62 @@
         padding:14px;
       }
 
+      .ahs-mobile-sync-copy{
+        font-size:12px;
+        color:rgba(220,230,255,.72);
+        line-height:1.45;
+        margin-bottom:10px;
+      }
+
+      .ahs-mobile-sync-btn{
+        width:100%;
+        min-height:38px;
+        border-radius:12px;
+        border:1px solid rgba(120,170,255,.28);
+        background:linear-gradient(180deg, rgba(55,95,160,.34), rgba(30,54,92,.28));
+        color:#eaf1ff;
+        font-size:12px;
+        font-weight:800;
+        cursor:pointer;
+      }
+
+      .ahs-mobile-sync-btn:disabled{
+        opacity:.55;
+        cursor:default;
+      }
+
+      .ahs-mobile-sync-panel{
+        margin-top:10px;
+        font-size:12px;
+        line-height:1.45;
+        color:rgba(220,230,255,.78);
+      }
+
+      .ahs-mobile-sync-panel.-loading{ color:#9fb6d9; }
+      .ahs-mobile-sync-panel.-success{ color:#d8f0ff; }
+      .ahs-mobile-sync-panel.-error{ color:#ffb8a8; }
+
+      .ahs-mobile-sync-code{
+        margin-top:8px;
+        padding:10px 12px;
+        border-radius:12px;
+        border:1px dashed rgba(120,170,255,.35);
+        background:rgba(255,255,255,.04);
+        font-size:18px;
+        font-weight:900;
+        letter-spacing:.18em;
+        text-align:center;
+        color:#f3f7ff;
+        user-select:all;
+        word-break:break-all;
+      }
+
+      .ahs-mobile-sync-note{
+        margin-top:8px;
+        font-size:11px;
+        color:rgba(220,230,255,.62);
+      }
+
       @media (min-width: 430px){
         .ahs-grid-3{
           grid-template-columns:repeat(3, 1fr);
@@ -1263,6 +1321,146 @@
         </div>
       </div>
     `;
+  }
+
+  function extractMobileLinkCode(res){
+    if (!res || typeof res !== "object") return "";
+    const direct = res.code || res.linkCode || res.mobileLinkCode;
+    if (direct) return String(direct).trim();
+    const payload = getPayload(res);
+    if (!payload || typeof payload !== "object") return "";
+    return String(payload.code || payload.linkCode || payload.mobileLinkCode || "").trim();
+  }
+
+  function formatMobileSyncExpiry(res){
+    if (!res || typeof res !== "object") return "";
+    const payload = (res.code || res.linkCode || res.mobileLinkCode) ? res : (getPayload(res) || res);
+    const expiresAt = payload.expiresAt || payload.expires_at;
+    if (expiresAt) return `Expires at ${String(expiresAt)}.`;
+    const expiresIn = payload.expiresIn ?? payload.expiresInSeconds ?? payload.expires_in;
+    const nSec = Number(expiresIn);
+    if (Number.isFinite(nSec) && nSec > 0) {
+      const mins = Math.max(1, Math.round(nSec / 60));
+      return `Valid for about ${mins} minute${mins === 1 ? "" : "s"}.`;
+    }
+    return "One-time code. Use it soon.";
+  }
+
+  function mobileSyncPanelHtml(){
+    const panel = _mobileSyncPanel || { state: "idle", code: "", expiryNote: "", message: "" };
+    const state = String(panel.state || "idle");
+    if (state === "idle") return "";
+    const cls = state === "loading" ? "-loading" : state === "success" ? "-success" : "-error";
+    let body = `<div class="ahs-mobile-sync-panel ${cls}">`;
+    if (state === "loading") {
+      body += "Generating mobile sync code...";
+    } else if (state === "success" && panel.code) {
+      body += `<div>Your one-time sync code:</div>`;
+      body += `<div class="ahs-mobile-sync-code" id="ahs-mobile-sync-code">${esc(panel.code)}</div>`;
+      if (panel.expiryNote) body += `<div class="ahs-mobile-sync-note">${esc(panel.expiryNote)}</div>`;
+      body += `<div class="ahs-mobile-sync-note">Open the Alpha Husky mobile app and enter this code to link your profile.</div>`;
+    } else {
+      body += esc(panel.message || "Could not generate a mobile sync code. Try again.");
+    }
+    body += `</div>`;
+    return body;
+  }
+
+  function renderMobileAppSyncCard(){
+    const busy = _mobileSyncLoading ? " disabled" : "";
+    return `
+      <div class="ahs-card ahs-mobile-sync-card" id="ahs-mobile-sync-card">
+        <div class="ahs-pad">
+          <div class="ahs-section-title">Mobile App Sync</div>
+          <div class="ahs-mobile-sync-copy">Generate a one-time code to link your Telegram profile with the Alpha Husky mobile app.</div>
+          <button type="button" class="ahs-mobile-sync-btn" id="ahs-mobile-sync-btn"${busy}>Generate mobile sync code</button>
+          ${mobileSyncPanelHtml()}
+        </div>
+      </div>
+    `;
+  }
+
+  function syncMobileSyncPanelDom(){
+    const card = qs("ahs-mobile-sync-card");
+    if (!card) return;
+    const btn = card.querySelector("#ahs-mobile-sync-btn");
+    if (btn) btn.disabled = !!_mobileSyncLoading;
+    const oldPanel = card.querySelector(".ahs-mobile-sync-panel");
+    const wrap = document.createElement("div");
+    wrap.innerHTML = mobileSyncPanelHtml();
+    const nextPanel = wrap.firstElementChild;
+    if (oldPanel) oldPanel.replaceWith(nextPanel || document.createTextNode(""));
+    else if (nextPanel) card.querySelector(".ahs-pad")?.appendChild(nextPanel);
+  }
+
+  function mobileSyncErrorMessage(err){
+    const status = Number(err?.status || 0);
+    const data = (err && err.data && typeof err.data === "object") ? err.data : {};
+    const reason = String(data.reason || data.error || err?.message || "").trim().toUpperCase();
+    const message = String(data.message || "").trim();
+
+    if (status === 401 || reason.includes("INIT") || reason.includes("AUTH") || reason.includes("TELEGRAM")) {
+      return "Telegram auth missing. Reopen the Mini App and try again.";
+    }
+    if (status === 404 || reason.includes("ALPHA_ACCOUNT_DISABLED") || reason.includes("DISABLED")) {
+      return "Mobile App Sync is not available right now.";
+    }
+    if (reason.includes("NOT_ALLOWLISTED") || reason.includes("ALREADY_LINKED") || reason.includes("UNAVAILABLE")) {
+      return message || "Mobile App Sync is unavailable for this account.";
+    }
+    if (status === 429 || reason.includes("RATE")) {
+      return "Too many code requests. Wait a moment and try again.";
+    }
+    if (message) return message;
+    return "Could not generate a mobile sync code. Try again.";
+  }
+
+  async function requestMobileLinkCode(){
+    if (_mobileSyncLoading) return;
+
+    if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
+    if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
+    if (!_tg) _tg = window.Telegram?.WebApp || null;
+
+    if (typeof _apiPost !== "function") {
+      _mobileSyncPanel = { state: "error", code: "", expiryNote: "", message: "Mini App API is not ready yet." };
+      syncMobileSyncPanelDom();
+      return;
+    }
+
+    _mobileSyncLoading = true;
+    _mobileSyncPanel = { state: "loading", code: "", expiryNote: "", message: "" };
+    syncMobileSyncPanelDom();
+
+    try {
+      const res = await _apiPost("/webapp/mobile/link-code", {});
+      const code = extractMobileLinkCode(res);
+      if (!code) {
+        _mobileSyncPanel = {
+          state: "error",
+          code: "",
+          expiryNote: "",
+          message: String(res?.message || "Server did not return a sync code.")
+        };
+        return;
+      }
+      _mobileSyncPanel = {
+        state: "success",
+        code,
+        expiryNote: formatMobileSyncExpiry(res),
+        message: ""
+      };
+    } catch (err) {
+      _mobileSyncPanel = {
+        state: "error",
+        code: "",
+        expiryNote: "",
+        message: mobileSyncErrorMessage(err)
+      };
+    } finally {
+      _mobileSyncLoading = false;
+      syncMobileSyncPanelDom();
+    }
   }
 
   function render(stats, mystats, extras = _progressionExtras){
@@ -1453,6 +1651,8 @@
 
         ${gearHtml}
         ${setsHtml}
+
+        ${renderMobileAppSyncCard()}
       </div>
     `;
   }
