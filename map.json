@@ -223,6 +223,22 @@
       "tags": ["hq", "faction", "safe", "community"]
     },
     {
+      "id": "alpha_den",
+      "name": "Alpha Den",
+      "region": "chain",
+      "x": 31,
+      "y": 64,
+      "icon": "images/map/building/alpha_den.png",
+      "desc": "Personal command room preview",
+      "action": "open_alpha_den",
+      "buildingId": "alpha_den",
+      "labelOffset": { "x": 14, "y": 30 },
+      "actionHint": "Enter Den",
+      "reasonText": "Your bunker shell is ready for local preview builds.",
+      "rewardText": "Preview only. Real Den systems unlock in a later patch.",
+      "tags": ["safe", "den", "preview"]
+    },
+    {
       "id": "chain_gate",
       "name": "The Chain Gate",
       "region": "chain",
