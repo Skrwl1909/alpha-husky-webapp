@@ -46,7 +46,8 @@
           (readyName === "oracle.js" && !!global.Oracle) ||
           (readyName === "bloodmoon.js" && !!global.BloodMoon) ||
           (readyName === "arena.js" && !!global.Arena) ||
-          (readyName === "slots.js" && !!global.Slots);
+          (readyName === "slots.js" && !!global.Slots) ||
+          (readyName === "alpha_den.js" && !!global.AlphaDen?.open);
 
         if (isReady) return resolve(true);
 
@@ -350,6 +351,22 @@
       return true;
     });
   }
+  
+  async function ensureAlphaDenLoaded(apiPost, tg, dbg) {
+  if (global.AlphaDen?.open) return true;
+
+  const loadScript = getLoadScript();
+
+  return await once("alpha_den", async () => {
+    await loadScript("js/alpha_den.js");
+
+    if (!global.AlphaDen?.open) {
+      throw new Error("alpha_den.js loaded but window.AlphaDen.open is missing");
+    }
+
+    return true;
+  });
+  }
 
   function init(deps = {}) {
     STATE.deps = {
@@ -374,6 +391,7 @@
     global.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
     global.ensureArenaLoaded = ensureArenaLoaded;
     global.ensureSlotsLoaded = ensureSlotsLoaded;
+    global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
 
     return API;
   }
@@ -394,8 +412,9 @@
     ensureOracleLoaded,
     ensureBloodMoonLoaded,
     ensureArenaLoaded,
-    ensureSlotsLoaded
-  };
+    ensureSlotsLoaded,
+    ensureAlphaDenLoaded
+    };
 
   global.AHBootLoaders = API;
 })(window);
