@@ -8427,6 +8427,7 @@ document.addEventListener("click", async (e) => {
           const action = String(node?.action || "").trim();
           const actionHint = String(pinEl?.dataset?.actionHint || "").trim();
 
+          if (bid === "alpha_den" || action === "open_alpha_den") return "Enter Den";
           if (bid === "phantom_nodes") return "Open Phantom Nodes";
           if (bid === "blood_moon_tower" || action === "open_bloodmoon") return "Open Blood-Moon";
           if (bid === "edge_of_chain" || action === "open_siege") return "Open Siege";
@@ -8446,6 +8447,7 @@ document.addEventListener("click", async (e) => {
           const bid = String(node?.buildingId || node?.id || "").trim();
           const action = String(node?.action || "").trim();
 
+          if (bid === "alpha_den" || action === "open_alpha_den") return "Personal bunker shell - preview your first Den builds here.";
           if (pinEl?.classList?.contains("siege-forming")) return "Siege forming - join or watch the clash.";
           if (pinEl?.classList?.contains("siege-running")) return "Siege live - join or watch the clash.";
           if (pinEl?.classList?.contains("pressure-contested") || pinEl?.classList?.contains("is-contested")) return "Contested zone - patrol, donate or join the fight.";
@@ -9777,6 +9779,16 @@ function isRegionUnlocked(regionId){
         return openArchiveNodeSheet(b);
       }
 
+      if (
+        bid === "alpha_den" ||
+        b.buildingId === "alpha_den" ||
+        b.id === "alpha_den" ||
+        b.action === "open_alpha_den"
+      ) {
+        if (window.AlphaDen?.open) return window.AlphaDen.open();
+        return openBuilding(bid, b.name, b.desc);
+      }
+
       if (!unlocked) return await openLocked(b);
 
       if (
@@ -11026,6 +11038,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
+<script src="/js/alpha_den.js?v=den-p0e"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
