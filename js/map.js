@@ -12,7 +12,9 @@
   let _leadersLastFetchMs = 0;
   let _sitrepTried = false;
   let _sitrepLoading = false;
+  let _alphaDenLoadPromise = null;
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
+  const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=den-p0e";
 
   const FACTIONS = {
     rogue_byte:   { cls: "f-rb", code: "RB" },
@@ -2718,6 +2720,122 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     });
   }
 
+  function isAlphaDenAvailable() {
+    return !!(window.AlphaDen && typeof window.AlphaDen.open === "function");
+  }
+
+  function ensureAlphaDenLoaded() {
+    if (isAlphaDenAvailable()) return Promise.resolve(true);
+    if (_alphaDenLoadPromise) return _alphaDenLoadPromise;
+
+    _alphaDenLoadPromise = new Promise((resolve) => {
+      const finish = (loaded) => {
+        _alphaDenLoadPromise = null;
+        resolve(!!loaded && isAlphaDenAvailable());
+      };
+
+      const attachToScript = (script) => {
+        if (!script) {
+          finish(false);
+          return;
+        }
+
+        if (isAlphaDenAvailable() || script.dataset.alphaDenRuntimeLoaded === "1") {
+          finish(true);
+          return;
+        }
+        if (script.dataset.alphaDenRuntimeFailed === "1") {
+          finish(false);
+          return;
+        }
+
+        const readyState = String(script.readyState || "").toLowerCase();
+        if (readyState === "loaded" || readyState === "complete") {
+          finish(true);
+          return;
+        }
+
+        const onLoad = () => {
+          script.dataset.alphaDenRuntimeLoaded = "1";
+          cleanup();
+          finish(true);
+        };
+        const onError = () => {
+          script.dataset.alphaDenRuntimeFailed = "1";
+          cleanup();
+          finish(false);
+        };
+        const cleanup = () => {
+          script.removeEventListener("load", onLoad);
+          script.removeEventListener("error", onError);
+        };
+
+        script.addEventListener("load", onLoad);
+        script.addEventListener("error", onError);
+      };
+
+      const existingScript = Array.from(document.getElementsByTagName("script")).find((script) => {
+        if (!script) return false;
+        if (script.dataset?.alphaDenRuntime === "1") return true;
+        const srcAttr = String(script.getAttribute("src") || "").trim();
+        return srcAttr === ALPHA_DEN_RUNTIME_SRC;
+      });
+
+      if (existingScript) {
+        attachToScript(existingScript);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = ALPHA_DEN_RUNTIME_SRC;
+      script.async = false;
+      script.dataset.alphaDenRuntime = "1";
+      attachToScript(script);
+
+      const parent = document.head || document.body || document.documentElement;
+      if (!parent) {
+        script.dataset.alphaDenRuntimeFailed = "1";
+        finish(false);
+        return;
+      }
+      parent.appendChild(script);
+    });
+
+    return _alphaDenLoadPromise;
+  }
+
+  function _showAlphaDenUnavailableNotice() {
+    const msg = "Alpha Den is unavailable right now.";
+    try {
+      if (typeof window.showToast === "function") {
+        window.showToast(msg);
+        return;
+      }
+      if (typeof window.toast === "function") {
+        window.toast(msg);
+        return;
+      }
+      if (typeof window.notify === "function") {
+        window.notify(msg);
+        return;
+      }
+      if (typeof window.showNotice === "function") {
+        window.showNotice(msg);
+        return;
+      }
+      if (typeof window.notice === "function") {
+        window.notice(msg);
+        return;
+      }
+      if (window.Telegram?.WebApp?.showAlert) {
+        window.Telegram.WebApp.showAlert(msg);
+        return;
+      }
+    } catch (_) {}
+
+    try { console.warn(msg); } catch (_) {}
+  }
+
   function _bindReapplyHooks() {
     window.addEventListener("click", (event) => {
       const mapBack = document.getElementById("mapBack");
@@ -2758,43 +2876,27 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       event.stopImmediatePropagation?.();
       event.stopPropagation?.();
 
-      const denOpen = window.AlphaDen?.open;
-      if (typeof denOpen === "function") {
+      const openAlphaDen = () => {
+        const denOpen = window.AlphaDen?.open;
+        if (typeof denOpen !== "function") return false;
         try {
           denOpen.call(window.AlphaDen);
-          return;
-        } catch (_) {}
-      }
+          return true;
+        } catch (_) {
+          return false;
+        }
+      };
 
-      const msg = "Alpha Den is unavailable right now.";
-      try {
-        if (typeof window.showToast === "function") {
-          window.showToast(msg);
-          return;
-        }
-        if (typeof window.toast === "function") {
-          window.toast(msg);
-          return;
-        }
-        if (typeof window.notify === "function") {
-          window.notify(msg);
-          return;
-        }
-        if (typeof window.showNotice === "function") {
-          window.showNotice(msg);
-          return;
-        }
-        if (typeof window.notice === "function") {
-          window.notice(msg);
-          return;
-        }
-        if (window.Telegram?.WebApp?.showAlert) {
-          window.Telegram.WebApp.showAlert(msg);
-          return;
-        }
-      } catch (_) {}
+      if (openAlphaDen()) return;
 
-      try { console.warn(msg); } catch (_) {}
+      ensureAlphaDenLoaded()
+        .then((loaded) => {
+          if (loaded && openAlphaDen()) return;
+          _showAlphaDenUnavailableNotice();
+        })
+        .catch(() => {
+          _showAlphaDenUnavailableNotice();
+        });
     }, true);
     // po kliknięciu / focusie na mapie UI czasem przebudowuje piny
     document.addEventListener("click", (event) => {
