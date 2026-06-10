@@ -14,7 +14,8 @@
   let _sitrepLoading = false;
   let _alphaDenLoadPromise = null;
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
-  const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=den-p0e";
+  const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=den-p0f";
+  const ALPHA_DEN_RUNTIME_PATH = "/js/alpha_den.js";
 
   const FACTIONS = {
     rogue_byte:   { cls: "f-rb", code: "RB" },
@@ -2724,82 +2725,120 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     return !!(window.AlphaDen && typeof window.AlphaDen.open === "function");
   }
 
+  function _isAlphaDenRuntimeScript(script) {
+    if (!script) return false;
+    const src = String(script.getAttribute?.("src") || script.src || "").trim();
+    return src.includes(ALPHA_DEN_RUNTIME_PATH);
+  }
+
+  function _waitForAlphaDenScript(script) {
+    return new Promise((resolve) => {
+      if (!script) {
+        resolve(false);
+        return;
+      }
+      if (isAlphaDenAvailable()) {
+        resolve(true);
+        return;
+      }
+      if (script.dataset.alphaDenRuntimeFailed === "1") {
+        resolve(false);
+        return;
+      }
+
+      const readyState = String(script.readyState || "").toLowerCase();
+      if (
+        script.dataset.alphaDenRuntimeLoaded === "1" ||
+        readyState === "loaded" ||
+        readyState === "complete"
+      ) {
+        resolve(isAlphaDenAvailable());
+        return;
+      }
+
+      const onLoad = () => {
+        script.dataset.alphaDenRuntimeLoaded = "1";
+        cleanup();
+        resolve(isAlphaDenAvailable());
+      };
+      const onError = () => {
+        script.dataset.alphaDenRuntimeFailed = "1";
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        script.removeEventListener("load", onLoad);
+        script.removeEventListener("error", onError);
+      };
+
+      script.addEventListener("load", onLoad);
+      script.addEventListener("error", onError);
+    });
+  }
+
   function ensureAlphaDenLoaded() {
     if (isAlphaDenAvailable()) return Promise.resolve(true);
     if (_alphaDenLoadPromise) return _alphaDenLoadPromise;
 
-    _alphaDenLoadPromise = new Promise((resolve) => {
-      const finish = (loaded) => {
-        _alphaDenLoadPromise = null;
-        resolve(!!loaded && isAlphaDenAvailable());
-      };
-
-      const attachToScript = (script) => {
-        if (!script) {
-          finish(false);
-          return;
-        }
-
-        if (isAlphaDenAvailable() || script.dataset.alphaDenRuntimeLoaded === "1") {
-          finish(true);
-          return;
-        }
-        if (script.dataset.alphaDenRuntimeFailed === "1") {
-          finish(false);
-          return;
-        }
-
-        const readyState = String(script.readyState || "").toLowerCase();
-        if (readyState === "loaded" || readyState === "complete") {
-          finish(true);
-          return;
-        }
-
-        const onLoad = () => {
-          script.dataset.alphaDenRuntimeLoaded = "1";
-          cleanup();
-          finish(true);
-        };
-        const onError = () => {
-          script.dataset.alphaDenRuntimeFailed = "1";
-          cleanup();
-          finish(false);
-        };
-        const cleanup = () => {
-          script.removeEventListener("load", onLoad);
-          script.removeEventListener("error", onError);
-        };
-
-        script.addEventListener("load", onLoad);
-        script.addEventListener("error", onError);
-      };
-
-      const existingScript = Array.from(document.getElementsByTagName("script")).find((script) => {
-        if (!script) return false;
-        if (script.dataset?.alphaDenRuntime === "1") return true;
-        const srcAttr = String(script.getAttribute("src") || "").trim();
-        return srcAttr === ALPHA_DEN_RUNTIME_SRC;
+    _alphaDenLoadPromise = (async () => {
+      const allScripts = Array.from(document.getElementsByTagName("script")).filter(_isAlphaDenRuntimeScript);
+      const currentRuntimeScript = allScripts.find((script) => {
+        const src = String(script.getAttribute("src") || script.src || "").trim();
+        return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=den-p0f");
       });
 
-      if (existingScript) {
-        attachToScript(existingScript);
-        return;
+      if (currentRuntimeScript) {
+        return _waitForAlphaDenScript(currentRuntimeScript);
       }
 
-      const script = document.createElement("script");
-      script.src = ALPHA_DEN_RUNTIME_SRC;
-      script.async = false;
-      script.dataset.alphaDenRuntime = "1";
-      attachToScript(script);
+      const pendingLegacyScript = allScripts.find((script) => {
+        if (script.dataset.alphaDenRuntimeFailed === "1") return false;
+        if (script.dataset.alphaDenRuntimeLoaded === "1") return false;
+        const readyState = String(script.readyState || "").toLowerCase();
+        return readyState !== "loaded" && readyState !== "complete";
+      });
 
-      const parent = document.head || document.body || document.documentElement;
-      if (!parent) {
-        script.dataset.alphaDenRuntimeFailed = "1";
-        finish(false);
-        return;
+      if (pendingLegacyScript) {
+        const pendingReady = await _waitForAlphaDenScript(pendingLegacyScript);
+        if (pendingReady) return true;
       }
-      parent.appendChild(script);
-    });
+
+      return new Promise((resolve) => {
+        const finish = (loaded) => {
+          resolve(!!loaded && isAlphaDenAvailable());
+        };
+
+        const existingCurrentScript = Array.from(document.getElementsByTagName("script")).find((script) => {
+          if (!script) return false;
+          const src = String(script.getAttribute("src") || script.src || "").trim();
+          return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=den-p0f");
+        });
+
+        if (existingCurrentScript) {
+          _waitForAlphaDenScript(existingCurrentScript).then(finish).catch(() => finish(false));
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = ALPHA_DEN_RUNTIME_SRC;
+        script.async = false;
+        script.dataset.alphaDenRuntime = "1";
+
+        const parent = document.head || document.body || document.documentElement;
+        if (!parent) {
+          script.dataset.alphaDenRuntimeFailed = "1";
+          finish(false);
+          return;
+        }
+
+        _waitForAlphaDenScript(script).then(finish).catch(() => finish(false));
+        parent.appendChild(script);
+      });
+    })()
+      .catch(() => false)
+      .finally(() => {
+        _alphaDenLoadPromise = null;
+      });
 
     return _alphaDenLoadPromise;
   }
