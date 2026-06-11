@@ -97,6 +97,11 @@
   let selectedBuildingId = BUILDING_ORDER[0];
   let isOpen = false;
   let domReadyQueued = false;
+  let serverState = null;
+  let usingServerState = false;
+  let lastSyncError = "";
+  let isActionBusy = false;
+  let syncPromise = null;
 
   function cloneState(value) {
     return JSON.parse(JSON.stringify(value));
@@ -135,6 +140,236 @@
       currentState = sanitizeState(readStoredState() || memoryState);
     }
     return currentState;
+  }
+
+  function getApiPost() {
+    const fn = window.apiPost || window.S?.apiPost || window.AH?.apiPost || null;
+    return typeof fn === "function" ? fn : null;
+  }
+
+  function asUnix(value) {
+    const num = Number(value);
+    return Number.isFinite(num) && num >= 0 ? Math.floor(num) : null;
+  }
+
+  function asCount(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.max(0, Math.floor(num)) : 0;
+  }
+
+  function notify(message) {
+    const text = String(message || "").trim();
+    if (!text) return;
+    try {
+      if (typeof window.showToast === "function") {
+        window.showToast(text);
+        return;
+      }
+      if (typeof window.toast === "function") {
+        window.toast(text);
+        return;
+      }
+      if (typeof window.notify === "function") {
+        window.notify(text);
+        return;
+      }
+      if (typeof window.showNotice === "function") {
+        window.showNotice(text);
+        return;
+      }
+      if (window.Telegram?.WebApp?.showAlert) {
+        window.Telegram.WebApp.showAlert(text);
+        return;
+      }
+    } catch (_) {}
+    try { console.warn(text); } catch (_) {}
+  }
+
+  function formatDuration(seconds) {
+    const total = Math.max(0, asCount(seconds));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    if (mins > 0) return `${mins}m ${String(secs).padStart(2, "0")}s`;
+    return `${secs}s`;
+  }
+
+  function formatCost(cost) {
+    if (!cost || typeof cost !== "object") return "No cost";
+    const parts = [];
+    const bones = asCount(cost.bones);
+    const scrap = asCount(cost.scrap);
+    if (bones > 0) parts.push(`${bones} Bones`);
+    if (scrap > 0) parts.push(`${scrap} Scrap`);
+    return parts.length ? parts.join(" + ") : "No cost";
+  }
+
+  function makeRunId(action, buildingId) {
+    const stamp = Date.now().toString(36);
+    const rand = Math.random().toString(36).slice(2, 8);
+    return `alpha_den:${String(action || "action")}:${String(buildingId || "building")}:${stamp}:${rand}`;
+  }
+
+  function makeApiError(out, fallback) {
+    const err = new Error(String(out?.reason || fallback || "REQUEST_FAILED"));
+    err.data = out || null;
+    return err;
+  }
+
+  function humanizeReason(reason) {
+    const code = String(reason || "").trim().toUpperCase();
+    if (code === "BUILD_DISABLED") return "Build system disabled for this test window";
+    if (code === "INVALID_BUILDING") return "That build zone is unavailable right now.";
+    if (code === "ALREADY_BUILT") return "This structure is already built.";
+    if (code === "ALREADY_BUILDING") return "This structure is already building.";
+    if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
+    if (code === "NOT_BUILDING") return "This structure is not building right now.";
+    if (code === "NOT_READY") return "This build is not ready yet.";
+    if (code === "STATE_FAIL" || code === "DEN_STATE_INVALID") return "Live Den state is unavailable right now.";
+    if (code === "USER_NOT_FOUND" || code === "USER_NOT_REGISTERED" || code === "USER_NOT_FOUND") return "Your live Den state is not ready yet.";
+    return "Local preview only";
+  }
+
+  function normalizeServerState(raw) {
+    if (!raw || typeof raw !== "object" || !raw.buildings || typeof raw.buildings !== "object") return null;
+
+    const next = {
+      version: asCount(raw.version) || 1,
+      denLevel: Math.max(1, asCount(raw.denLevel) || 1),
+      buildEnabled: !!raw.buildEnabled,
+      now: asUnix(raw.now) || Math.floor(Date.now() / 1000),
+      balances: {
+        bones: asCount(raw?.balances?.bones),
+        scrap: asCount(raw?.balances?.scrap)
+      },
+      buildings: {}
+    };
+
+    for (const id of BUILDING_ORDER) {
+      const src = raw.buildings[id] || {};
+      next.buildings[id] = {
+        id,
+        name: String(src.name || DEN_BUILDINGS[id]?.name || id),
+        level: asCount(src.level),
+        uiStatus: String(src.uiStatus || "").trim().toLowerCase() || (asCount(src.level) > 0 ? "built" : "unbuilt"),
+        rawStatus: String(src.rawStatus || src.status || "").trim().toLowerCase() || "idle",
+        buildStartedAt: asUnix(src.buildStartedAt),
+        buildReadyAt: asUnix(src.buildReadyAt),
+        lastClaimedAt: asUnix(src.lastClaimedAt),
+        secondsRemaining: asCount(src.secondsRemaining),
+        canStart: !!src.canStart,
+        canClaim: !!src.canClaim,
+        nextLevel: src.nextLevel == null ? null : asCount(src.nextLevel),
+        nextCost: src.nextCost && typeof src.nextCost === "object"
+          ? { bones: asCount(src.nextCost.bones), scrap: asCount(src.nextCost.scrap) }
+          : null,
+        buildSeconds: asCount(src.buildSeconds),
+        hasResources: src.hasResources !== false
+      };
+    }
+
+    return next;
+  }
+
+  function getLocalBuildingState(buildingId) {
+    const local = ensureState()?.buildings?.[buildingId] || {};
+    const level = normalizeLevel(local.level);
+    return {
+      id: buildingId,
+      name: DEN_BUILDINGS[buildingId]?.name || buildingId,
+      level,
+      uiStatus: level >= 1 ? "built" : "unbuilt",
+      rawStatus: "idle",
+      buildStartedAt: null,
+      buildReadyAt: null,
+      lastClaimedAt: null,
+      secondsRemaining: 0,
+      canStart: level < 1,
+      canClaim: false,
+      nextLevel: level < 1 ? 1 : null,
+      nextCost: { bones: 25, scrap: 1 },
+      buildSeconds: 120,
+      hasResources: true
+    };
+  }
+
+  function getEffectiveState() {
+    if (usingServerState && serverState?.buildings) return serverState;
+    return ensureState();
+  }
+
+  function getEffectiveBuildingState(buildingId) {
+    if (usingServerState && serverState?.buildings?.[buildingId]) {
+      return serverState.buildings[buildingId];
+    }
+    return getLocalBuildingState(buildingId);
+  }
+
+  async function refreshServerState({ rerender = true } = {}) {
+    const apiPost = getApiPost();
+    if (!apiPost) {
+      usingServerState = false;
+      serverState = null;
+      lastSyncError = "apiPost missing";
+      if (rerender && isOpen) render(selectedBuildingId);
+      return null;
+    }
+    if (syncPromise) return syncPromise;
+
+    syncPromise = (async () => {
+      try {
+        const out = await apiPost("/webapp/den/state", {});
+        if (!out || out.ok === false) throw makeApiError(out, "STATE_FAIL");
+        const payload = normalizeServerState(out.alphaDen || out?.data?.alphaDen || out?.data || out);
+        if (!payload) throw makeApiError(out, "DEN_STATE_INVALID");
+        serverState = payload;
+        usingServerState = true;
+        lastSyncError = "";
+        return payload;
+      } catch (err) {
+        usingServerState = false;
+        serverState = null;
+        lastSyncError = String(err?.data?.reason || err?.message || "STATE_FAIL");
+        return null;
+      } finally {
+        syncPromise = null;
+        if (rerender && isOpen) render(selectedBuildingId);
+      }
+    })();
+
+    return syncPromise;
+  }
+
+  async function runServerAction(path, buildingId) {
+    const apiPost = getApiPost();
+    if (!apiPost) {
+      notify("Local preview only");
+      return null;
+    }
+    if (isActionBusy) return null;
+
+    isActionBusy = true;
+    render(buildingId);
+    try {
+      const out = await apiPost(path, {
+        buildingId,
+        run_id: makeRunId(path.split("/").pop(), buildingId)
+      });
+      if (!out || out.ok === false) throw makeApiError(out, "ACTION_FAILED");
+      const payload = normalizeServerState(out.alphaDen || out?.data?.alphaDen || out?.data || out);
+      if (payload) {
+        serverState = payload;
+        usingServerState = true;
+        lastSyncError = "";
+      }
+      return out;
+    } catch (err) {
+      notify(humanizeReason(err?.data?.reason || err?.message || "ACTION_FAILED"));
+      await refreshServerState({ rerender: false });
+      return null;
+    } finally {
+      isActionBusy = false;
+      render(buildingId);
+    }
   }
 
   function persistState() {
@@ -841,7 +1076,7 @@
     if (event.key === "Escape") close();
   }
 
-  function onRootClick(event) {
+  async function onRootClick(event) {
     const actionEl = event.target.closest("[data-alpha-den-action]");
     if (!actionEl) return;
 
@@ -853,7 +1088,15 @@
       return;
     }
     if (action === "reset") {
+      if (usingServerState) {
+        await refreshServerState();
+        return;
+      }
       resetPreview();
+      return;
+    }
+    if (action === "refresh") {
+      await refreshServerState();
       return;
     }
     if (action === "select" && buildingId) {
@@ -862,33 +1105,98 @@
       return;
     }
     if (action === "build" && buildingId) {
+      if (usingServerState) {
+        await runServerAction("/webapp/den/build/start", buildingId);
+        return;
+      }
       buildPreview(buildingId);
+      return;
+    }
+    if (action === "claim" && buildingId) {
+      await runServerAction("/webapp/den/build/claim", buildingId);
     }
   }
 
   function getBuildingLevel(buildingId) {
-    return normalizeLevel(ensureState()?.buildings?.[buildingId]?.level);
+    return normalizeLevel(getEffectiveBuildingState(buildingId)?.level);
   }
 
-  function getBuildingDisplay(config, level) {
+  function getBuildingDisplay(config, buildingId) {
+    const building = getEffectiveBuildingState(buildingId);
+    const level = normalizeLevel(building?.level);
     const built = level > 0;
+    const tier = getTierForLevel(level);
+
+    if (!usingServerState) {
+      return {
+        level,
+        built,
+        tier,
+        stateLabel: built ? `Level ${level}` : "Unbuilt",
+        title: built ? config.level1Name : config.unbuiltName,
+        copy: built ? config.level1Copy : config.unbuiltCopy,
+        buttonLabel: built ? "Function coming later" : "Build Preview",
+        buttonAction: built ? "noop" : "build",
+        buttonDisabled: built,
+        helperCopy: built
+          ? "Real upgrade costs, timers, and functions will be added in a later patch."
+          : "Local preview only. Real build flow unlocks later."
+      };
+    }
+
+    const uiStatus = String(building?.uiStatus || "").trim().toLowerCase() || (built ? "built" : "unbuilt");
+    const buildEnabled = !!serverState?.buildEnabled;
+    const nextCost = building?.nextCost || null;
+    const buildSeconds = asCount(building?.buildSeconds);
+    let stateLabel = built ? `Level ${level}` : "Unbuilt";
+    let buttonLabel = "Function coming later";
+    let buttonAction = "noop";
+    let buttonDisabled = true;
+    let helperCopy = "Live Den state";
+
+    if (!buildEnabled) {
+      stateLabel = built ? `Level ${level}` : "Unbuilt";
+      helperCopy = "Live Den state. Build system disabled for this test window.";
+    } else if (uiStatus === "unbuilt") {
+      stateLabel = "Ready";
+      buttonLabel = "Start Build";
+      buttonAction = "build";
+      buttonDisabled = isActionBusy;
+      helperCopy = `${formatCost(nextCost)} • ${formatDuration(buildSeconds)} build`;
+      if (building?.hasResources === false) {
+        helperCopy = `Need ${formatCost(nextCost)} to start this build.`;
+      }
+    } else if (uiStatus === "building") {
+      stateLabel = "Building";
+      buttonLabel = "Building...";
+      helperCopy = `Ready in ${formatDuration(building?.secondsRemaining)}.`;
+    } else if (uiStatus === "claim_available") {
+      stateLabel = "Build ready";
+      buttonLabel = "Claim Build";
+      buttonAction = "claim";
+      buttonDisabled = isActionBusy || !building?.canClaim;
+      helperCopy = "Build ready. Claim Build to complete this structure.";
+    } else if (built) {
+      stateLabel = `Level ${level}`;
+      helperCopy = "Live Den state. Structure built. Function coming later.";
+    }
+
     return {
       level,
       built,
-      tier: getTierForLevel(level),
-      stateLabel: built ? `Level ${level}` : "Unbuilt",
+      tier,
+      stateLabel,
       title: built ? config.level1Name : config.unbuiltName,
       copy: built ? config.level1Copy : config.unbuiltCopy,
-      buttonLabel: built ? "Function coming later" : "Build Preview",
-      buttonDisabled: built,
-      helperCopy: built
-        ? "Real upgrade costs, timers, and functions will be added in a later patch."
-        : "Local preview only. Real build flow unlocks later."
+      buttonLabel,
+      buttonAction,
+      buttonDisabled,
+      helperCopy
     };
   }
 
-  function renderZone(config, level, activeId) {
-    const display = getBuildingDisplay(config, level);
+  function renderZone(config, buildingId, activeId) {
+    const display = getBuildingDisplay(config, buildingId);
     const tierClass = `den-building--${display.tier}`;
     const selectedClass = activeId === config.id ? " is-selected" : "";
 
@@ -925,8 +1233,14 @@
 
   function renderDetail(buildingId) {
     const config = DEN_BUILDINGS[buildingId] || DEN_BUILDINGS[BUILDING_ORDER[0]];
-    const display = getBuildingDisplay(config, getBuildingLevel(config.id));
+    const display = getBuildingDisplay(config, config.id);
     const buttonClass = display.buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
+    const building = getEffectiveBuildingState(config.id);
+    const buildMeta = usingServerState
+      ? (display.built
+        ? "Level 1 complete | Function coming later"
+        : `${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)}` : ""}`)
+      : `${escapeHtml(config.buildTimeLabel)} | ${escapeHtml(config.costPreview)}`;
 
     return `
 <section class="alpha-den-card alpha-den-card--detail">
@@ -948,14 +1262,14 @@
     </div>
     <div class="alpha-den-detail__meta-row">
       <span class="alpha-den-detail__meta-label">Later build flow</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(config.buildTimeLabel)} | ${escapeHtml(config.costPreview)}</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(buildMeta)}</span>
     </div>
   </div>
   <div class="alpha-den-detail__actions">
     <button
       type="button"
       class="${buttonClass}"
-      data-alpha-den-action="${display.buttonDisabled ? "noop" : "build"}"
+      data-alpha-den-action="${display.buttonDisabled ? "noop" : display.buttonAction}"
       data-building-id="${config.id}"
       ${display.buttonDisabled ? "disabled" : ""}
     >${escapeHtml(display.buttonLabel)}</button>
@@ -968,7 +1282,8 @@
     const root = ensureRoot();
     if (!root) return null;
 
-    ensureState();
+    const state = getEffectiveState();
+    const liveMode = !!(usingServerState && serverState?.buildings);
 
     if (buildingId && DEN_BUILDINGS[buildingId]) {
       selectedBuildingId = buildingId;
@@ -978,6 +1293,25 @@
 
     const backgroundMarkup = DEN_ASSETS.roomBackground
       ? `<img class="alpha-den-room__background-img" src="${escapeHtml(DEN_ASSETS.roomBackground)}" alt="">`
+      : "";
+    const topAction = liveMode ? "refresh" : "reset";
+    const topActionLabel = liveMode ? "Refresh" : "Reset Preview";
+    const summaryCopy = liveMode
+      ? (state.buildEnabled
+        ? "Live Den state. Level 0 to Level 1 construction is synced with the server in this test window."
+        : "Live Den state. Build system disabled for this test window.")
+      : "This bunker shell is local preview only. The room stays fixed. Future patches swap in real structure layers, costs, timers, and backend state.";
+    const footnote = liveMode
+      ? "Server synced. Only Level 0 to Level 1 construction is active in this test window."
+      : "Preview state is local only. Real Den progression will be backend-backed later.";
+    const modePill = liveMode ? "Live Den state" : "Local preview only";
+    const syncPill = liveMode && !state.buildEnabled
+      ? "Build system disabled for this test window"
+      : liveMode
+        ? "Server synced"
+        : "Preview build";
+    const errorNote = !liveMode && lastSyncError
+      ? `<section class="alpha-den-card alpha-den-card--summary"><div class="alpha-den-detail__eyebrow">Sync status</div><p class="alpha-den-detail__copy">${escapeHtml(humanizeReason(lastSyncError))}</p></section>`
       : "";
 
     root.setAttribute("data-open", isOpen ? "1" : "0");
@@ -994,7 +1328,7 @@
             <p class="alpha-den-subtitle">Build the first pieces of your Den. Functions unlock in later phases.</p>
           </div>
           <div class="alpha-den-topbar-actions">
-            <button type="button" class="alpha-den-btn alpha-den-btn--ghost" data-alpha-den-action="reset">Reset Preview</button>
+            <button type="button" class="alpha-den-btn alpha-den-btn--ghost" data-alpha-den-action="${topAction}" ${isActionBusy ? "disabled" : ""}>${topActionLabel}</button>
             <button type="button" class="alpha-den-btn alpha-den-btn--close" data-alpha-den-action="close" aria-label="Close Alpha Den">x</button>
           </div>
         </div>
@@ -1002,7 +1336,8 @@
         <div class="alpha-den-status">
           <span class="alpha-den-status__pill"><strong>Den Level 1</strong></span>
           <span class="alpha-den-status__pill">Foundation stage</span>
-          <span class="alpha-den-status__pill">Preview build</span>
+          <span class="alpha-den-status__pill">${escapeHtml(modePill)}</span>
+          <span class="alpha-den-status__pill">${escapeHtml(syncPill)}</span>
         </div>
 
         <div class="alpha-den-room">
@@ -1014,17 +1349,18 @@
             <div class="alpha-den-room__layer alpha-den-room__layer--details">
             </div>
             <div class="alpha-den-room__layer alpha-den-room__layer--hotspots">
-              ${BUILDING_ORDER.map((id) => renderZone(DEN_BUILDINGS[id], getBuildingLevel(id), selectedBuildingId)).join("")}
+              ${BUILDING_ORDER.map((id) => renderZone(DEN_BUILDINGS[id], id, selectedBuildingId)).join("")}
             </div>
           </section>
 
           <aside class="alpha-den-drawer">
             <section class="alpha-den-card alpha-den-card--summary">
               <div class="alpha-den-detail__eyebrow">Den status</div>
-              <p class="alpha-den-detail__copy">This bunker shell is local preview only. The room stays fixed. Future patches swap in real structure layers, costs, timers, and backend state.</p>
+              <p class="alpha-den-detail__copy">${escapeHtml(summaryCopy)}</p>
             </section>
+            ${errorNote}
             ${renderDetail(selectedBuildingId)}
-            <section class="alpha-den-card alpha-den-footnote">Preview state is local only. Real Den progression will be backend-backed later.</section>
+            <section class="alpha-den-card alpha-den-footnote">${escapeHtml(footnote)}</section>
           </aside>
         </div>
       </div>
@@ -1038,6 +1374,7 @@
   function openNow(buildingId) {
     isOpen = true;
     render(buildingId || selectedBuildingId);
+    void refreshServerState();
   }
 
   function open(buildingId) {
