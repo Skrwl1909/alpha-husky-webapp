@@ -14,7 +14,8 @@
   let _sitrepLoading = false;
   let _alphaDenLoadPromise = null;
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
-  const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=den-p0f";
+  const ALPHA_DEN_RUNTIME_VERSION = "den-p0g";
+  const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=" + ALPHA_DEN_RUNTIME_VERSION;
   const ALPHA_DEN_RUNTIME_PATH = "/js/alpha_den.js";
 
   const FACTIONS = {
@@ -2776,7 +2777,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     });
   }
 
-  function ensureAlphaDenLoaded() {
+  function ensureAlphaDenScriptDirect() {
     if (isAlphaDenAvailable()) return Promise.resolve(true);
     if (_alphaDenLoadPromise) return _alphaDenLoadPromise;
 
@@ -2784,7 +2785,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       const allScripts = Array.from(document.getElementsByTagName("script")).filter(_isAlphaDenRuntimeScript);
       const currentRuntimeScript = allScripts.find((script) => {
         const src = String(script.getAttribute("src") || script.src || "").trim();
-        return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=den-p0f");
+        return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=" + ALPHA_DEN_RUNTIME_VERSION);
       });
 
       if (currentRuntimeScript) {
@@ -2811,7 +2812,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
         const existingCurrentScript = Array.from(document.getElementsByTagName("script")).find((script) => {
           if (!script) return false;
           const src = String(script.getAttribute("src") || script.src || "").trim();
-          return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=den-p0f");
+          return src === ALPHA_DEN_RUNTIME_SRC || src.includes("v=" + ALPHA_DEN_RUNTIME_VERSION);
         });
 
         if (existingCurrentScript) {
@@ -2841,6 +2842,58 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       });
 
     return _alphaDenLoadPromise;
+  }
+
+  function _debugAlphaDenRuntime(stage) {
+    if (!window.DBG) return;
+    try {
+      console.debug("[AlphaDen] runtime", {
+        stage,
+        hasAlphaDen: !!window.AlphaDen,
+        hasOpen: typeof window.AlphaDen?.open,
+        hasEnsureGlobal: typeof window.ensureAlphaDenLoaded,
+        hasBootLoader: typeof window.AHBootLoaders?.ensureAlphaDenLoaded
+      });
+    } catch (_) {}
+  }
+
+  function _openAlphaDen() {
+    const denOpen = window.AlphaDen?.open;
+    if (typeof denOpen !== "function") return false;
+    try {
+      denOpen.call(window.AlphaDen);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function openAlphaDenFromMap() {
+    _debugAlphaDenRuntime("before-open");
+
+    if (_openAlphaDen()) return true;
+
+    if (typeof window.ensureAlphaDenLoaded === "function") {
+      try {
+        await window.ensureAlphaDenLoaded();
+        if (_openAlphaDen()) return true;
+      } catch (_) {}
+    }
+
+    if (typeof window.AHBootLoaders?.ensureAlphaDenLoaded === "function") {
+      try {
+        await window.AHBootLoaders.ensureAlphaDenLoaded();
+        if (_openAlphaDen()) return true;
+      } catch (_) {}
+    }
+
+    try {
+      const loaded = await ensureAlphaDenScriptDirect();
+      if (loaded && _openAlphaDen()) return true;
+    } catch (_) {}
+
+    _debugAlphaDenRuntime("open-failed");
+    return false;
   }
 
   function _showAlphaDenUnavailableNotice() {
@@ -2915,22 +2968,9 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       event.stopImmediatePropagation?.();
       event.stopPropagation?.();
 
-      const openAlphaDen = () => {
-        const denOpen = window.AlphaDen?.open;
-        if (typeof denOpen !== "function") return false;
-        try {
-          denOpen.call(window.AlphaDen);
-          return true;
-        } catch (_) {
-          return false;
-        }
-      };
-
-      if (openAlphaDen()) return;
-
-      ensureAlphaDenLoaded()
-        .then((loaded) => {
-          if (loaded && openAlphaDen()) return;
+      openAlphaDenFromMap()
+        .then((opened) => {
+          if (opened) return;
           _showAlphaDenUnavailableNotice();
         })
         .catch(() => {

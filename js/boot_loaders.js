@@ -33,6 +33,7 @@
           (readyName === "combat.js" && !!global.Combat) ||
           (readyName === "skins.js" && !!global.Skins) ||
           (readyName === "frames.js" && !!global.Frames) ||
+          (readyName === "alpha_den.js" && !!global.AlphaDen?.open) ||
           (readyName === "pet_sprite.js" && !!global.PetSprite) ||
           (readyName === "adopt.js" && !!global.Adopt) ||
           (readyName === "updates.js" && !!global.Updates) ||
@@ -46,8 +47,7 @@
           (readyName === "oracle.js" && !!global.Oracle) ||
           (readyName === "bloodmoon.js" && !!global.BloodMoon) ||
           (readyName === "arena.js" && !!global.Arena) ||
-          (readyName === "slots.js" && !!global.Slots) ||
-          (readyName === "alpha_den.js" && !!global.AlphaDen?.open);
+          (readyName === "slots.js" && !!global.Slots);
 
         if (isReady) return resolve(true);
 
@@ -153,6 +153,27 @@
     return await once("frames", async () => {
       await loadScript("js/frames.js");
       try { global.Frames?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureAlphaDenLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.AlphaDen?.open) {
+      if (deps.dbg) {
+        try { console.debug("[AlphaDen] boot loader ready", { source: "existing" }); } catch (_) {}
+      }
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("alpha_den", async () => {
+      await loadScript("js/alpha_den.js");
+      if (!global.AlphaDen?.open) {
+        throw new Error("alpha_den.js loaded but window.AlphaDen.open is missing");
+      }
+      if (deps.dbg) {
+        try { console.debug("[AlphaDen] boot loader ready", { source: "lazy" }); } catch (_) {}
+      }
       return true;
     });
   }
@@ -351,22 +372,6 @@
       return true;
     });
   }
-  
-  async function ensureAlphaDenLoaded(apiPost, tg, dbg) {
-  if (global.AlphaDen?.open) return true;
-
-  const loadScript = getLoadScript();
-
-  return await once("alpha_den", async () => {
-    await loadScript("js/alpha_den.js");
-
-    if (!global.AlphaDen?.open) {
-      throw new Error("alpha_den.js loaded but window.AlphaDen.open is missing");
-    }
-
-    return true;
-  });
-  }
 
   function init(deps = {}) {
     STATE.deps = {
@@ -378,6 +383,7 @@
 
     global.ensureSkinsLoaded = ensureSkinsLoaded;
     global.ensureFramesLoaded = ensureFramesLoaded;
+    global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
     global.ensurePetSpriteLoaded = ensurePetSpriteLoaded;
     global.ensureAdoptLoaded = ensureAdoptLoaded;
     global.ensureUpdatesLoaded = ensureUpdatesLoaded;
@@ -391,7 +397,6 @@
     global.ensureBloodMoonLoaded = ensureBloodMoonLoaded;
     global.ensureArenaLoaded = ensureArenaLoaded;
     global.ensureSlotsLoaded = ensureSlotsLoaded;
-    global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
 
     return API;
   }
@@ -400,6 +405,7 @@
     init,
     ensureSkinsLoaded,
     ensureFramesLoaded,
+    ensureAlphaDenLoaded,
     ensurePetSpriteLoaded,
     ensureAdoptLoaded,
     ensureUpdatesLoaded,
@@ -412,9 +418,9 @@
     ensureOracleLoaded,
     ensureBloodMoonLoaded,
     ensureArenaLoaded,
-    ensureSlotsLoaded,
-    ensureAlphaDenLoaded
-    };
+    ensureSlotsLoaded
+  };
 
+  global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
   global.AHBootLoaders = API;
 })(window);
