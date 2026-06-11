@@ -25,9 +25,9 @@
       buildTimeLabel: "Future build time: 30 min",
       costPreview: "Future cost: Bones + materials",
       positionLabel: "Back wall cable relay point",
-      x: 56,
-      y: 41,
-      overlayStyle: "left:55%; top:34%; width:20%;",
+      x: 61,
+      y: 36,
+      overlayStyle: "left:60%; top:31%; width:19%;",
       glyph: "SC"
     },
     pet_kennel: {
@@ -57,9 +57,9 @@
       buildTimeLabel: "Future build time: 30 min",
       costPreview: "Future cost: Bones + materials",
       positionLabel: "Right-side table surface",
-      x: 74,
-      y: 61,
-      overlayStyle: "left:74%; top:61%; width:27%; transform:translate(-50%, -50%) rotate(-2deg);",
+      x: 67,
+      y: 59,
+      overlayStyle: "left:67%; top:58%; width:25%; transform:translate(-50%, -50%) rotate(-2deg);",
       glyph: "WT"
     }
   };
@@ -543,6 +543,9 @@
   gap:10px;
   flex-shrink:0;
 }
+.alpha-den-btn--back{
+  min-height:38px;
+}
 .alpha-den-btn{
   border:1px solid rgba(154,183,212,.22);
   border-radius:999px;
@@ -945,6 +948,9 @@
   .alpha-den-frame{
     gap:10px;
   }
+  .alpha-den-shell{
+    padding-top:max(8px, env(safe-area-inset-top, 0px));
+  }
   .alpha-den-topbar{
     gap:8px;
   }
@@ -964,7 +970,10 @@
   }
   .alpha-den-topbar-actions{
     gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
   }
+  .alpha-den-btn--back,
   .alpha-den-btn--ghost{
     padding:7px 10px;
     font-size:11px;
@@ -1006,9 +1015,9 @@
     gap:5px;
   }
   .alpha-den-room__overlay--signal-core{
-    left:57% !important;
-    top:35% !important;
-    width:22% !important;
+    left:60% !important;
+    top:32% !important;
+    width:19% !important;
   }
   .alpha-den-room__overlay--pet-kennel{
     left:22% !important;
@@ -1016,21 +1025,21 @@
     width:31% !important;
   }
   .alpha-den-room__overlay--war-table{
-    left:68% !important;
-    top:60% !important;
-    width:28% !important;
+    left:65% !important;
+    top:58% !important;
+    width:25% !important;
   }
   .alpha-den-zone[data-building-id="signal_core"]{
-    left:58% !important;
-    top:39% !important;
+    left:61% !important;
+    top:37% !important;
   }
   .alpha-den-zone[data-building-id="pet_kennel"]{
     left:24% !important;
     top:76% !important;
   }
   .alpha-den-zone[data-building-id="war_table"]{
-    left:66% !important;
-    top:61% !important;
+    left:64% !important;
+    top:60% !important;
   }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
@@ -1080,10 +1089,14 @@
     const actionEl = event.target.closest("[data-alpha-den-action]");
     if (!actionEl) return;
 
+    if (typeof event.preventDefault === "function") event.preventDefault();
+    if (typeof event.stopPropagation === "function") event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+
     const action = String(actionEl.getAttribute("data-alpha-den-action") || "").trim();
     const buildingId = String(actionEl.getAttribute("data-building-id") || "").trim();
 
-    if (action === "close") {
+    if (action === "back" || action === "close") {
       close();
       return;
     }
@@ -1328,6 +1341,7 @@
             <p class="alpha-den-subtitle">Build the first pieces of your Den. Functions unlock in later phases.</p>
           </div>
           <div class="alpha-den-topbar-actions">
+            <button type="button" class="alpha-den-btn alpha-den-btn--ghost alpha-den-btn--back" data-alpha-den-action="back" aria-label="Back to map">&lt;- Back</button>
             <button type="button" class="alpha-den-btn alpha-den-btn--ghost" data-alpha-den-action="${topAction}" ${isActionBusy ? "disabled" : ""}>${topActionLabel}</button>
             <button type="button" class="alpha-den-btn alpha-den-btn--close" data-alpha-den-action="close" aria-label="Close Alpha Den">x</button>
           </div>
