@@ -382,6 +382,7 @@
 }
 .alpha-den-room__scene{
   position:relative;
+  width:100%;
   min-height:360px;
   aspect-ratio:16 / 9;
   border-radius:24px;
@@ -401,12 +402,17 @@
   inset:0;
 }
 .alpha-den-room__background{
+  z-index:0;
+  overflow:hidden;
   background:
-    linear-gradient(180deg, rgba(18,28,39,.88), rgba(7,10,16,.98)),
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px);
-  background-size:cover, 56px 56px, 56px 56px;
-  background-position:center, center, center;
+    linear-gradient(180deg, rgba(18,28,39,.28), rgba(7,10,16,.68));
+}
+.alpha-den-room__background-img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center center;
 }
 .alpha-den-room__background::before{
   content:"";
@@ -699,22 +705,102 @@
     border-radius:0;
     border-left:0;
     border-right:0;
-    padding:14px;
+    padding:10px 12px 14px;
+  }
+  .alpha-den-frame{
+    gap:10px;
+  }
+  .alpha-den-topbar{
+    gap:8px;
+  }
+  .alpha-den-heading{
+    gap:4px;
+  }
+  .alpha-den-kicker{
+    font-size:10px;
+    letter-spacing:.18em;
+  }
+  .alpha-den-title{
+    font-size:clamp(24px, 7vw, 30px);
+  }
+  .alpha-den-subtitle{
+    font-size:12px;
+    line-height:1.35;
+  }
+  .alpha-den-topbar-actions{
+    gap:8px;
+  }
+  .alpha-den-btn--ghost{
+    padding:7px 10px;
+    font-size:11px;
+  }
+  .alpha-den-btn--close{
+    width:34px;
+    height:34px;
+    font-size:18px;
+  }
+  .alpha-den-status{
+    gap:6px;
+  }
+  .alpha-den-status__pill{
+    min-height:28px;
+    padding:6px 10px;
+    font-size:10px;
   }
   .alpha-den-room__scene{
-    min-height:320px;
-    aspect-ratio:4 / 3;
+    min-height:280px;
+    aspect-ratio:16 / 10;
   }
   .alpha-den-zone{
-    max-width:min(48vw, 170px);
-    gap:8px;
+    max-width:min(44vw, 150px);
+    gap:6px;
   }
   .alpha-den-zone__marker{
     width:18px;
     height:18px;
   }
   .alpha-den-zone__labelwrap{
-    padding:7px 10px;
+    padding:6px 9px;
+  }
+  .alpha-den-zone__label{
+    font-size:11px;
+    letter-spacing:.08em;
+  }
+  .alpha-den-zone__state{
+    font-size:10px;
+    gap:5px;
+  }
+  .alpha-den-room__overlay--signal-core{
+    left:57% !important;
+    top:35% !important;
+    width:22% !important;
+  }
+  .alpha-den-room__overlay--pet-kennel{
+    left:22% !important;
+    top:73% !important;
+    width:31% !important;
+  }
+  .alpha-den-room__overlay--war-table{
+    left:68% !important;
+    top:60% !important;
+    width:28% !important;
+  }
+  .alpha-den-zone[data-building-id="signal_core"]{
+    left:58% !important;
+    top:39% !important;
+  }
+  .alpha-den-zone[data-building-id="pet_kennel"]{
+    left:24% !important;
+    top:76% !important;
+  }
+  .alpha-den-zone[data-building-id="war_table"]{
+    left:66% !important;
+    top:61% !important;
+  }
+  .alpha-den-card--summary,
+  .alpha-den-card--detail,
+  .alpha-den-footnote{
+    padding:14px;
   }
 }
 @media (prefers-reduced-motion: reduce){
@@ -890,8 +976,8 @@
       selectedBuildingId = BUILDING_ORDER[0];
     }
 
-    const backgroundStyle = DEN_ASSETS.roomBackground
-      ? ` style="background-image:linear-gradient(180deg, rgba(6,10,16,.10), rgba(6,10,16,.28)), url('${escapeHtml(DEN_ASSETS.roomBackground)}');"`
+    const backgroundMarkup = DEN_ASSETS.roomBackground
+      ? `<img class="alpha-den-room__background-img" src="${escapeHtml(DEN_ASSETS.roomBackground)}" alt="">`
       : "";
 
     root.setAttribute("data-open", isOpen ? "1" : "0");
@@ -921,7 +1007,7 @@
 
         <div class="alpha-den-room">
           <section class="alpha-den-room__scene">
-            <div class="alpha-den-room__background"${backgroundStyle}></div>
+            <div class="alpha-den-room__background">${backgroundMarkup}</div>
             <div class="alpha-den-room__overlays">
               ${BUILDING_ORDER.map((id) => renderStructureOverlay(DEN_BUILDINGS[id], getBuildingLevel(id))).join("")}
             </div>
