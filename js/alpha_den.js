@@ -727,9 +727,7 @@
     document.head.appendChild(style);
   }
 
-  function ensureRoot() {
-    if (!queueForDom(() => ensureRoot())) return null;
-
+  function ensureRootNow() {
     ensureStyles();
 
     let root = document.getElementById(ROOT_ID);
@@ -742,6 +740,14 @@
       document.addEventListener("keydown", onKeyDown);
     }
     return root;
+  }
+
+  function ensureRoot() {
+    if (!document.body) {
+      queueForDom(ensureRootNow);
+      return null;
+    }
+    return ensureRootNow();
   }
 
   function onKeyDown(event) {
@@ -943,10 +949,17 @@
     return root;
   }
 
-  function open(buildingId) {
-    if (!queueForDom(() => open(buildingId))) return;
+  function openNow(buildingId) {
     isOpen = true;
     render(buildingId || selectedBuildingId);
+  }
+
+  function open(buildingId) {
+    if (!document.body) {
+      queueForDom(() => openNow(buildingId));
+      return;
+    }
+    openNow(buildingId);
   }
 
   function close() {
