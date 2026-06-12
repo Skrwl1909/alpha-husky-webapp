@@ -100,6 +100,7 @@
   let serverState = null;
   let usingServerState = false;
   let lastSyncError = "";
+  let lastActionMessage = "";
   let isActionBusy = false;
   let syncPromise = null;
 
@@ -203,6 +204,29 @@
     return parts.length ? parts.join(" + ") : "No cost";
   }
 
+  function formatMissingResources(missing) {
+    if (!missing || typeof missing !== "object") return "";
+    const parts = [];
+    const bones = asCount(missing.bones);
+    const scrap = asCount(missing.scrap);
+    if (bones > 0) parts.push(`Missing ${bones} Bones`);
+    if (scrap > 0) parts.push(`Missing ${scrap} Scrap`);
+    return parts.join(" | ");
+  }
+
+  function formatReadyTime(unixTs) {
+    const ts = asUnix(unixTs);
+    if (!ts) return "";
+    try {
+      return new Date(ts * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (_) {
+      return "";
+    }
+  }
+
   function makeRunId(action, buildingId) {
     const stamp = Date.now().toString(36);
     const rand = Math.random().toString(36).slice(2, 8);
@@ -210,7 +234,7 @@
   }
 
   function makeApiError(out, fallback) {
-    const err = new Error(String(out?.reason || fallback || "REQUEST_FAILED"));
+    const err = new Error(String(out?.error || out?.reason || fallback || "REQUEST_FAILED"));
     err.data = out || null;
     return err;
   }
@@ -224,9 +248,25 @@
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
     if (code === "NOT_BUILDING") return "This structure is not building right now.";
     if (code === "NOT_READY") return "This build is not ready yet.";
+    if (code === "STATE_ERROR" || code === "ACTION_FAILED") return "Alpha Den is unavailable right now.";
     if (code === "STATE_FAIL" || code === "DEN_STATE_INVALID") return "Live Den state is unavailable right now.";
     if (code === "USER_NOT_FOUND" || code === "USER_NOT_REGISTERED" || code === "USER_NOT_FOUND") return "Your live Den state is not ready yet.";
-    return "Local preview only";
+    return "Alpha Den is unavailable right now.";
+  }
+
+  function buildActionMessage(data, fallbackReason) {
+    const code = String(data?.error || data?.reason || fallbackReason || "").trim().toUpperCase();
+    if (code === "INSUFFICIENT_RESOURCES") {
+      const missing = formatMissingResources(data?.missingResources);
+      return missing || "Not enough Bones or Scrap for this build.";
+    }
+    if (code === "NOT_READY") {
+      const secondsRemaining = asCount(data?.secondsRemaining);
+      return secondsRemaining > 0
+        ? `This build is not ready yet. Ready in ${formatDuration(secondsRemaining)}.`
+        : "This build is not ready yet.";
+    }
+    return humanizeReason(code);
   }
 
   function normalizeServerState(raw) {
@@ -246,10 +286,10 @@
 
     for (const id of BUILDING_ORDER) {
       const src = raw.buildings[id] || {};
-      next.buildings[id] = {
-        id,
-        name: String(src.name || DEN_BUILDINGS[id]?.name || id),
-        level: asCount(src.level),
+        next.buildings[id] = {
+          id,
+          name: String(src.name || DEN_BUILDINGS[id]?.name || id),
+          level: asCount(src.level),
         uiStatus: String(src.uiStatus || "").trim().toLowerCase() || (asCount(src.level) > 0 ? "built" : "unbuilt"),
         rawStatus: String(src.rawStatus || src.status || "").trim().toLowerCase() || "idle",
         buildStartedAt: asUnix(src.buildStartedAt),
@@ -257,15 +297,19 @@
         lastClaimedAt: asUnix(src.lastClaimedAt),
         secondsRemaining: asCount(src.secondsRemaining),
         canStart: !!src.canStart,
-        canClaim: !!src.canClaim,
-        nextLevel: src.nextLevel == null ? null : asCount(src.nextLevel),
-        nextCost: src.nextCost && typeof src.nextCost === "object"
-          ? { bones: asCount(src.nextCost.bones), scrap: asCount(src.nextCost.scrap) }
-          : null,
-        buildSeconds: asCount(src.buildSeconds),
-        hasResources: src.hasResources !== false
-      };
-    }
+          canClaim: !!src.canClaim,
+          nextLevel: src.nextLevel == null ? null : asCount(src.nextLevel),
+          nextCost: src.nextCost && typeof src.nextCost === "object"
+            ? { bones: asCount(src.nextCost.bones), scrap: asCount(src.nextCost.scrap) }
+            : null,
+          buildSeconds: asCount(src.buildSeconds),
+          hasResources: src.hasResources !== false,
+          enoughResources: src.enoughResources == null ? src.hasResources !== false : !!src.enoughResources,
+          missingResources: src.missingResources && typeof src.missingResources === "object"
+            ? { bones: asCount(src.missingResources.bones), scrap: asCount(src.missingResources.scrap) }
+            : null
+        };
+      }
 
     return next;
   }
@@ -288,7 +332,9 @@
       nextLevel: level < 1 ? 1 : null,
       nextCost: { bones: 25, scrap: 1 },
       buildSeconds: 120,
-      hasResources: true
+      hasResources: true,
+      enoughResources: true,
+      missingResources: null
     };
   }
 
@@ -360,10 +406,16 @@
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
+        lastActionMessage = path.includes("/build/start")
+          ? "Build started. Use Refresh to update this timer."
+          : path.includes("/build/claim")
+            ? "Build claimed. Function coming later."
+            : "";
       }
       return out;
     } catch (err) {
-      notify(humanizeReason(err?.data?.reason || err?.message || "ACTION_FAILED"));
+      lastActionMessage = buildActionMessage(err?.data, err?.message || "ACTION_FAILED");
+      notify(lastActionMessage);
       await refreshServerState({ rerender: false });
       return null;
     } finally {
@@ -936,14 +988,19 @@
 @media (max-width: 640px){
   .alpha-den-shell{
     padding:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
   }
   .alpha-den-panel{
     width:100%;
     min-height:100vh;
+    min-height:100dvh;
     border-radius:0;
     border-left:0;
     border-right:0;
-    padding:10px 12px 14px;
+    padding:10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    overflow:visible;
   }
   .alpha-den-frame{
     gap:10px;
@@ -1015,7 +1072,7 @@
     gap:5px;
   }
   .alpha-den-room__overlay--signal-core{
-    left:60% !important;
+    left:62% !important;
     top:32% !important;
     width:19% !important;
   }
@@ -1025,12 +1082,12 @@
     width:31% !important;
   }
   .alpha-den-room__overlay--war-table{
-    left:65% !important;
-    top:58% !important;
+    left:69% !important;
+    top:59% !important;
     width:25% !important;
   }
   .alpha-den-zone[data-building-id="signal_core"]{
-    left:61% !important;
+    left:63% !important;
     top:37% !important;
   }
   .alpha-den-zone[data-building-id="pet_kennel"]{
@@ -1038,8 +1095,8 @@
     top:76% !important;
   }
   .alpha-den-zone[data-building-id="war_table"]{
-    left:64% !important;
-    top:60% !important;
+    left:68% !important;
+    top:61% !important;
   }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
@@ -1161,6 +1218,9 @@
     const buildEnabled = !!serverState?.buildEnabled;
     const nextCost = building?.nextCost || null;
     const buildSeconds = asCount(building?.buildSeconds);
+    const enoughResources = building?.enoughResources !== false && building?.hasResources !== false;
+    const missingResources = formatMissingResources(building?.missingResources);
+    const readyAtLabel = formatReadyTime(building?.buildReadyAt);
     let stateLabel = built ? `Level ${level}` : "Unbuilt";
     let buttonLabel = "Function coming later";
     let buttonAction = "noop";
@@ -1171,18 +1231,22 @@
       stateLabel = built ? `Level ${level}` : "Unbuilt";
       helperCopy = "Live Den state. Build system disabled for this test window.";
     } else if (uiStatus === "unbuilt") {
-      stateLabel = "Ready";
+      stateLabel = enoughResources ? "Ready" : "Missing resources";
       buttonLabel = "Start Build";
       buttonAction = "build";
-      buttonDisabled = isActionBusy;
-      helperCopy = `${formatCost(nextCost)} • ${formatDuration(buildSeconds)} build`;
-      if (building?.hasResources === false) {
-        helperCopy = `Need ${formatCost(nextCost)} to start this build.`;
+      buttonDisabled = isActionBusy || !building?.canStart;
+      helperCopy = `${formatCost(nextCost)} | ${formatDuration(buildSeconds)} build`;
+      if (!enoughResources) {
+        helperCopy = missingResources
+          ? `${missingResources} | Need ${formatCost(nextCost)} to start this build.`
+          : `Need ${formatCost(nextCost)} to start this build.`;
       }
     } else if (uiStatus === "building") {
       stateLabel = "Building";
       buttonLabel = "Building...";
-      helperCopy = `Ready in ${formatDuration(building?.secondsRemaining)}.`;
+      helperCopy = readyAtLabel
+        ? `Ready in ${formatDuration(building?.secondsRemaining)}. Ready at ${readyAtLabel}. Use Refresh to update.`
+        : `Ready in ${formatDuration(building?.secondsRemaining)}. Use Refresh to update.`;
     } else if (uiStatus === "claim_available") {
       stateLabel = "Build ready";
       buttonLabel = "Claim Build";
@@ -1252,7 +1316,9 @@
     const buildMeta = usingServerState
       ? (display.built
         ? "Level 1 complete | Function coming later"
-        : `${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)}` : ""}`)
+        : display.stateLabel === "Building"
+          ? `${formatCost(building?.nextCost)} | ${formatDuration(building?.secondsRemaining)} remaining`
+          : `${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)}` : ""}`)
       : `${escapeHtml(config.buildTimeLabel)} | ${escapeHtml(config.costPreview)}`;
 
     return `
@@ -1323,8 +1389,15 @@
       : liveMode
         ? "Server synced"
         : "Preview build";
-    const errorNote = !liveMode && lastSyncError
-      ? `<section class="alpha-den-card alpha-den-card--summary"><div class="alpha-den-detail__eyebrow">Sync status</div><p class="alpha-den-detail__copy">${escapeHtml(humanizeReason(lastSyncError))}</p></section>`
+    const statusMessage = !liveMode && lastSyncError
+      ? humanizeReason(lastSyncError)
+      : lastActionMessage
+        ? lastActionMessage
+        : lastSyncError
+          ? humanizeReason(lastSyncError)
+          : "";
+    const errorNote = statusMessage
+      ? `<section class="alpha-den-card alpha-den-card--summary"><div class="alpha-den-detail__eyebrow">${escapeHtml(liveMode ? "Build status" : "Sync status")}</div><p class="alpha-den-detail__copy">${escapeHtml(statusMessage)}</p></section>`
       : "";
 
     root.setAttribute("data-open", isOpen ? "1" : "0");
@@ -1410,6 +1483,7 @@
   function resetPreview() {
     currentState = cloneState(DEFAULT_STATE);
     memoryState = cloneState(DEFAULT_STATE);
+    lastActionMessage = "";
     clearStoredState();
     render(selectedBuildingId);
   }
