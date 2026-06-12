@@ -3,6 +3,12 @@
   const ROOT_ID = "alphaDenRoot";
   const STYLE_ID = "alphaDenStyles";
   const BUILDING_ORDER = ["signal_core", "pet_kennel", "war_table"];
+  const MAX_BUILD_LEVEL = 3;
+  const BUILD_LEVELS = {
+    1: { cost: { bones: 800, scrap: 15 }, buildSeconds: 21600 },
+    2: { cost: { bones: 1800, scrap: 35 }, buildSeconds: 43200 },
+    3: { cost: { bones: 3500, scrap: 70 }, buildSeconds: 86400 }
+  };
 
   const DEFAULT_STATE = {
     denLevel: 1,
@@ -22,12 +28,21 @@
       unbuiltCopy: "An empty relay point waiting for its first signal engine.",
       level1Copy: "Primitive Signal Core online. Future scans and signal charge will connect here.",
       role: "Future source of signal charge, scans, and Den energy.",
-      buildTimeLabel: "Future build time: 30 min",
-      costPreview: "Future cost: Bones + materials",
+      buildTimeLabel: "Level 1 build time: 6h",
+      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
       positionLabel: "Back wall cable relay point",
       x: 61,
       y: 36,
       overlayStyle: "left:60%; top:31%; width:19%;",
+      mobilePlacement: {
+        hotspotX: 67,
+        hotspotY: 38,
+        labelX: 64,
+        labelY: 35,
+        overlayLeft: 64,
+        overlayTop: 33,
+        overlayWidth: 19
+      },
       glyph: "SC"
     },
     pet_kennel: {
@@ -38,12 +53,20 @@
       unbuiltCopy: "An empty pack corner. Your active pet will eventually rest and train here.",
       level1Copy: "Scrap Pet Kennel built. Future pet training and expeditions will connect here.",
       role: "Future pet resting, training, and expedition space.",
-      buildTimeLabel: "Future build time: 30 min",
-      costPreview: "Future cost: Bones + materials",
+      buildTimeLabel: "Level 1 build time: 6h",
+      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
       positionLabel: "Lower-left pack corner",
       x: 18,
       y: 73,
       overlayStyle: "left:17%; top:72%; width:30%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.02);",
+      mobilePlacement: {
+        hotspotX: 24,
+        hotspotY: 76,
+        overlayLeft: 22,
+        overlayTop: 73,
+        overlayWidth: 31,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.02)"
+      },
       glyph: "PK"
     },
     war_table: {
@@ -54,12 +77,22 @@
       unbuiltCopy: "An empty command spot. Future faction orders will be planned here.",
       level1Copy: "Field War Table assembled. Future SITREP orders and strategy will connect here.",
       role: "Future faction orders, SITREP planning, and map strategy space.",
-      buildTimeLabel: "Future build time: 30 min",
-      costPreview: "Future cost: Bones + materials",
+      buildTimeLabel: "Level 1 build time: 6h",
+      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
       positionLabel: "Right-side table surface",
       x: 67,
       y: 59,
       overlayStyle: "left:67%; top:58%; width:25%; transform:translate(-50%, -50%) rotate(-2deg);",
+      mobilePlacement: {
+        hotspotX: 80,
+        hotspotY: 63,
+        labelX: 71,
+        labelY: 58,
+        overlayLeft: 74,
+        overlayTop: 60,
+        overlayWidth: 25,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg)"
+      },
       glyph: "WT"
     }
   };
@@ -68,27 +101,27 @@
     roomBackground: "images/alpha_den/den_background_empty.webp",
     signal_core: {
       unbuilt: "",
-      primitive: "images/alpha_den/signal_core_l1.png",
-      reinforced: "",
-      advanced: "",
-      alpha: "",
-      legendary: ""
+      l1: "images/alpha_den/signal_core_l1.png",
+      l3: "",
+      l5: "",
+      l7: "",
+      l9: ""
     },
     pet_kennel: {
       unbuilt: "",
-      primitive: "images/alpha_den/pet_kennel_l1.png",
-      reinforced: "",
-      advanced: "",
-      alpha: "",
-      legendary: ""
+      l1: "images/alpha_den/pet_kennel_l1.png",
+      l3: "",
+      l5: "",
+      l7: "",
+      l9: ""
     },
     war_table: {
       unbuilt: "",
-      primitive: "images/alpha_den/war_table_l1.png",
-      reinforced: "",
-      advanced: "",
-      alpha: "",
-      legendary: ""
+      l1: "images/alpha_den/war_table_l1.png",
+      l3: "",
+      l5: "",
+      l7: "",
+      l9: ""
     }
   };
 
@@ -227,6 +260,54 @@
     }
   }
 
+  function isCompactMobileViewport() {
+    try {
+      return !!window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function buildOverlayStyle(left, top, width, transform) {
+    const parts = [];
+    if (Number.isFinite(left)) parts.push(`left:${left}%`);
+    if (Number.isFinite(top)) parts.push(`top:${top}%`);
+    if (Number.isFinite(width)) parts.push(`width:${width}%`);
+    if (transform) parts.push(`transform:${transform}`);
+    return parts.length ? `${parts.join(";")};` : "";
+  }
+
+  function getPlacement(config) {
+    const mobile = isCompactMobileViewport() ? (config.mobilePlacement || null) : null;
+    const hotspotX = Number.isFinite(Number(mobile?.hotspotX)) ? Number(mobile.hotspotX) : Number(config.x);
+    const hotspotY = Number.isFinite(Number(mobile?.hotspotY)) ? Number(mobile.hotspotY) : Number(config.y);
+    const labelX = Number.isFinite(Number(mobile?.labelX)) ? Number(mobile.labelX) : hotspotX;
+    const labelY = Number.isFinite(Number(mobile?.labelY)) ? Number(mobile.labelY) : hotspotY;
+
+    if (mobile) {
+      return {
+        hotspotX,
+        hotspotY,
+        labelX,
+        labelY,
+        overlayStyle: buildOverlayStyle(
+          Number(mobile.overlayLeft),
+          Number(mobile.overlayTop),
+          Number(mobile.overlayWidth),
+          String(mobile.overlayTransform || "").trim()
+        ) || config.overlayStyle || ""
+      };
+    }
+
+    return {
+      hotspotX,
+      hotspotY,
+      labelX,
+      labelY,
+      overlayStyle: config.overlayStyle || ""
+    };
+  }
+
   function makeRunId(action, buildingId) {
     const stamp = Date.now().toString(36);
     const rand = Math.random().toString(36).slice(2, 8);
@@ -246,6 +327,7 @@
     if (code === "ALREADY_BUILT") return "This structure is already built.";
     if (code === "ALREADY_BUILDING") return "This structure is already building.";
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
+    if (code === "MAX_LEVEL_REACHED") return "This structure is at max level for this phase.";
     if (code === "NOT_BUILDING") return "This structure is not building right now.";
     if (code === "NOT_READY") return "This build is not ready yet.";
     if (code === "STATE_ERROR" || code === "ACTION_FAILED") return "Alpha Den is unavailable right now.";
@@ -290,11 +372,13 @@
           id,
           name: String(src.name || DEN_BUILDINGS[id]?.name || id),
           level: asCount(src.level),
-        uiStatus: String(src.uiStatus || "").trim().toLowerCase() || (asCount(src.level) > 0 ? "built" : "unbuilt"),
-        rawStatus: String(src.rawStatus || src.status || "").trim().toLowerCase() || "idle",
-        buildStartedAt: asUnix(src.buildStartedAt),
-        buildReadyAt: asUnix(src.buildReadyAt),
-        lastClaimedAt: asUnix(src.lastClaimedAt),
+          maxLevel: asCount(src.maxLevel) || MAX_BUILD_LEVEL,
+          uiStatus: String(src.uiStatus || "").trim().toLowerCase() || (asCount(src.level) > 0 ? "built" : "unbuilt"),
+          rawStatus: String(src.rawStatus || src.status || "").trim().toLowerCase() || "idle",
+          targetLevel: src.targetLevel == null ? null : asCount(src.targetLevel),
+          buildStartedAt: asUnix(src.buildStartedAt),
+          buildReadyAt: asUnix(src.buildReadyAt),
+          lastClaimedAt: asUnix(src.lastClaimedAt),
         secondsRemaining: asCount(src.secondsRemaining),
         canStart: !!src.canStart,
           canClaim: !!src.canClaim,
@@ -305,6 +389,7 @@
           buildSeconds: asCount(src.buildSeconds),
           hasResources: src.hasResources !== false,
           enoughResources: src.enoughResources == null ? src.hasResources !== false : !!src.enoughResources,
+          isMaxLevel: !!src.isMaxLevel,
           missingResources: src.missingResources && typeof src.missingResources === "object"
             ? { bones: asCount(src.missingResources.bones), scrap: asCount(src.missingResources.scrap) }
             : null
@@ -317,23 +402,28 @@
   function getLocalBuildingState(buildingId) {
     const local = ensureState()?.buildings?.[buildingId] || {};
     const level = normalizeLevel(local.level);
+    const nextLevel = level < MAX_BUILD_LEVEL ? level + 1 : null;
+    const nextBuild = nextLevel ? BUILD_LEVELS[nextLevel] : null;
     return {
       id: buildingId,
       name: DEN_BUILDINGS[buildingId]?.name || buildingId,
       level,
+      maxLevel: MAX_BUILD_LEVEL,
       uiStatus: level >= 1 ? "built" : "unbuilt",
       rawStatus: "idle",
+      targetLevel: null,
       buildStartedAt: null,
       buildReadyAt: null,
       lastClaimedAt: null,
       secondsRemaining: 0,
-      canStart: level < 1,
+      canStart: level < MAX_BUILD_LEVEL,
       canClaim: false,
-      nextLevel: level < 1 ? 1 : null,
-      nextCost: { bones: 25, scrap: 1 },
-      buildSeconds: 120,
+      nextLevel,
+      nextCost: nextBuild ? cloneState(nextBuild.cost) : null,
+      buildSeconds: nextBuild ? asCount(nextBuild.buildSeconds) : 0,
       hasResources: true,
       enoughResources: true,
+      isMaxLevel: level >= MAX_BUILD_LEVEL,
       missingResources: null
     };
   }
@@ -403,13 +493,14 @@
       if (!out || out.ok === false) throw makeApiError(out, "ACTION_FAILED");
       const payload = normalizeServerState(out.alphaDen || out?.data?.alphaDen || out?.data || out);
       if (payload) {
+        const updatedBuilding = payload?.buildings?.[buildingId] || null;
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
         lastActionMessage = path.includes("/build/start")
-          ? "Build started. Use Refresh to update this timer."
+          ? `Build started${updatedBuilding?.targetLevel ? ` for Level ${updatedBuilding.targetLevel}` : ""}. Use Refresh to update this timer.`
           : path.includes("/build/claim")
-            ? "Build claimed. Function coming later."
+            ? `Level ${updatedBuilding?.level || ""} complete. Function coming later.`.replace("Level  complete", "Build claimed")
             : "";
       }
       return out;
@@ -440,20 +531,37 @@
   }
 
   function getTierForLevel(level) {
-    if (level <= 0) return "unbuilt";
-    if (level <= 2) return "primitive";
-    if (level <= 4) return "reinforced";
-    if (level <= 6) return "advanced";
-    if (level <= 8) return "alpha";
-    return "legendary";
+    const tierLevel = getVisualTierLevel(level);
+    if (!tierLevel) return "unbuilt";
+    if (tierLevel >= 9) return "legendary";
+    if (tierLevel >= 7) return "alpha";
+    if (tierLevel >= 5) return "advanced";
+    if (tierLevel >= 3) return "reinforced";
+    return "primitive";
+  }
+
+  function getVisualTierLevel(level) {
+    const safeLevel = normalizeLevel(level);
+    if (safeLevel <= 0) return 0;
+    if (safeLevel >= 9) return 9;
+    if (safeLevel >= 7) return 7;
+    if (safeLevel >= 5) return 5;
+    if (safeLevel >= 3) return 3;
+    return 1;
   }
 
   function getAssetForLevel(buildingId, level) {
-    const tier = getTierForLevel(level);
     const buildingAssets = DEN_ASSETS?.[buildingId];
     if (!buildingAssets) return "";
-    if (level <= 0) return buildingAssets.unbuilt || "";
-    return buildingAssets[tier] || buildingAssets.primitive || "";
+    if (normalizeLevel(level) <= 0) return String(buildingAssets.unbuilt || "").trim();
+
+    const targetTier = getVisualTierLevel(level);
+    const fallbacks = [9, 7, 5, 3, 1].filter((tier) => tier <= targetTier);
+    for (const tier of fallbacks) {
+      const assetUrl = String(buildingAssets[`l${tier}`] || "").trim();
+      if (assetUrl) return assetUrl;
+    }
+    return "";
   }
 
   function queueForDom(callback) {
@@ -792,6 +900,14 @@
   text-align:left;
   cursor:pointer;
 }
+.alpha-den-zone.is-detached-label{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+  display:block;
+  overflow:visible;
+}
 .alpha-den-zone::before,
 .alpha-den-zone::after{
   content:none;
@@ -812,6 +928,12 @@
   border:1px solid rgba(197,223,247,.42);
   background:rgba(5,10,16,.72);
   box-shadow:0 8px 18px rgba(0,0,0,.24);
+}
+.alpha-den-zone.is-detached-label .alpha-den-zone__marker{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
 }
 .alpha-den-zone__marker::before{
   content:"";
@@ -838,6 +960,15 @@
   border:1px solid rgba(125,156,185,.18);
   box-shadow:0 12px 20px rgba(0,0,0,.26);
   backdrop-filter:blur(6px);
+}
+.alpha-den-zone.is-detached-label .alpha-den-zone__labelwrap{
+  position:absolute;
+  left:calc(50% + var(--label-shift-x, 0%));
+  top:calc(50% + var(--label-shift-y, 0%));
+  transform:translate(-50%, -50%);
+  width:max-content;
+  max-width:min(44vw, 150px);
+  pointer-events:none;
 }
 .alpha-den-zone__label{
   font-size:12px;
@@ -1071,33 +1202,6 @@
     font-size:10px;
     gap:5px;
   }
-  .alpha-den-room__overlay--signal-core{
-    left:62% !important;
-    top:32% !important;
-    width:19% !important;
-  }
-  .alpha-den-room__overlay--pet-kennel{
-    left:22% !important;
-    top:73% !important;
-    width:31% !important;
-  }
-  .alpha-den-room__overlay--war-table{
-    left:69% !important;
-    top:59% !important;
-    width:25% !important;
-  }
-  .alpha-den-zone[data-building-id="signal_core"]{
-    left:63% !important;
-    top:37% !important;
-  }
-  .alpha-den-zone[data-building-id="pet_kennel"]{
-    left:24% !important;
-    top:76% !important;
-  }
-  .alpha-den-zone[data-building-id="war_table"]{
-    left:68% !important;
-    top:61% !important;
-  }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
   .alpha-den-footnote{
@@ -1196,21 +1300,40 @@
     const level = normalizeLevel(building?.level);
     const built = level > 0;
     const tier = getTierForLevel(level);
+    const placement = getPlacement(config);
+    const maxLevel = asCount(building?.maxLevel) || MAX_BUILD_LEVEL;
+    const nextLevel = building?.nextLevel == null ? null : asCount(building?.nextLevel);
+    const targetLevel = building?.targetLevel == null ? null : asCount(building?.targetLevel);
+    const isMaxLevel = !!building?.isMaxLevel || level >= maxLevel;
+    const levelLabel = `Level ${level}`;
+    const maxLevelLabel = `Max ${maxLevel}`;
 
     if (!usingServerState) {
       return {
         level,
         built,
         tier,
-        stateLabel: built ? `Level ${level}` : "Unbuilt",
-        title: built ? config.level1Name : config.unbuiltName,
-        copy: built ? config.level1Copy : config.unbuiltCopy,
-        buttonLabel: built ? "Function coming later" : "Build Preview",
-        buttonAction: built ? "noop" : "build",
-        buttonDisabled: built,
-        helperCopy: built
-          ? "Real upgrade costs, timers, and functions will be added in a later patch."
-          : "Local preview only. Real build flow unlocks later."
+        placement,
+        maxLevel,
+        nextLevel,
+        targetLevel,
+        isMaxLevel,
+        levelLabel,
+        maxLevelLabel,
+        progressLabel: isMaxLevel ? "Max Level" : `Next ${nextLevel || 1}`,
+        stateLabel: built ? `Level ${level}` : "Level 0",
+        title: built ? `${config.name} Level ${level}` : config.unbuiltName,
+        copy: built
+          ? (isMaxLevel
+            ? `Level ${level} complete. Function coming later.`
+            : `Level ${level} complete. Preview only.`)
+          : "Local preview only. Real build flow unlocks later.",
+        buttonLabel: isMaxLevel ? "Max Level for this phase" : "Build Preview",
+        buttonAction: isMaxLevel ? "noop" : "build",
+        buttonDisabled: isMaxLevel,
+        helperCopy: isMaxLevel
+          ? "Function coming later."
+          : `Next Level ${nextLevel || 1} | ${formatCost(building?.nextCost)} | ${formatDuration(building?.buildSeconds)} build`
       };
     }
 
@@ -1221,50 +1344,78 @@
     const enoughResources = building?.enoughResources !== false && building?.hasResources !== false;
     const missingResources = formatMissingResources(building?.missingResources);
     const readyAtLabel = formatReadyTime(building?.buildReadyAt);
-    let stateLabel = built ? `Level ${level}` : "Unbuilt";
+    let stateLabel = level > 0 ? `Level ${level}` : "Level 0";
     let buttonLabel = "Function coming later";
     let buttonAction = "noop";
     let buttonDisabled = true;
     let helperCopy = "Live Den state";
+    let copy = built
+      ? `Level ${level} complete. Function coming later.`
+      : config.unbuiltCopy;
+    let progressLabel = isMaxLevel ? "Max Level" : `Next ${nextLevel || targetLevel || 1}`;
 
     if (!buildEnabled) {
-      stateLabel = built ? `Level ${level}` : "Unbuilt";
+      stateLabel = isMaxLevel ? "Max level" : levelLabel;
       helperCopy = "Live Den state. Build system disabled for this test window.";
-    } else if (uiStatus === "unbuilt") {
-      stateLabel = enoughResources ? "Ready" : "Missing resources";
-      buttonLabel = "Start Build";
-      buttonAction = "build";
-      buttonDisabled = isActionBusy || !building?.canStart;
-      helperCopy = `${formatCost(nextCost)} | ${formatDuration(buildSeconds)} build`;
-      if (!enoughResources) {
-        helperCopy = missingResources
-          ? `${missingResources} | Need ${formatCost(nextCost)} to start this build.`
-          : `Need ${formatCost(nextCost)} to start this build.`;
-      }
+      copy = built ? copy : config.unbuiltCopy;
     } else if (uiStatus === "building") {
       stateLabel = "Building";
+      progressLabel = targetLevel ? `Target ${targetLevel}` : progressLabel;
       buttonLabel = "Building...";
-      helperCopy = readyAtLabel
-        ? `Ready in ${formatDuration(building?.secondsRemaining)}. Ready at ${readyAtLabel}. Use Refresh to update.`
+      helperCopy = targetLevel
+        ? `Target Level ${targetLevel} | Ready in ${formatDuration(building?.secondsRemaining)}${readyAtLabel ? ` | Ready at ${readyAtLabel}` : ""}. Use Refresh to update.`
         : `Ready in ${formatDuration(building?.secondsRemaining)}. Use Refresh to update.`;
+      copy = targetLevel
+        ? `Construction underway. Target Level ${targetLevel}.`
+        : "Construction underway.";
     } else if (uiStatus === "claim_available") {
       stateLabel = "Build ready";
+      progressLabel = targetLevel ? `Target ${targetLevel}` : progressLabel;
       buttonLabel = "Claim Build";
       buttonAction = "claim";
       buttonDisabled = isActionBusy || !building?.canClaim;
-      helperCopy = "Build ready. Claim Build to complete this structure.";
-    } else if (built) {
-      stateLabel = `Level ${level}`;
-      helperCopy = "Live Den state. Structure built. Function coming later.";
+      helperCopy = targetLevel
+        ? `Target Level ${targetLevel} is ready. Claim Build to complete this structure.`
+        : "Build ready. Claim Build to complete this structure.";
+      copy = targetLevel
+        ? `Level ${targetLevel} is ready to claim.`
+        : "Build ready. Claim Build to complete this structure.";
+    } else if (isMaxLevel) {
+      stateLabel = "Max level";
+      buttonLabel = "Max Level for this phase";
+      helperCopy = "Level 3 complete. Function coming later.";
+      copy = "Level 3 complete. Function coming later.";
+    } else {
+      stateLabel = levelLabel;
+      buttonLabel = "Start Build";
+      buttonAction = "build";
+      buttonDisabled = isActionBusy || !building?.canStart;
+      helperCopy = `Next Level ${nextLevel || 1} | ${formatCost(nextCost)} | ${formatDuration(buildSeconds)} build`;
+      if (!enoughResources) {
+        helperCopy = missingResources
+          ? `${missingResources} | Next Level ${nextLevel || 1} | Need ${formatCost(nextCost)} to start this build.`
+          : `Need ${formatCost(nextCost)} to start this build.`;
+      }
+      copy = level > 0
+        ? `Level ${level} complete. Start Build to begin Level ${nextLevel}.`
+        : config.unbuiltCopy;
     }
 
     return {
       level,
       built,
       tier,
+      placement,
+      maxLevel,
+      nextLevel,
+      targetLevel,
+      isMaxLevel,
+      levelLabel,
+      maxLevelLabel,
+      progressLabel,
       stateLabel,
-      title: built ? config.level1Name : config.unbuiltName,
-      copy: built ? config.level1Copy : config.unbuiltCopy,
+      title: built ? `${config.name} Level ${level}` : config.unbuiltName,
+      copy,
       buttonLabel,
       buttonAction,
       buttonDisabled,
@@ -1276,12 +1427,17 @@
     const display = getBuildingDisplay(config, buildingId);
     const tierClass = `den-building--${display.tier}`;
     const selectedClass = activeId === config.id ? " is-selected" : "";
+    const placement = display.placement || getPlacement(config);
+    const detachedLabel = Math.abs(placement.labelX - placement.hotspotX) > 0.5 || Math.abs(placement.labelY - placement.hotspotY) > 0.5;
+    const zoneStyle = detachedLabel
+      ? `left:${placement.hotspotX}%; top:${placement.hotspotY}%; --label-shift-x:${placement.labelX - placement.hotspotX}%; --label-shift-y:${placement.labelY - placement.hotspotY}%;`
+      : `left:${placement.hotspotX}%; top:${placement.hotspotY}%`;
 
     return `
 <button
   type="button"
-  class="alpha-den-zone ${tierClass}${selectedClass}"
-  style="left:${config.x}%; top:${config.y}%"
+  class="alpha-den-zone ${tierClass}${selectedClass}${detachedLabel ? " is-detached-label" : ""}"
+  style="${zoneStyle}"
   data-alpha-den-action="select"
   data-building-id="${config.id}"
   aria-pressed="${activeId === config.id ? "true" : "false"}"
@@ -1297,11 +1453,12 @@
   function renderStructureOverlay(config, level) {
     const assetUrl = getAssetForLevel(config.id, level);
     if (!assetUrl || level <= 0) return "";
+    const placement = getPlacement(config);
 
     return `
 <div
   class="alpha-den-room__overlay alpha-den-room__overlay--${config.id.replace(/_/g, "-")} den-building--${escapeHtml(getTierForLevel(level))}"
-  style="${config.overlayStyle || ""}"
+  style="${placement.overlayStyle || config.overlayStyle || ""}"
   aria-hidden="true"
 >
   <img src="${escapeHtml(assetUrl)}" alt="">
@@ -1314,11 +1471,11 @@
     const buttonClass = display.buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
     const building = getEffectiveBuildingState(config.id);
     const buildMeta = usingServerState
-      ? (display.built
-        ? "Level 1 complete | Function coming later"
-        : display.stateLabel === "Building"
-          ? `${formatCost(building?.nextCost)} | ${formatDuration(building?.secondsRemaining)} remaining`
-          : `${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)}` : ""}`)
+      ? (display.isMaxLevel
+        ? `Max Level ${display.maxLevel} for this phase | Function coming later`
+        : display.stateLabel === "Building" || display.stateLabel === "Build ready"
+          ? `Target Level ${display.targetLevel || display.nextLevel || "?"} | ${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)} build` : ""}`
+          : `Next Level ${display.nextLevel || "?"} | ${formatCost(building?.nextCost)}${building?.buildSeconds ? ` | ${formatDuration(building.buildSeconds)} build` : ""}`)
       : `${escapeHtml(config.buildTimeLabel)} | ${escapeHtml(config.costPreview)}`;
 
     return `
@@ -1327,7 +1484,8 @@
   <h2 class="alpha-den-detail__title">${escapeHtml(config.name)}</h2>
   <div class="alpha-den-detail__state">
     <span class="alpha-den-detail__pill">${escapeHtml(display.stateLabel)}</span>
-    <span class="alpha-den-detail__pill">${escapeHtml(display.title)}</span>
+    <span class="alpha-den-detail__pill">${escapeHtml(display.levelLabel)}</span>
+    <span class="alpha-den-detail__pill">${escapeHtml(display.progressLabel)}</span>
   </div>
   <p class="alpha-den-detail__copy">${escapeHtml(display.copy)}</p>
   <div class="alpha-den-detail__meta">
@@ -1342,6 +1500,10 @@
     <div class="alpha-den-detail__meta-row">
       <span class="alpha-den-detail__meta-label">Later build flow</span>
       <span class="alpha-den-detail__meta-value">${escapeHtml(buildMeta)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Construction cap</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(`Current ${display.levelLabel} | ${display.maxLevelLabel}`)}</span>
     </div>
   </div>
   <div class="alpha-den-detail__actions">
@@ -1377,11 +1539,13 @@
     const topActionLabel = liveMode ? "Refresh" : "Reset Preview";
     const summaryCopy = liveMode
       ? (state.buildEnabled
-        ? "Live Den state. Level 0 to Level 1 construction is synced with the server in this test window."
-        : "Live Den state. Build system disabled for this test window.")
+        ? "Server synced. Level 1-3 construction config loaded."
+        : "Server synced. Build system disabled for this test window.")
       : "This bunker shell is local preview only. The room stays fixed. Future patches swap in real structure layers, costs, timers, and backend state.";
     const footnote = liveMode
-      ? "Server synced. Only Level 0 to Level 1 construction is active in this test window."
+      ? (state.buildEnabled
+        ? "Server synced. Level 1-3 construction config loaded."
+        : "Server synced. Build system disabled for this test window.")
       : "Preview state is local only. Real Den progression will be backend-backed later.";
     const modePill = liveMode ? "Live Den state" : "Local preview only";
     const syncPill = liveMode && !state.buildEnabled
@@ -1496,7 +1660,8 @@
     if (!DEN_BUILDINGS[buildingId]) return getState();
 
     const state = ensureState();
-    state.buildings[buildingId].level = Math.max(1, normalizeLevel(state?.buildings?.[buildingId]?.level));
+    const currentLevel = normalizeLevel(state?.buildings?.[buildingId]?.level);
+    state.buildings[buildingId].level = Math.min(MAX_BUILD_LEVEL, Math.max(1, currentLevel + 1));
     currentState = sanitizeState(state);
     persistState();
     render(buildingId);
