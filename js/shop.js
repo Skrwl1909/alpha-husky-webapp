@@ -1,4 +1,4 @@
-// js/shop.js — Daily Shop inside WebApp (supports token credits) + thumbnails + INSPECT (compare vs equipped)
+// js/shop.js — Daily Shop inside WebApp (supports mixed soft-currency costs) + thumbnails + INSPECT (compare vs equipped)
 (function () {
   function el(id) { return document.getElementById(id); }
 
@@ -90,7 +90,7 @@
 
   function displayTokenLabel(raw) {
     const label = String(raw || "").trim();
-    return (!label || label === "$TOKEN") ? "$HOWL Credits" : label;
+    return (!label || label === "$TOKEN") ? "Legacy Credits" : label;
   }
 
   // Accept many backend schemas:
@@ -117,13 +117,30 @@
       priceObj.bones, priceObj.bone
     );
 
+    let scrapPrice = pickNum(
+      it.price_scrap, it.priceScrap,
+      it.scrap_cost, it.scrapCost,
+      it.cost_scrap, it.costScrap,
+      priceObj.scrap
+    );
+
+    let runeDustPrice = pickNum(
+      it.price_rune_dust, it.priceRuneDust,
+      it.rune_dust_cost, it.runeDustCost,
+      it.cost_rune_dust, it.costRuneDust,
+      priceObj.rune_dust, priceObj.runeDust,
+      priceObj.dust
+    );
+
     // Many backends send 0 as "not used" — treat 0 as "unset" unless explicitly free
     if (!it?.free) {
       if (tokenPrice === 0) tokenPrice = null;
       if (bonePrice === 0) bonePrice = null;
+      if (scrapPrice === 0) scrapPrice = null;
+      if (runeDustPrice === 0) runeDustPrice = null;
     }
 
-    return { tokenPrice, bonePrice };
+    return { tokenPrice, bonePrice, scrapPrice, runeDustPrice };
   }
 
   // Prefer explicit image url/path from API (Cloudinary), then /assets path, then key-based fallback
@@ -171,13 +188,19 @@
   }
 
   function _priceString(it) {
-    const { tokenPrice, bonePrice } = getPrices(it);
+    const { tokenPrice, bonePrice, scrapPrice, runeDustPrice } = getPrices(it);
     const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
     const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
+    const hasScrapCost = (scrapPrice != null && Number(scrapPrice) > 0);
+    const hasDustCost = (runeDustPrice != null && Number(runeDustPrice) > 0);
+    const parts = [];
 
-    if (hasBoneCost && hasTokenCost) return `${fmtNum(bonePrice)} 🦴 + ${fmtNum(tokenPrice)} 🪙`;
-    if (hasTokenCost) return `${fmtNum(tokenPrice)} 🪙`;
-    if (hasBoneCost) return `${fmtNum(bonePrice)} 🦴`;
+    if (hasBoneCost) parts.push(`${fmtNum(bonePrice)} 🦴`);
+    if (hasScrapCost) parts.push(`${fmtNum(scrapPrice)} Scrap`);
+    if (hasDustCost) parts.push(`${fmtNum(runeDustPrice)} Dust`);
+    if (hasTokenCost) parts.push(`${fmtNum(tokenPrice)} Credits`);
+
+    if (parts.length) return parts.join(" + ");
     return (it?.free ? "FREE" : "?");
   }
 
@@ -185,26 +208,34 @@
     const r = resources || {};
     const tokenBal = Number(r.token ?? 0);
     const boneBal  = Number(r.bones ?? 0);
+    const scrapBal = Number(r.scrap ?? 0);
+    const dustBal  = Number(r.rune_dust ?? 0);
 
-    const { tokenPrice, bonePrice } = getPrices(it);
+    const { tokenPrice, bonePrice, scrapPrice, runeDustPrice } = getPrices(it);
     const hasTokenCost = (tokenPrice != null && Number(tokenPrice) > 0);
     const hasBoneCost  = (bonePrice != null && Number(bonePrice) > 0);
+    const hasScrapCost = (scrapPrice != null && Number(scrapPrice) > 0);
+    const hasDustCost  = (runeDustPrice != null && Number(runeDustPrice) > 0);
 
     const limit = pickNum(it.dailyLimit, it.daily_limit, it.limitDaily, it.limit_daily, 0) || 0;
     const bought = pickNum(it.boughtToday, it.bought_today, it.purchasedToday, it.purchased_today, 0) || 0;
     const hitLimit = (limit > 0 && bought >= limit);
 
-    const missingPrice = (!it?.free && !hasTokenCost && !hasBoneCost);
+    const missingPrice = (!it?.free && !hasTokenCost && !hasBoneCost && !hasScrapCost && !hasDustCost);
     const notEnoughToken = (hasTokenCost && tokenBal < Number(tokenPrice));
     const notEnoughBones = (hasBoneCost && boneBal < Number(bonePrice));
+    const notEnoughScrap = (hasScrapCost && scrapBal < Number(scrapPrice));
+    const notEnoughDust = (hasDustCost && dustBal < Number(runeDustPrice));
 
-    const disabled = hitLimit || notEnoughToken || notEnoughBones || missingPrice;
+    const disabled = hitLimit || notEnoughToken || notEnoughBones || notEnoughScrap || notEnoughDust || missingPrice;
 
     const reason =
       missingPrice ? "No price configured yet."
       : hitLimit ? "Daily limit reached."
-    : notEnoughToken ? "Not enough HOWL Credits."
       : notEnoughBones ? "Not enough bones."
+      : notEnoughScrap ? "Not enough scrap."
+      : notEnoughDust ? "Not enough rune dust."
+      : notEnoughToken ? "Not enough legacy credits."
       : "";
 
     return { disabled, reason, missingPrice, hitLimit, limit, bought };
@@ -430,10 +461,9 @@
 
     metaLine() {
       const r = this._state?.resources || {};
-      const sym = displayTokenLabel(r.tokenSymbol || "$TOKEN");
       const left = this._state?.refreshInSec ?? 0;
       const m = Math.floor(left / 60), s = left % 60;
-      return `🦴 ${r.bones ?? 0}  •  Scrap ${r.scrap ?? 0}  •  Dust ${r.rune_dust ?? 0}  •  🪙 ${r.token ?? 0} ${sym}  •  Refresh in ${m}m ${s}s`;
+      return `🦴 ${r.bones ?? 0}  •  Scrap ${r.scrap ?? 0}  •  Dust ${r.rune_dust ?? 0}  •  Refresh in ${m}m ${s}s`;
     },
 
     render() {
@@ -754,18 +784,18 @@
         return;
       }
 
-     const p = res.purchase;
-if (p && typeof p === "object") {
-  const icon = (p.currency === "tokens") ? "🪙" : "🦴";
-  const msg =
-    `✅ Purchased: ${p.name}${p.qty > 1 ? ` x${p.qty}` : ""}\n` +
-    `Cost: ${p.spent} ${icon}`;
-  this.toast(msg);
-} else {
-  this.toast(res.message || "Purchased!");
-}
+      const p = res.purchase;
+      if (p && typeof p === "object") {
+        const spentText = String(p.spentText || _priceString({ cost: (p.spent || p.cost || {}) }) || "N/A");
+        const msg =
+          `✅ Purchased: ${p.name}${p.qty > 1 ? ` x${p.qty}` : ""}\n` +
+          `Cost: ${spentText}`;
+        this.toast(msg);
+      } else {
+        this.toast(res.message || "Purchased!");
+      }
 
-await this.refresh();
+      await this.refresh();
     },
 
     toast(text) {
