@@ -204,6 +204,31 @@
     return (it?.free ? "FREE" : "?");
   }
 
+  function _shopCostEntries(it, resources) {
+    const r = resources || {};
+    const { tokenPrice, bonePrice, scrapPrice, runeDustPrice } = getPrices(it);
+    const defs = [
+      { key: "bones", amount: Number(bonePrice || 0), balance: Number(r.bones ?? 0), icon: "🦴", label: "Bones" },
+      { key: "scrap", amount: Number(scrapPrice || 0), balance: Number(r.scrap ?? 0), icon: "⚙", label: "Scrap" },
+      { key: "rune_dust", amount: Number(runeDustPrice || 0), balance: Number(r.rune_dust ?? 0), icon: "✦", label: "Dust" },
+      { key: "credits", amount: Number(tokenPrice || 0), balance: Number(r.token ?? 0), icon: "◈", label: "Credits" }
+    ];
+
+    const out = defs
+      .filter(def => Number.isFinite(def.amount) && def.amount > 0)
+      .map(def => ({
+        ...def,
+        insufficient: def.balance < def.amount,
+        missing: Math.max(0, def.amount - def.balance)
+      }));
+
+    if (!out.length && it?.free) {
+      out.push({ key: "free", amount: 0, balance: 0, icon: "★", label: "Free", insufficient: false, missing: 0 });
+    }
+
+    return out;
+  }
+
   function _buyDisabledReason(it, resources) {
     const r = resources || {};
     const tokenBal = Number(r.token ?? 0);
@@ -239,6 +264,23 @@
       : "";
 
     return { disabled, reason, missingPrice, hitLimit, limit, bought };
+  }
+
+  function _availabilityState(it, resources) {
+    const state = _buyDisabledReason(it, resources);
+    const costEntries = _shopCostEntries(it, resources);
+    const firstMissing = costEntries.find(entry => entry.insufficient);
+
+    if (state.missingPrice) {
+      return { tone: "locked", text: "No price configured" };
+    }
+    if (state.hitLimit) {
+      return { tone: "locked", text: `Limit reached ${state.bought}/${state.limit}` };
+    }
+    if (firstMissing) {
+      return { tone: "warn", text: `Missing ${fmtNum(firstMissing.missing)} ${firstMissing.label}` };
+    }
+    return { tone: "ok", text: (it?.free ? "Free to claim" : "Affordable") };
   }
 
   function _topDeltas(deltaObj, max = 5) {
@@ -292,18 +334,40 @@
       .ah-shop-vault{ margin:0 0 10px 0;display:flex;justify-content:center; }
       .ah-shop-vault-btn{ min-height:38px;padding:10px 14px;border-radius:999px;border:1px solid rgba(123,225,255,.28);background:linear-gradient(180deg, rgba(123,225,255,.16), rgba(15,18,25,.82));color:#e8fbff;font-weight:800;letter-spacing:.04em;cursor:pointer; }
       .ah-shop-list{ flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-right:6px; }
-      .ah-shop-card{ background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;cursor:pointer; }
+      .ah-shop-card{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(14,18,24,.92));border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.22); }
       .ah-shop-card:active{ transform: translateY(1px); }
-      .ah-row{ display:flex;justify-content:space-between;gap:12px;align-items:flex-start; }
-      .ah-left{ display:flex;gap:12px;align-items:flex-start;min-width:0;flex:1; }
-      .ah-thumb{ width:52px;height:52px;flex:0 0 52px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12); }
-      .ah-name{ font-weight:900;line-height:1.15; }
-      .ah-sub{ opacity:.85;font-size:13px;margin-top:2px; }
-      .ah-desc{ opacity:.9;font-size:13px;margin-top:6px; }
-      .ah-right{ text-align:right;flex:0 0 auto; }
-      .ah-price{ font-weight:900;margin-bottom:8px; }
-      .ah-btn{ padding:10px 12px;border-radius:12px;border:0;cursor:pointer; }
-      .ah-btn[disabled]{ opacity:.45;cursor:not-allowed; }
+      .ah-shop-card.is-epic{ border-color:rgba(232,183,88,.34);box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,223,146,.08);background:linear-gradient(180deg, rgba(86,61,24,.34), rgba(15,18,24,.96)); }
+      .ah-card-main{ display:flex;gap:12px;align-items:stretch; }
+      .ah-card-media{ flex:0 0 60px; }
+      .ah-thumb{ width:60px;height:60px;display:block;object-fit:contain;border-radius:14px;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.14); }
+      .ah-card-body{ min-width:0;flex:1;display:flex;flex-direction:column;gap:8px; }
+      .ah-name{ font-weight:950;line-height:1.14;font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+      .ah-meta-row{ display:flex;flex-wrap:wrap;gap:6px; }
+      .ah-meta-pill{ display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:rgba(244,247,251,.78);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:capitalize;white-space:nowrap; }
+      .ah-desc{ color:rgba(244,247,251,.78);font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em; }
+      .ah-card-footer{ display:flex;gap:12px;align-items:flex-end;justify-content:space-between; }
+      .ah-card-economy{ min-width:0;flex:1;display:flex;flex-direction:column;gap:7px; }
+      .ah-price-chips{ display:flex;flex-wrap:wrap;gap:6px; }
+      .ah-price-chip{ display:inline-flex;align-items:center;gap:6px;min-height:30px;max-width:100%;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#f4f7fb;font-size:12px;font-weight:800;line-height:1; }
+      .ah-price-chip.is-insufficient{ border-color:rgba(255,118,118,.42);background:rgba(108,19,28,.28);color:#ffd9df; }
+      .ah-price-icon{ flex:0 0 auto;font-size:13px;line-height:1; }
+      .ah-price-value{ font-weight:950; }
+      .ah-price-label{ opacity:.76;font-size:11px;letter-spacing:.02em; }
+      .ah-status{ font-size:12px;font-weight:800;letter-spacing:.01em;line-height:1.3; }
+      .ah-status--ok{ color:#95ecb0; }
+      .ah-status--warn{ color:#ffc27f; }
+      .ah-status--locked{ color:rgba(244,247,251,.72); }
+      .ah-buy-wrap{ flex:0 0 auto;display:flex;align-items:flex-end; }
+      .ah-btn{ min-width:84px;min-height:42px;padding:0 14px;border-radius:14px;border:1px solid rgba(255,219,146,.35);background:linear-gradient(180deg, #f2d48f, #c9902d);color:#211506;font-weight:950;letter-spacing:.02em;box-shadow:0 8px 16px rgba(0,0,0,.18);cursor:pointer; }
+      .ah-btn[disabled]{ opacity:1;cursor:not-allowed;border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.08);color:rgba(244,247,251,.42);box-shadow:none; }
+      @media (max-width:420px){
+        .ah-shop-wrap{ padding:12px; }
+        .ah-shop-card{ padding:12px; }
+        .ah-card-main{ gap:10px; }
+        .ah-card-media{ flex-basis:56px; }
+        .ah-thumb{ width:56px;height:56px; }
+        .ah-btn{ min-width:78px; }
+      }
 
       /* Modal */
       .ah-pv-back{ display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:16px; }
@@ -538,6 +602,96 @@
       });
 
       // Card click -> INSPECT (compare)
+      list.onclick = (e) => {
+        if (e.target.closest("button[data-buy]")) return;
+        const card = e.target.closest(".shop-card");
+        if (!card) return;
+        const key = card.getAttribute("data-preview");
+        if (key) this.openPreview(key);
+      };
+    },
+
+    render() {
+      const meta = el("shop-meta");
+      if (meta) meta.textContent = this.metaLine();
+
+      const list = el("shop-list");
+      if (!list) return;
+
+      const items = this._state?.items || [];
+      const r = this._state?.resources || {};
+
+      if (!items.length) {
+        list.innerHTML = `<div style="opacity:.85;text-align:center;">No items today.</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(it => {
+        const { disabled, reason, missingPrice, limit, bought } = _buyDisabledReason(it, r);
+        const availability = _availabilityState(it, r);
+        const priceChips = _shopCostEntries(it, r);
+        const metaItems = [
+          it.rarity ? `<span class="ah-meta-pill">${escapeHtml(String(it.rarity))}</span>` : "",
+          (it.category || it.type) ? `<span class="ah-meta-pill">${escapeHtml(String(it.category || it.type))}</span>` : "",
+          (limit > 0) ? `<span class="ah-meta-pill">Limit ${escapeHtml(`${bought}/${limit}`)}</span>` : ""
+        ].filter(Boolean).join("");
+        const priceHtml = priceChips.map(entry => `
+          <span class="ah-price-chip${entry.insufficient ? " is-insufficient" : ""}">
+            <span class="ah-price-icon">${escapeHtml(entry.icon)}</span>
+            <span class="ah-price-value">${escapeHtml(fmtNum(entry.amount))}</span>
+            <span class="ah-price-label">${escapeHtml(entry.label)}</span>
+          </span>
+        `).join("");
+
+        const key = itemKeyOf(it);
+        return `
+          <div class="ah-shop-card shop-card ${String(it.rarity || "").toLowerCase() === "epic" ? "is-epic" : ""}" data-preview="${escapeHtml(key)}">
+            <div class="ah-card-main">
+              <div class="ah-card-media">
+                <img
+                  src="${escapeHtml(itemImg(it))}"
+                  width="52" height="52"
+                  loading="lazy" decoding="async"
+                  class="ah-thumb"
+                  onerror="this.onerror=null;this.src='${escapeHtml(itemImgFallback())}';"
+                  alt=""
+                />
+              </div>
+              <div class="ah-card-body">
+                <div>
+                  <div class="ah-name">${escapeHtml(it.name)}</div>
+                  ${metaItems ? `<div class="ah-meta-row">${metaItems}</div>` : ""}
+                  ${it.desc ? `<div class="ah-desc">${escapeHtml(it.desc)}</div>` : ""}
+                </div>
+                <div class="ah-card-footer">
+                  <div class="ah-card-economy">
+                    <div class="ah-price-chips">${priceHtml}</div>
+                    <div class="ah-status ah-status--${escapeHtml(availability.tone)}">${escapeHtml(availability.text || reason || "")}</div>
+                  </div>
+                  <div class="ah-buy-wrap">
+                    <button type="button"
+                      class="ah-btn"
+                      data-buy="${escapeHtml(key)}"
+                      ${disabled ? "disabled" : ""}>
+                      ${missingPrice ? "N/A" : (disabled && reason === "Daily limit reached." ? "Maxed" : "Buy")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      list.querySelectorAll("button[data-buy]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          if (btn.disabled) return;
+          const k = btn.getAttribute("data-buy");
+          this.buy(k);
+        };
+      });
+
       list.onclick = (e) => {
         if (e.target.closest("button[data-buy]")) return;
         const card = e.target.closest(".shop-card");
