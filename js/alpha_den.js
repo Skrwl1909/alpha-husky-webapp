@@ -322,6 +322,7 @@
 
   function humanizeReason(reason) {
     const code = String(reason || "").trim().toUpperCase();
+    if (code === "APIPOST MISSING") return "Local preview only. Connect live backend to test real construction.";
     if (code === "BUILD_DISABLED") return "Build system disabled for this test window";
     if (code === "INVALID_BUILDING") return "That build zone is unavailable right now.";
     if (code === "ALREADY_BUILT") return "This structure is already built.";
@@ -478,7 +479,7 @@
   async function runServerAction(path, buildingId) {
     const apiPost = getApiPost();
     if (!apiPost) {
-      notify("Local preview only");
+      notify("Local preview only. Connect live backend to test real construction.");
       return null;
     }
     if (isActionBusy) return null;
@@ -1309,6 +1310,7 @@
     const maxLevelLabel = `Max ${maxLevel}`;
 
     if (!usingServerState) {
+      const previewLabel = "LOCAL PREVIEW / NOT LIVE";
       return {
         level,
         built,
@@ -1325,15 +1327,15 @@
         title: built ? `${config.name} Level ${level}` : config.unbuiltName,
         copy: built
           ? (isMaxLevel
-            ? `Level ${level} complete. Function coming later.`
-            : `Level ${level} complete. Preview only.`)
-          : "Local preview only. Real build flow unlocks later.",
+            ? `${previewLabel} | Level ${level} complete. Function coming later.`
+            : `${previewLabel} | Level ${level} complete. Preview only.`)
+          : "Local preview only. Connect live backend to test real construction.",
         buttonLabel: isMaxLevel ? "Max Level for this phase" : "Build Preview",
         buttonAction: isMaxLevel ? "noop" : "build",
         buttonDisabled: isMaxLevel,
         helperCopy: isMaxLevel
-          ? "Function coming later."
-          : `Next Level ${nextLevel || 1} | ${formatCost(building?.nextCost)} | ${formatDuration(building?.buildSeconds)} build`
+          ? `${previewLabel} | Function coming later.`
+          : `${previewLabel} | Next Level ${nextLevel || 1} | ${formatCost(building?.nextCost)} | ${formatDuration(building?.buildSeconds)} build`
       };
     }
 
@@ -1356,7 +1358,7 @@
 
     if (!buildEnabled) {
       stateLabel = isMaxLevel ? "Max level" : levelLabel;
-      helperCopy = "Live Den state. Build system disabled for this test window.";
+      helperCopy = "Server synced. Build system disabled for this test window.";
       copy = built ? copy : config.unbuiltCopy;
     } else if (uiStatus === "building") {
       stateLabel = "Building";
@@ -1537,22 +1539,21 @@
       : "";
     const topAction = liveMode ? "refresh" : "reset";
     const topActionLabel = liveMode ? "Refresh" : "Reset Preview";
+    const previewMessage = "Local preview only. Connect live backend to test real construction.";
     const summaryCopy = liveMode
-      ? (state.buildEnabled
-        ? "Server synced. Level 1-3 construction config loaded."
-        : "Server synced. Build system disabled for this test window.")
-      : "This bunker shell is local preview only. The room stays fixed. Future patches swap in real structure layers, costs, timers, and backend state.";
+      ? "Server synced. Level 1-3 construction config loaded."
+      : previewMessage;
     const footnote = liveMode
       ? (state.buildEnabled
-        ? "Server synced. Level 1-3 construction config loaded."
+        ? "Server synced. Build system enabled for controlled test."
         : "Server synced. Build system disabled for this test window.")
-      : "Preview state is local only. Real Den progression will be backend-backed later.";
-    const modePill = liveMode ? "Live Den state" : "Local preview only";
+      : "LOCAL PREVIEW / NOT LIVE";
+    const modePill = liveMode ? "LIVE SERVER STATE" : "LOCAL PREVIEW / NOT LIVE";
     const syncPill = liveMode && !state.buildEnabled
       ? "Build system disabled for this test window"
       : liveMode
         ? "Server synced"
-        : "Preview build";
+        : "Preview only";
     const statusMessage = !liveMode && lastSyncError
       ? humanizeReason(lastSyncError)
       : lastActionMessage
