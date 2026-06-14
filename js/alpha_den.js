@@ -260,6 +260,17 @@
     }
   }
 
+  function formatLongDuration(seconds) {
+    const total = Math.max(0, asCount(seconds));
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+    if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    if (mins > 0) return `${mins}m`;
+    return `${total}s`;
+  }
+
   function isCompactMobileViewport() {
     try {
       return !!window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
@@ -324,13 +335,20 @@
     const code = String(reason || "").trim().toUpperCase();
     if (code === "APIPOST MISSING") return "Local preview only. Connect live backend to test real construction.";
     if (code === "BUILD_DISABLED") return "Build system disabled for this test window";
+    if (code === "TRAINING_DISABLED") return "Pet Training coming soon.";
     if (code === "INVALID_BUILDING") return "That build zone is unavailable right now.";
     if (code === "ALREADY_BUILT") return "This structure is already built.";
     if (code === "ALREADY_BUILDING") return "This structure is already building.";
+    if (code === "ALREADY_TRAINING") return "Pet Training is already active.";
+    if (code === "CLAIM_REQUIRED") return "Pet Training is ready. Claim Pet XP.";
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
+    if (code === "KENNEL_REQUIRED") return "Build Pet Kennel to unlock training.";
     if (code === "MAX_LEVEL_REACHED") return "This structure is at max level for this phase.";
+    if (code === "NO_ACTIVE_PET") return "Set an active pet before starting training.";
+    if (code === "NO_ACTIVE_TRAINING") return "No Pet Training is active right now.";
     if (code === "NOT_BUILDING") return "This structure is not building right now.";
-    if (code === "NOT_READY") return "This build is not ready yet.";
+    if (code === "NOT_READY") return "This timer is not ready yet.";
+    if (code === "PET_NOT_FOUND") return "The trained pet is unavailable right now.";
     if (code === "STATE_ERROR" || code === "ACTION_FAILED") return "Alpha Den is unavailable right now.";
     if (code === "STATE_FAIL" || code === "DEN_STATE_INVALID") return "Live Den state is unavailable right now.";
     if (code === "USER_NOT_FOUND" || code === "USER_NOT_REGISTERED" || code === "USER_NOT_FOUND") return "Your live Den state is not ready yet.";
@@ -346,10 +364,42 @@
     if (code === "NOT_READY") {
       const secondsRemaining = asCount(data?.secondsRemaining);
       return secondsRemaining > 0
-        ? `This build is not ready yet. Ready in ${formatDuration(secondsRemaining)}.`
-        : "This build is not ready yet.";
+        ? `Not ready yet. Ready in ${formatLongDuration(secondsRemaining)}.`
+        : "Not ready yet.";
     }
     return humanizeReason(code);
+  }
+
+  function normalizePetKennelTraining(raw) {
+    const activePet = raw?.activePet && typeof raw.activePet === "object"
+      ? {
+          petId: String(raw.activePet.petId || "").trim(),
+          name: String(raw.activePet.name || "").trim(),
+          type: String(raw.activePet.type || "").trim(),
+          level: Math.max(0, asCount(raw.activePet.level))
+        }
+      : null;
+
+    return {
+      trainingEnabled: !!raw?.trainingEnabled,
+      petKennelLevel: asCount(raw?.petKennelLevel),
+      activePet,
+      trainingStatus: String(raw?.trainingStatus || raw?.status || "").trim().toLowerCase() || "idle",
+      status: String(raw?.status || "").trim().toLowerCase() || "idle",
+      canTrain: !!raw?.canTrain,
+      canClaim: !!raw?.canClaim,
+      reason: String(raw?.reason || "").trim(),
+      secondsRemaining: asCount(raw?.secondsRemaining),
+      readyAt: asUnix(raw?.readyAt),
+      claimedAt: asUnix(raw?.claimedAt),
+      rewardPetXp: asCount(raw?.rewardPetXp),
+      trainingType: String(raw?.trainingType || "").trim(),
+      durationSeconds: asCount(raw?.durationSeconds),
+      startedAt: asUnix(raw?.startedAt),
+      targetKennelLevel: raw?.targetKennelLevel == null ? null : asCount(raw?.targetKennelLevel),
+      activeTrainingPetId: String(raw?.activeTrainingPetId || "").trim(),
+      activeTrainingPetName: String(raw?.activeTrainingPetName || "").trim()
+    };
   }
 
   function normalizeServerState(raw) {
@@ -364,6 +414,7 @@
         bones: asCount(raw?.balances?.bones),
         scrap: asCount(raw?.balances?.scrap)
       },
+      petKennelTraining: normalizePetKennelTraining(raw?.petKennelTraining || null),
       buildings: {}
     };
 
@@ -441,6 +492,33 @@
     return getLocalBuildingState(buildingId);
   }
 
+  function getEffectivePetKennelTraining() {
+    if (usingServerState && serverState?.petKennelTraining) {
+      return serverState.petKennelTraining;
+    }
+    const level = getBuildingLevel("pet_kennel");
+    return {
+      trainingEnabled: false,
+      petKennelLevel: level,
+      activePet: null,
+      trainingStatus: level > 0 ? "disabled" : "locked",
+      status: "idle",
+      canTrain: false,
+      canClaim: false,
+      reason: level > 0 ? "TRAINING_DISABLED" : "KENNEL_REQUIRED",
+      secondsRemaining: 0,
+      readyAt: null,
+      claimedAt: null,
+      rewardPetXp: level >= 3 ? 100 : level >= 2 ? 45 : level >= 1 ? 30 : 0,
+      trainingType: level >= 3 ? "Reinforced Training" : level >= 2 ? "Basic Training+" : level >= 1 ? "Basic Training" : "",
+      durationSeconds: level >= 3 ? 21600 : level >= 1 ? 10800 : 0,
+      startedAt: null,
+      targetKennelLevel: level > 0 ? level : null,
+      activeTrainingPetId: "",
+      activeTrainingPetName: ""
+    };
+  }
+
   async function refreshServerState({ rerender = true } = {}) {
     const apiPost = getApiPost();
     if (!apiPost) {
@@ -495,6 +573,7 @@
       const payload = normalizeServerState(out.alphaDen || out?.data?.alphaDen || out?.data || out);
       if (payload) {
         const updatedBuilding = payload?.buildings?.[buildingId] || null;
+        const training = payload?.petKennelTraining || null;
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
@@ -502,6 +581,10 @@
           ? `Build started${updatedBuilding?.targetLevel ? ` for Level ${updatedBuilding.targetLevel}` : ""}. Use Refresh to update this timer.`
           : path.includes("/build/claim")
             ? `Level ${updatedBuilding?.level || ""} complete. Function coming later.`.replace("Level  complete", "Build claimed")
+            : path.includes("/pet-training/start")
+              ? `${String(training?.trainingType || "Training").trim() || "Training"} started${training?.activeTrainingPetName ? ` for ${training.activeTrainingPetName}` : ""}. Reward: +${asCount(training?.rewardPetXp)} Pet XP. Refresh to update.`
+              : path.includes("/pet-training/claim")
+                ? `${String(out?.petName || training?.activeTrainingPetName || "Pet").trim()} claimed +${asCount(out?.rewardPetXp || training?.rewardPetXp)} Pet XP${out?.petLeveledUp ? " and leveled up." : "."}`
             : "";
       }
       return out;
@@ -1289,6 +1372,14 @@
     }
     if (action === "claim" && buildingId) {
       await runServerAction("/webapp/den/build/claim", buildingId);
+      return;
+    }
+    if (action === "pet-training-start") {
+      await runServerAction("/webapp/den/pet-training/start", "pet_kennel");
+      return;
+    }
+    if (action === "pet-training-claim") {
+      await runServerAction("/webapp/den/pet-training/claim", "pet_kennel");
     }
   }
 
@@ -1517,6 +1608,128 @@
       ${display.buttonDisabled ? "disabled" : ""}
     >${escapeHtml(display.buttonLabel)}</button>
     <p class="alpha-den-detail__note">${escapeHtml(display.helperCopy)}</p>
+  </div>
+</section>
+${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}`;
+  }
+
+  function renderPetTrainingCard() {
+    const building = getEffectiveBuildingState("pet_kennel");
+    const kennelLevel = normalizeLevel(building?.level);
+    const training = getEffectivePetKennelTraining();
+    const activePet = training?.activePet || null;
+    const readyAtLabel = formatReadyTime(training?.readyAt);
+
+    let copy = "Pet Training coming soon.";
+    let metaRows = "";
+    let buttonLabel = "Function coming later";
+    let buttonAction = "noop";
+    let buttonDisabled = true;
+    let helperCopy = "Pet Training coming soon.";
+
+    if (!usingServerState) {
+      if (kennelLevel <= 0) {
+        copy = "Build Pet Kennel to unlock training.";
+        helperCopy = "Local preview only. Connect live backend to test real training.";
+      } else {
+        copy = "Pet Training coming soon.";
+        metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Training Type</span>
+      <span class="alpha-den-detail__meta-value">Basic Training</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward</span>
+      <span class="alpha-den-detail__meta-value">+30 Pet XP</span>
+    </div>`;
+        helperCopy = "Local preview only. Connect live backend to test real training.";
+      }
+    } else if (kennelLevel <= 0) {
+      copy = "Build Pet Kennel to unlock training.";
+      helperCopy = "Build Pet Kennel to Level 1 first.";
+    } else if (!training?.trainingEnabled) {
+      copy = "Pet Training coming soon.";
+      helperCopy = "Feature flag is currently off.";
+    } else if (training?.trainingStatus === "training") {
+      copy = `Training active${training?.activeTrainingPetName ? ` for ${training.activeTrainingPetName}` : ""}.`;
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Training Type</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(training?.trainingType || "Training")}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward</span>
+      <span class="alpha-den-detail__meta-value">+${escapeHtml(String(asCount(training?.rewardPetXp)))} Pet XP</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Time Remaining</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(formatLongDuration(training?.secondsRemaining))}${readyAtLabel ? ` | Ready at ${escapeHtml(readyAtLabel)}` : ""}</span>
+    </div>`;
+      helperCopy = "Refresh to update this timer.";
+      buttonLabel = "Training Active";
+    } else if (training?.trainingStatus === "ready") {
+      copy = "Training ready. Claim Pet XP when you are ready.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Training Type</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(training?.trainingType || "Training")}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward</span>
+      <span class="alpha-den-detail__meta-value">+${escapeHtml(String(asCount(training?.rewardPetXp)))} Pet XP</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Trained Pet</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(training?.activeTrainingPetName || activePet?.name || "Active Pet")}</span>
+    </div>`;
+      helperCopy = "Claim Pet XP to finish this training.";
+      buttonLabel = "Claim Pet XP";
+      buttonAction = "pet-training-claim";
+      buttonDisabled = isActionBusy || !training?.canClaim;
+    } else {
+      copy = activePet
+        ? `${activePet.name} can start training now.`
+        : "Set an active pet before starting training.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Training Type</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(training?.trainingType || "Basic Training")}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Duration</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(formatLongDuration(training?.durationSeconds))}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward</span>
+      <span class="alpha-den-detail__meta-value">+${escapeHtml(String(asCount(training?.rewardPetXp)))} Pet XP</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Active Pet</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(activePet?.name || "No active pet")}</span>
+    </div>`;
+      helperCopy = training?.canTrain
+        ? "Start Training to begin the kennel timer."
+        : humanizeReason(training?.reason || "NO_ACTIVE_PET");
+      buttonLabel = training?.canTrain ? "Start Training" : "Training Locked";
+      buttonAction = training?.canTrain ? "pet-training-start" : "noop";
+      buttonDisabled = isActionBusy || !training?.canTrain;
+    }
+
+    const buttonClass = buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Pet Training</div>
+  <h3 class="alpha-den-detail__title">Pet Kennel Training</h3>
+  <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
+  <div class="alpha-den-detail__meta">${metaRows}</div>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${buttonClass}"
+      data-alpha-den-action="${buttonDisabled ? "noop" : buttonAction}"
+      ${buttonDisabled ? "disabled" : ""}
+    >${escapeHtml(buttonLabel)}</button>
+    <p class="alpha-den-detail__note">${escapeHtml(helperCopy)}</p>
   </div>
 </section>`;
   }
