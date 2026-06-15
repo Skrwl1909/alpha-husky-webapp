@@ -268,6 +268,26 @@
     }
   }
 
+  function formatSignalCacheReward(reward) {
+    const scrap = asCount(reward?.scrap);
+    const bones = asCount(reward?.bones);
+    if (scrap <= 0 && bones <= 0) return "No reward";
+    if (scrap > 0 && bones > 0) return `${scrap} Scrap + ${bones} Bones`;
+    if (scrap > 0) return `${scrap} Scrap`;
+    return `${bones} Bones`;
+  }
+
+  function formatSignalCachePreview(preview) {
+    const scrapMin = asCount(preview?.scrapMin);
+    const scrapMax = asCount(preview?.scrapMax);
+    const bones = asCount(preview?.bones);
+    const scrapLabel = scrapMin > 0 || scrapMax > 0
+      ? `${scrapMin}-${Math.max(scrapMin, scrapMax)} Scrap`
+      : "";
+    if (scrapLabel && bones > 0) return `${scrapLabel} + ${bones} Bones`;
+    return scrapLabel || (bones > 0 ? `${bones} Bones` : "No reward");
+  }
+
   function formatLongDuration(seconds) {
     const total = Math.max(0, asCount(seconds));
     const days = Math.floor(total / 86400);
@@ -348,6 +368,7 @@
     if (code === "APIPOST MISSING") return "Local preview only. Connect live backend to test real construction.";
     if (code === "BUILD_DISABLED") return "Build system disabled for this test window";
     if (code === "TRAINING_DISABLED") return "Pet Training coming soon.";
+    if (code === "FEATURE_DISABLED") return "Signal Cache is currently disabled.";
     if (code === "INVALID_BUILDING") return "That build zone is unavailable right now.";
     if (code === "ALREADY_BUILT") return "This structure is already built.";
     if (code === "ALREADY_BUILDING") return "This structure is already building.";
@@ -355,6 +376,7 @@
     if (code === "CLAIM_REQUIRED") return "Pet Training is ready. Claim Pet XP.";
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
     if (code === "KENNEL_REQUIRED") return "Build Pet Kennel to unlock training.";
+    if (code === "SIGNAL_CORE_REQUIRED" || code === "LOCKED") return "Build Signal Core Level 1 to unlock Signal Cache.";
     if (code === "MAX_LEVEL_REACHED") return "This structure is at max level for this phase.";
     if (code === "NO_ACTIVE_PET") return "Set an active pet before starting training.";
     if (code === "NO_ACTIVE_TRAINING") return "No Pet Training is active right now.";
@@ -414,6 +436,41 @@
     };
   }
 
+  function normalizeSignalCache(raw) {
+    const preview = raw?.rewardPreview && typeof raw.rewardPreview === "object"
+      ? {
+          scrapMin: asCount(raw.rewardPreview.scrapMin),
+          scrapMax: asCount(raw.rewardPreview.scrapMax),
+          bones: asCount(raw.rewardPreview.bones)
+        }
+      : { scrapMin: 0, scrapMax: 0, bones: 0 };
+
+    const lastReward = raw?.lastReward && typeof raw.lastReward === "object"
+      ? {
+          scrap: asCount(raw.lastReward.scrap),
+          bones: asCount(raw.lastReward.bones)
+        }
+      : { scrap: 0, bones: 0 };
+
+    return {
+      featureEnabled: !!raw?.featureEnabled,
+      signalCoreLevel: asCount(raw?.signalCoreLevel),
+      cacheStatus: String(raw?.cacheStatus || raw?.status || "").trim().toLowerCase() || "locked",
+      status: String(raw?.status || raw?.cacheStatus || "").trim().toLowerCase() || "locked",
+      canClaim: !!raw?.canClaim,
+      reason: String(raw?.reason || "").trim(),
+      secondsRemaining: asCount(raw?.secondsRemaining),
+      nextReadyAt: asUnix(raw?.nextReadyAt),
+      lastClaimedAt: asUnix(raw?.lastClaimedAt),
+      lastReward,
+      rewardPreview: preview,
+      cooldownSeconds: asCount(raw?.cooldownSeconds),
+      sourceLevel: raw?.sourceLevel == null ? null : asCount(raw?.sourceLevel),
+      claimedCount: asCount(raw?.claimedCount),
+      version: String(raw?.version || "").trim()
+    };
+  }
+
   function normalizeServerState(raw) {
     if (!raw || typeof raw !== "object" || !raw.buildings || typeof raw.buildings !== "object") return null;
 
@@ -427,6 +484,7 @@
         scrap: asCount(raw?.balances?.scrap)
       },
       petKennelTraining: normalizePetKennelTraining(raw?.petKennelTraining || null),
+      signalCache: normalizeSignalCache(raw?.signalCache || null),
       buildings: {}
     };
 
@@ -531,6 +589,90 @@
     };
   }
 
+  function getSignalCachePreviewForLevel(level) {
+    if (level >= 3) {
+      return {
+        featureEnabled: false,
+        signalCoreLevel: level,
+        cacheStatus: level > 0 ? "disabled" : "locked",
+        status: level > 0 ? "disabled" : "locked",
+        canClaim: false,
+        reason: level > 0 ? "FEATURE_DISABLED" : "SIGNAL_CORE_REQUIRED",
+        secondsRemaining: 0,
+        nextReadyAt: null,
+        lastClaimedAt: null,
+        lastReward: { scrap: 0, bones: 0 },
+        rewardPreview: { scrapMin: 18, scrapMax: 30, bones: 75 },
+        cooldownSeconds: 50400,
+        sourceLevel: level > 0 ? level : null,
+        claimedCount: 0,
+        version: "p2b_signal_cache_v1"
+      };
+    }
+    if (level >= 2) {
+      return {
+        featureEnabled: false,
+        signalCoreLevel: level,
+        cacheStatus: "disabled",
+        status: "disabled",
+        canClaim: false,
+        reason: "FEATURE_DISABLED",
+        secondsRemaining: 0,
+        nextReadyAt: null,
+        lastClaimedAt: null,
+        lastReward: { scrap: 0, bones: 0 },
+        rewardPreview: { scrapMin: 12, scrapMax: 20, bones: 50 },
+        cooldownSeconds: 64800,
+        sourceLevel: level,
+        claimedCount: 0,
+        version: "p2b_signal_cache_v1"
+      };
+    }
+    if (level >= 1) {
+      return {
+        featureEnabled: false,
+        signalCoreLevel: level,
+        cacheStatus: "disabled",
+        status: "disabled",
+        canClaim: false,
+        reason: "FEATURE_DISABLED",
+        secondsRemaining: 0,
+        nextReadyAt: null,
+        lastClaimedAt: null,
+        lastReward: { scrap: 0, bones: 0 },
+        rewardPreview: { scrapMin: 8, scrapMax: 14, bones: 0 },
+        cooldownSeconds: 64800,
+        sourceLevel: level,
+        claimedCount: 0,
+        version: "p2b_signal_cache_v1"
+      };
+    }
+    return {
+      featureEnabled: false,
+      signalCoreLevel: 0,
+      cacheStatus: "locked",
+      status: "locked",
+      canClaim: false,
+      reason: "SIGNAL_CORE_REQUIRED",
+      secondsRemaining: 0,
+      nextReadyAt: null,
+      lastClaimedAt: null,
+      lastReward: { scrap: 0, bones: 0 },
+      rewardPreview: { scrapMin: 0, scrapMax: 0, bones: 0 },
+      cooldownSeconds: 0,
+      sourceLevel: null,
+      claimedCount: 0,
+      version: "p2b_signal_cache_v1"
+    };
+  }
+
+  function getEffectiveSignalCache() {
+    if (usingServerState && serverState?.signalCache) {
+      return serverState.signalCache;
+    }
+    return getSignalCachePreviewForLevel(getBuildingLevel("signal_core"));
+  }
+
   async function refreshServerState({ rerender = true } = {}) {
     const apiPost = getApiPost();
     if (!apiPost) {
@@ -586,6 +728,7 @@
       if (payload) {
         const updatedBuilding = payload?.buildings?.[buildingId] || null;
         const training = payload?.petKennelTraining || null;
+        const signalCache = payload?.signalCache || null;
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
@@ -597,6 +740,8 @@
               ? `${String(training?.trainingType || "Training").trim() || "Training"} started${training?.activeTrainingPetName ? ` for ${training.activeTrainingPetName}` : ""}. Reward: +${asCount(training?.rewardPetXp)} Pet XP. Refresh to update.`
               : path.includes("/pet-training/claim")
                 ? `${String(out?.petName || training?.activeTrainingPetName || "Pet").trim()} claimed +${asCount(out?.rewardPetXp || training?.rewardPetXp)} Pet XP${out?.petLeveledUp ? " and leveled up." : "."}`
+                : path.includes("/signal-cache/claim")
+                  ? `Signal Cache claimed: ${formatSignalCacheReward(out?.lastReward || signalCache?.lastReward)}.${signalCache?.nextReadyAt ? " Refresh later when the cache is ready again." : ""}`
             : "";
       }
       return out;
@@ -1392,6 +1537,10 @@
     }
     if (action === "pet-training-claim") {
       await runServerAction("/webapp/den/pet-training/claim", "pet_kennel");
+      return;
+    }
+    if (action === "signal-cache-claim") {
+      await runServerAction("/webapp/den/signal-cache/claim", "signal_core");
     }
   }
 
@@ -1622,7 +1771,118 @@
     <p class="alpha-den-detail__note">${escapeHtml(display.helperCopy)}</p>
   </div>
 </section>
-${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}`;
+${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}
+${config.id === "signal_core" ? renderSignalCacheCard() : ""}`;
+  }
+
+  function renderSignalCacheCard() {
+    const building = getEffectiveBuildingState("signal_core");
+    const signalCoreLevel = normalizeLevel(building?.level);
+    const cache = getEffectiveSignalCache();
+    const nextReadyLabel = formatReadyTime(cache?.nextReadyAt);
+    const previewLabel = formatSignalCachePreview(cache?.rewardPreview);
+    const cooldownLabel = formatLongDuration(cache?.cooldownSeconds);
+    const lastRewardLabel = formatSignalCacheReward(cache?.lastReward);
+
+    let copy = "Signal Cache coming later.";
+    let metaRows = "";
+    let buttonLabel = "Function coming later";
+    let buttonAction = "noop";
+    let buttonDisabled = true;
+    let helperCopy = "Signal Cache coming later.";
+
+    if (!usingServerState) {
+      if (signalCoreLevel <= 0) {
+        copy = "Build Signal Core Level 1 to unlock Signal Cache.";
+        helperCopy = "Local preview only. Connect live backend to test real Signal Cache.";
+      } else {
+        copy = "Signal Cache can convert Signal Core uptime into claimable scrap and bones.";
+        metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward Preview</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Cooldown</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
+    </div>`;
+        helperCopy = "Local preview only. Connect live backend to test real Signal Cache.";
+      }
+    } else if (signalCoreLevel <= 0 || cache?.cacheStatus === "locked") {
+      copy = "Build Signal Core Level 1 to unlock Signal Cache.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward Preview</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
+    </div>`;
+      helperCopy = "Signal Core Level 1 is required.";
+    } else if (!cache?.featureEnabled) {
+      copy = "Signal Cache is wired but the live feature flag is currently off.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward Preview</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Cooldown</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
+    </div>`;
+      helperCopy = "Enable ALPHA_DEN_SIGNAL_CACHE_ENABLED to claim it live.";
+    } else if (cache?.cacheStatus === "charging") {
+      copy = "Signal Cache is charging.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward Preview</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Time Remaining</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(formatLongDuration(cache?.secondsRemaining))}${nextReadyLabel ? ` | Ready at ${escapeHtml(nextReadyLabel)}` : ""}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Last Reward</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(lastRewardLabel)}</span>
+    </div>`;
+      helperCopy = "Refresh to update this timer.";
+      buttonLabel = "Cache Charging";
+    } else {
+      copy = "Signal Cache is ready to claim.";
+      metaRows = `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Reward Preview</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Cooldown</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
+    </div>
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">Last Reward</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(lastRewardLabel)}</span>
+    </div>`;
+      helperCopy = "Claim Signal Cache to collect the current reward roll.";
+      buttonLabel = "Claim Signal Cache";
+      buttonAction = "signal-cache-claim";
+      buttonDisabled = isActionBusy || !cache?.canClaim;
+    }
+
+    const buttonClass = buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Signal Cache</div>
+  <h3 class="alpha-den-detail__title">Signal Core Cache</h3>
+  <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
+  <div class="alpha-den-detail__meta">${metaRows}</div>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${buttonClass}"
+      data-alpha-den-action="${buttonDisabled ? "noop" : buttonAction}"
+      ${buttonDisabled ? "disabled" : ""}
+    >${escapeHtml(buttonLabel)}</button>
+    <p class="alpha-den-detail__note">${escapeHtml(helperCopy)}</p>
+  </div>
+</section>`;
   }
 
   function renderPetTrainingCard() {
