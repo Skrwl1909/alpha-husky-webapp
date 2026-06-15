@@ -1906,6 +1906,7 @@ html.ah-skins-open #heroFrame{
   min-width:100%;
   min-height:100%;
   z-index:1;
+  overflow:hidden;
   background:
     url("images/map/base/map.2.0.webp") center/cover no-repeat,
     url("images/map/base/wasteland.jpg") center/cover no-repeat;
@@ -1919,6 +1920,24 @@ html.ah-skins-open #heroFrame{
   cursor:grabbing;
 }
 
+.map-stage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(180deg, rgba(132,210,255,.032) 0 1px, rgba(0,0,0,0) 1px 4px),
+    linear-gradient(112deg, rgba(88,196,255,.055) 0%, rgba(88,196,255,0) 34%, rgba(255,136,88,.028) 66%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 18% 24%, rgba(102,198,255,.06), rgba(102,198,255,0) 34%),
+    radial-gradient(circle at 84% 76%, rgba(255,132,84,.04), rgba(255,132,84,0) 28%);
+  opacity:.34;
+  mix-blend-mode:screen;
+  animation:
+    ahMapScanlinesDrift 18s linear infinite,
+    ahMapOverlayHum 8.4s ease-in-out infinite;
+}
+
 .map-stage::after{
   content:"";
   position:absolute;
@@ -1926,9 +1945,16 @@ html.ah-skins-open #heroFrame{
   z-index:2;
   pointer-events:none;
   background:
+    linear-gradient(116deg, rgba(0,0,0,0) 18%, rgba(146,228,255,.08) 44%, rgba(0,0,0,0) 66%),
+    radial-gradient(circle at 50% 46%, rgba(92,160,232,.11), rgba(92,160,232,0) 58%),
     url("images/map/overlays/fog.png") center/cover no-repeat,
     linear-gradient(0deg, rgba(0,0,0,.24), transparent);
-  opacity:.50;
+  background-size:220% 100%, 100% 100%, cover, 100% 100%;
+  background-position:-145% 0, center, center, center;
+  opacity:.42;
+  animation:
+    ahMapTacticalSweep 14s ease-in-out infinite,
+    ahMapFogPulse 10s ease-in-out infinite;
 }
 
 .map-territories{
@@ -2198,6 +2224,257 @@ html.ah-skins-open #heroFrame{
 .path.glow{
   stroke-width:4;
   stroke:rgba(120,196,255,.08);
+}
+
+/* === LIVING MAP V1 === */
+@keyframes ahMapScanlinesDrift{
+  0%{ transform:translate3d(0,-2%,0); }
+  50%{ transform:translate3d(0,2%,0); }
+  100%{ transform:translate3d(0,-2%,0); }
+}
+
+@keyframes ahMapOverlayHum{
+  0%,100%{ opacity:.28; }
+  50%{ opacity:.38; }
+}
+
+@keyframes ahMapTacticalSweep{
+  0%{ background-position:-145% 0, center, center, center; }
+  52%,100%{ background-position:155% 0, center, center, center; }
+}
+
+@keyframes ahMapFogPulse{
+  0%,100%{ opacity:.36; }
+  50%{ opacity:.48; }
+}
+
+@keyframes ahMapPathHum{
+  0%,100%{ stroke-opacity:.72; }
+  50%{ stroke-opacity:1; }
+}
+
+@keyframes ahMapPathFlow{
+  0%{ stroke-dashoffset:0; opacity:.42; }
+  50%{ opacity:.86; }
+  100%{ stroke-dashoffset:-44; opacity:.42; }
+}
+
+@keyframes ahMapNodeIdleHalo{
+  0%,100%{
+    opacity:.78;
+    transform:scale(1);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.04);
+  }
+}
+
+@keyframes ahMapNodeFocusHalo{
+  0%,100%{
+    opacity:.92;
+    transform:scale(1);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.08);
+  }
+}
+
+@keyframes ahMapNodeLivePulse{
+  0%,100%{
+    opacity:.82;
+    transform:scale(1);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.1);
+  }
+}
+
+@keyframes ahMapNodeHotPulse{
+  0%,100%{
+    opacity:.88;
+    transform:scale(1);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.12);
+  }
+}
+
+@keyframes ahMapNodeBeaconPulse{
+  0%,100%{
+    opacity:.94;
+    transform:scale(1);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.15);
+  }
+}
+
+@keyframes ahMapBriefRefresh{
+  0%{
+    opacity:0;
+    transform:translate3d(-26%,0,0);
+  }
+  100%{
+    opacity:1;
+    transform:translate3d(26%,0,0);
+  }
+}
+
+#map .paths-layer svg{
+  overflow:visible;
+}
+
+#map .path:not(.locked){
+  stroke-opacity:.84;
+  animation:ahMapPathHum 9.6s ease-in-out infinite;
+}
+
+#map .path.glow{
+  stroke-dasharray:14 18;
+  stroke-linecap:round;
+  opacity:.42;
+  animation:ahMapPathFlow 5.8s linear infinite;
+}
+
+#map .map-pin .pin-ring{
+  transition:
+    opacity .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease,
+    border-color .2s ease;
+  animation:ahMapNodeIdleHalo 4.8s ease-in-out infinite;
+}
+
+#map .map-pin .pin-icon,
+#map .map-pin > img{
+  transition:
+    transform .22s ease,
+    filter .22s ease,
+    opacity .22s ease;
+}
+
+#map .map-pin.active .pin-ring{
+  animation:ahMapNodeFocusHalo 1.9s ease-in-out infinite;
+}
+
+#map .map-pin.active .pin-icon,
+#map .map-pin.active > img{
+  transform:scale(1.06);
+  filter:
+    brightness(1.06)
+    saturate(1.08)
+    drop-shadow(0 0 14px rgba(132,212,255,.2));
+}
+
+#map .map-pin.is-live .pin-ring{
+  animation:ahMapNodeLivePulse 1.8s ease-in-out infinite;
+  box-shadow:
+    0 0 0 1px rgba(82,236,192,.14),
+    0 0 18px rgba(82,236,192,.18);
+}
+
+#map .map-pin.pressure-hot .pin-ring,
+#map .map-pin.is-threatened .pin-ring{
+  animation:ahMapNodeHotPulse 1.38s ease-in-out infinite;
+}
+
+#map .map-pin.pressure-hot .pin-icon,
+#map .map-pin.is-threatened .pin-icon,
+#map .map-pin.pressure-hot > img,
+#map .map-pin.is-threatened > img{
+  filter:
+    brightness(1.06)
+    saturate(1.12)
+    drop-shadow(0 0 14px rgba(255,132,64,.2));
+}
+
+#map .map-pin.pressure-contested .pin-ring,
+#map .map-pin.is-contested .pin-ring,
+#map .map-pin.siege-running .pin-ring,
+#map .map-pin.pressure-flashpoint .pin-ring{
+  animation:ahMapNodeBeaconPulse .92s ease-in-out infinite;
+}
+
+#map .map-pin.pressure-contested .pin-icon,
+#map .map-pin.is-contested .pin-icon,
+#map .map-pin.siege-running .pin-icon,
+#map .map-pin.pressure-flashpoint .pin-icon,
+#map .map-pin.pressure-contested > img,
+#map .map-pin.is-contested > img,
+#map .map-pin.siege-running > img,
+#map .map-pin.pressure-flashpoint > img{
+  filter:
+    brightness(1.08)
+    saturate(1.14)
+    drop-shadow(0 0 18px rgba(255,92,92,.24));
+}
+
+#map .map-pin .pin-pressure-badges,
+#map .map-pin .chip{
+  transition:
+    opacity .18s ease,
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+}
+
+#map .map-pin.active .chip{
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.34),
+    0 0 0 1px rgba(164,218,255,.12),
+    0 0 18px rgba(72,166,255,.14);
+}
+
+.map-world-brief{
+  position:relative;
+  overflow:hidden;
+  transition:
+    border-color .22s ease,
+    box-shadow .22s ease,
+    transform .22s ease,
+    background .22s ease,
+    opacity .22s ease;
+}
+
+.map-world-brief::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(112deg, rgba(0,0,0,0) 12%, rgba(140,222,255,.14) 48%, rgba(0,0,0,0) 84%);
+}
+
+.map-world-brief[data-mode="selection"]{
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.22),
+    0 0 0 1px rgba(146,212,255,.08),
+    0 0 20px rgba(56,150,255,.08);
+}
+
+.map-world-brief[data-mode="selection"] .map-world-brief-line-1,
+.map-world-brief[data-mode="selection"] .map-world-brief-line-2{
+  transition:
+    color .18s ease,
+    opacity .18s ease,
+    transform .18s ease;
+}
+
+.map-world-brief.is-refreshing{
+  transform:translateY(-1px);
+  box-shadow:
+    0 12px 34px rgba(0,0,0,.26),
+    0 0 0 1px rgba(166,224,255,.12),
+    0 0 22px rgba(82,176,255,.14);
+}
+
+.map-world-brief.is-refreshing::after{
+  animation:ahMapBriefRefresh .58s ease-out 1;
 }
 
 /* neutral */
@@ -3107,6 +3384,19 @@ html.ah-skins-open #heroFrame{
     transition:none !important;
   }
 
+  .map-stage::before,
+  .map-stage::after,
+  .map-world-brief,
+  .map-world-brief::after,
+  #map .path,
+  #map .path.glow,
+  #map .map-pin .pin-ring,
+  #map .map-pin .pin-icon,
+  #map .map-pin > img{
+    animation:none !important;
+    transition:none !important;
+  }
+
   .hotspot.signal-scan-lock .node-tap-scan,
   .map-pin.signal-scan-lock .node-tap-scan{
     animation:none !important;
@@ -3244,9 +3534,31 @@ body.ah-perf-lite .path.glow{
   display:none !important;
 }
 
+html.ah-perf-lite .map-stage::before,
+body.ah-perf-lite .map-stage::before{
+  display:none !important;
+  animation:none !important;
+}
+
 html.ah-perf-lite .map-stage::after,
 body.ah-perf-lite .map-stage::after{
   opacity:.28 !important;
+}
+
+html.ah-perf-lite #map .path,
+body.ah-perf-lite #map .path,
+html.ah-perf-lite #map .map-pin .pin-ring,
+body.ah-perf-lite #map .map-pin .pin-ring,
+html.ah-perf-lite #map .map-pin .pin-icon,
+body.ah-perf-lite #map .map-pin .pin-icon,
+html.ah-perf-lite #map .map-pin > img,
+body.ah-perf-lite #map .map-pin > img,
+html.ah-perf-lite .map-world-brief,
+body.ah-perf-lite .map-world-brief,
+html.ah-perf-lite .map-world-brief::after,
+body.ah-perf-lite .map-world-brief::after{
+  animation:none !important;
+  transition:none !important;
 }
 </style>
 
@@ -8517,16 +8829,36 @@ document.addEventListener("click", async (e) => {
           const node = selectedMapNode();
           const pinEl = selectedMapPin();
           if (!node || !pinEl) {
+            if (root.__ahMapBriefFxTimer) {
+              window.clearTimeout(root.__ahMapBriefFxTimer);
+              root.__ahMapBriefFxTimer = null;
+            }
+            root.classList.remove("is-refreshing");
+            delete root.dataset.selectedNodeId;
             delete root.dataset.mode;
             return;
           }
 
           const statusLabel = selectedNodeStatusLabel(pinEl);
           const guidanceHint = selectedNodeGuidanceHint(node, pinEl);
+          const activeId = String(node?.id || pinEl?.dataset?.nodeId || "").trim();
+          const prevActiveId = String(root.dataset.selectedNodeId || "").trim();
 
           root.dataset.mode = "selection";
           line1El.textContent = String(node?.name || "Selected node");
           line2El.textContent = [statusLabel, guidanceHint].filter(Boolean).join(" - ");
+
+          if (activeId && activeId !== prevActiveId) {
+            root.dataset.selectedNodeId = activeId;
+            root.classList.remove("is-refreshing");
+            void root.offsetWidth;
+            root.classList.add("is-refreshing");
+            if (root.__ahMapBriefFxTimer) window.clearTimeout(root.__ahMapBriefFxTimer);
+            root.__ahMapBriefFxTimer = window.setTimeout(() => {
+              root.classList.remove("is-refreshing");
+              root.__ahMapBriefFxTimer = null;
+            }, 620);
+          }
         }
 
         function resolveLabelCollisions(){
@@ -11038,7 +11370,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
-<script src="/js/alpha_den.js?v=den-p2b"></script>
+<script src="/js/alpha_den.js?v=den-p2b-signal-cache"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
