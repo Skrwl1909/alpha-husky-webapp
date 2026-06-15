@@ -31,19 +31,19 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Back wall cable relay point",
-      x: 61,
-      y: 36,
-      labelX: 70,
-      labelY: 24,
-      overlayStyle: "left:61%; top:32%; width:23%;",
+      x: 60,
+      y: 35,
+      labelX: 73,
+      labelY: 20,
+      overlayStyle: "left:60.5%; top:32%; width:28%;",
       mobilePlacement: {
-        hotspotX: 67,
-        hotspotY: 37,
-        labelX: 74,
-        labelY: 27,
-        overlayLeft: 65,
-        overlayTop: 34,
-        overlayWidth: 22
+        hotspotX: 65,
+        hotspotY: 35,
+        labelX: 78,
+        labelY: 21,
+        overlayLeft: 63,
+        overlayTop: 33,
+        overlayWidth: 29
       },
       glyph: "SC"
     },
@@ -58,20 +58,20 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Lower-left pack corner",
-      x: 18,
-      y: 73,
-      labelX: 16,
-      labelY: 84,
-      overlayStyle: "left:18%; top:72%; width:35%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.05);",
+      x: 19,
+      y: 72,
+      labelX: 12,
+      labelY: 86,
+      overlayStyle: "left:19%; top:71.5%; width:41%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.08);",
       mobilePlacement: {
-        hotspotX: 24,
-        hotspotY: 75,
-        labelX: 21,
-        labelY: 85,
-        overlayLeft: 23,
-        overlayTop: 73,
-        overlayWidth: 34,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.05)"
+        hotspotX: 23,
+        hotspotY: 73,
+        labelX: 15,
+        labelY: 87,
+        overlayLeft: 21,
+        overlayTop: 72,
+        overlayWidth: 40,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.08)"
       },
       glyph: "PK"
     },
@@ -86,20 +86,20 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Right-side table surface",
-      x: 67,
-      y: 59,
-      labelX: 79,
-      labelY: 53,
-      overlayStyle: "left:68%; top:59%; width:30%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.04);",
+      x: 68,
+      y: 58,
+      labelX: 84,
+      labelY: 47,
+      overlayStyle: "left:68.5%; top:58.5%; width:35%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.06);",
       mobilePlacement: {
-        hotspotX: 81,
-        hotspotY: 62,
-        labelX: 71,
-        labelY: 53,
-        overlayLeft: 75,
-        overlayTop: 60,
-        overlayWidth: 29,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.04)"
+        hotspotX: 79,
+        hotspotY: 60,
+        labelX: 87,
+        labelY: 50,
+        overlayLeft: 76,
+        overlayTop: 59,
+        overlayWidth: 34,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.06)"
       },
       glyph: "WT"
     }
@@ -349,6 +349,14 @@
       labelY,
       overlayStyle: config.overlayStyle || ""
     };
+  }
+
+  function getSceneStateLabel(display) {
+    if (!display || typeof display !== "object") return "L0";
+    if (display.stateLabel === "Build ready") return "Ready";
+    if (display.stateLabel === "Building") return "Building";
+    if (display.isMaxLevel) return `L${asCount(display.level)} Max`;
+    return `L${asCount(display.level)}`;
   }
 
   function makeRunId(action, buildingId) {
@@ -1014,16 +1022,16 @@
 }
 .alpha-den-room{
   display:grid;
-  grid-template-columns:minmax(0, 1.4fr) minmax(280px, .86fr);
-  gap:16px;
+  grid-template-columns:minmax(0, 1.55fr) minmax(270px, .78fr);
+  gap:14px;
   min-height:0;
   flex:1;
 }
 .alpha-den-room__scene{
   position:relative;
   width:100%;
-  min-height:360px;
-  aspect-ratio:16 / 9;
+  min-height:392px;
+  aspect-ratio:16 / 9.4;
   border-radius:24px;
   overflow:hidden;
   border:1px solid rgba(136,162,190,.18);
@@ -1051,7 +1059,7 @@
   height:100%;
   display:block;
   object-fit:cover;
-  object-position:center center;
+  object-position:center 48%;
 }
 .alpha-den-room__background::before{
   content:"";
@@ -1090,28 +1098,32 @@
   position:absolute;
   transform:translate(-50%, -50%);
   transform-origin:center;
+  will-change:transform;
 }
 .alpha-den-room__overlay img{
   display:block;
   width:100%;
   height:auto;
   user-select:none;
-  filter:drop-shadow(0 14px 24px rgba(0,0,0,.38));
+  filter:drop-shadow(0 16px 26px rgba(0,0,0,.42));
 }
 .alpha-den-room__overlay--signal-core{
   z-index:3;
 }
 .alpha-den-room__overlay--signal-core img{
-  filter:drop-shadow(0 10px 16px rgba(0,0,0,.34)) drop-shadow(0 0 14px rgba(255,191,87,.20));
+  filter:drop-shadow(0 14px 22px rgba(0,0,0,.36)) drop-shadow(0 0 18px rgba(255,191,87,.22));
 }
 .alpha-den-room__overlay--pet-kennel{
   z-index:2;
+}
+.alpha-den-room__overlay--pet-kennel img{
+  filter:drop-shadow(0 14px 22px rgba(0,0,0,.34));
 }
 .alpha-den-room__overlay--war-table{
   z-index:4;
 }
 .alpha-den-room__overlay--war-table img{
-  filter:drop-shadow(0 10px 14px rgba(0,0,0,.26));
+  filter:drop-shadow(0 14px 20px rgba(0,0,0,.30));
 }
 .alpha-den-room__layer{
   z-index:2;
@@ -1131,9 +1143,9 @@
   transform:translate(-50%, -50%);
   display:inline-flex;
   align-items:center;
-  gap:10px;
+  gap:7px;
   width:auto;
-  max-width:min(38vw, 210px);
+  max-width:min(30vw, 168px);
   padding:0;
   border:0;
   background:transparent;
@@ -1142,10 +1154,10 @@
   cursor:pointer;
 }
 .alpha-den-zone.is-detached-label{
-  width:44px;
-  height:44px;
-  min-width:44px;
-  min-height:44px;
+  width:38px;
+  height:38px;
+  min-width:38px;
+  min-height:38px;
   display:block;
   overflow:visible;
 }
@@ -1163,12 +1175,12 @@
 .alpha-den-zone__marker{
   position:relative;
   flex:0 0 auto;
-  width:22px;
-  height:22px;
+  width:18px;
+  height:18px;
   border-radius:999px;
   border:1px solid rgba(197,223,247,.42);
-  background:rgba(5,10,16,.72);
-  box-shadow:0 8px 18px rgba(0,0,0,.24);
+  background:rgba(5,10,16,.62);
+  box-shadow:0 6px 14px rgba(0,0,0,.22);
 }
 .alpha-den-zone.is-detached-label .alpha-den-zone__marker{
   position:absolute;
@@ -1179,7 +1191,7 @@
 .alpha-den-zone__marker::before{
   content:"";
   position:absolute;
-  inset:5px;
+  inset:4px;
   border-radius:999px;
   background:rgba(226,237,247,.88);
 }
@@ -1187,19 +1199,19 @@
   content:"";
   position:absolute;
   border-radius:999px;
-  inset:-6px;
+  inset:-4px;
   border:1px solid rgba(190,221,246,.24);
-  opacity:.65;
+  opacity:.58;
 }
 .alpha-den-zone__labelwrap{
   display:flex;
   flex-direction:column;
-  gap:3px;
-  padding:8px 12px;
-  border-radius:14px;
-  background:linear-gradient(180deg, rgba(8,13,20,.84), rgba(5,9,14,.90));
+  gap:2px;
+  padding:5px 8px 5px 9px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(8,13,20,.78), rgba(5,9,14,.86));
   border:1px solid rgba(125,156,185,.18);
-  box-shadow:0 12px 20px rgba(0,0,0,.26);
+  box-shadow:0 8px 16px rgba(0,0,0,.22);
   backdrop-filter:blur(6px);
 }
 .alpha-den-zone.is-detached-label .alpha-den-zone__labelwrap{
@@ -1208,27 +1220,31 @@
   top:calc(50% + var(--label-shift-y, 0%));
   transform:translate(-50%, -50%);
   width:max-content;
-  max-width:min(44vw, 150px);
+  max-width:min(28vw, 118px);
   pointer-events:none;
 }
 .alpha-den-zone__label{
-  font-size:12px;
+  font-size:10px;
   font-weight:800;
   letter-spacing:.10em;
   text-transform:uppercase;
   color:#edf5ff;
+  line-height:1.08;
+  white-space:nowrap;
 }
 .alpha-den-zone__state{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  font-size:11px;
+  gap:4px;
+  font-size:9px;
   color:#a9bdd3;
+  line-height:1;
+  white-space:nowrap;
 }
 .alpha-den-zone__state::before{
   content:"";
-  width:7px;
-  height:7px;
+  width:5px;
+  height:5px;
   border-radius:999px;
   background:rgba(111,156,192,.56);
 }
@@ -1354,7 +1370,7 @@
     grid-template-columns:1fr;
   }
   .alpha-den-zone{
-    max-width:min(42vw, 190px);
+    max-width:min(34vw, 132px);
   }
 }
 @media (max-width: 640px){
@@ -1371,7 +1387,7 @@
     border-radius:0;
     border-left:0;
     border-right:0;
-    padding:10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding:12px 10px calc(14px + env(safe-area-inset-bottom, 0px));
     overflow:visible;
   }
   .alpha-den-frame{
@@ -1421,27 +1437,38 @@
     font-size:10px;
   }
   .alpha-den-room__scene{
-    min-height:280px;
-    aspect-ratio:16 / 10;
+    min-height:336px;
+    aspect-ratio:4 / 3;
   }
   .alpha-den-zone{
-    max-width:min(44vw, 150px);
-    gap:6px;
+    max-width:min(32vw, 106px);
+    gap:4px;
+  }
+  .alpha-den-zone.is-detached-label{
+    width:34px;
+    height:34px;
+    min-width:34px;
+    min-height:34px;
   }
   .alpha-den-zone__marker{
-    width:18px;
-    height:18px;
+    width:15px;
+    height:15px;
   }
   .alpha-den-zone__labelwrap{
-    padding:6px 9px;
+    gap:1px;
+    padding:4px 6px 4px 7px;
+    border-radius:10px;
+  }
+  .alpha-den-zone.is-detached-label .alpha-den-zone__labelwrap{
+    max-width:min(30vw, 96px);
   }
   .alpha-den-zone__label{
-    font-size:11px;
-    letter-spacing:.08em;
+    font-size:9px;
+    letter-spacing:.06em;
   }
   .alpha-den-zone__state{
-    font-size:10px;
-    gap:5px;
+    font-size:8px;
+    gap:3px;
   }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
@@ -1682,6 +1709,7 @@
     const tierClass = `den-building--${display.tier}`;
     const selectedClass = activeId === config.id ? " is-selected" : "";
     const placement = display.placement || getPlacement(config);
+    const sceneStateLabel = getSceneStateLabel(display);
     const detachedLabel = Math.abs(placement.labelX - placement.hotspotX) > 0.5 || Math.abs(placement.labelY - placement.hotspotY) > 0.5;
     const zoneStyle = detachedLabel
       ? `left:${placement.hotspotX}%; top:${placement.hotspotY}%; --label-shift-x:${placement.labelX - placement.hotspotX}%; --label-shift-y:${placement.labelY - placement.hotspotY}%;`
@@ -1699,7 +1727,7 @@
   <span class="alpha-den-zone__marker" aria-hidden="true"></span>
   <span class="alpha-den-zone__labelwrap">
     <span class="alpha-den-zone__label">${escapeHtml(config.name)}</span>
-    <span class="alpha-den-zone__state">${escapeHtml(display.stateLabel)}</span>
+    <span class="alpha-den-zone__state">${escapeHtml(sceneStateLabel)}</span>
   </span>
 </button>`;
   }
