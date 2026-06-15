@@ -5,9 +5,9 @@
   const BUILDING_ORDER = ["signal_core", "pet_kennel", "war_table"];
   const MAX_BUILD_LEVEL = 3;
   const BUILD_LEVELS = {
-    1: { cost: { bones: 800, scrap: 15 }, buildSeconds: 21600 },
-    2: { cost: { bones: 1800, scrap: 35 }, buildSeconds: 43200 },
-    3: { cost: { bones: 3500, scrap: 70 }, buildSeconds: 86400 }
+    1: { cost: { bones: 7500, scrap: 100 }, buildSeconds: 43200 },
+    2: { cost: { bones: 22500, scrap: 300 }, buildSeconds: 86400 },
+    3: { cost: { bones: 50000, scrap: 650 }, buildSeconds: 172800 }
   };
 
   const DEFAULT_STATE = {
@@ -28,20 +28,22 @@
       unbuiltCopy: "An empty relay point waiting for its first signal engine.",
       level1Copy: "Primitive Signal Core online. Future scans and signal charge will connect here.",
       role: "Future source of signal charge, scans, and Den energy.",
-      buildTimeLabel: "Level 1 build time: 6h",
-      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
+      buildTimeLabel: "Level 1 build time: 12h",
+      costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Back wall cable relay point",
       x: 61,
       y: 36,
-      overlayStyle: "left:60%; top:31%; width:19%;",
+      labelX: 70,
+      labelY: 24,
+      overlayStyle: "left:61%; top:32%; width:23%;",
       mobilePlacement: {
         hotspotX: 67,
-        hotspotY: 38,
-        labelX: 64,
-        labelY: 35,
-        overlayLeft: 64,
-        overlayTop: 33,
-        overlayWidth: 19
+        hotspotY: 37,
+        labelX: 74,
+        labelY: 27,
+        overlayLeft: 65,
+        overlayTop: 34,
+        overlayWidth: 22
       },
       glyph: "SC"
     },
@@ -53,19 +55,23 @@
       unbuiltCopy: "An empty pack corner. Your active pet will eventually rest and train here.",
       level1Copy: "Scrap Pet Kennel built. Future pet training and expeditions will connect here.",
       role: "Future pet resting, training, and expedition space.",
-      buildTimeLabel: "Level 1 build time: 6h",
-      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
+      buildTimeLabel: "Level 1 build time: 12h",
+      costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Lower-left pack corner",
       x: 18,
       y: 73,
-      overlayStyle: "left:17%; top:72%; width:30%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.02);",
+      labelX: 16,
+      labelY: 84,
+      overlayStyle: "left:18%; top:72%; width:35%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.05);",
       mobilePlacement: {
         hotspotX: 24,
-        hotspotY: 76,
-        overlayLeft: 22,
+        hotspotY: 75,
+        labelX: 21,
+        labelY: 85,
+        overlayLeft: 23,
         overlayTop: 73,
-        overlayWidth: 31,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.02)"
+        overlayWidth: 34,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.05)"
       },
       glyph: "PK"
     },
@@ -77,21 +83,23 @@
       unbuiltCopy: "An empty command spot. Future faction orders will be planned here.",
       level1Copy: "Field War Table assembled. Future SITREP orders and strategy will connect here.",
       role: "Future faction orders, SITREP planning, and map strategy space.",
-      buildTimeLabel: "Level 1 build time: 6h",
-      costPreview: "Level 1 cost: 800 Bones + 15 Scrap",
+      buildTimeLabel: "Level 1 build time: 12h",
+      costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Right-side table surface",
       x: 67,
       y: 59,
-      overlayStyle: "left:67%; top:58%; width:25%; transform:translate(-50%, -50%) rotate(-2deg);",
+      labelX: 79,
+      labelY: 53,
+      overlayStyle: "left:68%; top:59%; width:30%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.04);",
       mobilePlacement: {
-        hotspotX: 80,
-        hotspotY: 63,
+        hotspotX: 81,
+        hotspotY: 62,
         labelX: 71,
-        labelY: 58,
-        overlayLeft: 74,
+        labelY: 53,
+        overlayLeft: 75,
         overlayTop: 60,
-        overlayWidth: 25,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg)"
+        overlayWidth: 29,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.04)"
       },
       glyph: "WT"
     }
@@ -292,8 +300,12 @@
     const mobile = isCompactMobileViewport() ? (config.mobilePlacement || null) : null;
     const hotspotX = Number.isFinite(Number(mobile?.hotspotX)) ? Number(mobile.hotspotX) : Number(config.x);
     const hotspotY = Number.isFinite(Number(mobile?.hotspotY)) ? Number(mobile.hotspotY) : Number(config.y);
-    const labelX = Number.isFinite(Number(mobile?.labelX)) ? Number(mobile.labelX) : hotspotX;
-    const labelY = Number.isFinite(Number(mobile?.labelY)) ? Number(mobile.labelY) : hotspotY;
+    const labelX = Number.isFinite(Number(mobile?.labelX))
+      ? Number(mobile.labelX)
+      : (Number.isFinite(Number(config.labelX)) ? Number(config.labelX) : hotspotX);
+    const labelY = Number.isFinite(Number(mobile?.labelY))
+      ? Number(mobile.labelY)
+      : (Number.isFinite(Number(config.labelY)) ? Number(config.labelY) : hotspotY);
 
     if (mobile) {
       return {
