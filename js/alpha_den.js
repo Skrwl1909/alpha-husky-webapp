@@ -31,19 +31,20 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Back wall cable relay point",
-      x: 60,
-      y: 35,
-      labelX: 73,
-      labelY: 20,
-      overlayStyle: "left:60.5%; top:32%; width:28%;",
+      x: 61,
+      y: 38,
+      labelX: 71,
+      labelY: 25,
+      overlayStyle: "left:61.5%; top:36.5%; width:32%; transform:translate(-50%, -50%) rotate(-1.5deg) scale(1.12);",
       mobilePlacement: {
         hotspotX: 65,
-        hotspotY: 35,
-        labelX: 78,
-        labelY: 21,
-        overlayLeft: 63,
-        overlayTop: 33,
-        overlayWidth: 29
+        hotspotY: 38,
+        labelX: 73,
+        labelY: 26,
+        overlayLeft: 64,
+        overlayTop: 37,
+        overlayWidth: 34,
+        overlayTransform: "translate(-50%, -50%) rotate(-1.5deg) scale(1.12)"
       },
       glyph: "SC"
     },
@@ -58,20 +59,20 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Lower-left pack corner",
-      x: 19,
-      y: 72,
-      labelX: 12,
-      labelY: 86,
-      overlayStyle: "left:19%; top:71.5%; width:41%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.08);",
+      x: 24,
+      y: 75,
+      labelX: 18,
+      labelY: 84,
+      overlayStyle: "left:25%; top:75.5%; width:49%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.14);",
       mobilePlacement: {
-        hotspotX: 23,
-        hotspotY: 73,
-        labelX: 15,
-        labelY: 87,
-        overlayLeft: 21,
-        overlayTop: 72,
-        overlayWidth: 40,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.08)"
+        hotspotX: 27,
+        hotspotY: 75,
+        labelX: 20,
+        labelY: 84,
+        overlayLeft: 28,
+        overlayTop: 76,
+        overlayWidth: 51,
+        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.14)"
       },
       glyph: "PK"
     },
@@ -86,20 +87,20 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Right-side table surface",
-      x: 68,
-      y: 58,
-      labelX: 84,
-      labelY: 47,
-      overlayStyle: "left:68.5%; top:58.5%; width:35%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.06);",
+      x: 76,
+      y: 62,
+      labelX: 81,
+      labelY: 51,
+      overlayStyle: "left:76.5%; top:63%; width:42%; transform:translate(-50%, -50%) rotate(-3deg) scale(1.08);",
       mobilePlacement: {
-        hotspotX: 79,
-        hotspotY: 60,
-        labelX: 87,
-        labelY: 50,
-        overlayLeft: 76,
-        overlayTop: 59,
-        overlayWidth: 34,
-        overlayTransform: "translate(-50%, -50%) rotate(-2deg) scale(1.06)"
+        hotspotX: 80,
+        hotspotY: 62,
+        labelX: 83,
+        labelY: 52,
+        overlayLeft: 79,
+        overlayTop: 63,
+        overlayWidth: 44,
+        overlayTransform: "translate(-50%, -50%) rotate(-3deg) scale(1.08)"
       },
       glyph: "WT"
     }
@@ -1022,16 +1023,16 @@
 }
 .alpha-den-room{
   display:grid;
-  grid-template-columns:minmax(0, 1.55fr) minmax(270px, .78fr);
-  gap:14px;
+  grid-template-columns:minmax(0, 1.62fr) minmax(280px, .76fr);
+  gap:16px;
   min-height:0;
   flex:1;
 }
 .alpha-den-room__scene{
   position:relative;
   width:100%;
-  min-height:392px;
-  aspect-ratio:16 / 9.4;
+  min-height:424px;
+  aspect-ratio:16 / 9;
   border-radius:24px;
   overflow:hidden;
   border:1px solid rgba(136,162,190,.18);
@@ -1099,6 +1100,21 @@
   transform:translate(-50%, -50%);
   transform-origin:center;
   will-change:transform;
+  isolation:isolate;
+}
+.alpha-den-room__overlay::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:4%;
+  width:58%;
+  height:16%;
+  transform:translateX(-50%);
+  border-radius:999px;
+  background:radial-gradient(circle, rgba(0,0,0,.44), rgba(0,0,0,0) 72%);
+  filter:blur(12px);
+  opacity:.72;
+  z-index:-1;
 }
 .alpha-den-room__overlay img{
   display:block;
@@ -1113,17 +1129,34 @@
 .alpha-den-room__overlay--signal-core img{
   filter:drop-shadow(0 14px 22px rgba(0,0,0,.36)) drop-shadow(0 0 18px rgba(255,191,87,.22));
 }
+.alpha-den-room__overlay--signal-core::after{
+  width:46%;
+  height:12%;
+  bottom:2%;
+  opacity:.52;
+}
 .alpha-den-room__overlay--pet-kennel{
   z-index:2;
 }
 .alpha-den-room__overlay--pet-kennel img{
   filter:drop-shadow(0 14px 22px rgba(0,0,0,.34));
 }
+.alpha-den-room__overlay--pet-kennel::after{
+  width:68%;
+  height:18%;
+  bottom:1%;
+}
 .alpha-den-room__overlay--war-table{
   z-index:4;
 }
 .alpha-den-room__overlay--war-table img{
   filter:drop-shadow(0 14px 20px rgba(0,0,0,.30));
+}
+.alpha-den-room__overlay--war-table::after{
+  width:64%;
+  height:18%;
+  bottom:5%;
+  opacity:.64;
 }
 .alpha-den-room__layer{
   z-index:2;
@@ -1143,9 +1176,9 @@
   transform:translate(-50%, -50%);
   display:inline-flex;
   align-items:center;
-  gap:7px;
+  gap:6px;
   width:auto;
-  max-width:min(30vw, 168px);
+  max-width:min(24vw, 154px);
   padding:0;
   border:0;
   background:transparent;
@@ -1154,10 +1187,10 @@
   cursor:pointer;
 }
 .alpha-den-zone.is-detached-label{
-  width:38px;
-  height:38px;
-  min-width:38px;
-  min-height:38px;
+  width:42px;
+  height:42px;
+  min-width:42px;
+  min-height:42px;
   display:block;
   overflow:visible;
 }
@@ -1175,12 +1208,12 @@
 .alpha-den-zone__marker{
   position:relative;
   flex:0 0 auto;
-  width:18px;
-  height:18px;
+  width:14px;
+  height:14px;
   border-radius:999px;
   border:1px solid rgba(197,223,247,.42);
-  background:rgba(5,10,16,.62);
-  box-shadow:0 6px 14px rgba(0,0,0,.22);
+  background:rgba(5,10,16,.54);
+  box-shadow:0 5px 12px rgba(0,0,0,.20);
 }
 .alpha-den-zone.is-detached-label .alpha-den-zone__marker{
   position:absolute;
@@ -1191,7 +1224,7 @@
 .alpha-den-zone__marker::before{
   content:"";
   position:absolute;
-  inset:4px;
+  inset:3px;
   border-radius:999px;
   background:rgba(226,237,247,.88);
 }
@@ -1199,20 +1232,25 @@
   content:"";
   position:absolute;
   border-radius:999px;
-  inset:-4px;
+  inset:-5px;
   border:1px solid rgba(190,221,246,.24);
-  opacity:.58;
+  opacity:.44;
 }
 .alpha-den-zone__labelwrap{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  padding:5px 8px 5px 9px;
-  border-radius:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:28px;
+  padding:4px 7px 4px 8px;
+  border-radius:999px;
   background:linear-gradient(180deg, rgba(8,13,20,.78), rgba(5,9,14,.86));
   border:1px solid rgba(125,156,185,.18);
-  box-shadow:0 8px 16px rgba(0,0,0,.22);
+  box-shadow:0 8px 16px rgba(0,0,0,.20);
   backdrop-filter:blur(6px);
+}
+.alpha-den-zone.is-selected .alpha-den-zone__labelwrap{
+  border-color:rgba(100,196,255,.28);
+  box-shadow:0 10px 20px rgba(0,0,0,.24), 0 0 0 1px rgba(100,196,255,.06);
 }
 .alpha-den-zone.is-detached-label .alpha-den-zone__labelwrap{
   position:absolute;
@@ -1220,31 +1258,36 @@
   top:calc(50% + var(--label-shift-y, 0%));
   transform:translate(-50%, -50%);
   width:max-content;
-  max-width:min(28vw, 118px);
-  pointer-events:none;
+  max-width:min(24vw, 136px);
+  pointer-events:auto;
 }
 .alpha-den-zone__label{
-  font-size:10px;
+  font-size:9px;
   font-weight:800;
-  letter-spacing:.10em;
+  letter-spacing:.08em;
   text-transform:uppercase;
   color:#edf5ff;
-  line-height:1.08;
+  line-height:1;
   white-space:nowrap;
 }
 .alpha-den-zone__state{
   display:inline-flex;
   align-items:center;
   gap:4px;
-  font-size:9px;
+  padding:2px 6px 2px 5px;
+  border-radius:999px;
+  border:1px solid rgba(118,147,176,.18);
+  background:rgba(12,18,27,.62);
+  font-size:8px;
   color:#a9bdd3;
   line-height:1;
   white-space:nowrap;
+  flex:0 0 auto;
 }
 .alpha-den-zone__state::before{
   content:"";
-  width:5px;
-  height:5px;
+  width:4px;
+  height:4px;
   border-radius:999px;
   background:rgba(111,156,192,.56);
 }
@@ -1370,7 +1413,7 @@
     grid-template-columns:1fr;
   }
   .alpha-den-zone{
-    max-width:min(34vw, 132px);
+    max-width:min(26vw, 128px);
   }
 }
 @media (max-width: 640px){
@@ -1387,14 +1430,14 @@
     border-radius:0;
     border-left:0;
     border-right:0;
-    padding:12px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding:10px 10px calc(16px + env(safe-area-inset-bottom, 0px));
     overflow:visible;
   }
   .alpha-den-frame{
-    gap:10px;
+    gap:9px;
   }
   .alpha-den-shell{
-    padding-top:max(8px, env(safe-area-inset-top, 0px));
+    padding-top:max(6px, env(safe-area-inset-top, 0px));
   }
   .alpha-den-topbar{
     gap:8px;
@@ -1433,42 +1476,52 @@
   }
   .alpha-den-status__pill{
     min-height:28px;
-    padding:6px 10px;
-    font-size:10px;
+    padding:6px 9px;
+    font-size:9px;
+  }
+  .alpha-den-room{
+    gap:12px;
   }
   .alpha-den-room__scene{
-    min-height:336px;
-    aspect-ratio:4 / 3;
+    min-height:374px;
+    aspect-ratio:4 / 3.28;
+  }
+  .alpha-den-room__background-img{
+    object-position:center 46%;
   }
   .alpha-den-zone{
-    max-width:min(32vw, 106px);
-    gap:4px;
+    max-width:min(27vw, 102px);
+    gap:3px;
   }
   .alpha-den-zone.is-detached-label{
-    width:34px;
-    height:34px;
-    min-width:34px;
-    min-height:34px;
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
   }
   .alpha-den-zone__marker{
-    width:15px;
-    height:15px;
+    width:13px;
+    height:13px;
   }
   .alpha-den-zone__labelwrap{
-    gap:1px;
-    padding:4px 6px 4px 7px;
-    border-radius:10px;
+    gap:5px;
+    min-height:24px;
+    padding:3px 6px 3px 7px;
   }
   .alpha-den-zone.is-detached-label .alpha-den-zone__labelwrap{
-    max-width:min(30vw, 96px);
+    max-width:min(27vw, 92px);
   }
   .alpha-den-zone__label{
-    font-size:9px;
-    letter-spacing:.06em;
+    font-size:8px;
+    letter-spacing:.05em;
   }
   .alpha-den-zone__state{
-    font-size:8px;
+    padding:2px 5px 2px 4px;
+    font-size:7px;
     gap:3px;
+  }
+  .alpha-den-drawer{
+    gap:10px;
   }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
