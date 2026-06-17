@@ -9,6 +9,31 @@
     2: { cost: { bones: 22500, scrap: 300 }, buildSeconds: 86400 },
     3: { cost: { bones: 50000, scrap: 650 }, buildSeconds: 172800 }
   };
+  const SIGNAL_CORE_BENEFITS = {
+    1: {
+      level: 1,
+      cooldownSeconds: 64800,
+      rewardPreview: { scrapMin: 8, scrapMax: 14, bones: 0 },
+      label: "Recover 8-14 Scrap every 18h."
+    },
+    2: {
+      level: 2,
+      cooldownSeconds: 64800,
+      rewardPreview: { scrapMin: 12, scrapMax: 20, bones: 50 },
+      label: "Recover 12-20 Scrap + 50 Bones every 18h."
+    },
+    3: {
+      level: 3,
+      cooldownSeconds: 50400,
+      rewardPreview: { scrapMin: 18, scrapMax: 30, bones: 75 },
+      label: "Recover 18-30 Scrap + 75 Bones every 14h."
+    }
+  };
+  const WAR_TABLE_BRIEF_LEVELS = {
+    1: { durationSeconds: 21600 },
+    2: { durationSeconds: 21600 },
+    3: { durationSeconds: 14400 }
+  };
 
   const DEFAULT_STATE = {
     denLevel: 1,
@@ -31,18 +56,18 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Back wall cable relay point",
-      x: 61,
-      y: 38,
-      labelX: 71,
-      labelY: 25,
-      overlayStyle: "left:61.5%; top:36.5%; width:32%; transform:translate(-50%, -50%) rotate(-1.5deg) scale(1.12);",
+      x: 62,
+      y: 40,
+      labelX: 72,
+      labelY: 27,
+      overlayStyle: "left:62.5%; top:38.5%; width:32%; transform:translate(-50%, -50%) rotate(-1.5deg) scale(1.12);",
       mobilePlacement: {
-        hotspotX: 65,
-        hotspotY: 38,
-        labelX: 73,
-        labelY: 26,
-        overlayLeft: 64,
-        overlayTop: 37,
+        hotspotX: 66,
+        hotspotY: 39,
+        labelX: 74,
+        labelY: 28,
+        overlayLeft: 65,
+        overlayTop: 38,
         overlayWidth: 34,
         overlayTransform: "translate(-50%, -50%) rotate(-1.5deg) scale(1.12)"
       },
@@ -87,17 +112,17 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Right-side table surface",
-      x: 76,
+      x: 78,
       y: 62,
-      labelX: 81,
+      labelX: 83,
       labelY: 51,
-      overlayStyle: "left:76.5%; top:63%; width:42%; transform:translate(-50%, -50%) rotate(-3deg) scale(1.08);",
+      overlayStyle: "left:78%; top:63%; width:42%; transform:translate(-50%, -50%) rotate(-3deg) scale(1.08);",
       mobilePlacement: {
-        hotspotX: 80,
+        hotspotX: 81,
         hotspotY: 62,
-        labelX: 83,
+        labelX: 84,
         labelY: 52,
-        overlayLeft: 79,
+        overlayLeft: 80,
         overlayTop: 63,
         overlayWidth: 44,
         overlayTransform: "translate(-50%, -50%) rotate(-3deg) scale(1.08)"
@@ -278,6 +303,51 @@
     return `${bones} Bones`;
   }
 
+  function normalizeSignalCacheBenefit(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const preview = raw?.rewardPreview && typeof raw.rewardPreview === "object"
+      ? {
+          scrapMin: asCount(raw.rewardPreview.scrapMin),
+          scrapMax: asCount(raw.rewardPreview.scrapMax),
+          bones: asCount(raw.rewardPreview.bones)
+        }
+      : { scrapMin: 0, scrapMax: 0, bones: 0 };
+    const level = asCount(raw.level);
+    const cooldownSeconds = asCount(raw.cooldownSeconds);
+    const label = String(raw.label || "").trim();
+    if (level <= 0 && cooldownSeconds <= 0 && !label && preview.scrapMin <= 0 && preview.scrapMax <= 0 && preview.bones <= 0) {
+      return null;
+    }
+    return {
+      level,
+      cooldownSeconds,
+      rewardPreview: preview,
+      label
+    };
+  }
+
+  function getSignalCoreBenefitForLevel(level) {
+    const src = SIGNAL_CORE_BENEFITS[asCount(level)];
+    return src ? normalizeSignalCacheBenefit(src) : null;
+  }
+
+  function getNextSignalCoreBenefitForLevel(level) {
+    const currentLevel = asCount(level);
+    if (currentLevel <= 0) return getSignalCoreBenefitForLevel(1);
+    if (currentLevel >= MAX_BUILD_LEVEL) return null;
+    return getSignalCoreBenefitForLevel(currentLevel + 1);
+  }
+
+  function formatSignalCoreBenefit(benefit) {
+    const text = String(benefit?.label || "").trim();
+    return text || "No recovery unlocked.";
+  }
+
+  function formatSignalCacheLastRecovered(reward) {
+    const label = formatSignalCacheReward(reward);
+    return label === "No reward" ? "No recovered cache yet." : label;
+  }
+
   function formatSignalCachePreview(preview) {
     const scrapMin = asCount(preview?.scrapMin);
     const scrapMax = asCount(preview?.scrapMax);
@@ -377,18 +447,25 @@
     if (code === "APIPOST MISSING") return "Local preview only. Connect live backend to test real construction.";
     if (code === "BUILD_DISABLED") return "Build system disabled for this test window";
     if (code === "TRAINING_DISABLED") return "Pet Training coming soon.";
-    if (code === "FEATURE_DISABLED") return "Signal Cache is currently disabled.";
+    if (code === "FEATURE_DISABLED") return "This Alpha Den feature is currently disabled.";
     if (code === "INVALID_BUILDING") return "That build zone is unavailable right now.";
     if (code === "ALREADY_BUILT") return "This structure is already built.";
     if (code === "ALREADY_BUILDING") return "This structure is already building.";
     if (code === "ALREADY_TRAINING") return "Pet Training is already active.";
     if (code === "CLAIM_REQUIRED") return "Pet Training is ready. Claim Pet XP.";
+    if (code === "ALREADY_PREPARING") return "Tactical Brief is already preparing.";
+    if (code === "BRIEF_CLAIM_REQUIRED") return "Tactical Brief is ready. Claim the latest note first.";
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
     if (code === "KENNEL_REQUIRED") return "Build Pet Kennel to unlock training.";
+    if (code === "KENNEL_UNDER_CONSTRUCTION" || code === "BUILDING_UNDER_CONSTRUCTION") return "Pet Training is offline while Pet Kennel is under construction.";
     if (code === "SIGNAL_CORE_REQUIRED" || code === "LOCKED") return "Build Signal Core Level 1 to unlock Signal Cache.";
+    if (code === "SIGNAL_CORE_UNDER_CONSTRUCTION") return "Signal Cache is offline while Signal Core is under construction.";
+    if (code === "WAR_TABLE_REQUIRED") return "Build War Table Level 1 to unlock Tactical Brief.";
+    if (code === "WAR_TABLE_UNDER_CONSTRUCTION") return "Tactical Brief is offline while War Table is under construction.";
     if (code === "MAX_LEVEL_REACHED") return "This structure is at max level for this phase.";
     if (code === "NO_ACTIVE_PET") return "Set an active pet before starting training.";
     if (code === "NO_ACTIVE_TRAINING") return "No Pet Training is active right now.";
+    if (code === "NO_ACTIVE_BRIEF") return "No Tactical Brief is active right now.";
     if (code === "NOT_BUILDING") return "This structure is not building right now.";
     if (code === "NOT_READY") return "This timer is not ready yet.";
     if (code === "PET_NOT_FOUND") return "The trained pet is unavailable right now.";
@@ -425,6 +502,7 @@
 
     return {
       trainingEnabled: !!raw?.trainingEnabled,
+      buildingUnderConstruction: !!raw?.buildingUnderConstruction,
       petKennelLevel: asCount(raw?.petKennelLevel),
       activePet,
       trainingStatus: String(raw?.trainingStatus || raw?.status || "").trim().toLowerCase() || "idle",
@@ -463,6 +541,7 @@
 
     return {
       featureEnabled: !!raw?.featureEnabled,
+      buildingUnderConstruction: !!raw?.buildingUnderConstruction,
       signalCoreLevel: asCount(raw?.signalCoreLevel),
       cacheStatus: String(raw?.cacheStatus || raw?.status || "").trim().toLowerCase() || "locked",
       status: String(raw?.status || raw?.cacheStatus || "").trim().toLowerCase() || "locked",
@@ -474,8 +553,38 @@
       lastReward,
       rewardPreview: preview,
       cooldownSeconds: asCount(raw?.cooldownSeconds),
+      currentBenefit: normalizeSignalCacheBenefit(raw?.currentBenefit),
+      nextBenefit: normalizeSignalCacheBenefit(raw?.nextBenefit),
       sourceLevel: raw?.sourceLevel == null ? null : asCount(raw?.sourceLevel),
       claimedCount: asCount(raw?.claimedCount),
+      version: String(raw?.version || "").trim()
+    };
+  }
+
+  function normalizeWarTableBrief(raw) {
+    const lastBrief = raw?.lastBrief && typeof raw.lastBrief === "object"
+      ? {
+          title: String(raw.lastBrief.title || "").trim(),
+          message: String(raw.lastBrief.message || "").trim()
+        }
+      : null;
+
+    return {
+      featureEnabled: !!raw?.featureEnabled,
+      buildingUnderConstruction: !!raw?.buildingUnderConstruction,
+      warTableLevel: asCount(raw?.warTableLevel),
+      briefStatus: String(raw?.briefStatus || raw?.status || "").trim().toLowerCase() || "idle",
+      status: String(raw?.status || raw?.briefStatus || "").trim().toLowerCase() || "idle",
+      canStart: !!raw?.canStart,
+      canClaim: !!raw?.canClaim,
+      reason: String(raw?.reason || "").trim(),
+      secondsRemaining: asCount(raw?.secondsRemaining),
+      startedAt: asUnix(raw?.startedAt),
+      readyAt: asUnix(raw?.readyAt),
+      claimedAt: asUnix(raw?.claimedAt),
+      sourceLevel: raw?.sourceLevel == null ? null : asCount(raw?.sourceLevel),
+      lastBrief,
+      durationSeconds: asCount(raw?.durationSeconds),
       version: String(raw?.version || "").trim()
     };
   }
@@ -487,6 +596,7 @@
       version: asCount(raw.version) || 1,
       denLevel: Math.max(1, asCount(raw.denLevel) || 1),
       buildEnabled: !!raw.buildEnabled,
+      warTableEnabled: !!raw.warTableEnabled,
       now: asUnix(raw.now) || Math.floor(Date.now() / 1000),
       balances: {
         bones: asCount(raw?.balances?.bones),
@@ -494,6 +604,7 @@
       },
       petKennelTraining: normalizePetKennelTraining(raw?.petKennelTraining || null),
       signalCache: normalizeSignalCache(raw?.signalCache || null),
+      warTableBrief: normalizeWarTableBrief(raw?.warTableBrief || null),
       buildings: {}
     };
 
@@ -578,6 +689,7 @@
     const level = getBuildingLevel("pet_kennel");
     return {
       trainingEnabled: false,
+      buildingUnderConstruction: false,
       petKennelLevel: level,
       activePet: null,
       trainingStatus: level > 0 ? "disabled" : "locked",
@@ -598,10 +710,47 @@
     };
   }
 
+  function getWarTableBriefPreviewForLevel(level) {
+    const durationSeconds = level >= 3 ? 14400 : level >= 1 ? 21600 : 0;
+    return {
+      featureEnabled: false,
+      buildingUnderConstruction: false,
+      warTableLevel: level,
+      briefStatus: level > 0 ? "disabled" : "locked",
+      status: level > 0 ? "disabled" : "locked",
+      canStart: false,
+      canClaim: false,
+      reason: level > 0 ? "FEATURE_DISABLED" : "WAR_TABLE_REQUIRED",
+      secondsRemaining: 0,
+      startedAt: null,
+      readyAt: null,
+      claimedAt: null,
+      sourceLevel: level > 0 ? level : null,
+      lastBrief: level > 0
+        ? {
+            title: "Tactical Brief",
+            message: "War Table calibrated. The next signal is easier to read."
+          }
+        : null,
+      durationSeconds,
+      version: "p2e_war_table_brief_v1"
+    };
+  }
+
+  function getEffectiveWarTableBrief() {
+    if (usingServerState && serverState?.warTableBrief) {
+      return serverState.warTableBrief;
+    }
+    return getWarTableBriefPreviewForLevel(getBuildingLevel("war_table"));
+  }
+
   function getSignalCachePreviewForLevel(level) {
+    const currentBenefit = getSignalCoreBenefitForLevel(level);
+    const nextBenefit = getNextSignalCoreBenefitForLevel(level);
     if (level >= 3) {
       return {
         featureEnabled: false,
+        buildingUnderConstruction: false,
         signalCoreLevel: level,
         cacheStatus: level > 0 ? "disabled" : "locked",
         status: level > 0 ? "disabled" : "locked",
@@ -613,6 +762,8 @@
         lastReward: { scrap: 0, bones: 0 },
         rewardPreview: { scrapMin: 18, scrapMax: 30, bones: 75 },
         cooldownSeconds: 50400,
+        currentBenefit,
+        nextBenefit,
         sourceLevel: level > 0 ? level : null,
         claimedCount: 0,
         version: "p2b_signal_cache_v1"
@@ -621,6 +772,7 @@
     if (level >= 2) {
       return {
         featureEnabled: false,
+        buildingUnderConstruction: false,
         signalCoreLevel: level,
         cacheStatus: "disabled",
         status: "disabled",
@@ -632,6 +784,8 @@
         lastReward: { scrap: 0, bones: 0 },
         rewardPreview: { scrapMin: 12, scrapMax: 20, bones: 50 },
         cooldownSeconds: 64800,
+        currentBenefit,
+        nextBenefit,
         sourceLevel: level,
         claimedCount: 0,
         version: "p2b_signal_cache_v1"
@@ -640,6 +794,7 @@
     if (level >= 1) {
       return {
         featureEnabled: false,
+        buildingUnderConstruction: false,
         signalCoreLevel: level,
         cacheStatus: "disabled",
         status: "disabled",
@@ -651,6 +806,8 @@
         lastReward: { scrap: 0, bones: 0 },
         rewardPreview: { scrapMin: 8, scrapMax: 14, bones: 0 },
         cooldownSeconds: 64800,
+        currentBenefit,
+        nextBenefit,
         sourceLevel: level,
         claimedCount: 0,
         version: "p2b_signal_cache_v1"
@@ -658,6 +815,7 @@
     }
     return {
       featureEnabled: false,
+      buildingUnderConstruction: false,
       signalCoreLevel: 0,
       cacheStatus: "locked",
       status: "locked",
@@ -669,6 +827,8 @@
       lastReward: { scrap: 0, bones: 0 },
       rewardPreview: { scrapMin: 0, scrapMax: 0, bones: 0 },
       cooldownSeconds: 0,
+      currentBenefit: null,
+      nextBenefit,
       sourceLevel: null,
       claimedCount: 0,
       version: "p2b_signal_cache_v1"
@@ -738,6 +898,7 @@
         const updatedBuilding = payload?.buildings?.[buildingId] || null;
         const training = payload?.petKennelTraining || null;
         const signalCache = payload?.signalCache || null;
+        const warTableBrief = payload?.warTableBrief || null;
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
@@ -750,7 +911,11 @@
               : path.includes("/pet-training/claim")
                 ? `${String(out?.petName || training?.activeTrainingPetName || "Pet").trim()} claimed +${asCount(out?.rewardPetXp || training?.rewardPetXp)} Pet XP${out?.petLeveledUp ? " and leveled up." : "."}`
                 : path.includes("/signal-cache/claim")
-                  ? `Signal Cache claimed: ${formatSignalCacheReward(out?.lastReward || signalCache?.lastReward)}.${signalCache?.nextReadyAt ? " Refresh later when the cache is ready again." : ""}`
+                  ? `Recovered ${formatSignalCacheReward(out?.lastReward || signalCache?.lastReward)} from Signal Cache.${signalCache?.nextReadyAt ? " Refresh later when the cache is ready again." : ""}`
+                  : path.includes("/war-table/brief/start")
+                    ? `Tactical Brief started. Return in ${formatLongDuration(asCount(out?.durationSeconds || warTableBrief?.durationSeconds))}.`
+                    : path.includes("/war-table/brief/claim")
+                      ? `${String(out?.message || warTableBrief?.lastBrief?.message || "Tactical Brief received.").trim()}`
             : "";
       }
       return out;
@@ -1243,10 +1408,10 @@
   min-height:28px;
   padding:4px 7px 4px 8px;
   border-radius:999px;
-  background:linear-gradient(180deg, rgba(8,13,20,.78), rgba(5,9,14,.86));
-  border:1px solid rgba(125,156,185,.18);
-  box-shadow:0 8px 16px rgba(0,0,0,.20);
-  backdrop-filter:blur(6px);
+  background:linear-gradient(180deg, rgba(8,13,20,.62), rgba(5,9,14,.72));
+  border:1px solid rgba(125,156,185,.22);
+  box-shadow:0 8px 16px rgba(0,0,0,.16);
+  backdrop-filter:blur(4px);
 }
 .alpha-den-zone.is-selected .alpha-den-zone__labelwrap{
   border-color:rgba(100,196,255,.28);
@@ -1277,7 +1442,7 @@
   padding:2px 6px 2px 5px;
   border-radius:999px;
   border:1px solid rgba(118,147,176,.18);
-  background:rgba(12,18,27,.62);
+  background:rgba(12,18,27,.46);
   font-size:8px;
   color:#a9bdd3;
   line-height:1;
@@ -1621,6 +1786,14 @@
     }
     if (action === "signal-cache-claim") {
       await runServerAction("/webapp/den/signal-cache/claim", "signal_core");
+      return;
+    }
+    if (action === "war-table-brief-start") {
+      await runServerAction("/webapp/den/war-table/brief/start", "war_table");
+      return;
+    }
+    if (action === "war-table-brief-claim") {
+      await runServerAction("/webapp/den/war-table/brief/claim", "war_table");
     }
   }
 
@@ -1853,20 +2026,47 @@
   </div>
 </section>
 ${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}
-${config.id === "signal_core" ? renderSignalCacheCard() : ""}`;
+${config.id === "signal_core" ? renderSignalCacheCard() : ""}
+${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
+  }
+
+  function renderDetailMetaRow(label, value) {
+    return `
+    <div class="alpha-den-detail__meta-row">
+      <span class="alpha-den-detail__meta-label">${escapeHtml(label)}</span>
+      <span class="alpha-den-detail__meta-value">${escapeHtml(value)}</span>
+    </div>`;
   }
 
   function renderSignalCacheCard() {
     const building = getEffectiveBuildingState("signal_core");
     const signalCoreLevel = normalizeLevel(building?.level);
     const cache = getEffectiveSignalCache();
+    const currentBenefit = cache?.currentBenefit || getSignalCoreBenefitForLevel(signalCoreLevel);
+    const nextBenefit = cache?.nextBenefit || getNextSignalCoreBenefitForLevel(signalCoreLevel);
+    const benefitSource = currentBenefit || nextBenefit;
     const nextReadyLabel = formatReadyTime(cache?.nextReadyAt);
-    const previewLabel = formatSignalCachePreview(cache?.rewardPreview);
-    const cooldownLabel = formatLongDuration(cache?.cooldownSeconds);
-    const lastRewardLabel = formatSignalCacheReward(cache?.lastReward);
+    const previewLabel = formatSignalCachePreview(cache?.rewardPreview || benefitSource?.rewardPreview);
+    const cooldownLabel = formatLongDuration(cache?.cooldownSeconds || benefitSource?.cooldownSeconds);
+    const lastRewardLabel = formatSignalCacheLastRecovered(cache?.lastReward);
+    const currentBenefitLabel = signalCoreLevel > 0
+      ? formatSignalCoreBenefit(currentBenefit)
+      : "Locked until Level 1.";
+    const nextBenefitLabel = nextBenefit
+      ? formatSignalCoreBenefit(nextBenefit)
+      : "Max phase reached.";
+    const basePurposeCopy = "Signal Core intercepts broken Alpha network signals and converts them into recovered resources.";
+    const manualClaimCopy = "Cache must be claimed manually. No passive farming.";
 
     let copy = "Signal Cache coming later.";
-    let metaRows = "";
+    let metaRows = [
+      renderDetailMetaRow("Signal Core Level", `Level ${signalCoreLevel}`),
+      renderDetailMetaRow("Current Benefit", currentBenefitLabel),
+      renderDetailMetaRow("Next Upgrade Benefit", nextBenefitLabel),
+      renderDetailMetaRow("Cache Cooldown", cooldownLabel || "Locked"),
+      renderDetailMetaRow("Reward Preview", previewLabel || "Locked"),
+      renderDetailMetaRow("Last Recovered Cache", lastRewardLabel)
+    ].join("");
     let buttonLabel = "Function coming later";
     let buttonAction = "noop";
     let buttonDisabled = true;
@@ -1875,73 +2075,35 @@ ${config.id === "signal_core" ? renderSignalCacheCard() : ""}`;
     if (!usingServerState) {
       if (signalCoreLevel <= 0) {
         copy = "Build Signal Core Level 1 to unlock Signal Cache.";
-        helperCopy = "Local preview only. Connect live backend to test real Signal Cache.";
+        helperCopy = `${basePurposeCopy} ${manualClaimCopy}`;
+        buttonLabel = "Signal Core Required";
       } else {
-        copy = "Signal Cache can convert Signal Core uptime into claimable scrap and bones.";
-        metaRows = `
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Reward Preview</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Cooldown</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
-    </div>`;
-        helperCopy = "Local preview only. Connect live backend to test real Signal Cache.";
+        copy = basePurposeCopy;
+        helperCopy = `Upgrade Signal Core to recover stronger caches. ${manualClaimCopy}`;
       }
     } else if (signalCoreLevel <= 0 || cache?.cacheStatus === "locked") {
       copy = "Build Signal Core Level 1 to unlock Signal Cache.";
-      metaRows = `
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Reward Preview</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
-    </div>`;
-      helperCopy = "Signal Core Level 1 is required.";
+      helperCopy = `${basePurposeCopy} ${manualClaimCopy}`;
+      buttonLabel = "Signal Core Required";
+    } else if (cache?.reason === "SIGNAL_CORE_UNDER_CONSTRUCTION" || cache?.buildingUnderConstruction) {
+      copy = "Signal Cache is offline while Signal Core is under construction.";
+      helperCopy = `Upgrade Signal Core to recover stronger caches. ${manualClaimCopy}`;
+      buttonLabel = "Cache Offline";
     } else if (!cache?.featureEnabled) {
-      copy = "Signal Cache is wired but the live feature flag is currently off.";
-      metaRows = `
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Reward Preview</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Cooldown</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
-    </div>`;
-      helperCopy = "Enable ALPHA_DEN_SIGNAL_CACHE_ENABLED to claim it live.";
+      copy = basePurposeCopy;
+      helperCopy = "Signal Cache is offline right now.";
+      buttonLabel = "Cache Offline";
     } else if (cache?.cacheStatus === "charging") {
       copy = "Signal Cache is charging.";
-      metaRows = `
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Reward Preview</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Time Remaining</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(formatLongDuration(cache?.secondsRemaining))}${nextReadyLabel ? ` | Ready at ${escapeHtml(nextReadyLabel)}` : ""}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Last Reward</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(lastRewardLabel)}</span>
-    </div>`;
-      helperCopy = "Refresh to update this timer.";
+      metaRows += renderDetailMetaRow(
+        "Time Remaining",
+        `${formatLongDuration(cache?.secondsRemaining)}${nextReadyLabel ? ` | Ready at ${nextReadyLabel}` : ""}`
+      );
+      helperCopy = manualClaimCopy;
       buttonLabel = "Cache Charging";
     } else {
       copy = "Signal Cache is ready to claim.";
-      metaRows = `
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Reward Preview</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(previewLabel)}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Cooldown</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(cooldownLabel)}</span>
-    </div>
-    <div class="alpha-den-detail__meta-row">
-      <span class="alpha-den-detail__meta-label">Last Reward</span>
-      <span class="alpha-den-detail__meta-value">${escapeHtml(lastRewardLabel)}</span>
-    </div>`;
-      helperCopy = "Claim Signal Cache to collect the current reward roll.";
+      helperCopy = `Claim manually when the cache is ready. ${manualClaimCopy}`;
       buttonLabel = "Claim Signal Cache";
       buttonAction = "signal-cache-claim";
       buttonDisabled = isActionBusy || !cache?.canClaim;
@@ -1952,6 +2114,112 @@ ${config.id === "signal_core" ? renderSignalCacheCard() : ""}`;
 <section class="alpha-den-card alpha-den-card--detail">
   <div class="alpha-den-detail__eyebrow">Signal Cache</div>
   <h3 class="alpha-den-detail__title">Signal Core Cache</h3>
+  <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
+  <div class="alpha-den-detail__meta">${metaRows}</div>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${buttonClass}"
+      data-alpha-den-action="${buttonDisabled ? "noop" : buttonAction}"
+      ${buttonDisabled ? "disabled" : ""}
+    >${escapeHtml(buttonLabel)}</button>
+    <p class="alpha-den-detail__note">${escapeHtml(helperCopy)}</p>
+  </div>
+</section>`;
+  }
+
+  function renderWarTableBriefCard() {
+    const building = getEffectiveBuildingState("war_table");
+    const warTableLevel = normalizeLevel(building?.level);
+    const brief = getEffectiveWarTableBrief();
+    const readyAtLabel = formatReadyTime(brief?.readyAt);
+    const lastBrief = brief?.lastBrief || null;
+    const durationSeconds = asCount(
+      brief?.durationSeconds || WAR_TABLE_BRIEF_LEVELS[Math.min(Math.max(warTableLevel, 1), 3)]?.durationSeconds
+    );
+    const basePurposeCopy = "War Table turns map noise into tactical notes. Prepare a brief, return later, and read the next signal.";
+
+    let copy = "Tactical Brief coming later.";
+    let metaRows = [
+      renderDetailMetaRow("War Table Level", `Level ${warTableLevel}`),
+      renderDetailMetaRow("Brief Duration", durationSeconds > 0 ? formatLongDuration(durationSeconds) : "Locked")
+    ].join("");
+    let buttonLabel = "Function coming later";
+    let buttonAction = "noop";
+    let buttonDisabled = true;
+    let helperCopy = "Tactical Brief coming later.";
+
+    if (!usingServerState) {
+      if (warTableLevel <= 0) {
+        copy = "Build War Table Level 1 to unlock Tactical Brief.";
+        helperCopy = "Local preview only. Connect live backend to test Tactical Brief.";
+        buttonLabel = "War Table Required";
+      } else {
+        copy = basePurposeCopy;
+        if (lastBrief?.message) {
+          metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
+        }
+        helperCopy = "Local preview only. Connect live backend to test Tactical Brief.";
+        buttonLabel = "Tactical Brief Preview";
+      }
+    } else if (warTableLevel <= 0 || brief?.briefStatus === "locked") {
+      copy = "Build War Table Level 1 to unlock Tactical Brief.";
+      helperCopy = "Build War Table to Level 1 first.";
+      buttonLabel = "War Table Required";
+    } else if (!brief?.featureEnabled) {
+      copy = basePurposeCopy;
+      if (lastBrief?.message) {
+        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
+      }
+      helperCopy = "Feature flag is currently off.";
+      buttonLabel = "Brief Offline";
+    } else if (brief?.briefStatus === "offline" || brief?.reason === "WAR_TABLE_UNDER_CONSTRUCTION") {
+      copy = "Tactical Brief is offline while War Table is under construction.";
+      helperCopy = "Claim the construction first to bring the table back online.";
+      buttonLabel = "Brief Offline";
+    } else if (brief?.briefStatus === "preparing") {
+      copy = "Tactical Brief is preparing.";
+      metaRows += renderDetailMetaRow(
+        "Time Remaining",
+        `${formatLongDuration(brief?.secondsRemaining)}${readyAtLabel ? ` | Ready at ${readyAtLabel}` : ""}`
+      );
+      if (lastBrief?.message) {
+        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
+      }
+      helperCopy = "Return later and claim the next signal note.";
+      buttonLabel = "Brief Preparing";
+    } else if (brief?.briefStatus === "ready") {
+      copy = "Tactical Brief is ready to read.";
+      if (lastBrief?.message) {
+        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
+      }
+      helperCopy = "Claim the latest note when you are ready.";
+      buttonLabel = "Claim Tactical Brief";
+      buttonAction = "war-table-brief-claim";
+      buttonDisabled = isActionBusy || !brief?.canClaim;
+    } else if (brief?.briefStatus === "claimed") {
+      copy = lastBrief?.message || "Latest Tactical Brief is stored.";
+      metaRows += renderDetailMetaRow("Last Brief", lastBrief?.message || "No brief stored yet.");
+      helperCopy = "Prepare another brief when you want a fresh note.";
+      buttonLabel = "Prepare Next Brief";
+      buttonAction = "war-table-brief-start";
+      buttonDisabled = isActionBusy || !brief?.canStart;
+    } else {
+      copy = basePurposeCopy;
+      if (lastBrief?.message) {
+        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
+      }
+      helperCopy = "Prepare a brief now and return when the timer finishes.";
+      buttonLabel = "Prepare Tactical Brief";
+      buttonAction = "war-table-brief-start";
+      buttonDisabled = isActionBusy || !brief?.canStart;
+    }
+
+    const buttonClass = buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Tactical Brief</div>
+  <h3 class="alpha-den-detail__title">War Table Tactical Brief</h3>
   <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
   <div class="alpha-den-detail__meta">${metaRows}</div>
   <div class="alpha-den-detail__actions">
@@ -2003,6 +2271,9 @@ ${config.id === "signal_core" ? renderSignalCacheCard() : ""}`;
     } else if (!training?.trainingEnabled) {
       copy = "Pet Training coming soon.";
       helperCopy = "Feature flag is currently off.";
+    } else if (training?.trainingStatus === "offline" || training?.reason === "KENNEL_UNDER_CONSTRUCTION") {
+      copy = "Pet Training is offline while Pet Kennel is under construction.";
+      helperCopy = "Training will come back online after construction is claimed.";
     } else if (training?.trainingStatus === "training") {
       copy = `Training active${training?.activeTrainingPetName ? ` for ${training.activeTrainingPetName}` : ""}.`;
       metaRows = `
