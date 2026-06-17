@@ -281,6 +281,10 @@
     const rewardDaysValueEl = _qs("infRewardDaysValue");
     const rewardDaysBarEl = _qs("infRewardDaysBar");
     const rewardHintEl = _qs("infRewardHint");
+    const impactSupportValueEl = _qs("infImpactSupportValue");
+    const impactSupportHintEl = _qs("infImpactSupportHint");
+    const impactRewardValueEl = _qs("infImpactRewardValue");
+    const impactRewardHintEl = _qs("infImpactRewardHint");
 
     const applyRewardDefaults = () => {
       if (rewardStateChipEl) {
@@ -295,11 +299,16 @@
       if (rewardDaysValueEl) rewardDaysValueEl.textContent = "0/2";
       if (rewardDaysBarEl) rewardDaysBarEl.style.width = "0%";
       if (rewardHintEl) rewardHintEl.textContent = "War Rewards may include aura, frame, skin, or raffle entry.";
+      if (impactSupportValueEl) impactSupportValueEl.textContent = "0/60";
+      if (impactSupportHintEl) impactSupportHintEl.textContent = "Build faction support through patrols and supplies.";
+      if (impactRewardValueEl) impactRewardValueEl.textContent = "Not yet";
+      if (impactRewardHintEl) impactRewardHintEl.textContent = "War reward progress will appear here.";
     };
 
     const w = _weekly || null;
     if (!w || !w.weekId) {
       applyRewardDefaults();
+      syncPhantomImpact(_openNodeId);
       previewHost.style.display = "block";
       previewHost.innerHTML = `
         <section class="inf-weekly-preview">
@@ -355,6 +364,18 @@
     if (rewardDaysValueEl) rewardDaysValueEl.textContent = `${myDays}/${reqDays}`;
     if (rewardDaysBarEl) rewardDaysBarEl.style.width = `${daysPct}%`;
     if (rewardHintEl) rewardHintEl.textContent = rewardCopy;
+    if (impactSupportValueEl) impactSupportValueEl.textContent = `${myScore}/${reqScore}`;
+    if (impactSupportHintEl) {
+      impactSupportHintEl.textContent = myQualified
+        ? "Faction support threshold reached."
+        : (scoreMissing > 0 ? `${scoreMissing} more support to hit reward pace.` : "Support threshold is nearly there.");
+    }
+    if (impactRewardValueEl) impactRewardValueEl.textContent = myQualified ? "Qualified" : "Not yet";
+    if (impactRewardHintEl) {
+      impactRewardHintEl.textContent = myQualified
+        ? "You are inside the weekly reward window."
+        : rewardCopy;
+    }
 
     const leadFactionText = topFaction ? fmtFaction(topFaction.faction) : "No leader yet";
     const rankText = viewerRank > 0 ? `#${viewerRank} ${fmtFaction(viewerFaction)}` : "Rank pending";
@@ -386,6 +407,68 @@
 
     host.style.display = "none";
     host.innerHTML = "";
+    syncPhantomImpact(_openNodeId);
+  }
+
+  function syncPhantomImpact(nodeId) {
+    const safeNodeId = normalizeNodeId(nodeId);
+    if (!safeNodeId || !isPhantomNode(safeNodeId)) return;
+
+    const patrolValueEl = _qs("infImpactPatrolValue");
+    const patrolHintEl = _qs("infImpactPatrolHint");
+    const suppliesValueEl = _qs("infImpactSuppliesValue");
+    const suppliesHintEl = _qs("infImpactSuppliesHint");
+    const supportValueEl = _qs("infImpactSupportValue");
+    const supportHintEl = _qs("infImpactSupportHint");
+    const rewardValueEl = _qs("infImpactRewardValue");
+    const rewardHintEl = _qs("infImpactRewardHint");
+    const impactCopyEl = _qs("infImpactCopy");
+    if (!patrolValueEl || !patrolHintEl || !suppliesValueEl || !suppliesHintEl || !supportValueEl || !supportHintEl || !rewardValueEl || !rewardHintEl || !impactCopyEl) return;
+
+    const recent = getRecentNodeActionState(safeNodeId);
+    const patrolReady = _cdUntilMs <= Date.now();
+    const cooldownLeftSec = patrolReady ? 0 : Math.max(0, Math.ceil((_cdUntilMs - Date.now()) / 1000));
+    const w = _weekly || null;
+    const my = (w && w.my && typeof w.my === "object") ? w.my : null;
+    const qualify = (w && w.qualifyThreshold && typeof w.qualifyThreshold === "object") ? w.qualifyThreshold : {};
+    const requirements = (w && w.requirements && typeof w.requirements === "object") ? w.requirements : {};
+    const reqScore = Number(qualify.score || requirements.minScore || 60);
+    const reqDays = Number(qualify.activeDays || requirements.minActiveDays || 2);
+    const myScore = Number(my?.score || 0);
+    const myDays = Number(my?.activeDays || 0);
+    const myQualified = !!my?.qualified;
+    const scoreMissing = Math.max(0, reqScore - myScore);
+    const daysMissing = Math.max(0, reqDays - myDays);
+
+    patrolValueEl.textContent = patrolReady ? "Available" : "Done";
+    patrolHintEl.textContent = patrolReady
+      ? "Patrol is ready now."
+      : `Patrol returns in ${fmtCooldownHint(cooldownLeftSec)}.`;
+
+    suppliesValueEl.textContent = recent.donateAt > 0 ? "Sent" : "Available";
+    suppliesHintEl.textContent = recent.donateAt > 0
+      ? "Your supplies were added to the war effort."
+      : "Send supplies to reinforce the relay.";
+
+    supportValueEl.textContent = `${myScore}/${reqScore}`;
+    supportHintEl.textContent = myQualified
+      ? "Faction support threshold reached."
+      : (scoreMissing > 0 ? `${scoreMissing} more support to build.` : "Support threshold is nearly there.");
+
+    rewardValueEl.textContent = myQualified ? "Qualified" : "Not yet";
+    rewardHintEl.textContent = myQualified
+      ? "You are inside the weekly reward window."
+      : `Need ${scoreMissing > 0 ? `${scoreMissing} score` : "score ready"}${scoreMissing > 0 && daysMissing > 0 ? " and " : ""}${daysMissing > 0 ? `${daysMissing} active day${daysMissing === 1 ? "" : "s"}` : ""}.`;
+
+    if (recent.patrolAt > 0 || recent.donateAt > 0) {
+      impactCopyEl.textContent = "Your support is already on the line.";
+    } else if (myQualified) {
+      impactCopyEl.textContent = "You have real faction support behind this front.";
+    } else if (myScore > 0 || myDays > 0) {
+      impactCopyEl.textContent = "One more action strengthens your faction presence.";
+    } else {
+      impactCopyEl.textContent = "Move first. This node needs support.";
+    }
   }
   // -------------------------
   // Run id
@@ -412,6 +495,7 @@
   let _lastFactionCdSec = 0;
   let _signalCoreOpen = false;
   let _tooltipKey = "";
+  const _recentNodeActions = Object.create(null);
 
   const PATROL_ACTION_HINT = "Scout the relay and reinforce control.";
   const DONATE_ACTION_HINT = "Spend supplies to strengthen your faction’s hold.";
@@ -478,6 +562,51 @@
       return { headline: "YOUR FACTION IS HOLDING", detail: `${yName}: ${v} • ${eName}: ${o}`, advice: "Keep defending to secure the node." };
     }
     return { headline: "ENEMY PRESSURE IS AHEAD", detail: `${yName}: ${v} • ${eName}: ${o}`, advice: "Push back to protect this node." };
+  }
+
+  function markRecentNodeAction(nodeId, kind) {
+    const safeNodeId = normalizeNodeId(nodeId);
+    if (!safeNodeId) return;
+    if (!_recentNodeActions[safeNodeId]) {
+      _recentNodeActions[safeNodeId] = { patrolAt: 0, donateAt: 0 };
+    }
+    if (kind === "patrol") _recentNodeActions[safeNodeId].patrolAt = Date.now();
+    if (kind === "donate") _recentNodeActions[safeNodeId].donateAt = Date.now();
+  }
+
+  function getRecentNodeActionState(nodeId) {
+    const safeNodeId = normalizeNodeId(nodeId);
+    return _recentNodeActions[safeNodeId] || { patrolAt: 0, donateAt: 0 };
+  }
+
+  function phantomEncounterBadge({ condition, owner, viewerFaction, viewerPressure, enemyPressure }) {
+    if (condition === "CONTESTED") return "CONTESTED";
+    if (owner && viewerFaction && owner === viewerFaction && Number(viewerPressure || 0) >= Number(enemyPressure || 0)) return "HOLDING";
+    if (condition === "HOT") return "HOT";
+    return "UNDER PRESSURE";
+  }
+
+  function phantomEncounterLine({ badge, owner, ownerLabel, viewerFaction, yourFactionName, viewerPressure, enemyPressure }) {
+    if (badge === "HOLDING") return `${yourFactionName} is holding this relay.`;
+    if (badge === "CONTESTED" && owner && viewerFaction && owner === viewerFaction) return `${yourFactionName} is fighting to hold this relay.`;
+    if (badge === "CONTESTED" && ownerLabel) return `${ownerLabel} is being challenged at this relay.`;
+    if (badge === "HOT") return "Enemy pressure is rising.";
+    if (owner && viewerFaction && owner !== viewerFaction && Number(enemyPressure || 0) >= Number(viewerPressure || 0)) return "This node needs support.";
+    if (ownerLabel) return `${ownerLabel} is holding this relay.`;
+    return "This node needs support.";
+  }
+
+  function phantomEncounterBrief({ badge, recommendedAction, patrolReady, cooldownLeftSec }) {
+    if (!patrolReady && cooldownLeftSec > 0) return `Patrol reopens in ${fmtCooldownHint(cooldownLeftSec)}.`;
+    if (badge === "HOLDING") return "Hold the relay.";
+    if (badge === "CONTESTED") return "Defend the node.";
+    if (recommendedAction === "PUSH") return "Patrol the node.";
+    return "Support your faction.";
+  }
+
+  function phantomPrimaryCtaLabel({ owner, viewerFaction, badge }) {
+    if (badge === "HOLDING" || badge === "CONTESTED" || (owner && viewerFaction && owner === viewerFaction)) return "DEFEND NODE";
+    return "PATROL NODE";
   }
 
   function explainNodeCondition(condition) {
@@ -697,6 +826,8 @@
   function setActionResult(kind, payload = {}) {
     const el = _qs("infStatus");
     if (!el) return;
+    const currentNodeId = normalizeNodeId(_qs("influenceModal")?.dataset?.nodeId || _openNodeId || "");
+    const phantomMode = isPhantomNode(currentNodeId);
     const gain = Number(payload?.gain || 0) || 0;
     const spent = Number(payload?.spent || 0) || 0;
     const refunded = Number(payload?.refunded || 0) || 0;
@@ -709,19 +840,28 @@
       : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
     const isPatrol = kind === "patrol";
     // Player-facing action result (Phantom Nodes uses "defend / push" language)
-    const title = isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED";
+    const title = phantomMode
+      ? (isPatrol ? "YOU DEFENDED PHANTOM NODE" : "SUPPLIES SENT TO PHANTOM NODE")
+      : (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED");
     const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
-    const baseLine = isPatrol
-      ? "You helped defend this node. Control updates with faction pressure over the cycle."
-      : "Your faction’s hold is stronger. Control updates with faction pressure over the cycle.";
+    const baseLine = phantomMode
+      ? (isPatrol ? "Your patrol was added to the war effort." : "Your supplies were added to the war effort.")
+      : (isPatrol
+        ? "You helped defend this node. Control updates with faction pressure over the cycle."
+        : "Your faction’s hold is stronger. Control updates with faction pressure over the cycle.");
+    const phantomLeadLine = phantomMode
+      ? (isPatrol ? "You defended Phantom Node." : "Faction support reached the relay.")
+      : "";
     const lines = isPatrol
       ? [
+          phantomLeadLine,
           baseLine,
           warContributionLine,
           contractContributionLine,
           archiveKeyLine,
         ]
       : [
+          phantomLeadLine,
           baseLine,
           warContributionLine,
           contractContributionLine,
@@ -994,6 +1134,7 @@
         }
       }
       setOrdersCooldownText("Patrol ready now. Free action is back online.", "ready");
+      syncPhantomImpact(_openNodeId);
       return;
     }
 
@@ -1008,6 +1149,7 @@
       }
     }
     setOrdersCooldownText(`Patrol ready in ${fmtCooldownHint(leftSec)}.`, "cooldown");
+    syncPhantomImpact(_openNodeId);
   }
 
   function startCooldown(sec) {
@@ -3028,24 +3170,219 @@
       }
 
       /* De-emphasize dense Intel/Faction Control tiles for Phantom Nodes (make feel like details) */
-      #influenceModal.is-phantom-node .inf-local-grid{
+      #influenceCard.is-phantom-node .inf-local-grid{
         opacity:.82;
         gap:3px;
       }
-      #influenceModal.is-phantom-node .inf-tile{
+      #influenceCard.is-phantom-node .inf-tile{
         padding:5px 6px 6px;
         background:rgba(255,255,255,.02);
         border-color:rgba(255,255,255,.08);
       }
-      #influenceModal.is-phantom-node .inf-tile-label{
+      #influenceCard.is-phantom-node .inf-tile-label{
         font-size:9px;
         opacity:.7;
       }
-      #influenceModal.is-phantom-node .inf-tile-value{
+      #influenceCard.is-phantom-node .inf-tile-value{
         font-size:11px;
       }
-      #influenceModal.is-phantom-node .inf-hint{
+      #influenceCard.is-phantom-node .inf-hint{
         font-size:9px;
+      }
+      #influenceCard.is-phantom-node .inf-head{
+        align-items:flex-start;
+      }
+      #influenceCard.is-phantom-node .inf-title{
+        font-size:28px;
+        line-height:1;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+      }
+      #influenceCard.is-phantom-node .inf-sub{
+        margin-top:5px;
+        font-size:12px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#aabed8;
+      }
+      #influenceCard.is-phantom-node .inf-hero-grid{
+        grid-template-columns:minmax(0,1fr);
+      }
+      #influenceCard.is-phantom-node .inf-node-core{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-chip-row{
+        margin-top:10px;
+      }
+      #influenceCard.is-phantom-node #infUxControlChip,
+      #influenceCard.is-phantom-node #infUxAction,
+      #influenceCard.is-phantom-node #infUxValue,
+      #influenceCard.is-phantom-node #infUxWatchChip{
+        display:none !important;
+      }
+      #influenceModal .inf-encounter-line{
+        margin-top:6px;
+        font-size:18px;
+        line-height:1.18;
+        font-weight:900;
+        color:#f2f7ff;
+      }
+      #influenceCard.is-phantom-node .inf-hero-flavor{
+        margin-top:8px;
+        font-size:12px;
+        line-height:1.45;
+        color:#dbe7f6;
+      }
+      #influenceCard.is-phantom-node .inf-hero-status{
+        font-size:13px;
+      }
+      #influenceCard.is-phantom-node .inf-clash-meter{
+        margin-top:12px !important;
+        padding:12px 12px 13px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.14);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(124,208,255,.12), transparent 32%),
+          linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      }
+      #influenceCard.is-phantom-node .inf-clash-head{
+        margin-bottom:8px;
+        font-size:11px;
+        letter-spacing:.14em;
+        color:#bcd6f3;
+      }
+      #influenceCard.is-phantom-node .inf-clash-sides{
+        margin-bottom:7px;
+        font-size:11px;
+        color:#d5e4f6;
+      }
+      #influenceCard.is-phantom-node .inf-clash-side{
+        display:flex;
+        gap:6px;
+        align-items:center;
+      }
+      #influenceCard.is-phantom-node .inf-clash-side .score{
+        font-weight:900;
+      }
+      #influenceCard.is-phantom-node .inf-clash-bar{
+        height:12px;
+        border-radius:999px;
+        background:rgba(255,255,255,.08);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      }
+      #influenceCard.is-phantom-node .inf-clash-foot{
+        margin-top:8px;
+        font-size:11px;
+        line-height:1.38;
+        color:#d2e0f1;
+      }
+      #influenceCard.is-phantom-node .inf-panel-title{
+        font-size:11px;
+        letter-spacing:.12em;
+      }
+      #influenceCard.is-phantom-node .inf-ops-panel .inf-chip-row{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-action-grid{
+        grid-template-columns:minmax(0,1fr);
+        gap:10px;
+      }
+      #influenceCard.is-phantom-node .inf-action-card-primary{
+        padding:14px 12px 12px;
+      }
+      #influenceCard.is-phantom-node .inf-action-card-primary .inf-action-title{
+        font-size:16px;
+      }
+      #influenceCard.is-phantom-node .inf-action-card-support{
+        padding:10px 11px;
+        gap:5px;
+        background:linear-gradient(180deg, rgba(124,208,255,.12), rgba(124,208,255,.05));
+        border-color:rgba(124,208,255,.22);
+      }
+      #influenceCard.is-phantom-node .inf-donate-box{
+        margin-top:8px;
+      }
+      #influenceModal .inf-impact-grid{
+        margin-top:10px;
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+      }
+      #influenceModal .inf-impact-card{
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.035);
+        padding:9px 10px;
+      }
+      #influenceModal .inf-impact-label{
+        font-size:10px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#aac2dd;
+      }
+      #influenceModal .inf-impact-value{
+        margin-top:4px;
+        font-size:14px;
+        line-height:1.2;
+        font-weight:900;
+        color:#f0f6ff;
+      }
+      #influenceModal .inf-impact-hint{
+        margin-top:4px;
+        font-size:10px;
+        line-height:1.35;
+        color:#c7d9ed;
+      }
+      #influenceModal .inf-impact-copy{
+        margin-top:10px;
+        padding:8px 10px;
+        border-radius:11px;
+        border:1px solid rgba(255,255,255,.11);
+        background:rgba(255,255,255,.035);
+        font-size:11px;
+        line-height:1.4;
+        color:#dce8f7;
+      }
+      #influenceModal .inf-war-intel{
+        margin-top:10px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.03);
+        overflow:hidden;
+      }
+      #influenceModal .inf-war-intel summary{
+        list-style:none;
+        cursor:pointer;
+        padding:11px 12px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#e6f0ff;
+      }
+      #influenceModal .inf-war-intel summary::-webkit-details-marker{
+        display:none;
+      }
+      #influenceModal .inf-war-intel-summary-copy{
+        font-size:10px;
+        color:#9fb7d3;
+        letter-spacing:.04em;
+        text-transform:none;
+        font-weight:700;
+      }
+      #influenceModal .inf-war-intel-body{
+        padding:0 10px 10px;
+      }
+      #influenceCard.is-phantom-node #infIntelShell,
+      #influenceCard.is-phantom-node #infLoreShell{
+        margin-top:8px;
+      }
+      #influenceCard.is-phantom-node #infWeeklyPreview{
+        margin-top:8px;
       }
 
       @media (max-width: 520px){
@@ -3060,6 +3397,9 @@
         #influenceModal .inf-weekly-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-reward-checklist{ grid-template-columns:repeat(2,minmax(0,1fr)); }
         #influenceModal .inf-weekly-mini-grid{ grid-template-columns:minmax(0,1fr); }
+        #influenceModal .inf-impact-grid{ grid-template-columns:minmax(0,1fr); }
+        #influenceCard.is-phantom-node .inf-title{ font-size:24px; }
+        #influenceModal .inf-encounter-line{ font-size:16px; }
       }
     `;
     document.head.appendChild(style);
@@ -3103,9 +3443,10 @@
         <section id="infHero" class="inf-hero rv-surface rv-surface-hero">
           <div class="inf-hero-grid">
             <div>
-              <div id="infHeroKicker" class="inf-panel-kicker">Live Node Operations</div>
+              <div id="infHeroKicker" class="inf-panel-kicker">War Encounter</div>
               <div id="infLeader" class="inf-leader">-</div>
               <div id="infControlLine" class="inf-control-line"></div>
+              <div id="infEncounterLine" class="inf-encounter-line">This node needs support.</div>
             </div>
             <button
               id="infSignalCoreBtn"
@@ -3136,10 +3477,10 @@
 
         <section id="infOpsPanel" class="inf-panel inf-ops-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infOrdersTitle" class="inf-panel-title">Your Orders</div>
+            <div id="infOrdersTitle" class="inf-panel-title">Recommended Action</div>
             <span id="infOpsState" class="inf-chip">Stand by</span>
           </div>
-          <div id="infOrdersLead" class="inf-hero-status">Recommended order: STABILIZE the relay.</div>
+          <div id="infOrdersLead" class="inf-hero-status">Hold the relay.</div>
           <div class="inf-chip-row">
             <span class="inf-label-row"><span class="inf-panel-kicker">Patrol</span><button type="button" class="inf-help" data-tip-key="patrol" aria-label="Patrol help">?</button></span>
             <span class="inf-label-row"><span class="inf-panel-kicker">Donate</span><button type="button" class="inf-help" data-tip-key="donate" aria-label="Donate help">?</button></span>
@@ -3148,7 +3489,7 @@
             <button id="infPatrolBtn" type="button" class="inf-action-card inf-action-card-primary">
               <span class="inf-action-line">
                 <span class="inf-action-icon">[P]</span>
-                <span id="infPatrolLabel" class="inf-action-title">PATROL NODE</span>
+                <span id="infPatrolLabel" class="inf-action-title">DEFEND NODE</span>
                 <span id="infPatrolTimer" class="inf-chip inf-action-tag" style="display:none;"></span>
               </span>
               <span id="infPatrolHelp" class="inf-action-effect">${PATROL_ACTION_HINT}</span>
@@ -3161,10 +3502,10 @@
                 <span class="inf-action-title">DONATE SUPPLIES</span>
               </span>
               <span id="infDonateHelp" class="inf-action-effect">${DONATE_ACTION_HINT}</span>
-              <span class="inf-action-chip">Donate</span>
+              <span class="inf-action-chip">Support</span>
             </button>
           </div>
-          <div id="infWatchHelp" class="inf-watch-line">Patrol is live. Move now to support Faction Control here.</div>
+          <div id="infWatchHelp" class="inf-watch-line">Patrol is live. Move now to support your faction.</div>
           <div id="infOrdersCooldown" class="inf-orders-cooldown">Patrol ready now. Free action is back online.</div>
         </section>
 
@@ -3187,89 +3528,120 @@
           <button id="infDonateBtn" type="button" class="inf-donate-confirm">Confirm donate</button>
         </div>
 
-        <section id="infIntelShell" class="inf-panel rv-surface">
-          <div class="inf-panel-head">
-            <div id="infWarTitle" class="inf-panel-title">Faction Control</div>
-            <span id="infWarChip" class="inf-chip inf-chip-muted">Live feed</span>
-          </div>
-          <div id="infWarSummary" class="inf-hero-status">Faction Control data is syncing.</div>
-          <div class="inf-local-grid">
-            <article class="inf-tile">
-              <div class="inf-tile-label">Owner</div>
-              <div id="infIntelOwner" class="inf-tile-value">-</div>
-            </article>
-            <article class="inf-tile">
-              <div class="inf-tile-label">
-                <span class="inf-label-row">Pressure <button type="button" class="inf-help" data-tip-key="pressure" aria-label="Pressure help">?</button></span>
-              </div>
-              <div id="infIntelWatch" class="inf-tile-value">No pressure trace</div>
-              <div class="inf-meter"><i id="infIntelWatchBar"></i></div>
-            </article>
-            <article class="inf-tile">
-              <div class="inf-tile-label">
-                <span class="inf-label-row">Node Condition <button id="infConditionHelp" type="button" class="inf-help" data-tip-key="hot" aria-label="Node condition help">?</button></span>
-              </div>
-              <div id="infIntelPressure" class="inf-tile-value">CALM</div>
-              <div class="inf-meter"><i id="infIntelPressureBar"></i></div>
-              <div id="infIntelPressureHint" class="inf-hint">Waiting for frontline pressure.</div>
-            </article>
-            <article class="inf-tile">
-              <div class="inf-tile-label">
-                <span class="inf-label-row">Recommended Action <button id="infActionHelp" type="button" class="inf-help" data-tip-key="defend" aria-label="Recommended action help">?</button></span>
-              </div>
-              <div id="infLocalOps" class="inf-tile-value">STABILIZE</div>
-              <div id="infNodeStateHint" class="inf-hint">Recommended order will update from local pressure.</div>
-            </article>
-          </div>
-        </section>
-
         <section id="infPresenceShell" class="inf-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infRewardTitle" class="inf-panel-title">Your Faction Support</div>
-            <span id="infRewardStateChip" class="inf-chip inf-chip-muted">Not qualified</span>
+            <div id="infRewardTitle" class="inf-panel-title">Your Impact Today</div>
+            <span id="infRewardStateChip" class="inf-chip inf-chip-muted">Not yet</span>
           </div>
-          <div id="infRewardStateText" class="inf-hero-status">War Contribution is your personal weekly activity from Patrol, Donate, and some Siege actions.</div>
-          <div class="inf-reward-metric">
+          <div id="infRewardStateText" class="inf-hero-status">Your frontline actions strengthen faction support and weekly reward progress.</div>
+          <div class="inf-impact-grid">
+            <article class="inf-impact-card">
+              <div class="inf-impact-label">Patrol</div>
+              <div id="infImpactPatrolValue" class="inf-impact-value">Available</div>
+              <div id="infImpactPatrolHint" class="inf-impact-hint">Patrol is ready now.</div>
+            </article>
+            <article class="inf-impact-card">
+              <div class="inf-impact-label">Supplies</div>
+              <div id="infImpactSuppliesValue" class="inf-impact-value">Available</div>
+              <div id="infImpactSuppliesHint" class="inf-impact-hint">Send supplies to reinforce the relay.</div>
+            </article>
+            <article class="inf-impact-card">
+              <div class="inf-impact-label">Faction Support</div>
+              <div id="infImpactSupportValue" class="inf-impact-value">0/60</div>
+              <div id="infImpactSupportHint" class="inf-impact-hint">Build faction support through patrols and supplies.</div>
+            </article>
+            <article class="inf-impact-card">
+              <div class="inf-impact-label">Reward Status</div>
+              <div id="infImpactRewardValue" class="inf-impact-value">Not yet</div>
+              <div id="infImpactRewardHint" class="inf-impact-hint">War reward progress will appear here.</div>
+            </article>
+          </div>
+          <div id="infImpactCopy" class="inf-impact-copy">One action strengthens your faction presence.</div>
+          <div class="inf-reward-metric" style="display:none;">
             <div class="inf-reward-metric-head">
               <span class="inf-label-row">Your Faction Support <button type="button" class="inf-help" data-tip-key="weekly_score" aria-label="Your Faction Support help">?</button></span>
               <span id="infRewardScoreValue">0/60</span>
             </div>
             <div class="inf-reward-track"><i id="infRewardScoreBar" style="width:0%;"></i></div>
           </div>
-          <div class="inf-reward-metric">
+          <div class="inf-reward-metric" style="display:none;">
             <div class="inf-reward-metric-head">
               <span class="inf-label-row">Active Days <button type="button" class="inf-help" data-tip-key="eligibility" aria-label="Eligibility help">?</button></span>
               <span id="infRewardDaysValue">0/2</span>
             </div>
             <div class="inf-reward-track inf-reward-track-days"><i id="infRewardDaysBar" style="width:0%;"></i></div>
           </div>
-          <div id="infRewardHint" class="inf-hint">War Rewards may include aura, frame, skin, or raffle entry.</div>
+          <div id="infRewardHint" class="inf-hint" style="display:none;">War Rewards may include aura, frame, skin, or raffle entry.</div>
           <div id="infLocalYou" style="display:none;"></div>
           <div id="infLocalProgress" style="display:none;"></div>
           <div id="infPresenceHint" style="display:none;"></div>
           <div id="infIntelPresence" style="display:none;"></div>
         </section>
 
-        <section id="infLoreShell" class="inf-panel rv-surface">
-          <div class="inf-panel-head">
-            <div id="infIntelTitle" class="inf-panel-title">Intel</div>
-            <span class="inf-chip inf-chip-muted">Relay brief</span>
-          </div>
-          <article class="inf-intel-block">
-            <div class="inf-intel-label">Relay Brief</div>
-            <div id="infUxReason" class="inf-intel-copy"></div>
-          </article>
-          <article class="inf-intel-block">
-            <div class="inf-intel-label">Rivalry Link</div>
-            <div id="infUxReward" class="inf-intel-copy"></div>
-          </article>
-          <div id="infUxLore" class="inf-intel-lore" style="display:none;"></div>
-        </section>
-
         <div id="infStatus" class="inf-status" style="display:none;"></div>
-        <div id="infWeeklyPreview" style="display:none;"></div>
-        <div id="infWeekly" style="display:none;"></div>
-        <div id="infFoot" class="inf-foot"></div>
+        <details id="infWarIntel" class="inf-war-intel">
+          <summary>
+            <span>War Intel</span>
+            <span class="inf-war-intel-summary-copy">Pressure, support, reward details</span>
+          </summary>
+          <div class="inf-war-intel-body">
+            <section id="infIntelShell" class="inf-panel rv-surface">
+              <div class="inf-panel-head">
+                <div id="infWarTitle" class="inf-panel-title">Faction Control</div>
+                <span id="infWarChip" class="inf-chip inf-chip-muted">Live feed</span>
+              </div>
+              <div id="infWarSummary" class="inf-hero-status">Faction Control data is syncing.</div>
+              <div class="inf-local-grid">
+                <article class="inf-tile">
+                  <div class="inf-tile-label">Owner</div>
+                  <div id="infIntelOwner" class="inf-tile-value">-</div>
+                </article>
+                <article class="inf-tile">
+                  <div class="inf-tile-label">
+                    <span class="inf-label-row">Pressure <button type="button" class="inf-help" data-tip-key="pressure" aria-label="Pressure help">?</button></span>
+                  </div>
+                  <div id="infIntelWatch" class="inf-tile-value">No pressure trace</div>
+                  <div class="inf-meter"><i id="infIntelWatchBar"></i></div>
+                </article>
+                <article class="inf-tile">
+                  <div class="inf-tile-label">
+                    <span class="inf-label-row">Node Condition <button id="infConditionHelp" type="button" class="inf-help" data-tip-key="hot" aria-label="Node condition help">?</button></span>
+                  </div>
+                  <div id="infIntelPressure" class="inf-tile-value">CALM</div>
+                  <div class="inf-meter"><i id="infIntelPressureBar"></i></div>
+                  <div id="infIntelPressureHint" class="inf-hint">Waiting for frontline pressure.</div>
+                </article>
+                <article class="inf-tile">
+                  <div class="inf-tile-label">
+                    <span class="inf-label-row">Recommended Action <button id="infActionHelp" type="button" class="inf-help" data-tip-key="defend" aria-label="Recommended action help">?</button></span>
+                  </div>
+                  <div id="infLocalOps" class="inf-tile-value">STABILIZE</div>
+                  <div id="infNodeStateHint" class="inf-hint">Recommended order will update from local pressure.</div>
+                </article>
+              </div>
+            </section>
+
+            <section id="infLoreShell" class="inf-panel rv-surface">
+              <div class="inf-panel-head">
+                <div id="infIntelTitle" class="inf-panel-title">Intel</div>
+                <span class="inf-chip inf-chip-muted">Relay brief</span>
+              </div>
+              <article class="inf-intel-block">
+                <div class="inf-intel-label">Relay Brief</div>
+                <div id="infUxReason" class="inf-intel-copy"></div>
+              </article>
+              <article class="inf-intel-block">
+                <div class="inf-intel-label">Rivalry Link</div>
+                <div id="infUxReward" class="inf-intel-copy"></div>
+              </article>
+              <div id="infUxLore" class="inf-intel-lore" style="display:none;"></div>
+            </section>
+
+            <div id="infWeeklyPreview" style="display:none;"></div>
+            <div id="infWeekly" style="display:none;"></div>
+            <div id="infFoot" class="inf-foot"></div>
+          </div>
+        </details>
         <div id="infTooltip" class="inf-tooltip" style="display:none;" aria-hidden="true"></div>
       </div>
       <button id="infSignalBackdrop" type="button" class="inf-signal-backdrop" style="display:none;" data-signal-close aria-label="Close Signal Core panel"></button>
@@ -3645,15 +4017,21 @@
     const heroKickerEl = document.getElementById("infHeroKicker");
     const heroFlavorEl = document.getElementById("infHeroFlavor");
     const cardEl = document.getElementById("influenceCard");
+    const rewardTitleEl = document.getElementById("infRewardTitle");
+    const ordersTitleEl = document.getElementById("infOrdersTitle");
+    const warIntelEl = document.getElementById("infWarIntel");
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
-    if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODE" : (title || nodeId);
+    if (titleEl) titleEl.textContent = phantomMode ? "Phantom Node" : (title || nodeId);
     if (subEl) {
       const prettyNodeId = String(safeNodeId || "").trim().replaceAll("_", " ");
       subEl.textContent = phantomMode
-        ? "Relay under pressure"
+        ? "Faction war encounter"
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
     }
-    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Faction War Relay" : "Live Node Operations";
+    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "War Encounter" : "Live Node Operations";
+    if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Impact Today" : "Your Faction Support";
+    if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Recommended Action" : "Your Orders";
+    if (warIntelEl) warIntelEl.open = !phantomMode;
     if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
 
     // close donate box at start
@@ -3914,6 +4292,7 @@
     const leaderEl = document.getElementById("infLeader");
     const contEl = document.getElementById("infContested");
     const controlLineEl = document.getElementById("infControlLine");
+    const encounterLineEl = document.getElementById("infEncounterLine");
     const heroFlavorEl = document.getElementById("infHeroFlavor");
     const foot = document.getElementById("infFoot");
     const statusEl = document.getElementById("infUxStatus");
@@ -4013,13 +4392,14 @@
       if (ordersLeadEl) ordersLeadEl.textContent = "Recommended order: STABILIZE the relay.";
       if (warSummaryEl) warSummaryEl.textContent = "Faction Control data is syncing.";
       if (warChipEl) warChipEl.textContent = "Live feed";
+      if (encounterLineEl) encounterLineEl.textContent = "This node needs support.";
       if (conditionHelpEl) {
         conditionHelpEl.dataset.tipKey = "pressure";
         conditionHelpEl.style.display = "inline-flex";
       }
       if (actionHelpEl) actionHelpEl.style.display = "none";
       if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
-      if (subEl && phantomMode) subEl.textContent = "Relay under pressure";
+      if (subEl && phantomMode) subEl.textContent = "Faction war encounter";
       paintUxPill(controlChipEl, "Neutral", {
         background: "rgba(255,255,255,.05)",
         border: "1px solid rgba(255,255,255,.12)",
@@ -4041,6 +4421,7 @@
         controlText: "Faction Control data is syncing.",
       });
       setOrdersCooldownText("Patrol ready now. Free action is back online.", "ready");
+      syncPhantomImpact(nodeId);
     };
 
     if (!info || !Object.keys(info).length) {
@@ -4133,6 +4514,28 @@
     const pressureNarrative = statusNarrative(condition);
     const yourFactionName = fmtFaction ? fmtFaction(viewerFaction) : (viewerFaction || "Your faction");
     const controlStatus = phantomMode ? deriveControlStatus(viewerPressure, enemyPressure, yourFactionName) : null;
+    const patrolReady = _cdUntilMs <= Date.now();
+    const cooldownLeftSec = patrolReady ? 0 : Math.max(0, Math.ceil((_cdUntilMs - Date.now()) / 1000));
+    const encounterBadge = phantomMode
+      ? phantomEncounterBadge({ condition, owner, viewerFaction, viewerPressure, enemyPressure })
+      : primaryStatus;
+    const encounterLine = phantomMode
+      ? phantomEncounterLine({
+          badge: encounterBadge,
+          owner,
+          ownerLabel,
+          viewerFaction,
+          yourFactionName,
+          viewerPressure,
+          enemyPressure,
+        })
+      : "";
+    const encounterBrief = phantomMode
+      ? phantomEncounterBrief({ badge: encounterBadge, recommendedAction, patrolReady, cooldownLeftSec })
+      : "";
+    const primaryCtaLabel = phantomMode
+      ? phantomPrimaryCtaLabel({ owner, viewerFaction, badge: encounterBadge })
+      : patrolLabelForAction(ux.actionHint);
     const captureTier = Math.max(0, Number(info?.captureTier || 0) || 0);
     const maxPressure = Math.max(
       1,
@@ -4152,8 +4555,8 @@
       : (leaderName ? `${leaderName}${leaderValue > 0 ? ` (${leaderValue})` : ""}` : ownerLabel);
     if (phantomMode && controlStatus) {
       // Top hero / War Brief — player-facing, not technical
-      controlLineEl.textContent = controlStatus.headline;
-      if (subEl) subEl.textContent = controlStatus.detail || (owner ? `${ownerLabel} relay under pressure` : "Unclaimed relay under pressure");
+      controlLineEl.textContent = encounterBrief || controlStatus.advice || controlStatus.headline;
+      if (subEl) subEl.textContent = "Faction war encounter";
       if (heroFlavorEl) {
         const brief = controlStatus.advice || controlStatus.headline;
         heroFlavorEl.textContent = brief ? `${brief} ${controlStatus.detail ? "" : "Choose an action to support your faction."}`.trim() : "This node is active. Choose an action to support your faction.";
@@ -4162,11 +4565,12 @@
       controlLineEl.textContent = phantomMode
         ? `${ownerLabel} relay under pressure`
         : controlText;
-      if (subEl && phantomMode) subEl.textContent = owner ? `${ownerLabel} relay under pressure` : "Unclaimed relay under pressure";
+      if (subEl && phantomMode) subEl.textContent = "Faction war encounter";
       if (heroFlavorEl && !phantomMode) {
         heroFlavorEl.textContent = (ux.valueText || "This node supports steady faction pressure.");
       }
     }
+    if (encounterLineEl) encounterLineEl.textContent = phantomMode ? encounterLine : "";
     if (coreStateEl) coreStateEl.textContent = primaryStatus;
 
     // Compact Control Clash meter for Phantom Nodes (in hero, after brief, before dense Intel)
@@ -4182,7 +4586,7 @@
         const secondLabel = (phantomMode && isRealEnemyFromScores) ? "Enemy" : "Lead";
         clashEl.style.display = "block";
         clashEl.innerHTML = `
-          <div class="inf-clash-head">${controlStatus.headline}</div>
+          <div class="inf-clash-head">WAR PRESSURE</div>
           <div class="inf-clash-sides">
             <div class="inf-clash-side your"><span class="name">${yourName}</span> <span class="score">${v}</span></div>
             <div class="inf-clash-side enemy"><span class="name">${secondLabel}</span> <span class="score">${o}</span></div>
@@ -4191,17 +4595,18 @@
             <div class="your" style="width:${yourPct}%"></div>
             <div class="enemy" style="width:${enemyPct}%"></div>
           </div>
+          <div class="inf-clash-foot">${encounterLine}</div>
         `;
       } else if (phantomMode) {
         clashEl.style.display = "block";
-        clashEl.innerHTML = `<div style="font-size:11px;color:#c6d8ee;opacity:.9;">This node is active. Choose an action to support your faction.</div>`;
+        clashEl.innerHTML = `<div class="inf-clash-head">WAR PRESSURE</div><div class="inf-clash-foot">Take the next action to start local pressure.</div>`;
       } else {
         clashEl.style.display = "none";
         clashEl.innerHTML = "";
       }
     }
-    paintUxPill(statusEl, primaryStatus, uxToneStyles(paintStatus));
-    statusEl.classList.toggle("is-hot", primaryStatus === "HOT");
+    paintUxPill(statusEl, phantomMode ? encounterBadge : primaryStatus, uxToneStyles(paintStatus));
+    statusEl.classList.toggle("is-hot", (phantomMode ? encounterBadge : primaryStatus) === "HOT");
     paintUxPill(controlChipEl, owner ? ownerLabel : "Neutral", {
       background: owner ? "rgba(120,255,220,.12)" : "rgba(255,255,255,.05)",
       border: owner ? "1px solid rgba(120,255,220,.24)" : "1px solid rgba(255,255,255,.12)",
@@ -4244,7 +4649,11 @@
         actionHelpEl.style.display = "none";
       }
     }
-    if (ordersLeadEl) ordersLeadEl.textContent = `Recommended order: ${recommendedAction} the relay.`;
+    if (ordersLeadEl) {
+      ordersLeadEl.textContent = phantomMode
+        ? encounterBrief
+        : `Recommended order: ${recommendedAction} the relay.`;
+    }
     if (warSummaryEl) {
       warSummaryEl.textContent = owner
         ? `${ownerLabel} holds the node. ${pressureNarrative} ${recommendedAction === "DEFEND" ? "Protect control now." : recommendedAction === "PUSH" ? "Push now to contest control." : "Stabilize the line and keep tempo."}`
@@ -4384,7 +4793,11 @@
     });
 
     if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
-    if (watchHelpEl) watchHelpEl.textContent = `${recommendedAction} now. Patrol supports Faction Control and your faction support.`;
+    if (watchHelpEl) {
+      watchHelpEl.textContent = phantomMode
+        ? `${encounterBrief} Patrol and supplies both reinforce the war effort.`
+        : `${recommendedAction} now. Patrol supports Faction Control and your faction support.`;
+    }
     if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
 
     if (_cdUntilMs > Date.now()) {
@@ -4412,8 +4825,9 @@
           : "#d9eeff";
     }
 
-    setPatrolButtonLabel(phantomMode ? "PATROL NODE" : patrolLabelForAction(ux.actionHint));
+    setPatrolButtonLabel(phantomMode ? primaryCtaLabel : patrolLabelForAction(ux.actionHint));
     foot.textContent = `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
+    syncPhantomImpact(nodeId);
   }
 
   async function doPatrol(nodeId) {
@@ -4445,6 +4859,7 @@
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`+${r.gain} influence${hq}`);
+      markRecentNodeAction(nodeId, "patrol");
       setActionResult("patrol", {
         gain: r.gain,
         weeklyPoints: r.weeklyPoints,
@@ -4514,6 +4929,7 @@
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
       toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
+      markRecentNodeAction(nodeId, "donate");
       setActionResult("donate", {
         gain: r.gain,
         spent: r.spent,

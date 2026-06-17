@@ -253,6 +253,14 @@
     try { console.warn(text); } catch (_) {}
   }
 
+  function showProgressToast(config) {
+    try {
+      if (window.AlphaToast && typeof window.AlphaToast.show === "function") {
+        window.AlphaToast.show(config);
+      }
+    } catch (_) {}
+  }
+
   function formatDuration(seconds) {
     const total = Math.max(0, asCount(seconds));
     const mins = Math.floor(total / 60);
@@ -301,6 +309,36 @@
     if (scrap > 0 && bones > 0) return `${scrap} Scrap + ${bones} Bones`;
     if (scrap > 0) return `${scrap} Scrap`;
     return `${bones} Bones`;
+  }
+
+  function showAlphaDenProgressToast(path, out, training, signalCache, warTableBrief) {
+    if (path.includes("/pet-training/claim")) {
+      const petXp = asCount(out?.rewardPetXp || training?.rewardPetXp);
+      const petName = String(out?.petName || training?.activeTrainingPetName || "").trim();
+      showProgressToast({
+        type: "pet",
+        title: "Pet Training Complete",
+        message: petXp > 0 ? `+${petXp} Pet XP` : (petName || "Training reward claimed"),
+        meta: out?.petLeveledUp ? "Pet leveled up" : petName
+      });
+      return;
+    }
+    if (path.includes("/signal-cache/claim")) {
+      const rewardText = formatSignalCacheReward(out?.lastReward || signalCache?.lastReward);
+      showProgressToast({
+        type: "den",
+        title: "Signal Cache Recovered",
+        message: rewardText === "No reward" ? rewardText : `+${rewardText}`
+      });
+      return;
+    }
+    if (path.includes("/war-table/brief/claim")) {
+      showProgressToast({
+        type: "den",
+        title: "Tactical Brief Claimed",
+        message: String(out?.message || warTableBrief?.lastBrief?.message || "War Table calibrated").trim()
+      });
+    }
   }
 
   function normalizeSignalCacheBenefit(raw) {
@@ -894,11 +932,11 @@
       });
       if (!out || out.ok === false) throw makeApiError(out, "ACTION_FAILED");
       const payload = normalizeServerState(out.alphaDen || out?.data?.alphaDen || out?.data || out);
+      const training = payload?.petKennelTraining || serverState?.petKennelTraining || null;
+      const signalCache = payload?.signalCache || serverState?.signalCache || null;
+      const warTableBrief = payload?.warTableBrief || serverState?.warTableBrief || null;
       if (payload) {
         const updatedBuilding = payload?.buildings?.[buildingId] || null;
-        const training = payload?.petKennelTraining || null;
-        const signalCache = payload?.signalCache || null;
-        const warTableBrief = payload?.warTableBrief || null;
         serverState = payload;
         usingServerState = true;
         lastSyncError = "";
@@ -918,6 +956,7 @@
                       ? `${String(out?.message || warTableBrief?.lastBrief?.message || "Tactical Brief received.").trim()}`
             : "";
       }
+      showAlphaDenProgressToast(path, out, training, signalCache, warTableBrief);
       return out;
     } catch (err) {
       lastActionMessage = buildActionMessage(err?.data, err?.message || "ACTION_FAILED");
