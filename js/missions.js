@@ -1320,14 +1320,25 @@
       }
       .m-duel-panel-top{
         position:relative;
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
         z-index:1;
+        min-width:0;
         align-items:flex-start;
+      }
+      .m-duel-panel-top > :first-child{
+        min-width:0;
+        flex:1 1 auto;
       }
       .m-duel-side{
         font-size:10px;
         letter-spacing:.24em;
         text-transform:uppercase;
         color:rgba(220,227,236,.58);
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
       }
       .m-duel-name{
         margin-top:4px;
@@ -1335,10 +1346,16 @@
         font-weight:900;
         line-height:1.06;
         color:#fbfdff;
-        overflow-wrap:anywhere;
+        max-width:100%;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        overflow-wrap:normal;
+        word-break:normal;
       }
       .m-duel-state{
         flex:0 0 auto;
+        max-width:42%;
         padding:6px 9px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.08);
@@ -1347,6 +1364,9 @@
         letter-spacing:.18em;
         text-transform:uppercase;
         color:rgba(255,255,255,.8);
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
       }
       .m-duel-visual{
         position:relative;
@@ -1376,17 +1396,17 @@
         object-position:center top;
       }
       .m-duel-panel.is-player .m-duel-portrait{
-        object-fit:contain;
-        object-position:center 26%;
-        transform:scale(1.06);
+        object-fit:cover;
+        object-position:center 22%;
+        transform:scale(1.01);
       }
       .m-duel-panel.is-enemy .m-duel-portrait{
         object-position:center 18%;
       }
       .m-duel-visual.is-relay-visual .m-duel-portrait{
-        object-fit:contain;
-        object-position:56% 50%;
-        transform:scale(1.02);
+        object-fit:cover;
+        object-position:56% 48%;
+        transform:scale(1.09);
       }
       .m-duel-visual-fallback{
         position:absolute;
@@ -1463,6 +1483,7 @@
         left:14px;
         bottom:12px;
         z-index:3;
+        max-width:calc(100% - 28px);
         padding:5px 8px;
         border-radius:999px;
         border:1px solid rgba(255,255,255,.08);
@@ -1472,6 +1493,9 @@
         text-transform:uppercase;
         color:rgba(240,244,250,.82);
         backdrop-filter:blur(4px);
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
       }
       .m-duel-panel.is-player .m-duel-stamp{
         border-color:rgba(120,198,255,.16);
@@ -1800,13 +1824,21 @@
           padding:12px;
         }
         .m-duel-name{
-          font-size:17px;
+          font-size:15px;
+        }
+        .m-duel-side,
+        .m-duel-state,
+        .m-duel-stamp{
+          letter-spacing:.12em;
         }
         .m-duel-visual{
           min-height:138px;
         }
         .m-duel-panel.is-player .m-duel-portrait{
-          transform:scale(1.03);
+          transform:scale(1);
+        }
+        .m-duel-visual.is-relay-visual .m-duel-portrait{
+          transform:scale(1.06);
         }
         .m-duel-vs-ring{
           width:78px;
@@ -3407,9 +3439,7 @@ function _normalizeRareDropObj(obj) {
     const isVictory = !!(last?.victory || resultKey === "victory" || outcomeTone === "success" || outcomeTone === "critical" || outcomeTone === "partial");
     const playerVisual = resolveMissionDuelPlayerVisual(resultData, last);
     const enemyVisual = resolveMissionDuelEnemyVisual(resultData, last);
-    const enemyDisplayName = enemyVisual?.displayName && enemyName === "Hostile Signal"
-      ? enemyVisual.displayName
-      : enemyName;
+    const enemyDisplayName = textOrEmpty(enemyVisual?.displayName) || enemyName;
     const seed = hashPlaybackSeed([
       missionTitle,
       subtitle,
