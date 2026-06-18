@@ -1163,10 +1163,10 @@
         display:flex;
         align-items:stretch;
         justify-content:center;
-        padding:18px;
+        padding:16px;
         background:
-          radial-gradient(circle at top, rgba(255,255,255,.05), transparent 42%),
-          linear-gradient(180deg, rgba(5,8,12,.72), rgba(5,8,12,.94));
+          radial-gradient(circle at top, rgba(255,255,255,.04), transparent 40%),
+          linear-gradient(180deg, rgba(4,6,10,.74), rgba(4,6,10,.95));
         overflow:hidden;
       }
       .m-duel-overlay::before{
@@ -1174,40 +1174,39 @@
         position:absolute;
         inset:0;
         background:
-          repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 1px, transparent 1px 4px),
-          linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
-        opacity:.38;
+          repeating-linear-gradient(180deg, rgba(255,255,255,.042) 0 1px, transparent 1px 4px),
+          linear-gradient(90deg, transparent 0, rgba(255,255,255,.05) 48%, transparent 54%);
+        opacity:.34;
         pointer-events:none;
       }
       .m-duel-shell{
         position:relative;
         z-index:1;
-        width:min(920px, 100%);
+        width:min(980px, 100%);
         min-height:100%;
         display:flex;
         flex-direction:column;
         gap:14px;
-        padding:18px;
+        padding:18px 18px 16px;
         border:1px solid rgba(255,255,255,.10);
-        border-radius:22px;
+        border-radius:24px;
         background:
-          linear-gradient(180deg, rgba(14,18,26,.94), rgba(8,10,16,.98));
-        box-shadow:0 24px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.03);
+          radial-gradient(circle at top center, rgba(255,110,72,.08), transparent 28%),
+          linear-gradient(180deg, rgba(12,16,24,.95), rgba(7,9,14,.98));
+        box-shadow:0 26px 90px rgba(0,0,0,.58), inset 0 0 0 1px rgba(255,255,255,.03);
         overflow:hidden;
       }
       .m-duel-shell::after{
         content:"";
         position:absolute;
-        inset:-30% -10% auto;
-        height:220px;
-        background:radial-gradient(circle, rgba(255,90,90,.12), transparent 62%);
-        filter:blur(18px);
+        inset:auto -6% -90px;
+        height:180px;
+        background:radial-gradient(circle, rgba(255,255,255,.08), transparent 64%);
+        opacity:.22;
         pointer-events:none;
       }
       .m-duel-head,
-      .m-duel-stage-head,
       .m-duel-stage-meta,
-      .m-duel-panels,
       .m-duel-panel-top,
       .m-duel-log-head,
       .m-duel-footer{
@@ -1220,23 +1219,23 @@
         align-items:flex-start;
       }
       .m-duel-kicker{
-        font-size:11px;
-        letter-spacing:.28em;
+        font-size:10px;
+        letter-spacing:.32em;
         text-transform:uppercase;
-        color:rgba(255,196,140,.74);
+        color:rgba(255,196,140,.72);
       }
       .m-duel-title{
         margin-top:6px;
-        font-size:27px;
+        font-size:28px;
         font-weight:900;
-        letter-spacing:.04em;
-        color:#f5f7fb;
+        letter-spacing:.05em;
+        color:#f4f7fb;
       }
       .m-duel-sub{
         margin-top:4px;
         font-size:12px;
         line-height:1.45;
-        color:rgba(225,233,244,.72);
+        color:rgba(225,233,244,.68);
       }
       .m-duel-stage{
         position:relative;
@@ -1245,139 +1244,85 @@
         flex-direction:column;
         gap:14px;
       }
-      .m-duel-stage-head{
-        align-items:flex-start;
-      }
-      .m-duel-label{
-        display:inline-flex;
-        align-items:center;
-        gap:8px;
-        padding:7px 11px;
-        border-radius:999px;
-        background:rgba(255,255,255,.05);
-        border:1px solid rgba(255,255,255,.08);
-        font-size:11px;
-        text-transform:uppercase;
-        letter-spacing:.18em;
-        color:rgba(244,247,251,.82);
-      }
-      .m-duel-label::before{
-        content:"";
-        width:7px;
-        height:7px;
-        border-radius:999px;
-        background:rgba(255,176,88,.92);
-        box-shadow:0 0 10px rgba(255,176,88,.65);
-      }
-      .m-duel-vs{
-        flex:1 1 auto;
-        text-align:center;
-        font-size:28px;
-        font-weight:900;
-        letter-spacing:.22em;
-        color:rgba(255,255,255,.18);
-      }
-      .m-duel-result{
-        opacity:0;
-        transform:translateY(10px) scale(.96);
-        transition:opacity .28s ease, transform .28s ease;
-        padding:8px 12px;
-        border-radius:14px;
-        border:1px solid rgba(255,255,255,.08);
-        background:rgba(255,255,255,.04);
-        font-size:12px;
-        line-height:1.2;
-        letter-spacing:.18em;
-        text-transform:uppercase;
-        color:rgba(255,255,255,.82);
-        white-space:nowrap;
-      }
-      .m-duel-result.is-visible{
-        opacity:1;
-        transform:translateY(0) scale(1);
-      }
-      .m-duel-result[data-tone="victory"]{
-        border-color:rgba(105,232,177,.24);
-        background:rgba(39,115,88,.22);
-        color:#dffaf0;
-      }
-      .m-duel-result[data-tone="defeat"]{
-        border-color:rgba(255,116,116,.24);
-        background:rgba(120,34,34,.24);
-        color:#ffe7e7;
-      }
-      .m-duel-stage-meta{
-        font-size:11px;
-        letter-spacing:.1em;
-        text-transform:uppercase;
-        color:rgba(218,226,238,.68);
-      }
-      .m-duel-panels{
+      .m-duel-arena{
+        position:relative;
+        display:grid;
+        grid-template-columns:minmax(0,1fr) clamp(120px, 16vw, 172px) minmax(0,1fr);
         align-items:stretch;
+        gap:18px;
       }
       .m-duel-panel{
         position:relative;
-        flex:1 1 0;
         display:flex;
         flex-direction:column;
-        gap:10px;
-        min-height:200px;
-        padding:16px;
-        border-radius:18px;
+        gap:12px;
+        min-height:340px;
+        padding:16px 16px 14px;
+        border-radius:20px;
         border:1px solid rgba(255,255,255,.08);
         background:
           linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
-          rgba(6,9,14,.86);
+          rgba(6,9,14,.84);
         box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
         transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
         overflow:hidden;
       }
+      .m-duel-panel::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:linear-gradient(180deg, rgba(255,255,255,.05), transparent 24%, transparent 76%, rgba(255,255,255,.03));
+        opacity:.4;
+        pointer-events:none;
+      }
       .m-duel-panel::after{
         content:"";
         position:absolute;
-        inset:auto -12% -30px;
-        height:110px;
-        background:radial-gradient(circle, rgba(255,255,255,.08), transparent 60%);
-        opacity:.36;
+        inset:auto -10% -40px;
+        height:130px;
+        background:radial-gradient(circle, rgba(255,255,255,.08), transparent 62%);
+        opacity:.34;
         pointer-events:none;
       }
       .m-duel-panel.is-player{
-        border-color:rgba(140,214,255,.16);
+        border-color:rgba(132,208,255,.18);
       }
       .m-duel-panel.is-enemy{
         border-color:rgba(255,132,118,.18);
       }
       .m-duel-panel.is-hit{
-        box-shadow:0 0 0 1px rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 2px rgba(255,118,118,.12);
+        box-shadow:0 0 0 1px rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 2px rgba(255,118,118,.14);
         filter:brightness(1.08);
       }
       .m-duel-panel.is-player.is-hit{
         background:
-          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
-          rgba(46,18,18,.86);
+          linear-gradient(180deg, rgba(255,255,255,.038), rgba(255,255,255,.015)),
+          rgba(40,17,18,.88);
       }
       .m-duel-panel.is-enemy.is-hit{
         background:
-          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
-          rgba(76,24,20,.9);
+          linear-gradient(180deg, rgba(255,255,255,.038), rgba(255,255,255,.015)),
+          rgba(74,23,19,.9);
       }
       .m-duel-panel.is-shake{
         animation:m-duel-shake .32s linear;
       }
       .m-duel-panel-top{
+        position:relative;
+        z-index:1;
         align-items:flex-start;
       }
       .m-duel-side{
-        font-size:11px;
-        letter-spacing:.18em;
+        font-size:10px;
+        letter-spacing:.24em;
         text-transform:uppercase;
-        color:rgba(220,227,236,.6);
+        color:rgba(220,227,236,.58);
       }
       .m-duel-name{
         margin-top:4px;
         font-size:22px;
         font-weight:900;
-        line-height:1.05;
+        line-height:1.06;
         color:#fbfdff;
         overflow-wrap:anywhere;
       }
@@ -1392,44 +1337,139 @@
         text-transform:uppercase;
         color:rgba(255,255,255,.8);
       }
-      .m-duel-avatar{
+      .m-duel-visual{
         position:relative;
         display:grid;
         place-items:center;
         flex:1 1 auto;
-        min-height:92px;
-        border-radius:16px;
-        border:1px solid rgba(255,255,255,.05);
+        min-height:184px;
+        border-radius:18px;
+        border:1px solid rgba(255,255,255,.06);
         background:
-          radial-gradient(circle at center, rgba(255,255,255,.08), transparent 54%),
+          radial-gradient(circle at center, rgba(255,255,255,.10), transparent 55%),
           linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-        font-size:42px;
-        font-weight:900;
-        letter-spacing:.16em;
-        color:rgba(255,255,255,.9);
-        text-shadow:0 0 18px rgba(255,255,255,.12);
+        overflow:hidden;
       }
-      .m-duel-avatar::before{
-        content:"";
+      .m-duel-visual.has-image{
+        background:
+          radial-gradient(circle at center, rgba(255,255,255,.06), transparent 56%),
+          linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,.01));
+      }
+      .m-duel-portrait{
         position:absolute;
         inset:0;
-        background:linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%, rgba(255,255,255,.03));
-        opacity:.68;
-        pointer-events:none;
+        z-index:2;
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center top;
       }
-      .m-duel-avatar > span{
-        position:relative;
+      .m-duel-panel.is-player .m-duel-portrait{
+        object-position:center 22%;
+      }
+      .m-duel-panel.is-enemy .m-duel-portrait{
+        object-position:center 18%;
+      }
+      .m-duel-visual-fallback{
+        position:absolute;
+        inset:0;
         z-index:1;
+        display:grid;
+        place-items:center;
+      }
+      .m-duel-sigil{
+        position:relative;
+        width:112px;
+        height:112px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:radial-gradient(circle, rgba(255,255,255,.08), rgba(255,255,255,.01) 60%, transparent 75%);
+        box-shadow:0 0 28px rgba(0,0,0,.32), inset 0 0 22px rgba(255,255,255,.05);
+      }
+      .m-duel-sigil::before,
+      .m-duel-sigil::after{
+        content:"";
+        position:absolute;
+        inset:18px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+      }
+      .m-duel-sigil::after{
+        inset:36px;
+        border-color:rgba(255,255,255,.18);
+      }
+      .m-duel-sigil-core{
+        position:absolute;
+        inset:50%;
+        width:18px;
+        height:18px;
+        margin:-9px 0 0 -9px;
+        transform:rotate(45deg);
+        background:rgba(255,255,255,.78);
+        box-shadow:0 0 18px rgba(255,255,255,.18);
+      }
+      .m-duel-sigil-lines{
+        position:absolute;
+        inset:18px;
+      }
+      .m-duel-sigil-lines::before,
+      .m-duel-sigil-lines::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:0;
+        bottom:0;
+        width:1px;
+        margin-left:-.5px;
+        background:linear-gradient(180deg, transparent, rgba(255,255,255,.28), transparent);
+      }
+      .m-duel-sigil-lines::after{
+        top:50%;
+        left:0;
+        right:0;
+        width:auto;
+        height:1px;
+        margin:0;
+        background:linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+      }
+      .m-duel-panel.is-player .m-duel-sigil{
+        border-color:rgba(120,198,255,.24);
+        box-shadow:0 0 28px rgba(43,128,217,.18), inset 0 0 22px rgba(120,198,255,.08);
+      }
+      .m-duel-panel.is-enemy .m-duel-sigil{
+        border-color:rgba(255,142,108,.24);
+        box-shadow:0 0 28px rgba(204,66,66,.18), inset 0 0 22px rgba(255,142,108,.08);
+      }
+      .m-duel-stamp{
+        position:absolute;
+        left:14px;
+        bottom:12px;
+        z-index:3;
+        padding:5px 8px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(5,8,12,.58);
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(240,244,250,.82);
+        backdrop-filter:blur(4px);
+      }
+      .m-duel-panel.is-player .m-duel-stamp{
+        border-color:rgba(120,198,255,.16);
+      }
+      .m-duel-panel.is-enemy .m-duel-stamp{
+        border-color:rgba(255,142,108,.18);
       }
       .m-duel-hp{
         font-size:11px;
         letter-spacing:.14em;
         text-transform:uppercase;
-        color:rgba(230,236,244,.72);
+        color:rgba(230,236,244,.74);
       }
       .m-duel-bar{
         position:relative;
-        height:13px;
+        height:14px;
         border-radius:999px;
         overflow:hidden;
         background:rgba(255,255,255,.08);
@@ -1449,9 +1489,9 @@
       }
       .m-duel-damage{
         position:absolute;
-        top:18px;
+        top:16px;
         right:14px;
-        z-index:2;
+        z-index:4;
         padding:6px 10px;
         border-radius:999px;
         background:rgba(255,255,255,.08);
@@ -1477,12 +1517,153 @@
         background:rgba(255,176,92,.16);
         border-color:rgba(255,196,148,.24);
       }
+      .m-duel-clash{
+        position:relative;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:12px;
+        min-height:340px;
+      }
+      .m-duel-clash::before{
+        content:"";
+        position:absolute;
+        inset:18px 50% 18px auto;
+        width:1px;
+        margin-right:-.5px;
+        background:linear-gradient(180deg, transparent, rgba(255,255,255,.08), transparent);
+      }
+      .m-duel-label{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:7px 11px;
+        border-radius:999px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.08);
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:.18em;
+        color:rgba(244,247,251,.82);
+      }
+      .m-duel-label::before{
+        content:"";
+        width:7px;
+        height:7px;
+        border-radius:999px;
+        background:rgba(255,176,88,.92);
+        box-shadow:0 0 10px rgba(255,176,88,.65);
+      }
+      .m-duel-vs{
+        position:relative;
+        width:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      .m-duel-vs-ring{
+        position:relative;
+        width:108px;
+        height:108px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:
+          radial-gradient(circle, rgba(255,255,255,.08), rgba(255,255,255,.015) 60%, transparent 78%);
+        box-shadow:0 0 28px rgba(0,0,0,.28), inset 0 0 22px rgba(255,255,255,.06);
+        display:grid;
+        place-items:center;
+      }
+      .m-duel-vs-ring::before,
+      .m-duel-vs-ring::after{
+        content:"";
+        position:absolute;
+        inset:-18px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.06);
+      }
+      .m-duel-vs-ring::after{
+        inset:18px;
+        border-color:rgba(255,255,255,.14);
+      }
+      .m-duel-vs-core{
+        position:relative;
+        z-index:1;
+        font-size:30px;
+        font-weight:900;
+        letter-spacing:.22em;
+        text-indent:.22em;
+        color:rgba(255,255,255,.88);
+      }
+      .m-duel-clash-text{
+        min-height:34px;
+        max-width:170px;
+        text-align:center;
+        font-size:12px;
+        line-height:1.4;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:rgba(239,244,250,.82);
+      }
+      .m-duel-clash.is-player-strike .m-duel-vs-ring{
+        border-color:rgba(120,198,255,.22);
+        box-shadow:0 0 26px rgba(43,128,217,.18), inset 0 0 22px rgba(120,198,255,.08);
+      }
+      .m-duel-clash.is-enemy-strike .m-duel-vs-ring{
+        border-color:rgba(255,142,108,.22);
+        box-shadow:0 0 26px rgba(214,62,62,.18), inset 0 0 22px rgba(255,142,108,.08);
+      }
+      .m-duel-clash.is-critical .m-duel-vs-ring{
+        transform:scale(1.06);
+      }
+      .m-duel-progress{
+        font-size:11px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(221,229,238,.66);
+      }
+      .m-duel-result{
+        opacity:0;
+        transform:translateY(10px) scale(.96);
+        transition:opacity .28s ease, transform .28s ease;
+        padding:8px 12px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        font-size:12px;
+        line-height:1.2;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(255,255,255,.82);
+        text-align:center;
+      }
+      .m-duel-result.is-visible{
+        opacity:1;
+        transform:translateY(0) scale(1);
+      }
+      .m-duel-result[data-tone="victory"]{
+        border-color:rgba(105,232,177,.24);
+        background:rgba(39,115,88,.22);
+        color:#dffaf0;
+      }
+      .m-duel-result[data-tone="defeat"]{
+        border-color:rgba(255,116,116,.24);
+        background:rgba(120,34,34,.24);
+        color:#ffe7e7;
+      }
+      .m-duel-stage-meta{
+        font-size:11px;
+        letter-spacing:.1em;
+        text-transform:uppercase;
+        color:rgba(218,226,238,.68);
+      }
       .m-duel-log{
-        min-height:176px;
-        padding:14px 16px;
+        min-height:132px;
+        max-height:164px;
+        padding:12px 14px;
         border-radius:18px;
         border:1px solid rgba(255,255,255,.08);
-        background:rgba(2,4,8,.62);
+        background:rgba(2,4,8,.54);
         display:flex;
         flex-direction:column;
         gap:10px;
@@ -1501,11 +1682,11 @@
       .m-duel-log-line{
         padding:8px 10px;
         border-radius:12px;
-        background:rgba(255,255,255,.04);
+        background:rgba(255,255,255,.035);
         border:1px solid rgba(255,255,255,.05);
         font-size:12px;
-        line-height:1.45;
-        color:rgba(240,244,250,.88);
+        line-height:1.4;
+        color:rgba(240,244,250,.82);
       }
       .m-duel-log-line.is-live{
         border-color:rgba(255,196,128,.18);
@@ -1516,13 +1697,25 @@
         font-size:11px;
         letter-spacing:.12em;
         text-transform:uppercase;
-        color:rgba(225,232,240,.64);
+        color:rgba(225,232,240,.62);
       }
       .m-duel-footer-note{
         opacity:.84;
       }
       .m-duel-skip{
         flex:0 0 auto;
+        min-height:28px;
+        padding:5px 10px;
+        border-color:rgba(255,255,255,.08);
+        background:rgba(255,255,255,.035);
+        font-size:11px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:rgba(240,244,250,.76);
+        opacity:.78;
+      }
+      .m-duel-skip:hover{
+        opacity:.96;
       }
       @keyframes m-duel-shake{
         0%{ transform:translate3d(0,0,0); }
@@ -1571,30 +1764,50 @@
           padding:14px;
           border-radius:18px;
         }
-        .m-duel-panels,
         .m-duel-head,
-        .m-duel-stage-head,
         .m-duel-stage-meta,
         .m-duel-footer{
           flex-direction:column;
           align-items:stretch;
         }
-        .m-duel-vs{
-          font-size:22px;
-          letter-spacing:.14em;
-        }
         .m-duel-title{
           font-size:22px;
         }
+        .m-duel-arena{
+          gap:10px;
+          grid-template-columns:minmax(0,1fr) 94px minmax(0,1fr);
+        }
         .m-duel-panel{
-          min-height:168px;
+          min-height:270px;
+          padding:12px;
         }
-        .m-duel-avatar{
-          min-height:74px;
-          font-size:34px;
+        .m-duel-name{
+          font-size:17px;
         }
+        .m-duel-visual{
+          min-height:138px;
+        }
+        .m-duel-vs-ring{
+          width:78px;
+          height:78px;
+        }
+        .m-duel-vs-core{
+          font-size:23px;
+          letter-spacing:.18em;
+          text-indent:.18em;
+        }
+        .m-duel-clash-text{
+          max-width:96px;
+          font-size:10px;
+        }
+        .m-duel-progress,
         .m-duel-result{
-          white-space:normal;
+          font-size:10px;
+          letter-spacing:.12em;
+        }
+        .m-duel-log{
+          min-height:120px;
+          max-height:none;
         }
       }
     `;
@@ -2915,6 +3128,190 @@ function _normalizeRareDropObj(obj) {
         ];
   }
 
+  function missionDuelUniqueStrings(values = []) {
+    const seen = new Set();
+    const out = [];
+    values.forEach((value) => {
+      const text = textOrEmpty(value);
+      if (!text || seen.has(text)) return;
+      seen.add(text);
+      out.push(text);
+    });
+    return out;
+  }
+
+  function missionDuelImageValue(value) {
+    if (!value) return "";
+    if (typeof value === "string") return textOrEmpty(value);
+    if (typeof value !== "object") return "";
+    return textOrEmpty(
+      value.url ||
+      value.img ||
+      value.src ||
+      value.image ||
+      value.icon ||
+      value.avatarUrl ||
+      value.avatar_url ||
+      value.portraitUrl ||
+      value.portrait_url ||
+      value.skinUrl ||
+      value.skin_url ||
+      value.previewUrl ||
+      value.preview_url
+    );
+  }
+
+  function missionDuelProfileState() {
+    return window.__PROFILE__ || window.PROFILE || window.lastProfile || window.profileState || window._profile || null;
+  }
+
+  function missionDuelQueryImage(selectors) {
+    try {
+      const node = document.querySelector(selectors);
+      return textOrEmpty(node?.currentSrc || node?.src);
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function resolveMissionDuelPlayerVisual(resultData, last) {
+    const payload = normalizePayload(resultData) || resultData || {};
+    const profile = missionDuelProfileState();
+    const skinCandidates = missionDuelUniqueStrings([
+      missionDuelQueryImage("#player-skin"),
+      missionDuelImageValue(last?.player?.skin),
+      last?.player?.skinUrl,
+      last?.player?.skin_url,
+      last?.playerSkin,
+      last?.player_skin,
+      missionDuelImageValue(payload?.player?.skin),
+      payload?.player?.skinUrl,
+      payload?.player?.skin_url,
+      payload?.playerSkin,
+      payload?.player_skin,
+      typeof profile?.skin === "string" ? profile.skin : "",
+      missionDuelImageValue(profile?.skin),
+      profile?.heroImg,
+      profile?.heroPng,
+      profile?.character,
+      profile?.characterPng,
+      profile?.skinKey ? `/assets/skins/${profile.skinKey}.webp` : "",
+    ]);
+    if (skinCandidates[0]) {
+      return { src: assetUrl(skinCandidates[0]), source: "active skin / hero visual" };
+    }
+
+    const avatarCandidates = missionDuelUniqueStrings([
+      missionDuelImageValue(last?.player?.avatar),
+      last?.player?.avatarUrl,
+      last?.player?.avatar_url,
+      last?.playerAvatar,
+      last?.player_avatar,
+      missionDuelImageValue(payload?.player?.avatar),
+      payload?.player?.avatarUrl,
+      payload?.player?.avatar_url,
+      payload?.playerAvatar,
+      payload?.player_avatar,
+      profile?.avatarPng,
+      profile?.avatar,
+      profile?.avatarUrl,
+      profile?.avatar_url,
+      profile?.profileAvatar,
+      missionDuelQueryImage("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img"),
+      missionDuelQueryImage("#equippedRoot img, #equippedModal img"),
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url,
+    ]);
+    if (avatarCandidates[0]) {
+      return { src: assetUrl(avatarCandidates[0]), source: "player avatar / profile visual" };
+    }
+
+    return {
+      src: assetUrl("/assets/skins/lunarhowl_skin.webp"),
+      source: "Alpha Husky fallback skin",
+    };
+  }
+
+  function resolveMissionDuelEnemyVisual(resultData, last) {
+    const payload = normalizePayload(resultData) || resultData || {};
+    const enemyBlock = last?.enemy || payload?.enemy || null;
+    const candidates = missionDuelUniqueStrings([
+      missionDuelImageValue(enemyBlock?.visual),
+      missionDuelImageValue(enemyBlock?.avatar),
+      enemyBlock?.avatarUrl,
+      enemyBlock?.avatar_url,
+      enemyBlock?.portraitUrl,
+      enemyBlock?.portrait_url,
+      enemyBlock?.iconUrl,
+      enemyBlock?.icon_url,
+      enemyBlock?.image,
+      enemyBlock?.img,
+      enemyBlock?.emblemUrl,
+      enemyBlock?.emblem_url,
+      last?.enemyVisual,
+      last?.enemy_visual,
+      last?.enemyImage,
+      last?.enemy_image,
+      last?.enemyAvatar,
+      last?.enemy_avatar,
+      last?.enemyPortrait,
+      last?.enemy_portrait,
+      last?.enemyIcon,
+      last?.enemy_icon,
+      last?.enemyIconUrl,
+      last?.enemy_icon_url,
+      last?.targetImage,
+      last?.target_image,
+      last?.targetAvatar,
+      last?.target_avatar,
+      last?.targetIcon,
+      last?.target_icon,
+      last?.hostileImage,
+      last?.hostile_image,
+      payload?.enemyVisual,
+      payload?.enemy_visual,
+      payload?.enemyImage,
+      payload?.enemy_image,
+      payload?.enemyAvatar,
+      payload?.enemy_avatar,
+      payload?.enemyPortrait,
+      payload?.enemy_portrait,
+      payload?.enemyIcon,
+      payload?.enemy_icon,
+      payload?.enemyIconUrl,
+      payload?.enemy_icon_url,
+      payload?.targetImage,
+      payload?.target_image,
+      payload?.targetAvatar,
+      payload?.target_avatar,
+      payload?.targetIcon,
+      payload?.target_icon,
+    ]);
+    if (candidates[0]) {
+      return { src: assetUrl(candidates[0]), source: "enemy art / icon" };
+    }
+    return { src: "", source: "generated signal sigil" };
+  }
+
+  function renderMissionDuelVisual(visual, side, alt, stamp) {
+    const hasImage = !!textOrEmpty(visual?.src);
+    return `
+      <div class="m-duel-visual ${hasImage ? "has-image" : ""}">
+        <div class="m-duel-visual-fallback" aria-hidden="true">
+          <div class="m-duel-sigil">
+            <div class="m-duel-sigil-lines"></div>
+            <div class="m-duel-sigil-core"></div>
+          </div>
+        </div>
+        ${
+          hasImage
+            ? `<img class="m-duel-portrait" src="${esc(visual.src)}" alt="${esc(alt)}" loading="eager" decoding="async" onerror="this.closest('.m-duel-visual') && this.closest('.m-duel-visual').classList.remove('has-image'); this.remove();">`
+            : ""
+        }
+        <div class="m-duel-stamp">${esc(stamp || (side === "player" ? "Pack Signal" : "Threat Trace"))}</div>
+      </div>
+    `;
+  }
+
   function buildMissionDuelModel(resultData) {
     const payload = normalizePayload(resultData) || resultData || {};
     const last = payload?.lastResolve || payload?.last_resolve || resultData?.lastResolve || resultData?.last_resolve || null;
@@ -2934,6 +3331,8 @@ function _normalizeRareDropObj(obj) {
     const outcomeTone = normalizeOutcomeTone(outcomeTier);
     const resultKey = toText(last?.result, "").toLowerCase();
     const isVictory = !!(last?.victory || resultKey === "victory" || outcomeTone === "success" || outcomeTone === "critical" || outcomeTone === "partial");
+    const playerVisual = resolveMissionDuelPlayerVisual(resultData, last);
+    const enemyVisual = resolveMissionDuelEnemyVisual(resultData, last);
     const seed = hashPlaybackSeed([
       missionTitle,
       subtitle,
@@ -3035,6 +3434,8 @@ function _normalizeRareDropObj(obj) {
       subtitle,
       playerName,
       enemyName,
+      playerVisual,
+      enemyVisual,
       isVictory,
       resultLabel,
       exchangeCount,
@@ -3080,16 +3481,7 @@ function _normalizeRareDropObj(obj) {
             <button type="button" class="btn m-duel-skip">Skip</button>
           </div>
           <div class="m-duel-stage">
-            <div class="m-duel-stage-head">
-              <div class="m-duel-label">Signal Feed Active</div>
-              <div class="m-duel-vs">VS</div>
-              <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
-            </div>
-            <div class="m-duel-stage-meta">
-              <span>${esc(model.statusLabel)}</span>
-              <span class="m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</span>
-            </div>
-            <div class="m-duel-panels">
+            <div class="m-duel-arena">
               <section class="m-duel-panel is-player" data-side="player">
                 <div class="m-duel-panel-top">
                   <div style="min-width:0;">
@@ -3098,11 +3490,22 @@ function _normalizeRareDropObj(obj) {
                   </div>
                   <div class="m-duel-state">Ready</div>
                 </div>
-                <div class="m-duel-avatar" aria-hidden="true"><span>A</span></div>
+                ${renderMissionDuelVisual(model.playerVisual, "player", `${model.playerName} visual`, "Alpha")}
                 <div class="m-duel-hp" data-hp="player">100 / 100 HP</div>
                 <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="player" style="width:100%"></div></div>
                 <div class="m-duel-damage" data-damage="player"></div>
               </section>
+              <div class="m-duel-clash">
+                <div class="m-duel-label">Signal Feed Active</div>
+                <div class="m-duel-vs">
+                  <div class="m-duel-vs-ring">
+                    <div class="m-duel-vs-core">VS</div>
+                  </div>
+                </div>
+                <div class="m-duel-clash-text">Signal locked.</div>
+                <div class="m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</div>
+                <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
+              </div>
               <section class="m-duel-panel is-enemy" data-side="enemy">
                 <div class="m-duel-panel-top">
                   <div style="min-width:0;">
@@ -3111,16 +3514,20 @@ function _normalizeRareDropObj(obj) {
                   </div>
                   <div class="m-duel-state">Scanning</div>
                 </div>
-                <div class="m-duel-avatar" aria-hidden="true"><span>!</span></div>
+                ${renderMissionDuelVisual(model.enemyVisual, "enemy", `${model.enemyName} visual`, "Hostile")}
                 <div class="m-duel-hp" data-hp="enemy">100 / 100 HP</div>
                 <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="enemy" style="width:100%"></div></div>
                 <div class="m-duel-damage" data-damage="enemy"></div>
               </section>
             </div>
+            <div class="m-duel-stage-meta">
+              <span>${esc(model.statusLabel)}</span>
+              <span class="m-duel-live-status">Signal locked.</span>
+            </div>
             <div class="m-duel-log">
               <div class="m-duel-log-head">
                 <span>Field Report</span>
-                <span class="m-duel-live-status">Signal locked.</span>
+                <span>Playback trace</span>
               </div>
               <div class="m-duel-log-lines">
                 <div class="m-duel-log-line">Signal locked.</div>
@@ -3143,6 +3550,8 @@ function _normalizeRareDropObj(obj) {
       const progressNode = overlay.querySelector(".m-duel-progress");
       const resultNode = overlay.querySelector(".m-duel-result");
       const liveStatusNode = overlay.querySelector(".m-duel-live-status");
+      const clashNode = overlay.querySelector(".m-duel-clash");
+      const clashTextNode = overlay.querySelector(".m-duel-clash-text");
       const logLinesNode = overlay.querySelector(".m-duel-log-lines");
       const playerPanel = overlay.querySelector('[data-side="player"]');
       const enemyPanel = overlay.querySelector('[data-side="enemy"]');
@@ -3224,6 +3633,26 @@ function _normalizeRareDropObj(obj) {
         if (stateNode) stateNode.textContent = text;
       };
 
+      const pulseClash = (exchange) => {
+        if (!clashNode || !clashTextNode) return;
+        clashNode.classList.remove("is-player-strike", "is-enemy-strike", "is-critical");
+        void clashNode.offsetWidth;
+        clashNode.classList.add(exchange.attacker === "player" ? "is-player-strike" : "is-enemy-strike");
+        if (exchange.critical) clashNode.classList.add("is-critical");
+        clashTextNode.textContent = exchange.finalStrike
+          ? model.resultLabel
+          : exchange.critical
+            ? "Critical breach"
+            : exchange.attacker === "player"
+              ? `${model.playerName} engages`
+              : `${model.enemyName} surges`;
+        const timerId = setTimeout(() => {
+          clashNode.classList.remove("is-player-strike", "is-enemy-strike", "is-critical");
+          damageTimers.delete(timerId);
+        }, exchange.finalStrike ? 520 : 280);
+        damageTimers.add(timerId);
+      };
+
       skipButton?.addEventListener("click", () => {
         finishPlayback();
       });
@@ -3241,6 +3670,7 @@ function _normalizeRareDropObj(obj) {
         setPanelState(playerPanel, exchange.target === "player" ? "Under fire" : (exchange.finalStrike && model.isVictory ? "Final strike" : "Advancing"));
         setPanelState(enemyPanel, exchange.target === "enemy" ? "Breached" : (exchange.finalStrike && !model.isVictory ? "Final strike" : "Countering"));
 
+        pulseClash(exchange);
         flashPanel(targetPanel, exchange.finalStrike);
         if (attackerPanel && attackerPanel !== targetPanel) {
           attackerPanel.classList.remove("is-shake");
@@ -3260,6 +3690,7 @@ function _normalizeRareDropObj(obj) {
         if (exchange.finalStrike) {
           resultNode.classList.add("is-visible");
           liveStatusNode.textContent = model.resultLabel;
+          if (clashTextNode) clashTextNode.textContent = model.resultLabel;
           setPanelState(playerPanel, model.isVictory ? "Stable" : "Critical");
           setPanelState(enemyPanel, model.isVictory ? "Collapsed" : "Dominant");
         }
