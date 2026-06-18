@@ -254,11 +254,24 @@
   }
 
   function showProgressToast(config) {
-    try {
+    const toast = (config && typeof config === "object") ? config : {};
+    const fallbackText = [toast.title, toast.message].filter(Boolean).join(": ");
+    const fireToast = () => {
       if (window.AlphaToast && typeof window.AlphaToast.show === "function") {
-        window.AlphaToast.show(config);
+        window.AlphaToast.show(toast);
+        return true;
       }
+      return false;
+    };
+    try {
+      if (fireToast()) return;
     } catch (_) {}
+    window.setTimeout(() => {
+      try {
+        if (fireToast()) return;
+      } catch (_) {}
+      if (fallbackText) notify(fallbackText);
+    }, 80);
   }
 
   function formatDuration(seconds) {
@@ -318,8 +331,8 @@
       showProgressToast({
         type: "pet",
         title: "Pet Training Complete",
-        message: petXp > 0 ? `+${petXp} Pet XP` : (petName || "Training reward claimed"),
-        meta: out?.petLeveledUp ? "Pet leveled up" : petName
+        message: petXp > 0 ? `+${petXp} Pet XP` : "Training reward claimed",
+        meta: petName
       });
       return;
     }
@@ -328,7 +341,7 @@
       showProgressToast({
         type: "den",
         title: "Signal Cache Recovered",
-        message: rewardText === "No reward" ? rewardText : `+${rewardText}`
+        message: rewardText === "No reward" ? "Claim complete" : `+${rewardText}`
       });
       return;
     }

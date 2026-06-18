@@ -6,6 +6,7 @@
   const queue = [];
   const active = [];
   let bootQueued = false;
+  const VERSION = "2026-06-18-progress-toasts-fix-1";
 
   const TYPE_STYLES = {
     success: {
@@ -51,6 +52,10 @@
 
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) return;
+    if (!document.head) {
+      scheduleBoot();
+      return;
+    }
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
@@ -58,13 +63,14 @@
   position:fixed;
   top:calc(env(safe-area-inset-top, 0px) + 12px);
   right:12px;
-  z-index:2147483600;
+  z-index:2147483647;
   width:min(340px, calc(100vw - 24px));
   display:flex;
   flex-direction:column;
   gap:8px;
   pointer-events:none;
-}
+  isolation:isolate;
+ }
 #${STACK_ID} .alpha-toast{
   position:relative;
   overflow:hidden;
@@ -236,7 +242,10 @@
     stack.appendChild(el);
     const entry = { el, timer: 0 };
     active.push(entry);
-    window.requestAnimationFrame(() => {
+    const scheduleFrame = typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame.bind(window)
+      : (cb) => window.setTimeout(cb, 0);
+    scheduleFrame(() => {
       el.classList.remove("is-enter");
     });
     entry.timer = window.setTimeout(() => removeToast(entry), toast.ttl);
@@ -258,5 +267,11 @@
     flush();
   }
 
-  window.AlphaToast = window.AlphaToast || { show };
+  const api = (window.AlphaToast && typeof window.AlphaToast === "object")
+    ? window.AlphaToast
+    : {};
+  api.show = show;
+  api.flush = flush;
+  api.version = VERSION;
+  window.AlphaToast = api;
 })();
