@@ -4475,9 +4475,9 @@
     const viewerPressure = viewerFaction ? Number(s?.[viewerFaction] || 0) : 0;
     const leaderPressure = Number(info?.leaderValue || 0);
 
-    // Phantom Nodes only: compute true opposing (enemy) pressure from scores excluding viewer faction.
-    // Defensive fallback to leaderPressure if no other faction scores available or on error.
-    let enemyPressure = leaderPressure;
+    // Phantom Nodes only: compute opposing pressure from other factions' scores.
+    // Do not mirror the current leader score here, or the viewer can appear to fight an equal copy of themself.
+    let enemyPressure = 0;
     let isRealEnemyFromScores = false;
     if (phantomMode) {
       try {
@@ -4496,9 +4496,7 @@
           enemyPressure = maxOther;
           isRealEnemyFromScores = true;
         }
-      } catch (_) {
-        // keep fallback to leaderPressure
-      }
+      } catch (_) {}
     }
 
     const watchUsed = Number(info?.guardSlotsUsed || info?.watchCount || 0);

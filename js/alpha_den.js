@@ -951,9 +951,9 @@
                 : path.includes("/signal-cache/claim")
                   ? `Recovered ${formatSignalCacheReward(out?.lastReward || signalCache?.lastReward)} from Signal Cache.${signalCache?.nextReadyAt ? " Refresh later when the cache is ready again." : ""}`
                   : path.includes("/war-table/brief/start")
-                    ? `Tactical Brief started. Return in ${formatLongDuration(asCount(out?.durationSeconds || warTableBrief?.durationSeconds))}.`
+                    ? `Tactical Brief started. Claim stays locked for ${formatLongDuration(asCount(out?.durationSeconds || warTableBrief?.durationSeconds))}.`
                     : path.includes("/war-table/brief/claim")
-                      ? `${String(out?.message || warTableBrief?.lastBrief?.message || "Tactical Brief received.").trim()}`
+                      ? `Tactical Brief claimed. ${String(out?.message || warTableBrief?.lastBrief?.message || "Tactical Brief received.").trim()}`
             : "";
       }
       showAlphaDenProgressToast(path, out, training, signalCache, warTableBrief);
@@ -2191,19 +2191,19 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     if (!usingServerState) {
       if (warTableLevel <= 0) {
         copy = "Build War Table Level 1 to unlock Tactical Brief.";
-        helperCopy = "Local preview only. Connect live backend to test Tactical Brief.";
+        helperCopy = "Local preview only. Connect live backend to test the start, wait, and claim flow.";
         buttonLabel = "War Table Required";
       } else {
         copy = basePurposeCopy;
         if (lastBrief?.message) {
           metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
         }
-        helperCopy = "Local preview only. Connect live backend to test Tactical Brief.";
+        helperCopy = "Local preview only. Connect live backend to test the start, wait, and claim flow.";
         buttonLabel = "Tactical Brief Preview";
       }
     } else if (warTableLevel <= 0 || brief?.briefStatus === "locked") {
       copy = "Build War Table Level 1 to unlock Tactical Brief.";
-      helperCopy = "Build War Table to Level 1 first.";
+      helperCopy = "Build War Table to Level 1 first. Tactical Brief follows a start, wait, then claim flow.";
       buttonLabel = "War Table Required";
     } else if (!brief?.featureEnabled) {
       copy = basePurposeCopy;
@@ -2217,7 +2217,7 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
       helperCopy = "Claim the construction first to bring the table back online.";
       buttonLabel = "Brief Offline";
     } else if (brief?.briefStatus === "preparing") {
-      copy = "Tactical Brief is preparing.";
+      copy = "Tactical Brief is preparing. Claim stays locked until the timer finishes.";
       metaRows += renderDetailMetaRow(
         "Time Remaining",
         `${formatLongDuration(brief?.secondsRemaining)}${readyAtLabel ? ` | Ready at ${readyAtLabel}` : ""}`
@@ -2225,30 +2225,30 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
       if (lastBrief?.message) {
         metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
       }
-      helperCopy = "Return later and claim the next signal note.";
+      helperCopy = "Return when the timer ends, then claim the note once.";
       buttonLabel = "Brief Preparing";
     } else if (brief?.briefStatus === "ready") {
-      copy = "Tactical Brief is ready to read.";
+      copy = "Tactical Brief is ready. Claim once to read the stored note.";
       if (lastBrief?.message) {
         metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
       }
-      helperCopy = "Claim the latest note when you are ready.";
+      helperCopy = "Claim the latest note now. Starting another brief stays locked until this one is claimed.";
       buttonLabel = "Claim Tactical Brief";
       buttonAction = "war-table-brief-claim";
       buttonDisabled = isActionBusy || !brief?.canClaim;
     } else if (brief?.briefStatus === "claimed") {
-      copy = lastBrief?.message || "Latest Tactical Brief is stored.";
-      metaRows += renderDetailMetaRow("Last Brief", lastBrief?.message || "No brief stored yet.");
-      helperCopy = "Prepare another brief when you want a fresh note.";
+      copy = lastBrief?.message || "Latest Tactical Brief already claimed and stored.";
+      metaRows += renderDetailMetaRow("Stored Brief", lastBrief?.message || "No brief stored yet.");
+      helperCopy = "This note has already been claimed. Prepare another brief when you want a fresh one.";
       buttonLabel = "Prepare Next Brief";
       buttonAction = "war-table-brief-start";
       buttonDisabled = isActionBusy || !brief?.canStart;
     } else {
-      copy = basePurposeCopy;
+      copy = "Prepare a Tactical Brief now. When the timer ends, claim once to reveal the note.";
       if (lastBrief?.message) {
         metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
       }
-      helperCopy = "Prepare a brief now and return when the timer finishes.";
+      helperCopy = "Start the brief now, wait for ready, then claim once.";
       buttonLabel = "Prepare Tactical Brief";
       buttonAction = "war-table-brief-start";
       buttonDisabled = isActionBusy || !brief?.canStart;

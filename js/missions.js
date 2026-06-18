@@ -369,6 +369,7 @@
 
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
+  let _missionDuelPlaybackSeq = 0;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
@@ -1155,6 +1156,381 @@
         font-size:11.5px;
         pointer-events:none;
       }
+      .m-duel-overlay{
+        position:absolute;
+        inset:0;
+        z-index:12;
+        display:flex;
+        align-items:stretch;
+        justify-content:center;
+        padding:18px;
+        background:
+          radial-gradient(circle at top, rgba(255,255,255,.05), transparent 42%),
+          linear-gradient(180deg, rgba(5,8,12,.72), rgba(5,8,12,.94));
+        overflow:hidden;
+      }
+      .m-duel-overlay::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+          repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 1px, transparent 1px 4px),
+          linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
+        opacity:.38;
+        pointer-events:none;
+      }
+      .m-duel-shell{
+        position:relative;
+        z-index:1;
+        width:min(920px, 100%);
+        min-height:100%;
+        display:flex;
+        flex-direction:column;
+        gap:14px;
+        padding:18px;
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:22px;
+        background:
+          linear-gradient(180deg, rgba(14,18,26,.94), rgba(8,10,16,.98));
+        box-shadow:0 24px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.03);
+        overflow:hidden;
+      }
+      .m-duel-shell::after{
+        content:"";
+        position:absolute;
+        inset:-30% -10% auto;
+        height:220px;
+        background:radial-gradient(circle, rgba(255,90,90,.12), transparent 62%);
+        filter:blur(18px);
+        pointer-events:none;
+      }
+      .m-duel-head,
+      .m-duel-stage-head,
+      .m-duel-stage-meta,
+      .m-duel-panels,
+      .m-duel-panel-top,
+      .m-duel-log-head,
+      .m-duel-footer{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+      }
+      .m-duel-head{
+        align-items:flex-start;
+      }
+      .m-duel-kicker{
+        font-size:11px;
+        letter-spacing:.28em;
+        text-transform:uppercase;
+        color:rgba(255,196,140,.74);
+      }
+      .m-duel-title{
+        margin-top:6px;
+        font-size:27px;
+        font-weight:900;
+        letter-spacing:.04em;
+        color:#f5f7fb;
+      }
+      .m-duel-sub{
+        margin-top:4px;
+        font-size:12px;
+        line-height:1.45;
+        color:rgba(225,233,244,.72);
+      }
+      .m-duel-stage{
+        position:relative;
+        flex:1 1 auto;
+        display:flex;
+        flex-direction:column;
+        gap:14px;
+      }
+      .m-duel-stage-head{
+        align-items:flex-start;
+      }
+      .m-duel-label{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:7px 11px;
+        border-radius:999px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.08);
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:.18em;
+        color:rgba(244,247,251,.82);
+      }
+      .m-duel-label::before{
+        content:"";
+        width:7px;
+        height:7px;
+        border-radius:999px;
+        background:rgba(255,176,88,.92);
+        box-shadow:0 0 10px rgba(255,176,88,.65);
+      }
+      .m-duel-vs{
+        flex:1 1 auto;
+        text-align:center;
+        font-size:28px;
+        font-weight:900;
+        letter-spacing:.22em;
+        color:rgba(255,255,255,.18);
+      }
+      .m-duel-result{
+        opacity:0;
+        transform:translateY(10px) scale(.96);
+        transition:opacity .28s ease, transform .28s ease;
+        padding:8px 12px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        font-size:12px;
+        line-height:1.2;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(255,255,255,.82);
+        white-space:nowrap;
+      }
+      .m-duel-result.is-visible{
+        opacity:1;
+        transform:translateY(0) scale(1);
+      }
+      .m-duel-result[data-tone="victory"]{
+        border-color:rgba(105,232,177,.24);
+        background:rgba(39,115,88,.22);
+        color:#dffaf0;
+      }
+      .m-duel-result[data-tone="defeat"]{
+        border-color:rgba(255,116,116,.24);
+        background:rgba(120,34,34,.24);
+        color:#ffe7e7;
+      }
+      .m-duel-stage-meta{
+        font-size:11px;
+        letter-spacing:.1em;
+        text-transform:uppercase;
+        color:rgba(218,226,238,.68);
+      }
+      .m-duel-panels{
+        align-items:stretch;
+      }
+      .m-duel-panel{
+        position:relative;
+        flex:1 1 0;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        min-height:200px;
+        padding:16px;
+        border-radius:18px;
+        border:1px solid rgba(255,255,255,.08);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
+          rgba(6,9,14,.86);
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+        transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+        overflow:hidden;
+      }
+      .m-duel-panel::after{
+        content:"";
+        position:absolute;
+        inset:auto -12% -30px;
+        height:110px;
+        background:radial-gradient(circle, rgba(255,255,255,.08), transparent 60%);
+        opacity:.36;
+        pointer-events:none;
+      }
+      .m-duel-panel.is-player{
+        border-color:rgba(140,214,255,.16);
+      }
+      .m-duel-panel.is-enemy{
+        border-color:rgba(255,132,118,.18);
+      }
+      .m-duel-panel.is-hit{
+        box-shadow:0 0 0 1px rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.04), 0 0 0 2px rgba(255,118,118,.12);
+        filter:brightness(1.08);
+      }
+      .m-duel-panel.is-player.is-hit{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
+          rgba(46,18,18,.86);
+      }
+      .m-duel-panel.is-enemy.is-hit{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)),
+          rgba(76,24,20,.9);
+      }
+      .m-duel-panel.is-shake{
+        animation:m-duel-shake .32s linear;
+      }
+      .m-duel-panel-top{
+        align-items:flex-start;
+      }
+      .m-duel-side{
+        font-size:11px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(220,227,236,.6);
+      }
+      .m-duel-name{
+        margin-top:4px;
+        font-size:22px;
+        font-weight:900;
+        line-height:1.05;
+        color:#fbfdff;
+        overflow-wrap:anywhere;
+      }
+      .m-duel-state{
+        flex:0 0 auto;
+        padding:6px 9px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.05);
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(255,255,255,.8);
+      }
+      .m-duel-avatar{
+        position:relative;
+        display:grid;
+        place-items:center;
+        flex:1 1 auto;
+        min-height:92px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,.05);
+        background:
+          radial-gradient(circle at center, rgba(255,255,255,.08), transparent 54%),
+          linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+        font-size:42px;
+        font-weight:900;
+        letter-spacing:.16em;
+        color:rgba(255,255,255,.9);
+        text-shadow:0 0 18px rgba(255,255,255,.12);
+      }
+      .m-duel-avatar::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%, rgba(255,255,255,.03));
+        opacity:.68;
+        pointer-events:none;
+      }
+      .m-duel-avatar > span{
+        position:relative;
+        z-index:1;
+      }
+      .m-duel-hp{
+        font-size:11px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:rgba(230,236,244,.72);
+      }
+      .m-duel-bar{
+        position:relative;
+        height:13px;
+        border-radius:999px;
+        overflow:hidden;
+        background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.06);
+      }
+      .m-duel-bar-fill{
+        height:100%;
+        width:100%;
+        transition:width .52s cubic-bezier(.2,.8,.2,1), background .32s ease;
+        background:linear-gradient(90deg, rgba(145,250,182,.96), rgba(41,169,109,.96));
+      }
+      .m-duel-panel.is-enemy .m-duel-bar-fill{
+        background:linear-gradient(90deg, rgba(255,173,97,.95), rgba(214,62,62,.98));
+      }
+      .m-duel-bar.is-critical .m-duel-bar-fill{
+        background:linear-gradient(90deg, rgba(255,214,97,.96), rgba(227,64,64,.99));
+      }
+      .m-duel-damage{
+        position:absolute;
+        top:18px;
+        right:14px;
+        z-index:2;
+        padding:6px 10px;
+        border-radius:999px;
+        background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.12);
+        font-size:14px;
+        font-weight:900;
+        letter-spacing:.08em;
+        color:#fff6f6;
+        opacity:0;
+        transform:translateY(12px) scale(.82);
+        pointer-events:none;
+      }
+      .m-duel-damage.is-visible{
+        opacity:1;
+        transform:translateY(0) scale(1);
+        transition:opacity .18s ease, transform .18s ease;
+      }
+      .m-duel-damage.is-player-hit{
+        background:rgba(255,94,94,.14);
+        border-color:rgba(255,148,148,.22);
+      }
+      .m-duel-damage.is-enemy-hit{
+        background:rgba(255,176,92,.16);
+        border-color:rgba(255,196,148,.24);
+      }
+      .m-duel-log{
+        min-height:176px;
+        padding:14px 16px;
+        border-radius:18px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(2,4,8,.62);
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+      .m-duel-log-head{
+        font-size:11px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:rgba(235,240,247,.7);
+      }
+      .m-duel-log-lines{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      .m-duel-log-line{
+        padding:8px 10px;
+        border-radius:12px;
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.05);
+        font-size:12px;
+        line-height:1.45;
+        color:rgba(240,244,250,.88);
+      }
+      .m-duel-log-line.is-live{
+        border-color:rgba(255,196,128,.18);
+        background:rgba(255,255,255,.06);
+        color:#fff8ef;
+      }
+      .m-duel-footer{
+        font-size:11px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:rgba(225,232,240,.64);
+      }
+      .m-duel-footer-note{
+        opacity:.84;
+      }
+      .m-duel-skip{
+        flex:0 0 auto;
+      }
+      @keyframes m-duel-shake{
+        0%{ transform:translate3d(0,0,0); }
+        25%{ transform:translate3d(-4px,1px,0); }
+        50%{ transform:translate3d(4px,-1px,0); }
+        75%{ transform:translate3d(-3px,0,0); }
+        100%{ transform:translate3d(0,0,0); }
+      }
 
       @media (max-width: 520px){
         #missionsRoot .m-row,
@@ -1187,6 +1563,38 @@
         }
         #missionsRoot .m-elite-cta .btn{
           width:100%;
+        }
+        .m-duel-overlay{
+          padding:10px;
+        }
+        .m-duel-shell{
+          padding:14px;
+          border-radius:18px;
+        }
+        .m-duel-panels,
+        .m-duel-head,
+        .m-duel-stage-head,
+        .m-duel-stage-meta,
+        .m-duel-footer{
+          flex-direction:column;
+          align-items:stretch;
+        }
+        .m-duel-vs{
+          font-size:22px;
+          letter-spacing:.14em;
+        }
+        .m-duel-title{
+          font-size:22px;
+        }
+        .m-duel-panel{
+          min-height:168px;
+        }
+        .m-duel-avatar{
+          min-height:74px;
+          font-size:34px;
+        }
+        .m-duel-result{
+          white-space:normal;
         }
       }
     `;
@@ -2377,6 +2785,501 @@ function _normalizeRareDropObj(obj) {
     `;
   }
 
+  function prefersReducedMotion() {
+    try {
+      return !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function hashPlaybackSeed(value) {
+    const text = String(value || "mission-duel");
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function seededPlaybackUnit(seed, step = 0) {
+    let x = (seed + Math.imul((step + 1), 374761393)) >>> 0;
+    x ^= x >>> 13;
+    x = Math.imul(x, 1274126177);
+    x ^= x >>> 16;
+    return (x >>> 0) / 4294967295;
+  }
+
+  function collectPlaybackText(value, out = [], seen = new Set()) {
+    const addLine = (line) => {
+      const text = textOrEmpty(line).replace(/\s+/g, " ").trim();
+      if (!text) return;
+      const key = text.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(text);
+    };
+
+    if (value == null) return out;
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectPlaybackText(item, out, seen));
+      return out;
+    }
+    if (typeof value === "string" || typeof value === "number") {
+      addLine(value);
+      return out;
+    }
+    if (typeof value !== "object") return out;
+
+    addLine(value.text || value.message || value.log || value.line || value.summary || value.action || value.report || value.outcome || value.result);
+    if (Array.isArray(value.lines)) collectPlaybackText(value.lines, out, seen);
+    if (Array.isArray(value.entries)) collectPlaybackText(value.entries, out, seen);
+    if (Array.isArray(value.events)) collectPlaybackText(value.events, out, seen);
+    if (Array.isArray(value.rounds)) collectPlaybackText(value.rounds, out, seen);
+    return out;
+  }
+
+  function extractMissionPlaybackLines(payload, last) {
+    const candidates = [
+      last?.battleLog,
+      last?.battle_log,
+      last?.combatLog,
+      last?.combat_log,
+      last?.duelLog,
+      last?.duel_log,
+      last?.roundLog,
+      last?.round_log,
+      last?.rounds,
+      payload?.battleLog,
+      payload?.battle_log,
+      payload?.combatLog,
+      payload?.combat_log,
+      payload?.duelLog,
+      payload?.duel_log,
+      payload?.rounds,
+    ];
+    for (const candidate of candidates) {
+      const lines = collectPlaybackText(candidate);
+      if (lines.length) return lines;
+    }
+    return [];
+  }
+
+  function buildDamageSlices(totalLoss, hitCount, seed) {
+    if (hitCount <= 0) return [];
+    if (hitCount === 1) return [Math.max(1, totalLoss)];
+    const slices = [];
+    let remaining = Math.max(hitCount, totalLoss);
+    for (let i = 0; i < hitCount; i += 1) {
+      const remainingHits = hitCount - i;
+      if (remainingHits === 1) {
+        slices.push(Math.max(1, remaining));
+        break;
+      }
+      const base = Math.floor(remaining / remainingHits);
+      const swing = Math.max(1, Math.floor(totalLoss * 0.13));
+      let amount = base + Math.floor((seededPlaybackUnit(seed, i) - 0.32) * swing);
+      const minAllowed = 1;
+      const maxAllowed = remaining - (remainingHits - 1);
+      amount = clampNumber(amount, minAllowed, Math.max(minAllowed, maxAllowed));
+      slices.push(amount);
+      remaining -= amount;
+    }
+    return slices;
+  }
+
+  function buildFallbackPlaybackLines(isVictory) {
+    return isVictory
+      ? [
+          "Signal locked.",
+          "Hostile trace engaged.",
+          "Alpha cuts through the static.",
+          "Enemy counterstrike blocked.",
+          "Critical breach.",
+          "Final threat collapsing.",
+          "Signal cleared.",
+        ]
+      : [
+          "Signal locked.",
+          "Hostile trace engaged.",
+          "Static pressure mounting.",
+          "Alpha loses ground.",
+          "Signal integrity collapsing.",
+          "Pack retreating.",
+          "Mission signal broken.",
+        ];
+  }
+
+  function buildMissionDuelModel(resultData) {
+    const payload = normalizePayload(resultData) || resultData || {};
+    const last = payload?.lastResolve || payload?.last_resolve || resultData?.lastResolve || resultData?.last_resolve || null;
+    if (!last || typeof last !== "object") return null;
+
+    const missionTitle = toText(last?.title || last?.name || payload?.missionTitle || payload?.mission_title, "Mission Signal");
+    const subtitle = toText(last?.subtitle || payload?.missionSubtitle || payload?.mission_subtitle, "");
+    const playerName = toText(
+      last?.playerName || last?.player_name || payload?.playerName || payload?.player_name || payload?.alphaName || payload?.alpha_name,
+      "Alpha"
+    );
+    const enemyName = toText(
+      last?.enemyName || last?.enemy_name || last?.targetName || last?.target_name || subtitle,
+      "Hostile Signal"
+    );
+    const outcomeTier = normalizeOutcomeTier(last);
+    const outcomeTone = normalizeOutcomeTone(outcomeTier);
+    const resultKey = toText(last?.result, "").toLowerCase();
+    const isVictory = !!(last?.victory || resultKey === "victory" || outcomeTone === "success" || outcomeTone === "critical" || outcomeTone === "partial");
+    const seed = hashPlaybackSeed([
+      missionTitle,
+      subtitle,
+      playerName,
+      enemyName,
+      outcomeTier,
+      resultKey,
+      textOrEmpty(last?.report),
+      textOrEmpty(last?.rewardMsg || last?.reward_msg),
+      textOrEmpty(last?.lootMsg || last?.loot_msg),
+    ].join("|"));
+    const exchangeCount = 5 + Math.floor(seededPlaybackUnit(seed, 1) * 3);
+    const winner = isVictory ? "player" : "enemy";
+    const loser = isVictory ? "enemy" : "player";
+    const labels = isVictory
+      ? ["SIGNAL CLEARED", "THREAT NEUTRALIZED", "MISSION CLEARED"]
+      : ["SIGNAL BROKEN", "PACK RETREATING", "MISSION FAILED"];
+    const resultLabel = labels[Math.floor(seededPlaybackUnit(seed, 2) * labels.length)] || labels[0];
+
+    const attackers = [];
+    let winnerTurns = 0;
+    let loserTurns = 0;
+    for (let i = 0; i < exchangeCount; i += 1) {
+      if (i === 0 || i === exchangeCount - 1) {
+        attackers.push(winner);
+        winnerTurns += 1;
+        continue;
+      }
+      const attacker = seededPlaybackUnit(seed, 10 + i) > 0.36 ? winner : loser;
+      attackers.push(attacker);
+      if (attacker === winner) winnerTurns += 1;
+      else loserTurns += 1;
+    }
+    if (loserTurns === 0 && exchangeCount > 2) {
+      attackers[1] = loser;
+      loserTurns = 1;
+      winnerTurns = Math.max(1, winnerTurns - 1);
+    }
+
+    const enemyLossTotal = isVictory ? 100 : 18 + Math.floor(seededPlaybackUnit(seed, 30) * 22);
+    const playerLossTotal = isVictory ? 24 + Math.floor(seededPlaybackUnit(seed, 31) * 32) : 100;
+    const enemyHitCount = attackers.filter((attacker) => attacker === "player").length;
+    const playerHitCount = attackers.filter((attacker) => attacker === "enemy").length;
+    const enemySlices = buildDamageSlices(enemyLossTotal, enemyHitCount, seed + 101);
+    const playerSlices = buildDamageSlices(playerLossTotal, playerHitCount, seed + 303);
+
+    const backendLines = extractMissionPlaybackLines(payload, last);
+    const fallbackLines = buildFallbackPlaybackLines(isVictory);
+    const logLines = backendLines.length
+      ? backendLines.slice(0, exchangeCount).concat(fallbackLines).slice(0, exchangeCount)
+      : fallbackLines.slice(0, exchangeCount);
+
+    const exchanges = [];
+    let playerHp = 100;
+    let enemyHp = 100;
+    let playerHitsUsed = 0;
+    let enemyHitsUsed = 0;
+
+    for (let i = 0; i < exchangeCount; i += 1) {
+      const attacker = attackers[i];
+      const isFinal = i === exchangeCount - 1;
+      let damage = 0;
+      let target = "enemy";
+      if (attacker === "player") {
+        const hpBefore = enemyHp;
+        damage = enemySlices[playerHitsUsed] ?? 1;
+        playerHitsUsed += 1;
+        enemyHp = clampNumber(enemyHp - damage, 0, 100);
+        target = "enemy";
+        if (isFinal) {
+          damage = Math.max(1, hpBefore);
+          enemyHp = 0;
+        }
+      } else {
+        const hpBefore = playerHp;
+        damage = playerSlices[enemyHitsUsed] ?? 1;
+        enemyHitsUsed += 1;
+        playerHp = clampNumber(playerHp - damage, 0, 100);
+        target = "player";
+        if (isFinal) {
+          damage = Math.max(1, hpBefore);
+          playerHp = 0;
+        }
+      }
+      exchanges.push({
+        attacker,
+        target,
+        damage: Math.max(1, damage),
+        playerHp,
+        enemyHp,
+        critical: isFinal || damage >= 22,
+        finalStrike: isFinal,
+        logLine: logLines[i] || fallbackLines[Math.min(i, fallbackLines.length - 1)],
+      });
+    }
+
+    return {
+      missionTitle,
+      subtitle,
+      playerName,
+      enemyName,
+      isVictory,
+      resultLabel,
+      exchangeCount,
+      exchanges,
+      fieldLine: isVictory ? "Resolved signal playback." : "Signal replay degraded.",
+      statusLabel: isVictory ? "Threat response stabilized" : "Threat pressure escalating",
+    };
+  }
+
+  async function triggerMissionDuelPlayback(resultData, showResultCardCallback) {
+    const revealResultCard = (() => {
+      let done = false;
+      return () => {
+        if (done) return;
+        done = true;
+        try { showResultCardCallback?.(); } catch (_) {}
+      };
+    })();
+
+    try {
+      if (prefersReducedMotion()) {
+        revealResultCard();
+        return;
+      }
+
+      const model = buildMissionDuelModel(resultData);
+      if (!model || !model.exchanges?.length || !_modal) {
+        revealResultCard();
+        return;
+      }
+
+      const seq = ++_missionDuelPlaybackSeq;
+      const overlay = document.createElement("div");
+      overlay.className = "m-duel-overlay";
+      overlay.innerHTML = `
+        <div class="m-duel-shell" role="dialog" aria-modal="true" aria-label="Mission duel playback">
+          <div class="m-duel-head">
+            <div style="min-width:0;">
+              <div class="m-duel-kicker">Mission Duel Playback</div>
+              <div class="m-duel-title">${esc(model.missionTitle)}</div>
+              <div class="m-duel-sub">${esc(model.subtitle || model.fieldLine)}</div>
+            </div>
+            <button type="button" class="btn m-duel-skip">Skip</button>
+          </div>
+          <div class="m-duel-stage">
+            <div class="m-duel-stage-head">
+              <div class="m-duel-label">Signal Feed Active</div>
+              <div class="m-duel-vs">VS</div>
+              <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
+            </div>
+            <div class="m-duel-stage-meta">
+              <span>${esc(model.statusLabel)}</span>
+              <span class="m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</span>
+            </div>
+            <div class="m-duel-panels">
+              <section class="m-duel-panel is-player" data-side="player">
+                <div class="m-duel-panel-top">
+                  <div style="min-width:0;">
+                    <div class="m-duel-side">Alpha Pack</div>
+                    <div class="m-duel-name">${esc(model.playerName)}</div>
+                  </div>
+                  <div class="m-duel-state">Ready</div>
+                </div>
+                <div class="m-duel-avatar" aria-hidden="true"><span>A</span></div>
+                <div class="m-duel-hp" data-hp="player">100 / 100 HP</div>
+                <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="player" style="width:100%"></div></div>
+                <div class="m-duel-damage" data-damage="player"></div>
+              </section>
+              <section class="m-duel-panel is-enemy" data-side="enemy">
+                <div class="m-duel-panel-top">
+                  <div style="min-width:0;">
+                    <div class="m-duel-side">Hostile Trace</div>
+                    <div class="m-duel-name">${esc(model.enemyName)}</div>
+                  </div>
+                  <div class="m-duel-state">Scanning</div>
+                </div>
+                <div class="m-duel-avatar" aria-hidden="true"><span>!</span></div>
+                <div class="m-duel-hp" data-hp="enemy">100 / 100 HP</div>
+                <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="enemy" style="width:100%"></div></div>
+                <div class="m-duel-damage" data-damage="enemy"></div>
+              </section>
+            </div>
+            <div class="m-duel-log">
+              <div class="m-duel-log-head">
+                <span>Field Report</span>
+                <span class="m-duel-live-status">Signal locked.</span>
+              </div>
+              <div class="m-duel-log-lines">
+                <div class="m-duel-log-line">Signal locked.</div>
+                <div class="m-duel-log-line">Hostile trace engaged.</div>
+              </div>
+            </div>
+            <div class="m-duel-footer">
+              <span class="m-duel-footer-note">Visual playback only. Rewards already resolved.</span>
+              <span>Auto reveal in progress</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const host = _modal || document.body;
+      host.appendChild(overlay);
+      if (_modal && !_modal.style.position) _modal.style.position = "fixed";
+
+      const skipButton = overlay.querySelector(".m-duel-skip");
+      const progressNode = overlay.querySelector(".m-duel-progress");
+      const resultNode = overlay.querySelector(".m-duel-result");
+      const liveStatusNode = overlay.querySelector(".m-duel-live-status");
+      const logLinesNode = overlay.querySelector(".m-duel-log-lines");
+      const playerPanel = overlay.querySelector('[data-side="player"]');
+      const enemyPanel = overlay.querySelector('[data-side="enemy"]');
+      const playerBar = overlay.querySelector('[data-bar="player"]');
+      const enemyBar = overlay.querySelector('[data-bar="enemy"]');
+      const playerHp = overlay.querySelector('[data-hp="player"]');
+      const enemyHp = overlay.querySelector('[data-hp="enemy"]');
+      const playerDamage = overlay.querySelector('[data-damage="player"]');
+      const enemyDamage = overlay.querySelector('[data-damage="enemy"]');
+      const damageTimers = new Set();
+
+      const sleepSafe = async (ms) => {
+        if (ms <= 0) return;
+        await sleep(ms);
+      };
+
+      const cleanup = () => {
+        damageTimers.forEach((timerId) => clearTimeout(timerId));
+        damageTimers.clear();
+        overlay.remove();
+      };
+
+      const finishPlayback = () => {
+        if (seq !== _missionDuelPlaybackSeq) return;
+        _missionDuelPlaybackSeq += 1;
+        cleanup();
+        revealResultCard();
+      };
+
+      const renderDamage = (target, damage, critical) => {
+        const node = target === "player" ? playerDamage : enemyDamage;
+        if (!node) return;
+        node.textContent = `${critical ? "CRIT " : ""}-${damage}`;
+        node.className = `m-duel-damage is-visible ${target === "player" ? "is-player-hit" : "is-enemy-hit"}`;
+        const timerId = setTimeout(() => {
+          node.className = `m-duel-damage ${target === "player" ? "is-player-hit" : "is-enemy-hit"}`;
+          damageTimers.delete(timerId);
+        }, 720);
+        damageTimers.add(timerId);
+      };
+
+      const setHpState = (side, hpValue) => {
+        const bar = side === "player" ? playerBar : enemyBar;
+        const hpNode = side === "player" ? playerHp : enemyHp;
+        if (!bar || !hpNode) return;
+        const safeHp = clampNumber(Math.round(hpValue), 0, 100);
+        bar.style.width = `${safeHp}%`;
+        hpNode.textContent = `${safeHp} / 100 HP`;
+        hpNode.classList.toggle("is-critical", safeHp <= 25);
+        bar.parentElement?.classList.toggle("is-critical", safeHp <= 25);
+      };
+
+      const flashPanel = (panel, finalStrike) => {
+        if (!panel) return;
+        panel.classList.remove("is-hit", "is-shake");
+        void panel.offsetWidth;
+        panel.classList.add("is-hit", "is-shake");
+        const timerId = setTimeout(() => {
+          panel.classList.remove("is-hit", "is-shake");
+          if (finalStrike) panel.classList.add("is-hit");
+          damageTimers.delete(timerId);
+        }, finalStrike ? 420 : 280);
+        damageTimers.add(timerId);
+      };
+
+      const pushLogLine = (text, isLive = false) => {
+        if (!logLinesNode) return;
+        const line = document.createElement("div");
+        line.className = `m-duel-log-line${isLive ? " is-live" : ""}`;
+        line.textContent = text;
+        logLinesNode.appendChild(line);
+        while (logLinesNode.children.length > 6) {
+          logLinesNode.removeChild(logLinesNode.firstElementChild);
+        }
+      };
+
+      const setPanelState = (panel, text) => {
+        const stateNode = panel?.querySelector(".m-duel-state");
+        if (stateNode) stateNode.textContent = text;
+      };
+
+      skipButton?.addEventListener("click", () => {
+        finishPlayback();
+      });
+
+      await sleepSafe(900);
+      if (seq !== _missionDuelPlaybackSeq) return;
+
+      for (let i = 0; i < model.exchanges.length; i += 1) {
+        if (seq !== _missionDuelPlaybackSeq) return;
+        const exchange = model.exchanges[i];
+        const targetPanel = exchange.target === "player" ? playerPanel : enemyPanel;
+        const attackerPanel = exchange.attacker === "player" ? playerPanel : enemyPanel;
+        progressNode.textContent = `Exchange ${i + 1} / ${model.exchangeCount}`;
+        liveStatusNode.textContent = exchange.logLine;
+        setPanelState(playerPanel, exchange.target === "player" ? "Under fire" : (exchange.finalStrike && model.isVictory ? "Final strike" : "Advancing"));
+        setPanelState(enemyPanel, exchange.target === "enemy" ? "Breached" : (exchange.finalStrike && !model.isVictory ? "Final strike" : "Countering"));
+
+        flashPanel(targetPanel, exchange.finalStrike);
+        if (attackerPanel && attackerPanel !== targetPanel) {
+          attackerPanel.classList.remove("is-shake");
+          void attackerPanel.offsetWidth;
+          attackerPanel.classList.add("is-shake");
+          const timerId = setTimeout(() => {
+            attackerPanel.classList.remove("is-shake");
+            damageTimers.delete(timerId);
+          }, 220);
+          damageTimers.add(timerId);
+        }
+        renderDamage(exchange.target, exchange.damage, exchange.critical);
+        setHpState("player", exchange.playerHp);
+        setHpState("enemy", exchange.enemyHp);
+        pushLogLine(exchange.logLine, true);
+
+        if (exchange.finalStrike) {
+          resultNode.classList.add("is-visible");
+          liveStatusNode.textContent = model.resultLabel;
+          setPanelState(playerPanel, model.isVictory ? "Stable" : "Critical");
+          setPanelState(enemyPanel, model.isVictory ? "Collapsed" : "Dominant");
+        }
+
+        await sleepSafe(exchange.finalStrike ? 1680 : 1520);
+      }
+
+      if (seq !== _missionDuelPlaybackSeq) return;
+      await sleepSafe(900);
+      finishPlayback();
+    } catch (err) {
+      log("mission duel playback failed", err?.message || err);
+      try {
+        const staleOverlay = (_modal || document).querySelector?.(".m-duel-overlay");
+        staleOverlay?.remove?.();
+      } catch (_) {}
+      revealResultCard();
+    }
+  }
+
   function paintWaiting(a) {
     const clockEl = el("mClock");
     const subEl = el("mClockSub");
@@ -2714,13 +3617,16 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
       _pendingStart = null;
       if (res && typeof res === "object") {
-        _state = res;
-        _stateLoadedAt = Date.now();
-        try {
-          window.__AH_MISSIONS_RAW = res;
-          window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
-        } catch (_) {}
-        render();
+        const showResultCard = () => {
+          _state = res;
+          _stateLoadedAt = Date.now();
+          try {
+            window.__AH_MISSIONS_RAW = res;
+            window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+          } catch (_) {}
+          render();
+        };
+        await triggerMissionDuelPlayback(res, showResultCard);
         return;
       }
       await loadState({ force: true, reason: "resolve_fallback" });
@@ -2772,5 +3678,5 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     log("init ok");
   }
 
-  window.Missions = { init, open, close, reload: loadState };
+  window.Missions = { init, open, close, reload: loadState, triggerMissionDuelPlayback };
 })();
