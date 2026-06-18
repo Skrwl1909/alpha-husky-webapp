@@ -26,6 +26,17 @@
     blue_signal_fragment: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_blue_signal_fragment_v1_128.png",
     rare_bonus_signal: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_rare_bonus_signal_v1_128.png"
   });
+  const MISSION_DUEL_CORRUPTED_RELAY_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/enemy_corrupted_relay_v1.png";
+  const MISSION_DUEL_CORRUPTED_RELAY_NAME = "Corrupted Relay";
+  const MISSION_DUEL_CORRUPTED_RELAY_KEYWORDS = Object.freeze([
+    "signal",
+    "relay",
+    "corrupted",
+    "transmission",
+    "cache",
+    "hostile trace",
+    "phantom"
+  ]);
 
   function assetUrl(p) {
     p = String(p || "");
@@ -1365,10 +1376,17 @@
         object-position:center top;
       }
       .m-duel-panel.is-player .m-duel-portrait{
-        object-position:center 22%;
+        object-fit:contain;
+        object-position:center 26%;
+        transform:scale(1.06);
       }
       .m-duel-panel.is-enemy .m-duel-portrait{
         object-position:center 18%;
+      }
+      .m-duel-visual.is-relay-visual .m-duel-portrait{
+        object-fit:contain;
+        object-position:56% 50%;
+        transform:scale(1.02);
       }
       .m-duel-visual-fallback{
         position:absolute;
@@ -1786,6 +1804,9 @@
         }
         .m-duel-visual{
           min-height:138px;
+        }
+        .m-duel-panel.is-player .m-duel-portrait{
+          transform:scale(1.03);
         }
         .m-duel-vs-ring{
           width:78px;
@@ -3165,6 +3186,50 @@ function _normalizeRareDropObj(obj) {
     return window.__PROFILE__ || window.PROFILE || window.lastProfile || window.profileState || window._profile || null;
   }
 
+  function missionDuelUsesCorruptedRelay(payload, last, enemyBlock) {
+    const haystack = missionDuelUniqueStrings([
+      last?.title,
+      last?.name,
+      last?.subtitle,
+      last?.description,
+      last?.desc,
+      last?.report,
+      last?.enemyName,
+      last?.enemy_name,
+      last?.targetName,
+      last?.target_name,
+      last?.type,
+      last?.missionType,
+      last?.mission_type,
+      last?.targetType,
+      last?.target_type,
+      enemyBlock?.name,
+      enemyBlock?.title,
+      enemyBlock?.type,
+      enemyBlock?.description,
+      enemyBlock?.desc,
+      payload?.missionTitle,
+      payload?.mission_title,
+      payload?.missionSubtitle,
+      payload?.mission_subtitle,
+      payload?.description,
+      payload?.desc,
+      payload?.enemyName,
+      payload?.enemy_name,
+      payload?.targetName,
+      payload?.target_name,
+      payload?.missionType,
+      payload?.mission_type,
+      payload?.targetType,
+      payload?.target_type,
+    ]).join(" ").toLowerCase();
+    return !!haystack && MISSION_DUEL_CORRUPTED_RELAY_KEYWORDS.some((keyword) => haystack.includes(keyword));
+  }
+
+  function missionDuelVisualVariantClass(visual) {
+    return textOrEmpty(visual?.variant) === "relay" ? "is-relay-visual" : "";
+  }
+
   function missionDuelQueryImage(selectors) {
     try {
       const node = document.querySelector(selectors);
@@ -3289,13 +3354,22 @@ function _normalizeRareDropObj(obj) {
     if (candidates[0]) {
       return { src: assetUrl(candidates[0]), source: "enemy art / icon" };
     }
+    if (missionDuelUsesCorruptedRelay(payload, last, enemyBlock)) {
+      return {
+        src: MISSION_DUEL_CORRUPTED_RELAY_URL,
+        source: "remote Corrupted Relay fallback art",
+        displayName: MISSION_DUEL_CORRUPTED_RELAY_NAME,
+        variant: "relay"
+      };
+    }
     return { src: "", source: "generated signal sigil" };
   }
 
   function renderMissionDuelVisual(visual, side, alt, stamp) {
     const hasImage = !!textOrEmpty(visual?.src);
+    const variantClass = missionDuelVisualVariantClass(visual);
     return `
-      <div class="m-duel-visual ${hasImage ? "has-image" : ""}">
+      <div class="m-duel-visual ${hasImage ? "has-image" : ""} ${variantClass}">
         <div class="m-duel-visual-fallback" aria-hidden="true">
           <div class="m-duel-sigil">
             <div class="m-duel-sigil-lines"></div>
@@ -3333,11 +3407,14 @@ function _normalizeRareDropObj(obj) {
     const isVictory = !!(last?.victory || resultKey === "victory" || outcomeTone === "success" || outcomeTone === "critical" || outcomeTone === "partial");
     const playerVisual = resolveMissionDuelPlayerVisual(resultData, last);
     const enemyVisual = resolveMissionDuelEnemyVisual(resultData, last);
+    const enemyDisplayName = enemyVisual?.displayName && enemyName === "Hostile Signal"
+      ? enemyVisual.displayName
+      : enemyName;
     const seed = hashPlaybackSeed([
       missionTitle,
       subtitle,
       playerName,
-      enemyName,
+      enemyDisplayName,
       outcomeTier,
       resultKey,
       textOrEmpty(last?.report),
@@ -3433,7 +3510,7 @@ function _normalizeRareDropObj(obj) {
       missionTitle,
       subtitle,
       playerName,
-      enemyName,
+      enemyName: enemyDisplayName,
       playerVisual,
       enemyVisual,
       isVictory,
