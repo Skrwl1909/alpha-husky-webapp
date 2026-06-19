@@ -261,6 +261,7 @@ function _renderTrackReward(q) {
     list: ["/webapp/quests/state", "/webapp/daily/state", "/webapp/quests"],
     accept: ["/webapp/quests/accept", "/webapp/quest/accept"],
     complete: ["/webapp/quests/complete", "/webapp/quest/complete"],
+    claimAll: ["/webapp/quests/claim-all"],
   };
 
   async function apiPostRaw(path, payload) {
@@ -503,6 +504,30 @@ function _renderTrackReward(q) {
     return s;
   }
 
+  function hasClaimAllTarget(q) {
+    const stepsArr = Array.isArray(q?.steps) ? q.steps : (Array.isArray(q?.trackSteps) ? q.trackSteps : null);
+    if (Array.isArray(stepsArr) && stepsArr.length) return false;
+    return String(q?.status || "").toLowerCase() === "ready";
+  }
+
+  function claimAllRewardSummary(rewards) {
+    const labels = {
+      xp: "XP",
+      bones: "Bones",
+      scrap: "Scrap",
+      rune_dust: "Rune Dust",
+      tokens: "Tokens",
+    };
+    const order = ["xp", "bones", "scrap", "rune_dust", "tokens"];
+    const parts = [];
+    for (const key of order) {
+      const value = Number(rewards?.[key] || 0);
+      if (!value) continue;
+      parts.push(`${value} ${labels[key] || key}`);
+    }
+    return parts.join(", ");
+  }
+
   function makeCard(q, actions) {
     const cat = questCategory(q);
     const title = esc(q.title || q.name || q.id);
@@ -696,6 +721,7 @@ function _renderTrackReward(q) {
       tabs: null,
       chips: null,
       status: null,
+      claimAll: null,
       refresh: null,
       close: null,
     },
@@ -709,6 +735,39 @@ function _renderTrackReward(q) {
     if (!msg) return;
     clearTimeout(state.el.status._t);
     state.el.status._t = setTimeout(() => { state.el.status.textContent = ""; }, 1800);
+  }
+
+  function updateClaimAllButton() {
+    const btn = state.el.claimAll;
+    if (!btn) return;
+    const items = state.board ? mergeBoard(state.board) : [];
+    const hasReady = items.some(hasClaimAllTarget);
+    btn.disabled = !hasReady;
+    btn.title = hasReady ? "Claim all completed quests" : "No completed quests to claim";
+  }
+
+  async function runClaimAll(btn) {
+    try {
+      if (btn) btn.disabled = true;
+      setStatus("Claiming…");
+      const res = await postFirstOk(EP.claimAll, { run_id: mkRunId("qall") });
+      await refresh();
+      const count = Number(res?.claimedCount || 0);
+      const rewardText = claimAllRewardSummary(res?.rewards);
+      const message = rewardText ? `Claimed ${count} quests • ${rewardText}` : `Claimed ${count} quests`;
+      setStatus(message);
+      toast(message);
+    } catch (e) {
+      state.debug(e);
+      const code = e?.data?.code || "";
+      const msg = code === "NO_CLAIMABLE_QUESTS"
+        ? "No completed quests to claim."
+        : (e?.data?.message || e?.message || "Claim All failed");
+      setStatus(msg);
+      toast(msg);
+    } finally {
+      updateClaimAllButton();
+    }
   }
 
   function toast(msg) {
@@ -920,6 +979,7 @@ setOpen(wantOpen, true);
       frag.appendChild(card);
     }
     state.el.list.appendChild(frag);
+    updateClaimAllButton();
   }
 
   async function refresh() {
@@ -971,6 +1031,7 @@ setOpen(wantOpen, true);
     });
 
     if (state.el.refresh) state.el.refresh.onclick = () => refresh();
+    if (state.el.claimAll) state.el.claimAll.onclick = () => runClaimAll(state.el.claimAll);
     if (state.el.close) state.el.close.onclick = () => closeModal();
 
     state.el.back?.addEventListener("click", (e) => {
@@ -1001,6 +1062,7 @@ setOpen(wantOpen, true);
       state.el.tabs = $("#qTabs", root);
       state.el.chips = $("#qState", root);
       state.el.status = $("#qStatus", root);
+      state.el.claimAll = $("#qClaimAll", root);
       state.el.refresh = $("#qRefresh", root) || $("#q-refresh", root);
       state.el.close = $("#qClose", root) || $("#closeQuests", root);
 
