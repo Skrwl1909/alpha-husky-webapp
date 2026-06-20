@@ -1925,12 +1925,24 @@ function _contribSummaryLegacy(c) {
   // Open / close
   // ---------------------------
   async function open() {
-  ensureModal();
-  _feedExpanded = false;
-  _supportCustomExpanded = false;
+    ensureModal();
+    _feedExpanded = false;
+    _supportCustomExpanded = false;
 
     _back.classList.add("is-open");
     document.body.classList.add("hq-open");
+
+    const navMeta = {
+      close: () => closeView(),
+      isOpen: () => !!_back && _back.classList.contains("is-open")
+    };
+    try {
+      if (window.AlphaNav?.push) window.AlphaNav.push("factionHQBack", navMeta);
+      else {
+        window.navRegister?.("factionHQBack", navMeta);
+        window.navOpen?.("factionHQBack");
+      }
+    } catch (_) {}
 
     let cached =
       window.PROFILE?.faction ||
@@ -1945,9 +1957,15 @@ function _contribSummaryLegacy(c) {
     await render();
   }
 
-  function close() {
+  function closeView() {
     if (_back) _back.classList.remove("is-open");
     document.body.classList.remove("hq-open");
+  }
+
+  function close() {
+    if (window.AlphaNav?.close?.("factionHQBack", { source: "faction-hq-close" })) return;
+    closeView();
+    try { window.navClose?.("factionHQBack"); } catch (_) {}
   }
 
   // ---------------------------

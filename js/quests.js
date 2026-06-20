@@ -860,11 +860,17 @@ function _renderTrackReward(q) {
     console.log("[Quests]", msg);
   }
 
+  function hideModal() {
+    if (state.el.back) state.el.back.style.display = "none";
+  }
+
   function closeModal() {
     try {
+      if (global.AlphaNav?.close?.("qBack", { source: "quests-close" })) return;
       if (global.navCloseTop) { global.navCloseTop(); return; }
     } catch (_) { }
-    if (state.el.back) state.el.back.style.display = "none";
+    hideModal();
+    try { global.navClose?.("qBack"); } catch (_) { }
   }
 
   // ✅ 2B: Legendary Path accordion (collapse details until expanded)
@@ -1160,6 +1166,19 @@ setOpen(wantOpen, true);
         this.init({ apiPost: global.S?.apiPost, tg: global.Telegram?.WebApp, dbg: global.dbg || noop });
       }
       if (state.el.back) state.el.back.style.display = "flex";
+
+      const navMeta = {
+        close: () => hideModal(),
+        isOpen: () => !!state.el.back && state.el.back.style.display === "flex"
+      };
+      try {
+        if (global.AlphaNav?.push) global.AlphaNav.push("qBack", navMeta);
+        else {
+          global.navRegister?.("qBack", navMeta);
+          global.navOpen?.("qBack");
+        }
+      } catch (_) { }
+
       await refresh();
     }
   };

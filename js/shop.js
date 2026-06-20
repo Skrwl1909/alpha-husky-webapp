@@ -417,6 +417,20 @@
     _timer: null,
     _state: null,
     _previewNonce: 0,
+    _navId: "shopView",
+
+    _isOpen() {
+      return !!document.querySelector(".ah-shop-wrap");
+    },
+
+    _teardownView() {
+      this.closePreview();
+      if (this._timer) clearInterval(this._timer);
+      this._timer = null;
+      document.body.style.overflow = document.body.dataset.prevOverflow || "";
+      delete document.body.dataset.prevOverflow;
+      window.SceneBg?.pop?.();
+    },
 
     init({ apiPost, tg, dbg }) {
       this._apiPost = apiPost;
@@ -470,6 +484,7 @@
       if (pvBack) {
         pvBack.onclick = (e) => { if (e.target === pvBack) this.closePreview(); };
       }
+
       const vaultBtn = el("shop-howl-vault");
       if (vaultBtn) {
         vaultBtn.onclick = () => {
@@ -479,19 +494,24 @@
         };
       }
 
-      // close: cleanup + unlock body + return to map
+      const navMeta = {
+        close: () => this._teardownView(),
+        isOpen: () => this._isOpen(),
+        fallback: "root"
+      };
+      try {
+        if (window.AlphaNav?.push) window.AlphaNav.push(this._navId, navMeta);
+        else {
+          window.navRegister?.(this._navId, navMeta);
+          window.navOpen?.(this._navId);
+        }
+      } catch (_) {}
+
+      // close: cleanup + return to previous game context or safe root
       el("shop-close").onclick = () => {
-        this.closePreview();
-        if (this._timer) clearInterval(this._timer);
-        this._timer = null;
-
-        document.body.style.overflow = document.body.dataset.prevOverflow || "";
-        delete document.body.dataset.prevOverflow;
-
-        window.SceneBg?.pop?.();
-
-        if (window.Map?.open) return window.Map.open();
-        window.location.reload();
+        if (window.AlphaNav?.close?.(this._navId, { source: "shop-close" })) return;
+        this._teardownView();
+        window.AlphaNav?.goHome?.({ source: "shop-close", id: this._navId }) || window.goHome?.();
       };
 
       await this.refresh();

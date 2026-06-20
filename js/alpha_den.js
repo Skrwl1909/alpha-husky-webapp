@@ -2516,6 +2516,21 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     isOpen = true;
     render(buildingId || selectedBuildingId);
     void refreshServerState();
+
+    const navMeta = {
+      close: () => closeView(),
+      isOpen: () => {
+        const root = ensureRoot();
+        return !!root && root.getAttribute("data-open") === "1";
+      }
+    };
+    try {
+      if (window.AlphaNav?.push) window.AlphaNav.push(ROOT_ID, navMeta);
+      else {
+        window.navRegister?.(ROOT_ID, navMeta);
+        window.navOpen?.(ROOT_ID);
+      }
+    } catch (_) {}
   }
 
   function open(buildingId) {
@@ -2526,12 +2541,18 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     openNow(buildingId);
   }
 
-  function close() {
+  function closeView() {
     const root = ensureRoot();
     if (!root) return;
     isOpen = false;
     render(selectedBuildingId);
     root.setAttribute("data-open", "0");
+  }
+
+  function close() {
+    if (window.AlphaNav?.close?.(ROOT_ID, { source: "alpha-den-close" })) return;
+    closeView();
+    try { window.navClose?.(ROOT_ID); } catch (_) {}
   }
 
   function resetPreview() {

@@ -1416,12 +1416,18 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     document.body.style.overflow = "hidden";
   }
 
-  function close() {
+  function closeView() {
     stopBattlePlayback(true);
     _lastClaimFeedback = null;
     rootEl()?.classList.remove("show");
     document.documentElement.classList.remove("ah-bloodmoon-open");
     document.body.style.overflow = "";
+  }
+
+  function close() {
+    if (window.AlphaNav?.close?.(ROOT_ID, { source: "bloodmoon-close" })) return;
+    closeView();
+    try { window.navClose?.(ROOT_ID); } catch (_) {}
   }
 
   async function call(path, payload) {
@@ -2494,6 +2500,19 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     ensureMounted();
     _lastClaimFeedback = null;
     show();
+
+    const navMeta = {
+      close: () => closeView(),
+      isOpen: () => !!rootEl()?.classList?.contains("show")
+    };
+    try {
+      if (window.AlphaNav?.push) window.AlphaNav.push(ROOT_ID, navMeta);
+      else {
+        window.navRegister?.(ROOT_ID, navMeta);
+        window.navOpen?.(ROOT_ID);
+      }
+    } catch (_) {}
+
     return await loadState();
   }
 

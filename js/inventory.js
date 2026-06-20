@@ -340,30 +340,29 @@ window.Inventory = {
   },
 
   _bindBackButtons() {
-    // ✅ Prefer global nav stack router (AH_NAV)
+    // Prefer the shared AlphaNav stack when available.
     this._navRegistered = false;
 
     try {
       const stack = window.AH_NAV?.stack;
       const top = Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
       const topId = (typeof top === "string") ? top : top?.id;
-
-      const onClose = () => {
-        try { window.Inventory?.goBack?.("nav"); } catch (_) {}
+      const navMeta = {
+        close: () => {
+          try { window.Inventory?.goBack?.("nav"); } catch (_) {}
+        },
+        isOpen: () => !!document.getElementById("inventory-grid")
       };
 
       if (topId === this._navId) {
         this._navRegistered = true;
-      } else if (typeof window.navOpen === "function") {
-        // try common signatures
-        try { window.navOpen(this._navId, onClose); this._navRegistered = true; }
-        catch (_) {
-          try { window.navOpen({ id: this._navId, onClose }); this._navRegistered = true; }
-          catch (_) {
-            try { window.navOpen({ id: this._navId, close: onClose }); this._navRegistered = true; }
-            catch (_) {}
-          }
-        }
+      } else if (window.AlphaNav?.push) {
+        window.AlphaNav.push(this._navId, navMeta);
+        this._navRegistered = true;
+      } else if (typeof window.navRegister === "function" && typeof window.navOpen === "function") {
+        window.navRegister(this._navId, navMeta);
+        window.navOpen(this._navId);
+        this._navRegistered = true;
       }
     } catch (e) {
       console.warn("Inventory navOpen failed:", e);
@@ -448,14 +447,14 @@ window.Inventory = {
       console.warn("Inventory.goBack: dashboard opener failed:", e);
     }
 
-    // final fallback: reload without nav params
+    // final fallback: replace to a clean in-game root, never hard reload from Back
     try {
       const url = new URL(window.location.href);
       ["section", "view", "modal", "page", "tab", "panel"].forEach((p) => url.searchParams.delete(p));
       url.hash = "";
-      window.location.href = url.toString();
+      location.replace(url.toString());
     } catch (_) {
-      try { location.reload(); } catch (_) {}
+      try { if (window.Map?.open) return window.Map.open(); } catch (_) {}
     }
   },
 
@@ -570,12 +569,6 @@ window.Inventory = {
       </div>
     </div>
 
-    <div style="text-align:center;margin-top:24px;">
-      <button onclick="Telegram.WebApp.close()" type="button"
-              style="padding:14px 40px;border-radius:20px;background:#333;color:#fff;font-size:16px;border:none;cursor:pointer;">
-        Close WebApp
-      </button>
-    </div>
   </div>
 `;
     // register in nav stack + (optional) TG back fallback
