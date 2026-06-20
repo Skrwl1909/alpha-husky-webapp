@@ -6877,6 +6877,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <h3 class="q-title">Quest Board</h3>
 
       <div class="q-head-actions">
+        <button class="q-btn q-btn-ghost" id="qClaimAll" type="button" title="Claim all completed quests" aria-label="Claim all completed quests">Claim All</button>
         <button class="q-btn q-btn-ghost" id="qRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
         <button class="q-btn" id="qClose" type="button" title="Close" aria-label="Close">×</button>
       </div>
@@ -8084,6 +8085,119 @@ function normalizeApiPath(path) {
   return String(path || "").split("?")[0];
 }
 
+const LEVEL_TOAST_LAST_SHOWN_KEY = "ah_level_toast_last_shown_level";
+const LEVEL_TOAST_ARM_WINDOW_MS = 15000;
+const LEVEL_TOAST_META = "Pack power increased";
+const levelToastState = {
+  hydrated: false,
+  lastKnownLevel: null,
+  lastShownLevel: readStoredLevelToastLevel(),
+  armToken: 0,
+  handledToken: 0,
+  armedUntil: 0
+};
+
+function coercePlayerLevel(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? Math.max(1, Math.floor(num)) : null;
+}
+
+function readStoredLevelToastLevel() {
+  try {
+    return coercePlayerLevel(window.sessionStorage?.getItem?.(LEVEL_TOAST_LAST_SHOWN_KEY)) || 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function storeLevelToastLevel(level) {
+  const safeLevel = coercePlayerLevel(level);
+  if (!safeLevel) return;
+  try {
+    window.sessionStorage?.setItem?.(LEVEL_TOAST_LAST_SHOWN_KEY, String(safeLevel));
+  } catch (_) {}
+}
+
+function extractProfileLevel(profile) {
+  if (!profile || typeof profile !== "object") return null;
+  return coercePlayerLevel(
+    typeof profile.level === "number"
+      ? profile.level
+      : profile?.stats?.level
+  );
+}
+
+function shouldArmLevelToastForPath(path) {
+  const safePath = normalizeApiPath(path);
+  if (!safePath) return false;
+  if (safePath === "/webapp/state" || safePath === "/webapp/profile") return false;
+  if (safePath.endsWith("/state")) return false;
+  return true;
+}
+
+function armLevelToastForAction(path) {
+  if (!shouldArmLevelToastForPath(path)) return;
+  levelToastState.armToken += 1;
+  levelToastState.armedUntil = Date.now() + LEVEL_TOAST_ARM_WINDOW_MS;
+}
+
+function hasPendingLevelToastArm() {
+  return levelToastState.armToken > levelToastState.handledToken
+    && Date.now() <= levelToastState.armedUntil;
+}
+
+function consumeLevelToastArm() {
+  levelToastState.handledToken = levelToastState.armToken;
+  levelToastState.armedUntil = 0;
+}
+
+function emitLevelToast(level) {
+  const safeLevel = coercePlayerLevel(level);
+  if (!safeLevel) return false;
+  const payload = {
+    type: "level",
+    title: "LEVEL UP",
+    message: `You reached Level ${safeLevel}`,
+    meta: LEVEL_TOAST_META,
+    ttl: 4000
+  };
+  const showNow = () => {
+    if (window.AlphaToast && typeof window.AlphaToast.show === "function") {
+      window.AlphaToast.show(payload);
+      return true;
+    }
+    return false;
+  };
+  try {
+    if (showNow()) return true;
+  } catch (_) {}
+  window.setTimeout(() => {
+    try { showNow(); } catch (_) {}
+  }, 80);
+  return false;
+}
+
+function syncLevelToastFromProfile(profile) {
+  const nextLevel = extractProfileLevel(profile);
+  if (!nextLevel) return;
+  if (!levelToastState.hydrated) {
+    levelToastState.hydrated = true;
+    levelToastState.lastKnownLevel = nextLevel;
+    return;
+  }
+  const previousLevel = levelToastState.lastKnownLevel;
+  levelToastState.lastKnownLevel = nextLevel;
+  if (!hasPendingLevelToastArm()) return;
+  if (!Number.isFinite(previousLevel) || nextLevel <= previousLevel || nextLevel <= levelToastState.lastShownLevel) {
+    consumeLevelToastArm();
+    return;
+  }
+  emitLevelToast(nextLevel);
+  levelToastState.lastShownLevel = nextLevel;
+  storeLevelToastLevel(nextLevel);
+  consumeLevelToastArm();
+}
+
 function shouldCoalesceReadOnlyState(path) {
   return READ_ONLY_STATE_DEDUPE_PATHS.has(normalizeApiPath(path));
 }
@@ -8117,6 +8231,7 @@ async function apiPost(path, payload) {
       const out = await apiPostRaw(path, requestBody);
       ok = !!(out && out.ok !== false);
       status = ok ? 200 : 0;
+      if (ok) armLevelToastForAction(safePath);
       return out;
     } catch (err) {
       status = Number(err?.status || 0);
@@ -9542,12 +9657,12 @@ async function loadProfile() {
 
     // ✅ odporny picker na różne wrappery backendu
     const p = out?.profile || out?.data?.profile || out?.data || out || {};
-hydrateFactionFromPayload({ profile: p, ...out });
+    hydrateFactionFromPayload({ profile: p, ...out });
 
     PROFILE = PROFILE || {};
 
-    if (typeof p.level === "number") PROFILE.level = p.level;
-    else if (p.stats && typeof p.stats.level === "number") PROFILE.level = p.stats.level;
+    const incomingProfileLevel = extractProfileLevel(p);
+    if (incomingProfileLevel != null) PROFILE.level = incomingProfileLevel;
 
     if (p.nickname || p.name) {
       PROFILE.nickname = p.nickname || p.name;
@@ -9617,6 +9732,7 @@ hydrateFactionFromPayload({ profile: p, ...out });
         Array.isArray(p.activeBuffs) ? p.activeBuffs : (Array.isArray(p.buffs) ? p.buffs : [])
       );
     } catch (_) {}
+    try { syncLevelToastFromProfile(p); } catch (_) {}
     window.__ahPerf?.boot?.("loadProfile.render", renderPerfT0);
 
   } catch (e) {
@@ -11370,7 +11486,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
-<script src="/js/toast_manager.js?v=2026-06-18-progress-toasts-fix-1"></script>
+<script src="/js/toast_manager.js?v=2026-06-18-progress-toasts-v1-1-level"></script>
 <script src="/js/alpha_den.js?v=2026-06-18-progress-toasts-fix-1"></script>
 <script>
 (function initHowlTreasury(){
