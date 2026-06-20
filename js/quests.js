@@ -528,6 +528,87 @@ function _renderTrackReward(q) {
     return parts.join(", ");
   }
 
+  function rewardToastCount(value) {
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? Math.max(0, Math.trunc(num)) : 0;
+  }
+
+  function pushRewardToastLine(lines, text) {
+    const safe = String(text || "").replace(/\s+/g, " ").trim();
+    if (!safe || lines.includes(safe)) return;
+    lines.push(safe);
+  }
+
+  function firstRewardItemName(value) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = firstRewardItemName(item);
+        if (found) return found;
+      }
+      return "";
+    }
+    if (typeof value === "string") return value.trim();
+    if (value && typeof value === "object") {
+      return String(value.name || value.title || value.label || value.itemName || value.key || "").trim();
+    }
+    return "";
+  }
+
+  function detectQuestSignalDelta(source) {
+    const direct = rewardToastCount(
+      source?.signalPowerDelta ?? source?.signal_power_delta ?? source?.signalDelta ?? source?.signal_delta
+    );
+    if (direct > 0) return direct;
+    const progression = source?.progression || source?.progression_v1 || source?.stats?.progression_v1 || null;
+    return rewardToastCount(progression?.signalPowerDelta ?? progression?.signal_power_delta ?? progression?.delta);
+  }
+
+  function buildQuestRewardToastLines(source, options = {}) {
+    const payload = (source && typeof source === "object") ? source : {};
+    const rewards = (payload.rewards && typeof payload.rewards === "object")
+      ? payload.rewards
+      : ((payload.reward && typeof payload.reward === "object") ? payload.reward : payload);
+    const lines = [];
+    const claimedCount = rewardToastCount(options.claimedCount ?? payload.claimedCount ?? payload.claimed_count);
+    if (claimedCount > 0) pushRewardToastLine(lines, `Claimed ${claimedCount} quests`);
+    const xp = rewardToastCount(rewards?.xp ?? payload?.xp ?? payload?.xp_gain);
+    const bones = rewardToastCount(rewards?.bones ?? payload?.bones ?? payload?.bones_gain);
+    if (xp > 0) pushRewardToastLine(lines, `XP +${xp}`);
+    if (bones > 0) pushRewardToastLine(lines, `Bones +${bones}`);
+    const itemName = firstRewardItemName(
+      rewards?.items || rewards?.drops || rewards?.loot || payload?.items || payload?.drops || payload?.loot
+    );
+    if (itemName) pushRewardToastLine(lines, `Item found: ${itemName}`);
+    const signalDelta = detectQuestSignalDelta(payload);
+    if (signalDelta > 0) pushRewardToastLine(lines, `Signal Power +${signalDelta}`);
+    if (!lines.length) {
+      const fallback = String(options.fallbackText || payload?.rewardText || payload?.message || "").trim();
+      if (fallback) pushRewardToastLine(lines, fallback);
+    }
+    return lines;
+  }
+
+  function showQuestProgressToast(config, fallbackText) {
+    const input = (config && typeof config === "object") ? config : {};
+    const lines = Array.isArray(input.lines) ? input.lines.filter(Boolean) : [];
+    try {
+      if (window.AlphaToast && typeof window.AlphaToast.showProgressSummary === "function") {
+        if (window.AlphaToast.showProgressSummary({
+          type: input.type || "success",
+          title: input.title || "Quest Reward",
+          lines,
+          message: input.message || "",
+          meta: input.meta || "",
+          ttl: input.ttl || 3800,
+        })) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    if (fallbackText) toast(fallbackText);
+    return false;
+  }
+
   function makeCard(q, actions) {
     const cat = questCategory(q);
     const title = esc(q.title || q.name || q.id);
@@ -755,8 +836,9 @@ function _renderTrackReward(q) {
       const count = Number(res?.claimedCount || 0);
       const rewardText = claimAllRewardSummary(res?.rewards);
       const message = rewardText ? `Claimed ${count} quests • ${rewardText}` : `Claimed ${count} quests`;
+      const lines = buildQuestRewardToastLines(res, { claimedCount: count, fallbackText: message });
       setStatus(message);
-      toast(message);
+      showQuestProgressToast({ title: "Quest Rewards", lines }, message);
     } catch (e) {
       state.debug(e);
       const code = e?.data?.code || "";
@@ -919,7 +1001,9 @@ setOpen(wantOpen, true);
           setStatus("Claiming…");
           const res = await completeQuest(id, mkRunId("qcmp"));
           await refresh();
-          toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed");
+          const fallbackText = res?.rewardText ? `Claimed: ${res.rewardText}` : "Reward claimed";
+          const lines = buildQuestRewardToastLines(res, { fallbackText });
+          showQuestProgressToast({ title: "Quest Reward", lines }, fallbackText);
         } catch (e) {
           state.debug(e);
           toast(e?.message || "Claim failed");
@@ -933,7 +1017,9 @@ setOpen(wantOpen, true);
           setStatus("Claiming…");
           const res = await claimLegendaryStep(trackId, stepId, mkRunId("lp"));
           await refresh();
-          toast(res?.rewardText ? `Claimed: ${res.rewardText}` : "Claimed");
+          const fallbackText = res?.rewardText ? `Claimed: ${res.rewardText}` : "Claimed";
+          const lines = buildQuestRewardToastLines(res, { fallbackText });
+          showQuestProgressToast({ title: "Quest Reward", lines }, fallbackText);
         } catch (e) {
           state.debug(e);
           const reason = e?.data?.reason || e?.message || "Claim failed";

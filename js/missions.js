@@ -26,6 +26,20 @@
     blue_signal_fragment: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_blue_signal_fragment_v1_128.png",
     rare_bonus_signal: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_rare_bonus_signal_v1_128.png"
   });
+  const MISSION_DUEL_MOON_HUNTER_SCOUT_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/moon_hunter_scout.png";
+  const MISSION_DUEL_RUST_MARAUDER_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/rust_marauder.png";
+  const MISSION_DUEL_NAMED_ENEMY_VISUALS = Object.freeze({
+    "moon hunter scout": Object.freeze({
+      src: MISSION_DUEL_MOON_HUNTER_SCOUT_URL,
+      source: "remote Moon Hunter Scout fallback art",
+      displayName: "Moon Hunter Scout"
+    }),
+    "rust marauder": Object.freeze({
+      src: MISSION_DUEL_RUST_MARAUDER_URL,
+      source: "remote Rust Marauder fallback art",
+      displayName: "Rust Marauder"
+    })
+  });
   const MISSION_DUEL_CORRUPTED_RELAY_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/enemy_corrupted_relay_v1.png";
   const MISSION_DUEL_CORRUPTED_RELAY_NAME = "Corrupted Relay";
   const MISSION_DUEL_CORRUPTED_RELAY_KEYWORDS = Object.freeze([
@@ -321,6 +335,94 @@
     return { baseRewards, eventRewards, extraRecovered };
   }
 
+  function showMissionProgressToast(config, fallbackText) {
+    const input = (config && typeof config === "object") ? config : {};
+    try {
+      if (window.AlphaToast && typeof window.AlphaToast.showProgressSummary === "function") {
+        if (window.AlphaToast.showProgressSummary({
+          type: input.type || "success",
+          title: input.title || "Mission Result",
+          lines: Array.isArray(input.lines) ? input.lines.filter(Boolean) : [],
+          message: input.message || "",
+          meta: input.meta || "",
+          ttl: input.ttl || 3900,
+        })) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    if (fallbackText && typeof window.toast === "function") {
+      try { window.toast(fallbackText); return true; } catch (_) {}
+    }
+    return false;
+  }
+
+  function pushMissionToastLine(lines, value) {
+    const text = textOrEmpty(value).replace(/\s+/g, " ").trim();
+    if (!text || lines.includes(text)) return;
+    lines.push(text);
+  }
+
+  function extractMissionSignalDelta(payload) {
+    const progression = normalizeProgressionV1(
+      payload?.progression_v1
+      || payload?.stats?.progression_v1
+      || getStatsPayload(payload)?.progression_v1
+      || payload?.progression
+    );
+    const nextSignal = Math.max(0, n(progression?.signalPower, 0));
+    const previousSignal = Math.max(0, n(_progressionV1?.signalPower, 0));
+    if (nextSignal > previousSignal && previousSignal > 0) return nextSignal - previousSignal;
+    return Math.max(0, n(payload?.signalPowerDelta ?? payload?.signal_power_delta ?? progression?.signalPowerDelta ?? progression?.signal_power_delta, 0));
+  }
+
+  function parseMissionRewardTextToLines(lines, value) {
+    const entries = normalizeRewardList(value);
+    entries.forEach((entry) => {
+      const lower = entry.toLowerCase();
+      if (!entry) return;
+      const xpMatch = entry.match(/xp[^0-9]*([0-9]+)/i);
+      if (xpMatch) {
+        pushMissionToastLine(lines, `XP +${xpMatch[1]}`);
+        return;
+      }
+      const bonesMatch = entry.match(/bones?[^0-9]*([0-9]+)/i);
+      if (bonesMatch) {
+        pushMissionToastLine(lines, `Bones +${bonesMatch[1]}`);
+        return;
+      }
+      const signalMatch = entry.match(/signal power[^0-9]*([0-9]+)/i);
+      if (signalMatch) {
+        pushMissionToastLine(lines, `Signal Power +${signalMatch[1]}`);
+        return;
+      }
+      const cleaned = entry.replace(/^(recovered|reward|loot|drop|found|bonus found)\s*:?\s*/i, "").trim();
+      if (cleaned) pushMissionToastLine(lines, `Item found: ${cleaned}`);
+    });
+  }
+
+  function buildMissionResolveToast(res) {
+    const payload = normalizePayload(res) || res || {};
+    const last = payload?.lastResolve || payload?.last_resolve || null;
+    if (!last || typeof last !== "object") return null;
+    const lines = [];
+    parseMissionRewardTextToLines(lines, last?.recoveredRewards);
+    if (!lines.length) parseMissionRewardTextToLines(lines, last?.rewardMsg || last?.reward_msg);
+    if (!lines.length) parseMissionRewardTextToLines(lines, last?.lootMsg || last?.loot_msg);
+    const signalDelta = extractMissionSignalDelta(payload);
+    if (signalDelta > 0) pushMissionToastLine(lines, `Signal Power +${signalDelta}`);
+    const tone = normalizeOutcomeTone(normalizeOutcomeTier(last));
+    const title = tone === "failed" ? "Mission Resolved" : "Mission Completed";
+    if (!lines.length) {
+      const fallback = textOrEmpty(last?.rewardMsg || last?.reward_msg || last?.lootMsg || last?.loot_msg);
+      if (fallback) pushMissionToastLine(lines, fallback);
+    }
+    return {
+      title,
+      type: lines.some((line) => /^Item found:/i.test(line)) ? "drop" : "success",
+      lines,
+    };
+  }
   function rewardIconKeyFromLabel(label) {
     const lower = textOrEmpty(label).toLowerCase();
     if (!lower) return "";
@@ -3262,6 +3364,71 @@ function _normalizeRareDropObj(obj) {
     return textOrEmpty(visual?.variant) === "relay" ? "is-relay-visual" : "";
   }
 
+  function normalizeMissionDuelEnemyArtKey(value) {
+    return textOrEmpty(value)
+      .toLowerCase()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function resolveMissionDuelNamedEnemyVisual(payload, last, enemyBlock) {
+    const lookupValues = missionDuelUniqueStrings([
+      enemyBlock?.id,
+      enemyBlock?.key,
+      enemyBlock?.slug,
+      enemyBlock?.code,
+      enemyBlock?.name,
+      enemyBlock?.title,
+      enemyBlock?.type,
+      last?.enemyId,
+      last?.enemy_id,
+      last?.enemyKey,
+      last?.enemy_key,
+      last?.enemySlug,
+      last?.enemy_slug,
+      last?.enemyCode,
+      last?.enemy_code,
+      last?.enemyName,
+      last?.enemy_name,
+      last?.targetId,
+      last?.target_id,
+      last?.targetKey,
+      last?.target_key,
+      last?.targetSlug,
+      last?.target_slug,
+      last?.targetCode,
+      last?.target_code,
+      last?.targetName,
+      last?.target_name,
+      payload?.enemyId,
+      payload?.enemy_id,
+      payload?.enemyKey,
+      payload?.enemy_key,
+      payload?.enemySlug,
+      payload?.enemy_slug,
+      payload?.enemyCode,
+      payload?.enemy_code,
+      payload?.enemyName,
+      payload?.enemy_name,
+      payload?.targetId,
+      payload?.target_id,
+      payload?.targetKey,
+      payload?.target_key,
+      payload?.targetSlug,
+      payload?.target_slug,
+      payload?.targetCode,
+      payload?.target_code,
+      payload?.targetName,
+      payload?.target_name,
+    ]);
+    for (const value of lookupValues) {
+      const meta = MISSION_DUEL_NAMED_ENEMY_VISUALS[normalizeMissionDuelEnemyArtKey(value)];
+      if (meta?.src) return meta;
+    }
+    return null;
+  }
+
   function missionDuelQueryImage(selectors) {
     try {
       const node = document.querySelector(selectors);
@@ -3385,6 +3552,10 @@ function _normalizeRareDropObj(obj) {
     ]);
     if (candidates[0]) {
       return { src: assetUrl(candidates[0]), source: "enemy art / icon" };
+    }
+    const namedVisual = resolveMissionDuelNamedEnemyVisual(payload, last, enemyBlock);
+    if (namedVisual) {
+      return namedVisual;
     }
     if (missionDuelUsesCorruptedRelay(payload, last, enemyBlock)) {
       return {
@@ -4153,6 +4324,10 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       });
       
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      const progressToast = buildMissionResolveToast(res);
+      if (progressToast && Array.isArray(progressToast.lines) && progressToast.lines.length) {
+        showMissionProgressToast(progressToast, progressToast.lines.join(" • "));
+      }
       _pendingStart = null;
       if (res && typeof res === "object") {
         const showResultCard = () => {

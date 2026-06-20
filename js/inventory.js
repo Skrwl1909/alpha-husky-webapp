@@ -92,6 +92,50 @@ window.Inventory = {
     }
   },
 
+  _showProgressToast(config, fallbackText) {
+    const input = (config && typeof config === "object") ? config : {};
+    try {
+      if (window.AlphaToast && typeof window.AlphaToast.showProgressSummary === "function") {
+        if (window.AlphaToast.showProgressSummary({
+          type: input.type || "success",
+          title: input.title || "Inventory Updated",
+          lines: Array.isArray(input.lines) ? input.lines.filter(Boolean) : [],
+          message: input.message || "",
+          meta: input.meta || "",
+          ttl: input.ttl || 3800,
+        })) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    if (fallbackText) this._toast(fallbackText);
+    return false;
+  },
+
+  _pushProgressLine(lines, text) {
+    const safe = String(text || "").replace(/\s+/g, " ").trim();
+    if (!safe || lines.includes(safe)) return;
+    lines.push(safe);
+  },
+
+  _buildSalvageToastLines(source, options = {}) {
+    const payload = (source && typeof source === "object") ? source : {};
+    const lines = [];
+    const count = this._toInt(options.salvagedCount ?? payload.quantity ?? payload.qty ?? payload.count, 0);
+    if (count > 0) this._pushProgressLine(lines, `Salvaged ${count} items`);
+    const scrap = this._toInt(payload.scrap ?? payload.resources?.scrap ?? payload.reward?.scrap ?? payload.rewards?.scrap, 0);
+    const runeDust = this._toInt(payload.rune_dust ?? payload.runeDust ?? payload.resources?.rune_dust ?? payload.reward?.rune_dust ?? payload.rewards?.rune_dust, 0);
+    if (scrap > 0) this._pushProgressLine(lines, `Scrap +${scrap}`);
+    if (runeDust > 0) this._pushProgressLine(lines, `Rune Dust +${runeDust}`);
+    const signalDelta = this._toInt(payload.signalPowerDelta ?? payload.signal_power_delta ?? payload.progression?.signalPowerDelta ?? payload.progression_v1?.signalPowerDelta, 0);
+    if (signalDelta > 0) this._pushProgressLine(lines, `Signal Power +${signalDelta}`);
+    if (!lines.length) {
+      const fallback = String(options.fallbackText || payload.message || "").trim();
+      if (fallback) this._pushProgressLine(lines, fallback);
+    }
+    return lines;
+  },
+
   _perfAction(name, startedAt) {
     try { window.__ahPerf?.action?.(name, startedAt); } catch (_) {}
   },
@@ -633,6 +677,25 @@ window.Inventory = {
     };
   },
 
+  _salvageableCopyCount(item) {
+    return Math.max(0, this._qty(item));
+  },
+
+  _salvageRewardForQuantity(item, quantity) {
+    const salvage = this._salvagePreview(item);
+    const count = this._toInt(quantity, 0);
+    if (!salvage.ok || count < 1) {
+      return { ok: false, reason: salvage.reason, quantity: 0, scrap: 0, runeDust: 0 };
+    }
+    return {
+      ok: true,
+      reason: "ok",
+      quantity: count,
+      scrap: Number(salvage.scrap || 0) * count,
+      runeDust: Number(salvage.runeDust || 0) * count,
+    };
+  },
+
   _slotLabel(item) {
     return this._safeText(item?.slotLabel || item?.slot, "");
   },
@@ -687,6 +750,7 @@ window.Inventory = {
   _detailActions(item) {
     const key = this._safeText(item?.key || item?.item_key || item?.item, "");
     const salvage = this._salvagePreview(item);
+    const salvageQty = this._salvageableCopyCount(item);
     const actions = [];
     if (this._isConsumable(item)) {
       const meta = this._useMeta(item);
@@ -724,12 +788,32 @@ window.Inventory = {
       `);
     }
     if (salvage.ok) {
-      actions.push(`
-        <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
-                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
-          SALVAGE
-        </button>
-      `);
+      if (salvageQty > 1) {
+        const x5Disabled = salvageQty < 5;
+        actions.push(`
+          <div style="display:flex;flex:1 1 100%;flex-wrap:wrap;gap:8px;">
+            <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
+                    style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
+              x1
+            </button>
+            <button onclick="event.stopPropagation(); Inventory.salvageMultiple('${this._esc(key)}', 5)" type="button" ${x5Disabled ? 'disabled' : ''}
+                    style="flex:1 1 90px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.18);background:${x5Disabled ? 'rgba(255,255,255,.06)' : 'rgba(84,24,35,.78)'};color:${x5Disabled ? '#9ba7b9' : '#ffe0e4'};font-weight:800;letter-spacing:.3px;cursor:${x5Disabled ? 'default' : 'pointer'};opacity:${x5Disabled ? '0.6' : '1'};">
+              x5
+            </button>
+            <button onclick="event.stopPropagation(); Inventory.salvageMultiple('${this._esc(key)}', 'all')" type="button"
+                    style="flex:1 1 90px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.18);background:rgba(123,31,52,.82);color:#ffe0e4;font-weight:800;letter-spacing:.3px;cursor:pointer;">
+              ALL
+            </button>
+          </div>
+        `);
+      } else {
+        actions.push(`
+          <button onclick="event.stopPropagation(); Inventory.removeItem('${this._esc(key)}','one')" type="button"
+                  style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,120,120,.22);background:rgba(98,21,31,.85);color:#ffd7dc;font-weight:800;letter-spacing:.3px;cursor:pointer;">
+            SALVAGE
+          </button>
+        `);
+      }
     }
     return actions.join("");
   },
@@ -752,6 +836,8 @@ window.Inventory = {
     const compare = this._compareState(item);
     const eq = compare.equipped;
     const salvage = this._salvagePreview(item);
+    const salvageAllQty = this._salvageableCopyCount(item);
+    const salvageAll = this._salvageRewardForQuantity(item, salvageAllQty);
 
     const statCards = statKeys.length
       ? statKeys.map((key) => `
@@ -833,6 +919,11 @@ window.Inventory = {
           <div style="font-size:13px;line-height:1.6;color:#d8e4f8;">
             Salvage yield: <b>+${this._esc(String(salvage.scrap))} scrap</b>, <b>+${this._esc(String(salvage.runeDust))} rune dust</b>.
           </div>
+          ${salvageAllQty > 1 && salvageAll.ok ? `
+            <div style="margin-top:8px;font-size:12px;line-height:1.5;color:#b8cbe4;">
+              All ${this._esc(String(salvageAllQty))}x: <b>+${this._esc(String(salvageAll.scrap))} scrap</b>, <b>+${this._esc(String(salvageAll.runeDust))} rune dust</b>.
+            </div>
+          ` : ""}
         ` : `
           <div style="font-size:13px;line-height:1.6;color:#b8c3d6;">
             ${this._esc(this._salvageReasonText(salvage.reason, item?.name || item?.key || "This item"))}
@@ -1324,6 +1415,81 @@ async use(key) {
     this._perfAction("inventory_use", perfT0);
   }
 },
+
+  async salvageMultiple(key, quantity) {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    const item = this.findByKey(key);
+    if (!item) return;
+
+    const itemName = String(item.name || key || "item");
+    const salvage = this._salvagePreview(item);
+    if (!salvage.ok) {
+      this._toast(this._salvageReasonText(salvage.reason, itemName));
+      return;
+    }
+
+    const maxQty = this._salvageableCopyCount(item);
+    const requested = String(quantity || "").toLowerCase() === "all"
+      ? maxQty
+      : this._toInt(quantity, 0);
+
+    if (!Number.isInteger(requested) || requested < 1) {
+      this._toast("Quantity must be 1 or more.");
+      return;
+    }
+
+    if (requested > maxQty) {
+      this._toast(`You only have ${maxQty} salvageable cop${maxQty === 1 ? 'y' : 'ies'} of ${itemName}.`);
+      return;
+    }
+
+    const reward = this._salvageRewardForQuantity(item, requested);
+    const ok = confirm(
+      `Salvage ${requested}x ${itemName}?\n\nExpected reward: ${reward.scrap} scrap and ${reward.runeDust} rune dust.`
+    );
+    if (!ok) return;
+
+    Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
+
+    const apiPost = window.S?.apiPost || window.apiPost;
+    if (typeof apiPost !== "function") {
+      this._toast("Can't reach inventory right now.");
+      return;
+    }
+
+    const pendingKey = `${String(key)}:salvage:${requested}`;
+    this._removePending = this._removePending || new Set();
+    if (this._removePending.has(pendingKey)) return;
+    this._removePending.add(pendingKey);
+
+    try {
+      const res = await apiPost("/webapp/inventory/salvage-multiple", {
+        itemId: String(key),
+        quantity: requested,
+        run_id: this._mkRunId("w_inv_salvage_multi"),
+      });
+
+      if (!res?.ok) {
+        const err = new Error(String(res?.message || "Salvage failed"));
+        err.data = res;
+        throw err;
+      }
+
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+      const fallbackText = res?.message || `Salvaged ${requested}x ${itemName}.`;
+      const lines = this._buildSalvageToastLines(res, { salvagedCount: requested, fallbackText });
+      this._showProgressToast({ title: "Salvage Complete", lines }, fallbackText);
+      await this.open();
+    } catch (e) {
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      const reason = e?.data?.code || e?.data?.reason || e?.message || "";
+      const message = e?.data?.message || this._salvageReasonText(reason, itemName) || "Salvage failed.";
+      this._toast(String(message));
+    } finally {
+      this._removePending.delete(pendingKey);
+      this._perfAction("inventory_salvage_multiple", perfT0);
+    }
+  },
 
   // === SALVAGE ITEM (single item only) ===
   async removeItem(key, mode = "one") {

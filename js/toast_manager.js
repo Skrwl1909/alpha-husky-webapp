@@ -6,7 +6,7 @@
   const queue = [];
   const active = [];
   let bootQueued = false;
-  const VERSION = "2026-06-18-progress-toasts-fix-1";
+  const VERSION = "2026-06-20-progress-toasts-v1-2-reward-feedback";
 
   const TYPE_STYLES = {
     success: {
@@ -22,10 +22,10 @@
       icon: "*"
     },
     level: {
-      glow: "rgba(139, 201, 255, .22)",
-      border: "rgba(139, 201, 255, .34)",
-      accent: "#b7e2ff",
-      icon: "^"
+      glow: "rgba(176, 225, 255, .34)",
+      border: "rgba(176, 225, 255, .52)",
+      accent: "#d6efff",
+      icon: "LV"
     },
     pet: {
       glow: "rgba(170, 145, 255, .20)",
@@ -89,6 +89,24 @@
   opacity:1;
   transition:opacity .2s ease, transform .2s ease;
 }
+#${STACK_ID} .alpha-toast--level{
+  background:
+    radial-gradient(circle at top right, rgba(176,225,255,.34), transparent 38%),
+    linear-gradient(180deg, rgba(18,26,40,.98), rgba(8,13,23,.96));
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.34),
+    0 0 0 1px rgba(214,239,255,.09) inset;
+}
+#${STACK_ID} .alpha-toast--level::after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:12px;
+  right:12px;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(214,239,255,.88), transparent);
+  opacity:.92;
+}
 #${STACK_ID} .alpha-toast.is-enter{
   opacity:0;
   transform:translate3d(0, -6px, 0);
@@ -96,6 +114,12 @@
 #${STACK_ID} .alpha-toast.is-leave{
   opacity:0;
   transform:translate3d(0, -8px, 0);
+}
+#${STACK_ID} .alpha-toast--level.is-enter{
+  transform:translate3d(0, -10px, 0) scale(.985);
+}
+#${STACK_ID} .alpha-toast--level.is-leave{
+  transform:translate3d(0, -10px, 0) scale(.985);
 }
 #${STACK_ID} .alpha-toast__row{
   display:flex;
@@ -128,11 +152,17 @@
   font-weight:900;
   color:#f3f8ff;
 }
+#${STACK_ID} .alpha-toast--level .alpha-toast__title{
+  letter-spacing:.14em;
+}
 #${STACK_ID} .alpha-toast__message{
   margin-top:3px;
   font-size:12px;
   line-height:1.35;
   color:#d8e6f7;
+}
+#${STACK_ID} .alpha-toast--level .alpha-toast__message{
+  color:#edf6ff;
 }
 #${STACK_ID} .alpha-toast__meta{
   margin-top:4px;
@@ -140,6 +170,12 @@
   line-height:1.35;
   color:var(--toast-accent, #bcecff);
   opacity:.92;
+}
+#${STACK_ID} .alpha-toast--level .alpha-toast__badge{
+  width:30px;
+  height:30px;
+  background:rgba(214,239,255,.12);
+  box-shadow:0 0 20px rgba(176,225,255,.14);
 }
 @media (max-width: 640px){
   #${STACK_ID}{
@@ -221,10 +257,21 @@
     flush();
   }
 
+  function clearQueuedType(type) {
+    for (let i = queue.length - 1; i >= 0; i -= 1) {
+      if (queue[i] && queue[i].type === type) queue.splice(i, 1);
+    }
+  }
+
+  function clearActiveType(type) {
+    const entries = active.filter((entry) => entry && entry.type === type);
+    entries.forEach((entry) => removeToast(entry));
+  }
+
   function mountToast(stack, toast) {
     const tone = TYPE_STYLES[toast.type] || TYPE_STYLES.success;
     const el = document.createElement("article");
-    el.className = "alpha-toast is-enter";
+    el.className = `alpha-toast alpha-toast--${esc(toast.type)} is-enter`;
     el.setAttribute("role", "status");
     el.style.setProperty("--toast-glow", tone.glow);
     el.style.setProperty("--toast-border", tone.border);
@@ -240,7 +287,7 @@
       </div>
     `;
     stack.appendChild(el);
-    const entry = { el, timer: 0 };
+    const entry = { el, timer: 0, type: toast.type };
     active.push(entry);
     const scheduleFrame = typeof window.requestAnimationFrame === "function"
       ? window.requestAnimationFrame.bind(window)
@@ -263,14 +310,52 @@
   }
 
   function show(opts) {
-    queue.push(normalize(opts));
+    const toast = normalize(opts);
+    if (toast.type === "level") {
+      clearQueuedType("level");
+      clearActiveType("level");
+    }
+    queue.push(toast);
     flush();
   }
 
+  function normalizeSummaryLines(lines) {
+    const raw = Array.isArray(lines) ? lines : [lines];
+    const out = [];
+    for (const entry of raw) {
+      const text = String(entry == null ? "" : entry).replace(/\s+/g, " ").trim();
+      if (!text || out.includes(text)) continue;
+      out.push(text);
+      if (out.length >= 4) break;
+    }
+    return out;
+  }
+
+  function inferSummaryType(type, lines) {
+    if (TYPE_STYLES[type]) return type;
+    return lines.some((line) => /^Item found:/i.test(String(line || ""))) ? "drop" : "success";
+  }
+
+  function showProgressSummary(opts) {
+    const input = (opts && typeof opts === "object") ? opts : {};
+    const lines = normalizeSummaryLines(input.lines);
+    const message = String(input.message || "").trim() || lines.slice(0, 2).join(" • ");
+    const meta = String(input.meta || "").trim() || lines.slice(2).join(" • ");
+    if (!message && !meta) return false;
+    show({
+      type: inferSummaryType(input.type, lines),
+      title: String(input.title || "Progress Updated").trim() || "Progress Updated",
+      message,
+      meta,
+      ttl: input.ttl,
+    });
+    return true;
+  }
   const api = (window.AlphaToast && typeof window.AlphaToast === "object")
     ? window.AlphaToast
     : {};
   api.show = show;
+  api.showProgressSummary = showProgressSummary;
   api.flush = flush;
   api.version = VERSION;
   window.AlphaToast = api;
