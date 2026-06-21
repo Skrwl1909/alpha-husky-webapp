@@ -56,6 +56,7 @@
   };
   const PHANTOM_NODE_ASSETS = {
     hero: "images/map/phantom_node/phantom_node.webp",
+    signalOverlay: "images/map/phantom_node/phantom_signal_overlay.png",
     frameDesktop: "images/map/phantom_node/phantom_ui_frame.png",
     frameMobile: "images/map/phantom_node/phantom_ui_frame_mobile.png",
     pressureBar: "images/map/phantom_node/phantom_pressure_bar.png",
@@ -3255,6 +3256,17 @@
           linear-gradient(180deg, rgba(255,255,255,.03), transparent 22%, transparent 78%, rgba(255,255,255,.02));
         pointer-events:none;
       }
+      #influenceCard.is-phantom-node::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        border-radius:inherit;
+        background:url("${PHANTOM_NODE_ASSETS.signalOverlay}") center top/cover no-repeat;
+        opacity:.045;
+        mix-blend-mode:screen;
+        pointer-events:none;
+        z-index:0;
+      }
       #influenceCard.is-phantom-node > *{
         position:relative;
         z-index:1;
@@ -3304,11 +3316,24 @@
       }
       #influenceCard.is-phantom-node .inf-phantom-hero-media{
         position:relative;
+        isolation:isolate;
         min-height:360px;
         background:
           radial-gradient(circle at 50% 18%, rgba(255,188,114,.12), transparent 22%),
           linear-gradient(180deg, rgba(10,12,18,.12), rgba(5,7,12,.9));
       }
+      #influenceCard.is-phantom-node .inf-phantom-hero-signal{
+        position:absolute;
+        inset:0;
+        background:url("${PHANTOM_NODE_ASSETS.signalOverlay}") center 18%/cover no-repeat;
+        opacity:.11;
+        mix-blend-mode:screen;
+        pointer-events:none;
+        transform:scale(1.03);
+        transform-origin:center center;
+        z-index:1;
+      }
+
       #influenceCard.is-phantom-node .inf-phantom-hero-media::before{
         content:"";
         position:absolute;
@@ -3318,6 +3343,7 @@
           radial-gradient(circle at 50% 64%, rgba(255,121,70,.18), transparent 16%),
           radial-gradient(circle at 82% 68%, rgba(94,226,206,.12), transparent 24%);
         pointer-events:none;
+        z-index:2;
       }
       #influenceCard.is-phantom-node .inf-phantom-hero-media::after{
         content:"";
@@ -3326,6 +3352,7 @@
         height:40%;
         background:linear-gradient(180deg, rgba(6,8,12,0), rgba(6,8,12,.72) 38%, rgba(6,8,12,.96));
         pointer-events:none;
+        z-index:3;
       }
       #influenceCard.is-phantom-node .inf-phantom-hero-media.is-art-missing{
         background:
@@ -3341,11 +3368,12 @@
         object-fit:cover;
         object-position:center center;
         opacity:.96;
+        z-index:0;
       }
       #influenceCard.is-phantom-node .inf-phantom-hero-top,
       #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
         position:relative;
-        z-index:1;
+        z-index:4;
       }
       #influenceCard.is-phantom-node .inf-phantom-hero-top{
         display:grid;
@@ -3404,6 +3432,7 @@
         letter-spacing:.12em;
         text-transform:uppercase;
         box-shadow:0 12px 28px rgba(0,0,0,.3);
+        z-index:4;
       }
       #influenceCard.is-phantom-node .inf-phantom-status-badge[data-state="CONTESTED"]{
         color:#ffd79f;
@@ -3629,16 +3658,23 @@
       }
       #influenceCard.is-phantom-node .inf-pressure-fill.is-enemy{
         left:18px;
+        min-width:12px;
         background:linear-gradient(90deg, rgba(255,94,68,.78), rgba(255,165,102,.84));
         box-shadow:0 0 14px rgba(255,116,76,.34);
       }
       #influenceCard.is-phantom-node .inf-pressure-fill.is-friendly{
         right:18px;
+        min-width:12px;
         background:linear-gradient(90deg, rgba(86,222,191,.84), rgba(108,255,244,.86));
         box-shadow:0 0 14px rgba(84,222,190,.3);
       }
       #influenceCard.is-phantom-node .inf-pressure-track.is-idle .inf-pressure-fill{
         display:none;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-track.is-idle .inf-pressure-fill.is-enemy{
+        display:block;
+        width:12%;
+        opacity:.28;
       }
       #influenceCard.is-phantom-node .inf-pressure-core{
         position:absolute;
@@ -3885,48 +3921,266 @@
       @media (max-width: 720px){
         #influenceCard.is-phantom-node{
           width:min(100vw - 10px, 460px);
-          padding:14px 14px 16px;
+          padding:12px 12px 14px;
           border-radius:24px;
           background:
             linear-gradient(180deg, rgba(5,8,12,.98), rgba(9,12,18,.98)),
             url("${PHANTOM_NODE_ASSETS.frameMobile}") center/100% 100% no-repeat;
         }
+        #influenceCard.is-phantom-node::after{
+          opacity:.025;
+          background-position:center 10%;
+        }
         #influenceCard.is-phantom-node .inf-head{
-          padding:2px 76px 8px;
+          min-height:40px;
+          padding:0 70px 6px;
+          gap:8px;
         }
         #influenceCard.is-phantom-node .inf-title{
-          font-size:clamp(26px, 8vw, 40px);
+          font-size:clamp(21px, 6vw, 30px);
+          letter-spacing:.1em;
+          white-space:nowrap;
         }
         #influenceCard.is-phantom-node .inf-sub{
-          font-size:10px;
-          letter-spacing:.18em;
+          margin-top:3px;
+          font-size:9px;
+          letter-spacing:.14em;
         }
-        #influenceCard.is-phantom-node .inf-phantom-hero-top{
-          grid-template-columns:minmax(0,1fr);
-          gap:10px;
-          padding:54px 12px 0;
+        #influenceCard.is-phantom-node .inf-close-btn{
+          top:0;
+          min-width:68px;
+          padding:8px 11px;
+          font-size:11px;
         }
-        #influenceCard.is-phantom-node .inf-phantom-center-copy{
-          padding-top:0;
+        #influenceCard.is-phantom-node .inf-hero{
+          margin-top:8px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-media{
+          min-height:228px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-signal{
+          opacity:.06;
+          background-position:center 26%;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-art{
+          object-position:center 34%;
         }
         #influenceCard.is-phantom-node .inf-phantom-status-badge{
-          top:12px;
+          top:8px;
+          padding:5px 10px;
+          font-size:9px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:8px;
+          padding:40px 10px 0;
+          align-items:start;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-center-copy{
+          grid-column:1 / -1;
+          padding-top:2px;
+          text-align:left;
+        }
+        #influenceCard.is-phantom-node .inf-panel-kicker{
+          font-size:8px;
+          letter-spacing:.14em;
+        }
+        #influenceCard.is-phantom-node .inf-leader{
+          margin-top:4px;
+          font-size:18px;
+        }
+        #influenceCard.is-phantom-node .inf-control-line,
+        #influenceCard.is-phantom-node .inf-hero-flavor,
+        #influenceCard.is-phantom-node .inf-node-core-hint,
+        #influenceCard.is-phantom-node .inf-phantom-sidecard-label,
+        #influenceCard.is-phantom-node .inf-phantom-faction-lead{
+          display:none;
+        }
+        #influenceCard.is-phantom-node .inf-encounter-line{
+          margin-top:4px;
+          font-size:14px;
+          line-height:1.12;
+        }
+        #influenceCard.is-phantom-node .inf-node-core,
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{
+          min-height:0;
+          gap:6px;
+          padding:9px 10px 8px;
+          border-radius:14px;
+          background:linear-gradient(180deg, rgba(10,12,16,.92), rgba(8,10,14,.82));
+        }
+        #influenceCard.is-phantom-node .inf-node-core-label{
+          font-size:8px;
+        }
+        #influenceCard.is-phantom-node .inf-node-core-mark{
+          font-size:13px;
+        }
+        #influenceCard.is-phantom-node .inf-node-core-state{
+          margin-top:1px;
+          font-size:9px;
+        }
+        #influenceCard.is-phantom-node .inf-node-core-code{
+          display:none !important;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-faction-row{
+          gap:8px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-faction-sigil-wrap{
+          width:34px;
+          height:34px;
+          flex:0 0 34px;
+          border-radius:10px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-faction-name{
+          font-size:13px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-faction-status{
+          font-size:10px;
+          line-height:1.3;
         }
         #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
-          padding:20px 14px 16px;
+          padding:10px 10px 12px;
+          gap:4px;
+        }
+        #influenceCard.is-phantom-node .inf-hero-status{
+          font-size:11px;
+          line-height:1.35;
         }
         #influenceCard.is-phantom-node .inf-clash-meter{
-          padding:14px;
+          padding:10px 12px 12px;
         }
-        #influenceCard.is-phantom-node .inf-pressure-sides,
+        #influenceCard.is-phantom-node .inf-pressure-head{
+          margin-bottom:8px;
+          font-size:12px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-state{
+          font-size:9px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-sides{
+          margin-bottom:8px;
+          gap:10px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-side .label{
+          font-size:10px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-side .value{
+          font-size:20px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-track{
+          height:56px;
+          border-radius:14px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-fill{
+          top:18px;
+          bottom:18px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-core{
+          width:52px;
+          height:52px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-core span{
+          font-size:9px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-foot{
+          margin-top:8px;
+          font-size:10px;
+          line-height:1.35;
+        }
+        #influenceCard.is-phantom-node .inf-panel{
+          margin-top:8px;
+          padding:12px;
+          border-radius:16px;
+        }
+        #influenceCard.is-phantom-node #infOrdersLead{
+          margin-top:4px;
+          font-size:11px;
+          line-height:1.35;
+        }
         #influenceCard.is-phantom-node .inf-action-grid{
-          grid-template-columns:minmax(0,1fr);
+          margin-top:8px;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:8px;
+        }
+        #influenceCard.is-phantom-node .inf-action-card{
+          min-height:148px;
+          border-radius:14px;
+        }
+        #influenceCard.is-phantom-node .inf-action-art{
+          height:54px;
+        }
+        #influenceCard.is-phantom-node .inf-action-copy{
+          gap:6px;
+          padding:9px 9px 10px;
+        }
+        #influenceCard.is-phantom-node .inf-action-line{
+          align-items:flex-start;
+          gap:6px;
+        }
+        #influenceCard.is-phantom-node .inf-action-eyebrow{
+          font-size:9px;
+          letter-spacing:.14em;
+        }
+        #influenceCard.is-phantom-node .inf-action-title{
+          font-size:16px;
+          line-height:1.08;
+        }
+        #influenceCard.is-phantom-node .inf-action-effect{
+          font-size:10px;
+          line-height:1.35;
+          display:-webkit-box;
+          -webkit-line-clamp:2;
+          -webkit-box-orient:vertical;
+          overflow:hidden;
+        }
+        #influenceCard.is-phantom-node .inf-action-chip{
+          width:100%;
+          min-height:44px;
+          padding:0 8px;
+          font-size:11px;
+        }
+        #influenceCard.is-phantom-node .inf-watch-line,
+        #influenceCard.is-phantom-node .inf-orders-cooldown{
+          margin-top:8px;
+          font-size:10px;
+          line-height:1.35;
+        }
+        #influenceCard.is-phantom-node .inf-donate-box{
+          margin-top:8px;
         }
         #influenceCard.is-phantom-node .inf-impact-grid{
           grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:8px;
         }
-        #influenceCard.is-phantom-node .inf-action-card{
-          min-height:244px;
+        #influenceCard.is-phantom-node .inf-impact-card{
+          min-height:96px;
+          padding:10px;
+        }
+        #influenceCard.is-phantom-node .inf-impact-value{
+          font-size:20px;
+        }
+        #influenceCard.is-phantom-node .inf-impact-hint,
+        #influenceCard.is-phantom-node .inf-impact-copy{
+          font-size:10px;
+          line-height:1.35;
+        }
+        #influenceCard.is-phantom-node .inf-impact-copy,
+        #influenceCard.is-phantom-node .inf-war-intel{
+          margin-top:8px;
+        }
+        #influenceCard.is-phantom-node .inf-war-intel summary{
+          padding:12px 38px 12px 14px;
+          font-size:14px;
+        }
+        #influenceCard.is-phantom-node .inf-war-intel-summary-copy{
+          font-size:10px;
+        }
+        #influenceCard.is-phantom-node .inf-war-intel-body{
+          padding:0 10px 10px;
+        }
+        #influenceCard.is-phantom-node #infIntelShell,
+        #influenceCard.is-phantom-node #infLoreShell,
+        #influenceCard.is-phantom-node #infWeeklyPreview{
+          margin-top:8px;
         }
       }
 
@@ -3934,7 +4188,6 @@
         #influenceModal .inf-modal-card{ padding:12px 10px 11px; }
         #influenceModal .inf-hero-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-node-core{ width:100%; height:84px; }
-        #influenceModal .inf-action-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-local-grid,
         #influenceModal .inf-status-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-signal-sheet{ width:min(96vw,430px); left:50%; right:auto; bottom:6px; padding:9px 9px 10px; }
@@ -3942,10 +4195,96 @@
         #influenceModal .inf-weekly-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-reward-checklist{ grid-template-columns:repeat(2,minmax(0,1fr)); }
         #influenceModal .inf-weekly-mini-grid{ grid-template-columns:minmax(0,1fr); }
-        #influenceCard.is-phantom-node .inf-impact-grid{ grid-template-columns:minmax(0,1fr); }
-        #influenceCard.is-phantom-node .inf-close-btn{ min-width:72px; padding:9px 12px; }
-        #influenceCard.is-phantom-node .inf-encounter-line{ font-size:16px; }
-        #influenceCard.is-phantom-node .inf-pressure-side .value{ font-size:24px; }
+        #influenceCard.is-phantom-node{
+          width:min(100vw - 8px, 420px);
+          padding:10px 10px 12px;
+          border-radius:20px;
+        }
+        #influenceCard.is-phantom-node .inf-head{
+          min-height:34px;
+          padding:0 58px 4px;
+        }
+        #influenceCard.is-phantom-node .inf-title{
+          font-size:clamp(18px, 5.8vw, 24px);
+        }
+        #influenceCard.is-phantom-node .inf-sub{
+          font-size:8.5px;
+          letter-spacing:.11em;
+        }
+        #influenceCard.is-phantom-node .inf-close-btn{
+          min-width:60px;
+          padding:8px 10px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-media{
+          min-height:212px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{
+          gap:7px;
+          padding:36px 8px 0;
+        }
+        #influenceCard.is-phantom-node .inf-node-core,
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{
+          padding:8px 9px;
+        }
+        #influenceCard.is-phantom-node .inf-leader{
+          font-size:16px;
+        }
+        #influenceCard.is-phantom-node .inf-encounter-line{
+          font-size:13px;
+        }
+        #influenceCard.is-phantom-node .inf-hero-status{
+          font-size:10.5px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-head{
+          font-size:11px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-side .value{
+          font-size:18px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-track{
+          height:52px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-fill{
+          top:17px;
+          bottom:17px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-core{
+          width:48px;
+          height:48px;
+        }
+        #influenceCard.is-phantom-node .inf-action-grid{
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:7px;
+        }
+        #influenceCard.is-phantom-node .inf-action-card{
+          min-height:136px;
+        }
+        #influenceCard.is-phantom-node .inf-action-art{
+          height:48px;
+        }
+        #influenceCard.is-phantom-node .inf-action-copy{
+          padding:8px 8px 9px;
+        }
+        #influenceCard.is-phantom-node .inf-action-title{
+          font-size:14px;
+        }
+        #influenceCard.is-phantom-node .inf-action-effect{
+          font-size:9.5px;
+        }
+        #influenceCard.is-phantom-node .inf-action-chip{
+          font-size:10.5px;
+        }
+        #influenceCard.is-phantom-node .inf-impact-grid{
+          grid-template-columns:repeat(2,minmax(0,1fr));
+        }
+      }
+
+      @media (max-width: 360px){
+        #influenceCard.is-phantom-node .inf-phantom-hero-top,
+        #influenceCard.is-phantom-node .inf-action-grid,
+        #influenceCard.is-phantom-node .inf-impact-grid{
+          grid-template-columns:minmax(0,1fr);
+        }
       }
     `;
     document.head.appendChild(style);
@@ -3989,6 +4328,7 @@
         <section id="infHero" class="inf-hero rv-surface rv-surface-hero">
           <div class="inf-phantom-hero-media">
             <img class="inf-phantom-hero-art" src="${PHANTOM_NODE_ASSETS.hero}" alt="Phantom Node relay banner" loading="eager" decoding="async" onerror="this.style.display='none'; if (this.parentElement) this.parentElement.classList.add('is-art-missing');" />
+            <span class="inf-phantom-hero-signal" aria-hidden="true"></span>
             <span id="infPhantomHeroBadge" class="inf-phantom-status-badge" data-state="CALM">Stable</span>
             <div class="inf-phantom-hero-top">
               <button
