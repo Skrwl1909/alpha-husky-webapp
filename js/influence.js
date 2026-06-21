@@ -54,6 +54,20 @@
     pack_burners: "255,168,95",
     inner_howl: "189,146,255",
   };
+  const PHANTOM_NODE_ASSETS = {
+    hero: "images/map/phantom_node/phantom_node.webp",
+    frameDesktop: "images/map/phantom_node/phantom_ui_frame.png",
+    frameMobile: "images/map/phantom_node/phantom_ui_frame_mobile.png",
+    pressureBar: "images/map/phantom_node/phantom_pressure_bar.png",
+    patrolAction: "images/map/phantom_node/phantom_patrol_action.png",
+    donateAction: "images/map/phantom_node/phantom_donate_action.png",
+    sigils: {
+      rogue_byte: "images/map/phantom_node/sigil_rogue_byte.png",
+      echo_wardens: "images/map/phantom_node/sigil_ew.png",
+      pack_burners: "images/map/phantom_node/sigil_pack_burners.png",
+      inner_howl: "images/map/phantom_node/sigil_inner_howl.png",
+    },
+  };
   const NODE_ID_ALIASES = {
     edge_of_the_chain: "edge_of_chain",
     broken_contracts_hub: "broken_contracts",
@@ -179,6 +193,26 @@
   function factionSigilUrl(f) {
     const key = normalizeFaction(f);
     return FACTION_SIGILS[key] || "";
+  }
+  function phantomFactionSigilUrl(f) {
+    const key = normalizeFaction(f);
+    return PHANTOM_NODE_ASSETS.sigils[key] || "";
+  }
+  function phantomNodeSignalId(info) {
+    const candidates = [
+      info?.signalId,
+      info?.signal_id,
+      info?.nodeSignalId,
+      info?.node_signal_id,
+      info?.uid,
+      info?.nodeUid,
+      info?.node_uid,
+    ];
+    for (const raw of candidates) {
+      const value = String(raw || "").trim();
+      if (value) return shortUid(value);
+    }
+    return "";
   }
 
   function normalizeNodeId(raw) {
@@ -3198,194 +3232,705 @@
         letter-spacing:.06em;
         text-transform:uppercase;
       }
+
+      #influenceCard.is-phantom-node{
+        width:min(96vw, 760px);
+        padding:18px 20px 20px;
+        border:none;
+        border-radius:28px;
+        background:
+          linear-gradient(180deg, rgba(5,8,12,.98), rgba(9,12,18,.98)),
+          url("${PHANTOM_NODE_ASSETS.frameDesktop}") center/100% 100% no-repeat;
+        box-shadow:0 34px 88px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.04);
+        overflow:auto;
+      }
+      #influenceCard.is-phantom-node::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        border-radius:inherit;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(255,196,120,.09), transparent 34%),
+          radial-gradient(circle at 50% 100%, rgba(74,207,188,.08), transparent 30%),
+          linear-gradient(180deg, rgba(255,255,255,.03), transparent 22%, transparent 78%, rgba(255,255,255,.02));
+        pointer-events:none;
+      }
+      #influenceCard.is-phantom-node > *{
+        position:relative;
+        z-index:1;
+      }
+      #influenceCard.is-phantom-node .inf-head{
+        position:relative;
+        justify-content:center;
+        min-height:54px;
+        padding:4px 96px 10px;
+      }
+      #influenceCard.is-phantom-node .inf-title{
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:clamp(34px, 5.6vw, 58px);
+        line-height:1;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        text-align:center;
+        color:#f8f3e7;
+        text-shadow:0 2px 18px rgba(0,0,0,.38);
+      }
       #influenceCard.is-phantom-node .inf-sub{
-        margin-top:5px;
+        margin-top:7px;
+        font-size:11px;
+        letter-spacing:.22em;
+        text-transform:uppercase;
+        text-align:center;
+        color:#c5b086;
+      }
+      #influenceCard.is-phantom-node .inf-close-btn{
+        position:absolute;
+        right:0;
+        top:4px;
+        min-width:84px;
+        padding:10px 14px;
+        border-radius:999px;
+        border:1px solid rgba(224,201,156,.24);
+        background:rgba(10,12,16,.72);
+        color:#f2ead8;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      }
+      #influenceCard.is-phantom-node .inf-hero{
+        padding:0;
+        border-radius:22px;
+        border:1px solid rgba(218,198,154,.16);
+        background:rgba(9,12,18,.9);
+        overflow:hidden;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-media{
+        position:relative;
+        min-height:360px;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(255,188,114,.12), transparent 22%),
+          linear-gradient(180deg, rgba(10,12,18,.12), rgba(5,7,12,.9));
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-media::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+          linear-gradient(180deg, rgba(6,8,12,.44) 0%, rgba(6,8,12,.08) 24%, rgba(6,8,12,.28) 58%, rgba(4,6,10,.94) 100%),
+          radial-gradient(circle at 50% 64%, rgba(255,121,70,.18), transparent 16%),
+          radial-gradient(circle at 82% 68%, rgba(94,226,206,.12), transparent 24%);
+        pointer-events:none;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-media::after{
+        content:"";
+        position:absolute;
+        inset:auto 0 0;
+        height:40%;
+        background:linear-gradient(180deg, rgba(6,8,12,0), rgba(6,8,12,.72) 38%, rgba(6,8,12,.96));
+        pointer-events:none;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-media.is-art-missing{
+        background:
+          radial-gradient(circle at 50% 34%, rgba(255,188,114,.22), transparent 20%),
+          radial-gradient(circle at 50% 72%, rgba(255,104,68,.12), transparent 26%),
+          linear-gradient(180deg, rgba(18,22,30,.98), rgba(9,12,18,.98));
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-art{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center center;
+        opacity:.96;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-top,
+      #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
+        position:relative;
+        z-index:1;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-top{
+        display:grid;
+        grid-template-columns:156px minmax(0,1fr) 194px;
+        gap:14px;
+        align-items:start;
+        padding:18px 18px 0;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-center-copy{
+        text-align:center;
+        padding-top:14px;
+      }
+      #influenceCard.is-phantom-node .inf-panel-kicker{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#c5b086;
+      }
+      #influenceCard.is-phantom-node .inf-leader{
+        margin-top:10px;
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:clamp(24px, 4vw, 38px);
+        line-height:1.06;
+        letter-spacing:.04em;
+        text-transform:uppercase;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-control-line{
+        margin-top:8px;
         font-size:12px;
+        line-height:1.5;
+        color:#d8d2c5;
+      }
+      #influenceCard.is-phantom-node .inf-encounter-line{
+        margin-top:6px;
+        font-size:18px;
+        line-height:1.18;
+        font-weight:900;
+        color:#ffffff;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-status-badge{
+        position:absolute;
+        top:18px;
+        left:50%;
+        transform:translateX(-50%);
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:7px 14px;
+        border-radius:999px;
+        border:1px solid rgba(255,192,124,.36);
+        background:rgba(12,14,18,.72);
+        color:#ffd8a6;
+        font-size:11px;
+        font-weight:900;
         letter-spacing:.12em;
         text-transform:uppercase;
-        color:#aabed8;
+        box-shadow:0 12px 28px rgba(0,0,0,.3);
       }
-      #influenceCard.is-phantom-node .inf-hero-grid{
-        grid-template-columns:minmax(0,1fr);
+      #influenceCard.is-phantom-node .inf-phantom-status-badge[data-state="CONTESTED"]{
+        color:#ffd79f;
+        border-color:rgba(255,178,96,.42);
+      }
+      #influenceCard.is-phantom-node .inf-phantom-status-badge[data-state="HOT"]{
+        color:#ffb48e;
+        border-color:rgba(255,118,82,.48);
+      }
+      #influenceCard.is-phantom-node .inf-phantom-status-badge[data-state="FORTIFIED"],
+      #influenceCard.is-phantom-node .inf-phantom-status-badge[data-state="CALM"]{
+        color:#d6fff4;
+        border-color:rgba(94,226,206,.34);
+      }
+      #influenceCard.is-phantom-node .inf-phantom-sidecard{
+        min-height:132px;
+        padding:14px 14px 12px;
+        border-radius:18px;
+        border:1px solid rgba(222,200,156,.16);
+        background:linear-gradient(180deg, rgba(10,12,16,.86), rgba(8,10,14,.64));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 16px 34px rgba(0,0,0,.18);
       }
       #influenceCard.is-phantom-node .inf-node-core{
+        width:auto;
+        height:auto;
+        align-items:flex-start;
+        justify-content:flex-start;
+        text-align:left;
+        gap:8px;
+        padding:14px 14px 12px;
+        border-radius:18px;
+        background:linear-gradient(180deg, rgba(10,12,16,.92), rgba(8,10,14,.72));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 16px 34px rgba(0,0,0,.18);
+      }
+      #influenceCard.is-phantom-node .inf-node-core::before,
+      #influenceCard.is-phantom-node .inf-node-core::after{
         display:none;
       }
-      #influenceCard.is-phantom-node .inf-chip-row{
-        margin-top:10px;
+      #influenceCard.is-phantom-node .inf-node-core-btn:hover{
+        border-color:rgba(255,192,124,.34);
       }
+      #influenceCard.is-phantom-node .inf-node-core-mark{
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:20px;
+        line-height:1.04;
+        letter-spacing:.04em;
+        text-transform:uppercase;
+        color:#f6efe1;
+      }
+      #influenceCard.is-phantom-node .inf-node-core-code{
+        display:none;
+        font-size:10px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#ad9e7d;
+      }
+      #influenceCard.is-phantom-node .inf-node-core-hint{
+        margin-top:auto;
+        color:#b8f4e6;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-card{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-sidecard-label{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#c5b086;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-row{
+        display:flex;
+        gap:10px;
+        align-items:center;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-sigil-wrap{
+        position:relative;
+        width:48px;
+        height:48px;
+        flex:0 0 48px;
+        border-radius:14px;
+        border:1px solid rgba(222,200,156,.16);
+        background:rgba(255,255,255,.03);
+        display:grid;
+        place-items:center;
+        overflow:hidden;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-sigil{
+        width:82%;
+        height:82%;
+        object-fit:contain;
+        filter:drop-shadow(0 8px 18px rgba(0,0,0,.34));
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-fallback{
+        font-size:16px;
+        font-weight:900;
+        letter-spacing:.12em;
+        color:#e8dfcf;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-name{
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:18px;
+        line-height:1.1;
+        letter-spacing:.04em;
+        text-transform:uppercase;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-lead,
+      #influenceCard.is-phantom-node .inf-phantom-faction-status{
+        font-size:11px;
+        line-height:1.45;
+        color:#d7d0c2;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
+        padding:126px 22px 22px;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      #influenceCard.is-phantom-node .inf-chip-row,
       #influenceCard.is-phantom-node #infUxControlChip,
       #influenceCard.is-phantom-node #infUxAction,
       #influenceCard.is-phantom-node #infUxValue,
       #influenceCard.is-phantom-node #infUxWatchChip{
         display:none !important;
       }
-      #influenceModal .inf-encounter-line{
-        margin-top:6px;
-        font-size:18px;
-        line-height:1.18;
-        font-weight:900;
-        color:#f2f7ff;
-      }
       #influenceCard.is-phantom-node .inf-hero-flavor{
-        margin-top:8px;
-        font-size:12px;
-        line-height:1.45;
-        color:#dbe7f6;
+        margin-top:0;
+        font-size:13px;
+        line-height:1.55;
+        color:#e8e0d2;
       }
       #influenceCard.is-phantom-node .inf-hero-status{
-        font-size:13px;
+        font-size:12px;
+        line-height:1.55;
+        color:#cfc9bc;
       }
       #influenceCard.is-phantom-node .inf-clash-meter{
-        margin-top:12px !important;
-        padding:12px 12px 13px;
-        border-radius:16px;
-        border:1px solid rgba(255,255,255,.14);
-        background:
-          radial-gradient(circle at 12% 0%, rgba(124,208,255,.12), transparent 32%),
-          linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+        margin-top:0 !important;
+        padding:16px 18px 18px;
+        border-top:1px solid rgba(222,200,156,.12);
+        background:linear-gradient(180deg, rgba(11,13,18,.84), rgba(7,9,13,.94));
       }
-      #influenceCard.is-phantom-node .inf-clash-head{
-        margin-bottom:8px;
-        font-size:11px;
-        letter-spacing:.14em;
-        color:#bcd6f3;
-      }
-      #influenceCard.is-phantom-node .inf-clash-sides{
-        margin-bottom:7px;
-        font-size:11px;
-        color:#d5e4f6;
-      }
-      #influenceCard.is-phantom-node .inf-clash-side{
+      #influenceCard.is-phantom-node .inf-pressure-head{
         display:flex;
-        gap:6px;
         align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:12px;
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:14px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#f5efe1;
       }
-      #influenceCard.is-phantom-node .inf-clash-side .score{
+      #influenceCard.is-phantom-node .inf-pressure-state{
+        font-size:10px;
         font-weight:900;
+        letter-spacing:.16em;
+        color:#c5b086;
       }
-      #influenceCard.is-phantom-node .inf-clash-bar{
-        height:12px;
+      #influenceCard.is-phantom-node .inf-pressure-sides{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:12px;
+        margin-bottom:10px;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side{
+        display:flex;
+        align-items:baseline;
+        justify-content:space-between;
+        gap:10px;
+        font-size:12px;
+        color:#d5cec1;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side .label{
+        font-weight:800;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side .value{
+        font-size:30px;
+        font-weight:900;
+        line-height:1;
+        color:#f9f2e5;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side.is-enemy .label,
+      #influenceCard.is-phantom-node .inf-pressure-side.is-enemy .value{
+        color:#ff8e72;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side.is-friendly{
+        text-align:right;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-side.is-friendly .label,
+      #influenceCard.is-phantom-node .inf-pressure-side.is-friendly .value{
+        color:#82f2d4;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-track{
+        position:relative;
+        height:74px;
+        border-radius:20px;
+        overflow:hidden;
+        background:rgba(255,255,255,.03);
+        border:1px solid rgba(222,200,156,.12);
+      }
+      #influenceCard.is-phantom-node .inf-pressure-track::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+          linear-gradient(180deg, rgba(5,8,12,.28), rgba(5,8,12,.14)),
+          url("${PHANTOM_NODE_ASSETS.pressureBar}") center/cover no-repeat;
+        opacity:.95;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-fill{
+        position:absolute;
+        top:24px;
+        bottom:24px;
+        z-index:1;
         border-radius:999px;
-        background:rgba(255,255,255,.08);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+        filter:drop-shadow(0 0 10px rgba(0,0,0,.24));
       }
-      #influenceCard.is-phantom-node .inf-clash-foot{
-        margin-top:8px;
+      #influenceCard.is-phantom-node .inf-pressure-fill.is-enemy{
+        left:18px;
+        background:linear-gradient(90deg, rgba(255,94,68,.78), rgba(255,165,102,.84));
+        box-shadow:0 0 14px rgba(255,116,76,.34);
+      }
+      #influenceCard.is-phantom-node .inf-pressure-fill.is-friendly{
+        right:18px;
+        background:linear-gradient(90deg, rgba(86,222,191,.84), rgba(108,255,244,.86));
+        box-shadow:0 0 14px rgba(84,222,190,.3);
+      }
+      #influenceCard.is-phantom-node .inf-pressure-track.is-idle .inf-pressure-fill{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-core{
+        position:absolute;
+        top:50%;
+        left:50%;
+        z-index:2;
+        transform:translate(-50%, -50%);
+        display:grid;
+        place-items:center;
+        width:68px;
+        height:68px;
+        border-radius:999px;
+        border:1px solid rgba(255,214,152,.34);
+        background:radial-gradient(circle at 50% 50%, rgba(255,214,152,.18), rgba(12,14,18,.9) 66%);
+        box-shadow:0 0 24px rgba(255,184,96,.16);
+      }
+      #influenceCard.is-phantom-node .inf-pressure-core span{
         font-size:11px;
-        line-height:1.38;
-        color:#d2e0f1;
+        font-weight:900;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#f3ead8;
+      }
+      #influenceCard.is-phantom-node .inf-pressure-foot{
+        margin-top:10px;
+        font-size:11px;
+        line-height:1.5;
+        color:#d5cec1;
+      }
+      #influenceCard.is-phantom-node .inf-panel{
+        margin-top:12px;
+        padding:14px;
+        border-radius:18px;
+        border:1px solid rgba(222,200,156,.12);
+        background:linear-gradient(180deg, rgba(16,18,24,.9), rgba(8,10,14,.88));
       }
       #influenceCard.is-phantom-node .inf-panel-title{
-        font-size:11px;
-        letter-spacing:.12em;
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:14px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#f5efe1;
       }
       #influenceCard.is-phantom-node .inf-ops-panel .inf-chip-row{
         display:none;
       }
-      #influenceCard.is-phantom-node .inf-action-grid{
-        grid-template-columns:minmax(0,1fr);
-        gap:10px;
-      }
-      #influenceCard.is-phantom-node .inf-action-card-primary{
-        padding:14px 12px 12px;
-      }
-      #influenceCard.is-phantom-node .inf-action-card-primary .inf-action-title{
-        font-size:16px;
-      }
-      #influenceCard.is-phantom-node .inf-action-card-support{
-        padding:10px 11px;
-        gap:5px;
-        background:linear-gradient(180deg, rgba(124,208,255,.12), rgba(124,208,255,.05));
-        border-color:rgba(124,208,255,.22);
-      }
-      #influenceCard.is-phantom-node .inf-donate-box{
+      #influenceCard.is-phantom-node #infOrdersLead{
         margin-top:8px;
+        color:#d8d2c5;
       }
-      #influenceModal .inf-impact-grid{
-        margin-top:10px;
-        display:grid;
+      #influenceCard.is-phantom-node .inf-action-grid{
+        margin-top:12px;
         grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:8px;
+        gap:14px;
       }
-      #influenceModal .inf-impact-card{
-        border-radius:12px;
-        border:1px solid rgba(255,255,255,.12);
-        background:rgba(255,255,255,.035);
-        padding:9px 10px;
-      }
-      #influenceModal .inf-impact-label{
-        font-size:10px;
-        letter-spacing:.08em;
-        text-transform:uppercase;
-        color:#aac2dd;
-      }
-      #influenceModal .inf-impact-value{
-        margin-top:4px;
-        font-size:14px;
-        line-height:1.2;
-        font-weight:900;
-        color:#f0f6ff;
-      }
-      #influenceModal .inf-impact-hint{
-        margin-top:4px;
-        font-size:10px;
-        line-height:1.35;
-        color:#c7d9ed;
-      }
-      #influenceModal .inf-impact-copy{
-        margin-top:10px;
-        padding:8px 10px;
-        border-radius:11px;
-        border:1px solid rgba(255,255,255,.11);
-        background:rgba(255,255,255,.035);
-        font-size:11px;
-        line-height:1.4;
-        color:#dce8f7;
-      }
-      #influenceModal .inf-war-intel{
-        margin-top:10px;
-        border-radius:14px;
-        border:1px solid rgba(255,255,255,.12);
-        background:rgba(255,255,255,.03);
+      #influenceCard.is-phantom-node .inf-action-card{
+        min-height:262px;
+        padding:0;
+        border-radius:18px;
         overflow:hidden;
+        border:1px solid rgba(222,200,156,.14);
+        background:linear-gradient(180deg, rgba(12,14,20,.96), rgba(7,9,13,.98));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
       }
-      #influenceModal .inf-war-intel summary{
-        list-style:none;
-        cursor:pointer;
-        padding:11px 12px;
+      #influenceCard.is-phantom-node .inf-action-card:disabled{
+        opacity:.74;
+      }
+      #influenceCard.is-phantom-node .inf-action-art{
+        position:relative;
+        display:block;
+        height:138px;
+        overflow:hidden;
+        background:rgba(255,255,255,.03);
+      }
+      #influenceCard.is-phantom-node .inf-action-art img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        object-position:center;
+        opacity:.94;
+      }
+      #influenceCard.is-phantom-node .inf-action-copy{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        padding:14px 14px 15px;
+        text-align:left;
+      }
+      #influenceCard.is-phantom-node .inf-action-line{
         display:flex;
         align-items:center;
         justify-content:space-between;
         gap:10px;
+      }
+      #influenceCard.is-phantom-node .inf-action-eyebrow{
+        font-size:10px;
+        letter-spacing:.18em;
+        text-transform:uppercase;
+        color:#c5b086;
+      }
+      #influenceCard.is-phantom-node .inf-action-title{
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:28px;
+        line-height:1.02;
+        letter-spacing:.04em;
+        text-transform:uppercase;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-action-effect{
+        font-size:12px;
+        line-height:1.55;
+        color:#d6d0c3;
+      }
+      #influenceCard.is-phantom-node .inf-action-chip{
+        margin-top:auto;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:40px;
+        border-radius:12px;
         font-size:12px;
         font-weight:900;
         letter-spacing:.08em;
         text-transform:uppercase;
-        color:#e6f0ff;
       }
-      #influenceModal .inf-war-intel summary::-webkit-details-marker{
-        display:none;
+      #influenceCard.is-phantom-node .inf-action-card-primary .inf-action-chip{
+        background:linear-gradient(90deg, rgba(43,160,140,.24), rgba(60,221,192,.18));
+        border:1px solid rgba(82,228,199,.28);
+        color:#90f3db;
       }
-      #influenceModal .inf-war-intel-summary-copy{
+      #influenceCard.is-phantom-node .inf-action-card-support .inf-action-chip{
+        background:linear-gradient(90deg, rgba(190,112,48,.24), rgba(255,160,74,.18));
+        border:1px solid rgba(255,176,96,.28);
+        color:#ffca86;
+      }
+      #influenceCard.is-phantom-node .inf-action-card-primary{
+        border-color:rgba(76,214,188,.18);
+      }
+      #influenceCard.is-phantom-node .inf-action-card-support{
+        border-color:rgba(255,178,96,.18);
+      }
+      #influenceCard.is-phantom-node .inf-watch-line,
+      #influenceCard.is-phantom-node .inf-orders-cooldown{
+        margin-top:12px;
+        color:#cfc9bc;
+      }
+      #influenceCard.is-phantom-node .inf-donate-box{
+        margin-top:12px;
+        border-radius:18px;
+        border:1px solid rgba(222,200,156,.12);
+        background:linear-gradient(180deg, rgba(13,16,22,.9), rgba(8,10,14,.94));
+      }
+      #influenceCard.is-phantom-node .inf-donate-shell{
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:18px;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-impact-grid{
+        margin-top:12px;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:10px;
+      }
+      #influenceCard.is-phantom-node .inf-impact-card{
+        min-height:108px;
+        border-radius:14px;
+        border:1px solid rgba(222,200,156,.12);
+        background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+        padding:12px;
+      }
+      #influenceCard.is-phantom-node .inf-impact-label{
         font-size:10px;
-        color:#9fb7d3;
-        letter-spacing:.04em;
-        text-transform:none;
-        font-weight:700;
+        letter-spacing:.16em;
+        text-transform:uppercase;
+        color:#a99778;
       }
-      #influenceModal .inf-war-intel-body{
-        padding:0 10px 10px;
+      #influenceCard.is-phantom-node .inf-impact-value{
+        margin-top:8px;
+        font-size:24px;
+        font-weight:900;
+        line-height:1.04;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-impact-hint{
+        margin-top:8px;
+        font-size:11px;
+        line-height:1.45;
+        color:#cfc9bc;
+      }
+      #influenceCard.is-phantom-node .inf-impact-copy{
+        margin-top:12px;
+        border-radius:14px;
+        border:1px solid rgba(222,200,156,.1);
+        background:rgba(255,255,255,.02);
+        color:#d6d0c3;
+      }
+      #influenceCard.is-phantom-node .inf-war-intel{
+        margin-top:12px;
+        border-radius:18px;
+        border:1px solid rgba(222,200,156,.12);
+        background:linear-gradient(180deg, rgba(13,16,22,.82), rgba(8,10,14,.9));
+      }
+      #influenceCard.is-phantom-node .inf-war-intel summary{
+        position:relative;
+        padding:14px 46px 14px 16px;
+        font-family:Georgia, "Times New Roman", serif;
+        font-size:16px;
+        letter-spacing:.06em;
+        text-transform:uppercase;
+        color:#f5efe1;
+      }
+      #influenceCard.is-phantom-node .inf-war-intel summary::after{
+        content:"⌄";
+        position:absolute;
+        right:16px;
+        top:50%;
+        transform:translateY(-56%);
+        font-size:18px;
+        color:#c5b086;
+        transition:transform .18s ease;
+      }
+      #influenceCard.is-phantom-node .inf-war-intel[open] summary::after{
+        transform:translateY(-56%) rotate(180deg);
+      }
+      #influenceCard.is-phantom-node .inf-war-intel-summary-copy{
+        display:block;
+        margin-top:4px;
+        font-size:11px;
+        letter-spacing:.04em;
+        color:#a99778;
+      }
+      #influenceCard.is-phantom-node .inf-war-intel-body{
+        padding:0 12px 12px;
       }
       #influenceCard.is-phantom-node #infIntelShell,
       #influenceCard.is-phantom-node #infLoreShell{
-        margin-top:8px;
+        margin-top:10px;
       }
       #influenceCard.is-phantom-node #infWeeklyPreview{
-        margin-top:8px;
+        margin-top:10px;
       }
 
-      @media (max-width: 520px){
+      @media (max-width: 720px){
+        #influenceCard.is-phantom-node{
+          width:min(100vw - 10px, 460px);
+          padding:14px 14px 16px;
+          border-radius:24px;
+          background:
+            linear-gradient(180deg, rgba(5,8,12,.98), rgba(9,12,18,.98)),
+            url("${PHANTOM_NODE_ASSETS.frameMobile}") center/100% 100% no-repeat;
+        }
+        #influenceCard.is-phantom-node .inf-head{
+          padding:2px 76px 8px;
+        }
+        #influenceCard.is-phantom-node .inf-title{
+          font-size:clamp(26px, 8vw, 40px);
+        }
+        #influenceCard.is-phantom-node .inf-sub{
+          font-size:10px;
+          letter-spacing:.18em;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{
+          grid-template-columns:minmax(0,1fr);
+          gap:10px;
+          padding:54px 12px 0;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-center-copy{
+          padding-top:0;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-status-badge{
+          top:12px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
+          padding:20px 14px 16px;
+        }
+        #influenceCard.is-phantom-node .inf-clash-meter{
+          padding:14px;
+        }
+        #influenceCard.is-phantom-node .inf-pressure-sides,
+        #influenceCard.is-phantom-node .inf-action-grid{
+          grid-template-columns:minmax(0,1fr);
+        }
+        #influenceCard.is-phantom-node .inf-impact-grid{
+          grid-template-columns:repeat(2,minmax(0,1fr));
+        }
+        #influenceCard.is-phantom-node .inf-action-card{
+          min-height:244px;
+        }
+      }
+
+      @media (max-width: 430px){
         #influenceModal .inf-modal-card{ padding:12px 10px 11px; }
         #influenceModal .inf-hero-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-node-core{ width:100%; height:84px; }
@@ -3397,9 +3942,10 @@
         #influenceModal .inf-weekly-grid{ grid-template-columns:minmax(0,1fr); }
         #influenceModal .inf-reward-checklist{ grid-template-columns:repeat(2,minmax(0,1fr)); }
         #influenceModal .inf-weekly-mini-grid{ grid-template-columns:minmax(0,1fr); }
-        #influenceModal .inf-impact-grid{ grid-template-columns:minmax(0,1fr); }
-        #influenceCard.is-phantom-node .inf-title{ font-size:24px; }
-        #influenceModal .inf-encounter-line{ font-size:16px; }
+        #influenceCard.is-phantom-node .inf-impact-grid{ grid-template-columns:minmax(0,1fr); }
+        #influenceCard.is-phantom-node .inf-close-btn{ min-width:72px; padding:9px 12px; }
+        #influenceCard.is-phantom-node .inf-encounter-line{ font-size:16px; }
+        #influenceCard.is-phantom-node .inf-pressure-side .value{ font-size:24px; }
       }
     `;
     document.head.appendChild(style);
@@ -3441,68 +3987,96 @@
         </div>
 
         <section id="infHero" class="inf-hero rv-surface rv-surface-hero">
-          <div class="inf-hero-grid">
-            <div>
-              <div id="infHeroKicker" class="inf-panel-kicker">War Encounter</div>
-              <div id="infLeader" class="inf-leader">-</div>
-              <div id="infControlLine" class="inf-control-line"></div>
-              <div id="infEncounterLine" class="inf-encounter-line">This node needs support.</div>
+          <div class="inf-phantom-hero-media">
+            <img class="inf-phantom-hero-art" src="${PHANTOM_NODE_ASSETS.hero}" alt="Phantom Node relay banner" loading="eager" decoding="async" onerror="this.style.display='none'; if (this.parentElement) this.parentElement.classList.add('is-art-missing');" />
+            <span id="infPhantomHeroBadge" class="inf-phantom-status-badge" data-state="CALM">Stable</span>
+            <div class="inf-phantom-hero-top">
+              <button
+                id="infSignalCoreBtn"
+                type="button"
+                class="inf-node-core inf-node-core-btn inf-phantom-sidecard inf-phantom-id-card"
+                data-signal-open
+                aria-haspopup="dialog"
+                aria-controls="infSignalSheet"
+                aria-expanded="false"
+              >
+                <div class="inf-node-core-label">Alpha Husky</div>
+                <div class="inf-node-core-mark">Signal Core</div>
+                <div id="infCoreState" class="inf-node-core-state">Stable</div>
+                <div id="infNodeIdentityCode" class="inf-node-core-code"></div>
+                <div class="inf-node-core-hint">Inspect</div>
+              </button>
+              <div class="inf-phantom-center-copy">
+                <div id="infHeroKicker" class="inf-panel-kicker">Faction war control point</div>
+                <div id="infLeader" class="inf-leader">-</div>
+                <div id="infControlLine" class="inf-control-line"></div>
+                <div id="infEncounterLine" class="inf-encounter-line">This node needs support.</div>
+              </div>
+              <div class="inf-phantom-sidecard inf-phantom-faction-card">
+                <div class="inf-phantom-sidecard-label">Current Lead</div>
+                <div class="inf-phantom-faction-row">
+                  <div class="inf-phantom-faction-sigil-wrap">
+                    <img id="infHeroFactionSigil" class="inf-phantom-faction-sigil" alt="" loading="eager" decoding="async" style="display:none;" onerror="this.style.display='none'; var fb=document.getElementById('infHeroFactionFallback'); if (fb) fb.style.display='grid';" />
+                    <div id="infHeroFactionFallback" class="inf-phantom-faction-fallback">--</div>
+                  </div>
+                  <div>
+                    <div id="infHeroFactionName" class="inf-phantom-faction-name">Neutral</div>
+                    <div id="infHeroFactionLead" class="inf-phantom-faction-lead">No lead recorded.</div>
+                  </div>
+                </div>
+                <div id="infHeroFactionStatus" class="inf-phantom-faction-status">Pressure is building.</div>
+              </div>
             </div>
-            <button
-              id="infSignalCoreBtn"
-              type="button"
-              class="inf-node-core inf-node-core-btn"
-              data-signal-open
-              aria-haspopup="dialog"
-              aria-controls="infSignalSheet"
-              aria-expanded="false"
-            >
-              <div class="inf-node-core-label">Signal Core</div>
-              <div id="infCoreState" class="inf-node-core-state">Stable</div>
-              <div class="inf-node-core-hint">Inspect</div>
-            </button>
+            <div class="inf-phantom-hero-bottom">
+              <div class="inf-chip-row">
+                <span id="infUxStatus" class="inf-chip rv-chip">Secured</span>
+                <span id="infUxControlChip" class="inf-chip inf-chip-muted rv-chip is-muted">Controlled</span>
+                <span id="infUxAction" class="inf-chip inf-chip-muted rv-chip is-muted">Pressure stable</span>
+                <span id="infUxValue" class="inf-chip rv-chip" style="display:none;"></span>
+                <span id="infUxWatchChip" class="inf-chip inf-chip-muted rv-chip is-muted" style="display:none;"></span>
+              </div>
+              <div id="infHeroFlavor" class="inf-hero-flavor">Old relay spines control signal routes, patrol response, and faction pressure.</div>
+              <div id="infUxStatusText" class="inf-hero-status">This frontline is stable right now.</div>
+            </div>
           </div>
-          <div class="inf-chip-row">
-            <span id="infUxStatus" class="inf-chip rv-chip">Secured</span>
-            <span id="infUxControlChip" class="inf-chip inf-chip-muted rv-chip is-muted">Controlled</span>
-            <span id="infUxAction" class="inf-chip inf-chip-muted rv-chip is-muted">Pressure stable</span>
-            <span id="infUxValue" class="inf-chip rv-chip" style="display:none;"></span>
-            <span id="infUxWatchChip" class="inf-chip inf-chip-muted rv-chip is-muted" style="display:none;"></span>
-          </div>
-          <div id="infHeroFlavor" class="inf-hero-flavor">Old relay spines control signal routes, patrol response, and faction pressure.</div>
-          <div id="infUxStatusText" class="inf-hero-status">This frontline is stable right now.</div>
-          <div id="infClashMeter" class="inf-clash-meter" style="display:none;margin-top:6px;"></div>
+          <div id="infClashMeter" class="inf-clash-meter" style="display:none;"></div>
           <div id="infContested" style="display:none;"></div>
         </section>
 
         <section id="infOpsPanel" class="inf-panel inf-ops-panel rv-surface">
           <div class="inf-panel-head">
-            <div id="infOrdersTitle" class="inf-panel-title">Recommended Action</div>
+            <div id="infOrdersTitle" class="inf-panel-title">Operations</div>
             <span id="infOpsState" class="inf-chip">Stand by</span>
           </div>
           <div id="infOrdersLead" class="inf-hero-status">Hold the relay.</div>
-          <div class="inf-chip-row">
-            <span class="inf-label-row"><span class="inf-panel-kicker">Patrol</span><button type="button" class="inf-help" data-tip-key="patrol" aria-label="Patrol help">?</button></span>
-            <span class="inf-label-row"><span class="inf-panel-kicker">Donate</span><button type="button" class="inf-help" data-tip-key="donate" aria-label="Donate help">?</button></span>
-          </div>
           <div class="inf-action-grid">
             <button id="infPatrolBtn" type="button" class="inf-action-card inf-action-card-primary">
-              <span class="inf-action-line">
-                <span class="inf-action-icon">[P]</span>
-                <span id="infPatrolLabel" class="inf-action-title">DEFEND NODE</span>
-                <span id="infPatrolTimer" class="inf-chip inf-action-tag" style="display:none;"></span>
+              <span class="inf-action-art">
+                <img src="${PHANTOM_NODE_ASSETS.patrolAction}" alt="Patrol Node tactical art" loading="eager" decoding="async" onerror="if (this.parentElement) this.parentElement.style.display='none';" />
               </span>
-              <span id="infPatrolHelp" class="inf-action-effect">${PATROL_ACTION_HINT}</span>
-              <span class="inf-action-chip">Patrol</span>
+              <span class="inf-action-copy">
+                <span class="inf-action-line">
+                  <span class="inf-action-eyebrow">Patrol Node</span>
+                  <span id="infPatrolTimer" class="inf-chip inf-action-tag" style="display:none;"></span>
+                </span>
+                <span id="infPatrolLabel" class="inf-action-title">Defend Node</span>
+                <span id="infPatrolHelp" class="inf-action-effect">${PATROL_ACTION_HINT}</span>
+                <span class="inf-action-chip">Deploy Patrol</span>
+              </span>
             </button>
 
             <button id="infDonateToggle" type="button" class="inf-action-card inf-action-card-support">
-              <span class="inf-action-line">
-                <span class="inf-action-icon">[D]</span>
-                <span class="inf-action-title">DONATE SUPPLIES</span>
+              <span class="inf-action-art">
+                <img src="${PHANTOM_NODE_ASSETS.donateAction}" alt="Donate Supplies logistics art" loading="eager" decoding="async" onerror="if (this.parentElement) this.parentElement.style.display='none';" />
               </span>
-              <span id="infDonateHelp" class="inf-action-effect">${DONATE_ACTION_HINT}</span>
-              <span class="inf-action-chip">Support</span>
+              <span class="inf-action-copy">
+                <span class="inf-action-line">
+                  <span class="inf-action-eyebrow">Donate Supplies</span>
+                </span>
+                <span class="inf-action-title">Support Flow</span>
+                <span id="infDonateHelp" class="inf-action-effect">${DONATE_ACTION_HINT}</span>
+                <span class="inf-action-chip">Deliver Supplies</span>
+              </span>
             </button>
           </div>
           <div id="infWatchHelp" class="inf-watch-line">Patrol is live. Move now to support your faction.</div>
@@ -3536,12 +4110,12 @@
           <div id="infRewardStateText" class="inf-hero-status">Your frontline actions strengthen faction support and weekly reward progress.</div>
           <div class="inf-impact-grid">
             <article class="inf-impact-card">
-              <div class="inf-impact-label">Patrol</div>
+              <div class="inf-impact-label">Patrol Status</div>
               <div id="infImpactPatrolValue" class="inf-impact-value">Available</div>
               <div id="infImpactPatrolHint" class="inf-impact-hint">Patrol is ready now.</div>
             </article>
             <article class="inf-impact-card">
-              <div class="inf-impact-label">Supplies</div>
+              <div class="inf-impact-label">Supplies Status</div>
               <div id="infImpactSuppliesValue" class="inf-impact-value">Available</div>
               <div id="infImpactSuppliesHint" class="inf-impact-hint">Send supplies to reinforce the relay.</div>
             </article>
@@ -4021,16 +4595,16 @@
     const ordersTitleEl = document.getElementById("infOrdersTitle");
     const warIntelEl = document.getElementById("infWarIntel");
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
-    if (titleEl) titleEl.textContent = phantomMode ? "Phantom Node" : (title || nodeId);
+    if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODE" : (title || nodeId);
     if (subEl) {
       const prettyNodeId = String(safeNodeId || "").trim().replaceAll("_", " ");
       subEl.textContent = phantomMode
-        ? "Faction war encounter"
+        ? "FACTION WAR CONTROL POINT"
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
     }
-    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "War Encounter" : "Live Node Operations";
+    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Faction war control point" : "Live Node Operations";
     if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Impact Today" : "Your Faction Support";
-    if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Recommended Action" : "Your Orders";
+    if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Operations" : "Your Orders";
     if (warIntelEl) warIntelEl.open = !phantomMode;
     if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
 
@@ -4327,6 +4901,13 @@
     const watchHelpEl = document.getElementById("infWatchHelp");
     const donateHelpEl = document.getElementById("infDonateHelp");
     const subEl = document.getElementById("infSub");
+    const phantomBadgeEl = document.getElementById("infPhantomHeroBadge");
+    const heroFactionNameEl = document.getElementById("infHeroFactionName");
+    const heroFactionLeadEl = document.getElementById("infHeroFactionLead");
+    const heroFactionStatusEl = document.getElementById("infHeroFactionStatus");
+    const heroFactionSigilEl = document.getElementById("infHeroFactionSigil");
+    const heroFactionFallbackEl = document.getElementById("infHeroFactionFallback");
+    const nodeIdentityCodeEl = document.getElementById("infNodeIdentityCode");
 
     if (!leaderEl || !contEl || !controlLineEl || !foot || !statusEl || !actionEl || !valueEl || !statusTextEl || !reasonEl || !rewardEl || !loreEl) return;
     const phantomMode = isPhantomNode(nodeId);
@@ -4338,6 +4919,7 @@
         cardEl.style.setProperty("--inf-accent-soft", mood.panel);
         cardEl.style.setProperty("--inf-chip-bg", mood.chipBg);
         cardEl.style.setProperty("--inf-chip-border", mood.chipBorder);
+        cardEl.dataset.phantomState = String(displayStatus || "CALM").trim().toUpperCase() || "CALM";
       }
       if (heroEl) {
         heroEl.style.background = `radial-gradient(circle at 88% 12%, ${mood.burst}, transparent 44%), radial-gradient(circle at 8% 94%, ${mood.base}, transparent 46%), linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04))`;
@@ -4399,7 +4981,26 @@
       }
       if (actionHelpEl) actionHelpEl.style.display = "none";
       if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
-      if (subEl && phantomMode) subEl.textContent = "Faction war encounter";
+      if (subEl && phantomMode) subEl.textContent = "FACTION WAR CONTROL POINT";
+      if (phantomBadgeEl) {
+        phantomBadgeEl.textContent = "STABLE";
+        phantomBadgeEl.dataset.state = "CALM";
+      }
+      if (heroFactionNameEl) heroFactionNameEl.textContent = "Neutral";
+      if (heroFactionLeadEl) heroFactionLeadEl.textContent = "No lead recorded.";
+      if (heroFactionStatusEl) heroFactionStatusEl.textContent = "Pressure is building.";
+      if (heroFactionSigilEl) {
+        heroFactionSigilEl.style.display = "none";
+        heroFactionSigilEl.removeAttribute("src");
+      }
+      if (heroFactionFallbackEl) {
+        heroFactionFallbackEl.textContent = "--";
+        heroFactionFallbackEl.style.display = "grid";
+      }
+      if (nodeIdentityCodeEl) {
+        nodeIdentityCodeEl.style.display = "none";
+        nodeIdentityCodeEl.textContent = "";
+      }
       paintUxPill(controlChipEl, "Neutral", {
         background: "rgba(255,255,255,.05)",
         border: "1px solid rgba(255,255,255,.12)",
@@ -4547,6 +5148,10 @@
     );
     const pressureSignal = Math.max(viewerPressure, leaderPressure, Number(info?.pressureTopValue || 0), Number(info?.heat || 0));
     const pressurePct = pressureSignal > 0 ? Math.max(10, Math.min(100, Math.round((pressureSignal / maxPressure) * 100))) : 0;
+    const panelFaction = owner || leaderFaction || viewerFaction;
+    const panelFactionLabel = panelFaction ? fmtFaction(panelFaction) : "Neutral";
+    const panelSigilUrl = phantomMode ? phantomFactionSigilUrl(panelFaction) : factionSigilUrl(panelFaction);
+    const signalId = phantomMode ? phantomNodeSignalId(info) : "";
 
     leaderEl.textContent = phantomMode
       ? (owner ? ownerLabel : "Neutral Control")
@@ -4554,7 +5159,7 @@
     if (phantomMode && controlStatus) {
       // Top hero / War Brief — player-facing, not technical
       controlLineEl.textContent = encounterBrief || controlStatus.advice || controlStatus.headline;
-      if (subEl) subEl.textContent = "Faction war encounter";
+      if (subEl) subEl.textContent = "FACTION WAR CONTROL POINT";
       if (heroFlavorEl) {
         const brief = controlStatus.advice || controlStatus.headline;
         heroFlavorEl.textContent = brief ? `${brief} ${controlStatus.detail ? "" : "Choose an action to support your faction."}`.trim() : "This node is active. Choose an action to support your faction.";
@@ -4563,41 +5168,77 @@
       controlLineEl.textContent = phantomMode
         ? `${ownerLabel} relay under pressure`
         : controlText;
-      if (subEl && phantomMode) subEl.textContent = "Faction war encounter";
+      if (subEl && phantomMode) subEl.textContent = "FACTION WAR CONTROL POINT";
       if (heroFlavorEl && !phantomMode) {
         heroFlavorEl.textContent = (ux.valueText || "This node supports steady faction pressure.");
       }
     }
     if (encounterLineEl) encounterLineEl.textContent = phantomMode ? encounterLine : "";
     if (coreStateEl) coreStateEl.textContent = primaryStatus;
+    if (phantomBadgeEl) {
+      phantomBadgeEl.textContent = phantomMode ? encounterBadge : primaryStatus;
+      phantomBadgeEl.dataset.state = paintStatus;
+    }
+    if (heroFactionNameEl) heroFactionNameEl.textContent = panelFactionLabel;
+    if (heroFactionLeadEl) {
+      heroFactionLeadEl.textContent = owner
+        ? (ownerLabel + " controls the relay.")
+        : (leaderName ? (leaderName + " has the strongest pressure.") : "No lead recorded.");
+    }
+    if (heroFactionStatusEl) heroFactionStatusEl.textContent = uxStatusText(ux.displayStatus);
+    if (heroFactionSigilEl) {
+      if (panelSigilUrl) {
+        heroFactionSigilEl.src = panelSigilUrl;
+        heroFactionSigilEl.style.display = "block";
+      } else {
+        heroFactionSigilEl.style.display = "none";
+        heroFactionSigilEl.removeAttribute("src");
+      }
+    }
+    if (heroFactionFallbackEl) {
+      heroFactionFallbackEl.textContent = panelFaction ? factionCode(panelFaction) : "--";
+      heroFactionFallbackEl.style.display = panelSigilUrl ? "none" : "grid";
+    }
+    if (nodeIdentityCodeEl) {
+      if (signalId) {
+        nodeIdentityCodeEl.textContent = "Signal " + signalId;
+        nodeIdentityCodeEl.style.display = "block";
+      } else {
+        nodeIdentityCodeEl.textContent = "";
+        nodeIdentityCodeEl.style.display = "none";
+      }
+    }
 
-    // Compact Control Clash meter for Phantom Nodes (in hero, after brief, before dense Intel)
     const clashEl = document.getElementById("infClashMeter");
     if (clashEl) {
-      if (phantomMode && controlStatus && (viewerPressure > 0 || enemyPressure > 0)) {
+      if (phantomMode) {
         const v = Math.max(0, Number(viewerPressure));
         const o = Math.max(0, Number(enemyPressure));
         const total = Math.max(1, v + o);
-        const yourPct = Math.round((v / total) * 100);
-        const enemyPct = 100 - yourPct;
-        const yourName = yourFactionName || "Your faction";
-        const secondLabel = (phantomMode && isRealEnemyFromScores) ? "Enemy" : "Lead";
+        const yourPct = v > 0 || o > 0 ? Math.round((v / total) * 100) : 0;
+        const enemyPct = v > 0 || o > 0 ? 100 - yourPct : 0;
+        const enemyLabel = owner && viewerFaction && owner !== viewerFaction
+          ? ownerLabel
+          : (isRealEnemyFromScores ? "Opposition" : "Enemy pressure");
+        const yourLabel = yourFactionName || "Your faction";
+        const idleClass = v === 0 && o === 0 ? " is-idle" : "";
         clashEl.style.display = "block";
         clashEl.innerHTML = `
-          <div class="inf-clash-head">WAR PRESSURE</div>
-          <div class="inf-clash-sides">
-            <div class="inf-clash-side your"><span class="name">${yourName}</span> <span class="score">${v}</span></div>
-            <div class="inf-clash-side enemy"><span class="name">${secondLabel}</span> <span class="score">${o}</span></div>
+          <div class="inf-pressure-head">
+            <span>Frontline Pressure</span>
+            <span class="inf-pressure-state">${encounterBadge}</span>
           </div>
-          <div class="inf-clash-bar">
-            <div class="your" style="width:${yourPct}%"></div>
-            <div class="enemy" style="width:${enemyPct}%"></div>
+          <div class="inf-pressure-sides">
+            <div class="inf-pressure-side is-enemy"><span class="label">${enemyLabel}</span><span class="value">${enemyPct}%</span></div>
+            <div class="inf-pressure-side is-friendly"><span class="label">${yourLabel}</span><span class="value">${yourPct}%</span></div>
           </div>
-          <div class="inf-clash-foot">${encounterLine}</div>
+          <div class="inf-pressure-track${idleClass}">
+            <div class="inf-pressure-fill is-enemy" style="width:${enemyPct}%;"></div>
+            <div class="inf-pressure-fill is-friendly" style="width:${yourPct}%;"></div>
+            <div class="inf-pressure-core"><span>${encounterBadge}</span></div>
+          </div>
+          <div class="inf-pressure-foot">${controlStatus?.detail || encounterLine || "Take the next action to start local pressure."}</div>
         `;
-      } else if (phantomMode) {
-        clashEl.style.display = "block";
-        clashEl.innerHTML = `<div class="inf-clash-head">WAR PRESSURE</div><div class="inf-clash-foot">Take the next action to start local pressure.</div>`;
       } else {
         clashEl.style.display = "none";
         clashEl.innerHTML = "";

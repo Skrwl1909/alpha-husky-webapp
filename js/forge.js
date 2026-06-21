@@ -1483,6 +1483,7 @@
   let _pityOverride = {};
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
+  let _useBlueCrystal = false;
 
   function getCfg() {
     const cfg = (_state && _state.craftCfg) || {};
@@ -1603,6 +1604,8 @@
     async function doUpgrade(it) {
       if (!it || _busy || !it.canUpgrade) return;
       const perfT0 = window.__ahPerf?.now?.() || Date.now();
+      const crystalMeta = (it.upgradePreview && it.upgradePreview.blueCrystal) || {};
+      const shouldUseBlueCrystal = !!(_useBlueCrystal && crystalMeta && crystalMeta.canUse);
       _busy = true;
       draw();
 
@@ -1611,7 +1614,9 @@
           buildingId: _ctx.buildingId,
           slot: it.slot,
           run_id: rid("web_upg"),
+          use_blue_crystal: shouldUseBlueCrystal,
         });
+        _useBlueCrystal = false;
         await loadState();
         toast(`Upgraded ${it.slotLabel}.`);
       } catch (e) {
@@ -1753,6 +1758,8 @@
 
     <div class="ah-divider"></div>
 
+    <div id="ah-blue-crystal-panel"></div>
+
     <div class="ah-btnrow" id="ah-upg-actions"></div>
 
     <div class="ah-loreline">
@@ -1777,9 +1784,66 @@
   }
 
   const actions = detailPanel.querySelector("#ah-upg-actions");
+  const crystalPanel = detailPanel.querySelector("#ah-blue-crystal-panel");
 
-  const btn = el(
-    "button",
+  if (crystalPanel) {
+    crystalPanel.innerHTML = "";
+    const crystal = preview.blueCrystal || {};
+    const crystalOwned = Number(crystal.owned || 0);
+    const crystalCanUse = !!crystal.canUse;
+    const crystalBaseChance = Math.max(0, Number(crystal.baseDoubleChance || 0));
+    const crystalBoostedChance = Math.max(crystalBaseChance, Number(crystal.boostedDoubleChance || 0));
+    const crystalMessage = String(crystal.message || "").trim();
+
+    if (crystalOwned > 0 || crystalMessage) {
+      const crystalBox = el("div", "ah-statbox");
+      crystalBox.style.marginTop = "12px";
+      crystalBox.appendChild(el("div", "k", "Blue Crystal"));
+      const crystalBody = el("div", "v", "");
+
+      if (crystalOwned > 0) {
+        crystalBody.appendChild(el("div", "ah-small", `Owned: <b>${esc(String(crystalOwned))}</b>`));
+        crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b>`));
+        crystalBody.appendChild(el("div", "ah-small", `With Blue Crystal: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
+      }
+
+      if (crystalOwned > 0) {
+        const label = document.createElement("label");
+        label.className = "ah-small";
+        label.style.display = "flex";
+        label.style.alignItems = "flex-start";
+        label.style.gap = "10px";
+        label.style.marginTop = "10px";
+        label.style.opacity = crystalCanUse ? "1" : ".7";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = !!(_useBlueCrystal && crystalCanUse);
+        checkbox.disabled = !crystalCanUse;
+        checkbox.addEventListener("change", () => {
+          _useBlueCrystal = !!checkbox.checked;
+        });
+
+        const copy = document.createElement("span");
+        copy.textContent = "Use Blue Crystal - increases chance for +2 stat gain";
+
+        label.appendChild(checkbox);
+        label.appendChild(copy);
+        crystalBody.appendChild(label);
+      }
+
+      if (crystalMessage) {
+        const note = el("div", "ah-small", esc(crystalMessage));
+        note.style.marginTop = "8px";
+        crystalBody.appendChild(note);
+      }
+
+      crystalBox.appendChild(crystalBody);
+      crystalPanel.appendChild(crystalBox);
+    }
+  }
+
+  const btn = el(    "button",
     `ah-btn primary ${isMaxed ? "" : ""}`,
     isMaxed ? "Item Maxed" : (it.canUpgrade ? "Forge Upgrade" : "Missing Materials")
   );
@@ -1847,6 +1911,7 @@
       btn.disabled = _busy || !it.canUpgrade;
 
       row.addEventListener("click", () => {
+        if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
         _selectedUpgradeKey = it.key;
         draw();
         if (window.innerWidth < 920) {
@@ -1859,6 +1924,7 @@
       btn.addEventListener("click", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+        if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
         _selectedUpgradeKey = it.key;
         doUpgrade(it);
       });

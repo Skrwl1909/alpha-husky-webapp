@@ -1372,11 +1372,25 @@ async use(key) {
     return;
   }
 
+  if (String(key) === "respec_token") {
+    const ok = confirm(
+      "This resets allocated stats and refunds points. Gear, pets, level and inventory stay safe.\n\nUse 1 Respec Token?"
+    );
+    if (!ok) {
+      this._perfAction("inventory_use", perfT0);
+      return;
+    }
+  }
+
   Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
   const apiPost = window.S?.apiPost || window.apiPost;
 
   try {
-    const res = await apiPost("/webapp/inventory/use", { key });
+    const res = await apiPost("/webapp/inventory/use", {
+      key,
+      run_id: this._mkRunId("w_inv_use"),
+      confirm_respec: String(key) === "respec_token",
+    });
     if (res.ok) {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
       this.activeEffects = this._activeEffectsFromResponse(res);
