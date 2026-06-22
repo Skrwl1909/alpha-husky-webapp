@@ -190,6 +190,65 @@
     }).join("");
   }
 
+  function materialRows(cost, materials) {
+    const balance = mats();
+    const order = [
+      ["bones", "Bones"],
+      ["scrap", "Scrap"],
+      ["rune_dust", "Rune Dust"],
+    ];
+    return order.map(([asset, label]) => {
+      const need = Number((materials && materials.need && materials.need[asset]) ?? (cost && cost[asset]) ?? 0);
+      const have = Number((materials && materials.have && materials.have[asset]) ?? balance[asset] ?? 0);
+      const ok = (materials && materials.enough && Object.prototype.hasOwnProperty.call(materials.enough, asset))
+        ? !!materials.enough[asset]
+        : have >= need;
+      return { asset, label, need, have, ok };
+    }).filter((row) => row.need > 0 || row.have > 0);
+  }
+
+  function renderCompactMaterialAvailability(cost, materials) {
+    const rows = materialRows(cost, materials);
+    if (!rows.length) return `<div class="ah-small">Availability check not available.</div>`;
+    return rows.map((row) => `
+      <div class="ah-cost-row ${row.ok ? "is-ok" : "is-missing"}">
+        <span>${esc(row.label)}</span>
+        <b>${esc(`${row.need} / ${row.have}`)}</b>
+      </div>
+    `).join("");
+  }
+
+  function getUpgradeStatusMeta(it, preview) {
+    const atCap = !!(preview && preview.atCap);
+    const isMaxed = atCap || Number((it && it.stars) || 0) >= Number((it && it.maxStars) || 0);
+    if (isMaxed) return { isMaxed: true, label: "Maxed", className: "is-maxed" };
+    if (it && it.canUpgrade) return { isMaxed: false, label: "Ready", className: "is-ready" };
+    return { isMaxed: false, label: "Missing Materials", className: "is-missing" };
+  }
+
+  function getUpgradeGainSummary(preview) {
+    const gainType = String((preview && preview.gainType) || "");
+    const previewMessage = String((preview && preview.message) || "").trim();
+    const statPool = Array.isArray(preview && preview.statPool) ? preview.statPool : [];
+    const pool = statPool.map((key) => statLabel(key)).join(" / ");
+
+    if (gainType === "exact") {
+      const exactGain = (preview && preview.exactGain) || {};
+      const exactKeys = orderedStatKeys(exactGain);
+      const summary = exactKeys.length
+        ? exactKeys.map((key) => `+${Number(exactGain[key] || 0)} ${statLabel(key)}`).join(" � ")
+        : (previewMessage || "Exact stat gain");
+      return { summary, pool };
+    }
+
+    if (gainType === "random") {
+      const totalMax = Number((preview && preview.possibleGain && preview.possibleGain.totalPointsMax) || 2);
+      return { summary: `+1 to +${totalMax} item stat points`, pool };
+    }
+
+    return { summary: previewMessage || "No upgrade preview available.", pool };
+  }
+
   function ensureStyles() {
   if (document.getElementById("ah-forge-styles")) return;
 
@@ -1441,6 +1500,229 @@
   color:var(--ah-dim);
   line-height:1.45;
 }
+
+.ah-status-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.ah-status-chip.is-ready{ border-color:rgba(104,255,173,.24); color:#c9ffe1; }
+.ah-status-chip.is-missing{ border-color:rgba(255,176,174,.28); color:#ffd2d1; }
+.ah-status-chip.is-maxed{ border-color:rgba(255,210,122,.28); color:#ffe7bd; }
+.ah-status-chip.is-crystal{ border-color:rgba(102,212,255,.28); color:#d7f5ff; }
+
+.ah-card.compact-picker{
+  align-items:stretch;
+  flex-direction:column;
+  gap:12px;
+}
+
+.ah-card.compact-picker .ah-left{ align-items:flex-start; }
+
+.ah-picker-summary{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.ah-picker-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.ah-picker-cost{
+  font-size:12px;
+  color:var(--ah-dim);
+  line-height:1.4;
+}
+
+.ah-picker-action{ min-width:96px; }
+
+.ah-mobile-navbtn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  padding:0;
+  margin:0 0 10px;
+  color:#ffd8a3;
+  font-size:13px;
+  font-weight:1000;
+  letter-spacing:.02em;
+  text-align:left;
+  cursor:pointer;
+}
+
+.ah-mobile-summary-box,
+.ah-mobile-cost-card,
+.ah-mobile-crystal{ padding:14px; }
+
+.ah-mobile-summary-head{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.ah-mobile-summary-copy{
+  min-width:0;
+  flex:1;
+}
+
+.ah-mobile-starline{
+  margin-top:8px;
+  font-size:13px;
+  font-weight:1000;
+  color:#ffe1b4;
+}
+
+.ah-mobile-summary-lines{
+  display:grid;
+  gap:10px;
+  margin-top:14px;
+}
+
+.ah-mobile-summary-line{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.ah-mobile-summary-line span:first-child{ color:var(--ah-dim); }
+.ah-mobile-summary-line b{ text-align:right; }
+
+.ah-cost-list{ display:grid; gap:8px; }
+
+.ah-cost-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:9px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:13px;
+}
+
+.ah-cost-row:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+
+.ah-cost-row.is-ok b{ color:#8ef0b0; }
+.ah-cost-row.is-missing b{ color:#ffb0ae; }
+
+.ah-mobile-toggle{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  margin-top:12px;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.ah-mobile-toggle small{
+  display:block;
+  margin-top:4px;
+  color:var(--ah-dim);
+}
+
+.ah-mobile-crystal-note{ margin-top:8px; }
+
+.ah-accordion{
+  margin-top:10px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+    rgba(255,255,255,.02);
+  overflow:hidden;
+}
+
+.ah-accordion > summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+  font-size:12px;
+  font-weight:1000;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:#ffcf90;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.ah-accordion > summary::-webkit-details-marker{ display:none; }
+.ah-accordion > summary::after{ content:"+"; color:rgba(255,255,255,.82); font-size:16px; line-height:1; }
+.ah-accordion[open] > summary::after{ content:"-"; }
+.ah-accordion-content{ padding:0 14px 14px; }
+
+.ah-mobile-stickybar{ display:none; }
+
+@media(max-width:720px){
+  .ah-forge-body{ padding:12px 12px 108px; }
+
+  .ah-mobile-picker-panel,
+  .ah-mobile-detail-panel{ padding:12px; }
+
+  .ah-card.compact-picker.selected{
+    transform:translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.06),
+      0 0 0 1px rgba(255,184,73,.10),
+      0 16px 30px rgba(255,126,31,.15);
+  }
+
+  .ah-mobile-stickybar{
+    position:sticky;
+    bottom:-1px;
+    z-index:3;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:16px -12px -12px;
+    padding:12px;
+    border-top:1px solid rgba(255,255,255,.10);
+    background:
+      linear-gradient(180deg, rgba(17,19,24,.92), rgba(10,12,16,.98)),
+      rgba(10,12,16,.98);
+    box-shadow:0 -14px 28px rgba(0,0,0,.28);
+  }
+
+  .ah-mobile-stickycopy{ min-width:0; flex:1; }
+  .ah-mobile-stickytitle{ font-size:12px; font-weight:1000; line-height:1.35; }
+
+  .ah-mobile-stickyfoot{
+    margin-top:4px;
+    font-size:11px;
+    color:var(--ah-dim);
+    line-height:1.35;
+  }
+
+  .ah-mobile-stickybar .ah-btn{
+    min-width:150px;
+    justify-content:center;
+  }
+
+  .ah-btnrow.ah-desktop-actions{ display:none; }
+}
+
   `;
 
   document.head.appendChild(s);
@@ -1484,6 +1766,36 @@
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
   let _useBlueCrystal = false;
+  let _mobileUpgradeView = "picker";
+
+  const MOBILE_FORGE_BREAKPOINT = 720;
+
+  function isCompactForgeMobile() {
+    return !!(typeof window !== "undefined" && window.innerWidth <= MOBILE_FORGE_BREAKPOINT);
+  }
+
+  function scrollForgeSectionToTop(selector, behavior = "auto") {
+    if (!_root) return;
+    const target = _root.querySelector(selector);
+    if (!target) {
+      const body = _root.querySelector(".ah-forge-body");
+      if (!body) return;
+      try { body.scrollTo({ top: 0, behavior }); } catch (_) { body.scrollTop = 0; }
+      return;
+    }
+    const run = () => {
+      try { target.scrollIntoView({ behavior, block: "start" }); }
+      catch (_) {
+        const body = _root && _root.querySelector(".ah-forge-body");
+        if (body) body.scrollTop = 0;
+      }
+    };
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(run);
+    } else {
+      run();
+    }
+  }
 
   function getCfg() {
     const cfg = (_state && _state.craftCfg) || {};
@@ -1578,9 +1890,12 @@
       return;
     }
 
+    const compactMobile = isCompactForgeMobile();
     if (!_selectedUpgradeKey || !eq.some((x) => x.key === _selectedUpgradeKey)) {
       _selectedUpgradeKey = eq[0].key;
+      if (compactMobile) _mobileUpgradeView = "picker";
     }
+    if (!compactMobile) _mobileUpgradeView = "detail";
 
     body.appendChild(el("div", "ah-note",
       `<div class="ah-section-kicker">Forgotten Tokens’ Vault</div>
@@ -1590,13 +1905,13 @@
     ));
 
     const split = el("div", "ah-split");
-    const listPanel = el("div", "ah-panel");
-    const detailPanel = el("div", "ah-panel");
+    const listPanel = el("div", `ah-panel${compactMobile ? " ah-mobile-picker-panel" : ""}`);
+    const detailPanel = el("div", `ah-panel${compactMobile ? " ah-mobile-detail-panel" : ""}`);
 
     listPanel.appendChild(el("div", "", `
       <div class="ah-section-kicker">Equipped Loadout</div>
       <div class="ah-section-title">Choose a piece to forge</div>
-      <div class="ah-section-copy">Each row below uses the same upgrade rules as Telegram. This pass changes only presentation, not math.</div>
+      <div class="ah-section-copy">${compactMobile ? "Pick one item to inspect. Full stats and extra details open after selection." : "Each row below uses the same upgrade rules as Telegram. This pass changes only presentation, not math."}</div>
     `));
 
     const list = el("div", "ah-list");
@@ -1618,7 +1933,8 @@
         });
         _useBlueCrystal = false;
         await loadState();
-        toast(`Upgraded ${it.slotLabel}.`);
+        toast(`Forged ${it.slotLabel} to \u2605${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
+        if (compactMobile) scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
       } catch (e) {
         toast(`Upgrade failed: ${e.message}`);
       } finally {
@@ -1629,259 +1945,309 @@
     }
 
     function drawDetail(it) {
-  if (!it) {
-    detailPanel.innerHTML = `
-      <div class="ah-section-kicker">Inspection</div>
-      <div class="ah-section-title">Select an item</div>
-      <div class="ah-section-copy">Tap any equipped piece on the left to open its forge preview.</div>
-    `;
-    return;
-  }
-
-  const preview = it.upgradePreview || {};
-  const cost = preview.cost || it.costNext || null;
-  const miss = cost ? missingForCost(cost) : [];
-  const isMaxed = Number(preview.atCap ? 1 : 0) === 1 || Number(it.stars || 0) >= Number(it.maxStars || 0);
-  const rKey = rarityKey(it.rarity);
-  const nextStars = Number(preview.nextLevel || Math.min(Number(it.maxStars || 0), Number(it.stars || 0) + 1));
-  const currentStats = preview.currentStats || it.currentStats || {};
-  const projectedStats = preview.projectedStats || null;
-  const projectedRanges = preview.projectedRanges || {};
-  const materials = preview.materials || null;
-  const statPool = Array.isArray(preview.statPool) ? preview.statPool : [];
-  const gainType = String(preview.gainType || "");
-  const previewMessage = String(preview.message || "");
-
-  let gainHtml = `<div class="ah-small">${esc(previewMessage || "No upgrade preview available.")}</div>`;
-  if (gainType === "exact") {
-    const exactGain = preview.exactGain || {};
-    const exactKeys = orderedStatKeys(exactGain);
-    gainHtml = exactKeys.map((key) => `
-      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-        <span class="ah-small">${esc(statLabel(key))}</span>
-        <b>+${esc(String(exactGain[key] || 0))}</b>
-      </div>
-    `).join("");
-  } else if (gainType === "random") {
-    gainHtml = `
-      <div class="ah-small" style="margin-bottom:8px;">${esc(previewMessage || "Upgrade will increase 1-2 item stats.")}</div>
-      ${statPool.length ? `<div class="ah-small" style="margin-bottom:8px;">Possible stat pool: <b>${esc(statPool.map((key) => statLabel(key)).join(", "))}</b></div>` : ""}
-      <div class="ah-small">Total gain: +1 to +${esc(String((preview.possibleGain && preview.possibleGain.totalPointsMax) || 2))} across the pool above.</div>
-    `;
-  }
-
-  const projectedHtml = projectedStats
-    ? renderCurrentStats(projectedStats)
-    : renderProjectedRanges(projectedRanges);
-  const materialHtml = renderMaterialAvailability(materials);
-
-  detailPanel.className = `ah-panel ${rarityClass(rKey)}`;
-  detailPanel.innerHTML = `
-    <div class="ah-forge-hero ${rarityClass(rKey)}">
-      <div class="ah-forge-halo"></div>
-
-      <div class="ah-forge-hero-top">
-        <div class="ah-forge-hero-copy">
-          <div class="ah-section-kicker">Forge Inspection</div>
-          <div class="ah-detail-name">${esc(it.name || it.slotLabel || "Item")}</div>
-          <div class="ah-detail-slot">
-            <span>${esc(it.slotLabel || it.slot || "slot")}</span>
-            <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>
-          </div>
-        </div>
-        <div class="ah-forge-rune">✦</div>
-      </div>
-
-      <div class="ah-detail-hero">
-        <div class="ah-detail-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
-        <div class="ah-detail-meta">
-          <div class="ah-small">This piece is currently mounted on your active build and can be pushed further at the vault bench.</div>
-          <div class="ah-outcome-strip">
-            <span class="ah-outcome-pill">Current ★${Number(it.stars || 0)}</span>
-            <span class="ah-outcome-pill">Next ★${nextStars}</span>
-            <span class="ah-outcome-pill">${isMaxed ? "Max Rank" : "Upgradeable"}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="ah-detail-grid" style="margin-top:12px">
-      <div class="ah-statbox">
-        <div class="k">Current Rank</div>
-        <div class="v">
-          ${starsHtml(it.stars, it.maxStars)}
-          <div class="ah-small" style="margin-top:6px">★${Number(it.stars || 0)} / ★${Number(it.maxStars || 0)}</div>
-        </div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">Next Step</div>
-        <div class="v">${isMaxed ? "No further star" : `Push to ★${nextStars}`}</div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">Forge Cost</div>
-        <div class="v">${cost ? esc(fmtCost(cost)) : "No further upgrades"}</div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">Status</div>
-        <div class="v">${isMaxed ? "Item is maxed" : (it.canUpgrade ? "Ready to forge" : "Missing materials")}</div>
-      </div>
-    </div>
-
-    ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
-
-    <div class="ah-divider"></div>
-
-    <div class="ah-detail-grid" style="margin-top:12px">
-      <div class="ah-statbox">
-        <div class="k">Current Stats</div>
-        <div class="v">${renderCurrentStats(currentStats)}</div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">Next Upgrade Gain</div>
-        <div class="v">${gainHtml}</div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</div>
-        <div class="v">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div>
-      </div>
-
-      <div class="ah-statbox">
-        <div class="k">Material Availability</div>
-        <div class="v">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div>
-      </div>
-    </div>
-
-    <div class="ah-divider"></div>
-
-    <div id="ah-blue-crystal-panel"></div>
-
-    <div class="ah-btnrow" id="ah-upg-actions"></div>
-
-    <div class="ah-loreline">
-      Upgrade cost still uses the same Telegram-side core. This patch only makes the station feel like a real vault forge instead of a plain script panel.
-    </div>
-  `;
-
-  const icoMount = detailPanel.querySelector("#ah-detail-ico");
-  if (icoMount) {
-    const img = document.createElement("img");
-    img.alt = it.name || it.key || "item";
-    img.src = it.icon || "";
-    img.onerror = () => {
-      img.remove();
-      icoMount.textContent = "✦";
-      icoMount.style.display = "grid";
-      icoMount.style.placeItems = "center";
-      icoMount.style.fontWeight = "1000";
-      icoMount.style.fontSize = "24px";
-    };
-    icoMount.appendChild(img);
-  }
-
-  const actions = detailPanel.querySelector("#ah-upg-actions");
-  const crystalPanel = detailPanel.querySelector("#ah-blue-crystal-panel");
-
-  if (crystalPanel) {
-    crystalPanel.innerHTML = "";
-    const crystal = preview.blueCrystal || {};
-    const crystalOwned = Number(crystal.owned || 0);
-    const crystalCanUse = !!crystal.canUse;
-    const crystalBaseChance = Math.max(0, Number(crystal.baseDoubleChance || 0));
-    const crystalBoostedChance = Math.max(crystalBaseChance, Number(crystal.boostedDoubleChance || 0));
-    const crystalMessage = String(crystal.message || "").trim();
-
-    if (crystalOwned > 0 || crystalMessage) {
-      const crystalBox = el("div", "ah-statbox");
-      crystalBox.style.marginTop = "12px";
-      crystalBox.appendChild(el("div", "k", "Blue Crystal"));
-      const crystalBody = el("div", "v", "");
-
-      if (crystalOwned > 0) {
-        crystalBody.appendChild(el("div", "ah-small", `Owned: <b>${esc(String(crystalOwned))}</b>`));
-        crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b>`));
-        crystalBody.appendChild(el("div", "ah-small", `With Blue Crystal: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
+      if (!it) {
+        detailPanel.innerHTML = `
+          <div class="ah-section-kicker">Inspection</div>
+          <div class="ah-section-title">Select an item</div>
+          <div class="ah-section-copy">${compactMobile ? "Choose a piece to open its focused forge view." : "Tap any equipped piece on the left to open its forge preview."}</div>
+        `;
+        return;
       }
 
-      if (crystalOwned > 0) {
-        const label = document.createElement("label");
-        label.className = "ah-small";
-        label.style.display = "flex";
-        label.style.alignItems = "flex-start";
-        label.style.gap = "10px";
-        label.style.marginTop = "10px";
-        label.style.opacity = crystalCanUse ? "1" : ".7";
+      const preview = it.upgradePreview || {};
+      const cost = preview.cost || it.costNext || null;
+      const miss = cost ? missingForCost(cost) : [];
+      const statusMeta = getUpgradeStatusMeta(it, preview);
+      const isMaxed = statusMeta.isMaxed;
+      const rKey = rarityKey(it.rarity);
+      const nextStars = Number(preview.nextLevel || Math.min(Number(it.maxStars || 0), Number(it.stars || 0) + 1));
+      const currentStats = preview.currentStats || it.currentStats || {};
+      const projectedStats = preview.projectedStats || null;
+      const projectedRanges = preview.projectedRanges || {};
+      const materials = preview.materials || null;
+      const gainSummary = getUpgradeGainSummary(preview);
+      const crystal = preview.blueCrystal || {};
+      const crystalOwned = Number(crystal.owned || 0);
+      const crystalCanUse = !!crystal.canUse && crystalOwned > 0;
+      const crystalBaseChance = Math.max(0, Number(crystal.baseDoubleChance || 0));
+      const crystalBoostedChance = Math.max(crystalBaseChance, Number(crystal.boostedDoubleChance || 0));
+      const crystalMessage = String(crystal.message || "").trim();
+      const showCrystalPanel = !isMaxed && !!it.canUpgrade && (crystalOwned > 0 || crystalMessage);
+      const compactMaterialHtml = renderCompactMaterialAvailability(cost, materials);
+      const compactCostSummary = materialRows(cost, materials).map((row) => `${row.label} ${row.need}`).join(" � ");
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = !!(_useBlueCrystal && crystalCanUse);
-        checkbox.disabled = !crystalCanUse;
-        checkbox.addEventListener("change", () => {
-          _useBlueCrystal = !!checkbox.checked;
+      if (!showCrystalPanel || !crystalCanUse) {
+        _useBlueCrystal = false;
+      }
+
+      let gainHtml = `<div class="ah-small">${esc(String(preview.message || "No upgrade preview available."))}</div>`;
+      if (String(preview.gainType || "") === "exact") {
+        const exactGain = preview.exactGain || {};
+        const exactKeys = orderedStatKeys(exactGain);
+        gainHtml = exactKeys.map((key) => `
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span class="ah-small">${esc(statLabel(key))}</span>
+            <b>+${esc(String(exactGain[key] || 0))}</b>
+          </div>
+        `).join("");
+      } else if (String(preview.gainType || "") === "random") {
+        gainHtml = `
+          <div class="ah-small" style="margin-bottom:8px;">${esc(String(preview.message || "Upgrade will increase 1-2 item stats."))}</div>
+          ${gainSummary.pool ? `<div class="ah-small" style="margin-bottom:8px;">Possible stat pool: <b>${esc(gainSummary.pool.split(" / ").join(", "))}</b></div>` : ""}
+          <div class="ah-small">Total gain: +1 to +${esc(String((preview.possibleGain && preview.possibleGain.totalPointsMax) || 2))} across the pool above.</div>
+        `;
+      }
+
+      const projectedHtml = projectedStats ? renderCurrentStats(projectedStats) : renderProjectedRanges(projectedRanges);
+      const materialHtml = renderMaterialAvailability(materials);
+
+      detailPanel.className = `ah-panel ${rarityClass(rKey)}`;
+      if (compactMobile) {
+        detailPanel.className = `ah-panel ah-mobile-detail-panel ${rarityClass(rKey)}`;
+        detailPanel.innerHTML = `
+          <button class="ah-mobile-navbtn" id="ah-mobile-change-item" type="button">&larr; Change item</button>
+
+          <div class="ah-statbox ah-mobile-summary-box">
+            <div class="ah-mobile-summary-head">
+              <div class="ah-detail-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
+              <div class="ah-mobile-summary-copy">
+                <div class="ah-detail-name">${esc(it.name || it.slotLabel || "Item")}</div>
+                <div class="ah-detail-slot">
+                  <span>${esc(it.slotLabel || it.slot || "slot")}</span>
+                  <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>
+                </div>
+                <div class="ah-mobile-starline">&#9733;${Number(it.stars || 0)} &rarr; &#9733;${nextStars}</div>
+              </div>
+            </div>
+
+            <div class="ah-mobile-summary-lines">
+              <div class="ah-mobile-summary-line"><span>Upgrade</span><b>${isMaxed ? "No further star" : `to &#9733;${nextStars}`}</b></div>
+              <div class="ah-mobile-summary-line"><span>Gain</span><b>${esc(gainSummary.summary)}</b></div>
+              ${gainSummary.pool ? `<div class="ah-mobile-summary-line"><span>Pool</span><b>${esc(gainSummary.pool)}</b></div>` : ""}
+              <div class="ah-mobile-summary-line"><span>Status</span><span class="ah-status-chip ${statusMeta.className}">${statusMeta.label}</span></div>
+            </div>
+          </div>
+
+          <div class="ah-statbox ah-mobile-cost-card" style="margin-top:12px;">
+            <div class="k">Cost + Availability</div>
+            <div class="v">
+              <div class="ah-cost-list">${compactMaterialHtml}</div>
+              ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
+            </div>
+          </div>
+
+          <div id="ah-blue-crystal-panel"></div>
+
+          <details class="ah-accordion">
+            <summary>Current Stats</summary>
+            <div class="ah-accordion-content">${renderCurrentStats(currentStats)}</div>
+          </details>
+
+          <details class="ah-accordion">
+            <summary>Next Upgrade Gain</summary>
+            <div class="ah-accordion-content">${gainHtml}</div>
+          </details>
+
+          <details class="ah-accordion">
+            <summary>${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</summary>
+            <div class="ah-accordion-content">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div>
+          </details>
+
+          <details class="ah-accordion">
+            <summary>Full Material Details</summary>
+            <div class="ah-accordion-content">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div>
+          </details>
+
+          <details class="ah-accordion">
+            <summary>Advanced Forge Info</summary>
+            <div class="ah-accordion-content"><div class="ah-small">Upgrade cost still uses the same Telegram-side core. This pass only changes presentation and keeps forge math untouched.</div></div>
+          </details>
+
+          <div class="ah-btnrow ah-desktop-actions" id="ah-upg-actions"></div>
+          <div class="ah-mobile-stickybar" id="ah-mobile-stickybar"></div>
+        `;
+      } else {
+        detailPanel.innerHTML = `
+          <div class="ah-forge-hero ${rarityClass(rKey)}">
+            <div class="ah-forge-halo"></div>
+
+            <div class="ah-forge-hero-top">
+              <div class="ah-forge-hero-copy">
+                <div class="ah-section-kicker">Forge Inspection</div>
+                <div class="ah-detail-name">${esc(it.name || it.slotLabel || "Item")}</div>
+                <div class="ah-detail-slot">
+                  <span>${esc(it.slotLabel || it.slot || "slot")}</span>
+                  <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>
+                </div>
+              </div>
+              <div class="ah-forge-rune">✦</div>
+            </div>
+
+            <div class="ah-detail-hero">
+              <div class="ah-detail-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
+              <div class="ah-detail-meta">
+                <div class="ah-small">This piece is currently mounted on your active build and can be pushed further at the vault bench.</div>
+                <div class="ah-outcome-strip">
+                  <span class="ah-outcome-pill">Current ★${Number(it.stars || 0)}</span>
+                  <span class="ah-outcome-pill">Next ★${nextStars}</span>
+                  <span class="ah-outcome-pill">${statusMeta.label}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ah-detail-grid" style="margin-top:12px">
+            <div class="ah-statbox"><div class="k">Current Rank</div><div class="v">${starsHtml(it.stars, it.maxStars)}<div class="ah-small" style="margin-top:6px">★${Number(it.stars || 0)} / ★${Number(it.maxStars || 0)}</div></div></div>
+            <div class="ah-statbox"><div class="k">Next Step</div><div class="v">${isMaxed ? "No further star" : `Push to ★${nextStars}`}</div></div>
+            <div class="ah-statbox"><div class="k">Forge Cost</div><div class="v">${cost ? esc(fmtCost(cost)) : "No further upgrades"}</div></div>
+            <div class="ah-statbox"><div class="k">Status</div><div class="v">${statusMeta.label}</div></div>
+          </div>
+
+          ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
+
+          <div class="ah-divider"></div>
+
+          <div class="ah-detail-grid" style="margin-top:12px">
+            <div class="ah-statbox"><div class="k">Current Stats</div><div class="v">${renderCurrentStats(currentStats)}</div></div>
+            <div class="ah-statbox"><div class="k">Next Upgrade Gain</div><div class="v">${gainHtml}</div></div>
+            <div class="ah-statbox"><div class="k">${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</div><div class="v">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div></div>
+            <div class="ah-statbox"><div class="k">Material Availability</div><div class="v">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div></div>
+          </div>
+
+          <div class="ah-divider"></div>
+
+          <div id="ah-blue-crystal-panel"></div>
+
+          <div class="ah-btnrow" id="ah-upg-actions"></div>
+
+          <div class="ah-loreline">Upgrade cost still uses the same Telegram-side core. This patch only makes the station feel like a real vault forge instead of a plain script panel.</div>
+        `;
+      }
+
+      const icoMount = detailPanel.querySelector("#ah-detail-ico");
+      if (icoMount) {
+        const img = document.createElement("img");
+        img.alt = it.name || it.key || "item";
+        img.src = it.icon || "";
+        img.onerror = () => {
+          img.remove();
+          icoMount.textContent = "✦";
+          icoMount.style.display = "grid";
+          icoMount.style.placeItems = "center";
+          icoMount.style.fontWeight = "1000";
+          icoMount.style.fontSize = "24px";
+        };
+        icoMount.appendChild(img);
+      }
+
+      const actions = detailPanel.querySelector("#ah-upg-actions");
+      const crystalPanel = detailPanel.querySelector("#ah-blue-crystal-panel");
+      const mobileSticky = detailPanel.querySelector("#ah-mobile-stickybar");
+      const changeItemBtn = detailPanel.querySelector("#ah-mobile-change-item");
+      if (changeItemBtn) {
+        changeItemBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          _mobileUpgradeView = "picker";
+          draw();
+          scrollForgeSectionToTop(".ah-mobile-picker-panel", "auto");
         });
-
-        const copy = document.createElement("span");
-        copy.textContent = "Use Blue Crystal - increases chance for +2 stat gain";
-
-        label.appendChild(checkbox);
-        label.appendChild(copy);
-        crystalBody.appendChild(label);
       }
 
-      if (crystalMessage) {
-        const note = el("div", "ah-small", esc(crystalMessage));
-        note.style.marginTop = "8px";
-        crystalBody.appendChild(note);
+      if (crystalPanel) {
+        crystalPanel.innerHTML = "";
+        if (showCrystalPanel) {
+          const crystalBox = el("div", `ah-statbox${compactMobile ? " ah-mobile-crystal" : ""}`);
+          crystalBox.style.marginTop = "12px";
+          crystalBox.appendChild(el("div", "k", "Blue Crystal"));
+          const crystalBody = el("div", "v", "");
+          crystalBody.appendChild(el("div", "ah-small", `Owned: <b>${esc(String(crystalOwned))}</b>`));
+          crystalBody.appendChild(el("div", "ah-small", "Boosts chance for +2 stat gain. Not guaranteed."));
+
+          if (crystalOwned > 0) {
+            crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b> � Armed: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
+            const label = document.createElement("label");
+            label.className = "ah-mobile-toggle";
+            label.style.opacity = crystalCanUse ? "1" : ".7";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = !!(_useBlueCrystal && crystalCanUse);
+            checkbox.disabled = !crystalCanUse;
+            checkbox.addEventListener("change", () => {
+              _useBlueCrystal = !!checkbox.checked;
+              draw();
+            });
+
+            const copy = document.createElement("span");
+            copy.innerHTML = `Use Blue Crystal<small>Boosts chance for +2 stat gain. Not guaranteed.</small>`;
+
+            label.appendChild(checkbox);
+            label.appendChild(copy);
+            crystalBody.appendChild(label);
+          }
+
+          if (crystalMessage) {
+            crystalBody.appendChild(el("div", "ah-small ah-mobile-crystal-note", esc(crystalMessage)));
+          }
+
+          crystalBox.appendChild(crystalBody);
+          crystalPanel.appendChild(crystalBox);
+        }
       }
 
-      crystalBox.appendChild(crystalBody);
-      crystalPanel.appendChild(crystalBox);
+      const btn = el(
+        "button",
+        "ah-btn primary",
+        _busy ? "Forging..." : (isMaxed ? "Item Maxed" : (it.canUpgrade ? `Forge to ?${nextStars}` : "Missing Materials"))
+      );
+      btn.type = "button";
+      btn.disabled = _busy || isMaxed || !it.canUpgrade;
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        doUpgrade(it);
+      });
+
+      const secondary = el("button", "ah-btn subtle", "Refresh");
+      secondary.type = "button";
+      secondary.disabled = _busy;
+      secondary.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (_busy) return;
+        _busy = true;
+        draw();
+        try {
+          await loadState();
+          toast("Forge updated.");
+        } catch (e) {
+          toast(`Refresh failed: ${e.message}`);
+        } finally {
+          _busy = false;
+          draw();
+        }
+      });
+
+      if (mobileSticky) {
+        const stickyCopy = el("div", "ah-mobile-stickycopy", "");
+        stickyCopy.innerHTML = `
+          <div class="ah-mobile-stickytitle">${esc([statusMeta.label, (_useBlueCrystal && crystalCanUse) ? "Crystal armed" : ""].filter(Boolean).join(" � "))}</div>
+          <div class="ah-mobile-stickyfoot">${esc(compactCostSummary || "No further forge cost")}</div>
+        `;
+        mobileSticky.appendChild(stickyCopy);
+        mobileSticky.appendChild(btn);
+      } else if (actions) {
+        actions.appendChild(btn);
+        actions.appendChild(secondary);
+      }
     }
-  }
-
-  const btn = el(    "button",
-    `ah-btn primary ${isMaxed ? "" : ""}`,
-    isMaxed ? "Item Maxed" : (it.canUpgrade ? "Forge Upgrade" : "Missing Materials")
-  );
-  btn.type = "button";
-  btn.disabled = _busy || isMaxed || !it.canUpgrade;
-  btn.addEventListener("click", (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    doUpgrade(it);
-  });
-
-  const secondary = el("button", "ah-btn subtle", "Refresh");
-  secondary.type = "button";
-  secondary.disabled = _busy;
-  secondary.addEventListener("click", async (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (_busy) return;
-    _busy = true;
-    draw();
-    try {
-      await loadState();
-      toast("Forge updated.");
-    } catch (e) {
-      toast(`Refresh failed: ${e.message}`);
-    } finally {
-      _busy = false;
-      draw();
-    }
-  });
-
-  actions.appendChild(btn);
-  actions.appendChild(secondary);
-}
 
     eq.forEach((it) => {
       const rKey = rarityKey(it.rarity);
-      const row = el("div", `ah-card ${rarityClass(rKey)} ${_selectedUpgradeKey === it.key ? "selected" : ""}`);
+      const preview = it.upgradePreview || {};
+      const statusMeta = getUpgradeStatusMeta(it, preview);
+      const row = el("div", `ah-card ${compactMobile ? "compact-picker " : ""}${rarityClass(rKey)} ${_selectedUpgradeKey === it.key ? "selected" : ""}`);
       const left = el("div", "ah-left");
 
       const ico = el("div", `ah-ico ${rarityClass(rKey)}`);
@@ -1894,27 +2260,38 @@
       const meta = el("div", "ah-meta");
       meta.appendChild(el("div", "ah-slotline", `<span>${esc(it.slotLabel || cap(it.slot) || "Item")}</span>`));
       meta.appendChild(el("div", "ah-line", `${esc(it.name || "—")}`));
-      meta.appendChild(el("div", "ah-subline",
-        `${starsHtml(it.stars, it.maxStars)}
-         <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>`
-      ));
-      if (it.costNext) {
-        meta.appendChild(el("div", "ah-small", `Next: ${esc(fmtCost(it.costNext))}`));
-      }
+      meta.appendChild(el("div", "ah-subline", `${starsHtml(it.stars, it.maxStars)} <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>`));
+      if (!compactMobile && it.costNext) meta.appendChild(el("div", "ah-small", `Next: ${esc(fmtCost(it.costNext))}`));
 
       left.appendChild(ico);
       left.appendChild(meta);
-      row.appendChild(left);
-
-      const btn = el("button", `ah-btn ${it.canUpgrade ? "primary" : "subtle"}`, it.canUpgrade ? "Upgrade" : "Maxed");
+      const btn = el("button", `ah-btn ${compactMobile ? "subtle" : (it.canUpgrade ? "primary" : "subtle")}`, compactMobile ? "Inspect" : (it.canUpgrade ? "Upgrade" : "Maxed"));
       btn.type = "button";
-      btn.disabled = _busy || !it.canUpgrade;
+      btn.disabled = _busy || (!compactMobile && !it.canUpgrade);
+
+      if (compactMobile) {
+        const summary = el("div", "ah-picker-summary");
+        summary.appendChild(left);
+        summary.appendChild(el("div", "", `<span class="ah-status-chip ${statusMeta.className}">${statusMeta.label}</span>`));
+        row.appendChild(summary);
+
+        const metaRow = el("div", "ah-picker-meta", `<div class="ah-picker-cost">${it.costNext ? esc(fmtCost(it.costNext)) : "No further upgrades"}</div>`);
+        btn.classList.add("ah-picker-action");
+        metaRow.appendChild(btn);
+        row.appendChild(metaRow);
+      } else {
+        row.appendChild(left);
+        row.appendChild(btn);
+      }
 
       row.addEventListener("click", () => {
         if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
         _selectedUpgradeKey = it.key;
+        if (compactMobile) _mobileUpgradeView = "detail";
         draw();
-        if (window.innerWidth < 920) {
+        if (compactMobile) {
+          scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
+        } else if (window.innerWidth < 920) {
           const target = _root && _root.querySelector(".ah-split");
           const detail = target && target.lastElementChild;
           if (detail) detail.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1926,10 +2303,15 @@
         ev.stopPropagation();
         if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
         _selectedUpgradeKey = it.key;
+        if (compactMobile) {
+          _mobileUpgradeView = "detail";
+          draw();
+          scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
+          return;
+        }
         doUpgrade(it);
       });
 
-      row.appendChild(btn);
       list.appendChild(row);
     });
 
@@ -1939,7 +2321,10 @@
     const selected = eq.find((x) => x.key === _selectedUpgradeKey) || eq[0];
     drawDetail(selected);
 
-    if (window.innerWidth < 920) {
+    if (compactMobile) {
+      if (_mobileUpgradeView === "detail") split.appendChild(detailPanel);
+      else split.appendChild(listPanel);
+    } else if (window.innerWidth < 920) {
       split.appendChild(detailPanel);
       split.appendChild(listPanel);
     } else {
@@ -2563,6 +2948,7 @@ slotField.right.appendChild(chipbar);
     _state = null;
     _busy = false;
     _tab = "upgrade";
+    _mobileUpgradeView = "picker";
   }
 
   async function open(ctx) {
