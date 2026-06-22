@@ -51,7 +51,72 @@
     "hostile trace",
     "phantom"
   ]);
+const MISSION_DUEL_BOSS_ASSET_MAP = Object.freeze({
+  atrium_sentinel: "images/bosses/atrium_sentinel.png",
+  core_custodian: "images/bosses/core_custodian.png",
+  echo_revenant: "images/bosses/echo_revenant.png",
+  flux_scorpion: "images/bosses/flux_scorpion.png",
+  gleam_warden: "images/bosses/gleam_warden.png",
+  ion_sentry: "images/bosses/ion_sentry.png",
+  lunar_myrmidon: "images/bosses/lunar_myrmidon.png",
+  neon_goliath: "images/bosses/neon_goliath.png",
+  pale_tyrant: "images/bosses/pale_tyrant.png",
+  phase_knight: "images/bosses/phase_knight.png",
+  shatter_hound: "images/bosses/shatter_hound.png"
+});
 
+function missionBossAssetVersion() {
+  return textOrEmpty(window.WEBAPP_VER || window.__WEBAPP_VER || window.APP_VERSION || "");
+}
+
+function missionBossAssetUrl(path) {
+  const base = assetUrl(path);
+  if (!base) return "";
+  if (/^(?:https?:|data:)/i.test(base)) return base;
+  const version = missionBossAssetVersion();
+  if (!version) return base;
+  return base.includes("?")
+    ? `${base}&v=${encodeURIComponent(version)}`
+    : `${base}?v=${encodeURIComponent(version)}`;
+}
+
+function normalizeMissionBossAssetKey(value) {
+  return textOrEmpty(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    .trim();
+}
+
+function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
+  const bossKeys = missionDuelUniqueStrings([
+    enemyBlock?.bossAsset,
+    enemyBlock?.boss_asset,
+    enemyBlock?.visualKey,
+    enemyBlock?.visual_key,
+    enemyBlock?.key,
+    enemyBlock?.code,
+    last?.bossAsset,
+    last?.boss_asset,
+    last?.visualKey,
+    last?.visual_key,
+    payload?.bossAsset,
+    payload?.boss_asset,
+    payload?.visualKey,
+    payload?.visual_key,
+  ]);
+  for (const rawKey of bossKeys) {
+    const key = normalizeMissionBossAssetKey(rawKey);
+    const mappedPath = MISSION_DUEL_BOSS_ASSET_MAP[key];
+    if (!mappedPath) continue;
+    return {
+      src: missionBossAssetUrl(mappedPath),
+      source: "local mission boss asset mapping",
+      displayName: titleizeWord(key.replaceAll("_", " "))
+    };
+  }
+  return null;
+}
   function assetUrl(p) {
     p = String(p || "");
     if (!p) return "";
@@ -3511,6 +3576,10 @@ function _normalizeRareDropObj(obj) {
       enemyBlock?.img,
       enemyBlock?.emblemUrl,
       enemyBlock?.emblem_url,
+      last?.bossImage,
+      last?.boss_image,
+      payload?.bossImage,
+      payload?.boss_image,
       last?.enemyVisual,
       last?.enemy_visual,
       last?.enemyImage,
@@ -3551,7 +3620,11 @@ function _normalizeRareDropObj(obj) {
       payload?.target_icon,
     ]);
     if (candidates[0]) {
-      return { src: assetUrl(candidates[0]), source: "enemy art / icon" };
+      return { src: missionBossAssetUrl(candidates[0]), source: "enemy art / icon" };
+    }
+    const mappedBossVisual = resolveMissionDuelBossAssetVisual(payload, last, enemyBlock);
+    if (mappedBossVisual) {
+      return mappedBossVisual;
     }
     const namedVisual = resolveMissionDuelNamedEnemyVisual(payload, last, enemyBlock);
     if (namedVisual) {
@@ -4042,6 +4115,12 @@ function _normalizeRareDropObj(obj) {
       rewardIntent: Array.isArray(o?.rewardIntent) ? o.rewardIntent : [],
       rareHint: String(o?.rareHint || ""),
       rareDrop,
+      bossAsset: String(o?.bossAsset || ""),
+      bossImage: String(o?.bossImage || ""),
+      visualKey: String(o?.visualKey || ""),
+      enemyVisual: String(o?.enemyVisual || o?.bossImage || ""),
+      enemyImage: String(o?.enemyImage || o?.bossImage || ""),
+      targetImage: String(o?.targetImage || o?.bossImage || ""),
       // ✅ keep optimistic timer until mission would be ready (+30s buffer)
       untilMs: Date.now() + (durSec * 1000) + 30000,
     };
