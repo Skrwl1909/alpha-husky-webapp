@@ -616,6 +616,128 @@
   function phantomFrontlineCtaLabel() {
     return "HOLD THE LINE";
   }
+  function renderPhantomThreatCard(info) {
+    const el = _qs("infThreatCard");
+    if (!el) return;
+    const threat = (info && typeof info.frontlineThreat === "object") ? info.frontlineThreat : null;
+    if (!threat) { el.style.display = "none"; el.innerHTML = ""; return; }
+    const weakness = Array.isArray(threat.weakness) ? threat.weakness.join(" / ") : "Patrol / Supplies";
+    el.style.display = "block";
+    el.innerHTML = `
+      <div class="inf-threat-head">
+        <div class="inf-threat-silhouette" aria-hidden="true"></div>
+        <div style="min-width:0;flex:1;">
+          <div class="inf-threat-kicker">Threat Detected</div>
+          <div class="inf-threat-name">${esc(String(threat.name || "The Static Maw"))}</div>
+          <div class="inf-threat-meta">${esc(String(threat.type || "Wasteland Threat"))} · ${esc(String(threat.status || ""))}</div>
+          <div class="inf-threat-meta">Pressure: ${esc(String(threat.pressure ?? phantomWastelandPressure(info)))}% · Weakness: ${esc(weakness)}</div>
+          <div class="inf-threat-note">“${esc(String(threat.note || ""))}”</div>
+        </div>
+      </div>
+    `;
+  }
+  function renderPhantomThreatPulse(info) {
+    const el = _qs("infThreatPulse");
+    if (!el) return;
+    const pulse = (info && typeof info.threatPulse === "object") ? info.threatPulse : null;
+    if (!pulse || pulse.applied !== true) { el.style.display = "none"; el.innerHTML = ""; return; }
+    const before = Number(pulse.pressureBeforePulse);
+    const after = Number(pulse.pressureAfterPulse);
+    const line = Number.isFinite(before) && Number.isFinite(after)
+      ? `Pressure: ${before}% → ${after}%`
+      : "";
+    el.style.display = "block";
+    el.innerHTML = `
+      <div class="inf-threat-kicker">While The Pack Was Away</div>
+      ${line ? `<div class="inf-threat-meta">${esc(line)}</div>` : ""}
+      <div class="inf-threat-pulse-copy">${esc(String(pulse.pulseNote || "The Static Maw pressed deeper into the relay."))}</div>
+    `;
+  }
+  function renderPhantomFrontlineTarget(info) {
+    const el = _qs("infFrontlineTarget");
+    if (!el) return;
+    const target = (info && typeof info.frontlineTarget === "object") ? info.frontlineTarget : null;
+    if (!target) { el.style.display = "none"; el.innerHTML = ""; return; }
+    const unit = String(target.unit || "support");
+    const current = Number(target.current || 0);
+    const goal = Number(target.target || 75);
+    el.style.display = "block";
+    el.innerHTML = `
+      <div class="inf-target-kicker">${esc(String(target.label || "Your Frontline Target"))}</div>
+      <div class="inf-target-progress">${esc(unit.charAt(0).toUpperCase() + unit.slice(1))}: ${esc(`${current} / ${goal}`)}</div>
+      <div class="inf-target-copy">Best Move: ${esc(String(target.bestMove || "Patrol the node or send supplies."))}</div>
+      <div class="inf-target-copy">${esc(String(target.rewardPreview || "Progress toward frontline recognition."))}</div>
+    `;
+  }
+  function renderPhantomDailyOutcome(info) {
+    const el = _qs("infDailyOutcome");
+    if (!el) return;
+    const outcome = (info && typeof info.dailyOutcome === "object") ? info.dailyOutcome : null;
+    if (!outcome) { el.style.display = "none"; el.innerHTML = ""; return; }
+    const hasOutcome = outcome.hasOutcome === true;
+    el.classList.toggle("is-recovery", !!outcome.recoveryMode);
+    el.style.display = "block";
+    if (!hasOutcome) {
+      el.innerHTML = `
+        <div class="inf-daily-kicker">Yesterday's Frontline Report</div>
+        <div class="inf-daily-title">First report begins after today's cycle.</div>
+        <div class="inf-daily-note">${esc(String(outcome.note || outcome.body || "First frontline report begins after today's cycle."))}</div>
+        <div class="inf-daily-note">${esc(String(outcome.fallbackCopy || "Patrol or send supplies to help shape tomorrow's outcome."))}</div>
+      `;
+      return;
+    }
+    const pStart = Number(outcome.pressureStart);
+    const pEnd = Number(outcome.pressureEnd);
+    const pressureLine = Number.isFinite(pStart) && Number.isFinite(pEnd)
+      ? `Pressure: ${pStart}% → ${pEnd}%`
+      : "";
+    const packImpact = Number(outcome.packImpact || 0);
+    const actions = Number(outcome.actions || 0);
+    const recoveryChip = outcome.recoveryMode
+      ? '<span class="inf-recovery-chip">Recovery Effort Active</span>'
+      : (String(outcome.result || "").toLowerCase() === "secured"
+        ? '<span class="inf-momentum-chip">The Pack starts today with momentum.</span>'
+        : "");
+    el.innerHTML = `
+      <div class="inf-daily-kicker">Yesterday's Frontline Report</div>
+      <div class="inf-daily-title">${esc(String(outcome.title || ""))}</div>
+      ${recoveryChip}
+      ${pressureLine ? `<div class="inf-daily-meta">${esc(pressureLine)}</div>` : ""}
+      ${packImpact > 0 ? `<div class="inf-daily-meta">Pack Impact: -${esc(String(packImpact))} pressure</div>` : ""}
+      ${actions > 0 ? `<div class="inf-daily-meta">Actions: ${esc(String(actions))}</div>` : ""}
+      <div class="inf-daily-note">“${esc(String(outcome.body || ""))}”</div>
+    `;
+  }
+  function renderPhantomFrontlineToday(info) {
+    const el = _qs("infFrontlineToday");
+    if (!el) return;
+    const today = (info && typeof info.frontlineToday === "object") ? info.frontlineToday : null;
+    if (!today || !String(today.date || "").trim()) { el.style.display = "none"; el.innerHTML = ""; return; }
+    const impact = Number(today.packImpactToday || 0);
+    const actions = Number(today.actionsToday || 0);
+    el.style.display = "block";
+    el.innerHTML = `
+      <div class="inf-today-kicker">Today's Pack Impact</div>
+      <div class="inf-today-line">Impact: -${esc(String(impact))} pressure</div>
+      <div class="inf-today-line">Actions: ${esc(String(actions))}</div>
+    `;
+  }
+  function renderPhantomThreatLayers(nodeId, info) {
+    if (!isPhantomNode(nodeId)) {
+      renderPhantomThreatCard(null);
+      renderPhantomThreatPulse(null);
+      renderPhantomFrontlineTarget(null);
+      renderPhantomDailyOutcome(null);
+      renderPhantomFrontlineToday(null);
+      return;
+    }
+    renderPhantomThreatCard(info);
+    renderPhantomThreatPulse(info);
+    renderPhantomFrontlineTarget(info);
+    renderPhantomDailyOutcome(info);
+    renderPhantomFrontlineToday(info);
+  }
+
   function phantomFrontlineOrderLabel(info) {
     const status = phantomPackDefenseStatus(info);
     if (status === "Critical" || status === "Dangerous") return "HOLD";
@@ -955,7 +1077,9 @@
       ? (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED")
       : (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED");
     const lead = phantomMode
-      ? (hasPressureReport ? `Pressure: ${wpBefore}% → ${wpAfter}%` : (gain > 0 ? `Pack impact +${gain}` : "Frontline updated"))
+      ? (hasPressureReport
+        ? (reaction?.pressureLine || `Pressure: ${wpBefore}% → ${wpAfter}%`)
+        : (gain > 0 ? `Pack impact +${gain}` : "Frontline updated"))
       : (gain > 0 ? `+${gain} influence` : "Influence updated");
     const baseLine = phantomMode
       ? (hasPressureReport
@@ -965,18 +1089,31 @@
         ? "You helped defend this node. Control updates with faction pressure over the cycle."
         : "Your faction’s hold is stronger. Control updates with faction pressure over the cycle.");
     const phantomLeadLine = phantomMode
-      ? (weeklyPts > 0 ? `Your Contribution: +${weeklyPts}` : "")
+      ? (weeklyPts > 0 ? `Your Support: +${weeklyPts}` : "")
       : "";
     const phantomStatusLine = phantomMode && statusBefore && statusAfter && statusBefore !== statusAfter
       ? `Status: ${statusBefore} → ${statusAfter}`
       : (phantomMode && statusAfter ? `Status: ${statusAfter}` : "");
+    const reaction = (payload?.frontlineReaction && typeof payload.frontlineReaction === "object")
+      ? payload.frontlineReaction
+      : null;
+    const phantomReactionHeadline = phantomMode && reaction?.headline
+      ? String(reaction.headline)
+      : "";
+    const phantomReactionBody = phantomMode && reaction?.body
+      ? String(reaction.body)
+      : "";
     const phantomNoteLine = phantomMode
-      ? (isPatrol
+      ? (phantomReactionBody || (isPatrol
         ? String(payload?.frontlineCopy || "The line is holding, but not by much.")
-        : String(payload?.frontlineCopy || "Supplies received. The relay holds longer now."))
+        : String(payload?.frontlineCopy || "Supplies received. The relay holds longer now.")))
+      : "";
+    const phantomReactionLine = phantomReactionHeadline
+      ? phantomReactionHeadline.charAt(0) + phantomReactionHeadline.slice(1).toLowerCase()
       : "";
     const lines = isPatrol
       ? [
+          phantomReactionLine,
           baseLine,
           phantomLeadLine,
           phantomStatusLine,
@@ -986,6 +1123,7 @@
           archiveKeyLine,
         ]
       : [
+          phantomReactionLine,
           baseLine,
           phantomLeadLine,
           phantomStatusLine,
@@ -1429,6 +1567,15 @@
 
     if (!leaders) return;
     _leadersMap = leaders;
+
+    const info = r?.info || r?.data?.info || null;
+    const safeNodeId = normalizeNodeId(nodeId || r?.nodeId || "");
+    if (safeNodeId && info && typeof info === "object") {
+      _nodeInfoById[safeNodeId] = {
+        ...(_nodeInfoById[safeNodeId] || {}),
+        ...info,
+      };
+    }
 
     try { window.AHMap?.applyLeaders?.(_leadersMap); } catch (_) {}
     try { if (typeof window.renderPins === "function") window.renderPins(); } catch (_) {}
@@ -3790,6 +3937,144 @@
         text-transform:uppercase;
         color:#f3ead8;
       }
+      #influenceCard.is-phantom-node .inf-threat-card,
+      #influenceCard.is-phantom-node .inf-threat-pulse,
+      #influenceCard.is-phantom-node .inf-daily-outcome,
+      #influenceCard.is-phantom-node .inf-frontline-today{
+        margin-top:10px;
+        padding:12px 14px;
+        border-radius:16px;
+        border:1px solid rgba(145,206,255,.20);
+        background:linear-gradient(180deg, rgba(145,206,255,.10), rgba(12,14,18,.72));
+      }
+      #influenceCard.is-phantom-node .inf-daily-outcome.is-recovery{
+        border-color:rgba(255,116,76,.28);
+        background:linear-gradient(180deg, rgba(255,94,68,.12), rgba(12,14,18,.72));
+      }
+      #influenceCard.is-phantom-node .inf-daily-kicker,
+      #influenceCard.is-phantom-node .inf-today-kicker{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.16em;
+        text-transform:uppercase;
+        color:#9fd0ff;
+      }
+      #influenceCard.is-phantom-node .inf-daily-title{
+        margin-top:4px;
+        font-size:15px;
+        font-weight:900;
+        color:#f7efe2;
+        line-height:1.25;
+      }
+      #influenceCard.is-phantom-node .inf-daily-meta,
+      #influenceCard.is-phantom-node .inf-daily-note,
+      #influenceCard.is-phantom-node .inf-today-line{
+        margin-top:6px;
+        font-size:11px;
+        line-height:1.45;
+        color:#d5cec1;
+      }
+      #influenceCard.is-phantom-node .inf-recovery-chip{
+        display:inline-flex;
+        margin-top:6px;
+        padding:3px 8px;
+        border-radius:999px;
+        font-size:9px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#ffd2b0;
+        border:1px solid rgba(255,116,76,.34);
+        background:rgba(255,94,68,.14);
+      }
+      #influenceCard.is-phantom-node .inf-momentum-chip{
+        display:inline-flex;
+        margin-top:6px;
+        padding:3px 8px;
+        border-radius:999px;
+        font-size:9px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#b8ffe8;
+        border:1px solid rgba(108,255,244,.28);
+        background:rgba(86,222,191,.12);
+      }
+      #influenceCard.is-phantom-node .inf-frontline-target{
+        margin-top:10px;
+        padding:12px 14px;
+        border-radius:16px;
+        border:1px solid rgba(255,116,76,.22);
+        background:linear-gradient(180deg, rgba(255,94,68,.10), rgba(12,14,18,.72));
+      }
+      #influenceCard.is-phantom-node .inf-threat-pulse{
+        border-color:rgba(255,182,116,.24);
+        background:linear-gradient(180deg, rgba(255,182,116,.12), rgba(12,14,18,.68));
+      }
+      #influenceCard.is-phantom-node .inf-frontline-target{
+        border-color:rgba(108,255,244,.22);
+        background:linear-gradient(180deg, rgba(86,222,191,.10), rgba(12,14,18,.72));
+      }
+      #influenceCard.is-phantom-node .inf-threat-kicker,
+      #influenceCard.is-phantom-node .inf-target-kicker{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.16em;
+        text-transform:uppercase;
+        color:#ffb074;
+      }
+      #influenceCard.is-phantom-node .inf-target-kicker{ color:#82f2d4; }
+      #influenceCard.is-phantom-node .inf-threat-name{
+        margin-top:4px;
+        font-size:18px;
+        font-weight:900;
+        color:#f7efe2;
+      }
+      #influenceCard.is-phantom-node .inf-threat-meta,
+      #influenceCard.is-phantom-node .inf-threat-note,
+      #influenceCard.is-phantom-node .inf-threat-pulse-copy,
+      #influenceCard.is-phantom-node .inf-target-copy{
+        margin-top:6px;
+        font-size:11px;
+        line-height:1.45;
+        color:#d5cec1;
+      }
+      #influenceCard.is-phantom-node .inf-threat-silhouette{
+        width:42px;
+        height:42px;
+        border-radius:12px;
+        background:linear-gradient(180deg, rgba(255,94,68,.24), rgba(20,10,12,.9));
+        border:1px solid rgba(255,116,76,.28);
+        box-shadow:0 0 18px rgba(255,94,68,.18);
+        position:relative;
+        overflow:hidden;
+        flex:0 0 42px;
+      }
+      #influenceCard.is-phantom-node .inf-threat-silhouette::after{
+        content:"";
+        position:absolute;
+        inset:8px 10px;
+        border-radius:8px;
+        background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,94,68,.22));
+        filter:blur(.2px);
+        animation:infThreatGlitch 2.8s ease-in-out infinite;
+      }
+      @keyframes infThreatGlitch{
+        0%,100%{ transform:translateX(0); opacity:.85; }
+        45%{ transform:translateX(1px); opacity:1; }
+        50%{ transform:translateX(-1px); opacity:.72; }
+      }
+      #influenceCard.is-phantom-node .inf-threat-head{
+        display:flex;
+        gap:12px;
+        align-items:flex-start;
+      }
+      #influenceCard.is-phantom-node .inf-target-progress{
+        margin-top:6px;
+        font-size:16px;
+        font-weight:800;
+        color:#e8fff8;
+      }
       #influenceCard.is-phantom-node .inf-pressure-foot{
         margin-top:10px;
         font-size:11px;
@@ -4472,6 +4757,11 @@
             </div>
           </div>
           <div id="infClashMeter" class="inf-clash-meter" style="display:none;"></div>
+          <div id="infThreatCard" class="inf-threat-card" style="display:none;"></div>
+          <div id="infThreatPulse" class="inf-threat-pulse" style="display:none;"></div>
+          <div id="infFrontlineTarget" class="inf-frontline-target" style="display:none;"></div>
+          <div id="infDailyOutcome" class="inf-daily-outcome" style="display:none;"></div>
+          <div id="infFrontlineToday" class="inf-frontline-today" style="display:none;"></div>
           <div id="infContested" style="display:none;"></div>
         </section>
 
@@ -4934,6 +5224,10 @@
           ...(_nodeInfoById[safeNodeId] || {}),
           ...info,
           youFaction,
+          threatPulse: r?.threatPulse || info?.threatPulse || null,
+          frontlineTarget: r?.frontlineTarget || info?.frontlineTarget || null,
+          dailyOutcome: r?.dailyOutcome || info?.dailyOutcome || null,
+          frontlineToday: r?.frontlineToday || info?.frontlineToday || null,
         };
         paintLeader(safeNodeId);
       }
@@ -5480,10 +5774,11 @@
         ? "Phantom Node is an old relay spine of the Alpha Network."
         : "Control here sets the local frontline tempo.";
       rewardEl.textContent = phantomMode
-        ? "Control here affects faction pressure and weekly rivalry progress."
+        ? "Your actions reduce Wasteland pressure and build personal support."
         : "Your actions here feed faction war progress.";
       loreEl.style.display = "none";
       loreEl.textContent = "";
+      renderPhantomThreatLayers(nodeId, null);
       setLocalDefaults();
       setPatrolButtonLabel(phantomMode ? "PATROL NODE" : "Patrol");
       return;
@@ -5548,7 +5843,13 @@
     const cooldownLeftSec = patrolReady ? 0 : Math.max(0, Math.ceil((_cdUntilMs - Date.now()) / 1000));
     const encounterBadge = phantomMode ? phantomFrontlineBadge(info) : primaryStatus;
     const encounterLine = phantomMode ? phantomFrontlineLine(info) : "";
-    const encounterBrief = phantomMode ? phantomFrontlineBrief(info, patrolReady, cooldownLeftSec) : "";
+    const dailyOutcome = (info && typeof info.dailyOutcome === "object") ? info.dailyOutcome : null;
+    let encounterBrief = phantomMode ? phantomFrontlineBrief(info, patrolReady, cooldownLeftSec) : "";
+    if (phantomMode && dailyOutcome?.recoveryMode) {
+      encounterBrief = "Recovery effort active today. The relay needs support.";
+    } else if (phantomMode && dailyOutcome?.hasOutcome && String(dailyOutcome.result || "").toLowerCase() === "secured") {
+      encounterBrief = "The Pack starts today with momentum.";
+    }
     const primaryCtaLabel = phantomMode ? phantomFrontlineCtaLabel() : patrolLabelForAction(ux.actionHint);
     const recommendedAction = phantomMode ? phantomFrontlineOrderLabel(info) : recommendedOrderLabel(owner, viewerFaction, condition);
     const captureTier = Math.max(0, Number(info?.captureTier || 0) || 0);
@@ -5869,6 +6170,7 @@
     foot.textContent = phantomMode
       ? `Wasteland pressure ${phantomWastelandPressure(info)}% — ${phantomPackDefenseStatus(info)}. Hold the line.`
       : `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
+    renderPhantomThreatLayers(nodeId, info);
     syncPhantomImpact(nodeId);
   }
 
@@ -5900,7 +6202,7 @@
 
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
-      toast(phantomMode ? `Pack impact +${r.gain}${hq}` : `+${r.gain} influence${hq}`);
+      toast(isPhantomNode(nodeId) ? `Pack impact +${r.gain}${hq}` : `+${r.gain} influence${hq}`);
       markRecentNodeAction(nodeId, "patrol");
       setActionResult("patrol", {
         gain: r.gain,
@@ -5912,6 +6214,10 @@
         packDefenseStatusBefore: r.packDefenseStatusBefore,
         packDefenseStatusAfter: r.packDefenseStatusAfter,
         frontlineCopy: r.frontlineCopy,
+        frontlineReaction: r.frontlineReaction,
+        statusBefore: r.statusBefore,
+        statusAfter: r.statusAfter,
+        statusChanged: r.statusChanged,
         weeklyPoints: r.weeklyPoints,
         contractContributionChanged: r.contractContributionChanged,
         contractContributionDelta: r.contractContributionDelta,
@@ -5993,6 +6299,10 @@
         packDefenseStatusBefore: r.packDefenseStatusBefore,
         packDefenseStatusAfter: r.packDefenseStatusAfter,
         frontlineCopy: r.frontlineCopy,
+        frontlineReaction: r.frontlineReaction,
+        statusBefore: r.statusBefore,
+        statusAfter: r.statusAfter,
+        statusChanged: r.statusChanged,
         spent: r.spent,
         asset: r.asset || asset,
         refunded: r.refunded,
