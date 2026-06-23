@@ -236,7 +236,7 @@
       const exactGain = (preview && preview.exactGain) || {};
       const exactKeys = orderedStatKeys(exactGain);
       const summary = exactKeys.length
-        ? exactKeys.map((key) => `+${Number(exactGain[key] || 0)} ${statLabel(key)}`).join(" · ")
+        ? exactKeys.map((key) => `+${Number(exactGain[key] || 0)} ${statLabel(key)}`).join(" ï¿½ ")
         : (previewMessage || "Exact stat gain");
       return { summary, pool };
     }
@@ -1765,7 +1765,7 @@
   let _pityOverride = {};
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
-  let _useBlueCrystal = false;
+  let _useIceCrystal = false;
   let _mobileUpgradeView = "picker";
 
   const MOBILE_FORGE_BREAKPOINT = 720;
@@ -1919,8 +1919,8 @@
     async function doUpgrade(it) {
       if (!it || _busy || !it.canUpgrade) return;
       const perfT0 = window.__ahPerf?.now?.() || Date.now();
-      const crystalMeta = (it.upgradePreview && it.upgradePreview.blueCrystal) || {};
-      const shouldUseBlueCrystal = !!(_useBlueCrystal && crystalMeta && crystalMeta.canUse);
+      const crystalMeta = (it.upgradePreview && it.upgradePreview.iceCrystal) || {};
+      const shouldUseIceCrystal = !!(_useIceCrystal && crystalMeta && crystalMeta.canUse);
       _busy = true;
       draw();
 
@@ -1929,9 +1929,9 @@
           buildingId: _ctx.buildingId,
           slot: it.slot,
           run_id: rid("web_upg"),
-          use_blue_crystal: shouldUseBlueCrystal,
+          use_ice_crystal: shouldUseIceCrystal,
         });
-        _useBlueCrystal = false;
+        _useIceCrystal = false;
         await loadState();
         toast(`Forged ${it.slotLabel} to \u2605${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
         if (compactMobile) scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
@@ -1966,7 +1966,7 @@
       const projectedRanges = preview.projectedRanges || {};
       const materials = preview.materials || null;
       const gainSummary = getUpgradeGainSummary(preview);
-      const crystal = preview.blueCrystal || {};
+      const crystal = preview.iceCrystal || {};
       const crystalOwned = Number(crystal.owned || 0);
       const crystalCanUse = !!crystal.canUse && crystalOwned > 0;
       const crystalBaseChance = Math.max(0, Number(crystal.baseDoubleChance || 0));
@@ -1974,10 +1974,10 @@
       const crystalMessage = String(crystal.message || "").trim();
       const showCrystalPanel = !isMaxed && !!it.canUpgrade && (crystalOwned > 0 || crystalMessage);
       const compactMaterialHtml = renderCompactMaterialAvailability(cost, materials);
-      const compactCostSummary = materialRows(cost, materials).map((row) => `${row.label} ${row.need}`).join(" · ");
+      const compactCostSummary = materialRows(cost, materials).map((row) => `${row.label} ${row.need}`).join(" ï¿½ ");
 
       if (!showCrystalPanel || !crystalCanUse) {
-        _useBlueCrystal = false;
+        _useIceCrystal = false;
       }
 
       let gainHtml = `<div class="ah-small">${esc(String(preview.message || "No upgrade preview available."))}</div>`;
@@ -2159,28 +2159,28 @@
         if (showCrystalPanel) {
           const crystalBox = el("div", `ah-statbox${compactMobile ? " ah-mobile-crystal" : ""}`);
           crystalBox.style.marginTop = "12px";
-          crystalBox.appendChild(el("div", "k", "Blue Crystal"));
+          crystalBox.appendChild(el("div", "k", "Ice Crystal"));
           const crystalBody = el("div", "v", "");
           crystalBody.appendChild(el("div", "ah-small", `Owned: <b>${esc(String(crystalOwned))}</b>`));
           crystalBody.appendChild(el("div", "ah-small", "Boosts chance for +2 stat gain. Not guaranteed."));
 
           if (crystalOwned > 0) {
-            crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b> · Armed: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
+            crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b> ï¿½ Armed: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
             const label = document.createElement("label");
             label.className = "ah-mobile-toggle";
             label.style.opacity = crystalCanUse ? "1" : ".7";
 
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
-            checkbox.checked = !!(_useBlueCrystal && crystalCanUse);
+            checkbox.checked = !!(_useIceCrystal && crystalCanUse);
             checkbox.disabled = !crystalCanUse;
             checkbox.addEventListener("change", () => {
-              _useBlueCrystal = !!checkbox.checked;
+              _useIceCrystal = !!checkbox.checked;
               draw();
             });
 
             const copy = document.createElement("span");
-            copy.innerHTML = `Use Blue Crystal<small>Boosts chance for +2 stat gain. Not guaranteed.</small>`;
+            copy.innerHTML = `Use Ice Crystal<small>Boosts chance for +2 stat gain. Not guaranteed.</small>`;
 
             label.appendChild(checkbox);
             label.appendChild(copy);
@@ -2232,7 +2232,7 @@
       if (mobileSticky) {
         const stickyCopy = el("div", "ah-mobile-stickycopy", "");
         stickyCopy.innerHTML = `
-          <div class="ah-mobile-stickytitle">${esc([statusMeta.label, (_useBlueCrystal && crystalCanUse) ? "Crystal armed" : ""].filter(Boolean).join(" · "))}</div>
+          <div class="ah-mobile-stickytitle">${esc([statusMeta.label, (_useIceCrystal && crystalCanUse) ? "Crystal armed" : ""].filter(Boolean).join(" ï¿½ "))}</div>
           <div class="ah-mobile-stickyfoot">${esc(compactCostSummary || "No further forge cost")}</div>
         `;
         mobileSticky.appendChild(stickyCopy);
@@ -2285,7 +2285,7 @@
       }
 
       row.addEventListener("click", () => {
-        if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
+        if (_selectedUpgradeKey !== it.key) _useIceCrystal = false;
         _selectedUpgradeKey = it.key;
         if (compactMobile) _mobileUpgradeView = "detail";
         draw();
@@ -2301,7 +2301,7 @@
       btn.addEventListener("click", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        if (_selectedUpgradeKey !== it.key) _useBlueCrystal = false;
+        if (_selectedUpgradeKey !== it.key) _useIceCrystal = false;
         _selectedUpgradeKey = it.key;
         if (compactMobile) {
           _mobileUpgradeView = "detail";

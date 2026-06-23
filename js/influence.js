@@ -415,7 +415,33 @@
     const leadFactionText = topFaction ? fmtFaction(topFaction.faction) : "No leader yet";
     const rankText = viewerRank > 0 ? `#${viewerRank} ${fmtFaction(viewerFaction)}` : "Rank pending";
     previewHost.style.display = "block";
-    previewHost.innerHTML = `
+    const phantomWeekly = isPhantomNode(_openNodeId);
+    previewHost.innerHTML = phantomWeekly
+      ? `
+      <section class="inf-weekly-preview">
+        <div style="min-width:0;">
+          <div class="inf-panel-kicker">Your Support</div>
+          <div class="inf-weekly-title">Hold the Line</div>
+          <div class="inf-weekly-sub">Patrol and supplies reduce Wasteland pressure and build your personal support.</div>
+        </div>
+        <div class="inf-weekly-mini-grid">
+          <article class="inf-weekly-mini-card">
+            <div class="inf-weekly-mini-label">Your Support</div>
+            <div class="inf-weekly-mini-value">${esc(`${myScore}/${reqScore}`)}</div>
+          </article>
+          <article class="inf-weekly-mini-card">
+            <div class="inf-weekly-mini-label">Active days</div>
+            <div class="inf-weekly-mini-value">${esc(`${myDays}/${reqDays}`)}</div>
+          </article>
+          <article class="inf-weekly-mini-card">
+            <div class="inf-weekly-mini-label">Reward window</div>
+            <div class="inf-weekly-mini-value">${esc(myQualified ? "Qualified" : "Not yet")}</div>
+          </article>
+        </div>
+        <div class="inf-weekly-sub">Week ${esc(String(w.weekId || ""))} · ${esc(fmtRemain(w.endsInSec))} left</div>
+      </section>
+    `
+      : `
       <section class="inf-weekly-preview">
         <div style="min-width:0;">
           <div class="inf-panel-kicker">War Contribution</div>
@@ -554,6 +580,49 @@
   function isPhantomNode(nodeId = _openNodeId) {
     return normalizeNodeId(nodeId) === "phantom_nodes";
   }
+  function phantomWastelandPressure(info) {
+    const raw = Number(info?.wastelandPressure);
+    if (Number.isFinite(raw)) return Math.max(0, Math.min(100, Math.round(raw)));
+    return 65;
+  }
+  function phantomPackDefenseStatus(info) {
+    return String(info?.packDefenseStatus || "").trim() || phantomStatusFromPressure(phantomWastelandPressure(info));
+  }
+  function phantomStatusFromPressure(p) {
+    const n = Math.max(0, Math.min(100, Number(p || 0)));
+    if (n <= 29) return "Secured";
+    if (n <= 59) return "Unstable";
+    if (n <= 79) return "Dangerous";
+    return "Critical";
+  }
+  function phantomFrontlineBadge(info) {
+    return phantomPackDefenseStatus(info).toUpperCase();
+  }
+  function phantomFrontlineLine(info) {
+    const wp = phantomWastelandPressure(info);
+    const status = phantomPackDefenseStatus(info);
+    if (status === "Secured") return "The relay is holding. Keep the Wasteland back.";
+    if (status === "Unstable") return "Phantom Node is under Wasteland pressure.";
+    if (status === "Dangerous") return "The Wasteland is pushing hard. Hold the line.";
+    return "Critical Wasteland pressure. Every action counts.";
+  }
+  function phantomFrontlineBrief(info, patrolReady, cooldownLeftSec) {
+    if (!patrolReady && cooldownLeftSec > 0) return `Patrol reopens in ${fmtCooldownHint(cooldownLeftSec)}.`;
+    const status = phantomPackDefenseStatus(info);
+    if (status === "Critical" || status === "Dangerous") return "Hold the line now.";
+    if (status === "Unstable") return "Patrol or send supplies.";
+    return "The Pack holds the relay.";
+  }
+  function phantomFrontlineCtaLabel() {
+    return "HOLD THE LINE";
+  }
+  function phantomFrontlineOrderLabel(info) {
+    const status = phantomPackDefenseStatus(info);
+    if (status === "Critical" || status === "Dangerous") return "HOLD";
+    if (status === "Unstable") return "STABILIZE";
+    return "PATROL";
+  }
+
   function fmtCooldownHint(sec) {
     sec = Math.max(0, parseInt(sec || 0, 10) || 0);
     const m = Math.floor(sec / 60);
@@ -874,30 +943,53 @@
       ? `Spent ${spent} ${asset}${refunded > 0 ? `; refunded ${refunded}` : ""}.`
       : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
     const isPatrol = kind === "patrol";
-    // Player-facing action result (Phantom Nodes uses "defend / push" language)
+    const wpBefore = Number(payload?.wastelandPressureBefore);
+    const wpAfter = Number(payload?.wastelandPressureAfter);
+    const hasPressureReport = phantomMode && Number.isFinite(wpBefore) && Number.isFinite(wpAfter);
+    const pressureDelta = Number(payload?.pressureDelta || (wpBefore - wpAfter) || 0);
+    const playerImpact = Number(payload?.playerImpact || payload?.frontlineImpact || pressureDelta || 0);
+    const statusBefore = String(payload?.packDefenseStatusBefore || "").trim();
+    const statusAfter = String(payload?.packDefenseStatusAfter || "").trim();
+    const weeklyPts = Number(payload?.weeklyPoints || 0);
     const title = phantomMode
-      ? (isPatrol ? "YOU DEFENDED PHANTOM NODE" : "SUPPLIES SENT TO PHANTOM NODE")
+      ? (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED")
       : (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED");
-    const lead = gain > 0 ? `+${gain} influence` : "Influence updated";
+    const lead = phantomMode
+      ? (hasPressureReport ? `Pressure: ${wpBefore}% → ${wpAfter}%` : (gain > 0 ? `Pack impact +${gain}` : "Frontline updated"))
+      : (gain > 0 ? `+${gain} influence` : "Influence updated");
     const baseLine = phantomMode
-      ? (isPatrol ? "Your patrol was added to the war effort." : "Your supplies were added to the war effort.")
+      ? (hasPressureReport
+        ? `Pack Impact: -${Math.max(0, pressureDelta)} pressure`
+        : (isPatrol ? "Your patrol helped hold the line." : "Your supplies helped hold the line."))
       : (isPatrol
         ? "You helped defend this node. Control updates with faction pressure over the cycle."
         : "Your faction’s hold is stronger. Control updates with faction pressure over the cycle.");
     const phantomLeadLine = phantomMode
-      ? (isPatrol ? "You defended Phantom Node." : "Faction support reached the relay.")
+      ? (weeklyPts > 0 ? `Your Contribution: +${weeklyPts}` : "")
+      : "";
+    const phantomStatusLine = phantomMode && statusBefore && statusAfter && statusBefore !== statusAfter
+      ? `Status: ${statusBefore} → ${statusAfter}`
+      : (phantomMode && statusAfter ? `Status: ${statusAfter}` : "");
+    const phantomNoteLine = phantomMode
+      ? (isPatrol
+        ? String(payload?.frontlineCopy || "The line is holding, but not by much.")
+        : String(payload?.frontlineCopy || "Supplies received. The relay holds longer now."))
       : "";
     const lines = isPatrol
       ? [
-          phantomLeadLine,
           baseLine,
+          phantomLeadLine,
+          phantomStatusLine,
+          phantomNoteLine,
           warContributionLine,
           contractContributionLine,
           archiveKeyLine,
         ]
       : [
-          phantomLeadLine,
           baseLine,
+          phantomLeadLine,
+          phantomStatusLine,
+          phantomNoteLine,
           warContributionLine,
           contractContributionLine,
           spendRefundLine,
@@ -4939,10 +5031,10 @@
     if (subEl) {
       const prettyNodeId = String(safeNodeId || "").trim().replaceAll("_", " ");
       subEl.textContent = phantomMode
-        ? "FACTION WAR CONTROL POINT"
+        ? "PACK vs WASTELAND · HOLD THE LINE"
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
     }
-    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Faction war control point" : "Live Node Operations";
+    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Pack vs Wasteland" : "Live Node Operations";
     if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Impact Today" : "Your Faction Support";
     if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Operations" : "Your Orders";
     if (warIntelEl) warIntelEl.open = !phantomMode;
@@ -5321,7 +5413,7 @@
       }
       if (actionHelpEl) actionHelpEl.style.display = "none";
       if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
-      if (subEl && phantomMode) subEl.textContent = "FACTION WAR CONTROL POINT";
+      if (subEl && phantomMode) subEl.textContent = "PACK vs WASTELAND · HOLD THE LINE";
       if (phantomBadgeEl) {
         phantomBadgeEl.textContent = "STABLE";
         phantomBadgeEl.dataset.state = "CALM";
@@ -5447,34 +5539,18 @@
       : (watchUsed > 0 ? `${watchUsed} active` : "No watch roster");
     const watchPct = watchMax > 0 ? Math.max(0, Math.min(100, Math.round((watchUsed / watchMax) * 100))) : 0;
     const ownerLabel = owner ? fmtFaction(owner) : "Neutral";
-    const recommendedAction = recommendedOrderLabel(owner, viewerFaction, condition);
-    const primaryStatus = phantomMode ? condition : uxPrimaryStatusLabel(ux.displayStatus, ux.displayLabel);
-    const pressureChipLabel = recommendedAction;
-    const pressureNarrative = statusNarrative(condition);
-    const yourFactionName = fmtFaction ? fmtFaction(viewerFaction) : (viewerFaction || "Your faction");
-    const controlStatus = phantomMode ? deriveControlStatus(viewerPressure, enemyPressure, yourFactionName) : null;
+    const primaryStatus = phantomMode ? phantomFrontlineBadge(info) : uxPrimaryStatusLabel(ux.displayStatus, ux.displayLabel);
+    const pressureChipLabel = phantomMode ? phantomFrontlineOrderLabel(info) : recommendedOrderLabel(owner, viewerFaction, condition);
+    const pressureNarrative = phantomMode ? phantomFrontlineLine(info) : statusNarrative(condition);
+    const yourFactionName = fmtFaction ? fmtFaction(viewerFaction) : (viewerFaction || "Your Pack banner");
+    const controlStatus = null;
     const patrolReady = _cdUntilMs <= Date.now();
     const cooldownLeftSec = patrolReady ? 0 : Math.max(0, Math.ceil((_cdUntilMs - Date.now()) / 1000));
-    const encounterBadge = phantomMode
-      ? phantomEncounterBadge({ condition, owner, viewerFaction, viewerPressure, enemyPressure })
-      : primaryStatus;
-    const encounterLine = phantomMode
-      ? phantomEncounterLine({
-          badge: encounterBadge,
-          owner,
-          ownerLabel,
-          viewerFaction,
-          yourFactionName,
-          viewerPressure,
-          enemyPressure,
-        })
-      : "";
-    const encounterBrief = phantomMode
-      ? phantomEncounterBrief({ badge: encounterBadge, recommendedAction, patrolReady, cooldownLeftSec })
-      : "";
-    const primaryCtaLabel = phantomMode
-      ? phantomPrimaryCtaLabel({ owner, viewerFaction, badge: encounterBadge })
-      : patrolLabelForAction(ux.actionHint);
+    const encounterBadge = phantomMode ? phantomFrontlineBadge(info) : primaryStatus;
+    const encounterLine = phantomMode ? phantomFrontlineLine(info) : "";
+    const encounterBrief = phantomMode ? phantomFrontlineBrief(info, patrolReady, cooldownLeftSec) : "";
+    const primaryCtaLabel = phantomMode ? phantomFrontlineCtaLabel() : patrolLabelForAction(ux.actionHint);
+    const recommendedAction = phantomMode ? phantomFrontlineOrderLabel(info) : recommendedOrderLabel(owner, viewerFaction, condition);
     const captureTier = Math.max(0, Number(info?.captureTier || 0) || 0);
     const maxPressure = Math.max(
       1,
@@ -5494,22 +5570,17 @@
     const signalId = phantomMode ? phantomNodeSignalId(info) : "";
 
     leaderEl.textContent = phantomMode
-      ? (owner ? ownerLabel : "Neutral Control")
+      ? `Pressure ${phantomWastelandPressure(info)}% — ${phantomPackDefenseStatus(info)}`
       : (leaderName ? `${leaderName}${leaderValue > 0 ? ` (${leaderValue})` : ""}` : ownerLabel);
-    if (phantomMode && controlStatus) {
-      // Top hero / War Brief — player-facing, not technical
-      controlLineEl.textContent = encounterBrief || controlStatus.advice || controlStatus.headline;
-      if (subEl) subEl.textContent = "FACTION WAR CONTROL POINT";
+    if (phantomMode) {
+      controlLineEl.textContent = encounterLine || encounterBrief;
+      if (subEl) subEl.textContent = "PACK vs WASTELAND · HOLD THE LINE";
       if (heroFlavorEl) {
-        const brief = controlStatus.advice || controlStatus.headline;
-        heroFlavorEl.textContent = brief ? `${brief} ${controlStatus.detail ? "" : "Choose an action to support your faction."}`.trim() : "This node is active. Choose an action to support your faction.";
+        heroFlavorEl.textContent = "Your faction is your banner. The enemy is the Wasteland. Every action helps hold the line.";
       }
     } else {
-      controlLineEl.textContent = phantomMode
-        ? `${ownerLabel} relay under pressure`
-        : controlText;
-      if (subEl && phantomMode) subEl.textContent = "FACTION WAR CONTROL POINT";
-      if (heroFlavorEl && !phantomMode) {
+      controlLineEl.textContent = controlText;
+      if (heroFlavorEl) {
         heroFlavorEl.textContent = (ux.valueText || "This node supports steady faction pressure.");
       }
     }
@@ -5521,9 +5592,11 @@
     }
     if (heroFactionNameEl) heroFactionNameEl.textContent = panelFactionLabel;
     if (heroFactionLeadEl) {
-      heroFactionLeadEl.textContent = owner
+      heroFactionLeadEl.textContent = phantomMode
+        ? (yourFactionName + " banner on the line.")
+        : (owner
         ? (ownerLabel + " controls the relay.")
-        : (leaderName ? (leaderName + " has the strongest pressure.") : "No lead recorded.");
+        : (leaderName ? (leaderName + " has the strongest pressure.") : "No lead recorded."));
     }
     if (heroFactionStatusEl) heroFactionStatusEl.textContent = uxStatusText(ux.displayStatus);
     if (heroFactionSigilEl) {
@@ -5552,32 +5625,27 @@
     const clashEl = document.getElementById("infClashMeter");
     if (clashEl) {
       if (phantomMode) {
-        const v = Math.max(0, Number(viewerPressure));
-        const o = Math.max(0, Number(enemyPressure));
-        const total = Math.max(1, v + o);
-        const yourPct = v > 0 || o > 0 ? Math.round((v / total) * 100) : 0;
-        const enemyPct = v > 0 || o > 0 ? 100 - yourPct : 0;
-        const enemyLabel = owner && viewerFaction && owner !== viewerFaction
-          ? ownerLabel
-          : (isRealEnemyFromScores ? "Opposition" : "Enemy pressure");
-        const yourLabel = yourFactionName || "Your faction";
-        const idleClass = v === 0 && o === 0 ? " is-idle" : "";
+        const wp = phantomWastelandPressure(info);
+        const packPct = Math.max(0, Math.min(100, 100 - wp));
+        const packStatus = phantomPackDefenseStatus(info);
+        const packBadge = phantomFrontlineBadge(info);
+        const packLine = phantomFrontlineLine(info);
         clashEl.style.display = "block";
         clashEl.innerHTML = `
           <div class="inf-pressure-head">
-            <span>Frontline Pressure</span>
-            <span class="inf-pressure-state">${encounterBadge}</span>
+            <span>Wasteland Pressure</span>
+            <span class="inf-pressure-state">${esc(packBadge)}</span>
           </div>
           <div class="inf-pressure-sides">
-            <div class="inf-pressure-side is-enemy"><span class="label">${enemyLabel}</span><span class="value">${enemyPct}%</span></div>
-            <div class="inf-pressure-side is-friendly"><span class="label">${yourLabel}</span><span class="value">${yourPct}%</span></div>
+            <div class="inf-pressure-side is-enemy"><span class="label">Wasteland</span><span class="value">${wp}%</span></div>
+            <div class="inf-pressure-side is-friendly"><span class="label">Pack Defense</span><span class="value">${packPct}%</span></div>
           </div>
-          <div class="inf-pressure-track${idleClass}">
-            <div class="inf-pressure-fill is-enemy" style="width:${enemyPct}%;"></div>
-            <div class="inf-pressure-fill is-friendly" style="width:${yourPct}%;"></div>
-            <div class="inf-pressure-core"><span>${encounterBadge}</span></div>
+          <div class="inf-pressure-track">
+            <div class="inf-pressure-fill is-enemy" style="width:${wp}%;"></div>
+            <div class="inf-pressure-fill is-friendly" style="width:${packPct}%;"></div>
+            <div class="inf-pressure-core"><span>${esc(packStatus)}</span></div>
           </div>
-          <div class="inf-pressure-foot">${controlStatus?.detail || encounterLine || "Take the next action to start local pressure."}</div>
+          <div class="inf-pressure-foot">Pressure: ${wp}% — ${esc(packStatus)}. ${esc(packLine)}</div>
         `;
       } else {
         clashEl.style.display = "none";
@@ -5639,10 +5707,10 @@
         : `No faction owns the node. ${pressureNarrative} ${recommendedAction === "PUSH" ? "Push first to establish pressure." : "Stabilize the line before it swings."}`;
     }
     reasonEl.textContent = phantomMode
-      ? "Phantom Node is an old relay spine of the Alpha Network."
+      ? "Phantom Node is under Wasteland pressure. Patrol and supplies help the Pack keep the relay alive."
       : (ux.reasonText || "Control here shapes the local rivalry line.");
     rewardEl.textContent = phantomMode
-      ? "Control here affects faction pressure and weekly rivalry progress."
+      ? "Your actions reduce Wasteland pressure and build personal support."
       : (ux.rewardText || "Contribution here converts into faction war progress.");
 
     const loreLines = resolveNodeLoreLines(nodeId, info);
@@ -5660,19 +5728,8 @@
     if (intelOwnerEl) intelOwnerEl.textContent = owner ? fmtFaction(owner) : "Neutral";
     if (intelWatchEl) {
       if (phantomMode) {
-        // Phantom: use corrected enemyPressure from other factions' scores (fallback to leaderPressure keeps "Faction pressure" copy)
-        const ep = enemyPressure;
-        const hasReal = isRealEnemyFromScores;
-        if (viewerPressure > 0 && ep > 0) {
-          intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${ep}`;
-        } else if (ep > 0) {
-          const pfx = hasReal ? "Enemy pressure" : "Lead pressure";
-          intelWatchEl.textContent = `${pfx} ${ep}`;
-        } else if (viewerPressure > 0) {
-          intelWatchEl.textContent = `Your pressure ${viewerPressure}`;
-        } else {
-          intelWatchEl.textContent = "Quiet pressure band";
-        }
+        const wpIntel = phantomWastelandPressure(info);
+        intelWatchEl.textContent = `Wasteland pressure ${wpIntel}% — ${phantomPackDefenseStatus(info)}`;
       } else {
         // non-Phantom: original behavior unchanged
         if (viewerPressure > 0 && leaderPressure > 0) intelWatchEl.textContent = `Faction pressure — ${viewerPressure} vs ${leaderPressure}`;
@@ -5682,7 +5739,7 @@
       }
     }
     if (intelWatchBarEl) {
-      intelWatchBarEl.style.width = `${pressurePct}%`;
+      intelWatchBarEl.style.width = phantomMode ? `${phantomWastelandPressure(info)}%` : `${pressurePct}%`;
       if (condition === "CONTESTED") {
         intelWatchBarEl.style.background = "repeating-linear-gradient(90deg,rgba(255,138,120,.95) 0 8px, rgba(255,92,92,.86) 8px 12px)";
       } else if (condition === "HOT") {
@@ -5696,9 +5753,13 @@
 
     const my = (_weekly && typeof _weekly.my === "object") ? _weekly.my : null;
     if (localYouEl) {
-      if (my) {
+      if (phantomMode && my) {
+        localYouEl.textContent = `Your Support ${Number(my.score || 0)}`;
+      } else if (my) {
         const rankTxt = my.factionRank ? `Faction #${my.factionRank}` : (my.overallRank ? `Global #${my.overallRank}` : "Rank pending");
         localYouEl.textContent = `${rankTxt} | Score ${Number(my.score || 0)}`;
+      } else if (phantomMode) {
+        localYouEl.textContent = "Patrol or donate to register your support.";
       } else if (viewerPressure > 0) {
         localYouEl.textContent = "Position recording. Keep pressure active.";
       } else {
@@ -5805,7 +5866,9 @@
     }
 
     setPatrolButtonLabel(phantomMode ? primaryCtaLabel : patrolLabelForAction(ux.actionHint));
-    foot.textContent = `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
+    foot.textContent = phantomMode
+      ? `Wasteland pressure ${phantomWastelandPressure(info)}% — ${phantomPackDefenseStatus(info)}. Hold the line.`
+      : `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
     syncPhantomImpact(nodeId);
   }
 
@@ -5837,10 +5900,18 @@
 
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
-      toast(`+${r.gain} influence${hq}`);
+      toast(phantomMode ? `Pack impact +${r.gain}${hq}` : `+${r.gain} influence${hq}`);
       markRecentNodeAction(nodeId, "patrol");
       setActionResult("patrol", {
         gain: r.gain,
+        wastelandPressureBefore: r.wastelandPressureBefore,
+        wastelandPressureAfter: r.wastelandPressureAfter,
+        pressureDelta: r.pressureDelta,
+        playerImpact: r.playerImpact,
+        frontlineImpact: r.frontlineImpact,
+        packDefenseStatusBefore: r.packDefenseStatusBefore,
+        packDefenseStatusAfter: r.packDefenseStatusAfter,
+        frontlineCopy: r.frontlineCopy,
         weeklyPoints: r.weeklyPoints,
         contractContributionChanged: r.contractContributionChanged,
         contractContributionDelta: r.contractContributionDelta,
@@ -5907,10 +5978,21 @@
 
       clearStatus();
       const hq = (r?.hqMult != null) ? ` (HQ x${Number(r.hqMult).toFixed(2)})` : "";
-      toast(`Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
+      const phantomDonateToast = isPhantomNode(nodeId);
+      toast(phantomDonateToast && Number.isFinite(Number(r?.wastelandPressureAfter))
+        ? `Supplies sent · Pressure ${r.wastelandPressureBefore}% → ${r.wastelandPressureAfter}%`
+        : `Donated ${amount} ${asset} -> +${r.gain} influence${hq}`);
       markRecentNodeAction(nodeId, "donate");
       setActionResult("donate", {
         gain: r.gain,
+        wastelandPressureBefore: r.wastelandPressureBefore,
+        wastelandPressureAfter: r.wastelandPressureAfter,
+        pressureDelta: r.pressureDelta,
+        playerImpact: r.playerImpact,
+        frontlineImpact: r.frontlineImpact,
+        packDefenseStatusBefore: r.packDefenseStatusBefore,
+        packDefenseStatusAfter: r.packDefenseStatusAfter,
+        frontlineCopy: r.frontlineCopy,
         spent: r.spent,
         asset: r.asset || asset,
         refunded: r.refunded,

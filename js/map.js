@@ -1140,6 +1140,28 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   function _extractPressureMeta(info) {
     const src = (info && typeof info === "object") ? info : {};
 
+    if (src?.isFrontlinePressure || src?.copyMode === "pack_vs_wasteland") {
+      const wp = Math.max(0, Math.min(100, Number(src?.wastelandPressure || 0)));
+      const packStatus = String(src?.packDefenseStatus || "").trim().toUpperCase();
+      const isHot = wp >= 80 || packStatus === "CRITICAL";
+      const isContested = (wp >= 60 && wp < 80) || packStatus === "DANGEROUS" || packStatus === "UNSTABLE";
+      const isFortified = wp <= 29 || packStatus === "SECURED";
+      return {
+        isHot,
+        isContested,
+        isPressureContested: isContested,
+        isSiegeContested: false,
+        isFortified,
+        captureTier: isHot ? 3 : (isContested ? 2 : (isFortified ? 1 : 0)),
+        pressureDerivedStatus: packStatus || "NEUTRAL",
+        heat: wp,
+        pressureDelta: 0,
+        pressureTopValue: wp,
+        wastelandPressure: wp,
+        packDefenseStatus: String(src?.packDefenseStatus || ""),
+      };
+    }
+
     const pressureDerivedStatus = String(
       src?.pressureDerivedStatus ||
       src?.derivedPressureStatus ||
@@ -2190,6 +2212,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     // LIVE nodes: truth only from leadersMap/backend
     if (liveNode) {
       const top = _resolveTopFaction(scores);
+      const frontlinePhantom = !!(safeInfo?.isFrontlinePressure || safeInfo?.copyMode === "pack_vs_wasteland");
 
       // trust ONLY explicit ownership fields
       // never use generic "faction" as owner
@@ -2199,7 +2222,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
         ""
       );
 
-      const owner = explicitOwner || (top.top1 > 0 ? top.owner : "") || "";
+      const owner = frontlinePhantom ? "" : (explicitOwner || (top.top1 > 0 ? top.owner : "") || "");
 
       const contested = (
         siegeMeta.siegeStatus === "forming" ||
