@@ -7329,7 +7329,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "2026-06-02-bluemoon-end-1";
+    window.WEBAPP_VER = "phantom-daily-outcome-v1-2";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -7448,6 +7448,54 @@ body.bc-open #ahCommunityBtn{
         }
       }
 
+      function navGoHome(meta){
+        try {
+          if (typeof window.goHome === "function") {
+            window.goHome(meta);
+            return true;
+          }
+        } catch (err) {
+          console.warn("[AH_NAV] goHome failed", err);
+        }
+
+        try { if (window.Map?.open) { window.Map.open(); return true; } } catch (_) {}
+        try { if (window.Dashboard?.open) { window.Dashboard.open(); return true; } } catch (_) {}
+        try { if (typeof window.openDashboard === "function") { window.openDashboard(); return true; } } catch (_) {}
+        try { if (typeof window.loadMap === "function") { window.loadMap(); return true; } } catch (_) {}
+
+        try {
+          const url = new URL(location.href);
+          ["section", "view", "modal", "page", "tab", "panel"].forEach((key) => url.searchParams.delete(key));
+          url.hash = "";
+          location.replace(url.toString());
+          return true;
+        } catch (_) {}
+
+        return false;
+      }
+
+      function navRunFallback(fallback, meta){
+        if (fallback === false || fallback == null) return false;
+        if (typeof fallback === "function") {
+          try { return fallback(meta) !== false; } catch (err) {
+            console.warn("[AH_NAV] fallback failed", err);
+            return false;
+          }
+        }
+        if (fallback === true || fallback === "root" || fallback === "home" || fallback === "map") {
+          return navGoHome(meta);
+        }
+        if (typeof fallback === "string" && typeof window[fallback] === "function") {
+          try {
+            window[fallback](meta);
+            return true;
+          } catch (err) {
+            console.warn("[AH_NAV] fallback target failed", fallback, err);
+          }
+        }
+        return false;
+      }
+
       function navSyncUi(){
         const hasStack = !!window.AH_NAV?.stack?.length;
         try {
@@ -7550,6 +7598,10 @@ body.bc-open #ahCommunityBtn{
             navSyncUi();
           }
 
+          if (!st.length) {
+            navRunFallback(entry && entry.fallback, { source, id, el, entry });
+          }
+
           navDbg("closeTop", source, id, st.slice());
           return true;
         }
@@ -7565,14 +7617,88 @@ body.bc-open #ahCommunityBtn{
       window.navClose = navClose;
       window.navCloseTop = navCloseTop;
 
-      // ✅ One BackButton handler (close top modal, else close webapp)
+      window.AlphaNav = window.AlphaNav || {
+        push(viewId, options){
+          const id = _navId(viewId);
+          if (!id) return null;
+          const meta = (options && typeof options === "object") ? { ...options, id } : { id };
+          navRegister(id, meta);
+          navOpen(id);
+          return navEntry(id);
+        },
+        back(reason){
+          const source = reason || "back";
+          if (AH_NAV.stack.length) {
+            return !!navCloseTop({ source });
+          }
+          return navGoHome({ source, id: null, entry: null });
+        },
+        close(viewId, options){
+          const id = _navId(viewId);
+          if (!id) return false;
+
+          const meta = (options && typeof options === "object") ? options : {};
+          const source = meta.source || "close";
+          const st = AH_NAV.stack;
+          const topId = st.length ? st[st.length - 1] : null;
+          const entry = navEntry(id);
+          const el = document.getElementById(id);
+
+          if (topId === id) {
+            return !!navCloseTop({ source });
+          }
+          if (!entry && !navHasOpenState(id)) {
+            return false;
+          }
+
+          try {
+            if (entry && typeof entry.close === "function") {
+              entry.close({ source, id, el, entry });
+            } else if (el) {
+              el.style.display = "none";
+            }
+          } catch (err) {
+            console.warn("[AH_NAV] close failed", id, err);
+            if (el) el.style.display = "none";
+          }
+
+          if (st.lastIndexOf(id) >= 0) {
+            navClose(id);
+          } else {
+            navSyncUi();
+          }
+
+          if (!st.length) {
+            const fallback = Object.prototype.hasOwnProperty.call(meta, "fallback")
+              ? meta.fallback
+              : (entry && entry.fallback);
+            navRunFallback(fallback, { source, id, el, entry });
+          }
+          return true;
+        },
+        reset(){
+          AH_NAV.stack.length = 0;
+          AH_NAV.historyArmed = false;
+          AH_NAV.ignoreNextPop = false;
+          AH_NAV.popClosing = false;
+          navSyncUi();
+          return true;
+        },
+        goHome(meta){
+          return navGoHome(meta);
+        },
+        stack: AH_NAV.stack,
+        registry: AH_NAV.registry
+      };
+
+      // ✅ One BackButton handler (close top modal, else return safely home)
       if (!AH_NAV.inited){
         AH_NAV.inited = true;
         try { tg?.BackButton?.hide?.(); } catch (_) {}
 
         tg?.BackButton?.onClick?.(() => {
-          if (navCloseTop()) return;
-          try { tg?.close?.(); } catch(_) {}
+          if (window.AlphaNav?.back?.("telegram")) return;
+          navGoHome({ source: "telegram" });
         });
 
         window.addEventListener("popstate", (ev) => {
@@ -7854,6 +7980,7 @@ function closeFaqModal(){
         try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
 
         // ✅ Clear nav stack when returning HOME (prevents "ghost" back closes)
+        try { window.AlphaNav?.reset?.(); } catch (_) {}
         try { if (window.AH_NAV?.stack) window.AH_NAV.stack.length = 0; } catch (_) {}
 
         // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
@@ -9841,6 +9968,7 @@ window.loadProfile = loadProfile;
 // ✅ ONE global HOME — deterministic return to main menu/map
 window.goHome = function goHome() {
   try { Telegram?.WebApp?.BackButton?.hide?.(); } catch (_) {}
+  try { window.AlphaNav?.reset?.(); } catch (_) {}
 
   // 1) Soft return if map still exists (e.g. you opened a modal, not full rerender)
   const mapEl = document.getElementById("map");
