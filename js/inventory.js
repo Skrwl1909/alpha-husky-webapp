@@ -315,6 +315,195 @@ window.Inventory = {
     return false;
   },
 
+
+  _isOpenableBox(itemOrKey) {
+    const key = typeof itemOrKey === "string"
+      ? itemOrKey
+      : (itemOrKey?.key || itemOrKey?.item_key || itemOrKey?.item || "");
+    return ["mystery_box", "premium_box"].includes(String(key || "").trim().toLowerCase());
+  },
+
+  _boxOwnedCount(key) {
+    const item = this.findByKey(key);
+    return item ? this._qty(item) : 0;
+  },
+
+  _boxMood(key) {
+    return String(key || "").toLowerCase() === "premium_box"
+      ? {
+          bg: "radial-gradient(circle at 50% 0%,rgba(255,215,106,.18),transparent 34%),linear-gradient(180deg,rgba(21,19,31,.98),rgba(7,9,18,.98))",
+          border: "rgba(255,215,106,.30)",
+          glow: "0 26px 72px rgba(255,177,66,.20)",
+          accent: "#ffd76a",
+        }
+      : {
+          bg: "radial-gradient(circle at 50% 0%,rgba(85,214,255,.16),transparent 34%),linear-gradient(180deg,rgba(15,24,34,.98),rgba(7,10,18,.98))",
+          border: "rgba(126,198,255,.24)",
+          glow: "0 24px 62px rgba(62,184,255,.16)",
+          accent: "#7fdcff",
+        };
+  },
+
+  _rewardTone(reward) {
+    const notable = !!reward?.notable;
+    const chip = this._safeText(reward?.chip, "Reward");
+    if (notable) return { bg: "rgba(255,215,106,.14)", border: "rgba(255,215,106,.34)", fg: "#ffe59a", chip };
+    if (chip === "Shards") return { bg: "rgba(126,198,255,.12)", border: "rgba(126,198,255,.24)", fg: "#dff4ff", chip };
+    if (chip === "Material" || chip === "Resource") return { bg: "rgba(95,227,161,.12)", border: "rgba(95,227,161,.23)", fg: "#c9ffe6", chip };
+    return { bg: "rgba(255,255,255,.07)", border: "rgba(255,255,255,.12)", fg: "#edf4ff", chip };
+  },
+
+  _boxRevealButtons(reveal, pending = false) {
+    const key = this._safeText(reveal?.boxKey, "");
+    const remaining = this._toInt(reveal?.remaining, 0);
+    const batchMax = Math.max(1, this._toInt(reveal?.batchMax, 20));
+    const openAllLabel = this._safeText(reveal?.openAllLabel, remaining > batchMax ? `Open up to ${batchMax}` : "Open all");
+    const disabled = pending ? "disabled" : "";
+    const cursor = pending ? "default" : "pointer";
+    return `
+      <button type="button" onclick="Inventory.closeBoxReveal()" style="flex:1 1 110px;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#edf4ff;font-weight:900;cursor:pointer;">Continue</button>
+      ${remaining >= 1 ? `<button type="button" ${disabled} onclick="Inventory.openAnotherBox('${this._esc(key)}')" style="flex:1 1 140px;padding:13px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#7fdcff,#2d8dff);color:#06111c;font-weight:950;cursor:${cursor};opacity:${pending ? '.68' : '1'};">${pending ? 'Opening...' : 'Open another'}</button>` : ""}
+      ${remaining > 1 ? `<button type="button" ${disabled} onclick="Inventory.openAllBoxes('${this._esc(key)}')" style="flex:1 1 130px;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,215,106,.34);background:rgba(255,215,106,.13);color:#ffe59a;font-weight:950;cursor:${cursor};opacity:${pending ? '.68' : '1'};">${pending ? 'Opening...' : this._esc(openAllLabel)}</button>` : ""}
+    `;
+  },
+
+  _renderBoxReveal(reveal, pending = false) {
+    const data = (reveal && typeof reveal === "object") ? reveal : {};
+    const key = this._safeText(data.boxKey, "mystery_box");
+    const mood = this._boxMood(key);
+    const rewards = Array.isArray(data.rewards) ? data.rewards : [];
+    const lines = Array.isArray(data.lines) ? data.lines : [];
+    const fallbackRewards = rewards.length ? rewards : lines.map((line) => ({ name: line, quantity: 1, chip: "Reward", line }));
+    const rewardCards = fallbackRewards.map((reward) => {
+      const tone = this._rewardTone(reward);
+      const name = this._safeText(reward?.name || reward?.line, "Reward");
+      const qty = this._toInt(reward?.quantity, 1);
+      const qtyText = qty > 1 ? `x${qty}` : "x1";
+      return `
+        <div style="padding:14px;border-radius:16px;background:${tone.bg};border:1px solid ${tone.border};box-shadow:inset 0 1px 0 rgba(255,255,255,.05);">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div style="min-width:0;">
+              <div style="font-size:18px;line-height:1.15;font-weight:950;color:${tone.fg};word-break:break-word;">${this._esc(name)}</div>
+              <div style="margin-top:8px;display:inline-flex;padding:5px 9px;border-radius:999px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);font-size:10px;font-weight:900;text-transform:uppercase;color:#d8e8f8;letter-spacing:.45px;">${this._esc(tone.chip)}</div>
+            </div>
+            <div style="flex:0 0 auto;font-size:18px;font-weight:950;color:#fff;">${this._esc(qtyText)}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div id="boxRevealOverlay" onclick="if(event.target===this) Inventory.closeBoxReveal()" style="position:fixed;inset:0;z-index:16000;display:flex;align-items:flex-end;justify-content:center;padding:16px;background:rgba(3,6,12,.78);backdrop-filter:blur(10px);">
+        <div role="dialog" aria-modal="true" style="width:min(520px,100%);max-height:86vh;overflow:auto;border-radius:26px 26px 20px 20px;background:${mood.bg};border:1px solid ${mood.border};box-shadow:${mood.glow},0 24px 70px rgba(0,0,0,.52);animation:ahBoxRevealIn .18s ease-out;">
+          <style>
+            @keyframes ahBoxRevealIn { from { opacity:.4; transform:translateY(14px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+            @keyframes ahRewardPop { from { transform:scale(.98); } to { transform:scale(1); } }
+          </style>
+          <div style="padding:20px 18px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${mood.accent};font-weight:950;">LOOT REVEAL</div>
+            <div style="margin-top:8px;font-size:22px;line-height:1.08;font-weight:950;color:#f7fbff;">${this._esc(data.title || "BOX OPENED")}</div>
+            <div style="margin-top:8px;font-size:13px;color:#afc2d5;">${this._esc(data.subtitle || "Pack secured")}</div>
+            ${data.partialFailure ? `<div style="margin:12px auto 0;max-width:38ch;padding:9px 10px;border-radius:12px;background:rgba(255,120,120,.12);border:1px solid rgba(255,120,120,.22);font-size:12px;line-height:1.45;color:#ffd7dc;">${this._esc(data.partialFailure)}</div>` : ""}
+          </div>
+          <div style="padding:16px 16px 8px;display:grid;gap:10px;animation:ahRewardPop .2s ease-out;">
+            ${rewardCards || `<div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);color:#dbe7f5;font-weight:800;text-align:center;">No loot</div>`}
+          </div>
+          <div id="boxRevealActions" style="padding:14px 16px 18px;display:flex;gap:10px;flex-wrap:wrap;">${this._boxRevealButtons(data, pending)}</div>
+        </div>
+      </div>
+    `;
+  },
+
+  _showBoxReveal(reveal, pending = false) {
+    this._lastBoxReveal = reveal;
+    const existing = document.getElementById("boxRevealOverlay");
+    const html = this._renderBoxReveal(reveal, pending);
+    if (existing) {
+      existing.outerHTML = html;
+      return;
+    }
+    document.body.insertAdjacentHTML("beforeend", html);
+  },
+
+  _setBoxRevealPending(pending) {
+    if (!this._lastBoxReveal) return;
+    this._showBoxReveal(this._lastBoxReveal, !!pending);
+  },
+
+  closeBoxReveal() {
+    const overlay = document.getElementById("boxRevealOverlay");
+    if (overlay) overlay.remove();
+  },
+
+  async _refreshInventoryFromResponse(res) {
+    if (Array.isArray(res?.slots)) this.items = res.slots;
+    else if (Array.isArray(res?.items)) this.items = res.items;
+    if (Array.isArray(res?.activeEffects)) this.activeEffects = res.activeEffects;
+    if (res && typeof res === "object") {
+      this.resources = {
+        bones: this._toInt(res.bones ?? this.resources.bones, 0),
+        scrap: this._toInt(res.scrap ?? this.resources.scrap, 0),
+        rune_dust: this._toInt(res.rune_dust ?? this.resources.rune_dust, 0),
+      };
+    }
+    this._renderActiveEffectsPanel();
+    const grid = document.getElementById("inventory-grid");
+    if (grid) this.showTab(this.currentTab);
+  },
+
+  async _openBoxRequest(key, options = {}) {
+    const boxKey = String(key || "").trim();
+    if (!this._isOpenableBox(boxKey)) return;
+    this._boxOpenPending = this._boxOpenPending || new Set();
+    if (this._boxOpenPending.has(boxKey)) return;
+    this._boxOpenPending.add(boxKey);
+    this._setBoxRevealPending(true);
+
+    const apiPost = window.S?.apiPost || window.apiPost;
+    if (typeof apiPost !== "function") {
+      this._boxOpenPending.delete(boxKey);
+      this._setBoxRevealPending(false);
+      this._toast("Can't reach inventory right now.");
+      return;
+    }
+
+    try {
+      const payload = {
+        key: boxKey,
+        run_id: this._mkRunId(options.openAll ? "w_inv_box_open_all" : "w_inv_box_open"),
+      };
+      if (options.openAll) payload.open_all = true;
+      if (options.count) payload.count = this._toInt(options.count, 1);
+      const res = await apiPost("/webapp/inventory/use", payload);
+      if (!res?.ok) {
+        const err = new Error(String(res?.message || res?.reason || "Box opening failed."));
+        err.data = res;
+        throw err;
+      }
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+      await this._refreshInventoryFromResponse(res);
+      if (res.boxReveal) this._showBoxReveal(res.boxReveal, false);
+      else if (res.message) this._toast(res.message);
+    } catch (e) {
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      const data = e?.data || {};
+      const message = data?.message || e?.message || "Box opening failed.";
+      if (this._lastBoxReveal) this._showBoxReveal({ ...this._lastBoxReveal, partialFailure: message, rewards: [], lines: [message], canOpenAnother: false, canOpenAll: false, remaining: this._boxOwnedCount(boxKey) }, false);
+      else this._toast(String(message));
+    } finally {
+      this._boxOpenPending.delete(boxKey);
+      this._setBoxRevealPending(false);
+    }
+  },
+
+  async openAnotherBox(key) {
+    return this._openBoxRequest(key, { count: 1 });
+  },
+
+  async openAllBoxes(key) {
+    return this._openBoxRequest(key, { openAll: true });
+  },
+
   // === Telegram BackButton fallback binder (ONLY if nav helpers not present) ===
   _bindTelegramBackButtonFallback() {
     try {
@@ -745,6 +934,25 @@ window.Inventory = {
     const salvage = this._salvagePreview(item);
     const salvageQty = this._salvageableCopyCount(item);
     const actions = [];
+    if (this._isOpenableBox(item)) {
+      const qty = this._qty(item);
+      const openAllLabel = qty > 20 ? "OPEN UP TO 20" : "OPEN ALL";
+      actions.push(`
+        <button onclick="event.stopPropagation(); Inventory.use('${this._esc(key)}')" type="button"
+                style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:none;background:linear-gradient(180deg,#7fdcff,#2d8dff);color:#06111c;font-weight:950;letter-spacing:.4px;cursor:pointer;">
+          OPEN BOX
+        </button>
+      `);
+      if (qty > 1) {
+        actions.push(`
+          <button onclick="event.stopPropagation(); Inventory.openAllBoxes('${this._esc(key)}')" type="button"
+                  style="flex:1 1 140px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,215,106,.34);background:rgba(255,215,106,.13);color:#ffe59a;font-weight:950;letter-spacing:.4px;cursor:pointer;">
+            ${openAllLabel}
+          </button>
+        `);
+      }
+      return actions.join("");
+    }
     if (this._isConsumable(item)) {
       const meta = this._useMeta(item);
       const state = this._safeText(meta.state, "unknown").toLowerCase();
@@ -1353,6 +1561,10 @@ async use(key) {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   const item = this.findByKey(key);
   if (!item || this._normType(item) !== "consumable") return;
+  if (this._isOpenableBox(item)) {
+    this._perfAction("inventory_box_open", perfT0);
+    return this._openBoxRequest(key, { count: 1 });
+  }
   const meta = this._useMeta(item);
   const state = this._safeText(meta.state, "unknown").toLowerCase();
 
