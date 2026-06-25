@@ -185,20 +185,40 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     { value: 8000, label: "False Alpha Signal Prestige Wall" },
   ];
 
-  function getNextThreshold(signalPower) {
-    for (const item of SIGNAL_THRESHOLDS) {
+  function normalizeBackendThresholds(raw) {
+    const list = Array.isArray(raw) ? raw : [];
+    const out = [];
+    for (const item of list) {
+      if (!item || typeof item !== "object") continue;
+      const value = Math.max(0, n(item.value, 0));
+      const label = toText(item.label, "");
+      if (value > 0 && label) out.push({ value, label });
+    }
+    return out.length ? out : null;
+  }
+
+  function resolveSignalThresholds(raw) {
+    if (!raw || typeof raw !== "object") return SIGNAL_THRESHOLDS;
+    const fromBackend = normalizeBackendThresholds(raw.thresholds);
+    return fromBackend || SIGNAL_THRESHOLDS;
+  }
+
+  function getNextThreshold(signalPower, thresholds) {
+    const items = Array.isArray(thresholds) && thresholds.length ? thresholds : SIGNAL_THRESHOLDS;
+    for (const item of items) {
       if (signalPower < item.value) return item;
     }
-    return SIGNAL_THRESHOLDS[SIGNAL_THRESHOLDS.length - 1];
+    return items[items.length - 1];
   }
 
   function normalizeProgressionV1(raw) {
     if (!raw || typeof raw !== "object") return null;
 
     const breakdown = (raw.breakdown && typeof raw.breakdown === "object") ? raw.breakdown : {};
-    const fallbackThreshold = getNextThreshold(Math.max(0, n(raw.signalPower ?? breakdown.total, 0)));
-    const wall = (raw.moonlabWall && typeof raw.moonlabWall === "object") ? raw.moonlabWall : {};
+    const thresholds = resolveSignalThresholds(raw);
     const signalPower = Math.max(0, n(raw.signalPower ?? breakdown.total, 0));
+    const fallbackThreshold = getNextThreshold(signalPower, thresholds);
+    const wall = (raw.moonlabWall && typeof raw.moonlabWall === "object") ? raw.moonlabWall : {};
     const nextThreshold = Math.max(0, n(raw.nextThreshold, fallbackThreshold.value));
     const missingPower = Math.max(0, n(raw.missingPower, Math.max(0, nextThreshold - signalPower)));
 
@@ -208,6 +228,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       missingPower,
       nextUnlockLabel: toText(raw.nextUnlockLabel, fallbackThreshold.label),
       recommendedAction: toText(raw.recommendedAction, "Complete missions to stabilize your signal."),
+      thresholds,
       breakdown: {
         levelPower: Math.max(0, n(breakdown.levelPower, 0)),
         badgePower: Math.max(0, n(breakdown.badgePower, 0)),
