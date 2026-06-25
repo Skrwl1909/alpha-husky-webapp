@@ -280,7 +280,45 @@
         cooldownLeftSec: Math.max(0, n(wall.cooldownLeftSec, 0)),
         ready: !!wall.ready,
       },
+      signalMilestones: normalizeSignalMilestones(raw.signalMilestones, signalPower),
     };
+  }
+
+  function normalizeSignalMilestones(raw, signalPower){
+    const sp = Math.max(0, n(signalPower, 0));
+    if (!raw || typeof raw !== "object") {
+      return { currentSignalPower: sp, nextClaimable: null, claimableCount: 0, milestones: [] };
+    }
+    const milestones = asArray(raw.milestones).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      return {
+        id: toText(item.id, ""),
+        threshold: Math.max(0, n(item.threshold, 0)),
+        name: toText(item.name, ""),
+        shortLabel: toText(item.shortLabel, item.name),
+        description: toText(item.description, ""),
+        status: toText(item.status, "locked"),
+        missingPower: Math.max(0, n(item.missingPower, 0)),
+        rewardsPreview: asArray(item.rewardsPreview),
+        claimedAt: item.claimedAt ?? null,
+        isPreviewOnly: !!item.isPreviewOnly,
+        eligibilityNote: toText(item.eligibilityNote, ""),
+      };
+    }).filter(Boolean);
+    return {
+      currentSignalPower: Math.max(0, n(raw.currentSignalPower, sp)),
+      nextClaimable: raw.nextClaimable && typeof raw.nextClaimable === "object" ? raw.nextClaimable : null,
+      claimableCount: Math.max(0, n(raw.claimableCount, 0)),
+      milestones,
+    };
+  }
+
+  function formatMilestoneRewardsPreview(rewardsPreview){
+    const labels = asArray(rewardsPreview).map((item) => {
+      if (!item || typeof item !== "object") return "";
+      return toText(item.label, "");
+    }).filter(Boolean);
+    return labels.length ? labels.join(", ") : "Rewards syncing…";
   }
 
   function getSignalBreakdown(stats, extras){
@@ -471,13 +509,21 @@
     const style = document.createElement("style");
     style.id = "ah-stats-styles";
     style.textContent = `
-      #statsRoot { color: #e9edf6; }
+      #statsRoot {
+        color: #e9edf6;
+        overflow-x: hidden;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
 
       .ahs-wrap{
         display:flex;
         flex-direction:column;
         gap:12px;
         padding:2px 2px 8px;
+        min-width:0;
+        max-width:100%;
+        box-sizing:border-box;
       }
 
       .ahs-card{
@@ -490,6 +536,9 @@
           0 8px 24px rgba(0,0,0,.24),
           inset 0 1px 0 rgba(255,255,255,.04);
         overflow:hidden;
+        min-width:0;
+        max-width:100%;
+        box-sizing:border-box;
       }
 
       .ahs-card::before{
@@ -501,7 +550,12 @@
         pointer-events:none;
       }
 
-      .ahs-pad{ padding:14px; }
+      .ahs-pad{
+        padding:14px;
+        min-width:0;
+        max-width:100%;
+        box-sizing:border-box;
+      }
       .ahs-section-title{
         font-size:13px;
         font-weight:800;
@@ -639,8 +693,11 @@
 
       .ahs-stats-grid{
         display:grid;
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:1fr;
         gap:10px;
+        min-width:0;
+        max-width:100%;
+        width:100%;
       }
 
       .ahs-stat{
@@ -649,6 +706,10 @@
         background:
           linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
         padding:11px 11px 10px;
+        min-width:0;
+        max-width:100%;
+        width:100%;
+        box-sizing:border-box;
       }
 
       .ahs-stat-head{
@@ -657,12 +718,19 @@
         justify-content:space-between;
         gap:8px;
         margin-bottom:8px;
+        min-width:0;
+      }
+
+      .ahs-stat-head > div:first-child{
+        min-width:0;
+        flex:1 1 auto;
       }
 
       .ahs-stat-right{
         display:flex;
         align-items:flex-start;
         gap:8px;
+        flex:0 0 auto;
       }
 
       .ahs-plus{
@@ -709,8 +777,9 @@
 
       .ahs-stat-break{
         display:grid;
-        grid-template-columns:repeat(3, 1fr);
+        grid-template-columns:repeat(3, minmax(0, 1fr));
         gap:6px;
+        min-width:0;
       }
 
       .ahs-chip{
@@ -867,6 +936,78 @@
         font-size:12px;
         color:#c7d7f2;
       }
+
+
+      .ahs-ms-row{
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        font-size:12px;
+        margin-top:8px;
+      }
+      .ahs-ms-row b{ color:#f4f8ff; }
+      .ahs-ms-section{
+        margin-top:10px;
+        font-size:10px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#8ea6c8;
+      }
+      .ahs-ms-claimed{
+        font-size:12px;
+        color:#9fd6b4;
+        margin-top:4px;
+      }
+      .ahs-ms-muted{
+        font-size:12px;
+        color:rgba(220,230,255,.55);
+        margin-top:4px;
+      }
+      .ahs-ms-next{
+        margin-top:6px;
+        padding:10px;
+        border-radius:10px;
+        border:1px solid rgba(120,160,220,.18);
+        background:rgba(8,14,24,.45);
+      }
+      .ahs-ms-next-title{
+        font-size:13px;
+        font-weight:700;
+        color:#f4f8ff;
+      }
+      .ahs-ms-rewards{
+        margin-top:6px;
+        font-size:11px;
+        color:rgba(220,230,255,.78);
+        line-height:1.35;
+      }
+      .ahs-ms-note{
+        margin-top:6px;
+        font-size:10px;
+        color:#9fb6d9;
+        line-height:1.3;
+      }
+      .ahs-ms-status{
+        margin-top:8px;
+        font-size:11px;
+        font-weight:600;
+      }
+      .ahs-ms-status.is-claimed{ color:#9fd6b4; }
+      .ahs-ms-status.is-locked{ color:#d6a06a; }
+      .ahs-ms-claim-btn{
+        margin-top:10px;
+        width:100%;
+        border:0;
+        border-radius:10px;
+        padding:10px 12px;
+        font-size:12px;
+        font-weight:700;
+        color:#061018;
+        background:linear-gradient(180deg,#7ce0ff,#39b7ff);
+        cursor:pointer;
+      }
+      .ahs-ms-claim-btn:disabled{ opacity:.55; cursor:default; }
+      .ahs-ms-compact{ margin-top:10px; }
 
       .ahs-breakdown-row b{
         font-size:13px;
@@ -1181,6 +1322,12 @@
           grid-template-columns:repeat(3, 1fr);
         }
       }
+
+      @media (min-width: 561px){
+        .ahs-stats-grid{
+          grid-template-columns:1fr 1fr;
+        }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1270,6 +1417,7 @@
           <div class="ahg-move"><b>Best Move:</b> ${esc(hubBestMove)}</div>
         </div>
       </div>
+      ${renderSignalMilestonesCard(stats, extras, { compact: true })}
     `;
   }
 
@@ -1325,6 +1473,63 @@
         </div>
       </div>
     `;
+  }
+
+  function renderSignalMilestonesCard(stats, extras, options = {}){
+    const compact = !!options.compact;
+    const progression = normalizeProgressionV1(stats?.progression_v1);
+    const milestonesState = progression?.signalMilestones || { currentSignalPower: 0, milestones: [], nextClaimable: null, claimableCount: 0 };
+    const milestones = asArray(milestonesState.milestones);
+    const currentSp = Math.max(0, n(milestonesState.currentSignalPower, progression?.signalPower, 0));
+    const claimed = milestones.filter((m) => m.status === "claimed");
+    const nextLocked = milestones.find((m) => m.status === "locked") || null;
+    const nextClaimable = milestones.find((m) => m.status === "claimable") || milestonesState.nextClaimable || null;
+    const focus = nextClaimable || nextLocked;
+
+    const claimedHtml = claimed.length
+      ? claimed.map((m) => `<div class="ahs-ms-claimed">✓ ${esc(m.shortLabel || m.name)}</div>`).join("")
+      : `<div class="ahs-ms-muted">No milestones claimed yet.</div>`;
+
+    let nextHtml = "";
+    if (focus) {
+      const status = toText(focus.status, "locked");
+      const missing = Math.max(0, n(focus.missingPower, 0));
+      const rewards = formatMilestoneRewardsPreview(focus.rewardsPreview);
+      const note = toText(focus.eligibilityNote, "");
+      nextHtml = `
+        <div class="ahs-ms-next">
+          <div class="ahs-ms-next-title">${esc(focus.shortLabel || focus.name)}${status === "locked" && missing > 0 ? ` — ${esc(missing)} missing` : ""}</div>
+          <div class="ahs-ms-rewards"><b>Rewards:</b> ${esc(rewards)}</div>
+          ${note ? `<div class="ahs-ms-note">${esc(note)}</div>` : ""}
+          ${status === "claimable" ? `<button type="button" class="ahs-ms-claim-btn" data-action="claim-signal-milestone" data-milestone-id="${esc(focus.id)}">Claim Milestone</button>` : ""}
+          ${status === "claimed" ? `<div class="ahs-ms-status is-claimed">Claimed</div>` : ""}
+          ${status === "locked" ? `<div class="ahs-ms-status is-locked">${esc(missing)} Signal Power missing</div>` : ""}
+        </div>`;
+    }
+
+    if (compact) {
+      return `
+        <div class="ahg-card ahs-ms-compact">
+          <div class="ahg-pad">
+            <div class="ahg-kicker">Signal Milestones</div>
+            <div class="ahs-ms-row"><span>Current Signal Power</span><b>${esc(currentSp)}</b></div>
+            ${claimed.length ? `<div class="ahs-ms-section">Claimed</div>${claimedHtml}` : ""}
+            ${focus ? `<div class="ahs-ms-section">Next</div>${nextHtml}` : ""}
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="ahs-card" id="ahs-signal-milestones-card">
+        <div class="ahs-pad">
+          <div class="ahs-section-title">Signal Milestones</div>
+          <div class="ahs-ms-row"><span>Current Signal Power</span><b>${esc(currentSp)}</b></div>
+          <div class="ahs-ms-section">Claimed</div>
+          ${claimedHtml}
+          <div class="ahs-ms-section">Next</div>
+          ${focus ? nextHtml : `<div class="ahs-ms-muted">All milestones claimed or syncing…</div>`}
+        </div>
+      </div>`;
   }
 
   function renderSignalBreakdownCard(stats, extras){
@@ -1659,6 +1864,8 @@
 
         ${renderSignalBreakdownCard(stats, extras)}
 
+        ${renderSignalMilestonesCard(stats, extras)}
+
         ${renderMoonlabBossWallCard(stats, extras)}
 
         <div class="ahs-card">
@@ -1677,6 +1884,56 @@
       </div>
     `;
   }
+
+  let _milestoneClaimLoading = false;
+
+  async function claimSignalMilestone(milestoneId){
+    if (_milestoneClaimLoading) return;
+    const milestoneKey = toText(milestoneId, "");
+    if (!milestoneKey) return;
+
+    if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
+    if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
+    if (typeof _apiPost !== "function") {
+      try { _tg?.showAlert?.("Mini App API is not ready yet."); } catch (_) {}
+      return;
+    }
+
+    _milestoneClaimLoading = true;
+    const btn = document.querySelector(`[data-action="claim-signal-milestone"][data-milestone-id="${milestoneKey}"]`);
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await _apiPost("/webapp/progression/milestone/claim", { milestoneId: milestoneKey });
+      if (res?.alreadyClaimed) {
+        try { _tg?.showAlert?.("Milestone already claimed."); } catch (_) {}
+      } else if (res?.claimed && res?.milestone) {
+        try { _tg?.showAlert?.(`Claimed ${toText(res.milestone.name, "milestone")}!`); } catch (_) {}
+        try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      } else if (!res?.ok) {
+        const msg = toText(res?.message, res?.reason || "Could not claim milestone.");
+        try { _tg?.showAlert?.(msg); } catch (_) {}
+        return;
+      }
+
+      const nextStats = res?.progression_v1
+        ? { ...(_lastStats || {}), progression_v1: res.progression_v1 }
+        : (getPayload(await _apiPost("/webapp/stats/state", { t: Date.now() })) || _lastStats);
+
+      if (nextStats) {
+        _lastStats = nextStats;
+        render(nextStats, _lastMystats, _progressionExtras);
+        renderHubGoalCard(nextStats, _progressionExtras);
+      }
+    } catch (e) {
+      if (_dbg) console.error("[Stats] milestone claim failed", e);
+      try { _tg?.showAlert?.("Milestone claim failed."); } catch (_) {}
+    } finally {
+      _milestoneClaimLoading = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
   async function upgradeStat(stat){
     if (_loading) return;
 
@@ -1912,6 +2169,14 @@
         e.preventDefault();
         if (_mobileSyncLoading) return;
         requestMobileLinkCode();
+        return;
+      }
+
+      const claimBtn = e.target.closest('[data-action="claim-signal-milestone"]');
+      if (claimBtn) {
+        e.preventDefault();
+        if (_milestoneClaimLoading) return;
+        claimSignalMilestone(claimBtn.dataset.milestoneId || "");
         return;
       }
 
