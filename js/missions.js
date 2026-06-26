@@ -174,6 +174,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     return null;
   }
 
+  // Fallback only when progression_v1 is absent; backend progression_v1 is source of truth when present.
   const SIGNAL_THRESHOLDS = [
     { value: 500, label: "MoonLab Stabilization" },
     { value: 1000, label: "First Wall Break" },
@@ -245,7 +246,28 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         cooldownLeftSec: Math.max(0, n(wall.cooldownLeftSec ?? wall.cooldown, 0)),
         ready: !!wall.ready,
       },
+      nextAlphaGoal: (raw.nextAlphaGoal && typeof raw.nextAlphaGoal === "object") ? raw.nextAlphaGoal : null,
+      elitePreviewHints: (raw.elitePreviewHints && typeof raw.elitePreviewHints === "object") ? {
+        previewOnly: raw.elitePreviewHints.previewOnly !== false,
+        eliteUnlockThreshold: Math.max(0, n(raw.elitePreviewHints.eliteUnlockThreshold, 0)),
+        eliteUnlockLabel: toText(raw.elitePreviewHints.eliteUnlockLabel, ""),
+        eliteLockedLabel: toText(raw.elitePreviewHints.eliteLockedLabel, "Locked Preview"),
+        eliteReadyLabel: toText(raw.elitePreviewHints.eliteReadyLabel, "Read-only Preview"),
+        safetyCopy: toText(raw.elitePreviewHints.safetyCopy, "Preview only — standard routes below still handle rewards."),
+        source: toText(raw.elitePreviewHints.source, "progression_v1"),
+      } : null,
+      signalMilestones: (raw.signalMilestones && typeof raw.signalMilestones === "object") ? raw.signalMilestones : null,
     };
+  }
+
+  // Fallback when backend progression_v1.elitePreviewHints is absent.
+  const ELITE_HUNT_SIGNAL_THRESHOLD_FALLBACK = 1500;
+
+  function resolveEliteUnlockThreshold(progression) {
+    const hints = progression?.elitePreviewHints;
+    const fromBackend = Math.max(0, n(hints?.eliteUnlockThreshold, 0));
+    if (fromBackend > 0) return fromBackend;
+    return ELITE_HUNT_SIGNAL_THRESHOLD_FALLBACK;
   }
 
   function getMoonlabBossPressure(wall) {
@@ -561,7 +583,6 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   let _missionsHelpOpen = false;
   const MISSIONS_STATE_STALE_MS = 10 * 1000;
 
-  const ELITE_HUNT_SIGNAL_THRESHOLD = 1500;
   let _progressionV1 = null;
   let _progressionStatus = "syncing";
   let _progressionLoadedAt = 0;
@@ -2769,6 +2790,20 @@ function _normalizeRareDropObj(obj) {
     `;
   }
 
+
+  function resolveNextMilestoneLabel(progression) {
+    const milestones = progression?.signalMilestones;
+    if (!milestones || typeof milestones !== "object") return "";
+    const next = milestones.nextClaimable && typeof milestones.nextClaimable === "object"
+      ? milestones.nextClaimable
+      : (Array.isArray(milestones.milestones) ? milestones.milestones : []).find((m) => m && (m.status === "claimable" || m.status === "locked"));
+    if (!next) return "";
+    const label = toText(next.shortLabel || next.name, "");
+    const missing = Math.max(0, n(next.missingPower, 0));
+    if (!label) return "";
+    return missing > 0 ? `Next milestone: ${label} — ${missing} missing` : `Next milestone: ${label}`;
+  }
+
   function buildElitePreviewCards(progression) {
     if (!progression || typeof progression !== "object") return [];
 
@@ -2777,6 +2812,7 @@ function _normalizeRareDropObj(obj) {
     const recommended = toText(progression.recommendedAction, "Complete standard routes and strengthen your profile.");
     const nextUnlock = toText(progression.nextUnlockLabel, "Next Signal threshold");
     const missingPower = Math.max(0, n(progression.missingPower, 0));
+    const milestoneHint = resolveNextMilestoneLabel(progression);
     const cards = [];
 
     if (wall.available) {
@@ -2807,12 +2843,15 @@ function _normalizeRareDropObj(obj) {
       });
     }
 
-    const eliteLocked = sp < ELITE_HUNT_SIGNAL_THRESHOLD;
+    const eliteHints = progression.elitePreviewHints || {};
+    const eliteThreshold = resolveEliteUnlockThreshold(progression);
+    const eliteUnlockLabel = toText(eliteHints.eliteUnlockLabel, "Elite Missions Tier I Preview");
+    const eliteLocked = sp < eliteThreshold;
     cards.push({
       title: "Elite Hunt: Red Static Trail",
-      requires: `${ELITE_HUNT_SIGNAL_THRESHOLD} Signal Power`,
+      requires: `Eligibility · Progress toward ${eliteThreshold} Signal Power · ${eliteUnlockLabel}`,
       purpose: "Prepare for the Red Static Warden.",
-      link: `Next Signal Unlock — ${nextUnlock}`,
+      link: milestoneHint || `Next Signal Unlock — ${nextUnlock}`,
       status: eliteLocked ? "Locked" : "Ready",
       bestMove: "Build Signal Power through routes, badges, pets, and MoonLab progress.",
       ctaLabel: elitePreviewCtaLabel(eliteLocked ? "Locked" : "Ready", eliteLocked),
@@ -2896,7 +2935,7 @@ function _normalizeRareDropObj(obj) {
       <div class="m-card m-elite-wrap">
         <div class="m-elite-kicker">ELITE MISSIONS</div>
         <div class="m-muted" style="margin-top:6px;">High-risk operations tied to your Signal Power, MoonLab wall, and long-term path.</div>
-        <div class="m-elite-safety">Preview only — standard routes below still handle rewards.</div>
+        <div class="m-elite-safety">${esc(toText(_progressionV1?.elitePreviewHints?.safetyCopy, "Preview only — standard routes below still handle rewards."))}</div>
         ${signalHint ? `<div class="m-muted" style="margin-top:6px;">${esc(signalHint)}</div>` : ""}
         ${
           ready && cards.length

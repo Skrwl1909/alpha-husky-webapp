@@ -848,7 +848,7 @@
 
           <div class="inf-weekly-title">Hold the Line</div>
 
-          <div class="inf-weekly-sub">Patrol and supplies reduce Wasteland pressure and build your personal support.</div>
+          <div class="inf-weekly-sub">Patrol and supplies weaken the Maw and build your personal support. Confront finishes the daily push.</div>
 
         </div>
 
@@ -1226,11 +1226,17 @@
 
     const status = phantomPackDefenseStatus(info);
 
-    if (status === "Secured") return "The relay is holding. Keep the Wasteland back.";
+    const mawState = (info && typeof info.mawState === "object") ? info.mawState : null;
 
-    if (status === "Unstable") return "Phantom Node is under Wasteland pressure.";
+    const mawProvoked = info?.mawProvoked === true || mawState?.mawProvoked === true;
 
-    if (status === "Dangerous") return "The Wasteland is pushing hard. Hold the line.";
+    if (status === "Secured") return "SECURED — FOR NOW. The Static Maw is already rebuilding pressure.";
+
+    if (wp <= 35) return "The Maw is exposed. Confront it to secure today's push.";
+
+    if (mawProvoked) return "The Maw has clawed back into the relay. Hold the line again.";
+
+    if (status === "Unstable" || status === "Dangerous") return "Patrol and supplies weaken the Maw.";
 
     return "Critical Wasteland pressure. Every action counts.";
 
@@ -1240,13 +1246,17 @@
 
     if (!patrolReady && cooldownLeftSec > 0) return `Patrol reopens in ${fmtCooldownHint(cooldownLeftSec)}.`;
 
+    const wp = phantomWastelandPressure(info);
+
     const status = phantomPackDefenseStatus(info);
 
     if (status === "Critical" || status === "Dangerous") return "Hold the line now.";
 
-    if (status === "Unstable") return "Patrol or send supplies.";
+    if (wp <= 35) return "Confront the Maw to secure today's push.";
 
-    return "The Pack holds the relay.";
+    if (status === "Unstable") return "Patrol and supplies weaken the Maw.";
+
+    return "Check back later. The line will not hold itself.";
 
   }
 
@@ -1276,6 +1286,160 @@
 
   }
 
+  function phantomMawIntent(info) {
+
+    const intent = (info && typeof info.mawIntent === "object") ? info.mawIntent : null;
+
+    if (intent && String(intent.label || "").trim()) return intent;
+
+    const wp = phantomWastelandPressure(info);
+
+    const mawState = (info && typeof info.mawState === "object") ? info.mawState : null;
+
+    const provoked = info?.mawProvoked === true || mawState?.mawProvoked === true;
+
+    if (provoked && wp <= 10) {
+
+      return {
+
+        label: "MAW PROVOKED",
+
+        detail: "The Static Maw is rebuilding pressure faster after being pushed back.",
+
+        nextBestMove: "Check back later or prepare to hold the line again.",
+
+      };
+
+    }
+
+    if (wp <= 35) {
+
+      return {
+
+        label: "MAW EXPOSED",
+
+        detail: "The Maw is exposed. Confront it to secure today's push.",
+
+        nextBestMove: "Confront The Maw.",
+
+      };
+
+    }
+
+    return {
+
+      label: "CLAWING BACK",
+
+      detail: "Patrol and supplies weaken the Maw.",
+
+      nextBestMove: "Patrol or donate supplies to expose it.",
+
+    };
+
+  }
+
+  function phantomClashReportHtml(report) {
+
+    if (!report || typeof report !== "object") return "";
+
+    const mawReaction = String(report.mawReaction || report.mawResponse || report.npcNote || "").trim();
+
+    const clashLines = Array.isArray(report.clashLines) ? report.clashLines.filter(Boolean) : [];
+
+    const nextBestMove = String(report.nextBestMove || "").trim();
+
+    if (!mawReaction && !clashLines.length && !nextBestMove) return "";
+
+    const linesHtml = clashLines.length
+
+      ? `<ul class="inf-clash-lines">${clashLines.map((line) => `<li>${esc(String(line))}</li>`).join("")}</ul>`
+
+      : "";
+
+    return `
+
+      <div class="inf-clash-report">
+
+        <div class="inf-clash-kicker">Clash Report</div>
+
+        <div class="inf-clash-vs">Pack Signal → Static Maw</div>
+
+        ${mawReaction ? `<div class="inf-clash-reaction">Maw response: ${esc(mawReaction)}</div>` : ""}
+
+        ${linesHtml}
+
+        ${nextBestMove ? `<div class="inf-clash-next">Next: ${esc(nextBestMove)}</div>` : ""}
+
+      </div>
+
+    `;
+
+  }
+
+  function flashPhantomThreatCard() {
+
+    const card = _qs("infThreatCard");
+
+    if (!card) return;
+
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduce) return;
+
+    card.classList.remove("is-clash-flash");
+
+    void card.offsetWidth;
+
+    card.classList.add("is-clash-flash");
+
+    window.setTimeout(() => card.classList.remove("is-clash-flash"), 1000);
+
+  }
+
+  function renderPhantomLastClash(info) {
+
+    const el = _qs("infLastClash");
+
+    if (!el) return;
+
+    const clash = (info && typeof info.lastClash === "object") ? info.lastClash : null;
+
+    if (!clash || !String(clash.summary || "").trim()) {
+
+      el.style.display = "none";
+
+      el.innerHTML = "";
+
+      return;
+
+    }
+
+    const summary = String(clash.summary || "").trim();
+
+    const pb = Number(clash.pressureBefore);
+
+    const pa = Number(clash.pressureAfter);
+
+    const pressureLine = Number.isFinite(pb) && Number.isFinite(pa) ? `Pressure: ${pb}% → ${pa}%` : "";
+
+    const mawReaction = String(clash.mawReaction || "").trim();
+
+    el.style.display = "block";
+
+    el.innerHTML = `
+
+      <div class="inf-last-clash-kicker">Last Clash</div>
+
+      <div class="inf-last-clash-summary">${esc(summary)}</div>
+
+      ${pressureLine ? `<div class="inf-last-clash-meta">${esc(pressureLine)}</div>` : ""}
+
+      ${mawReaction ? `<div class="inf-last-clash-meta">Maw response: ${esc(mawReaction)}</div>` : ""}
+
+    `;
+
+  }
+
   function renderPhantomThreatCard(info) {
 
     const el = _qs("infThreatCard");
@@ -1288,7 +1452,17 @@
 
     const weakness = Array.isArray(threat.weakness) ? threat.weakness.join(" / ") : "Patrol / Supplies";
 
-    const statusClass = phantomThreatStatusClass(info);
+    const mawState = (info && typeof info.mawState === "object") ? info.mawState : null;
+
+    const mawProvoked = threat.mawProvoked === true || info?.mawProvoked === true || mawState?.mawProvoked === true;
+
+    const mawAlertTitle = String(threat.mawAlertTitle || info?.mawAlertTitle || mawState?.mawAlertTitle || (mawProvoked ? "MAW PROVOKED" : "")).trim();
+
+    const mawAlertCopy = String(threat.mawAlertCopy || info?.mawAlertCopy || mawState?.mawAlertCopy || "").trim();
+
+    const statusClass = mawProvoked ? "is-status-provoked" : phantomThreatStatusClass(info);
+
+    const threatStatus = String(threat.status || phantomPackDefenseStatus(info) || "").trim();
 
     el.className = `inf-threat-card ${statusClass}`;
 
@@ -1326,19 +1500,57 @@
 
           <div class="inf-threat-copy">
 
-            <div class="inf-threat-kicker">Threat Detected</div>
+            <div class="inf-threat-kicker">${esc(mawProvoked ? "Maw Retaliation" : "Threat Detected")}</div>
 
             <div class="inf-threat-name">${esc(String(threat.name || "The Static Maw"))}</div>
 
-            <div class="inf-threat-meta">${esc(String(threat.type || "Wasteland Threat"))} · ${esc(String(threat.status || ""))}</div>
+            <div class="inf-threat-meta">${esc(String(threat.type || "Wasteland Threat"))} · ${esc(threatStatus)}</div>
 
             <div class="inf-threat-meta">Pressure: ${esc(String(threat.pressure ?? phantomWastelandPressure(info)))}% · Weakness: ${esc(weakness)}</div>
 
+            ${mawAlertTitle ? `<div class="inf-threat-meta is-maw-alert">${esc(mawAlertTitle)}</div>` : ""}
+
             <div class="inf-threat-note">“${esc(String(threat.note || ""))}”</div>
+
+            ${mawAlertCopy ? `<div class="inf-threat-pulse-copy">${esc(mawAlertCopy)}</div>` : ""}
 
           </div>
 
         </div>
+
+        ${(() => {
+
+          const intent = phantomMawIntent(info);
+
+          const label = String(intent?.label || "").trim();
+
+          const detail = String(intent?.detail || "").trim();
+
+          const next = String(intent?.nextBestMove || "").trim();
+
+          const rate = String(intent?.pressureRateHint || "").trim();
+
+          if (!label) return "";
+
+          return `
+
+            <div class="inf-maw-intent">
+
+              <div class="inf-maw-intent-kicker">Enemy Intent</div>
+
+              <div class="inf-maw-intent-label">${esc(label)}</div>
+
+              ${detail ? `<div class="inf-maw-intent-detail">${esc(detail)}</div>` : ""}
+
+              ${rate ? `<div class="inf-maw-intent-rate">${esc(rate)}</div>` : ""}
+
+              ${next ? `<div class="inf-maw-intent-next">Next: ${esc(next)}</div>` : ""}
+
+            </div>
+
+          `;
+
+        })()}
 
       </div>
 
@@ -1394,7 +1606,7 @@
 
     const current = Number(target.current || 0);
 
-    const goal = Number(target.target || 900);
+    const goal = Number(target.target || 1500);
 
     const progressPct = Math.max(0, Math.min(100, Number(target.progressPct || (goal > 0 ? Math.round((current / goal) * 100) : 0))));
 
@@ -1552,13 +1764,19 @@
 
     const pressure = Number(confront.currentPressure);
 
-    const unlockAt = Number(confront.unlockedAtPressure || 60);
+    const unlockAt = Number(confront.unlockedAtPressure || 35);
 
     const usesToday = Number(confront.usesToday || 0);
 
     const maxUses = Number(confront.maxUsesPerDay || 1);
 
-    const reason = String(confront.reason || "").trim();
+    const status = String(confront.status || (available ? "available" : "locked")).trim();
+
+    const buttonLabel = String(confront.buttonLabel || (available ? "CONFRONT THE MAW" : (status === "used_today" ? "USED TODAY" : "LOCKED"))).trim();
+
+    const copyPrimary = String(confront.copyPrimary || "").trim();
+
+    const copySecondary = String(confront.copySecondary || confront.reason || "").trim();
 
     el.style.display = "block";
 
@@ -1574,13 +1792,11 @@
 
         <div class="inf-confront-title">CONFRONT THE MAW</div>
 
-        <div class="inf-confront-copy">The Pack created an opening.</div>
-
-        <div class="inf-confront-copy">Challenge the Static Maw directly.</div>
+        <div class="inf-confront-copy">${esc(copyPrimary || "Pressure is low enough. Strike before the Static Maw regroups.")}</div>
 
         <div class="inf-confront-meta">Pressure: ${esc(String(Number.isFinite(pressure) ? pressure : "?"))}% · ${esc(`${usesToday}/${maxUses}`)} today</div>
 
-        <button id="infConfrontBtn" type="button" class="inf-confront-btn">Drive Back The Static Maw</button>
+        <button id="infConfrontBtn" type="button" class="inf-confront-btn">${esc(buttonLabel)}</button>
 
       `;
 
@@ -1592,17 +1808,31 @@
 
     }
 
+    const lockedTitleClass = status === "used_today" ? "is-used" : "is-locked";
+
+    const primary = copyPrimary || (status === "used_today"
+
+      ? "You already confronted The Static Maw today."
+
+      : `Available when pressure drops to ${unlockAt} or lower.`);
+
+    const secondary = copySecondary || (status === "used_today"
+
+      ? "Return tomorrow after the Wasteland pressure rebuilds."
+
+      : `Current pressure: ${Number.isFinite(pressure) ? pressure : "?"}%. The Pack must weaken the threat first.`);
+
     el.innerHTML = `
 
       <div class="inf-confront-kicker">Confrontation Window</div>
 
-      <div class="inf-confront-title is-locked">CONFRONT THE MAW</div>
+      <div class="inf-confront-title ${esc(lockedTitleClass)}">CONFRONT THE MAW</div>
 
-      <div class="inf-confront-copy">Available when pressure drops to ${esc(String(unlockAt))} or lower.</div>
+      <div class="inf-confront-copy">${esc(primary)}</div>
 
-      <div class="inf-confront-meta">Pressure: ${esc(String(Number.isFinite(pressure) ? pressure : "?"))}%${reason ? ` · ${esc(reason)}` : ""}</div>
+      <div class="inf-confront-copy">${esc(secondary)}</div>
 
-      <button type="button" class="inf-confront-btn is-locked" disabled>Locked</button>
+      <button type="button" class="inf-confront-btn is-locked" disabled>${esc(buttonLabel)}</button>
 
     `;
 
@@ -1616,27 +1846,49 @@
 
     if (!el) return;
 
-    const result = (payload?.frontlineConfrontResult && typeof payload.frontlineConfrontResult === "object")
+    const report = (payload?.afterActionReport && typeof payload.afterActionReport === "object")
 
-      ? payload.frontlineConfrontResult
+      ? payload.afterActionReport
 
-      : null;
+      : ((payload?.frontlineConfrontResult && typeof payload.frontlineConfrontResult === "object")
 
-    const wpBefore = Number(result?.pressureBefore ?? payload?.wastelandPressureBefore);
+        ? (payload.frontlineConfrontResult.afterActionReport || payload.frontlineConfrontResult)
 
-    const wpAfter = Number(result?.pressureAfter ?? payload?.wastelandPressureAfter);
+        : null);
 
-    const pressureDelta = Number(result?.pressureDelta ?? payload?.pressureDelta ?? (wpBefore - wpAfter));
+    if (!report) {
 
-    const supportGained = Number(result?.supportGained ?? payload?.weeklyPoints ?? 0);
+      setStatus("Confrontation complete, but no report returned.", "warn");
 
-    const statusBefore = String(result?.statusBefore || payload?.statusBefore || "").trim();
+      return;
 
-    const statusAfter = String(result?.statusAfter || payload?.statusAfter || "").trim();
+    }
 
-    const npcNote = String(result?.npcNote || payload?.frontlineCopy || "").trim();
+    const wpBefore = Number(report.pressureBefore ?? payload?.wastelandPressureBefore);
 
-    const tier = String(result?.confrontationTier || "").trim();
+    const wpAfter = Number(report.pressureAfter ?? payload?.wastelandPressureAfter);
+
+    const pressureDelta = Number(report.packImpactToday ?? report.pressureDelta ?? payload?.pressureDelta ?? (wpBefore - wpAfter));
+
+    const supportGained = Number(report.contributionGained ?? report.supportGained ?? payload?.weeklyPoints ?? 0);
+
+    const playerSupportToday = Number(report.playerSupportToday ?? payload?.playerSupportToday ?? 0);
+
+    const packSupportToday = Number(report.packSupportToday ?? payload?.packSupportToday ?? 0);
+
+    const statusBefore = String(report.statusBefore || payload?.statusBefore || "").trim();
+
+    const statusAfter = String(report.statusAfter || payload?.statusAfter || "").trim();
+
+    const mawNote = String(report.mawResponse || report.npcNote || payload?.frontlineCopy || "").trim();
+
+    const rewardLine = String(report.rewardLine || "").trim();
+
+    const tomorrowHook = String(report.tomorrowHook || "Return tomorrow to see if the Pack held the line overnight.").trim();
+
+    const title = String(report.title || "CONFRONTATION COMPLETE").trim();
+
+    const main = String(report.main || "You forced The Static Maw back from the relay.").trim();
 
     const pressureLine = Number.isFinite(wpBefore) && Number.isFinite(wpAfter)
 
@@ -1644,23 +1896,33 @@
 
       : "";
 
+    const statusLine = statusBefore && statusAfter
+
+      ? (statusBefore !== statusAfter ? `Status: ${statusBefore} → ${statusAfter}` : `Status: ${statusAfter}`)
+
+      : (statusAfter ? `Status: ${statusAfter}` : "");
+
     const lines = [
+
+      main,
 
       pressureLine,
 
-      pressureDelta > 0 ? `Pack Impact: -${pressureDelta} pressure` : "",
+      statusLine,
 
-      supportGained > 0 ? `Your Support: +${supportGained}` : "",
+      supportGained > 0 ? `Your impact: +${supportGained} Frontline Support` : "",
 
-      statusBefore && statusAfter
+      playerSupportToday > 0 ? `Your support today: ${playerSupportToday}` : "",
 
-        ? (statusBefore !== statusAfter ? `Status: ${statusBefore} → ${statusAfter}` : `Status: ${statusAfter}`)
+      packSupportToday > 0 ? `Pack support today: ${packSupportToday}` : "",
 
-        : "",
+      pressureDelta > 0 ? `Pack impact today: -${pressureDelta} pressure` : "",
 
-      npcNote,
+      rewardLine || (supportGained > 0 ? "Progress: Frontline contribution recorded." : ""),
 
-      tier ? `Tier: ${tier}` : "",
+      mawNote,
+
+      tomorrowHook,
 
     ].filter(Boolean);
 
@@ -1674,19 +1936,23 @@
 
     el.innerHTML = `
 
-      <div class="inf-result-kicker">Confrontation Complete</div>
+      <div class="inf-result-kicker">${esc(title)}</div>
 
-      <div class="inf-result-title">YOU DROVE BACK THE STATIC MAW</div>
+      <div class="inf-result-title">${esc(main)}</div>
 
-      <div class="inf-result-gain">${esc(pressureLine || "The Static Maw recoiled from the relay.")}</div>
+      <div class="inf-result-gain">${esc(pressureLine || main)}</div>
 
       <div class="inf-result-lines">
 
-        ${lines.slice(1, 5).map((line) => `<div class="inf-result-line">${esc(line)}</div>`).join("")}
+        ${lines.slice(2, 8).map((line) => `<div class="inf-result-line">${esc(line)}</div>`).join("")}
 
       </div>
 
+      ${phantomClashReportHtml(report)}
+
     `;
+
+    flashPhantomThreatCard();
 
   }
 
@@ -1697,6 +1963,8 @@
     if (!isPhantomNode(nodeId)) {
 
       renderPhantomThreatCard(null);
+
+      renderPhantomLastClash(null);
 
       renderPhantomThreatPulse(null);
 
@@ -1713,6 +1981,8 @@
     }
 
     renderPhantomThreatCard(info);
+
+    renderPhantomLastClash(info);
 
     renderPhantomThreatPulse(info);
 
@@ -2416,7 +2686,7 @@
 
     const title = phantomMode
 
-      ? (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED")
+      ? String(report?.title || (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED"))
 
       : (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED");
 
@@ -2576,11 +2846,15 @@
 
     el.style.background = "linear-gradient(180deg, rgba(108,255,213,.14), rgba(70,164,214,.10))";
 
+    const phantomMain = phantomMode ? String(report?.main || "").trim() : "";
+
+    const phantomClashHtml = phantomMode ? phantomClashReportHtml(report) : "";
+
     el.innerHTML = `
 
-      <div class="inf-result-kicker">Action Confirmed</div>
+      <div class="inf-result-kicker">${phantomMode ? esc(title) : "Action Confirmed"}</div>
 
-      <div class="inf-result-title">${title}</div>
+      <div class="inf-result-title">${phantomMain ? esc(phantomMain) : title}</div>
 
       <div class="inf-result-gain">${esc(lead)}</div>
 
@@ -2600,7 +2874,11 @@
 
       </div>
 
+      ${phantomClashHtml}
+
     `;
+
+    if (phantomMode) flashPhantomThreatCard();
 
   }
 
@@ -3386,9 +3664,9 @@
 
     if (reason === "BAD_ACTION") return "Bad action.";
 
-    if (reason === "CONFRONT_LOCKED") return "The Static Maw is still too strong. Lower pressure first.";
+    if (reason === "CONFRONT_LOCKED") return "Available when pressure drops to 35 or lower. The Pack must weaken the threat first.";
 
-    if (reason === "CONFRONT_USED_TODAY") return "You already confronted The Static Maw today.";
+    if (reason === "CONFRONT_USED_TODAY") return "You already confronted The Static Maw today. Return tomorrow after the Wasteland pressure rebuilds.";
 
 
 
@@ -8640,6 +8918,16 @@
 
       }
 
+      #influenceCard.is-phantom-node .inf-threat-card.is-status-provoked{
+        border-color: rgba(255,108,72,.55);
+        box-shadow: 0 0 0 1px rgba(255,108,72,.18), 0 10px 28px rgba(255,72,32,.16);
+      }
+      #influenceCard.is-phantom-node .inf-threat-meta.is-maw-alert{
+        color: rgba(255,150,110,.95);
+        font-weight: 700;
+        letter-spacing: .04em;
+      }
+
       #influenceCard.is-phantom-node .inf-threat-card.is-status-secured{
 
         border-color:rgba(86,222,191,.28);
@@ -8709,6 +8997,150 @@
           0 0 14px rgba(255,116,76,.22),
 
           0 0 8px rgba(86,222,191,.12);
+
+      }
+
+      #influenceCard.is-phantom-node .inf-threat-card.is-clash-flash{
+
+        animation:infMawClashFlash 1s ease-out 1;
+
+      }
+
+      @keyframes infMawClashFlash{
+
+        0%{ box-shadow:0 0 0 rgba(255,132,112,0); }
+
+        35%{ box-shadow:0 0 18px rgba(255,132,112,.42); }
+
+        100%{ box-shadow:0 0 0 rgba(255,132,112,0); }
+
+      }
+
+      #influenceCard.is-phantom-node .inf-maw-intent{
+
+        margin-top:10px;
+
+        padding-top:10px;
+
+        border-top:1px solid rgba(255,255,255,.08);
+
+      }
+
+      #influenceCard.is-phantom-node .inf-maw-intent-kicker,
+
+      #influenceCard.is-phantom-node .inf-last-clash-kicker,
+
+      #influenceCard.is-phantom-node .inf-clash-kicker{
+
+        font-size:10px;
+
+        letter-spacing:.11em;
+
+        text-transform:uppercase;
+
+        color:#9ec9e8;
+
+        opacity:.86;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-maw-intent-label{
+
+        margin-top:4px;
+
+        font-size:13px;
+
+        font-weight:900;
+
+        color:#f4fbff;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-maw-intent-detail,
+
+      #influenceCard.is-phantom-node .inf-maw-intent-rate,
+
+      #influenceCard.is-phantom-node .inf-maw-intent-next,
+
+      #influenceCard.is-phantom-node .inf-last-clash-summary,
+
+      #influenceCard.is-phantom-node .inf-last-clash-meta{
+
+        margin-top:4px;
+
+        font-size:11px;
+
+        line-height:1.45;
+
+        color:#d2e2f2;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-last-clash{
+
+        margin-top:8px;
+
+        padding:10px 12px;
+
+        border-radius:12px;
+
+        border:1px solid rgba(117,240,201,.14);
+
+        background:linear-gradient(180deg, rgba(70,164,214,.10), rgba(8,10,14,.55));
+
+      }
+
+      #influenceCard.is-phantom-node .inf-clash-report{
+
+        margin-top:10px;
+
+        padding-top:8px;
+
+        border-top:1px solid rgba(255,255,255,.08);
+
+      }
+
+      #influenceCard.is-phantom-node .inf-clash-vs{
+
+        margin-top:4px;
+
+        font-size:11px;
+
+        font-weight:800;
+
+        color:#c6efe2;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-clash-reaction,
+
+      #influenceCard.is-phantom-node .inf-clash-next{
+
+        margin-top:5px;
+
+        font-size:11px;
+
+        color:#d7e8f7;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-clash-lines{
+
+        margin:6px 0 0;
+
+        padding-left:16px;
+
+        display:grid;
+
+        gap:2px;
+
+      }
+
+      #influenceCard.is-phantom-node .inf-clash-lines li{
+
+        font-size:11px;
+
+        color:#d0e0ef;
 
       }
 
@@ -10133,6 +10565,8 @@
           <div id="infClashMeter" class="inf-clash-meter" style="display:none;"></div>
 
           <div id="infThreatCard" class="inf-threat-card" style="display:none;"></div>
+
+          <div id="infLastClash" class="inf-last-clash" style="display:none;"></div>
 
           <div id="infThreatPulse" class="inf-threat-pulse" style="display:none;"></div>
 
@@ -13024,11 +13458,17 @@
 
 
 
-      clearStatus();
-
-      toast(`Confrontation complete · Pressure ${r.wastelandPressureBefore}% → ${r.wastelandPressureAfter}%`);
-
       setConfrontActionResult(r);
+
+      if (!r?.afterActionReport && !(r?.frontlineConfrontResult?.afterActionReport)) {
+
+        toast("Confrontation complete, but report data is missing.");
+
+      } else {
+
+        toast(`Confrontation complete · Pressure ${r.wastelandPressureBefore}% → ${r.wastelandPressureAfter}%`);
+
+      }
 
       triggerActionMicroReaction();
 

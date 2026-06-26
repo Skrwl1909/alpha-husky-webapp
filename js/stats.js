@@ -17,6 +17,7 @@
     fortress: null,
   };
 
+  // Fallback only when progression_v1 is absent; backend progression_v1 is source of truth when present.
   const SIGNAL_THRESHOLDS = [
     { value: 500, label: "MoonLab Stabilization" },
     { value: 1000, label: "First Wall Break" },
@@ -185,6 +186,18 @@
   function getMoonlabWallContext(stats, extras, goal){
     const progression = normalizeProgressionV1(stats?.progression_v1);
     if (progression) {
+      const alphaGoal = progression.nextAlphaGoal;
+      if (alphaGoal && typeof alphaGoal === "object") {
+        return {
+          wall: progression.moonlabWall,
+          wallSummary: alphaGoal.moonlabWallSummary,
+          signalPower: Math.max(0, n(alphaGoal.signalPower, progression.signalPower)),
+          missingPower: Math.max(0, n(alphaGoal.missingPower, progression.missingPower)),
+          nextUnlockLabel: toText(alphaGoal.nextUnlockLabel, progression.nextUnlockLabel),
+          recommendedAction: toText(alphaGoal.recommendedAction, progression.recommendedAction),
+          isPreview: alphaGoal.isPreview === true,
+        };
+      }
       return {
         wall: progression.moonlabWall,
         signalPower: progression.signalPower,
@@ -252,6 +265,16 @@
     const wall = (raw.moonlabWall && typeof raw.moonlabWall === "object") ? raw.moonlabWall : {};
     const nextThreshold = Math.max(0, n(raw.nextThreshold, fallbackThreshold.value));
     const missingPower = Math.max(0, n(raw.missingPower, Math.max(0, nextThreshold - signalPower)));
+    const nextAlphaGoalRaw = (raw.nextAlphaGoal && typeof raw.nextAlphaGoal === "object") ? raw.nextAlphaGoal : null;
+    const eliteHintsRaw = (raw.elitePreviewHints && typeof raw.elitePreviewHints === "object") ? raw.elitePreviewHints : null;
+    const wallSummaryRaw = nextAlphaGoalRaw?.moonlabWallSummary;
+    const wallSummary = (wallSummaryRaw && typeof wallSummaryRaw === "object") ? {
+      available: !!wallSummaryRaw.available,
+      bossName: toText(wallSummaryRaw.bossName, ""),
+      bossPower: Math.max(0, n(wallSummaryRaw.bossPower, 0)),
+      missingPower: Math.max(0, n(wallSummaryRaw.missingPower, 0)),
+      status: toText(wallSummaryRaw.status, "Syncing"),
+    } : null;
 
     return {
       signalPower,
@@ -280,6 +303,24 @@
         cooldownLeftSec: Math.max(0, n(wall.cooldownLeftSec, 0)),
         ready: !!wall.ready,
       },
+      nextAlphaGoal: nextAlphaGoalRaw ? {
+        signalPower: Math.max(0, n(nextAlphaGoalRaw.signalPower, signalPower)),
+        nextThreshold: Math.max(0, n(nextAlphaGoalRaw.nextThreshold, nextThreshold)),
+        missingPower: Math.max(0, n(nextAlphaGoalRaw.missingPower, missingPower)),
+        nextUnlockLabel: toText(nextAlphaGoalRaw.nextUnlockLabel, toText(raw.nextUnlockLabel, fallbackThreshold.label)),
+        recommendedAction: toText(nextAlphaGoalRaw.recommendedAction, toText(raw.recommendedAction, "Complete missions to stabilize your signal.")),
+        moonlabWallSummary: wallSummary || { available: false, bossName: "", bossPower: 0, missingPower: 0, status: "Syncing" },
+        isPreview: nextAlphaGoalRaw.isPreview !== false,
+      } : null,
+      elitePreviewHints: eliteHintsRaw ? {
+        previewOnly: eliteHintsRaw.previewOnly !== false,
+        eliteUnlockThreshold: Math.max(0, n(eliteHintsRaw.eliteUnlockThreshold, 0)),
+        eliteUnlockLabel: toText(eliteHintsRaw.eliteUnlockLabel, ""),
+        eliteLockedLabel: toText(eliteHintsRaw.eliteLockedLabel, "Locked Preview"),
+        eliteReadyLabel: toText(eliteHintsRaw.eliteReadyLabel, "Read-only Preview"),
+        safetyCopy: toText(eliteHintsRaw.safetyCopy, "Preview only — standard routes below still handle rewards."),
+        source: toText(eliteHintsRaw.source, "progression_v1"),
+      } : null,
       signalMilestones: normalizeSignalMilestones(raw.signalMilestones, signalPower),
     };
   }
@@ -360,15 +401,26 @@
   function buildGoalState(stats, extras){
     const progression = normalizeProgressionV1(stats?.progression_v1);
     if (progression) {
+      const alphaGoal = progression.nextAlphaGoal;
+      const useGoal = alphaGoal && typeof alphaGoal === "object";
       const wall = progression.moonlabWall || {};
+      const wallBossName = toText(
+        wall.bossName || alphaGoal?.moonlabWallSummary?.bossName,
+        "Unknown"
+      );
       const wallLabel = wall.available
-        ? `MoonLab Floor ${Math.max(1, wall.currentFloor || 1)} - ${toText(wall.bossName, "Unknown")}`
+        ? `MoonLab Floor ${Math.max(1, wall.currentFloor || 1)} - ${wallBossName}`
         : "MoonLab wall syncing...";
+      const signalPower = useGoal ? Math.max(0, n(alphaGoal.signalPower, progression.signalPower)) : progression.signalPower;
+      const nextThresholdValue = useGoal ? Math.max(0, n(alphaGoal.nextThreshold, progression.nextThreshold)) : progression.nextThreshold;
+      const nextUnlockLabel = useGoal ? toText(alphaGoal.nextUnlockLabel, progression.nextUnlockLabel) : progression.nextUnlockLabel;
+      const missingPower = useGoal ? Math.max(0, n(alphaGoal.missingPower, progression.missingPower)) : progression.missingPower;
+      const bestMove = useGoal ? toText(alphaGoal.recommendedAction, progression.recommendedAction) : progression.recommendedAction;
       return {
-        signalPower: progression.signalPower,
-        nextThreshold: { value: progression.nextThreshold, label: progression.nextUnlockLabel },
-        missingPower: progression.missingPower,
-        bestMove: progression.recommendedAction,
+        signalPower,
+        nextThreshold: { value: nextThresholdValue, label: nextUnlockLabel },
+        missingPower,
+        bestMove,
         fortress: wall.available ? {
           currentFloor: wall.currentFloor,
           bestFloor: wall.bestFloor,
@@ -386,6 +438,7 @@
         levelPower: progression.breakdown.levelPower,
         badgePower: progression.breakdown.badgePower,
         petPower: progression.breakdown.petPower,
+        isPreview: useGoal ? alphaGoal.isPreview === true : false,
       };
     }
 
