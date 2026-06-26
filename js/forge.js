@@ -1760,6 +1760,7 @@
   let _tab = "upgrade";
   let _state = null;
   let _busy = false;
+  let _closing = false;
   let _ctx = { buildingId: null, name: "Forgotten Tokens’ Vault" };
 
   let _pityOverride = {};
@@ -2883,6 +2884,34 @@ slotField.right.appendChild(chipbar);
     logActionPerf("forge_state", perfT0);
   }
 
+  function isOpen() {
+    return !!((_root && _root.isConnected) || document.getElementById(FORGE_MODAL_ID));
+  }
+
+  function teardownView() {
+    if (!isOpen()) return;
+    lockScroll(false);
+    const node = _root || document.getElementById(FORGE_MODAL_ID);
+    if (node) node.remove();
+    _root = null;
+    _state = null;
+    _busy = false;
+    _tab = "upgrade";
+    _mobileUpgradeView = "picker";
+  }
+
+  function closeViaNav(source = "forge-close") {
+    if (_closing) return true;
+    _closing = true;
+    try {
+      if (window.AlphaNav?.close?.(FORGE_MODAL_ID, { source, fallback: false })) return true;
+      teardownView();
+      return false;
+    } finally {
+      _closing = false;
+    }
+  }
+
   function mount() {
     if (_root && _root.isConnected) return;
 
@@ -2907,7 +2936,7 @@ slotField.right.appendChild(chipbar);
 
     const close = el("button", "ah-forge-close", "✕");
     close.type = "button";
-    close.addEventListener("click", unmount);
+    close.addEventListener("click", () => closeViaNav("forge-close"));
     head.appendChild(close);
 
     const tabs = el("div", "ah-forge-tabs");
@@ -2932,23 +2961,21 @@ slotField.right.appendChild(chipbar);
     backdrop.appendChild(modal);
 
     backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) unmount();
+      if (e.target === backdrop) closeViaNav("forge-backdrop");
     });
 
     _root = backdrop;
     document.body.appendChild(backdrop);
-    try { window.navOpen?.(FORGE_MODAL_ID); } catch (_) {}
+    const navMeta = {
+      close: () => teardownView(),
+      isOpen: () => isOpen(),
+      fallback: false
+    };
+    try { window.AlphaNav?.push?.(FORGE_MODAL_ID, navMeta); } catch (_) {}
   }
 
   function unmount() {
-    try { window.navClose?.(FORGE_MODAL_ID); } catch (_) {}
-    lockScroll(false);
-    if (_root) _root.remove();
-    _root = null;
-    _state = null;
-    _busy = false;
-    _tab = "upgrade";
-    _mobileUpgradeView = "picker";
+    teardownView();
   }
 
   async function open(ctx) {
@@ -2959,7 +2986,7 @@ slotField.right.appendChild(chipbar);
     };
 
     if (_root && _root.isConnected) {
-      unmount();
+      closeViaNav("forge-reopen");
     }
     mount();
     try {
@@ -2972,5 +2999,5 @@ slotField.right.appendChild(chipbar);
     }
   }
 
-  window.Forge = { init, open, close: unmount };
+  window.Forge = { init, open, close: () => closeViaNav("forge-api-close") };
 })();

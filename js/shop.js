@@ -418,18 +418,34 @@
     _state: null,
     _previewNonce: 0,
     _navId: "shopView",
+    _mounted: false,
+    _closing: false,
 
     _isOpen() {
       return !!document.querySelector(".ah-shop-wrap");
     },
 
     _teardownView() {
+      if (!this._mounted && !this._isOpen()) return;
+      this._mounted = false;
       this.closePreview();
       if (this._timer) clearInterval(this._timer);
       this._timer = null;
       document.body.style.overflow = document.body.dataset.prevOverflow || "";
       delete document.body.dataset.prevOverflow;
       window.SceneBg?.pop?.();
+    },
+
+    _closeViaNav(source = "shop-close") {
+      if (this._closing) return true;
+      this._closing = true;
+      try {
+        if (window.AlphaNav?.close?.(this._navId, { source, fallback: "root" })) return true;
+        this._teardownView();
+        return false;
+      } finally {
+        this._closing = false;
+      }
     },
 
     init({ apiPost, tg, dbg }) {
@@ -439,6 +455,9 @@
     },
 
     async open() {
+      this._closing = false;
+      this._mounted = true;
+
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
         .forEach(x => x.style.display = "none");
 
@@ -509,9 +528,7 @@
 
       // close: cleanup + return to previous game context or safe root
       el("shop-close").onclick = () => {
-        if (window.AlphaNav?.close?.(this._navId, { source: "shop-close" })) return;
-        this._teardownView();
-        window.AlphaNav?.goHome?.({ source: "shop-close", id: this._navId }) || window.goHome?.();
+        this._closeViaNav("shop-close");
       };
 
       await this.refresh();
