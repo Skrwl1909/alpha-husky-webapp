@@ -212,6 +212,44 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     return items[items.length - 1];
   }
 
+  function normalizeBossWallPreview(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const boss = (raw.currentBoss && typeof raw.currentBoss === "object") ? raw.currentBoss : {};
+    return {
+      available: !!raw.available,
+      previewOnly: raw.previewOnly !== false,
+      isPreview: raw.isPreview !== false,
+      currentFloor: Math.max(0, n(raw.currentFloor, 0)),
+      highestClearedFloor: Math.max(0, n(raw.highestClearedFloor, 0)),
+      maxFloor: Math.max(0, n(raw.maxFloor, 0)),
+      sector: Math.max(0, n(raw.sector, 0)),
+      sectorFloor: Math.max(0, n(raw.sectorFloor, 0)),
+      ready: !!raw.ready,
+      cooldownLeftSec: Math.max(0, n(raw.cooldownLeftSec, 0)),
+      statusText: toText(raw.statusText, "Syncing"),
+      currentBoss: {
+        name: toText(boss.name, ""),
+        requiredSignalPower: Math.max(0, n(boss.requiredSignalPower, 0)),
+        playerSignalPower: Math.max(0, n(boss.playerSignalPower, 0)),
+        missingPower: Math.max(0, n(boss.missingPower, 0)),
+        status: toText(boss.status, ""),
+        rewardPreview: toText(boss.rewardPreview, ""),
+        recommendedAction: toText(boss.recommendedAction, ""),
+        readyCopy: toText(boss.readyCopy, ""),
+        notReadyCopy: toText(boss.notReadyCopy, ""),
+      },
+    };
+  }
+
+  function formatBossPrepStatusFromPreview(preview) {
+    if (!preview || !preview.available) return "Syncing";
+    const status = toText(preview.currentBoss?.status, "");
+    if (status === "cooldown") return "Cooling Down";
+    if (status === "ready_preview") return "Ready";
+    if (status === "not_ready") return "Locked";
+    return toText(preview.statusText, "Preview");
+  }
+
   function normalizeProgressionV1(raw) {
     if (!raw || typeof raw !== "object") return null;
 
@@ -256,6 +294,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         safetyCopy: toText(raw.elitePreviewHints.safetyCopy, "Preview only — standard routes below still handle rewards."),
         source: toText(raw.elitePreviewHints.source, "progression_v1"),
       } : null,
+      bossWallPreview: normalizeBossWallPreview(raw.bossWallPreview),
       signalMilestones: (raw.signalMilestones && typeof raw.signalMilestones === "object") ? raw.signalMilestones : null,
     };
   }
@@ -2808,6 +2847,7 @@ function _normalizeRareDropObj(obj) {
     if (!progression || typeof progression !== "object") return [];
 
     const sp = Math.max(0, n(progression.signalPower, 0));
+    const bossPreview = progression.bossWallPreview;
     const wall = progression.moonlabWall || { available: false };
     const recommended = toText(progression.recommendedAction, "Complete standard routes and strengthen your profile.");
     const nextUnlock = toText(progression.nextUnlockLabel, "Next Signal threshold");
@@ -2815,7 +2855,35 @@ function _normalizeRareDropObj(obj) {
     const milestoneHint = resolveNextMilestoneLabel(progression);
     const cards = [];
 
-    if (wall.available) {
+    if (bossPreview && bossPreview.available) {
+      const boss = bossPreview.currentBoss || {};
+      const bossName = toText(boss.name, "Unknown Boss");
+      const floorNum = Math.max(1, n(bossPreview.currentFloor, 1));
+      const bossStatus = formatBossPrepStatusFromPreview(bossPreview);
+      const bossLocked = bossStatus === "Locked" || bossStatus === "Cooling Down";
+      const requiredPower = Math.max(0, n(boss.requiredSignalPower, 0));
+      const bossMissing = Math.max(0, n(boss.missingPower, 0));
+      const rewardPreview = toText(
+        boss.rewardPreview,
+        "MoonLab floor clear rewards remain handled by MoonLab."
+      );
+      const bestMove = boss.status === "ready_preview"
+        ? toText(boss.readyCopy, "Your signal can challenge this chamber. Enter MoonLab from the Map/Hub.")
+        : toText(boss.recommendedAction, resolveBossPrepBestMove(wall, sp, recommended));
+      cards.push({
+        title: `Boss Prep Preview: ${bossName} Pattern`,
+        requires: `Requires: ${requiredPower} Signal Power`,
+        purpose: "Study the current MoonLab wall before entering deeper.",
+        link: bossMissing > 0
+          ? `Missing: +${bossMissing} Signal Power`
+          : `MoonLab Floor ${floorNum} · ${bossName}`,
+        status: bossStatus,
+        bestMove,
+        rewardPreview,
+        ctaLabel: elitePreviewCtaLabel(bossStatus, bossLocked),
+        locked: bossLocked,
+      });
+    } else if (wall.available) {
       const bossName = toText(wall.bossName, "Unknown Boss");
       const floorNum = Math.max(1, n(wall.currentFloor, 1));
       const bossStatus = formatBossPrepStatus(wall, sp);
@@ -2917,6 +2985,7 @@ function _normalizeRareDropObj(obj) {
         </div>
         ${requires ? `<div class="m-elite-line"><b>Requires:</b> ${esc(requires)}</div>` : ""}
         ${purpose ? `<div class="m-elite-line"><b>Purpose:</b> ${esc(purpose)}</div>` : ""}
+        ${card.rewardPreview ? `<div class="m-elite-line"><b>Reward Preview:</b> ${esc(card.rewardPreview)}</div>` : ""}
         ${link ? `<div class="m-elite-line"><b>Progression Link:</b> ${esc(link)}</div>` : ""}
         ${bestMove ? `<div class="m-elite-line"><b>Best Move:</b> ${esc(bestMove)}</div>` : ""}
         <div class="m-elite-cta">

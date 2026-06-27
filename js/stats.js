@@ -183,9 +183,94 @@
     return "Chamber Active";
   }
 
+  function normalizeBossWallPreview(raw){
+    if (!raw || typeof raw !== "object") return null;
+    const boss = (raw.currentBoss && typeof raw.currentBoss === "object") ? raw.currentBoss : {};
+    return {
+      available: !!raw.available,
+      previewOnly: raw.previewOnly !== false,
+      isPreview: raw.isPreview !== false,
+      source: toText(raw.source, "fortress_state"),
+      buildingId: toText(raw.buildingId, "moonlab_fortress"),
+      currentFloor: Math.max(0, n(raw.currentFloor, 0)),
+      highestClearedFloor: Math.max(0, n(raw.highestClearedFloor, 0)),
+      maxFloor: Math.max(0, n(raw.maxFloor, 0)),
+      sector: Math.max(0, n(raw.sector, 0)),
+      sectorFloor: Math.max(0, n(raw.sectorFloor, 0)),
+      ready: !!raw.ready,
+      cooldownLeftSec: Math.max(0, n(raw.cooldownLeftSec, 0)),
+      statusText: toText(raw.statusText, "Syncing"),
+      currentBoss: {
+        name: toText(boss.name, ""),
+        key: toText(boss.key, ""),
+        power: Math.max(0, n(boss.power, 0)),
+        danger: Math.max(0, n(boss.danger, 0)),
+        requiredSignalPower: Math.max(0, n(boss.requiredSignalPower, 0)),
+        playerSignalPower: Math.max(0, n(boss.playerSignalPower, 0)),
+        missingPower: Math.max(0, n(boss.missingPower, 0)),
+        status: toText(boss.status, ""),
+        rewardPreview: toText(boss.rewardPreview, ""),
+        recommendedAction: toText(boss.recommendedAction, ""),
+        notReadyCopy: toText(boss.notReadyCopy, ""),
+        readyCopy: toText(boss.readyCopy, ""),
+        isMiniMilestone: !!boss.isMiniMilestone,
+        isMilestoneBoss: !!boss.isMilestoneBoss,
+        role: toText(boss.role, "MoonLab Boss Wall"),
+      },
+    };
+  }
+
+  function formatBossWallStatusChip(preview){
+    if (!preview || !preview.available) return "SYNCING";
+    const status = toText(preview.currentBoss?.status, "");
+    if (status === "cooldown") return "COOLING DOWN";
+    if (status === "ready_preview") return "READY TO INSPECT";
+    if (status === "not_ready") return "NOT READY";
+    return toText(preview.statusText, "Syncing").toUpperCase();
+  }
+
+  function wallFromBossWallPreview(preview){
+    if (!preview || !preview.available) return { available: false };
+    const boss = preview.currentBoss || {};
+    return {
+      available: true,
+      currentFloor: preview.currentFloor,
+      highestClearedFloor: preview.highestClearedFloor,
+      maxFloor: preview.maxFloor,
+      sector: preview.sector,
+      sectorFloor: preview.sectorFloor,
+      bossName: toText(boss.name, "Unknown"),
+      bossPower: Math.max(0, n(boss.power, 0)),
+      bossDanger: Math.max(0, n(boss.danger, 0)),
+      cooldownLeftSec: Math.max(0, n(preview.cooldownLeftSec, 0)),
+      ready: !!preview.ready,
+    };
+  }
+
   function getMoonlabWallContext(stats, extras, goal){
     const progression = normalizeProgressionV1(stats?.progression_v1);
     if (progression) {
+      const bossPreview = progression.bossWallPreview;
+      if (bossPreview && bossPreview.available) {
+        const boss = bossPreview.currentBoss || {};
+        const alphaGoal = progression.nextAlphaGoal;
+        return {
+          bossWallPreview: bossPreview,
+          wall: wallFromBossWallPreview(bossPreview),
+          wallSummary: alphaGoal?.moonlabWallSummary,
+          signalPower: Math.max(0, n(boss.playerSignalPower, progression.signalPower)),
+          missingPower: Math.max(0, n(boss.missingPower, 0)),
+          requiredSignalPower: Math.max(0, n(boss.requiredSignalPower, 0)),
+          nextUnlockLabel: toText(alphaGoal?.nextUnlockLabel, progression.nextUnlockLabel),
+          recommendedAction: toText(
+            boss.recommendedAction,
+            alphaGoal?.recommendedAction,
+            progression.recommendedAction
+          ),
+          isPreview: bossPreview.isPreview === true,
+        };
+      }
+
       const alphaGoal = progression.nextAlphaGoal;
       if (alphaGoal && typeof alphaGoal === "object") {
         return {
@@ -321,6 +406,7 @@
         safetyCopy: toText(eliteHintsRaw.safetyCopy, "Preview only — standard routes below still handle rewards."),
         source: toText(eliteHintsRaw.source, "progression_v1"),
       } : null,
+      bossWallPreview: normalizeBossWallPreview(raw.bossWallPreview),
       signalMilestones: normalizeSignalMilestones(raw.signalMilestones, signalPower),
     };
   }
@@ -403,9 +489,12 @@
     if (progression) {
       const alphaGoal = progression.nextAlphaGoal;
       const useGoal = alphaGoal && typeof alphaGoal === "object";
-      const wall = progression.moonlabWall || {};
+      const bossPreview = progression.bossWallPreview;
+      const wall = bossPreview?.available
+        ? wallFromBossWallPreview(bossPreview)
+        : (progression.moonlabWall || {});
       const wallBossName = toText(
-        wall.bossName || alphaGoal?.moonlabWallSummary?.bossName,
+        wall.bossName || bossPreview?.currentBoss?.name || alphaGoal?.moonlabWallSummary?.bossName,
         "Unknown"
       );
       const wallLabel = wall.available
@@ -1477,6 +1566,7 @@
   function renderMoonlabBossWallCard(stats, extras){
     const goal = buildGoalState(stats, extras);
     const ctx = getMoonlabWallContext(stats, extras, goal);
+    const preview = ctx.bossWallPreview;
     const wall = ctx.wall || { available: false };
 
     if (!wall.available) {
@@ -1493,35 +1583,50 @@
       `;
     }
 
-    const bossName = toText(wall.bossName, "Unknown");
+    const boss = preview?.currentBoss || {};
+    const bossName = toText(boss.name || wall.bossName, "Unknown");
     const floor = Math.max(1, n(wall.currentFloor, 1));
     const maxFloor = Math.max(floor, n(wall.maxFloor, 30));
-    const sector = Math.max(1, n(wall.sector, 1));
-    const sectorFloor = Math.max(1, n(wall.sectorFloor, 1));
-    const bossPower = Math.max(0, n(wall.bossPower, 0));
-    const bossDanger = Math.max(0, n(wall.bossDanger, 0));
-    const statusLabel = formatMoonlabStatus(wall, ctx.signalPower);
-    const highestCleared = Math.max(0, n(wall.highestClearedFloor ?? wall.bestFloor, 0));
-    const recommended = resolveStatsMoonlabRecommended(ctx);
+    const sector = Math.max(1, n(wall.sector, 0));
+    const sectorFloor = Math.max(1, n(wall.sectorFloor, 0));
+    const requiredPower = Math.max(0, n(ctx.requiredSignalPower, getMoonlabBossPressure(wall)));
+    const playerSignal = Math.max(0, n(ctx.signalPower, 0));
+    const missingPower = Math.max(0, n(ctx.missingPower, Math.max(0, requiredPower - playerSignal)));
+    const statusChip = preview ? formatBossWallStatusChip(preview) : formatMoonlabStatus(wall, playerSignal).toUpperCase();
+    const rewardPreview = toText(
+      boss.rewardPreview,
+      "Preview: floor clear rewards and milestone loot remain handled by MoonLab."
+    );
+    const recommended = toText(
+      boss.recommendedAction,
+      resolveStatsMoonlabRecommended(ctx)
+    );
+    const statusCopy = boss.status === "ready_preview"
+      ? toText(boss.readyCopy, "Your signal can challenge this chamber.")
+      : (boss.status === "cooldown"
+        ? "Return when the chamber stabilizes."
+        : toText(boss.notReadyCopy, "This boss still overpowers your signal. Build Signal Power before entering deeper."));
+    const floorLine = sector > 0
+      ? `Floor ${floor}${sector > 0 ? ` · Sector ${sector}` : ""} · ${bossName}`
+      : `Floor ${floor} · ${bossName}`;
 
     return `
       <div class="ahs-card">
         <div class="ahs-pad">
           <div class="ahs-goal-wall">
             <div class="ahs-goal-wall-title">MoonLab Boss Wall</div>
-            <div class="ahs-moonlab-head">${esc(bossName)}</div>
+            <div class="ahs-moonlab-head">${esc(floorLine)}</div>
             <div class="ahs-moonlab-meta">
-              Floor ${esc(floor)} / ${esc(maxFloor)} · Sector ${esc(sector)} · Chamber ${esc(sectorFloor)}<br>
-              Boss Power ${esc(bossPower)} · Danger ${esc(bossDanger)}<br>
-              Status: ${esc(statusLabel)}
+              Requires: ${esc(requiredPower)} Signal Power<br>
+              Your Signal: ${esc(playerSignal)}<br>
+              ${missingPower > 0 ? `Missing: +${esc(missingPower)}<br>` : ""}
+              Status: ${esc(statusChip)}
             </div>
-            <div class="ahs-moonlab-section">Progress</div>
-            <div class="ahs-breakdown" style="margin-top:6px">
-              <div class="ahs-breakdown-row"><span>Highest Cleared</span><b>${esc(highestCleared)}</b></div>
-              <div class="ahs-breakdown-row"><span>Current Chamber</span><b>${esc(floor)}</b></div>
-            </div>
-            <div class="ahs-moonlab-section">Recommended</div>
+            <div class="ahs-moonlab-section">Preview</div>
+            <div class="ahs-moonlab-copy">${esc(rewardPreview)}</div>
+            <div class="ahs-moonlab-section">Best Move</div>
             <div class="ahs-moonlab-copy">${esc(recommended)}</div>
+            <div class="ahs-moonlab-copy" style="margin-top:6px">${esc(statusCopy)}</div>
           </div>
         </div>
       </div>
