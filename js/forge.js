@@ -81,6 +81,7 @@
     const s = String(v || "").trim().toLowerCase();
     if (s === "legendary") return "legendary";
     if (s === "epic") return "epic";
+    if (s === "rare") return "rare";
     if (s === "uncommon") return "uncommon";
     return "common";
   }
@@ -617,6 +618,7 @@
 
     .ah-tag.is-common{border-color:rgba(255,255,255,.11)}
     .ah-tag.is-uncommon{border-color:rgba(104,255,173,.24); color:#c9ffe1}
+    .ah-tag.is-rare{border-color:rgba(90,170,255,.28); color:#d8ebff}
     .ah-tag.is-epic{border-color:rgba(197,133,255,.28); color:#ecd7ff}
     .ah-tag.is-legendary{border-color:rgba(255,192,86,.35); color:#ffe5b6}
 
@@ -964,6 +966,14 @@
         0 0 18px rgba(104,255,173,.07);
     }
 
+    .ah-card.is-rare .ah-ico,
+    .ah-result.is-rare .ah-ico,
+    .ah-detail-ico.is-rare{
+      box-shadow:
+        0 0 0 1px rgba(90,170,255,.12),
+        0 0 18px rgba(90,170,255,.08);
+    }
+
     .ah-card.is-epic .ah-ico,
     .ah-result.is-epic .ah-ico,
     .ah-detail-ico.is-epic{
@@ -1104,6 +1114,11 @@
     .ah-result-cine.is-uncommon .ah-result-ribbon{
       border-color:rgba(104,255,173,.24);
       color:#c9ffe1;
+    }
+
+    .ah-result-cine.is-rare .ah-result-ribbon{
+      border-color:rgba(90,170,255,.28);
+      color:#d8ebff;
     }
 
     .ah-result-cine.is-epic .ah-result-ribbon{
@@ -1287,6 +1302,11 @@
     .ah-tag.is-uncommon{
       border-color:rgba(104,255,173,.24);
       color:#c9ffe1;
+    }
+
+    .ah-tag.is-rare{
+      border-color:rgba(90,170,255,.30);
+      color:#d8ebff;
     }
 
     .ah-tag.is-epic{
@@ -1824,6 +1844,7 @@
 
     const pEpic = _pct01(cfg.pEpic ?? cfg.epicBase ?? 0, 0);
     const pLegendary = _pct01(cfg.pLegendary ?? cfg.legendaryBase ?? 0, 0);
+    const rareShare = _pct01(cfg.rareShareOfUpgraded ?? cfg.rareShare ?? 0.25, 0.25);
 
     return {
       baseCost,
@@ -1834,6 +1855,7 @@
       uncommonCap,
       pEpic,
       pLegendary,
+      rareShare,
     };
   }
 
@@ -2344,19 +2366,19 @@
 
     const pools = pick(_state, "rollCfg.pools", null);
     const poolsLine = pools
-      ? `Pools: C ${pools.common || 0} / U ${pools.uncommon || 0} / E ${pools.epic || 0} / L ${pools.legendary || 0}`
+      ? `Pools: C ${pools.common || 0} / U ${pools.uncommon || 0} / R ${pools.rare || 0} / E ${pools.epic || 0} / L ${pools.legendary || 0}`
       : "Slot pool data not exposed.";
 
-    const basePlus = Math.min(1, (cfg.uncommonBase || 0) + (cfg.pEpic || 0) + (cfg.pLegendary || 0));
+    const basePlus = Math.min(1, (cfg.uncommonBase || 0));
 
     body.appendChild(el("div", "ah-note",
       `<div class="ah-section-kicker">Shard Forge</div>
        <div class="ah-section-title">Token-infused crafting</div>
        <div class="ah-section-copy">
-         Spend slot shards to roll gear from that slot’s pool. Refine increases shard cost per pull and can improve your uncommon+ odds. Epic and Legendary only roll if that slot actually has items in those rarities.
+         Spend slot shards to roll gear from that slot’s pool. Refine increases shard cost per pull and can improve your upgraded odds for uncommon or rare gear. Epic and Legendary only roll if that slot actually has items in those rarities.
        </div>
        <div class="ah-loreline">
-         Base cost <b>${cfg.baseCost}</b> · Refine adds <b>${cfg.refineCost}</b>/lvl · Uncommon+ base <b>${Math.round(basePlus * 100)}%</b> · Pity <b>${cfg.pity}</b> · ${esc(poolsLine)}
+         Base cost <b>${cfg.baseCost}</b> · Refine adds <b>${cfg.refineCost}</b>/lvl · Upgraded base <b>${Math.round(basePlus * 100)}%</b> · Pity <b>${cfg.pity}</b> · ${esc(poolsLine)}
        </div>`
     ));
 
@@ -2462,7 +2484,7 @@ slotField.right.appendChild(chipbar);
     });
     countField.right.appendChild(quick);
 
-    const refineField = makeField("Refine", "Extra pressure increases shard cost per pull and may improve uncommon+ odds.");
+    const refineField = makeField("Refine", "Extra pressure increases shard cost per pull and may improve uncommon or rare odds.");
     const refWrap = el("div", "ah-stepper");
     const refMinus = el("button", "ah-btn subtle", "−");
     refMinus.type = "button";
@@ -2526,6 +2548,9 @@ slotField.right.appendChild(chipbar);
     (cfg.uncommonCap || 1)
   );
 
+  const pRare = pU * (cfg.rareShare || 0.25);
+  const pUncommon = Math.max(0, pU - pRare);
+
   const pity = currentPity(slot);
   const pityMax = Number(cfg.pity || 0);
   const pityRatio = (pity != null && pityMax > 0)
@@ -2565,11 +2590,12 @@ slotField.right.appendChild(chipbar);
 
       <div class="ah-forecast-card">
         <div class="k">Odds Snapshot</div>
-        <div class="v">${Math.round(pU * 100)}% uncommon+</div>
+        <div class="v">${Math.round(pU * 100)}% upgraded</div>
         <div class="sub">
-          ${cfg.pEpic ? `Epic ${(cfg.pEpic * 100).toFixed(2)}% · ` : ``}
-          ${cfg.pLegendary ? `Legendary ${(cfg.pLegendary * 100).toFixed(2)}% · ` : ``}
-          Base uncommon ${Math.round((cfg.uncommonBase || 0) * 100)}%
+          Rare ${(pRare * 100).toFixed(2)}% / Uncommon ${(pUncommon * 100).toFixed(2)}% /
+          ${cfg.pEpic ? `Epic ${(cfg.pEpic * 100).toFixed(2)}% / ` : ``}
+          ${cfg.pLegendary ? `Legendary ${(cfg.pLegendary * 100).toFixed(2)}% / ` : ``}
+          Base upgraded ${Math.round((cfg.uncommonBase || 0) * 100)}%
         </div>
       </div>
     </div>

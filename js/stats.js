@@ -407,8 +407,44 @@
         source: toText(eliteHintsRaw.source, "progression_v1"),
       } : null,
       bossWallPreview: normalizeBossWallPreview(raw.bossWallPreview),
+      eliteOperationsPreview: (raw.eliteOperationsPreview && typeof raw.eliteOperationsPreview === "object") ? {
+        status: toText(raw.eliteOperationsPreview.status, "locked"),
+        tier: toText(raw.eliteOperationsPreview.tier, "Tier I"),
+        headline: toText(raw.eliteOperationsPreview.headline, ""),
+        summary: toText(raw.eliteOperationsPreview.summary, ""),
+        requiredSignalPower: Math.max(0, n(raw.eliteOperationsPreview.requiredSignalPower, 0)),
+        missingSignalPower: Math.max(0, n(raw.eliteOperationsPreview.missingSignalPower, 0)),
+        missingLevel: Math.max(0, n(raw.eliteOperationsPreview.missingLevel, 0)),
+        isReady: !!raw.eliteOperationsPreview.isReady,
+      } : null,
       signalMilestones: normalizeSignalMilestones(raw.signalMilestones, signalPower),
     };
+  }
+
+  function isEliteMissionsNextUnlock(stats){
+    const progression = normalizeProgressionV1(stats?.progression_v1);
+    if (!progression) return false;
+    const alphaGoal = progression.nextAlphaGoal;
+    const unlockLabel = toText(alphaGoal?.nextUnlockLabel, progression.nextUnlockLabel).toLowerCase();
+    if (unlockLabel.includes("elite missions")) return true;
+    const eliteThreshold = Math.max(0, n(progression.elitePreviewHints?.eliteUnlockThreshold, 0));
+    const nextThreshold = Math.max(0, n(alphaGoal?.nextThreshold, progression.nextThreshold));
+    return eliteThreshold > 0 && nextThreshold === eliteThreshold;
+  }
+
+  function renderEliteMissionsBridge(stats){
+    if (!isEliteMissionsNextUnlock(stats)) return "";
+    const progression = normalizeProgressionV1(stats?.progression_v1);
+    const eliteOps = progression?.eliteOperationsPreview;
+    const summary = toText(
+      eliteOps?.summary,
+      "Elite Operations Tier I are visible in Missions."
+    );
+    return `
+      <div class="ahg-move" style="margin-top:8px;">
+        <b>Elite Path:</b> ${esc(summary)} Open <b>Missions</b> for Elite Operations detail.
+      </div>
+    `;
   }
 
   function normalizeSignalMilestones(raw, signalPower){
@@ -1557,6 +1593,7 @@
           </div>
 
           <div class="ahg-move"><b>Best Move:</b> ${esc(hubBestMove)}</div>
+          ${renderEliteMissionsBridge(stats)}
         </div>
       </div>
       ${renderSignalMilestonesCard(stats, extras, { compact: true })}

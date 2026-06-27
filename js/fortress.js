@@ -52,6 +52,37 @@
     }
   }
 
+  const RARE_PLUS_RARITIES = new Set(["rare", "epic", "legendary", "mythic"]);
+
+  function isRarePlusRarity(rarity) {
+    return RARE_PLUS_RARITIES.has(String(rarity || "").toLowerCase());
+  }
+
+  function formatFirstClearRewardPreview(st) {
+    const preview = String(st?.firstClearRewardPreview || "").trim();
+    if (preview) return preview;
+    const floor = Number(st?.currentFloor || 1) || 1;
+    const entry = (st?.firstClearRewards && typeof st.firstClearRewards === "object")
+      ? st.firstClearRewards[String(floor)]
+      : null;
+    if (entry && entry.claimed) return "First Clear Reward: Claimed";
+    if (st?.firstClearAvailable) return "First Clear Reward: Guaranteed Rare+ item";
+    return "First Clear Reward: Claimed";
+  }
+
+  function buildFirstClearPreviewChips(st) {
+    const chips = [formatFirstClearRewardPreview(st)];
+    const preview = st?.rewardPreview;
+    if (preview && Array.isArray(preview.firstClear)) {
+      for (const item of preview.firstClear) {
+        const text = String(item || "").trim();
+        if (!text || chips.includes(text)) continue;
+        chips.push(text);
+      }
+    }
+    return chips;
+  }
+
   // run_id helper (idempotency-friendly)
   function rid(prefix = "fortress") {
     try {
@@ -414,9 +445,13 @@ function normalizeFortressPayload(raw) {
   const firstClear = Array.isArray(t.firstClear)
     ? t.firstClear
     : (Array.isArray(matsSrc.firstClear) ? matsSrc.firstClear : []);
+  const firstClearRarePlus = matsSrc.firstClearRarePlus || t.firstClearRarePlus || null;
 
   // ✅ PATCH 1: loot passthrough (gear drop spec / future)
   const loot = t?.rewards?.loot || t?.loot || t?.gearDrop || null;
+  const hasRarePlusGear =
+    (firstClearRarePlus && isRarePlusRarity(firstClearRarePlus.rarity)) ||
+    (loot && isRarePlusRarity(loot.rarity));
 
   return {
     mode: "fortress",
@@ -443,8 +478,9 @@ function normalizeFortressPayload(raw) {
         rune_dust: Number(matsSrc.rune_dust || 0),
         universal_key_shards: Number(matsSrc.universal_key_shards || 0),
       },
-      rare: !!t.rare,
+      rare: !!hasRarePlusGear,
       firstClear,
+      firstClearRarePlus,
       milestone: Array.isArray(matsSrc.milestone) ? matsSrc.milestone : [],
       summary: Array.isArray(matsSrc.summary) ? matsSrc.summary : [],
       loot, // ✅
@@ -500,6 +536,10 @@ function normalizeFortressPayload(raw) {
       return `<div class="fx-report-empty">No fight logged yet.</div>`;
     }
     const rewards = renderListChips(report.rewards || [], "No rewards");
+    const fcRare = report.firstClearRarePlus;
+    const fcRareLine = (fcRare && isRarePlusRarity(fcRare.rarity))
+      ? `<div class="fx-report-line"><span>First Clear</span><b>${esc(String(fcRare.rarity || "rare").toUpperCase())} ${esc(fcRare.name || "gear")}</b></div>`
+      : "";
     const extras = [
       ...asArray(report.firstClearBonus),
       ...asArray(report.milestoneReward),
@@ -519,6 +559,7 @@ function normalizeFortressPayload(raw) {
       <div class="fx-report-line"><span>Floor</span><b>${esc(report.floorCleared || report.floorHeld || report.floorAttempted || "—")}</b></div>
       ${progressLine}
       <div class="fx-report-line"><span>Rewards</span><div class="fx-pill-row">${rewards}</div></div>
+      ${fcRareLine}
       ${extraHtml}
       ${hintLine}
     </div>`;
@@ -749,7 +790,7 @@ function normalizeFortressPayload(raw) {
       const dropsEl = $("#fx-drops");
       if (dropsEl) dropsEl.innerHTML = renderListChips(st.possibleDrops || st.rewardPreview?.possibleDrops || [], "Bones, scrap, and chamber materials");
       const firstEl = $("#fx-firstclear");
-      if (firstEl) firstEl.innerHTML = renderListChips(st.rewardPreview?.firstClear || [], "No first-clear bonus");
+      if (firstEl) firstEl.innerHTML = renderListChips(buildFirstClearPreviewChips(st), "No first-clear bonus");
       const replayEl = $("#fx-replay");
       if (replayEl) replayEl.innerHTML = renderListChips(st.rewardPreview?.replay || [], "Replay rewards are weaker");
       const ladderEl = $("#fx-ladder");
@@ -1436,8 +1477,13 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       if (matsSrc.universal_key_shards) mats.push(`Key Shards ×${matsSrc.universal_key_shards}`);
       if (mats.length) lines.push("Rewards: " + mats.join(", "));
 
-      if (data.rewards?.rare) lines.push("💎 Rare drop!");
-      if (data.rewards?.loot && data.rewards.loot.type === "gear") {
+      const fcRarePlus = data.rewards?.firstClearRarePlus || data.firstClearRarePlus || null;
+      if (fcRarePlus && isRarePlusRarity(fcRarePlus.rarity)) {
+        const rr = String(fcRarePlus.rarity || "rare").toUpperCase();
+        const nm = fcRarePlus.name ? `: ${fcRarePlus.name}` : "";
+        lines.push(`🎁 First Clear ${rr} gear${nm}`);
+      }
+      if (data.rewards?.loot && isRarePlusRarity(data.rewards.loot.rarity)) {
         const rr = String(data.rewards.loot.rarity || "").toUpperCase();
         const nm = data.rewards.loot.name ? `: ${data.rewards.loot.name}` : "";
         lines.push(`🎁 ${rr} gear${nm}`);

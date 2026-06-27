@@ -295,7 +295,59 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         source: toText(raw.elitePreviewHints.source, "progression_v1"),
       } : null,
       bossWallPreview: normalizeBossWallPreview(raw.bossWallPreview),
+      eliteOperationsPreview: normalizeEliteOperationsPreview(raw.eliteOperationsPreview),
       signalMilestones: (raw.signalMilestones && typeof raw.signalMilestones === "object") ? raw.signalMilestones : null,
+    };
+  }
+
+  function normalizeEliteOperationsPreview(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const safety = (raw.safety && typeof raw.safety === "object") ? raw.safety : {};
+    const operations = Array.isArray(raw.operations) ? raw.operations.map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const requires = (item.requires && typeof item.requires === "object") ? item.requires : {};
+      const rewards = Array.isArray(item.rewardPreview)
+        ? item.rewardPreview.map((entry) => toText(entry, "")).filter(Boolean)
+        : [];
+      return {
+        key: toText(item.key, ""),
+        type: toText(item.type, ""),
+        title: toText(item.title, ""),
+        status: toText(item.status, "preview"),
+        requires: {
+          level: Math.max(0, n(requires.level, 0)),
+          signalPower: Math.max(0, n(requires.signalPower, 0)),
+          bossWallVisible: requires.bossWallVisible === true,
+        },
+        rewardPreview: rewards,
+        purpose: toText(item.purpose, ""),
+        linkedBossKey: item.linkedBossKey ? toText(item.linkedBossKey, "") : null,
+        linkedBossName: item.linkedBossName ? toText(item.linkedBossName, "") : null,
+        cta: toText(item.cta, "Preview"),
+      };
+    }).filter(Boolean) : [];
+
+    return {
+      version: toText(raw.version, "p0.7a"),
+      status: toText(raw.status, "locked"),
+      tier: toText(raw.tier, "Tier I"),
+      requiredLevel: Math.max(0, n(raw.requiredLevel, 0)),
+      requiredSignalPower: Math.max(0, n(raw.requiredSignalPower, 0)),
+      playerLevel: Math.max(0, n(raw.playerLevel, 0)),
+      playerSignalPower: Math.max(0, n(raw.playerSignalPower, 0)),
+      missingLevel: Math.max(0, n(raw.missingLevel, 0)),
+      missingSignalPower: Math.max(0, n(raw.missingSignalPower, 0)),
+      isReady: !!raw.isReady,
+      lockedReason: raw.lockedReason ? toText(raw.lockedReason, "") : null,
+      headline: toText(raw.headline, ""),
+      summary: toText(raw.summary, ""),
+      recommendedAction: toText(raw.recommendedAction, ""),
+      operations,
+      safety: {
+        previewOnly: safety.previewOnly !== false,
+        realRewardsEnabled: safety.realRewardsEnabled === true,
+        startsRealMission: safety.startsRealMission === true,
+      },
     };
   }
 
@@ -1326,6 +1378,45 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         text-transform:uppercase;
         opacity:.72;
       }
+      #missionsRoot .m-elite-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:4px;
+        min-width:0;
+      }
+      #missionsRoot .m-elite-tier-status{
+        flex:0 0 auto;
+        font-size:10.5px;
+        font-weight:900;
+        letter-spacing:.35px;
+        text-transform:uppercase;
+        padding:3px 8px;
+        border-radius:999px;
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.05);
+        white-space:nowrap;
+      }
+      #missionsRoot .m-elite-tier-status.is-ready{
+        border-color:rgba(92,222,180,.28);
+        background:rgba(47,161,125,.14);
+      }
+      #missionsRoot .m-elite-tier-status.is-locked{
+        border-color:rgba(255,128,128,.22);
+        background:rgba(122,48,48,.14);
+      }
+      #missionsRoot .m-elite-tier-status.is-preview{
+        border-color:rgba(120,188,255,.24);
+        background:rgba(52,108,168,.14);
+      }
+      #missionsRoot .m-elite-req{
+        margin-top:6px;
+        font-size:11.5px;
+        line-height:1.35;
+        opacity:.84;
+        overflow-wrap:anywhere;
+      }
       #missionsRoot .m-elite-safety{
         margin-top:6px;
         font-size:11.5px;
@@ -1390,7 +1481,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         border-color:rgba(255,128,128,.22);
         background:rgba(122,48,48,.14);
       }
-      #missionsRoot .m-elite-status.is-recommended{
+      #missionsRoot .m-elite-status.is-recommended,
+      #missionsRoot .m-elite-status.is-preview{
         border-color:rgba(120,188,255,.24);
         background:rgba(52,108,168,.14);
       }
@@ -2962,8 +3054,64 @@ function _normalizeRareDropObj(obj) {
     const key = toText(status, "").toLowerCase();
     if (key === "ready") return "is-ready";
     if (key === "locked" || key === "cooling down") return "is-locked";
-    if (key === "recommended") return "is-recommended";
+    if (key === "preview" || key === "recommended") return "is-preview";
     return "";
+  }
+
+  function formatEliteTierStatusLabel(status) {
+    const key = toText(status, "preview").toLowerCase();
+    if (key === "ready") return "Tier I Ready";
+    if (key === "locked") return "Locked";
+    return "Preview";
+  }
+
+  function formatEliteOperationRequires(op, preview) {
+    if (!op || typeof op !== "object") return "";
+    const requires = op.requires || {};
+    const parts = [];
+    if (requires.level > 0) parts.push(`Level ${requires.level}`);
+    if (requires.signalPower > 0) parts.push(`${requires.signalPower} Signal Power`);
+    if (requires.bossWallVisible) parts.push("Visible Boss Wall");
+    if (!parts.length) return "Eligibility syncing…";
+    const missing = [];
+    if (requires.level > 0 && preview && preview.missingLevel > 0) {
+      missing.push(`+${preview.missingLevel} Level`);
+    }
+    if (requires.signalPower > 0 && preview) {
+      const playerSp = Math.max(0, n(preview.playerSignalPower, 0));
+      const gap = Math.max(0, requires.signalPower - playerSp);
+      if (gap > 0) missing.push(`+${gap} Signal Power`);
+    }
+    return missing.length ? `${parts.join(" · ")} · Missing: ${missing.join(", ")}` : parts.join(" · ");
+  }
+
+  function renderEliteOperationCard(op, preview) {
+    if (!op || typeof op !== "object") return "";
+    const title = toText(op.title, "Elite Operation");
+    const status = toText(op.status, "preview");
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    const requires = formatEliteOperationRequires(op, preview);
+    const purpose = toText(op.purpose, "");
+    const rewards = Array.isArray(op.rewardPreview) ? op.rewardPreview.join(" · ") : "";
+    const linkedBoss = toText(op.linkedBossName, "");
+    const ctaLabel = toText(op.cta, "Preview");
+    const locked = status === "locked";
+
+    return `
+      <div class="m-elite-card${locked ? " is-locked" : ""}">
+        <div class="m-elite-card-top">
+          <div class="m-elite-card-title">${esc(title)}</div>
+          <div class="m-elite-status ${eliteStatusClass(status)}">${esc(statusLabel)}</div>
+        </div>
+        ${requires ? `<div class="m-elite-line"><b>Requires:</b> ${esc(requires)}</div>` : ""}
+        ${purpose ? `<div class="m-elite-line"><b>Purpose:</b> ${esc(purpose)}</div>` : ""}
+        ${rewards ? `<div class="m-elite-line"><b>Reward Preview:</b> ${esc(rewards)}</div>` : ""}
+        ${linkedBoss ? `<div class="m-elite-line"><b>Boss Wall Link:</b> ${esc(linkedBoss)}</div>` : ""}
+        <div class="m-elite-cta">
+          <button type="button" class="btn" disabled aria-disabled="true">${esc(ctaLabel)}</button>
+        </div>
+      </div>
+    `;
   }
 
   function renderElitePreviewCard(card) {
@@ -2997,18 +3145,53 @@ function _normalizeRareDropObj(obj) {
 
   function renderEliteMissionsPreview() {
     const ready = _progressionStatus === "ready" && !!_progressionV1;
-    const cards = ready ? buildElitePreviewCards(_progressionV1) : [];
+    const eliteOps = ready ? _progressionV1.eliteOperationsPreview : null;
+    const useBackendOps = !!(eliteOps && Array.isArray(eliteOps.operations) && eliteOps.operations.length);
+    const fallbackCards = ready && !useBackendOps ? buildElitePreviewCards(_progressionV1) : [];
+    const safetyCopy = toText(
+      _progressionV1?.elitePreviewHints?.safetyCopy,
+      "Preview only — standard routes below still handle rewards."
+    );
+
+    if (useBackendOps) {
+      const tierStatus = toText(eliteOps.status, "preview");
+      const tierClass = eliteStatusClass(tierStatus) || "is-preview";
+      const reqParts = [];
+      if (eliteOps.missingLevel > 0) reqParts.push(`+${eliteOps.missingLevel} Level`);
+      if (eliteOps.missingSignalPower > 0) reqParts.push(`+${eliteOps.missingSignalPower} Signal Power`);
+      const reqLine = reqParts.length
+        ? `Missing: ${reqParts.join(" · ")}`
+        : `Level ${eliteOps.playerLevel} · Signal Power ${eliteOps.playerSignalPower}`;
+      const ops = eliteOps.operations.slice(0, 3);
+
+      return `
+        <div class="m-card m-elite-wrap">
+          <div class="m-elite-kicker">ELITE OPERATIONS · ${esc(toText(eliteOps.tier, "Tier I"))}</div>
+          <div class="m-elite-head">
+            <div class="m-muted" style="margin-top:0;">${esc(toText(eliteOps.headline, "Elite Operations Tier I"))}</div>
+            <div class="m-elite-tier-status ${tierClass}">${esc(formatEliteTierStatusLabel(tierStatus))}</div>
+          </div>
+          <div class="m-muted" style="margin-top:6px;">${esc(toText(eliteOps.summary, ""))}</div>
+          <div class="m-elite-req">${esc(reqLine)}</div>
+          ${eliteOps.lockedReason ? `<div class="m-elite-req">${esc(eliteOps.lockedReason)}</div>` : ""}
+          <div class="m-elite-safety">${esc(safetyCopy)}</div>
+          <div class="m-elite-line" style="margin-top:8px;"><b>Recommended:</b> ${esc(toText(eliteOps.recommendedAction, ""))}</div>
+          <div class="m-elite-cards">${ops.map((op) => renderEliteOperationCard(op, eliteOps)).join("")}</div>
+        </div>
+      `;
+    }
+
     const signalHint = ready ? `Signal Power ${Math.max(0, n(_progressionV1.signalPower, 0))}` : "";
 
     return `
       <div class="m-card m-elite-wrap">
         <div class="m-elite-kicker">ELITE MISSIONS</div>
         <div class="m-muted" style="margin-top:6px;">High-risk operations tied to your Signal Power, MoonLab wall, and long-term path.</div>
-        <div class="m-elite-safety">${esc(toText(_progressionV1?.elitePreviewHints?.safetyCopy, "Preview only — standard routes below still handle rewards."))}</div>
+        <div class="m-elite-safety">${esc(safetyCopy)}</div>
         ${signalHint ? `<div class="m-muted" style="margin-top:6px;">${esc(signalHint)}</div>` : ""}
         ${
-          ready && cards.length
-            ? `<div class="m-elite-cards">${cards.map((card) => renderElitePreviewCard(card)).join("")}</div>`
+          ready && fallbackCards.length
+            ? `<div class="m-elite-cards">${fallbackCards.map((card) => renderElitePreviewCard(card)).join("")}</div>`
             : `<div class="m-elite-sync">Syncing progression link… Standard routes below are still live.</div>`
         }
       </div>
