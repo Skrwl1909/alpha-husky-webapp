@@ -1,4 +1,4 @@
-// Alpha Husky WebApp — Mailbox MVP
+// Alpha Husky WebApp - Mailbox / Pack Signals v2
 // Personal inbox: important things waiting for YOU.
 // Endpoint:
 //   POST /webapp/mailbox/state
@@ -11,6 +11,11 @@
     inited: false,
     initCount: 0,
     items: [],
+    pendingSignals: [],
+    messages: [],
+    pendingCount: 0,
+    unreadCount: 0,
+    totalAttentionCount: 0,
     serverTs: 0,
     lastLoadAt: 0,
     loadSeq: 0,
@@ -103,8 +108,24 @@
       const targetUid = asText(target.target_uid || target.targetUid || target.uid);
       return targetUid ? { type, target_uid: targetUid, targetUid, source: asText(target.source) || "mailbox" } : null;
     }
+    if (type === "stats" || type === "den" || type === "influence" || type === "profile") {
+      return { type };
+    }
 
     return null;
+  }
+
+  function normalizeRouteTarget(raw) {
+    const route = normalizeTarget(raw?.targetRoute);
+    if (route) return route;
+    const key = asText(raw?.target).toLowerCase();
+    if (!key) return null;
+    if (key === "stats") return { type: "stats" };
+    if (key === "den") return { type: "den" };
+    if (key === "missions") return { type: "open_action", action: "quests" };
+    if (key === "influence") return { type: "map_node", nodeId: "phantom_nodes" };
+    if (key === "profile") return { type: "open_action", action: "equipped" };
+    return normalizeTarget(raw?.target);
   }
 
   function normalizeItem(raw) {
@@ -114,10 +135,10 @@
     const title = asText(raw.title);
     const line = asText(raw.line);
     const body = asText(raw.body);
-    const target = normalizeTarget(raw.target);
+    const target = normalizeRouteTarget(raw) || normalizeTarget(raw.target);
     if (!id || !kind || !title) return null;
     const hasAction = !!target;
-    const actionLabel = hasAction ? (asText(raw.actionLabel) || "Open") : "";
+    const actionLabel = hasAction ? (asText(raw.cta || raw.actionLabel) || "Open") : "";
     const dismissible = raw?.dismissible === true;
     return {
       id,
@@ -131,29 +152,87 @@
       hasAction,
       actionLabel,
       dismissible,
+      pending: raw?.pending === true,
       meta: raw.meta && typeof raw.meta === "object" ? raw.meta : {},
     };
   }
 
+  function normalizePendingSignal(raw) {
+    const item = normalizeItem(raw);
+    if (!item) return null;
+    item.kind = "pending_signal";
+    item.pending = true;
+    item.dismissible = false;
+    return item;
+  }
+
   function normalizePayload(raw) {
     const data = raw?.data && typeof raw.data === "object" ? raw.data : raw;
-    const rows = Array.isArray(data?.items) ? data.items : [];
+    const pendingRows = Array.isArray(data?.pendingSignals) ? data.pendingSignals : [];
+    const messageRows = Array.isArray(data?.messages) ? data.messages : [];
+    const legacyRows = Array.isArray(data?.items) ? data.items : [];
+
+    const pendingSignals = [];
+    const messages = [];
+    const seenPending = new Set();
+    const seenMessages = new Set();
+
+    for (const row of pendingRows) {
+      const item = normalizePendingSignal(row);
+      if (!item || seenPending.has(item.id)) continue;
+      seenPending.add(item.id);
+      pendingSignals.push(item);
+    }
+
+    for (const row of messageRows) {
+      const item = normalizeItem(row);
+      if (!item || item.pending || seenMessages.has(item.id)) continue;
+      seenMessages.add(item.id);
+      messages.push(item);
+    }
+
+    if (!pendingSignals.length && !messages.length) {
+      for (const row of legacyRows) {
+        const item = normalizeItem(row);
+        if (!item || seenPending.has(item.id) || seenMessages.has(item.id)) continue;
+        if (item.kind === "pending_signal" || item.pending) {
+          seenPending.add(item.id);
+          item.pending = true;
+          item.dismissible = false;
+          pendingSignals.push(item);
+        } else {
+          seenMessages.add(item.id);
+          messages.push(item);
+        }
+      }
+    }
+
+    const pendingCount = Math.max(0, asInt(data?.pendingCount, pendingSignals.length));
+    const unreadCount = Math.max(0, asInt(data?.unreadCount, messages.length));
+    const totalAttentionCount = Math.max(0, asInt(data?.totalAttentionCount, pendingCount + unreadCount));
+
     const items = [];
     const seen = new Set();
-    for (const row of rows) {
-      const item = normalizeItem(row);
+    for (const item of [...pendingSignals, ...messages]) {
       if (!item || seen.has(item.id)) continue;
       seen.add(item.id);
       items.push(item);
       if (items.length >= MAX_ITEMS) break;
     }
+
     return {
       items,
+      pendingSignals,
+      messages,
+      pendingCount,
+      unreadCount,
+      totalAttentionCount,
       serverTs: asInt(data?.serverTs, Math.floor(Date.now() / 1000)),
     };
   }
 
   function kindIcon(kind) {
+    if (kind === "pending_signal") return "SIGNAL";
     if (kind === "npc_guidance" || String(kind || "").startsWith("npc_")) return "WARDEN";
     if (kind === "mission_ready") return "MISSION";
     if (kind === "bloodmoon_claim_ready") return "TOWER";
@@ -161,6 +240,8 @@
     if (kind === "contracts_progress") return "CO-OP";
     if (kind === "fortress_ready") return "RAID";
     if (kind === "developer_announcement") return "NEWS";
+    if (kind === "influence_weekly_victory") return "INFLUENCE";
+    if (kind === "social_howl") return "HOWL";
     return "MAIL";
   }
 
@@ -174,20 +255,25 @@
     return `${Math.floor(diff / 86400)}d ago`;
   }
 
-  function unreadCount() {
+  function unreadMessageCount() {
     const seenTs = readSeenTs();
     let count = 0;
-    for (const item of S.items) {
+    for (const item of S.messages) {
       if (asInt(item?.ts, 0) > seenTs) count += 1;
     }
     return count;
+  }
+
+  function attentionCount() {
+    const pending = Math.max(0, asInt(S.pendingCount, S.pendingSignals.length));
+    return pending + unreadMessageCount();
   }
 
   function applyHubUnreadBadge() {
     const badge = document.querySelector('.ah-badge[data-badge="hub"]');
     if (!badge) return;
 
-    const count = unreadCount();
+    const count = attentionCount();
     if (count <= 0) {
       badge.hidden = true;
       badge.textContent = "";
@@ -274,6 +360,7 @@
         gap:8px;
       }
       .mailbox-item{
+        position:relative;
         border:1px solid rgba(255,255,255,.11);
         background:rgba(255,255,255,.04);
         border-radius:14px;
@@ -283,6 +370,10 @@
         justify-content:space-between;
         gap:10px;
         cursor:pointer;
+      }
+      .mailbox-item.pending-signal{
+        border-color:rgba(120,190,255,.22);
+        background:rgba(70,120,200,.08);
       }
       .mailbox-item.no-action{
         cursor:default;
@@ -296,6 +387,7 @@
       .mailbox-left{
         min-width:0;
         flex:1;
+        padding-right:18px;
       }
       .mailbox-kicker{
         display:flex;
@@ -342,6 +434,22 @@
         flex-direction:column;
         align-items:flex-end;
         gap:6px;
+      }
+      .mailbox-dismiss-x{
+        position:absolute;
+        top:6px;
+        right:6px;
+        width:22px;
+        height:22px;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(0,0,0,.22);
+        color:rgba(255,255,255,.72);
+        border-radius:8px;
+        padding:0;
+        font-size:14px;
+        line-height:20px;
+        font-weight:700;
+        cursor:pointer;
       }
       .mailbox-dismiss{
         flex-shrink:0;
@@ -391,7 +499,7 @@
         <div class="mailbox-head">
           <div>
             <div class="mailbox-title">Mailbox</div>
-            <div class="mailbox-sub">Important things waiting for you.</div>
+            <div class="mailbox-sub">Pack Signals and important updates.</div>
           </div>
           <button type="button" class="mailbox-close" aria-label="Close mailbox">×</button>
         </div>
@@ -458,7 +566,12 @@
     const { force = false, reason = "auto" } = options || {};
     if (!force && S.lastLoadAt && isFreshEnough()) {
       logFreshSkip(reason, force);
-      return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+      return {
+        items: S.items,
+        pendingSignals: S.pendingSignals,
+        messages: S.messages,
+        serverTs: S.serverTs || Math.floor(Date.now() / 1000),
+      };
     }
 
     if (S.loadPromise) {
@@ -485,10 +598,20 @@
       try {
         const raw = await api("/webapp/mailbox/state", {});
         if (reqSeq !== S.loadSeq) {
-          return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+          return {
+            items: S.items,
+            pendingSignals: S.pendingSignals,
+            messages: S.messages,
+            serverTs: S.serverTs || Math.floor(Date.now() / 1000),
+          };
         }
         const normalized = normalizePayload(raw || {});
         S.items = normalized.items;
+        S.pendingSignals = normalized.pendingSignals;
+        S.messages = normalized.messages;
+        S.pendingCount = normalized.pendingCount;
+        S.unreadCount = normalized.unreadCount;
+        S.totalAttentionCount = normalized.totalAttentionCount;
         S.serverTs = normalized.serverTs;
         S.lastLoadAt = Date.now();
         log("mailbox/state loaded", {
@@ -496,7 +619,8 @@
           force: !!force,
           fresh: true,
           ageMs: 0,
-          itemCount: Array.isArray(normalized.items) ? normalized.items.length : 0,
+          pendingCount: S.pendingCount,
+          messageCount: S.messages.length,
           open: isOpen(),
           pollerCount: S.pollTimer ? 1 : 0,
         });
@@ -507,11 +631,21 @@
         return normalized;
       } catch (err) {
         if (reqSeq !== S.loadSeq) {
-          return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+          return {
+            items: S.items,
+            pendingSignals: S.pendingSignals,
+            messages: S.messages,
+            serverTs: S.serverTs || Math.floor(Date.now() / 1000),
+          };
         }
         warn("load failed", { reason, force: !!force, err });
         applyHubUnreadBadge();
-        return { items: S.items, serverTs: S.serverTs || Math.floor(Date.now() / 1000) };
+        return {
+          items: S.items,
+          pendingSignals: S.pendingSignals,
+          messages: S.messages,
+          serverTs: S.serverTs || Math.floor(Date.now() / 1000),
+        };
       } finally {
         S.loadPromise = null;
       }
@@ -525,39 +659,125 @@
   }
 
   function markSeenNow() {
-    const latest = latestItemTs(S.items);
+    const latest = latestItemTs(S.messages);
     if (latest > 0) {
       writeSeenTs(Math.max(readSeenTs(), latest));
       applyHubUnreadBadge();
     }
   }
 
+  async function openAlphaDen() {
+    try { window.showSection?.("map"); } catch (_) {}
+    if (typeof window.Map?.openAlphaDenFromMap === "function") {
+      return !!await window.Map.openAlphaDenFromMap();
+    }
+    if (typeof window.AlphaDen?.open === "function") {
+      window.AlphaDen.open();
+      return true;
+    }
+    if (typeof window.ensureAlphaDenLoaded === "function") {
+      try {
+        await window.ensureAlphaDenLoaded();
+        if (typeof window.AlphaDen?.open === "function") {
+          window.AlphaDen.open();
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  async function openStats() {
+    if (typeof window.Stats?.open === "function") {
+      window.Stats.open();
+      return true;
+    }
+    if (typeof window.openStats === "function") {
+      window.openStats();
+      return true;
+    }
+    const btn = document.querySelector('.ah-action[data-action="stats"], [data-action="stats"]');
+    if (btn) {
+      btn.click();
+      return true;
+    }
+    return false;
+  }
+
+  async function openQuestBoard() {
+    if (typeof window.Quests?.open === "function") {
+      window.Quests.open();
+      return true;
+    }
+    const launcher = document.getElementById("quests-launcher");
+    if (launcher) {
+      launcher.click();
+      return true;
+    }
+    return false;
+  }
+
+  async function openInfluence() {
+    try { window.showSection?.("map"); } catch (_) {}
+    if (typeof window.Influence?.open === "function") {
+      window.Influence.open("phantom_nodes", "Phantom Nodes");
+      return true;
+    }
+    if (typeof window.CTA?.openTarget === "function") {
+      return !!await window.CTA.openTarget({ type: "map_node", nodeId: "phantom_nodes" });
+    }
+    return true;
+  }
+
+  async function openProfile() {
+    if (typeof window.Equipped?.open === "function") {
+      window.Equipped.open();
+      return true;
+    }
+    const btn = document.querySelector('.ah-action[data-action="equipped"], .btn.profile, [data-action="profile"]');
+    if (btn) {
+      btn.click();
+      return true;
+    }
+    return false;
+  }
+
   async function openTarget(target) {
     if (!target || typeof target !== "object") return false;
 
     if (typeof window.CTA?.openTarget === "function") {
-      try {
-        return await window.CTA.openTarget(target);
-      } catch (err) {
-        warn("CTA.openTarget failed", err);
+      const ctaTarget = normalizeTarget(target);
+      if (ctaTarget && !["stats", "den", "profile"].includes(ctaTarget.type)) {
+        try {
+          return await window.CTA.openTarget(ctaTarget);
+        } catch (err) {
+          warn("CTA.openTarget failed", err);
+        }
       }
     }
 
     const type = asText(target?.type).toLowerCase();
+    if (type === "stats") return openStats();
+    if (type === "den") return openAlphaDen();
+    if (type === "profile") return openProfile();
     if (type === "siege") {
       try { window.showSection?.("map"); } catch (_) {}
       const nodeId = asText(target?.nodeId);
       return !!window.Siege?.openForNode?.(nodeId) || !!window.Siege?.open?.(nodeId) || true;
     }
-    if (type === "missions") return !!window.Missions?.open?.();
+    if (type === "missions") return openQuestBoard();
     if (type === "bloodmoon") return !!window.BloodMoon?.open?.();
     if (type === "fortress") return !!window.Fortress?.open?.();
     if (type === "open_action") {
       const action = asText(target?.action).toLowerCase();
+      if (action === "stats") return openStats();
+      if (action === "open_alpha_den" || action === "alpha_den" || action === "den") return openAlphaDen();
+      if (action === "quests" || action === "quest_board") return openQuestBoard();
+      if (action === "equipped" || action === "profile") return openProfile();
       if (action === "factions") return !!window.Factions?.openPicker?.() || !!window.Factions?.open?.({ mode: "select" });
-      if (action === "equipped") return !!window.Equipped?.open?.();
       if (action === "skins") return !!window.Skins?.open?.();
       if (action === "broken_contracts") return !!window.BrokenContracts?.open?.();
+      if (action === "treasury") return !!window.HowlTreasury?.open?.();
     }
     if (type === "send_howl") {
       const targetUid = asText(target?.target_uid || target?.targetUid);
@@ -574,6 +794,8 @@
       return !!window.PlayerProfile?.open?.(targetUid, { source: "mailbox" });
     }
     if (type === "map_node") {
+      const nodeId = asText(target?.nodeId);
+      if (nodeId === "phantom_nodes") return openInfluence();
       try { window.showSection?.("map"); } catch (_) {}
       return true;
     }
@@ -585,7 +807,9 @@
     if (!id) return false;
     if (S.dismissing.size > 0) return false;
     if (S.dismissing.has(id)) return false;
+    const prevMessages = Array.isArray(S.messages) ? S.messages.slice() : [];
     const prevItems = Array.isArray(S.items) ? S.items.slice() : [];
+    S.messages = prevMessages.filter((row) => asText(row?.id) !== id);
     S.items = prevItems.filter((row) => asText(row?.id) !== id);
     applyHubUnreadBadge();
     render();
@@ -593,6 +817,7 @@
     try {
       const out = await api("/webapp/mailbox/dismiss", { message_id: id });
       if (!out || out.ok === false) {
+        S.messages = prevMessages;
         S.items = prevItems;
         applyHubUnreadBadge();
         render();
@@ -605,6 +830,7 @@
       return true;
     } catch (err) {
       warn("dismiss failed", err);
+      S.messages = prevMessages;
       S.items = prevItems;
       applyHubUnreadBadge();
       render();
@@ -615,7 +841,7 @@
     }
   }
 
-  function renderItemsSection(root, title, items, nowTs) {
+  function renderItemsSection(root, title, items, nowTs, { pending = false } = {}) {
     if (!Array.isArray(items) || !items.length) return;
     const sec = document.createElement("section");
     sec.className = "mailbox-section";
@@ -624,16 +850,16 @@
 
     for (const item of items) {
       const row = document.createElement("article");
-      row.className = `mailbox-item${item.hasAction ? "" : " no-action"}`;
+      row.className = `mailbox-item${item.hasAction ? "" : " no-action"}${pending ? " pending-signal" : ""}`;
       const stamp = relTime(item.ts, nowTs);
       const actionButton = item.hasAction
         ? `<button type="button" class="mailbox-act">${esc(item.actionLabel || "Open")}</button>`
         : "";
-      const dismissButton = item.dismissible
-        ? `<button type="button" class="mailbox-dismiss" data-item-id="${esc(item.id)}">Dismiss</button>`
+      const dismissButton = (!pending && item.dismissible)
+        ? `<button type="button" class="mailbox-dismiss-x" data-item-id="${esc(item.id)}" aria-label="Dismiss message">×</button>`
         : "";
-      const controls = (actionButton || dismissButton)
-        ? `<div class="mailbox-actions">${actionButton}${dismissButton}</div>`
+      const controls = actionButton
+        ? `<div class="mailbox-actions">${actionButton}</div>`
         : "";
       const senderUid = asText(item?.meta?.sender_uid || item?.meta?.senderUid);
       const senderName = asText(item?.meta?.sender_name || item?.meta?.senderName);
@@ -642,6 +868,7 @@
         : "";
       const kicker = stamp ? `${kindIcon(item.kind)} · ${stamp}` : kindIcon(item.kind);
       row.innerHTML = `
+        ${dismissButton}
         <div class="mailbox-left">
           <div class="mailbox-kicker"><span>${esc(kicker)}</span><span class="dot"></span><span>${esc(item.badge || "INFO")}</span></div>
           <div class="mailbox-item-title">${esc(item.title)}</div>
@@ -657,14 +884,17 @@
           await openTarget(item.target);
           close();
         };
-        row.addEventListener("click", () => { void open(); });
+        row.addEventListener("click", (ev) => {
+          if (ev.target?.closest?.(".mailbox-dismiss-x, .mailbox-profile")) return;
+          void open();
+        });
         row.querySelector(".mailbox-act")?.addEventListener("click", (ev) => {
           ev.stopPropagation();
           void open();
         });
       }
 
-      row.querySelector(".mailbox-dismiss:not(.mailbox-profile)")?.addEventListener("click", (ev) => {
+      row.querySelector(".mailbox-dismiss-x")?.addEventListener("click", (ev) => {
         ev.stopPropagation();
         try { S.tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         void dismissItem(item.id);
@@ -687,16 +917,22 @@
     if (!body) return;
     body.innerHTML = "";
 
-    if (!S.items.length) {
-      body.innerHTML = `<div class="mailbox-empty">No important personal items right now. New rewards and ready states will appear here.</div>`;
+    const hasPending = S.pendingSignals.length > 0;
+    const hasMessages = S.messages.length > 0;
+    if (!hasPending && !hasMessages) {
+      body.innerHTML = `<div class="mailbox-empty">No important personal items right now. Pack Signals will appear when rewards are waiting.</div>`;
       return;
     }
 
     const seenTs = readSeenTs();
     const nowTs = S.serverTs || Math.floor(Date.now() / 1000);
+    if (hasPending) {
+      renderItemsSection(body, "Pack Signals", S.pendingSignals, nowTs, { pending: true });
+    }
+
     const fresh = [];
     const older = [];
-    for (const item of S.items) {
+    for (const item of S.messages) {
       if (item.ts > seenTs) fresh.push(item);
       else older.push(item);
     }
