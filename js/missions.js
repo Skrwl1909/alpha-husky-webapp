@@ -323,12 +323,22 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         purpose: toText(item.purpose, ""),
         linkedBossKey: item.linkedBossKey ? toText(item.linkedBossKey, "") : null,
         linkedBossName: item.linkedBossName ? toText(item.linkedBossName, "") : null,
+        missingRequirements: Array.isArray(item.missingRequirements) ? item.missingRequirements.map((entry) => toText(entry, "")).filter(Boolean) : [],
+        missingLevel: Math.max(0, n(item.missingLevel, 0)),
+        missingSignalPower: Math.max(0, n(item.missingSignalPower, 0)),
+        startable: item.startable === true,
+        startsRealMission: item.startsRealMission === true,
+        realRewardsEnabled: item.realRewardsEnabled === true,
+        durationSec: Math.max(0, n(item.durationSec, 0)),
+        bossPrepProgress: Math.max(0, n(item.bossPrepProgress, 0)),
+        bossPrepProgressTotal: Math.max(0, n(item.bossPrepProgressTotal, 0)),
+        nextRecommendedAction: toText(item.nextRecommendedAction, ""),
         cta: toText(item.cta, "Preview"),
       };
     }).filter(Boolean) : [];
 
     return {
-      version: toText(raw.version, "p0.7a"),
+      version: toText(raw.version, "p0.9a"),
       status: toText(raw.status, "locked"),
       tier: toText(raw.tier, "Tier I"),
       requiredLevel: Math.max(0, n(raw.requiredLevel, 0)),
@@ -342,6 +352,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       headline: toText(raw.headline, ""),
       summary: toText(raw.summary, ""),
       recommendedAction: toText(raw.recommendedAction, ""),
+      progressSummary: (raw.progressSummary && typeof raw.progressSummary === "object") ? raw.progressSummary : null,
+      bossPrepSummary: (raw.bossPrepSummary && typeof raw.bossPrepSummary === "object") ? raw.bossPrepSummary : null,
       operations,
       safety: {
         previewOnly: safety.previewOnly !== false,
@@ -2227,6 +2239,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
+      if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "");
       if (act === "resolve") return void doResolve();
       if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
       if (act === "open_frames") return void openFrames();
@@ -3089,13 +3102,25 @@ function _normalizeRareDropObj(obj) {
     if (!op || typeof op !== "object") return "";
     const title = toText(op.title, "Elite Operation");
     const status = toText(op.status, "preview");
-    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    const canStart = !!(op.startable && op.startsRealMission && preview?.safety?.startsRealMission);
+    const statusLabel = canStart ? "Ready" : (status.charAt(0).toUpperCase() + status.slice(1));
     const requires = formatEliteOperationRequires(op, preview);
     const purpose = toText(op.purpose, "");
     const rewards = Array.isArray(op.rewardPreview) ? op.rewardPreview.join(" · ") : "";
     const linkedBoss = toText(op.linkedBossName, "");
-    const ctaLabel = toText(op.cta, "Preview");
+    const ctaLabel = canStart ? "Start" : toText(op.cta, "Locked");
     const locked = status === "locked";
+    const durationSec = Math.max(0, n(op.durationSec, 0));
+    const duration = durationSec ? `${Math.max(1, Math.round(durationSec / 60))}m` : "Instant";
+    const nextAction = toText(op.nextRecommendedAction, "");
+    const missingParts = [];
+    if (!canStart && Math.max(0, n(op.missingLevel, 0)) > 0) missingParts.push(`+${Math.max(0, n(op.missingLevel, 0))} Level`);
+    if (!canStart && Math.max(0, n(op.missingSignalPower, 0)) > 0) missingParts.push(`+${Math.max(0, n(op.missingSignalPower, 0))} Signal Power`);
+    const rawMissing = Array.isArray(op.missingRequirements) ? op.missingRequirements.join(" · ") : "";
+    const missing = missingParts.length ? missingParts.join(" · ") : rawMissing;
+    const stateLine = canStart
+      ? "Real Tier I mission. Rewards are granted on resolve."
+      : (missing ? `Locked until ${missing}.` : "Eligibility syncing from backend.");
 
     return `
       <div class="m-elite-card${locked ? " is-locked" : ""}">
@@ -3103,12 +3128,21 @@ function _normalizeRareDropObj(obj) {
           <div class="m-elite-card-title">${esc(title)}</div>
           <div class="m-elite-status ${eliteStatusClass(status)}">${esc(statusLabel)}</div>
         </div>
+        <div class="m-elite-line">${esc(stateLine)}</div>
         ${requires ? `<div class="m-elite-line"><b>Requires:</b> ${esc(requires)}</div>` : ""}
+        ${missing && !canStart ? `<div class="m-elite-line"><b>Missing:</b> ${esc(missing)}</div>` : ""}
         ${purpose ? `<div class="m-elite-line"><b>Purpose:</b> ${esc(purpose)}</div>` : ""}
+        ${duration ? `<div class="m-elite-line"><b>Duration:</b> ${esc(duration)}</div>` : ""}
         ${rewards ? `<div class="m-elite-line"><b>Reward Preview:</b> ${esc(rewards)}</div>` : ""}
         ${linkedBoss ? `<div class="m-elite-line"><b>Boss Wall Link:</b> ${esc(linkedBoss)}</div>` : ""}
+        ${op.bossPrepProgress > 0 ? `<div class="m-elite-line"><b>Boss Prep:</b> ${esc(`+${op.bossPrepProgress} progress on resolve`)}</div>` : ""}
+        ${nextAction ? `<div class="m-elite-line"><b>Next:</b> ${esc(nextAction)}</div>` : ""}
         <div class="m-elite-cta">
-          <button type="button" class="btn" disabled aria-disabled="true">${esc(ctaLabel)}</button>
+          <button type="button" class="btn${canStart ? " primary" : ""}"
+            data-act="elite_start"
+            data-operation-key="${esc(op.key)}"
+            ${canStart ? "" : 'disabled aria-disabled="true"'}
+          >${esc(ctaLabel)}</button>
         </div>
       </div>
     `;
@@ -3163,6 +3197,8 @@ function _normalizeRareDropObj(obj) {
         ? `Missing: ${reqParts.join(" · ")}`
         : `Level ${eliteOps.playerLevel} · Signal Power ${eliteOps.playerSignalPower}`;
       const ops = eliteOps.operations.slice(0, 3);
+      const bossPrepSummary = toText(eliteOps.bossPrepSummary?.summary || eliteOps.progressSummary?.summary, "");
+      const realMissionLine = eliteOps.safety?.startsRealMission ? "Real Tier I missions are live. Rewards are granted only after resolve." : "Elite Operations are syncing.";
 
       return `
         <div class="m-card m-elite-wrap">
@@ -3174,7 +3210,9 @@ function _normalizeRareDropObj(obj) {
           <div class="m-muted" style="margin-top:6px;">${esc(toText(eliteOps.summary, ""))}</div>
           <div class="m-elite-req">${esc(reqLine)}</div>
           ${eliteOps.lockedReason ? `<div class="m-elite-req">${esc(eliteOps.lockedReason)}</div>` : ""}
+          <div class="m-elite-safety">${esc(realMissionLine)}</div>
           <div class="m-elite-safety">${esc(safetyCopy)}</div>
+          ${bossPrepSummary ? `<div class="m-elite-line" style="margin-top:8px;"><b>Boss Prep:</b> ${esc(bossPrepSummary)}</div>` : ""}
           <div class="m-elite-line" style="margin-top:8px;"><b>Recommended:</b> ${esc(toText(eliteOps.recommendedAction, ""))}</div>
           <div class="m-elite-cards">${ops.map((op) => renderEliteOperationCard(op, eliteOps)).join("")}</div>
         </div>
@@ -3459,8 +3497,64 @@ function _normalizeRareDropObj(obj) {
       </div>
     `;
   }
+  function formatEliteReportRewardLines(report, last) {
+    const fromReport = Array.isArray(report?.rewardLines) ? report.rewardLines : [];
+    const cleanReport = fromReport.map((x) => textOrEmpty(x)).filter(Boolean);
+    if (cleanReport.length) return cleanReport;
+    const granted = Array.isArray(report?.rewardsGranted) ? report.rewardsGranted : [];
+    const lines = [];
+    for (const reward of granted) {
+      if (!reward || typeof reward !== "object") continue;
+      const amount = Math.max(0, n(reward.amount, 0));
+      const label = textOrEmpty(reward.label || reward.asset || reward.type);
+      if (amount > 0 && label) lines.push(`+${amount} ${label}`);
+    }
+    if (lines.length) return lines;
+    return normalizeRewardList(last?.recoveredRewards);
+  }
+
+  function renderEliteMissionReport(last) {
+    const report = (last?.eliteMissionReport && typeof last.eliteMissionReport === "object") ? last.eliteMissionReport : null;
+    if (!report) return "";
+    const title = textOrEmpty(report.reportTitle, "Elite Mission Report") || "Elite Mission Report";
+    const operation = textOrEmpty(report.operationName || last?.title || last?.name, "Elite Operation");
+    const result = textOrEmpty(report.resultLabel || last?.resultLabel || normalizeOutcomeTier(last), "Complete");
+    const resultStatus = textOrEmpty(report.resultStatus || last?.result || "").toLowerCase();
+    const resultTone = (resultStatus.includes("invalid") || resultStatus.includes("fail")) ? "failed" : "success";
+    const narrative = textOrEmpty(last?.narrativeLine || last?.report);
+    const rewardLines = formatEliteReportRewardLines(report, last);
+    const bossPrep = (report.bossPrepProgress && typeof report.bossPrepProgress === "object") ? report.bossPrepProgress : {};
+    const bossPrepGain = Math.max(0, n(report.bossPrepProgressGained ?? bossPrep.granted, 0));
+    const bossPrepTotal = Math.max(0, n(report.bossPrepProgressTotal ?? bossPrep.total, 0));
+    const nextAction = textOrEmpty(report.nextRecommendedAction || last?.nextRecommendedAction, "Check Next Alpha Goal.");
+    const req = (report.requirementsChecked && typeof report.requirementsChecked === "object") ? report.requirementsChecked : {};
+    const reqLine = (n(req.level, 0) > 0 || n(req.signalPower, 0) > 0)
+      ? `Level ${Math.max(0, n(req.playerLevel, 0))}/${Math.max(0, n(req.level, 0))} · Signal Power ${Math.max(0, n(req.playerSignalPower, 0))}/${Math.max(0, n(req.signalPower, 0))}`
+      : "Requirements checked by backend";
+
+    return `
+      <div class="m-card m-report" style="margin-top:10px;">
+        <div class="m-report-head">
+          <div style="min-width:0;">
+            <div class="m-title">${esc(title)}</div>
+            <div class="m-report-title" style="margin-top:8px;">${esc(operation)}</div>
+            <div class="m-report-sub">Elite Operations · Tier I</div>
+          </div>
+          <div class="m-outcome-badge" data-tone="${esc(resultTone)}">${esc(result)}</div>
+        </div>
+        ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
+        <div class="m-report-section"><div class="m-report-label">Requirements checked</div><div class="m-report-values">${esc(reqLine)}</div></div>
+        <div class="m-report-section"><div class="m-report-label">Rewards granted</div><div class="m-report-values">${esc(rewardLines.length ? rewardLines.join(" · ") : "No rewards granted")}</div></div>
+        ${bossPrepGain > 0 ? `<div class="m-report-section"><div class="m-report-label">Boss Prep progress</div><div class="m-report-values">${esc(`+${bossPrepGain}${bossPrepTotal > 0 ? ` · Total ${bossPrepTotal}` : ""}`)}</div></div>` : ""}
+        ${nextAction ? `<div class="m-report-section"><div class="m-report-label">Next</div><div class="m-report-values">${esc(nextAction)}</div></div>` : ""}
+      </div>
+    `;
+  }
 
   function renderLastClarity(last) {
+    const eliteReport = renderEliteMissionReport(last);
+    if (eliteReport) return eliteReport;
+
     const ts = last?.ts ? new Date(Number(last.ts) * 1000).toLocaleString() : "";
     const title = textOrEmpty(last?.title || last?.name) || "Mission";
     const subtitle = textOrEmpty(last?.subtitle);
@@ -4703,6 +4797,42 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       renderError("Start failed", msg);
     }
   }
+  async function doEliteStart(operationKey) {
+    const key = textOrEmpty(operationKey);
+    if (!key) return;
+    renderLoading("Starting Elite Operation…");
+    try {
+      const res = await api("/webapp/missions/action", {
+        action: "elite_start",
+        operationKey: key,
+        operation_key: key,
+        run_id: rid("m:elite:start"),
+      });
+      _pendingStart = null;
+      if (res && typeof res === "object") {
+        _state = res;
+        _stateLoadedAt = Date.now();
+        try {
+          window.__AH_MISSIONS_RAW = res;
+          window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+        } catch (_) {}
+        await loadProgressionV1({ force: true }).catch(() => null);
+        render();
+        if (res.message) {
+          try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
+          try { _tg?.showAlert?.(String(res.message)); } catch (_) {}
+        }
+        await _syncAfterStart(3500, 500);
+        return;
+      }
+      await loadState({ force: true, reason: "elite_start_fallback" });
+    } catch (e) {
+      const msg = String(e?.data?.message || e?.message || e || "Elite start failed");
+      try { _tg?.HapticFeedback?.notificationOccurred?.("error"); } catch (_) {}
+      try { _tg?.showAlert?.(msg); } catch (_) {}
+      await loadState({ force: true, reason: "elite_start_error" });
+    }
+  }
 
   async function doResolve() {
     try {
@@ -4721,6 +4851,18 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       }
       _pendingStart = null;
       if (res && typeof res === "object") {
+        const payload = normalizePayload(res) || res;
+        if (res.eliteMissionReport || payload?.lastResolve?.eliteMissionReport) {
+          _state = res;
+          _stateLoadedAt = Date.now();
+          try {
+            window.__AH_MISSIONS_RAW = res;
+            window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
+          } catch (_) {}
+          await loadProgressionV1({ force: true }).catch(() => null);
+          render();
+          return;
+        }
         const showResultCard = () => {
           _state = res;
           _stateLoadedAt = Date.now();
