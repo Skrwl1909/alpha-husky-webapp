@@ -846,9 +846,9 @@
 
           <div class="inf-panel-kicker">Your Support</div>
 
-          <div class="inf-weekly-title">Hold the Line</div>
+          <div class="inf-weekly-title">Hold the Frontline</div>
 
-          <div class="inf-weekly-sub">Patrol and supplies weaken the Maw and build your personal support. Confront finishes the daily push.</div>
+          <div class="inf-weekly-sub">Patrol and supplies push pressure down and build your support. Confront strikes back when the Maw is exposed.</div>
 
         </div>
 
@@ -1022,7 +1022,7 @@
 
       ? "Your supplies were added to the war effort."
 
-      : "Send supplies to reinforce the relay.";
+      : "Use supplies to support the frontline.";
 
 
 
@@ -1048,7 +1048,7 @@
 
       : (packPct >= 100
 
-        ? "Target secured. The Static Maw is pushing back."
+        ? "Daily target reached. The Static Maw is pushing back — keep pressure low."
 
         : `${packGoal - packSupport} Pack support to daily target (${packPct}%).`);
 
@@ -1072,15 +1072,15 @@
 
     } else if (recent.patrolAt > 0 || recent.donateAt > 0) {
 
-      impactCopyEl.textContent = "Your action moved the line. Return tomorrow to see if the Pack held overnight.";
+      impactCopyEl.textContent = "Your action helped the Pack. Check tomorrow's Daily Frontline Report.";
 
     } else if (!patrolReady) {
 
-      impactCopyEl.textContent = "Patrol is on cooldown. Send supplies or return when patrol is ready.";
+      impactCopyEl.textContent = "Patrol is on cooldown. Donate supplies or return when patrol is ready.";
 
     } else {
 
-      impactCopyEl.textContent = "Patrol the relay. The Static Maw is pushing back.";
+      impactCopyEl.textContent = "Start with a Patrol to push pressure down for the Pack.";
 
     }
 
@@ -1143,6 +1143,16 @@
   const PATROL_ACTION_HINT = "Scout the relay and reinforce control.";
 
   const DONATE_ACTION_HINT = "Spend supplies to strengthen your faction’s hold.";
+
+  const PHANTOM_PATROL_HINT = "Scout the area and push pressure down.";
+
+  const PHANTOM_DONATE_HINT = "Use supplies to support the frontline.";
+
+  const PHANTOM_PRESSURE_HELPER = "Wasteland Pressure shows how close the node is to being overwhelmed. Lower pressure means the Pack is holding the line.";
+
+  const PHANTOM_DAILY_HELPER = "This report shows how the Pack performed before the new day started.";
+
+  const PHANTOM_EMPTY_ACTION_COPY = "No action taken yet today. Start with a Patrol to help the Pack.";
 
   const LOCAL_TOOLTIP_COPY = {
 
@@ -1220,6 +1230,22 @@
 
   }
 
+  function phantomStatusExplanation(status) {
+
+    const s = String(status || "").trim();
+
+    if (s === "Secured") return "The Pack is in control. Pressure is low.";
+
+    if (s === "Unstable") return "The line is holding, but pressure is building.";
+
+    if (s === "Dangerous") return "The node is under heavy pressure. Help is needed.";
+
+    if (s === "Critical") return "The node is close to collapse. The Pack needs action now.";
+
+    return "Lower pressure is better. Help the Pack hold the frontline.";
+
+  }
+
   function phantomFrontlineLine(info) {
 
     const wp = phantomWastelandPressure(info);
@@ -1230,15 +1256,11 @@
 
     const mawProvoked = info?.mawProvoked === true || mawState?.mawProvoked === true;
 
-    if (status === "Secured") return "SECURED — FOR NOW. The Static Maw is already rebuilding pressure.";
+    if (wp <= 35) return "The Maw is exposed. You can strike back once today.";
 
-    if (wp <= 35) return "The Maw is exposed. Confront it to secure today's push.";
+    if (mawProvoked) return "The Static Maw is pushing back. Help the Pack reduce pressure.";
 
-    if (mawProvoked) return "The Maw has clawed back into the relay. Hold the line again.";
-
-    if (status === "Unstable" || status === "Dangerous") return "Patrol and supplies weaken the Maw.";
-
-    return "Critical Wasteland pressure. Every action counts.";
+    return phantomStatusExplanation(status);
 
   }
 
@@ -1250,13 +1272,13 @@
 
     const status = phantomPackDefenseStatus(info);
 
-    if (status === "Critical" || status === "Dangerous") return "Hold the line now.";
+    if (status === "Critical" || status === "Dangerous") return "The node needs help now. Patrol or donate to push pressure down.";
 
-    if (wp <= 35) return "Confront the Maw to secure today's push.";
+    if (wp <= 35) return "The Maw is exposed. Confront it once today.";
 
-    if (status === "Unstable") return "Patrol and supplies weaken the Maw.";
+    if (status === "Unstable") return "Patrol or donate supplies to push pressure down.";
 
-    return "Check back later. The line will not hold itself.";
+    return "Check tomorrow's Daily Frontline Report to see how the Pack held.";
 
   }
 
@@ -1304,9 +1326,9 @@
 
         label: "MAW PROVOKED",
 
-        detail: "The Static Maw is rebuilding pressure faster after being pushed back.",
+        detail: "The Static Maw is pushing back faster. Keep reducing pressure.",
 
-        nextBestMove: "Check back later or prepare to hold the line again.",
+        nextBestMove: "Patrol or donate supplies to push pressure down.",
 
       };
 
@@ -1318,7 +1340,7 @@
 
         label: "MAW EXPOSED",
 
-        detail: "The Maw is exposed. Confront it to secure today's push.",
+        detail: "The Maw is exposed. You can strike back once today.",
 
         nextBestMove: "Confront The Maw.",
 
@@ -1330,9 +1352,9 @@
 
       label: "CLAWING BACK",
 
-      detail: "Patrol and supplies weaken the Maw.",
+      detail: "Pressure is building. Patrol or donate to push it down.",
 
-      nextBestMove: "Patrol or donate supplies to expose it.",
+      nextBestMove: "Patrol or donate supplies to lower pressure.",
 
     };
 
@@ -1360,9 +1382,9 @@
 
       <div class="inf-clash-report">
 
-        <div class="inf-clash-kicker">Clash Report</div>
+        <div class="inf-clash-kicker">Frontline Action Report</div>
 
-        <div class="inf-clash-vs">Pack Signal → Static Maw</div>
+        <div class="inf-clash-vs">The Pack vs The Static Maw</div>
 
         ${mawReaction ? `<div class="inf-clash-reaction">Maw response: ${esc(mawReaction)}</div>` : ""}
 
@@ -1406,9 +1428,15 @@
 
     if (!clash || !String(clash.summary || "").trim()) {
 
-      el.style.display = "none";
+      el.style.display = "block";
 
-      el.innerHTML = "";
+      el.innerHTML = `
+
+      <div class="inf-last-clash-kicker">Latest Frontline Action</div>
+
+      <div class="inf-last-clash-summary">${esc(PHANTOM_EMPTY_ACTION_COPY)}</div>
+
+    `;
 
       return;
 
@@ -1420,7 +1448,7 @@
 
     const pa = Number(clash.pressureAfter);
 
-    const pressureLine = Number.isFinite(pb) && Number.isFinite(pa) ? `Pressure: ${pb}% → ${pa}%` : "";
+    const pressureLine = Number.isFinite(pb) && Number.isFinite(pa) ? `Pressure reduced: ${pb}% → ${pa}%` : "";
 
     const mawReaction = String(clash.mawReaction || "").trim();
 
@@ -1428,7 +1456,7 @@
 
     el.innerHTML = `
 
-      <div class="inf-last-clash-kicker">Last Clash</div>
+      <div class="inf-last-clash-kicker">Latest Frontline Action</div>
 
       <div class="inf-last-clash-summary">${esc(summary)}</div>
 
@@ -1500,7 +1528,7 @@
 
           <div class="inf-threat-copy">
 
-            <div class="inf-threat-kicker">${esc(mawProvoked ? "Maw Retaliation" : "Threat Detected")}</div>
+            <div class="inf-threat-kicker">${esc(mawProvoked ? "Maw Pushing Back" : "Frontline Threat")}</div>
 
             <div class="inf-threat-name">${esc(String(threat.name || "The Static Maw"))}</div>
 
@@ -1536,7 +1564,7 @@
 
             <div class="inf-maw-intent">
 
-              <div class="inf-maw-intent-kicker">Enemy Intent</div>
+              <div class="inf-maw-intent-kicker">Maw Status</div>
 
               <div class="inf-maw-intent-label">${esc(label)}</div>
 
@@ -1582,11 +1610,11 @@
 
     el.innerHTML = `
 
-      <div class="inf-threat-kicker">While The Pack Was Away</div>
+      <div class="inf-threat-kicker">While You Were Away</div>
 
       ${line ? `<div class="inf-threat-meta">${esc(line)}</div>` : ""}
 
-      <div class="inf-threat-pulse-copy">${esc(String(pulse.pulseNote || "The Static Maw pressed deeper into the relay."))}</div>
+      <div class="inf-threat-pulse-copy">${esc(String(pulse.pulseNote || "Wasteland Pressure rose while you were away. Lower is better."))}</div>
 
     `;
 
@@ -1634,7 +1662,7 @@
 
       <div class="inf-target-copy">Your support today: ${esc(String(personal))} · Pack total: ${esc(String(current))}</div>
 
-      <div class="inf-target-copy">Best Move: ${esc(String(target.bestMove || "Patrol the node or send supplies."))}</div>
+      <div class="inf-target-copy">Best move: ${esc(String(target.bestMove || "Patrol the node or donate supplies."))}</div>
 
       <div class="inf-target-copy">${esc(String(target.tomorrowHook || "Return tomorrow to see if the Pack held overnight."))}</div>
 
@@ -1668,7 +1696,9 @@
 
         <div class="inf-daily-note">${esc(String(outcome.note || outcome.body || "First frontline report begins after today's cycle."))}</div>
 
-        <div class="inf-daily-note">${esc(String(outcome.fallbackCopy || "Patrol or send supplies to help shape tomorrow's outcome."))}</div>
+        <div class="inf-daily-note">${esc(PHANTOM_DAILY_HELPER)}</div>
+
+        <div class="inf-daily-note">${esc(String(outcome.fallbackCopy || "Patrol or donate supplies to help the Pack hold the line."))}</div>
 
       `;
 
@@ -1682,7 +1712,7 @@
 
     const pressureLine = Number.isFinite(pStart) && Number.isFinite(pEnd)
 
-      ? `Pressure: ${pStart}% → ${pEnd}%`
+      ? `Pressure reduced: ${pStart}% → ${pEnd}%`
 
       : "";
 
@@ -1713,6 +1743,8 @@
       ${packImpact > 0 ? `<div class="inf-daily-meta">Pack Impact: -${esc(String(packImpact))} pressure</div>` : ""}
 
       ${actions > 0 ? `<div class="inf-daily-meta">Actions: ${esc(String(actions))}</div>` : ""}
+
+      <div class="inf-daily-note">${esc(PHANTOM_DAILY_HELPER)}</div>
 
       <div class="inf-daily-note">“${esc(String(outcome.body || ""))}”</div>
 
@@ -1788,11 +1820,11 @@
 
       el.innerHTML = `
 
-        <div class="inf-confront-kicker">Confrontation Window</div>
+        <div class="inf-confront-kicker">Confront The Maw</div>
 
         <div class="inf-confront-title">CONFRONT THE MAW</div>
 
-        <div class="inf-confront-copy">${esc(copyPrimary || "Pressure is low enough. Strike before the Static Maw regroups.")}</div>
+        <div class="inf-confront-copy">${esc(copyPrimary || "The Maw is exposed. You can strike back once today.")}</div>
 
         <div class="inf-confront-meta">Pressure: ${esc(String(Number.isFinite(pressure) ? pressure : "?"))}% · ${esc(`${usesToday}/${maxUses}`)} today</div>
 
@@ -1814,17 +1846,17 @@
 
       ? "You already confronted The Static Maw today."
 
-      : `Available when pressure drops to ${unlockAt} or lower.`);
+      : `Confront unlocks at ${unlockAt}% pressure or lower. Help the Pack reduce pressure first.`);
 
     const secondary = copySecondary || (status === "used_today"
 
-      ? "Return tomorrow after the Wasteland pressure rebuilds."
+      ? "Return tomorrow for the next Daily Frontline Report."
 
-      : `Current pressure: ${Number.isFinite(pressure) ? pressure : "?"}%. The Pack must weaken the threat first.`);
+      : `Current pressure: ${Number.isFinite(pressure) ? pressure : "?"}%. Lower pressure to unlock.`);
 
     el.innerHTML = `
 
-      <div class="inf-confront-kicker">Confrontation Window</div>
+      <div class="inf-confront-kicker">Confront The Maw</div>
 
       <div class="inf-confront-title ${esc(lockedTitleClass)}">CONFRONT THE MAW</div>
 
@@ -1886,13 +1918,13 @@
 
     const tomorrowHook = String(report.tomorrowHook || "Return tomorrow to see if the Pack held the line overnight.").trim();
 
-    const title = String(report.title || "CONFRONTATION COMPLETE").trim();
+    const title = "Frontline Action Report";
 
     const main = String(report.main || "You forced The Static Maw back from the relay.").trim();
 
     const pressureLine = Number.isFinite(wpBefore) && Number.isFinite(wpAfter)
 
-      ? `Pressure: ${wpBefore}% → ${wpAfter}%`
+      ? `Pressure reduced: ${wpBefore}% → ${wpAfter}%`
 
       : "";
 
@@ -1910,7 +1942,7 @@
 
       statusLine,
 
-      supportGained > 0 ? `Your impact: +${supportGained} Frontline Support` : "",
+      supportGained > 0 ? `Your contribution today: +${supportGained}` : "",
 
       playerSupportToday > 0 ? `Your support today: ${playerSupportToday}` : "",
 
@@ -2676,7 +2708,7 @@
 
     const playerSupportToday = Number(report?.playerSupportToday ?? payload?.playerSupportToday ?? 0);
 
-    const tomorrowHook = String(report?.tomorrowHook || payload?.tomorrowHook || "Return tomorrow to see if the Pack held overnight.").trim();
+    const tomorrowHook = String(report?.tomorrowHook || payload?.tomorrowHook || "Return tomorrow for the Daily Frontline Report.").trim();
 
     const reaction = (payload?.frontlineReaction && typeof payload.frontlineReaction === "object")
 
@@ -2686,7 +2718,7 @@
 
     const title = phantomMode
 
-      ? String(report?.title || (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED"))
+      ? "Frontline Action Report"
 
       : (isPatrol ? "PATROL COMPLETE" : "SUPPLIES DELIVERED");
 
@@ -2694,7 +2726,7 @@
 
       ? (hasPressureReport
 
-        ? (reaction?.pressureLine || `Pressure: ${wpBefore}% → ${wpAfter}%`)
+        ? (reaction?.pressureLine || `Pressure reduced: ${wpBefore}% → ${wpAfter}%`)
 
         : (gain > 0 ? `Pack impact +${gain}` : "Frontline updated"))
 
@@ -2702,11 +2734,11 @@
 
     const baseLine = phantomMode
 
-      ? (hasPressureReport
+      ? (contributionGained > 0
 
-        ? `Pack Impact: -${Math.max(0, pressureDelta)} pressure`
+        ? `Your contribution today: +${contributionGained}`
 
-        : (isPatrol ? "Your patrol helped hold the line." : "Your supplies helped hold the line."))
+        : (isPatrol ? "Your patrol pushed pressure down for the Pack." : "Your supplies helped the Pack hold the frontline."))
 
       : (isPatrol
 
@@ -2728,7 +2760,7 @@
 
     const phantomContributionLine = phantomMode && contributionGained > 0
 
-      ? `Contribution: +${contributionGained}`
+      ? `Your contribution today: +${contributionGained}`
 
       : "";
 
@@ -2762,9 +2794,9 @@
 
       ? (phantomReactionBody || (isPatrol
 
-        ? String(payload?.frontlineCopy || "The line is holding, but not by much.")
+        ? String(payload?.frontlineCopy || "The Pack is holding, but the node still needs support.")
 
-        : String(payload?.frontlineCopy || "Supplies received. The relay holds longer now.")))
+        : String(payload?.frontlineCopy || "The Pack is holding, but the node still needs support.")))
 
       : "";
 
@@ -3664,9 +3696,9 @@
 
     if (reason === "BAD_ACTION") return "Bad action.";
 
-    if (reason === "CONFRONT_LOCKED") return "Available when pressure drops to 35 or lower. The Pack must weaken the threat first.";
+    if (reason === "CONFRONT_LOCKED") return "Confront unlocks when pressure drops to 35% or lower. Help the Pack reduce pressure first.";
 
-    if (reason === "CONFRONT_USED_TODAY") return "You already confronted The Static Maw today. Return tomorrow after the Wasteland pressure rebuilds.";
+    if (reason === "CONFRONT_USED_TODAY") return "You already confronted The Static Maw today. Return tomorrow for the next Daily Frontline Report.";
 
 
 
@@ -10554,7 +10586,7 @@
 
               </div>
 
-              <div id="infHeroFlavor" class="inf-hero-flavor">Old relay spines control signal routes, patrol response, and faction pressure.</div>
+              <div id="infHeroFlavor" class="inf-hero-flavor">The Pack is holding a dangerous frontline against the Static Maw.</div>
 
               <div id="infUxStatusText" class="inf-hero-status">This frontline is stable right now.</div>
 
@@ -10594,7 +10626,7 @@
 
           </div>
 
-          <div id="infOrdersLead" class="inf-hero-status">Hold the relay.</div>
+          <div id="infOrdersLead" class="inf-hero-status">Hold the frontline. Push pressure down.</div>
 
           <div class="inf-action-grid">
 
@@ -10616,11 +10648,11 @@
 
                 </span>
 
-                <span id="infPatrolLabel" class="inf-action-title">Defend Node</span>
+                <span id="infPatrolLabel" class="inf-action-title">Patrol Node</span>
 
                 <span id="infPatrolHelp" class="inf-action-effect">${PATROL_ACTION_HINT}</span>
 
-                <span class="inf-action-chip">Deploy Patrol</span>
+                <span class="inf-action-chip">Patrol</span>
 
               </span>
 
@@ -10644,11 +10676,11 @@
 
                 </span>
 
-                <span class="inf-action-title">Support Flow</span>
+                <span class="inf-action-title">Donate Supplies</span>
 
                 <span id="infDonateHelp" class="inf-action-effect">${DONATE_ACTION_HINT}</span>
 
-                <span class="inf-action-chip">Deliver Supplies</span>
+                <span class="inf-action-chip">Donate</span>
 
               </span>
 
@@ -11698,7 +11730,7 @@
 
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
 
-    if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODE" : (title || nodeId);
+    if (titleEl) titleEl.textContent = phantomMode ? "Phantom Node" : (title || nodeId);
 
     if (subEl) {
 
@@ -11706,13 +11738,13 @@
 
       subEl.textContent = phantomMode
 
-        ? "PACK vs WASTELAND · HOLD THE LINE"
+        ? "Hold the frontline. Push pressure down. Check tomorrow's report."
 
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
 
     }
 
-    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Pack vs Wasteland" : "Live Node Operations";
+    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Pack Frontline" : "Live Node Operations";
 
     if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Impact Today" : "Your Faction Support";
 
@@ -12444,13 +12476,21 @@
 
       if (nodeStateHintEl) nodeStateHintEl.textContent = "Recommended order will update from local pressure.";
 
-      if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
+      if (patrolHelpEl) patrolHelpEl.textContent = phantomMode ? PHANTOM_PATROL_HINT : PATROL_ACTION_HINT;
 
-      if (watchHelpEl) watchHelpEl.textContent = "Patrol is live. Move now to support Faction Control here.";
+      if (watchHelpEl) watchHelpEl.textContent = phantomMode
 
-      if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
+        ? "Patrol is ready. Push pressure down for the Pack."
 
-      if (ordersLeadEl) ordersLeadEl.textContent = "Recommended order: STABILIZE the relay.";
+        : "Patrol is live. Move now to support Faction Control here.";
+
+      if (donateHelpEl) donateHelpEl.textContent = phantomMode ? PHANTOM_DONATE_HINT : DONATE_ACTION_HINT;
+
+      if (ordersLeadEl) ordersLeadEl.textContent = phantomMode
+
+        ? "Hold the frontline. Push pressure down."
+
+        : "Recommended order: STABILIZE the relay.";
 
       if (warSummaryEl) warSummaryEl.textContent = "Faction Control data is syncing.";
 
@@ -12470,7 +12510,7 @@
 
       if (heroFlavorEl && !phantomMode) heroFlavorEl.textContent = "Frontline conditions update from live faction pressure.";
 
-      if (subEl && phantomMode) subEl.textContent = "PACK vs WASTELAND · HOLD THE LINE";
+      if (subEl && phantomMode) subEl.textContent = "Hold the frontline. Push pressure down. Check tomorrow's report.";
 
       if (phantomBadgeEl) {
 
@@ -12566,7 +12606,7 @@
 
       contEl.textContent = "";
 
-      controlLineEl.textContent = phantomMode ? "Relay under pressure" : "Faction Control data is syncing.";
+      controlLineEl.textContent = phantomMode ? "Wasteland Pressure is building on the frontline." : "Faction Control data is syncing.";
 
       foot.textContent = "";
 
@@ -12592,19 +12632,19 @@
 
       statusTextEl.textContent = phantomMode
 
-        ? "The relay is quiet for now, but pressure can swing it fast."
+        ? PHANTOM_PRESSURE_HELPER
 
         : "Node secured for now. Keep pressure to prevent a swing.";
 
       reasonEl.textContent = phantomMode
 
-        ? "Phantom Node is an old relay spine of the Alpha Network."
+        ? "The Pack is holding a dangerous frontline against the Static Maw."
 
         : "Control here sets the local frontline tempo.";
 
       rewardEl.textContent = phantomMode
 
-        ? "Your actions reduce Wasteland pressure and build personal support."
+        ? "Patrol and supplies push pressure down. Check tomorrow's Daily Frontline Report."
 
         : "Your actions here feed faction war progress.";
 
@@ -12748,7 +12788,7 @@
 
     if (phantomMode && dailyOutcome?.recoveryMode) {
 
-      encounterBrief = "Recovery effort active today. The relay needs support.";
+      encounterBrief = "Recovery effort active today. The frontline needs support.";
 
     } else if (phantomMode && dailyOutcome?.hasOutcome && String(dailyOutcome.result || "").toLowerCase() === "secured") {
 
@@ -12806,11 +12846,11 @@
 
       controlLineEl.textContent = encounterLine || encounterBrief;
 
-      if (subEl) subEl.textContent = "PACK vs WASTELAND · HOLD THE LINE";
+      if (subEl) subEl.textContent = "Hold the frontline. Push pressure down. Check tomorrow's report.";
 
       if (heroFlavorEl) {
 
-        heroFlavorEl.textContent = "Your faction is your banner. The enemy is the Wasteland. Every action helps hold the line.";
+        heroFlavorEl.textContent = "The Pack is holding a dangerous frontline against the Static Maw. Lower pressure is better.";
 
       }
 
@@ -12948,7 +12988,9 @@
 
           </div>
 
-          <div class="inf-pressure-foot">Pressure: ${wp}% — ${esc(packStatus)}. ${esc(packLine)}</div>
+          <div class="inf-pressure-foot">${esc(PHANTOM_PRESSURE_HELPER)}</div>
+
+          <div class="inf-pressure-foot">Wasteland Pressure: ${wp}% — ${esc(packStatus)}. ${esc(packLine)}</div>
 
         `;
 
@@ -13072,13 +13114,13 @@
 
     reasonEl.textContent = phantomMode
 
-      ? "Phantom Node is under Wasteland pressure. Patrol and supplies help the Pack keep the relay alive."
+      ? PHANTOM_PRESSURE_HELPER
 
       : (ux.reasonText || "Control here shapes the local rivalry line.");
 
     rewardEl.textContent = phantomMode
 
-      ? "Your actions reduce Wasteland pressure and build personal support."
+      ? "Patrol and supplies push pressure down. Return tomorrow for the Daily Frontline Report."
 
       : (ux.rewardText || "Contribution here converts into faction war progress.");
 
@@ -13176,7 +13218,7 @@
 
       } else if (phantomMode) {
 
-        localYouEl.textContent = "Patrol or donate to register your support.";
+        localYouEl.textContent = "No action taken yet today. Start with a Patrol to help the Pack.";
 
       } else if (viewerPressure > 0) {
 
@@ -13322,19 +13364,19 @@
 
 
 
-    if (patrolHelpEl) patrolHelpEl.textContent = PATROL_ACTION_HINT;
+    if (patrolHelpEl) patrolHelpEl.textContent = phantomMode ? PHANTOM_PATROL_HINT : PATROL_ACTION_HINT;
 
     if (watchHelpEl) {
 
       watchHelpEl.textContent = phantomMode
 
-        ? `${encounterBrief} Patrol and supplies both reinforce the war effort.`
+        ? `${encounterBrief} Patrol and supplies both push pressure down.`
 
         : `${recommendedAction} now. Patrol supports Faction Control and your faction support.`;
 
     }
 
-    if (donateHelpEl) donateHelpEl.textContent = DONATE_ACTION_HINT;
+    if (donateHelpEl) donateHelpEl.textContent = phantomMode ? PHANTOM_DONATE_HINT : DONATE_ACTION_HINT;
 
 
 
@@ -13392,7 +13434,7 @@
 
     foot.textContent = phantomMode
 
-      ? `Wasteland pressure ${phantomWastelandPressure(info)}% — ${phantomPackDefenseStatus(info)}. Hold the line.`
+      ? `Wasteland Pressure ${phantomWastelandPressure(info)}% — ${phantomPackDefenseStatus(info)}. Lower is better.`
 
       : `Hourly pressure - RB ${s.rogue_byte || 0} | EW ${s.echo_wardens || 0} | PB ${s.pack_burners || 0} | IH ${s.inner_howl || 0}`;
 

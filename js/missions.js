@@ -312,6 +312,10 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       return {
         key: toText(item.key, ""),
         type: toText(item.type, ""),
+        operationType: toText(item.operationType || item.type, ""),
+        typeLabel: toText(item.typeLabel, ""),
+        impactProfile: toText(item.impactProfile, ""),
+        impactPreview: (item.impactPreview && typeof item.impactPreview === "object") ? item.impactPreview : null,
         title: toText(item.title, ""),
         status: toText(item.status, "preview"),
         requires: {
@@ -323,6 +327,11 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         purpose: toText(item.purpose, ""),
         linkedBossKey: item.linkedBossKey ? toText(item.linkedBossKey, "") : null,
         linkedBossName: item.linkedBossName ? toText(item.linkedBossName, "") : null,
+        linkedTargetKind: item.linkedTargetKind ? toText(item.linkedTargetKind, "") : null,
+        linkedTargetId: item.linkedTargetId ? toText(item.linkedTargetId, "") : null,
+        linkedTargetName: item.linkedTargetName ? toText(item.linkedTargetName, "") : null,
+        readinessState: toText(item.readinessState, ""),
+        readiness: (item.readiness && typeof item.readiness === "object") ? item.readiness : null,
         missingRequirements: Array.isArray(item.missingRequirements) ? item.missingRequirements.map((entry) => toText(entry, "")).filter(Boolean) : [],
         missingLevel: Math.max(0, n(item.missingLevel, 0)),
         missingSignalPower: Math.max(0, n(item.missingSignalPower, 0)),
@@ -1508,6 +1517,36 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       #missionsRoot .m-elite-line b{
         opacity:.95;
       }
+      #missionsRoot .m-elite-choice-row{
+        margin-top:6px;
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+      }
+      #missionsRoot .m-elite-choice-chip{
+        display:inline-flex;
+        align-items:center;
+        min-height:28px;
+        border:1px solid rgba(255,255,255,.14);
+        border-radius:999px;
+        padding:0 8px;
+        background:rgba(255,255,255,.05);
+        font-size:11px;
+        font-weight:800;
+        line-height:1;
+        cursor:pointer;
+        user-select:none;
+      }
+      #missionsRoot .m-elite-choice-chip input{
+        position:absolute;
+        opacity:0;
+        pointer-events:none;
+      }
+      #missionsRoot .m-elite-choice-chip:has(input:checked){
+        border-color:rgba(125,211,252,.72);
+        background:rgba(125,211,252,.14);
+        color:#e0f2fe;
+      }
       #missionsRoot .m-elite-cta{
         margin-top:8px;
         display:flex;
@@ -2239,7 +2278,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
-      if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "");
+      if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "", selectedTacticalChoiceForButton(btn));
       if (act === "resolve") return void doResolve();
       if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
       if (act === "open_frames") return void openFrames();
@@ -2650,6 +2689,10 @@ function _normalizeRareDropObj(obj) {
     const modifierLabel = String(am.modifierLabel || "");
     const rareHint = String(am.rareHint || "");
     const rewardIntent = Array.isArray(am.rewardIntent) ? am.rewardIntent : [];
+    const eliteMission = am.eliteMission === true || !!am.eliteOperationKey;
+    const tacticalChoice = normalizeTacticalChoiceKey(am.tacticalChoice || am.eliteTacticalChoice || "standard_plan");
+    const activeTacticalChoiceLabel = String(am.tacticalChoiceLabel || am.eliteTacticalChoiceLabel || tacticalChoiceLabel(tacticalChoice));
+    const tacticalEffectLine = String(am.tacticalEffectLine || am.eliteTacticalEffectLine || "");
 
     const started = Number(am.started_ts || am.start_ts || am.start_time || am.startTime || 0);
     const dur = Number(am.duration_sec || am.duration || am.durationSec || 0);
@@ -2672,6 +2715,10 @@ function _normalizeRareDropObj(obj) {
         modifierLabel,
         rareHint,
         rewardIntent,
+        eliteMission,
+        tacticalChoice,
+        tacticalChoiceLabel: activeTacticalChoiceLabel,
+        tacticalEffectLine,
         started_ts: started,
         duration_sec: dur || total,
         ends_ts: ends,
@@ -2700,11 +2747,11 @@ function _normalizeRareDropObj(obj) {
       const remaining = Math.max(0, Math.ceil(_legacyAnchor.left - elapsed));
       const total = Math.max(1, Number(am.duration_sec || am.duration || _legacyAnchor.left || 1));
       const pct = Math.min(1, Math.max(0, 1 - (remaining / total)));
-      return { status: remaining > 0 ? "RUNNING" : "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, remaining, total, pct, readyAt: am.readyAt || "", __raw: am };
+      return { status: remaining > 0 ? "RUNNING" : "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, eliteMission, tacticalChoice, tacticalChoiceLabel: activeTacticalChoiceLabel, tacticalEffectLine, remaining, total, pct, readyAt: am.readyAt || "", __raw: am };
     }
 
     if (status === "READY") {
-      return { status: "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", __raw: am };
+      return { status: "READY", title, subtitle, lore, modifierLabel, rareHint, rewardIntent, eliteMission, tacticalChoice, tacticalChoiceLabel: activeTacticalChoiceLabel, tacticalEffectLine, remaining: 0, total: Math.max(1, dur || 1), pct: 1, readyAt: am.readyAt || "", __raw: am };
     }
 
     return { status: "NONE" };
@@ -3078,6 +3125,46 @@ function _normalizeRareDropObj(obj) {
     return "Preview";
   }
 
+  const ELITE_TACTICAL_CHOICES = [
+    { key: "standard_plan", label: "Standard" },
+    { key: "safe_route", label: "Safe Route" },
+    { key: "force_breach", label: "Force Breach" },
+    { key: "deep_scan", label: "Deep Scan" },
+    { key: "secure_cache", label: "Secure Cache" },
+  ];
+
+  function normalizeTacticalChoiceKey(value) {
+    const key = toText(value, "standard_plan").toLowerCase().replace(/[-\s]+/g, "_");
+    return ELITE_TACTICAL_CHOICES.some((item) => item.key === key) ? key : "standard_plan";
+  }
+
+  function tacticalChoiceLabel(value) {
+    const key = normalizeTacticalChoiceKey(value);
+    return ELITE_TACTICAL_CHOICES.find((item) => item.key === key)?.label || "Standard";
+  }
+
+  function renderTacticalChoiceSelector(op, canStart) {
+    if (!canStart || !op?.key) return "";
+    const name = `elite_choice_${String(op.key).replace(/[^a-z0-9_:-]/gi, "_")}`;
+    return `
+      <div class="m-elite-line"><b>Tactical Choice:</b></div>
+      <div class="m-elite-choice-row" data-elite-choice-row="${esc(op.key)}">
+        ${ELITE_TACTICAL_CHOICES.map((choice, idx) => `
+          <label class="m-elite-choice-chip">
+            <input type="radio" name="${esc(name)}" value="${esc(choice.key)}" ${idx === 0 ? "checked" : ""}>
+            <span>${esc(choice.label)}</span>
+          </label>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function selectedTacticalChoiceForButton(btn) {
+    const card = btn?.closest?.(".m-elite-card");
+    const checked = card?.querySelector?.('input[type="radio"][name^="elite_choice_"]:checked');
+    return normalizeTacticalChoiceKey(checked?.value || btn?.dataset?.tacticalChoice || "standard_plan");
+  }
+
   function formatEliteOperationRequires(op, preview) {
     if (!op || typeof op !== "object") return "";
     const requires = op.requires || {};
@@ -3108,6 +3195,10 @@ function _normalizeRareDropObj(obj) {
     const purpose = toText(op.purpose, "");
     const rewards = Array.isArray(op.rewardPreview) ? op.rewardPreview.join(" · ") : "";
     const linkedBoss = toText(op.linkedBossName, "");
+    const linkedTarget = toText(op.linkedTargetName || op.linkedBossName, "");
+    const typeLabel = toText(op.typeLabel || op.operationType, "");
+    const impactLabel = toText(op.impactPreview?.label, "") || ({ boss_prep: "Boss Prep advanced", gate_progress: "Gate Stability improved", intel: "Intel secured" }[toText(op.impactProfile, "")] || "");
+    const readiness = toText(op.readinessState, "");
     const ctaLabel = canStart ? "Start" : toText(op.cta, "Locked");
     const locked = status === "locked";
     const durationSec = Math.max(0, n(op.durationSec, 0));
@@ -3131,11 +3222,14 @@ function _normalizeRareDropObj(obj) {
         <div class="m-elite-line">${esc(stateLine)}</div>
         ${requires ? `<div class="m-elite-line"><b>Requires:</b> ${esc(requires)}</div>` : ""}
         ${missing && !canStart ? `<div class="m-elite-line"><b>Missing:</b> ${esc(missing)}</div>` : ""}
+        ${typeLabel ? `<div class="m-elite-line"><b>Type:</b> ${esc(typeLabel)}</div>` : ""}
         ${purpose ? `<div class="m-elite-line"><b>Purpose:</b> ${esc(purpose)}</div>` : ""}
         ${duration ? `<div class="m-elite-line"><b>Duration:</b> ${esc(duration)}</div>` : ""}
         ${rewards ? `<div class="m-elite-line"><b>Reward Preview:</b> ${esc(rewards)}</div>` : ""}
-        ${linkedBoss ? `<div class="m-elite-line"><b>Boss Wall Link:</b> ${esc(linkedBoss)}</div>` : ""}
-        ${op.bossPrepProgress > 0 ? `<div class="m-elite-line"><b>Boss Prep:</b> ${esc(`+${op.bossPrepProgress} progress on resolve`)}</div>` : ""}
+        ${linkedTarget ? `<div class="m-elite-line"><b>Target:</b> ${esc(linkedTarget)}</div>` : (linkedBoss ? `<div class="m-elite-line"><b>Boss Wall Link:</b> ${esc(linkedBoss)}</div>` : "")}
+        ${impactLabel ? `<div class="m-elite-line"><b>Impact:</b> ${esc(impactLabel)}</div>` : ""}
+        ${readiness ? `<div class="m-elite-line"><b>Readiness:</b> ${esc(readiness)}</div>` : ""}
+        ${renderTacticalChoiceSelector(op, canStart)}
         ${nextAction ? `<div class="m-elite-line"><b>Next:</b> ${esc(nextAction)}</div>` : ""}
         <div class="m-elite-cta">
           <button type="button" class="btn${canStart ? " primary" : ""}"
@@ -3523,6 +3617,13 @@ function _normalizeRareDropObj(obj) {
     const resultTone = (resultStatus.includes("invalid") || resultStatus.includes("fail")) ? "failed" : "success";
     const narrative = textOrEmpty(last?.narrativeLine || last?.report);
     const rewardLines = formatEliteReportRewardLines(report, last);
+    const typeLabel = textOrEmpty(report.operationTypeLabel, "");
+    const linkedTarget = (report.linkedTarget && typeof report.linkedTarget === "object") ? report.linkedTarget : null;
+    const targetName = textOrEmpty(linkedTarget?.name || linkedTarget?.id, "");
+    const planLabel = textOrEmpty(report.tacticalChoiceLabel || last?.tacticalChoiceLabel, "");
+    const tacticalEffect = textOrEmpty(report.tacticalEffectLine || last?.tacticalEffectLine, "");
+    const impactLine = textOrEmpty(report.impactLine || report.impactResult?.line, "");
+    const readinessState = textOrEmpty(report.readinessState || report.impactResult?.readinessState, "");
     const bossPrep = (report.bossPrepProgress && typeof report.bossPrepProgress === "object") ? report.bossPrepProgress : {};
     const bossPrepGain = Math.max(0, n(report.bossPrepProgressGained ?? bossPrep.granted, 0));
     const bossPrepTotal = Math.max(0, n(report.bossPrepProgressTotal ?? bossPrep.total, 0));
@@ -3543,11 +3644,16 @@ function _normalizeRareDropObj(obj) {
           <div class="m-outcome-badge" data-tone="${esc(resultTone)}">${esc(result)}</div>
         </div>
         ${narrative ? `<div class="m-report-line">${esc(narrative)}</div>` : ""}
+        ${typeLabel ? `<div class="m-report-section"><div class="m-report-label">Operation type</div><div class="m-report-values">${esc(typeLabel)}</div></div>` : ""}
+        ${targetName ? `<div class="m-report-section"><div class="m-report-label">Linked target</div><div class="m-report-values">${esc(targetName)}</div></div>` : ""}
+        ${planLabel ? `<div class="m-report-section"><div class="m-report-label">Chosen plan</div><div class="m-report-values">${esc(planLabel)}</div></div>` : ""}
+        ${tacticalEffect ? `<div class="m-report-section"><div class="m-report-label">Tactical effect</div><div class="m-report-values">${esc(tacticalEffect)}</div></div>` : ""}
         <div class="m-report-section"><div class="m-report-label">Requirements checked</div><div class="m-report-values">${esc(reqLine)}</div></div>
-        <div class="m-report-section"><div class="m-report-label">Rewards granted</div><div class="m-report-values">${esc(rewardLines.length ? rewardLines.join(" · ") : "No rewards granted")}</div></div>
-        ${bossPrepGain > 0 ? `<div class="m-report-section"><div class="m-report-label">Boss Prep progress</div><div class="m-report-values">${esc(`+${bossPrepGain}${bossPrepTotal > 0 ? ` · Total ${bossPrepTotal}` : ""}`)}</div></div>` : ""}
-        ${nextAction ? `<div class="m-report-section"><div class="m-report-label">Next</div><div class="m-report-values">${esc(nextAction)}</div></div>` : ""}
-      </div>
+        <div class="m-report-section"><div class="m-report-label">Rewards granted</div><div class="m-report-values">${esc(rewardLines.length ? rewardLines.join(" | ") : "No rewards granted")}</div></div>
+        ${impactLine ? `<div class="m-report-section"><div class="m-report-label">Impact result</div><div class="m-report-values">${esc(impactLine)}</div></div>` : ""}
+        ${readinessState ? `<div class="m-report-section"><div class="m-report-label">Readiness</div><div class="m-report-values">${esc(readinessState)}</div></div>` : ""}
+        ${bossPrepGain > 0 ? `<div class="m-report-section"><div class="m-report-label">Boss Prep progress</div><div class="m-report-values">${esc(`+${bossPrepGain}${bossPrepTotal > 0 ? ` | Total ${bossPrepTotal}` : ""}`)}</div></div>` : ""}
+        ${nextAction ? `<div class="m-report-section"><div class="m-report-label">Next</div><div class="m-report-values">${esc(nextAction)}</div></div>` : ""}\n      </div>
     `;
   }
 
@@ -4566,6 +4672,7 @@ function _normalizeRareDropObj(obj) {
       }
       const activeMatchLabel = normalizePetMatchLabel(active);
       const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet fit: ${activeMatchLabel}` : "");
+      const activePlanLabel = active.eliteMission ? textOrEmpty(active.tacticalChoiceLabel || tacticalChoiceLabel(active.tacticalChoice), "") : "";
 
       _root.innerHTML = `
         <div class="m-stage m-stage-wait">
@@ -4574,6 +4681,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-title">${esc(active.title || "Mission")}</div>
             ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
             ${renderTags(activeTags)}
+            ${activePlanLabel ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;"><b>Plan locked:</b> ${esc(activePlanLabel)}</div>` : ""}
             ${activeHint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(activeHint)}</div>` : ""}
             <div id="mClock" class="m-clock">—</div>
             <div id="mClockSub" class="m-clock-sub">—</div>
@@ -4797,15 +4905,18 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       renderError("Start failed", msg);
     }
   }
-  async function doEliteStart(operationKey) {
+  async function doEliteStart(operationKey, tacticalChoice) {
     const key = textOrEmpty(operationKey);
     if (!key) return;
-    renderLoading("Starting Elite Operation…");
+    const plan = normalizeTacticalChoiceKey(tacticalChoice);
+    renderLoading(`Starting Elite Operation with ${tacticalChoiceLabel(plan)}...`);
     try {
       const res = await api("/webapp/missions/action", {
         action: "elite_start",
         operationKey: key,
         operation_key: key,
+        tacticalChoice: plan,
+        tactical_choice: plan,
         run_id: rid("m:elite:start"),
       });
       _pendingStart = null;

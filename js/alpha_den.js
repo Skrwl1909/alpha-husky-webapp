@@ -511,8 +511,8 @@
     if (code === "KENNEL_UNDER_CONSTRUCTION" || code === "BUILDING_UNDER_CONSTRUCTION") return "Pet Training is offline while Pet Kennel is under construction.";
     if (code === "SIGNAL_CORE_REQUIRED" || code === "LOCKED") return "Build Signal Core Level 1 to unlock Signal Cache.";
     if (code === "SIGNAL_CORE_UNDER_CONSTRUCTION") return "Signal Cache is offline while Signal Core is under construction.";
-    if (code === "WAR_TABLE_REQUIRED") return "Build War Table Level 1 to unlock Tactical Brief.";
-    if (code === "WAR_TABLE_UNDER_CONSTRUCTION") return "Tactical Brief is offline while War Table is under construction.";
+    if (code === "WAR_TABLE_REQUIRED") return "Build War Table Level 1 to unlock Command Briefing.";
+    if (code === "WAR_TABLE_UNDER_CONSTRUCTION") return "Command Briefing is offline while War Table is under construction.";
     if (code === "MAX_LEVEL_REACHED") return "This structure is at max level for this phase.";
     if (code === "NO_ACTIVE_PET") return "Set an active pet before starting training.";
     if (code === "NO_ACTIVE_TRAINING") return "No Pet Training is active right now.";
@@ -640,6 +640,97 @@
     };
   }
 
+  function normalizeWarTableCommandBriefing(raw) {
+    const sections = raw?.sections && typeof raw.sections === "object" ? raw.sections : {};
+    const currentObjective = sections.currentObjective && typeof sections.currentObjective === "object" ? sections.currentObjective : {};
+    const eliteStatus = sections.eliteStatus && typeof sections.eliteStatus === "object" ? sections.eliteStatus : {};
+    const bossPrepSummary = sections.bossPrepSummary && typeof sections.bossPrepSummary === "object" ? sections.bossPrepSummary : {};
+    const bossWall = sections.bossWall && typeof sections.bossWall === "object" ? sections.bossWall : {};
+    const targetRelevance = sections.targetRelevance && typeof sections.targetRelevance === "object" ? sections.targetRelevance : {};
+    const frontline = sections.frontline && typeof sections.frontline === "object" ? sections.frontline : {};
+    const recommendedMove = sections.recommendedMove && typeof sections.recommendedMove === "object" ? sections.recommendedMove : {};
+    const normalizeBriefOp = (op) => (op && typeof op === "object") ? {
+      operationKey: String(op.operationKey || "").trim(),
+      title: String(op.title || "Elite Operation").trim(),
+      typeLabel: String(op.typeLabel || "Elite Operation").trim(),
+      impactProfile: String(op.impactProfile || "").trim(),
+      status: String(op.status || "syncing").trim(),
+      targetKind: String(op.targetKind || "").trim(),
+      targetId: String(op.targetId || "").trim(),
+      targetName: String(op.targetName || "").trim(),
+      recommendedAction: String(op.recommendedAction || "").trim()
+    } : null;
+    const ctas = Array.isArray(raw?.ctas)
+      ? raw.ctas.map((item) => ({
+          label: String(item?.label || "").trim(),
+          target: String(item?.target || "").trim().toLowerCase()
+        })).filter((item) => item.label && item.target)
+      : [];
+
+    return {
+      moduleId: String(raw?.moduleId || "war_table").trim() || "war_table",
+      moduleName: String(raw?.moduleName || "War Table").trim() || "War Table",
+      moduleLevel: asCount(raw?.moduleLevel),
+      status: String(raw?.status || "unbuilt").trim().toLowerCase() || "unbuilt",
+      briefingStatus: String(raw?.briefingStatus || "locked").trim().toLowerCase() || "locked",
+      readOnly: raw?.readOnly !== false,
+      locked: raw?.locked !== false,
+      currentBenefit: String(raw?.currentBenefit || "Build War Table to unlock command briefing.").trim(),
+      nextUpgradePreview: Array.isArray(raw?.nextUpgradePreview) ? raw.nextUpgradePreview.map((x) => String(x || "").trim()).filter(Boolean) : [],
+      sections: {
+        currentObjective: {
+          title: String(currentObjective.title || "Next Alpha Goal").trim(),
+          signalPower: asCount(currentObjective.signalPower),
+          missingSignalPower: asCount(currentObjective.missingSignalPower),
+          nextThreshold: asCount(currentObjective.nextThreshold),
+          recommendedAction: String(currentObjective.recommendedAction || "").trim()
+        },
+        eliteStatus: {
+          status: String(eliteStatus.status || "unknown").trim(),
+          tier: String(eliteStatus.tier || "Tier I").trim(),
+          headline: String(eliteStatus.headline || "Elite Operations Tier I").trim(),
+          summary: String(eliteStatus.summary || "Elite Operations status is syncing.").trim(),
+          missingLevel: asCount(eliteStatus.missingLevel),
+          missingSignalPower: asCount(eliteStatus.missingSignalPower),
+          isReady: !!eliteStatus.isReady
+        },
+        bossPrepSummary: {
+          bossPrepProgress: asCount(bossPrepSummary.bossPrepProgress),
+          hasBossPrepProgress: !!bossPrepSummary.hasBossPrepProgress,
+          summary: String(bossPrepSummary.summary || "Boss Prep status is syncing.").trim()
+        },
+        bossWall: {
+          available: !!bossWall.available,
+          statusText: String(bossWall.statusText || "MoonLab signal syncing").trim(),
+          bossName: String(bossWall.bossName || "Unknown").trim(),
+          requiredSignalPower: asCount(bossWall.requiredSignalPower),
+          missingPower: asCount(bossWall.missingPower),
+          recommendedAction: String(bossWall.recommendedAction || "").trim(),
+          readinessState: String(bossWall.readinessState || "Untracked").trim()
+        },
+        targetRelevance: {
+          recommendedOperation: normalizeBriefOp(targetRelevance.recommendedOperation),
+          suggestedPlan: targetRelevance.suggestedPlan && typeof targetRelevance.suggestedPlan === "object" ? {
+            key: String(targetRelevance.suggestedPlan.key || "standard_plan").trim(),
+            label: String(targetRelevance.suggestedPlan.label || "Standard Plan").trim()
+          } : null,
+          gateBreachOpportunity: normalizeBriefOp(targetRelevance.gateBreachOpportunity),
+          recoveryOpportunity: normalizeBriefOp(targetRelevance.recoveryOpportunity),
+          summary: String(targetRelevance.summary || "Check Missions for the next Elite operation.").trim()
+        },
+        frontline: {
+          available: !!frontline.available,
+          status: String(frontline.status || "not_exposed").trim(),
+          summary: String(frontline.summary || "Frontline state is not exposed in the current Alpha Den payload.").trim()
+        },
+        recommendedMove: {
+          summary: String(recommendedMove.summary || "Check Stats/Progression for the next objective.").trim()
+        }
+      },
+      ctas,
+      version: String(raw?.version || "").trim()
+    };
+  }
   function normalizeServerState(raw) {
     if (!raw || typeof raw !== "object" || !raw.buildings || typeof raw.buildings !== "object") return null;
 
@@ -656,6 +747,7 @@
       petKennelTraining: normalizePetKennelTraining(raw?.petKennelTraining || null),
       signalCache: normalizeSignalCache(raw?.signalCache || null),
       warTableBrief: normalizeWarTableBrief(raw?.warTableBrief || null),
+      warTableCommandBriefing: normalizeWarTableCommandBriefing(raw?.warTableCommandBriefing || null),
       buildings: {}
     };
 
@@ -793,6 +885,80 @@
       return serverState.warTableBrief;
     }
     return getWarTableBriefPreviewForLevel(getBuildingLevel("war_table"));
+  }
+  function getWarTableCommandBriefingPreviewForLevel(level) {
+    const locked = normalizeLevel(level) < 1;
+    const benefit = locked
+      ? "Build War Table to unlock command briefing."
+      : "Command Briefing: view current objective, Elite status, Boss Prep and Boss Wall direction.";
+    return {
+      moduleId: "war_table",
+      moduleName: "War Table",
+      moduleLevel: normalizeLevel(level),
+      status: locked ? "unbuilt" : "built",
+      briefingStatus: locked ? "locked" : "ready",
+      readOnly: true,
+      locked,
+      currentBenefit: benefit,
+      nextUpgradePreview: [
+        "future Tactical Orders",
+        "better mission intel",
+        "Mission Board expansion",
+        "stronger Elite/Boss Prep visibility"
+      ],
+      sections: {
+        currentObjective: {
+          title: "Next Alpha Goal",
+          signalPower: 0,
+          missingSignalPower: 0,
+          nextThreshold: 0,
+          recommendedAction: "Connect live backend to view the current objective."
+        },
+        eliteStatus: {
+          status: "syncing",
+          tier: "Tier I",
+          headline: "Elite Operations Tier I",
+          summary: "Connect live backend to view Elite status.",
+          missingLevel: 0,
+          missingSignalPower: 0,
+          isReady: false
+        },
+        bossPrepSummary: {
+          bossPrepProgress: 0,
+          hasBossPrepProgress: false,
+          summary: "Boss Prep status is available from live progression."
+        },
+        bossWall: {
+          available: false,
+          statusText: "MoonLab signal syncing",
+          bossName: "Unknown",
+          requiredSignalPower: 0,
+          missingPower: 0,
+          recommendedAction: "Connect live backend to view Boss Wall direction."
+        },
+        frontline: {
+          available: false,
+          status: "not_exposed",
+          summary: "Frontline state is not exposed in the current Alpha Den payload."
+        },
+        recommendedMove: {
+          summary: locked ? "Build War Table Level 1 first." : "Connect live backend to view the recommended move."
+        }
+      },
+      ctas: [
+        { label: "Missions", target: "missions" },
+        { label: "MoonLab", target: "moonlab" },
+        { label: "Stats", target: "stats" }
+      ],
+      version: "p1_0_command_briefing_v1"
+    };
+  }
+
+  function getEffectiveWarTableCommandBriefing() {
+    if (usingServerState && serverState?.warTableCommandBriefing) {
+      return serverState.warTableCommandBriefing;
+    }
+    return getWarTableCommandBriefingPreviewForLevel(getBuildingLevel("war_table"));
   }
 
   function getSignalCachePreviewForLevel(level) {
@@ -1784,6 +1950,35 @@
     if (event.key === "Escape") close();
   }
 
+  async function openCommandBriefingTarget(target) {
+    const key = String(target || "").trim().toLowerCase();
+    close();
+    try {
+      if (key === "missions") {
+        if (typeof window.openMissions === "function" && window.openMissions()) return;
+        if (typeof window.Missions?.open === "function" && window.Missions.open()) return;
+        if (await window.CTA?.openTarget?.({ type: "missions" })) return;
+      }
+      if (key === "moonlab") {
+        if (await window.CTA?.openTarget?.({ type: "fortress", buildingId: "moonlab_fortress" })) return;
+        if (typeof window.Fortress?.open === "function") {
+          window.Fortress.open("moonlab_fortress");
+          return;
+        }
+      }
+      if (key === "stats") {
+        if (typeof window.openStats === "function") {
+          window.openStats();
+          return;
+        }
+        if (typeof window.Stats?.open === "function") {
+          window.Stats.open();
+          return;
+        }
+      }
+    } catch (_) {}
+    notify(key === "moonlab" ? "Open MoonLab from the Map." : key === "stats" ? "Open Stats from the Hub." : "Open Missions from the Hub.");
+  }
   async function onRootClick(event) {
     const actionEl = event.target.closest("[data-alpha-den-action]");
     if (!actionEl) return;
@@ -1840,12 +2035,8 @@
       await runServerAction("/webapp/den/signal-cache/claim", "signal_core");
       return;
     }
-    if (action === "war-table-brief-start") {
-      await runServerAction("/webapp/den/war-table/brief/start", "war_table");
-      return;
-    }
-    if (action === "war-table-brief-claim") {
-      await runServerAction("/webapp/den/war-table/brief/claim", "war_table");
+    if (action === "command-briefing-nav") {
+      await openCommandBriefingTarget(actionEl.getAttribute("data-command-target"));
     }
   }
 
@@ -2180,112 +2371,104 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
 </section>`;
   }
 
+  function renderCommandBriefingCtas(ctas, locked) {
+    if (locked) return "";
+    const safeCtas = Array.isArray(ctas) ? ctas.filter((item) => item?.label && item?.target) : [];
+    if (!safeCtas.length) return "";
+    return safeCtas.map((item) => `
+    <button
+      type="button"
+      class="alpha-den-btn alpha-den-btn--ghost"
+      data-alpha-den-action="command-briefing-nav"
+      data-command-target="${escapeHtml(item.target)}"
+    >${escapeHtml(item.label)}</button>`).join("");
+  }
+
   function renderWarTableBriefCard() {
-    const building = getEffectiveBuildingState("war_table");
-    const warTableLevel = normalizeLevel(building?.level);
-    const brief = getEffectiveWarTableBrief();
-    const readyAtLabel = formatReadyTime(brief?.readyAt);
-    const lastBrief = brief?.lastBrief || null;
-    const durationSeconds = asCount(
-      brief?.durationSeconds || WAR_TABLE_BRIEF_LEVELS[Math.min(Math.max(warTableLevel, 1), 3)]?.durationSeconds
-    );
-    const basePurposeCopy = "War Table turns map noise into tactical notes. Prepare a brief, return later, and read the next signal.";
+    const briefing = getEffectiveWarTableCommandBriefing();
+    const sections = briefing?.sections || {};
+    const objective = sections.currentObjective || {};
+    const elite = sections.eliteStatus || {};
+    const bossPrep = sections.bossPrepSummary || {};
+    const bossWall = sections.bossWall || {};
+    const targetRelevance = sections.targetRelevance || {};
+    const frontline = sections.frontline || {};
+    const recommended = sections.recommendedMove || {};
+    const locked = !!briefing?.locked;
+    const moduleLevel = asCount(briefing?.moduleLevel);
+    const nextPreview = Array.isArray(briefing?.nextUpgradePreview) && briefing.nextUpgradePreview.length
+      ? briefing.nextUpgradePreview.join(" | ")
+      : "Future upgrades will add tactical orders, mission intel, and broader mission visibility.";
 
-    let copy = "Tactical Brief coming later.";
-    let metaRows = [
-      renderDetailMetaRow("War Table Level", `Level ${warTableLevel}`),
-      renderDetailMetaRow("Brief Duration", durationSeconds > 0 ? formatLongDuration(durationSeconds) : "Locked")
+    const objectiveValue = locked
+      ? "Locked until War Table Level 1"
+      : `${objective.title || "Next Alpha Goal"} | Signal ${asCount(objective.signalPower)} | Missing ${asCount(objective.missingSignalPower)} / ${asCount(objective.nextThreshold)}`;
+    const eliteValue = locked
+      ? "Locked"
+      : `${elite.headline || "Elite Operations Tier I"} | ${elite.status || "syncing"}`;
+    const bossPrepValue = locked
+      ? "Locked"
+      : (bossPrep.summary || `Boss Prep progress: ${asCount(bossPrep.bossPrepProgress)}`);
+    const bossWallValue = locked
+      ? "Locked"
+      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.readinessState ? ` | ${bossWall.readinessState}` : ""}`;
+    const recommendedOp = targetRelevance.recommendedOperation;
+    const suggestedPlan = targetRelevance.suggestedPlan;
+    const gateOp = targetRelevance.gateBreachOpportunity;
+    const recoveryOp = targetRelevance.recoveryOpportunity;
+    const targetRelevanceValue = locked
+      ? "Locked"
+      : (recommendedOp ? `${recommendedOp.title} | ${recommendedOp.targetName || recommendedOp.typeLabel}` : (targetRelevance.summary || "No target operation surfaced."));
+    const suggestedPlanValue = locked
+      ? "Locked"
+      : (suggestedPlan?.label || "Standard Plan");
+    const gateOpportunityValue = locked
+      ? "Locked"
+      : (gateOp ? `${gateOp.title} | ${gateOp.status}` : "No gate breach opportunity surfaced.");
+    const recoveryOpportunityValue = locked
+      ? "Locked"
+      : (recoveryOp ? `${recoveryOp.title} | ${recoveryOp.status}` : "No recovery operation exposed in Tier I.");
+    const frontlineValue = frontline.summary || "Frontline state is not exposed in the current Alpha Den payload.";
+    const recommendedValue = locked
+      ? "Build War Table Level 1 first."
+      : (recommended.summary || objective.recommendedAction || bossWall.recommendedAction || "Check Stats/Progression for the next objective.");
+
+    const metaRows = [
+      renderDetailMetaRow("Module Level", `Level ${moduleLevel}`),
+      renderDetailMetaRow("Current Benefit", briefing?.currentBenefit || "Build War Table to unlock command briefing."),
+      renderDetailMetaRow("Current Objective", objectiveValue),
+      renderDetailMetaRow("Elite Status", eliteValue),
+      renderDetailMetaRow("Boss Prep", bossPrepValue),
+      renderDetailMetaRow("Boss Wall", bossWallValue),
+      renderDetailMetaRow("Target Relevance", targetRelevanceValue),
+      renderDetailMetaRow("Suggested Plan", suggestedPlanValue),
+      renderDetailMetaRow("Gate Opportunity", gateOpportunityValue),
+      renderDetailMetaRow("Recovery Opportunity", recoveryOpportunityValue),
+      renderDetailMetaRow("Frontline", frontlineValue),
+      renderDetailMetaRow("Recommended Move", recommendedValue),
+      renderDetailMetaRow("Next Upgrade Preview", nextPreview)
     ].join("");
-    let buttonLabel = "Function coming later";
-    let buttonAction = "noop";
-    let buttonDisabled = true;
-    let helperCopy = "Tactical Brief coming later.";
 
-    if (!usingServerState) {
-      if (warTableLevel <= 0) {
-        copy = "Build War Table Level 1 to unlock Tactical Brief.";
-        helperCopy = "Local preview only. Connect live backend to test the start, wait, and claim flow.";
-        buttonLabel = "War Table Required";
-      } else {
-        copy = basePurposeCopy;
-        if (lastBrief?.message) {
-          metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
-        }
-        helperCopy = "Local preview only. Connect live backend to test the start, wait, and claim flow.";
-        buttonLabel = "Tactical Brief Preview";
-      }
-    } else if (warTableLevel <= 0 || brief?.briefStatus === "locked") {
-      copy = "Build War Table Level 1 to unlock Tactical Brief.";
-      helperCopy = "Build War Table to Level 1 first. Tactical Brief follows a start, wait, then claim flow.";
-      buttonLabel = "War Table Required";
-    } else if (!brief?.featureEnabled) {
-      copy = basePurposeCopy;
-      if (lastBrief?.message) {
-        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
-      }
-      helperCopy = "Feature flag is currently off.";
-      buttonLabel = "Brief Offline";
-    } else if (brief?.briefStatus === "offline" || brief?.reason === "WAR_TABLE_UNDER_CONSTRUCTION") {
-      copy = "Tactical Brief is offline while War Table is under construction.";
-      helperCopy = "Claim the construction first to bring the table back online.";
-      buttonLabel = "Brief Offline";
-    } else if (brief?.briefStatus === "preparing") {
-      copy = "Tactical Brief is preparing. Claim stays locked until the timer finishes.";
-      metaRows += renderDetailMetaRow(
-        "Time Remaining",
-        `${formatLongDuration(brief?.secondsRemaining)}${readyAtLabel ? ` | Ready at ${readyAtLabel}` : ""}`
-      );
-      if (lastBrief?.message) {
-        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
-      }
-      helperCopy = "Return when the timer ends, then claim the note once.";
-      buttonLabel = "Brief Preparing";
-    } else if (brief?.briefStatus === "ready") {
-      copy = "Tactical Brief is ready. Claim once to read the stored note.";
-      if (lastBrief?.message) {
-        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
-      }
-      helperCopy = "Claim the latest note now. Starting another brief stays locked until this one is claimed.";
-      buttonLabel = "Claim Tactical Brief";
-      buttonAction = "war-table-brief-claim";
-      buttonDisabled = isActionBusy || !brief?.canClaim;
-    } else if (brief?.briefStatus === "claimed") {
-      copy = lastBrief?.message || "Latest Tactical Brief already claimed and stored.";
-      metaRows += renderDetailMetaRow("Stored Brief", lastBrief?.message || "No brief stored yet.");
-      helperCopy = "This note has already been claimed. Prepare another brief when you want a fresh one.";
-      buttonLabel = "Prepare Next Brief";
-      buttonAction = "war-table-brief-start";
-      buttonDisabled = isActionBusy || !brief?.canStart;
-    } else {
-      copy = "Prepare a Tactical Brief now. When the timer ends, claim once to reveal the note.";
-      if (lastBrief?.message) {
-        metaRows += renderDetailMetaRow("Last Brief", lastBrief.message);
-      }
-      helperCopy = "Start the brief now, wait for ready, then claim once.";
-      buttonLabel = "Prepare Tactical Brief";
-      buttonAction = "war-table-brief-start";
-      buttonDisabled = isActionBusy || !brief?.canStart;
-    }
+    const copy = locked
+      ? "Build War Table Level 1 to unlock the read-only Command Briefing."
+      : "Command Briefing is online. It reads the current Progression Spine state without starting missions or granting rewards.";
+    const ctaMarkup = renderCommandBriefingCtas(briefing?.ctas, locked);
+    const note = locked
+      ? "No War Table action is available until the module is built."
+      : "Read-only briefing. Actions open existing pages only.";
 
-    const buttonClass = buttonDisabled ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary";
     return `
 <section class="alpha-den-card alpha-den-card--detail">
-  <div class="alpha-den-detail__eyebrow">Tactical Brief</div>
-  <h3 class="alpha-den-detail__title">War Table Tactical Brief</h3>
+  <div class="alpha-den-detail__eyebrow">Command Briefing</div>
+  <h3 class="alpha-den-detail__title">War Table Command Briefing</h3>
   <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
   <div class="alpha-den-detail__meta">${metaRows}</div>
   <div class="alpha-den-detail__actions">
-    <button
-      type="button"
-      class="${buttonClass}"
-      data-alpha-den-action="${buttonDisabled ? "noop" : buttonAction}"
-      ${buttonDisabled ? "disabled" : ""}
-    >${escapeHtml(buttonLabel)}</button>
-    <p class="alpha-den-detail__note">${escapeHtml(helperCopy)}</p>
+    ${ctaMarkup || `<button type="button" class="alpha-den-btn alpha-den-btn--passive" data-alpha-den-action="noop" disabled>${escapeHtml(locked ? "War Table Required" : "Briefing Only")}</button>`}
+    <p class="alpha-den-detail__note">${escapeHtml(note)}</p>
   </div>
 </section>`;
   }
-
   function renderPetTrainingCard() {
     const building = getEffectiveBuildingState("pet_kennel");
     const kennelLevel = normalizeLevel(building?.level);
