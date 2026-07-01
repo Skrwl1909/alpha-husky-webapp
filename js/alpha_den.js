@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const STORAGE_KEY = "alpha_husky_den_preview_v1";
   const ROOT_ID = "alphaDenRoot";
   const STYLE_ID = "alphaDenStyles";
@@ -703,6 +703,8 @@
           available: !!bossWall.available,
           statusText: String(bossWall.statusText || "MoonLab signal syncing").trim(),
           bossName: String(bossWall.bossName || "Unknown").trim(),
+          bossId: String(bossWall.bossId || bossWall.boss_id || "").trim(),
+          arcName: String(bossWall.arcName || bossWall.arc_name || "").trim(),
           requiredSignalPower: asCount(bossWall.requiredSignalPower),
           missingPower: asCount(bossWall.missingPower),
           recommendedAction: String(bossWall.recommendedAction || "").trim(),
@@ -2411,7 +2413,7 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
       : (bossPrep.summary || `Boss Prep progress: ${asCount(bossPrep.bossPrepProgress)}`);
     const bossWallValue = locked
       ? "Locked"
-      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.readinessState ? ` | ${bossWall.readinessState}` : ""}`;
+      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.arcName ? ` | ${bossWall.arcName}` : ""}${bossWall.readinessState ? ` | ${bossWall.readinessState}` : ""}`;
     const recommendedOp = targetRelevance.recommendedOperation;
     const suggestedPlan = targetRelevance.suggestedPlan;
     const gateOp = targetRelevance.gateBreachOpportunity;
@@ -2780,3 +2782,4 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     buildPreview
   };
 })();
+
