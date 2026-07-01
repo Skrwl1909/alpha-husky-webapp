@@ -1,6 +1,6 @@
-﻿// js/fortress.js
-// Alpha Husky â€” Moon Lab (Fortress) UI
-// Usage: window.Fortress.init({ apiPost, tg, dbg }); â†’ window.Fortress.open();
+// js/fortress.js
+// Alpha Husky - Moon Lab (Fortress) UI
+// Usage: window.Fortress.init({ apiPost, tg, dbg }); then window.Fortress.open();
 (function (global) {
   const BID = "moonlab_fortress";
 
@@ -144,7 +144,7 @@
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
 #fortress-modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:1}
 
-/* âś… card flex-col + min-height:0 => scroll dziaĹ‚a */
+/*  card flex-col + min-height:0 => scroll dziaa */
 #fortress-modal .card{
   position:relative;z-index:2;width:min(92vw,520px);max-height:86vh;
   background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.12);
@@ -153,7 +153,7 @@
   display:flex;flex-direction:column;
   min-height:0;
 }
-/* âś… KLUCZ: battle layout musi byÄ‡ flex-column, ĹĽeby fb-main dostaĹ‚o ograniczonÄ… wysokoĹ›Ä‡ */
+/*  KLUCZ: battle layout musi by flex-column, eby fb-main dostao ograniczon wysoko */
 #fortress-modal .fortress-battle{
   display:flex;
   flex-direction:column;
@@ -168,11 +168,11 @@
   gap:10px;
   flex:1 1 auto;
   min-height:0;
-  overflow:hidden; /* âś… scroll tylko w logu */
+  overflow:hidden; /*  scroll tylko w logu */
   padding-bottom:8px;
 }
 
-/* âś… log ma wĹ‚asny scroll (TG WebView safe) */
+/*  log ma wasny scroll (TG WebView safe) */
 #fb-log{
   flex:1 1 auto;
   min-height:0;
@@ -200,7 +200,7 @@
 .fx-bar{position:relative;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
 .fx-bar>i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,rgba(0,229,255,.6),rgba(155,77,255,.6))}
 
-/* âś… open modal body teĹĽ moĹĽe scrollowaÄ‡ */
+/*  open modal body te moe scrollowa */
 .fx-body{
   display:grid;gap:10px;
   overflow:auto;
@@ -222,11 +222,11 @@
   gap:10px;
   flex:1;
   min-height:0;
-  overflow:hidden; /* âś… scroll tylko w logu */
+  overflow:hidden; /*  scroll tylko w logu */
   padding-bottom:8px;
 }
 
-/* âś… stage ma zawsze wysokoĹ›Ä‡ */
+/*  stage ma zawsze wysoko */
 #fb-stage{
   position:relative;
   height:clamp(200px, 34vh, 360px);
@@ -378,7 +378,7 @@
     // stop any cooldown ticker
     stopTicker();
 
-    // âś… always cleanup PIXI/battle timers BEFORE removing modal
+    //  always cleanup PIXI/battle timers BEFORE removing modal
     try {
       globalThis.__FORTRESS_PIXI_CLEANUP__?.();
     } catch (_) {}
@@ -442,6 +442,8 @@ function normalizeFortressPayload(raw) {
 
   const bossLabel = String(t?.boss?.name || t?.bossName || "Boss");
   const bossSprite = t?.boss?.sprite || t?.bossSprite || null;
+  const canonBossWall = t?.canonBossWall || t?.bossWallContext || t?.moonlabBossWall || null;
+  const currentEncounter = t?.currentEncounter || t?.boss || null;
 
   const level = Number(t.floorCleared ?? t.floorAttempted ?? t.level ?? 1) || 1;
 
@@ -460,7 +462,7 @@ function normalizeFortressPayload(raw) {
     : (Array.isArray(matsSrc.firstClear) ? matsSrc.firstClear : []);
   const firstClearRarePlus = matsSrc.firstClearRarePlus || t.firstClearRarePlus || null;
 
-  // âś… PATCH 1: loot passthrough (gear drop spec / future)
+  //  PATCH 1: loot passthrough (gear drop spec / future)
   const loot = t?.rewards?.loot || t?.loot || t?.gearDrop || null;
   const hasRarePlusGear =
     (firstClearRarePlus && isRarePlusRarity(firstClearRarePlus.rarity)) ||
@@ -481,6 +483,9 @@ function normalizeFortressPayload(raw) {
       power: Number(t?.boss?.power || 0) || 0,
       danger: Number(t?.boss?.danger || 0) || 0,
     },
+    currentEncounter,
+    canonBossWall,
+    bossWallContext: canonBossWall,
     player: { hpMax: playerHpMax },
     steps,
     winner,
@@ -496,7 +501,7 @@ function normalizeFortressPayload(raw) {
       firstClearRarePlus,
       milestone: Array.isArray(matsSrc.milestone) ? matsSrc.milestone : [],
       summary: Array.isArray(matsSrc.summary) ? matsSrc.summary : [],
-      loot, // âś…
+      loot, // 
     },
     report: t.fightReport || null,
     next: {
@@ -565,7 +570,7 @@ function normalizeFortressPayload(raw) {
   }
 
   function renderBossWallArt(wall) {
-    if (wall.imageUrl) {
+    if (wall.hasFinalAsset && wall.imageUrl) {
       return `<img src="${esc(wall.imageUrl)}" alt="${esc(wall.displayName || "Boss Wall")}">`;
     }
     return `<div class="fx-boss-placeholder">
@@ -592,7 +597,7 @@ function normalizeFortressPayload(raw) {
     const signalPower = Number(st?.playerSignalPower ?? st?.signalPower ?? st?.progression?.signalPower ?? 0) || 0;
     const missingPower = signalPower > 0 && wall.requiredSignalPower > 0 ? Math.max(0, wall.requiredSignalPower - signalPower) : null;
     const readiness = String(st?.bossPrepReadiness?.state || st?.readinessState || st?.bossWallReadiness || "").trim();
-    const floorText = wall.floorStart && wall.floorEnd ? `${wall.floorStart}-${wall.floorEnd}` : "—";
+    const floorText = wall.floorStart && wall.floorEnd ? `${wall.floorStart}-${wall.floorEnd}` : "";
     const lore = wall.shortLore || wall.visualDirection || wall.notReadyCopy || "MoonLab signal target identified.";
 
     return `<div class="fx-boss-wall">
@@ -600,11 +605,11 @@ function normalizeFortressPayload(raw) {
       <div class="fx-boss-info">
         <div class="fx-section-title">Current Boss Wall</div>
         <div class="fx-boss-name">Boss Wall: ${esc(wall.displayName)}</div>
-        <div class="fx-boss-sub">${esc(wall.arcName || "MoonLab")} · Floors ${esc(floorText)} · Milestone ${esc(wall.milestoneFloor || "—")}</div>
+        <div class="fx-boss-sub">${esc(wall.arcName || "MoonLab")}  Floors ${esc(floorText)}  Milestone ${esc(wall.milestoneFloor || "")}</div>
         <div class="fx-boss-meta">
-          <span>Required Signal Power<b>${esc(wall.requiredSignalPower || "—")}</b></span>
+          <span>Required Signal Power<b>${esc(wall.requiredSignalPower || "")}</b></span>
           <span>Your Signal<b>${signalPower > 0 ? esc(signalPower) : "Check Progression"}</b></span>
-          <span>Missing Signal<b>${missingPower == null ? "—" : (missingPower > 0 ? "+" + esc(missingPower) : "Ready")}</b></span>
+          <span>Missing Signal<b>${missingPower == null ? "" : (missingPower > 0 ? "+" + esc(missingPower) : "Ready")}</b></span>
           <span>Prep State<b>${esc(readiness || "Untracked")}</b></span>
         </div>
         <div class="fx-boss-lore">${esc(lore)}</div>
@@ -624,7 +629,7 @@ function normalizeFortressPayload(raw) {
       const cleared = best >= end;
       return `<div class="fx-ladder-band${active ? " is-active" : ""}${cleared ? " is-cleared" : ""}">
         <div class="fx-ladder-label">${esc(g.label || `Sector ${g.sector || ""}`)}</div>
-        <div class="fx-ladder-range">${start}â€“${end}</div>
+        <div class="fx-ladder-range">${start}-${end}</div>
       </div>`;
     }).join("");
   }
@@ -654,7 +659,7 @@ function normalizeFortressPayload(raw) {
         <strong>${esc(report.outcome || "Report")}</strong>
         <span>${esc(report.bossName || "Boss")}</span>
       </div>
-      <div class="fx-report-line"><span>Floor</span><b>${esc(report.floorCleared || report.floorHeld || report.floorAttempted || "â€”")}</b></div>
+      <div class="fx-report-line"><span>Floor</span><b>${esc(report.floorCleared || report.floorHeld || report.floorAttempted || "-")}</b></div>
       ${progressLine}
       <div class="fx-report-line"><span>Rewards</span><div class="fx-pill-row">${rewards}</div></div>
       ${fcRareLine}
@@ -680,31 +685,31 @@ function normalizeFortressPayload(raw) {
             <div class="fx-title" id="fx-title">Containment Floor</div>
           </div>
           <div class="fx-kv">
-            <span id="fx-badge" class="fx-badge">â€¦</span>
-            <button class="fx-x" id="fx-x" type="button" aria-label="Close">Ă—</button>
+            <span id="fx-badge" class="fx-badge">...</span>
+            <button class="fx-x" id="fx-x" type="button" aria-label="Close">x</button>
           </div>
         </div>
 
         <div class="fx-body">
           <div class="fx-row">
             <div class="fx-col">
-              <div class="fx-kv"><b id="fx-sector">Sector â€”</b></div>
-              <div class="fx-kv"><b>Status:</b> <span id="fx-status">â€”</span></div>
-              <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">â€”</span></div>
-              <div class="fx-kv"><b>Boss Chamber:</b> <span id="fx-next">â€”</span></div>
+              <div class="fx-kv"><b id="fx-sector">Sector -</b></div>
+              <div class="fx-kv"><b>Status:</b> <span id="fx-status">-</span></div>
+              <div class="fx-kv"><b>Cooldown:</b> <span id="fx-cd">-</span></div>
+              <div class="fx-kv"><b>Current Encounter:</b> <span id="fx-next">-</span></div>
             </div>
             <div class="fx-col" style="min-width:170px;align-items:flex-end">
               <div class="fx-kv">
-                <span class="fx-chip" id="fx-lvl">Floor â€”</span>
-                <span class="fx-chip" id="fx-best" style="display:none" title="Best floor">â­ Best â€”</span>
+                <span class="fx-chip" id="fx-lvl">Floor -</span>
+                <span class="fx-chip" id="fx-best" style="display:none" title="Best floor">Best -</span>
                 <span class="fx-chip" id="fx-milestone">Standard</span>
-                <span class="fx-chip" id="fx-attempts" title="Boss power">Power <span id="fx-power">â€”</span></span>
+                <span class="fx-chip" id="fx-attempts" title="Boss power">Power <span id="fx-power">-</span></span>
               </div>
             </div>
           </div>
 
           <div class="fx-prog">
-            <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">â€”/â€”</span></div>
+            <div class="fx-kv"><b>Encounter</b> <span class="fx-note" id="fx-encLbl">/</span></div>
             <div class="fx-bar"><i id="fx-barFill"></i></div>
           </div>
 
@@ -734,7 +739,7 @@ function normalizeFortressPayload(raw) {
           <div class="fx-section">
             <div class="fx-section-head">
               <div class="fx-section-title">Sector Ladder</div>
-              <div class="fx-note">1â€“10 â€˘ 11â€“20 â€˘ 21â€“30</div>
+              <div class="fx-note">110  1120  2130</div>
             </div>
             <div class="fx-ladder" id="fx-ladder"></div>
           </div>
@@ -831,13 +836,15 @@ function normalizeFortressPayload(raw) {
       const bossLabel = String(
         st.nextEncounterName || st.bossName || nx.name || st.nextName || st.nextId || st.next_opponent?.name || ""
       );
+      const wall = canonBossWallFromState(st);
+      const encounterLabel = bossLabel || `Boss Floor ${lvl}`;
       const bossKey = st.nextEncounterKey || nx.key || st.nextKey || null;
 
-      setText("#fx-next", bossLabel || `Boss Floor ${lvl}`);
+      setText("#fx-next", encounterLabel);
       const bossWallEl = $("#fx-boss-wall");
       if (bossWallEl) bossWallEl.innerHTML = renderCanonBossWall(st);
 
-      // âś… prefer sprite from backend (Cloudinary URL)
+      //  prefer sprite from backend (Cloudinary URL)
       const spriteRaw =
         st.bossSprite || st.sprite || nx.sprite || st.nextSprite || st.boss?.sprite || null;
       setEnemySprite(spriteRaw || bossKey || bossLabel || BOSS_FALLBACK);
@@ -860,20 +867,19 @@ function normalizeFortressPayload(raw) {
 
       const titleEl = $("#fx-title");
       if (titleEl) {
-        titleEl.textContent = `Containment Floor ${curFloor}`;
-        setText("#fx-next", bossLabel || `Boss Floor ${lvl}`);
+        titleEl.textContent = wall.available ? `Boss Wall: ${wall.displayName}` : `MoonLab Floor ${curFloor}`;
       }
 
       const bestEl = $("#fx-best");
       if (bestEl) {
         if (Number.isFinite(bestFloor) && bestFloor >= 0) {
           bestEl.style.display = "";
-          bestEl.textContent = `â­ Best ${Math.max(0, bestFloor)}`;
+          bestEl.textContent = `Best ${Math.max(0, bestFloor)}`;
         } else bestEl.style.display = "none";
       }
 
       setText("#fx-lvl", `Floor ${curFloor}`);
-      setText("#fx-sector", `Sector ${sector} Â· Chamber ${sectorFloor}`);
+      setText("#fx-sector", `Sector ${sector} - Chamber ${sectorFloor}`);
       setText("#fx-status", ready ? "Chamber Stable" : "Cooling Down");
       setText("#fx-cd", ready ? "Ready" : fmtLeft(cd));
       setText("#fx-power", bossPower > 0 ? String(bossPower) : "Unknown");
@@ -944,7 +950,7 @@ function normalizeFortressPayload(raw) {
     try {
       S.tg?.HapticFeedback?.impactOccurred?.("light");
 
-      // âś… send run_id to backend (idempotency)
+      //  send run_id to backend (idempotency)
       const out = await S.apiPost("/webapp/building/start", {
         buildingId: BID,
         run_id: rid("fx"),
@@ -966,7 +972,7 @@ function normalizeFortressPayload(raw) {
         toast(`MoonLab is cooling down. ${fmtLeft(left)} remaining.`);
         await refresh();
       } else if (/LOCKED_REGION|LOCKED/i.test(reason)) {
-        toast("đź”’ Region locked");
+        toast("Region locked");
       } else {
         console.error(e);
         toast("Something went wrong.");
@@ -982,7 +988,7 @@ function normalizeFortressPayload(raw) {
     cur = Math.max(0, cur | 0);
     max = Math.max(1, max | 0);
     const fill = Math.round(W * (cur / max));
-    return "â–".repeat(fill) + "â–‘".repeat(W - fill);
+    return "#".repeat(fill) + "-".repeat(W - fill);
   }
 
   function cloudThumb(url, size = 256) {
@@ -1049,7 +1055,7 @@ function getPlayerBattleAvatarUrl(data) {
     "";
   if (direct) return cloudThumb(direct, 256);
 
-  // 2) profile â€” avatar first
+  // 2) profile  avatar first
   const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
 
   const candidates = [
@@ -1098,7 +1104,7 @@ function pixiTextureFromUrl(PIXI, url) {
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
   // ---------- battle renderer (PATCH 2 + 3 + no redeclare hazards) ----------
 function renderFortressBattle(data) {
-  // âś… kill previous PIXI if still alive
+  //  kill previous PIXI if still alive
   try { globalThis.__FORTRESS_PIXI_CLEANUP__?.(); } catch (_) {}
   try { globalThis.__FORTRESS_PIXI_CLEANUP__ = null; } catch (_) {}
 
@@ -1106,11 +1112,13 @@ function renderFortressBattle(data) {
   ensureDamageParticles();
   closeModal();
 
-  // âś… locals only (no "already declared" collisions)
+  //  locals only (no "already declared" collisions)
   const BOSS_FALLBACK_URL =
     (typeof BOSS_FALLBACK === "string" && BOSS_FALLBACK) ? BOSS_FALLBACK : "images/bosses/core_custodian.png";
 
-  const bossLabelTxt = String(data?.boss?.name || data?.bossName || "Boss");
+  const bossLabelTxt = String(data?.currentEncounter?.name || data?.boss?.name || data?.bossName || "Boss");
+  const battleWall = canonBossWallFromState(data);
+  const battleWallName = battleWall.available ? battleWall.displayName : "Boss Wall";
 
   const rawBossSprite = (data?.boss?.sprite || data?.bossSprite || BOSS_FALLBACK_URL);
   const bossSpriteUrl =
@@ -1126,13 +1134,14 @@ function renderFortressBattle(data) {
     <div class="fx-head" style="margin-bottom:6px">
       <div>
         <div class="fx-sub">MoonLab Boss Ladder</div>
-        <div class="fx-title">Containment Floor ${data.currentFloor ?? data.level ?? data.lvl ?? "?"} Â· ${bossLabelTxt}</div>
+        <div class="fx-title">Boss Wall: ${esc(battleWallName)}</div>
+        <div class="fx-sub">Floor ${data.currentFloor ?? data.level ?? data.lvl ?? "?"} - Current Encounter: ${esc(bossLabelTxt)}</div>
       </div>
-      <button class="fx-x" id="fb-x" type="button">Ă—</button>
+      <button class="fx-x" id="fb-x" type="button">x</button>
     </div>
 
     <div class="fb-main">
-      <!-- âś… PIXI STAGE + DOM FALLBACK -->
+      <!--  PIXI STAGE + DOM FALLBACK -->
       <div class="fx-stage" id="fb-stage">
         <div class="fb-fallback" id="fb-fallback">
           <div class="fb-side">
@@ -1192,7 +1201,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     fbEl.style.display = "none";
   }
 
-  // âś… fallback start: always visible until boss is really loaded
+  //  fallback start: always visible until boss is really loaded
   showFallback();
 
   if (bossNameEl) bossNameEl.textContent = bossLabelTxt;
@@ -1299,7 +1308,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     return g;
   }
 
-  // âś… CORS-safe texture loader with explicit onload/onerror
+  //  CORS-safe texture loader with explicit onload/onerror
   function texFromUrlCORS(PIXI, url, onOk, onFail) {
     try {
       const img = new Image();
@@ -1318,7 +1327,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 
   async function mountPixi() {
   if (!stageHost) return;
-  if (pixiApp) return; // âś… guard
+  if (pixiApp) return; //  guard
 
   const PIXI = globalThis.PIXI;
   if (!PIXI || !PIXI.Application) return;
@@ -1337,7 +1346,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     stageHost.appendChild(view);
   }
 
-  // âś… IMPORTANT: do NOT hide fallback on mount
+  //  IMPORTANT: do NOT hide fallback on mount
   // hideFallback() happens only when boss texture really loads (with real size)
 
   const bgPanel = _gfxRoundedRect(PIXI, w, h, 14, 0x0b0d12, 0.55);
@@ -1393,7 +1402,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
   pixiApp.stage.addChild(pixiPlayerGroup);
 
   // =========================
-  // âś… boss block (POINT 2) â€” Pixi v8 safe: scale from Image.naturalWidth/Height
+  //  boss block (POINT 2)  Pixi v8 safe: scale from Image.naturalWidth/Height
   // =========================
   const maxW = w * 0.42;
   const maxH = h * 0.70;
@@ -1427,7 +1436,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 
     try { pixiBossSprite.scale?.set?.(Math.max(0.01, s)); } catch (_) {}
 
-    // âś… only now hide fallback (boss is definitely visible)
+    //  only now hide fallback (boss is definitely visible)
     hideFallback();
   };
 
@@ -1497,7 +1506,7 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
   // DOM particles nad stage
   globalThis.Combat.container = stageHost || card;
 
-  // mount pixi (jeĹ›li dostÄ™pne)
+  // mount pixi (jeli dostpne)
   (async () => {
     try { await mountPixi(); } catch (_) {}
   })();
@@ -1569,29 +1578,29 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     const steps = data.steps || [];
     if (idx >= steps.length) {
       const lines = [];
-      lines.push(data.winner === "you" ? "âś… Victory!" : "âťŚ Defeat!");
+      lines.push(data.winner === "you" ? "Victory!" : "Defeat!");
 
       const matsSrc = data.rewards?.materials || data.rewards || {};
       const mats = [];
-      if (matsSrc.bones) mats.push(`Bones Ă—${matsSrc.bones}`);
-      if (matsSrc.scrap) mats.push(`Scrap Ă—${matsSrc.scrap}`);
-      if (matsSrc.rune_dust) mats.push(`Rune Dust Ă—${matsSrc.rune_dust}`);
-      if (matsSrc.universal_key_shards) mats.push(`Key Shards Ă—${matsSrc.universal_key_shards}`);
+      if (matsSrc.bones) mats.push(`Bones x${matsSrc.bones}`);
+      if (matsSrc.scrap) mats.push(`Scrap x${matsSrc.scrap}`);
+      if (matsSrc.rune_dust) mats.push(`Rune Dust x${matsSrc.rune_dust}`);
+      if (matsSrc.universal_key_shards) mats.push(`Key Shards x${matsSrc.universal_key_shards}`);
       if (mats.length) lines.push("Rewards: " + mats.join(", "));
 
       const fcRarePlus = data.rewards?.firstClearRarePlus || data.firstClearRarePlus || null;
       if (fcRarePlus && isRarePlusRarity(fcRarePlus.rarity)) {
         const rr = String(fcRarePlus.rarity || "rare").toUpperCase();
         const nm = fcRarePlus.name ? `: ${fcRarePlus.name}` : "";
-        lines.push(`đźŽ First Clear ${rr} gear${nm}`);
+        lines.push(`First Clear ${rr} gear${nm}`);
       }
       if (data.rewards?.loot && isRarePlusRarity(data.rewards.loot.rarity)) {
         const rr = String(data.rewards.loot.rarity || "").toUpperCase();
         const nm = data.rewards.loot.name ? `: ${data.rewards.loot.name}` : "";
-        lines.push(`đźŽ ${rr} gear${nm}`);
+        lines.push(`${rr} gear${nm}`);
       }
-      if (data.rewards?.firstClear?.length) lines.push("đźŚź First clear: " + data.rewards.firstClear.join(", "));
-      if (data.rewards?.summary?.length) lines.push(data.rewards.summary.join(" â€˘ "));
+      if (data.rewards?.firstClear?.length) lines.push("First clear: " + data.rewards.firstClear.join(", "));
+      if (data.rewards?.summary?.length) lines.push(data.rewards.summary.join(" - "));
       if (data.report?.hint) lines.push(data.report.hint);
       if (data.next?.floor || data.next?.level) lines.push(`Next Floor: ${data.next?.nextFloorUnlocked || data.next?.floor || data.next?.level}`);
 
@@ -1613,16 +1622,16 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
     if (actor === "you") {
       bHpNow = s0.b_hp ?? bHpNow;
       const youTxt = dodge
-        ? "shootâ€¦ boss <b>DODGED</b>!"
-        : "hit for <b>" + dmg + "</b>" + (crit ? " <i>(CRIT)</i>" : "") + ".";
-      logEl?.insertAdjacentHTML("beforeend", `<div>â–¶ You ${youTxt}</div>`);
+        ? "You missed. Boss dodged."
+        : "You hit for " + dmg + (crit ? " (CRIT)" : "") + ".";
+      logEl?.insertAdjacentHTML("beforeend", `<div>${esc(youTxt)}</div>`);
       if (!dodge && dmg > 0) bossShakeFrames = 8;
     } else {
       pHpNow = s0.p_hp ?? pHpNow;
       const bossTxt = dodge
-        ? "attacksâ€¦ you <b>DODGE</b>!"
-        : "hits for <b>" + dmg + "</b>" + (crit ? " <i>(CRIT)</i>" : "") + ".";
-      logEl?.insertAdjacentHTML("beforeend", `<div>â—€ Boss ${bossTxt}</div>`);
+        ? "Boss missed. You dodged."
+        : "Boss hits for " + dmg + (crit ? " (CRIT)" : "") + ".";
+      logEl?.insertAdjacentHTML("beforeend", `<div>${esc(bossTxt)}</div>`);
       if (!dodge && dmg > 0) playerShakeFrames = 8;
     }
 
