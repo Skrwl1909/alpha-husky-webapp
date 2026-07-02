@@ -206,7 +206,7 @@
   overflow:auto;
   flex:1;
   min-height:0;
-  padding-bottom:8px;
+  padding-bottom:calc(86px + env(safe-area-inset-bottom, 0px));
 }
 
 /* --- Portret przeciwnika (open modal) --- */
@@ -293,7 +293,7 @@
   margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);
   position:sticky;bottom:0;
   background:linear-gradient(180deg,rgba(12,14,18,0),rgba(12,14,18,.96) 35%);
-  padding-bottom:6px;
+  padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));
 }
 .fx-actions-left,.fx-actions-right{display:flex;gap:8px;flex-wrap:wrap}
 .fx-btn{padding:10px 12px;border-radius:12px;background:#2a2f45;border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
@@ -310,9 +310,9 @@
 .fx-pill-row{display:flex;flex-wrap:wrap;gap:8px}
 .fx-pill{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:12px;font-weight:700}
 .fx-pill-muted{opacity:.72}
-.fx-boss-wall{display:grid;grid-template-columns:minmax(92px,120px) minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg,rgba(16,22,30,.94),rgba(9,12,18,.94));border:1px solid rgba(103,232,249,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
-.fx-boss-art{min-height:118px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 35%,rgba(103,232,249,.16),rgba(255,255,255,.04) 48%,rgba(0,0,0,.12));display:grid;place-items:center;overflow:hidden;text-align:center;padding:10px}
-.fx-boss-art img{width:100%;height:100%;max-height:132px;object-fit:contain;filter:drop-shadow(0 12px 24px rgba(0,0,0,.45))}
+.fx-boss-wall{display:grid;grid-template-columns:minmax(138px,42%) minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg,rgba(16,22,30,.94),rgba(9,12,18,.94));border:1px solid rgba(103,232,249,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.fx-boss-art{min-height:190px;aspect-ratio:4/5;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 35%,rgba(103,232,249,.16),rgba(255,255,255,.04) 48%,rgba(0,0,0,.12));display:grid;place-items:center;overflow:hidden;text-align:center;padding:8px}
+.fx-boss-art img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 16px 28px rgba(0,0,0,.50))}
 .fx-boss-placeholder{display:grid;gap:6px;justify-items:center;line-height:1.15}
 .fx-boss-placeholder strong{font-size:13px;color:#e7fbff}
 .fx-boss-placeholder span{font-size:11px;color:rgba(223,242,255,.72)}
@@ -321,9 +321,9 @@
 .fx-boss-sub{font-size:12px;color:rgba(218,231,255,.78);line-height:1.4}
 .fx-boss-lore{font-size:12px;color:rgba(233,239,255,.86);line-height:1.45}
 .fx-boss-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.fx-boss-meta span{display:block;padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06);font-size:11px;line-height:1.25;color:rgba(235,242,255,.9)}
-.fx-boss-meta b{display:block;margin-top:2px;color:#fff;font-size:12px;overflow-wrap:anywhere}
-.fx-encounter-callout{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);font-size:12px;line-height:1.35;color:rgba(238,243,255,.86)}.fx-section{display:grid;gap:8px;padding:12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}
+.fx-boss-meta span{display:block;min-width:0;padding:7px 8px;border-radius:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06);font-size:11px;line-height:1.25;color:rgba(235,242,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-boss-meta b{display:block;margin-top:2px;color:#fff;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-boss-readiness{padding:8px 10px;border-radius:10px;background:rgba(103,232,249,.07);border:1px solid rgba(103,232,249,.12);font-size:12px;font-weight:800;color:#e7fbff}.fx-encounter-callout{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);font-size:12px;line-height:1.35;color:rgba(238,243,255,.86)}.fx-section{display:grid;gap:8px;padding:12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}
 .fx-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .fx-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.12em;opacity:.72}
 .fx-ladder{display:grid;gap:8px}
@@ -357,6 +357,9 @@
   .fx-title{font-size:15px}
   .fx-btn{padding:12px 14px}
   .fx-meta-grid{grid-template-columns:1fr}
+  .fx-boss-wall{grid-template-columns:1fr}
+  .fx-boss-art{min-height:240px;aspect-ratio:5/4}
+  .fx-boss-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 `;
     const s = el("style");
@@ -594,9 +597,14 @@ function normalizeFortressPayload(raw) {
     }
 
     const currentEncounter = String(st?.boss?.name || st?.nextEncounterName || st?.bossName || "Unknown").trim();
-    const signalPower = Number(st?.playerSignalPower ?? st?.signalPower ?? st?.progression?.signalPower ?? 0) || 0;
-    const missingPower = signalPower > 0 && wall.requiredSignalPower > 0 ? Math.max(0, wall.requiredSignalPower - signalPower) : null;
-    const readiness = String(st?.bossPrepReadiness?.state || st?.readinessState || st?.bossWallReadiness || "").trim();
+    const signalPowerRaw = st?.playerSignalPower ?? st?.signalPower ?? st?.progression?.signalPower;
+    const hasSignalPower = signalPowerRaw !== undefined && signalPowerRaw !== null && signalPowerRaw !== "";
+    const signalPower = hasSignalPower ? (Number(signalPowerRaw) || 0) : null;
+    const requiredSignalPower = Number(wall.requiredSignalPower || 0) || 0;
+    const missingPower = hasSignalPower && requiredSignalPower > 0 ? Math.max(0, requiredSignalPower - signalPower) : null;
+    const readinessRaw = String(st?.bossPrepReadiness?.state || st?.readinessState || st?.bossWallReadiness || "").trim();
+    const readiness = readinessRaw ? readinessRaw.charAt(0).toUpperCase() + readinessRaw.slice(1).toLowerCase() : "Untracked";
+    const bossWallStatus = missingPower == null ? "Boss Wall: Not Ready" : (missingPower > 0 ? `Signal Shortfall: ${missingPower}` : "Boss Wall: Ready");
     const floorText = wall.floorStart && wall.floorEnd ? `${wall.floorStart}-${wall.floorEnd}` : "";
     const lore = wall.shortLore || wall.visualDirection || wall.notReadyCopy || "MoonLab signal target identified.";
 
@@ -607,11 +615,12 @@ function normalizeFortressPayload(raw) {
         <div class="fx-boss-name">Boss Wall: ${esc(wall.displayName)}</div>
         <div class="fx-boss-sub">${esc(wall.arcName || "MoonLab")}  Floors ${esc(floorText)}  Milestone ${esc(wall.milestoneFloor || "")}</div>
         <div class="fx-boss-meta">
-          <span>Required Signal Power<b>${esc(wall.requiredSignalPower || "")}</b></span>
-          <span>Your Signal<b>${signalPower > 0 ? esc(signalPower) : "Check Progression"}</b></span>
-          <span>Missing Signal<b>${missingPower == null ? "" : (missingPower > 0 ? "+" + esc(missingPower) : "Ready")}</b></span>
-          <span>Prep State<b>${esc(readiness || "Untracked")}</b></span>
+          <span>Required<b>${esc(requiredSignalPower)}</b></span>
+          <span>Your Signal<b>${hasSignalPower ? esc(signalPower) : "Check Progression"}</b></span>
+          <span>Missing<b>${missingPower == null ? "&mdash;" : esc(missingPower)}</b></span>
+          <span>Prep<b>${esc(readiness)}</b></span>
         </div>
+        <div class="fx-boss-readiness">${esc(bossWallStatus)}</div>
         <div class="fx-boss-lore">${esc(lore)}</div>
         <div class="fx-encounter-callout"><b>Current Encounter:</b> ${esc(currentEncounter)}<br><span class="fx-note">Existing MoonLab combat enemy.</span></div>
       </div>
@@ -802,7 +811,7 @@ function normalizeFortressPayload(raw) {
     const base = "rgba(255,255,255,.06)";
     const green = "rgba(16,185,129,.18)";
     const blue = "rgba(59,130,246,.18)";
-    b.style.background = txt === "Ready" ? green : (txt === "Active" || txt === "Cooling") ? blue : base;
+    b.style.background = txt.includes("Ready") ? green : (txt === "Active" || txt === "Cooling") ? blue : base;
   }
 
   async function refresh() {
@@ -880,13 +889,13 @@ function normalizeFortressPayload(raw) {
 
       setText("#fx-lvl", `Floor ${curFloor}`);
       setText("#fx-sector", `Sector ${sector} - Chamber ${sectorFloor}`);
-      setText("#fx-status", ready ? "Chamber Stable" : "Cooling Down");
-      setText("#fx-cd", ready ? "Ready" : fmtLeft(cd));
+      setText("#fx-status", ready ? "Chamber Ready" : "Cooling Down");
+      setText("#fx-cd", ready ? "Available" : fmtLeft(cd));
       setText("#fx-power", bossPower > 0 ? String(bossPower) : "Unknown");
       setText("#fx-milestone", milestoneText);
       setText("#fx-first-clear-flag", st.firstClearAvailable ? "First Clear" : "Replay");
       setText("#fx-report-status", st.lastFightReport?.outcome || "Return Stronger");
-      setBadge(ready ? "Ready" : "Cooling");
+      setBadge(ready ? "Chamber Ready" : "Cooling");
 
       const hintEl = $("#fx-hint");
       if (hintEl) {
@@ -922,9 +931,9 @@ function normalizeFortressPayload(raw) {
           }
           if (left <= 0) {
             stopTicker();
-            setBadge("Ready");
-            setText("#fx-status", "Chamber Stable");
-            setText("#fx-cd", "Ready");
+            setBadge("Chamber Ready");
+            setText("#fx-status", "Chamber Ready");
+            setText("#fx-cd", "Available");
             btn.disabled = false;
             btn.textContent = "Enter Chamber";
           }
