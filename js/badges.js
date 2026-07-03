@@ -198,6 +198,28 @@
     const rarity = String(value || "common").trim().toLowerCase();
     return RARITY_CLASS[rarity] ? rarity : "common";
   }
+  function frameToneText(badge) {
+    return String(
+      badge?.framePublicId || badge?.frame_public_id || badge?.frameUrl || badge?.frame_url || ""
+    ).trim().toLowerCase();
+  }
+  function badgeTierClass(badge, rarity) {
+    if (!badge?.owned) return "badge-locked";
+
+    const tier = Number.isFinite(Number(badge?.tier)) ? Number(badge.tier) : 0;
+    if (tier >= 3) return "badge-tier-gold";
+    if (tier === 2) return "badge-tier-purple";
+
+    const tierName = String(badge?.tierName || badge?.tier_name || "").trim().toLowerCase();
+    const frameTone = frameToneText(badge);
+    const tone = `${tierName} ${frameTone}`;
+    if (tone.includes("gold") || tone.includes("orange") || tone.includes("legendary")) return "badge-tier-gold";
+    if (tone.includes("purple") || tone.includes("violet") || tone.includes("epic")) return "badge-tier-purple";
+
+    if (rarity === "legendary") return "badge-tier-gold";
+    if (rarity === "epic") return "badge-tier-purple";
+    return "badge-tier-base";
+  }
   function ensureCss() {
     if (document.getElementById("ah-badge-wall-style")) return;
     const style = document.createElement("style");
@@ -413,11 +435,11 @@
         box-shadow:0 0 6px rgba(255,206,118,.7);
       }
       #badgeWallBack .ah-bw-icon{
-        width:100%;
-        height:100%;
+        width:calc(100% - 8px);
+        height:calc(100% - 8px);
         border-radius:9px;
         position:relative;
-        border:1px solid rgba(183,208,233,.24);
+        border:1px solid rgba(183,208,233,.16);
         background:rgba(6,12,20,.7);
         display:flex;
         align-items:center;
@@ -427,34 +449,46 @@
         color:rgba(229,240,252,.9);
         overflow:hidden;
       }
-      #badgeWallBack .ah-bw-icon img{
-        width:100%;
-        height:100%;
-        object-fit:contain;
-      }
-      #badgeWallBack .ah-bw-icon img.ah-bw-layer{
+      #badgeWallBack .ah-bw-icon::before{
+        content:"";
         position:absolute;
-        inset:0;
-        display:none;
-      }
-      #badgeWallBack .ah-bw-icon img.ah-bw-emblem{ z-index:1; }
-      #badgeWallBack .ah-bw-icon img.ah-bw-frame{ z-index:2; }
-      #badgeWallBack .ah-bw-icon img.ah-bw-pioneer-base{
-        position:relative;
-        inset:auto;
+        inset:2px;
         z-index:1;
-      }
-      #badgeWallBack .ah-bw-icon img.ah-bw-pioneer-glow{
-        position:absolute;
-        inset:0;
-        z-index:2;
+        border-radius:999px;
+        border:1px solid rgba(185,204,226,.24);
+        box-shadow:inset 0 0 8px rgba(185,204,226,.08);
         pointer-events:none;
-        opacity:.18;
-        animation:ah-bw-pioneer-glow-pulse 3s ease-in-out infinite;
       }
-      @keyframes ah-bw-pioneer-glow-pulse{
-        0%, 100%{ opacity:.18; }
-        50%{ opacity:.34; }
+      #badgeWallBack .ah-bw-icon.badge-tier-base::before{
+        border-color:rgba(185,204,226,.24);
+        box-shadow:inset 0 0 8px rgba(185,204,226,.08);
+      }
+      #badgeWallBack .ah-bw-icon.badge-tier-purple::before{
+        border-color:rgba(180,118,239,.72);
+        box-shadow:
+          inset 0 0 8px rgba(180,118,239,.16),
+          0 0 8px rgba(180,118,239,.13);
+      }
+      #badgeWallBack .ah-bw-icon.badge-tier-gold::before{
+        border-color:rgba(244,184,86,.78);
+        box-shadow:
+          inset 0 0 8px rgba(244,184,86,.16),
+          0 0 8px rgba(244,184,86,.14);
+      }
+      #badgeWallBack .ah-bw-icon.badge-locked::before{
+        border-color:rgba(164,178,193,.28);
+        box-shadow:inset 0 0 8px rgba(164,178,193,.06);
+      }
+      #badgeWallBack .ah-bw-icon img{
+        width:calc(100% - 12px);
+        height:calc(100% - 12px);
+        object-fit:contain;
+        position:relative;
+        z-index:2;
+      }
+      #badgeWallBack .ah-bw-fallback{
+        position:relative;
+        z-index:2;
       }
       #badgeWallBack .ah-bw-lock{
         position:absolute;
@@ -1025,71 +1059,18 @@
       badge?.emblemUrl || badge?.emblem_url || badge?.iconUrl || badge?.icon_url || ""
     ).trim();
   }
-  function badgeFrameSource(badge) {
-    return String(badge?.frameUrl || badge?.frame_url || "").trim();
-  }
-  function isPioneerBadgeKey(key) {
-    return toKey(key) === "PIONEER_BADGE";
-  }
   function isMasteryBadge(badge) {
     return String(badge?.badgeType || badge?.badge_type || "").trim().toLowerCase() === "mastery";
   }
 
   function setBadgeImage(iconWrap, badge, key) {
-    const primary = badgeIconSource(badge);
-    const emblem = badgeEmblemSource(badge);
-    const frame = badgeFrameSource(badge);
-    const layeredMode = !!frame;
-    const fallbackMark = "◆";
+    const primary = badgeEmblemSource(badge) || badgeIconSource(badge);
+    const fallbackMark = "?";
 
     clearEl(iconWrap);
 
     const fallback = newEl("span", "ah-bw-fallback", fallbackMark);
     iconWrap.appendChild(fallback);
-
-    if (layeredMode) {
-      const layers = [];
-      const showLockedEmblem = !isMasteryBadge(badge);
-      const pioneer = isPioneerBadgeKey(key);
-      if (emblem && (badge?.owned || showLockedEmblem)) {
-        layers.push({
-          src: emblem,
-          className: pioneer ? "ah-bw-layer ah-bw-emblem ah-bw-pioneer-base" : "ah-bw-layer ah-bw-emblem",
-        });
-      }
-      layers.push({
-        src: frame,
-        className: pioneer ? "ah-bw-layer ah-bw-frame ah-bw-pioneer-glow" : "ah-bw-layer ah-bw-frame",
-      });
-
-      let loadedCount = 0;
-      for (const layer of layers) {
-        const img = newEl("img", layer.className);
-        img.alt = String(badge.name || key || "Badge");
-        img.loading = "eager";
-        img.decoding = "async";
-        img.style.display = "none";
-
-        img.addEventListener("load", () => {
-          loadedCount += 1;
-          img.style.display = "block";
-          if (loadedCount > 0) {
-            fallback.style.display = "none";
-          }
-        });
-
-        img.addEventListener("error", () => {
-          img.remove();
-          if (loadedCount <= 0) {
-            fallback.style.display = "";
-          }
-        });
-
-        iconWrap.appendChild(img);
-        img.src = layer.src;
-      }
-      return;
-    }
 
     if (!primary) {
       return;
@@ -1270,13 +1251,14 @@
     const isOwned = !!badge.owned;
     const isFeatured = isFeaturedKey(key);
 
+    const tierClass = badgeTierClass(badge, rarity);
     const tileClass = "ah-bw-tile " + RARITY_CLASS[rarity] + (isActive ? " is-active" : "") + (isFeatured ? " is-featured" : "") + (isOwned ? " is-owned" : " is-locked");
     const card = newEl("button", tileClass);
     card.type = "button";
     card.setAttribute("aria-label", String(badge.name || key || "Badge"));
     if (key) card.setAttribute("data-key", key);
 
-    const iconWrap = newEl("div", "ah-bw-icon");
+    const iconWrap = newEl("div", "ah-bw-icon " + tierClass);
     setBadgeImage(iconWrap, badge, key);
     card.appendChild(iconWrap);
 
