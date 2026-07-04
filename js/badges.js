@@ -16,7 +16,10 @@
   let featuredPill;
   let titlePanelValue;
   let titlePanelButton;
-  let identityGrid;
+  let tabButtons = [];
+  let tabPanels = [];
+  let tagPanel;
+  let auraPanel;
   let statusBox;
   let gridBox;
   let emptyBox;
@@ -33,6 +36,7 @@
   let _loadingTitleState = false;
   let _settingTitleState = false;
   let _settingIdentityState = false;
+  let _activeTab = "badges";
 
   let _state = {
     badges: [],
@@ -203,8 +207,8 @@
       activeTitle,
       displayTitle,
       titles: out,
-      activeTag: String(payload?.activeTag || payload?.identity?.activeTag || "").trim(),
-      displayTag: String(payload?.displayTag || payload?.identity?.displayTag || "").trim(),
+      activeTag: String(payload?.activeTag || payload?.active_tag || payload?.identity?.activeTag || payload?.identity?.active_tag || "").trim(),
+      displayTag: String(payload?.displayTag || payload?.display_tag || payload?.identity?.displayTag || payload?.identity?.display_tag || "").trim(),
       activeAura: payload?.activeAura || payload?.identity?.activeAura || null,
       ownedTags: normalizeIdentityRows(payload?.ownedTags || payload?.identity?.ownedTags, "tag"),
       ownedAuras: normalizeIdentityRows(payload?.ownedAuras || payload?.identity?.ownedAuras, "aura"),
@@ -276,7 +280,7 @@
       #badgeWallBack .ah-bw-card{
         position:relative;
         width:min(96vw, 560px);
-        max-height:88vh;
+        max-height:min(88vh, 680px);
         overflow:hidden;
         border-radius:18px;
         border:1px solid rgba(181,209,235,.24);
@@ -327,6 +331,53 @@
         display:flex;
         flex-wrap:wrap;
         gap:6px;
+      }
+      #badgeWallBack .ah-bw-tabs{
+        display:grid;
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+        gap:5px;
+        border:1px solid rgba(165,196,226,.16);
+        border-radius:12px;
+        background:rgba(6,12,20,.52);
+        padding:4px;
+      }
+      #badgeWallBack .ah-bw-tab{
+        appearance:none;
+        min-width:0;
+        min-height:30px;
+        border:0;
+        border-radius:8px;
+        background:transparent;
+        color:rgba(202,222,241,.76);
+        font-size:11px;
+        font-weight:900;
+        cursor:pointer;
+      }
+      #badgeWallBack .ah-bw-tab.is-active{
+        background:rgba(168,202,236,.16);
+        color:#f2f8ff;
+        box-shadow:inset 0 0 0 1px rgba(179,211,240,.2);
+      }
+      #badgeWallBack .ah-bw-tabpanels{
+        flex:1 1 auto;
+        min-height:0;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+      }
+      #badgeWallBack .ah-bw-panel{
+        flex:1 1 auto;
+        min-height:0;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      #badgeWallBack .ah-bw-panel[hidden]{
+        display:none;
+      }
+      #badgeWallBack .ah-bw-panel-scroll{
+        overflow:auto;
       }
       #badgeWallBack .ah-bw-title-panel{
         border:1px solid rgba(165,196,226,.18);
@@ -411,7 +462,7 @@
         grid-template-columns:repeat(5, minmax(0, 1fr));
         gap:6px;
         min-height:108px;
-        max-height:52vh;
+        max-height:min(44vh, 360px);
       }
       #badgeWallBack .ah-bw-empty{
         border:1px dashed rgba(174,199,224,.2);
@@ -743,13 +794,13 @@
         border-color:rgba(247,203,124,.3);
         color:#ffe3ae;
       }
-      #badgeWallBack .ah-bw-identity-grid{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:10px;
+      #badgeWallBack .ah-bw-identity-panel{
+        min-height:0;
+        overflow:hidden;
       }
       #badgeWallBack .ah-bw-identity-section{
         min-width:0;
+        min-height:0;
         display:flex;
         flex-direction:column;
         gap:7px;
@@ -760,8 +811,21 @@
         text-transform:uppercase;
         color:rgba(185,208,230,.82);
       }
+      #badgeWallBack .ah-bw-identity-current{
+        border:1px solid rgba(247,203,124,.22);
+        border-radius:10px;
+        background:rgba(36,29,14,.45);
+        color:#ffe4ae;
+        padding:7px 9px;
+        font-size:11px;
+        font-weight:900;
+        line-height:1.25;
+      }
       #badgeWallBack .ah-bw-identity-list{
-        max-height:190px;
+        flex:1 1 auto;
+        min-height:0;
+        max-height:none;
+        padding:0;
       }
       #badgeWallBack .ah-bw-identity-option.is-locked{
         opacity:.74;
@@ -773,11 +837,16 @@
         line-height:1.25;
       }
       @media (max-width:520px){
-        #badgeWallBack .ah-bw-identity-grid{
-          grid-template-columns:1fr;
+        #badgeWallBack .ah-bw-head{
+          align-items:flex-start;
         }
-        #badgeWallBack .ah-bw-identity-list{
-          max-height:160px;
+        #badgeWallBack .ah-bw-head-actions{
+          gap:6px;
+        }
+        #badgeWallBack .ah-bw-head-actions .btn{
+          min-width:38px;
+          padding-left:8px;
+          padding-right:8px;
         }
       }
       #badgeWallBack .ah-bw-title-active{
@@ -816,26 +885,40 @@
             </div>
           </div>
 
-          <div class="ah-bw-meta">
-            <span class="ah-bw-pill" id="badgeWallOwned">Owned 0/0</span>
-            <span class="ah-bw-pill is-muted" id="badgeWallActive">No active title</span>
-            <span class="ah-bw-pill is-muted" id="badgeWallFeatured">Featured 0/3</span>
+          <div class="ah-bw-tabs" role="tablist" aria-label="Identity Loadout">
+            <button class="ah-bw-tab is-active" id="badgeWallTabBadges" data-badge-tab="badges" role="tab" aria-selected="true" aria-controls="badgeWallPanelBadges" type="button">Badges</button>
+            <button class="ah-bw-tab" id="badgeWallTabTitles" data-badge-tab="titles" role="tab" aria-selected="false" aria-controls="badgeWallPanelTitles" type="button">Titles</button>
+            <button class="ah-bw-tab" id="badgeWallTabTags" data-badge-tab="tags" role="tab" aria-selected="false" aria-controls="badgeWallPanelTags" type="button">Tags</button>
+            <button class="ah-bw-tab" id="badgeWallTabAuras" data-badge-tab="auras" role="tab" aria-selected="false" aria-controls="badgeWallPanelAuras" type="button">Auras</button>
           </div>
-
-          <div class="ah-bw-title-panel">
-            <div class="ah-bw-title-copy">
-              <span class="ah-bw-title-label">Active Title</span>
-              <span class="ah-bw-title-value is-empty" id="badgeWallTitleValue">No Title Equipped</span>
-            </div>
-            <button class="btn" id="badgeWallTitleButton" type="button">Choose Title</button>
-          </div>
-
-          <div class="ah-bw-identity-grid" id="badgeIdentityGrid"></div>
 
           <div class="ah-bw-status" id="badgeWallStatus" hidden></div>
-          <div class="ah-bw-grid" id="badgeWallGrid"></div>
-          <div class="ah-bw-empty" id="badgeWallEmpty" hidden>No badges available yet.</div>
-          <div class="ah-bw-detail" id="badgeWallDetail" hidden></div>
+
+          <div class="ah-bw-tabpanels">
+            <section class="ah-bw-panel" id="badgeWallPanelBadges" data-badge-panel="badges" role="tabpanel" aria-labelledby="badgeWallTabBadges">
+              <div class="ah-bw-meta">
+                <span class="ah-bw-pill" id="badgeWallOwned">Owned 0/0</span>
+                <span class="ah-bw-pill is-muted" id="badgeWallActive">No active title</span>
+                <span class="ah-bw-pill is-muted" id="badgeWallFeatured">Featured 0/3</span>
+              </div>
+              <div class="ah-bw-grid" id="badgeWallGrid"></div>
+              <div class="ah-bw-empty" id="badgeWallEmpty" hidden>No badges available yet.</div>
+              <div class="ah-bw-detail" id="badgeWallDetail" hidden></div>
+            </section>
+
+            <section class="ah-bw-panel ah-bw-panel-scroll" id="badgeWallPanelTitles" data-badge-panel="titles" role="tabpanel" aria-labelledby="badgeWallTabTitles" hidden>
+              <div class="ah-bw-title-panel">
+                <div class="ah-bw-title-copy">
+                  <span class="ah-bw-title-label">Active Title</span>
+                  <span class="ah-bw-title-value is-empty" id="badgeWallTitleValue">No Title Equipped</span>
+                </div>
+                <button class="btn" id="badgeWallTitleButton" type="button">Choose Title</button>
+              </div>
+            </section>
+
+            <section class="ah-bw-panel ah-bw-identity-panel" id="badgeWallPanelTags" data-badge-panel="tags" role="tabpanel" aria-labelledby="badgeWallTabTags" hidden></section>
+            <section class="ah-bw-panel ah-bw-identity-panel" id="badgeWallPanelAuras" data-badge-panel="auras" role="tabpanel" aria-labelledby="badgeWallTabAuras" hidden></section>
+          </div>
 
           <div class="ah-bw-picker-back" id="badgeTitlePickerBack" hidden>
             <div class="ah-bw-picker" role="dialog" aria-modal="true" aria-label="Choose Title">
@@ -861,7 +944,10 @@
     featuredPill = document.getElementById("badgeWallFeatured");
     titlePanelValue = document.getElementById("badgeWallTitleValue");
     titlePanelButton = document.getElementById("badgeWallTitleButton");
-    identityGrid = document.getElementById("badgeIdentityGrid");
+    tabButtons = Array.from(wallBack.querySelectorAll("[data-badge-tab]"));
+    tabPanels = Array.from(wallBack.querySelectorAll("[data-badge-panel]"));
+    tagPanel = document.getElementById("badgeWallPanelTags");
+    auraPanel = document.getElementById("badgeWallPanelAuras");
     statusBox = document.getElementById("badgeWallStatus");
     gridBox = document.getElementById("badgeWallGrid");
     emptyBox = document.getElementById("badgeWallEmpty");
@@ -910,6 +996,21 @@
 
   function openTitlePickerShell() {
     if (titlePickerBack) titlePickerBack.hidden = false;
+  }
+
+  function setActiveTab(tab) {
+    const next = ["badges", "titles", "tags", "auras"].includes(tab) ? tab : "badges";
+    _activeTab = next;
+
+    for (const button of tabButtons) {
+      const isActive = button.getAttribute("data-badge-tab") === next;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+
+    for (const panel of tabPanels) {
+      panel.hidden = panel.getAttribute("data-badge-panel") !== next;
+    }
   }
 
   function updateSaveButtonState() {
@@ -1031,6 +1132,40 @@
     return parts.join(" / ");
   }
 
+  function activeIdentityText(kind, rows) {
+    const items = Array.isArray(rows) ? rows : [];
+    let active = items.find((item) => !!item?.active) || null;
+
+    if (!active && kind === "tag") {
+      const activeTag = toKey(_titleState.activeTag || _titleState.displayTag);
+      active = items.find((item) => toKey(item?.key) === activeTag || toKey(item?.label) === activeTag) || null;
+    }
+
+    if (!active && kind === "aura") {
+      const rawAura = _titleState.activeAura;
+      const auraKey = typeof rawAura === "object" ? (rawAura?.key || rawAura?.auraKey) : rawAura;
+      const activeAura = toKey(auraKey);
+      active = items.find((item) => toKey(item?.key) === activeAura || toKey(item?.label) === activeAura) || null;
+    }
+
+    if (!active && kind === "tag") {
+      const fallback = String(_titleState.displayTag || _titleState.activeTag || "").trim();
+      return "Active Tag: " + (fallback || "None");
+    }
+
+    if (!active && kind === "aura") {
+      const rawAura = _titleState.activeAura;
+      const fallback = typeof rawAura === "object"
+        ? String(rawAura?.label || rawAura?.key || rawAura?.auraKey || "").trim()
+        : String(rawAura || "").trim();
+      return "Active Aura: " + (fallback || "None");
+    }
+
+    const label = String(active?.label || active?.key || "None").trim() || "None";
+    const expiry = kind === "aura" ? formatIdentityExpiry(active) : "";
+    return "Active " + (kind === "aura" ? "Aura" : "Tag") + ": " + label + (expiry ? " (" + expiry + ")" : "");
+  }
+
   function createIdentityOption(kind, item) {
     const isAura = kind === "aura";
     const canEquip = !!item?.owned && !item?.active && !(isAura && item?.temporary) && !_settingIdentityState;
@@ -1051,7 +1186,7 @@
     copy.appendChild(meta);
     row.appendChild(copy);
 
-    const status = item?.active ? "Equipped" : (item?.owned && !(isAura && item?.temporary) ? "Equip" : "Locked");
+    const status = item?.active ? "Active" : (item?.owned && !(isAura && item?.temporary) ? "Equip" : "Locked");
     row.appendChild(newEl("span", "ah-bw-title-active", status));
 
     if (canEquip) {
@@ -1064,8 +1199,9 @@
 
   function createIdentitySection(title, kind, rows) {
     const section = newEl("div", "ah-bw-identity-section");
-    const head = newEl("div", "ah-bw-identity-head", title);
-    section.appendChild(head);
+    section.appendChild(newEl("div", "ah-bw-identity-head", title));
+    section.appendChild(newEl("div", "ah-bw-identity-current", activeIdentityText(kind, rows)));
+
     const list = newEl("div", "ah-bw-picker-list ah-bw-identity-list");
     const items = Array.isArray(rows) ? rows : [];
     if (!items.length) {
@@ -1078,12 +1214,39 @@
   }
 
   function renderIdentityLoadout() {
-    if (!identityGrid) return;
-    clearEl(identityGrid);
-    identityGrid.appendChild(createIdentitySection("Tags", "tag", _titleState.ownedTags));
-    identityGrid.appendChild(createIdentitySection("Auras", "aura", _titleState.ownedAuras));
+    if (tagPanel) {
+      clearEl(tagPanel);
+      tagPanel.appendChild(createIdentitySection("Tags", "tag", _titleState.ownedTags));
+    }
+    if (auraPanel) {
+      clearEl(auraPanel);
+      auraPanel.appendChild(createIdentitySection("Auras", "aura", _titleState.ownedAuras));
+    }
   }
 
+  function syncTopTagFromIdentityState(kind) {
+    if (kind !== "tag") return;
+    const activeTag = String(_titleState.activeTag || "").trim();
+    const displayTag = String(_titleState.displayTag || activeTag || "").trim();
+    if (!activeTag) return;
+
+    const profiles = ["PROFILE", "__PROFILE__", "lastProfile", "profileState", "_profile"];
+    if (!window.PROFILE || typeof window.PROFILE !== "object") window.PROFILE = {};
+    for (const name of profiles) {
+      const profile = window[name];
+      if (!profile || typeof profile !== "object") continue;
+      profile.activeTag = activeTag;
+      profile.displayTag = displayTag;
+      profile.tag = activeTag;
+      if (profile.cosmetics && typeof profile.cosmetics === "object") {
+        profile.cosmetics.tag = activeTag;
+      }
+    }
+
+    const base = window.PROFILE?.faction || window.__PROFILE__?.faction || "PACK";
+    try { window.setTopTag?.(activeTag, base); } catch (_) {}
+    try { window.renderTopbar?.(); } catch (_) {}
+  }
   async function equipIdentity(kind, selectedKey) {
     const key = String(selectedKey || "").trim();
     if (!_apiPost || !key || _settingIdentityState) return;
@@ -1096,10 +1259,18 @@
       const out = await _apiPost("/webapp/player/title/state", { action, [field]: key });
       if (!out || out.ok === false) throw new Error(out?.reason || "IDENTITY_SET_FAILED");
       _titleState = normalizeTitleState(out);
+      syncTopTagFromIdentityState(kind);
       updateSummary();
       renderIdentityLoadout();
       setStatus((kind === "aura" ? "Aura" : "Tag") + " equipped.", "");
-      try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
+      try {
+        if (typeof window.loadProfile === "function") {
+          const profileRefresh = window.loadProfile();
+          if (kind === "tag" && profileRefresh && typeof profileRefresh.finally === "function") {
+            profileRefresh.finally(() => syncTopTagFromIdentityState(kind));
+          }
+        }
+      } catch (_) {}
       haptic("light");
     } catch (err) {
       dbg("set identity failed", err);
