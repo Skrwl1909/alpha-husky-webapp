@@ -7329,7 +7329,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "phantom-frontline-copy-v1";
+    window.WEBAPP_VER = "moonlab-fight-preview-polish-p1-3d2-live-deploy";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -9259,7 +9259,7 @@ document.addEventListener("click", async (e) => {
   const base = (PROFILE && PROFILE.faction) ? PROFILE.faction : 'PACK';
 
   /* ✅ B) TAG: zamiast nadpisywać textContent base, użyj tier tagów */
-  setTopTag(PROFILE?.tag, base);
+  setTopTag(resolveTopProfileTag(PROFILE), base);
 
   if (metaEl) metaEl.textContent = `Lv ${lvl} • ${bones}🦴`;
 
@@ -9677,13 +9677,41 @@ function pickSkinKey(p){
   return ahSkinKeyFromUrl(skinUrl || raw);
 }
 
+function isValidTopIdentityTag(value){
+  const text = String(value || "").trim();
+  if (!text) return false;
+  const norm = text.toLowerCase();
+  return norm !== "none" && norm !== "null" && norm !== "undefined" && norm !== "no_tag" && norm !== "no active tag";
+}
+
+function resolveTopProfileTag(profile){
+  const p = profile || {};
+  const identity = p.identity || {};
+  const active = p.activeTag || p.active_tag || identity.activeTag || identity.active_tag;
+  if (isValidTopIdentityTag(active)) return active;
+  const fallback = p.tag || p.cosmetics?.tag || identity.tag;
+  return isValidTopIdentityTag(fallback) ? fallback : "";
+}
+
+function bindTopTagPillGuard(tagEl){
+  if (!tagEl || tagEl.__ahTopTagClickGuard) return;
+  tagEl.__ahTopTagClickGuard = true;
+  tagEl.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }, true);
+}
+
 function setTopTag(tagKey, baseText="PACK"){
   const tagEl = document.getElementById("factionTag");
   if(!tagEl) return;
+  bindTopTagPillGuard(tagEl);
 
   tagEl.classList.remove("tag-pack","tag-supporter","tag-founder","tag-patron","tag-believe","tag-dual","tag-prime");
 
-  const t = String(tagKey || "").toLowerCase();
+  const raw = String(tagKey || "").trim();
+  const t = raw.toLowerCase();
 
   if(t === "supporter"){
     tagEl.textContent = "SUPPORTER";
@@ -9703,11 +9731,24 @@ function setTopTag(tagKey, baseText="PACK"){
   }else if(t === "prime"){
     tagEl.textContent = "PRIME";
     tagEl.classList.add("tag-prime");
+  }else if(t === "og"){
+    tagEl.textContent = "OG";
+    tagEl.classList.add("tag-prime");
+  }else if(t === "pack_1k" || t === "1k"){
+    tagEl.textContent = "1K";
+    tagEl.classList.add("tag-pack");
+  }else if(t === "lab" || t === "node" || t === "beast" || t === "bug"){
+    tagEl.textContent = t.toUpperCase();
+    tagEl.classList.add("tag-pack");
+  }else if(raw){
+    tagEl.textContent = raw.replace(/[_-]+/g, " ").toUpperCase();
+    tagEl.classList.add("tag-pack");
   }else{
     tagEl.textContent = String(baseText || "PACK");
     tagEl.classList.add("tag-pack");
   }
 }
+      
       function hydrateFactionFromPayload(payload){
   const f = String(
     payload?.profile?.faction ??
@@ -9792,8 +9833,14 @@ async function loadProfile() {
 
     if (p.faction) PROFILE.faction = p.faction;
 
-    /* ✅ A) TAG: pobierz tier tag z profilu */
-    PROFILE.tag = p?.cosmetics?.tag || p?.tag || PROFILE.tag || null;
+    /* active identity tag: use backend activeTag first; never retain stale local tag over it */
+    const profileIdentity = p?.identity || {};
+    const backendActiveTag = p?.activeTag || p?.active_tag || profileIdentity?.activeTag || profileIdentity?.active_tag || "";
+    const backendDisplayTag = p?.displayTag || p?.display_tag || profileIdentity?.displayTag || profileIdentity?.display_tag || "";
+    const fallbackTag = p?.tag || p?.cosmetics?.tag || profileIdentity?.tag || "";
+    PROFILE.activeTag = isValidTopIdentityTag(backendActiveTag) ? String(backendActiveTag).trim() : "";
+    PROFILE.displayTag = PROFILE.activeTag ? String(backendDisplayTag || backendActiveTag).trim() : "";
+    PROFILE.tag = PROFILE.activeTag || (isValidTopIdentityTag(fallbackTag) ? String(fallbackTag).trim() : "");
     PROFILE.weeklyAura = p?.weeklyAura || p?.activeAura || null;
     PROFILE.howlSignal = p?.howlSignal || p?.signal || p?.cosmetics?.signal || null;
 
@@ -12161,6 +12208,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
 
