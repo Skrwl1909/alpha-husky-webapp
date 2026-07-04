@@ -37,6 +37,7 @@
   let _settingTitleState = false;
   let _settingIdentityState = false;
   let _activeTab = "badges";
+  let _lastTabPointerAt = 0;
 
   let _state = {
     badges: [],
@@ -1013,6 +1014,27 @@
     }
   }
 
+  function handleTabSwitchEvent(e) {
+    const button = e.target?.closest?.("[data-badge-tab]");
+    if (!button || !wallBack || !wallBack.contains(button)) return false;
+
+    const now = Date.now();
+    if (e.type === "click" && now - _lastTabPointerAt < 450) {
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
+    }
+    if (e.type === "pointerup") {
+      if (e.button != null && e.button !== 0) return false;
+      _lastTabPointerAt = now;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveTab(button.getAttribute("data-badge-tab") || "badges");
+    haptic("light");
+    return true;
+  }
   function updateSaveButtonState() {
     if (!saveFeaturedBtn) return;
     saveFeaturedBtn.disabled = _savingFeatured || !_featuredDirty;
@@ -1759,6 +1781,7 @@
       return;
     }
 
+    setActiveTab("badges");
     if (wallBack) wallBack.style.display = "flex";
     bindTgBackButton();
     haptic("light");
@@ -1783,7 +1806,9 @@
     });
     titlePickerCloseBtn?.addEventListener("click", closeTitlePicker);
 
+    wallBack?.addEventListener("pointerup", handleTabSwitchEvent);
     wallBack?.addEventListener("click", (e) => {
+      if (handleTabSwitchEvent(e)) return;
       if (e.target === wallBack) close();
     });
     titlePickerBack?.addEventListener("click", (e) => {
