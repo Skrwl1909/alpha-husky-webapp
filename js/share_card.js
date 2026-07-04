@@ -408,9 +408,9 @@
     const origin = pickOriginMeta(profile);
     const originLabel = origin?.label || "";
     const factionLabel = resolveProfileFactionLabel(profile);
-    const visualTag = textOf("factionTag", profile?.tag || profile?.cosmetics?.tag || "");
+    const visualTag = textOf("factionTag", profile?.displayTag || profile?.activeTag || profile?.tag || profile?.cosmetics?.tag || "");
     const displayTitle = normalizeDisplayTitle(
-      profile?.title || profile?.active_title || profile?.activeTitle || profile?.displayTitle || ""
+      profile?.displayTitle || profile?.title || profile?.active_title || profile?.activeTitle || ""
     );
 
     return {

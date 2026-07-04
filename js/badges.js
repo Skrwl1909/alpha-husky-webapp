@@ -1,4 +1,4 @@
-﻿// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
+// js/badges.js - Badge Wall v1 (owned badges from existing badge system)
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -16,6 +16,7 @@
   let featuredPill;
   let titlePanelValue;
   let titlePanelButton;
+  let identityGrid;
   let statusBox;
   let gridBox;
   let emptyBox;
@@ -31,6 +32,7 @@
   let _savingFeatured = false;
   let _loadingTitleState = false;
   let _settingTitleState = false;
+  let _settingIdentityState = false;
 
   let _state = {
     badges: [],
@@ -42,6 +44,11 @@
     activeTitle: "",
     displayTitle: "",
     titles: [],
+    activeTag: "",
+    displayTag: "",
+    activeAura: null,
+    ownedTags: [],
+    ownedAuras: [],
   };
   const MAX_FEATURED_BADGES = 3;
   const INVALID_TITLE_VALUES = new Set(["", "NO TITLE", "NO ACTIVE TITLE"]);
@@ -117,6 +124,35 @@
     return toKey(option.key) === toKey(active) || toKey(option.label) === toKey(active);
   }
 
+
+  function normalizeIdentityRows(list, type) {
+    const rows = Array.isArray(list) ? list : [];
+    const out = [];
+    const seen = new Set();
+    for (const raw of rows) {
+      if (!raw || typeof raw !== "object") continue;
+      const key = String(raw.key || raw.auraKey || "").trim();
+      const label = String(raw.label || key).trim();
+      if (!key || !label) continue;
+      const norm = key.toLowerCase();
+      if (seen.has(norm)) continue;
+      seen.add(norm);
+      out.push({
+        key,
+        label,
+        type,
+        rarity: String(raw.rarity || "rare").trim().toLowerCase(),
+        sourceText: String(raw.sourceText || raw.source || "").trim(),
+        owned: !!raw.owned,
+        locked: raw.locked !== false && !raw.owned,
+        active: !!raw.active,
+        temporary: !!raw.temporary,
+        expiresAt: Number(raw.expiresAt || 0),
+        expiresInSec: Number(raw.expiresInSec || 0),
+      });
+    }
+    return out;
+  }
   function normalizeTitleState(payload) {
     const rawTitles = Array.isArray(payload?.titles) ? payload.titles : [];
     const out = [];
@@ -167,6 +203,11 @@
       activeTitle,
       displayTitle,
       titles: out,
+      activeTag: String(payload?.activeTag || payload?.identity?.activeTag || "").trim(),
+      displayTag: String(payload?.displayTag || payload?.identity?.displayTag || "").trim(),
+      activeAura: payload?.activeAura || payload?.identity?.activeAura || null,
+      ownedTags: normalizeIdentityRows(payload?.ownedTags || payload?.identity?.ownedTags, "tag"),
+      ownedAuras: normalizeIdentityRows(payload?.ownedAuras || payload?.identity?.ownedAuras, "aura"),
     };
   }
 
@@ -702,6 +743,43 @@
         border-color:rgba(247,203,124,.3);
         color:#ffe3ae;
       }
+      #badgeWallBack .ah-bw-identity-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+      }
+      #badgeWallBack .ah-bw-identity-section{
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:7px;
+      }
+      #badgeWallBack .ah-bw-identity-head{
+        font-size:10px;
+        font-weight:900;
+        text-transform:uppercase;
+        color:rgba(185,208,230,.82);
+      }
+      #badgeWallBack .ah-bw-identity-list{
+        max-height:190px;
+      }
+      #badgeWallBack .ah-bw-identity-option.is-locked{
+        opacity:.74;
+      }
+      #badgeWallBack .ah-bw-identity-source{
+        min-width:0;
+        color:rgba(204,219,236,.68);
+        font-size:10px;
+        line-height:1.25;
+      }
+      @media (max-width:520px){
+        #badgeWallBack .ah-bw-identity-grid{
+          grid-template-columns:1fr;
+        }
+        #badgeWallBack .ah-bw-identity-list{
+          max-height:160px;
+        }
+      }
       #badgeWallBack .ah-bw-title-active{
         flex-shrink:0;
         font-size:11px;
@@ -752,6 +830,8 @@
             <button class="btn" id="badgeWallTitleButton" type="button">Choose Title</button>
           </div>
 
+          <div class="ah-bw-identity-grid" id="badgeIdentityGrid"></div>
+
           <div class="ah-bw-status" id="badgeWallStatus" hidden></div>
           <div class="ah-bw-grid" id="badgeWallGrid"></div>
           <div class="ah-bw-empty" id="badgeWallEmpty" hidden>No badges available yet.</div>
@@ -781,6 +861,7 @@
     featuredPill = document.getElementById("badgeWallFeatured");
     titlePanelValue = document.getElementById("badgeWallTitleValue");
     titlePanelButton = document.getElementById("badgeWallTitleButton");
+    identityGrid = document.getElementById("badgeIdentityGrid");
     statusBox = document.getElementById("badgeWallStatus");
     gridBox = document.getElementById("badgeWallGrid");
     emptyBox = document.getElementById("badgeWallEmpty");
@@ -890,6 +971,7 @@
 
     updateSaveButtonState();
     updateTitlePanel();
+    renderIdentityLoadout();
   }
 
   function newEl(tag, className, text) {
@@ -930,6 +1012,105 @@
     return row;
   }
 
+
+  function formatIdentityExpiry(item) {
+    const sec = Number(item?.expiresInSec || 0);
+    if (sec <= 0) return "";
+    const days = Math.floor(sec / 86400);
+    if (days > 0) return days + "d left";
+    const hours = Math.max(1, Math.floor(sec / 3600));
+    return hours + "h left";
+  }
+
+  function identityChipText(item) {
+    const parts = [];
+    if (item?.rarity) parts.push(String(item.rarity).toUpperCase());
+    if (item?.temporary) parts.push("TEMP");
+    const expiry = formatIdentityExpiry(item);
+    if (expiry) parts.push(expiry);
+    return parts.join(" / ");
+  }
+
+  function createIdentityOption(kind, item) {
+    const isAura = kind === "aura";
+    const canEquip = !!item?.owned && !item?.active && !(isAura && item?.temporary) && !_settingIdentityState;
+    const row = newEl("button", "ah-bw-title-option ah-bw-identity-option" + (item?.active ? " is-active" : "") + (!item?.owned && !item?.active ? " is-locked" : ""));
+    row.type = "button";
+    row.disabled = !canEquip;
+    row.setAttribute("data-identity-kind", kind);
+    row.setAttribute("data-identity-key", item?.key || "");
+
+    const copy = newEl("div", "ah-bw-title-option-copy");
+    copy.appendChild(newEl("div", "ah-bw-title-option-label", item?.label || item?.key || "Locked"));
+
+    const meta = newEl("div", "ah-bw-title-option-meta");
+    const chip = newEl("span", "ah-bw-title-chip", identityChipText(item) || (item?.owned ? "OWNED" : "LOCKED"));
+    meta.appendChild(chip);
+    const source = String(item?.sourceText || "").trim();
+    if (source) meta.appendChild(newEl("span", "ah-bw-identity-source", source));
+    copy.appendChild(meta);
+    row.appendChild(copy);
+
+    const status = item?.active ? "Equipped" : (item?.owned && !(isAura && item?.temporary) ? "Equip" : "Locked");
+    row.appendChild(newEl("span", "ah-bw-title-active", status));
+
+    if (canEquip) {
+      row.addEventListener("click", () => {
+        equipIdentity(kind, item.key).catch(() => {});
+      });
+    }
+    return row;
+  }
+
+  function createIdentitySection(title, kind, rows) {
+    const section = newEl("div", "ah-bw-identity-section");
+    const head = newEl("div", "ah-bw-identity-head", title);
+    section.appendChild(head);
+    const list = newEl("div", "ah-bw-picker-list ah-bw-identity-list");
+    const items = Array.isArray(rows) ? rows : [];
+    if (!items.length) {
+      list.appendChild(newEl("div", "ah-bw-picker-empty", "No entries available."));
+    } else {
+      for (const item of items) list.appendChild(createIdentityOption(kind, item));
+    }
+    section.appendChild(list);
+    return section;
+  }
+
+  function renderIdentityLoadout() {
+    if (!identityGrid) return;
+    clearEl(identityGrid);
+    identityGrid.appendChild(createIdentitySection("Tags", "tag", _titleState.ownedTags));
+    identityGrid.appendChild(createIdentitySection("Auras", "aura", _titleState.ownedAuras));
+  }
+
+  async function equipIdentity(kind, selectedKey) {
+    const key = String(selectedKey || "").trim();
+    if (!_apiPost || !key || _settingIdentityState) return;
+    const action = kind === "aura" ? "set_active_aura" : "set_active_tag";
+    const field = kind === "aura" ? "aura_key" : "tag_key";
+    _settingIdentityState = true;
+    renderIdentityLoadout();
+    setStatus("Equipping " + (kind === "aura" ? "aura" : "tag") + "...", "");
+    try {
+      const out = await _apiPost("/webapp/player/title/state", { action, [field]: key });
+      if (!out || out.ok === false) throw new Error(out?.reason || "IDENTITY_SET_FAILED");
+      _titleState = normalizeTitleState(out);
+      updateSummary();
+      renderIdentityLoadout();
+      setStatus((kind === "aura" ? "Aura" : "Tag") + " equipped.", "");
+      try { if (typeof window.loadProfile === "function") window.loadProfile(); } catch (_) {}
+      haptic("light");
+    } catch (err) {
+      dbg("set identity failed", err);
+      setStatus("Failed to equip " + (kind === "aura" ? "aura" : "tag") + ".", "error");
+      haptic("light");
+      throw err;
+    } finally {
+      _settingIdentityState = false;
+      renderIdentityLoadout();
+    }
+  }
   function renderTitlePicker() {
     if (!titlePickerList || !titlePickerEmpty) return;
     clearEl(titlePickerList);
@@ -964,6 +1145,7 @@
       _titleState = next;
       updateSummary();
       renderTitlePicker();
+      renderIdentityLoadout();
       if (!silent) setTitlePickerStatus("");
       return next;
     } catch (err) {
@@ -998,6 +1180,7 @@
       _titleState = normalizeTitleState(out);
       updateSummary();
       renderTitlePicker();
+      renderIdentityLoadout();
       closeTitlePicker();
       setStatus("Title equipped.", "");
       haptic("light");
@@ -1376,6 +1559,7 @@
       updateSummary();
       renderBadges();
       renderTitlePicker();
+      renderIdentityLoadout();
       setStatus("");
     } catch (err) {
       dbg("refresh failed", err);
@@ -1384,6 +1568,7 @@
         renderBadges();
       }
       renderTitlePicker();
+      renderIdentityLoadout();
       throw err;
     }
   }
