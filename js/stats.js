@@ -213,6 +213,13 @@
         recommendedAction: toText(boss.recommendedAction, ""),
         notReadyCopy: toText(boss.notReadyCopy, ""),
         readyCopy: toText(boss.readyCopy, ""),
+        bossPrep: Math.max(0, n(boss.bossPrep ?? boss.bossPrepProgress, 0)),
+        bossPrepMax: Math.max(1, n(boss.bossPrepMax, 3)),
+        readinessState: toText(boss.readinessState, "Untracked"),
+        readinessLevel: Math.max(0, n(boss.readinessLevel, 0)),
+        intel: Math.max(0, n(boss.intel, 0)),
+        gateProgress: Math.max(0, n(boss.gateProgress, 0)),
+        readinessMicrocopy: toText(boss.readinessMicrocopy, ""),
         isMiniMilestone: !!boss.isMiniMilestone,
         isMilestoneBoss: !!boss.isMilestoneBoss,
         role: toText(boss.role, "MoonLab Boss Wall"),
@@ -240,6 +247,14 @@
       sector: preview.sector,
       sectorFloor: preview.sectorFloor,
       bossName: toText(boss.name, "Unknown"),
+      bossId: toText(boss.bossId || boss.key, ""),
+      bossPrep: Math.max(0, n(boss.bossPrep ?? boss.bossPrepProgress, 0)),
+      bossPrepMax: Math.max(1, n(boss.bossPrepMax, 3)),
+      readinessState: toText(boss.readinessState, "Untracked"),
+      readinessLevel: Math.max(0, n(boss.readinessLevel, 0)),
+      intel: Math.max(0, n(boss.intel, 0)),
+      gateProgress: Math.max(0, n(boss.gateProgress, 0)),
+      readinessMicrocopy: toText(boss.readinessMicrocopy, ""),
       bossPower: Math.max(0, n(boss.power, 0)),
       bossDanger: Math.max(0, n(boss.danger, 0)),
       cooldownLeftSec: Math.max(0, n(preview.cooldownLeftSec, 0)),
@@ -394,6 +409,19 @@
         missingPower: Math.max(0, n(nextAlphaGoalRaw.missingPower, missingPower)),
         nextUnlockLabel: toText(nextAlphaGoalRaw.nextUnlockLabel, toText(raw.nextUnlockLabel, fallbackThreshold.label)),
         recommendedAction: toText(nextAlphaGoalRaw.recommendedAction, toText(raw.recommendedAction, "Complete missions to stabilize your signal.")),
+        blockerBossId: toText(nextAlphaGoalRaw.blockerBossId, ""),
+        blockerDisplayName: toText(nextAlphaGoalRaw.blockerDisplayName, ""),
+        bossPrep: Math.max(0, n(nextAlphaGoalRaw.bossPrep, 0)),
+        bossPrepMax: Math.max(1, n(nextAlphaGoalRaw.bossPrepMax, 3)),
+        readiness: toText(nextAlphaGoalRaw.readiness, "Untracked"),
+        readinessLevel: Math.max(0, n(nextAlphaGoalRaw.readinessLevel, 0)),
+        intel: Math.max(0, n(nextAlphaGoalRaw.intel, 0)),
+        gateProgress: Math.max(0, n(nextAlphaGoalRaw.gateProgress, 0)),
+        suggestedElitePlan: (nextAlphaGoalRaw.suggestedElitePlan && typeof nextAlphaGoalRaw.suggestedElitePlan === "object") ? {
+          key: toText(nextAlphaGoalRaw.suggestedElitePlan.key, "standard_plan"),
+          label: toText(nextAlphaGoalRaw.suggestedElitePlan.label, "Standard Plan"),
+        } : null,
+        nextAction: toText(nextAlphaGoalRaw.nextAction, ""),
         moonlabWallSummary: wallSummary || { available: false, bossName: "", bossPower: 0, missingPower: 0, status: "Syncing" },
         isPreview: nextAlphaGoalRaw.isPreview !== false,
       } : null,
@@ -546,6 +574,13 @@
         nextThreshold: { value: nextThresholdValue, label: nextUnlockLabel },
         missingPower,
         bestMove,
+        blockerBossId: useGoal ? toText(alphaGoal.blockerBossId, "") : "",
+        blockerDisplayName: useGoal ? toText(alphaGoal.blockerDisplayName, "") : "",
+        bossPrep: useGoal ? Math.max(0, n(alphaGoal.bossPrep, 0)) : 0,
+        bossPrepMax: useGoal ? Math.max(1, n(alphaGoal.bossPrepMax, 3)) : 3,
+        readiness: useGoal ? toText(alphaGoal.readiness, "Untracked") : "Untracked",
+        suggestedElitePlan: useGoal ? alphaGoal.suggestedElitePlan : null,
+        nextAction: useGoal ? toText(alphaGoal.nextAction, "") : "",
         fortress: wall.available ? {
           currentFloor: wall.currentFloor,
           bestFloor: wall.bestFloor,
@@ -1514,6 +1549,13 @@
     ensureStyles();
     const root = qs("statsRoot");
     if (!root) return;
+    const goalBossName = toText(goal.blockerDisplayName, "");
+    const prepLine = goalBossName
+      ? `Boss Prep ${Math.max(0, n(goal.bossPrep, 0))}/${Math.max(1, n(goal.bossPrepMax, 3))} | ${toText(goal.readiness, "Untracked")}`
+      : "";
+    const suggestedPlan = toText(goal.suggestedElitePlan?.label, "");
+    const nextAction = toText(goal.nextAction, "");
+
     root.innerHTML = `
       <div class="ahs-wrap">
         <div class="ahs-card">
@@ -1590,9 +1632,12 @@
             <div class="ahg-row"><span>Floor</span><b>${esc(floorLabel)}</b></div>
             <div class="ahg-row"><span>Status</span><b>${esc(statusLabel)}</b></div>
             <div class="ahg-row"><span>Next Signal Unlock</span><b>${esc(nextSignalUnlock)}</b></div>
+            ${goalBossName ? `<div class="ahg-row"><span>Blocker Boss</span><b>${esc(goalBossName)}</b></div>` : ""}
+            ${prepLine ? `<div class="ahg-row"><span>Boss Prep</span><b>${esc(prepLine)}</b></div>` : ""}
+            ${suggestedPlan ? `<div class="ahg-row"><span>Suggested Plan</span><b>${esc(suggestedPlan)}</b></div>` : ""}
           </div>
 
-          <div class="ahg-move"><b>Best Move:</b> ${esc(hubBestMove)}</div>
+          <div class="ahg-move"><b>Best Move:</b> ${esc(nextAction || hubBestMove)}</div>
           ${renderEliteMissionsBridge(stats)}
         </div>
       </div>
@@ -1638,6 +1683,19 @@
       boss.recommendedAction,
       resolveStatsMoonlabRecommended(ctx)
     );
+    const bossPrep = Math.max(0, n(boss.bossPrep ?? wall.bossPrep, 0));
+    const bossPrepMax = Math.max(1, n(boss.bossPrepMax ?? wall.bossPrepMax, 3));
+    const readiness = toText(boss.readinessState || wall.readinessState, "Untracked");
+    const intel = Math.max(0, n(boss.intel ?? wall.intel, 0));
+    const gateProgress = Math.max(0, n(boss.gateProgress ?? wall.gateProgress, 0));
+    const readinessMicrocopy = toText(
+      boss.readinessMicrocopy || wall.readinessMicrocopy,
+      readiness === "Prepared"
+        ? "Attempt recommended. Signal Power still matters."
+        : readiness === "Scouted"
+          ? "Weak signal mapped. More prep recommended."
+          : "Run Elite Mission or check War Table."
+    );
     const statusCopy = boss.status === "ready_preview"
       ? toText(boss.readyCopy, "Your signal can challenge this chamber.")
       : (boss.status === "cooldown"
@@ -1657,8 +1715,10 @@
               Requires: ${esc(requiredPower)} Signal Power<br>
               Your Signal: ${esc(playerSignal)}<br>
               ${missingPower > 0 ? `Missing: +${esc(missingPower)}<br>` : ""}
-              Status: ${esc(statusChip)}
+              Status: ${esc(statusChip)}<br>
+              Boss Prep: ${esc(`${bossPrep}/${bossPrepMax}`)} | ${esc(readiness)}${intel ? ` | Intel ${esc(intel)}` : ""}${gateProgress ? ` | Gate ${esc(gateProgress)}` : ""}
             </div>
+            <div class="ahs-moonlab-copy" style="margin-top:6px">${esc(readinessMicrocopy)}</div>
             <div class="ahs-moonlab-section">Preview</div>
             <div class="ahs-moonlab-copy">${esc(rewardPreview)}</div>
             <div class="ahs-moonlab-section">Best Move</div>

@@ -696,7 +696,12 @@
         },
         bossPrepSummary: {
           bossPrepProgress: asCount(bossPrepSummary.bossPrepProgress),
+          bossPrep: asCount(bossPrepSummary.bossPrep || bossPrepSummary.bossPrepProgress),
+          bossPrepMax: Math.max(1, asCount(bossPrepSummary.bossPrepMax || bossPrepSummary.preparedAt || 3)),
           hasBossPrepProgress: !!bossPrepSummary.hasBossPrepProgress,
+          readinessState: String(bossPrepSummary.readinessState || bossPrepSummary.readiness?.state || "Untracked").trim(),
+          intel: asCount(bossPrepSummary.intel),
+          gateProgress: asCount(bossPrepSummary.gateProgress),
           summary: String(bossPrepSummary.summary || "Boss Prep status is syncing.").trim()
         },
         bossWall: {
@@ -708,7 +713,12 @@
           requiredSignalPower: asCount(bossWall.requiredSignalPower),
           missingPower: asCount(bossWall.missingPower),
           recommendedAction: String(bossWall.recommendedAction || "").trim(),
-          readinessState: String(bossWall.readinessState || "Untracked").trim()
+          bossPrep: asCount(bossWall.bossPrep || bossWall.bossPrepProgress),
+          bossPrepMax: Math.max(1, asCount(bossWall.bossPrepMax || 3)),
+          intel: asCount(bossWall.intel),
+          gateProgress: asCount(bossWall.gateProgress),
+          readinessState: String(bossWall.readinessState || "Untracked").trim(),
+          readinessMicrocopy: String(bossWall.readinessMicrocopy || "").trim()
         },
         targetRelevance: {
           recommendedOperation: normalizeBriefOp(targetRelevance.recommendedOperation),
@@ -2408,12 +2418,19 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     const eliteValue = locked
       ? "Locked"
       : `${elite.headline || "Elite Operations Tier I"} | ${elite.status || "syncing"}`;
+    const bossPrepBits = [];
+    if (!locked) {
+      bossPrepBits.push(`Boss Prep ${asCount(bossWall.bossPrep || bossPrep.bossPrep)}/${Math.max(1, asCount(bossWall.bossPrepMax || bossPrep.bossPrepMax || 3))}`);
+      bossPrepBits.push(bossWall.readinessState || bossPrep.readinessState || "Untracked");
+      if (asCount(bossWall.intel || bossPrep.intel) > 0) bossPrepBits.push(`Intel ${asCount(bossWall.intel || bossPrep.intel)}`);
+      if (asCount(bossWall.gateProgress || bossPrep.gateProgress) > 0) bossPrepBits.push(`Gate ${asCount(bossWall.gateProgress || bossPrep.gateProgress)}`);
+    }
     const bossPrepValue = locked
       ? "Locked"
-      : (bossPrep.summary || `Boss Prep progress: ${asCount(bossPrep.bossPrepProgress)}`);
+      : (bossPrepBits.length ? bossPrepBits.join(" | ") : (bossPrep.summary || `Boss Prep progress: ${asCount(bossPrep.bossPrepProgress)}`));
     const bossWallValue = locked
       ? "Locked"
-      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.arcName ? ` | ${bossWall.arcName}` : ""}${bossWall.readinessState ? ` | ${bossWall.readinessState}` : ""}`;
+      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.arcName ? ` | ${bossWall.arcName}` : ""}${bossWall.readinessMicrocopy ? ` | ${bossWall.readinessMicrocopy}` : ""}`;
     const recommendedOp = targetRelevance.recommendedOperation;
     const suggestedPlan = targetRelevance.suggestedPlan;
     const gateOp = targetRelevance.gateBreachOpportunity;

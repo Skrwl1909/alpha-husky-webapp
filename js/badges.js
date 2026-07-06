@@ -244,6 +244,24 @@
     const rarity = String(value || "common").trim().toLowerCase();
     return RARITY_CLASS[rarity] ? rarity : "common";
   }
+
+  function normalizeBadgeProgress(raw) {
+    const source = (raw?.progress && typeof raw.progress === "object")
+      ? raw.progress
+      : ((raw?.progressPayload && typeof raw.progressPayload === "object")
+        ? raw.progressPayload
+        : ((raw?.progress_payload && typeof raw.progress_payload === "object") ? raw.progress_payload : null));
+    if (!source) return null;
+    const target = Number(source.target);
+    if (!Number.isFinite(target) || target <= 0) return null;
+    const current = Math.max(0, Math.min(Number(source.current) || 0, target));
+    const percentRaw = Number(source.percent);
+    const percent = Number.isFinite(percentRaw)
+      ? Math.max(0, Math.min(100, percentRaw))
+      : Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+    const label = String(source.label || (String(current) + "/" + String(target))).trim();
+    return { current, target, label, percent };
+  }
   function frameToneText(badge) {
     return String(
       badge?.framePublicId || badge?.frame_public_id || badge?.frameUrl || badge?.frame_url || ""
@@ -999,42 +1017,53 @@
     if (titlePickerBack) titlePickerBack.hidden = false;
   }
 
+  function normalizeBadgeTabKey(tab) {
+    const key = String(tab || "").trim().toLowerCase();
+    return ["badges", "titles", "tags", "auras"].includes(key) ? key : "badges";
+  }
+
+  function stopTabEvent(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation?.();
+  }
+
   function setActiveTab(tab) {
-    const next = ["badges", "titles", "tags", "auras"].includes(tab) ? tab : "badges";
+    const next = normalizeBadgeTabKey(tab);
     _activeTab = next;
 
     for (const button of tabButtons) {
-      const isActive = button.getAttribute("data-badge-tab") === next;
+      const isActive = normalizeBadgeTabKey(button.getAttribute("data-badge-tab")) === next;
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-selected", isActive ? "true" : "false");
     }
 
     for (const panel of tabPanels) {
-      panel.hidden = panel.getAttribute("data-badge-panel") !== next;
+      panel.hidden = normalizeBadgeTabKey(panel.getAttribute("data-badge-panel")) !== next;
     }
   }
 
   function handleTabSwitchEvent(e) {
+    const now = Date.now();
+    if (e.type === "click" && now - _lastTabPointerAt < 450) {
+      stopTabEvent(e);
+      return true;
+    }
+
     const button = e.target?.closest?.("[data-badge-tab]");
     if (!button || !wallBack || !wallBack.contains(button)) return false;
 
-    const now = Date.now();
-    if (e.type === "click" && now - _lastTabPointerAt < 450) {
-      e.preventDefault();
-      e.stopPropagation();
-      return true;
-    }
     if (e.type === "pointerup") {
       if (e.button != null && e.button !== 0) return false;
       _lastTabPointerAt = now;
     }
 
-    e.preventDefault();
-    e.stopPropagation();
-    setActiveTab(button.getAttribute("data-badge-tab") || "badges");
+    stopTabEvent(e);
+    setActiveTab(button.getAttribute("data-badge-tab"));
     haptic("light");
     return true;
   }
+
   function updateSaveButtonState() {
     if (!saveFeaturedBtn) return;
     saveFeaturedBtn.disabled = _savingFeatured || !_featuredDirty;
@@ -1566,8 +1595,13 @@
     const desc = String(badge.description || "").trim() || "Prestige badge.";
     detailBox.appendChild(newEl("p", "ah-bw-detail-desc", desc));
 
+    const progressPayload = badge.progress && typeof badge.progress === "object" ? badge.progress : null;
+    if (!mastery && progressPayload?.label) {
+      detailBox.appendChild(newEl("div", "ah-bw-detail-meta", "Progress: " + progressPayload.label));
+    }
+
     if (mastery) {
-      const progress = Math.max(0, Number(badge.progress) || 0);
+      const progress = Math.max(0, Number(badge.progressValue) || 0);
       const nextRaw = (badge.nextThreshold != null) ? badge.nextThreshold : badge.next_threshold;
       const next = Number(nextRaw);
       const nextTierName = String(badge.nextTierName || badge.next_tier_name || "").trim();
@@ -1701,7 +1735,8 @@
       family: String(raw?.family || "").trim().toLowerCase(),
       tier: Number.isFinite(Number(raw?.tier)) ? Number(raw.tier) : 0,
       tierName: String(raw?.tierName || raw?.tier_name || "").trim(),
-      progress: Number.isFinite(Number(raw?.progress)) ? Math.max(0, Number(raw.progress)) : 0,
+      progress: normalizeBadgeProgress(raw),
+      progressValue: Number.isFinite(Number(raw?.progress)) ? Math.max(0, Number(raw.progress)) : 0,
       nextThreshold: nextThreshold,
       nextTierName: String(raw?.nextTierName || raw?.next_tier_name || "").trim(),
       maxTier: raw?.maxTier === true || raw?.max_tier === true,
@@ -1806,11 +1841,11 @@
     });
     titlePickerCloseBtn?.addEventListener("click", closeTitlePicker);
 
-    wallBack?.addEventListener("pointerup", handleTabSwitchEvent);
+    wallBack?.addEventListener("pointerup", handleTabSwitchEvent, true);
     wallBack?.addEventListener("click", (e) => {
       if (handleTabSwitchEvent(e)) return;
       if (e.target === wallBack) close();
-    });
+    }, true);
     titlePickerBack?.addEventListener("click", (e) => {
       if (e.target === titlePickerBack) closeTitlePicker();
     });

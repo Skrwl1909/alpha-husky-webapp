@@ -277,7 +277,23 @@
 #fb-stage .fb-name{font:800 13px system-ui;opacity:.92;text-align:center}
 
 /* board + log */
-#fb-board{margin:0;background:rgba(255,255,255,.06);padding:8px;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.ahs-fight-board{display:grid;gap:8px;margin:0;background:rgba(255,255,255,.055);padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.07)}
+.ahs-fight-hp-row{display:grid;grid-template-columns:minmax(54px,70px) minmax(0,1fr) auto;align-items:center;gap:8px;font-size:12px}
+.ahs-fight-hp-name{font-weight:900;text-transform:uppercase;color:rgba(244,248,255,.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ahs-fight-hp-track{height:9px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.045)}
+.ahs-fight-hp-fill{display:block;height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,rgba(16,185,129,.86),rgba(103,232,249,.82));transition:width .18s ease}
+.ahs-fight-hp-fill.is-boss{background:linear-gradient(90deg,rgba(248,113,113,.88),rgba(251,191,36,.82))}
+.ahs-fight-hp-num{font-weight:800;color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ahs-fight-latest{padding:8px 10px;border-radius:10px;background:rgba(103,232,249,.07);border:1px solid rgba(103,232,249,.10);font-size:12px;font-weight:800;color:#e7fbff;min-height:32px}
+.ahs-fight-result{display:grid;gap:8px;margin-top:6px;padding:10px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10)}
+.ahs-fight-result-title{font-size:14px;font-weight:900;color:#fff}
+.ahs-fight-result-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;font-size:12px;line-height:1.35}
+.ahs-fight-result-row span{color:rgba(235,242,255,.72)}
+.ahs-fight-result-row b{text-align:right;color:#fff;font-weight:800}
+#fb-stage .fb-boss.is-hit{animation:ahsBossHit 180ms ease-out}
+#fb-stage .fb-avatar.is-hit{animation:ahsAvatarHit 180ms ease-out}
+@keyframes ahsBossHit{0%,100%{transform:translate3d(0,0,0);filter:drop-shadow(0 14px 28px rgba(0,0,0,.45)) brightness(1)}45%{transform:translate3d(3px,-1px,0);filter:drop-shadow(0 14px 28px rgba(0,0,0,.45)) brightness(1.35)}}
+@keyframes ahsAvatarHit{0%,100%{transform:translate3d(0,0,0);filter:brightness(1)}45%{transform:translate3d(-2px,1px,0);filter:brightness(1.25)}}
 #fb-log{
   flex:1;
   min-height:0;
@@ -602,11 +618,24 @@ function normalizeFortressPayload(raw) {
     const signalPower = hasSignalPower ? (Number(signalPowerRaw) || 0) : null;
     const requiredSignalPower = Number(wall.requiredSignalPower || 0) || 0;
     const missingPower = hasSignalPower && requiredSignalPower > 0 ? Math.max(0, requiredSignalPower - signalPower) : null;
-    const readinessRaw = String(st?.bossPrepReadiness?.state || st?.readinessState || st?.bossWallReadiness || "").trim();
+    const prepState = (st?.bossPrepReadiness && typeof st.bossPrepReadiness === "object") ? st.bossPrepReadiness : ((st?.bossProgressState && typeof st.bossProgressState === "object") ? st.bossProgressState : {});
+    const readinessRaw = String(prepState.state || prepState.readinessState || st?.readinessState || st?.bossWallReadiness || "").trim();
     const readiness = readinessRaw ? readinessRaw.charAt(0).toUpperCase() + readinessRaw.slice(1).toLowerCase() : "Untracked";
+    const bossPrep = Math.max(0, Number(prepState.bossPrep ?? prepState.bossPrepProgress ?? 0) || 0);
+    const bossPrepMax = Math.max(1, Number(prepState.bossPrepMax ?? prepState.preparedAt ?? 3) || 3);
+    const intel = Math.max(0, Number(prepState.intel || 0) || 0);
+    const gateProgress = Math.max(0, Number(prepState.gateProgress || 0) || 0);
+    const readinessCopy = String(prepState.microcopy || "").trim() || (
+      readiness === "Prepared"
+        ? "Attempt recommended. Signal Power still matters."
+        : readiness === "Scouted"
+          ? "Weak signal mapped. More prep recommended."
+          : "Run Elite Mission or check War Table."
+    );
     const bossWallStatus = missingPower == null ? "Boss Wall: Not Ready" : (missingPower > 0 ? `Signal Shortfall: ${missingPower}` : "Boss Wall: Ready");
     const floorText = wall.floorStart && wall.floorEnd ? `${wall.floorStart}-${wall.floorEnd}` : "";
     const lore = wall.shortLore || wall.visualDirection || wall.notReadyCopy || "MoonLab signal target identified.";
+    const prepLine = `Boss Prep ${bossPrep}/${bossPrepMax} | ${readiness}${intel ? ` | Intel ${intel}` : ""}${gateProgress ? ` | Gate ${gateProgress}` : ""}`;
 
     return `<div class="fx-boss-wall">
       <div class="fx-boss-art">${renderBossWallArt(wall)}</div>
@@ -618,9 +647,11 @@ function normalizeFortressPayload(raw) {
           <span>Required<b>${esc(requiredSignalPower)}</b></span>
           <span>Your Signal<b>${hasSignalPower ? esc(signalPower) : "Check Progression"}</b></span>
           <span>Missing<b>${missingPower == null ? "&mdash;" : esc(missingPower)}</b></span>
-          <span>Prep<b>${esc(readiness)}</b></span>
+          <span>Prep<b>${esc(`${bossPrep}/${bossPrepMax}`)}</b></span>
         </div>
         <div class="fx-boss-readiness">${esc(bossWallStatus)}</div>
+        <div class="fx-boss-readiness">${esc(prepLine)}</div>
+        <div class="fx-boss-lore">${esc(readinessCopy)}</div>
         <div class="fx-boss-lore">${esc(lore)}</div>
         <div class="fx-encounter-callout"><b>Current Encounter:</b> ${esc(currentEncounter)}<br><span class="fx-note">Existing MoonLab combat enemy.</span></div>
       </div>
@@ -992,14 +1023,6 @@ function normalizeFortressPayload(raw) {
   }
 
   // ---------- battle helpers ----------
-  function hpbar(cur, max) {
-    const W = 18;
-    cur = Math.max(0, cur | 0);
-    max = Math.max(1, max | 0);
-    const fill = Math.round(W * (cur / max));
-    return "#".repeat(fill) + "-".repeat(W - fill);
-  }
-
   function cloudThumb(url, size = 256) {
   url = String(url || "").trim();
   if (!url) return "";
@@ -1137,14 +1160,35 @@ function renderFortressBattle(data) {
 
   const playerAvatarUrl = getPlayerBattleAvatarUrl(data);
   console.log("[Fortress] playerAvatarUrl =", playerAvatarUrl);
+  function hpPct(cur, max) {
+    const c = Math.max(0, Number(cur) || 0);
+    const m = Math.max(1, Number(max) || 1);
+    return clamp(Math.round((c / m) * 100), 0, 100);
+  }
+
+  function renderHpRow(label, cur, max, extraClass = "") {
+    const c = Math.max(0, Number(cur) || 0);
+    const m = Math.max(1, Number(max) || 1);
+    const pct = hpPct(c, m);
+    const fillClass = extraClass ? `ahs-fight-hp-fill ${extraClass}` : "ahs-fight-hp-fill";
+    return `<div class="ahs-fight-hp-row">
+      <div class="ahs-fight-hp-name">${esc(label)}</div>
+      <div class="ahs-fight-hp-track"><i class="${fillClass}" style="width:${pct}%"></i></div>
+      <div class="ahs-fight-hp-num">${esc(c)}/${esc(m)}</div>
+    </div>`;
+  }
+
+  function renderHpBoard(playerCur, playerMax, bossCur, bossMax) {
+    return renderHpRow("You", playerCur, playerMax) + renderHpRow("Encounter", bossCur, bossMax, "is-boss");
+  }
 
   const cont = el("div", "fortress-battle");
   cont.innerHTML = `
     <div class="fx-head" style="margin-bottom:6px">
       <div>
-        <div class="fx-sub">MoonLab Boss Ladder</div>
+        <div class="fx-sub">Boss Wall Target</div>
         <div class="fx-title">Boss Wall: ${esc(battleWallName)}</div>
-        <div class="fx-sub">Floor ${data.currentFloor ?? data.level ?? data.lvl ?? "?"} - Current Encounter: ${esc(bossLabelTxt)}</div>
+        <div class="fx-sub">Current Encounter: ${esc(bossLabelTxt)} - Floor ${data.currentFloor ?? data.level ?? data.lvl ?? "?"}</div>
       </div>
       <button class="fx-x" id="fb-x" type="button">x</button>
     </div>
@@ -1158,14 +1202,16 @@ function renderFortressBattle(data) {
             <div class="fb-tag">YOU</div>
           </div>
           <div class="fb-side">
-            <img class="fb-boss" id="fb-boss-img" alt="Boss">
+            <img class="fb-boss" id="fb-boss-img" alt="Current Encounter">
+            <div class="fb-tag">CURRENT ENCOUNTER</div>
             <div class="fb-name" id="fb-boss-name"></div>
           </div>
         </div>
       </div>
 
-      <pre id="fb-board">YOU  [${hpbar(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1)}] ${data.player?.hpMax ?? 0}/${data.player?.hpMax ?? 0}
-BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax ?? 0}/${data.boss?.hpMax ?? 0}</pre>
+      <div id="fb-board" class="ahs-fight-board">${renderHpBoard(data.player?.hpMax ?? 0, data.player?.hpMax ?? 1, data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}</div>
+
+      <div id="fb-latest-action" class="ahs-fight-latest">Fight preview starting.</div>
 
       <div id="fb-log"></div>
     </div>
@@ -1568,6 +1614,18 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
 
   const logEl = $("#fb-log", cont);
   const boardEl = $("#fb-board", cont);
+  function setLatestAction(msg) {
+    const latestEl = $("#fb-latest-action", cont);
+    if (latestEl) latestEl.textContent = String(msg || "");
+  }
+
+  function pulseHit(node) {
+    if (!node) return;
+    node.classList.remove("is-hit");
+    void node.offsetWidth;
+    node.classList.add("is-hit");
+    setTimeout(() => node.classList.remove("is-hit"), 220);
+  }
 
   function dmgPos(actor) {
     const host = stageHost;
@@ -1582,41 +1640,57 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
   let pHpNow = data.player?.hpMax ?? 0;
   let bHpNow = data.boss?.hpMax ?? 0;
   let idx = 0;
+  function renderResultRow(label, value) {
+    if (value == null || value === "") return "";
+    return `<div class="ahs-fight-result-row"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;
+  }
+
+  function renderFightResultHtml() {
+    const won = data.winner === "you";
+    const matsSrc = data.rewards?.materials || data.rewards || {};
+    const rewards = [];
+    if (matsSrc.bones) rewards.push(`Bones x${matsSrc.bones}`);
+    if (matsSrc.scrap) rewards.push(`Scrap x${matsSrc.scrap}`);
+    if (matsSrc.rune_dust) rewards.push(`Rune Dust x${matsSrc.rune_dust}`);
+    if (matsSrc.universal_key_shards) rewards.push(`Key Shards x${matsSrc.universal_key_shards}`);
+
+    if (data.rewards?.loot && isRarePlusRarity(data.rewards.loot.rarity)) {
+      const rr = String(data.rewards.loot.rarity || "").toUpperCase();
+      const nm = data.rewards.loot.name ? `: ${data.rewards.loot.name}` : "";
+      rewards.push(`${rr} gear${nm}`);
+    }
+
+    const firstClear = [];
+    const fcRarePlus = data.rewards?.firstClearRarePlus || data.firstClearRarePlus || null;
+    if (fcRarePlus && isRarePlusRarity(fcRarePlus.rarity)) {
+      const rr = String(fcRarePlus.rarity || "rare").toUpperCase();
+      const nm = fcRarePlus.name ? `: ${fcRarePlus.name}` : "";
+      firstClear.push(`${rr} gear${nm}`);
+    }
+    if (data.rewards?.firstClear?.length) firstClear.push(data.rewards.firstClear.join(", "));
+
+    const notes = [];
+    if (data.rewards?.summary?.length) notes.push(data.rewards.summary.join(" - "));
+    if (data.report?.hint) notes.push(data.report.hint);
+
+    const nextFloor = data.next?.nextFloorUnlocked || data.next?.floor || data.next?.level || "";
+    const floorValue = data.currentFloor ?? data.level ?? data.lvl ?? "";
+    return `<div class="ahs-fight-result">
+      <div class="ahs-fight-result-title">${won ? "Victory" : "Defeat"}</div>
+      ${renderResultRow(won ? "Floor cleared" : "Floor held", floorValue)}
+      ${renderResultRow("Rewards", rewards.join(", "))}
+      ${renderResultRow("First Clear", firstClear.join(", "))}
+      ${renderResultRow("Next Floor", nextFloor)}
+      ${renderResultRow("Notes", notes.join(" - "))}
+    </div>`;
+  }
 
   function step() {
     const steps = data.steps || [];
     if (idx >= steps.length) {
-      const lines = [];
-      lines.push(data.winner === "you" ? "Victory!" : "Defeat!");
-
-      const matsSrc = data.rewards?.materials || data.rewards || {};
-      const mats = [];
-      if (matsSrc.bones) mats.push(`Bones x${matsSrc.bones}`);
-      if (matsSrc.scrap) mats.push(`Scrap x${matsSrc.scrap}`);
-      if (matsSrc.rune_dust) mats.push(`Rune Dust x${matsSrc.rune_dust}`);
-      if (matsSrc.universal_key_shards) mats.push(`Key Shards x${matsSrc.universal_key_shards}`);
-      if (mats.length) lines.push("Rewards: " + mats.join(", "));
-
-      const fcRarePlus = data.rewards?.firstClearRarePlus || data.firstClearRarePlus || null;
-      if (fcRarePlus && isRarePlusRarity(fcRarePlus.rarity)) {
-        const rr = String(fcRarePlus.rarity || "rare").toUpperCase();
-        const nm = fcRarePlus.name ? `: ${fcRarePlus.name}` : "";
-        lines.push(`First Clear ${rr} gear${nm}`);
-      }
-      if (data.rewards?.loot && isRarePlusRarity(data.rewards.loot.rarity)) {
-        const rr = String(data.rewards.loot.rarity || "").toUpperCase();
-        const nm = data.rewards.loot.name ? `: ${data.rewards.loot.name}` : "";
-        lines.push(`${rr} gear${nm}`);
-      }
-      if (data.rewards?.firstClear?.length) lines.push("First clear: " + data.rewards.firstClear.join(", "));
-      if (data.rewards?.summary?.length) lines.push(data.rewards.summary.join(" - "));
-      if (data.report?.hint) lines.push(data.report.hint);
-      if (data.next?.floor || data.next?.level) lines.push(`Next Floor: ${data.next?.nextFloorUnlocked || data.next?.floor || data.next?.level}`);
-
-      logEl?.insertAdjacentHTML(
-        "beforeend",
-        `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)">${lines.join("<br>")}</div>`
-      );
+      const outcomeText = data.winner === "you" ? "Victory!" : "Defeat!";
+      setLatestAction(outcomeText);
+      logEl?.insertAdjacentHTML("beforeend", renderFightResultHtml());
       if (logEl) logEl.scrollTop = logEl.scrollHeight;
       return;
     }
@@ -1633,21 +1707,27 @@ BOSS [${hpbar(data.boss?.hpMax ?? 0, data.boss?.hpMax ?? 1)}] ${data.boss?.hpMax
       const youTxt = dodge
         ? "You missed. Boss dodged."
         : "You hit for " + dmg + (crit ? " (CRIT)" : "") + ".";
+      setLatestAction(youTxt);
       logEl?.insertAdjacentHTML("beforeend", `<div>${esc(youTxt)}</div>`);
-      if (!dodge && dmg > 0) bossShakeFrames = 8;
+      if (!dodge && dmg > 0) {
+        bossShakeFrames = 8;
+        pulseHit(bossImgEl);
+      }
     } else {
       pHpNow = s0.p_hp ?? pHpNow;
       const bossTxt = dodge
         ? "Boss missed. You dodged."
         : "Boss hits for " + dmg + (crit ? " (CRIT)" : "") + ".";
+      setLatestAction(bossTxt);
       logEl?.insertAdjacentHTML("beforeend", `<div>${esc(bossTxt)}</div>`);
-      if (!dodge && dmg > 0) playerShakeFrames = 8;
+      if (!dodge && dmg > 0) {
+        playerShakeFrames = 8;
+        pulseHit(youImgEl);
+      }
     }
 
     if (boardEl) {
-      boardEl.textContent =
-        `YOU  [${hpbar(pHpNow, data.player?.hpMax ?? 1)}] ${pHpNow}/${data.player?.hpMax ?? 0}\n` +
-        `BOSS [${hpbar(bHpNow, data.boss?.hpMax ?? 1)}] ${bHpNow}/${data.boss?.hpMax ?? 0}`;
+      boardEl.innerHTML = renderHpBoard(pHpNow, data.player?.hpMax ?? 1, bHpNow, data.boss?.hpMax ?? 1);
     }
 
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
