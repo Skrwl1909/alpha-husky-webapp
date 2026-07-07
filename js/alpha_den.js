@@ -3,6 +3,7 @@
   const ROOT_ID = "alphaDenRoot";
   const STYLE_ID = "alphaDenStyles";
   const BUILDING_ORDER = ["signal_core", "pet_kennel", "war_table"];
+  const ROOM_MAP_LABELS_DEBUG = false;
   const MAX_BUILD_LEVEL = 3;
   const BUILD_LEVELS = {
     1: { cost: { bones: 7500, scrap: 100 }, buildSeconds: 43200 },
@@ -84,14 +85,14 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Lower-left pack corner",
-      x: 24,
-      y: 75,
+      x: 20,
+      y: 76,
       labelX: 18,
       labelY: 84,
       overlayStyle: "left:25%; top:75.5%; width:49%; transform:translate(-50%, -50%) rotate(-2deg) scale(1.14);",
       mobilePlacement: {
-        hotspotX: 27,
-        hotspotY: 75,
+        hotspotX: 22,
+        hotspotY: 76,
         labelX: 20,
         labelY: 84,
         overlayLeft: 28,
@@ -112,13 +113,13 @@
       buildTimeLabel: "Level 1 build time: 12h",
       costPreview: "Level 1 cost: 7500 Bones + 100 Scrap",
       positionLabel: "Right-side table surface",
-      x: 78,
-      y: 62,
+      x: 84,
+      y: 61,
       labelX: 83,
       labelY: 51,
       overlayStyle: "left:78%; top:63%; width:42%; transform:translate(-50%, -50%) rotate(-3deg) scale(1.08);",
       mobilePlacement: {
-        hotspotX: 81,
+        hotspotX: 86,
         hotspotY: 62,
         labelX: 84,
         labelY: 52,
@@ -506,6 +507,7 @@
     if (code === "CLAIM_REQUIRED") return "Pet Training is ready. Claim Pet XP.";
     if (code === "ALREADY_PREPARING") return "Tactical Brief is already preparing.";
     if (code === "BRIEF_CLAIM_REQUIRED") return "Tactical Brief is ready. Claim the latest note first.";
+    if (code === "PREPARED_ATTEMPT_ACTIVE") return "Prepared Attempt already active. Use it on MoonLab or Blood Moon Tower before collecting another brief.";
     if (code === "INSUFFICIENT_RESOURCES") return "Not enough Bones or Scrap for this build.";
     if (code === "KENNEL_REQUIRED") return "Build Pet Kennel to unlock training.";
     if (code === "KENNEL_UNDER_CONSTRUCTION" || code === "BUILDING_UNDER_CONSTRUCTION") return "Pet Training is offline while Pet Kennel is under construction.";
@@ -619,27 +621,64 @@
           message: String(raw.lastBrief.message || "").trim()
         }
       : null;
+    const effectPreview = raw?.effectPreview && typeof raw.effectPreview === "object"
+      ? {
+          briefType: String(raw.effectPreview.briefType || "breach_plan").trim(),
+          effectScope: String(raw.effectPreview.effectScope || "pve_boss_next_attempt").trim(),
+          damageBonusPct: asCount(raw.effectPreview.damageBonusPct || 2),
+          label: String(raw.effectPreview.label || "Next PvE boss attempt +2% damage").trim(),
+          appliesTo: Array.isArray(raw.effectPreview.appliesTo) ? raw.effectPreview.appliesTo.map((x) => String(x || "").trim()).filter(Boolean) : [],
+          consumeOn: Array.isArray(raw.effectPreview.consumeOn) ? raw.effectPreview.consumeOn.map((x) => String(x || "").trim()).filter(Boolean) : []
+        }
+      : {
+          briefType: "breach_plan",
+          effectScope: "pve_boss_next_attempt",
+          damageBonusPct: 2,
+          label: "Next PvE boss attempt +2% damage",
+          appliesTo: ["MoonLab", "Blood Moon Tower"],
+          consumeOn: ["moonlab_boss_attempt", "blood_moon_tower_attempt"]
+        };
+    const preparedAttempt = raw?.preparedAttempt && typeof raw.preparedAttempt === "object"
+      ? {
+          active: !!raw.preparedAttempt.active,
+          briefType: String(raw.preparedAttempt.briefType || effectPreview.briefType || "breach_plan").trim(),
+          effectScope: String(raw.preparedAttempt.effectScope || effectPreview.effectScope || "pve_boss_next_attempt").trim(),
+          damageBonusPct: asCount(raw.preparedAttempt.damageBonusPct || effectPreview.damageBonusPct || 2),
+          source: String(raw.preparedAttempt.source || "war_room").trim(),
+          createdAt: asUnix(raw.preparedAttempt.createdAt),
+          consumeOn: Array.isArray(raw.preparedAttempt.consumeOn) ? raw.preparedAttempt.consumeOn.map((x) => String(x || "").trim()).filter(Boolean) : effectPreview.consumeOn
+        }
+      : null;
 
     return {
       featureEnabled: !!raw?.featureEnabled,
       buildingUnderConstruction: !!raw?.buildingUnderConstruction,
-      warTableLevel: asCount(raw?.warTableLevel),
+      warTableLevel: asCount(raw?.warTableLevel || raw?.warRoomLevel),
+      warRoomLevel: asCount(raw?.warRoomLevel || raw?.warTableLevel),
       briefStatus: String(raw?.briefStatus || raw?.status || "").trim().toLowerCase() || "idle",
       status: String(raw?.status || raw?.briefStatus || "").trim().toLowerCase() || "idle",
+      storageStatus: String(raw?.storageStatus || "").trim().toLowerCase(),
       canStart: !!raw?.canStart,
       canClaim: !!raw?.canClaim,
       reason: String(raw?.reason || "").trim(),
       secondsRemaining: asCount(raw?.secondsRemaining),
       startedAt: asUnix(raw?.startedAt),
-      readyAt: asUnix(raw?.readyAt),
+      nextReadyAt: asUnix(raw?.nextReadyAt || raw?.readyAt),
+      readyAt: asUnix(raw?.readyAt || raw?.nextReadyAt),
       claimedAt: asUnix(raw?.claimedAt),
+      lastGeneratedAt: asUnix(raw?.lastGeneratedAt),
       sourceLevel: raw?.sourceLevel == null ? null : asCount(raw?.sourceLevel),
+      briefsStored: asCount(raw?.briefsStored),
+      storageCap: Math.max(0, asCount(raw?.storageCap || 1)),
+      preparedAttempt,
+      preparedAttemptActive: !!raw?.preparedAttemptActive || !!preparedAttempt?.active,
+      effectPreview,
       lastBrief,
-      durationSeconds: asCount(raw?.durationSeconds),
+      cooldownSeconds: asCount(raw?.cooldownSeconds || raw?.durationSeconds || 86400),
+      durationSeconds: asCount(raw?.durationSeconds || raw?.cooldownSeconds || 86400),
       version: String(raw?.version || "").trim()
     };
   }
-
   function normalizeWarTableCommandBriefing(raw) {
     const sections = raw?.sections && typeof raw.sections === "object" ? raw.sections : {};
     const currentObjective = sections.currentObjective && typeof sections.currentObjective === "object" ? sections.currentObjective : {};
@@ -758,7 +797,7 @@
       },
       petKennelTraining: normalizePetKennelTraining(raw?.petKennelTraining || null),
       signalCache: normalizeSignalCache(raw?.signalCache || null),
-      warTableBrief: normalizeWarTableBrief(raw?.warTableBrief || null),
+      warTableBrief: normalizeWarTableBrief(raw?.warTableBrief || raw?.warRoom || null),
       warTableCommandBriefing: normalizeWarTableCommandBriefing(raw?.warTableCommandBriefing || null),
       buildings: {}
     };
@@ -866,32 +905,44 @@
   }
 
   function getWarTableBriefPreviewForLevel(level) {
-    const durationSeconds = level >= 3 ? 14400 : level >= 1 ? 21600 : 0;
+    const normalizedLevel = normalizeLevel(level);
+    const locked = normalizedLevel < 1;
     return {
       featureEnabled: false,
       buildingUnderConstruction: false,
-      warTableLevel: level,
-      briefStatus: level > 0 ? "disabled" : "locked",
-      status: level > 0 ? "disabled" : "locked",
+      warTableLevel: normalizedLevel,
+      warRoomLevel: normalizedLevel,
+      briefStatus: locked ? "locked" : "disabled",
+      status: locked ? "locked" : "disabled",
+      storageStatus: locked ? "locked" : "disabled",
       canStart: false,
       canClaim: false,
-      reason: level > 0 ? "FEATURE_DISABLED" : "WAR_TABLE_REQUIRED",
+      reason: locked ? "WAR_TABLE_REQUIRED" : "FEATURE_DISABLED",
       secondsRemaining: 0,
       startedAt: null,
+      nextReadyAt: null,
       readyAt: null,
       claimedAt: null,
-      sourceLevel: level > 0 ? level : null,
-      lastBrief: level > 0
-        ? {
-            title: "Tactical Brief",
-            message: "War Table calibrated. The next signal is easier to read."
-          }
-        : null,
-      durationSeconds,
-      version: "p2e_war_table_brief_v1"
+      lastGeneratedAt: null,
+      sourceLevel: normalizedLevel > 0 ? normalizedLevel : null,
+      briefsStored: 0,
+      storageCap: 1,
+      preparedAttempt: null,
+      preparedAttemptActive: false,
+      effectPreview: {
+        briefType: "breach_plan",
+        effectScope: "pve_boss_next_attempt",
+        damageBonusPct: 2,
+        label: "Next PvE boss attempt +2% damage",
+        appliesTo: ["MoonLab", "Blood Moon Tower"],
+        consumeOn: ["moonlab_boss_attempt", "blood_moon_tower_attempt"]
+      },
+      lastBrief: null,
+      cooldownSeconds: 86400,
+      durationSeconds: 86400,
+      version: "p1_4b_war_room_prepared_attempt_v1"
     };
   }
-
   function getEffectiveWarTableBrief() {
     if (usingServerState && serverState?.warTableBrief) {
       return serverState.warTableBrief;
@@ -1569,17 +1620,17 @@
 .alpha-den-zone{
   position:absolute;
   transform:translate(-50%, -50%);
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  width:auto;
-  max-width:min(24vw, 154px);
+  display:block;
+  width:54px;
+  height:54px;
+  max-width:none;
   padding:0;
   border:0;
   background:transparent;
   color:#eff6ff;
   text-align:left;
   cursor:pointer;
+  outline:0;
 }
 .alpha-den-zone.is-detached-label{
   width:42px;
@@ -1597,11 +1648,11 @@
   position:relative;
   z-index:1;
 }
-.alpha-den-zone.is-selected .alpha-den-zone__marker{
-  box-shadow:0 0 0 1px rgba(100,196,255,.30), 0 0 20px rgba(100,196,255,.22);
-}
 .alpha-den-zone__marker{
-  position:relative;
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
   flex:0 0 auto;
   width:14px;
   height:14px;
@@ -1610,11 +1661,11 @@
   background:rgba(5,10,16,.54);
   box-shadow:0 5px 12px rgba(0,0,0,.20);
 }
-.alpha-den-zone.is-detached-label .alpha-den-zone__marker{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%, -50%);
+.alpha-den-zone.is-selected .alpha-den-zone__marker{
+  box-shadow:0 0 0 1px rgba(100,196,255,.34), 0 0 0 8px rgba(100,196,255,.08), 0 0 20px rgba(100,196,255,.22);
+}
+.alpha-den-zone:focus-visible .alpha-den-zone__marker{
+  box-shadow:0 0 0 2px rgba(238,246,255,.72), 0 0 0 9px rgba(100,196,255,.12), 0 0 20px rgba(100,196,255,.22);
 }
 .alpha-den-zone__marker::before{
   content:"";
@@ -1808,7 +1859,8 @@
     grid-template-columns:1fr;
   }
   .alpha-den-zone{
-    max-width:min(26vw, 128px);
+    width:52px;
+    height:52px;
   }
 }
 @media (max-width: 640px){
@@ -1885,8 +1937,8 @@
     object-position:center 46%;
   }
   .alpha-den-zone{
-    max-width:min(27vw, 102px);
-    gap:3px;
+    width:50px;
+    height:50px;
   }
   .alpha-den-zone.is-detached-label{
     width:38px;
@@ -2047,6 +2099,10 @@
       await runServerAction("/webapp/den/signal-cache/claim", "signal_core");
       return;
     }
+    if (action === "war-table-brief-claim") {
+      await runServerAction("/webapp/den/war-table/brief/claim", "war_table");
+      return;
+    }
     if (action === "command-briefing-nav") {
       await openCommandBriefingTarget(actionEl.getAttribute("data-command-target"));
     }
@@ -2191,10 +2247,16 @@
     const selectedClass = activeId === config.id ? " is-selected" : "";
     const placement = display.placement || getPlacement(config);
     const sceneStateLabel = getSceneStateLabel(display);
-    const detachedLabel = Math.abs(placement.labelX - placement.hotspotX) > 0.5 || Math.abs(placement.labelY - placement.hotspotY) > 0.5;
+    const debugLabels = ROOM_MAP_LABELS_DEBUG === true;
+    const detachedLabel = debugLabels && (Math.abs(placement.labelX - placement.hotspotX) > 0.5 || Math.abs(placement.labelY - placement.hotspotY) > 0.5);
     const zoneStyle = detachedLabel
       ? `left:${placement.hotspotX}%; top:${placement.hotspotY}%; --label-shift-x:${placement.labelX - placement.hotspotX}%; --label-shift-y:${placement.labelY - placement.hotspotY}%;`
       : `left:${placement.hotspotX}%; top:${placement.hotspotY}%`;
+    const labelMarkup = debugLabels ? `
+  <span class="alpha-den-zone__labelwrap" aria-hidden="true">
+    <span class="alpha-den-zone__label">${escapeHtml(config.name)}</span>
+    <span class="alpha-den-zone__state">${escapeHtml(sceneStateLabel)}</span>
+  </span>` : "";
 
     return `
 <button
@@ -2203,16 +2265,12 @@
   style="${zoneStyle}"
   data-alpha-den-action="select"
   data-building-id="${config.id}"
+  aria-label="${escapeHtml(`${config.name}, ${sceneStateLabel}`)}"
   aria-pressed="${activeId === config.id ? "true" : "false"}"
 >
-  <span class="alpha-den-zone__marker" aria-hidden="true"></span>
-  <span class="alpha-den-zone__labelwrap">
-    <span class="alpha-den-zone__label">${escapeHtml(config.name)}</span>
-    <span class="alpha-den-zone__state">${escapeHtml(sceneStateLabel)}</span>
-  </span>
+  <span class="alpha-den-zone__marker" aria-hidden="true"></span>${labelMarkup}
 </button>`;
   }
-
   function renderStructureOverlay(config, level) {
     const assetUrl = getAssetForLevel(config.id, level);
     if (!assetUrl || level <= 0) return "";
@@ -2397,93 +2455,89 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
   }
 
   function renderWarTableBriefCard() {
-    const briefing = getEffectiveWarTableCommandBriefing();
-    const sections = briefing?.sections || {};
-    const objective = sections.currentObjective || {};
-    const elite = sections.eliteStatus || {};
-    const bossPrep = sections.bossPrepSummary || {};
-    const bossWall = sections.bossWall || {};
-    const targetRelevance = sections.targetRelevance || {};
-    const frontline = sections.frontline || {};
-    const recommended = sections.recommendedMove || {};
-    const locked = !!briefing?.locked;
-    const moduleLevel = asCount(briefing?.moduleLevel);
-    const nextPreview = Array.isArray(briefing?.nextUpgradePreview) && briefing.nextUpgradePreview.length
-      ? briefing.nextUpgradePreview.join(" | ")
-      : "Future upgrades will add tactical orders, mission intel, and broader mission visibility.";
+    const brief = getEffectiveWarTableBrief();
+    const level = asCount(brief?.warRoomLevel || brief?.warTableLevel || getBuildingLevel("war_table"));
+    const status = String(brief?.status || brief?.briefStatus || "idle").trim().toLowerCase();
+    const effect = brief?.effectPreview || {};
+    const bonusPct = Math.max(0, asCount(effect.damageBonusPct || brief?.preparedAttempt?.damageBonusPct || 2));
+    const stored = Math.max(0, asCount(brief?.briefsStored));
+    const cap = Math.max(1, asCount(brief?.storageCap || 1));
+    const locked = level < 1 || status === "locked";
+    const preparedActive = !!brief?.preparedAttemptActive || !!brief?.preparedAttempt?.active || status === "prepared_active";
+    const ready = !!brief?.canClaim || status === "ready";
+    const generating = status === "generating" || (!!brief?.nextReadyAt && !ready && !preparedActive && !locked);
+    const underConstruction = !!brief?.buildingUnderConstruction || status === "offline";
+    const nextReadyLabel = formatReadyTime(brief?.nextReadyAt || brief?.readyAt);
+    const cooldownLabel = formatLongDuration(brief?.cooldownSeconds || brief?.durationSeconds || 86400);
+    const storedLabel = `${stored}/${cap}`;
+    const effectLabel = effect.label || `Next PvE boss attempt +${bonusPct}% damage`;
+    const appliesTo = Array.isArray(effect.appliesTo) && effect.appliesTo.length
+      ? effect.appliesTo.join(" + ")
+      : "MoonLab + Blood Moon Tower";
 
-    const objectiveValue = locked
-      ? "Locked until War Table Level 1"
-      : `${objective.title || "Next Alpha Goal"} | Signal ${asCount(objective.signalPower)} | Missing ${asCount(objective.missingSignalPower)} / ${asCount(objective.nextThreshold)}`;
-    const eliteValue = locked
-      ? "Locked"
-      : `${elite.headline || "Elite Operations Tier I"} | ${elite.status || "syncing"}`;
-    const bossPrepBits = [];
-    if (!locked) {
-      bossPrepBits.push(`Boss Prep ${asCount(bossWall.bossPrep || bossPrep.bossPrep)}/${Math.max(1, asCount(bossWall.bossPrepMax || bossPrep.bossPrepMax || 3))}`);
-      bossPrepBits.push(bossWall.readinessState || bossPrep.readinessState || "Untracked");
-      if (asCount(bossWall.intel || bossPrep.intel) > 0) bossPrepBits.push(`Intel ${asCount(bossWall.intel || bossPrep.intel)}`);
-      if (asCount(bossWall.gateProgress || bossPrep.gateProgress) > 0) bossPrepBits.push(`Gate ${asCount(bossWall.gateProgress || bossPrep.gateProgress)}`);
-    }
-    const bossPrepValue = locked
-      ? "Locked"
-      : (bossPrepBits.length ? bossPrepBits.join(" | ") : (bossPrep.summary || `Boss Prep progress: ${asCount(bossPrep.bossPrepProgress)}`));
-    const bossWallValue = locked
-      ? "Locked"
-      : `${bossWall.statusText || "MoonLab signal syncing"}${bossWall.available ? ` | ${bossWall.bossName || "Unknown"}` : ""}${bossWall.arcName ? ` | ${bossWall.arcName}` : ""}${bossWall.readinessMicrocopy ? ` | ${bossWall.readinessMicrocopy}` : ""}`;
-    const recommendedOp = targetRelevance.recommendedOperation;
-    const suggestedPlan = targetRelevance.suggestedPlan;
-    const gateOp = targetRelevance.gateBreachOpportunity;
-    const recoveryOp = targetRelevance.recoveryOpportunity;
-    const targetRelevanceValue = locked
-      ? "Locked"
-      : (recommendedOp ? `${recommendedOp.title} | ${recommendedOp.targetName || recommendedOp.typeLabel}` : (targetRelevance.summary || "No target operation surfaced."));
-    const suggestedPlanValue = locked
-      ? "Locked"
-      : (suggestedPlan?.label || "Standard Plan");
-    const gateOpportunityValue = locked
-      ? "Locked"
-      : (gateOp ? `${gateOp.title} | ${gateOp.status}` : "No gate breach opportunity surfaced.");
-    const recoveryOpportunityValue = locked
-      ? "Locked"
-      : (recoveryOp ? `${recoveryOp.title} | ${recoveryOp.status}` : "No recovery operation exposed in Tier I.");
-    const frontlineValue = frontline.summary || "Frontline state is not exposed in the current Alpha Den payload.";
-    const recommendedValue = locked
-      ? "Build War Table Level 1 first."
-      : (recommended.summary || objective.recommendedAction || bossWall.recommendedAction || "Check Stats/Progression for the next objective.");
+    let statusLabel = "Unavailable";
+    if (locked) statusLabel = "War Table Required";
+    else if (underConstruction) statusLabel = "Offline During Construction";
+    else if (preparedActive) statusLabel = "Prepared Attempt Active";
+    else if (ready) statusLabel = "Tactical Brief Ready";
+    else if (generating) statusLabel = "Generating";
+    else if (status === "disabled") statusLabel = "Disabled";
+
+    const nextReadyValue = nextReadyLabel
+      ? `${cooldownLabel} | Next ready ${nextReadyLabel}`
+      : cooldownLabel;
+    const preparedValue = preparedActive
+      ? `Active | +${bonusPct}% next eligible boss attempt`
+      : "None active";
+    const note = preparedActive
+      ? "Next MoonLab or Blood Moon Tower boss attempt: +2% damage. Consumed after one attempt."
+      : ready
+        ? "Collecting arms one Prepared Attempt. It does not stack."
+        : generating
+          ? "War Room prepares one Tactical Brief every 24h."
+          : locked
+            ? "Build War Table Level 1 to unlock Tactical Brief generation."
+            : "Tactical Briefs are capped at one stored brief.";
 
     const metaRows = [
-      renderDetailMetaRow("Module Level", `Level ${moduleLevel}`),
-      renderDetailMetaRow("Current Benefit", briefing?.currentBenefit || "Build War Table to unlock command briefing."),
-      renderDetailMetaRow("Current Objective", objectiveValue),
-      renderDetailMetaRow("Elite Status", eliteValue),
-      renderDetailMetaRow("Boss Prep", bossPrepValue),
-      renderDetailMetaRow("Boss Wall", bossWallValue),
-      renderDetailMetaRow("Target Relevance", targetRelevanceValue),
-      renderDetailMetaRow("Suggested Plan", suggestedPlanValue),
-      renderDetailMetaRow("Gate Opportunity", gateOpportunityValue),
-      renderDetailMetaRow("Recovery Opportunity", recoveryOpportunityValue),
-      renderDetailMetaRow("Frontline", frontlineValue),
-      renderDetailMetaRow("Recommended Move", recommendedValue),
-      renderDetailMetaRow("Next Upgrade Preview", nextPreview)
+      renderDetailMetaRow("Module Level", level > 0 ? `Level ${level}` : "Unbuilt"),
+      renderDetailMetaRow("Tactical Brief", statusLabel),
+      renderDetailMetaRow("Effect", effectLabel),
+      renderDetailMetaRow("Applies To", appliesTo),
+      renderDetailMetaRow("Stored Briefs", storedLabel),
+      renderDetailMetaRow("Cooldown", nextReadyValue),
+      renderDetailMetaRow("Prepared Attempt", preparedValue)
     ].join("");
 
-    const copy = locked
-      ? "Build War Table Level 1 to unlock the read-only Command Briefing."
-      : "Command Briefing is online. It reads the current Progression Spine state without starting missions or granting rewards.";
-    const ctaMarkup = renderCommandBriefingCtas(briefing?.ctas, locked);
-    const note = locked
-      ? "No War Table action is available until the module is built."
-      : "Read-only briefing. Actions open existing pages only.";
+    const claimDisabled = !brief?.canClaim || preparedActive || isActionBusy;
+    const claimLabel = isActionBusy
+      ? "Working..."
+      : preparedActive
+        ? "Prepared Attempt Active"
+        : locked
+          ? "War Table Required"
+          : generating
+            ? "Generating"
+            : ready
+              ? "Collect Tactical Brief"
+              : "Brief Unavailable";
+    const buttonClass = brief?.canClaim && !preparedActive && !isActionBusy
+      ? "alpha-den-btn alpha-den-btn--primary"
+      : "alpha-den-btn alpha-den-btn--passive";
 
     return `
 <section class="alpha-den-card alpha-den-card--detail">
-  <div class="alpha-den-detail__eyebrow">Command Briefing</div>
-  <h3 class="alpha-den-detail__title">War Table Command Briefing</h3>
-  <p class="alpha-den-detail__copy">${escapeHtml(copy)}</p>
+  <div class="alpha-den-detail__eyebrow">War Room</div>
+  <h3 class="alpha-den-detail__title">Tactical Brief</h3>
+  <p class="alpha-den-detail__copy">Level 1 prepares one Tactical Brief every 24h. Collecting it arms the next eligible PvE boss attempt.</p>
   <div class="alpha-den-detail__meta">${metaRows}</div>
   <div class="alpha-den-detail__actions">
-    ${ctaMarkup || `<button type="button" class="alpha-den-btn alpha-den-btn--passive" data-alpha-den-action="noop" disabled>${escapeHtml(locked ? "War Table Required" : "Briefing Only")}</button>`}
+    <button
+      type="button"
+      class="${buttonClass}"
+      data-alpha-den-action="war-table-brief-claim"
+      ${claimDisabled ? "disabled" : ""}
+    >${escapeHtml(claimLabel)}</button>
     <p class="alpha-den-detail__note">${escapeHtml(note)}</p>
   </div>
 </section>`;
@@ -2799,4 +2853,6 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     buildPreview
   };
 })();
+
+
 
