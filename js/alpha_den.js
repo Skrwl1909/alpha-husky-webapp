@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const STORAGE_KEY = "alpha_husky_den_preview_v1";
   const ROOT_ID = "alphaDenRoot";
   const STYLE_ID = "alphaDenStyles";
@@ -1302,9 +1302,12 @@
   position:absolute;
   inset:0;
   display:flex;
-  align-items:stretch;
+  align-items:flex-start;
   justify-content:center;
-  padding:18px;
+  padding:18px 18px calc(96px + env(safe-area-inset-bottom, 0px));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
 }
 .alpha-den-shell::before,
 .alpha-den-shell::after{
@@ -1341,9 +1344,9 @@
   position:relative;
   display:flex;
   flex-direction:column;
-  width:min(100%, 980px);
-  min-height:min(88vh, 820px);
-  margin:auto;
+  width:min(100%, 1180px);
+  min-height:min(760px, calc(100dvh - 36px - env(safe-area-inset-bottom, 0px)));
+  margin:0 auto;
   padding:18px;
   border:1px solid rgba(127,164,196,.22);
   border-radius:24px;
@@ -1351,7 +1354,7 @@
     linear-gradient(180deg, rgba(8,13,21,.98), rgba(5,9,15,.98)),
     #050910;
   box-shadow:0 28px 90px rgba(0,0,0,.55);
-  overflow:hidden;
+  overflow:visible;
 }
 .alpha-den-frame{
   position:relative;
@@ -1359,7 +1362,7 @@
   display:flex;
   flex-direction:column;
   gap:16px;
-  height:100%;
+  min-height:0;
 }
 .alpha-den-topbar{
   display:flex;
@@ -1469,7 +1472,7 @@
 }
 .alpha-den-room{
   display:grid;
-  grid-template-columns:minmax(0, 1.62fr) minmax(280px, .76fr);
+  grid-template-columns:minmax(520px, 1.58fr) minmax(340px, .84fr);
   gap:16px;
   min-height:0;
   flex:1;
@@ -1477,7 +1480,7 @@
 .alpha-den-room__scene{
   position:relative;
   width:100%;
-  min-height:424px;
+  min-height:clamp(360px, 54vh, 560px);
   aspect-ratio:16 / 9;
   border-radius:24px;
   overflow:hidden;
@@ -1760,7 +1763,7 @@
 .alpha-den-drawer{
   display:flex;
   flex-direction:column;
-  gap:14px;
+  gap:12px;
   min-height:0;
 }
 .alpha-den-card{
@@ -1770,13 +1773,13 @@
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
 }
 .alpha-den-card--summary{
-  padding:16px;
+  padding:14px;
 }
 .alpha-den-card--detail{
-  padding:18px;
+  padding:16px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
   flex:1;
 }
 .alpha-den-detail__eyebrow{
@@ -1812,15 +1815,15 @@
 .alpha-den-detail__copy{
   margin:0;
   color:#cad7e5;
-  line-height:1.55;
+  line-height:1.45;
 }
 .alpha-den-detail__meta{
   display:grid;
-  gap:8px;
+  gap:7px;
 }
 .alpha-den-detail__meta-row{
-  padding:10px 12px;
-  border-radius:16px;
+  padding:9px 11px;
+  border-radius:14px;
   background:rgba(13,19,29,.78);
   border:1px solid rgba(128,160,189,.12);
 }
@@ -1854,7 +1857,7 @@
   line-height:1.5;
   color:#a5b7cb;
 }
-@media (max-width: 860px){
+@media (max-width: 980px){
   .alpha-den-room{
     grid-template-columns:1fr;
   }
@@ -1865,19 +1868,15 @@
 }
 @media (max-width: 640px){
   .alpha-den-shell{
-    padding:0;
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
+    padding:0 0 calc(72px + env(safe-area-inset-bottom, 0px));
   }
   .alpha-den-panel{
     width:100%;
-    min-height:100vh;
-    min-height:100dvh;
+    min-height:auto;
     border-radius:0;
     border-left:0;
     border-right:0;
-    padding:10px 10px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding:8px 10px 12px;
     overflow:visible;
   }
   .alpha-den-frame{
@@ -1900,8 +1899,7 @@
     font-size:clamp(24px, 7vw, 30px);
   }
   .alpha-den-subtitle{
-    font-size:12px;
-    line-height:1.35;
+    display:none;
   }
   .alpha-den-topbar-actions{
     gap:8px;
@@ -1921,17 +1919,22 @@
   .alpha-den-status{
     gap:6px;
   }
+  .alpha-den-status__pill:nth-child(2),
+  .alpha-den-status__pill:nth-child(3){
+    display:none;
+  }
   .alpha-den-status__pill{
-    min-height:28px;
-    padding:6px 9px;
+    min-height:26px;
+    padding:5px 8px;
     font-size:9px;
   }
   .alpha-den-room{
-    gap:12px;
+    gap:9px;
   }
   .alpha-den-room__scene{
-    min-height:374px;
-    aspect-ratio:4 / 3.28;
+    min-height:clamp(260px, 68vw, 330px);
+    aspect-ratio:4 / 3;
+    border-radius:18px;
   }
   .alpha-den-room__background-img{
     object-position:center 46%;
@@ -1968,12 +1971,74 @@
     gap:3px;
   }
   .alpha-den-drawer{
-    gap:10px;
+    gap:8px;
+  }
+  .alpha-den-card--den-summary,
+  .alpha-den-footnote{
+    display:none;
   }
   .alpha-den-card--summary,
   .alpha-den-card--detail,
   .alpha-den-footnote{
-    padding:14px;
+    padding:10px;
+    border-radius:16px;
+  }
+  .alpha-den-card--detail{
+    gap:8px;
+  }
+  .alpha-den-detail__eyebrow{
+    font-size:9px;
+    letter-spacing:.16em;
+  }
+  .alpha-den-detail__title{
+    font-size:18px;
+  }
+  .alpha-den-detail__state{
+    gap:6px;
+  }
+  .alpha-den-detail__pill{
+    min-height:24px;
+    padding:5px 8px;
+    font-size:9px;
+  }
+  .alpha-den-detail__copy{
+    font-size:13px;
+    line-height:1.35;
+  }
+  .alpha-den-detail__actions{
+    order:2;
+    gap:7px;
+    margin-top:0;
+  }
+  .alpha-den-detail__meta{
+    order:3;
+    gap:6px;
+  }
+  .alpha-den-detail__meta-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 9px;
+    border-radius:12px;
+  }
+  .alpha-den-detail__meta-label{
+    margin-bottom:0;
+    font-size:9px;
+    letter-spacing:.1em;
+  }
+  .alpha-den-detail__meta-value{
+    font-size:12px;
+    text-align:right;
+  }
+  .alpha-den-btn--primary,
+  .alpha-den-btn--passive{
+    min-height:40px;
+    padding:9px 12px;
+  }
+  .alpha-den-detail__note{
+    font-size:11px;
+    line-height:1.35;
   }
 }
 @media (prefers-reduced-motion: reduce){
@@ -2751,7 +2816,7 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
           </section>
 
           <aside class="alpha-den-drawer">
-            <section class="alpha-den-card alpha-den-card--summary">
+            <section class="alpha-den-card alpha-den-card--summary alpha-den-card--den-summary">
               <div class="alpha-den-detail__eyebrow">Den status</div>
               <p class="alpha-den-detail__copy">${escapeHtml(summaryCopy)}</p>
             </section>

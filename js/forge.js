@@ -550,7 +550,7 @@
       min-width:0;
     }
 
-    .ah-ico{
+    .ah-forge .ah-ico{
       position:relative;
       width:54px;
       height:54px;
@@ -562,7 +562,7 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
     }
 
-    .ah-ico img{
+    .ah-forge .ah-ico img{
       width:100%;
       height:100%;
       object-fit:cover;
@@ -1776,6 +1776,107 @@
     document.body.style.touchAction = prev ? prev.touchAction : "";
   }
 
+  function restoreMobileShellAfterForgeExit(source = "forge-cleanup") {
+    const forgeStillOpen = !!document.getElementById(FORGE_MODAL_ID);
+    const stack = Array.isArray(window.AH_NAV?.stack) ? window.AH_NAV.stack : [];
+    const remainingStack = stack.filter((id) => id && id !== FORGE_MODAL_ID);
+    const anotherSheetOpen = !!document.querySelector(
+      "#hubBack[data-open='1'], #charBack[data-open='1'], #shareBack[data-open='1'], #supportBack[data-open='1'], #statsBack[data-open='1'], #qBack[data-open='1']"
+    );
+    const shouldUnlockShell = !forgeStillOpen && remainingStack.length === 0 && !anotherSheetOpen;
+    const app = document.getElementById("app");
+    const shell = document.querySelector(".app");
+    const nav = document.getElementById("ahBottomNav");
+    const clearClasses = [
+      "ah-forge-open",
+      "forge-open",
+      "crafting-open",
+      "craft-open",
+      "route-lock",
+      "modal-open",
+      "sheet-open",
+    ];
+
+    [document.body, app, shell, nav].forEach((node) => {
+      if (!node || !node.classList) return;
+      clearClasses.forEach((className) => node.classList.remove(className));
+    });
+
+    if (shouldUnlockShell) {
+      document.documentElement.classList.remove("ah-modal-open", "ah-forge-open", "forge-open", "crafting-open", "route-lock");
+      document.body.classList.remove("ah-modal-open", "ah-sheet-open");
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
+
+    [app, shell, nav].forEach((node) => {
+      if (!node || !node.style) return;
+      node.style.removeProperty("display");
+      node.style.removeProperty("visibility");
+      node.style.removeProperty("opacity");
+      node.style.removeProperty("pointer-events");
+      node.style.removeProperty("transform");
+    });
+
+    if (nav) {
+      nav.removeAttribute("hidden");
+      nav.setAttribute("aria-hidden", "false");
+      nav.style.removeProperty("display");
+      nav.style.removeProperty("visibility");
+      nav.style.removeProperty("opacity");
+      nav.style.removeProperty("pointer-events");
+    }
+
+    requestAnimationFrame(() => {
+      try { window.dispatchEvent(new Event("resize")); } catch (_) {}
+      requestAnimationFrame(() => {
+        try { window.dispatchEvent(new Event("resize")); } catch (_) {}
+      });
+    });
+
+    if (_dbg) {
+      try { console.debug("[Forge] restored mobile shell", { source, shouldUnlockShell }); } catch (_) {}
+    }
+  }
+  function debugBottomNavLayoutSnapshot(phase = "manual") {
+    const nav = document.getElementById("ahBottomNav");
+    const btn = nav && nav.querySelector(".ah-navbtn");
+    const ico = btn && btn.querySelector(".ah-ico");
+    const read = (node, props) => {
+      if (!node) return null;
+      const cs = getComputedStyle(node);
+      return props.reduce((out, prop) => {
+        out[prop] = cs.getPropertyValue(prop);
+        return out;
+      }, {});
+    };
+    const snap = {
+      phase,
+      at: new Date().toISOString(),
+      bodyClasses: document.body ? Array.from(document.body.classList) : [],
+      htmlClasses: document.documentElement ? Array.from(document.documentElement.classList) : [],
+      navInline: nav ? nav.getAttribute("style") || "" : null,
+      appInline: document.getElementById("app")?.getAttribute("style") || "",
+      nav: read(nav, ["display", "visibility", "opacity", "pointer-events", "position", "height", "left", "right", "bottom", "transform"]),
+      button: read(btn, ["display", "width", "height", "padding", "transform"]),
+      icon: read(ico, ["display", "width", "height", "border-radius", "border-width", "background-color", "overflow", "flex-basis"]),
+    };
+    const store = window.__ahForgeNavDebug || (window.__ahForgeNavDebug = []);
+    store.push(snap);
+    const baseline = store[0];
+    snap.compareToFirst = baseline && baseline !== snap ? {
+      navHeightChanged: baseline.nav?.height !== snap.nav?.height,
+      navDisplayChanged: baseline.nav?.display !== snap.nav?.display,
+      navPointerChanged: baseline.nav?.["pointer-events"] !== snap.nav?.["pointer-events"],
+      iconWidthChanged: baseline.icon?.width !== snap.icon?.width,
+      iconHeightChanged: baseline.icon?.height !== snap.icon?.height,
+      iconBorderChanged: baseline.icon?.["border-width"] !== snap.icon?.["border-width"],
+      bodyLockLeftover: snap.bodyClasses.some((className) => /forge|craft|route-lock|modal-open|sheet-open/.test(className)),
+      navInlineLeftover: !!snap.navInline,
+    } : null;
+    try { console.table(store.map((item) => ({ phase: item.phase, navHeight: item.nav?.height, navDisplay: item.nav?.display, iconWidth: item.icon?.width, iconHeight: item.icon?.height, iconBorder: item.icon?.["border-width"], navInline: item.navInline || "" }))); } catch (_) {}
+    return snap;
+  }
   let _root = null;
   let _tab = "upgrade";
   let _state = null;
@@ -2915,7 +3016,10 @@ slotField.right.appendChild(chipbar);
   }
 
   function teardownView() {
-    if (!isOpen()) return;
+    if (!isOpen()) {
+      restoreMobileShellAfterForgeExit("forge-teardown-noop");
+      return;
+    }
     lockScroll(false);
     const node = _root || document.getElementById(FORGE_MODAL_ID);
     if (node) node.remove();
@@ -2924,6 +3028,7 @@ slotField.right.appendChild(chipbar);
     _busy = false;
     _tab = "upgrade";
     _mobileUpgradeView = "picker";
+    restoreMobileShellAfterForgeExit("forge-teardown");
   }
 
   function closeViaNav(source = "forge-close") {
@@ -2943,6 +3048,7 @@ slotField.right.appendChild(chipbar);
 
     ensureStyles();
     lockScroll(true);
+    document.body.classList.add("ah-forge-open");
 
     const stale = document.getElementById(FORGE_MODAL_ID);
     if (stale && stale !== _root) {
@@ -3004,6 +3110,13 @@ slotField.right.appendChild(chipbar);
     teardownView();
   }
 
+  document.addEventListener("click", (e) => {
+    const btn = e.target && e.target.closest && e.target.closest("#ahBottomNav [data-go]");
+    if (!btn) return;
+    if (isOpen()) closeViaNav("forge-bottom-nav");
+    else restoreMobileShellAfterForgeExit("forge-bottom-nav-click");
+  }, true);
+
   async function open(ctx) {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     _ctx = {
@@ -3025,5 +3138,11 @@ slotField.right.appendChild(chipbar);
     }
   }
 
-  window.Forge = { init, open, close: () => closeViaNav("forge-api-close") };
+  window.Forge = {
+    init,
+    open,
+    close: () => closeViaNav("forge-api-close"),
+    restoreMobileShellAfterForgeExit,
+    debugBottomNavLayoutSnapshot,
+  };
 })();
