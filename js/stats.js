@@ -19,14 +19,14 @@
 
   // Fallback only when progression_v1 is absent; backend progression_v1 is source of truth when present.
   const SIGNAL_THRESHOLDS = [
-    { value: 500, label: "MoonLab Stabilization" },
-    { value: 1000, label: "First Wall Break" },
-    { value: 1500, label: "Elite Missions Tier I Preview" },
-    { value: 2500, label: "Iron Siege Bracket Preview" },
-    { value: 3500, label: "Relay Directive Missions Preview" },
-    { value: 5000, label: "Deep Signal Interference" },
-    { value: 6500, label: "Corrupted Signal Wall" },
-    { value: 8000, label: "False Alpha Signal Prestige Wall" },
+    { value: 500, label: "First Signal Break" },
+    { value: 1000, label: "Rustfang Frequency" },
+    { value: 1600, label: "Red Static Trail" },
+    { value: 2500, label: "Iron Signal" },
+    { value: 3500, label: "Relay-Broken Signal" },
+    { value: 4700, label: "Archive Signal" },
+    { value: 6200, label: "Chain Noise Resistance" },
+    { value: 8000, label: "False Alpha Breaker" },
   ];
 
   function qs(id){ return document.getElementById(id); }
@@ -404,11 +404,21 @@
         ready: !!wall.ready,
       },
       nextAlphaGoal: nextAlphaGoalRaw ? {
+        state: toText(nextAlphaGoalRaw.state, "next_threshold"),
+        message: toText(nextAlphaGoalRaw.message, ""),
+        headline: toText(nextAlphaGoalRaw.headline, ""),
         signalPower: Math.max(0, n(nextAlphaGoalRaw.signalPower, signalPower)),
         nextThreshold: Math.max(0, n(nextAlphaGoalRaw.nextThreshold, nextThreshold)),
         missingPower: Math.max(0, n(nextAlphaGoalRaw.missingPower, missingPower)),
         nextUnlockLabel: toText(nextAlphaGoalRaw.nextUnlockLabel, toText(raw.nextUnlockLabel, fallbackThreshold.label)),
         recommendedAction: toText(nextAlphaGoalRaw.recommendedAction, toText(raw.recommendedAction, "Complete missions to stabilize your signal.")),
+        preparedAttemptActive: !!nextAlphaGoalRaw.preparedAttemptActive,
+        preparedAttemptHint: toText(nextAlphaGoalRaw.preparedAttemptHint, ""),
+        claimableMilestone: (nextAlphaGoalRaw.claimableMilestone && typeof nextAlphaGoalRaw.claimableMilestone === "object") ? nextAlphaGoalRaw.claimableMilestone : null,
+        nextBoss: (nextAlphaGoalRaw.nextBoss && typeof nextAlphaGoalRaw.nextBoss === "object") ? {
+          name: toText(nextAlphaGoalRaw.nextBoss.name, ""),
+          milestoneName: toText(nextAlphaGoalRaw.nextBoss.milestoneName, ""),
+        } : null,
         blockerBossId: toText(nextAlphaGoalRaw.blockerBossId, ""),
         blockerDisplayName: toText(nextAlphaGoalRaw.blockerDisplayName, ""),
         bossPrep: Math.max(0, n(nextAlphaGoalRaw.bossPrep, 0)),
@@ -490,6 +500,9 @@
         description: toText(item.description, ""),
         status: toText(item.status, "locked"),
         missingPower: Math.max(0, n(item.missingPower, 0)),
+        iconUrl: toText(item.iconUrl || item.assetUrls?.icon, ""),
+        frameUrl: toText(item.frameUrl || item.assetUrls?.frame, ""),
+        assetUrls: (item.assetUrls && typeof item.assetUrls === "object") ? item.assetUrls : {},
         rewardsPreview: asArray(item.rewardsPreview),
         claimedAt: item.claimedAt ?? null,
         isPreviewOnly: !!item.isPreviewOnly,
@@ -510,6 +523,33 @@
       return toText(item.label, "");
     }).filter(Boolean);
     return labels.length ? labels.join(", ") : "Rewards syncing…";
+  }
+
+  function safeMilestoneAssetUrl(value){
+    const url = toText(value, "");
+    return /^https:\/\/res\.cloudinary\.com\/dnjwvxinh\//.test(url) ? url : "";
+  }
+
+  function rewardPreviewUrl(milestone, type){
+    const direct = type === "icon" ? milestone?.iconUrl : milestone?.frameUrl;
+    const safeDirect = safeMilestoneAssetUrl(direct);
+    if (safeDirect) return safeDirect;
+    const item = asArray(milestone?.rewardsPreview).find((entry) => entry && entry.type === type);
+    return safeMilestoneAssetUrl(item?.url);
+  }
+
+  function renderMilestoneIcon(milestone){
+    const url = rewardPreviewUrl(milestone, "icon");
+    if (!url) return "";
+    const label = toText(milestone?.shortLabel || milestone?.name, "Signal Milestone");
+    return `<img class="ahs-ms-icon" src="${esc(url)}" alt="${esc(label)}" loading="lazy" onerror="this.style.display='none'">`;
+  }
+
+  function renderMilestoneFramePreview(milestone){
+    const url = rewardPreviewUrl(milestone, "frame");
+    if (!url) return "";
+    const label = toText(milestone?.shortLabel || milestone?.name, "Signal Milestone");
+    return `<img class="ahs-ms-frame-preview" src="${esc(url)}" alt="${esc(label)} frame" loading="lazy" onerror="this.style.display='none'">`;
   }
 
   function getSignalBreakdown(stats, extras){
@@ -570,6 +610,13 @@
       const missingPower = useGoal ? Math.max(0, n(alphaGoal.missingPower, progression.missingPower)) : progression.missingPower;
       const bestMove = useGoal ? toText(alphaGoal.recommendedAction, progression.recommendedAction) : progression.recommendedAction;
       return {
+        state: useGoal ? toText(alphaGoal.state, "next_threshold") : "next_threshold",
+        message: useGoal ? toText(alphaGoal.message, "") : "",
+        headline: useGoal ? toText(alphaGoal.headline, "") : "",
+        preparedAttemptActive: useGoal ? !!alphaGoal.preparedAttemptActive : false,
+        preparedAttemptHint: useGoal ? toText(alphaGoal.preparedAttemptHint, "") : "",
+        claimableMilestone: useGoal ? alphaGoal.claimableMilestone : null,
+        nextBoss: useGoal ? alphaGoal.nextBoss : null,
         signalPower,
         nextThreshold: { value: nextThresholdValue, label: nextUnlockLabel },
         missingPower,
@@ -1167,9 +1214,38 @@
         color:#8ea6c8;
       }
       .ahs-ms-claimed{
+        display:flex;
+        align-items:center;
+        gap:7px;
+        min-height:24px;
         font-size:12px;
         color:#9fd6b4;
         margin-top:4px;
+      }
+      .ahs-ms-next-head{
+        display:flex;
+        align-items:center;
+        gap:9px;
+        min-width:0;
+      }
+      .ahs-ms-icon{
+        width:24px;
+        height:24px;
+        flex:0 0 24px;
+        object-fit:contain;
+        border-radius:6px;
+        background:rgba(255,255,255,.05);
+        border:1px solid rgba(255,255,255,.08);
+      }
+      .ahs-ms-frame-preview{
+        display:block;
+        width:100%;
+        max-height:92px;
+        object-fit:contain;
+        margin-top:8px;
+        border-radius:8px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.08);
       }
       .ahs-ms-muted{
         font-size:12px;
@@ -1549,12 +1625,6 @@
     ensureStyles();
     const root = qs("statsRoot");
     if (!root) return;
-    const goalBossName = toText(goal.blockerDisplayName, "");
-    const prepLine = goalBossName
-      ? `Boss Prep ${Math.max(0, n(goal.bossPrep, 0))}/${Math.max(1, n(goal.bossPrepMax, 3))} | ${toText(goal.readiness, "Untracked")}`
-      : "";
-    const suggestedPlan = toText(goal.suggestedElitePlan?.label, "");
-    const nextAction = toText(goal.nextAction, "");
 
     root.innerHTML = `
       <div class="ahs-wrap">
@@ -1605,15 +1675,37 @@
     const wall = ctx.wall || { available: false };
     const hubBestMove = resolveHubBestMove(ctx);
     const statusLabel = formatMoonlabStatus(wall, ctx.signalPower);
-    const moonlabWallLabel = wall.available ? toText(wall.bossName, "Unknown") : "Syncing…";
+    const moonlabWallLabel = wall.available ? toText(wall.bossName, "Unknown") : "Syncing...";
     const floorLabel = wall.available
       ? `${Math.max(1, n(wall.currentFloor, 1))} / ${Math.max(1, n(wall.maxFloor, 30))}`
-      : "—";
-    const missingPower = Math.max(0, n(ctx.missingPower, 0));
-    const unlockName = toText(ctx.nextUnlockLabel, "Next threshold");
-    const nextSignalUnlock = missingPower > 0
-      ? `+${missingPower} · ${unlockName}`
-      : unlockName;
+      : "-";
+    const missingPower = Math.max(0, n(ctx.missingPower, goal.missingPower, 0));
+    const unlockName = toText(ctx.nextUnlockLabel, goal.nextThreshold?.label || "Next threshold");
+    const goalState = toText(goal.state, "next_threshold");
+    const isCompleteGoal = goalState === "all_claimed" || goalState === "maxed_or_no_target";
+    const claimableName = toText(goal.claimableMilestone?.shortLabel || goal.claimableMilestone?.name, "");
+    const goalMessage = toText(
+      goal.message,
+      goalState === "claimable_milestone" && claimableName
+        ? `${claimableName} ready to claim`
+        : isCompleteGoal
+          ? "All current Signal milestones claimed. Keep building for the next expansion."
+          : `Reach ${Math.max(0, n(goal.nextThreshold?.value, 0))} Signal Power`
+    );
+    const nextBossName = toText(goal.nextBoss?.name, "");
+    const preparedAttemptHint = toText(goal.preparedAttemptHint, "");
+    const nextSignalUnlock = goalState === "claimable_milestone"
+      ? goalMessage
+      : isCompleteGoal
+        ? goalMessage
+        : (missingPower > 0 ? `+${missingPower} / ${unlockName}` : unlockName);
+    const goalBossName = toText(goal.blockerDisplayName, "");
+    const prepLine = goalBossName
+      ? `Boss Prep ${Math.max(0, n(goal.bossPrep, 0))}/${Math.max(1, n(goal.bossPrepMax, 3))} | ${toText(goal.readiness, "Untracked")}`
+      : "";
+    const suggestedPlan = toText(goal.suggestedElitePlan?.label, "");
+    const nextAction = toText(goal.nextAction, "");
+    const bestMoveText = toText(nextAction, toText(goal.bestMove, hubBestMove));
 
     root.innerHTML = `
       <div class="ahg-card">
@@ -1631,13 +1723,17 @@
             <div class="ahg-row"><span>MoonLab Wall</span><b>${esc(moonlabWallLabel)}</b></div>
             <div class="ahg-row"><span>Floor</span><b>${esc(floorLabel)}</b></div>
             <div class="ahg-row"><span>Status</span><b>${esc(statusLabel)}</b></div>
+            <div class="ahg-row"><span>Goal</span><b>${esc(goalMessage)}</b></div>
             <div class="ahg-row"><span>Next Signal Unlock</span><b>${esc(nextSignalUnlock)}</b></div>
+            ${goalState === "next_threshold" ? `<div class="ahg-row"><span>Missing Signal Power</span><b>${esc(missingPower)}</b></div>` : ""}
+            ${nextBossName ? `<div class="ahg-row"><span>Next Boss</span><b>${esc(nextBossName)}</b></div>` : ""}
             ${goalBossName ? `<div class="ahg-row"><span>Blocker Boss</span><b>${esc(goalBossName)}</b></div>` : ""}
             ${prepLine ? `<div class="ahg-row"><span>Boss Prep</span><b>${esc(prepLine)}</b></div>` : ""}
             ${suggestedPlan ? `<div class="ahg-row"><span>Suggested Plan</span><b>${esc(suggestedPlan)}</b></div>` : ""}
           </div>
 
-          <div class="ahg-move"><b>Best Move:</b> ${esc(nextAction || hubBestMove)}</div>
+          <div class="ahg-move"><b>Best Move:</b> ${esc(bestMoveText)}</div>
+          ${preparedAttemptHint ? `<div class="ahg-move"><b>War Room:</b> ${esc(preparedAttemptHint)}</div>` : ""}
           ${renderEliteMissionsBridge(stats)}
         </div>
       </div>
@@ -1742,7 +1838,7 @@
     const focus = nextClaimable || nextLocked;
 
     const claimedHtml = claimed.length
-      ? claimed.map((m) => `<div class="ahs-ms-claimed">✓ ${esc(m.shortLabel || m.name)}</div>`).join("")
+      ? claimed.map((m) => `<div class="ahs-ms-claimed">${renderMilestoneIcon(m)}<span>✓ ${esc(m.shortLabel || m.name)}</span></div>`).join("")
       : `<div class="ahs-ms-muted">No milestones claimed yet.</div>`;
 
     let nextHtml = "";
@@ -1751,9 +1847,12 @@
       const missing = Math.max(0, n(focus.missingPower, 0));
       const rewards = formatMilestoneRewardsPreview(focus.rewardsPreview);
       const note = toText(focus.eligibilityNote, "");
+      const focusIcon = renderMilestoneIcon(focus);
+      const focusFrame = renderMilestoneFramePreview(focus);
       nextHtml = `
         <div class="ahs-ms-next">
-          <div class="ahs-ms-next-title">${esc(focus.shortLabel || focus.name)}${status === "locked" && missing > 0 ? ` — ${esc(missing)} missing` : ""}</div>
+          <div class="ahs-ms-next-head">${focusIcon}<div class="ahs-ms-next-title">${esc(focus.shortLabel || focus.name)}${status === "locked" && missing > 0 ? ` — ${esc(missing)} missing` : ""}</div></div>
+          ${focusFrame}
           <div class="ahs-ms-rewards"><b>Rewards:</b> ${esc(rewards)}</div>
           ${note ? `<div class="ahs-ms-note">${esc(note)}</div>` : ""}
           ${status === "claimable" ? `<button type="button" class="ahs-ms-claim-btn" data-action="claim-signal-milestone" data-milestone-id="${esc(focus.id)}">Claim Milestone</button>` : ""}
