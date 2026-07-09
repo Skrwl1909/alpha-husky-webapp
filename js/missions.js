@@ -26,6 +26,28 @@
     blue_signal_fragment: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_blue_signal_fragment_v1_128.png",
     rare_bonus_signal: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780054311/alpha_ui/icons/blue_event/alpha_icon_rare_bonus_signal_v1_128.png"
   });
+  const MISSION_DEBRIEF_LINES = Object.freeze({
+    scoutSuccess: Object.freeze([
+      "Hostile trace cleared. Route is safe for now.",
+      "Clean contact. No second signal detected.",
+      "Target dropped before the breach widened."
+    ]),
+    scoutRough: Object.freeze([
+      "Contact broke ugly. Pull back and reset.",
+      "Signal resisted the push. We mark it and move.",
+      "You made it out. That counts."
+    ]),
+    wardenSuccess: Object.freeze([
+      "Clean return. The Pack marks this one.",
+      "The line holds another hour.",
+      "Every cleared signal keeps the dark outside."
+    ]),
+    wardenRough: Object.freeze([
+      "Fall back. The front is not won in one push.",
+      "The line bent, but it did not break.",
+      "You survived the trace. Learn from it."
+    ])
+  });
   const MISSION_DUEL_MOON_HUNTER_SCOUT_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/moon_hunter_scout.png";
   const MISSION_DUEL_RUST_MARAUDER_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/rust_marauder.png";
   const MISSION_DUEL_NAMED_ENEMY_VISUALS = Object.freeze({
@@ -341,6 +363,9 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         durationSec: Math.max(0, n(item.durationSec, 0)),
         bossPrepProgress: Math.max(0, n(item.bossPrepProgress, 0)),
         bossPrepProgressTotal: Math.max(0, n(item.bossPrepProgressTotal, 0)),
+        bossPrepMax: Math.max(1, n(item.bossPrepMax || item.readiness?.bossPrepMax, 3)),
+        intel: Math.max(0, n(item.intel || item.bossProgressState?.intel, 0)),
+        gateProgress: Math.max(0, n(item.gateProgress || item.bossProgressState?.gateProgress, 0)),
         nextRecommendedAction: toText(item.nextRecommendedAction, ""),
         cta: toText(item.cta, "Preview"),
       };
@@ -643,6 +668,109 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       lines,
     };
   }
+  function missionDebriefOutcome(last) {
+    const tier = normalizeOutcomeTier(last);
+    if (!textOrEmpty(tier)) return { label: "Resolved", tone: "success", rough: false };
+    const tone = normalizeOutcomeTone(tier);
+    if (tone === "failed") return { label: "Failed", tone: "failed", rough: true };
+    if (tone === "partial") return { label: "Partial", tone: "partial", rough: true };
+    if (tone === "critical" || tone === "success") return { label: "Success", tone: tone === "critical" ? "critical" : "success", rough: false };
+    return { label: textOrEmpty(tier) || "Resolved", tone: "success", rough: false };
+  }
+
+  function missionDebriefPick(list, seedText, salt) {
+    const items = Array.isArray(list) ? list.filter(Boolean) : [];
+    if (!items.length) return "";
+    const seed = hashPlaybackSeed(`${seedText || "mission-debrief"}|${salt || "line"}`);
+    return items[Math.abs(seed) % items.length] || items[0];
+  }
+
+  function missionDebriefAsset(raw, keys) {
+    if (!raw || typeof raw !== "object") return "";
+    for (const key of keys) {
+      const url = textOrEmpty(raw?.[key]);
+      if (url) return assetUrl(url);
+    }
+    return "";
+  }
+
+  function buildMissionDebriefModel(resultData) {
+    const payload = normalizePayload(resultData) || resultData || {};
+    const last = payload?.lastResolve || payload?.last_resolve || resultData?.lastResolve || resultData?.last_resolve || null;
+    if (!last || typeof last !== "object") return null;
+
+    const operation = toText(
+      last?.operationName || last?.operation_name || last?.title || last?.name || payload?.missionTitle || payload?.mission_title,
+      "Field Operation"
+    );
+    const outcome = missionDebriefOutcome(last);
+    const recoveredRewards = normalizeRewardList(last?.recoveredRewards);
+    const fallbackRewards = [];
+    if (!recoveredRewards.length) {
+      fallbackRewards.push(...normalizeRewardList(last?.rewardMsg || last?.reward_msg));
+      fallbackRewards.push(...normalizeRewardList(last?.lootMsg || last?.loot_msg));
+      fallbackRewards.push(...normalizeRewardList(last?.tokenLootMsg || last?.token_loot_msg));
+    }
+    const rewards = recoveredRewards.length ? recoveredRewards.slice() : fallbackRewards;
+    const signalDelta = extractMissionSignalDelta(payload);
+    if (signalDelta > 0 && !rewards.some((line) => /signal power/i.test(line))) rewards.push(`Signal Power +${signalDelta}`);
+
+    const seedText = [operation, outcome.label, textOrEmpty(last?.enemyName || last?.enemy_name || last?.targetName || last?.target_name)].join("|");
+    const scoutPack = outcome.rough ? MISSION_DEBRIEF_LINES.scoutRough : MISSION_DEBRIEF_LINES.scoutSuccess;
+    const wardenPack = outcome.rough ? MISSION_DEBRIEF_LINES.wardenRough : MISSION_DEBRIEF_LINES.wardenSuccess;
+    const npcAssets = (payload?.npcAssets && typeof payload.npcAssets === "object") ? payload.npcAssets : {};
+    const scoutAvatar = missionDebriefAsset(last, ["scoutAvatar", "scout_avatar", "scoutImage", "scout_image"])
+      || missionDebriefAsset(npcAssets, ["scoutAvatar", "scout_avatar", "scoutImage", "scout_image"]);
+    const wardenSigil = missionDebriefAsset(last, ["wardenSigil", "warden_sigil", "wardenImage", "warden_image"])
+      || missionDebriefAsset(npcAssets, ["wardenSigil", "warden_sigil", "wardenImage", "warden_image"]);
+
+    return {
+      visible: true,
+      missionName: operation,
+      outcome: outcome.label,
+      outcomeTone: outcome.tone,
+      recoveredText: rewards.join(" - "),
+      scoutLine: missionDebriefPick(scoutPack, seedText, "scout"),
+      wardenLine: missionDebriefPick(wardenPack, seedText, "warden"),
+      scoutAvatar,
+      wardenSigil,
+    };
+  }
+
+  function renderMissionDebriefGate(model) {
+    const m = model || buildMissionDebriefModel(_state) || { visible: true, missionName: "Field Operation", outcome: "Resolved", recoveredText: "", scoutLine: "Hostile trace cleared. Route is safe for now.", wardenLine: "Clean return. The Pack marks this one." };
+    const scoutAvatar = textOrEmpty(m?.scoutAvatar);
+    const wardenSigil = textOrEmpty(m?.wardenSigil);
+    return `
+      <div class="m-stage m-stage-debrief">
+        <div class="m-card m-debrief-card">
+          <div class="m-report-head">
+            <div style="min-width:0;">
+              <div class="m-kicker">Field Debrief</div>
+              <div class="m-report-title" style="margin-top:8px;">${esc(m?.missionName || "Field Operation")}</div>
+            </div>
+            <div class="m-outcome-badge" data-tone="${esc(m?.outcomeTone || "success")}">${esc(m?.outcome || "Resolved")}</div>
+          </div>
+          <div class="m-report-section"><div class="m-report-label">Operation</div><div class="m-report-values">${esc(m?.missionName || "Field Operation")}</div></div>
+          <div class="m-report-section"><div class="m-report-label">Outcome</div><div class="m-report-values">${esc(m?.outcome || "Resolved")}</div></div>
+          ${textOrEmpty(m?.recoveredText) ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(m.recoveredText)}</div></div>` : ""}
+          <div class="m-debrief-voices">
+            <div class="m-debrief-voice">
+              ${scoutAvatar ? `<img class="m-debrief-avatar" src="${esc(scoutAvatar)}" alt="" loading="lazy" decoding="async" onerror="this.remove();">` : ""}
+              <div style="min-width:0;"><div class="m-report-label">Scout</div><div class="m-debrief-line">${esc(m?.scoutLine || "Hostile trace cleared. Route is safe for now.")}</div></div>
+            </div>
+            <div class="m-debrief-voice">
+              ${wardenSigil ? `<img class="m-debrief-avatar" src="${esc(wardenSigil)}" alt="" loading="lazy" decoding="async" onerror="this.remove();">` : ""}
+              <div style="min-width:0;"><div class="m-report-label">Warden</div><div class="m-debrief-line">${esc(m?.wardenLine || "Clean return. The Pack marks this one.")}</div></div>
+            </div>
+          </div>
+          <div class="m-actions m-debrief-actions">
+            <button type="button" class="btn primary" data-act="continue_mission_debrief">Return to Missions</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   function rewardIconKeyFromLabel(label) {
     const lower = textOrEmpty(label).toLowerCase();
     if (!lower) return "";
@@ -701,6 +829,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
+  let _missionDebriefState = null;
   let _missionDuelPlaybackSeq = 0;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
@@ -1388,6 +1517,60 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         overflow-wrap:anywhere;
       }
 
+      #missionsRoot .m-stage-debrief{
+        min-height:100%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:10px 0;
+      }
+      #missionsRoot .m-debrief-card{
+        width:min(560px, 100%);
+        margin:0 auto;
+        border-color:rgba(255,196,128,.16);
+        box-shadow:0 16px 42px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,196,128,.05);
+      }
+      #missionsRoot .m-debrief-voices{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        margin-top:12px;
+      }
+      #missionsRoot .m-debrief-voice{
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+        padding:10px;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.035);
+        min-width:0;
+      }
+      #missionsRoot .m-debrief-avatar{
+        flex:0 0 auto;
+        width:34px;
+        height:34px;
+        border-radius:10px;
+        object-fit:cover;
+        border:1px solid rgba(255,255,255,.10);
+        background:rgba(255,255,255,.04);
+      }
+      #missionsRoot .m-debrief-line{
+        margin-top:5px;
+        font-size:13px;
+        line-height:1.42;
+        color:rgba(244,247,251,.88);
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-debrief-actions{
+        margin-top:14px;
+        justify-content:flex-end;
+      }
+      #missionsRoot .m-debrief-actions .btn{
+        min-height:42px;
+        padding:10px 14px;
+        width:100%;
+      }
       #missionsRoot .m-elite-wrap{
         margin-top:10px;
         border-color:rgba(255,176,0,.14);
@@ -2280,6 +2463,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "", selectedTacticalChoiceForButton(btn));
       if (act === "resolve") return void doResolve();
+      if (act === "continue_mission_debrief") { _missionDebriefState = null; return void render(); }
       if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
       if (act === "open_frames") return void openFrames();
       if (act === "close")   return void close();
@@ -3199,6 +3383,10 @@ function _normalizeRareDropObj(obj) {
     const typeLabel = toText(op.typeLabel || op.operationType, "");
     const impactLabel = toText(op.impactPreview?.label, "") || ({ boss_prep: "Boss Prep advanced", gate_progress: "Gate Stability improved", intel: "Intel secured" }[toText(op.impactProfile, "")] || "");
     const readiness = toText(op.readinessState, "");
+    const prepTotal = Math.max(0, n(op.bossPrepProgressTotal, 0));
+    const prepMax = Math.max(1, n(op.bossPrepMax, 3));
+    const intel = Math.max(0, n(op.intel, 0));
+    const gateProgress = Math.max(0, n(op.gateProgress, 0));
     const ctaLabel = canStart ? "Start" : toText(op.cta, "Locked");
     const locked = status === "locked";
     const durationSec = Math.max(0, n(op.durationSec, 0));
@@ -3229,6 +3417,7 @@ function _normalizeRareDropObj(obj) {
         ${linkedTarget ? `<div class="m-elite-line"><b>Target:</b> ${esc(linkedTarget)}</div>` : (linkedBoss ? `<div class="m-elite-line"><b>Boss Wall Link:</b> ${esc(linkedBoss)}</div>` : "")}
         ${impactLabel ? `<div class="m-elite-line"><b>Impact:</b> ${esc(impactLabel)}</div>` : ""}
         ${readiness ? `<div class="m-elite-line"><b>Readiness:</b> ${esc(readiness)}</div>` : ""}
+        <div class="m-elite-line"><b>Boss Prep:</b> ${esc(`${prepTotal}/${prepMax}`)}${intel ? ` | Intel ${esc(intel)}` : ""}${gateProgress ? ` | Gate ${esc(gateProgress)}` : ""}</div>
         ${renderTacticalChoiceSelector(op, canStart)}
         ${nextAction ? `<div class="m-elite-line"><b>Next:</b> ${esc(nextAction)}</div>` : ""}
         <div class="m-elite-cta">
@@ -3619,7 +3808,8 @@ function _normalizeRareDropObj(obj) {
     const rewardLines = formatEliteReportRewardLines(report, last);
     const typeLabel = textOrEmpty(report.operationTypeLabel, "");
     const linkedTarget = (report.linkedTarget && typeof report.linkedTarget === "object") ? report.linkedTarget : null;
-    const targetName = textOrEmpty(linkedTarget?.name || linkedTarget?.id, "");
+    const targetBoss = (report.targetBoss && typeof report.targetBoss === "object") ? report.targetBoss : null;
+    const targetName = textOrEmpty(targetBoss?.displayName || linkedTarget?.name || linkedTarget?.id, "");
     const planLabel = textOrEmpty(report.tacticalChoiceLabel || last?.tacticalChoiceLabel, "");
     const tacticalEffect = textOrEmpty(report.tacticalEffectLine || last?.tacticalEffectLine, "");
     const impactLine = textOrEmpty(report.impactLine || report.impactResult?.line, "");
@@ -3627,6 +3817,7 @@ function _normalizeRareDropObj(obj) {
     const bossPrep = (report.bossPrepProgress && typeof report.bossPrepProgress === "object") ? report.bossPrepProgress : {};
     const bossPrepGain = Math.max(0, n(report.bossPrepProgressGained ?? bossPrep.granted, 0));
     const bossPrepTotal = Math.max(0, n(report.bossPrepProgressTotal ?? bossPrep.total, 0));
+    const bossPrepMax = Math.max(1, n(bossPrep.max || targetBoss?.state?.bossPrepMax, 3));
     const nextAction = textOrEmpty(report.nextRecommendedAction || last?.nextRecommendedAction, "Check Next Alpha Goal.");
     const req = (report.requirementsChecked && typeof report.requirementsChecked === "object") ? report.requirementsChecked : {};
     const reqLine = (n(req.level, 0) > 0 || n(req.signalPower, 0) > 0)
@@ -3652,7 +3843,7 @@ function _normalizeRareDropObj(obj) {
         <div class="m-report-section"><div class="m-report-label">Rewards granted</div><div class="m-report-values">${esc(rewardLines.length ? rewardLines.join(" | ") : "No rewards granted")}</div></div>
         ${impactLine ? `<div class="m-report-section"><div class="m-report-label">Impact result</div><div class="m-report-values">${esc(impactLine)}</div></div>` : ""}
         ${readinessState ? `<div class="m-report-section"><div class="m-report-label">Readiness</div><div class="m-report-values">${esc(readinessState)}</div></div>` : ""}
-        ${bossPrepGain > 0 ? `<div class="m-report-section"><div class="m-report-label">Boss Prep progress</div><div class="m-report-values">${esc(`+${bossPrepGain}${bossPrepTotal > 0 ? ` | Total ${bossPrepTotal}` : ""}`)}</div></div>` : ""}
+        ${bossPrepGain > 0 || bossPrepTotal > 0 ? `<div class="m-report-section"><div class="m-report-label">Boss Prep progress</div><div class="m-report-values">${esc(`${bossPrepGain > 0 ? `+${bossPrepGain} | ` : ""}Total ${bossPrepTotal}/${bossPrepMax}`)}</div></div>` : ""}
         ${nextAction ? `<div class="m-report-section"><div class="m-report-label">Next</div><div class="m-report-values">${esc(nextAction)}</div></div>` : ""}\n      </div>
     `;
   }
@@ -4658,6 +4849,12 @@ function _normalizeRareDropObj(obj) {
     const last = payload.lastResolve || payload.last_resolve || null;
     blueSignalHuntProgress(payload);
 
+    if (_missionDebriefState?.visible) {
+      stopTick();
+      _root.innerHTML = renderMissionDebriefGate(_missionDebriefState);
+      return;
+    }
+
     if (active.status && active.status !== "NONE") {
       // ✅ rare drop source order: pending.offer → active raw mission → payload (fallback)
       const rare =
@@ -4715,7 +4912,7 @@ function _normalizeRareDropObj(obj) {
             <div class="m-title">Missions</div>
             <button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button>
           </div>
-          <div class="m-shell-sub">Pick a route. Start → Wait → Resolve.</div>
+          <div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>
           <div class="m-inline-status">No active mission. Pick an offer to start.</div>
           ${renderHelpPanel()}
         </div>
@@ -4958,7 +5155,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
       const progressToast = buildMissionResolveToast(res);
       if (progressToast && Array.isArray(progressToast.lines) && progressToast.lines.length) {
-        showMissionProgressToast(progressToast, progressToast.lines.join(" • "));
+        showMissionProgressToast(progressToast, progressToast.lines.join(" - "));
       }
       _pendingStart = null;
       if (res && typeof res === "object") {
@@ -4977,6 +5174,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         const showResultCard = () => {
           _state = res;
           _stateLoadedAt = Date.now();
+          _missionDebriefState = buildMissionDebriefModel(res);
           try {
             window.__AH_MISSIONS_RAW = res;
             window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);

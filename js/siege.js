@@ -872,6 +872,9 @@ function renderBattlePanelHTML(raw, node, cur) {
       ? previewReplay.turns
       : [];
   const fightNo = Number(previewReplay?.fightNo || previewReplay?.fight_no || cur?.currentFight || 0);
+  const maxRounds = Number(previewReplay?.maxRounds || previewReplay?.max_rounds || 0);
+  const roundCount = Number(previewReplay?.rounds || previewReplay?.roundCount || previewReplay?.round_count || 0) || new Set(turns.map(t => Number(t?.turn || t?.round || 0)).filter(Boolean)).size || turns.length;
+  const turnsLabel = maxRounds > 0 ? `Turns: ${hasReplay ? roundCount : 0} / ${maxRounds}` : `Turns: ${hasReplay ? roundCount : 0}`;
   const firstFightNo = Number(bouts?.[0]?.fightNo || bouts?.[0]?.fight_no || fightNo || 0);
   const boutCount = bouts.length;
 
@@ -947,7 +950,7 @@ function renderBattlePanelHTML(raw, node, cur) {
 
       <div id="siegeBattleMeta" class="siege-battle-meta">
         <span class="siege-pill">${esc(isClash ? `Bouts: ${hasReplay ? boutCount : 0}` : `Fight: ${hasReplay ? (fightNo || "-") : "-"}`)}</span>
-        <span class="siege-pill">${esc(isClash ? `Fights: ${hasReplay ? `${firstFightNo || fightNo || "-"}-${fightNo || "-"}` : "-"}` : `Turns: ${hasReplay ? turns.length : 0}`)}</span>
+        <span class="siege-pill">${esc(isClash ? `Fights: ${hasReplay ? `${firstFightNo || fightNo || "-"}-${fightNo || "-"}` : "-"}` : turnsLabel)}</span>
         <span class="siege-pill">${esc(`${outcomeLabel}: ${hasReplay ? winnerName : "-"}`)}</span>
         <span class="siege-pill">Siege: ${esc(siegeStatus || "-")}</span>
       </div>
@@ -1114,8 +1117,8 @@ function renderBattlePanelHTML(raw, node, cur) {
             background:rgba(255,255,255,.08); color:#fff;
           ">✕</button>
         </div>
-        <div id="siegeRoot" style="padding:12px; overflow:auto; -webkit-overflow-scrolling:touch;"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-top:1px solid rgba(255,255,255,.08)">
+        <div id="siegeRoot" style="flex:1 1 auto;min-height:0;padding:10px;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
+        <div id="siegeActions" class="siege-actionbar" style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid rgba(255,255,255,.08)">
           <button id="siegeRefresh" class="siege-btn">Refresh</button>
           <button id="siegeWatch" class="siege-btn">Take Watch</button>
           <button id="siegeUnwatch" class="siege-btn">Leave Watch</button>
@@ -1148,12 +1151,66 @@ function renderBattlePanelHTML(raw, node, cur) {
       .siege-btn.is-busy{
         background:rgba(255,255,255,.16);
       }
+      .siege-actionbar{
+        flex:0 0 auto;
+        background:rgba(15,16,22,.98);
+      }
+      .siege-actionbar .siege-btn{
+        min-height:38px;
+      }
       .siege-card{
         border:1px solid rgba(255,255,255,.08);
         background:rgba(255,255,255,.03);
-        border-radius:14px;
+        border-radius:8px;
         padding:10px 12px;
-        margin-bottom:10px;
+        margin-bottom:8px;
+      }
+      .siege-command-shell{
+        padding:12px;
+        background:rgba(255,255,255,.045);
+      }
+      .siege-command-top{
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        align-items:flex-start;
+      }
+      .siege-command-node{
+        min-width:0;
+      }
+      .siege-command-kicker{
+        font-size:10px;
+        line-height:1;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        opacity:.62;
+        font-weight:800;
+      }
+      .siege-command-name{
+        margin-top:4px;
+        font-size:16px;
+        line-height:1.12;
+        font-weight:900;
+        color:#f6f8ff;
+        overflow-wrap:anywhere;
+      }
+      .siege-command-pills{
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+        gap:6px;
+      }
+      .siege-command-copy{
+        margin-top:8px;
+        font-size:12px;
+        line-height:1.32;
+        opacity:.86;
+      }
+      .siege-command-meta{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+        margin-top:9px;
       }
       .siege-kv{
         display:flex;
@@ -1206,14 +1263,14 @@ function renderBattlePanelHTML(raw, node, cur) {
       }
 
       .siege-battle-card{
-        padding:12px;
+        padding:10px;
       }
       .siege-battle-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
         gap:10px;
-        margin-bottom:10px;
+        margin-bottom:8px;
       }
       .siege-battle-title{
         font-weight:800;
@@ -1241,16 +1298,16 @@ function renderBattlePanelHTML(raw, node, cur) {
       .siege-battle-meta{
         display:flex;
         flex-wrap:wrap;
-        gap:8px;
-        margin-bottom:10px;
+        gap:6px;
+        margin-bottom:8px;
       }
       .siege-battle-stage{
         position:relative;
-        min-height:220px;
-        height:220px;
-        border-radius:14px;
+        min-height:132px;
+        height:132px;
+        border-radius:8px;
         overflow:hidden;
-        margin-bottom:10px;
+        margin-bottom:8px;
         border:1px solid rgba(255,255,255,.08);
         background:
           radial-gradient(circle at 50% 35%, rgba(0,234,255,.10), transparent 35%),
@@ -1315,14 +1372,16 @@ function renderBattlePanelHTML(raw, node, cur) {
         display:flex;
         align-items:center;
         justify-content:center;
-        gap:12px;
-        padding:14px 0;
-        background:linear-gradient(90deg, rgba(0,255,255,0.08), rgba(255,0,255,0.08));
-        border-bottom:1px solid rgba(255,255,255,.12);
-        font-size:18px;
+        gap:10px;
+        padding:10px 8px;
+        margin-bottom:8px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:8px;
+        background:linear-gradient(90deg, rgba(0,255,255,0.07), rgba(255,0,255,0.07));
+        font-size:15px;
         font-weight:800;
         text-transform:uppercase;
-        letter-spacing:1px;
+        letter-spacing:.04em;
       }
       .siege-faction {
         display:flex;
@@ -1330,9 +1389,9 @@ function renderBattlePanelHTML(raw, node, cur) {
         gap:8px;
       }
       .siege-faction-short {
-        font-size:26px;
+        font-size:22px;
         font-weight:900;
-        letter-spacing:3px;
+        letter-spacing:.08em;
         line-height:1;
       }
       .siege-faction-full {
@@ -1342,39 +1401,39 @@ function renderBattlePanelHTML(raw, node, cur) {
         margin-top:-2px;
       }
       .vs {
-        font-size:22px;
+        font-size:16px;
         color:#fff;
         opacity:.75;
-        padding:0 8px;
+        padding:0 4px;
       }
 
       .siege-defender-slots {
-        margin:14px 0 18px;
-        padding:16px;
+        margin:8px 0;
+        padding:10px;
         background:rgba(10,12,22,0.9);
-        border:2px solid rgba(0,234,255,0.3);
-        border-radius:16px;
+        border:1px solid rgba(0,234,255,0.22);
+        border-radius:8px;
       }
       .slots-title {
         text-align:center;
-        font-size:14px;
+        font-size:12px;
         font-weight:800;
         color:#00eaff;
-        margin-bottom:12px;
-        letter-spacing:1px;
+        margin-bottom:6px;
+        letter-spacing:.06em;
       }
       .slots-grid {
         display:grid;
-        grid-template-columns:repeat(2, 1fr);
-        gap:10px;
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+        gap:6px;
       }
       .defender-slot {
         background:rgba(255,255,255,0.03);
-        border:2px solid rgba(255,255,255,0.15);
-        border-radius:12px;
-        padding:12px 10px;
+        border:1px solid rgba(255,255,255,0.15);
+        border-radius:8px;
+        padding:8px 6px;
         text-align:center;
-        min-height:92px;
+        min-height:72px;
         display:flex;
         flex-direction:column;
         align-items:center;
@@ -1385,7 +1444,7 @@ function renderBattlePanelHTML(raw, node, cur) {
         cursor:pointer;
       }
       .defender-slot.clickable:hover {
-        transform:scale(1.05);
+        transform:translateY(-1px);
         box-shadow:0 0 20px rgba(0,255,170,0.5);
       }
       .defender-slot.occupied {
@@ -1396,9 +1455,9 @@ function renderBattlePanelHTML(raw, node, cur) {
         border-style:dashed;
         opacity:0.75;
       }
-      .slot-icon { font-size:28px; margin-bottom:6px; }
-      .slot-name { font-weight:700; font-size:13px; color:#fff; }
-      .slot-status { font-size:11px; opacity:.7; }
+      .slot-icon { font-size:20px; margin-bottom:4px; }
+      .slot-name { font-weight:700; font-size:11px; line-height:1.12; color:#fff; overflow-wrap:anywhere; }
+      .slot-status { font-size:9px; line-height:1.1; opacity:.7; }
       .slot-fatigue{
         margin-top:5px;
         font-size:10px;
@@ -1428,6 +1487,28 @@ function renderBattlePanelHTML(raw, node, cur) {
       @keyframes pulse {
         0%, 100% { opacity:1; transform:scale(1); }
         50% { opacity:0.85; transform:scale(1.03); }
+      }
+      @media (max-width:420px){
+        .siege-command-top{
+          flex-direction:column;
+        }
+        .siege-command-pills{
+          justify-content:flex-start;
+        }
+        .siege-actionbar .siege-btn{
+          flex:1 1 calc(50% - 8px);
+          padding:9px 8px;
+        }
+        .siege-battle-summary{
+          gap:6px;
+        }
+        .siege-battle-stage{
+          min-height:112px;
+          height:112px;
+        }
+        .slots-grid{
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+        }
       }
     `;
     document.head.appendChild(style);
@@ -1535,6 +1616,7 @@ function renderBattlePanelHTML(raw, node, cur) {
     const ownerText = factionLabel(ownerFaction);
     const watchText = `${guardUsed(node)} / ${guardMax(node)}`;
     const cooldownText = cooldownLabel(node);
+    const nodeName = String(node?.name || node?.nodeName || node?.title || node?.nodeId || "Edge of the Chain").trim() || "Edge of the Chain";
     const ux = getNodeUx(raw, node);
 
     if (qs("siegeSub")) qs("siegeSub").textContent = `Siege Participation - ${ux.displayLabel} / ${ux.actionHint}`;
@@ -1640,16 +1722,20 @@ function renderBattlePanelHTML(raw, node, cur) {
       `;
 
     root.innerHTML = `
-      <div class="siege-card" style="padding:14px 14px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <span style="${statusPillStyle}">${esc(ux.displayLabel)}</span>
-          <span style="${actionPillStyle}">${esc(ux.actionHint)}</span>
-          ${valueLabel ? `<span style="${valuePillStyle}">${esc(valueLabel)}</span>` : ""}
+      <div class="siege-card siege-command-shell">
+        <div class="siege-command-top">
+          <div class="siege-command-node">
+            <div class="siege-command-kicker">Node</div>
+            <div class="siege-command-name">${esc(nodeName)}</div>
+          </div>
+          <div class="siege-command-pills">
+            <span style="${statusPillStyle}">${esc(ux.displayLabel)}</span>
+            <span style="${actionPillStyle}">${esc(ux.actionHint)}</span>
+            ${valueLabel ? `<span style="${valuePillStyle}">${esc(valueLabel)}</span>` : ""}
+          </div>
         </div>
-        <div style="margin-top:9px;font-size:14px;font-weight:700;color:#f6f8ff;">${esc(ux.statusText)}</div>
-        <div style="margin-top:6px;font-size:12px;line-height:1.35;opacity:.92;">${esc(`Why: ${ux.reasonText}`)}</div>
-        <div style="margin-top:4px;font-size:12px;line-height:1.35;opacity:.76;">${esc(`Impact: ${ux.rewardText}`)}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+        <div class="siege-command-copy">${esc(`${ux.statusText} ${ux.reasonText}`)}</div>
+        <div class="siege-command-meta">
           ${frontlineMetaHtml}
         </div>
       </div>
@@ -1666,6 +1752,8 @@ function renderBattlePanelHTML(raw, node, cur) {
         </div>
       </div>
 
+      ${renderBattlePanelHTML(raw, node, cur)}
+
       <div class="siege-defender-slots">
         <div class="slots-title">${esc(slotsTitleReadable)}</div>
         <div class="siege-muted" style="text-align:center;margin-bottom:10px;">${esc(slotsNote)}</div>
@@ -1680,8 +1768,6 @@ function renderBattlePanelHTML(raw, node, cur) {
         <div style="margin-top:10px;font-weight:700">${esc(rosterTitle)}</div>
         ${rosterHtml}
       </div>
-
-      ${renderBattlePanelHTML(raw, node, cur)}
 
       ${renderFeedHTML(feed)}
     `;
