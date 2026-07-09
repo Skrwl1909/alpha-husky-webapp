@@ -1,4 +1,4 @@
-// js/home_nav.js — BottomNav + Sheets router (integrates with window.navOpen/navClose/navCloseTop)
+// js/home_nav.js - BottomNav + Sheets router (integrates with window.navOpen/navClose/navCloseTop)
 // - Quests uses your existing #quests-launcher (wired by quests.js)
 // - Sheets (hubBack/charBack/shareBack) are compatible with Telegram BackButton stack
 // - BackButton closes our sheets AND unlocks body scroll (patches navCloseTop)
@@ -14,6 +14,58 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const HUB_ICON_MAP = Object.freeze({
+    shop: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590700/alpha_ui/icons/hub-icons/shop.webp",
+    support: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590704/alpha_ui/icons/hub-icons/support.webp",
+    faq: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590699/alpha_ui/icons/hub-icons/faq.webp",
+    adopt: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590699/alpha_ui/icons/hub-icons/adopt.webp",
+    arena: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590699/alpha_ui/icons/hub-icons/arena.webp",
+    referrals: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590700/alpha_ui/icons/hub-icons/referrals.webp",
+    howlboard: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590699/alpha_ui/icons/hub-icons/howlboard.webp",
+    profile: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590700/alpha_ui/icons/hub-icons/profile.webp",
+    mailbox: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590700/alpha_ui/icons/hub-icons/mailbox.webp",
+    whats_new: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590704/alpha_ui/icons/hub-icons/whats_new.webp",
+    add_home: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590699/alpha_ui/icons/hub-icons/add_home.webp",
+    share: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783590700/alpha_ui/icons/hub-icons/share.webp"
+  });
+
+  const HUB_ICON_ID_ALIASES = Object.freeze({
+    whatsnew: "whats_new",
+    add_to_home: "add_home"
+  });
+
+  function normalizeHubIconId(value) {
+    const id = String(value || "").trim().toLowerCase();
+    return HUB_ICON_ID_ALIASES[id] || id;
+  }
+
+  function renderHubIcon(tileId) {
+    const src = HUB_ICON_MAP[normalizeHubIconId(tileId)];
+
+    if (!src) {
+      return '<span class="ah-hub-icon-fallback" aria-hidden="true">&bull;</span>';
+    }
+
+    return `
+      <img
+        class="ah-hub-icon-img"
+        src="${src}"
+        alt=""
+        loading="lazy"
+        decoding="async"
+        aria-hidden="true"
+      />
+    `;
+  }
+
+  function hydrateHubIcons() {
+    $$("#hubBack .ah-grid .ah-tile:not([data-campaign-tile])").forEach((tile) => {
+      const icon = Array.from(tile.children).find((child) => child.classList?.contains("ah-hub-tile-icon"));
+      if (!icon) return;
+      icon.innerHTML = renderHubIcon(tile.dataset.hubIcon || tile.dataset.action);
+    });
+  }
 
   const IS_OUR_SHEET = (id) => id === "hubBack" || id === "charBack" || id === "shareBack" || id === "supportBack" || id === "statsBack";
 
@@ -107,14 +159,10 @@
     return clickLegacy(".btn.mission") || clickLegacy("button.btn.mission");
   }
 
-  // ✅ IMPORTANT: Quests = Mission Board modal (#qBack) driven by quests.js.
-  // Best is to click your launcher (#quests-launcher), not to manually toggle display.
   function openQuests() {
-    // if quests.js exposes something, use it, else click launcher
     if (typeof window.openQuests === "function") return window.openQuests();
     if (typeof window.Quests?.open === "function") return window.Quests.open();
     if (clickLegacy("#quests-launcher")) return true;
-    // last resort (if launcher removed): show modal
     const qb = document.getElementById("qBack");
     if (qb) { qb.style.display = "flex"; navOpenId("qBack"); return true; }
     return false;
@@ -163,11 +211,11 @@
       return;
     }
     if (A === "stats") {
-  closeBack("charBack");
-  openBack("statsBack");
-  try { window.Stats?.refresh?.(); } catch(_) {}
-  return;
-}
+      closeBack("charBack");
+      openBack("statsBack");
+      try { window.Stats?.refresh?.(); } catch(_) {}
+      return;
+    }
 
     switch (A) {
       case "shop":
@@ -227,14 +275,13 @@
         else clickLegacy(".btn.profile") || clickLegacy("button.btn.profile");
         break;
 
-        case "support":
-        // prefer moduł Support (support.js), potem fallback na legacy button
+      case "support":
         if (typeof window.Support?.open === "function") window.Support.open();
         else if (typeof window.openSupport === "function") window.openSupport();
         else if (clickLegacy(".btn.support") || clickLegacy("button.btn.support")) {}
         else {
           const tg = window.Telegram?.WebApp;
-          tg?.showAlert?.("Support is loading…");
+          tg?.showAlert?.("Support is loading...");
         }
         break;
 
@@ -322,6 +369,7 @@
 
   function init() {
     syncBadgeMenuCopy();
+    hydrateHubIcons();
 
     // backdrops
     wireBackdropClose("hubBack");
