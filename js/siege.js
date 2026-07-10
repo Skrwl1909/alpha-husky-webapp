@@ -1,6 +1,15 @@
 // js/siege.js
 (function () {
   const Siege = {};
+  const SIEGE_P2A_ASSETS = Object.freeze({
+    frontlineHeader: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603824/alpha_ui/siege/siege_frontline_header_bg.webp",
+    factionClash: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603824/alpha_ui/siege/siege_faction_clash_strip_bg.webp",
+    duelReplayStage: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603823/alpha_ui/siege/siege_duel_replay_stage_bg.webp",
+    watchSlotEmpty: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603824/alpha_ui/siege/siege_watch_slot_empty_icon.webp",
+    watchSlotDefender: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603824/alpha_ui/siege/siege_watch_slot_defender_icon.webp",
+    attackerRole: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603823/alpha_ui/siege/siege_attacker_role_icon.webp",
+    callToArms: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783603823/alpha_ui/siege/siege_call_to_arms_icon.webp"
+  });
   let _apiPost = null;
   let _tg = null;
   let _dbg = false;
@@ -589,7 +598,17 @@
     el.hidden = !visible;
     el.style.display = visible ? "" : "none";
     el.disabled = !visible;
-    el.textContent = nextLabel;
+    if (id === "siegeCTA") {
+      const icon = el.querySelector(".siege-cta-icon");
+      const labelEl = el.querySelector(".siege-cta-label");
+      if (icon && labelEl) {
+        labelEl.textContent = nextLabel;
+      } else {
+        el.textContent = nextLabel;
+      }
+    } else {
+      el.textContent = nextLabel;
+    }
     el.dataset.baseLabel = nextLabel;
     el.title = SIEGE_ACTION_HINTS[id] || "";
   }
@@ -966,7 +985,7 @@ function renderBattlePanelHTML(raw, node, cur) {
               }
             </div>
             <div class="siege-battle-fighter-main">
-              <div class="siege-battle-fighter-label">ATTACKER</div>
+              <div class="siege-battle-fighter-label"><img class="siege-attacker-role-icon" src="${SIEGE_P2A_ASSETS.attackerRole}" alt="" aria-hidden="true" onerror="this.hidden=true">ATTACKER</div>
               <div class="siege-battle-fighter-name">${esc(leftName)}</div>
               <div class="siege-battle-fighter-sub ${hasReplay ? "" : "siege-muted"}">${esc(leftFaction)}</div>
             </div>
@@ -1125,7 +1144,7 @@ function renderBattlePanelHTML(raw, node, cur) {
           <button id="siegeStart" class="siege-btn">Start Siege</button>
           <button id="siegeJoin" class="siege-btn">Join Siege</button>
           <button id="siegeLaunch" class="siege-btn">Launch</button>
-          <button id="siegeCTA" class="siege-btn">Call to Arms</button>
+          <button id="siegeCTA" class="siege-btn"><img class="siege-cta-icon" src="${SIEGE_P2A_ASSETS.callToArms}" alt="" aria-hidden="true" onerror="this.hidden=true"><span class="siege-cta-label">Call to Arms</span></button>
           <button id="siegeNext" class="siege-btn">Next Fight</button>
         </div>
         <div class="siege-hint-stack">
@@ -1166,6 +1185,10 @@ function renderBattlePanelHTML(raw, node, cur) {
         margin-bottom:8px;
       }
       .siege-command-shell{
+        background-color:rgba(10,12,22,.92);
+        background-image:linear-gradient(180deg,rgba(8,10,18,.42),rgba(8,10,18,.94)),url(${SIEGE_P2A_ASSETS.frontlineHeader});
+        background-size:cover;
+        background-position:center;
         padding:12px;
         background:rgba(255,255,255,.045);
       }
@@ -1302,6 +1325,10 @@ function renderBattlePanelHTML(raw, node, cur) {
         margin-bottom:8px;
       }
       .siege-battle-stage{
+        background-color:rgba(8,10,18,.94);
+        background-image:linear-gradient(180deg,rgba(8,10,18,.34),rgba(8,10,18,.92)),url(${SIEGE_P2A_ASSETS.duelReplayStage});
+        background-size:cover;
+        background-position:center;
         position:relative;
         min-height:132px;
         height:132px;
@@ -1369,6 +1396,10 @@ function renderBattlePanelHTML(raw, node, cur) {
       }
 
       .siege-vs-header {
+        background-color:rgba(8,10,18,.9);
+        background-image:linear-gradient(90deg,rgba(8,10,18,.76),rgba(8,10,18,.42),rgba(8,10,18,.76)),url(${SIEGE_P2A_ASSETS.factionClash});
+        background-size:cover;
+        background-position:center;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -1456,6 +1487,10 @@ function renderBattlePanelHTML(raw, node, cur) {
         opacity:0.75;
       }
       .slot-icon { font-size:20px; margin-bottom:4px; }
+      .siege-slot-icon-image { width:48px; height:48px; object-fit:contain; pointer-events:none; }
+      .siege-attacker-role-icon { width:32px; height:32px; object-fit:contain; pointer-events:none; vertical-align:middle; margin-right:5px; }
+      .siege-btn .siege-cta-icon { width:20px; height:20px; object-fit:contain; pointer-events:none; vertical-align:middle; margin-right:4px; }
+      .siege-btn .siege-cta-label { vertical-align:middle; }
       .slot-name { font-weight:700; font-size:11px; line-height:1.12; color:#fff; overflow-wrap:anywhere; }
       .slot-status { font-size:9px; line-height:1.1; opacity:.7; }
       .slot-fatigue{
@@ -1646,11 +1681,15 @@ function renderBattlePanelHTML(raw, node, cur) {
         ? ` onclick="document.getElementById('${slotCfg.clickId}')?.click()"`
         : "";
 
+      const slotIconHtml = slotMode === "defender"
+        ? `<img class="siege-slot-icon-image" src="${SIEGE_P2A_ASSETS[occupant ? "watchSlotDefender" : "watchSlotEmpty"]}" alt="" aria-hidden="true" onerror="this.hidden=true">`
+        : `<div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "A" : "+"))}</div>`;
+
       if (occupant) {
         const fatigueText = fatigueSuffix(occupant);
         return `
           <div class="defender-slot occupied ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-            <div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "A" : "+"))}</div>
+            ${slotIconHtml}
             <div class="slot-name">${esc(occupant.name || occupant.displayName || occupant.uid || "Unknown")}</div>
             <div class="slot-status">${esc(slotCfg.statusText || (slotMode === "attacker" ? "JOINED ASSAULT" : "WATCHING"))}</div>
             ${fatigueText ? `<div class="slot-fatigue">${esc(fatigueText)}</div>` : ""}
@@ -1660,7 +1699,7 @@ function renderBattlePanelHTML(raw, node, cur) {
 
       return `
         <div class="defender-slot empty ${slotCfg.clickable ? "clickable" : ""}"${clickHtml}>
-          <div class="slot-icon">${esc(slotCfg.icon || (slotMode === "attacker" ? "A" : "+"))}</div>
+          ${slotIconHtml}
           <div class="slot-name">EMPTY SLOT</div>
           <div class="slot-status">${esc(slotCfg.statusText || "AVAILABLE")}</div>
         </div>
