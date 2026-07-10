@@ -737,10 +737,38 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     };
   }
 
+  const MISSION_DEBRIEF_NPC_ASSETS = {
+    scout: {
+      label: "SCOUT",
+      avatarUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783676038/alpha_ui/missions/mission_npc_scout_avatar.webp"
+    },
+    warden: {
+      label: "WARDEN",
+      avatarUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1783676221/alpha_ui/missions/mission_npc_warden_avatar.webp"
+    }
+  };
+
+  function normalizeMissionDebriefSpeakerKey(value) {
+    const key = textOrEmpty(value).trim().toLowerCase();
+    return MISSION_DEBRIEF_NPC_ASSETS[key] ? key : "";
+  }
+
+  function renderMissionDebriefVoice(speaker, line, fallbackLine) {
+    const speakerKey = normalizeMissionDebriefSpeakerKey(speaker);
+    const asset = MISSION_DEBRIEF_NPC_ASSETS[speakerKey];
+    const label = asset?.label || textOrEmpty(speaker);
+    const initial = label.slice(0, 1).toUpperCase();
+    return `
+      <div class="m-debrief-voice">
+        ${asset?.avatarUrl ? `<img class="m-debrief-avatar" src="${esc(asset.avatarUrl)}" alt="" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.onerror=null;">` : ""}
+        ${asset?.avatarUrl ? `<span class="m-debrief-avatar-fallback" aria-hidden="true" hidden>${esc(initial)}</span>` : ""}
+        <div class="m-debrief-copy"><div class="m-report-label">${esc(label)}</div><div class="m-debrief-line">${esc(line || fallbackLine)}</div></div>
+      </div>
+    `;
+  }
   function renderMissionDebriefGate(model) {
     const m = model || buildMissionDebriefModel(_state) || { visible: true, missionName: "Field Operation", outcome: "Resolved", recoveredText: "", scoutLine: "Hostile trace cleared. Route is safe for now.", wardenLine: "Clean return. The Pack marks this one." };
-    const scoutAvatar = textOrEmpty(m?.scoutAvatar);
-    const wardenSigil = textOrEmpty(m?.wardenSigil);
+
     return `
       <div class="m-stage m-stage-debrief">
         <div class="m-card m-debrief-card">
@@ -755,14 +783,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
           <div class="m-report-section"><div class="m-report-label">Outcome</div><div class="m-report-values">${esc(m?.outcome || "Resolved")}</div></div>
           ${textOrEmpty(m?.recoveredText) ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(m.recoveredText)}</div></div>` : ""}
           <div class="m-debrief-voices">
-            <div class="m-debrief-voice">
-              ${scoutAvatar ? `<img class="m-debrief-avatar" src="${esc(scoutAvatar)}" alt="" loading="lazy" decoding="async" onerror="this.remove();">` : ""}
-              <div style="min-width:0;"><div class="m-report-label">Scout</div><div class="m-debrief-line">${esc(m?.scoutLine || "Hostile trace cleared. Route is safe for now.")}</div></div>
-            </div>
-            <div class="m-debrief-voice">
-              ${wardenSigil ? `<img class="m-debrief-avatar" src="${esc(wardenSigil)}" alt="" loading="lazy" decoding="async" onerror="this.remove();">` : ""}
-              <div style="min-width:0;"><div class="m-report-label">Warden</div><div class="m-debrief-line">${esc(m?.wardenLine || "Clean return. The Pack marks this one.")}</div></div>
-            </div>
+            ${renderMissionDebriefVoice("Scout", m?.scoutLine, "Hostile trace cleared. Route is safe for now.")}
+            ${renderMissionDebriefVoice("Warden", m?.wardenLine, "Clean return. The Pack marks this one.")}
           </div>
           <div class="m-actions m-debrief-actions">
             <button type="button" class="btn primary" data-act="continue_mission_debrief">Return to Missions</button>
@@ -1546,14 +1568,33 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         background:rgba(255,255,255,.035);
         min-width:0;
       }
-      #missionsRoot .m-debrief-avatar{
-        flex:0 0 auto;
-        width:34px;
-        height:34px;
+      #missionsRoot .m-debrief-avatar,
+      #missionsRoot .m-debrief-avatar-fallback{
+        flex:0 0 48px;
+        width:48px;
+        height:48px;
         border-radius:10px;
+        border:1px solid rgba(72,200,232,.28);
+        background:rgba(5,17,24,.88);
+        box-shadow:inset 0 0 0 1px rgba(0,0,0,.28);
+      }
+      #missionsRoot .m-debrief-avatar{
+        display:block;
         object-fit:cover;
-        border:1px solid rgba(255,255,255,.10);
-        background:rgba(255,255,255,.04);
+      }
+      #missionsRoot .m-debrief-avatar-fallback{
+        place-items:center;
+        color:rgba(152,231,248,.86);
+        font-size:15px;
+        font-weight:900;
+        line-height:1;
+      }
+      #missionsRoot .m-debrief-avatar-fallback:not([hidden]){
+        display:grid;
+      }
+      #missionsRoot .m-debrief-copy{
+        min-width:0;
+        max-width:100%;
       }
       #missionsRoot .m-debrief-line{
         margin-top:5px;
