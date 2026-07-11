@@ -1220,31 +1220,36 @@ function renderBattlePanelHTML(raw, node, cur) {
         pointer-events:none;
         border-radius:inherit;
         background:
-          radial-gradient(ellipse 18% 52% at 0 0, var(--siege-edge-glow), transparent 72%),
-          radial-gradient(ellipse 18% 52% at 100% 0, var(--siege-edge-glow), transparent 72%);
+          linear-gradient(180deg,var(--siege-edge-top),transparent 24px),
+          radial-gradient(ellipse 20% 56% at 0 0, var(--siege-edge-glow), transparent 74%),
+          radial-gradient(ellipse 20% 56% at 100% 0, var(--siege-edge-glow), transparent 74%);
         box-shadow:
-          inset 0 1px 0 var(--siege-edge-line),
-          inset 0 0 18px var(--siege-edge-soft);
+          inset 0 0 0 1px var(--siege-edge-line),
+          inset 0 0 26px var(--siege-edge-soft);
       }
       .siege-command-overlay--hot{
-        --siege-edge-glow:rgba(255,152,80,.16);
-        --siege-edge-line:rgba(255,142,72,.32);
-        --siege-edge-soft:rgba(255,96,64,.10);
+        --siege-edge-glow:rgba(255,152,80,.23);
+        --siege-edge-line:rgba(255,142,72,.56);
+        --siege-edge-soft:rgba(255,96,64,.15);
+        --siege-edge-top:rgba(255,142,72,.09);
       }
       .siege-command-overlay--live{
-        --siege-edge-glow:rgba(255,92,92,.16);
-        --siege-edge-line:rgba(255,92,92,.32);
-        --siege-edge-soft:rgba(255,72,72,.10);
+        --siege-edge-glow:rgba(255,92,92,.23);
+        --siege-edge-line:rgba(255,92,92,.56);
+        --siege-edge-soft:rgba(255,72,72,.15);
+        --siege-edge-top:rgba(255,92,92,.09);
       }
       .siege-command-overlay--cooldown{
-        --siege-edge-glow:rgba(88,200,255,.14);
-        --siege-edge-line:rgba(112,212,255,.28);
-        --siege-edge-soft:rgba(88,190,255,.09);
+        --siege-edge-glow:rgba(88,200,255,.20);
+        --siege-edge-line:rgba(112,212,255,.50);
+        --siege-edge-soft:rgba(88,190,255,.13);
+        --siege-edge-top:rgba(112,212,255,.08);
       }
       .siege-command-overlay--fortified{
-        --siege-edge-glow:rgba(82,220,165,.14);
-        --siege-edge-line:rgba(96,230,180,.28);
-        --siege-edge-soft:rgba(72,205,150,.09);
+        --siege-edge-glow:rgba(82,220,165,.20);
+        --siege-edge-line:rgba(96,230,180,.50);
+        --siege-edge-soft:rgba(72,205,150,.13);
+        --siege-edge-top:rgba(96,230,180,.08);
       }
       .siege-command-header > :not(.siege-command-overlay){
         position:relative;
