@@ -1201,7 +1201,8 @@ function renderBattlePanelHTML(raw, node, cur) {
       }
       .siege-command-shell{
         position:relative;
-        overflow:hidden
+        isolation:isolate;
+        overflow:hidden;
         border-radius:8px;
         background-color:rgba(10,12,22,.92);
         background-image:linear-gradient(180deg,rgba(8,10,18,.42),rgba(8,10,18,.94)),url(${SIEGE_P2A_ASSETS.frontlineHeader});
@@ -1212,11 +1213,35 @@ function renderBattlePanelHTML(raw, node, cur) {
       .siege-command-shell .siege-command-overlay{
         position:absolute;
         inset:0;
-        object-fit:cover;
-        border-radius:inherit;
-        opacity:.55;
-        pointer-events:none;
         z-index:0;
+        pointer-events:none;
+        border-radius:inherit;
+        background:
+          radial-gradient(ellipse 18% 52% at 0 0, var(--siege-edge-glow), transparent 72%),
+          radial-gradient(ellipse 18% 52% at 100% 0, var(--siege-edge-glow), transparent 72%);
+        box-shadow:
+          inset 0 1px 0 var(--siege-edge-line),
+          inset 0 0 18px var(--siege-edge-soft);
+      }
+      .siege-command-overlay--hot{
+        --siege-edge-glow:rgba(255,152,80,.16);
+        --siege-edge-line:rgba(255,142,72,.32);
+        --siege-edge-soft:rgba(255,96,64,.10);
+      }
+      .siege-command-overlay--live{
+        --siege-edge-glow:rgba(255,92,92,.16);
+        --siege-edge-line:rgba(255,92,92,.32);
+        --siege-edge-soft:rgba(255,72,72,.10);
+      }
+      .siege-command-overlay--cooldown{
+        --siege-edge-glow:rgba(88,200,255,.14);
+        --siege-edge-line:rgba(112,212,255,.28);
+        --siege-edge-soft:rgba(88,190,255,.09);
+      }
+      .siege-command-overlay--fortified{
+        --siege-edge-glow:rgba(82,220,165,.14);
+        --siege-edge-line:rgba(96,230,180,.28);
+        --siege-edge-soft:rgba(72,205,150,.09);
       }
       .siege-command-shell > :not(.siege-command-overlay){
         position:relative;
@@ -1693,17 +1718,8 @@ function renderBattlePanelHTML(raw, node, cur) {
     const nodeName = String(node?.name || node?.nodeName || node?.title || node?.nodeId || "Edge of the Chain").trim() || "Edge of the Chain";
     const ux = getNodeUx(raw, node);
     const overlayKey = resolveSiegeOverlayKey(raw);
-    const overlayAsset = overlayKey === "live"
-      ? SIEGE_P2A_ASSETS.overlayLive
-      : overlayKey === "cooldown"
-        ? SIEGE_P2A_ASSETS.overlayCooldown
-        : overlayKey === "hot"
-          ? SIEGE_P2A_ASSETS.overlayHot
-          : overlayKey === "fortified"
-            ? SIEGE_P2A_ASSETS.overlayFortified
-            : "";
-    const overlayHtml = overlayAsset
-      ? `<img class="siege-command-overlay" src="${overlayAsset}" alt="" aria-hidden="true" onerror="this.hidden=true">`
+    const overlayHtml = overlayKey
+      ? `<div class="siege-command-overlay siege-command-overlay--${overlayKey}" aria-hidden="true"></div>`
       : "";
 
     if (qs("siegeSub")) qs("siegeSub").textContent = `Siege Participation - ${ux.displayLabel} / ${ux.actionHint}`;
