@@ -5210,34 +5210,6 @@ body.missions-open{
   }
   .ah-tile span{ font-size: 18px; filter: drop-shadow(0 1px 8px rgba(0,0,0,.28)); }
   .ah-tile b{ font-size: 13px; letter-spacing:.2px; color: rgba(236,246,255,.96); }
-  #hubBack .ah-grid .ah-tile:not([data-campaign-tile]) .ah-hub-tile-icon{
-    width:34px;
-    height:34px;
-    min-width:34px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size:0;
-    filter:none;
-  }
-  #hubBack .ah-grid .ah-tile:not([data-campaign-tile]) .ah-hub-icon-img{
-    width:30px;
-    height:30px;
-    object-fit:contain;
-    display:block;
-    filter: drop-shadow(0 0 6px rgba(80, 200, 255, .32));
-  }
-  #hubBack .ah-grid .ah-tile:not([data-campaign-tile]) .ah-hub-icon-fallback{
-    width:30px;
-    height:30px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    color:rgba(160,220,255,.90);
-    text-shadow:0 0 6px rgba(80,200,255,.30);
-    font-size:18px;
-    filter:none;
-  }
   .ah-tile .ah-tile-ico{ flex: 0 0 auto; }
   .ah-tile .ah-tile-copy{
     display:flex;
@@ -6323,17 +6295,17 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="ah-panel-scroll">
     <div id="hubGoalRoot"></div>
     <div class="ah-grid">
-      <button class="ah-tile" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Shop</b></button>
+      <button class="ah-tile" data-action="shop" type="button"><span>🛒</span><b>Shop</b></button>
       <!-- ✅ NEW: Support -->
-      <button class="ah-tile" data-action="support" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Support</b></button>
-      <button class="ah-tile" data-action="faq" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>FAQ</b></button>
-      <button class="ah-tile" data-action="adopt" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Adopt</b></button>
-      <button class="ah-tile" data-action="arena" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Arena</b></button>
-      <button class="ah-tile" data-action="referrals" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Referrals</b></button>
-      <button class="ah-tile" data-action="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Howlboard</b></button>
-      <button class="ah-tile" data-action="profile" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Profile</b></button>
-      <button class="ah-tile" data-action="mailbox" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Mailbox</b></button>
-      <button class="ah-tile" data-action="whatsnew" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>What’s New</b></button>
+      <button class="ah-tile" data-action="support" type="button"><span>💎</span><b>Support</b></button>
+      <button class="ah-tile" data-action="faq" type="button"><span>❓</span><b>FAQ</b></button>
+      <button class="ah-tile" data-action="adopt" type="button"><span>🐾</span><b>Adopt</b></button>
+      <button class="ah-tile" data-action="arena" type="button"><span>🏆</span><b>Arena</b></button>
+      <button class="ah-tile" data-action="referrals" type="button"><span>🤝</span><b>Referrals</b></button>
+      <button class="ah-tile" data-action="howlboard" type="button"><span>📣</span><b>Howlboard</b></button>
+      <button class="ah-tile" data-action="profile" type="button"><span>👤</span><b>Profile</b></button>
+      <button class="ah-tile" data-action="mailbox" type="button"><span>✉️</span><b>Mailbox</b></button>
+      <button class="ah-tile" data-action="whatsnew" type="button"><span>📰</span><b>What’s New</b></button>
       <button class="ah-tile" data-action="campaign" data-campaign-tile type="button">
         <span class="ah-tile-ico">📡</span>
         <span class="ah-tile-copy">
@@ -6342,8 +6314,8 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </span>
         <span class="ah-badge ah-tile-badge" data-campaign-badge hidden></span>
       </button>
-      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Add to Home</b></button>
-      <button class="ah-tile" data-action="share" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Share</b></button>
+      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span>📲</span><b>Add to Home</b></button>
+      <button class="ah-tile" data-action="share" type="button"><span>⤴</span><b>Share</b></button>
     </div>
     <div style="padding:0 14px 8px;opacity:.68;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Quick Access</div>
     <div class="ah-actions" id="ahStartAppLinks">
@@ -7357,7 +7329,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "progression-spine-p1-5d-runtime-closure";
+    window.WEBAPP_VER = "moonlab-fight-preview-polish-p1-3d2-live-deploy";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
@@ -11709,7 +11681,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
-<script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
+<script src="/js/alpha_den.js?v=2026-06-30-elite-tactical-choice-p1-2"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
@@ -11897,7 +11869,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function loadStats(){
   const tg = window.Telegram?.WebApp || null;
 
-  const v = String(window.WEBAPP_VER || "stats-p1-5a");
+  const v = String(window.WEBAPP_VER || "stats");
   const s = document.createElement("script");
   s.src = "/js/stats.js?v=" + encodeURIComponent(v);
 
@@ -12118,7 +12090,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
   
-<script src="/js/home_nav.js?v=hub-icons-v1"></script>
+<script src="/js/home_nav.js?v=WEBAPP_VER"></script>
 
 <!-- SUPPORT (Stars) -->
 <script src="/js/support.js?v=WEBAPP_VER"></script>
@@ -12236,7 +12208,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
 
 
 
