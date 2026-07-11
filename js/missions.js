@@ -852,6 +852,11 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   // ✅ start sync guard (prevents "blink back to offers")
   let _pendingStart = null; // { tier, offerId, startedClientSec, durationSec, title, untilMs, rareDrop? }
   let _missionDebriefState = null;
+  let _eliteBriefingState = null;
+  let _eliteBriefingBusy = false;
+  let _eliteTacticalBusy = false;
+  let _eliteOperationComplete = null;
+  let _eliteOperationDismissedId = "";
   let _missionDuelPlaybackSeq = 0;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
@@ -1780,7 +1785,6 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         min-height:32px;
         padding:6px 11px;
         font-size:11.5px;
-        pointer-events:none;
       }
       .m-duel-overlay{
         position:absolute;
@@ -2502,9 +2506,15 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
+      if (act === "elite_briefing") return void openEliteBriefing(btn.dataset.operationKey || btn.dataset.operation || "");
+      if (act === "elite_select_plan") { if (_eliteBriefingState) { _eliteBriefingState.selectedPlan = normalizeTacticalChoiceKey(btn.dataset.plan || btn.value || ""); render(); } return; }
       if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "", selectedTacticalChoiceForButton(btn));
+      if (act === "elite_operation_begin") return void doEliteOperationBegin();
+      if (act === "elite_operation_action") return void doEliteOperationAction(btn.dataset.tacticalAction || "", btn.dataset.expectedRound);
       if (act === "resolve") return void doResolve();
       if (act === "continue_mission_debrief") { _missionDebriefState = null; return void render(); }
+      if (act === "elite_briefing_back") { _eliteBriefingState = null; _eliteBriefingBusy = false; return void render(); }
+      if (act === "elite_operation_close") { _eliteOperationDismissedId = textOrEmpty((_eliteOperationComplete || {}).operationId); _eliteOperationComplete = null; return void render(); }
       if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
       if (act === "open_frames") return void openFrames();
       if (act === "close")   return void close();
@@ -3410,6 +3420,122 @@ function _normalizeRareDropObj(obj) {
     return missing.length ? `${parts.join(" · ")} · Missing: ${missing.join(", ")}` : parts.join(" · ");
   }
 
+
+  function eliteOperationFromActive(active) {
+    const operation = active?.__raw?.eliteOperation;
+    return operation && operation.tacticalEnabled ? operation : null;
+  }
+
+  function renderElitePips(label, value) {
+    const count = Math.max(0, Math.min(3, Number(value || 0)));
+    return `<div class="m-elite-line"><b>${esc(label)}:</b> <span aria-label="${esc(label)} ${count} of 3">${"●".repeat(count)}${"○".repeat(3 - count)}</span></div>`;
+  }
+
+  function renderEliteTacticalShell(active, operation) {
+    const phase = operation.phase === "preparing" && active.status === "READY" ? "ready" : operation.phase;
+    const latest = Array.isArray(operation.roundLog) ? operation.roundLog[operation.roundLog.length - 1] : null;
+    if (phase === "fighting") {
+      const round = Number(operation.round || 1);
+      return `
+        <div class="m-stage"><div class="m-card m-elite-wrap">
+          <div class="m-kicker">WARDEN · TACTICAL OPERATION</div>
+          <div class="m-title" style="margin-top:6px;">${esc(active.title || "Elite Operation")}</div>
+          <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3</div>
+          <div class="m-elite-line"><b>Enemy Intent:</b> ${esc(operation.enemyIntent || "Unknown")}</div>
+          ${renderElitePips("Enemy Stability", operation.enemyStability)}
+          ${renderElitePips("Operation Control", operation.operationControl)}
+          ${operation.recommendedAction ? `<div class="m-elite-line"><b>Warden:</b> ${esc(operation.recommendedAction)}</div>` : ""}
+          ${latest ? `<div class="m-elite-line"><b>Last round:</b> ${esc(latest.correct ? "Countered" : "Pressure broke through")}</div>` : ""}
+          <div class="m-actions" style="margin-top:14px;">
+            ${["STRIKE", "GUARD", "EXPLOIT"].map((action) => `<button type="button" class="btn primary" data-act="elite_operation_action" data-tactical-action="${action}" data-expected-round="${esc(round)}" ${_eliteTacticalBusy ? "disabled" : ""}>${action}</button>`).join("")}
+          </div>
+        </div></div>
+      `;
+    }
+    const ready = phase === "ready";
+    return `
+      <div class="m-stage"><div class="m-card m-elite-wrap">
+        <div class="m-kicker">WARDEN · ELITE OPERATION</div>
+        <div class="m-title" style="margin-top:6px;">${esc(active.title || "Elite Operation")}</div>
+        <div id="mClock" class="m-clock">—</div>
+        <div id="mClockSub" class="m-clock-sub">Preparing operation…</div>
+        <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
+        ${ready ? `<div class="m-actions" style="margin-top:16px;"><button type="button" class="btn primary" data-act="elite_operation_begin" ${_eliteTacticalBusy ? "disabled" : ""}>${_eliteTacticalBusy ? "Opening…" : "PLAY OPERATION"}</button></div>` : ""}
+      </div></div>
+    `;
+  }
+
+  function renderEliteOperationComplete(operation, last) {
+    const result = textOrEmpty(operation?.result, "COMPLETE");
+    const rewards = Array.isArray(last?.recoveredRewards) ? last.recoveredRewards.join(" · ") : textOrEmpty(last?.rewardMsg, "Rewards recorded.");
+    return `
+      <div class="m-stage"><div class="m-card m-elite-wrap">
+        <div class="m-kicker">WARDEN DEBRIEF</div>
+        <div class="m-title" style="margin-top:6px;">${esc(result.replaceAll("_", " "))}</div>
+        ${renderElitePips("Enemy Stability", operation?.enemyStability)}
+        ${renderElitePips("Operation Control", operation?.operationControl)}
+        <div class="m-muted" style="margin-top:10px;">The operation is logged. Existing mission rewards have been applied.</div>
+        <div class="m-elite-line"><b>Recovered:</b> ${esc(rewards || "No rewards granted.")}</div>
+        <div class="m-actions" style="margin-top:16px;"><button type="button" class="btn primary" data-act="elite_operation_close">Back</button></div>
+      </div></div>
+    `;
+  }
+  function openEliteBriefing(operationKey) {
+    const key = textOrEmpty(operationKey);
+    const preview = _progressionV1?.eliteOperationsPreview;
+    const operations = Array.isArray(preview?.operations) ? preview.operations : [];
+    const op = operations.find((item) => textOrEmpty(item?.key) === key);
+    const canStart = !!(op?.startable && op?.startsRealMission && preview?.safety?.startsRealMission);
+    if (!key || !op || !canStart) return;
+    _eliteBriefingState = { operationKey: key, op, preview, selectedPlan: "" };
+    _eliteBriefingBusy = false;
+    render();
+  }
+
+  function renderEliteBriefingShell(state) {
+    const op = state?.op || {};
+    const selectedPlan = textOrEmpty(state?.selectedPlan);
+    const recommendedPlan = normalizeTacticalChoiceKey(op.recommendedPlan || op.recommended_plan || "STANDARD");
+    const title = toText(op.title, "Elite Operation");
+    const typeLabel = toText(op.typeLabel || op.operationType, "Elite Operation");
+    const status = toText(op.status || op.readinessState, "Ready");
+    const briefing = toText(op.purpose, "Warden assessment complete. Choose a plan before deployment.");
+    const wardenAvatar = textOrEmpty(MISSION_DEBRIEF_NPC_ASSETS?.warden?.avatarUrl);
+    const deployDisabled = !selectedPlan || _eliteBriefingBusy;
+
+    return `
+      <div class="m-stage">
+        <div class="m-card m-elite-wrap">
+          <div class="m-kicker">WARDEN</div>
+          <div class="m-row" style="align-items:flex-start; gap:12px; margin-top:8px;">
+            ${wardenAvatar ? `<img class="m-debrief-avatar" src="${esc(wardenAvatar)}" alt="Warden">` : ""}
+            <div style="min-width:0; flex:1;">
+              <div class="m-title">${esc(title)}</div>
+              <div class="m-muted" style="margin-top:4px;">${esc(typeLabel)} · ${esc(status)}</div>
+              <div class="m-muted" style="margin-top:8px;">${esc(briefing)}</div>
+            </div>
+          </div>
+          <div class="m-elite-line" style="margin-top:14px;"><b>Choose Tactical Plan</b></div>
+          <div class="m-elite-choice-row" data-elite-choice-row="${esc(state.operationKey)}">
+            ${ELITE_TACTICAL_CHOICES.map((choice) => {
+              const checked = selectedPlan === choice.key;
+              const recommended = choice.key === recommendedPlan;
+              return `
+                <label class="m-elite-choice-chip">
+                  <input type="radio" name="elite_choice_${esc(state.operationKey)}" value="${esc(choice.key)}" data-act="elite_select_plan" data-plan="${esc(choice.key)}" ${checked ? "checked" : ""}>
+                  <span>${esc(choice.label)}${recommended ? " · RECOMMENDED" : ""}</span>
+                </label>
+              `;
+            }).join("")}
+          </div>
+          <div class="m-actions" style="margin-top:16px;">
+            <button type="button" class="btn" data-act="elite_briefing_back" ${_eliteBriefingBusy ? "disabled" : ""}>Back</button>
+            <button type="button" class="btn primary" data-act="elite_start" data-operation-key="${esc(state.operationKey)}" data-tactical-choice="${esc(selectedPlan)}" ${deployDisabled ? "disabled" : ""}>${_eliteBriefingBusy ? "Deploying…" : "Deploy"}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   function renderEliteOperationCard(op, preview) {
     if (!op || typeof op !== "object") return "";
     const title = toText(op.title, "Elite Operation");
@@ -3428,7 +3554,7 @@ function _normalizeRareDropObj(obj) {
     const prepMax = Math.max(1, n(op.bossPrepMax, 3));
     const intel = Math.max(0, n(op.intel, 0));
     const gateProgress = Math.max(0, n(op.gateProgress, 0));
-    const ctaLabel = canStart ? "Start" : toText(op.cta, "Locked");
+    const ctaLabel = canStart ? "Briefing" : toText(op.cta, "Locked");
     const locked = status === "locked";
     const durationSec = Math.max(0, n(op.durationSec, 0));
     const duration = durationSec ? `${Math.max(1, Math.round(durationSec / 60))}m` : "Instant";
@@ -3459,11 +3585,10 @@ function _normalizeRareDropObj(obj) {
         ${impactLabel ? `<div class="m-elite-line"><b>Impact:</b> ${esc(impactLabel)}</div>` : ""}
         ${readiness ? `<div class="m-elite-line"><b>Readiness:</b> ${esc(readiness)}</div>` : ""}
         <div class="m-elite-line"><b>Boss Prep:</b> ${esc(`${prepTotal}/${prepMax}`)}${intel ? ` | Intel ${esc(intel)}` : ""}${gateProgress ? ` | Gate ${esc(gateProgress)}` : ""}</div>
-        ${renderTacticalChoiceSelector(op, canStart)}
         ${nextAction ? `<div class="m-elite-line"><b>Next:</b> ${esc(nextAction)}</div>` : ""}
         <div class="m-elite-cta">
           <button type="button" class="btn${canStart ? " primary" : ""}"
-            data-act="elite_start"
+            data-act="elite_briefing"
             data-operation-key="${esc(op.key)}"
             ${canStart ? "" : 'disabled aria-disabled="true"'}
           >${esc(ctaLabel)}</button>
@@ -4826,9 +4951,10 @@ function _normalizeRareDropObj(obj) {
       subEl.innerHTML = `Progress <b>${esc(pct)}%</b>${a.readyAt ? ` · Ready at <b>${esc(a.readyAt)}</b>` : ""}${syncing}`;
       if (resolveBtn) resolveBtn.style.display = "none";
     } else {
+      const tacticalReady = !!a?.__raw?.eliteOperation?.tacticalEnabled;
       clockEl.textContent = "READY";
-      subEl.textContent = "Tap Resolve to claim rewards.";
-      if (resolveBtn) resolveBtn.style.display = "";
+      subEl.textContent = tacticalReady ? "Operation ready. Enter when prepared." : "Tap Resolve to claim rewards.";
+      if (resolveBtn) resolveBtn.style.display = tacticalReady ? "none" : "";
     }
 
     const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
@@ -4890,9 +5016,29 @@ function _normalizeRareDropObj(obj) {
     const last = payload.lastResolve || payload.last_resolve || null;
     blueSignalHuntProgress(payload);
 
+    const completedOperation = _eliteOperationComplete || last?.eliteOperation;
+    if (completedOperation?.tacticalEnabled && completedOperation?.phase === "complete" && completedOperation.operationId !== _eliteOperationDismissedId) {
+      stopTick();
+      _root.innerHTML = renderEliteOperationComplete(completedOperation, last);
+      return;
+    }
+
+    if (_eliteBriefingState?.operationKey) {
+      stopTick();
+      _root.innerHTML = renderEliteBriefingShell(_eliteBriefingState);
+      return;
+    }
+
     if (_missionDebriefState?.visible) {
       stopTick();
       _root.innerHTML = renderMissionDebriefGate(_missionDebriefState);
+      return;
+    }
+
+    const tacticalOperation = eliteOperationFromActive(active);
+    if (tacticalOperation) {
+      _root.innerHTML = renderEliteTacticalShell(active, tacticalOperation);
+      if (tacticalOperation.phase !== "fighting") { paintWaiting(active); startTick(); } else { stopTick(); }
       return;
     }
 
@@ -5147,7 +5293,9 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     const key = textOrEmpty(operationKey);
     if (!key) return;
     const plan = normalizeTacticalChoiceKey(tacticalChoice);
-    renderLoading(`Starting Elite Operation with ${tacticalChoiceLabel(plan)}...`);
+    if (_eliteBriefingBusy) return;
+    _eliteBriefingBusy = true;
+    render();
     try {
       const res = await api("/webapp/missions/action", {
         action: "elite_start",
@@ -5166,6 +5314,8 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
           window.__AH_MISSIONS_PAYLOAD = normalizePayload(res);
         } catch (_) {}
         await loadProgressionV1({ force: true }).catch(() => null);
+        _eliteBriefingState = null;
+        _eliteBriefingBusy = false;
         render();
         if (res.message) {
           try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
@@ -5174,15 +5324,57 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         await _syncAfterStart(3500, 500);
         return;
       }
+      _eliteBriefingBusy = false;
       await loadState({ force: true, reason: "elite_start_fallback" });
     } catch (e) {
       const msg = String(e?.data?.message || e?.message || e || "Elite start failed");
       try { _tg?.HapticFeedback?.notificationOccurred?.("error"); } catch (_) {}
       try { _tg?.showAlert?.(msg); } catch (_) {}
+      _eliteBriefingBusy = false;
       await loadState({ force: true, reason: "elite_start_error" });
     }
   }
 
+
+  async function doEliteOperationBegin() {
+    if (_eliteTacticalBusy) return;
+    _eliteTacticalBusy = true;
+    render();
+    try {
+      const res = await api("/webapp/missions/action", { action: "elite_operation_begin", run_id: rid("m:elite:begin") });
+      _state = res;
+      _stateLoadedAt = Date.now();
+      _eliteTacticalBusy = false;
+      render();
+    } catch (e) {
+      _eliteTacticalBusy = false;
+      try { _tg?.showAlert?.(String(e?.data?.message || e?.message || "Operation could not begin.")); } catch (_) {}
+      await loadState({ force: true, reason: "elite_operation_begin_error" });
+    }
+  }
+
+  async function doEliteOperationAction(action, expectedRound) {
+    if (_eliteTacticalBusy) return;
+    _eliteTacticalBusy = true;
+    render();
+    try {
+      const res = await api("/webapp/missions/action", {
+        action: "elite_operation_action",
+        tacticalAction: String(action || "").toUpperCase(),
+        expectedRound: Number(expectedRound || 0),
+        run_id: rid("m:elite:round"),
+      });
+      _state = res;
+      _stateLoadedAt = Date.now();
+      if (res?.eliteOperation?.phase === "complete") _eliteOperationComplete = res.eliteOperation;
+      _eliteTacticalBusy = false;
+      render();
+    } catch (e) {
+      _eliteTacticalBusy = false;
+      try { _tg?.showAlert?.(String(e?.data?.message || e?.message || "Tactical action was rejected.")); } catch (_) {}
+      await loadState({ force: true, reason: "elite_operation_action_error" });
+    }
+  }
   async function doResolve() {
     try {
       const res = await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:resolve") });
