@@ -1201,20 +1201,19 @@ function renderBattlePanelHTML(raw, node, cur) {
       }
       .siege-command-shell{
         position:relative;
-        overflow:hidden;
+        overflow:hidden
+        border-radius:8px;
         background-color:rgba(10,12,22,.92);
         background-image:linear-gradient(180deg,rgba(8,10,18,.42),rgba(8,10,18,.94)),url(${SIEGE_P2A_ASSETS.frontlineHeader});
         background-size:cover;
         background-position:center;
         padding:12px;
-        background:rgba(255,255,255,.045);
       }
       .siege-command-shell .siege-command-overlay{
         position:absolute;
         inset:0;
-        width:100%;
-        height:100%;
         object-fit:cover;
+        border-radius:inherit;
         opacity:.55;
         pointer-events:none;
         z-index:0;
@@ -1354,10 +1353,14 @@ function renderBattlePanelHTML(raw, node, cur) {
         flex-wrap:wrap;
         gap:6px;
         margin-bottom:8px;
+        padding:7px 8px;
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:8px;
+        background:linear-gradient(135deg,rgba(12,15,26,.82),rgba(22,25,38,.62));
       }
       .siege-battle-stage{
         background-color:rgba(8,10,18,.94);
-        background-image:linear-gradient(180deg,rgba(8,10,18,.34),rgba(8,10,18,.92)),url(${SIEGE_P2A_ASSETS.duelReplayStage});
+        background-image:linear-gradient(180deg,rgba(8,10,18,.30),rgba(8,10,18,.82)),url(${SIEGE_P2A_ASSETS.duelReplayStage});
         background-size:cover;
         background-position:center;
         position:relative;
@@ -1367,10 +1370,6 @@ function renderBattlePanelHTML(raw, node, cur) {
         overflow:hidden;
         margin-bottom:8px;
         border:1px solid rgba(255,255,255,.08);
-        background:
-          radial-gradient(circle at 50% 35%, rgba(0,234,255,.10), transparent 35%),
-          radial-gradient(circle at 50% 120%, rgba(255,60,120,.10), transparent 38%),
-          linear-gradient(180deg, rgba(8,10,18,.98), rgba(16,18,28,.98));
         display:flex;
         align-items:center;
         justify-content:center;
@@ -1558,9 +1557,8 @@ function renderBattlePanelHTML(raw, node, cur) {
         .siege-command-shell .siege-command-overlay{
         position:absolute;
         inset:0;
-        width:100%;
-        height:100%;
         object-fit:cover;
+        border-radius:inherit;
         opacity:.55;
         pointer-events:none;
         z-index:0;
