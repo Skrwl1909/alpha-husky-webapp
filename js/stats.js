@@ -709,6 +709,14 @@
   }
 
 
+  function renderStatTraining(training){
+    if (!training || typeof training !== "object" || typeof training.enabled !== "boolean") return "";
+    const cost = training.nextCost && typeof training.nextCost === "object" ? Object.entries(training.nextCost).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" · ") : "";
+    const balances = training.balances && typeof training.balances === "object" ? Object.entries(training.balances).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" · ") : "";
+    const reason = String(training.lockedReason || "");
+    const label = !training.enabled ? "TRAINING OFFLINE" : training.maxed ? "MAX TRAINING REACHED" : reason === "level_locked" ? `REACH LEVEL ${(Number(training.nextRank) || 1) * 10}` : reason === "insufficient_resources" ? "INSUFFICIENT RESOURCES" : "TRAIN";
+    return `<div class="ahs-combat-snapshot"><div class="ahs-combat-snapshot-title">STAT TRAINING</div><div class="ahs-combat-snapshot-scope">Training Rank: ${esc(training.rank)} / 10 · Unlocked by Level: ${esc(training.unlockedRank)}</div><div class="ahs-combat-snapshot-note">Next Rank grants: +1 Stat Point${cost ? `<br>Cost: ${esc(cost)}` : ""}${balances ? `<br>Balances: ${esc(balances)}` : ""}</div><button type="button" class="ahs-plus" data-action="stat-training-purchase" ${training.canPurchase ? "" : "disabled"} style="margin-top:8px;width:100%;font-size:12px">${esc(label)}</button></div>`;
+  }
   function getCombatBreakdown(stats){
     const breakdown = stats?.statBreakdown;
     const snapshot = breakdown?.snapshot;
@@ -2253,6 +2261,8 @@
 
             ${renderCombatSnapshot(combatBreakdown)}
 
+            
+
             ${unspent > 0 ? `<div class="ahs-note">${esc(unspent)} stat point${unspent === 1 ? "" : "s"} ready to spend.</div>` : ``}
           </div>
         </div>
@@ -2558,7 +2568,20 @@
     bindClickOnce(qs("refreshStats"), load);
     bindClickOnce(qs("closeStats"), Stats.close);
 
-    bindClickOnce(qs("statsRoot"), (e) => {
+    bindClickOnce(qs("statsRoot"), async (e) => {
+      const trainingBtn = e.target.closest('[data-action="stat-training-purchase"]');
+      if (trainingBtn) {
+        e.preventDefault();
+        if (trainingBtn.dataset.loading === "1") return;
+        trainingBtn.dataset.loading = "1"; trainingBtn.disabled = true;
+        try {
+          const res = await _apiPost("/webapp/stats/training/purchase", { t: Date.now() });
+          if (!res?.ok) { _tg?.showAlert?.(String(res?.reason || "Training purchase failed.")); return; }
+          await load();
+        } catch (_) { _tg?.showAlert?.("Training purchase failed."); }
+        finally { trainingBtn.dataset.loading = ""; trainingBtn.disabled = false; }
+        return;
+      }
       const syncBtn = e.target.closest('[data-action="generate-mobile-sync-code"]');
       if (syncBtn) {
         e.preventDefault();
