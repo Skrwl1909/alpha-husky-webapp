@@ -708,6 +708,27 @@
     return map[k] || String(k || "");
   }
 
+
+  function getCombatBreakdown(stats){
+    const breakdown = stats?.statBreakdown;
+    const snapshot = breakdown?.snapshot;
+    const display = snapshot?.display;
+    const perStat = breakdown?.stats;
+    if (!breakdown || typeof breakdown !== "object" || !snapshot || typeof snapshot !== "object") return null;
+    if (!display || typeof display !== "object" || !perStat || typeof perStat !== "object") return null;
+    const required = ["maxHp", "attack", "baseDefenseReduction", "dodge", "crit", "defensePenetration"];
+    if (required.some((key) => typeof display[key] !== "string" || !display[key])) return null;
+    return breakdown;
+  }
+
+  function renderCombatSnapshot(breakdown){
+    if (!breakdown) return "";
+    const scope = breakdown.scope && typeof breakdown.scope === "object" ? breakdown.scope : {};
+    const display = breakdown.snapshot.display;
+    const systems = Array.isArray(scope.systems) ? scope.systems.filter((item) => typeof item === "string" && item) : [];
+    const items = [["Max HP", display.maxHp], ["Attack", display.attack], ["Base Reduction", display.baseDefenseReduction], ["Dodge", display.dodge], ["Crit", display.crit], ["Defense Penetration", display.defensePenetration]];
+    return `<div class="ahs-combat-snapshot"><div class="ahs-combat-snapshot-title">COMBAT SNAPSHOT</div><div class="ahs-combat-snapshot-scope">${esc(String(scope.label || "Shared Combat"))}${systems.length ? ` / ${esc(systems.join(" + "))}` : ""}</div><div class="ahs-combat-snapshot-grid">${items.map(([label, value]) => `<div class="ahs-combat-snapshot-item"><span class="ahs-combat-snapshot-label">${esc(label)}</span><span class="ahs-combat-snapshot-value">${esc(value)}</span></div>`).join("")}</div>${scope.note ? `<div class="ahs-combat-snapshot-note">${esc(String(scope.note))}</div>` : ""}</div>`;
+  }
   function show(){
     const b = qs("statsBack");
     if (!b) return;
@@ -1066,6 +1087,17 @@
         color:#eaf2ff;
       }
 
+
+      .ahs-combat-snapshot{margin-top:10px;border:1px solid rgba(120,170,255,.20);border-radius:13px;background:rgba(82,123,188,.08);padding:10px;min-width:0}
+      .ahs-combat-snapshot-title{font-size:11px;font-weight:900;letter-spacing:.08em;color:#dbeaff}
+      .ahs-combat-snapshot-scope,.ahs-combat-snapshot-note{margin-top:3px;font-size:11px;line-height:1.35;color:rgba(220,230,255,.66)}
+      .ahs-combat-snapshot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+      .ahs-combat-snapshot-item{min-width:0;border-radius:9px;background:rgba(255,255,255,.035);padding:6px}
+      .ahs-combat-snapshot-label{display:block;overflow-wrap:anywhere;font-size:10px;color:rgba(220,230,255,.54)}
+      .ahs-combat-snapshot-value{display:block;margin-top:2px;overflow-wrap:anywhere;font-size:12px;font-weight:800;color:#eff6ff}
+      .ahs-stat-effect{display:grid;gap:5px;margin-top:8px;min-width:0}
+      .ahs-stat-effect-row{min-width:0;font-size:11px;line-height:1.35;color:rgba(222,233,250,.78);overflow-wrap:anywhere}
+      .ahs-stat-effect-label{display:block;margin-bottom:1px;font-size:9px;font-weight:900;letter-spacing:.07em;color:rgba(159,182,217,.72)}
       .ahs-list{
         display:flex;
         flex-direction:column;
@@ -2080,6 +2112,8 @@
     const petXpPct = clampPct(pet?.pct ?? stats?.petPct);
 
     const statKeys = ["strength","agility","defense","vitality","intelligence","luck"];
+    const combatBreakdown = getCombatBreakdown(stats);
+    const combatStats = combatBreakdown?.stats || null;
 
     const canSpend = unspent > 0;
 
@@ -2088,6 +2122,10 @@
       const b = n(base[k], 0);
       const p = n(petS[k], 0);
       const g = n(gear[k], 0);
+      const effect = combatStats && combatStats[k] && typeof combatStats[k] === "object" ? combatStats[k] : null;
+      const effectHtml = effect && typeof effect.currentEffect === "string" && typeof effect.nextPointEffect === "string"
+        ? `<div class="ahs-stat-effect"><div class="ahs-stat-effect-row">${esc(typeof effect.description === "string" ? effect.description : "")}</div><div class="ahs-stat-effect-row"><span class="ahs-stat-effect-label">CURRENT EFFECT</span>${esc(effect.currentEffect)}</div><div class="ahs-stat-effect-row"><span class="ahs-stat-effect-label">NEXT POINT</span>${esc(effect.nextPointEffect)}</div></div>`
+        : "";
 
       return `
         <div class="ahs-stat" data-stat-key="${esc(k)}">
@@ -2122,6 +2160,7 @@
               <span class="ahs-chip-label">Gear</span>
               <span class="ahs-chip-value">${esc(g)}</span>
             </div>
+          ${effectHtml}
           </div>
         </div>
       `;
@@ -2211,6 +2250,8 @@
               ${renderBarBlock("XP", xpCur, xpNeed, "-xp", xpPct, `${xpPct.toFixed(0)}%`)}
               ${renderBarBlock("Pet", petXpCur, petXpNeed, "-pet", petXpPct, esc(petLabel))}
             </div>
+
+            ${renderCombatSnapshot(combatBreakdown)}
 
             ${unspent > 0 ? `<div class="ahs-note">${esc(unspent)} stat point${unspent === 1 ? "" : "s"} ready to spend.</div>` : ``}
           </div>

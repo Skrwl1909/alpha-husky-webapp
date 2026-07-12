@@ -761,7 +761,7 @@
     attackerFaction === youFaction;
 
   const showNext = hasRunning;
-  const showCTA = !!youFaction;
+  const showCTA = hasForming && !!attackerFaction && attackerFaction === youFaction;
 
   setBtn("siegeRefresh", true, "Refresh");
   setBtn("siegeWatch", showWatch, "Take Watch");
@@ -1986,7 +1986,7 @@ function renderBattlePanelHTML(raw, node, cur) {
 
       const fail = findFailure(rawOut);
       if (fail) {
-        showAlert(`Siege action failed: ${fail.reason || "UNKNOWN"}`);
+        showAlert(fail.message || `Siege action failed: ${fail.reason || "UNKNOWN"}`);
         return;
       }
 
