@@ -1789,7 +1789,34 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         padding:6px 11px;
         font-size:11.5px;
       }
-      .m-duel-overlay{
+     #missionsRoot .m-elite-duel{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:8px;
+        margin:12px 0 8px;
+      }
+      #missionsRoot .m-elite-duel-side{ min-width:0; }
+      #missionsRoot .m-elite-duel-label{
+        margin:0 0 5px;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.08em;
+        opacity:.68;
+        text-transform:uppercase;
+      }
+      #missionsRoot .m-elite-duel .m-duel-visual{ min-height:142px; border-radius:12px; }
+      #missionsRoot .m-elite-duel .m-duel-stamp{ font-size:9px; }
+      #missionsRoot .m-elite-duel.is-strike .m-elite-duel-side.is-player .m-duel-visual{ animation:mEliteStrike .42s ease-out both; }
+      #missionsRoot .m-elite-duel.is-strike .m-elite-duel-side.is-target .m-duel-visual{ animation:mEliteImpact .42s ease-out both; }
+      #missionsRoot .m-elite-duel.is-guard .m-elite-duel-side.is-player .m-duel-visual::after{ content:""; position:absolute; inset:10%; z-index:4; border:2px solid rgba(125,211,252,.82); border-radius:50%; animation:mEliteGuard .62s ease-out both; pointer-events:none; }
+      #missionsRoot .m-elite-duel.is-exploit .m-elite-duel-side.is-target .m-duel-visual::after{ content:""; position:absolute; inset:18%; z-index:4; border:1px solid rgba(250,204,21,.92); border-radius:50%; animation:mEliteExploit .65s ease-out both; pointer-events:none; }
+      #missionsRoot .m-elite-meters.is-updated .m-elite-line{ animation:mEliteMeter .42s ease-out both; }
+      @keyframes mEliteMeter{ from{ opacity:.35; transform:scale(.96); } 55%{ opacity:1; transform:scale(1.025); } to{ transform:none; } }
+      @keyframes mEliteStrike{ 45%{ transform:translateX(14px) scale(1.03); } 100%{ transform:none; } }
+      @keyframes mEliteImpact{ 20%,60%{ transform:translateX(-5px); filter:brightness(1.8); } 40%,80%{ transform:translateX(5px); } 100%{ transform:none; filter:none; } }
+      @keyframes mEliteGuard{ from{ opacity:0; transform:scale(.55); } 45%{ opacity:1; } to{ opacity:0; transform:scale(1.15); } }
+      @keyframes mEliteExploit{ from{ opacity:0; transform:scale(.45); box-shadow:0 0 0 rgba(250,204,21,0); } 45%{ opacity:1; box-shadow:0 0 22px rgba(250,204,21,.8); } to{ opacity:0; transform:scale(1.2); } }
+      @media (max-width:420px){ #missionsRoot .m-elite-duel .m-duel-visual{ min-height:118px; } }      .m-duel-overlay{
         position:absolute;
         inset:0;
         z-index:12;
@@ -2421,7 +2448,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         #missionsRoot .m-elite-cta .btn{
           width:100%;
         }
-        .m-duel-overlay{
+             .m-duel-overlay{
           padding:10px;
         }
         .m-duel-shell{
@@ -3460,6 +3487,17 @@ function _normalizeRareDropObj(obj) {
     }[normalizeTacticalChoiceKey(plan)] || "No modifier.";
   }
 
+ function resolveEliteTacticalTargetVisual(operation) {
+    const targetId = textOrEmpty(operation?.targetId);
+    const targetName = textOrEmpty(operation?.targetName) || titleizeWord(targetId.replaceAll("_", " ")) || "Elite Target";
+    const canonicalUrl = textOrEmpty(operation?.targetImageUrl);
+    if (canonicalUrl) return { src: missionBossAssetUrl(canonicalUrl), source: "canonical Elite target art", displayName: targetName };
+    if (targetId === "static_gate_i") {
+      return { src: assetUrl("/assets/bosses/static_gate_i.png"), source: "Static Gate I future asset hook", displayName: targetName };
+    }
+    return { src: "", source: "generated signal sigil", displayName: targetName };
+  }
+
   function renderEliteTacticalShell(active, operation) {
     const phase = operation.phase === "preparing" && active.status === "READY" ? "ready" : operation.phase;
     const plan = normalizeTacticalChoiceKey(operation.selectedPlan || active.tacticalChoice || "standard_plan");
@@ -3469,24 +3507,35 @@ function _normalizeRareDropObj(obj) {
     if (phase === "fighting") {
       const round = Number(operation.round || 1);
       const selectedAction = textOrEmpty(_eliteTacticalFeedback?.pendingAction);
+      const actionFx = feedback?.play && feedback?.entry ? textOrEmpty(feedback.entry.action).toLowerCase() : "";
+      if (feedback?.play) feedback.play = false;
+      const playerVisual = resolveMissionDuelPlayerVisual(_state, null);
+      const targetVisual = resolveEliteTacticalTargetVisual(operation);
+      const targetName = targetVisual.displayName || "Elite Target";
       const feedbackLine = latest
         ? (latest.correct ? "Warden: Clean counter. Hold the line." : "Warden: The pressure lands. Regain control.")
         : "Warden: Read the intent, then commit.";
       return `
         <div class="m-stage"><div class="m-card m-elite-wrap">
-          <div class="m-kicker">WARDEN Â· TACTICAL OPERATION</div>
+          <div class="m-kicker">WARDEN · TACTICAL OPERATION</div>
           <div class="m-title" style="margin-top:5px;">${esc(active.title || "Elite Operation")}</div>
-          <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3 Â· <b>Plan:</b> ${esc(planLabel)}</div>
+          <div class="m-elite-duel ${actionFx ? `is-${esc(actionFx)}` : ""}" aria-label="Elite tactical scene">
+            <section class="m-elite-duel-side is-player"><div class="m-elite-duel-label">Player</div>${renderMissionDuelVisual(playerVisual, "player", "Player skin", "Pack Signal")}</section>
+            <section class="m-elite-duel-side is-target"><div class="m-elite-duel-label">${esc(targetName)}</div>${renderMissionDuelVisual(targetVisual, "enemy", `${targetName} visual`, "Threat Trace")}</section>
+          </div>
+          <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3 · <b>Plan:</b> ${esc(planLabel)}</div>
           <div class="m-elite-line">${esc(elitePlanDescription(plan))}</div>
           <div class="m-elite-line"><b>Enemy Intent:</b> ${esc(operation.enemyIntent || "Unknown")}</div>
           <div class="m-muted" style="margin-top:3px;">${esc(eliteIntentCopy(operation.enemyIntent))}</div>
-          ${renderElitePips("Enemy Stability", operation.enemyStability)}
-          ${renderElitePips("Operation Control", operation.operationControl)}
+          <div class="m-elite-meters ${actionFx ? "is-updated" : ""}">
+            ${renderElitePips("Enemy Stability", operation.enemyStability)}
+            ${renderElitePips("Operation Control", operation.operationControl)}
+          </div>
           ${operation.recommendedAction ? `<div class="m-elite-line"><b>Warden recommends:</b> ${esc(operation.recommendedAction)}</div>` : ""}
-          ${latest ? `<div class="m-elite-line"><b>Latest:</b> ${esc(latest.enemyIntent)} â†’ ${esc(latest.action)} Â· ${latest.correct ? "Correct" : "Incorrect"}</div>` : ""}
+          ${latest ? `<div class="m-elite-line"><b>Latest:</b> ${esc(latest.enemyIntent)} › ${esc(latest.action)} · ${latest.correct ? "Correct" : "Incorrect"}</div>` : ""}
           <div class="m-muted" style="margin-top:5px;">${esc(feedbackLine)}</div>
           <div class="m-actions" style="margin-top:12px;">
-            ${["STRIKE", "GUARD", "EXPLOIT"].map((action) => `<button type="button" class="btn primary" data-act="elite_operation_action" data-tactical-action="${action}" data-expected-round="${esc(round)}" ${_eliteTacticalBusy ? "disabled" : ""}>${action === selectedAction ? `${action} Â· SELECTED` : action}</button>`).join("")}
+            ${["STRIKE", "GUARD", "EXPLOIT"].map((action) => `<button type="button" class="btn primary" data-act="elite_operation_action" data-tactical-action="${action}" data-expected-round="${esc(round)}" ${_eliteTacticalBusy ? "disabled" : ""}>${action === selectedAction ? `${action} · SELECTED` : action}</button>`).join("")}
           </div>
           <div class="m-actions" style="margin-top:8px;"><button type="button" class="btn" data-act="close">Close</button></div>
         </div></div>
@@ -3495,16 +3544,15 @@ function _normalizeRareDropObj(obj) {
     const ready = phase === "ready";
     return `
       <div class="m-stage"><div class="m-card m-elite-wrap">
-        <div class="m-kicker">WARDEN Â· ELITE OPERATION</div>
+        <div class="m-kicker">WARDEN · ELITE OPERATION</div>
         <div class="m-title" style="margin-top:5px;">${esc(active.title || "Elite Operation")}</div>
-        <div id="mClock" class="m-clock" style="margin-top:8px;">â€”</div>
-        <div id="mClockSub" class="m-clock-sub">Preparing operationâ€¦</div>
+        <div id="mClock" class="m-clock" style="margin-top:8px;">—</div>
+        <div id="mClockSub" class="m-clock-sub">Preparing operation…</div>
         <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
-        ${ready ? `<div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_begin" ${_eliteTacticalBusy ? "disabled" : ""}>${_eliteTacticalBusy ? "Openingâ€¦" : "PLAY OPERATION"}</button><button type="button" class="btn" data-act="close">Close</button></div>` : `<div class="m-actions" style="margin-top:10px;"><button type="button" class="btn" data-act="close">Close</button></div>`}
+        ${ready ? `<div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_begin" ${_eliteTacticalBusy ? "disabled" : ""}>${_eliteTacticalBusy ? "Opening…" : "PLAY OPERATION"}</button><button type="button" class="btn" data-act="close">Close</button></div>` : `<div class="m-actions" style="margin-top:10px;"><button type="button" class="btn" data-act="close">Close</button></div>`}
       </div></div>
     `;
   }
-
   function renderEliteOperationComplete(operation, last) {
     const result = textOrEmpty(operation?.result, "COMPLETE");
     const plan = tacticalChoiceLabel(operation?.selectedPlan || "standard_plan");
@@ -5423,7 +5471,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
         render();
         return;
       }
-      _eliteTacticalFeedback = { operationId, pendingAction: String(action || "").toUpperCase(), entry: res?.latestRound || null };
+      _eliteTacticalFeedback = { operationId, pendingAction: String(action || "").toUpperCase(), entry: res?.latestRound || null, play: !!res?.latestRound };
       render();
       await sleep(800);
       if (_eliteTacticalFeedback?.operationId === operationId) _eliteTacticalFeedback = null;
