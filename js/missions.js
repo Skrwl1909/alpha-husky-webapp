@@ -857,6 +857,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   let _eliteTacticalBusy = false;
   let _eliteOperationComplete = null;
   let _eliteOperationDismissedId = "";
+  let _eliteDismissBusy = false;
   let _eliteReadyRefreshOperationId = "";
   let _eliteTacticalFeedback = null;
   let _missionDuelPlaybackSeq = 0;
@@ -2516,7 +2517,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       if (act === "resolve") return void doResolve();
       if (act === "continue_mission_debrief") { _missionDebriefState = null; return void render(); }
       if (act === "elite_briefing_back") { _eliteBriefingState = null; _eliteBriefingBusy = false; return void render(); }
-      if (act === "elite_operation_close") { _eliteOperationDismissedId = textOrEmpty(btn.dataset.operationId || (_eliteOperationComplete || {}).operationId || normalizePayload(_state)?.lastResolve?.eliteOperation?.operationId || normalizePayload(_state)?.last_resolve?.eliteOperation?.operationId); _eliteOperationComplete = null; _eliteTacticalFeedback = null; stopTick(); return void render(); }
+      if (act === "elite_operation_close") return void doEliteOperationDismiss(btn.dataset.operationId || "");
       if (act === "claim_blue_signal_frame") return void doClaimBlueSignalFrame();
       if (act === "open_frames") return void openFrames();
       if (act === "close")   return void close();
@@ -3521,7 +3522,7 @@ function _normalizeRareDropObj(obj) {
         ${roundLog.map((entry) => `<div class="m-elite-line">${esc(entry.enemyIntent)} → ${esc(entry.action)} · ${entry.correct ? "Correct" : "Incorrect"}</div>`).join("") || '<div class="m-muted">No round log returned.</div>'}
         <div class="m-elite-line"><b>Recovered:</b> ${esc(rewards || "No rewards granted.")}</div>
         <div class="m-muted" style="margin-top:8px;">${esc(closing)}</div>
-        <div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_close" data-operation-id="${esc(operation?.operationId || "")}">Back</button><button type="button" class="btn" data-act="close">Close</button></div>
+        <div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_close" data-operation-id="${esc(operation?.operationId || "")}" ${_eliteDismissBusy ? "disabled" : ""}>${_eliteDismissBusy ? "Returning�" : "Return to Missions"}</button><button type="button" class="btn" data-act="close">Close</button></div>
       </div></div>
     `;
   }
@@ -5433,6 +5434,32 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
       _eliteTacticalFeedback = null;
       try { _tg?.showAlert?.(String(e?.data?.message || e?.message || "Tactical action was rejected.")); } catch (_) {}
       await loadState({ force: true, reason: "elite_operation_action_error" });
+    }
+  }
+  async function doEliteOperationDismiss(operationId) {
+    const id = textOrEmpty(operationId || (_eliteOperationComplete || {}).operationId);
+    if (!id || _eliteDismissBusy) return;
+    _eliteDismissBusy = true;
+    render();
+    try {
+      const res = await api("/webapp/missions/action", {
+        action: "elite_operation_acknowledge",
+        operationId: id,
+        operation_id: id,
+        run_id: rid("m:elite:ack"),
+      });
+      _eliteOperationDismissedId = id;
+      _eliteOperationComplete = null;
+      _eliteTacticalFeedback = null;
+      _state = res;
+      _stateLoadedAt = Date.now();
+      stopTick();
+    } catch (e) {
+      try { _tg?.showAlert?.(String(e?.data?.message || e?.message || "Debrief could not be dismissed.")); } catch (_) {}
+      await loadState({ force: true, reason: "elite_operation_acknowledge_error" });
+    } finally {
+      _eliteDismissBusy = false;
+      render();
     }
   }
   async function doResolve() {
