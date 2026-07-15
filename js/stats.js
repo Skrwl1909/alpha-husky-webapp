@@ -2273,6 +2273,8 @@
 
         ${renderMoonlabBossWallCard(stats, extras)}
 
+        ${renderStatTraining(stats?.statTraining)}
+
         <div class="ahs-card">
           <div class="ahs-pad">
             <div class="ahs-section-title">Attributes</div>
