@@ -861,6 +861,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   let _eliteReadyRefreshOperationId = "";
   let _eliteTacticalFeedback = null;
   let _missionDuelPlaybackSeq = 0;
+  let _missionsCompactTab = "";
+  let _missionsCompactTabManual = false;
 
   function log(...a) { if (_dbg) console.log("[Missions]", ...a); }
 
@@ -2512,6 +2514,32 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
           max-height:none;
         }
       }
+
+      #missionsRoot .m-compact-tabs{
+        display:grid;
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+        gap:6px;
+        margin:0 0 10px;
+      }
+      #missionsRoot .m-compact-tab{
+        min-width:0;
+        min-height:42px;
+        padding:8px 6px;
+        border:1px solid rgba(148,180,205,.28);
+        border-radius:10px;
+        background:rgba(9,16,24,.78);
+        color:rgba(220,236,245,.76);
+        font:inherit;
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:.04em;
+      }
+      #missionsRoot .m-compact-tab.is-active{
+        border-color:rgba(0,229,255,.7);
+        background:rgba(0,229,255,.12);
+        color:#e9fdff;
+      }
+      #missionsRoot .m-compact-panel[hidden]{ display:none !important; }
     `;
     document.head.appendChild(st);
   }
@@ -2534,6 +2562,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       const act = btn.dataset.act;
       if (!act) return;
 
+      if (act === "missions_tab") { const tab = String(btn.dataset.tab || "").toLowerCase(); if (["active", "available", "elite"].includes(tab)) { _missionsCompactTab = tab; _missionsCompactTabManual = true; render(); } return; }
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
       if (act === "elite_briefing") return void openEliteBriefing(btn.dataset.operationKey || btn.dataset.operation || "");
@@ -5092,137 +5121,40 @@ function _normalizeRareDropObj(obj) {
     render(); // renders WAITING via pending
   }
 
+  function resolveMissionsCompactTab(active, flowTab) {
+    if (_missionsCompactTabManual && ["active", "available", "elite"].includes(_missionsCompactTab)) return _missionsCompactTab;
+    if (flowTab) return flowTab;
+    if (active?.status && active.status !== "NONE") return active.eliteMission ? "elite" : "active";
+    return "available";
+  }
+  function renderMissionsCompactTabs(selected, activePanel, availablePanel, elitePanel) {
+    const tabs = [["active", "Active"], ["available", "Available"], ["elite", "Elite"]];
+    return `<div class="m-compact-tabs" role="tablist" aria-label="Mission views">${tabs.map(([key, label]) => `<button type="button" class="m-compact-tab${selected === key ? " is-active" : ""}" data-act="missions_tab" data-tab="${key}" role="tab" aria-selected="${selected === key ? "true" : "false"}">${label}</button>`).join("")}</div><section class="m-compact-panel" role="tabpanel"${selected === "active" ? "" : " hidden"}>${activePanel}</section><section class="m-compact-panel" role="tabpanel"${selected === "available" ? "" : " hidden"}>${availablePanel}</section><section class="m-compact-panel" role="tabpanel"${selected === "elite" ? "" : " hidden"}>${elitePanel}</section>`;
+  }
+  function renderMissionAvailablePanel(offers, realActive) {
+    return `<div class="m-card"><div class="m-row"><div style="min-width:0;"><div class="m-title">Offers</div><div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div></div><button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button></div><div class="m-hr"></div><div>${offers.length ? offers.map((o) => renderOffer(o, realActive)).join("") : '<div class="m-muted">No offers yet. Refresh to scan for routes.</div>'}</div></div>`;
+  }
+  function renderMissionActivePanel(active, payload) {
+    if (!active?.status || active.status === "NONE") return '<div class="m-card"><div class="m-muted">No active mission. Choose an available route.</div></div>';
+    const rare = (active.__pending ? (_pendingStart?.rareDrop || null) : null) || _extractRareDrop(active.__raw) || _extractRareDrop(_primaryActive(payload)) || null;
+    const tags = []; if (active.modifierLabel) tags.push(active.modifierLabel); if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) tags.push(`Reward intent: ${active.rewardIntent.join(" / ")}`);
+    const match = normalizePetMatchLabel(active); const hint = textOrEmpty(active.compactHint) || (match ? `Pet fit: ${match}` : "");
+    const planLabel = active.eliteMission ? textOrEmpty(active.tacticalChoiceLabel || tacticalChoiceLabel(active.tacticalChoice), "") : "";
+    return `<div class="m-stage m-stage-wait"><div class="m-wait-center">${active.subtitle ? `<div class="m-kicker">${esc(active.subtitle)}</div>` : ""}<div class="m-title">${esc(active.title || "Mission")}</div>${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}${renderTags(tags)}${planLabel ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;"><b>Plan locked:</b> ${esc(planLabel)}</div>` : ""}${hint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(hint)}</div>` : ""}<div id="mClock" class="m-clock">-</div><div id="mClockSub" class="m-clock-sub">-</div><div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>${rare ? renderRareDropCard(rare) : ""}<div class="m-actions"><button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>${active.__pending ? '<button type="button" class="btn" data-act="back_to_offers">Back</button>' : ""}</div></div></div>`;
+  }
   function render() {
-    if (!_root) return;
-
-    const payload = normalizePayload(_state);
-    if (!payload || typeof payload !== "object") {
-      renderError("Bad payload", JSON.stringify(_state).slice(0, 900));
-      return;
-    }
-
-    _syncServerClock(payload);
-
-    const offers = Array.isArray(payload.offers) ? payload.offers : [];
-    const realActive = getActive(payload);
-    const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive;
-
-    const last = payload.lastResolve || payload.last_resolve || null;
-    blueSignalHuntProgress(payload);
-
-    const completedOperation = _eliteOperationComplete || last?.eliteOperation;
-    if (completedOperation?.tacticalEnabled && completedOperation?.phase === "complete" && completedOperation.operationId !== _eliteOperationDismissedId) {
-      stopTick();
-      _root.innerHTML = renderEliteOperationComplete(completedOperation, last);
-      return;
-    }
-
-    if (_eliteBriefingState?.operationKey) {
-      stopTick();
-      _root.innerHTML = renderEliteBriefingShell(_eliteBriefingState);
-      return;
-    }
-
-    if (_missionDebriefState?.visible) {
-      stopTick();
-      _root.innerHTML = renderMissionDebriefGate(_missionDebriefState);
-      return;
-    }
-
-    const tacticalOperation = eliteOperationFromActive(active);
-    if (tacticalOperation) {
-      if (active.status === "RUNNING") _eliteReadyRefreshOperationId = "";
-      _root.innerHTML = renderEliteTacticalShell(active, tacticalOperation);
-      if (tacticalOperation.phase === "preparing" && active.status === "RUNNING") { paintWaiting(active); startTick(); } else { paintWaiting(active); stopTick(); }
-      return;
-    }
-
-    if (active.status && active.status !== "NONE") {
-      // ✅ rare drop source order: pending.offer → active raw mission → payload (fallback)
-      const rare =
-        (active.__pending ? (_pendingStart?.rareDrop || null) : null) ||
-        _extractRareDrop(active.__raw) ||
-        _extractRareDrop(_primaryActive(payload)) ||
-        null;
-      const activeTags = [];
-      if (active.modifierLabel) activeTags.push(active.modifierLabel);
-      if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) {
-        activeTags.push(`Reward intent: ${active.rewardIntent.join(" · ")}`);
-      }
-      const activeMatchLabel = normalizePetMatchLabel(active);
-      const activeHint = textOrEmpty(active.compactHint) || (activeMatchLabel ? `Pet fit: ${activeMatchLabel}` : "");
-      const activePlanLabel = active.eliteMission ? textOrEmpty(active.tacticalChoiceLabel || tacticalChoiceLabel(active.tacticalChoice), "") : "";
-
-      _root.innerHTML = `
-        <div class="m-stage m-stage-wait">
-          <div class="m-wait-center">
-            ${active.subtitle ? `<div class="m-kicker">${esc(active.subtitle)}</div>` : ""}
-            <div class="m-title">${esc(active.title || "Mission")}</div>
-            ${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}
-            ${renderTags(activeTags)}
-            ${activePlanLabel ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;"><b>Plan locked:</b> ${esc(activePlanLabel)}</div>` : ""}
-            ${activeHint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(activeHint)}</div>` : ""}
-            <div id="mClock" class="m-clock">—</div>
-            <div id="mClockSub" class="m-clock-sub">—</div>
-
-            <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
-
-            ${rare ? renderRareDropCard(rare) : ""}
-
-            <div class="m-actions">
-              <button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>
-              ${active.__pending ? `<button type="button" class="btn" data-act="back_to_offers">Back</button>` : ``}
-            </div>
-          </div>
-        </div>
-      `;
-
-      paintWaiting(active);
-      startTick();
-      return;
-    }
-
-    stopTick();
-
-    const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row");
-    if (row) row.style.display = "none";
-
-    _root.innerHTML = `
-      <div class="m-stage">
-        <div class="m-shell-head">
-          <div class="m-shell-top">
-            <div class="m-title">Missions</div>
-            <button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button>
-          </div>
-          <div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>
-          <div class="m-inline-status">No active mission. Pick an offer to start.</div>
-          ${renderHelpPanel()}
-        </div>
-
-        ${renderEliteMissionsPreview()}
-
-        <div class="m-card">
-          <div class="m-row">
-            <div style="min-width:0;">
-              <div class="m-title">Offers</div>
-              <div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div>
-            </div>
-            <button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button>
-          </div>
-
-          <div class="m-hr"></div>
-
-          <div>
-            ${
-              offers.length
-                ? offers.map(o => renderOffer(o, realActive)).join("")
-                : `<div class="m-muted">No offers yet. Refresh to scan for routes.</div>`
-            }
-          </div>
-        </div>
-        ${last ? renderLastClarity(last) : `<div class="m-muted" style="margin-top:8px;">No recent report.</div>`}
-      </div>
-    `;
+    if (!_root) return; const payload = normalizePayload(_state); if (!payload || typeof payload !== "object") { renderError("Bad payload", JSON.stringify(_state).slice(0, 900)); return; }
+    _syncServerClock(payload); const offers = Array.isArray(payload.offers) ? payload.offers : []; const realActive = getActive(payload); const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive; const last = payload.lastResolve || payload.last_resolve || null; blueSignalHuntProgress(payload);
+    const completed = _eliteOperationComplete || last?.eliteOperation, tactical = eliteOperationFromActive(active); let flow = "", activePanel = last ? renderLastClarity(last) : renderMissionActivePanel(null, payload), elitePanel = renderEliteMissionsPreview(), ticking = false;
+    if (last?.eliteMissionReport && (!active.status || active.status === "NONE")) { flow = "elite"; activePanel = renderMissionActivePanel(null, payload); elitePanel = renderLastClarity(last); }
+    if (completed?.tacticalEnabled && completed?.phase === "complete" && completed.operationId !== _eliteOperationDismissedId) { flow = "elite"; elitePanel = renderEliteOperationComplete(completed, last); }
+    else if (_eliteBriefingState?.operationKey) { flow = "elite"; elitePanel = renderEliteBriefingShell(_eliteBriefingState); }
+    else if (_missionDebriefState?.visible) { flow = "active"; activePanel = renderMissionDebriefGate(_missionDebriefState); }
+    else if (tactical) { flow = "elite"; elitePanel = renderEliteTacticalShell(active, tactical); ticking = tactical.phase === "preparing" && active.status === "RUNNING"; if (active.status === "RUNNING") _eliteReadyRefreshOperationId = ""; }
+    else if (active.status && active.status !== "NONE") { const panel = renderMissionActivePanel(active, payload); if (active.eliteMission) { flow = "elite"; elitePanel = panel; } else activePanel = panel; ticking = true; }
+    const selected = resolveMissionsCompactTab(active, flow); _missionsCompactTab = selected; const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row"); if (row) row.style.display = "none";
+    _root.innerHTML = `<div class="m-stage"><div class="m-shell-head"><div class="m-shell-top"><div class="m-title">Missions</div><button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button></div><div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>${renderHelpPanel()}</div>${renderMissionsCompactTabs(selected, activePanel, renderMissionAvailablePanel(offers, realActive), elitePanel)}</div>`;
+    if (ticking) { paintWaiting(active); startTick(); } else stopTick();
   }
 
   // =========================
