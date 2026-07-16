@@ -849,14 +849,353 @@
         .equip-selected-art{ width:78px; height:78px; }
         .equip-selected-name{ font-size:17px; }
       }
+
+      /* Equipped P1.5B final finish: local presentation only. */
+      #equipped-root{
+        --equip-motion:160ms;
+        --equip-ease:cubic-bezier(.2,.75,.25,1);
+        padding-left:max(10px,env(safe-area-inset-left)) !important;
+        padding-right:max(10px,env(safe-area-inset-right)) !important;
+      }
+      .equip-local-header{
+        grid-template-columns:minmax(72px,1fr) auto minmax(92px,1fr);
+        gap:6px;
+        min-width:0;
+        min-height:50px;
+        margin-bottom:10px;
+        padding:
+          max(5px,env(safe-area-inset-top))
+          max(2px,env(safe-area-inset-right))
+          7px
+          max(2px,env(safe-area-inset-left));
+      }
+      .equip-local-header h2{
+        min-width:0;
+        font-size:17px;
+        letter-spacing:.35px;
+        white-space:nowrap;
+      }
+      .equip-header-btn{
+        min-width:0;
+        min-height:44px;
+        border-radius:12px;
+        color:#d5e7f1;
+        background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+        font-size:11px;
+        font-weight:800;
+      }
+      .equip-header-btn:first-child{ padding:0 12px; }
+      .equip-header-btn:last-child{
+        padding:0 12px;
+        border-color:rgba(91,213,255,.20);
+        background:linear-gradient(180deg,rgba(25,128,169,.20),rgba(12,72,99,.16));
+      }
+      .equip-stage-wrap{
+        border-color:rgba(127,210,239,.18);
+        border-radius:21px;
+        background:
+          radial-gradient(circle at 50% 3%,rgba(35,186,229,.14),transparent 39%),
+          linear-gradient(180deg,rgba(9,21,37,.97),rgba(2,6,13,.99));
+        box-shadow:
+          inset 0 1px 0 rgba(214,247,255,.055),
+          inset 0 0 0 1px rgba(16,93,121,.08),
+          inset 0 -20px 48px rgba(0,0,0,.28),
+          0 14px 34px rgba(0,0,0,.30);
+      }
+      .equip-hotspot{
+        transition:
+          transform var(--equip-motion) var(--equip-ease),
+          filter var(--equip-motion) var(--equip-ease),
+          box-shadow var(--equip-motion) var(--equip-ease),
+          background-color var(--equip-motion) var(--equip-ease);
+      }
+      .equip-hotspot::after{
+        border-radius:inherit;
+        transition:
+          opacity var(--equip-motion) var(--equip-ease),
+          box-shadow var(--equip-motion) var(--equip-ease);
+      }
+      .equip-hotspot.is-selected{
+        outline:0;
+        box-shadow:
+          0 0 0 2px rgba(106,225,255,.68),
+          0 0 0 1px rgba(224,251,255,.28) inset,
+          0 0 15px rgba(48,191,237,.22);
+      }
+      .equip-hotspot.is-selected::after{
+        opacity:.56 !important;
+        box-shadow:
+          0 0 0 1px rgba(198,247,255,.30) inset,
+          0 0 13px rgba(76,211,255,.20) !important;
+      }
+      .equip-hotspot-label{
+        bottom:-13px;
+        height:16px;
+        max-width:76px;
+        padding:1px 6px 0;
+        border-radius:7px;
+        border-color:rgba(154,216,239,.17);
+        background:linear-gradient(180deg,rgba(8,17,29,.96),rgba(2,7,14,.94));
+        box-shadow:0 2px 6px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.035);
+        color:#d8eff8;
+        font-size:8px;
+        line-height:15px;
+        letter-spacing:.32px;
+      }
+      .equip-hotspot[data-slot="weapon"] .equip-hotspot-label,
+      .equip-hotspot[data-slot="offhand"] .equip-hotspot-label{ max-width:72px; }
+      .equip-selected-mark{
+        top:3px;
+        right:3px;
+        width:17px;
+        min-width:17px;
+        height:17px;
+        background:linear-gradient(180deg,#a5f2ff,#55cee9);
+        border-color:rgba(3,11,18,.96);
+        font-size:9px;
+        transform:scale(.76);
+        transition:
+          opacity var(--equip-motion) var(--equip-ease),
+          transform var(--equip-motion) var(--equip-ease);
+      }
+      .equip-hotspot.is-selected .equip-selected-mark{
+        opacity:1;
+        transform:scale(1);
+      }
+      #equip-avatar > div{ gap:8px !important; }
+      #equip-slots{ margin-top:12px; }
+      .equip-level-strip{
+        padding:8px 11px;
+        border-radius:12px;
+      }
+      .equip-stat-summary{ gap:5px; padding:7px; }
+      .equip-selected-panel{
+        padding:12px;
+        border-color:rgba(136,220,255,.17);
+        background:
+          radial-gradient(circle at 100% 0%,rgba(55,191,241,.095),transparent 34%),
+          linear-gradient(180deg,rgba(16,25,41,.97),rgba(6,11,20,.98));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.055),
+          inset 0 0 0 1px rgba(64,151,190,.04),
+          0 13px 29px rgba(0,0,0,.21);
+        animation:equipPanelIn var(--equip-motion) var(--equip-ease);
+      }
+      .equip-selected-head{
+        grid-template-columns:82px minmax(0,1fr);
+        gap:11px;
+      }
+      .equip-selected-art{
+        width:82px;
+        height:82px;
+        padding:5px;
+        border-radius:14px;
+        background:
+          radial-gradient(circle at 50% 35%,rgba(255,255,255,.055),transparent 58%),
+          rgba(0,0,0,.31);
+        box-shadow:inset 0 0 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.045);
+      }
+      .equip-selected-art[data-rarity="rare"]{ border-color:rgba(78,171,255,.25); }
+      .equip-selected-art[data-rarity="epic"]{ border-color:rgba(175,112,255,.28); }
+      .equip-selected-art[data-rarity="legendary"]{ border-color:rgba(255,196,92,.30); }
+      .equip-selected-name{ margin-top:4px; font-size:17px; }
+      .equip-selected-meta{ margin-top:5px; }
+      .equip-selected-stats{ gap:5px; margin-top:9px; }
+      .equip-selected-stat{
+        min-height:27px;
+        box-sizing:border-box;
+        justify-content:center;
+        padding:5px 8px 4px;
+        border-radius:8px;
+        border-color:rgba(133,206,235,.10);
+        background:
+          linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+        line-height:1;
+      }
+      .equip-selected-stat b{ line-height:1; }
+      .equip-selected-actions{
+        gap:8px;
+        margin-top:11px;
+      }
+      .equip-action-btn{
+        height:44px;
+        min-height:44px;
+        border-radius:12px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+        transition:
+          transform var(--equip-motion) var(--equip-ease),
+          background-color var(--equip-motion) var(--equip-ease),
+          border-color var(--equip-motion) var(--equip-ease),
+          box-shadow var(--equip-motion) var(--equip-ease);
+      }
+      .equip-action-btn.is-inspect,
+      .equip-action-btn.is-inventory{
+        border-color:rgba(91,216,255,.30);
+        background:linear-gradient(180deg,rgba(29,145,190,.31),rgba(14,84,116,.25));
+        box-shadow:inset 0 1px 0 rgba(198,245,255,.09);
+      }
+      .equip-action-btn.is-unequip{
+        border-color:rgba(239,113,128,.25);
+        background:linear-gradient(180deg,rgba(108,31,43,.86),rgba(67,17,28,.88));
+        box-shadow:inset 0 1px 0 rgba(255,207,213,.055);
+      }
+      .equip-summary-card{
+        margin-top:9px;
+        padding:10px 11px;
+        transition:border-color var(--equip-motion) var(--equip-ease),background-color var(--equip-motion) var(--equip-ease);
+      }
+      .equip-summary-card.is-sets{
+        position:relative;
+        overflow:hidden;
+        border-color:rgba(88,216,255,.20);
+        background:
+          radial-gradient(circle at 0 0,rgba(53,203,240,.10),transparent 36%),
+          linear-gradient(180deg,rgba(11,31,47,.94),rgba(5,14,25,.92));
+        box-shadow:inset 0 1px 0 rgba(196,245,255,.055),0 10px 24px rgba(0,0,0,.16);
+      }
+      .equip-summary-card.is-sets::before{
+        content:"";
+        position:absolute;
+        inset:0 auto 0 0;
+        width:2px;
+        background:linear-gradient(180deg,rgba(111,231,255,.85),rgba(52,155,193,.22));
+      }
+      .equip-summary-card.is-sets summary{
+        color:#f0fbff;
+        font-size:12px;
+        letter-spacing:.15px;
+      }
+      .equip-summary-card.is-sets .equip-summary-count{
+        background:rgba(81,215,255,.17);
+        color:#c5f5ff;
+        box-shadow:inset 0 0 0 1px rgba(130,231,255,.11);
+      }
+      .equip-summary-rows{ gap:7px; margin-top:8px; }
+      .equip-summary-row{
+        display:block;
+        padding:9px;
+        border:1px solid rgba(119,211,240,.09);
+        background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.022));
+      }
+      .equip-set-main{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+      .equip-set-name{
+        min-width:0;
+        color:#edfaff;
+        font-size:12px;
+        font-weight:850;
+        overflow-wrap:anywhere;
+      }
+      .equip-set-count{
+        flex:0 0 auto;
+        padding:4px 7px;
+        border-radius:999px;
+        background:rgba(68,200,239,.11);
+        color:#92e7ff;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.35px;
+        text-transform:uppercase;
+      }
+      .equip-set-bonuses{
+        display:flex;
+        flex-wrap:wrap;
+        gap:5px;
+        margin-top:7px;
+        padding-top:7px;
+        border-top:1px solid rgba(129,215,242,.08);
+      }
+      .equip-set-bonus{
+        min-height:24px;
+        padding:4px 7px 3px;
+        border-color:rgba(80,219,178,.13);
+        background:rgba(40,151,121,.09);
+        color:#82cbb6;
+      }
+      .equip-set-bonus b{ color:#a9f1dc; }
+      .equip-summary-card.is-total{
+        padding-top:9px;
+        padding-bottom:9px;
+        border-color:rgba(255,255,255,.065);
+        background:rgba(5,10,19,.64);
+        opacity:.82;
+        box-shadow:none;
+      }
+      .equip-summary-card.is-total summary{
+        color:#aebdca;
+        font-size:11px;
+        font-weight:750;
+      }
+      .equip-summary-card.is-total .equip-summary-count{
+        min-width:19px;
+        height:19px;
+        background:rgba(255,255,255,.055);
+        color:#93a5b4;
+      }
+      .equip-total-chips{ gap:5px; margin-top:8px; }
+      .equip-total-stat{
+        min-height:24px;
+        padding:4px 7px 3px;
+        border-color:rgba(255,255,255,.055);
+        background:rgba(255,255,255,.025);
+        color:#8c9ba8;
+        font-weight:750;
+      }
+      .equip-summary-card[open] .equip-summary-rows,
+      .equip-summary-card[open] .equip-total-chips{
+        animation:equipSummaryIn var(--equip-motion) var(--equip-ease);
+      }
+      @keyframes equipSummaryIn{
+        from{ opacity:.7; transform:translateY(-2px); }
+        to{ opacity:1; transform:translateY(0); }
+      }
+      @media (hover:hover) and (pointer:fine){
+        .equip-header-btn:hover,
+        .equip-action-btn:hover{ border-color:rgba(113,224,255,.34); }
+        .equip-hotspot:hover{ filter:brightness(1.045); }
+        .equip-summary-card summary:hover{ color:#f1fbff; }
+      }
+      @media (max-width:420px){
+        .equip-local-header{
+          grid-template-columns:minmax(66px,1fr) auto minmax(88px,1fr);
+        }
+        .equip-header-btn:first-child,
+        .equip-header-btn:last-child{ padding-left:10px; padding-right:10px; }
+        .equip-stat-summary{ grid-template-columns:repeat(6,minmax(0,1fr)); }
+        .equip-stat-chip{ grid-column:span 2; }
+        .equip-stat-chip:nth-child(n+4){ grid-column:span 3; }
+        .equip-selected-head{ grid-template-columns:76px minmax(0,1fr); gap:10px; }
+        .equip-selected-art{ width:76px; height:76px; }
+      }
+      @media (max-width:340px){
+        .equip-local-header{
+          grid-template-columns:minmax(60px,1fr) auto minmax(80px,1fr);
+          gap:4px;
+        }
+        .equip-local-header h2{ font-size:16px; }
+        .equip-header-btn{ padding-left:8px !important; padding-right:8px !important; font-size:10px; }
+      }
       @media (prefers-reduced-motion:reduce){
         .equip-hotspot,
         .equip-header-btn,
-        .equip-action-btn{ transition:none; }
-        .equip-selected-panel{ animation:none; }
+        .equip-action-btn,
+        .equip-hotspot::after,
+        .equip-selected-mark,
+        .equip-summary-card{ transition:none; }
+        .equip-selected-panel,
+        .equip-summary-card[open] .equip-summary-rows,
+        .equip-summary-card[open] .equip-total-chips{ animation:none; }
         .equip-hotspot:active,
         .equip-header-btn:active,
-        .equip-action-btn:active{ transform:none; }
+        .equip-action-btn:active,
+        .equip-selected-mark,
+        .equip-hotspot.is-selected .equip-selected-mark{ transform:none; }
       }
     `;
     document.head.appendChild(style);
@@ -1299,7 +1638,7 @@
       const stats = slot.stats && typeof slot.stats === "object" ? slot.stats : {};
       const statEntries = Object.keys(stats);
       const statsHtml = statEntries.length
-        ? statEntries.map((key) => `<span class="equip-selected-stat">${esc(statPresentationLabel(key))} <b>${esc(formattedStatValue(stats[key]))}</b></span>`).join("")
+        ? statEntries.map((key) => `<span class="equip-selected-stat"><b>${esc(formattedStatValue(stats[key]))}</b> ${esc(statPresentationLabel(key))}</span>`).join("")
         : (slot.bonusesText ? `<span class="equip-selected-stat">${esc(slot.bonusesText)}</span>` : "");
       const canInspect = !!itemKey && typeof window.Inventory?.openEquippedItem === "function";
       const levelText = slot.level != null ? `Level ${esc(slot.level)}` : "";
@@ -1351,7 +1690,27 @@
           <details class="equip-summary-card is-sets" ${sets.length === 1 ? "open" : ""}>
             <summary><span>Active set bonuses</span><span class="equip-summary-count">${sets.length}</span></summary>
             <div class="equip-summary-rows">
-              ${sets.map((set) => `<div class="equip-summary-row"><span>${esc(set.set)}</span><b>${esc(set.count)} equipped</b></div>`).join("")}
+              ${sets.map((set) => {
+                const bonus = set?.bonus && typeof set.bonus === "object" ? set.bonus : {};
+                const bonusKeys = Object.keys(bonus);
+                return `
+                  <div class="equip-summary-row">
+                    <div class="equip-set-main">
+                      <span class="equip-set-name">${esc(set.set)}</span>
+                      <span class="equip-set-count">${esc(set.count)} equipped</span>
+                    </div>
+                    ${bonusKeys.length ? `
+                      <div class="equip-set-bonuses" aria-label="Active set bonuses">
+                        ${bonusKeys.map((key) => `
+                          <span class="equip-selected-stat equip-set-bonus">
+                            <b>${esc(formattedStatValue(bonus[key]))}</b> ${esc(statPresentationLabel(key))}
+                          </span>
+                        `).join("")}
+                      </div>
+                    ` : ""}
+                  </div>
+                `;
+              }).join("")}
             </div>
           </details>
         ` : "";
@@ -1362,7 +1721,7 @@
           <details class="equip-summary-card is-total">
             <summary><span>Total gear bonus</span><span class="equip-summary-count">${totalKeys.length}</span></summary>
             <div class="equip-total-chips">
-              ${totalKeys.map((key) => `<span class="equip-selected-stat">${esc(key)}+${esc(total[key])}</span>`).join("")}
+              ${totalKeys.map((key) => `<span class="equip-selected-stat equip-total-stat">${esc(key)}+${esc(total[key])}</span>`).join("")}
             </div>
           </details>
         ` : "";
