@@ -649,6 +649,8 @@ window.Inventory = {
 
   async open() {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    this.selectedItemKey = null;
+    this._setItemModalScrollLock(false);
     try {
       document
         .querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back")
@@ -762,6 +764,8 @@ window.Inventory = {
 `;
     // register in nav stack + (optional) TG back fallback
     this._bindBackButtons();
+    this._ensureCompactGridStyles();
+    this._bindInventoryGridEvents();
 
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
@@ -821,6 +825,71 @@ window.Inventory = {
     if (this._gearSlots.has(t)) return true;
     if (t === "gear" && s) return true;
     return false;
+  },
+
+  _isItemEquipped(item) {
+    if (!item || typeof item !== "object") return false;
+    if (item.equipped === true || item.isEquipped === true || item.is_equipped === true) return true;
+    const slot = this._normSlot(item);
+    const equipped = slot ? this.equippedBySlot?.[slot] : null;
+    const itemKey = String(item.key || item.item_key || item.item || "");
+    const equippedKey = String(equipped?.key || equipped?.item_key || equipped?.item || "");
+    return !!itemKey && itemKey === equippedKey;
+  },
+
+  _ensureCompactGridStyles() {
+    if (document.getElementById("invCompactGridStyles")) return;
+    const style = document.createElement("style");
+    style.id = "invCompactGridStyles";
+    style.textContent = `
+      #inventory-grid.inv-compact-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:9px !important; padding:10px !important; overflow-x:hidden; }
+      .inv-compact-tile { min-width:0; min-height:154px; padding:9px; position:relative; display:flex; flex-direction:column; align-items:stretch; border:1px solid rgba(255,255,255,.10); border-radius:16px; background:linear-gradient(180deg,rgba(23,29,47,.96),rgba(8,11,20,.97)); color:#f7fbff; text-align:left; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 20px rgba(0,0,0,.18); transition:transform .14s ease,border-color .14s ease; }
+      .inv-compact-tile:active { transform:scale(.975); }
+      .inv-compact-tile:focus-visible { outline:2px solid #8fdcff; outline-offset:2px; }
+      .inv-compact-art { width:100%; aspect-ratio:1/1; min-height:76px; border-radius:12px; object-fit:cover; background:rgba(255,255,255,.04); }
+      .inv-compact-name { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; min-height:30px; margin-top:8px; font-size:12px; font-weight:900; line-height:1.22; overflow-wrap:anywhere; }
+      .inv-compact-badge { position:absolute; z-index:1; padding:3px 6px; border-radius:999px; font-size:10px; font-weight:900; line-height:1.2; letter-spacing:.25px; }
+      .inv-compact-qty { top:13px; right:13px; background:rgba(3,7,15,.82); border:1px solid rgba(255,255,255,.18); color:#fff; }
+      .inv-compact-equipped { left:13px; bottom:42px; background:rgba(57,174,126,.88); color:#06150e; }
+      @media (min-width:520px) { #inventory-grid.inv-compact-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:11px !important; } .inv-compact-tile { min-height:174px; } }
+      @media (min-width:900px) { #inventory-grid.inv-compact-grid { grid-template-columns:repeat(5,minmax(0,1fr)) !important; gap:12px !important; } }
+      @media (max-width:380px) { #inventory-grid.inv-compact-grid { gap:7px !important; padding:8px !important; } .inv-compact-tile { min-height:142px; padding:7px; border-radius:14px; } .inv-compact-name { margin-top:6px; font-size:11px; } .inv-compact-equipped { left:10px; bottom:35px; font-size:9px; } .inv-compact-qty { top:10px; right:10px; } }
+    `;
+    document.head.appendChild(style);
+  },
+
+  _bindInventoryGridEvents() {
+    const grid = document.getElementById("inventory-grid");
+    if (!grid || grid.dataset.itemDetailsBound === "1") return;
+    grid.dataset.itemDetailsBound = "1";
+    grid.addEventListener("click", (event) => {
+      const tile = event.target.closest("[data-inv-item-key]");
+      if (!tile || !grid.contains(tile)) return;
+      const key = tile.dataset.invItemKey;
+      if (key) this.openItem(key);
+    });
+  },
+
+  _setItemModalScrollLock(locked) {
+    const body = document.body;
+    if (!body) return;
+    if (locked) {
+      if (body.dataset.invOverflow === undefined) body.dataset.invOverflow = body.style.overflow || "";
+      body.style.overflow = "hidden";
+      return;
+    }
+    if (body.dataset.invOverflow !== undefined) {
+      body.style.overflow = body.dataset.invOverflow;
+      delete body.dataset.invOverflow;
+    }
+  },
+
+  _refreshSelectedItem() {
+    if (!this.selectedItemKey) return;
+    const item = this.findByKey(this.selectedItemKey);
+    if (!item) return this.closeItem();
+    const body = document.getElementById("invItemBody");
+    if (body) body.innerHTML = this._renderDetailSheet(item);
   },
 
   _salvagePreview(item) {
@@ -1022,6 +1091,7 @@ window.Inventory = {
   openItem(key) {
     const item = this.findByKey(key);
     if (!item) return;
+    this.selectedItemKey = String(key);
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     const back = document.getElementById("invItemBack");
     const body = document.getElementById("invItemBody");
@@ -1031,6 +1101,8 @@ window.Inventory = {
     const qty = this._qty(item);
     const typeLabel = this._safeText(item?.type || item?.category, "Misc");
     const slotLabel = this._slotLabel(item);
+    const setInfo = this._safeText(item?.set || item?.setName || item?.set_name || item?.data?.set, "");
+    const equippedState = this._isItemEquipped(item);
     const description = this._itemDescription(item);
     const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
     const statKeys = this._orderedStatKeys(stats);
@@ -1083,6 +1155,7 @@ window.Inventory = {
     body.innerHTML = this._renderDetailSheet(item);
     back.style.display = "flex";
     back.dataset.open = "1";
+    this._setItemModalScrollLock(true);
     try { window.navOpen?.("invItemBack"); } catch (_) {}
     return;
 
@@ -1147,6 +1220,8 @@ window.Inventory = {
     if (!back) return;
     back.style.display = "none";
     delete back.dataset.open;
+    this.selectedItemKey = null;
+    this._setItemModalScrollLock(false);
     try { window.navClose?.("invItemBack"); } catch (_) {}
   },
 
@@ -1298,6 +1373,8 @@ window.Inventory = {
     const qty = this._qty(item);
     const typeLabel = this._safeText(item?.type || item?.category, "Misc");
     const slotLabel = this._slotLabel(item);
+    const setInfo = this._safeText(item?.set || item?.setName || item?.set_name || item?.data?.set, "");
+    const equippedState = this._isItemEquipped(item);
     const description = this._itemDescription(item);
     const stats = this._normalizeStats(item?.stats || item?.data?.stat_bonus || {});
     const statKeys = this._orderedStatKeys(stats);
@@ -1359,12 +1436,14 @@ window.Inventory = {
             <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#d6dceb;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border:1px solid rgba(255,255,255,.05);">${this._esc(typeLabel)}</span>
             ${slotLabel ? `<span style="padding:6px 10px;border-radius:999px;background:rgba(76,95,165,.22);color:#b4c6ff;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border:1px solid rgba(76,95,165,.22);">${this._esc(slotLabel)}</span>` : ""}
             <span style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:#f8fbff;font-size:11px;letter-spacing:.5px;border:1px solid rgba(255,255,255,.05);">QTY ${this._esc(String(qty))}</span>
+            <span style="padding:6px 10px;border-radius:999px;background:${equippedState ? "rgba(57,174,126,.18)" : "rgba(255,255,255,.06)"};color:${equippedState ? "#a7f3cf" : "#d6dceb"};font-size:11px;letter-spacing:.5px;text-transform:uppercase;border:1px solid rgba(255,255,255,.05);">${equippedState ? "Equipped" : "Unequipped"}</span>
           </div>
           <div style="font-size:24px;line-height:1.08;font-weight:900;color:#f6fbff;word-break:break-word;">${this._esc(item?.name || item?.key || "Unknown Item")}</div>
           <div style="margin-top:12px;max-width:44ch;font-size:13px;line-height:1.62;color:#b8c3d6;">
             ${this._esc(description || "No description available.")}
           </div>
           ${item?.usedFor ? `<div style="margin-top:8px;font-size:12px;color:#8ad1ff;">Use: ${this._esc(item.usedFor)}</div>` : ""}
+          ${setInfo ? `<div style="margin-top:8px;font-size:12px;color:#d8c5ff;">Set: ${this._esc(setInfo)}</div>` : ""}
         </div>
       </div>
 
@@ -1381,6 +1460,28 @@ window.Inventory = {
         ${this._detailActions(item)}
       </section>
     `;
+  },
+
+  _renderCompactTiles(filtered) {
+    return (filtered || []).map((item) => {
+      const key = item.key || item.item_key || item.item;
+      const amount = this._qty(item);
+      const icon = item.icon || item.image || item.image_path || "/assets/items/unknown.png";
+      const name = this._safeText(item.name, key || "Unknown Item");
+      const rarity = this._rarityMeta(item?.rarity || "common");
+      const keyEsc = this._esc(String(key || ""));
+      const equipped = this._isItemEquipped(item);
+      return `
+        <button type="button" class="inv-compact-tile" data-inv-item-key="${keyEsc}"
+                aria-label="${this._esc(`View ${name}`)}" style="border-color:${rarity.color};">
+          ${amount > 1 ? `<span class="inv-compact-badge inv-compact-qty">x${this._esc(String(amount))}</span>` : ""}
+          ${equipped ? `<span class="inv-compact-badge inv-compact-equipped">EQUIPPED</span>` : ""}
+          <img class="inv-compact-art" src="${this._esc(icon)}" alt="" style="border:2px solid ${rarity.color};box-shadow:0 0 0 3px ${rarity.glow};"
+               onerror="this.onerror=null;this.src='/assets/items/unknown.png';">
+          <span class="inv-compact-name">${this._esc(name)}</span>
+        </button>
+      `;
+    }).join("");
   },
 
   showTab(type) {
@@ -1405,11 +1506,15 @@ window.Inventory = {
     if (!grid) return;
 
     if (!filtered.length) {
+      grid.classList.add("inv-compact-grid");
       grid.innerHTML = `<p style="grid-column:1/-1;opacity:0.6;margin:50px 0;text-align:center;">No items</p>`;
+      this._refreshSelectedItem();
       return;
     }
 
-    grid.innerHTML = this._renderCardsPremium(filtered);
+    grid.classList.add("inv-compact-grid");
+    grid.innerHTML = this._renderCompactTiles(filtered);
+    this._refreshSelectedItem();
     return;
 
     grid.innerHTML = filtered
@@ -1617,6 +1722,7 @@ async use(key) {
 
       if (res.message) this._toast(res.message);
 
+      this.closeItem();
       await this.open();
     } else {
       throw Object.assign(new Error(res?.message || res?.reason || "Failed"), { data: res });
@@ -1698,6 +1804,7 @@ async use(key) {
       const fallbackText = res?.message || `Salvaged ${requested}x ${itemName}.`;
       const lines = this._buildSalvageToastLines(res, { salvagedCount: requested, fallbackText });
       this._showProgressToast({ title: "Salvage Complete", lines }, fallbackText);
+      this.closeItem();
       await this.open();
     } catch (e) {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
@@ -1757,6 +1864,7 @@ async use(key) {
       this._toast(
         res?.message || `Salvaged ${itemName}: +${salvage.scrap} scrap, +${salvage.runeDust} rune dust.`
       );
+      this.closeItem();
       await this.open();
     } catch (e) {
       Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
@@ -1783,6 +1891,7 @@ async use(key) {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
+        this.closeItem();
         await this.open();
       } else {
         throw new Error(res.reason || "Failed");
@@ -1809,6 +1918,7 @@ async use(key) {
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
+        this.closeItem();
         await this.open();
       } else {
         throw new Error(res.reason || "Failed");
