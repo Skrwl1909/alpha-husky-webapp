@@ -16,6 +16,21 @@
     pet:     [945, 640, 134, 134],
     offhand: [682, 655, 156, 156],
   };
+  const SLOT_ORDER = Object.freeze(Object.keys(SLOT_COORDS));
+
+  function esc(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function slotLabel(slotKey, slotState) {
+    const label = slotState?.label || String(slotKey || "").replace(/_/g, " ");
+    return label.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
 
   function getTg() {
     return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
@@ -113,7 +128,7 @@
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
         touch-action: pan-y;
-        padding-bottom: 28px;
+        padding-bottom:max(96px,calc(env(safe-area-inset-bottom) + 76px));
       }
 
       /* =========================================================
@@ -356,6 +371,182 @@
 
 .equip-hotspot.is-selected[data-rarity="legendary"]::after,
 .equip-hotspot.is-equipped[data-rarity="legendary"]::after{ opacity:1; }
+
+      .equip-hotspot{
+        min-width:44px;
+        min-height:44px;
+        color:#eefaff;
+        cursor:pointer;
+      }
+      .equip-hotspot.is-selected{
+        z-index:8;
+        outline:2px solid rgba(94,225,255,.94);
+        outline-offset:2px;
+        box-shadow:
+          0 0 0 1px rgba(181,245,255,.25) inset,
+          0 0 20px rgba(46,203,255,.38);
+      }
+      .equip-hotspot-label{
+        position:absolute;
+        left:50%;
+        bottom:-15px;
+        transform:translateX(-50%);
+        max-width:86px;
+        padding:2px 5px;
+        border-radius:999px;
+        background:rgba(3,8,16,.88);
+        border:1px solid rgba(255,255,255,.13);
+        color:#dff8ff;
+        font-size:9px;
+        line-height:1.15;
+        font-weight:850;
+        letter-spacing:.25px;
+        text-transform:uppercase;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        pointer-events:none;
+      }
+      .equip-selected-mark{
+        position:absolute;
+        top:-8px;
+        right:-8px;
+        min-width:18px;
+        height:18px;
+        display:grid;
+        place-items:center;
+        border-radius:999px;
+        background:#76e7ff;
+        color:#04121a;
+        border:2px solid rgba(3,8,16,.92);
+        font-size:10px;
+        font-weight:950;
+        opacity:0;
+        pointer-events:none;
+      }
+      .equip-hotspot.is-selected .equip-selected-mark{ opacity:1; }
+
+      #equip-main{
+        display:block !important;
+      }
+      #equip-avatar,
+      #equip-slots{
+        min-width:0 !important;
+        width:100%;
+        max-width:680px;
+        margin:0 auto;
+      }
+      #equip-slots{ margin-top:14px; }
+      .equip-stat-summary{
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:6px;
+        width:100%;
+        padding:10px;
+        border-radius:16px;
+        background:rgba(5,11,22,.82);
+        border:1px solid rgba(255,255,255,.09);
+      }
+      .equip-stat-chip{
+        min-width:0;
+        padding:7px 4px;
+        border-radius:10px;
+        background:rgba(255,255,255,.045);
+        text-align:center;
+      }
+      .equip-stat-chip span{
+        display:block;
+        color:#8295ad;
+        font-size:9px;
+        letter-spacing:.45px;
+      }
+      .equip-stat-chip b{
+        display:block;
+        margin-top:2px;
+        color:#f3fbff;
+        font-size:12px;
+        overflow-wrap:anywhere;
+      }
+      .equip-selected-panel{
+        padding:14px;
+        border-radius:20px;
+        background:
+          radial-gradient(circle at 100% 0%,rgba(49,182,255,.10),transparent 36%),
+          linear-gradient(180deg,rgba(17,25,42,.96),rgba(7,11,21,.97));
+        border:1px solid rgba(136,220,255,.15);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 34px rgba(0,0,0,.22);
+      }
+      .equip-selected-head{
+        display:grid;
+        grid-template-columns:88px minmax(0,1fr);
+        gap:13px;
+        align-items:start;
+      }
+      .equip-selected-art{
+        width:88px;
+        height:88px;
+        border-radius:17px;
+        background:rgba(0,0,0,.36);
+        border:1px solid rgba(255,255,255,.12);
+        overflow:visible;
+      }
+      .equip-selected-art img{
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        display:block;
+      }
+      .equip-selected-stats{
+        display:flex;
+        flex-wrap:wrap;
+        gap:7px;
+        margin-top:13px;
+      }
+      .equip-selected-stat{
+        padding:7px 9px;
+        border-radius:10px;
+        background:rgba(255,255,255,.055);
+        border:1px solid rgba(255,255,255,.08);
+        color:#dcecff;
+        font-size:11px;
+        overflow-wrap:anywhere;
+      }
+      .equip-selected-actions{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+        margin-top:14px;
+        padding-bottom:max(2px,env(safe-area-inset-bottom));
+      }
+      .equip-selected-actions button{
+        min-height:44px;
+        border-radius:13px;
+        font-weight:850;
+        cursor:pointer;
+      }
+      .equip-summary-card{
+        max-width:680px;
+        margin:10px auto 0;
+        padding:11px 13px;
+        border-radius:15px;
+        background:rgba(5,11,22,.76);
+        border:1px solid rgba(255,255,255,.08);
+        color:#cbd9e9;
+        line-height:1.45;
+      }
+      .equip-summary-card summary{
+        cursor:pointer;
+        color:#edf8ff;
+        font-weight:800;
+      }
+      @media (max-width:420px){
+        #equipped-root{ padding-left:10px !important; padding-right:10px !important; }
+        .equip-hotspot-label{ bottom:-13px; max-width:68px; font-size:8px; }
+        .equip-stat-summary{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .equip-stat-chip:first-child{ grid-column:span 3; }
+        .equip-selected-head{ grid-template-columns:76px minmax(0,1fr); gap:11px; }
+        .equip-selected-art{ width:76px; height:76px; }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -531,6 +722,7 @@
 
   window.Equipped = {
     state: null,
+    selectedEquippedSlotKey: null,
 
     _containerEl: null,
     _containerPrev: null,
@@ -543,25 +735,57 @@
       try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
     },
 
+    _canonicalSlotKeys() {
+      return SLOT_ORDER.slice();
+    },
+
+    _slotState(slotKey) {
+      const key = String(slotKey || "").toLowerCase();
+      const current = (this.state?.slots || []).find((slot) => String(slot?.slot || "").toLowerCase() === key);
+      return current || { slot: key, label: slotLabel(key), empty: true };
+    },
+
+    _ensureSelectedSlot() {
+      const keys = this._canonicalSlotKeys();
+      if (!keys.length) {
+        this.selectedEquippedSlotKey = null;
+        return null;
+      }
+      if (keys.includes(this.selectedEquippedSlotKey)) return this.selectedEquippedSlotKey;
+
+      const helmet = keys.includes("helmet") ? this._slotState("helmet") : null;
+      if (helmet && !helmet.empty) {
+        this.selectedEquippedSlotKey = "helmet";
+        return this.selectedEquippedSlotKey;
+      }
+
+      const firstOccupied = keys.find((key) => !this._slotState(key).empty);
+      this.selectedEquippedSlotKey = firstOccupied || (keys.includes("helmet") ? "helmet" : keys[0]);
+      return this.selectedEquippedSlotKey;
+    },
+
     _selectSlot(slotKey) {
+      const key = String(slotKey || "").toLowerCase();
+      if (!this._canonicalSlotKeys().includes(key)) return;
+      this.selectedEquippedSlotKey = key;
       try {
         document.querySelectorAll("#equip-hotspots .equip-hotspot.is-selected").forEach((el) => el.classList.remove("is-selected"));
-        document.querySelectorAll("#equip-slots .equip-slot-btn.is-selected").forEach((el) => el.classList.remove("is-selected"));
 
-        const hs = document.querySelector(`#equip-hotspots .equip-hotspot[data-slot="${slotKey}"]`);
+        const hs = document.querySelector(`#equip-hotspots .equip-hotspot[data-slot="${key}"]`);
         if (hs) hs.classList.add("is-selected");
-
-        const lb = document.querySelector(`#equip-slots .equip-slot-btn[data-slot="${slotKey}"]`);
-        if (lb) lb.classList.add("is-selected");
       } catch (_) {}
+      this._renderSelectedSlotPanel();
     },
 
     closeInspect() {
-      const el = document.getElementById("equip-inspect");
-      if (!el) return false;
-      try { el.remove(); } catch (_) {}
-      try { window.navClose?.("equip-inspect"); } catch (_) {}
-      return true;
+      const back = document.getElementById("invItemBack");
+      if (back?.dataset?.open !== "1") return false;
+      try {
+        window.Inventory?.closeItem?.();
+        return true;
+      } catch (_) {
+        return false;
+      }
     },
 
     close() {
@@ -601,9 +825,9 @@
 
       container.innerHTML = `
         <div id="equipped-root" style="padding:16px 16px 24px;color:#fff;max-width:760px;margin:0 auto;font-family:system-ui;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
             <h2 style="margin:0;font-size:18px;">Character & Equipped</h2>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
               <button type="button"
                       style="border-radius:999px;border:0;background:rgba(255,255,255,.10);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
                       onclick="window.Equipped && window.Equipped.close && window.Equipped.close()">
@@ -627,20 +851,21 @@
             </div>
           </div>
 
-          <div id="equip-main" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
-            <div id="equip-avatar" style="flex:1;min-width:260px;text-align:center;">
+          <div id="equip-main">
+            <div id="equip-avatar" style="text-align:center;">
               <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading character...</div>
             </div>
 
-            <div id="equip-slots" style="flex:1;min-width:260px;">
-              <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading equipment...</div>
+            <div id="equip-slots">
+              <div style="font-size:13px;opacity:.8;padding:24px 8px;text-align:center;">Loading selected slot...</div>
             </div>
           </div>
 
-          <div id="equip-sets" style="margin-top:12px;font-size:13px;opacity:.9;"></div>
-          <div id="equip-total" style="margin-top:4px;font-size:13px;opacity:.9;"></div>
+          <div id="equip-sets"></div>
+          <div id="equip-total"></div>
         </div>
       `;
+      this._bindEquippedEvents();
 
       try {
         window.navRegister?.("equipped-root", {
@@ -676,7 +901,219 @@
       }
     },
 
+    _bindEquippedEvents() {
+      const root = document.getElementById("equipped-root");
+      if (!root || root.dataset.equippedEventsBound === "1") return;
+      root.dataset.equippedEventsBound = "1";
+      root.addEventListener("click", (event) => {
+        const slotButton = event.target.closest("[data-equip-slot]");
+        if (slotButton && root.contains(slotButton)) {
+          event.preventDefault();
+          event.stopPropagation();
+          haptic("light");
+          this._selectSlot(slotButton.dataset.equipSlot);
+          return;
+        }
+
+        const actionButton = event.target.closest("[data-equipped-action]");
+        if (!actionButton || !root.contains(actionButton)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const action = actionButton.dataset.equippedAction;
+        if (action === "inspect") this.inspectSelected();
+        else if (action === "unequip") this.unequipSelected();
+        else if (action === "open-inventory") this.openInventory();
+      });
+    },
+
+    _renderP1() {
+      if (!this.state) return;
+      const avatarBox = document.getElementById("equip-avatar");
+      const stats = this.state.stats || {};
+      const level = stats.level || this.state.level || 1;
+      this._ensureSelectedSlot();
+
+      if (avatarBox) {
+        const statRows = [
+          ["LEVEL", level],
+          ["HP", stats.hp],
+          ["ATK", stats.attack],
+          ["DEF", stats.defense],
+          ["AGI", stats.agility],
+          ["LUCK", stats.luck],
+        ];
+        avatarBox.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+            <div class="equip-stage-wrap" aria-label="Equipment slot board">
+              <img id="equipped-character-img" alt="Character" />
+              <div id="equip-hotspots"></div>
+            </div>
+            <div class="equip-stat-summary">
+              ${statRows.map(([label, value]) => `
+                <div class="equip-stat-chip">
+                  <span>${label}</span>
+                  <b>${esc(value ?? "?")}</b>
+                </div>
+              `).join("")}
+            </div>
+            <div style="font-size:11px;color:#91a4bb;letter-spacing:.2px;">
+              Select a slot to view its current equipment.
+            </div>
+          </div>
+        `;
+
+        const imgEl = document.getElementById("equipped-character-img");
+        const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
+        window.__EquippedPreviewToken = previewToken;
+        window.__EquippedPreviewReady = false;
+        loadCharacterPngInto(imgEl, () => this._mountHotspots(), previewToken);
+        this._waitAndMountHotspots();
+      }
+
+      this._renderSelectedSlotPanel();
+      this._renderSummaries();
+    },
+
+    _renderSelectedSlotPanel() {
+      const panel = document.getElementById("equip-slots");
+      if (!panel) return;
+      const slotKey = this._ensureSelectedSlot();
+      if (!slotKey) {
+        panel.innerHTML = "";
+        return;
+      }
+
+      const slot = this._slotState(slotKey);
+      const label = slotLabel(slotKey, slot);
+      if (slot.empty) {
+        panel.innerHTML = `
+          <section class="equip-selected-panel" aria-live="polite">
+            <div style="font-size:10px;color:#72dfff;font-weight:900;letter-spacing:.8px;text-transform:uppercase;">${esc(label)}</div>
+            <div style="margin-top:7px;font-size:19px;font-weight:900;color:#f1f8ff;">Empty slot</div>
+            <div style="margin-top:6px;font-size:12px;line-height:1.5;color:#9fb0c5;">Equip an item from Inventory.</div>
+            <div class="equip-selected-actions" style="grid-template-columns:1fr;">
+              <button type="button" data-equipped-action="open-inventory"
+                      style="border:1px solid rgba(108,219,255,.28);background:rgba(29,133,178,.22);color:#dff8ff;">
+                OPEN INVENTORY
+              </button>
+            </div>
+          </section>
+        `;
+        return;
+      }
+
+      const itemKey = String(slot.item_key || slot.key || slot.itemKey || slot.item || "");
+      const name = slot.name || itemKey || "Unknown item";
+      const rarity = _normRarity(slot.rarity);
+      const stats = slot.stats && typeof slot.stats === "object" ? slot.stats : {};
+      const statEntries = Object.keys(stats);
+      const statsHtml = statEntries.length
+        ? statEntries.map((key) => `<span class="equip-selected-stat">${esc(key)}: <b>${esc(stats[key])}</b></span>`).join("")
+        : (slot.bonusesText ? `<span class="equip-selected-stat">${esc(slot.bonusesText)}</span>` : "");
+      const canInspect = !!itemKey && typeof window.Inventory?.openEquippedItem === "function";
+      const levelText = slot.level != null ? `Level ${esc(slot.level)}` : "";
+
+      panel.innerHTML = `
+        <section class="equip-selected-panel" aria-live="polite">
+          <div class="equip-selected-head">
+            <div class="equip-selected-art equip-icon-box" data-rarity="${rarity}">
+              ${slot.icon ? `<img src="${esc(slot.icon)}" class="item-icon" alt="">` : ""}
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:10px;color:#72dfff;font-weight:900;letter-spacing:.8px;text-transform:uppercase;">${esc(label)}</div>
+              <div style="margin-top:6px;font-size:19px;line-height:1.15;font-weight:900;color:#f4f9ff;overflow-wrap:anywhere;">${esc(name)}</div>
+              <div style="margin-top:7px;font-size:11px;color:#9fb0c5;text-transform:uppercase;letter-spacing:.4px;">
+                ${slot.rarity ? esc(slot.rarity) : ""}${slot.rarity && levelText ? " · " : ""}${levelText}
+              </div>
+            </div>
+          </div>
+          ${statsHtml ? `<div class="equip-selected-stats">${statsHtml}</div>` : ""}
+          <div class="equip-selected-actions">
+            ${canInspect ? `
+              <button type="button" data-equipped-action="inspect"
+                      style="border:1px solid rgba(108,219,255,.28);background:rgba(29,133,178,.22);color:#dff8ff;">
+                INSPECT
+              </button>
+            ` : ""}
+            <button type="button" data-equipped-action="unequip"
+                    style="${canInspect ? "" : "grid-column:1/-1;"}border:1px solid rgba(255,120,120,.24);background:rgba(91,23,34,.82);color:#ffd9de;">
+              UNEQUIP
+            </button>
+          </div>
+        </section>
+      `;
+
+      const art = panel.querySelector(".equip-selected-art");
+      if (art && !_mountPetSprite(art, slot, "equip-pet-sprite equip-pet-sprite-selected") && !slot.icon) {
+        _setBgWithFallback(art, slot);
+      }
+    },
+
+    _renderSummaries() {
+      const setsBox = document.getElementById("equip-sets");
+      const totalBox = document.getElementById("equip-total");
+      const sets = this.state?.activeSets || this.state?.active_sets || [];
+      const total = this.state?.totalBonus || this.state?.total_bonus || {};
+      const totalKeys = Object.keys(total);
+
+      if (setsBox) {
+        setsBox.innerHTML = sets.length ? `
+          <details class="equip-summary-card" ${sets.length === 1 ? "open" : ""}>
+            <summary>Active set bonuses · ${sets.length}</summary>
+            <div style="margin-top:8px;display:grid;gap:5px;">
+              ${sets.map((set) => `<div>${esc(set.set)} (${esc(set.count)})</div>`).join("")}
+            </div>
+          </details>
+        ` : "";
+      }
+
+      if (totalBox) {
+        totalBox.innerHTML = totalKeys.length ? `
+          <details class="equip-summary-card">
+            <summary>Total gear bonus · ${totalKeys.length}</summary>
+            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+              ${totalKeys.map((key) => `<span class="equip-selected-stat">${esc(key)}+${esc(total[key])}</span>`).join("")}
+            </div>
+          </details>
+        ` : "";
+      }
+    },
+
+    openInventory() {
+      try { window.navClose?.("equipped-root"); } catch (_) {}
+      try { this._restoreContainer(); } catch (_) {}
+      if (typeof window.Inventory?.open === "function") window.Inventory.open();
+    },
+
+    inspectSelected() {
+      const slot = this._slotState(this.selectedEquippedSlotKey);
+      if (!slot || slot.empty) return;
+      const itemKey = String(slot.item_key || slot.key || slot.itemKey || slot.item || "");
+      if (!itemKey || typeof window.Inventory?.openEquippedItem !== "function") return;
+      window.Inventory.openEquippedItem(itemKey);
+    },
+
+    async unequipSelected() {
+      const slotKey = this.selectedEquippedSlotKey;
+      const slot = this._slotState(slotKey);
+      if (!slotKey || !slot || slot.empty) return;
+      try {
+        const res = await equippedPost("/webapp/equipped/unequip", { slot: slotKey });
+        if (res && res.ok) {
+          this.state = res.data;
+          this.render();
+        } else {
+          showAlert("Failed to unequip.");
+        }
+      } catch (err) {
+        console.error("Equipped.unequip error", err);
+        showAlert("Failed to unequip.");
+      }
+    },
+
     render() {
+      return this._renderP1();
+
       if (!this.state) return;
 
       const avatarBox = document.getElementById("equip-avatar");
@@ -792,23 +1229,6 @@
           <div>${html}</div>
         `;
 
-        slotsBox.querySelectorAll(".equip-slot-btn").forEach((btn) => {
-          const slotKey = btn.getAttribute("data-slot");
-          const slotState = (this.state.slots || []).find((s) => s.slot === slotKey);
-          if (!slotState) return;
-
-          btn.onclick = () => {
-            haptic("light");
-            this._selectSlot(slotKey);
-
-            if (slotState.empty) {
-              showAlert("Empty slot.");
-              return;
-            }
-            this.inspect(slotKey);
-          };
-        });
-
         (this.state.slots || []).forEach((slotState) => {
           if (!slotState?.isPet) return;
           const iconBox = slotsBox.querySelector(`.equip-slot-btn[data-slot="${slotState.slot}"] .equip-icon-box`);
@@ -867,7 +1287,7 @@
 
       layer.innerHTML = "";
 
-      Object.keys(SLOT_COORDS).forEach((slotKey) => {
+      SLOT_ORDER.forEach((slotKey) => {
         const rect = SLOT_COORDS[slotKey];
         if (!rect) return;
 
@@ -877,7 +1297,10 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
+        if (slotKey === this.selectedEquippedSlotKey) btn.classList.add("is-selected");
         btn.setAttribute("data-slot", slotKey);
+        btn.setAttribute("data-equip-slot", slotKey);
+        btn.setAttribute("aria-label", `${slotLabel(slotKey, s)}: ${s.empty ? "Empty slot" : (s.name || s.item_key || "Equipped")}`);
 
         btn.style.left   = toPctRatio(x / W);
         btn.style.top    = toPctRatio(y / H);
@@ -901,164 +1324,37 @@
         if (s.empty) icon.style.opacity = "0.35";
         btn.appendChild(icon);
 
+        const label = document.createElement("span");
+        label.className = "equip-hotspot-label";
+        label.textContent = slotLabel(slotKey, s);
+        btn.appendChild(label);
+
+        const selectedMark = document.createElement("span");
+        selectedMark.className = "equip-selected-mark";
+        selectedMark.textContent = "✓";
+        btn.appendChild(selectedMark);
+
         if (dbg) {
           btn.style.outline = s.empty
             ? "1px dashed rgba(255,255,255,.35)"
             : "1px solid rgba(0,229,255,.65)";
         }
 
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          haptic("light");
-
-          this._selectSlot(slotKey);
-
-          if (s.empty) return showAlert("Empty slot.");
-          this.inspect(slotKey);
-        });
-
         layer.appendChild(btn);
       });
     },
 
     async inspect(slot) {
-      try {
-        const res = await equippedPost("/webapp/equipped/inspect", { slot });
-        if (!res || !res.ok) {
-          showAlert("Failed to inspect item.");
-          return;
-        }
-        const d = res.data;
-        if (!d || d.empty) {
-          showAlert("Nothing equipped in this slot.");
-          return;
-        }
-        this.renderInspect(d);
-      } catch (err) {
-        console.error("Equipped.inspect error", err);
-        showAlert("Error while loading item.");
-      }
+      this._selectSlot(slot);
+      return this.inspectSelected();
     },
 
     renderInspect(d) {
-      this.closeInspect();
-
-      const wrapper = document.createElement("div");
-      wrapper.id = "equip-inspect";
-      wrapper.style.position = "fixed";
-      wrapper.style.left = "0";
-      wrapper.style.top = "0";
-      wrapper.style.right = "0";
-      wrapper.style.bottom = "0";
-      wrapper.style.background = "rgba(0,0,0,.65)";
-      wrapper.style.zIndex = "999";
-      wrapper.style.display = "flex";
-      wrapper.style.alignItems = "center";
-      wrapper.style.justifyContent = "center";
-
-      const card = document.createElement("div");
-      card.style.background = "rgba(10,10,25,.98)";
-      card.style.borderRadius = "18px";
-      card.style.border = "1px solid rgba(255,255,255,.12)";
-      card.style.maxWidth = "420px";
-      card.style.width = "90%";
-      card.style.padding = "16px";
-      card.style.color = "#fff";
-      card.style.fontFamily = "system-ui";
-      card.style.boxShadow = "0 18px 60px rgba(0,0,0,.6)";
-
-      const iconUrl = d.icon || "";
-      const stats = d.stats || {};
-      const statsLines =
-        Object.keys(stats)
-          .map((k) => `<div style="font-size:13px;">▫ ${k}: <b>${stats[k]}</b></div>`)
-          .join("") ||
-        "<div style='font-size:13px;opacity:.8;'>No bonuses</div>";
-
-      const starInfo = d.star_cap ? ` / ${d.star_cap}★ cap` : "";
-      const rarityKey = _normRarity(d.rarity);
-
-      card.innerHTML = `
-        <div style="display:flex;gap:12px;">
-          ${
-            iconUrl
-              ? `
-          <div class="equip-icon-box lg" data-rarity="${rarityKey}">
-            <img src="${iconUrl}" class="item-icon">
-          </div>`
-              : ""
-          }
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:600;margin-bottom:2px;">${d.name || d.item_key}</div>
-            <div style="font-size:12px;opacity:.8;margin-bottom:4px;">
-               ${d.rarity ? d.rarity.toUpperCase() : ""} ${d.set ? "• " + d.set : ""}
-            </div>
-            <div style="font-size:12px;opacity:.8;">Slot: ${d.slot}</div>
-            <div style="font-size:12px;opacity:.8;">Level: ${d.level}${starInfo}</div>
-          </div>
-        </div>
-        <div style="font-size:12px;opacity:.85;margin-top:8px;margin-bottom:8px;">
-          ${d.desc || ""}
-        </div>
-        <div style="border-top:1px solid rgba(255,255,255,.08);margin:8px 0 6px;"></div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Stats</div>
-        ${statsLines}
-        <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">
-          <button id="equip-unequip-btn" style="
-             border-radius:999px;
-             border:1px solid rgba(255,255,255,.15);
-             background:rgba(60,10,10,.9);
-             color:#fff;
-             padding:6px 14px;
-             font-size:13px;
-             cursor:pointer;
-          ">Unequip</button>
-          <button id="equip-close-btn" style="
-             border-radius:999px;
-             border:0;
-             background:rgba(255,255,255,.08);
-             color:#fff;
-             padding:6px 14px;
-             font-size:13px;
-             cursor:pointer;
-          ">Close</button>
-        </div>
-      `;
-
-      wrapper.appendChild(card);
-      document.body.appendChild(wrapper);
-      wrapper.addEventListener("click", (e) => {
-        if (e.target === wrapper) this.closeInspect();
-      });
-      try {
-        window.navRegister?.("equip-inspect", {
-          close: () => this.closeInspect(),
-          isOpen: () => !!document.getElementById("equip-inspect"),
-        });
-        window.navOpen?.("equip-inspect");
-      } catch (_) {}
-
-      document.getElementById("equip-close-btn").onclick = () => {
-        this.closeInspect();
-      };
-
-      document.getElementById("equip-unequip-btn").onclick = async () => {
-        try {
-          const res = await equippedPost("/webapp/equipped/unequip", { slot: d.slot });
-          if (res && res.ok) {
-            this.state = res.data;
-            this.render();
-          } else {
-            showAlert("Failed to unequip.");
-          }
-        } catch (err) {
-          console.error("Equipped.unequip error", err);
-          showAlert("Failed to unequip.");
-        } finally {
-          this.closeInspect();
-        }
-      };
+      const itemKey = String(d?.item_key || d?.key || d?.itemKey || d?.item || "");
+      if (itemKey && typeof window.Inventory?.openEquippedItem === "function") {
+        return window.Inventory.openEquippedItem(itemKey);
+      }
+      return false;
     },
   };
 })();

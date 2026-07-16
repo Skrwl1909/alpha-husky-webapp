@@ -650,6 +650,7 @@ window.Inventory = {
   async open() {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     this.selectedItemKey = null;
+    this._selectedItemModalOptions = null;
     this._setItemModalScrollLock(false);
     try {
       document
@@ -735,37 +736,13 @@ window.Inventory = {
       <div style="grid-column:1/-1;text-align:center;padding:80px;opacity:0.7;color:#aaa;">loading items...</div>
     </div>
 
-    <div id="invItemBack" onclick="if(event.target===this) Inventory.closeItem()" style="
-      display:none;position:fixed;inset:0;z-index:12000;
-      background:rgba(4,8,15,.84);backdrop-filter:blur(10px);
-      align-items:flex-end;justify-content:center;padding:18px;
-    ">
-      <div style="
-        width:min(680px,100%);max-height:82vh;overflow:auto;
-        background:linear-gradient(180deg,rgba(20,25,42,.98),rgba(9,12,22,.985));
-        border:1px solid rgba(255,255,255,.12);border-radius:28px 28px 22px 22px;
-        box-shadow:0 26px 70px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.05);
-      ">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px 18px;border-bottom:1px solid rgba(255,255,255,.07);">
-          <div>
-            <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Item</div>
-            <div style="font-size:20px;font-weight:900;color:#f6fbff;">Item Details</div>
-          </div>
-          <button onclick="Inventory.closeItem()" type="button" style="
-            width:42px;height:42px;border-radius:14px;border:none;
-            background:rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;
-          ">×</button>
-        </div>
-        <div id="invItemBody" style="padding:18px;"></div>
-      </div>
-    </div>
-
   </div>
 `;
     // register in nav stack + (optional) TG back fallback
     this._bindBackButtons();
     this._ensureCompactGridStyles();
     this._bindInventoryGridEvents();
+    this._ensureItemModalHost();
 
     try {
       const apiPost = window.S?.apiPost || window.apiPost;
@@ -834,7 +811,12 @@ window.Inventory = {
     const equipped = slot ? this.equippedBySlot?.[slot] : null;
     const itemKey = String(item.key || item.item_key || item.item || "");
     const equippedKey = String(equipped?.key || equipped?.item_key || equipped?.item || "");
-    return !!itemKey && itemKey === equippedKey;
+    if (!!itemKey && itemKey === equippedKey) return true;
+    return (window.Equipped?.state?.slots || []).some((slotState) => {
+      if (!slotState || slotState.empty) return false;
+      const key = String(slotState.key || slotState.item_key || slotState.itemKey || slotState.item || "");
+      return !!itemKey && key === itemKey;
+    });
   },
 
   _ensureCompactGridStyles() {
@@ -884,12 +866,44 @@ window.Inventory = {
     }
   },
 
+  _ensureItemModalHost() {
+    let back = document.getElementById("invItemBack");
+    if (back) return back;
+    document.body.insertAdjacentHTML("beforeend", `
+      <div id="invItemBack" role="presentation" onclick="if(event.target===this) Inventory.closeItem()" style="
+        display:none;position:fixed;inset:0;z-index:12000;
+        background:rgba(4,8,15,.84);backdrop-filter:blur(10px);
+        align-items:flex-end;justify-content:center;padding:18px;
+      ">
+        <div role="dialog" aria-modal="true" aria-label="Item details" style="
+          width:min(680px,100%);max-height:88vh;overflow:auto;
+          background:linear-gradient(180deg,rgba(20,25,42,.98),rgba(9,12,22,.985));
+          border:1px solid rgba(255,255,255,.12);border-radius:28px 28px 22px 22px;
+          box-shadow:0 26px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.05);
+        ">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;border-bottom:1px solid rgba(255,255,255,.07);">
+            <div>
+              <div style="font-size:11px;letter-spacing:.7px;color:#7d8aa3;text-transform:uppercase;">Item</div>
+              <div style="font-size:20px;font-weight:900;color:#f6fbff;">Item Details</div>
+            </div>
+            <button onclick="Inventory.closeItem()" type="button" aria-label="Close item details" style="
+              width:44px;height:44px;border-radius:14px;border:none;
+              background:rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;
+            ">×</button>
+          </div>
+          <div id="invItemBody" style="padding:18px;"></div>
+        </div>
+      </div>
+    `);
+    return document.getElementById("invItemBack");
+  },
+
   _refreshSelectedItem() {
     if (!this.selectedItemKey) return;
     const item = this.findByKey(this.selectedItemKey);
     if (!item) return this.closeItem();
     const body = document.getElementById("invItemBody");
-    if (body) body.innerHTML = this._renderDetailSheet(item);
+    if (body) body.innerHTML = this._renderDetailSheet(item, this._selectedItemModalOptions);
   },
 
   _salvagePreview(item) {
@@ -1088,12 +1102,13 @@ window.Inventory = {
     return actions.join("");
   },
 
-  openItem(key) {
+  openItem(key, options = {}) {
     const item = this.findByKey(key);
     if (!item) return;
     this.selectedItemKey = String(key);
+    this._selectedItemModalOptions = (options && typeof options === "object") ? options : {};
     try { Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
-    const back = document.getElementById("invItemBack");
+    const back = this._ensureItemModalHost();
     const body = document.getElementById("invItemBody");
     if (!back || !body) return;
 
@@ -1152,7 +1167,7 @@ window.Inventory = {
       `;
     }
 
-    body.innerHTML = this._renderDetailSheet(item);
+    body.innerHTML = this._renderDetailSheet(item, this._selectedItemModalOptions);
     back.style.display = "flex";
     back.dataset.open = "1";
     this._setItemModalScrollLock(true);
@@ -1221,6 +1236,7 @@ window.Inventory = {
     back.style.display = "none";
     delete back.dataset.open;
     this.selectedItemKey = null;
+    this._selectedItemModalOptions = null;
     this._setItemModalScrollLock(false);
     try { window.navClose?.("invItemBack"); } catch (_) {}
   },
@@ -1368,7 +1384,7 @@ window.Inventory = {
     }).join("");
   },
 
-  _renderDetailSheet(item) {
+  _renderDetailSheet(item, options = {}) {
     const rarity = this._rarityMeta(item?.rarity);
     const qty = this._qty(item);
     const typeLabel = this._safeText(item?.type || item?.category, "Misc");
@@ -1456,9 +1472,11 @@ window.Inventory = {
 
       ${compareBlock}
 
-      <section style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
-        ${this._detailActions(item)}
-      </section>
+      ${options.actions === false ? "" : `
+        <section style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+          ${this._detailActions(item)}
+        </section>
+      `}
     `;
   },
 
@@ -1603,10 +1621,20 @@ window.Inventory = {
   // === helper: find item by key ===
   findByKey(key) {
     if (!key) return null;
-    return (this.items || []).find((it) => {
+    const inventoryItem = (this.items || []).find((it) => {
       const k = it.key || it.item_key || it.item;
       return k === key;
     });
+    if (inventoryItem) return inventoryItem;
+    return (window.Equipped?.state?.slots || []).find((it) => {
+      if (!it || it.empty) return false;
+      const k = it.key || it.item_key || it.itemKey || it.item;
+      return k === key;
+    }) || null;
+  },
+
+  openEquippedItem(key) {
+    return this.openItem(key, { actions: false, source: "equipped" });
   },
 
   // === SALVAGE DUPES (killer) ===
