@@ -32,6 +32,30 @@
     return label.replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
+  function statPresentationLabel(key) {
+    const normalized = String(key || "").toLowerCase().replace(/[\s_-]+/g, "");
+    const labels = {
+      strength: "STR", str: "STR",
+      defense: "DEF", def: "DEF",
+      vitality: "VIT", vit: "VIT",
+      attack: "ATK", atk: "ATK",
+      agility: "AGI", agi: "AGI",
+      luck: "LUCK",
+      intelligence: "INT", int: "INT",
+      hp: "HP", health: "HP",
+      speed: "SPD",
+      critical: "CRIT", crit: "CRIT",
+    };
+    return labels[normalized] || String(key || "").replace(/_/g, " ").toUpperCase();
+  }
+
+  function formattedStatValue(value) {
+    if (value === "" || value == null) return "";
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric > 0 ? `+${numeric}` : String(numeric);
+    return String(value);
+  }
+
   function getTg() {
     return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
   }
@@ -547,6 +571,293 @@
         .equip-selected-head{ grid-template-columns:76px minmax(0,1fr); gap:11px; }
         .equip-selected-art{ width:76px; height:76px; }
       }
+
+      /* Equipped P1.5A polish; slot geometry remains owned by SLOT_COORDS. */
+      #equipped-root{
+        box-sizing:border-box;
+        padding:12px 12px max(104px,calc(env(safe-area-inset-bottom) + 84px)) !important;
+        background:
+          radial-gradient(circle at 50% -8%,rgba(39,167,220,.12),transparent 34%),
+          linear-gradient(180deg,#07101d 0%,#050914 52%,#040711 100%);
+      }
+      .equip-local-header{
+        position:sticky;
+        top:0;
+        z-index:20;
+        display:grid;
+        grid-template-columns:1fr auto 1fr;
+        align-items:center;
+        gap:8px;
+        min-height:48px;
+        margin:0 0 12px;
+        padding:max(4px,env(safe-area-inset-top)) 2px 7px;
+        background:linear-gradient(180deg,rgba(7,16,29,.98) 72%,rgba(7,16,29,0));
+      }
+      .equip-local-header h2{
+        margin:0;
+        color:#f4fbff;
+        font-size:18px;
+        line-height:1;
+        font-weight:900;
+        letter-spacing:.2px;
+        text-align:center;
+      }
+      .equip-header-btn,
+      .equip-action-btn{
+        min-height:44px;
+        border:1px solid rgba(171,221,244,.16);
+        border-radius:13px;
+        color:#eaf8ff;
+        background:rgba(255,255,255,.065);
+        font:inherit;
+        font-size:12px;
+        font-weight:850;
+        letter-spacing:.15px;
+        cursor:pointer;
+        -webkit-tap-highlight-color:transparent;
+        transition:transform 150ms ease,background-color 150ms ease,border-color 150ms ease,box-shadow 150ms ease;
+      }
+      .equip-header-btn:first-child{ justify-self:start; padding:0 13px; }
+      .equip-header-btn:last-child{
+        justify-self:end;
+        padding:0 13px;
+        border-color:rgba(91,213,255,.25);
+        background:rgba(24,119,159,.20);
+      }
+      .equip-header-btn:active,
+      .equip-action-btn:active{ transform:scale(.97); }
+      .equip-header-btn:focus-visible,
+      .equip-action-btn:focus-visible,
+      .equip-hotspot:focus-visible{
+        outline:2px solid #72dfff;
+        outline-offset:2px;
+      }
+      .equip-stage-wrap{
+        border:1px solid rgba(149,218,245,.13);
+        background:
+          radial-gradient(circle at 50% 4%,rgba(27,177,222,.16),transparent 38%),
+          linear-gradient(180deg,rgba(9,21,37,.98),rgba(2,6,13,.99));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.055),
+          inset 0 -24px 54px rgba(0,0,0,.34),
+          0 18px 42px rgba(0,0,0,.34);
+      }
+      .equip-hotspot{
+        transition:transform 160ms ease,filter 160ms ease,box-shadow 160ms ease,background-color 160ms ease;
+      }
+      .equip-hotspot:active{ transform:scale(.97); }
+      .equip-hotspot::after{
+        opacity:.18 !important;
+        filter:none !important;
+        box-shadow:0 0 0 1px rgba(170,225,247,.13) inset,0 0 14px rgba(57,185,231,.12) !important;
+      }
+      .equip-hotspot.is-selected::after{
+        opacity:.72 !important;
+        box-shadow:0 0 0 1px rgba(173,240,255,.38) inset,0 0 18px rgba(76,211,255,.28) !important;
+      }
+      .equip-hotspot[data-rarity="epic"] .equip-icon,
+      .equip-hotspot[data-rarity="legendary"] .equip-icon{
+        filter:drop-shadow(0 0 8px rgba(105,211,255,.26));
+      }
+      .equip-hotspot-label{
+        bottom:-14px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        height:17px;
+        max-width:82px;
+        box-sizing:border-box;
+        padding:1px 6px;
+        background:rgba(3,8,16,.92);
+        border-color:rgba(175,224,244,.16);
+        box-shadow:0 3px 8px rgba(0,0,0,.28);
+        line-height:1;
+      }
+      .equip-selected-mark{
+        top:2px;
+        right:2px;
+        width:18px;
+        min-width:18px;
+        height:18px;
+        border-width:1px;
+        box-shadow:0 3px 8px rgba(0,0,0,.34);
+      }
+      .equip-stat-summary{
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        padding:8px;
+        border-radius:14px;
+        background:rgba(8,16,29,.88);
+        border-color:rgba(156,214,239,.11);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+      }
+      .equip-level-strip{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        width:100%;
+        box-sizing:border-box;
+        padding:9px 12px;
+        border:1px solid rgba(103,218,255,.16);
+        border-radius:13px;
+        background:linear-gradient(90deg,rgba(21,109,146,.20),rgba(255,255,255,.035));
+      }
+      .equip-level-strip span{
+        color:#82a4b9;
+        font-size:9px;
+        font-weight:850;
+        letter-spacing:.9px;
+      }
+      .equip-level-strip b{ color:#effaff; font-size:14px; }
+      .equip-stat-chip{
+        min-height:38px;
+        box-sizing:border-box;
+        padding:6px 3px;
+        border:1px solid rgba(255,255,255,.045);
+        background:rgba(255,255,255,.035);
+      }
+      .equip-stat-chip:first-child{ grid-column:auto; }
+      .equip-selected-panel{
+        overflow:hidden;
+        padding:13px;
+        border-radius:18px;
+        animation:equipPanelIn 150ms ease-out;
+      }
+      .equip-selected-panel[data-rarity="epic"]{ border-color:rgba(175,112,255,.24); }
+      .equip-selected-panel[data-rarity="legendary"]{ border-color:rgba(255,196,92,.25); }
+      .equip-selected-head{
+        grid-template-columns:84px minmax(0,1fr);
+        gap:12px;
+        align-items:center;
+      }
+      .equip-selected-art{
+        width:84px;
+        height:84px;
+        box-sizing:border-box;
+        padding:5px;
+        border-radius:15px;
+        overflow:hidden;
+      }
+      .equip-selected-art img{ border-radius:11px; }
+      .equip-selected-slot-label{
+        color:#72dfff;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.85px;
+        text-transform:uppercase;
+      }
+      .equip-selected-name{
+        display:-webkit-box;
+        margin-top:5px;
+        overflow:hidden;
+        color:#f4f9ff;
+        font-size:18px;
+        line-height:1.16;
+        font-weight:900;
+        overflow-wrap:anywhere;
+        -webkit-box-orient:vertical;
+        -webkit-line-clamp:2;
+      }
+      .equip-selected-meta{
+        margin-top:7px;
+        color:#92a8bc;
+        font-size:10px;
+        font-weight:750;
+        letter-spacing:.45px;
+        text-transform:uppercase;
+      }
+      .equip-selected-stats{ gap:6px; margin-top:11px; }
+      .equip-selected-stat{
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        padding:6px 8px;
+        border-color:rgba(139,204,232,.09);
+        background:rgba(255,255,255,.04);
+        color:#8fa5b9;
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.25px;
+      }
+      .equip-selected-stat b{ color:#edf9ff; font-size:11px; }
+      .equip-action-btn{ width:100%; min-height:44px; }
+      .equip-action-btn.is-inspect,
+      .equip-action-btn.is-inventory{
+        border-color:rgba(92,216,255,.28);
+        background:rgba(23,125,168,.22);
+        color:#dff8ff;
+      }
+      .equip-action-btn.is-unequip{
+        border-color:rgba(255,128,139,.22);
+        background:rgba(91,23,34,.76);
+        color:#ffd9de;
+      }
+      .equip-empty-copy{
+        margin-top:6px;
+        color:#92a8bc;
+        font-size:12px;
+        line-height:1.45;
+      }
+      .equip-summary-card{
+        padding:12px 13px;
+        border-radius:14px;
+        background:rgba(7,14,25,.78);
+      }
+      .equip-summary-card.is-sets{
+        border-color:rgba(91,213,255,.15);
+        background:linear-gradient(180deg,rgba(11,29,45,.88),rgba(6,13,24,.88));
+      }
+      .equip-summary-card.is-total{ opacity:.92; }
+      .equip-summary-card summary{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        list-style:none;
+        font-size:12px;
+      }
+      .equip-summary-card summary::-webkit-details-marker{ display:none; }
+      .equip-summary-count{
+        display:inline-grid;
+        min-width:21px;
+        height:21px;
+        place-items:center;
+        border-radius:999px;
+        background:rgba(105,218,255,.12);
+        color:#aeeeff;
+        font-size:10px;
+      }
+      .equip-summary-rows{ display:grid; gap:6px; margin-top:9px; }
+      .equip-summary-row{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        padding:7px 8px;
+        border-radius:9px;
+        background:rgba(255,255,255,.035);
+        color:#d9e9f4;
+        font-size:11px;
+      }
+      .equip-summary-row b{ color:#83dffb; }
+      .equip-total-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+      @keyframes equipPanelIn{
+        from{ opacity:.72; transform:translateY(3px); }
+        to{ opacity:1; transform:translateY(0); }
+      }
+      @media (max-width:420px){
+        .equip-hotspot-label{ max-width:68px; height:16px; }
+        .equip-selected-head{ grid-template-columns:78px minmax(0,1fr); gap:10px; }
+        .equip-selected-art{ width:78px; height:78px; }
+        .equip-selected-name{ font-size:17px; }
+      }
+      @media (prefers-reduced-motion:reduce){
+        .equip-hotspot,
+        .equip-header-btn,
+        .equip-action-btn{ transition:none; }
+        .equip-selected-panel{ animation:none; }
+        .equip-hotspot:active,
+        .equip-header-btn:active,
+        .equip-action-btn:active{ transform:none; }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -825,31 +1136,11 @@
 
       container.innerHTML = `
         <div id="equipped-root" style="padding:16px 16px 24px;color:#fff;max-width:760px;margin:0 auto;font-family:system-ui;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
-            <h2 style="margin:0;font-size:18px;">Character & Equipped</h2>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-              <button type="button"
-                      style="border-radius:999px;border:0;background:rgba(255,255,255,.10);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.Equipped && window.Equipped.close && window.Equipped.close()">
-                Back to Menu
-              </button>
-              <button type="button"
-                      style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="try{ window.navClose && window.navClose('equipped-root'); }catch(_){}; try{ window.Equipped && window.Equipped._restoreContainer && window.Equipped._restoreContainer(); }catch(_){}; window.Inventory && window.Inventory.open && window.Inventory.open()">
-                Inventory
-              </button>
-              <button type="button"
-                      style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.Equipped && window.Equipped.refresh && window.Equipped.refresh()">
-                Refresh
-              </button>
-              <button type="button"
-                      style="border-radius:999px;border:0;background:rgba(255,255,255,.08);color:#fff;padding:5px 12px;font-size:12px;cursor:pointer;"
-                      onclick="window.ShareCard && window.ShareCard.open && window.ShareCard.open('equipped')">
-                Share
-              </button>
-            </div>
-          </div>
+          <header class="equip-local-header">
+            <button type="button" class="equip-header-btn" data-equipped-action="back">Back</button>
+            <h2>Equipped</h2>
+            <button type="button" class="equip-header-btn" data-equipped-action="open-inventory">Inventory</button>
+          </header>
 
           <div id="equip-main">
             <div id="equip-avatar" style="text-align:center;">
@@ -920,7 +1211,8 @@
         event.preventDefault();
         event.stopPropagation();
         const action = actionButton.dataset.equippedAction;
-        if (action === "inspect") this.inspectSelected();
+        if (action === "back") this.close();
+        else if (action === "inspect") this.inspectSelected();
         else if (action === "unequip") this.unequipSelected();
         else if (action === "open-inventory") this.openInventory();
       });
@@ -935,7 +1227,6 @@
 
       if (avatarBox) {
         const statRows = [
-          ["LEVEL", level],
           ["HP", stats.hp],
           ["ATK", stats.attack],
           ["DEF", stats.defense],
@@ -948,6 +1239,10 @@
               <img id="equipped-character-img" alt="Character" />
               <div id="equip-hotspots"></div>
             </div>
+            <div class="equip-level-strip">
+              <span>LEVEL</span>
+              <b>${esc(level)}</b>
+            </div>
             <div class="equip-stat-summary">
               ${statRows.map(([label, value]) => `
                 <div class="equip-stat-chip">
@@ -955,9 +1250,6 @@
                   <b>${esc(value ?? "?")}</b>
                 </div>
               `).join("")}
-            </div>
-            <div style="font-size:11px;color:#91a4bb;letter-spacing:.2px;">
-              Select a slot to view its current equipment.
             </div>
           </div>
         `;
@@ -987,13 +1279,12 @@
       const label = slotLabel(slotKey, slot);
       if (slot.empty) {
         panel.innerHTML = `
-          <section class="equip-selected-panel" aria-live="polite">
-            <div style="font-size:10px;color:#72dfff;font-weight:900;letter-spacing:.8px;text-transform:uppercase;">${esc(label)}</div>
-            <div style="margin-top:7px;font-size:19px;font-weight:900;color:#f1f8ff;">Empty slot</div>
-            <div style="margin-top:6px;font-size:12px;line-height:1.5;color:#9fb0c5;">Equip an item from Inventory.</div>
+          <section class="equip-selected-panel" aria-live="polite" data-rarity="common">
+            <div class="equip-selected-slot-label">${esc(label)}</div>
+            <div class="equip-selected-name">Empty slot</div>
+            <div class="equip-empty-copy">Equip an item from Inventory.</div>
             <div class="equip-selected-actions" style="grid-template-columns:1fr;">
-              <button type="button" data-equipped-action="open-inventory"
-                      style="border:1px solid rgba(108,219,255,.28);background:rgba(29,133,178,.22);color:#dff8ff;">
+              <button type="button" class="equip-action-btn is-inventory" data-equipped-action="open-inventory">
                 OPEN INVENTORY
               </button>
             </div>
@@ -1008,21 +1299,21 @@
       const stats = slot.stats && typeof slot.stats === "object" ? slot.stats : {};
       const statEntries = Object.keys(stats);
       const statsHtml = statEntries.length
-        ? statEntries.map((key) => `<span class="equip-selected-stat">${esc(key)}: <b>${esc(stats[key])}</b></span>`).join("")
+        ? statEntries.map((key) => `<span class="equip-selected-stat">${esc(statPresentationLabel(key))} <b>${esc(formattedStatValue(stats[key]))}</b></span>`).join("")
         : (slot.bonusesText ? `<span class="equip-selected-stat">${esc(slot.bonusesText)}</span>` : "");
       const canInspect = !!itemKey && typeof window.Inventory?.openEquippedItem === "function";
       const levelText = slot.level != null ? `Level ${esc(slot.level)}` : "";
 
       panel.innerHTML = `
-        <section class="equip-selected-panel" aria-live="polite">
+        <section class="equip-selected-panel" aria-live="polite" data-rarity="${rarity}">
           <div class="equip-selected-head">
             <div class="equip-selected-art equip-icon-box" data-rarity="${rarity}">
               ${slot.icon ? `<img src="${esc(slot.icon)}" class="item-icon" alt="">` : ""}
             </div>
             <div style="min-width:0;">
-              <div style="font-size:10px;color:#72dfff;font-weight:900;letter-spacing:.8px;text-transform:uppercase;">${esc(label)}</div>
-              <div style="margin-top:6px;font-size:19px;line-height:1.15;font-weight:900;color:#f4f9ff;overflow-wrap:anywhere;">${esc(name)}</div>
-              <div style="margin-top:7px;font-size:11px;color:#9fb0c5;text-transform:uppercase;letter-spacing:.4px;">
+              <div class="equip-selected-slot-label">${esc(label)}</div>
+              <div class="equip-selected-name">${esc(name)}</div>
+              <div class="equip-selected-meta">
                 ${slot.rarity ? esc(slot.rarity) : ""}${slot.rarity && levelText ? " · " : ""}${levelText}
               </div>
             </div>
@@ -1030,13 +1321,12 @@
           ${statsHtml ? `<div class="equip-selected-stats">${statsHtml}</div>` : ""}
           <div class="equip-selected-actions">
             ${canInspect ? `
-              <button type="button" data-equipped-action="inspect"
-                      style="border:1px solid rgba(108,219,255,.28);background:rgba(29,133,178,.22);color:#dff8ff;">
+              <button type="button" class="equip-action-btn is-inspect" data-equipped-action="inspect">
                 INSPECT
               </button>
             ` : ""}
-            <button type="button" data-equipped-action="unequip"
-                    style="${canInspect ? "" : "grid-column:1/-1;"}border:1px solid rgba(255,120,120,.24);background:rgba(91,23,34,.82);color:#ffd9de;">
+            <button type="button" class="equip-action-btn is-unequip" data-equipped-action="unequip"
+                    ${canInspect ? "" : 'style="grid-column:1/-1;"'}>
               UNEQUIP
             </button>
           </div>
@@ -1058,10 +1348,10 @@
 
       if (setsBox) {
         setsBox.innerHTML = sets.length ? `
-          <details class="equip-summary-card" ${sets.length === 1 ? "open" : ""}>
-            <summary>Active set bonuses · ${sets.length}</summary>
-            <div style="margin-top:8px;display:grid;gap:5px;">
-              ${sets.map((set) => `<div>${esc(set.set)} (${esc(set.count)})</div>`).join("")}
+          <details class="equip-summary-card is-sets" ${sets.length === 1 ? "open" : ""}>
+            <summary><span>Active set bonuses</span><span class="equip-summary-count">${sets.length}</span></summary>
+            <div class="equip-summary-rows">
+              ${sets.map((set) => `<div class="equip-summary-row"><span>${esc(set.set)}</span><b>${esc(set.count)} equipped</b></div>`).join("")}
             </div>
           </details>
         ` : "";
@@ -1069,9 +1359,9 @@
 
       if (totalBox) {
         totalBox.innerHTML = totalKeys.length ? `
-          <details class="equip-summary-card">
-            <summary>Total gear bonus · ${totalKeys.length}</summary>
-            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+          <details class="equip-summary-card is-total">
+            <summary><span>Total gear bonus</span><span class="equip-summary-count">${totalKeys.length}</span></summary>
+            <div class="equip-total-chips">
               ${totalKeys.map((key) => `<span class="equip-selected-stat">${esc(key)}+${esc(total[key])}</span>`).join("")}
             </div>
           </details>
