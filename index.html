@@ -4983,7 +4983,7 @@ body.missions-open{
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: transform .18s ease, opacity .18s ease;
-    animation: ah-community-float 3.2s ease-in-out infinite;
+    animation: none;
   }
 
   .ah-community-btn img {
@@ -5006,9 +5006,20 @@ body.missions-open{
     transform: scale(.96);
   }
 
-  @keyframes ah-community-float {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-2px) scale(1.025); }
+  .ah-community-label {
+    position:absolute;
+    left:50%; bottom:4px;
+    transform:translateX(-50%);
+    min-width:42px;
+    padding:2px 5px;
+    border-radius:6px;
+    background:rgba(5,9,13,.88);
+    color:#eefaff;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.08em;
+    line-height:1.2;
+    pointer-events:none;
   }
 
   @media (max-width: 420px) {
@@ -7356,8 +7367,9 @@ body.bc-open #ahCommunityBtn{
 <!-- Floating launcher (📜) -->
 <button id="quests-launcher" class="q-launcher" type="button" aria-label="Open Quest Board" title="Quests">📜</button>
 
-<button id="ahCommunityBtn" class="ah-community-btn" type="button" aria-label="Open Alpha Husky Telegram Community">
+<button id="ahCommunityBtn" class="ah-community-btn" type="button" aria-label="Open Pack Comms">
   <img src="/images/ui/ah-community-btn.png" alt="Alpha Husky Community" />
+  <span class="ah-community-label" aria-hidden="true">CHAT</span>
 </button>
 
 <div class="fallback" id="fallback">
@@ -11786,7 +11798,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/onboarding.js?v=WEBAPP_VER"></script>
 <script src="js/awakening.js?v=WEBAPP_VER"></script>
 <script src="js/oath.js?v=WEBAPP_VER"></script>
-  <script src="/js/community_btn.js?v=20260313b"></script>
+  <script src="/js/pack_comms.js?v=pack-comms-lite-v1"></script>
+  <script src="/js/community_btn.js?v=pack-comms-lite-v1"></script>
 <script src="js/share_card.js?v=WEBAPP_VER"></script>
 <script>
 (function initAwakening(){
