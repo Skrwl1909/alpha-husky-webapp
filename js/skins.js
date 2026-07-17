@@ -8,7 +8,7 @@
 
   // DOM
   let avatarBack, skinCanvas, skinCtx, skinPreviewImg, skinDesc, closeAvatar, equipBtn, shareBtn, skinButtonsWrap;
-  let skinPreviewFrame, skinInfoName, skinInfoMeta, skinInfoTip, skinStateChip, skinFramePreviewToggle;
+  let skinPreviewAura, skinPreviewFrame, skinInfoName, skinInfoMeta, skinInfoTip, skinStateChip, skinFramePreviewToggle;
 
   // claim UI (dynamic)
   let claimWrap, claimInput, claimBtn;
@@ -93,6 +93,19 @@
           linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.10));
         z-index:0;
       }
+      #avatarBack .ah-skin-stage-aura{
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        object-position:center;
+        opacity:.72;
+        pointer-events:none;
+        user-select:none;
+        z-index:1;
+        display:none;
+      }
       #avatarBack #skinPreviewImg.ah-skin-preview-media,
       #avatarBack #skinCanvas.ah-skin-preview-media{
         position:absolute !important;
@@ -106,7 +119,7 @@
         border-radius:0 !important;
         box-shadow:none !important;
         background:transparent !important;
-        z-index:1;
+        z-index:2;
         filter:drop-shadow(0 10px 18px rgba(0,0,0,.20));
       }
       #avatarBack #skinPreviewImg.ah-skin-preview-media{
@@ -124,7 +137,7 @@
         transform-origin:center center;
         filter:drop-shadow(0 8px 14px rgba(0,0,0,.30));
         pointer-events:none;
-        z-index:2;
+        z-index:3;
         display:none;
       }
       #avatarBack .ah-skin-preview-controls{
@@ -340,6 +353,20 @@
       card.insertBefore(stageWrap, skinDesc || null);
     }
 
+    skinPreviewAura = document.getElementById("skinPreviewAuraOverlay");
+    if (!skinPreviewAura) {
+      skinPreviewAura = document.createElement("img");
+      skinPreviewAura.id = "skinPreviewAuraOverlay";
+      skinPreviewAura.className = "ah-skin-stage-aura";
+      skinPreviewAura.alt = "";
+      skinPreviewAura.setAttribute("aria-hidden", "true");
+      skinPreviewAura.addEventListener("error", () => {
+        skinPreviewAura.removeAttribute("src");
+        skinPreviewAura.style.display = "none";
+      });
+      stage.appendChild(skinPreviewAura);
+    }
+
     if (skinPreviewImg.parentElement !== stage) stage.appendChild(skinPreviewImg);
     if (skinCanvas.parentElement !== stage) stage.appendChild(skinCanvas);
 
@@ -352,6 +379,11 @@
       skinPreviewFrame.id = "skinPreviewFrameOverlay";
       skinPreviewFrame.className = "ah-skin-stage-frame";
       skinPreviewFrame.alt = "";
+      skinPreviewFrame.setAttribute("aria-hidden", "true");
+      skinPreviewFrame.addEventListener("error", () => {
+        skinPreviewFrame.removeAttribute("src");
+        skinPreviewFrame.style.display = "none";
+      });
       stage.appendChild(skinPreviewFrame);
     }
 
@@ -409,6 +441,11 @@
     if (skinPreviewImg) {
       skinPreviewImg.onerror = null;
       skinPreviewImg.src = "";
+    }
+
+    if (skinPreviewAura) {
+      skinPreviewAura.removeAttribute("src");
+      skinPreviewAura.style.display = "none";
     }
 
     if (skinPreviewFrame) {
@@ -713,6 +750,30 @@
     return hidden ? "" : attr;
   }
 
+  function currentHeroAuraUrl() {
+    const aura = document.getElementById("heroAuraOverlay");
+    if (!aura) return "";
+    const src = String(aura.currentSrc || aura.getAttribute("src") || aura.src || "").trim();
+    if (!src) return "";
+    let hidden = aura.style?.display === "none";
+    if (!hidden) {
+      try { hidden = window.getComputedStyle(aura).display === "none"; } catch (_) {}
+    }
+    return hidden ? "" : src;
+  }
+
+  function syncCurrentAuraOverlay() {
+    if (!skinPreviewAura) return;
+    const src = currentHeroAuraUrl();
+    if (!src) {
+      skinPreviewAura.removeAttribute("src");
+      skinPreviewAura.style.display = "none";
+      return;
+    }
+    if (skinPreviewAura.getAttribute("src") !== src) skinPreviewAura.src = src;
+    skinPreviewAura.style.display = "block";
+  }
+
   function updateFramePreviewToggleUi() {
     if (!skinFramePreviewToggle) return;
     const hasFrame = !!currentEquippedFrameUrl();
@@ -959,6 +1020,7 @@
   function drawPlaceholder(text) {
     _useImgPreview(false);
     if (skinPreviewImg) skinPreviewImg.src = "";
+    syncCurrentAuraOverlay();
     syncCurrentFrameOverlay();
     if (!skinCtx || !skinCanvas) return;
 
@@ -995,6 +1057,7 @@
 
   function renderSkinPreview(imgUrl, name, fallbackUrl, forceImg) {
     if ((!skinCtx || !skinCanvas) && !skinPreviewImg) return;
+    syncCurrentAuraOverlay();
     syncCurrentFrameOverlay();
 
     if (!imgUrl) {
@@ -1374,6 +1437,7 @@
       if (avatarBack) avatarBack.style.display = "flex";
       _setSkinsModalOpen(true);
       updateFramePreviewToggleUi();
+      syncCurrentAuraOverlay();
       syncCurrentFrameOverlay();
       setPrimaryButtonState();
     } catch (e) {
