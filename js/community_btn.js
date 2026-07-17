@@ -6,9 +6,10 @@
 
     btn.dataset.bound = "1";
 
-    btn.addEventListener("click", function () {
+    function openCommunity(urlOverride) {
       const tg = window.Telegram?.WebApp || null;
-      const url = "https://t.me/The_Alpha_husky";
+      const url = String(urlOverride || "https://t.me/The_Alpha_husky").trim();
+      if (!url) return;
 
       try { tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
@@ -24,6 +25,17 @@
       } catch (_) {
         window.location.href = url;
       }
+    }
+
+    // Pack Comms reuses this single Telegram fallback path rather than owning a second URL helper.
+    window.AHOpenCommunityLink = openCommunity;
+
+    btn.addEventListener("click", function () {
+      if (window.PackComms?.openFromLauncher) {
+        window.PackComms.openFromLauncher();
+        return;
+      }
+      openCommunity();
     });
   }
 
