@@ -337,7 +337,8 @@ html.ah-boot-ready .ah-boot-screen{
 /* ✅ NOWY viewport — skin siedzi w realnym "oknie" frame'a */
 .hero-frame .hero-skin-viewport{
   position:absolute;
-  inset:11% 15% 16% 15%;
+  /* Match the usable interior of the enlarged frame overlay. */
+  inset:5% 8% 7% 8%;
   border-radius:16px;
   overflow:hidden;
   z-index:1;
@@ -349,9 +350,10 @@ html.ah-boot-ready .ah-boot-screen{
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  object-position: center 25%;
-  transform: scale(1.06);
+  object-fit: contain;
+  object-position: center bottom;
+  transform: scale(1);
+  transform-origin: center bottom;
   border-radius: 0;
   clip-path: none;
 }
@@ -635,13 +637,14 @@ html.ah-modal-open #heroFrame{
   }
 
   .hero-frame .hero-skin-viewport{
-    inset:12% 16% 17% 16%;
+    inset:6% 9% 8% 9%;
     border-radius:14px;
   }
 
   .hero-frame .hero-skin{
-    object-position:center 24%;
-    transform:scale(1.06);
+    object-position:center bottom;
+    transform:scale(1);
+    transform-origin:center bottom;
   }
 
   .hero-center .share-row{
@@ -9350,7 +9353,7 @@ const AH_HERO_SKIN_FIT_OVERRIDES = Object.freeze({
   unbroken_alpha: { scale: 1.02, offsetX: 0, offsetY: -2 }, // skin-aware example (tune per asset framing)
 });
 
-const AH_HERO_FRAME_FIT_DEFAULT = Object.freeze({ scale: 1.06, offsetX: 0, offsetY: 0 });
+const AH_HERO_FRAME_FIT_DEFAULT = Object.freeze({ scale: 1, offsetX: 0, offsetY: 0 });
 const AH_HERO_FRAME_FIT_OVERRIDES = Object.freeze({
   pioneer_frame: { scale: 1.03, offsetX: 0, offsetY: 8 },
   server_signal_frame: { scale: 0.99, offsetX: 0, offsetY: 1 },
@@ -9548,6 +9551,8 @@ function applyHeroSkinFit(frameUrl, frameKey, skinUrl, skinKey){
   const src = String(skinUrl || skinEl.currentSrc || skinEl.src || "").trim();
   const fit = composeHeroFit(frameUrl, frameKey, src, skinKey);
   skinEl.style.objectFit = "contain";
+  skinEl.style.objectPosition = "center bottom";
+  skinEl.style.transformOrigin = "center bottom";
   skinEl.style.transform = `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale})`;
 }
 
