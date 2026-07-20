@@ -1262,10 +1262,10 @@ html.ah-skins-open #heroFrame{
   background:rgba(12,14,18,.82);
   border:1px solid var(--ring);
   border-radius:16px;
-  padding:10px;
+  padding:8px;
   box-shadow:0 8px 22px rgba(0,0,0,.44);
   width:100%;
-  height:min(88dvh, calc(100dvh - 24px));
+  height:min(92dvh, calc(100dvh - 16px));
   max-height: calc(100dvh - 24px);
   position:relative;
   display:flex;
@@ -1280,22 +1280,22 @@ html.ah-skins-open #heroFrame{
     "main actions"
     "status status";
   align-items:center;
-  gap:8px;
-  padding:4px 2px 6px;
+  gap:5px;
+  padding:2px;
   flex:0 0 auto;
 }
-.map-head-main{ grid-area:main; display:flex; align-items:center; gap:8px; min-width:0; }
-.map-head-actions{ grid-area:actions; display:flex; align-items:center; gap:6px; flex:0 0 auto; min-width:0; }
+.map-head-main{ grid-area:main; display:flex; align-items:center; gap:6px; min-width:0; }
+.map-head-actions{ grid-area:actions; display:flex; align-items:center; gap:4px; flex:0 0 auto; min-width:0; }
 .map-head-status{ grid-area:status; display:flex; justify-content:flex-end; min-width:0; }
-.map-head h2 { margin:0; font:600 16px system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-head h2 { margin:0; font:700 15px/1 system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
 .map-intel-btn{
-  min-height:30px;
-  padding:0 11px;
+  min-height:26px;
+  padding:0 9px;
   border-radius:999px;
   border:1px solid rgba(173,222,255,.20);
   background:linear-gradient(180deg, rgba(20,32,42,.84), rgba(9,15,22,.84));
   color:#eef7ff;
-  font:800 10.5px/1 system-ui, sans-serif;
+  font:800 10px/1 system-ui, sans-serif;
   letter-spacing:.04em;
   cursor:pointer;
   white-space:nowrap;
@@ -1304,15 +1304,15 @@ html.ah-skins-open #heroFrame{
 .map-zoom-controls{
   display:inline-flex;
   align-items:center;
-  gap:4px;
-  padding:3px;
+  gap:3px;
+  padding:2px;
   border-radius:12px;
   border:1px solid rgba(255,255,255,.08);
   background:rgba(8,12,16,.42);
 }
 .map-zoom-slider{
-  width:72px;
-  height:28px;
+  width:64px;
+  height:24px;
   margin:0;
   accent-color:#93ffd8;
   cursor:pointer;
@@ -1323,8 +1323,8 @@ html.ah-skins-open #heroFrame{
 }
 .map-zoom-btn{
   min-width:48px;
-  height:30px;
-  padding:0 10px;
+  height:26px;
+  padding:0 8px;
   border-radius:9px;
   border:1px solid rgba(255,255,255,.10);
   background:rgba(255,255,255,.04);
@@ -1341,11 +1341,24 @@ html.ah-skins-open #heroFrame{
 }
 #ctaSurface{
   width:100% !important;
-  margin:0 0 3px !important;
+  margin:0 !important;
+}
+.map-intel-stack{
+  display:grid;
+  grid-template-rows:auto auto;
+  gap:2px;
+  margin:0 2px 3px;
+  min-height:0;
+}
+.map-intel-stack #ctaSurface:not([style*="display:none"]){
+  max-height:min(68px, 12dvh);
+  overflow:auto;
+  padding-right:2px;
+  scrollbar-width:thin;
 }
 .map-world-brief{
-  margin:0 4px 4px;
-  padding:1px 0 2px;
+  margin:0;
+  padding:0 2px;
   display:flex;
   align-items:center;
   gap:7px;
@@ -1636,6 +1649,8 @@ html.ah-skins-open #heroFrame{
   }
   .map-card{
     padding:8px;
+    height:calc(100dvh - 12px);
+    max-height:calc(100dvh - 12px);
   }
   .map-head{
     grid-template-columns:minmax(0,1fr) auto;
@@ -1709,6 +1724,17 @@ html.ah-skins-open #heroFrame{
     margin:0 2px 2px;
     padding:0;
     gap:5px;
+  }
+  .map-intel-stack{
+    margin:0 1px 2px;
+    gap:1px;
+  }
+  .map-intel-stack #ctaSurface:not([style*="display:none"]){
+    max-height:min(54px, 10dvh);
+  }
+  .map{
+    min-height:clamp(300px, 60dvh, 520px);
+    max-height:none;
   }
   .map-pressure-mood{
     min-height:18px;
@@ -1897,8 +1923,8 @@ html.ah-skins-open #heroFrame{
   position:relative;
   width:100%;
   flex: 1 1 auto;
-  min-height: clamp(300px, 54dvh, 500px);
-  max-height: min(72dvh, 700px);
+  min-height: clamp(340px, 62dvh, 620px);
+  max-height: min(80dvh, 760px);
   height:auto;
   border-radius:16px;
   overflow:hidden;
@@ -1950,9 +1976,9 @@ html.ah-skins-open #heroFrame{
 .map-world-base{
   z-index:0;
   background:
-    radial-gradient(circle at 34% 36%, rgba(72,118,142,.16), transparent 36%),
-    radial-gradient(circle at 76% 72%, rgba(7,12,20,.48), transparent 44%),
-    linear-gradient(132deg, rgba(6,10,16,.42), rgba(20,34,43,.16) 48%, rgba(5,8,14,.64)),
+    radial-gradient(circle at 34% 36%, rgba(72,118,142,.10), transparent 36%),
+    radial-gradient(circle at 76% 72%, rgba(7,12,20,.30), transparent 44%),
+    linear-gradient(132deg, rgba(6,10,16,.26), rgba(20,34,43,.10) 48%, rgba(5,8,14,.38)),
     url("images/map/base/wasteland.jpg") center / cover no-repeat;
 }
 
@@ -1975,7 +2001,11 @@ html.ah-skins-open #heroFrame{
 }
 
 .map-world-tile[data-tile-state="preview"]{
-  filter:brightness(.58) saturate(.58) contrast(1.08);
+  filter:brightness(.68) saturate(.68) contrast(1.04);
+}
+
+.map-world-tile[data-tile-id="known_network"]{
+  filter:none;
 }
 
 .map-world-tile[data-tile-state="preview"]::before{
@@ -6701,19 +6731,21 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <div class="map-head-actions">
               <button class="map-intel-btn" id="openWarIntel" type="button" aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">War Intel ?</button>
               <div class="map-zoom-controls" aria-label="Map zoom controls">
-                <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="2" step="1" value="1" aria-label="Map zoom level">
+                <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="3" step="1" value="2" aria-label="Map zoom level">
                 <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map zoom and center">Reset</button>
               </div>
               <button class="close-x" id="closeMap" type="button">×</button>
             </div>
           </div>
-          <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
-            <div id="ctaCardRoot"></div>
-            <div id="ctaHighlightsRoot"></div>
-          </section>
-          <div id="mapWorldBrief" class="map-world-brief">
-            <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
-            <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+          <div class="map-intel-stack" aria-label="Map Intel summary">
+            <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
+              <div id="ctaCardRoot"></div>
+              <div id="ctaHighlightsRoot"></div>
+            </section>
+            <div id="mapWorldBrief" class="map-world-brief">
+              <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
+              <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+            </div>
           </div>
           <div class="war-intel-back" id="warIntelBack" hidden aria-hidden="true">
             <div class="war-intel-sheet" role="dialog" aria-modal="true" aria-labelledby="warIntelTitle">
@@ -8808,7 +8840,7 @@ document.addEventListener("click", async (e) => {
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
         const LEGACY_MAP_STAGE_SCALE = 1.65;
-        const MAP_ZOOM_LEVELS = [0.75, 1.0, 1.25];
+        const MAP_ZOOM_LEVELS = [0.55, 0.75, 1.0, 1.25];
         const MAP_MOBILE_MEDIA = window.matchMedia("(max-width: 640px)");
         const MAP_PAN_DRAG_THRESHOLD = 10;
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
@@ -8831,7 +8863,7 @@ document.addEventListener("click", async (e) => {
         }
 
         function defaultMapZoom(){
-          return isMobileMapViewport() ? MAP_ZOOM_LEVELS[0] : 1;
+          return isMobileMapViewport() ? MAP_ZOOM_LEVELS[1] : 1;
         }
 
         const mapPanState = {
@@ -9099,7 +9131,7 @@ document.addEventListener("click", async (e) => {
         function mapZoomIndex(){
           const current = Number(mapPanState.zoom || 1);
           const idx = MAP_ZOOM_LEVELS.findIndex((level) => Math.abs(level - current) < 0.001);
-          return idx >= 0 ? idx : (isMobileMapViewport() ? 0 : 1);
+          return idx >= 0 ? idx : (isMobileMapViewport() ? 1 : 2);
         }
 
         function scaledStageSize(){
