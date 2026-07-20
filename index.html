@@ -1976,9 +1976,9 @@ html.ah-skins-open #heroFrame{
 .map-world-base{
   z-index:0;
   background:
-    radial-gradient(circle at 34% 36%, rgba(72,118,142,.10), transparent 36%),
-    radial-gradient(circle at 76% 72%, rgba(7,12,20,.30), transparent 44%),
-    linear-gradient(132deg, rgba(6,10,16,.26), rgba(20,34,43,.10) 48%, rgba(5,8,14,.38)),
+    radial-gradient(circle at 34% 36%, rgba(83,132,156,.06), transparent 36%),
+    radial-gradient(circle at 76% 72%, rgba(7,12,20,.22), transparent 44%),
+    linear-gradient(132deg, rgba(8,13,20,.72), rgba(15,25,34,.64) 48%, rgba(5,8,14,.82)),
     url("images/map/base/wasteland.jpg") center / cover no-repeat;
 }
 
@@ -2001,11 +2001,17 @@ html.ah-skins-open #heroFrame{
 }
 
 .map-world-tile[data-tile-state="preview"]{
-  filter:brightness(.68) saturate(.68) contrast(1.04);
+  filter:brightness(.72) saturate(.70) contrast(.94);
 }
 
 .map-world-tile[data-tile-id="known_network"]{
   filter:none;
+}
+
+.map-world-tile[data-tile-id="relay_fringe_preview"] img{
+  object-position:78% 56%;
+  transform:scale(1.07);
+  filter:brightness(.62) saturate(.64) contrast(.90);
 }
 
 .map-world-tile[data-tile-state="preview"]::before{
@@ -2015,10 +2021,11 @@ html.ah-skins-open #heroFrame{
   z-index:1;
   pointer-events:none;
   background:
-    radial-gradient(ellipse at 44% 38%, rgba(106,192,224,.075), transparent 34%),
-    linear-gradient(142deg, rgba(5,10,17,.16), rgba(7,15,24,.48) 65%, rgba(2,5,10,.72)),
-    repeating-linear-gradient(112deg, transparent 0 36px, rgba(108,190,218,.028) 37px 38px, transparent 39px 78px),
-    repeating-linear-gradient(180deg, rgba(145,210,230,.035) 0 1px, transparent 1px 5px);
+    radial-gradient(ellipse at 34% 30%, rgba(106,192,224,.10), transparent 31%),
+    radial-gradient(ellipse at 78% 78%, rgba(3,7,13,.66), transparent 54%),
+    linear-gradient(142deg, rgba(5,10,17,.08), rgba(7,15,24,.38) 58%, rgba(2,5,10,.70)),
+    repeating-linear-gradient(112deg, transparent 0 36px, rgba(108,190,218,.032) 37px 38px, transparent 39px 78px),
+    repeating-linear-gradient(180deg, rgba(145,210,230,.038) 0 1px, transparent 1px 5px);
 }
 
 .map-world-tile[data-tile-id="known_network"]::after{
