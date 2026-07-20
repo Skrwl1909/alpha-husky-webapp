@@ -1968,92 +1968,28 @@ html.ah-skins-open #heroFrame{
 .map-stage.is-world-canvas{
   min-width:0;
   min-height:0;
-  background:url("images/map/base/wasteland.jpg") center/cover no-repeat;
+  background:none;
 }
 
-.map-world-base,
-.map-world-tiles,
+.map-world-surface,
+.map-sector-atmosphere,
 .map-legacy-area,
-.map-world-blend,
-.map-world-fog{
+.map-territories{
   position:absolute;
   inset:0;
   pointer-events:none;
   user-select:none;
 }
 
-.map-world-base{
+.map-world-surface{
   z-index:0;
-  background:
-    radial-gradient(circle at 34% 36%, rgba(83,132,156,.06), transparent 36%),
-    radial-gradient(circle at 76% 72%, rgba(7,12,20,.22), transparent 44%),
-    linear-gradient(132deg, rgba(8,13,20,.72), rgba(15,25,34,.64) 48%, rgba(5,8,14,.82)),
-    url("images/map/base/wasteland.jpg") center / cover no-repeat;
-}
-
-.map-world-tiles{ z-index:2; }
-
-.map-world-tile{
-  position:absolute;
-  overflow:hidden;
-  pointer-events:none;
-  background:rgba(12,16,23,.64);
-}
-
-.map-world-tile img{
-  display:block;
   width:100%;
   height:100%;
-  object-fit:cover;
-  pointer-events:none;
-  user-select:none;
-}
-
-.map-world-tile[data-tile-state="preview"]{
-  filter:brightness(.72) saturate(.70) contrast(.94);
-}
-
-.map-world-tile[data-tile-id="known_network"]{
-  filter:none;
-}
-
-.map-world-tile[data-tile-id="relay_fringe_preview"] img{
-  object-position:78% 56%;
-  transform:scale(1.07);
-  filter:brightness(.62) saturate(.64) contrast(.90);
-}
-
-.map-world-tile[data-tile-state="preview"]::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:1;
-  pointer-events:none;
-  background:
-    radial-gradient(ellipse at 34% 30%, rgba(106,192,224,.10), transparent 31%),
-    radial-gradient(ellipse at 78% 78%, rgba(3,7,13,.66), transparent 54%),
-    linear-gradient(142deg, rgba(5,10,17,.08), rgba(7,15,24,.38) 58%, rgba(2,5,10,.70)),
-    repeating-linear-gradient(112deg, transparent 0 36px, rgba(108,190,218,.032) 37px 38px, transparent 39px 78px),
-    repeating-linear-gradient(180deg, rgba(145,210,230,.038) 0 1px, transparent 1px 5px);
-}
-
-.map-world-tile[data-tile-id="known_network"]::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:1;
-  pointer-events:none;
-  background:
-    radial-gradient(ellipse at 100% 100%, rgba(7,12,18,.54), transparent 48%),
-    radial-gradient(ellipse at 104% 46%, rgba(89,166,192,.09), transparent 28%),
-    linear-gradient(90deg, transparent 70%, rgba(7,12,18,.12) 85%, rgba(5,9,15,.44)),
-    url("images/map/overlays/fog.png") 100% 66% / 42% 78% no-repeat;
-  opacity:.78;
+  background:url("images/map/base/map.2.0.webp") center / 100% 100% no-repeat;
 }
 
 .map-legacy-area{
-  z-index:3;
-  overflow:hidden;
+  z-index:2;
 }
 
 .map-legacy-area .map-territories{
@@ -2061,78 +1997,35 @@ html.ah-skins-open #heroFrame{
   inset:0;
 }
 
-.map-world-blend{ z-index:4; }
-
-.map-world-blend-zone{
-  position:absolute;
-  overflow:hidden;
-  pointer-events:none;
-  isolation:isolate;
-}
-
-.map-world-blend-zone[data-zone="east"]{
-  background:
-    radial-gradient(ellipse at 18% 20%, rgba(88,170,198,.11), transparent 26%),
-    radial-gradient(ellipse at 54% 72%, rgba(4,8,14,.34), transparent 44%),
-    radial-gradient(ellipse at 78% 38%, rgba(9,17,25,.22), transparent 38%),
-    linear-gradient(90deg, transparent 0%, rgba(8,14,21,.13) 38%, rgba(5,10,16,.06) 76%, transparent 100%);
-  clip-path:polygon(4% 8%, 34% 0%, 82% 6%, 100% 22%, 92% 52%, 100% 84%, 70% 100%, 28% 94%, 0% 72%, 8% 40%);
-  opacity:.56;
-}
-
-.map-world-blend-zone[data-zone="south-east"]{
-  background:
-    radial-gradient(ellipse at 20% 16%, rgba(77,154,184,.08), transparent 28%),
-    radial-gradient(ellipse at 66% 66%, rgba(4,8,14,.40), transparent 48%),
-    linear-gradient(136deg, transparent 8%, rgba(9,16,24,.17) 50%, rgba(4,8,14,.30) 78%, transparent 100%);
-  clip-path:polygon(4% 14%, 36% 0%, 74% 9%, 100% 34%, 88% 70%, 66% 100%, 26% 92%, 0% 62%);
-  opacity:.52;
-}
-
-.map-world-fog{ z-index:5; }
-
-.map-world-preview-fog{
-  position:absolute;
+.map-sector-atmosphere{
+  z-index:1;
   overflow:hidden;
   background:
-    radial-gradient(ellipse at 30% 26%, rgba(130,208,230,.045), transparent 25%),
-    radial-gradient(ellipse at 80% 76%, rgba(3,7,12,.42), transparent 48%),
-    linear-gradient(128deg, transparent 6%, rgba(8,11,17,.12) 52%, transparent 96%);
-  opacity:.60;
+    radial-gradient(ellipse 58% 76% at 96% 66%, rgba(3,8,13,.44) 0%, rgba(5,12,18,.24) 38%, rgba(5,12,18,0) 76%),
+    radial-gradient(ellipse 48% 62% at 80% 91%, rgba(5,11,17,.29) 0%, rgba(5,11,17,0) 74%),
+    linear-gradient(112deg, rgba(8,14,21,0) 42%, rgba(14,28,37,.055) 59%, rgba(7,15,22,.17) 82%, rgba(4,9,14,.26) 100%);
 }
 
-.map-world-preview-fog::after{
+.map-sector-atmosphere::before{
   content:"";
   position:absolute;
   inset:0;
   pointer-events:none;
-  background:radial-gradient(ellipse at 70% 70%, transparent 32%, rgba(3,6,11,.12) 70%, rgba(2,4,8,.26));
+  opacity:.34;
+  background:
+    repeating-linear-gradient(172deg, rgba(132,198,212,.035) 0 1px, transparent 1px 7px),
+    radial-gradient(ellipse 40% 54% at 87% 38%, rgba(104,178,193,.08), transparent 72%),
+    radial-gradient(ellipse 52% 68% at 98% 85%, rgba(1,4,8,.22), transparent 74%);
 }
 
-.map-world-preview-label{
+.map-sector-atmosphere::after{
+  content:"";
   position:absolute;
-  z-index:1;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  color:rgba(210,230,247,.62);
-  font:800 clamp(10px, .8vw, 14px)/1.5 system-ui, sans-serif;
-  letter-spacing:.22em;
-  text-align:center;
-  text-shadow:0 2px 16px rgba(0,0,0,.9);
-  white-space:nowrap;
+  inset:0;
   pointer-events:none;
-}
-
-.map-world-preview-label span{
-  display:block;
-  margin-top:4px;
-  color:rgba(255,166,126,.56);
-  font-size:.72em;
-}
-
-@media (max-width: 760px){
-  .map-world-preview-label{ display:none; }
+  background:
+    radial-gradient(ellipse 34% 48% at 73% 28%, rgba(145,210,220,.045), transparent 78%),
+    radial-gradient(ellipse 45% 56% at 89% 73%, rgba(6,13,20,.18), transparent 76%);
 }
 
 .map-stage.is-panning{
@@ -3767,17 +3660,23 @@ body.ah-perf-lite .map-stage::after{
   opacity:.28 !important;
 }
 
-html.ah-perf-lite .map-world-blend-zone,
-body.ah-perf-lite .map-world-blend-zone{
-  opacity:.54 !important;
-  background-image:
-    linear-gradient(135deg, rgba(8,13,20,.16), rgba(5,9,15,.44)) !important;
+.map-stage.is-world-canvas::before,
+.map-stage.is-world-canvas::after{
+  content:none;
 }
 
-html.ah-perf-lite .map-world-preview-fog,
-body.ah-perf-lite .map-world-preview-fog{
-  background-image:linear-gradient(132deg, rgba(8,12,18,.48), rgba(5,9,15,.68)) !important;
-  box-shadow:none !important;
+html.ah-perf-lite .map-sector-atmosphere,
+body.ah-perf-lite .map-sector-atmosphere{
+  background:
+    radial-gradient(ellipse 56% 72% at 96% 68%, rgba(3,8,13,.28), transparent 76%),
+    linear-gradient(112deg, transparent 48%, rgba(7,14,21,.10) 76%, rgba(4,9,14,.18)) !important;
+}
+
+html.ah-perf-lite .map-sector-atmosphere::before,
+html.ah-perf-lite .map-sector-atmosphere::after,
+body.ah-perf-lite .map-sector-atmosphere::before,
+body.ah-perf-lite .map-sector-atmosphere::after{
+  display:none !important;
 }
 
 html.ah-perf-lite #map .path,
@@ -4876,6 +4775,94 @@ body.missions-open{
   box-shadow:
     0 8px 26px rgba(0,0,0,.26),
     0 0 22px rgba(46,220,255,.12);
+}
+
+/* ---------- SIGNAL BROKER / CSS PLACEHOLDER ---------- */
+#pins .hotspot.theme-signal-broker,
+#pins .map-pin.theme-signal-broker{
+  width:58px;
+  height:58px;
+  z-index:3;
+  --node-ping:rgba(72,211,232,.06);
+  --node-chip-bg:rgba(9,18,23,.9);
+  --node-chip-border:rgba(103,220,236,.24);
+  --node-chip-color:rgba(218,245,249,.94);
+}
+
+#pins .hotspot.theme-signal-broker::before,
+#pins .map-pin.theme-signal-broker::before{
+  content:"";
+  width:42px;
+  height:42px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:1px solid rgba(119,205,219,.38);
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(118,211,223,.28) 47%, rgba(118,211,223,.28) 53%, transparent 54%),
+    linear-gradient(0deg, transparent 46%, rgba(118,211,223,.20) 47%, rgba(118,211,223,.20) 53%, transparent 54%),
+    radial-gradient(circle at 50% 50%, rgba(23,44,53,.96) 0 28%, rgba(6,13,17,.97) 29% 63%, rgba(39,91,101,.44) 64% 66%, transparent 67%);
+  box-shadow:inset 0 0 0 5px rgba(4,9,12,.42), 0 7px 12px rgba(0,0,0,.32);
+  filter:none;
+  opacity:1;
+}
+
+#pins .hotspot.theme-signal-broker::after,
+#pins .map-pin.theme-signal-broker::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:7px;
+  height:7px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:#d99a43;
+  border:1px solid rgba(255,215,145,.68);
+  box-shadow:0 0 8px rgba(226,160,74,.38);
+  animation:signalBrokerStatusPulse 2.8s ease-in-out infinite;
+  pointer-events:none;
+}
+
+#pins .hotspot.theme-signal-broker .pin-ring,
+#pins .map-pin.theme-signal-broker .pin-ring{
+  width:52px;
+  height:52px;
+  border:1px solid rgba(92,218,234,.48);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(61,194,212,.08), transparent 67%);
+  box-shadow:0 0 0 2px rgba(76,204,221,.06), 0 0 14px rgba(69,196,213,.13);
+  animation:signalBrokerRing 4.8s ease-in-out infinite;
+}
+
+#pins .hotspot.theme-signal-broker .ping,
+#pins .map-pin.theme-signal-broker .ping{
+  width:56px;
+  height:56px;
+  border:1px solid rgba(85,213,229,.20);
+  background:transparent;
+  animation:signalBrokerPing 3.4s ease-out infinite;
+}
+
+#pins .hotspot.theme-signal-broker .pin-icon,
+#pins .map-pin.theme-signal-broker .pin-icon{ display:none; }
+
+#pins .hotspot.theme-signal-broker.active .chip,
+#pins .map-pin.theme-signal-broker.active .chip{
+  border-color:rgba(104,223,238,.38);
+  box-shadow:0 8px 22px rgba(0,0,0,.34), 0 0 16px rgba(76,198,215,.10);
+}
+
+@keyframes signalBrokerRing{
+  0%,100%{ opacity:.76; transform:translate(-50%,-50%) scale(.96); }
+  50%{ opacity:1; transform:translate(-50%,-50%) scale(1.03); }
+}
+@keyframes signalBrokerPing{
+  0%{ opacity:.58; transform:translate(-50%,-50%) scale(.82); }
+  72%,100%{ opacity:0; transform:translate(-50%,-50%) scale(1.12); }
+}
+@keyframes signalBrokerStatusPulse{
+  0%,100%{ opacity:.72; transform:translate(-50%,-50%) scale(.88); }
+  50%{ opacity:1; transform:translate(-50%,-50%) scale(1.08); }
 }
   </style>
 
@@ -9050,70 +9037,26 @@ document.addEventListener("click", async (e) => {
             mapStageEl.style.removeProperty("height");
             const territories = existingLegacyArea?.querySelector(".map-territories");
             if (territories) mapStageEl.insertBefore(territories, pathsSVG?.parentElement || null);
-            ["mapWorldBase", "mapWorldTiles", "mapLegacyArea", "mapWorldBlend", "mapWorldFog"].forEach((id) => document.getElementById(id)?.remove());
+            ["mapWorldSurface", "mapSectorAtmosphere", "mapWorldBase", "mapWorldTiles", "mapLegacyArea", "mapWorldBlend", "mapWorldFog"].forEach((id) => document.getElementById(id)?.remove());
             return null;
           }
 
           mapStageEl.classList.add("is-world-canvas");
-          const base = getOrCreateMapWorldLayer("mapWorldBase", "map-world-base");
-          const tiles = getOrCreateMapWorldLayer("mapWorldTiles", "map-world-tiles");
+          ["mapWorldBase", "mapWorldTiles", "mapWorldBlend", "mapWorldFog"].forEach((id) => document.getElementById(id)?.remove());
+          const surface = getOrCreateMapWorldLayer("mapWorldSurface", "map-world-surface");
+          const atmosphere = getOrCreateMapWorldLayer("mapSectorAtmosphere", "map-sector-atmosphere");
           const legacyArea = getOrCreateMapWorldLayer("mapLegacyArea", "map-legacy-area");
-          const blend = getOrCreateMapWorldLayer("mapWorldBlend", "map-world-blend");
-          const fog = getOrCreateMapWorldLayer("mapWorldFog", "map-world-fog");
           const territories = mapStageEl.querySelector(".map-territories");
           if (territories) legacyArea.appendChild(territories);
           setWorldLayerRect(legacyArea, worldConfig.legacyBounds, worldConfig);
-          mapStageEl.append(base, tiles, legacyArea, blend, fog, pathsSVG?.parentElement, pinsEl);
-          return { worldConfig, base, tiles, legacyArea, blend, fog };
+          surface.dataset.terrainAsset = "images/map/base/map.2.0.webp";
+          atmosphere.dataset.sector = "relay_fringe";
+          mapStageEl.append(surface, atmosphere, legacyArea, pathsSVG?.parentElement, pinsEl);
+          return { worldConfig, surface, atmosphere, legacyArea };
         }
 
         function renderWorldTiles(){
-          const layers = ensureWorldLayers();
-          if (!layers) return;
-          const { worldConfig, tiles, blend, fog } = layers;
-          tiles.innerHTML = "";
-          blend.innerHTML = "";
-          fog.innerHTML = "";
-          [
-            { zone: "east", x: 1660, y: 180, width: 420, height: 1100 },
-            { zone: "south-east", x: 1600, y: 850, width: 700, height: 600 }
-          ].forEach((zone) => {
-            const blendZone = document.createElement("div");
-            blendZone.className = "map-world-blend-zone";
-            blendZone.dataset.zone = zone.zone;
-            if (setWorldLayerRect(blendZone, zone, worldConfig)) blend.appendChild(blendZone);
-          });
-          const seenIds = new Set();
-          for (const tile of (Array.isArray(DATA?.tiles) ? DATA.tiles : [])) {
-            const id = String(tile?.id || "").trim();
-            if (!id || seenIds.has(id)) continue;
-            seenIds.add(id);
-            const tileEl = document.createElement("div");
-            tileEl.className = "map-world-tile";
-            tileEl.dataset.tileId = id;
-            tileEl.dataset.tileState = String(tile?.state || "unlocked");
-            tileEl.style.zIndex = String(mapFiniteNumber(tile?.z) || 0);
-            if (!setWorldLayerRect(tileEl, tile, worldConfig)) continue;
-            const image = document.createElement("img");
-            image.src = String(tile.asset || "");
-            image.alt = "";
-            image.decoding = "async";
-            image.draggable = false;
-            tileEl.appendChild(image);
-            tiles.appendChild(tileEl);
-
-            if (tile?.state === "preview" || tile?.state === "locked") {
-              const fogCell = document.createElement("div");
-              fogCell.className = "map-world-preview-fog";
-              if (setWorldLayerRect(fogCell, tile, worldConfig) && tile?.state === "preview") {
-                const label = document.createElement("div");
-                label.className = "map-world-preview-label";
-                label.innerHTML = "RELAY FRINGE<span>SIGNAL UNSTABLE</span>";
-                fogCell.appendChild(label);
-              }
-              fog.appendChild(fogCell);
-            }
-          }
+          ensureWorldLayers();
         }
 
         function resolveMapViewBox(){
@@ -9473,6 +9416,7 @@ document.addEventListener("click", async (e) => {
           if (bid === "burned_archive" || action === "open_burned_archive") return "Open Burned Archive";
           if (bid === "howl_treasury" || action === "open_howl_treasury") return "Open HOWL Treasury";
           if (bid === "oracle_void_doorway" || action === "open_oracle") return "Open Oracle";
+          if (bid === "dead_relay_exchange" || action === "open_signal_broker") return "Open Signal Broker";
           if (bid === "alpha_network_hq" || action === "open_faction_hq") return "Open Faction HQ";
           if (action === "open_campaign") return "Open Campaign";
           if (action === "open_missions") return "Open Missions";
@@ -9495,6 +9439,7 @@ document.addEventListener("click", async (e) => {
           if (bid === "blood_moon_tower" || action === "open_bloodmoon" || pinEl?.classList?.contains("type-bloodmoon")) return "PvE threat - push tower progress.";
           if (bid === "burned_archive" || action === "open_burned_archive" || pinEl?.classList?.contains("type-archive")) return "Signal anomaly - investigate archive activity.";
           if (bid === "howl_treasury" || action === "open_howl_treasury" || pinEl?.classList?.contains("type-treasury")) return "Support signal - check treasury activity.";
+          if (bid === "dead_relay_exchange" || action === "open_signal_broker" || pinEl?.classList?.contains("type-signal-broker")) return "Neutral relay exchange — review available work and recovered signals.";
           if (bid === "phantom_nodes" || pinEl?.classList?.contains("type-phantom")) return "Network front - monitor Pressure here.";
           if (bid === "edge_of_chain" || action === "open_siege" || pinEl?.classList?.contains("type-siege")) return "Frontline breach - watch the edge pressure.";
           if (pinEl?.classList?.contains("is-live")) return "Live pressure - move here while the window is open.";
@@ -10755,6 +10700,12 @@ function isRegionUnlocked(regionId){
       b.id === "howl_treasury" ||
       b.action === "open_howl_treasury";
 
+    const isSignalBroker =
+      b.buildingId === "dead_relay_exchange" ||
+      b.id === "dead_relay_exchange" ||
+      b.action === "open_signal_broker" ||
+      b.type === "signal_broker";
+
     const isHeroLandmark = isBloodMoon || isOracle || isEdge;
     const unlocked = isOracle ? true : isRegionUnlocked(b.region);
     const displayState = resolveNodeDisplayState(b);
@@ -10790,6 +10741,9 @@ function isRegionUnlocked(regionId){
     } else if (isTreasury) {
       btn.classList.add('theme-treasury');
       btn.dataset.theme = 'treasury';
+    } else if (isSignalBroker) {
+      btn.classList.add('type-signal-broker', 'theme-signal-broker');
+      btn.dataset.theme = 'signal-broker';
     }
 
     if (b.raidEnabled) btn.dataset.raidNode = "1";
@@ -10806,13 +10760,21 @@ function isRegionUnlocked(regionId){
 
     const img = document.createElement('img');
     img.className = 'pin-icon';
-    img.src = b.icon;
     img.alt = b.name;
     img.decoding = 'async';
-    img.onerror = () => {
+    const usesCssMarker = String(b.icon || '').startsWith('css:');
+    if (usesCssMarker) {
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
       img.style.display = 'none';
       btn.classList.add('no-icon');
-    };
+    } else {
+      img.src = b.icon;
+      img.onerror = () => {
+        img.style.display = 'none';
+        btn.classList.add('no-icon');
+      };
+    }
     btn.appendChild(img);
 
     // CHIP musi być w DOM zanim decoratePin odpali
@@ -10927,6 +10889,11 @@ function isRegionUnlocked(regionId){
         b.action === "open_alpha_den"
       ) {
         if (window.AlphaDen?.open) return window.AlphaDen.open();
+        return openBuilding(bid, b.name, b.desc);
+      }
+
+      if (b.action === "open_signal_broker") {
+        if (window.SignalBroker?.open) return window.SignalBroker.open();
         return openBuilding(bid, b.name, b.desc);
       }
 
@@ -12206,6 +12173,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
+<script src="/js/signal_broker.js?v=signal-broker-shell-p0"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){

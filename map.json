@@ -30,7 +30,8 @@
       "width": 1600,
       "height": 900,
       "state": "unlocked",
-      "z": 2
+      "z": 2,
+      "renderTerrain": false
     },
     {
       "id": "relay_fringe_preview",
@@ -40,7 +41,8 @@
       "width": 1520,
       "height": 1500,
       "state": "preview",
-      "z": 1
+      "z": 1,
+      "renderTerrain": false
     }
   ],
   "assets": {
@@ -90,6 +92,11 @@
       "desc": "Reality frays. The void answers.",
       "unlock": { "type": "fragments", "item": "map_key_fragment", "required": 12 },
       "lockedReason": "You’re not ready. The edge only opens when the Chain recognizes you."
+    },
+    "relay_fringe": {
+      "id": "relay_fringe",
+      "name": "Relay Fringe",
+      "desc": "A degraded relay frontier beyond the stable Pack network."
     }
   },
   "fortress": {
@@ -519,6 +526,26 @@
         "dummy": { "hp": 50000, "def": 12 }
       },
       "tags": ["training", "utility", "no-reward"]
+    },
+    {
+      "id": "dead_relay_exchange",
+      "buildingId": "dead_relay_exchange",
+      "name": "Dead Relay Exchange",
+      "region": "relay_fringe",
+      "position": {
+        "space": "world",
+        "x": 2080,
+        "y": 1100
+      },
+      "action": "open_signal_broker",
+      "type": "signal_broker",
+      "status": "active",
+      "icon": "css:signal-broker-placeholder",
+      "desc": "A surviving contract relay operating at the edge of the mapped network.",
+      "lore": {
+        "identity": "A dead relay rebuilt into a neutral exchange for work the main network refuses to carry.",
+        "stakes": "The Broker trades in recovered signals, field intelligence and unfinished Pack business."
+      }
     }
   ],
   "paths": [
