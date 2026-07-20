@@ -35,10 +35,10 @@
     {
       "id": "relay_fringe_preview",
       "asset": "images/map/base/wasteland.jpg",
-      "x": 1840,
-      "y": 650,
-      "width": 900,
-      "height": 800,
+      "x": 1680,
+      "y": 300,
+      "width": 1520,
+      "height": 1500,
       "state": "preview",
       "z": 1
     }
