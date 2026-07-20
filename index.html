@@ -1923,13 +1923,100 @@ html.ah-skins-open #heroFrame{
   min-height:100%;
   z-index:1;
   overflow:hidden;
-  background:
-    url("images/map/base/map.2.0.webp") center/cover no-repeat,
-    url("images/map/base/wasteland.jpg") center/cover no-repeat;
+  background:url("images/map/base/map.2.0.webp") center/cover no-repeat;
   transform:translate3d(0,0,0) scale(1);
   transform-origin:top left;
   will-change:transform;
   cursor:grab;
+}
+
+.map-stage.is-world-canvas{
+  min-width:0;
+  min-height:0;
+  background:url("images/map/base/wasteland.jpg") center/cover no-repeat;
+}
+
+.map-world-base,
+.map-world-tiles,
+.map-legacy-area,
+.map-world-fog{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  user-select:none;
+}
+
+.map-world-base{
+  z-index:0;
+  background:url("images/map/base/wasteland.jpg") center/cover no-repeat;
+  filter:saturate(.78) brightness(.74);
+}
+
+.map-world-tiles{ z-index:2; }
+
+.map-world-tile{
+  position:absolute;
+  overflow:hidden;
+  pointer-events:none;
+  background:rgba(12,16,23,.64);
+}
+
+.map-world-tile img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  pointer-events:none;
+  user-select:none;
+}
+
+.map-world-tile[data-tile-state="preview"]{
+  filter:brightness(.58) saturate(.58) contrast(1.08);
+}
+
+.map-legacy-area{
+  z-index:3;
+  overflow:hidden;
+}
+
+.map-legacy-area .map-territories{
+  position:absolute;
+  inset:0;
+}
+
+.map-world-fog{ z-index:4; }
+
+.map-world-preview-fog{
+  position:absolute;
+  overflow:hidden;
+  background:
+    linear-gradient(128deg, rgba(8,11,17,.64), rgba(8,11,17,.14) 52%, rgba(8,11,17,.56)),
+    repeating-linear-gradient(180deg, rgba(170,220,255,.06) 0 1px, transparent 1px 5px);
+  box-shadow:inset 0 0 70px rgba(0,0,0,.72);
+}
+
+.map-world-preview-label{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  color:rgba(210,230,247,.62);
+  font:800 clamp(10px, .8vw, 14px)/1.5 system-ui, sans-serif;
+  letter-spacing:.22em;
+  text-align:center;
+  text-shadow:0 2px 16px rgba(0,0,0,.9);
+  white-space:nowrap;
+}
+
+.map-world-preview-label span{
+  display:block;
+  margin-top:4px;
+  color:rgba(255,166,126,.56);
+  font-size:.72em;
+}
+
+@media (max-width: 760px){
+  .map-world-preview-label{ display:none; }
 }
 
 .map-stage.is-panning{
@@ -1940,7 +2027,7 @@ html.ah-skins-open #heroFrame{
   content:"";
   position:absolute;
   inset:0;
-  z-index:1;
+  z-index:4;
   pointer-events:none;
   background:
     repeating-linear-gradient(180deg, rgba(132,210,255,.032) 0 1px, rgba(0,0,0,0) 1px 4px),
@@ -1958,7 +2045,7 @@ html.ah-skins-open #heroFrame{
   content:"";
   position:absolute;
   inset:0;
-  z-index:2;
+  z-index:4;
   pointer-events:none;
   background:
     linear-gradient(116deg, rgba(0,0,0,0) 18%, rgba(146,228,255,.08) 44%, rgba(0,0,0,0) 66%),
@@ -2085,6 +2172,9 @@ html.ah-skins-open #heroFrame{
 .paths-layer svg{ width:100%; height:100%; }
 
 .pins{ position:absolute; inset:0; z-index:3; }
+
+.map-stage.is-world-canvas .paths-layer{ z-index:5; }
+.map-stage.is-world-canvas .pins{ z-index:6; }
 
 /* === MAP VISUAL SYSTEM v1 === */
 
@@ -8636,7 +8726,7 @@ document.addEventListener("click", async (e) => {
         /* ===== MAP / STATE ===== */
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
-        const MAP_STAGE_SCALE = 1.65;
+        const LEGACY_MAP_STAGE_SCALE = 1.65;
         const MAP_ZOOM_LEVELS = [0.75, 1.0, 1.25];
         const MAP_MOBILE_MEDIA = window.matchMedia("(max-width: 640px)");
         const MAP_PAN_DRAG_THRESHOLD = 10;
@@ -8686,7 +8776,7 @@ document.addEventListener("click", async (e) => {
           if (!root) return null;
           let stage = document.getElementById("mapStage");
           if (stage && root.contains(stage)) {
-            root.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+            root.style.setProperty("--ah-map-stage-scale", String(LEGACY_MAP_STAGE_SCALE));
             return stage;
           }
           stage = document.createElement("div");
@@ -8694,7 +8784,7 @@ document.addEventListener("click", async (e) => {
           stage.className = "map-stage";
           while (root.firstChild) stage.appendChild(root.firstChild);
           root.appendChild(stage);
-          root.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+          root.style.setProperty("--ah-map-stage-scale", String(LEGACY_MAP_STAGE_SCALE));
           return stage;
         }
 
@@ -8713,7 +8803,181 @@ document.addEventListener("click", async (e) => {
           root.appendChild(layer); return layer;
         }
 
+        function mapFiniteNumber(value){
+          const number = Number(value);
+          return Number.isFinite(number) ? number : null;
+        }
+
+        function getWorldCanvasConfig(){
+          const world = DATA?.world;
+          const legacyBounds = world?.legacyBounds;
+          if (!world || world.enabled !== true || !legacyBounds) return null;
+
+          const width = mapFiniteNumber(world.width);
+          const height = mapFiniteNumber(world.height);
+          const scale = mapFiniteNumber(world.legacyViewportScale);
+          const x = mapFiniteNumber(legacyBounds.x);
+          const y = mapFiniteNumber(legacyBounds.y);
+          const legacyWidth = mapFiniteNumber(legacyBounds.width);
+          const legacyHeight = mapFiniteNumber(legacyBounds.height);
+          if (
+            !width || !height || !scale ||
+            x === null || y === null || !legacyWidth || !legacyHeight ||
+            x < 0 || y < 0 || x + legacyWidth > width || y + legacyHeight > height
+          ) return null;
+
+          return {
+            width,
+            height,
+            legacyViewportScale: scale,
+            legacyBounds: { x, y, width: legacyWidth, height: legacyHeight },
+            initialFocus: world.initialFocus
+          };
+        }
+
+        function isWorldCanvasEnabled(){
+          return !!getWorldCanvasConfig();
+        }
+
+        function clampWorldCoordinate(value, limit){
+          const number = mapFiniteNumber(value);
+          if (number === null) return 0;
+          return Math.max(0, Math.min(limit, number));
+        }
+
+        function resolveNodeWorldPosition(node, worldConfig = getWorldCanvasConfig()){
+          if (!worldConfig) return { x: mapFiniteNumber(node?.x) || 0, y: mapFiniteNumber(node?.y) || 0 };
+          const position = node?.position;
+          const isWorldPosition = position?.space === "world";
+          const rawX = isWorldPosition
+            ? mapFiniteNumber(position.x)
+            : worldConfig.legacyBounds.x + ((mapFiniteNumber(node?.x) || 0) / 100) * worldConfig.legacyBounds.width;
+          const rawY = isWorldPosition
+            ? mapFiniteNumber(position.y)
+            : worldConfig.legacyBounds.y + ((mapFiniteNumber(node?.y) || 0) / 100) * worldConfig.legacyBounds.height;
+          return {
+            x: clampWorldCoordinate(rawX, worldConfig.width),
+            y: clampWorldCoordinate(rawY, worldConfig.height)
+          };
+        }
+
+        function resolvePathWorldPoints(path, worldConfig = getWorldCanvasConfig()){
+          const rawPoints = worldConfig && Array.isArray(path?.worldPoints) ? path.worldPoints : (path?.points || []);
+          return rawPoints.reduce((points, pair) => {
+            if (!Array.isArray(pair) || pair.length < 2) return points;
+            if (!worldConfig) {
+              const x = mapFiniteNumber(pair[0]);
+              const y = mapFiniteNumber(pair[1]);
+              if (x !== null && y !== null) points.push({ x: (x / 100) * mapViewBox.width, y: (y / 100) * mapViewBox.height });
+              return points;
+            }
+            const usesWorldPoints = Array.isArray(path?.worldPoints);
+            const rawX = usesWorldPoints
+              ? mapFiniteNumber(pair[0])
+              : worldConfig.legacyBounds.x + ((mapFiniteNumber(pair[0]) || 0) / 100) * worldConfig.legacyBounds.width;
+            const rawY = usesWorldPoints
+              ? mapFiniteNumber(pair[1])
+              : worldConfig.legacyBounds.y + ((mapFiniteNumber(pair[1]) || 0) / 100) * worldConfig.legacyBounds.height;
+            points.push({
+              x: clampWorldCoordinate(rawX, worldConfig.width),
+              y: clampWorldCoordinate(rawY, worldConfig.height)
+            });
+            return points;
+          }, []);
+        }
+
+        function setWorldLayerRect(element, entry, worldConfig){
+          const x = mapFiniteNumber(entry?.x);
+          const y = mapFiniteNumber(entry?.y);
+          const width = mapFiniteNumber(entry?.width);
+          const height = mapFiniteNumber(entry?.height);
+          if (x === null || y === null || !width || !height || x < 0 || y < 0 || x + width > worldConfig.width || y + height > worldConfig.height) return false;
+          element.style.left = `${(x / worldConfig.width) * 100}%`;
+          element.style.top = `${(y / worldConfig.height) * 100}%`;
+          element.style.width = `${(width / worldConfig.width) * 100}%`;
+          element.style.height = `${(height / worldConfig.height) * 100}%`;
+          return true;
+        }
+
+        function getOrCreateMapWorldLayer(id, className){
+          let layer = document.getElementById(id);
+          if (!layer) {
+            layer = document.createElement("div");
+            layer.id = id;
+            layer.className = className;
+          }
+          return layer;
+        }
+
+        function ensureWorldLayers(){
+          if (!mapStageEl) return null;
+          const worldConfig = getWorldCanvasConfig();
+          const existingLegacyArea = document.getElementById("mapLegacyArea");
+          if (!worldConfig) {
+            mapStageEl.classList.remove("is-world-canvas");
+            mapStageEl.style.removeProperty("width");
+            mapStageEl.style.removeProperty("height");
+            const territories = existingLegacyArea?.querySelector(".map-territories");
+            if (territories) mapStageEl.insertBefore(territories, pathsSVG?.parentElement || null);
+            ["mapWorldBase", "mapWorldTiles", "mapLegacyArea", "mapWorldFog"].forEach((id) => document.getElementById(id)?.remove());
+            return null;
+          }
+
+          mapStageEl.classList.add("is-world-canvas");
+          const base = getOrCreateMapWorldLayer("mapWorldBase", "map-world-base");
+          const tiles = getOrCreateMapWorldLayer("mapWorldTiles", "map-world-tiles");
+          const legacyArea = getOrCreateMapWorldLayer("mapLegacyArea", "map-legacy-area");
+          const fog = getOrCreateMapWorldLayer("mapWorldFog", "map-world-fog");
+          const territories = mapStageEl.querySelector(".map-territories");
+          if (territories) legacyArea.appendChild(territories);
+          setWorldLayerRect(legacyArea, worldConfig.legacyBounds, worldConfig);
+          mapStageEl.append(base, tiles, legacyArea, fog, pathsSVG?.parentElement, pinsEl);
+          return { worldConfig, base, tiles, legacyArea, fog };
+        }
+
+        function renderWorldTiles(){
+          const layers = ensureWorldLayers();
+          if (!layers) return;
+          const { worldConfig, tiles, fog } = layers;
+          tiles.innerHTML = "";
+          fog.innerHTML = "";
+          const seenIds = new Set();
+          for (const tile of (Array.isArray(DATA?.tiles) ? DATA.tiles : [])) {
+            const id = String(tile?.id || "").trim();
+            if (!id || seenIds.has(id)) continue;
+            seenIds.add(id);
+            const tileEl = document.createElement("div");
+            tileEl.className = "map-world-tile";
+            tileEl.dataset.tileId = id;
+            tileEl.dataset.tileState = String(tile?.state || "unlocked");
+            tileEl.style.zIndex = String(mapFiniteNumber(tile?.z) || 0);
+            if (!setWorldLayerRect(tileEl, tile, worldConfig)) continue;
+            const image = document.createElement("img");
+            image.src = String(tile.asset || "");
+            image.alt = "";
+            image.decoding = "async";
+            image.draggable = false;
+            tileEl.appendChild(image);
+            tiles.appendChild(tileEl);
+
+            if (tile?.state === "preview" || tile?.state === "locked") {
+              const fogCell = document.createElement("div");
+              fogCell.className = "map-world-preview-fog";
+              if (setWorldLayerRect(fogCell, tile, worldConfig) && tile?.state === "preview") {
+                const label = document.createElement("div");
+                label.className = "map-world-preview-label";
+                label.innerHTML = "RELAY FRINGE<span>SIGNAL UNSTABLE</span>";
+                fogCell.appendChild(label);
+              }
+              fog.appendChild(fogCell);
+            }
+          }
+        }
+
         function resolveMapViewBox(){
+          const worldConfig = getWorldCanvasConfig();
+          if (worldConfig) return { width: worldConfig.width, height: worldConfig.height };
+          if (DATA?.world) return { ...DEFAULT_MAP_VIEWBOX };
           const rawMeta = Array.isArray(DATA?.meta?.viewBox) ? DATA.meta.viewBox : null;
           if (rawMeta && rawMeta.length >= 2) {
             const width = Number(rawMeta[0] || 0);
@@ -8827,8 +9091,20 @@ document.addEventListener("click", async (e) => {
         }
 
         function getInitialMapFocusPoint(){
+          const worldConfig = getWorldCanvasConfig();
+          if (worldConfig) {
+            const focusX = mapFiniteNumber(worldConfig.initialFocus?.x);
+            const focusY = mapFiniteNumber(worldConfig.initialFocus?.y);
+            if (focusX !== null && focusY !== null && focusX >= 0 && focusY >= 0 && focusX <= worldConfig.width && focusY <= worldConfig.height) {
+              return { x: focusX, y: focusY };
+            }
+            return {
+              x: worldConfig.legacyBounds.x + (worldConfig.legacyBounds.width / 2),
+              y: worldConfig.legacyBounds.y + (worldConfig.legacyBounds.height / 2)
+            };
+          }
           const nodes = Array.isArray(DATA?.nodes) ? DATA.nodes : [];
-          if (!nodes.length) return { x: 38, y: 58 };
+          if (!nodes.length) return { x: 50, y: 50 };
           const focusNodes = MAP_INITIAL_FOCUS_IDS
             .map((id) => nodes.find((node) => String(node?.id || node?.buildingId || "") === id))
             .filter(Boolean);
@@ -8851,8 +9127,13 @@ document.addEventListener("click", async (e) => {
           const sizes = scaledStageSize();
           const stageWidth = sizes.scaledWidth || viewportWidth;
           const stageHeight = sizes.scaledHeight || viewportHeight;
-          const targetX = Number(point?.x || 0) / 100;
-          const targetY = Number(point?.y || 0) / 100;
+          const worldConfig = getWorldCanvasConfig();
+          const targetX = worldConfig
+            ? clampWorldCoordinate(point?.x, worldConfig.width) / worldConfig.width
+            : Number(point?.x || 0) / 100;
+          const targetY = worldConfig
+            ? clampWorldCoordinate(point?.y, worldConfig.height) / worldConfig.height
+            : Number(point?.y || 0) / 100;
           const desiredX = (viewportWidth * 0.5) - (stageWidth * targetX);
           const desiredY = (viewportHeight * 0.5) - (stageHeight * targetY);
           applyMapPan(desiredX, desiredY);
@@ -8860,7 +9141,18 @@ document.addEventListener("click", async (e) => {
 
         function refreshMapStage(options = {}){
           if (!mapRoot || !mapStageEl) return;
-          mapRoot.style.setProperty("--ah-map-stage-scale", String(MAP_STAGE_SCALE));
+          const worldConfig = getWorldCanvasConfig();
+          if (worldConfig) {
+            const viewportWidth = mapRoot.clientWidth || 0;
+            const viewportHeight = mapRoot.clientHeight || 0;
+            const fitX = viewportWidth / worldConfig.legacyBounds.width;
+            const fitY = viewportHeight / worldConfig.legacyBounds.height;
+            const basePixelsPerUnit = Math.max(fitX, fitY) * worldConfig.legacyViewportScale;
+            mapStageEl.style.width = `${Math.round(worldConfig.width * basePixelsPerUnit)}px`;
+            mapStageEl.style.height = `${Math.round(worldConfig.height * basePixelsPerUnit)}px`;
+          } else {
+            mapRoot.style.setProperty("--ah-map-stage-scale", String(LEGACY_MAP_STAGE_SCALE));
+          }
           updateMapZoomControls();
           if (options.recenter) {
             centerMapOn(getInitialMapFocusPoint());
@@ -10227,8 +10519,6 @@ function isRegionUnlocked(regionId){
   return false;
 }
 
-        const toXY = (xp,yp) => ({ x: Math.round((xp/100)*mapViewBox.width), y: Math.round((yp/100)*mapViewBox.height) });
-
         function isNodePreviewAccessible(node){
           const bid = String(node?.buildingId || node?.id || "").trim();
           const action = String(node?.action || "").trim();
@@ -10271,8 +10561,8 @@ function isRegionUnlocked(regionId){
           pathsSVG.innerHTML = '';
           for (const p of (DATA.paths || [])){
             const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
-            const ptsStr = (p.points||[]).map(([xp,yp])=>{ const {x,y}=toXY(xp,yp); return `${x},${y}`; }).join(' ');
-            if (!locked && p.emphasis){
+            const ptsStr = resolvePathWorldPoints(p).map(({x,y}) => `${Math.round(x)},${Math.round(y)}`).join(' ');
+            if (!locked && (p.emphasis || p.glow)){
               const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
               glow.setAttribute('points', ptsStr);
               glow.setAttribute('class', 'path glow');
@@ -10289,6 +10579,7 @@ function isRegionUnlocked(regionId){
        function renderPins(){
   if (!DATA) return;
   pinsEl.innerHTML = '';
+  const worldConfig = getWorldCanvasConfig();
 
   for (const b of (DATA.nodes || [])){
     const bid = String(b.buildingId || b.id || "");
@@ -10329,8 +10620,9 @@ function isRegionUnlocked(regionId){
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'hotspot map-pin ' + (displayState.displayLocked ? 'locked' : 'unlocked');
-    btn.style.left = b.x + '%';
-    btn.style.top  = b.y + '%';
+    const worldPosition = resolveNodeWorldPosition(b, worldConfig);
+    btn.style.left = worldConfig ? `${(worldPosition.x / worldConfig.width) * 100}%` : b.x + '%';
+    btn.style.top  = worldConfig ? `${(worldPosition.y / worldConfig.height) * 100}%` : b.y + '%';
     btn.title = b.name + (displayState.titleSuffix ? ` (${displayState.titleSuffix})` : '');
 
     // dataset
@@ -10592,7 +10884,7 @@ function isRegionUnlocked(regionId){
   // resolveLabelCollisions(); // jeśli używasz anti-collision
         }
 
-        function renderMap(){ drawPaths(); renderPins(); updateUnlockProgress(); updateMapSelectionBrief(); }
+        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); updateUnlockProgress(); updateMapSelectionBrief(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
@@ -11755,12 +12047,12 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   
 
 <!-- HUD SCRIPTS: INVENTORY + EQUIPPED -->
-<script src="js/inventory.js?v=20251205"></script>
+<script src="js/inventory.js?v=r25_1b_20260718"></script>
 <script src="js/equipped.js?v=20251210"></script>
 <script src="js/scene_bg.js?v=WEBAPP_VER"></script>
 <script src="js/shop.js?v=WEBAPP_VER"></script>
 <script src="js/forge.js?v=WEBAPP_VER"></script>
-<script src="js/missions.js?v=elite-visual-duel-p1-closure"></script>
+<script src="js/missions.js?v=elite-visual-duel-p1-closure-utf8-cleanup"></script>
 <script src="js/cta.js?v=WEBAPP_VER"></script>
 <script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
@@ -11960,7 +12252,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function loadStats(){
   const tg = window.Telegram?.WebApp || null;
 
-  const v = "stats-p0-2b1-training-panel-fix";
+  const v = "stats-p0-2b1-training-panel-fix-utf8-cleanup";
   const s = document.createElement("script");
   s.src = "/js/stats.js?v=" + encodeURIComponent(v);
 

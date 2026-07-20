@@ -2,8 +2,47 @@
   "version": 9,
   "meta": {
     "name": "Alpha Husky Overworld",
-    "viewBox": [1600, 900]
+    "viewBox": [3200, 1800]
   },
+  "world": {
+    "enabled": true,
+    "version": 1,
+    "width": 3200,
+    "height": 1800,
+    "legacyViewportScale": 1.65,
+    "legacyBounds": {
+      "x": 240,
+      "y": 180,
+      "width": 1600,
+      "height": 900
+    },
+    "initialFocus": {
+      "x": 1040,
+      "y": 630
+    }
+  },
+  "tiles": [
+    {
+      "id": "known_network",
+      "asset": "images/map/base/map.2.0.webp",
+      "x": 240,
+      "y": 180,
+      "width": 1600,
+      "height": 900,
+      "state": "unlocked",
+      "z": 2
+    },
+    {
+      "id": "relay_fringe_preview",
+      "asset": "images/map/base/wasteland.jpg",
+      "x": 1840,
+      "y": 650,
+      "width": 900,
+      "height": 800,
+      "state": "preview",
+      "z": 1
+    }
+  ],
   "assets": {
     "icons": "images/map/building",
     "ui": "images/ui",
