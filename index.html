@@ -1275,10 +1275,10 @@ html.ah-skins-open #heroFrame{
 
 .map-head {
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-columns:minmax(0,1fr) auto auto;
   grid-template-areas:
-    "main actions"
-    "status status";
+    "main actions close"
+    "status status status";
   align-items:center;
   gap:5px;
   padding:2px;
@@ -1287,6 +1287,7 @@ html.ah-skins-open #heroFrame{
 .map-head-main{ grid-area:main; display:flex; align-items:center; gap:6px; min-width:0; }
 .map-head-actions{ grid-area:actions; display:flex; align-items:center; gap:4px; flex:0 0 auto; min-width:0; }
 .map-head-status{ grid-area:status; display:flex; justify-content:flex-end; min-width:0; }
+.map-close-control{ grid-area:close; }
 .map-head h2 { margin:0; font:700 15px/1 system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
 .map-intel-btn{
   min-height:26px;
@@ -1653,11 +1654,14 @@ html.ah-skins-open #heroFrame{
     max-height:calc(100dvh - 12px);
   }
   .map-head{
-    grid-template-columns:minmax(0,1fr) auto;
-    grid-template-areas:"main actions";
-    align-items:flex-start;
-    gap:4px;
-    padding:1px 0 3px;
+    grid-template-columns:minmax(0,1fr) 44px;
+    grid-template-areas:
+      "main close"
+      "actions actions"
+      "status status";
+    align-items:center;
+    gap:5px;
+    padding:2px 0 4px;
   }
   .map-head-main{
     width:100%;
@@ -1670,52 +1674,57 @@ html.ah-skins-open #heroFrame{
     margin-left:auto;
   }
   .map-head-actions{
-    width:auto;
-    display:flex;
-    align-items:flex-start;
-    gap:4px;
+    width:100%;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    align-items:center;
+    gap:6px;
   }
   .map-head h2{
     font-size:14px;
     line-height:1.05;
   }
   .map-intel-btn{
-    order:1;
-    justify-self:end;
-    min-height:24px;
-    min-width:0;
-    padding:0 8px;
-    font-size:9.5px;
+    min-height:44px;
+    padding:0 10px;
+    font-size:10px;
     letter-spacing:.03em;
   }
   .map-zoom-controls{
-    order:2;
-    grid-column:auto;
     min-width:0;
-    width:auto;
+    width:100%;
+    min-height:44px;
     display:inline-flex;
     align-items:center;
-    gap:2px;
-    padding:2px 4px;
+    gap:5px;
+    padding:3px 5px;
+    justify-content:space-between;
   }
   .map-head-status{
     width:100%;
     justify-content:flex-start;
   }
   .map-zoom-btn{
-    display:none;
+    display:block;
+    min-width:44px;
+    min-height:38px;
+    height:38px;
+    padding:0 9px;
   }
   .map-zoom-slider{
-    width:36px;
-    min-width:36px;
+    width:auto;
+    min-width:92px;
+    flex:1 1 auto;
+    height:38px;
   }
   #closeMap{
-    order:3;
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    padding:0;
     justify-self:end;
-    min-width:28px;
-    height:24px;
-    padding:0 8px;
-    align-self:stretch;
+    pointer-events:auto;
   }
   #ctaSurface{
     margin:0 0 2px !important;
@@ -2058,25 +2067,26 @@ html.ah-skins-open #heroFrame{
   position:absolute;
   overflow:hidden;
   pointer-events:none;
+  isolation:isolate;
 }
 
 .map-world-blend-zone[data-zone="east"]{
   background:
-    radial-gradient(ellipse at 18% 22%, rgba(88,170,198,.16), transparent 31%),
-    radial-gradient(ellipse at 68% 76%, rgba(4,8,14,.54), transparent 52%),
-    radial-gradient(ellipse at 34% 56%, rgba(10,18,27,.38), transparent 44%),
-    linear-gradient(90deg, rgba(8,12,18,.05), rgba(9,17,25,.38) 48%, rgba(5,10,16,.10)),
-    url("images/map/overlays/fog.png") center / 150% 116% no-repeat;
-  opacity:.78;
+    radial-gradient(ellipse at 18% 20%, rgba(88,170,198,.11), transparent 26%),
+    radial-gradient(ellipse at 54% 72%, rgba(4,8,14,.34), transparent 44%),
+    radial-gradient(ellipse at 78% 38%, rgba(9,17,25,.22), transparent 38%),
+    linear-gradient(90deg, transparent 0%, rgba(8,14,21,.13) 38%, rgba(5,10,16,.06) 76%, transparent 100%);
+  clip-path:polygon(4% 8%, 34% 0%, 82% 6%, 100% 22%, 92% 52%, 100% 84%, 70% 100%, 28% 94%, 0% 72%, 8% 40%);
+  opacity:.56;
 }
 
 .map-world-blend-zone[data-zone="south-east"]{
   background:
-    radial-gradient(ellipse at 24% 8%, rgba(77,154,184,.10), transparent 32%),
-    radial-gradient(ellipse at 70% 68%, rgba(4,8,14,.58), transparent 58%),
-    linear-gradient(136deg, rgba(7,13,20,.04) 14%, rgba(9,16,24,.34) 54%, rgba(4,8,14,.60)),
-    url("images/map/overlays/fog.png") 54% 52% / 138% 128% no-repeat;
-  opacity:.78;
+    radial-gradient(ellipse at 20% 16%, rgba(77,154,184,.08), transparent 28%),
+    radial-gradient(ellipse at 66% 66%, rgba(4,8,14,.40), transparent 48%),
+    linear-gradient(136deg, transparent 8%, rgba(9,16,24,.17) 50%, rgba(4,8,14,.30) 78%, transparent 100%);
+  clip-path:polygon(4% 14%, 36% 0%, 74% 9%, 100% 34%, 88% 70%, 66% 100%, 26% 92%, 0% 62%);
+  opacity:.52;
 }
 
 .map-world-fog{ z-index:5; }
@@ -2085,9 +2095,10 @@ html.ah-skins-open #heroFrame{
   position:absolute;
   overflow:hidden;
   background:
-    linear-gradient(128deg, rgba(8,11,17,.64), rgba(8,11,17,.14) 52%, rgba(8,11,17,.56)),
-    repeating-linear-gradient(180deg, rgba(170,220,255,.06) 0 1px, transparent 1px 5px);
-  box-shadow:inset 0 0 70px rgba(0,0,0,.72);
+    radial-gradient(ellipse at 30% 26%, rgba(130,208,230,.045), transparent 25%),
+    radial-gradient(ellipse at 80% 76%, rgba(3,7,12,.42), transparent 48%),
+    linear-gradient(128deg, transparent 6%, rgba(8,11,17,.12) 52%, transparent 96%);
+  opacity:.60;
 }
 
 .map-world-preview-fog::after{
@@ -2095,7 +2106,7 @@ html.ah-skins-open #heroFrame{
   position:absolute;
   inset:0;
   pointer-events:none;
-  background:radial-gradient(ellipse at center, transparent 30%, rgba(3,6,11,.18) 72%, rgba(2,4,8,.46));
+  background:radial-gradient(ellipse at 70% 70%, transparent 32%, rgba(3,6,11,.12) 70%, rgba(2,4,8,.26));
 }
 
 .map-world-preview-label{
@@ -6741,8 +6752,8 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
                 <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="3" step="1" value="2" aria-label="Map zoom level">
                 <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map zoom and center">Reset</button>
               </div>
-              <button class="close-x" id="closeMap" type="button">×</button>
             </div>
+            <button class="close-x map-close-control" id="closeMap" type="button" aria-label="Close map">×</button>
           </div>
           <div class="map-intel-stack" aria-label="Map Intel summary">
             <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
