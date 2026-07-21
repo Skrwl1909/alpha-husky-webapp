@@ -4792,9 +4792,21 @@ body.missions-open{
     0 0 22px rgba(46,220,255,.12);
 }
 
-/* ---------- SIGNAL BROKER / CSS PLACEHOLDER ---------- */
+/* ---------- IMAGE MARKERS / SIGNAL BROKER ---------- */
+.map-stage.is-world-canvas .hotspot.map-pin.has-image-marker{
+  transform:translate(-50%,-50%) scale(var(--ah-map-marker-ui-scale, 1));
+  transform-origin:center;
+}
+
+.map-stage.is-world-canvas .hotspot.map-pin.has-image-marker:hover{
+  transform:translate(-50%,-50%) scale(var(--ah-map-marker-ui-scale, 1));
+  filter:brightness(1.05);
+}
+
 #pins .hotspot.theme-signal-broker,
 #pins .map-pin.theme-signal-broker{
+  display:grid;
+  place-items:center;
   width:58px;
   height:58px;
   z-index:3;
@@ -4802,40 +4814,6 @@ body.missions-open{
   --node-chip-bg:rgba(9,18,23,.9);
   --node-chip-border:rgba(103,220,236,.24);
   --node-chip-color:rgba(218,245,249,.94);
-}
-
-#pins .hotspot.theme-signal-broker::before,
-#pins .map-pin.theme-signal-broker::before{
-  content:"";
-  width:42px;
-  height:42px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  border:1px solid rgba(119,205,219,.38);
-  background:
-    linear-gradient(90deg, transparent 46%, rgba(118,211,223,.28) 47%, rgba(118,211,223,.28) 53%, transparent 54%),
-    linear-gradient(0deg, transparent 46%, rgba(118,211,223,.20) 47%, rgba(118,211,223,.20) 53%, transparent 54%),
-    radial-gradient(circle at 50% 50%, rgba(23,44,53,.96) 0 28%, rgba(6,13,17,.97) 29% 63%, rgba(39,91,101,.44) 64% 66%, transparent 67%);
-  box-shadow:inset 0 0 0 5px rgba(4,9,12,.42), 0 7px 12px rgba(0,0,0,.32);
-  filter:none;
-  opacity:1;
-}
-
-#pins .hotspot.theme-signal-broker::after,
-#pins .map-pin.theme-signal-broker::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:7px;
-  height:7px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  background:#d99a43;
-  border:1px solid rgba(255,215,145,.68);
-  box-shadow:0 0 8px rgba(226,160,74,.38);
-  animation:signalBrokerStatusPulse 2.8s ease-in-out infinite;
-  pointer-events:none;
 }
 
 #pins .hotspot.theme-signal-broker .pin-ring,
@@ -4859,7 +4837,13 @@ body.missions-open{
 }
 
 #pins .hotspot.theme-signal-broker .pin-icon,
-#pins .map-pin.theme-signal-broker .pin-icon{ display:none; }
+#pins .map-pin.theme-signal-broker .pin-icon{
+  display:block;
+  height:auto;
+  object-fit:contain;
+  position:relative;
+  z-index:1;
+}
 
 #pins .hotspot.theme-signal-broker.active .chip,
 #pins .map-pin.theme-signal-broker.active .chip{
@@ -4874,10 +4858,6 @@ body.missions-open{
 @keyframes signalBrokerPing{
   0%{ opacity:.58; transform:translate(-50%,-50%) scale(.82); }
   72%,100%{ opacity:0; transform:translate(-50%,-50%) scale(1.12); }
-}
-@keyframes signalBrokerStatusPulse{
-  0%,100%{ opacity:.72; transform:translate(-50%,-50%) scale(.88); }
-  50%{ opacity:1; transform:translate(-50%,-50%) scale(1.08); }
 }
   </style>
 
@@ -8862,6 +8842,7 @@ document.addEventListener("click", async (e) => {
         const LEGACY_MAP_STAGE_SCALE = 1.65;
         const MAP_ZOOM_PRESETS = Object.freeze([0.55, 0.75, 1.0, 1.25]);
         const MAP_FIT_PADDING_PX = 12;
+        const MAP_DATA_VERSION = "dead-relay-marker-v1";
         let MAP_ZOOM_LEVELS = [...MAP_ZOOM_PRESETS];
         const MAP_MOBILE_MEDIA = window.matchMedia("(max-width: 640px)");
         const MAP_PAN_DRAG_THRESHOLD = 10;
@@ -9187,9 +9168,11 @@ document.addEventListener("click", async (e) => {
         function applyMapPan(nextX, nextY){
           if (!mapStageEl) return;
           const clamped = clampMapPan(nextX, nextY);
+          const zoom = Math.max(0.05, Number(mapPanState.zoom || 1));
           mapPanState.x = clamped.x;
           mapPanState.y = clamped.y;
-          mapStageEl.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0) scale(${Number(mapPanState.zoom || 1)})`;
+          mapStageEl.style.setProperty("--ah-map-marker-ui-scale", String(1 / zoom));
+          mapStageEl.style.transform = `translate3d(${clamped.x}px, ${clamped.y}px, 0) scale(${zoom})`;
         }
 
         function updateMapZoomControls(){
@@ -9630,8 +9613,7 @@ document.addEventListener("click", async (e) => {
 
         async function loadMapData(){
           try{
-            const v = window.WEBAPP_VER || 'dev';
-            DATA = await fetch(`map.json?v=${encodeURIComponent(v)}`, { cache: 'no-store' }).then(r => r.json());
+            DATA = await fetch(`map.json?v=${encodeURIComponent(MAP_DATA_VERSION)}`, { cache: 'no-store' }).then(r => r.json());
           }catch(e){
             console.error('map.json load error', e);
             DATA = null;
@@ -10842,6 +10824,7 @@ function isRegionUnlocked(regionId){
       img.style.display = 'none';
       btn.classList.add('no-icon');
     } else {
+      btn.classList.add('has-image-marker');
       img.src = b.icon;
       img.onerror = () => {
         img.style.display = 'none';

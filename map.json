@@ -540,7 +540,7 @@
       "action": "open_signal_broker",
       "type": "signal_broker",
       "status": "active",
-      "icon": "css:signal-broker-placeholder",
+      "icon": "images/map/building/dead_relay_exchange_marker_v1.webp",
       "desc": "RELAY-7’s relay outpost. Campaign traffic, dead-route traces and future Pack contracts pass through this node.",
       "lore": {
         "identity": "A dead relay rebuilt as RELAY-7’s neutral outpost beyond the stable Pack network.",
