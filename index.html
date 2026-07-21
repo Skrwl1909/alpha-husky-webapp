@@ -1246,16 +1246,18 @@ html.ah-skins-open #heroFrame{
   }
   .fallback a { color:#aef; text-decoration:underline; }
 
-.map-back { position:fixed; inset:0; z-index: 4; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.62); }
+.map-back { position:fixed; inset:0; z-index:9001; display:none; align-items:center; justify-content:center; overflow:hidden; background:rgba(0,0,0,.62); }
 
 /* PATCH: większy modal + flex layout */
 .map-wrap {
   width:min(96vw, 1200px);
+  max-height:100%;
+  box-sizing:border-box;
   padding:
-    calc(12px + var(--ah-safe-top))
-    calc(12px + var(--ah-safe-right))
-    calc(12px + var(--ah-safe-bottom))
-    calc(12px + var(--ah-safe-left));
+    calc(12px + var(--ah-inset-top))
+    calc(12px + var(--ah-inset-right))
+    calc(12px + var(--ah-inset-bottom))
+    calc(12px + var(--ah-inset-left));
 }
 
 .map-card {
@@ -1640,18 +1642,23 @@ html.ah-skins-open #heroFrame{
   text-overflow:clip;
 }
 @media (max-width: 640px){
+  .map-back{
+    align-items:flex-start;
+  }
   .map-wrap{
-    width:100vw;
+    width:100%;
+    height:100%;
+    min-width:0;
     padding:
-      calc(6px + var(--ah-safe-top))
-      calc(6px + var(--ah-safe-right))
-      calc(6px + var(--ah-safe-bottom))
-      calc(6px + var(--ah-safe-left));
+      calc(6px + var(--ah-inset-top))
+      calc(6px + var(--ah-inset-right))
+      calc(6px + var(--ah-inset-bottom))
+      calc(6px + var(--ah-inset-left));
   }
   .map-card{
     padding:8px;
-    height:calc(100dvh - 12px);
-    max-height:calc(100dvh - 12px);
+    height:100%;
+    max-height:100%;
   }
   .map-head{
     grid-template-columns:minmax(0,1fr) 44px;
@@ -1693,12 +1700,14 @@ html.ah-skins-open #heroFrame{
   .map-zoom-controls{
     min-width:0;
     width:100%;
+    height:44px;
     min-height:44px;
     display:inline-flex;
     align-items:center;
-    gap:5px;
-    padding:3px 5px;
+    gap:4px;
+    padding:0 2px 0 6px;
     justify-content:space-between;
+    overflow:hidden;
   }
   .map-head-status{
     width:100%;
@@ -1706,16 +1715,18 @@ html.ah-skins-open #heroFrame{
   }
   .map-zoom-btn{
     display:block;
+    width:44px;
     min-width:44px;
-    min-height:38px;
-    height:38px;
-    padding:0 9px;
+    min-height:44px;
+    height:44px;
+    padding:0;
+    font-size:22px;
   }
   .map-zoom-slider{
     width:auto;
-    min-width:92px;
+    min-width:0;
     flex:1 1 auto;
-    height:38px;
+    height:44px;
   }
   #closeMap{
     width:44px;
@@ -1728,6 +1739,10 @@ html.ah-skins-open #heroFrame{
   }
   #ctaSurface{
     margin:0 0 2px !important;
+  }
+  .map-card .map{
+    min-height:0;
+    max-height:none;
   }
   .map-world-brief{
     margin:0 2px 2px;
@@ -6736,8 +6751,8 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <div class="map-head-actions">
               <button class="map-intel-btn" id="openWarIntel" type="button" aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">War Intel ?</button>
               <div class="map-zoom-controls" aria-label="Map zoom controls">
-                <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="3" step="1" value="2" aria-label="Map zoom level">
-                <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map zoom and center">Reset</button>
+                <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="4" step="1" value="3" aria-label="Map zoom level">
+                <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map view" title="Reset map view">↻</button>
               </div>
             </div>
             <button class="close-x map-close-control" id="closeMap" type="button" aria-label="Close map">×</button>
@@ -7597,7 +7612,7 @@ body.bc-open #ahCommunityBtn{
     window.WEBAPP_VER = "progression-spine-p1-5d-runtime-closure";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
-  <script src="/js/telegram_shell.js?v=WEBAPP_VER"></script>
+  <script src="/js/telegram_shell.js?v=world-canvas-mobile-ux-v1"></script>
   <script src="/js/start_links.js?v=WEBAPP_VER"></script>
   <script src="/js/start_router.js?v=WEBAPP_VER"></script>
   
@@ -8845,7 +8860,9 @@ document.addEventListener("click", async (e) => {
         const mapBack = document.getElementById("mapBack");
         const mapRoot = document.getElementById("map");
         const LEGACY_MAP_STAGE_SCALE = 1.65;
-        const MAP_ZOOM_LEVELS = [0.55, 0.75, 1.0, 1.25];
+        const MAP_ZOOM_PRESETS = Object.freeze([0.55, 0.75, 1.0, 1.25]);
+        const MAP_FIT_PADDING_PX = 12;
+        let MAP_ZOOM_LEVELS = [...MAP_ZOOM_PRESETS];
         const MAP_MOBILE_MEDIA = window.matchMedia("(max-width: 640px)");
         const MAP_PAN_DRAG_THRESHOLD = 10;
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
@@ -8868,7 +8885,7 @@ document.addEventListener("click", async (e) => {
         }
 
         function defaultMapZoom(){
-          return isMobileMapViewport() ? MAP_ZOOM_LEVELS[1] : 1;
+          return isMobileMapViewport() ? 0.75 : 1;
         }
 
         const mapPanState = {
@@ -8879,6 +8896,7 @@ document.addEventListener("click", async (e) => {
           minY: 0,
           maxY: 0,
           zoom: defaultMapZoom(),
+          zoomMode: "preset",
           pointerId: null,
           startX: 0,
           startY: 0,
@@ -9091,8 +9109,9 @@ document.addEventListener("click", async (e) => {
 
         function mapZoomIndex(){
           const current = Number(mapPanState.zoom || 1);
-          const idx = MAP_ZOOM_LEVELS.findIndex((level) => Math.abs(level - current) < 0.001);
-          return idx >= 0 ? idx : (isMobileMapViewport() ? 1 : 2);
+          return MAP_ZOOM_LEVELS.reduce((bestIndex, level, index) => (
+            Math.abs(level - current) < Math.abs(MAP_ZOOM_LEVELS[bestIndex] - current) ? index : bestIndex
+          ), 0);
         }
 
         function scaledStageSize(){
@@ -9108,6 +9127,36 @@ document.addEventListener("click", async (e) => {
           };
         }
 
+        function calculateMapFitZoom(){
+          const viewportWidth = mapRoot?.clientWidth || 0;
+          const viewportHeight = mapRoot?.clientHeight || 0;
+          const baseWidth = mapStageEl?.offsetWidth || 0;
+          const baseHeight = mapStageEl?.offsetHeight || 0;
+          if (viewportWidth <= 0 || viewportHeight <= 0 || baseWidth <= 0 || baseHeight <= 0) {
+            return Math.min(defaultMapZoom(), MAP_ZOOM_PRESETS[0]);
+          }
+          const availableWidth = Math.max(1, viewportWidth - (MAP_FIT_PADDING_PX * 2));
+          const availableHeight = Math.max(1, viewportHeight - (MAP_FIT_PADDING_PX * 2));
+          const rawFit = Math.min(availableWidth / baseWidth, availableHeight / baseHeight);
+          const safeFit = Math.min(defaultMapZoom(), Math.max(0.05, rawFit));
+          return Math.round(safeFit * 10000) / 10000;
+        }
+
+        function rebuildMapZoomLevels(){
+          const fitZoom = calculateMapFitZoom();
+          const wasFitZoom = mapPanState.zoomMode === "fit";
+          MAP_ZOOM_LEVELS = [
+            fitZoom,
+            ...MAP_ZOOM_PRESETS.filter((level) => level > fitZoom + 0.001)
+          ];
+          if (wasFitZoom) mapPanState.zoom = fitZoom;
+          if (mapZoomSlider) {
+            mapZoomSlider.min = "0";
+            mapZoomSlider.max = String(Math.max(0, MAP_ZOOM_LEVELS.length - 1));
+          }
+          return fitZoom;
+        }
+
         function clampMapPan(nextX, nextY){
           const viewportWidth = mapRoot?.clientWidth || 0;
           const viewportHeight = mapRoot?.clientHeight || 0;
@@ -9115,10 +9164,14 @@ document.addEventListener("click", async (e) => {
           const stageWidth = sizes.scaledWidth || viewportWidth;
           const stageHeight = sizes.scaledHeight || viewportHeight;
 
-          const minX = Math.min(0, viewportWidth - stageWidth);
-          const minY = Math.min(0, viewportHeight - stageHeight);
-          const maxX = 0;
-          const maxY = 0;
+          const centeredX = (viewportWidth - stageWidth) / 2;
+          const centeredY = (viewportHeight - stageHeight) / 2;
+          const stageWider = stageWidth > viewportWidth;
+          const stageTaller = stageHeight > viewportHeight;
+          const minX = stageWider ? viewportWidth - stageWidth : centeredX;
+          const minY = stageTaller ? viewportHeight - stageHeight : centeredY;
+          const maxX = stageWider ? 0 : centeredX;
+          const maxY = stageTaller ? 0 : centeredY;
 
           mapPanState.minX = minX;
           mapPanState.maxX = maxX;
@@ -9141,13 +9194,17 @@ document.addEventListener("click", async (e) => {
 
         function updateMapZoomControls(){
           const idx = mapZoomIndex();
-          if (mapZoomSlider) mapZoomSlider.value = String(idx);
+          if (mapZoomSlider) {
+            mapZoomSlider.max = String(Math.max(0, MAP_ZOOM_LEVELS.length - 1));
+            mapZoomSlider.value = String(idx);
+          }
         }
 
         function setMapZoom(nextZoom, options = {}){
           if (!mapRoot || !mapStageEl) return;
-          const zoom = MAP_ZOOM_LEVELS.includes(nextZoom) ? nextZoom : defaultMapZoom();
+          const zoom = MAP_ZOOM_LEVELS.find((level) => Math.abs(level - Number(nextZoom)) < 0.001) ?? defaultMapZoom();
           const currentZoom = Number(mapPanState.zoom || 1);
+          mapPanState.zoomMode = options.mode || (Math.abs(zoom - MAP_ZOOM_LEVELS[0]) < 0.001 ? "fit" : "preset");
           if (Math.abs(currentZoom - zoom) < 0.001 && !options.recenter) {
             updateMapZoomControls();
             return;
@@ -9238,6 +9295,7 @@ document.addEventListener("click", async (e) => {
           } else {
             mapRoot.style.setProperty("--ah-map-stage-scale", String(LEGACY_MAP_STAGE_SCALE));
           }
+          rebuildMapZoomLevels();
           updateMapZoomControls();
           if (options.recenter) {
             centerMapOn(getInitialMapFocusPoint());
@@ -9253,18 +9311,37 @@ document.addEventListener("click", async (e) => {
 
           mapZoomSlider?.addEventListener("input", (event) => {
             const idx = Math.max(0, Math.min(MAP_ZOOM_LEVELS.length - 1, Number(event.target?.value ?? 1)));
-            setMapZoom(MAP_ZOOM_LEVELS[idx]);
+            setMapZoom(MAP_ZOOM_LEVELS[idx], { mode: idx === 0 ? "fit" : "preset" });
           });
 
         mapZoomResetBtn?.addEventListener("click", (event) => {
           event.preventDefault();
-          setMapZoom(defaultMapZoom(), { recenter: true });
+          setMapZoom(defaultMapZoom(), { recenter: true, mode: "preset" });
         });
+        }
+
+        let mapViewportRefreshFrame = null;
+        function scheduleMapViewportRefresh(){
+          if (mapBack?.style?.display !== "flex" || mapViewportRefreshFrame !== null) return;
+          mapViewportRefreshFrame = requestAnimationFrame(() => {
+            mapViewportRefreshFrame = null;
+            refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
+          });
+        }
+
+        function bindMapViewportRefresh(){
+          if (!mapRoot || mapRoot.dataset.viewportBound === "1") return;
+          mapRoot.dataset.viewportBound = "1";
+          window.addEventListener("resize", scheduleMapViewportRefresh);
+          window.addEventListener("orientationchange", scheduleMapViewportRefresh);
+          window.addEventListener("ah:telegram-viewport-change", scheduleMapViewportRefresh);
+          window.visualViewport?.addEventListener("resize", scheduleMapViewportRefresh);
         }
 
         function bindMapPan(){
           if (!mapRoot || !mapStageEl || mapRoot.dataset.panBound === "1") return;
           mapRoot.dataset.panBound = "1";
+          bindMapViewportRefresh();
 
           mapRoot.addEventListener("pointerdown", (event) => {
             if (!event.isPrimary || mapPanState.pointerId !== null) return;
@@ -9323,10 +9400,6 @@ document.addEventListener("click", async (e) => {
             event.stopImmediatePropagation();
           }, true);
 
-          window.addEventListener("resize", () => {
-            if (mapBack?.style?.display !== "flex") return;
-            refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
-          });
         }
 
         function selectedMapNode(){
@@ -12173,7 +12246,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
-<script src="/js/signal_broker.js?v=signal-broker-shell-p0"></script>
+<script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
@@ -12531,7 +12604,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return;
   }
 
-  const v = "den-p0g";
+  const v = "world-canvas-mobile-ux-v1";
   const s = document.createElement("script");
   s.src = "/js/map.js?v=" + encodeURIComponent(v);
 

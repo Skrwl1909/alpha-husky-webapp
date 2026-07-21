@@ -541,10 +541,10 @@
       "type": "signal_broker",
       "status": "active",
       "icon": "css:signal-broker-placeholder",
-      "desc": "A surviving contract relay operating at the edge of the mapped network.",
+      "desc": "RELAY-7’s relay outpost. Campaign traffic, dead-route traces and future Pack contracts pass through this node.",
       "lore": {
-        "identity": "A dead relay rebuilt into a neutral exchange for work the main network refuses to carry.",
-        "stakes": "The Broker trades in recovered signals, field intelligence and unfinished Pack business."
+        "identity": "A dead relay rebuilt as RELAY-7’s neutral outpost beyond the stable Pack network.",
+        "stakes": "RELAY-7 tracks recovered signals, field intelligence and unfinished Pack business here."
       }
     }
   ],
