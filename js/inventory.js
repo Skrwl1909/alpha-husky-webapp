@@ -435,6 +435,175 @@ window.Inventory = {
     if (overlay) overlay.remove();
   },
 
+  _bonePackStorageKey: "ah.bonePack.pending.v1",
+
+  _loadBonePackRequest() {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem(this._bonePackStorageKey) || "null");
+      return parsed && typeof parsed === "object" && parsed.key ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  _saveBonePackRequest(record) {
+    try { sessionStorage.setItem(this._bonePackStorageKey, JSON.stringify(record || {})); } catch (_) {}
+  },
+
+  _clearBonePackRequest() {
+    try { sessionStorage.removeItem(this._bonePackStorageKey); } catch (_) {}
+  },
+
+  _renderBonePackChoice() {
+    const state = this._bonePackState || {};
+    const preview = state.preview || {};
+    const result = state.result || null;
+    const progress = (result || preview).progress || {};
+    const total = this._toInt((result || preview).bonePacksOpenedTotal ?? progress.current, 0);
+    const progressText = progress.maxed
+      ? `${total} committed openings · MAXED`
+      : `${total}/${this._toInt(progress.nextThreshold, 0)} · ${this._toInt(progress.remaining, 0)} remaining`;
+
+    let body = "";
+    if (result) {
+      const rewards = Array.isArray(result?.reward?.assets) ? result.reward.assets : [];
+      const unlocks = Array.isArray(result?.newlyUnlocked) ? result.newlyUnlocked : [];
+      body = `
+        <div style="padding:16px;border-radius:18px;background:rgba(95,227,161,.10);border:1px solid rgba(95,227,161,.24);">
+          <div style="font-size:11px;font-weight:950;letter-spacing:.8px;color:#8dffc7;text-transform:uppercase;">Cache secured</div>
+          <div style="margin-top:7px;font-size:22px;font-weight:950;color:#f5fff9;">${this._esc(result?.selectedChoice?.name || "Bone Pack opened")}</div>
+          <div style="margin-top:12px;display:grid;gap:8px;">
+            ${rewards.map((row) => `<div style="padding:11px 12px;border-radius:13px;background:rgba(0,0,0,.20);color:#eafff3;font-weight:850;">+${this._esc(String(row.amount || 0))} ${this._esc(row.name || row.asset || "Reward")}</div>`).join("")}
+          </div>
+        </div>
+        ${unlocks.length ? `<div style="margin-top:12px;padding:14px;border-radius:16px;background:rgba(255,215,106,.11);border:1px solid rgba(255,215,106,.26);color:#ffe8a5;"><b>Milestone unlocked</b><br>${unlocks.map((item) => this._esc(item.name || item.id)).join(" · ")}</div>` : ""}
+      `;
+    } else {
+      const choices = Array.isArray(preview.choices) ? preview.choices : [];
+      const lockedChoice = state.submitted ? state.selectedChoice : "";
+      body = `<div style="display:grid;gap:10px;">${choices.map((choice) => {
+        const selected = state.selectedChoice === choice.id;
+        const lockedOut = !!lockedChoice && lockedChoice !== choice.id;
+        return `<button type="button" ${lockedOut ? "disabled" : ""} onclick="Inventory.selectBonePackChoice('${this._esc(choice.id)}')" style="padding:14px 15px;border-radius:17px;text-align:left;border:1px solid ${selected ? "rgba(127,220,255,.55)" : "rgba(255,255,255,.11)"};background:${selected ? "rgba(48,142,204,.22)" : "rgba(255,255,255,.055)"};color:#f4f9ff;cursor:${lockedOut ? "default" : "pointer"};opacity:${lockedOut ? ".46" : "1"};">
+          <div style="font-size:17px;font-weight:950;">${this._esc(choice.name)}</div>
+          <div style="margin-top:6px;font-size:12px;line-height:1.5;color:#b9c9dc;">${(choice.contents || []).map((line) => this._esc(line)).join(" · ")}</div>
+        </button>`;
+      }).join("")}</div>`;
+    }
+
+    return `
+      <div id="bonePackChoiceOverlay" onclick="if(event.target===this) Inventory.closeBonePackChoice()" style="position:fixed;inset:0;z-index:16500;display:flex;align-items:flex-end;justify-content:center;padding:16px;background:rgba(3,6,12,.82);backdrop-filter:blur(11px);">
+        <div role="dialog" aria-modal="true" aria-label="Choose Bone Pack cache" style="width:min(520px,100%);max-height:88vh;overflow:auto;border-radius:26px 26px 20px 20px;background:radial-gradient(circle at 50% 0%,rgba(98,190,255,.14),transparent 34%),linear-gradient(180deg,rgba(18,24,38,.99),rgba(7,10,18,.99));border:1px solid rgba(126,198,255,.25);box-shadow:0 25px 72px rgba(0,0,0,.55);">
+          <div style="padding:20px 18px 15px;border-bottom:1px solid rgba(255,255,255,.08);">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7fdcff;font-weight:950;">Bone Legacy</div>
+            <div style="margin-top:6px;font-size:23px;font-weight:950;color:#f7fbff;">${result ? "Bone Pack opened" : "Choose one cache"}</div>
+            <div style="margin-top:7px;font-size:12px;color:#aebed2;">${this._esc(progressText)}</div>
+          </div>
+          <div style="padding:16px;">${body}</div>
+          <div style="padding:0 16px 18px;display:flex;gap:10px;flex-wrap:wrap;">
+            ${result ? `<button type="button" onclick="Inventory.closeBonePackChoice()" style="flex:1;padding:13px;border-radius:14px;border:none;background:#7fdcff;color:#06111c;font-weight:950;">Continue</button>` : `
+              <button type="button" onclick="Inventory.closeBonePackChoice()" style="flex:1;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);color:#edf4ff;font-weight:900;">Cancel</button>
+              <button type="button" ${(!state.selectedChoice || state.pending) ? "disabled" : ""} onclick="Inventory.confirmBonePackChoice()" style="flex:1.25;padding:13px;border-radius:14px;border:none;background:linear-gradient(180deg,#7fdcff,#2d8dff);color:#06111c;font-weight:950;opacity:${(!state.selectedChoice || state.pending) ? ".55" : "1"};">${state.pending ? "Confirming..." : (state.submitted ? "Retry confirm" : "Confirm")}</button>
+            `}
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _showBonePackChoice(preview, requestRecord) {
+    const record = requestRecord || {};
+    this._bonePackState = {
+      preview,
+      requestKey: preview?.requestKey || record.key,
+      selectedChoice: record.choice || "",
+      submitted: !!record.submitted,
+      pending: false,
+      result: null,
+    };
+    document.getElementById("bonePackChoiceOverlay")?.remove();
+    document.body.insertAdjacentHTML("beforeend", this._renderBonePackChoice());
+  },
+
+  selectBonePackChoice(choiceId) {
+    if (!this._bonePackState || this._bonePackState.pending || this._bonePackState.submitted) return;
+    this._bonePackState.selectedChoice = String(choiceId || "");
+    document.getElementById("bonePackChoiceOverlay").outerHTML = this._renderBonePackChoice();
+  },
+
+  closeBonePackChoice() {
+    const state = this._bonePackState || {};
+    if (state.pending) return;
+    if (!state.submitted || state.result) this._clearBonePackRequest();
+    document.getElementById("bonePackChoiceOverlay")?.remove();
+    this._bonePackState = null;
+  },
+
+  async _openBonePackPreview() {
+    const apiPost = window.S?.apiPost || window.apiPost;
+    if (typeof apiPost !== "function") throw new Error("Inventory is unavailable.");
+    let record = this._loadBonePackRequest();
+    if (!record) {
+      record = { key: this._mkRunId("w_bone_pack"), choice: "", submitted: false };
+      this._saveBonePackRequest(record);
+    }
+    if (record.submitted && record.choice) {
+      const replay = await apiPost("/webapp/inventory/use", {
+        key: "bone_pack",
+        choice_id: record.choice,
+        request_key: record.key,
+      });
+      if (!replay?.ok || !replay?.bonePackResult) {
+        throw Object.assign(new Error(replay?.message || replay?.reason || "Bone Pack confirmation recovery failed."), { data: replay });
+      }
+      this._clearBonePackRequest();
+      this.closeItem();
+      this._showBonePackChoice(replay.bonePackResult, record);
+      this._bonePackState.result = replay.bonePackResult;
+      this._bonePackState.pending = false;
+      await this._refreshInventoryFromResponse(replay);
+      document.getElementById("bonePackChoiceOverlay").outerHTML = this._renderBonePackChoice();
+      return;
+    }
+    const res = await apiPost("/webapp/inventory/use", {
+      key: "bone_pack",
+      preview: true,
+      request_key: record.key,
+    });
+    if (!res?.ok || !res?.bonePackChoice) throw Object.assign(new Error(res?.message || res?.reason || "Bone Pack preview failed."), { data: res });
+    this.closeItem();
+    this._showBonePackChoice(res.bonePackChoice, record);
+  },
+
+  async confirmBonePackChoice() {
+    const state = this._bonePackState;
+    if (!state || !state.selectedChoice || state.pending) return;
+    state.pending = true;
+    state.submitted = true;
+    this._saveBonePackRequest({ key: state.requestKey, choice: state.selectedChoice, submitted: true });
+    document.getElementById("bonePackChoiceOverlay").outerHTML = this._renderBonePackChoice();
+    const apiPost = window.S?.apiPost || window.apiPost;
+    try {
+      const res = await apiPost("/webapp/inventory/use", {
+        key: "bone_pack",
+        choice_id: state.selectedChoice,
+        request_key: state.requestKey,
+      });
+      if (!res?.ok || !res?.bonePackResult) throw Object.assign(new Error(res?.message || res?.reason || "Bone Pack opening failed."), { data: res });
+      this._clearBonePackRequest();
+      state.pending = false;
+      state.result = res.bonePackResult;
+      state.preview = { ...state.preview, ...res.bonePackResult };
+      await this._refreshInventoryFromResponse(res);
+      document.getElementById("bonePackChoiceOverlay").outerHTML = this._renderBonePackChoice();
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
+    } catch (error) {
+      state.pending = false;
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      this._toast(error?.data?.message || error?.message || "Bone Pack opening failed. Retry confirmation.");
+      document.getElementById("bonePackChoiceOverlay").outerHTML = this._renderBonePackChoice();
+    }
+  },
+
   async _refreshInventoryFromResponse(res) {
     if (Array.isArray(res?.slots)) this.items = res.slots;
     else if (Array.isArray(res?.items)) this.items = res.items;
@@ -1694,6 +1863,17 @@ async use(key) {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   const item = this.findByKey(key);
   if (!item || this._normType(item) !== "consumable") return;
+  if (String(key || "").toLowerCase() === "bone_pack") {
+    try {
+      await this._openBonePackPreview();
+    } catch (error) {
+      Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("error");
+      this._toast(error?.data?.message || error?.message || "Bone Pack preview failed.");
+    } finally {
+      this._perfAction("inventory_bone_pack_preview", perfT0);
+    }
+    return;
+  }
   if (this._isOpenableBox(item)) {
     this._perfAction("inventory_box_open", perfT0);
     return this._openBoxRequest(key, { count: 1 });
