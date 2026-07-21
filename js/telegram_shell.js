@@ -69,6 +69,14 @@
     return insets;
   }
 
+  function emitViewportChange(reason) {
+    try {
+      global.dispatchEvent(new CustomEvent("ah:telegram-viewport-change", {
+        detail: { reason: String(reason || "telegram") }
+      }));
+    } catch (_) {}
+  }
+
   function getLocal(key) {
     try { return global.localStorage ? global.localStorage.getItem(key) : null; } catch (_) { return null; }
   }
@@ -248,18 +256,26 @@
     var tg = getWebApp();
     if (!tg || state.eventsBound || typeof tg.onEvent !== "function") return;
 
-    var refreshSafeArea = function refreshSafeArea() {
+    var refreshSafeArea = function refreshSafeArea(reason) {
       applyTelegramSafeArea();
+      emitViewportChange(reason);
     };
 
-    tg.onEvent("safeAreaChanged", refreshSafeArea);
-    tg.onEvent("contentSafeAreaChanged", refreshSafeArea);
+    tg.onEvent("safeAreaChanged", function onSafeAreaChanged() {
+      refreshSafeArea("safe-area");
+    });
+    tg.onEvent("contentSafeAreaChanged", function onContentSafeAreaChanged() {
+      refreshSafeArea("content-safe-area");
+    });
+    tg.onEvent("viewportChanged", function onViewportChanged() {
+      refreshSafeArea("viewport");
+    });
     tg.onEvent("fullscreenChanged", function onFullscreenChanged() {
-      refreshSafeArea();
+      refreshSafeArea("fullscreen");
     });
     tg.onEvent("fullscreenFailed", function onFullscreenFailed(payload) {
       debug("fullscreenFailed", payload);
-      refreshSafeArea();
+      refreshSafeArea("fullscreen-failed");
     });
     tg.onEvent("homeScreenChecked", function onHomeScreenChecked(payload) {
       applyHomeStatus(extractStatus(payload));

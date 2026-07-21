@@ -899,7 +899,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       "is-contested", "is-controlled",
       "siege-forming", "siege-running", "siege-cooldown",
       "is-live", "is-active", "is-threatened", "is-fortified", "is-neutral",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-signal-broker", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
@@ -1766,7 +1766,8 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     (async () => {
       try {
         const r = await apiPost("/webapp/sitrep/state", { run_id: rid("sitrep") });
-        const s = (r && (r.state || r.data?.state || r.sitrep || r)) || {};
+        const payload = (r && (r.state || r.data?.state || r.sitrep || r.data || r)) || {};
+        const s = payload?.fronts?.burnedArchive || payload;
         const root = document.getElementById("mapWorldBrief");
         if (!root || !root.parentNode) return;
         const status = s.frontStatus || s.status || "LIVE";
@@ -2326,6 +2327,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     else if (id === "howl_treasury") type = "treasury";
     else if (id.includes("_hq") || id === "alpha_network_hq") type = "hq";
     else if (id === "broken_contracts") type = "contracts";
+    else if (id === "dead_relay_exchange") type = "signal-broker";
 
     let status = "";
     if (type === "archive") {
@@ -2371,7 +2373,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     pinEl.classList.remove(
       "f-rb", "f-ew", "f-pb", "f-ih", "is-neutral", "is-controlled",
       "is-live", "is-active", "is-threatened", "is-contested", "is-fortified",
-      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-generic",
+      "type-phantom", "type-bloodmoon", "type-siege", "type-oracle", "type-hq", "type-contracts", "type-treasury", "type-archive", "type-signal-broker", "type-generic",
       "family-rivalry", "family-legacy",
       "tier-low", "tier-high", "tier-strategic",
       "dom-presence", "dom-core", "dom-primary"
