@@ -711,11 +711,11 @@
 
   function renderStatTraining(training){
     if (!training || typeof training !== "object" || typeof training.enabled !== "boolean") return "";
-    const cost = training.nextCost && typeof training.nextCost === "object" ? Object.entries(training.nextCost).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" · ") : "";
-    const balances = training.balances && typeof training.balances === "object" ? Object.entries(training.balances).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" · ") : "";
+    const cost = training.nextCost && typeof training.nextCost === "object" ? Object.entries(training.nextCost).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" Â· ") : "";
+    const balances = training.balances && typeof training.balances === "object" ? Object.entries(training.balances).map(([k,v]) => `${k.replace("_", " ")}: ${v}`).join(" Â· ") : "";
     const reason = String(training.lockedReason || "");
     const label = !training.enabled ? "TRAINING OFFLINE" : training.maxed ? "MAX TRAINING REACHED" : reason === "level_locked" ? `REACH LEVEL ${(Number(training.nextRank) || 1) * 10}` : reason === "insufficient_resources" ? "INSUFFICIENT RESOURCES" : "TRAIN";
-    return `<div class="ahs-combat-snapshot"><div class="ahs-combat-snapshot-title">STAT TRAINING</div><div class="ahs-combat-snapshot-scope">Training Rank: ${esc(training.rank)} / 10 · Unlocked by Level: ${esc(training.unlockedRank)}</div><div class="ahs-combat-snapshot-note">Next Rank grants: +1 Stat Point${cost ? `<br>Cost: ${esc(cost)}` : ""}${balances ? `<br>Balances: ${esc(balances)}` : ""}</div><button type="button" class="ahs-plus" data-action="stat-training-purchase" ${training.canPurchase ? "" : "disabled"} style="margin-top:8px;width:100%;font-size:12px">${esc(label)}</button></div>`;
+    return `<div class="ahs-combat-snapshot"><div class="ahs-combat-snapshot-title">STAT TRAINING</div><div class="ahs-combat-snapshot-scope">Training Rank: ${esc(training.rank)} / 10 Â· Unlocked by Level: ${esc(training.unlockedRank)}</div><div class="ahs-combat-snapshot-note">Next Rank grants: +1 Stat Point${cost ? `<br>Cost: ${esc(cost)}` : ""}${balances ? `<br>Balances: ${esc(balances)}` : ""}</div><button type="button" class="ahs-plus" data-action="stat-training-purchase" ${training.canPurchase ? "" : "disabled"} style="margin-top:8px;width:100%;font-size:12px">${esc(label)}</button></div>`;
   }
   function getCombatBreakdown(stats){
     const breakdown = stats?.statBreakdown;
@@ -2294,6 +2294,34 @@
 
   let _milestoneClaimLoading = false;
 
+  function normalizeMilestoneClaimResponse(res){
+    if (!res || typeof res !== "object") return {};
+    const data = res.data && typeof res.data === "object" ? res.data : null;
+    if (!data) return res;
+    return { ...res, ...data, ok: data.ok ?? res.ok };
+  }
+
+  function milestoneClaimButtons(milestoneId){
+    const milestoneKey = toText(milestoneId, "");
+    return Array.from(document.querySelectorAll('[data-action="claim-signal-milestone"]'))
+      .filter((button) => button.dataset.milestoneId === milestoneKey);
+  }
+
+  function setMilestoneClaimButtonsLoading(milestoneId, loading){
+    milestoneClaimButtons(milestoneId).forEach((button) => {
+      if (loading) {
+        button.dataset.claimLabel = button.textContent || "Claim Milestone";
+        button.disabled = true;
+        button.textContent = "Claiming...";
+        return;
+      }
+      if (!button.isConnected) return;
+      button.disabled = false;
+      button.textContent = button.dataset.claimLabel || "Claim Milestone";
+      delete button.dataset.claimLabel;
+    });
+  }
+
   async function claimSignalMilestone(milestoneId){
     if (_milestoneClaimLoading) return;
     const milestoneKey = toText(milestoneId, "");
@@ -2307,23 +2335,24 @@
     }
 
     _milestoneClaimLoading = true;
-    const btn = document.querySelector(`[data-action="claim-signal-milestone"][data-milestone-id="${milestoneKey}"]`);
-    if (btn) btn.disabled = true;
+    setMilestoneClaimButtonsLoading(milestoneKey, true);
 
     try {
-      const res = await _apiPost("/webapp/progression/milestone/claim", { milestoneId: milestoneKey });
-      if (res?.alreadyClaimed) {
+      const res = normalizeMilestoneClaimResponse(
+        await _apiPost("/webapp/progression/milestone/claim", { milestoneId: milestoneKey })
+      );
+      if (res.alreadyClaimed) {
         try { _tg?.showAlert?.("Milestone already claimed."); } catch (_) {}
-      } else if (res?.claimed && res?.milestone) {
+      } else if (res.claimed && res.milestone) {
         try { _tg?.showAlert?.(`Claimed ${toText(res.milestone.name, "milestone")}!`); } catch (_) {}
         try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-      } else if (!res?.ok) {
-        const msg = toText(res?.message, res?.reason || "Could not claim milestone.");
+      } else {
+        const msg = toText(res.message, res.reason || "Could not claim milestone.");
         try { _tg?.showAlert?.(msg); } catch (_) {}
         return;
       }
 
-      const nextStats = res?.progression_v1
+      const nextStats = res.progression_v1
         ? { ...(_lastStats || {}), progression_v1: res.progression_v1 }
         : (getPayload(await _apiPost("/webapp/stats/state", { t: Date.now() })) || _lastStats);
 
@@ -2337,8 +2366,50 @@
       try { _tg?.showAlert?.("Milestone claim failed."); } catch (_) {}
     } finally {
       _milestoneClaimLoading = false;
-      if (btn) btn.disabled = false;
+      setMilestoneClaimButtonsLoading(milestoneKey, false);
     }
+  }
+
+  async function handleStatsActionClick(e){
+    const claimBtn = e.target.closest('[data-action="claim-signal-milestone"]');
+    if (claimBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (_milestoneClaimLoading) return;
+      await claimSignalMilestone(claimBtn.dataset.milestoneId || "");
+      return;
+    }
+
+    const trainingBtn = e.target.closest('[data-action="stat-training-purchase"]');
+    if (trainingBtn) {
+      e.preventDefault();
+      if (trainingBtn.dataset.loading === "1") return;
+      trainingBtn.dataset.loading = "1"; trainingBtn.disabled = true;
+      try {
+        const res = await _apiPost("/webapp/stats/training/purchase", { t: Date.now() });
+        if (!res?.ok) { _tg?.showAlert?.(String(res?.reason || "Training purchase failed.")); return; }
+        await load();
+      } catch (_) { _tg?.showAlert?.("Training purchase failed."); }
+      finally { trainingBtn.dataset.loading = ""; trainingBtn.disabled = false; }
+      return;
+    }
+    const syncBtn = e.target.closest('[data-action="generate-mobile-sync-code"]');
+    if (syncBtn) {
+      e.preventDefault();
+      if (_mobileSyncLoading) return;
+      requestMobileLinkCode();
+      return;
+    }
+
+    const btn = e.target.closest(".ahs-plus");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const stat = String(btn.dataset.stat || "").trim().toLowerCase();
+    if (!stat) return;
+
+    upgradeStat(stat);
   }
 
   async function upgradeStat(stat){
@@ -2563,53 +2634,19 @@
     _tg = tg || _tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
 
-    if (_inited) return;
+    if (_inited) {
+      bindClickOnce(qs("statsRoot"), handleStatsActionClick);
+      bindClickOnce(qs("hubGoalRoot"), handleStatsActionClick);
+      return;
+    }
     _inited = true;
 
     bindClickOnce(qs("btnStatsRefresh"), load);
     bindClickOnce(qs("refreshStats"), load);
     bindClickOnce(qs("closeStats"), Stats.close);
 
-    bindClickOnce(qs("statsRoot"), async (e) => {
-      const trainingBtn = e.target.closest('[data-action="stat-training-purchase"]');
-      if (trainingBtn) {
-        e.preventDefault();
-        if (trainingBtn.dataset.loading === "1") return;
-        trainingBtn.dataset.loading = "1"; trainingBtn.disabled = true;
-        try {
-          const res = await _apiPost("/webapp/stats/training/purchase", { t: Date.now() });
-          if (!res?.ok) { _tg?.showAlert?.(String(res?.reason || "Training purchase failed.")); return; }
-          await load();
-        } catch (_) { _tg?.showAlert?.("Training purchase failed."); }
-        finally { trainingBtn.dataset.loading = ""; trainingBtn.disabled = false; }
-        return;
-      }
-      const syncBtn = e.target.closest('[data-action="generate-mobile-sync-code"]');
-      if (syncBtn) {
-        e.preventDefault();
-        if (_mobileSyncLoading) return;
-        requestMobileLinkCode();
-        return;
-      }
-
-      const claimBtn = e.target.closest('[data-action="claim-signal-milestone"]');
-      if (claimBtn) {
-        e.preventDefault();
-        if (_milestoneClaimLoading) return;
-        claimSignalMilestone(claimBtn.dataset.milestoneId || "");
-        return;
-      }
-
-      const btn = e.target.closest(".ahs-plus");
-      if (!btn) return;
-
-      e.preventDefault();
-
-      const stat = String(btn.dataset.stat || "").trim().toLowerCase();
-      if (!stat) return;
-
-      upgradeStat(stat);
-    });
+    bindClickOnce(qs("statsRoot"), handleStatsActionClick);
+    bindClickOnce(qs("hubGoalRoot"), handleStatsActionClick);
 
     window.openStats = Stats.open;
     window.closeStats = Stats.close;
