@@ -2200,6 +2200,56 @@ html.ah-skins-open #heroFrame{
 .map-stage.is-world-canvas .paths-layer{ z-index:6; }
 .map-stage.is-world-canvas .pins{ z-index:7; }
 
+/* World Exploration P0C.1: stage-bound sector affordances; geometry comes from the state API. */
+.world-exploration-overlay{ position:absolute; inset:0; z-index:6; pointer-events:none; }
+.world-exploration-sector{ position:absolute; display:block; overflow:hidden; padding:0; border:1px solid rgba(156,210,220,.26); background:transparent; color:#dff7f7; pointer-events:auto; cursor:pointer; touch-action:none; }
+.world-exploration-sector:focus-visible{ outline:2px solid #8ce8ed; outline-offset:2px; }
+.world-exploration-sector-shade{ position:absolute; inset:0; background:linear-gradient(135deg, rgba(7,13,18,.38), rgba(18,53,62,.13)); transition:background .16s ease, opacity .16s ease; }
+.world-exploration-sector-label{ position:absolute; left:8%; top:8%; display:flex; flex-direction:column; gap:4px; padding:7px 9px; border:1px solid rgba(154,221,226,.18); background:rgba(5,11,15,.68); box-shadow:0 4px 18px rgba(0,0,0,.28); font:700 11px/1.1 system-ui,sans-serif; letter-spacing:.06em; text-align:left; text-transform:uppercase; }
+.world-exploration-sector-label em{ color:#9fb8bd; font-size:9px; font-style:normal; }
+.world-exploration-sector[data-status="locked"] .world-exploration-sector-shade{ background:rgba(2,6,9,.57); }
+.world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ background:linear-gradient(135deg, rgba(37,123,132,.24), rgba(9,32,39,.16)); animation:worldExplorationPulse 2.8s ease-in-out infinite; }
+.world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ background:repeating-linear-gradient(125deg, rgba(84,206,218,.20) 0 2px, rgba(11,38,45,.25) 2px 13px); }
+.world-exploration-sector[data-status="claimable"] .world-exploration-sector-shade{ background:linear-gradient(135deg, rgba(224,178,86,.35), rgba(45,77,57,.21)); }
+.world-exploration-sector[data-status="unlocked"]{ border-color:rgba(105,221,170,.36); }
+.world-exploration-sector[data-status="unlocked"] .world-exploration-sector-shade{ background:rgba(38,137,95,.17); }
+.world-exploration-sector:hover .world-exploration-sector-shade{ opacity:.75; }
+.map-pin.is-world-exploration-locked{ opacity:.42; filter:grayscale(.7); }
+
+.world-exploration-panel-shell{ position:fixed; inset:0; z-index:1000002; display:grid; place-items:center; padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+.world-exploration-panel-shell[hidden]{ display:none; }
+.world-exploration-backdrop{ position:absolute; inset:0; background:rgba(2,7,10,.78); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+.world-exploration-panel{ position:relative; width:min(460px,100%); max-height:100%; overflow:auto; border:1px solid rgba(130,211,219,.28); border-radius:17px; color:#dcebed; background:linear-gradient(145deg,#15262b,#071015); box-shadow:0 25px 70px rgba(0,0,0,.68); }
+.world-exploration-panel-head{ padding:20px 50px 15px 19px; border-bottom:1px solid rgba(136,204,210,.18); }
+.world-exploration-panel-head>span,.world-exploration-panel h3{ color:#8fcbd1; font:800 10px/1 system-ui,sans-serif; letter-spacing:.15em; text-transform:uppercase; }
+.world-exploration-panel h2{ margin:7px 0 8px; color:#f0fbfc; font-size:25px; line-height:1.05; }
+.world-exploration-status{ display:inline-block; margin:0; padding:4px 7px; border:1px solid rgba(143,205,211,.24); color:#a6c5c8; font:800 10px/1 system-ui,sans-serif; letter-spacing:.11em; }
+.world-exploration-status[data-status="available"],.world-exploration-status[data-status="claimable"]{ color:#d7db98; }
+.world-exploration-status[data-status="unlocked"]{ color:#8cddb2; }
+.world-exploration-close{ position:absolute; top:13px; right:13px; width:38px; height:38px; border:1px solid rgba(178,220,224,.25); border-radius:10px; color:#e7f5f5; background:rgba(255,255,255,.05); font-size:25px; cursor:pointer; }
+.world-exploration-panel-body{ padding:17px 19px calc(19px + env(safe-area-inset-bottom)); }
+.world-exploration-description,.world-exploration-confirmation,.world-exploration-message{ color:#a9bec2; font-size:13px; line-height:1.45; }
+.world-exploration-confirmation{ margin:16px 0 12px; color:#d7aa73; }
+.world-exploration-message{ min-height:1.4em; margin:10px 0 0; color:#efb0a4; }
+.world-exploration-details{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:16px 0; }
+.world-exploration-details div,.world-exploration-requirements li{ border:1px solid rgba(141,196,201,.15); background:rgba(255,255,255,.035); }
+.world-exploration-details div{ padding:10px; }
+.world-exploration-details dt{ color:#88a7ab; font-size:10px; text-transform:uppercase; letter-spacing:.07em; }
+.world-exploration-details dd{ margin:4px 0 0; color:#e3f0f1; font-weight:700; }
+.world-exploration-timer{ margin:0 0 15px; color:#bce8ec; font-weight:800; }
+.world-exploration-requirements{ display:grid; gap:7px; margin:8px 0 0; padding:0; list-style:none; }
+.world-exploration-requirements li{ display:flex; align-items:center; gap:8px; padding:9px 10px; color:#bfd2d5; font-size:13px; }
+.world-exploration-requirements li b{ margin-left:auto; color:#edf8f8; }
+.world-exploration-requirements img{ width:21px; height:21px; object-fit:contain; }
+.world-exploration-no-requirements{ color:#a8bec1; font-size:13px; }
+.world-exploration-action,.world-exploration-complete{ width:100%; min-height:46px; border:1px solid rgba(110,216,223,.4); border-radius:10px; color:#e7fbfc; background:linear-gradient(135deg,#1a6972,#123a42); font:800 13px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
+.world-exploration-action.is-claim{ border-color:rgba(230,193,100,.5); background:linear-gradient(135deg,#816238,#3f3a25); }
+.world-exploration-action:disabled{ border-color:rgba(166,187,191,.18); color:#91a4a7; background:rgba(255,255,255,.045); cursor:not-allowed; }
+.world-exploration-complete{ display:grid; place-items:center; border-color:rgba(109,214,161,.35); color:#9ee0bb; background:rgba(49,136,93,.14); }
+@keyframes worldExplorationPulse{ 50%{ filter:brightness(1.25); } }
+@media (max-width:640px){ .world-exploration-panel-shell{ padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); align-items:end; } .world-exploration-panel{ width:100%; max-height:88dvh; border-right:0; border-left:0; border-radius:17px 17px 0 0; } .world-exploration-sector-label{ font-size:9px; } .world-exploration-sector-label em{ font-size:8px; } }
+@media (prefers-reduced-motion:reduce){ .world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ animation:none; } }
+
 /* === MAP VISUAL SYSTEM v1 === */
 
 :root{
@@ -10949,6 +10999,10 @@ function isRegionUnlocked(regionId){
       }
 
       if (b.action === "open_signal_broker") {
+        if (!window.WorldExploration?.canOpenDeadRelay?.()) {
+          window.WorldExploration?.showDeadRelayLocked?.();
+          return;
+        }
         if (window.SignalBroker?.open) return window.SignalBroker.open();
         return openBuilding(bid, b.name, b.desc);
       }
@@ -11514,6 +11568,7 @@ const actions = {
     if (window.DBG) console.debug("[map] open", { source: "button" });
     mapBack.style.display = "flex";
     navOpen("mapBack");
+    window.WorldExploration?.onMapOpened?.();
     if (!mapPanState.hasCenteredOnce) mapPanState.zoom = defaultMapZoom();
     bindMapPan();
     bindMapZoomControls();
@@ -11969,6 +12024,7 @@ async function showSection(name){
       if (window.DBG) console.debug("[map] open", { source: "showSection" });
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
+      window.WorldExploration?.onMapOpened?.();
       if (!mapPanState.hasCenteredOnce) mapPanState.zoom = defaultMapZoom();
       bindMapPan();
       bindMapZoomControls();
@@ -12230,6 +12286,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
+<script src="/js/world_exploration.js?v=world-exploration-p0c1"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
