@@ -138,6 +138,16 @@
     return panel;
   }
 
+  function sectorVisualHtml(sector) {
+    const status = String(sector?.status || "locked");
+    const label = status === "locked" ? "Unknown signal" : formatSectorName(sector);
+    const detail = status === "locked" ? "Scan required" : status.toUpperCase();
+    const echoes = [1, 2, 3].map((index) => (
+      `<span class="world-exploration-sector-echo world-exploration-sector-echo--${index}" aria-hidden="true"><span class="world-exploration-sector-echo-core"></span><span class="world-exploration-sector-interference"></span></span>`
+    )).join("");
+    return `<span class="world-exploration-sector-shade" aria-hidden="true"></span>${echoes}<span class="world-exploration-sector-label"><strong>${escapeHtml(label)}</strong><em>${escapeHtml(detail)}</em></span>`;
+  }
+
   function renderOverlay() {
     const overlay = ensureOverlay();
     if (!overlay) return;
@@ -162,7 +172,7 @@
       button.style.width = `${(geometry.width / bounds.width) * 100}%`;
       button.style.height = `${(geometry.height / bounds.height) * 100}%`;
       button.setAttribute("aria-label", `${formatSectorName(sector)}: ${sector.status || "locked"}`);
-      button.innerHTML = `<span class="world-exploration-sector-shade"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(formatSectorName(sector))}</strong><em>${escapeHtml(String(sector.status || "locked").toUpperCase())}</em></span>`;
+      button.innerHTML = sectorVisualHtml(sector);
       let origin = null;
       let moved = false;
       button.addEventListener("pointerdown", (event) => { origin = { x: event.clientX, y: event.clientY }; moved = false; });
