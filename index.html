@@ -1299,7 +1299,7 @@ html.ah-skins-open #heroFrame{
 .map-close-control{ pointer-events:auto; }
 .map-head h2 { margin:0; font:800 14px/1 system-ui, sans-serif; color:#fff; letter-spacing:.08em; text-transform:uppercase; }
 .map-intel-btn{
-  min-width:36px;
+  min-width:34px;
   min-height:34px;
   padding:0 8px;
   border-radius:10px;
@@ -1316,17 +1316,13 @@ html.ah-skins-open #heroFrame{
   display:inline-flex;
   align-items:center;
   gap:3px;
-  padding:1px;
+  padding:0;
   border-radius:12px;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(8,12,16,.42);
+  border:0;
+  background:transparent;
 }
 .map-zoom-slider{
-  width:64px;
-  height:24px;
-  margin:0;
-  accent-color:#93ffd8;
-  cursor:pointer;
+  display:none;
 }
 .map-zoom-slider:focus-visible{
   outline:2px solid rgba(147,255,216,.45);
@@ -1334,6 +1330,7 @@ html.ah-skins-open #heroFrame{
 }
 .map-zoom-btn{
   min-width:34px;
+  min-height:34px;
   height:34px;
   padding:0;
   border-radius:9px;
@@ -1353,6 +1350,13 @@ html.ah-skins-open #heroFrame{
 #ctaSurface{
   width:100% !important;
   margin:0 !important;
+}
+.map-close-control{
+  width:34px;
+  min-width:34px;
+  min-height:34px;
+  height:34px;
+  padding:0;
 }
 .map-intel-stack{
   position:absolute;
@@ -1377,10 +1381,38 @@ html.ah-skins-open #heroFrame{
 .map-intel-content{ grid-area:content; min-width:0; pointer-events:auto; }
 .map-intel-toggle{ grid-area:toggle; min-width:36px; min-height:34px; padding:0 9px; border:1px solid rgba(170,224,235,.20); border-radius:9px; background:rgba(145,219,230,.08); color:#eafaff; font:800 10px/1 system-ui,sans-serif; letter-spacing:.05em; cursor:pointer; pointer-events:auto; }
 .map-intel-toggle:active{ transform:translateY(1px); }
-.map-intel-stack #ctaSurface:not([style*="display:none"]){
-  max-height:48px;
+.map-card:not(.is-intel-expanded) .map-intel-stack #ctaSurface:not([style*="display:none"]){
+  max-height:40px;
   overflow:hidden;
   padding-right:0;
+}
+.map-card:not(.is-intel-expanded) #ctaHighlightsRoot,
+.map-card:not(.is-intel-expanded) .map-world-brief{
+  display:none !important;
+}
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact){
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:7px;
+  min-height:32px;
+  padding:4px 5px 4px 8px;
+}
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-card-top,
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-why,
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-reward,
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-stakes{
+  display:none;
+}
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-title{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-go-row{
+  margin:0;
 }
 .map-world-brief{
   margin:0;
@@ -2078,8 +2110,6 @@ html.ah-skins-open #heroFrame{
   will-change:transform;
   cursor:grab;
 }
-.map-card:not(.is-intel-expanded) .map-world-brief{ display:none; }
-.map-card:not(.is-intel-expanded) #ctaSurface[style*="display:none"] + .map-world-brief{ display:flex; }
 .map-card.is-intel-expanded .map-intel-stack{
   grid-template-columns:1fr auto;
   grid-template-areas:"content toggle";
@@ -2316,11 +2346,11 @@ html.ah-skins-open #heroFrame{
 .world-exploration-sector:focus-visible{ outline:2px solid #8ce8ed; outline-offset:-2px; }
 .world-exploration-sector::before,.world-exploration-sector::after,.world-exploration-sector-shade{ position:absolute; inset:0; border-radius:inherit; }
 .world-exploration-sector::before{ content:""; z-index:0; background:radial-gradient(ellipse at 18% 68%, rgba(4,10,14,.22) 0 11%, transparent 29%), radial-gradient(ellipse at 67% 28%, rgba(3,9,13,.20) 0 13%, transparent 31%), radial-gradient(ellipse at 83% 74%, rgba(5,11,14,.16) 0 9%, transparent 24%); pointer-events:none; }
-.world-exploration-sector::after{ content:""; z-index:1; background:repeating-linear-gradient(164deg, rgba(179,234,236,.028) 0 1px, transparent 1px 9px); opacity:.25; pointer-events:none; }
+.world-exploration-sector::after{ content:""; z-index:1; background:repeating-linear-gradient(164deg, rgba(105,220,230,.032) 0 1px, transparent 1px 10px); opacity:.16; pointer-events:none; }
 .world-exploration-sector-visual{ position:absolute; z-index:2; inset:4% 3% 5%; overflow:hidden; pointer-events:none; user-select:none; }
-.world-exploration-region-asset{ position:absolute; z-index:0; left:50%; top:50%; width:102%; height:96%; object-fit:contain; object-position:center; opacity:.52; filter:saturate(.70); transform:translate(-50%,-50%); pointer-events:none; user-select:none; transition:opacity .16s ease, visibility .16s ease; }
-.world-exploration-sector-shade{ z-index:1; background:radial-gradient(ellipse at 42% 46%, rgba(28,59,65,.08) 0 17%, transparent 44%), radial-gradient(ellipse at 74% 62%, rgba(2,6,9,.16) 0 13%, transparent 36%); transition:background .16s ease, opacity .16s ease; pointer-events:none; }
-.world-exploration-lock-asset{ position:absolute; z-index:4; left:61%; top:32%; width:clamp(52px,18%,112px); height:auto; max-height:46%; object-fit:contain; object-position:center; opacity:.90; transform:translate(-50%,-46%); pointer-events:none; user-select:none; transition:opacity .16s ease, visibility .16s ease; }
+.world-exploration-region-asset{ position:absolute; z-index:0; left:50%; top:50%; width:102%; height:96%; object-fit:contain; object-position:center; opacity:.38; filter:saturate(.84) contrast(.94); transform:translate(-50%,-50%); pointer-events:none; user-select:none; transition:opacity .16s ease, visibility .16s ease; }
+.world-exploration-sector-shade{ z-index:1; background:radial-gradient(ellipse at 42% 46%, rgba(26,91,100,.06) 0 17%, transparent 44%), radial-gradient(ellipse at 74% 62%, rgba(2,6,9,.10) 0 13%, transparent 36%); transition:background .16s ease, opacity .16s ease; pointer-events:none; }
+.world-exploration-lock-asset{ position:absolute; z-index:4; left:61%; top:32%; width:clamp(60px,21%,120px); height:auto; max-height:50%; object-fit:contain; object-position:center; opacity:.96; filter:drop-shadow(0 0 7px rgba(101,226,236,.24)); transform:translate(-50%,-46%); pointer-events:none; user-select:none; transition:opacity .16s ease, visibility .16s ease; }
 .world-exploration-sector-label{ position:absolute; z-index:5; left:43%; top:53%; display:flex; flex-direction:column; gap:3px; max-width:48%; padding:4px 6px; border-left:1px solid rgba(154,221,226,.28); background:linear-gradient(90deg, rgba(5,11,15,.58), transparent); font:800 10px/1.08 system-ui,sans-serif; letter-spacing:.07em; text-align:left; text-transform:uppercase; pointer-events:none; }
 .world-exploration-sector-label em{ color:#a6bdc0; font-size:8px; font-style:normal; }
 .world-exploration-sector-echo{ position:absolute; z-index:3; width:20px; height:20px; margin:-10px 0 0 -10px; border:1px solid rgba(135,193,199,.22); border-radius:50%; background:radial-gradient(circle, rgba(191,236,238,.38) 0 7%, rgba(66,122,130,.14) 10% 28%, transparent 62%); pointer-events:none; user-select:none; }
@@ -2335,18 +2365,18 @@ html.ah-skins-open #heroFrame{
 .world-exploration-sector[data-sector-id="relay_fringe_02"] .world-exploration-region-asset{ width:98%; height:92%; }
 .world-exploration-sector[data-sector-id="relay_fringe_02"] .world-exploration-lock-asset{ left:48%; top:38%; }
 .world-exploration-sector[data-status="locked"]::before{ background:radial-gradient(ellipse at 18% 68%, rgba(2,6,9,.28) 0 12%, transparent 31%), radial-gradient(ellipse at 65% 27%, rgba(1,4,7,.25) 0 15%, transparent 35%), radial-gradient(ellipse at 82% 72%, rgba(4,8,11,.20) 0 10%, transparent 27%); }
-.world-exploration-sector[data-status="locked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 37% 48%, rgba(14,32,37,.10) 0 15%, transparent 42%), radial-gradient(ellipse at 74% 61%, rgba(1,4,7,.18) 0 13%, transparent 37%); }
-.world-exploration-sector[data-status="locked"] .world-exploration-region-asset{ opacity:.52; }
-.world-exploration-sector[data-status="locked"] .world-exploration-lock-asset{ opacity:.90; }
+.world-exploration-sector[data-status="locked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 37% 48%, rgba(13,72,81,.08) 0 15%, transparent 42%), radial-gradient(ellipse at 74% 61%, rgba(1,4,7,.12) 0 13%, transparent 37%); }
+.world-exploration-sector[data-status="locked"] .world-exploration-region-asset{ opacity:.38; }
+.world-exploration-sector[data-status="locked"] .world-exploration-lock-asset{ opacity:1; }
 .world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"]{ opacity:.78; }
 .world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"] .world-exploration-sector-label{ opacity:.80; }
-.world-exploration-sector[data-status="available"] .world-exploration-region-asset{ opacity:.60; filter:saturate(.88); }
+.world-exploration-sector[data-status="available"] .world-exploration-region-asset{ opacity:.46; filter:saturate(.96) contrast(.94); }
 .world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ background:radial-gradient(circle at 61% 30%, rgba(75,204,208,.20) 0 8%, transparent 28%), radial-gradient(ellipse at 37% 52%, rgba(20,81,88,.11) 0 17%, transparent 47%); animation:worldExplorationPulse 3.4s ease-in-out infinite; }
 .world-exploration-sector[data-status="available"] .world-exploration-lock-asset{ opacity:.97; animation:worldExplorationLockPulse 3.4s ease-in-out infinite; }
 .world-exploration-sector[data-status="available"] .world-exploration-sector-echo{ border-color:rgba(113,235,234,.54); background:radial-gradient(circle, rgba(209,255,252,.72) 0 7%, rgba(46,181,183,.20) 10% 32%, transparent 65%); }
-.world-exploration-sector[data-status="scanning"] .world-exploration-region-asset{ opacity:.45; }
+.world-exploration-sector[data-status="scanning"] .world-exploration-region-asset{ opacity:.30; }
 .world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ background:linear-gradient(112deg, transparent 29%, rgba(96,225,232,.16) 47%, transparent 65%), radial-gradient(ellipse at 55% 42%, rgba(38,134,145,.12) 0 18%, transparent 52%); animation:worldExplorationScan 2.8s ease-in-out infinite; }
-.world-exploration-sector[data-status="scanning"] .world-exploration-lock-asset{ opacity:.16; }
+.world-exploration-sector[data-status="scanning"] .world-exploration-lock-asset{ opacity:.08; }
 .world-exploration-sector[data-status="claimable"] .world-exploration-region-asset{ opacity:.43; }
 .world-exploration-sector[data-status="claimable"] .world-exploration-sector-shade{ background:radial-gradient(circle at 61% 30%, rgba(255,207,112,.46) 0 8%, rgba(177,121,45,.13) 22%, transparent 42%), radial-gradient(ellipse at 44% 46%, rgba(108,78,28,.11) 0 19%, transparent 55%); }
 .world-exploration-sector[data-status="claimable"] .world-exploration-lock-asset{ opacity:0; visibility:hidden; }
@@ -2359,6 +2389,11 @@ html.ah-skins-open #heroFrame{
 @keyframes worldExplorationScan{ 0%,100%{ opacity:.48; } 50%{ opacity:.96; } }
 @keyframes worldExplorationLockPulse{ 0%,100%{ opacity:.88; } 50%{ opacity:1; } }
 .map-pin.is-world-exploration-locked{ opacity:.42; filter:grayscale(.7); }
+#map .map-pin.is-world-exploration-obscured{ opacity:.30 !important; filter:grayscale(.82) saturate(.42) !important; }
+#map .map-pin.is-world-exploration-obscured .chip,
+#map .map-pin.is-world-exploration-obscured .pin-pressure-badges{ display:none !important; }
+#map .map-pin.is-world-exploration-obscured .ping,
+#map .map-pin.is-world-exploration-obscured .pin-ring{ opacity:.42; }
 
 .world-exploration-panel-shell{ position:fixed; inset:0; z-index:1000002; display:grid; place-items:center; padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
 .world-exploration-panel-shell[hidden]{ display:none; }
@@ -11287,7 +11322,7 @@ function isRegionUnlocked(regionId){
   // resolveLabelCollisions(); // jeśli używasz anti-collision
         }
 
-        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); updateUnlockProgress(); updateMapSelectionBrief(); }
+        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); window.WorldExploration?.syncLockedSectorNodePresentation?.(); updateUnlockProgress(); updateMapSelectionBrief(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
