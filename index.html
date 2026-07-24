@@ -1276,25 +1276,33 @@ html.ah-skins-open #heroFrame{
 }
 
 .map-head {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;
-  grid-template-areas:
-    "main actions close"
-    "status status status";
+  position:absolute;
+  z-index:20;
+  top:10px;
+  left:10px;
+  right:10px;
+  display:flex;
   align-items:center;
-  gap:5px;
-  padding:2px;
-  flex:0 0 auto;
+  justify-content:space-between;
+  gap:8px;
+  min-height:40px;
+  padding:3px 4px 3px 10px;
+  border:1px solid rgba(184,225,237,.16);
+  border-radius:13px;
+  background:linear-gradient(180deg, rgba(9,15,21,.84), rgba(6,10,15,.72));
+  box-shadow:0 7px 20px rgba(0,0,0,.22);
+  pointer-events:none;
 }
-.map-head-main{ grid-area:main; display:flex; align-items:center; gap:6px; min-width:0; }
-.map-head-actions{ grid-area:actions; display:flex; align-items:center; gap:4px; flex:0 0 auto; min-width:0; }
-.map-head-status{ grid-area:status; display:flex; justify-content:flex-end; min-width:0; }
-.map-close-control{ grid-area:close; }
-.map-head h2 { margin:0; font:700 15px/1 system-ui, sans-serif; color:#fff; letter-spacing:.2px; }
+.map-head-main{ display:flex; align-items:center; gap:6px; min-width:0; }
+.map-head-actions{ display:flex; align-items:center; gap:4px; flex:0 0 auto; min-width:0; pointer-events:auto; }
+.map-head-status{ display:none; }
+.map-close-control{ pointer-events:auto; }
+.map-head h2 { margin:0; font:800 14px/1 system-ui, sans-serif; color:#fff; letter-spacing:.08em; text-transform:uppercase; }
 .map-intel-btn{
-  min-height:26px;
-  padding:0 9px;
-  border-radius:999px;
+  min-width:36px;
+  min-height:34px;
+  padding:0 8px;
+  border-radius:10px;
   border:1px solid rgba(173,222,255,.20);
   background:linear-gradient(180deg, rgba(20,32,42,.84), rgba(9,15,22,.84));
   color:#eef7ff;
@@ -1308,7 +1316,7 @@ html.ah-skins-open #heroFrame{
   display:inline-flex;
   align-items:center;
   gap:3px;
-  padding:2px;
+  padding:1px;
   border-radius:12px;
   border:1px solid rgba(255,255,255,.08);
   background:rgba(8,12,16,.42);
@@ -1325,9 +1333,9 @@ html.ah-skins-open #heroFrame{
   outline-offset:2px;
 }
 .map-zoom-btn{
-  min-width:48px;
-  height:26px;
-  padding:0 8px;
+  min-width:34px;
+  height:34px;
+  padding:0;
   border-radius:9px;
   border:1px solid rgba(255,255,255,.10);
   background:rgba(255,255,255,.04);
@@ -1347,17 +1355,32 @@ html.ah-skins-open #heroFrame{
   margin:0 !important;
 }
 .map-intel-stack{
+  position:absolute;
+  z-index:20;
+  right:10px;
+  bottom:10px;
+  left:10px;
   display:grid;
-  grid-template-rows:auto auto;
-  gap:2px;
-  margin:0 2px 3px;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"content toggle";
+  align-items:center;
+  gap:6px;
+  margin:0;
+  padding:5px 6px 5px 10px;
   min-height:0;
+  border:1px solid rgba(184,225,237,.14);
+  border-radius:13px;
+  background:linear-gradient(180deg, rgba(8,14,20,.84), rgba(5,9,14,.72));
+  box-shadow:0 8px 22px rgba(0,0,0,.26);
+  pointer-events:none;
 }
+.map-intel-content{ grid-area:content; min-width:0; pointer-events:auto; }
+.map-intel-toggle{ grid-area:toggle; min-width:36px; min-height:34px; padding:0 9px; border:1px solid rgba(170,224,235,.20); border-radius:9px; background:rgba(145,219,230,.08); color:#eafaff; font:800 10px/1 system-ui,sans-serif; letter-spacing:.05em; cursor:pointer; pointer-events:auto; }
+.map-intel-toggle:active{ transform:translateY(1px); }
 .map-intel-stack #ctaSurface:not([style*="display:none"]){
-  max-height:min(68px, 12dvh);
-  overflow:auto;
-  padding-right:2px;
-  scrollbar-width:thin;
+  max-height:48px;
+  overflow:hidden;
+  padding-right:0;
 }
 .map-world-brief{
   margin:0;
@@ -1846,6 +1869,66 @@ html.ah-skins-open #heroFrame{
     max-height:min(48px, 10dvh);
   }
 }
+
+/* P0C.2 map shell: the map stays full-bleed while HUD and intel float above it. */
+.map-card > .map{
+  position:relative;
+  z-index:1;
+  flex:1 1 auto;
+  width:100%;
+  height:100%;
+  min-height:0;
+  max-height:none;
+}
+.map-pressure-mood{
+  position:absolute;
+  z-index:20;
+  top:58px;
+  left:14px;
+  max-width:min(58%, 240px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  pointer-events:none;
+}
+@media (max-width:640px){
+  .map-card{ padding:7px; }
+  .map-head{
+    top:8px;
+    right:8px;
+    left:8px;
+    min-height:38px;
+    gap:5px;
+    padding:2px 3px 2px 9px;
+    border-radius:12px;
+  }
+  .map-head h2{ font-size:13px; }
+  .map-head-actions{ gap:3px; }
+  .map-intel-btn{ min-width:34px; min-height:34px; padding:0 7px; font-size:9px; }
+  .map-zoom-controls{ width:auto; min-width:0; height:34px; min-height:34px; padding:0; gap:2px; border:0; background:transparent; opacity:1; overflow:visible; }
+  .map-zoom-controls:focus-within,.map-zoom-controls:hover{ background:transparent; }
+  .map-zoom-slider{ display:none; }
+  .map-zoom-btn{ display:block; width:34px; min-width:34px; min-height:34px; height:34px; font-size:16px; }
+  #closeMap{ width:36px; min-width:36px; height:36px; min-height:36px; padding:0; }
+  .map-pressure-mood{ top:54px; left:12px; max-width:calc(100% - 24px); min-height:17px; padding:2px 7px; font-size:8px; }
+  .map-intel-stack{
+    right:8px;
+    bottom:calc(8px + var(--ah-inset-bottom));
+    left:8px;
+    min-height:48px;
+    padding:5px 5px 5px 9px;
+    border-radius:12px;
+  }
+  .map-intel-toggle{ min-width:34px; min-height:34px; padding:0 7px; font-size:9px; }
+  .map-intel-stack #ctaSurface:not([style*="display:none"]){ max-height:42px; }
+  .map-world-brief-line-2{ font-size:10px; }
+  .map-card.is-intel-expanded .map-intel-stack{ max-height:46dvh; }
+  .map-card.is-intel-expanded .map-intel-content{ max-height:calc(46dvh - 12px); }
+  .map-card.is-intel-expanded #ctaSurface .cta-why,
+  .map-card.is-intel-expanded #ctaSurface .cta-reward,
+  .map-card.is-intel-expanded #ctaSurface .cta-stakes{ display:block; }
+  .map-card.is-intel-expanded #ctaSurface .cta-highlights-body{ max-height:none; }
+}
 .map-pressure-mood{
   display:inline-flex;
   align-items:center;
@@ -1970,7 +2053,14 @@ html.ah-skins-open #heroFrame{
 }
 
 .map::after{
-  content:none;
+  content:"";
+  position:absolute;
+  z-index:9;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(4,9,13,.22), transparent 18%, transparent 76%, rgba(4,8,12,.26)),
+    radial-gradient(ellipse at center, transparent 50%, rgba(2,5,8,.20) 100%);
 }
 
 .map-stage{
@@ -1988,6 +2078,17 @@ html.ah-skins-open #heroFrame{
   will-change:transform;
   cursor:grab;
 }
+.map-card:not(.is-intel-expanded) .map-world-brief{ display:none; }
+.map-card:not(.is-intel-expanded) #ctaSurface[style*="display:none"] + .map-world-brief{ display:flex; }
+.map-card.is-intel-expanded .map-intel-stack{
+  grid-template-columns:1fr auto;
+  grid-template-areas:"content toggle";
+  align-items:start;
+  max-height:min(32dvh, 240px);
+}
+.map-card.is-intel-expanded .map-intel-content{ max-height:calc(min(32dvh, 240px) - 12px); overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; }
+.map-card.is-intel-expanded .map-intel-stack #ctaSurface:not([style*="display:none"]){ max-height:none; overflow:visible; }
+.map-card.is-intel-expanded .map-world-brief{ display:flex; margin-top:5px; }
 
 .map-stage.is-world-canvas{
   min-width:0;
@@ -2214,24 +2315,31 @@ html.ah-skins-open #heroFrame{
 .world-exploration-sector{ position:absolute; display:block; isolation:isolate; overflow:hidden; contain:paint; padding:0; border:0; border-radius:14% 18% 16% 20% / 18% 13% 20% 15%; background:transparent; color:#dff7f7; pointer-events:auto; cursor:pointer; touch-action:none; }
 .world-exploration-sector:focus-visible{ outline:2px solid #8ce8ed; outline-offset:-2px; }
 .world-exploration-sector::before,.world-exploration-sector::after,.world-exploration-sector-shade{ position:absolute; inset:0; border-radius:inherit; }
-.world-exploration-sector::before{ content:""; z-index:0; border:1px solid rgba(127,190,198,.16); background:linear-gradient(120deg, rgba(108,173,183,.08), transparent 34%, rgba(24,53,62,.10)); box-shadow:inset 0 0 28px rgba(3,8,12,.22); pointer-events:none; }
-.world-exploration-sector::after{ content:""; z-index:1; background:radial-gradient(ellipse at 70% 38%, rgba(132,208,215,.08), transparent 56%), repeating-linear-gradient(164deg, rgba(179,234,236,.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none; }
-.world-exploration-sector-shade{ z-index:0; background:radial-gradient(ellipse at 42% 45%, rgba(26,62,69,.14), rgba(2,7,10,.28) 72%); transition:background .16s ease, opacity .16s ease; pointer-events:none; }
-.world-exploration-sector-label{ position:absolute; z-index:2; left:10%; top:10%; display:flex; flex-direction:column; gap:4px; max-width:70%; padding:6px 8px; border:1px solid rgba(154,221,226,.14); border-radius:8px; background:linear-gradient(135deg, rgba(5,11,15,.76), rgba(7,18,22,.48)); box-shadow:0 4px 18px rgba(0,0,0,.26); font:700 11px/1.1 system-ui,sans-serif; letter-spacing:.06em; text-align:left; text-transform:uppercase; }
-.world-exploration-sector-label em{ color:#9fb8bd; font-size:9px; font-style:normal; }
-.world-exploration-sector[data-status="locked"]::before{ border-color:rgba(100,130,137,.13); background:linear-gradient(120deg, rgba(12,24,29,.13), rgba(2,6,9,.30)); }
-.world-exploration-sector[data-status="locked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 38% 44%, rgba(19,37,42,.08), rgba(1,4,7,.38) 73%); }
-.world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"]{ opacity:.72; }
-.world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"] .world-exploration-sector-label{ opacity:.78; }
-.world-exploration-sector[data-status="available"]::before{ border-color:rgba(109,220,221,.34); box-shadow:inset 0 0 32px rgba(54,160,165,.13); }
-.world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 42% 45%, rgba(56,159,164,.28), rgba(5,23,29,.22) 72%); animation:worldExplorationPulse 3.4s ease-in-out infinite; }
-.world-exploration-sector[data-status="scanning"]::before{ border-color:rgba(104,210,219,.28); }
-.world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 55% 42%, rgba(64,178,190,.21), rgba(5,26,33,.35) 72%); }
-.world-exploration-sector[data-status="claimable"]::before{ border-color:rgba(231,192,101,.43); box-shadow:inset 0 0 34px rgba(169,121,45,.16); }
-.world-exploration-sector[data-status="claimable"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 44% 46%, rgba(211,166,76,.31), rgba(45,45,25,.23) 72%); }
-.world-exploration-sector[data-status="unlocked"]::before{ border-color:rgba(105,221,170,.30); background:linear-gradient(120deg, rgba(54,158,108,.14), transparent 55%); }
-.world-exploration-sector[data-status="unlocked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 45% 48%, rgba(42,139,94,.17), rgba(5,22,16,.14) 75%); }
-.world-exploration-sector:hover .world-exploration-sector-shade{ opacity:.78; }
+.world-exploration-sector::before{ content:""; z-index:0; background:radial-gradient(ellipse at 18% 68%, rgba(4,10,14,.42) 0 11%, transparent 29%), radial-gradient(ellipse at 67% 28%, rgba(3,9,13,.38) 0 13%, transparent 31%), radial-gradient(ellipse at 83% 74%, rgba(5,11,14,.30) 0 9%, transparent 24%); pointer-events:none; }
+.world-exploration-sector::after{ content:""; z-index:1; background:repeating-linear-gradient(164deg, rgba(179,234,236,.035) 0 1px, transparent 1px 9px); opacity:.42; pointer-events:none; }
+.world-exploration-sector-shade{ z-index:0; background:radial-gradient(ellipse at 42% 46%, rgba(28,59,65,.14) 0 17%, transparent 44%), radial-gradient(ellipse at 74% 62%, rgba(2,6,9,.34) 0 13%, transparent 36%); transition:background .16s ease, opacity .16s ease; pointer-events:none; }
+.world-exploration-sector-label{ position:absolute; z-index:3; left:43%; top:41%; display:flex; flex-direction:column; gap:3px; max-width:48%; padding:4px 6px; border-left:1px solid rgba(154,221,226,.28); background:linear-gradient(90deg, rgba(5,11,15,.66), transparent); font:800 10px/1.08 system-ui,sans-serif; letter-spacing:.07em; text-align:left; text-transform:uppercase; pointer-events:none; }
+.world-exploration-sector-label em{ color:#a6bdc0; font-size:8px; font-style:normal; }
+.world-exploration-sector-echo{ position:absolute; z-index:2; width:20px; height:20px; margin:-10px 0 0 -10px; border:1px solid rgba(135,193,199,.22); border-radius:50%; background:radial-gradient(circle, rgba(191,236,238,.38) 0 7%, rgba(66,122,130,.14) 10% 28%, transparent 62%); pointer-events:none; }
+.world-exploration-sector-echo::after{ content:""; position:absolute; inset:5px; border:1px solid rgba(185,238,237,.34); border-radius:50%; pointer-events:none; }
+.world-exploration-sector-echo-core,.world-exploration-sector-interference{ position:absolute; pointer-events:none; }
+.world-exploration-sector-echo-core{ inset:8px; border-radius:50%; background:#bdeff0; opacity:.75; }
+.world-exploration-sector-interference{ left:-10px; right:-10px; top:9px; height:1px; background:rgba(179,232,233,.28); transform:rotate(-18deg); }
+.world-exploration-sector-echo--1{ left:24%; top:62%; }.world-exploration-sector-echo--2{ left:61%; top:30%; }.world-exploration-sector-echo--3{ left:78%; top:70%; }
+.world-exploration-sector[data-status="locked"]::before{ background:radial-gradient(ellipse at 18% 68%, rgba(2,6,9,.48) 0 12%, transparent 31%), radial-gradient(ellipse at 65% 27%, rgba(1,4,7,.43) 0 15%, transparent 35%), radial-gradient(ellipse at 82% 72%, rgba(4,8,11,.37) 0 10%, transparent 27%); }
+.world-exploration-sector[data-status="locked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 37% 48%, rgba(14,32,37,.18) 0 15%, transparent 42%), radial-gradient(ellipse at 74% 61%, rgba(1,4,7,.36) 0 13%, transparent 37%); }
+.world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"]{ opacity:.78; }
+.world-exploration-sector[data-sector-id="relay_fringe_02"][data-status="locked"] .world-exploration-sector-label{ opacity:.80; }
+.world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ background:radial-gradient(circle at 61% 30%, rgba(75,204,208,.33) 0 8%, transparent 28%), radial-gradient(ellipse at 37% 52%, rgba(20,81,88,.20) 0 17%, transparent 47%); animation:worldExplorationPulse 3.4s ease-in-out infinite; }
+.world-exploration-sector[data-status="available"] .world-exploration-sector-echo{ border-color:rgba(113,235,234,.54); background:radial-gradient(circle, rgba(209,255,252,.72) 0 7%, rgba(46,181,183,.20) 10% 32%, transparent 65%); }
+.world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ background:linear-gradient(112deg, transparent 29%, rgba(96,225,232,.22) 47%, transparent 65%), radial-gradient(ellipse at 55% 42%, rgba(38,134,145,.20) 0 18%, transparent 52%); animation:worldExplorationScan 2.8s ease-in-out infinite; }
+.world-exploration-sector[data-status="claimable"] .world-exploration-sector-shade{ background:radial-gradient(circle at 61% 30%, rgba(255,207,112,.55) 0 8%, rgba(177,121,45,.18) 22%, transparent 42%), radial-gradient(ellipse at 44% 46%, rgba(108,78,28,.16) 0 19%, transparent 55%); }
+.world-exploration-sector[data-status="claimable"] .world-exploration-sector-echo{ border-color:rgba(255,213,126,.62); background:radial-gradient(circle, rgba(255,239,181,.88) 0 8%, rgba(215,161,68,.27) 11% 34%, transparent 66%); }
+.world-exploration-sector[data-status="unlocked"]::before{ opacity:.20; }
+.world-exploration-sector[data-status="unlocked"] .world-exploration-sector-shade{ background:radial-gradient(ellipse at 45% 48%, rgba(43,137,96,.10) 0 13%, transparent 43%); }
+.world-exploration-sector[data-status="unlocked"] .world-exploration-sector-echo{ opacity:.32; }
+.world-exploration-sector:hover .world-exploration-sector-shade{ opacity:.88; }
+@keyframes worldExplorationScan{ 0%,100%{ opacity:.48; } 50%{ opacity:.96; } }
 .map-pin.is-world-exploration-locked{ opacity:.42; filter:grayscale(.7); }
 
 .world-exploration-panel-shell{ position:fixed; inset:0; z-index:1000002; display:grid; place-items:center; padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
@@ -2266,7 +2374,7 @@ html.ah-skins-open #heroFrame{
 .world-exploration-complete{ display:grid; place-items:center; border-color:rgba(109,214,161,.35); color:#9ee0bb; background:rgba(49,136,93,.14); }
 @keyframes worldExplorationPulse{ 50%{ filter:brightness(1.25); } }
 @media (max-width:640px){ .world-exploration-panel-shell{ padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); align-items:end; } .world-exploration-panel{ width:100%; max-height:88dvh; border-right:0; border-left:0; border-radius:17px 17px 0 0; } .world-exploration-sector-label{ font-size:9px; } .world-exploration-sector-label em{ font-size:8px; } }
-@media (prefers-reduced-motion:reduce){ .world-exploration-sector[data-status="available"] .world-exploration-sector-shade{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .world-exploration-sector[data-status="available"] .world-exploration-sector-shade,.world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ animation:none; } }
 
 /* === MAP VISUAL SYSTEM v1 === */
 
@@ -6793,28 +6901,33 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <div class="map-card">
           <div class="map-head">
             <div class="map-head-main">
-              <h2>Regions Map</h2>
-              <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
+              <h2>Regions</h2>
             </div>
             <div class="map-head-actions">
-              <button class="map-intel-btn" id="openWarIntel" type="button" aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">War Intel ?</button>
+              <button class="map-intel-btn" id="openWarIntel" type="button" aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">Intel</button>
               <div class="map-zoom-controls" aria-label="Map zoom controls">
                 <input class="map-zoom-slider" id="mapZoomSlider" type="range" min="0" max="4" step="1" value="3" aria-label="Map zoom level">
+                <button class="map-zoom-btn" id="mapZoomOut" type="button" aria-label="Zoom out" title="Zoom out">&minus;</button>
+                <button class="map-zoom-btn" id="mapZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
                 <button class="map-zoom-btn" id="mapZoomReset" type="button" aria-label="Reset map view" title="Reset map view">↻</button>
               </div>
             </div>
             <button class="close-x map-close-control" id="closeMap" type="button" aria-label="Close map">×</button>
           </div>
           <div class="map-intel-stack" aria-label="Map Intel summary">
-            <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
-              <div id="ctaCardRoot"></div>
-              <div id="ctaHighlightsRoot"></div>
-            </section>
-            <div id="mapWorldBrief" class="map-world-brief">
-              <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
-              <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+            <div class="map-intel-content">
+              <section id="ctaSurface" style="display:none;margin:0 0 4px;width:auto;">
+                <div id="ctaCardRoot"></div>
+                <div id="ctaHighlightsRoot"></div>
+              </section>
+              <div id="mapWorldBrief" class="map-world-brief">
+                <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
+                <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
+              </div>
             </div>
+            <button class="map-intel-toggle" id="toggleMapIntel" type="button" aria-expanded="false" aria-controls="ctaSurface mapWorldBrief">Intel</button>
           </div>
+          <div id="mapPressureMood" class="map-pressure-mood" hidden></div>
           <div class="war-intel-back" id="warIntelBack" hidden aria-hidden="true">
             <div class="war-intel-sheet" role="dialog" aria-modal="true" aria-labelledby="warIntelTitle">
               <div class="war-intel-head">
@@ -8918,7 +9031,11 @@ document.addEventListener("click", async (e) => {
         const MAP_INITIAL_FOCUS_IDS = ["broken_contracts", "phantom_nodes", "alpha_network_hq"];
         const mapStageEl = ensureMapStage(mapRoot);
         const mapZoomSlider = document.getElementById("mapZoomSlider");
+        const mapZoomOutBtn = document.getElementById("mapZoomOut");
+        const mapZoomInBtn = document.getElementById("mapZoomIn");
         const mapZoomResetBtn = document.getElementById("mapZoomReset");
+        const mapCard = document.querySelector(".map-card");
+        const mapIntelToggle = document.getElementById("toggleMapIntel");
         const DEFAULT_MAP_VIEWBOX = Object.freeze({ width: 1600, height: 900 });
         let mapViewBox = { ...DEFAULT_MAP_VIEWBOX };
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
@@ -9250,6 +9367,15 @@ document.addEventListener("click", async (e) => {
             mapZoomSlider.max = String(Math.max(0, MAP_ZOOM_LEVELS.length - 1));
             mapZoomSlider.value = String(idx);
           }
+          if (mapZoomOutBtn) mapZoomOutBtn.disabled = idx <= 0;
+          if (mapZoomInBtn) mapZoomInBtn.disabled = idx >= MAP_ZOOM_LEVELS.length - 1;
+        }
+
+        function setMapIntelExpanded(expanded){
+          const open = !!expanded;
+          mapCard?.classList.toggle("is-intel-expanded", open);
+          mapIntelToggle?.setAttribute("aria-expanded", open ? "true" : "false");
+          if (mapIntelToggle) mapIntelToggle.textContent = open ? "Close" : "Intel";
         }
 
         function setMapZoom(nextZoom, options = {}){
@@ -9366,9 +9492,30 @@ document.addEventListener("click", async (e) => {
             setMapZoom(MAP_ZOOM_LEVELS[idx], { mode: idx === 0 ? "fit" : "preset" });
           });
 
+          mapZoomOutBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            const idx = mapZoomIndex();
+            if (idx > 0) setMapZoom(MAP_ZOOM_LEVELS[idx - 1], { mode: idx - 1 === 0 ? "fit" : "preset" });
+          });
+
+          mapZoomInBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            const idx = mapZoomIndex();
+            if (idx < MAP_ZOOM_LEVELS.length - 1) setMapZoom(MAP_ZOOM_LEVELS[idx + 1], { mode: "preset" });
+          });
+
         mapZoomResetBtn?.addEventListener("click", (event) => {
           event.preventDefault();
           setMapZoom(defaultMapZoom(), { recenter: true, mode: "preset" });
+        });
+        mapIntelToggle?.addEventListener("click", (event) => {
+          event.preventDefault();
+          setMapIntelExpanded(!mapCard?.classList.contains("is-intel-expanded"));
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape" || !mapCard?.classList.contains("is-intel-expanded")) return;
+          if (document.getElementById("warIntelBack")?.hidden === false) return;
+          setMapIntelExpanded(false);
         });
         }
 
@@ -11585,6 +11732,7 @@ const actions = {
   ".btn.map": () => {
     try { window.requestTelegramFullscreen?.(); } catch (_) {}
     if (window.DBG) console.debug("[map] open", { source: "button" });
+    setMapIntelExpanded(false);
     mapBack.style.display = "flex";
     navOpen("mapBack");
     window.WorldExploration?.onMapOpened?.();
@@ -11686,6 +11834,7 @@ document.addEventListener("click", (e) => {
 
 /* === MAP close === */
 document.getElementById("closeMap")?.addEventListener("click", () => {
+  setMapIntelExpanded(false);
   mapBack.style.display = "none";
   navClose("mapBack");
 });
@@ -12041,6 +12190,7 @@ async function showSection(name){
     case "map":
       try { window.requestTelegramFullscreen?.(); } catch (_) {}
       if (window.DBG) console.debug("[map] open", { source: "showSection" });
+      setMapIntelExpanded(false);
       mapBack.style.display = "flex";
       navOpen("mapBack"); // ✅
       window.WorldExploration?.onMapOpened?.();
@@ -12305,7 +12455,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
-<script src="/js/world_exploration.js?v=world-exploration-p0c1"></script>
+<script src="/js/world_exploration.js?v=world-exploration-p0c2"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
