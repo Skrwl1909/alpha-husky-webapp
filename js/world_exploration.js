@@ -5,6 +5,8 @@
   const PANEL_ID = "worldExplorationPanel";
   const CANONICAL_FRAGMENT_ID = "map_key_fragment";
   const FRAGMENT_ICON_PATH = "/images/ui/map_key_fragment.webp";
+  const REGION_ASSET_PATH = "/images/map/exploration/map_region.webp";
+  const LOCK_ASSET_PATH = "/images/map/exploration/lock_region.webp";
   const SECTOR_IDS = new Set(["relay_fringe_01", "relay_fringe_02"]);
   const TAP_MOVE_PX = 12;
   const state = {
@@ -140,12 +142,17 @@
 
   function sectorVisualHtml(sector) {
     const status = String(sector?.status || "locked");
-    const label = status === "locked" ? "Unknown signal" : formatSectorName(sector);
-    const detail = status === "locked" ? "Scan required" : status.toUpperCase();
+    const copy = {
+      locked: ["Unknown signal", "Locked"],
+      available: ["Scan available", "Ready"],
+      scanning: ["Signal scan", "Scanning"],
+      claimable: ["Signal claim", "Claimable"],
+      unlocked: ["Sector clear", "Unlocked"],
+    }[status] || [formatSectorName(sector), status.toUpperCase()];
     const echoes = [1, 2, 3].map((index) => (
       `<span class="world-exploration-sector-echo world-exploration-sector-echo--${index}" aria-hidden="true"><span class="world-exploration-sector-echo-core"></span><span class="world-exploration-sector-interference"></span></span>`
     )).join("");
-    return `<span class="world-exploration-sector-shade" aria-hidden="true"></span>${echoes}<span class="world-exploration-sector-label"><strong>${escapeHtml(label)}</strong><em>${escapeHtml(detail)}</em></span>`;
+    return `<span class="world-exploration-sector-visual" aria-hidden="true"><img class="world-exploration-region-asset" src="${REGION_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"><span class="world-exploration-sector-shade"></span>${echoes}<img class="world-exploration-lock-asset" src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(copy[0])}</strong><em>${escapeHtml(copy[1])}</em></span>`;
   }
 
   function renderOverlay() {
