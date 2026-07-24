@@ -162,6 +162,7 @@
     if (!state.valid || !state.projection) {
       overlay.hidden = true;
       syncDeadRelayMarker();
+      syncLockedSectorNodePresentation();
       return;
     }
     overlay.hidden = false;
@@ -196,6 +197,7 @@
       overlay.appendChild(button);
     });
     syncDeadRelayMarker();
+    syncLockedSectorNodePresentation();
   }
 
   function requirementsHtml(sector) {
@@ -336,6 +338,24 @@
       if (locked) element.title = "Dead Relay Exchange locked — claim Relay Fringe 01 first.";
     });
   }
+  function syncLockedSectorNodePresentation() {
+    const bounds = state.projection?.worldBounds;
+    const lockedSectors = (state.projection?.sectorCatalog || []).filter((sector) => (
+      sector?.visible && String(sector?.status || "locked") === "locked" && asObject(sector?.geometry)
+    ));
+    document.querySelectorAll("#pins .map-pin").forEach((element) => {
+      const x = Number.parseFloat(element.style.left);
+      const y = Number.parseFloat(element.style.top);
+      const obscured = !!bounds && Number.isFinite(x) && Number.isFinite(y) && lockedSectors.some((sector) => {
+        const geometry = sector.geometry;
+        const worldX = (x / 100) * bounds.width;
+        const worldY = (y / 100) * bounds.height;
+        return worldX >= geometry.x && worldX <= geometry.x + geometry.width
+          && worldY >= geometry.y && worldY <= geometry.y + geometry.height;
+      });
+      element.classList.toggle("is-world-exploration-obscured", obscured);
+    });
+  }
   function canOpenDeadRelay() { return !!(state.valid && state.projection?.canOpenRelay7 === true && state.projection?.relay7Available === true); }
   function showDeadRelayLocked() {
     const message = "Dead Relay Exchange is locked. Complete and claim Relay Fringe 01 first.";
@@ -391,7 +411,7 @@
     if (mapIsOpen()) onMapOpened();
   }
 
-  window.WorldExploration = { init, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, openSector, closePanel };
+  window.WorldExploration = { init, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, openSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();
