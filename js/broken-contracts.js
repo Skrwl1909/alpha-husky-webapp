@@ -1109,8 +1109,7 @@
       } catch (_) {}
       return true;
     } catch (err) {
-      close();
-      throw err;
+      return false;
     }
   }
 
@@ -1120,6 +1119,13 @@
     const closeBtn = el(CLOSE_ID);
     const refreshBtn = el(REFRESH_ID);
     applyRivalrySkin(S.state);
+
+    try {
+      global.navRegister?.(MODAL_ID, {
+        close: () => close(),
+        isOpen: () => isVisible(el(MODAL_ID))
+      });
+    } catch (_) {}
 
     if (closeBtn && !closeBtn.dataset.bcBound) {
       closeBtn.dataset.bcBound = "1";
