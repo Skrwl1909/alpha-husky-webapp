@@ -1282,7 +1282,8 @@ html.ah-skins-open #heroFrame{
   left:10px;
   right:10px;
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"main controls";
   align-items:center;
   justify-content:space-between;
   gap:8px;
@@ -1294,8 +1295,8 @@ html.ah-skins-open #heroFrame{
   box-shadow:0 7px 20px rgba(0,0,0,.22);
   pointer-events:none;
 }
-.map-head-main{ display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; }
-.map-head-actions{ display:flex; align-items:center; gap:4px; flex:0 0 auto; min-width:0; pointer-events:auto; }
+.map-head-main{ grid-area:main; display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; }
+.map-head-actions{ grid-area:controls; display:flex; align-items:center; flex:0 0 auto; flex-wrap:nowrap; gap:4px; min-width:0; pointer-events:auto; }
 .map-head-status{ display:none; }
 .map-close-control{ pointer-events:auto; }
 .map-head h2 { min-width:0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:800 14px/1 system-ui, sans-serif; color:#fff; letter-spacing:.08em; text-transform:uppercase; }
@@ -1359,6 +1360,20 @@ html.ah-skins-open #heroFrame{
   height:34px;
   padding:0;
 }
+.map-war-guide-btn{
+  display:none;
+  margin-top:6px;
+  min-height:30px;
+  padding:0 10px;
+  border:1px solid rgba(170,224,235,.22);
+  border-radius:9px;
+  background:rgba(145,219,230,.08);
+  color:#eafaff;
+  font:800 10px/1 system-ui,sans-serif;
+  letter-spacing:.05em;
+  cursor:pointer;
+}
+.map-card.is-intel-expanded .map-war-guide-btn{ display:inline-flex; align-items:center; }
 .map-intel-stack{
   position:absolute;
   z-index:20;
@@ -1938,13 +1953,14 @@ html.ah-skins-open #heroFrame{
     border-radius:12px;
   }
   .map-head h2{ font-size:13px; }
-  .map-head-actions{ gap:3px; }
-  .map-intel-btn{ min-width:34px; min-height:34px; padding:0 7px; font-size:9px; }
-  .map-zoom-controls{ width:auto; min-width:0; height:34px; min-height:34px; padding:0; gap:2px; border:0; background:transparent; opacity:1; overflow:visible; }
+  .map-head{ grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"main controls"; gap:5px; }
+  .map-head-actions{ flex-wrap:nowrap; gap:5px; }
+  #openWarIntel{ display:none !important; pointer-events:none !important; }
+  .map-zoom-controls{ display:flex; width:auto; min-width:0; height:40px; min-height:40px; padding:0; gap:5px; border:0; background:transparent; opacity:1; overflow:visible; flex:0 0 auto; flex-wrap:nowrap; }
   .map-zoom-controls:focus-within,.map-zoom-controls:hover{ background:transparent; }
   .map-zoom-slider{ display:none; }
-  .map-zoom-btn{ display:block; width:34px; min-width:34px; min-height:34px; height:34px; font-size:16px; }
-  #closeMap{ width:36px; min-width:36px; height:36px; min-height:36px; padding:0; }
+  .map-zoom-btn{ display:block; width:40px; min-width:40px; min-height:40px; height:40px; font-size:16px; }
+  #closeMap{ width:40px; min-width:40px; height:40px; min-height:40px; padding:0; }
   .map-pressure-mood{ top:54px; left:12px; max-width:calc(100% - 24px); min-height:17px; padding:2px 7px; font-size:8px; }
   .map-intel-stack{
     right:8px;
@@ -1986,11 +2002,10 @@ html.ah-skins-open #heroFrame{
 }
 @media (max-width:360px){
   .map-head{ gap:3px; padding-left:8px; }
-  .map-head-actions{ gap:2px; }
-  .map-intel-btn{ width:34px; min-width:34px; padding:0; font-size:0; }
-  .map-intel-btn::before{ content:"I"; font-size:11px; }
-  .map-zoom-btn{ width:32px; min-width:32px; }
-  #closeMap{ width:34px; min-width:34px; }
+  .map-head-actions,.map-zoom-controls{ gap:3px; }
+  .map-zoom-controls{ height:36px; min-height:36px; }
+  .map-zoom-btn{ width:36px; min-width:36px; min-height:36px; height:36px; }
+  #closeMap{ width:36px; min-width:36px; height:36px; min-height:36px; }
 }
 .map-pressure-mood{
   display:inline-flex;
@@ -7005,6 +7020,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
                 <div id="ctaCardRoot"></div>
                 <div id="ctaHighlightsRoot"></div>
               </section>
+              <button class="map-war-guide-btn" id="openWarIntelFromDrawer" type="button" data-map-war-intel aria-haspopup="dialog" aria-controls="warIntelBack" aria-expanded="false">War Guide</button>
               <div id="mapWorldBrief" class="map-world-brief">
                 <p class="map-world-brief-line map-world-brief-line-1" data-line="1">Network fracture</p>
                 <p class="map-world-brief-line map-world-brief-line-2" data-line="2">Scanning frontline pressure...</p>
@@ -9122,6 +9138,11 @@ document.addEventListener("click", async (e) => {
         const mapZoomResetBtn = document.getElementById("mapZoomReset");
         const mapCard = document.querySelector(".map-card");
         const mapIntelToggle = document.getElementById("toggleMapIntel");
+        const mapHeaderActions = document.querySelector(".map-head-actions");
+        const mapCloseControl = document.getElementById("closeMap");
+        if (mapHeaderActions && mapCloseControl && mapCloseControl.parentElement !== mapHeaderActions) {
+          mapHeaderActions.appendChild(mapCloseControl);
+        }
         const DEFAULT_MAP_VIEWBOX = Object.freeze({ width: 1600, height: 900 });
         let mapViewBox = { ...DEFAULT_MAP_VIEWBOX };
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
@@ -13037,20 +13058,20 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function () {
   function initWarIntel() {
     const mapBack = document.getElementById("mapBack");
-    const openBtn = document.getElementById("openWarIntel");
+    const openButtons = Array.from(document.querySelectorAll("[data-map-war-intel], #openWarIntel"));
     const back = document.getElementById("warIntelBack");
     const closeBtn = document.getElementById("closeWarIntel");
     const closeMapBtn = document.getElementById("closeMap");
-    if (!mapBack || !openBtn || !back || !closeBtn) return;
-    if (openBtn.dataset.warIntelBound === "1") return;
+    if (!mapBack || !openButtons.length || !back || !closeBtn) return;
+    if (openButtons[0].dataset.warIntelBound === "1") return;
 
     const setOpen = (open) => {
       back.hidden = !open;
       back.setAttribute("aria-hidden", open ? "false" : "true");
-      openBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      openButtons.forEach((button) => button.setAttribute("aria-expanded", open ? "true" : "false"));
     };
 
-    openBtn.addEventListener("click", () => setOpen(true));
+    openButtons.forEach((button) => button.addEventListener("click", () => setOpen(true)));
     closeBtn.addEventListener("click", () => setOpen(false));
     back.addEventListener("click", (event) => {
       if (event.target === back) setOpen(false);
@@ -13066,7 +13087,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     });
     observer.observe(mapBack, { attributes: true, attributeFilter: ["style"] });
 
-    openBtn.dataset.warIntelBound = "1";
+    openButtons.forEach((button) => { button.dataset.warIntelBound = "1"; });
     setOpen(false);
   }
 
