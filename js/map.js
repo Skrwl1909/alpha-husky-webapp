@@ -14,7 +14,7 @@
   let _sitrepLoading = false;
   let _alphaDenLoadPromise = null;
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
-  const ALPHA_DEN_RUNTIME_VERSION = "den-p0g";
+  const ALPHA_DEN_RUNTIME_VERSION = "den-visual-tiers-v1";
   const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=" + ALPHA_DEN_RUNTIME_VERSION;
   const ALPHA_DEN_RUNTIME_PATH = "/js/alpha_den.js";
 

@@ -137,26 +137,26 @@
     signal_core: {
       unbuilt: "",
       l1: "images/alpha_den/signal_core_l1.png",
-      l3: "",
-      l5: "",
-      l7: "",
-      l9: ""
+      l3: "images/alpha_den/signal_core_l3.png",
+      l5: "images/alpha_den/signal_core_l5.png",
+      l7: "images/alpha_den/signal_core_l7.png",
+      l9: "images/alpha_den/signal_core_l9.png"
     },
     pet_kennel: {
       unbuilt: "",
       l1: "images/alpha_den/pet_kennel_l1.png",
-      l3: "",
-      l5: "",
-      l7: "",
-      l9: ""
+      l3: "images/alpha_den/pet_kennel_l3.png",
+      l5: "images/alpha_den/pet_kennel_l5.png",
+      l7: "images/alpha_den/pet_kennel_l7.png",
+      l9: "images/alpha_den/pet_kennel_l9.png"
     },
     war_table: {
       unbuilt: "",
       l1: "images/alpha_den/war_table_l1.png",
-      l3: "",
-      l5: "",
-      l7: "",
-      l9: ""
+      l3: "images/alpha_den/war_table_l3.png",
+      l5: "images/alpha_den/war_table_l5.png",
+      l7: "images/alpha_den/war_table_l7.png",
+      l9: "images/alpha_den/war_table_l9.png"
     }
   };
 
