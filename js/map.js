@@ -887,6 +887,10 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   --map-node-shell-diameter:var(--map-node-size-standard);
   --map-node-ring-offset:calc((var(--map-node-shell-diameter) - var(--map-node-icon-viewport-size)) / 2);
   --map-node-icon-scale:1;
+  display:grid;
+  place-items:center;
+  width:var(--map-node-icon-viewport-size) !important;
+  height:var(--map-node-icon-viewport-size) !important;
   z-index:4;
 }
 #pins .map-pin.map-node-shell.map-role-landmark{
@@ -913,6 +917,8 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
 #pins .map-pin.map-node-shell .pin-ring{
   inset:calc(-1 * var(--map-node-ring-offset)) !important;
+  width:auto !important;
+  height:auto !important;
   border:1px solid color-mix(in srgb, var(--map-node-accent) 72%, transparent) !important;
   background:radial-gradient(circle, color-mix(in srgb, var(--map-node-accent) 11%, transparent) 0 56%, transparent 68%) !important;
   box-shadow:0 0 0 3px rgba(5,12,17,.58), 0 0 13px color-mix(in srgb, var(--map-node-accent) 17%, transparent) !important;
@@ -1001,20 +1007,27 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   border-right-color:color-mix(in srgb, var(--map-node-accent) 48%, transparent);
 }
 #pins .map-pin.map-node-shell .map-node-family-glyph{
-  position:absolute;
-  left:-5px;
-  bottom:-5px;
-  display:grid;
+  position:relative;
+  display:inline-grid;
+  flex:0 0 auto;
   place-items:center;
-  width:14px;
-  height:14px;
-  border:1px solid rgba(156,187,193,.42);
-  border-radius:50%;
-  color:#c9dbde;
-  background:rgba(6,13,18,.92);
-  font:800 10px/1 system-ui,sans-serif;
+  width:12px;
+  height:12px;
+  margin-right:4px;
+  color:#b7c9cc;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  font:800 11px/1 system-ui,sans-serif;
+  vertical-align:middle;
   pointer-events:none;
-  z-index:5;
+  z-index:auto;
+}
+#pins .map-pin.map-node-shell.map-label-persistent .chip{
+  display:flex !important;
+}
+#pins .map-pin.map-node-shell .chip .map-node-family-glyph{
+  color:#c9dbde;
 }
 #pins .map-pin.map-node-shell.map-priority-objective .ping{
   animation:ahMapNodeSignalPulse 3.8s ease-in-out infinite;
@@ -1056,7 +1069,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 @media (max-width:640px){
   :root{ --map-node-size-standard:58px; --map-node-size-landmark:68px; --map-node-icon-viewport-size:42px; }
   #pins .map-pin.map-node-shell .chip{ max-width:112px; font-size:9px; }
-  #pins .map-pin.map-node-shell .map-node-family-glyph{ width:12px; height:12px; font-size:9px; }
+  #pins .map-pin.map-node-shell .map-node-family-glyph{ width:10px; height:10px; margin-right:3px; font-size:9px; }
 }
 @media (prefers-reduced-motion:reduce){
   #pins .map-pin.map-node-shell.map-priority-objective .ping{ animation:none; }
@@ -2635,12 +2648,14 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
   function _syncMapFamilyGlyph(pinEl, family) {
     if (!pinEl) return;
-    let glyph = pinEl.querySelector(".map-node-family-glyph");
+    const chip = pinEl.querySelector(".chip");
+    if (!chip) return;
+    let glyph = chip.querySelector(".map-node-family-glyph");
     if (!glyph) {
       glyph = document.createElement("span");
       glyph.className = "map-node-family-glyph";
-      glyph.setAttribute("role", "img");
-      pinEl.appendChild(glyph);
+      glyph.setAttribute("aria-hidden", "true");
+      chip.prepend(glyph);
     }
     const label = String(family || "utility");
     glyph.textContent = MAP_FAMILY_GLYPHS[label] || MAP_FAMILY_GLYPHS.utility;
@@ -2664,7 +2679,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       "map-role-landmark", "map-role-activity", "map-role-gateway",
       "map-family-progression", "map-family-pve", "map-family-pvpve", "map-family-exploration", "map-family-event", "map-family-utility",
       "map-state-known", "map-state-live", "map-state-locked", "map-state-completed", "map-state-threat",
-      "map-priority-normal", "map-priority-objective", "map-priority-urgent"
+      "map-priority-normal", "map-priority-objective", "map-priority-urgent", "map-label-persistent"
     );
     pinEl.style.setProperty("--map-node-icon-scale", String(meta.iconScale || 1));
     if (meta.iconOffsetX) pinEl.style.setProperty("--map-node-icon-offset-x", meta.iconOffsetX);
@@ -2675,7 +2690,10 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     pinEl.dataset.mapFamily = family;
     pinEl.dataset.mapState = state;
     pinEl.dataset.mapPriority = "normal";
+    pinEl.setAttribute("aria-label", `${pinEl.dataset.nodeName || "Map node"}, ${family} activity`);
     pinEl.classList.add("map-node-shell", `map-role-${role}`, `map-family-${family}`, `map-state-${state}`, "map-priority-normal");
+    const persistentLabel = role === "landmark" || role === "gateway" || state === "live";
+    pinEl.classList.toggle("map-label-persistent", persistentLabel);
     _syncMapFamilyGlyph(pinEl, family);
   }
 
