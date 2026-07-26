@@ -336,8 +336,9 @@
     const locked = !canOpenDeadRelay();
     document.querySelectorAll('[data-node-id="dead_relay_exchange"], [data-building-id="dead_relay_exchange"]').forEach((element) => {
       element.classList.toggle("is-world-exploration-locked", locked);
-      element.classList.toggle("map-node-state-locked", locked);
-      if (!locked) element.classList.add("map-node-state-known");
+      element.classList.toggle("map-state-locked", locked);
+      if (locked) element.classList.remove("map-state-known");
+      else element.classList.add("map-state-known");
       element.setAttribute("aria-disabled", locked ? "true" : "false");
       if (locked) element.title = "Dead Relay Exchange locked — claim Relay Fringe 01 first.";
     });

@@ -77,8 +77,32 @@
     "phantom_nodes",
     "broken_contracts",
   ]);
-  const MAP_NODE_LANDMARK_IDS = new Set(["blood_moon_tower", "edge_of_chain", "oracle_void_doorway"]);
-  const MAP_NODE_GATEWAY_IDS = new Set(["dead_relay_exchange"]);
+  // Visual-only taxonomy. Gameplay, unlocks, positions, and runtime state stay in map data/API projections.
+  const NODE_VISUAL_META = Object.freeze({
+    abandoned_wallets: { role: "activity", activityFamily: "utility", iconScale: 1.04 },
+    phantom_nodes: { role: "activity", activityFamily: "pvpve" },
+    blood_moon_tower: { role: "landmark", activityFamily: "event", iconScale: 0.90 },
+    edge_of_chain: { role: "landmark", activityFamily: "pvpve", iconScale: 0.94 },
+    oracle_void_doorway: { role: "activity", activityFamily: "exploration" },
+    alpha_network_hq: { role: "activity", activityFamily: "progression" },
+    alpha_den: { role: "activity", activityFamily: "progression" },
+    chain_gate: { role: "activity", activityFamily: "exploration", iconScale: 1.02 },
+    vault_forge: { role: "activity", activityFamily: "utility" },
+    broken_contracts: { role: "activity", activityFamily: "pve" },
+    burned_archive: { role: "activity", activityFamily: "exploration", iconScale: 1.12 },
+    howl_treasury: { role: "activity", activityFamily: "utility" },
+    moon_lab: { role: "activity", activityFamily: "pve" },
+    testnet_wastes_dojo: { role: "activity", activityFamily: "pve" },
+    dead_relay_exchange: { role: "gateway", activityFamily: "exploration", iconScale: 1.16 },
+  });
+  const MAP_FAMILY_GLYPHS = Object.freeze({
+    progression: "↗",
+    pve: "✦",
+    pvpve: "×",
+    exploration: "⌖",
+    event: "◐",
+    utility: "□",
+  });
 
   function logMap(...args) {
     if (window.DBG) console.debug("[map]", ...args);
@@ -844,41 +868,48 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   box-shadow:none !important;
 }
 
-/* === Map visual coherence pass: one shell, three readable scales === */
+/* === Map node taxonomy hotfix: four independent visual axes === */
 :root{
   --map-node-known:#8fc8d2;
   --map-node-active:#66d2b2;
   --map-node-threat:#e98768;
   --map-node-locked:#728795;
-  --map-node-special:#9a78d1;
   --map-signal-dormant:rgba(128,174,187,.30);
   --map-signal-active:rgba(103,204,212,.56);
   --map-signal-broken:rgba(110,143,154,.25);
-  --map-node-ring-size-landmark:12px;
-  --map-node-ring-size-standard:8px;
-  --map-node-ring-size-gateway:6px;
+  --map-node-size-standard:80px;
+  --map-node-size-landmark:94px;
+  --map-node-icon-viewport-size:64px;
 }
 
 #pins .map-pin.map-node-shell{
   --map-node-accent:var(--map-node-known);
-  --map-node-ring-offset:var(--map-node-ring-size-standard);
+  --map-node-shell-diameter:var(--map-node-size-standard);
+  --map-node-ring-offset:calc((var(--map-node-shell-diameter) - var(--map-node-icon-viewport-size)) / 2);
   --map-node-icon-scale:1;
   z-index:4;
 }
-#pins .map-pin.map-node-shell.map-node-size-landmark{
-  --map-node-ring-offset:var(--map-node-ring-size-landmark);
-  --map-node-icon-scale:1.08;
+#pins .map-pin.map-node-shell.map-role-landmark{
+  --map-node-shell-diameter:var(--map-node-size-landmark);
   z-index:6;
 }
-#pins .map-pin.map-node-shell.map-node-size-gateway{
-  --map-node-ring-offset:var(--map-node-ring-size-gateway);
-  --map-node-icon-scale:.92;
+#pins .map-pin.map-node-shell.map-role-gateway{
+  --map-node-shell-diameter:var(--map-node-size-standard);
   z-index:5;
 }
-#pins .map-pin.map-node-shell.map-node-state-active{ --map-node-accent:var(--map-node-active); }
-#pins .map-pin.map-node-shell.map-node-state-threat{ --map-node-accent:var(--map-node-threat); }
-#pins .map-pin.map-node-shell.map-node-state-locked{ --map-node-accent:var(--map-node-locked); }
-#pins .map-pin.map-node-shell.map-node-state-special{ --map-node-accent:var(--map-node-special); }
+#pins .map-pin.map-node-shell.map-state-live{ --map-node-accent:var(--map-node-active); }
+#pins .map-pin.map-node-shell.map-state-threat{ --map-node-accent:var(--map-node-threat); }
+#pins .map-pin.map-node-shell.map-state-locked{ --map-node-accent:var(--map-node-locked); }
+
+#pins .map-pin.map-node-shell .map-node-icon-viewport{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:var(--map-node-icon-viewport-size);
+  height:var(--map-node-icon-viewport-size);
+  overflow:visible;
+  z-index:2;
+}
 
 #pins .map-pin.map-node-shell .pin-ring{
   inset:calc(-1 * var(--map-node-ring-offset)) !important;
@@ -897,7 +928,11 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 }
 #pins .map-pin.map-node-shell .pin-icon,
 #pins .map-pin.map-node-shell > img{
-  transform:scale(var(--map-node-icon-scale)) !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain;
+  opacity:1 !important;
+  transform:translate(var(--map-node-icon-offset-x, 0), var(--map-node-icon-offset-y, 0)) scale(var(--map-node-icon-scale)) !important;
   filter:drop-shadow(0 7px 12px rgba(0,0,0,.42)) !important;
 }
 #pins .map-pin.map-node-shell .ping{
@@ -907,9 +942,6 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   background:none;
   opacity:.28;
   animation:none;
-}
-#pins .map-pin.map-node-shell.map-node-state-active .ping{
-  animation:ahMapNodeSignalPulse 3.8s ease-in-out infinite;
 }
 #pins .map-pin.map-node-shell .chip{
   display:none;
@@ -931,12 +963,67 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   border-color:color-mix(in srgb, var(--map-node-accent) 36%, rgba(255,255,255,.16));
   background:rgba(6,13,18,.90);
 }
-#pins .map-pin.map-node-shell.map-node-state-locked{
-  filter:grayscale(.38) saturate(.65);
-}
-#pins .map-pin.map-node-shell.map-node-state-locked .pin-ring{
+#pins .map-pin.map-node-shell.map-state-locked .pin-ring{
   box-shadow:0 0 0 3px rgba(5,12,17,.58) !important;
   opacity:.76;
+}
+#pins .map-pin.map-node-shell.map-state-locked .pin-icon{
+  opacity:.84 !important;
+  filter:grayscale(.28) drop-shadow(0 7px 12px rgba(0,0,0,.42)) !important;
+}
+#pins .map-pin.map-node-shell.map-state-locked .lock-badge{
+  position:absolute;
+  top:-7px;
+  right:-7px;
+  display:grid !important;
+  place-items:center;
+  width:16px;
+  height:16px;
+  padding:0;
+  border:1px solid rgba(137,160,172,.58);
+  border-radius:50%;
+  background:rgba(6,13,18,.94);
+  z-index:5;
+}
+#pins .map-pin.map-node-shell.map-state-locked .lock-badge img{
+  display:block !important;
+  width:9px !important;
+  height:9px !important;
+  opacity:.86 !important;
+}
+#pins .map-pin.map-node-shell.map-role-gateway .pin-ring{
+  border-style:dashed !important;
+  border-width:2px !important;
+  border-left-color:transparent !important;
+}
+#pins .map-pin.map-node-shell.map-role-gateway .pin-ring::after{
+  border-bottom-color:transparent;
+  border-right-color:color-mix(in srgb, var(--map-node-accent) 48%, transparent);
+}
+#pins .map-pin.map-node-shell .map-node-family-glyph{
+  position:absolute;
+  left:-5px;
+  bottom:-5px;
+  display:grid;
+  place-items:center;
+  width:14px;
+  height:14px;
+  border:1px solid rgba(156,187,193,.42);
+  border-radius:50%;
+  color:#c9dbde;
+  background:rgba(6,13,18,.92);
+  font:800 10px/1 system-ui,sans-serif;
+  pointer-events:none;
+  z-index:5;
+}
+#pins .map-pin.map-node-shell.map-priority-objective .ping{
+  animation:ahMapNodeSignalPulse 3.8s ease-in-out infinite;
+}
+#pins .map-pin.map-node-shell.map-priority-objective .pin-ring{
+  box-shadow:0 0 0 3px rgba(5,12,17,.58), 0 0 18px color-mix(in srgb, var(--map-node-accent) 28%, transparent) !important;
+}
+#pins .map-pin.map-node-shell.map-priority-urgent .pin-ring{
+  box-shadow:0 0 0 3px rgba(5,12,17,.58), 0 0 16px color-mix(in srgb, var(--map-node-threat) 26%, transparent) !important;
 }
 
 #map .path.map-signal-dormant{
@@ -967,11 +1054,12 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   50%{ transform:translate(-50%,-50%) scale(1.08); opacity:.45; }
 }
 @media (max-width:640px){
+  :root{ --map-node-size-standard:58px; --map-node-size-landmark:68px; --map-node-icon-viewport-size:42px; }
   #pins .map-pin.map-node-shell .chip{ max-width:112px; font-size:9px; }
-  #pins .map-pin.map-node-shell.map-node-size-landmark{ --map-node-ring-offset:10px; }
+  #pins .map-pin.map-node-shell .map-node-family-glyph{ width:12px; height:12px; font-size:9px; }
 }
 @media (prefers-reduced-motion:reduce){
-  #pins .map-pin.map-node-shell.map-node-state-active .ping{ animation:none; }
+  #pins .map-pin.map-node-shell.map-priority-objective .ping{ animation:none; }
 }
 `;
     document.head.appendChild(s);
@@ -2521,8 +2609,8 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
     if (m.status) pinEl.classList.add(`is-${m.status}`);
     if (m.type) pinEl.classList.add(`type-${m.type}`);
-    if (m.family) pinEl.classList.add(`family-${m.family}`);
-    if (m.tierClass) pinEl.classList.add(m.tierClass);
+    // Legacy family/tier selectors are deliberately not reapplied here.
+    // NODE_VISUAL_META owns map role and icon calibration without touching runtime data.
     _applyMapNodeShell(pinEl, m);
 
     const chipEl = pinEl.querySelector(".chip");
@@ -2545,23 +2633,50 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     visualState.textContent = m.chip;
   }
 
+  function _syncMapFamilyGlyph(pinEl, family) {
+    if (!pinEl) return;
+    let glyph = pinEl.querySelector(".map-node-family-glyph");
+    if (!glyph) {
+      glyph = document.createElement("span");
+      glyph.className = "map-node-family-glyph";
+      glyph.setAttribute("role", "img");
+      pinEl.appendChild(glyph);
+    }
+    const label = String(family || "utility");
+    glyph.textContent = MAP_FAMILY_GLYPHS[label] || MAP_FAMILY_GLYPHS.utility;
+    glyph.setAttribute("aria-label", `${label} activity`);
+    glyph.title = `${label} activity`;
+  }
+
   function _applyMapNodeShell(pinEl, model) {
     if (!pinEl) return;
     const id = _normalizeNodeId(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "");
     const status = String(model?.status || "").toLowerCase();
-    const size = MAP_NODE_GATEWAY_IDS.has(id)
-      ? "gateway"
-      : (MAP_NODE_LANDMARK_IDS.has(id) ? "landmark" : "standard");
+    const meta = NODE_VISUAL_META[id] || { role: "activity", activityFamily: "utility" };
+    const role = meta.role === "landmark" || meta.role === "gateway" ? meta.role : "activity";
+    const family = MAP_FAMILY_GLYPHS[meta.activityFamily] ? meta.activityFamily : "utility";
     let state = "known";
     if (pinEl.classList.contains("is-locked") || pinEl.classList.contains("is-world-exploration-locked")) state = "locked";
-    else if (status === "live" || status === "active") state = "active";
+    else if (status === "live" || status === "active") state = "live";
     else if (status === "threatened" || status === "contested") state = "threat";
-    else if (id === "phantom_nodes") state = "special";
+    else if (status === "completed") state = "completed";
     pinEl.classList.remove(
-      "map-node-size-landmark", "map-node-size-standard", "map-node-size-gateway",
-      "map-node-state-known", "map-node-state-active", "map-node-state-threat", "map-node-state-locked", "map-node-state-special"
+      "map-role-landmark", "map-role-activity", "map-role-gateway",
+      "map-family-progression", "map-family-pve", "map-family-pvpve", "map-family-exploration", "map-family-event", "map-family-utility",
+      "map-state-known", "map-state-live", "map-state-locked", "map-state-completed", "map-state-threat",
+      "map-priority-normal", "map-priority-objective", "map-priority-urgent"
     );
-    pinEl.classList.add("map-node-shell", `map-node-size-${size}`, `map-node-state-${state}`);
+    pinEl.style.setProperty("--map-node-icon-scale", String(meta.iconScale || 1));
+    if (meta.iconOffsetX) pinEl.style.setProperty("--map-node-icon-offset-x", meta.iconOffsetX);
+    else pinEl.style.removeProperty("--map-node-icon-offset-x");
+    if (meta.iconOffsetY) pinEl.style.setProperty("--map-node-icon-offset-y", meta.iconOffsetY);
+    else pinEl.style.removeProperty("--map-node-icon-offset-y");
+    pinEl.dataset.mapRole = role;
+    pinEl.dataset.mapFamily = family;
+    pinEl.dataset.mapState = state;
+    pinEl.dataset.mapPriority = "normal";
+    pinEl.classList.add("map-node-shell", `map-role-${role}`, `map-family-${family}`, `map-state-${state}`, "map-priority-normal");
+    _syncMapFamilyGlyph(pinEl, family);
   }
 
   function _applyPinVisualState(pinEl, visualModel, opts) {
