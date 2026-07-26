@@ -531,7 +531,7 @@
       const run_id = mkRunId(f.key);
 
       // send both key and slug (backend can pick what it wants)
-      const res = await _apiPost("/webapp/faction/set", {
+      const res = await _apiPost("/webapp/faction/join", {
         faction: f.key,
         faction_key: f.key,
         factionSlug: f.slug,
@@ -572,7 +572,7 @@
       // common case: endpoint not deployed yet
       const msg =
         (String(e?.message || "").includes("404") || String(e || "").includes("404"))
-          ? "Backend endpoint /webapp/faction/set not found yet. Deploy backend handler first."
+          ? "Backend endpoint /webapp/faction/join not found yet. Deploy backend handler first."
           : ("Error joining faction: " + (e?.message || "unknown"));
 
       alert(msg);

@@ -3546,13 +3546,13 @@ function _normalizeRareDropObj(obj) {
         : "Warden: Read the intent, then commit.";
       return `
         <div class="m-stage"><div class="m-card m-elite-wrap">
-          <div class="m-kicker">WARDEN · TACTICAL OPERATION</div>
+          <div class="m-kicker">WARDEN Â· TACTICAL OPERATION</div>
           <div class="m-title" style="margin-top:5px;">${esc(active.title || "Elite Operation")}</div>
           <div class="m-elite-duel ${actionFx ? `is-${esc(actionFx)}` : ""}" aria-label="Elite tactical scene">
             <section class="m-elite-duel-side is-player"><div class="m-elite-duel-label">Player</div>${renderMissionDuelVisual(playerVisual, "player", "Player skin", "Pack Signal")}</section>
             <section class="m-elite-duel-side is-target"><div class="m-elite-duel-label">${esc(targetName)}</div>${renderMissionDuelVisual(targetVisual, "enemy", `${targetName} visual`, "Threat Trace")}</section>
           </div>
-          <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3 · <b>Plan:</b> ${esc(planLabel)}</div>
+          <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3 Â· <b>Plan:</b> ${esc(planLabel)}</div>
           <div class="m-elite-line">${esc(elitePlanDescription(plan))}</div>
           <div class="m-elite-line"><b>Enemy Intent:</b> ${esc(operation.enemyIntent || "Unknown")}</div>
           <div class="m-muted" style="margin-top:3px;">${esc(eliteIntentCopy(operation.enemyIntent))}</div>
@@ -3561,10 +3561,10 @@ function _normalizeRareDropObj(obj) {
             ${renderElitePips("Operation Control", operation.operationControl)}
           </div>
           ${operation.recommendedAction ? `<div class="m-elite-line"><b>Warden recommends:</b> ${esc(operation.recommendedAction)}</div>` : ""}
-          ${latest ? `<div class="m-elite-line"><b>Latest:</b> ${esc(latest.enemyIntent)} › ${esc(latest.action)} · ${latest.correct ? "Correct" : "Incorrect"}</div>` : ""}
+          ${latest ? `<div class="m-elite-line"><b>Latest:</b> ${esc(latest.enemyIntent)} â€º ${esc(latest.action)} Â· ${latest.correct ? "Correct" : "Incorrect"}</div>` : ""}
           <div class="m-muted" style="margin-top:5px;">${esc(feedbackLine)}</div>
           <div class="m-actions" style="margin-top:12px;">
-            ${["STRIKE", "GUARD", "EXPLOIT"].map((action) => `<button type="button" class="btn primary" data-act="elite_operation_action" data-tactical-action="${action}" data-expected-round="${esc(round)}" ${_eliteTacticalBusy ? "disabled" : ""}>${action === selectedAction ? `${action} · SELECTED` : action}</button>`).join("")}
+            ${["STRIKE", "GUARD", "EXPLOIT"].map((action) => `<button type="button" class="btn primary" data-act="elite_operation_action" data-tactical-action="${action}" data-expected-round="${esc(round)}" ${_eliteTacticalBusy ? "disabled" : ""}>${action === selectedAction ? `${action} Â· SELECTED` : action}</button>`).join("")}
           </div>
           <div class="m-actions" style="margin-top:8px;"><button type="button" class="btn" data-act="close">Close</button></div>
         </div></div>
@@ -3573,12 +3573,12 @@ function _normalizeRareDropObj(obj) {
     const ready = phase === "ready";
     return `
       <div class="m-stage"><div class="m-card m-elite-wrap">
-        <div class="m-kicker">WARDEN · ELITE OPERATION</div>
+        <div class="m-kicker">WARDEN Â· ELITE OPERATION</div>
         <div class="m-title" style="margin-top:5px;">${esc(active.title || "Elite Operation")}</div>
-        <div id="mClock" class="m-clock" style="margin-top:8px;">—</div>
-        <div id="mClockSub" class="m-clock-sub">Preparing operation…</div>
+        <div id="mClock" class="m-clock" style="margin-top:8px;">â€”</div>
+        <div id="mClockSub" class="m-clock-sub">Preparing operationâ€¦</div>
         <div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>
-        ${ready ? `<div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_begin" ${_eliteTacticalBusy ? "disabled" : ""}>${_eliteTacticalBusy ? "Opening…" : "PLAY OPERATION"}</button><button type="button" class="btn" data-act="close">Close</button></div>` : `<div class="m-actions" style="margin-top:10px;"><button type="button" class="btn" data-act="close">Close</button></div>`}
+        ${ready ? `<div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_begin" ${_eliteTacticalBusy ? "disabled" : ""}>${_eliteTacticalBusy ? "Openingâ€¦" : "PLAY OPERATION"}</button><button type="button" class="btn" data-act="close">Close</button></div>` : `<div class="m-actions" style="margin-top:10px;"><button type="button" class="btn" data-act="close">Close</button></div>`}
       </div></div>
     `;
   }
@@ -3599,7 +3599,7 @@ function _normalizeRareDropObj(obj) {
         ${roundLog.map((entry) => `<div class="m-elite-line">${esc(entry.enemyIntent)} â†’ ${esc(entry.action)} Â· ${entry.correct ? "Correct" : "Incorrect"}</div>`).join("") || '<div class="m-muted">No round log returned.</div>'}
         <div class="m-elite-line"><b>Recovered:</b> ${esc(rewards || "No rewards granted.")}</div>
         <div class="m-muted" style="margin-top:8px;">${esc(closing)}</div>
-        <div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_close" data-operation-id="${esc(operation?.operationId || "")}" ${_eliteDismissBusy ? "disabled" : ""}>${_eliteDismissBusy ? "Returning…" : "Return to Missions"}</button><button type="button" class="btn" data-act="close">Close</button></div>
+        <div class="m-actions" style="margin-top:12px;"><button type="button" class="btn primary" data-act="elite_operation_close" data-operation-id="${esc(operation?.operationId || "")}" ${_eliteDismissBusy ? "disabled" : ""}>${_eliteDismissBusy ? "Returningâ€¦" : "Return to Missions"}</button><button type="button" class="btn" data-act="close">Close</button></div>
       </div></div>
     `;
   }
@@ -5490,6 +5490,25 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     }
   }
 
+  async function doFirstSignalStart() {
+    const res = await api("/webapp/missions/action", { action: "first_signal_start", run_id: rid("m:first-signal:start") });
+    await loadState({ force: true, reason: "first_signal_start" });
+    return res;
+  }
+
+  async function doFirstSignalResolve() {
+    const res = await api("/webapp/missions/action", { action: "resolve", run_id: rid("m:first-signal:resolve") });
+    await loadState({ force: true, reason: "first_signal_resolve" });
+    return res;
+  }
+
+  async function loadFirstSignalState() {
+    const res = await api("/webapp/missions/state", { run_id: rid("m:first-signal:state") });
+    _state = res;
+    _stateLoadedAt = Date.now();
+    return res;
+  }
+
   async function doClaimBlueSignalFrame() {
     try {
       const res = await api("/webapp/blue-signal-hunt/claim", { run_id: rid("m:blue-signal-claim") });
@@ -5533,5 +5552,14 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     log("init ok");
   }
 
-  window.Missions = { init, open, close, reload: loadState, triggerMissionDuelPlayback };
+  window.Missions = {
+    init,
+    open,
+    close,
+    reload: loadState,
+    triggerMissionDuelPlayback,
+    firstSignalStart: doFirstSignalStart,
+    firstSignalResolve: doFirstSignalResolve,
+    firstSignalState: loadFirstSignalState,
+  };
 })();

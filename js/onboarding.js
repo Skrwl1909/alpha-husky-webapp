@@ -19,6 +19,9 @@
   let idx = 0;
   let _toastLock = 0;
   let _tutorial = null;
+  let _firstSignalMission = null;
+  let _focusedBusy = false;
+  let _focusedTimer = null;
 
   function log(...a) { if (_dbg) console.log("[Onboarding]", ...a); }
   function getTG() { return _tg || window.Telegram?.WebApp || null; }
@@ -101,8 +104,35 @@
       completed_steps: completed,
       optional_skips: optionalSkips,
       step_ts: data.step_ts || {},
-      version: data.version || null
+      version: data.version || null,
+      first_signal: (data.first_signal && typeof data.first_signal === "object") ? data.first_signal : null
     };
+  }
+
+  function firstSignalEnabled() {
+    return _tutorial?.first_signal?.eligible === true;
+  }
+
+  function missionPayload(out) {
+    return out?.data || out?.state || out || {};
+  }
+
+  async function fetchFirstSignalMissionState() {
+    if (!firstSignalEnabled()) {
+      _firstSignalMission = null;
+      return null;
+    }
+    try {
+      const out = window.Missions?.firstSignalState
+        ? await window.Missions.firstSignalState()
+        : await getApiPost()("/webapp/missions/state", { run_id: makeRunId("first_signal_state") });
+      const payload = missionPayload(out);
+      _firstSignalMission = payload.firstSignal || payload.first_signal || null;
+    } catch (e) {
+      log("FIRST SIGNAL state fetch failed", e);
+      _firstSignalMission = null;
+    }
+    return _firstSignalMission;
   }
 
   async function fetchTutorialState() {
@@ -431,9 +461,189 @@
     setTimeout(() => t.remove(), 2200);
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function focusedState() {
+    const tutorialState = _tutorial?.first_signal || {};
+    const missionState = _firstSignalMission || {};
+    return {
+      ...tutorialState,
+      ...missionState,
+      state: missionState.state || tutorialState.state || null,
+      completion: missionState.completion || tutorialState.completion || null,
+      reward: missionState.reward || tutorialState.reward || null,
+      faction_selected: tutorialState.faction_selected === true,
+    };
+  }
+
+  async function refreshFocusedState() {
+    await fetchTutorialState();
+    if (firstSignalEnabled()) await fetchFirstSignalMissionState();
+    render();
+  }
+
+  function waitForFactionSelection(attempt = 0) {
+    if (attempt >= 60) return;
+    setTimeout(async () => {
+      await fetchTutorialState();
+      if (_tutorial?.first_signal?.eligible && _tutorial.first_signal.faction_selected) {
+        await open(true);
+        return;
+      }
+      waitForFactionSelection(attempt + 1);
+    }, 1500);
+  }
+
+  async function runFocusedAction(action) {
+    if (_focusedBusy) return;
+    _focusedBusy = true;
+    renderFirstSignal();
+    try {
+      if (action === "faction") {
+        close(false);
+        openFactionPicker();
+        waitForFactionSelection();
+        return;
+      }
+      if (action === "start") {
+        if (window.Missions?.firstSignalStart) await window.Missions.firstSignalStart();
+        else await getApiPost()("/webapp/missions/action", { action: "first_signal_start", run_id: makeRunId("first_signal_start") });
+      } else if (action === "resolve") {
+        if (window.Missions?.firstSignalResolve) await window.Missions.firstSignalResolve();
+        else await getApiPost()("/webapp/missions/action", { action: "resolve", run_id: makeRunId("first_signal_resolve") });
+      } else if (action === "equip") {
+        const res = await window.Inventory?.equip?.("rustfang_fangs", {
+          serverValidated: true,
+          skipRefresh: true,
+          silent: true,
+        });
+        if (!res?.ok) throw new Error(res?.reason || "Equip failed");
+        if (res?.firstSignalCompletion?.completed === false) {
+          showToast("Equipped, but the Strength change could not be verified.");
+        }
+      } else if (action === "next") {
+        close(true);
+        requestAnimationFrame(() => openMissions());
+        return;
+      }
+      await refreshFocusedState();
+      haptic("success");
+    } catch (e) {
+      showToast(String(e?.data?.reason || e?.message || "Action failed"));
+      await refreshFocusedState();
+    } finally {
+      _focusedBusy = false;
+      if (firstSignalEnabled() && backEl?.style.display !== "none") renderFirstSignal();
+    }
+  }
+
+  function scheduleFocusedCountdown(state) {
+    if (_focusedTimer) clearInterval(_focusedTimer);
+    _focusedTimer = null;
+    if (state.state !== "MISSION_STARTED" || state.status !== "RUNNING") return;
+    const initialRemaining = Math.max(0, Number(state.remainingSec || 0));
+    const baseline = Date.now();
+    _focusedTimer = setInterval(async () => {
+      const remaining = Math.max(0, initialRemaining - Math.floor((Date.now() - baseline) / 1000));
+      const el = document.getElementById("obFirstSignalCountdown");
+      if (el) el.textContent = `${remaining}s`;
+      if (remaining <= 0) {
+        clearInterval(_focusedTimer);
+        _focusedTimer = null;
+        await refreshFocusedState();
+      }
+    }, 500);
+  }
+
+  function renderFirstSignal() {
+    if (!bodyEl) return;
+    const state = focusedState();
+    const modalTitle = document.querySelector("#obBack .ob-title");
+    if (modalTitle) modalTitle.textContent = state.state === "COMPLETED" ? "BUILD IMPROVED" : "FIRST SIGNAL";
+    if (progressFill) progressFill.style.width = state.state === "COMPLETED" ? "100%" : "35%";
+    if (btnBack) btnBack.style.display = "none";
+    if (btnNext) btnNext.style.display = "none";
+    if (btnLater) btnLater.style.display = state.state === "MISSION_STARTED" && state.status === "RUNNING" ? "block" : "none";
+
+    let icon = "⚡";
+    let heading = "FIRST SIGNAL";
+    let copy = "Your first short mission is ready. Complete it to recover a starter gear signal.";
+    let detail = "";
+    let action = "start";
+    let label = "Start First Mission";
+    let disabled = _focusedBusy;
+
+    if (!state.faction_selected) {
+      icon = "🏴";
+      heading = "Choose Your Faction";
+      copy = "Choose the pack you fight under before answering your first signal.";
+      action = "faction";
+      label = "Pick Faction";
+    } else if (state.state === "MISSION_STARTED" && state.status === "RUNNING") {
+      icon = "◌";
+      heading = "Signal in Progress";
+      copy = "The server is tracking this mission. You can safely close and return.";
+      detail = `<div class="ob-note">Ready in <strong id="obFirstSignalCountdown">${Math.max(0, Number(state.remainingSec || 0))}s</strong></div>`;
+      action = "";
+      label = "Mission Running";
+      disabled = true;
+    } else if (state.state === "MISSION_STARTED" && state.status === "READY") {
+      heading = "Signal Located";
+      copy = "The first mission is ready to resolve.";
+      action = "resolve";
+      label = "Resolve Mission";
+    } else if (state.state === "REWARD_RECEIVED") {
+      const reward = state.reward || {};
+      const strength = Number(reward?.statBonus?.strength || 0);
+      icon = "🦷";
+      heading = reward.displayName || "Rustfang Fangs";
+      copy = "Your first recovered gear is waiting to be equipped.";
+      detail = `<div class="ob-note">${escapeHtml(reward.rarity || "common")} · ${escapeHtml(reward.slot || "fangs")}${strength > 0 ? ` · +${strength} Strength` : ""}</div>`;
+      action = "equip";
+      label = "Equip";
+    } else if (state.state === "COMPLETED") {
+      const completion = state.completion || {};
+      icon = "▲";
+      heading = "BUILD IMPROVED";
+      copy = "Your first gear upgrade is active.";
+      detail = `<div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
+      action = "next";
+      label = "Start Next Mission";
+    }
+
+    bodyEl.innerHTML = `
+      <div class="ob-card">
+        <div class="ob-icon">${icon}</div>
+        <div class="ob-content">
+          <div class="ob-step">FTUE LITE</div>
+          <div class="ob-head">${escapeHtml(heading)}</div>
+          <div class="ob-p">${escapeHtml(copy)}</div>
+          ${detail}
+          <button class="ob-btn primary" id="obFirstSignalDo" style="margin-top:14px;width:100%" type="button" ${disabled ? "disabled" : ""}>${escapeHtml(_focusedBusy ? "Updating…" : label)}</button>
+        </div>
+      </div>`;
+    const button = document.getElementById("obFirstSignalDo");
+    if (button && action) button.onclick = () => runFocusedAction(action);
+    scheduleFocusedCountdown(state);
+  }
+
   async function refreshSteps(keepCurrent = true) {
     const prevKey = steps[idx]?.key || null;
     await fetchTutorialState();
+
+    if (firstSignalEnabled()) {
+      await fetchFirstSignalMissionState();
+      steps = [];
+      renderFirstSignal();
+      return;
+    }
 
     if (!_tutorial || !_tutorial.exists || !_tutorial.started) {
       steps = [];
@@ -461,7 +671,16 @@
 
   // ====================== RENDER ======================
   function render() {
+    if (firstSignalEnabled()) {
+      renderFirstSignal();
+      return;
+    }
     if (!steps.length) return;
+
+    const modalTitle = document.querySelector("#obBack .ob-title");
+    if (modalTitle) modalTitle.textContent = "Welcome to the Pack 🐺";
+    if (btnLater) btnLater.style.display = "block";
+    if (btnNext) btnNext.style.display = "block";
 
     const s = steps[idx];
     const percent = Math.round(((idx + 1) / steps.length) * 100);
@@ -516,6 +735,16 @@
 
     await fetchTutorialState();
 
+    if (firstSignalEnabled()) {
+      await fetchFirstSignalMissionState();
+      backEl.hidden = false;
+      backEl.style.display = "flex";
+      document.body.classList.add("ob-lock");
+      renderFirstSignal();
+      haptic("light");
+      return;
+    }
+
     // backend is canonical; if no tutorial exists, do not auto-open for legacy users
     if (!_tutorial || !_tutorial.exists || !_tutorial.started) {
       log("No active backend tutorial; skipping onboarding modal");
@@ -540,8 +769,11 @@
   }
 
   function close(done) {
-    if (done) markDone();
+    if (done && !firstSignalEnabled()) markDone();
     if (!backEl) return;
+
+    if (_focusedTimer) clearInterval(_focusedTimer);
+    _focusedTimer = null;
 
     backEl.style.display = "none";
     document.body.classList.remove("ob-lock");

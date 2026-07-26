@@ -2086,10 +2086,11 @@ async use(key) {
   },
 
   // === EQUIP ===
-  async equip(key) {
+  async equip(key, options = {}) {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const item = this.findByKey(key);
-    if (!item || !this._isGear(item)) return;
+    const serverValidated = options?.serverValidated === true;
+    if ((!item || !this._isGear(item)) && !serverValidated) return;
 
     Telegram.WebApp.HapticFeedback?.impactOccurred?.("light");
     const apiPost = window.S?.apiPost || window.apiPost;
@@ -2098,15 +2099,19 @@ async use(key) {
       const res = await apiPost("/webapp/inventory/equip", { key });
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
-        if (res.message) Telegram.WebApp.showAlert(res.message);
-        this.closeItem();
-        await this.open();
+        if (res.message && options?.silent !== true) Telegram.WebApp.showAlert(res.message);
+        if (options?.skipRefresh !== true) {
+          this.closeItem();
+          await this.open();
+        }
+        return res;
       } else {
         throw new Error(res.reason || "Failed");
       }
     } catch (e) {
       Telegram.WebApp.HapticFeedback?.notificationOccurred?.("error");
-      Telegram.WebApp.showAlert("Cannot equip: " + (e.message || "Error"));
+      if (options?.silent !== true) Telegram.WebApp.showAlert("Cannot equip: " + (e.message || "Error"));
+      return { ok: false, reason: e?.data?.reason || e.message || "equip_failed" };
     } finally {
       this._perfAction("inventory_equip", perfT0);
     }
