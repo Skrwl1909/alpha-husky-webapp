@@ -163,6 +163,7 @@
       overlay.hidden = true;
       syncDeadRelayMarker();
       syncLockedSectorNodePresentation();
+      syncNetworkBridge();
       return;
     }
     overlay.hidden = false;
@@ -198,6 +199,7 @@
     });
     syncDeadRelayMarker();
     syncLockedSectorNodePresentation();
+    syncNetworkBridge();
   }
 
   function requirementsHtml(sector) {
@@ -334,6 +336,8 @@
     const locked = !canOpenDeadRelay();
     document.querySelectorAll('[data-node-id="dead_relay_exchange"], [data-building-id="dead_relay_exchange"]').forEach((element) => {
       element.classList.toggle("is-world-exploration-locked", locked);
+      element.classList.toggle("map-node-state-locked", locked);
+      if (!locked) element.classList.add("map-node-state-known");
       element.setAttribute("aria-disabled", locked ? "true" : "false");
       if (locked) element.title = "Dead Relay Exchange locked — claim Relay Fringe 01 first.";
     });
@@ -355,6 +359,39 @@
       });
       element.classList.toggle("is-world-exploration-obscured", obscured);
     });
+  }
+  function syncNetworkBridge() {
+    const svg = byId("pathsSVG");
+    if (!svg) return;
+    svg.querySelectorAll(".map-signal-bridge").forEach((element) => element.remove());
+    const bounds = state.projection?.worldBounds;
+    const sector = (state.projection?.sectorCatalog || []).find((entry) => (
+      entry?.visible && String(entry?.status || "locked") !== "unlocked" && asObject(entry?.geometry)
+    ));
+    const archive = document.querySelector('[data-node-id="burned_archive"]');
+    const relay = document.querySelector('[data-node-id="dead_relay_exchange"]');
+    if (!bounds || !sector || !archive || !relay) return;
+    const pointFor = (element) => ({
+      x: (Number.parseFloat(element.style.left) / 100) * bounds.width,
+      y: (Number.parseFloat(element.style.top) / 100) * bounds.height,
+    });
+    const archivePoint = pointFor(archive);
+    const relayPoint = pointFor(relay);
+    if (![archivePoint.x, archivePoint.y, relayPoint.x, relayPoint.y].every(Number.isFinite)) return;
+    const geometry = sector.geometry;
+    const boundary = {
+      x: geometry.x,
+      y: Math.max(geometry.y, Math.min(relayPoint.y, geometry.y + geometry.height)),
+    };
+    const makePath = (points, stateClass) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      path.setAttribute("points", points.map(({ x, y }) => `${Math.round(x)},${Math.round(y)}`).join(" "));
+      path.setAttribute("class", `path map-signal-bridge ${stateClass}`);
+      path.setAttribute("aria-hidden", "true");
+      svg.appendChild(path);
+    };
+    makePath([archivePoint, relayPoint], "map-signal-dormant");
+    makePath([relayPoint, { x: (relayPoint.x + boundary.x) / 2, y: relayPoint.y }, boundary], "map-signal-broken");
   }
   function canOpenDeadRelay() { return !!(state.valid && state.projection?.canOpenRelay7 === true && state.projection?.relay7Available === true); }
   function showDeadRelayLocked() {
@@ -411,7 +448,7 @@
     if (mapIsOpen()) onMapOpened();
   }
 
-  window.WorldExploration = { init, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, openSector, closePanel };
+  window.WorldExploration = { init, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();

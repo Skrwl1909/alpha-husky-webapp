@@ -77,6 +77,8 @@
     "phantom_nodes",
     "broken_contracts",
   ]);
+  const MAP_NODE_LANDMARK_IDS = new Set(["blood_moon_tower", "edge_of_chain", "oracle_void_doorway"]);
+  const MAP_NODE_GATEWAY_IDS = new Set(["dead_relay_exchange"]);
 
   function logMap(...args) {
     if (window.DBG) console.debug("[map]", ...args);
@@ -840,6 +842,136 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
   box-shadow:none !important;
+}
+
+/* === Map visual coherence pass: one shell, three readable scales === */
+:root{
+  --map-node-known:#8fc8d2;
+  --map-node-active:#66d2b2;
+  --map-node-threat:#e98768;
+  --map-node-locked:#728795;
+  --map-node-special:#9a78d1;
+  --map-signal-dormant:rgba(128,174,187,.30);
+  --map-signal-active:rgba(103,204,212,.56);
+  --map-signal-broken:rgba(110,143,154,.25);
+  --map-node-ring-size-landmark:12px;
+  --map-node-ring-size-standard:8px;
+  --map-node-ring-size-gateway:6px;
+}
+
+#pins .map-pin.map-node-shell{
+  --map-node-accent:var(--map-node-known);
+  --map-node-ring-offset:var(--map-node-ring-size-standard);
+  --map-node-icon-scale:1;
+  z-index:4;
+}
+#pins .map-pin.map-node-shell.map-node-size-landmark{
+  --map-node-ring-offset:var(--map-node-ring-size-landmark);
+  --map-node-icon-scale:1.08;
+  z-index:6;
+}
+#pins .map-pin.map-node-shell.map-node-size-gateway{
+  --map-node-ring-offset:var(--map-node-ring-size-gateway);
+  --map-node-icon-scale:.92;
+  z-index:5;
+}
+#pins .map-pin.map-node-shell.map-node-state-active{ --map-node-accent:var(--map-node-active); }
+#pins .map-pin.map-node-shell.map-node-state-threat{ --map-node-accent:var(--map-node-threat); }
+#pins .map-pin.map-node-shell.map-node-state-locked{ --map-node-accent:var(--map-node-locked); }
+#pins .map-pin.map-node-shell.map-node-state-special{ --map-node-accent:var(--map-node-special); }
+
+#pins .map-pin.map-node-shell .pin-ring{
+  inset:calc(-1 * var(--map-node-ring-offset)) !important;
+  border:1px solid color-mix(in srgb, var(--map-node-accent) 72%, transparent) !important;
+  background:radial-gradient(circle, color-mix(in srgb, var(--map-node-accent) 11%, transparent) 0 56%, transparent 68%) !important;
+  box-shadow:0 0 0 3px rgba(5,12,17,.58), 0 0 13px color-mix(in srgb, var(--map-node-accent) 17%, transparent) !important;
+  opacity:.92;
+  animation:none !important;
+}
+#pins .map-pin.map-node-shell .pin-ring::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  border:1px solid color-mix(in srgb, var(--map-node-accent) 24%, transparent);
+  border-radius:inherit;
+}
+#pins .map-pin.map-node-shell .pin-icon,
+#pins .map-pin.map-node-shell > img{
+  transform:scale(var(--map-node-icon-scale)) !important;
+  filter:drop-shadow(0 7px 12px rgba(0,0,0,.42)) !important;
+}
+#pins .map-pin.map-node-shell .ping{
+  width:calc(100% + (var(--map-node-ring-offset) * 2));
+  height:calc(100% + (var(--map-node-ring-offset) * 2));
+  border:1px solid color-mix(in srgb, var(--map-node-accent) 26%, transparent);
+  background:none;
+  opacity:.28;
+  animation:none;
+}
+#pins .map-pin.map-node-shell.map-node-state-active .ping{
+  animation:ahMapNodeSignalPulse 3.8s ease-in-out infinite;
+}
+#pins .map-pin.map-node-shell .chip{
+  display:none;
+  max-width:clamp(88px, 18vw, 164px);
+  overflow:hidden;
+  padding:5px 8px;
+  border-color:color-mix(in srgb, var(--map-node-accent) 30%, rgba(255,255,255,.14));
+  background:rgba(6,13,18,.88);
+  color:#e5f0f2;
+  font:800 10px/1.1 system-ui,sans-serif;
+  letter-spacing:.07em;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+#pins .map-pin.map-node-shell.active .chip{ display:flex; }
+#pins .map-pin.map-node-shell .pin-badge,
+#pins .map-pin.map-node-shell .pin-pressure-chip{
+  border-color:color-mix(in srgb, var(--map-node-accent) 36%, rgba(255,255,255,.16));
+  background:rgba(6,13,18,.90);
+}
+#pins .map-pin.map-node-shell.map-node-state-locked{
+  filter:grayscale(.38) saturate(.65);
+}
+#pins .map-pin.map-node-shell.map-node-state-locked .pin-ring{
+  box-shadow:0 0 0 3px rgba(5,12,17,.58) !important;
+  opacity:.76;
+}
+
+#map .path.map-signal-dormant{
+  stroke:var(--map-signal-dormant);
+  stroke-width:1.35;
+  stroke-dasharray:3 8;
+  stroke-opacity:.78;
+  filter:none;
+  animation:none;
+}
+#map .path.map-signal-active{
+  stroke:var(--map-signal-active);
+  stroke-width:1.7;
+  stroke-dasharray:none;
+  filter:drop-shadow(0 0 3px rgba(103,204,212,.14));
+  animation:none;
+}
+#map .path.map-signal-broken{
+  stroke:var(--map-signal-broken);
+  stroke-width:1.45;
+  stroke-dasharray:2 9 7 12;
+  stroke-opacity:.80;
+  filter:none;
+  animation:none;
+}
+@keyframes ahMapNodeSignalPulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1); opacity:.20; }
+  50%{ transform:translate(-50%,-50%) scale(1.08); opacity:.45; }
+}
+@media (max-width:640px){
+  #pins .map-pin.map-node-shell .chip{ max-width:112px; font-size:9px; }
+  #pins .map-pin.map-node-shell.map-node-size-landmark{ --map-node-ring-offset:10px; }
+}
+@media (prefers-reduced-motion:reduce){
+  #pins .map-pin.map-node-shell.map-node-state-active .ping{ animation:none; }
 }
 `;
     document.head.appendChild(s);
@@ -2391,6 +2523,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     if (m.type) pinEl.classList.add(`type-${m.type}`);
     if (m.family) pinEl.classList.add(`family-${m.family}`);
     if (m.tierClass) pinEl.classList.add(m.tierClass);
+    _applyMapNodeShell(pinEl, m);
 
     const chipEl = pinEl.querySelector(".chip");
     if (!chipEl) return;
@@ -2410,6 +2543,25 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
     visualState.className = `chip-state node-visual-state v-${m.status || "generic"}`;
     visualState.textContent = m.chip;
+  }
+
+  function _applyMapNodeShell(pinEl, model) {
+    if (!pinEl) return;
+    const id = _normalizeNodeId(_pinBuildingId(pinEl) || _pinNodeId(pinEl) || "");
+    const status = String(model?.status || "").toLowerCase();
+    const size = MAP_NODE_GATEWAY_IDS.has(id)
+      ? "gateway"
+      : (MAP_NODE_LANDMARK_IDS.has(id) ? "landmark" : "standard");
+    let state = "known";
+    if (pinEl.classList.contains("is-locked") || pinEl.classList.contains("is-world-exploration-locked")) state = "locked";
+    else if (status === "live" || status === "active") state = "active";
+    else if (status === "threatened" || status === "contested") state = "threat";
+    else if (id === "phantom_nodes") state = "special";
+    pinEl.classList.remove(
+      "map-node-size-landmark", "map-node-size-standard", "map-node-size-gateway",
+      "map-node-state-known", "map-node-state-active", "map-node-state-threat", "map-node-state-locked", "map-node-state-special"
+    );
+    pinEl.classList.add("map-node-shell", `map-node-size-${size}`, `map-node-state-${state}`);
   }
 
   function _applyPinVisualState(pinEl, visualModel, opts) {
