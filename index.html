@@ -2476,6 +2476,32 @@ html.ah-skins-open #heroFrame{
 @media (max-width:640px){ .world-exploration-panel-shell{ padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); align-items:end; } .world-exploration-panel{ width:100%; max-height:88dvh; border-right:0; border-left:0; border-radius:17px 17px 0 0; } .world-exploration-sector-label{ font-size:9px; } .world-exploration-sector-label em{ font-size:8px; } }
 @media (prefers-reduced-motion:reduce){ .world-exploration-sector[data-status="available"] .world-exploration-sector-shade,.world-exploration-sector[data-status="available"] .world-exploration-lock-asset,.world-exploration-sector[data-status="scanning"] .world-exploration-sector-shade{ animation:none; } }
 
+/* Shared cartographic finish for the recovered and unrecovered world surface. */
+.map-stage.is-world-canvas .map-world-surface::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.22;
+  background:
+    linear-gradient(rgba(130,194,204,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(130,194,204,.035) 1px, transparent 1px),
+    radial-gradient(ellipse at 79% 60%, rgba(80,156,167,.06), transparent 42%);
+  background-size:64px 64px, 64px 64px, 100% 100%;
+}
+.map-stage.is-world-canvas .world-exploration-sector{
+  border:1px dashed rgba(129,191,200,.16);
+  box-shadow:inset 0 0 0 1px rgba(5,13,18,.32), inset 0 0 42px rgba(38,91,103,.08);
+}
+.map-stage.is-world-canvas .world-exploration-sector[data-status="locked"] .world-exploration-lock-asset{
+  padding:4px;
+  border:1px solid rgba(114,135,149,.58);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(114,135,149,.13), rgba(5,12,17,.30) 67%, transparent 69%);
+  box-shadow:0 0 0 3px rgba(5,12,17,.58), 0 0 13px rgba(114,135,149,.14);
+  filter:grayscale(.34) drop-shadow(0 0 5px rgba(114,135,149,.16));
+}
+
 /* === MAP VISUAL SYSTEM v1 === */
 
 :root{
@@ -11073,16 +11099,14 @@ function isRegionUnlocked(regionId){
           for (const p of (DATA.paths || [])){
             const locked = p.lockForRegion && !isRegionUnlocked(p.lockForRegion);
             const ptsStr = resolvePathWorldPoints(p).map(({x,y}) => `${Math.round(x)},${Math.round(y)}`).join(' ');
-            if (!locked && (p.emphasis || p.glow)){
-              const glow = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-              glow.setAttribute('points', ptsStr);
-              glow.setAttribute('class', 'path glow');
-              pathsSVG.appendChild(glow);
-            }
             const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
             poly.setAttribute('points', ptsStr);
-            poly.setAttribute('class', 'path' + (locked ? ' locked' : ''));
+            // Existing map data has no reliable route-availability or objective state.
+            // Keep every known route dormant instead of implying an actionable path.
+            const signalState = locked ? 'map-signal-broken' : 'map-signal-dormant';
+            poly.setAttribute('class', 'path ' + signalState + (locked ? ' locked' : ''));
             poly.setAttribute('data-id', p.id);
+            poly.setAttribute('aria-hidden', 'true');
             pathsSVG.appendChild(poly);
           }
         }
@@ -11422,7 +11446,7 @@ function isRegionUnlocked(regionId){
   // resolveLabelCollisions(); // jeśli używasz anti-collision
         }
 
-        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); window.WorldExploration?.syncLockedSectorNodePresentation?.(); updateUnlockProgress(); updateMapSelectionBrief(); }
+        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); window.WorldExploration?.syncLockedSectorNodePresentation?.(); window.WorldExploration?.syncNetworkBridge?.(); updateUnlockProgress(); updateMapSelectionBrief(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
@@ -12433,7 +12457,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   </script>
   <script src="js/quests.js?v=20251119f" defer></script>
   <script src="js/quests-launcher.js?v=20251119f" defer></script>
-  <script src="js/broken-contracts.js?v=20260328a" defer></script>
+  <script src="js/broken-contracts.js?v=broken-contracts-regression-fix-v1" defer></script>
   
   <!-- NATYCHMIASTOWE INIT – bez czekania na fallback -->
   <script>
@@ -12606,9 +12630,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/pet_quick_actions.js?v=WEBAPP_VER"></script>
 <script src="js/howl_treasury.js?v=2026-06-02-bluemoon-end-2"></script>
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
-<script src="/js/alpha_den.js?v=progression-spine-p1-5d-runtime-closure"></script>
+<script src="/js/alpha_den.js?v=den-visual-tiers-v1"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
-<script src="/js/world_exploration.js?v=world-exploration-p0c2"></script>
+<script src="/js/world_exploration.js?v=world-exploration-p0c2-map-coherence-v1"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
@@ -12966,7 +12990,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return;
   }
 
-  const v = "world-canvas-mobile-ux-v1";
+  const v = "world-canvas-mobile-ux-map-coherence-v1";
   const s = document.createElement("script");
   s.src = "/js/map.js?v=" + encodeURIComponent(v);
 
