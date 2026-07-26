@@ -5106,8 +5106,6 @@ body.missions-open{
 #pins .map-pin.theme-signal-broker{
   display:grid;
   place-items:center;
-  width:58px;
-  height:58px;
   z-index:3;
   --node-ping:rgba(72,211,232,.06);
   --node-chip-bg:rgba(9,18,23,.9);
@@ -5117,22 +5115,16 @@ body.missions-open{
 
 #pins .hotspot.theme-signal-broker .pin-ring,
 #pins .map-pin.theme-signal-broker .pin-ring{
-  width:52px;
-  height:52px;
   border:1px solid rgba(92,218,234,.48);
   border-radius:50%;
   background:radial-gradient(circle, rgba(61,194,212,.08), transparent 67%);
   box-shadow:0 0 0 2px rgba(76,204,221,.06), 0 0 14px rgba(69,196,213,.13);
-  animation:signalBrokerRing 4.8s ease-in-out infinite;
 }
 
 #pins .hotspot.theme-signal-broker .ping,
 #pins .map-pin.theme-signal-broker .ping{
-  width:56px;
-  height:56px;
   border:1px solid rgba(85,213,229,.20);
   background:transparent;
-  animation:signalBrokerPing 3.4s ease-out infinite;
 }
 
 #pins .hotspot.theme-signal-broker .pin-icon,
@@ -9821,7 +9813,7 @@ document.addEventListener("click", async (e) => {
             const isActive = !!activeId && String(pin?.dataset?.nodeId || "").trim() === activeId;
             pin.classList.toggle("active", isActive);
             const chip = pin.querySelector(".chip");
-            if (chip) chip.style.display = isActive ? "flex" : "none";
+            if (chip) chip.style.display = (isActive || pin.classList.contains("map-label-persistent")) ? "flex" : "none";
             if (!isActive) clearMapPinSignalScan(pin);
           });
         }
@@ -12632,7 +12624,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=den-visual-tiers-v1"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
-<script src="/js/world_exploration.js?v=world-exploration-p0c2-map-taxonomy-hotfix-v1"></script>
+<script src="/js/world_exploration.js?v=world-exploration-p0c2-map-renderer-cleanup-v1"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
@@ -12990,7 +12982,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return;
   }
 
-  const v = "world-canvas-mobile-ux-map-taxonomy-hotfix-v1";
+  const v = "world-canvas-mobile-ux-map-renderer-cleanup-v1";
   const s = document.createElement("script");
   s.src = "/js/map.js?v=" + encodeURIComponent(v);
 
