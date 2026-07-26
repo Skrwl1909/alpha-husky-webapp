@@ -2435,12 +2435,9 @@ html.ah-skins-open #heroFrame{
 .world-exploration-sector:hover .world-exploration-sector-shade{ opacity:.88; }
 @keyframes worldExplorationScan{ 0%,100%{ opacity:.48; } 50%{ opacity:.96; } }
 @keyframes worldExplorationLockPulse{ 0%,100%{ opacity:.88; } 50%{ opacity:1; } }
-.map-pin.is-world-exploration-locked{ opacity:.42; filter:grayscale(.7); }
-#map .map-pin.is-world-exploration-obscured{ opacity:.30 !important; filter:grayscale(.82) saturate(.42) !important; }
-#map .map-pin.is-world-exploration-obscured .chip,
-#map .map-pin.is-world-exploration-obscured .pin-pressure-badges{ display:none !important; }
-#map .map-pin.is-world-exploration-obscured .ping,
-#map .map-pin.is-world-exploration-obscured .pin-ring{ opacity:.42; }
+.map-pin.is-world-exploration-locked .pin-ring,
+#map .map-pin.is-world-exploration-obscured .pin-ring{ opacity:.76; }
+#map .map-pin.is-world-exploration-obscured .pin-icon{ opacity:.84; filter:grayscale(.28); }
 
 .world-exploration-panel-shell{ position:fixed; inset:0; z-index:1000002; display:grid; place-items:center; padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
 .world-exploration-panel-shell[hidden]{ display:none; }
@@ -11224,7 +11221,10 @@ function isRegionUnlocked(regionId){
         btn.classList.add('no-icon');
       };
     }
-    btn.appendChild(img);
+    const iconViewport = document.createElement('span');
+    iconViewport.className = 'map-node-icon-viewport';
+    iconViewport.appendChild(img);
+    btn.appendChild(iconViewport);
 
     // CHIP musi być w DOM zanim decoratePin odpali
     const chip = document.createElement('div');
@@ -12632,7 +12632,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=den-visual-tiers-v1"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
-<script src="/js/world_exploration.js?v=world-exploration-p0c2-map-coherence-v1"></script>
+<script src="/js/world_exploration.js?v=world-exploration-p0c2-map-taxonomy-hotfix-v1"></script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
@@ -12990,7 +12990,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return;
   }
 
-  const v = "world-canvas-mobile-ux-map-coherence-v1";
+  const v = "world-canvas-mobile-ux-map-taxonomy-hotfix-v1";
   const s = document.createElement("script");
   s.src = "/js/map.js?v=" + encodeURIComponent(v);
 
