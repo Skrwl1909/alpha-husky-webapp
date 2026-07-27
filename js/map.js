@@ -901,6 +901,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   --map-node-shell-diameter:var(--map-node-size-standard);
   z-index:5;
 }
+#pins .map-pin.map-node-shell.map-state-known{ --map-node-accent:var(--map-node-known); }
 #pins .map-pin.map-node-shell.map-state-live{ --map-node-accent:var(--map-node-active); }
 #pins .map-pin.map-node-shell.map-state-threat{ --map-node-accent:var(--map-node-threat); }
 #pins .map-pin.map-node-shell.map-state-locked{ --map-node-accent:var(--map-node-locked); }
@@ -931,6 +932,15 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
   inset:3px;
   border:1px solid color-mix(in srgb, var(--map-node-accent) 24%, transparent);
   border-radius:inherit;
+}
+#pins .map-pin.map-node-shell.map-state-live .pin-ring,
+#pins .map-pin.map-node-shell.active .pin-ring{
+  opacity:1;
+  box-shadow:0 0 0 3px rgba(5,12,17,.62), 0 0 18px color-mix(in srgb, var(--map-node-accent) 31%, transparent) !important;
+}
+#pins .map-pin.map-node-shell.map-state-live .ping,
+#pins .map-pin.map-node-shell.active .ping{
+  opacity:.46;
 }
 #pins .map-pin.map-node-shell .pin-icon,
 #pins .map-pin.map-node-shell > img{
