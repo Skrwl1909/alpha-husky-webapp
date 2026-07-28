@@ -17,6 +17,7 @@
   let _lunarTransitionTimer = 0;
   let _lunarRefreshPending = false;
   let _lunarVisibilityListenerBound = false;
+  let _shopOpen = false;
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
@@ -43,6 +44,22 @@
     convergence: "Convergence is near. The arena is gathering pressure.",
     full_blood_moon: "Full Blood Moon is active. The raid remains live for your faction.",
     fading: "The lunar window is fading. Your faction’s raid state remains visible."
+  });
+  // Future filenames: shop_cta_locked.webp, shop_cta_open.webp,
+  // shop_header_fullmoon.webp, shop_item_card_frame.webp,
+  // shop_purchase_confirm_panel.webp, shop_reward_reveal_panel.webp,
+  // reward_preview_aura_crimson_eclipse.webp,
+  // reward_preview_title_witness_of_blood_moon.webp.
+  const BLOODMOON_SHOP_ASSET_SLOTS = Object.freeze({
+    ctaLocked: null,
+    ctaOpen: null,
+    header: null,
+    itemCard: null,
+    confirmPanel: null,
+    rewardRevealPanel: null,
+    rewardFrame: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1775812669/frames/blood-moon_halo.webp",
+    rewardAura: null,
+    rewardTitle: null
   });
 
   function dbg(...args) {
@@ -122,6 +139,33 @@
     };
   }
 
+  function shopFoundation(raw) {
+    const source = raw && typeof raw === "object" ? raw : {};
+    const balances = source.balances && typeof source.balances === "object" ? source.balances : {};
+    return {
+      available: source.available === true,
+      windowStatus: String(source.windowStatus || "locked"),
+      stateLabel: String(source.stateLabel || "Shop Locked"),
+      ctaLabel: String(source.ctaLabel || "Shop Locked"),
+      helperCopy: String(source.helperCopy || "Shop availability is syncing."),
+      countdownTargetAt: typeof source.countdownTargetAt === "string" ? source.countdownTargetAt : null,
+      balances: {
+        towerMarks: Math.max(0, Number(balances.towerMarks || 0) || 0),
+        bloodMoonDust: Math.max(0, Number(balances.bloodMoonDust || 0) || 0)
+      },
+      rewardPath: Array.isArray(source.rewardPath) ? source.rewardPath : ["frame", "aura", "title"],
+      catalog: Array.isArray(source.catalog) ? source.catalog : []
+    };
+  }
+
+  function shopCountdownText(shop) {
+    const targetMs = validLunarTimestamp(shop?.countdownTargetAt);
+    if (!Number.isFinite(targetMs)) return "Shop timing is syncing";
+    const remaining = Math.ceil((targetMs - Date.now()) / 1000);
+    if (remaining <= 0) return shop?.available ? "Shop closing soon" : "Opening soon";
+    return `${shop?.available ? "Closes in" : "Opens in"} ${fmtSec(remaining)}`;
+  }
+
   function lunarPastCopy(towerState) {
     if (towerState === "full_blood_moon") return "Full Blood Moon is active";
     if (towerState === "fading") return "Fading window is active";
@@ -187,10 +231,17 @@
     const fullMoonMs = lunar?.syncMode === "manual" && lunar?.syncStatus === "configured"
       ? validLunarTimestamp(lunar?.nextFullMoonAt)
       : NaN;
-    const targetMs = Number.isFinite(transitionMs) ? transitionMs : fullMoonMs;
+    const lunarTargetMs = Number.isFinite(transitionMs) ? transitionMs : fullMoonMs;
+    const shopTargetMs = validLunarTimestamp(_state?.shop?.countdownTargetAt);
+    const targetMs = Math.max(
+      Number.isFinite(lunarTargetMs) ? lunarTargetMs : 0,
+      Number.isFinite(shopTargetMs) ? shopTargetMs : 0
+    ) || NaN;
     const update = () => {
       const label = lunarCountdownText(lunar);
       document.querySelectorAll("[data-bm-v2-countdown]").forEach((el) => { el.textContent = label; });
+      const shop = shopFoundation(_state?.shop);
+      document.querySelectorAll("[data-bm-shop-countdown]").forEach((el) => { el.textContent = shopCountdownText(shop); });
       if (!Number.isFinite(targetMs) || targetMs <= Date.now()) stopLunarCountdown();
     };
     update();
@@ -864,6 +915,20 @@
 .bm-v2-title{ margin:0; color:#fff; font-size:clamp(26px, 8vw, 36px); line-height:1; letter-spacing:-.7px; }
 .bm-v2-copy{ margin:0; max-width:500px; color:rgba(255,235,239,.84); font-size:13px; line-height:1.42; }
 .bm-v2-countdown{ color:#ffb8c1; font-size:13px; font-weight:800; min-height:18px; }
+.bm-shop-cta,.bm-shop-shell{ border:1px solid rgba(255,132,151,.28); border-radius:14px; background:rgba(25,6,12,.76); }
+.bm-shop-cta{ display:grid; gap:10px; padding:12px; }
+.bm-shop-cta strong,.bm-shop-header h2,.bm-shop-card h3{ color:#fff; margin:0; }
+.bm-shop-cta p,.bm-shop-header p,.bm-shop-card p{ margin:4px 0 0; color:rgba(255,235,239,.75); font-size:12px; line-height:1.38; }
+.bm-shop-open-btn,.bm-shop-back{ border:1px solid rgba(255,150,165,.55); border-radius:10px; background:#77182b; color:#fff; font-weight:850; padding:10px 12px; cursor:pointer; }
+.bm-shop-balances{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.bm-shop-balance{ min-width:0; display:flex; align-items:center; gap:5px; padding:7px; border:1px solid rgba(255,255,255,.08); border-radius:10px; background:rgba(0,0,0,.16); color:rgba(255,235,239,.76); font-size:11px; }
+.bm-shop-balance .bm-reward-icon{ width:20px; height:20px; }.bm-shop-balance span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.bm-shop-balance strong{ margin-left:auto; color:#fff; }
+.bm-shop-shell{ padding:14px; display:grid; gap:13px; }.bm-shop-back{ justify-self:start; background:rgba(255,255,255,.05); }
+.bm-shop-header{ display:grid; gap:5px; }.bm-shop-header h2{ font-size:26px; }.bm-shop-countdown,.bm-shop-note{ color:#ffbdc6; font-weight:800; font-size:12px; }
+.bm-shop-path{ display:flex; align-items:center; justify-content:space-between; gap:6px; color:#ffc4cc; font-size:12px; font-weight:850; padding:9px; border-radius:10px; background:rgba(255,255,255,.04); }.bm-shop-path b{ color:#ff778c; }
+.bm-shop-cards{ display:grid; gap:10px; }.bm-shop-card{ display:grid; grid-template-columns:92px minmax(0,1fr); gap:10px; padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:13px; background:rgba(255,255,255,.025); }.bm-shop-card-copy{ min-width:0; }.bm-shop-card h3{ font-size:16px; }
+.bm-shop-visual{ width:92px; height:92px; display:grid; place-items:center; overflow:hidden; border-radius:11px; border:1px solid rgba(255,255,255,.12); background:radial-gradient(circle,rgba(178,25,59,.38),rgba(20,4,11,.75)); }.bm-shop-visual img{ width:100%; height:100%; object-fit:contain; }.bm-shop-visual.is-fallback img{ display:none; }.bm-shop-visual.rewardAura{ background:radial-gradient(circle,rgba(235,42,82,.48) 0 16%,rgba(130,10,44,.42) 17% 42%,rgba(13,4,10,.8) 43%); }.bm-shop-visual.rewardTitle{ background:linear-gradient(135deg,rgba(119,14,42,.8),rgba(24,5,13,.92)); }
+.bm-shop-fallback{ padding:8px; text-align:center; color:#ffd4da; font-size:11px; line-height:1.25; }.bm-shop-requirement,.bm-shop-pending,.bm-shop-slot{ margin-top:6px; font-size:11px; line-height:1.3; }.bm-shop-requirement{ color:rgba(255,235,239,.66); }.bm-shop-pending{ color:#ffbdc6; font-weight:800; }.bm-shop-slot{ color:rgba(255,255,255,.48); }
 .bm-v2-raid-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
 .bm-v2-stat{
   min-width:0;
@@ -1669,6 +1734,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     stopBattlePlayback(true);
     stopLunarTimers();
     _lastClaimFeedback = null;
+    _shopOpen = false;
     rootEl()?.classList.remove("show");
     document.documentElement.classList.remove("ah-bloodmoon-open");
     document.body.style.overflow = "";
@@ -2480,6 +2546,58 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     });
   }
 
+  function renderShopBalances(shop) {
+    return `<div class="bm-shop-balances">
+      <div class="bm-shop-balance">${renderTowerRewardIcon("tower_marks", "is-inline")}<span>Tower Marks</span><strong>${fmtNum(shop.balances.towerMarks)}</strong></div>
+      <div class="bm-shop-balance">${renderTowerRewardIcon("blood_moon_dust", "is-inline")}<span>Blood Moon Dust</span><strong>${fmtNum(shop.balances.bloodMoonDust)}</strong></div>
+    </div>`;
+  }
+
+  function renderShopVisual(item) {
+    const slot = String(item?.assetSlot || "");
+    const asset = typeof item?.previewAssetUrl === "string" && item.previewAssetUrl ? item.previewAssetUrl : null;
+    if (asset && slot === "rewardFrame") {
+      return `<div class="bm-shop-visual is-frame"><img src="${esc(asset)}" alt="${esc(item.name || "Blood Moon Halo")}" loading="lazy" decoding="async" onerror="this.hidden=true;this.parentNode.classList.add('is-fallback');" /><span class="bm-shop-fallback">Frame preview pending</span></div>`;
+    }
+    return `<div class="bm-shop-visual is-placeholder ${esc(slot)}"><span class="bm-shop-fallback">${slot === "rewardAura" ? "Aura preview pending" : "Title preview pending"}</span></div>`;
+  }
+
+  function renderShopCards(shop) {
+    return shop.catalog.slice().sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0)).map((item) => {
+      const requirement = item.requiresItemId ? `Requires ${item.requiresItemId.replace("bloodmoon_", "").replace("_v1", "").replaceAll("_", " ")}` : "First step in the path";
+      return `<article class="bm-shop-card">
+        ${renderShopVisual(item)}
+        <div class="bm-shop-card-copy"><div class="bm-label">${esc(item.type || "cosmetic")} · permanent cosmetic</div>
+        <h3>${esc(item.name || "Reward preview")}</h3><p>${esc(item.description || "Preview only.")}</p>
+        <div class="bm-shop-requirement">${esc(requirement)}</div><div class="bm-shop-pending">Prices awaiting approval</div>
+        <div class="bm-shop-slot">Future asset slot: ${esc(item.assetSlot || "pending")}</div></div>
+      </article>`;
+    }).join("");
+  }
+
+  function renderShopView(shop) {
+    const isGrace = shop.windowStatus === "grace";
+    const locked = !shop.available;
+    const intro = locked
+      ? "Preview the rewards now. Purchases open during Full Blood Moon and remain available through Fading."
+      : "Read-only preview. Prices awaiting approval.";
+    return `<section class="bm-shop-shell ${locked ? "is-locked" : "is-open"}">
+      <button class="bm-shop-back" data-bm-shop-back type="button">← Tower Hub</button>
+      <div class="bm-shop-header"><div class="bm-label">Fullmoon Shop</div><h2>${locked ? "Shop Locked" : (isGrace ? "Last Chance Shop" : "Fullmoon Shop")}</h2>
+      <p>${esc(intro)}</p><div class="bm-shop-countdown" data-bm-shop-countdown>${esc(shopCountdownText(shop))}</div></div>
+      ${renderShopBalances(shop)}
+      <div class="bm-shop-path"><span>Frame</span><b>→</b><span>Aura</span><b>→</b><span>Title</span></div>
+      <div class="bm-shop-cards">${renderShopCards(shop)}</div>
+      <div class="bm-shop-note">${esc(shop.helperCopy)}</div>
+    </section>`;
+  }
+
+  function renderShopCta(shop) {
+    return `<section class="bm-shop-cta"><div><div class="bm-label">Fullmoon Shop</div><strong>${esc(shop.ctaLabel)}</strong><p>${esc(shop.helperCopy)}</p><div data-bm-shop-countdown>${esc(shopCountdownText(shop))}</div></div>
+      <button class="bm-shop-open-btn" data-bm-shop-open type="button">${esc(shop.ctaLabel)}</button>
+      ${renderShopBalances(shop)}</section>`;
+  }
+
   function bindActions() {
     document.querySelectorAll("[data-bm-replay]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -2505,6 +2623,13 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       });
     }
 
+    document.querySelectorAll("[data-bm-shop-open]").forEach((btn) => {
+      btn.addEventListener("click", () => { _shopOpen = true; render(_state); });
+    });
+    document.querySelectorAll("[data-bm-shop-back]").forEach((btn) => {
+      btn.addEventListener("click", () => { _shopOpen = false; render(_state); });
+    });
+
     bindFeedToggle();
   }
 
@@ -2528,6 +2653,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
    const cta = _state.cta || {};
    const my = _state.myContribution || {};
    const lunar = lunarFoundation(_state.lunar);
+   const shop = shopFoundation(_state.shop);
    const lastBattle = resolveDisplayBattle(_state, opts.preferredBattle);
   const attemptsLeft = Number(my.attemptsLeft || 0);
   const cooldownLeftSec = Number(my.cooldownLeftSec || 0);
@@ -2550,6 +2676,14 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   );
 
   stopBattlePlayback(true, true);
+
+  if (_shopOpen) {
+    body.innerHTML = renderShopView(shop);
+    bindActions();
+    startLunarCountdown(lunar);
+    scheduleLunarTransitionRefresh(lunar);
+    return;
+  }
 
   body.innerHTML = `
     <div class="bm-card bm-card-hero bm-v2-legacy" style="z-index:2">
@@ -2616,6 +2750,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
           <div class="bm-boss-bar"><div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div></div>
           <div class="bm-wave-line"><span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span><span style="color:#ff9baa">${waveClearedPct}% cleared</span></div>
         </div>
+        ${renderShopCta(shop)}
         <div>
           <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
             ${esc(cta.label || "RIP THROUGH THE VEIL")}
