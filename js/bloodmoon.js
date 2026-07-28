@@ -13,6 +13,10 @@
   let _feedExpanded = false;
   let _lastResolvedBattle = null;
   let _lastClaimFeedback = null;
+  let _lunarCountdownTimer = 0;
+  let _lunarTransitionTimer = 0;
+  let _lunarRefreshPending = false;
+  let _lunarVisibilityListenerBound = false;
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
@@ -21,6 +25,24 @@
   const BLOODMOON_UI_ICONS = Object.freeze({
     tower_marks: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780055683/alpha_ui/icons/blood_moon_tower/alpha_icon_tower_marks_v1_128.png",
     blood_moon_dust: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1780055681/alpha_ui/icons/blood_moon_tower/alpha_icon_blood_moon_dust_v1_128.png"
+  });
+  const BLOODMOON_V2_ASSETS = Object.freeze({
+    arena: "/assets/bloodmoon/v2/arena.webp",
+    atmosphere: "/assets/bloodmoon/v2/atmosphere.webp",
+    moons: Object.freeze({
+      dormant: "/assets/bloodmoon/v2/moon_dormant.webp",
+      rising: "/assets/bloodmoon/v2/moon_rising.webp",
+      convergence: "/assets/bloodmoon/v2/moon_convergence.webp",
+      full_blood_moon: "/assets/bloodmoon/v2/moon_full.webp",
+      fading: "/assets/bloodmoon/v2/moon_fading.webp"
+    })
+  });
+  const BLOODMOON_LUNAR_COPY = Object.freeze({
+    dormant: "The Tower is quiet. Blood Moon rises on the next lunar boundary.",
+    rising: "The Blood Moon is approaching. Keep your faction’s raid moving.",
+    convergence: "Convergence is near. The arena is gathering pressure.",
+    full_blood_moon: "Full Blood Moon is active. The raid remains live for your faction.",
+    fading: "The lunar window is fading. Your faction’s raid state remains visible."
   });
 
   function dbg(...args) {
@@ -72,6 +94,145 @@
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+  }
+
+  function normalizeLunarState(value) {
+    const state = String(value || "").trim().toLowerCase();
+    return BLOODMOON_V2_ASSETS.moons[state] ? state : "dormant";
+  }
+
+  function lunarFoundation(raw) {
+    const source = raw && typeof raw === "object" ? raw : {};
+    const towerState = normalizeLunarState(source.towerState);
+    return {
+      towerState,
+      moonPhaseName: String(source.moonPhaseName || ({
+        dormant: "Dormant",
+        rising: "Rising",
+        convergence: "Convergence",
+        full_blood_moon: "Full Blood Moon",
+        fading: "Fading"
+      })[towerState]),
+      nextFullMoonAt: typeof source.nextFullMoonAt === "string" ? source.nextFullMoonAt : null,
+      eventWindowStatus: String(source.eventWindowStatus || "locked"),
+      syncStatus: String(source.syncStatus || "unconfigured"),
+      syncMode: String(source.syncMode || "manual"),
+      nextTowerState: normalizeLunarState(source.nextTowerState),
+      nextTransitionAt: typeof source.nextTransitionAt === "string" ? source.nextTransitionAt : null
+    };
+  }
+
+  function lunarPastCopy(towerState) {
+    if (towerState === "full_blood_moon") return "Full Blood Moon is active";
+    if (towerState === "fading") return "Fading window is active";
+    return "Moon sync awaiting next timestamp";
+  }
+
+  function lunarTransitionLabel(towerState) {
+    return ({
+      dormant: "Blood Moon rising in",
+      rising: "Convergence in",
+      convergence: "Full Blood Moon in",
+      full_blood_moon: "Fading begins in",
+      fading: "Fading ends in"
+    })[towerState] || "Moon sync pending";
+  }
+
+  function validLunarTimestamp(value) {
+    const parsed = Date.parse(value || "");
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function lunarCountdownText(lunar) {
+    const transitionMs = validLunarTimestamp(lunar?.nextTransitionAt);
+    const nowMs = Date.now();
+    if (Number.isFinite(transitionMs)) {
+      const remainingSec = Math.ceil((transitionMs - nowMs) / 1000);
+      return remainingSec > 0
+        ? `${lunarTransitionLabel(lunar.towerState)} ${fmtSec(remainingSec)}`
+        : lunarPastCopy(lunar.towerState);
+    }
+
+    // Manual-mode fallback preserves the Stage 1 configured full-moon timer.
+    const fullMoonMs = lunar?.syncMode === "manual" && lunar?.syncStatus === "configured"
+      ? validLunarTimestamp(lunar?.nextFullMoonAt)
+      : NaN;
+    if (!Number.isFinite(fullMoonMs)) return "Moon sync pending";
+    const remainingSec = Math.ceil((fullMoonMs - nowMs) / 1000);
+    return remainingSec > 0 ? `Next full moon in ${fmtSec(remainingSec)}` : lunarPastCopy(lunar.towerState);
+  }
+
+  function stopLunarCountdown() {
+    if (_lunarCountdownTimer) {
+      clearInterval(_lunarCountdownTimer);
+      _lunarCountdownTimer = 0;
+    }
+  }
+
+  function stopLunarTransitionRefresh() {
+    if (_lunarTransitionTimer) {
+      clearTimeout(_lunarTransitionTimer);
+      _lunarTransitionTimer = 0;
+    }
+  }
+
+  function stopLunarTimers() {
+    stopLunarCountdown();
+    stopLunarTransitionRefresh();
+  }
+
+  function startLunarCountdown(lunar) {
+    stopLunarCountdown();
+    const transitionMs = validLunarTimestamp(lunar?.nextTransitionAt);
+    const fullMoonMs = lunar?.syncMode === "manual" && lunar?.syncStatus === "configured"
+      ? validLunarTimestamp(lunar?.nextFullMoonAt)
+      : NaN;
+    const targetMs = Number.isFinite(transitionMs) ? transitionMs : fullMoonMs;
+    const update = () => {
+      const label = lunarCountdownText(lunar);
+      document.querySelectorAll("[data-bm-v2-countdown]").forEach((el) => { el.textContent = label; });
+      if (!Number.isFinite(targetMs) || targetMs <= Date.now()) stopLunarCountdown();
+    };
+    update();
+    if (Number.isFinite(targetMs) && targetMs > Date.now()) _lunarCountdownTimer = window.setInterval(update, 1000);
+  }
+
+  function isBloodMoonOpen() {
+    return !!rootEl()?.classList?.contains("show");
+  }
+
+  async function refreshLunarStateIfStale() {
+    if (_lunarRefreshPending || !isBloodMoonOpen()) return;
+    const lunar = lunarFoundation(_state?.lunar);
+    const transitionMs = validLunarTimestamp(lunar.nextTransitionAt);
+    if (!Number.isFinite(transitionMs) || transitionMs > Date.now()) return;
+
+    _lunarRefreshPending = true;
+    try {
+      await loadState();
+    } catch (error) {
+      dbg("lunar transition refresh failed", error);
+    } finally {
+      _lunarRefreshPending = false;
+    }
+  }
+
+  function scheduleLunarTransitionRefresh(lunar) {
+    stopLunarTransitionRefresh();
+    const transitionMs = validLunarTimestamp(lunar?.nextTransitionAt);
+    if (!Number.isFinite(transitionMs) || transitionMs <= Date.now()) return;
+    _lunarTransitionTimer = window.setTimeout(() => {
+      _lunarTransitionTimer = 0;
+      void refreshLunarStateIfStale();
+    }, Math.max(0, transitionMs + 1000 - Date.now()));
+  }
+
+  function ensureLunarVisibilityRecovery() {
+    if (_lunarVisibilityListenerBound || !document?.addEventListener) return;
+    _lunarVisibilityListenerBound = true;
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") void refreshLunarStateIfStale();
+    });
   }
 
   function towerRewardIconUrl(key) {
@@ -644,6 +805,88 @@
   justify-content:center;
   pointer-events:none;
 }
+
+.bm-card-hero.bm-v2-legacy{ display:none; }
+.bm-v2-hero{
+  min-height:clamp(360px, 56vh, 540px);
+  padding:0;
+  isolation:isolate;
+  overflow:hidden;
+  background:#10070b;
+}
+.bm-v2-visual,
+.bm-v2-visual img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.bm-v2-visual{ z-index:0; overflow:hidden; }
+.bm-v2-arena{ object-fit:cover; object-position:50% 56%; opacity:.78; }
+.bm-v2-moon{
+  inset:auto auto 38% 50% !important;
+  width:min(70%, 400px) !important;
+  height:auto !important;
+  transform:translateX(-50%);
+  object-fit:contain;
+  opacity:.56;
+}
+.bm-v2-atmosphere{ object-fit:cover; object-position:50% 52%; opacity:.40; }
+.bm-v2-overlay{
+  position:relative;
+  z-index:1;
+  min-height:clamp(360px, 56vh, 540px);
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:12px;
+  padding:18px;
+  background:linear-gradient(180deg, rgba(7,5,8,.18) 0%, rgba(8,5,8,.42) 38%, rgba(10,5,9,.96) 100%);
+}
+.bm-v2-topline{ display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
+.bm-v2-kicker,.bm-v2-state-chip{
+  font-size:11px;
+  letter-spacing:.85px;
+  text-transform:uppercase;
+  font-weight:900;
+}
+.bm-v2-kicker{ color:rgba(255,235,239,.78); }
+.bm-v2-state-chip{
+  color:#ffe4e8;
+  border:1px solid rgba(255,143,157,.48);
+  border-radius:999px;
+  padding:6px 9px;
+  background:rgba(84,11,23,.52);
+  text-align:center;
+  max-width:100%;
+}
+.bm-v2-title{ margin:0; color:#fff; font-size:clamp(26px, 8vw, 36px); line-height:1; letter-spacing:-.7px; }
+.bm-v2-copy{ margin:0; max-width:500px; color:rgba(255,235,239,.84); font-size:13px; line-height:1.42; }
+.bm-v2-countdown{ color:#ffb8c1; font-size:13px; font-weight:800; min-height:18px; }
+.bm-v2-raid-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+.bm-v2-stat{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;
+  background:rgba(8,5,8,.50);
+}
+.bm-v2-stat .bm-label{ margin-bottom:3px; }
+.bm-v2-stat .bm-value{ overflow-wrap:anywhere; font-size:14px; }
+.bm-v2-wave{ padding:10px 12px; border:1px solid rgba(255,120,139,.22); border-radius:14px; background:rgba(22,6,11,.58); }
+.bm-v2-wave .bm-wave-line{ margin-top:6px; }
+.bm-v2-hero.is-dormant .bm-v2-moon{ opacity:.34; transform:translateX(-50%) scale(.92); }
+.bm-v2-hero.is-rising .bm-v2-moon{ opacity:.58; transform:translateX(-50%) scale(.96); }
+.bm-v2-hero.is-convergence .bm-v2-moon{ opacity:.72; transform:translateX(-50%) scale(1); }
+.bm-v2-hero.is-full_blood_moon .bm-v2-moon{ opacity:.96; transform:translateX(-50%) scale(1.06); }
+.bm-v2-hero.is-full_blood_moon .bm-v2-overlay{ background:linear-gradient(180deg, rgba(68,6,16,.16) 0%, rgba(25,4,9,.48) 38%, rgba(10,5,9,.96) 100%); }
+.bm-v2-hero.is-fading .bm-v2-moon{ opacity:.48; transform:translateX(-50%) scale(.94); }
+@media (min-width:640px){
+  .bm-v2-overlay{ padding:22px; }
+  .bm-v2-raid-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .bm-v2-moon{ width:min(58%, 400px) !important; }
+}
 .bm-reward-icon.is-inline{
   width:28px;
   height:28px;
@@ -1154,6 +1397,12 @@ body.ah-perf-lite .bm-battle-stage.is-crit{
   box-shadow:0 10px 22px rgba(0,0,0,.22) !important;
 }
 
+html.ah-perf-lite .bm-v2-overlay,
+body.ah-perf-lite .bm-v2-overlay{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
 html.ah-perf-lite .bm-progress > i,
 body.ah-perf-lite .bm-progress > i,
 html.ah-perf-lite .bm-cta,
@@ -1418,6 +1667,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 
   function closeView() {
     stopBattlePlayback(true);
+    stopLunarTimers();
     _lastClaimFeedback = null;
     rootEl()?.classList.remove("show");
     document.documentElement.classList.remove("ah-bloodmoon-open");
@@ -2259,7 +2509,8 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   }
 
   function render(data, opts = {}) {
-  _state = data || {};
+   stopLunarTimers();
+   _state = data || {};
   const body = bodyEl();
   if (!body) return;
 
@@ -2274,9 +2525,10 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   const waveRemainingPct = pct((waveHp / waveHpMax) * 100);
   const waveClearedPct = pct(((waveHpMax - waveHp) / waveHpMax) * 100);
 
-  const cta = _state.cta || {};
-  const my = _state.myContribution || {};
-  const lastBattle = resolveDisplayBattle(_state, opts.preferredBattle);
+   const cta = _state.cta || {};
+   const my = _state.myContribution || {};
+   const lunar = lunarFoundation(_state.lunar);
+   const lastBattle = resolveDisplayBattle(_state, opts.preferredBattle);
   const attemptsLeft = Number(my.attemptsLeft || 0);
   const cooldownLeftSec = Number(my.cooldownLeftSec || 0);
 
@@ -2285,10 +2537,12 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   );
   const topScore = Number(sortedFactions[0]?.score || 0);
   const secondScore = Number(sortedFactions[1]?.score || 0);
-  const dominancePct =
-    (topScore > 0 || secondScore > 0)
-      ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
-      : 0;
+   const dominancePct =
+     (topScore > 0 || secondScore > 0)
+       ? Math.round((topScore / Math.max(1, topScore + secondScore)) * 100)
+       : 0;
+   const myFactionRow = sortedFactions.find((row) => String(row?.faction || "") === String(_state.myFaction || "")) || {};
+   const factionWeeklyDamage = Number(myFactionRow.totalDamage || myFactionRow.score || 0);
   const myRewardPreview = rewardPreviewMarkup(
     my,
     `${my.rewardSummary || my.claimableSummary || ""}`.trim(),
@@ -2298,7 +2552,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   stopBattlePlayback(true, true);
 
   body.innerHTML = `
-    <div class="bm-card bm-card-hero" style="z-index:2">
+    <div class="bm-card bm-card-hero bm-v2-legacy" style="z-index:2">
       <div class="bm-hero-intensity">
         BLOOD MOON INTENSITY • WAVE ${fmtNum(currentWave)} / ${fmtNum(maxWave)}
       </div>
@@ -2313,7 +2567,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       </div>
 
       <div style="margin-top:18px">
-        <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
+        <button id="bloodMoonLegacyAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
           ${esc(cta.label || "RIP THROUGH THE VEIL")}
         </button>
         <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
@@ -2331,6 +2585,42 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
         <div class="bm-meta-pill">
           <div class="bm-label">Cooldown</div>
           <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bm-card bm-v2-hero is-${esc(lunar.towerState)}" style="z-index:2">
+      <div class="bm-v2-visual" aria-hidden="true">
+        <img class="bm-v2-arena" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
+        <img class="bm-v2-moon" src="${BLOODMOON_V2_ASSETS.moons[lunar.towerState]}" alt="" fetchpriority="high" decoding="async" />
+        <img class="bm-v2-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" loading="eager" decoding="async" />
+      </div>
+      <div class="bm-v2-overlay">
+        <div class="bm-v2-topline">
+          <div class="bm-v2-kicker">Weekly faction raid</div>
+          <div class="bm-v2-state-chip">${esc(lunar.moonPhaseName)} · ${esc(lunar.eventWindowStatus)}</div>
+        </div>
+        <h2 class="bm-v2-title">Blood Moon Tower</h2>
+        <p class="bm-v2-copy">${esc(BLOODMOON_LUNAR_COPY[lunar.towerState])}</p>
+        <div class="bm-v2-countdown" data-bm-v2-countdown aria-live="polite">${esc(lunarCountdownText(lunar))}</div>
+        <div class="bm-v2-raid-grid">
+          <div class="bm-v2-stat"><div class="bm-label">My faction</div><div class="bm-value">${esc(factionLabel(_state.myFaction))}</div></div>
+          <div class="bm-v2-stat"><div class="bm-label">Faction wave</div><div class="bm-value">${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div></div>
+          <div class="bm-v2-stat"><div class="bm-label">Attempts left</div><div class="bm-value">${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</div></div>
+          <div class="bm-v2-stat"><div class="bm-label">Cooldown</div><div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div></div>
+          <div class="bm-v2-stat"><div class="bm-label">My weekly damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div>
+          <div class="bm-v2-stat"><div class="bm-label">Faction weekly damage</div><div class="bm-value">${fmtNum(factionWeeklyDamage)}</div></div>
+        </div>
+        <div class="bm-v2-wave">
+          <div class="bm-label">Current faction wave</div>
+          <div class="bm-boss-bar"><div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div></div>
+          <div class="bm-wave-line"><span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span><span style="color:#ff9baa">${waveClearedPct}% cleared</span></div>
+        </div>
+        <div>
+          <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
+            ${esc(cta.label || "RIP THROUGH THE VEIL")}
+          </button>
+          <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
         </div>
       </div>
     </div>
@@ -2390,7 +2680,9 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 
   `;
 
-  bindActions();
+   bindActions();
+   startLunarCountdown(lunar);
+   scheduleLunarTransitionRefresh(lunar);
   if (lastBattle) {
     const kick = () => playLastBattlePixi(lastBattle, { animate: false });
     if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
@@ -2493,6 +2785,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     _tg = tg || _tg || null;
     _dbg = !!dbg;
     ensureMounted();
+    ensureLunarVisibilityRecovery();
     return BloodMoon;
   }
 
