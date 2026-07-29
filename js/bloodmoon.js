@@ -874,26 +874,35 @@
   pointer-events:none;
 }
 .bm-v2-visual{ z-index:0; overflow:hidden; }
-.bm-v2-arena{ object-fit:cover; object-position:50% 56%; opacity:.78; }
-.bm-v2-moon{
-  inset:auto auto 38% 50% !important;
-  width:min(70%, 400px) !important;
-  height:auto !important;
-  transform:translateX(-50%);
-  object-fit:contain;
-  opacity:.56;
+.bm-v2-arena{ object-fit:cover; object-position:50% 56%; opacity:.94; }
+.bm-v2-atmosphere{ object-fit:cover; object-position:50% 52%; opacity:.30; }
+.bm-v2-moon-visual{
+  position:absolute;
+  top:clamp(24px, 6vw, 36px);
+  right:clamp(12px, 4vw, 24px);
+  z-index:1;
+  width:clamp(140px, 42vw, 170px);
+  aspect-ratio:1;
+  overflow:visible;
+  pointer-events:none;
 }
-.bm-v2-atmosphere{ object-fit:cover; object-position:50% 52%; opacity:.40; }
+.bm-v2-moon{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  opacity:.96;
+}
 .bm-v2-overlay{
   position:relative;
-  z-index:1;
+  z-index:2;
   min-height:clamp(360px, 56vh, 540px);
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
   gap:12px;
-  padding:18px;
-  background:linear-gradient(180deg, rgba(7,5,8,.18) 0%, rgba(8,5,8,.42) 38%, rgba(10,5,9,.96) 100%);
+  padding:clamp(188px, 52vw, 216px) 18px 18px;
+  background:linear-gradient(180deg, rgba(7,5,8,.25) 0%, rgba(8,5,8,.32) 42%, rgba(10,5,9,.38) 100%);
 }
 .bm-v2-topline{ display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
 .bm-v2-kicker,.bm-v2-state-chip{
@@ -915,7 +924,7 @@
 .bm-v2-title{ margin:0; color:#fff; font-size:clamp(26px, 8vw, 36px); line-height:1; letter-spacing:-.7px; }
 .bm-v2-copy{ margin:0; max-width:500px; color:rgba(255,235,239,.84); font-size:13px; line-height:1.42; }
 .bm-v2-countdown{ color:#ffb8c1; font-size:13px; font-weight:800; min-height:18px; }
-.bm-shop-cta,.bm-shop-shell{ border:1px solid rgba(255,132,151,.28); border-radius:14px; background:rgba(25,6,12,.76); }
+.bm-shop-cta,.bm-shop-shell{ border:1px solid rgba(255,132,151,.28); border-radius:14px; background:rgba(25,6,12,.68); }
 .bm-shop-cta{ display:grid; gap:10px; padding:12px; }
 .bm-shop-cta strong,.bm-shop-header h2,.bm-shop-card h3{ color:#fff; margin:0; }
 .bm-shop-cta p,.bm-shop-header p,.bm-shop-card p{ margin:4px 0 0; color:rgba(255,235,239,.75); font-size:12px; line-height:1.38; }
@@ -935,22 +944,16 @@
   padding:9px 10px;
   border:1px solid rgba(255,255,255,.10);
   border-radius:12px;
-  background:rgba(8,5,8,.50);
+  background:rgba(8,5,8,.64);
 }
 .bm-v2-stat .bm-label{ margin-bottom:3px; }
 .bm-v2-stat .bm-value{ overflow-wrap:anywhere; font-size:14px; }
-.bm-v2-wave{ padding:10px 12px; border:1px solid rgba(255,120,139,.22); border-radius:14px; background:rgba(22,6,11,.58); }
+.bm-v2-wave{ padding:10px 12px; border:1px solid rgba(255,120,139,.22); border-radius:14px; background:rgba(22,6,11,.66); }
 .bm-v2-wave .bm-wave-line{ margin-top:6px; }
-.bm-v2-hero.is-dormant .bm-v2-moon{ opacity:.34; transform:translateX(-50%) scale(.92); }
-.bm-v2-hero.is-rising .bm-v2-moon{ opacity:.58; transform:translateX(-50%) scale(.96); }
-.bm-v2-hero.is-convergence .bm-v2-moon{ opacity:.72; transform:translateX(-50%) scale(1); }
-.bm-v2-hero.is-full_blood_moon .bm-v2-moon{ opacity:.96; transform:translateX(-50%) scale(1.06); }
-.bm-v2-hero.is-full_blood_moon .bm-v2-overlay{ background:linear-gradient(180deg, rgba(68,6,16,.16) 0%, rgba(25,4,9,.48) 38%, rgba(10,5,9,.96) 100%); }
-.bm-v2-hero.is-fading .bm-v2-moon{ opacity:.48; transform:translateX(-50%) scale(.94); }
 @media (min-width:640px){
-  .bm-v2-overlay{ padding:22px; }
+  .bm-v2-overlay{ padding:250px 22px 22px; }
   .bm-v2-raid-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
-  .bm-v2-moon{ width:min(58%, 400px) !important; }
+  .bm-v2-moon-visual{ top:28px; right:28px; width:clamp(190px, 22vw, 240px); }
 }
 .bm-reward-icon.is-inline{
   width:28px;
@@ -1683,7 +1686,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
             <div id="bloodMoonTitle">Blood-Moon Tower</div>
             <button id="bloodMoonClose" type="button">✕</button>
           </div>
-          <div id="bloodMoonSub">Faction PvE raid - shared wave progress - Blood-Moon Damage tracked here</div>
+          <div id="bloodMoonSub">Faction PvE raid — faction-specific wave progression. Blood Moon damage is tracked here.</div>
         </div>
 
         <div id="bloodMoonBody">
@@ -2726,8 +2729,10 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     <div class="bm-card bm-v2-hero is-${esc(lunar.towerState)}" style="z-index:2">
       <div class="bm-v2-visual" aria-hidden="true">
         <img class="bm-v2-arena" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
-        <img class="bm-v2-moon" src="${BLOODMOON_V2_ASSETS.moons[lunar.towerState]}" alt="" fetchpriority="high" decoding="async" />
         <img class="bm-v2-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" loading="eager" decoding="async" />
+      </div>
+      <div class="bm-v2-moon-visual" aria-hidden="true">
+        <img class="bm-v2-moon" src="${BLOODMOON_V2_ASSETS.moons[lunar.towerState]}" alt="" fetchpriority="high" decoding="async" />
       </div>
       <div class="bm-v2-overlay">
         <div class="bm-v2-topline">
