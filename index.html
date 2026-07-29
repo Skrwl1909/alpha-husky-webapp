@@ -2142,8 +2142,8 @@ html.ah-skins-open #heroFrame{
   inset:0;
   pointer-events:none;
   background:
-    linear-gradient(180deg, rgba(4,9,13,.22), transparent 18%, transparent 76%, rgba(4,8,12,.26)),
-    radial-gradient(ellipse at center, transparent 50%, rgba(2,5,8,.20) 100%);
+    linear-gradient(180deg, rgba(4,9,13,.12), transparent 18%, transparent 76%, rgba(4,8,12,.16)),
+    radial-gradient(ellipse at center, transparent 50%, rgba(2,5,8,.10) 100%);
 }
 
 .map-stage{
@@ -2208,8 +2208,8 @@ html.ah-skins-open #heroFrame{
   z-index:1;
   overflow:hidden;
   background:
-    radial-gradient(ellipse 58% 76% at 96% 66%, rgba(3,8,13,.34) 0%, rgba(5,12,18,.18) 38%, rgba(5,12,18,0) 76%),
-    radial-gradient(ellipse 48% 62% at 80% 91%, rgba(5,11,17,.21) 0%, rgba(5,11,17,0) 74%),
+    radial-gradient(ellipse 58% 76% at 96% 66%, rgba(3,8,13,.24) 0%, rgba(5,12,18,.12) 38%, rgba(5,12,18,0) 76%),
+    radial-gradient(ellipse 48% 62% at 80% 91%, rgba(5,11,17,.12) 0%, rgba(5,11,17,0) 74%),
     linear-gradient(112deg, rgba(8,14,21,0) 42%, rgba(14,28,37,.05) 59%, rgba(7,15,22,.13) 82%, rgba(4,9,14,.18) 100%);
 }
 
@@ -9818,7 +9818,7 @@ document.addEventListener("click", async (e) => {
             const isActive = !!activeId && String(pin?.dataset?.nodeId || "").trim() === activeId;
             pin.classList.toggle("active", isActive);
             const chip = pin.querySelector(".chip");
-            if (chip) chip.style.display = (isActive || pin.classList.contains("map-label-persistent")) ? "flex" : "none";
+            if (chip) chip.style.display = "flex";
             if (!isActive) clearMapPinSignalScan(pin);
           });
         }
@@ -11232,7 +11232,7 @@ function isRegionUnlocked(regionId){
     // focus
     const isActive = String(ACTIVE_PIN_ID || "") === String(b.id || "");
     btn.classList.toggle('active', isActive);
-    chip.style.display = isActive ? 'flex' : 'none';
+    chip.style.display = 'flex';
 
     if (displayState.displayLocked){
       const lock = document.createElement('span');
