@@ -19,6 +19,7 @@
   let _lunarRefreshPending = false;
   let _lunarVisibilityListenerBound = false;
   let _shopOpen = false;
+  let _shopPurchaseConfirm = null;
   const COMMAND_STORAGE_PREFIX = "alpha_husky.bloodmoon.command.v2";
   const COMMAND_EXPIRY_MS = 24 * 60 * 60 * 1000;
   const _pendingCommandMemory = new Map();
@@ -159,18 +160,22 @@
   function clearStalePendingCommands(activeRaidInstanceId) {
     const active = String(activeRaidInstanceId || "");
     for (const key of Array.from(_pendingCommandMemory.keys())) {
-      if (!key.includes(`:${active}:`)) _pendingCommandMemory.delete(key);
+      const value = _pendingCommandMemory.get(key);
+      if (value?.action !== "shop_purchase" && !key.includes(`:${active}:`)) _pendingCommandMemory.delete(key);
     }
     try {
       for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
         const key = window.localStorage.key(i);
-        if (key?.startsWith(`${COMMAND_STORAGE_PREFIX}:`) && !key.includes(`:${active}:`)) window.localStorage.removeItem(key);
+        if (!key?.startsWith(`${COMMAND_STORAGE_PREFIX}:`)) continue;
+        let value = null;
+        try { value = JSON.parse(window.localStorage.getItem(key) || "null"); } catch (_) {}
+        if (value?.action !== "shop_purchase" && !key.includes(`:${active}:`)) window.localStorage.removeItem(key);
       }
     } catch (_) {}
   }
 
   function isRetryableCommandReason(reason) {
-    return ["TRANSACTION_RECOVERY_FAILED", "TRANSACTION_LOCK_TIMEOUT", "BLOODMOON_TRANSACTION_FAILED"].includes(String(reason || ""));
+    return ["TRANSACTION_RECOVERY_FAILED", "TRANSACTION_LOCK_TIMEOUT", "BLOODMOON_TRANSACTION_FAILED", "BLOODMOON_SHOP_PURCHASE_FAILED"].includes(String(reason || ""));
   }
 
   function normalizeLunarState(value) {
@@ -208,6 +213,8 @@
       stateLabel: String(source.stateLabel || "Shop Locked"),
       ctaLabel: String(source.ctaLabel || "Shop Locked"),
       helperCopy: String(source.helperCopy || "Shop availability is syncing."),
+      shopInstanceId: typeof source.shopInstanceId === "string" ? source.shopInstanceId : "",
+      purchaseEnabled: source.purchaseEnabled === true,
       countdownTargetAt: typeof source.countdownTargetAt === "string" ? source.countdownTargetAt : null,
       balances: {
         towerMarks: Math.max(0, Number(balances.towerMarks || 0) || 0),
@@ -1817,6 +1824,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     stopLunarTimers();
     _lastClaimFeedback = null;
     _shopOpen = false;
+    _shopPurchaseConfirm = null;
     rootEl()?.classList.remove("show");
     document.documentElement.classList.remove("ah-bloodmoon-open");
     document.body.style.overflow = "";
@@ -2641,18 +2649,31 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     if (asset && slot === "rewardFrame") {
       return `<div class="bm-shop-visual is-frame"><img src="${esc(asset)}" alt="${esc(item.name || "Blood Moon Halo")}" loading="lazy" decoding="async" onerror="this.hidden=true;this.parentNode.classList.add('is-fallback');" /><span class="bm-shop-fallback">Frame preview pending</span></div>`;
     }
-    return `<div class="bm-shop-visual is-placeholder ${esc(slot)}"><span class="bm-shop-fallback">${slot === "rewardAura" ? "Aura preview pending" : "Title preview pending"}</span></div>`;
+    if (item?.type === "title") {
+      return `<div class="bm-shop-visual is-title"><span class="bm-shop-fallback">${esc(item.name || "Towerbound")}</span></div>`;
+    }
+    if (item?.type === "aura" && item?.effectKey === "bloodmoon_aura_v1") {
+      return `<div class="bm-shop-visual is-aura" data-aura-preview="bloodmoon_aura_v1" aria-hidden="true"><span class="bm-shop-fallback">Crimson lunar glow</span></div>`;
+    }
+    return `<div class="bm-shop-visual is-placeholder ${esc(slot)}"><span class="bm-shop-fallback">Cosmetic preview</span></div>`;
   }
 
   function renderShopCards(shop) {
     return shop.catalog.slice().sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0)).map((item) => {
-      const requirement = item.requiresItemId ? `Requires ${item.requiresItemId.replace("bloodmoon_", "").replace("_v1", "").replaceAll("_", " ")}` : "First step in the path";
+      const requirement = item.requiresItemId === "bloodmoon_frame_v1" ? "Requires Blood Moon Halo" : "First available reward";
+      const cost = item.cost && typeof item.cost === "object" ? item.cost : null;
+      const price = cost ? `${fmtNum(cost.towerMarks)} Tower Marks · ${fmtNum(cost.bloodMoonDust)} Blood Moon Dust` : "Preview only";
+      const action = item.owned
+        ? `<div class="bm-shop-pending">Owned - equip it later in ${item.type === "title" ? "Titles" : (item.type === "aura" ? "Auras" : "Frames")}.</div>`
+        : item.purchasable
+          ? `<button class="bm-shop-open-btn" data-bm-shop-buy="${esc(item.id || "")}" type="button">Purchase ${esc(item.name || "reward")}</button>`
+          : `<div class="bm-shop-pending">${esc(item.purchaseDisabledReason === "PREVIEW_ONLY" ? "Preview only" : (item.purchaseDisabledReason || "Unavailable"))}</div>`;
       return `<article class="bm-shop-card">
         ${renderShopVisual(item)}
         <div class="bm-shop-card-copy"><div class="bm-label">${esc(item.type || "cosmetic")} · permanent cosmetic</div>
         <h3>${esc(item.name || "Reward preview")}</h3><p>${esc(item.description || "Preview only.")}</p>
-        <div class="bm-shop-requirement">${esc(requirement)}</div><div class="bm-shop-pending">Prices awaiting approval</div>
-        <div class="bm-shop-slot">Future asset slot: ${esc(item.assetSlot || "pending")}</div></div>
+        <div class="bm-shop-requirement">${esc(requirement)}</div><div class="bm-shop-price">${esc(price)}</div>${action}
+        ${item.type === "aura" ? `<div class="bm-shop-slot">Lightweight CSS cosmetic</div>` : ""}</div>
       </article>`;
     }).join("");
   }
@@ -2662,14 +2683,44 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     const locked = !shop.available;
     const intro = locked
       ? "Preview the rewards now. Purchases open during Full Blood Moon and remain available through Fading."
-      : "Read-only preview. Prices awaiting approval.";
+      : "Blood Moon Halo, Blood Moon Aura, and Towerbound are progression cosmetics for this cycle.";
+    const confirm = _shopPurchaseConfirm && _shopPurchaseConfirm.itemId === "bloodmoon_frame_v1"
+      ? `<div class="bm-inline-feedback is-warning"><span>Confirm purchase: 100 Tower Marks and 50 Blood Moon Dust. The Halo is not equipped automatically.</span><button class="bm-feedback-retry" data-bm-shop-confirm type="button">Confirm purchase</button><button class="bm-feedback-retry" data-bm-shop-cancel type="button">Cancel</button></div>`
+      : "";
+    const towerboundConfirm = _shopPurchaseConfirm && _shopPurchaseConfirm.itemId === "bloodmoon_title_v1"
+      ? `<div class="bm-inline-feedback is-warning"><span>Confirm purchase: 500 Tower Marks and 250 Blood Moon Dust. Towerbound is not equipped automatically.</span><button class="bm-feedback-retry" data-bm-shop-confirm type="button">Confirm purchase</button><button class="bm-feedback-retry" data-bm-shop-cancel type="button">Cancel</button></div>`
+      : "";
+    const auraConfirm = _shopPurchaseConfirm && _shopPurchaseConfirm.itemId === "bloodmoon_aura_v1"
+      ? `<div class="bm-inline-feedback is-warning"><span>Confirm Blood Moon Aura: 250 Tower Marks and 125 Blood Moon Dust. Requires Blood Moon Halo. It grants a cosmetic only and is not automatically equipped.</span><button class="bm-feedback-retry" data-bm-shop-confirm type="button">Confirm purchase</button><button class="bm-feedback-retry" data-bm-shop-cancel type="button">Cancel</button></div>`
+      : "";
+    const truthfulProgression = `<style>.bm-shop-shell .bm-shop-path{display:none}.bm-shop-progression{margin:12px 0;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:10px}.bm-shop-progression b{padding:0 7px}.bm-shop-future{opacity:.78;font-size:12px}.bm-shop-visual.is-aura{position:relative;background:radial-gradient(circle at 50% 48%,rgba(157,25,62,.25),rgba(65,8,36,.08) 55%,transparent 75%);border:1px solid rgba(194,55,89,.42)}.bm-shop-visual.is-aura::after{content:"";position:absolute;inset:10px;border:1px solid rgba(235,91,124,.22);border-radius:50%;pointer-events:none}</style><div class="bm-shop-progression"><div class="bm-label">Base Reward</div><strong>Blood Moon Halo</strong><div class="bm-shop-future">Prestige rewards - require Blood Moon Halo: Blood Moon Aura and Towerbound</div></div>`;
+    const halo = shop.catalog.find((item) => item?.id === "bloodmoon_frame_v1");
+    const towerbound = shop.catalog.find((item) => item?.id === "bloodmoon_title_v1");
+    const aura = shop.catalog.find((item) => item?.id === "bloodmoon_aura_v1");
+    const framesLink = halo?.owned
+      ? `<button class="bm-shop-open-btn" data-bm-open-frames type="button">Open Frames</button>`
+      : "";
+    const titlesLink = towerbound?.owned
+      ? `<button class="bm-shop-open-btn" data-bm-open-titles type="button">Open Titles</button>`
+      : "";
+    const aurasLink = aura?.owned
+      ? `<button class="bm-shop-open-btn" data-bm-open-auras type="button">Open Auras</button>`
+      : "";
     return `<section class="bm-shop-shell ${locked ? "is-locked" : "is-open"}">
       <button class="bm-shop-back" data-bm-shop-back type="button">← Tower Hub</button>
       <div class="bm-shop-header"><div class="bm-label">Fullmoon Shop</div><h2>${locked ? "Shop Locked" : (isGrace ? "Last Chance Shop" : "Fullmoon Shop")}</h2>
       <p>${esc(intro)}</p><div class="bm-shop-countdown" data-bm-shop-countdown>${esc(shopCountdownText(shop))}</div></div>
       ${renderShopBalances(shop)}
+      ${truthfulProgression}
+      ${renderInlineFeedback()}
+      ${confirm}
+      ${towerboundConfirm}
+      ${auraConfirm}
       <div class="bm-shop-path"><span>Frame</span><b>→</b><span>Aura</span><b>→</b><span>Title</span></div>
       <div class="bm-shop-cards">${renderShopCards(shop)}</div>
+      ${framesLink}
+      ${titlesLink}
+      ${aurasLink}
       <div class="bm-shop-note">${esc(shop.helperCopy)}</div>
     </section>`;
   }
@@ -2730,6 +2781,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
         if (action === "state") await loadState();
         if (action === "attack") await attack();
         if (action.startsWith("claim:")) await claim(action.slice(6));
+        if (action.startsWith("shop_purchase:")) await purchaseShopItem(action.slice(14));
       });
     });
 
@@ -2737,7 +2789,32 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       btn.addEventListener("click", () => { _shopOpen = true; render(_state); });
     });
     document.querySelectorAll("[data-bm-shop-back]").forEach((btn) => {
-      btn.addEventListener("click", () => { _shopOpen = false; render(_state); });
+      btn.addEventListener("click", () => { _shopOpen = false; _shopPurchaseConfirm = null; render(_state); });
+    });
+    document.querySelectorAll("[data-bm-shop-buy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (_busy) return;
+        _shopPurchaseConfirm = { itemId: String(btn.getAttribute("data-bm-shop-buy") || "") };
+        render(_state);
+      });
+    });
+    document.querySelectorAll("[data-bm-shop-cancel]").forEach((btn) => {
+      btn.addEventListener("click", () => { _shopPurchaseConfirm = null; render(_state); });
+    });
+    document.querySelectorAll("[data-bm-shop-confirm]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (_busy || !_shopPurchaseConfirm?.itemId) return;
+        await purchaseShopItem(_shopPurchaseConfirm.itemId);
+      });
+    });
+    document.querySelectorAll("[data-bm-open-frames]").forEach((btn) => {
+      btn.addEventListener("click", () => { try { window.openFramesModal?.(); } catch (_) {} });
+    });
+    document.querySelectorAll("[data-bm-open-titles]").forEach((btn) => {
+      btn.addEventListener("click", () => { try { window.openBadgeWallModal?.(); } catch (_) {} });
+    });
+    document.querySelectorAll("[data-bm-open-auras]").forEach((btn) => {
+      btn.addEventListener("click", () => { try { window.openBadgeWallModal?.(); } catch (_) {} });
     });
 
     bindFeedToggle();
@@ -2869,13 +2946,13 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
         </div>
         ${renderPreparedAttempt(preparedAttempt, cta)}
         ${renderInlineFeedback()}
-        ${renderShopCta(shop)}
         <div>
           <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
             ${esc(cta.label || "RIP THROUGH THE VEIL")}
           </button>
           <div class="bm-action-hint">${esc(cta.reason || "Adds Blood-Moon Damage and event progress. Not War Contribution.")}</div>
         </div>
+        ${renderShopCta(shop)}
       </div>
     </div>
 
@@ -3099,6 +3176,53 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     } catch (_) {}
 
     return await loadState();
+  }
+
+  async function purchaseShopItem(itemId) {
+    const shop = shopFoundation(_state?.shop);
+    const shopInstanceId = String(shop.shopInstanceId || "");
+    if (!shopInstanceId || !itemId) {
+      setInlineFeedback("error", "Shop timing changed. Refresh the tower state.", "state");
+      if (_state) render(_state);
+      return;
+    }
+    setBusy(true);
+    try {
+      const commandId = pendingCommandId("shop_purchase", itemId, shopInstanceId);
+      const res = await call("/webapp/bloodmoon/shop/purchase", {
+        run_id: commandId,
+        shopInstanceId,
+        item_id: itemId,
+      });
+      if (!res || res.ok !== true) {
+        const reason = String(res?.reason || "SHOP_PURCHASE_FAILED");
+        if (reason === "STALE_SHOP_INSTANCE" || reason === "SHOP_UNAVAILABLE") {
+          clearPendingCommand("shop_purchase", itemId, shopInstanceId);
+          await loadState();
+        } else if (!isRetryableCommandReason(reason)) {
+          clearPendingCommand("shop_purchase", itemId, shopInstanceId);
+        }
+        const failure = new Error(reason);
+        failure.bmTerminal = !isRetryableCommandReason(reason);
+        throw failure;
+      }
+      clearPendingCommand("shop_purchase", itemId, shopInstanceId);
+      _shopPurchaseConfirm = null;
+      const debited = res.debited || {};
+      const displayName = String(res.displayName || itemId);
+      const destination = itemId === "bloodmoon_title_v1" ? "Titles" : (itemId === "bloodmoon_aura_v1" ? "Auras" : "Frames");
+      setInlineFeedback("success", `${displayName} acquired. Spent ${fmtNum(debited.towerMarks)} Tower Marks and ${fmtNum(debited.bloodMoonDust)} Blood Moon Dust. Equip it later in ${destination}.`);
+      if (res.data) render(res.data);
+      else await loadState();
+      return res;
+    } catch (e) {
+      dbg("shop purchase error", e);
+      setInlineFeedback(e?.bmTerminal ? "error" : "warning", e?.bmTerminal ? `Purchase blocked: ${e?.message || e}` : `Purchase is still resolving: ${e?.message || e}`, e?.bmTerminal ? "" : `shop_purchase:${itemId}`);
+      if (_state) render(_state);
+      throw e;
+    } finally {
+      setBusy(false);
+    }
   }
 
   BloodMoon.init = init;

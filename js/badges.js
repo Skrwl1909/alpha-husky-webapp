@@ -849,6 +849,16 @@
       #badgeWallBack .ah-bw-identity-option.is-locked{
         opacity:.74;
       }
+      #badgeWallBack .ah-bw-aura-preview{
+        width:28px;
+        height:28px;
+        flex:0 0 28px;
+        border-radius:50%;
+        border:1px solid rgba(214,67,106,.42);
+        background:radial-gradient(circle, rgba(157,25,62,.32), rgba(65,8,36,.08) 60%, transparent 72%);
+        box-shadow:0 0 10px rgba(167,29,73,.16);
+        pointer-events:none;
+      }
       #badgeWallBack .ah-bw-identity-source{
         min-width:0;
         color:rgba(204,219,236,.68);
@@ -1225,6 +1235,11 @@
     row.disabled = !canEquip;
     row.setAttribute("data-identity-kind", kind);
     row.setAttribute("data-identity-key", item?.key || "");
+    if (isAura && item?.key === "bloodmoon_aura_v1") {
+      const preview = newEl("span", "ah-bw-aura-preview");
+      preview.setAttribute("aria-hidden", "true");
+      row.appendChild(preview);
+    }
 
     const copy = newEl("div", "ah-bw-title-option-copy");
     copy.appendChild(newEl("div", "ah-bw-title-option-label", item?.label || item?.key || "Locked"));
@@ -1254,6 +1269,16 @@
     section.appendChild(newEl("div", "ah-bw-identity-current", activeIdentityText(kind, rows)));
 
     const list = newEl("div", "ah-bw-picker-list ah-bw-identity-list");
+    if (kind === "aura") {
+      const activeAura = Array.isArray(rows) && rows.some((item) => !!item?.active);
+      const none = newEl("button", "ah-bw-title-option ah-bw-identity-option" + (!activeAura ? " is-active" : ""));
+      none.type = "button";
+      none.disabled = !activeAura || _settingIdentityState;
+      none.appendChild(newEl("div", "ah-bw-title-option-copy", "None / Unequipped"));
+      none.appendChild(newEl("span", "ah-bw-title-active", activeAura ? "Unequip" : "Active"));
+      if (activeAura) none.addEventListener("click", () => { equipIdentity("aura", null).catch(() => {}); });
+      list.appendChild(none);
+    }
     const items = Array.isArray(rows) ? rows : [];
     if (!items.length) {
       list.appendChild(newEl("div", "ah-bw-picker-empty", "No entries available."));
@@ -1300,20 +1325,21 @@
   }
   async function equipIdentity(kind, selectedKey) {
     const key = String(selectedKey || "").trim();
-    if (!_apiPost || !key || _settingIdentityState) return;
+    const isAuraUnequip = kind === "aura" && !key;
+    if (!_apiPost || (!key && !isAuraUnequip) || _settingIdentityState) return;
     const action = kind === "aura" ? "set_active_aura" : "set_active_tag";
     const field = kind === "aura" ? "aura_key" : "tag_key";
     _settingIdentityState = true;
     renderIdentityLoadout();
-    setStatus("Equipping " + (kind === "aura" ? "aura" : "tag") + "...", "");
+    setStatus(isAuraUnequip ? "Unequipping aura..." : "Equipping " + (kind === "aura" ? "aura" : "tag") + "...", "");
     try {
-      const out = await _apiPost("/webapp/player/title/state", { action, [field]: key });
+      const out = await _apiPost("/webapp/player/title/state", { action, [field]: isAuraUnequip ? null : key });
       if (!out || out.ok === false) throw new Error(out?.reason || "IDENTITY_SET_FAILED");
       _titleState = normalizeTitleState(out);
       syncTopTagFromIdentityState(kind);
       updateSummary();
       renderIdentityLoadout();
-      setStatus((kind === "aura" ? "Aura" : "Tag") + " equipped.", "");
+      setStatus(isAuraUnequip ? "Aura unequipped." : (kind === "aura" ? "Aura" : "Tag") + " equipped.", "");
       try {
         if (typeof window.loadProfile === "function") {
           const profileRefresh = window.loadProfile();
