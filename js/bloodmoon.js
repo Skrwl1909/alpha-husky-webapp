@@ -13,11 +13,15 @@
   let _feedExpanded = false;
   let _lastResolvedBattle = null;
   let _lastClaimFeedback = null;
+  let _inlineFeedback = null;
   let _lunarCountdownTimer = 0;
   let _lunarTransitionTimer = 0;
   let _lunarRefreshPending = false;
   let _lunarVisibilityListenerBound = false;
   let _shopOpen = false;
+  const COMMAND_STORAGE_PREFIX = "alpha_husky.bloodmoon.command.v2";
+  const COMMAND_EXPIRY_MS = 24 * 60 * 60 * 1000;
+  const _pendingCommandMemory = new Map();
 
   const ROOT_ID = "bloodMoonBack";
   const STYLE_ID = "bloodMoonStyles";
@@ -111,6 +115,62 @@
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+  }
+
+  function commandStorageScope() {
+    const uid = _state?.viewer?.uid || _state?.viewer?.id || _tg?.initDataUnsafe?.user?.id || window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    return String(uid || "anonymous");
+  }
+
+  function commandStorageKey(action, target, raidInstanceId) {
+    return [COMMAND_STORAGE_PREFIX, commandStorageScope(), String(raidInstanceId || ""), String(action || ""), String(target || "")].join(":");
+  }
+
+  function readPendingCommand(action, target, raidInstanceId) {
+    const key = commandStorageKey(action, target, raidInstanceId);
+    let value = _pendingCommandMemory.get(key) || null;
+    try { value = value || JSON.parse(window.localStorage.getItem(key) || "null"); } catch (_) {}
+    if (!value || value.raidInstanceId !== String(raidInstanceId || "") || value.action !== action || value.target !== String(target || "")) return null;
+    if (!Number.isFinite(Number(value.expiresAt)) || Number(value.expiresAt) <= Date.now()) {
+      _pendingCommandMemory.delete(key);
+      try { window.localStorage.removeItem(key); } catch (_) {}
+      return null;
+    }
+    return value;
+  }
+
+  function pendingCommandId(action, target, raidInstanceId) {
+    const existing = readPendingCommand(action, target, raidInstanceId);
+    if (existing?.runId) return existing.runId;
+    const createdAt = Date.now();
+    const value = { action, target: String(target || ""), raidInstanceId: String(raidInstanceId || ""), runId: runId(`bm_${action}`), createdAt, expiresAt: createdAt + COMMAND_EXPIRY_MS };
+    const key = commandStorageKey(action, target, raidInstanceId);
+    _pendingCommandMemory.set(key, value);
+    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+    return value.runId;
+  }
+
+  function clearPendingCommand(action, target, raidInstanceId) {
+    const key = commandStorageKey(action, target, raidInstanceId);
+    _pendingCommandMemory.delete(key);
+    try { window.localStorage.removeItem(key); } catch (_) {}
+  }
+
+  function clearStalePendingCommands(activeRaidInstanceId) {
+    const active = String(activeRaidInstanceId || "");
+    for (const key of Array.from(_pendingCommandMemory.keys())) {
+      if (!key.includes(`:${active}:`)) _pendingCommandMemory.delete(key);
+    }
+    try {
+      for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+        const key = window.localStorage.key(i);
+        if (key?.startsWith(`${COMMAND_STORAGE_PREFIX}:`) && !key.includes(`:${active}:`)) window.localStorage.removeItem(key);
+      }
+    } catch (_) {}
+  }
+
+  function isRetryableCommandReason(reason) {
+    return ["TRANSACTION_RECOVERY_FAILED", "TRANSACTION_LOCK_TIMEOUT", "BLOODMOON_TRANSACTION_FAILED"].includes(String(reason || ""));
   }
 
   function normalizeLunarState(value) {
@@ -413,7 +473,20 @@
       if (window.showToast) return window.showToast(msg);
       if (window.toast) return window.toast(msg);
     } catch (_) {}
-    alert(msg);
+    dbg("Blood Moon notice", msg);
+  }
+
+  function setInlineFeedback(kind, text, retryAction = "") {
+    _inlineFeedback = { kind: String(kind || "info"), text: String(text || ""), retryAction: String(retryAction || "") };
+  }
+
+  function renderInlineFeedback() {
+    const feedback = _inlineFeedback;
+    if (!feedback?.text) return "";
+    const retry = feedback.retryAction
+      ? `<button class="bm-feedback-retry" data-bm-retry="${esc(feedback.retryAction)}" type="button">Retry</button>`
+      : "";
+    return `<div class="bm-inline-feedback is-${esc(feedback.kind)}" role="status" aria-live="polite"><span>${esc(feedback.text)}</span>${retry}</div>`;
   }
 
   function renderLoadingShell(message = "Syncing tower state...") {
@@ -766,6 +839,12 @@
 .bm-cta[disabled]::before{
   display:none;
 }
+.bm-prepared-attempt,.bm-inline-feedback{display:grid;gap:7px;margin:12px 0;padding:11px 12px;border-radius:12px;text-align:left;overflow-wrap:anywhere}
+.bm-prepared-attempt{border:1px solid rgba(255,165,179,.3);background:rgba(20,5,10,.72)}
+.bm-prepared-attempt strong{color:#fff;font-size:14px}.bm-prepared-attempt p{margin:0;color:rgba(255,235,239,.8);font-size:12px;line-height:1.35}
+.bm-prepared-attempt-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;color:#ffb5c0;font-size:12px}.bm-prepared-attempt-reason{color:#ffd5da;font-size:12px;line-height:1.35}
+.bm-inline-feedback{grid-template-columns:minmax(0,1fr) auto;align-items:center;border:1px solid rgba(255,180,99,.38);background:rgba(61,30,4,.78);color:#fff0d9;font-size:12px;line-height:1.35}
+.bm-inline-feedback.is-error{border-color:rgba(255,112,128,.45);background:rgba(72,8,16,.78);color:#ffe0e4}.bm-feedback-retry{border:1px solid rgba(255,255,255,.32);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;padding:7px 9px;font:inherit;font-weight:700}
 .bm-action-hint{
   margin-top:8px;
   font-size:12px;
@@ -2601,6 +2680,23 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       ${renderShopBalances(shop)}</section>`;
   }
 
+  function renderPreparedAttempt(prepared, cta) {
+    const source = prepared && typeof prepared === "object" ? prepared : {};
+    const enemy = source.enemy && typeof source.enemy === "object" ? source.enemy : {};
+    const isCommitted = String(source.status || "").toUpperCase() === "COMMITTED";
+    const attempts = isCommitted ? source.attemptsRemainingAfter : source.attemptsRemainingBefore;
+    const reason = String(source.reason || cta?.reason || "");
+    const status = isCommitted ? "Committed" : (source.ready ? "Ready" : "Blocked");
+    const actionCopy = isCommitted
+      ? `Resolved against Wave ${fmtNum(source.wave || enemy.wave || 1)}.`
+      : `Wave ${fmtNum(source.wave || enemy.wave || 1)} will use one of five daily attempts.`;
+    return `<section class="bm-prepared-attempt" data-reason-code="${esc(source.reasonCode || cta?.reasonCode || "READY")}" aria-live="polite">
+      <div><div class="bm-label">Prepared Attempt</div><strong>${esc(status)}</strong><p>${esc(actionCopy)}</p></div>
+      <div class="bm-prepared-attempt-meta"><span>${esc(enemy.name || `Blood-Moon Wave ${source.wave || 1}`)}</span><span>${fmtNum(attempts)} attempt${Number(attempts) === 1 ? "" : "s"} left</span></div>
+      ${reason ? `<div class="bm-prepared-attempt-reason">${esc(reason)}${Number(source.retryAfterSec || cta?.retryAfterSec || 0) > 0 ? ` ${esc(fmtSec(source.retryAfterSec || cta?.retryAfterSec))}.` : ""}</div>` : ""}
+    </section>`;
+  }
+
   function bindActions() {
     document.querySelectorAll("[data-bm-replay]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -2614,6 +2710,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
         if (_busy) return;
         const rewardKey = btn.getAttribute("data-bm-claim") || "";
         if (!rewardKey) return;
+        btn.disabled = true;
         await claim(rewardKey);
       });
     });
@@ -2625,6 +2722,16 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
         await attack();
       });
     }
+
+    document.querySelectorAll("[data-bm-retry]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const action = btn.getAttribute("data-bm-retry");
+        if (_busy) return;
+        if (action === "state") await loadState();
+        if (action === "attack") await attack();
+        if (action.startsWith("claim:")) await claim(action.slice(6));
+      });
+    });
 
     document.querySelectorAll("[data-bm-shop-open]").forEach((btn) => {
       btn.addEventListener("click", () => { _shopOpen = true; render(_state); });
@@ -2642,11 +2749,15 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   const body = bodyEl();
   if (!body) return;
 
-  const currentWave = Number(_state.currentWave || 1);
-  const maxWave = Number(_state.maxWave || 1);
+  // Compatibility fields remain available, but myFactionRun is the only
+  // player-progress authority in the client.
+  const myRun = _state.myFactionRun && typeof _state.myFactionRun === "object" ? _state.myFactionRun : {};
+  const currentWave = Number(myRun.currentWave || _state.currentWave || 1);
+  const maxWave = Number(myRun.maxWave || _state.maxWave || 10);
+  const currentWaveRow = myRun.waves && typeof myRun.waves === "object" ? (myRun.waves[String(currentWave)] || {}) : {};
 
-  const waveHp = Math.max(0, Number(_state.waveHp || 0));
-  const waveHpMaxRaw = Number(_state.waveHpMax || 1);
+  const waveHp = Math.max(0, Number(currentWaveRow.hp ?? _state.waveHp ?? 0));
+  const waveHpMaxRaw = Number(currentWaveRow.hpMax ?? _state.waveHpMax ?? 1);
   const waveHpMax = waveHpMaxRaw > 0 ? waveHpMaxRaw : 1;
 
   // HP bara przeciwnika nie licz z progressPct, tylko z realnego HP
@@ -2654,6 +2765,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   const waveClearedPct = pct(((waveHpMax - waveHp) / waveHpMax) * 100);
 
    const cta = _state.cta || {};
+   const preparedAttempt = _state.preparedAttempt || {};
    const my = _state.myContribution || {};
    const lunar = lunarFoundation(_state.lunar);
    const shop = shopFoundation(_state.shop);
@@ -2704,7 +2816,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       </div>
 
       <div style="margin-top:18px">
-        <button id="bloodMoonLegacyAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
+        <button id="bloodMoonLegacyAttackBtn" class="bm-cta" type="button" hidden aria-hidden="true" tabindex="-1" title="Legacy control hidden; use the canonical CTA below." disabled>
           ${esc(cta.label || "RIP THROUGH THE VEIL")}
         </button>
         <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
@@ -2755,12 +2867,14 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
           <div class="bm-boss-bar"><div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div></div>
           <div class="bm-wave-line"><span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span><span style="color:#ff9baa">${waveClearedPct}% cleared</span></div>
         </div>
+        ${renderPreparedAttempt(preparedAttempt, cta)}
+        ${renderInlineFeedback()}
         ${renderShopCta(shop)}
         <div>
           <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
             ${esc(cta.label || "RIP THROUGH THE VEIL")}
           </button>
-          <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
+          <div class="bm-action-hint">${esc(cta.reason || "Adds Blood-Moon Damage and event progress. Not War Contribution.")}</div>
         </div>
       </div>
     </div>
@@ -2837,13 +2951,19 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       if (!res || res.ok !== true || !res.data) {
         throw new Error((res && res.reason) || "BAD_STATE_RESPONSE");
       }
+      _inlineFeedback = null;
       render(res.data);
+      clearStalePendingCommands(res.data?.raidInstanceId);
       return res.data;
     } catch (e) {
       dbg("loadState error", e);
       const body = bodyEl();
-      if (body) {
-        body.innerHTML = `<div class="bm-empty">Blood-Moon Tower failed to load.<br>${esc(e?.message || e)}</div>`;
+      // Retain a confirmed screen through a transient state refresh failure.
+      setInlineFeedback("error", `Tower sync failed: ${e?.message || e}`, "state");
+      if (_state && body) render(_state);
+      else if (body) {
+        body.innerHTML = `<div class="bm-empty" role="status">Blood-Moon Tower failed to load. <button data-bm-retry="state" type="button">Retry</button></div>`;
+        bindActions();
       }
       throw e;
     } finally {
@@ -2854,15 +2974,29 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   async function attack() {
     setBusy(true);
     try {
+      const raidInstanceId = String(_state?.raidInstanceId || "");
+      const commandId = pendingCommandId("attack", "", raidInstanceId);
       const res = await call("/webapp/bloodmoon/attack", {
-        run_id: runId("bm_attack"),
+        run_id: commandId,
+        raidInstanceId: String(_state?.raidInstanceId || ""),
       });
 
       if (!res || res.ok !== true) {
         const nextData = res?.data;
         if (nextData) render(nextData, { preferredBattle: res?.result?.battle || null });
-        throw new Error((res && res.reason) || "ATTACK_FAILED");
+        const reason = String(res?.reason || "ATTACK_FAILED");
+        if (reason === "STALE_RAID_INSTANCE" || reason === "MISSING_RAID_INSTANCE") {
+          clearPendingCommand("attack", "", raidInstanceId);
+          await loadState();
+        } else if (!isRetryableCommandReason(reason)) {
+          clearPendingCommand("attack", "", raidInstanceId);
+        }
+        const failure = new Error(reason === "COMMAND_ID_CONFLICT" ? "This attack command conflicts with an earlier request. The tower state was reloaded." : reason);
+        failure.bmTerminal = !isRetryableCommandReason(reason);
+        throw failure;
       }
+
+      clearPendingCommand("attack", "", raidInstanceId);
 
       if (res?.result?.battle) _lastResolvedBattle = res.result.battle;
       if (res.data) render(res.data, { preferredBattle: res?.result?.battle || null });
@@ -2874,7 +3008,10 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       return res;
     } catch (e) {
       dbg("attack error", e);
-      alert(`Blood-Moon attack failed: ${e?.message || e}`);
+      // A thrown transport error is ambiguous: retain the stored command ID
+      // and let Retry reconcile the same BM2 receipt rather than rerolling.
+      setInlineFeedback(e?.bmTerminal ? "error" : "warning", e?.bmTerminal ? `Attack blocked: ${e?.message || e}` : `Attack is still resolving: ${e?.message || e}`, e?.bmTerminal ? "" : "attack");
+      if (_state) render(_state);
       throw e;
     } finally {
       setBusy(false);
@@ -2884,16 +3021,30 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   async function claim(rewardKey) {
     setBusy(true);
     try {
+      const raidInstanceId = String(_state?.raidInstanceId || "");
+      const commandId = pendingCommandId("claim", rewardKey, raidInstanceId);
       const res = await call("/webapp/bloodmoon/claim", {
         reward_key: rewardKey,
-        run_id: runId("bm_claim"),
+        run_id: commandId,
+        raidInstanceId: String(_state?.raidInstanceId || ""),
       });
 
       if (!res || res.ok !== true) {
         const nextData = res?.data;
         if (nextData) render(nextData);
-        throw new Error((res && res.reason) || "CLAIM_FAILED");
+        const reason = String(res?.reason || "CLAIM_FAILED");
+        if (reason === "STALE_RAID_INSTANCE" || reason === "MISSING_RAID_INSTANCE") {
+          clearPendingCommand("claim", rewardKey, raidInstanceId);
+          await loadState();
+        } else if (!isRetryableCommandReason(reason)) {
+          clearPendingCommand("claim", rewardKey, raidInstanceId);
+        }
+        const failure = new Error(reason === "COMMAND_ID_CONFLICT" ? "This claim command conflicts with an earlier request. The tower state was reloaded." : reason);
+        failure.bmTerminal = !isRetryableCommandReason(reason);
+        throw failure;
       }
+
+      clearPendingCommand("claim", rewardKey, raidInstanceId);
 
       const granted = res?.result?.granted || [];
       const reward = res?.result?.reward || {};
@@ -2913,7 +3064,8 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       return res;
     } catch (e) {
       dbg("claim error", e);
-      alert(`Claim failed: ${e?.message || e}`);
+      setInlineFeedback(e?.bmTerminal ? "error" : "warning", e?.bmTerminal ? `Claim blocked: ${e?.message || e}` : `Claim is still resolving: ${e?.message || e}`, e?.bmTerminal ? "" : `claim:${rewardKey}`);
+      if (_state) render(_state);
       throw e;
     } finally {
       setBusy(false);
