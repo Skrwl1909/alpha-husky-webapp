@@ -1260,6 +1260,24 @@ html.ah-skins-open #heroFrame{
     calc(4px + var(--ah-inset-left));
 }
 
+.hero-frame[data-aura-key="bloodmoon_aura_v1"] .hero-aura-ring{
+  inset:8px;
+  border-color:rgba(194,55,89,.48);
+  background:radial-gradient(circle at 50% 48%, rgba(157,25,62,.18), rgba(65,8,36,.06) 52%, transparent 74%);
+  box-shadow:0 0 16px rgba(167,29,73,.22), 0 0 30px rgba(88,12,50,.12);
+}
+.hero-frame[data-aura-key="bloodmoon_aura_v1"] .hero-aura-ring::after{
+  content:"";
+  position:absolute;
+  inset:7px;
+  border:1px solid rgba(235,91,124,.2);
+  border-radius:13px;
+  pointer-events:none;
+}
+@media (prefers-reduced-motion: reduce){
+  .hero-frame[data-aura-key="bloodmoon_aura_v1"] .hero-aura-ring{ transition:none; }
+}
+
 .map-card {
   background:rgba(5,9,13,.18);
   border:0;
@@ -3886,6 +3904,11 @@ body.ah-perf-lite .ah-bg-vignette{
 
 html.ah-perf-lite .hero-frame.has-aura,
 body.ah-perf-lite .hero-frame.has-aura{
+  box-shadow:none !important;
+}
+html.ah-perf-lite .hero-frame[data-aura-key="bloodmoon_aura_v1"] .hero-aura-ring,
+body.ah-perf-lite .hero-frame[data-aura-key="bloodmoon_aura_v1"] .hero-aura-ring{
+  background:none;
   box-shadow:none !important;
 }
 
@@ -6741,7 +6764,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <!-- ŚRODEK – SKIN / HERO -->
 <div class="hero-center">
   <div class="hero-frame" id="heroFrame">
-    <div id="heroAuraRing" class="hero-aura-ring"></div>
+    <div id="heroAuraRing" class="hero-aura-ring" aria-hidden="true"></div>
     <img id="heroAuraOverlay" class="hero-aura-overlay" src="" alt="" aria-hidden="true" style="display:none">
 
     <div class="hero-skin-viewport">
@@ -10452,6 +10475,9 @@ function getAuraToneStyle(aura){
   }
   if (key === "alpha_signal_core") {
     return { bg: "rgba(123,225,255,.14)", border: "rgba(123,225,255,.34)", glow: "rgba(123,225,255,.26)", color: "#e4fbff" };
+  }
+  if (key === "bloodmoon_aura_v1") {
+    return { bg: "rgba(128,18,55,.16)", border: "rgba(214,67,106,.38)", glow: "rgba(177,31,78,.26)", color: "#ffd7e2" };
   }
   if (key === "rogue_byte") {
     return { bg: "rgba(255,96,150,.12)", border: "rgba(255,96,150,.28)", glow: "rgba(255,96,150,.24)", color: "#ffd8e8" };
