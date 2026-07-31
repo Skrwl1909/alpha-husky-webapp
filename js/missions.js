@@ -860,6 +860,9 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   let _eliteDismissBusy = false;
   let _eliteReadyRefreshOperationId = "";
   let _eliteTacticalFeedback = null;
+  let _eliteStageHydrationSeq = 0;
+  let _eliteStageHydrationPromise = null;
+  let _eliteTacticalRequestSeq = 0;
   let _missionDuelPlaybackSeq = 0;
   let _missionsCompactTab = "";
   let _missionsCompactTabManual = false;
@@ -1791,6 +1794,35 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         padding:6px 11px;
         font-size:11.5px;
       }
+      #missionsRoot .m-elite-combat-stage{
+        position:relative;
+        width:100%;
+        height:clamp(250px, 68vw, 370px);
+        min-height:250px;
+        margin:12px 0 9px;
+        overflow:hidden;
+        border:1px solid rgba(123,183,206,.20);
+        border-radius:14px;
+        background:linear-gradient(180deg, #0a1119, #05080c);
+      }
+      #missionsRoot .m-elite-static-fallback{
+        height:100%;
+        min-width:0;
+        padding:8px;
+      }
+      #missionsRoot .m-elite-static-fallback .m-elite-duel{
+        height:100%;
+        margin:0;
+        align-items:stretch;
+      }
+      #missionsRoot .m-elite-static-fallback .m-elite-duel-side{
+        display:flex;
+        min-height:0;
+        flex-direction:column;
+      }
+      #missionsRoot .m-elite-static-fallback .m-duel-visual{
+        flex:1 1 auto;
+      }
      #missionsRoot .m-elite-duel{
         display:grid;
         grid-template-columns:minmax(0,1fr) minmax(0,1fr);
@@ -1805,6 +1837,9 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         letter-spacing:.08em;
         opacity:.68;
         text-transform:uppercase;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
       }
       #missionsRoot .m-elite-duel .m-duel-visual{ min-height:142px; border-radius:12px; }
       #missionsRoot .m-elite-duel .m-duel-stamp{ font-size:9px; }
@@ -1818,7 +1853,10 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       @keyframes mEliteImpact{ 20%,60%{ transform:translateX(-5px); filter:brightness(1.8); } 40%,80%{ transform:translateX(5px); } 100%{ transform:none; filter:none; } }
       @keyframes mEliteGuard{ from{ opacity:0; transform:scale(.55); } 45%{ opacity:1; } to{ opacity:0; transform:scale(1.15); } }
       @keyframes mEliteExploit{ from{ opacity:0; transform:scale(.45); box-shadow:0 0 0 rgba(250,204,21,0); } 45%{ opacity:1; box-shadow:0 0 22px rgba(250,204,21,.8); } to{ opacity:0; transform:scale(1.2); } }
-      @media (max-width:420px){ #missionsRoot .m-elite-duel .m-duel-visual{ min-height:118px; } }      .m-duel-overlay{
+      @media (max-width:420px){
+        #missionsRoot .m-elite-duel .m-duel-visual{ min-height:118px; }
+        #missionsRoot .m-elite-combat-stage{ height:244px; min-height:244px; }
+      }      .m-duel-overlay{
         position:absolute;
         inset:0;
         z-index:12;
@@ -2660,6 +2698,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   function close() {
     if (!_modal) return;
 
+    destroyEliteCombatStage("missions_close");
     _modal.classList.remove("is-open");
     _modal.style.display = "none";
     document.body.classList.remove("missions-open");
@@ -3527,6 +3566,93 @@ function _normalizeRareDropObj(obj) {
     return { src: "", source: "generated signal sigil", displayName: targetName };
   }
 
+  function missionsModalVisible() {
+    return !!(_modal && _modal.classList.contains("is-open") && _modal.style.display !== "none");
+  }
+
+  function destroyEliteCombatStage(reason = "") {
+    _eliteStageHydrationSeq += 1;
+    _eliteStageHydrationPromise = null;
+    try { window.EliteCombatStage?.destroy?.(); } catch (error) {
+      log("elite stage destroy failed", reason, error?.message || error);
+    }
+  }
+
+  function eliteCombatStageConfig(active, operation) {
+    const playerVisual = resolveMissionDuelPlayerVisual(_state, null);
+    const targetVisual = resolveEliteTacticalTargetVisual(operation);
+    return {
+      operationId: textOrEmpty(operation?.operationId),
+      round: Math.max(1, Number(operation?.round || 1)),
+      roundCount: Math.max(1, Number(operation?.roundCount || operation?.maxRounds || 3)),
+      planLabel: tacticalChoiceLabel(operation?.selectedPlan || active?.tacticalChoice || "standard_plan"),
+      player: {
+        ...playerVisual,
+        displayName: textOrEmpty(operation?.playerName) || "Alpha Pack",
+      },
+      enemy: {
+        ...targetVisual,
+        displayName: textOrEmpty(targetVisual?.displayName) || "Elite Target",
+      },
+      enemyIntent: textOrEmpty(operation?.enemyIntent) || "SIGNAL_SHIFT",
+      enemyStability: Number(operation?.enemyStability ?? 0),
+      operationControl: Number(operation?.operationControl ?? 0),
+      reducedMotion: prefersReducedMotion(),
+    };
+  }
+
+  function hydrateEliteCombatStage(active, operation) {
+    const operationId = textOrEmpty(operation?.operationId);
+    if (!operationId || operation?.phase !== "fighting" || !missionsModalVisible()) {
+      destroyEliteCombatStage("not_fighting");
+      return Promise.resolve(false);
+    }
+    const host = document.getElementById("eliteCombatStage");
+    if (!host || host.dataset.operationId !== operationId) {
+      destroyEliteCombatStage("host_mismatch");
+      return Promise.resolve(false);
+    }
+
+    const seq = ++_eliteStageHydrationSeq;
+    const config = eliteCombatStageConfig(active, operation);
+    const task = (async () => {
+      try {
+        const ensureLoaded = window.ensureEliteCombatStageLoaded || window.AHBootLoaders?.ensureEliteCombatStageLoaded;
+        if (typeof ensureLoaded !== "function") throw new Error("Elite stage loader is unavailable");
+        await ensureLoaded(_apiPost, _tg, _dbg);
+        if (seq !== _eliteStageHydrationSeq || !host.isConnected || host.dataset.operationId !== operationId) return false;
+        window.EliteCombatStage?.init?.({ tg: _tg, dbg: _dbg });
+        return await window.EliteCombatStage.mount(host, config);
+      } catch (error) {
+        log("elite stage hydration failed; static fallback retained", error?.message || error);
+        if (seq === _eliteStageHydrationSeq) {
+          try { window.EliteCombatStage?.destroy?.(); } catch (_) {}
+        }
+        return false;
+      }
+    })();
+    _eliteStageHydrationPromise = task;
+    task.finally(() => {
+      if (_eliteStageHydrationPromise === task) _eliteStageHydrationPromise = null;
+    });
+    return task;
+  }
+
+  async function settleEliteVisual(promise, timeoutMs) {
+    if (!promise || typeof promise.then !== "function") return false;
+    let timer = null;
+    try {
+      return await Promise.race([
+        Promise.resolve(promise).catch(() => false),
+        new Promise((resolve) => {
+          timer = setTimeout(() => resolve(false), Math.max(100, Number(timeoutMs) || 1200));
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   function renderEliteTacticalShell(active, operation) {
     const phase = operation.phase === "preparing" && active.status === "READY" ? "ready" : operation.phase;
     const plan = normalizeTacticalChoiceKey(operation.selectedPlan || active.tacticalChoice || "standard_plan");
@@ -3536,8 +3662,6 @@ function _normalizeRareDropObj(obj) {
     if (phase === "fighting") {
       const round = Number(operation.round || 1);
       const selectedAction = textOrEmpty(_eliteTacticalFeedback?.pendingAction);
-      const actionFx = feedback?.play && feedback?.entry ? textOrEmpty(feedback.entry.action).toLowerCase() : "";
-      if (feedback?.play) feedback.play = false;
       const playerVisual = resolveMissionDuelPlayerVisual(_state, null);
       const targetVisual = resolveEliteTacticalTargetVisual(operation);
       const targetName = targetVisual.displayName || "Elite Target";
@@ -3548,15 +3672,19 @@ function _normalizeRareDropObj(obj) {
         <div class="m-stage"><div class="m-card m-elite-wrap">
           <div class="m-kicker">WARDEN · TACTICAL OPERATION</div>
           <div class="m-title" style="margin-top:5px;">${esc(active.title || "Elite Operation")}</div>
-          <div class="m-elite-duel ${actionFx ? `is-${esc(actionFx)}` : ""}" aria-label="Elite tactical scene">
-            <section class="m-elite-duel-side is-player"><div class="m-elite-duel-label">Player</div>${renderMissionDuelVisual(playerVisual, "player", "Player skin", "Pack Signal")}</section>
-            <section class="m-elite-duel-side is-target"><div class="m-elite-duel-label">${esc(targetName)}</div>${renderMissionDuelVisual(targetVisual, "enemy", `${targetName} visual`, "Threat Trace")}</section>
+          <div id="eliteCombatStage" class="m-elite-combat-stage" data-operation-id="${esc(operation.operationId || "")}" role="img" aria-label="${esc(`Elite tactical combat: Alpha Pack versus ${targetName}`)}">
+            <div class="m-elite-static-fallback">
+              <div class="m-elite-duel" aria-label="Static Elite tactical fallback">
+                <section class="m-elite-duel-side is-player"><div class="m-elite-duel-label">Player</div>${renderMissionDuelVisual(playerVisual, "player", "Player skin", "Pack Signal")}</section>
+                <section class="m-elite-duel-side is-target"><div class="m-elite-duel-label">${esc(targetName)}</div>${renderMissionDuelVisual(targetVisual, "enemy", `${targetName} visual`, "Threat Trace")}</section>
+              </div>
+            </div>
           </div>
           <div class="m-elite-line"><b>Round:</b> ${esc(round)}/3 · <b>Plan:</b> ${esc(planLabel)}</div>
           <div class="m-elite-line">${esc(elitePlanDescription(plan))}</div>
           <div class="m-elite-line"><b>Enemy Intent:</b> ${esc(operation.enemyIntent || "Unknown")}</div>
           <div class="m-muted" style="margin-top:3px;">${esc(eliteIntentCopy(operation.enemyIntent))}</div>
-          <div class="m-elite-meters ${actionFx ? "is-updated" : ""}">
+          <div class="m-elite-meters">
             ${renderElitePips("Enemy Stability", operation.enemyStability)}
             ${renderElitePips("Operation Control", operation.operationControl)}
           </div>
@@ -5154,6 +5282,11 @@ function _normalizeRareDropObj(obj) {
     else if (active.status && active.status !== "NONE") { const panel = renderMissionActivePanel(active, payload); if (active.eliteMission) { flow = "elite"; elitePanel = panel; } else activePanel = panel; ticking = true; }
     const selected = resolveMissionsCompactTab(active, flow); _missionsCompactTab = selected; const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row"); if (row) row.style.display = "none";
     _root.innerHTML = `<div class="m-stage"><div class="m-shell-head"><div class="m-shell-top"><div class="m-title">Missions</div><button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button></div><div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>${renderHelpPanel()}</div>${renderMissionsCompactTabs(selected, activePanel, renderMissionAvailablePanel(offers, realActive), elitePanel)}</div>`;
+    if (tactical?.phase === "fighting" && flow === "elite") {
+      hydrateEliteCombatStage(active, tactical);
+    } else {
+      destroyEliteCombatStage("missions_render");
+    }
     if (ticking) { paintWaiting(active); startTick(); } else stopTick();
   }
 
@@ -5382,38 +5515,127 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
 
   async function doEliteOperationAction(action, expectedRound) {
     if (_eliteTacticalBusy) return;
-    const active = getActive(normalizePayload(_state));
-    const operationId = textOrEmpty(eliteOperationFromActive(active)?.operationId);
+    const actionKey = String(action || "").toUpperCase();
+    if (!["STRIKE", "GUARD", "EXPLOIT"].includes(actionKey)) return;
+    const previousActive = getActive(normalizePayload(_state));
+    const previousOperationRaw = eliteOperationFromActive(previousActive);
+    const operationId = textOrEmpty(previousOperationRaw?.operationId);
+    if (!operationId) return;
+    const previousOperation = {
+      operationId,
+      phase: textOrEmpty(previousOperationRaw?.phase),
+      round: Number(previousOperationRaw?.round || expectedRound || 0),
+      enemyIntent: textOrEmpty(previousOperationRaw?.enemyIntent),
+      enemyStability: Number(previousOperationRaw?.enemyStability ?? 0),
+      operationControl: Number(previousOperationRaw?.operationControl ?? 0),
+    };
+    const requestSeq = ++_eliteTacticalRequestSeq;
     _eliteTacticalBusy = true;
-    _eliteTacticalFeedback = { operationId, pendingAction: String(action || "").toUpperCase(), entry: null };
+    _eliteTacticalFeedback = { operationId, pendingAction: actionKey, entry: null };
     render();
+    const pendingHydration = _eliteStageHydrationPromise;
     try {
       const res = await api("/webapp/missions/action", {
         action: "elite_operation_action",
-        tacticalAction: String(action || "").toUpperCase(),
+        tacticalAction: actionKey,
         expectedRound: Number(expectedRound || 0),
         run_id: rid("m:elite:round"),
       });
-      _state = res;
-      _stateLoadedAt = Date.now();
-      if (res?.eliteOperation?.phase === "complete") {
-        _eliteOperationComplete = res.eliteOperation;
+      if (requestSeq !== _eliteTacticalRequestSeq) return;
+
+      const payload = normalizePayload(res) || res || {};
+      const responseOperation =
+        res?.eliteOperation ||
+        res?.data?.eliteOperation ||
+        res?.result?.eliteOperation ||
+        payload?.eliteOperation ||
+        payload?.lastResolve?.eliteOperation ||
+        null;
+      const responseOperationId = textOrEmpty(responseOperation?.operationId);
+      if (responseOperationId && responseOperationId !== operationId) {
+        log("ignored stale Elite operation response", { operationId, responseOperationId });
         _eliteTacticalBusy = false;
         _eliteTacticalFeedback = null;
-        render();
+        await loadState({ force: true, reason: "elite_operation_action_stale" });
         return;
       }
-      _eliteTacticalFeedback = { operationId, pendingAction: String(action || "").toUpperCase(), entry: res?.latestRound || null, play: !!res?.latestRound };
-      render();
-      await sleep(800);
+
+      _state = res;
+      _stateLoadedAt = Date.now();
+      const canonicalActive = getActive(payload);
+      const canonicalOperation = responseOperation || eliteOperationFromActive(canonicalActive);
+      const latestRound =
+        res?.latestRound ||
+        res?.data?.latestRound ||
+        res?.result?.latestRound ||
+        payload?.latestRound ||
+        (Array.isArray(canonicalOperation?.roundLog) ? canonicalOperation.roundLog[canonicalOperation.roundLog.length - 1] : null);
+      const completed = canonicalOperation?.phase === "complete";
+      let stageReady = false;
+
+      if (completed) {
+        stageReady = await settleEliteVisual(pendingHydration, 1300);
+        if (stageReady && requestSeq === _eliteTacticalRequestSeq) {
+          try {
+            window.EliteCombatStage?.sync?.(eliteCombatStageConfig(previousActive, canonicalOperation));
+          } catch (error) {
+            log("elite completion sync failed", error?.message || error);
+            stageReady = false;
+          }
+        }
+      } else {
+        _eliteTacticalFeedback = { operationId, pendingAction: actionKey, entry: latestRound || null };
+        render();
+        stageReady = await settleEliteVisual(_eliteStageHydrationPromise, 1300);
+      }
+
+      if (stageReady && latestRound && requestSeq === _eliteTacticalRequestSeq) {
+        try {
+          const previousEnemyStability = Number(latestRound?.stabilityBefore ?? previousOperation.enemyStability);
+          const enemyStability = Number(latestRound?.stabilityAfter ?? canonicalOperation?.enemyStability ?? previousEnemyStability);
+          const previousOperationControl = Number(latestRound?.controlBefore ?? previousOperation.operationControl);
+          const operationControl = Number(latestRound?.controlAfter ?? canonicalOperation?.operationControl ?? previousOperationControl);
+          const animation = window.EliteCombatStage?.playRound?.({
+            operationId,
+            round: Number(latestRound?.round || previousOperation.round || expectedRound || 1),
+            nextRound: Number(canonicalOperation?.round || latestRound?.round || 1),
+            action: actionKey,
+            enemyIntent: textOrEmpty(latestRound?.enemyIntent) || previousOperation.enemyIntent,
+            nextEnemyIntent: textOrEmpty(canonicalOperation?.enemyIntent) || "SIGNAL_SHIFT",
+            correct: !!latestRound?.correct,
+            previousEnemyStability,
+            enemyStability,
+            previousOperationControl,
+            operationControl,
+            stabilityDelta: enemyStability - previousEnemyStability,
+            controlDelta: operationControl - previousOperationControl,
+            critical: !!latestRound?.critical,
+            dodged: !!latestRound?.dodged,
+            resultText: textOrEmpty(latestRound?.resultText || latestRound?.result_text || res?.tacticalResultText),
+            completed,
+            operationResult: textOrEmpty(canonicalOperation?.result),
+          });
+          await settleEliteVisual(Promise.resolve(animation), 1700);
+        } catch (error) {
+          log("elite round animation failed; canonical state retained", error?.message || error);
+        }
+      }
+
+      if (requestSeq !== _eliteTacticalRequestSeq) return;
+      if (completed) _eliteOperationComplete = canonicalOperation;
       if (_eliteTacticalFeedback?.operationId === operationId) _eliteTacticalFeedback = null;
       _eliteTacticalBusy = false;
       render();
     } catch (e) {
+      if (requestSeq !== _eliteTacticalRequestSeq) return;
       _eliteTacticalBusy = false;
       _eliteTacticalFeedback = null;
       try { _tg?.showAlert?.(String(e?.data?.message || e?.message || "Tactical action was rejected.")); } catch (_) {}
-      await loadState({ force: true, reason: "elite_operation_action_error" });
+      try {
+        await loadState({ force: true, reason: "elite_operation_action_error" });
+      } catch (_) {
+        render();
+      }
     }
   }
   async function doEliteOperationDismiss(operationId) {

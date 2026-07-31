@@ -35,6 +35,7 @@
           (readyName === "frames.js" && !!global.Frames) ||
           (readyName === "alpha_den.js" && !!global.AlphaDen?.open) ||
           (readyName === "pet_sprite.js" && !!global.PetSprite) ||
+          (readyName === "elite_combat_stage.js" && !!global.EliteCombatStage) ||
           (readyName === "adopt.js" && !!global.Adopt) ||
           (readyName === "updates.js" && !!global.Updates) ||
           (readyName === "missions.js" && !!global.Missions) ||
@@ -153,6 +154,25 @@
     return await once("frames", async () => {
       await loadScript("js/frames.js");
       try { global.Frames?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensureEliteCombatStageLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.EliteCombatStage?.mount) {
+      try { global.EliteCombatStage.init?.(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("elite_combat_stage", async () => {
+      await ensurePixiCoreLoaded();
+      try { await ensurePetSpriteLoaded(); } catch (_) {}
+      await loadScript("js/elite_combat_stage.js");
+      if (!global.EliteCombatStage?.mount) {
+        throw new Error("elite_combat_stage.js loaded but window.EliteCombatStage is missing");
+      }
+      global.EliteCombatStage.init?.(deps);
       return true;
     });
   }
@@ -385,6 +405,7 @@
     global.ensureFramesLoaded = ensureFramesLoaded;
     global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
     global.ensurePetSpriteLoaded = ensurePetSpriteLoaded;
+    global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
     global.ensureAdoptLoaded = ensureAdoptLoaded;
     global.ensureUpdatesLoaded = ensureUpdatesLoaded;
     global.ensureMissionsLoaded = ensureMissionsLoaded;
@@ -407,6 +428,7 @@
     ensureFramesLoaded,
     ensureAlphaDenLoaded,
     ensurePetSpriteLoaded,
+    ensureEliteCombatStageLoaded,
     ensureAdoptLoaded,
     ensureUpdatesLoaded,
     ensureMissionsLoaded,
@@ -422,5 +444,6 @@
   };
 
   global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
+  global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
   global.AHBootLoaders = API;
 })(window);
