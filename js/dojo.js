@@ -465,18 +465,39 @@ button.ghost{background:#0f1420;border:1px solid #1e2a3d;color:#cfe3ff;padding:1
   }
 
   // ---------- public ----------
-  async function open(){
+  async function openLegacy(){
     try { const st = await getState(); render(st||{}); }
     catch(e){ S.dbg('dojo.state error', e); render({ seconds:60 }); }
+  }
+  async function open(){
+    if (global.AH_FLAGS?.dojoPhaserRoom !== false && global.AlphaDojoRoom?.open) {
+      try {
+        return await global.AlphaDojoRoom.open();
+      } catch (e) {
+        try { S.dbg('dojo.room open error', e); } catch (_) {}
+      }
+    }
+    return await openLegacy();
   }
   function init(deps){
     S.apiPost = deps?.apiPost || S.apiPost;
     S.tg      = deps?.tg || S.tg || global.Telegram?.WebApp || null;
-    S.dbg     = deps?.dbg || S.dbg;
+    if (typeof deps?.dbg === 'function') S.dbg = deps.dbg;
+    else if (deps?.dbg === true) {
+      S.dbg = (...args) => { try { console.debug('[Dojo]', ...args); } catch (_) {} };
+    }
+    try {
+      global.AlphaDojoRoom?.init?.({
+        apiPost: S.apiPost,
+        tg: S.tg,
+        dbg: S.dbg,
+        openLegacy
+      });
+    } catch (_) {}
   }
   function feed(hitDamage, isCrit=false){ if (_feed) _feed(hitDamage, !!isCrit); }
 
-  global.Dojo = { init, open, feed };
+  global.Dojo = { init, open, openLegacy, feed };
 
   // Convenience helper for game code:
   // Use anywhere after Dojo is loaded: window.DOJO_FEED(dmg, isCrit)

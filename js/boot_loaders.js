@@ -42,6 +42,8 @@
           (readyName === "mypets.js" && !!global.MyPets) ||
           (readyName === "fortress.js" && !!global.Fortress) ||
           (readyName === "dojo.js" && !!global.Dojo) ||
+          (readyName === "phaser.min.js" && !!global.Phaser) ||
+          (readyName === "dojo_room.js" && !!global.AlphaDojoRoom) ||
           (readyName === "referrals.js" && !!global.Referrals) ||
           (readyName === "siege_pixi.js" && !!global.SiegePixi) ||
           (readyName === "siege.js" && !!global.Siege) ||
@@ -154,6 +156,18 @@
     return await once("frames", async () => {
       await loadScript("js/frames.js");
       try { global.Frames?.init?.(deps); } catch (_) {}
+      return true;
+    });
+  }
+
+  async function ensurePhaserLoaded() {
+    if (global.Phaser) return true;
+    const loadScript = getLoadScript();
+    return await once("phaser_4_2_1", async () => {
+      await loadScript("vendor/phaser/4.2.1/phaser.min.js");
+      if (!global.Phaser) {
+        throw new Error("Phaser 4.2.1 loaded but window.Phaser is missing");
+      }
       return true;
     });
   }
@@ -287,15 +301,36 @@
 
   async function ensureDojoLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
-    if (global.Dojo?.open && global.Dojo?.init) {
-      try { global.Dojo.init(deps); } catch (_) {}
-      return true;
-    }
     const loadScript = getLoadScript();
     return await once("dojo", async () => {
       await ensureCombatLoaded();
-      await loadScript("js/dojo.js");
+
+      if (!global.Dojo?.open || !global.Dojo?.init) {
+        await loadScript("js/dojo.js");
+      }
+
       try { global.Dojo?.init?.(deps); } catch (_) {}
+
+      if (global.AH_FLAGS?.dojoPhaserRoom !== false) {
+        try {
+          await ensurePhaserLoaded();
+          if (!global.AlphaDojoRoom?.open) {
+            await loadScript("js/dojo_room.js");
+          }
+          if (!global.AlphaDojoRoom?.open || !global.AlphaDojoRoom?.init) {
+            throw new Error("dojo_room.js loaded but window.AlphaDojoRoom is missing");
+          }
+          global.AlphaDojoRoom.init({
+            ...deps,
+            openLegacy: global.Dojo?.openLegacy
+          });
+        } catch (err) {
+          if (deps.dbg) {
+            try { console.warn("[DojoRoom] lazy load failed; legacy Dojo remains available", err); } catch (_) {}
+          }
+        }
+      }
+
       return true;
     });
   }
@@ -411,6 +446,7 @@
     global.ensureMissionsLoaded = ensureMissionsLoaded;
     global.ensureMyPetsLoaded = ensureMyPetsLoaded;
     global.ensureFortressLoaded = ensureFortressLoaded;
+    global.ensurePhaserLoaded = ensurePhaserLoaded;
     global.ensureDojoLoaded = ensureDojoLoaded;
     global.ensureReferralsLoaded = ensureReferralsLoaded;
     global.ensureSiegeLoaded = ensureSiegeLoaded;
@@ -434,6 +470,7 @@
     ensureMissionsLoaded,
     ensureMyPetsLoaded,
     ensureFortressLoaded,
+    ensurePhaserLoaded,
     ensureDojoLoaded,
     ensureReferralsLoaded,
     ensureSiegeLoaded,
