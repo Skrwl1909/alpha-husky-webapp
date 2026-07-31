@@ -7,7 +7,6 @@
   const FRAGMENT_ICON_PATH = "/images/ui/map_key_fragment.webp";
   const REGION_ASSET_PATH = "/images/map/exploration/map_region.webp";
   const LOCK_ASSET_PATH = "/images/map/exploration/lock_region.webp";
-  const SECTOR_IDS = new Set(["relay_fringe_01", "relay_fringe_02"]);
   const TAP_MOVE_PX = 12;
   const state = {
     initialized: false,
@@ -17,10 +16,16 @@
     selectedSectorId: null,
     refreshing: null,
     requestBusy: false,
+    pendingLabel: "",
     requestIds: Object.create(null),
     lastMessage: "",
+    renderGeneration: 0,
+    actionGeneration: 0,
     timerId: null,
     timerRefreshPending: false,
+    mapObserver: null,
+    keyHandler: null,
+    visibilityHandler: null,
   };
 
   function byId(id) { return document.getElementById(id); }
@@ -65,7 +70,7 @@
     const sectors = sectorCatalog.filter((sector) => {
       const geometry = asObject(sector?.geometry);
       const values = ["x", "y", "width", "height"].map((key) => number(geometry?.[key]));
-      return SECTOR_IDS.has(String(sector?.id || "")) && values.every((value) => value != null) && values[2] > 0 && values[3] > 0
+      return !!String(sector?.id || "").trim() && values.every((value) => value != null) && values[2] > 0 && values[3] > 0
         && values[0] >= 0 && values[1] >= 0 && values[0] + values[2] <= bounds.width && values[1] + values[3] <= bounds.height;
     });
     if (!sectors.length) return null;
@@ -73,6 +78,8 @@
   }
 
   function formatSectorName(sector) {
+    const supplied = String(sector?.name || "").trim();
+    if (supplied) return supplied;
     return String(sector?.id || "Unknown sector").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
   function formatDuration(seconds) {
@@ -90,6 +97,11 @@
     return hours ? `${hours}h ${String(minutes).padStart(2, "0")}m` : `${minutes}m ${String(secs).padStart(2, "0")}s`;
   }
   function sectorFor(id) { return state.projection?.sectorCatalog?.find((sector) => String(sector.id) === String(id)) || null; }
+  function sectorFromProjection(projection, id) {
+    return projection?.sectorCatalog?.find?.((sector) => String(sector?.id || "") === String(id || "")) || null;
+  }
+  function pathModule() { return window.WorldExplorationPath || null; }
+  function pathVersion(sector) { return Math.max(0, Number(sector?.pathOfProof?.version) || 0); }
   function activeScanFor(sector) {
     const active = asObject(state.projection?.activeScan);
     return active && String(active.sector_id || active.sectorId || "") === String(sector?.id || "") ? active : null;
@@ -133,6 +145,12 @@
     panel.innerHTML = '<div class="world-exploration-backdrop" data-we-close="1"></div><section class="world-exploration-panel" role="dialog" aria-modal="true" aria-labelledby="worldExplorationTitle"><button class="world-exploration-close" type="button" data-we-close="1" aria-label="Close sector details">&times;</button><div id="worldExplorationPanelContent"></div></section>';
     panel.addEventListener("click", (event) => {
       if (event.target?.closest?.("[data-we-close]")) closePanel();
+      const pathButton = event.target?.closest?.("[data-we-path-action]");
+      if (pathButton) {
+        event.preventDefault();
+        void submitPathAction(pathButton);
+        return;
+      }
       if (event.target?.closest?.("[data-we-action='start']")) void startSelected();
       if (event.target?.closest?.("[data-we-action='claim']")) void claimSelected();
     });
@@ -142,7 +160,18 @@
 
   function sectorVisualHtml(sector) {
     const status = String(sector?.status || "locked");
-    const copy = {
+    const phase = String(sector?.pathOfProof?.phase || "");
+    const pathCopy = {
+      LOCKED: ["Unknown signal", "Locked"],
+      ELIGIBLE: ["Signal detected", "Trace ready"],
+      SCOUT_SELECTION: ["Path of Proof", "Select scout"],
+      TRACE_CHOICE: ["Path of Proof", "Scout assigned"],
+      ENCOUNTER_READY: ["Path of Proof", "Route traced"],
+      ENCOUNTER_ACTIVE: ["Hostile contact", "Survive"],
+      ANCHOR_CHOICE: ["Dead Relay", "Anchor ready"],
+      UNLOCKED: ["Route proven", "Pack network"],
+    }[phase];
+    const copy = pathCopy || {
       locked: ["Unknown signal", "Locked"],
       available: ["Scan available", "Ready"],
       scanning: ["Signal scan", "Scanning"],
@@ -155,12 +184,14 @@
     return `<span class="world-exploration-sector-visual" aria-hidden="true"><img class="world-exploration-region-asset" src="${REGION_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"><span class="world-exploration-sector-shade"></span>${echoes}<img class="world-exploration-lock-asset" src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(copy[0])}</strong><em>${escapeHtml(copy[1])}</em></span>`;
   }
 
-  function renderOverlay() {
+  function renderOverlay({ previousProjection = null, animate = false } = {}) {
     const overlay = ensureOverlay();
     if (!overlay) return;
+    state.renderGeneration += 1;
     overlay.replaceChildren();
     if (!state.valid || !state.projection) {
       overlay.hidden = true;
+      pathModule()?.destroyRoute?.();
       syncDeadRelayMarker();
       syncLockedSectorNodePresentation();
       syncNetworkBridge();
@@ -197,6 +228,23 @@
       });
       overlay.appendChild(button);
     });
+    const panelOpen = !byId(PANEL_ID)?.hidden;
+    const selected = panelOpen ? sectorFor(state.selectedSectorId) : null;
+    const routeSector = selected || state.projection.sectorCatalog.find((sector) => {
+      const path = sector?.pathOfProof;
+      return pathModule()?.isPathSector?.(sector) && path?.pathId && !["LOCKED", "ELIGIBLE"].includes(String(path.phase || ""));
+    });
+    if (routeSector && pathModule()?.isPathSector?.(routeSector) && routeSector?.pathOfProof?.pathId) {
+      pathModule().renderRoute({
+        host: overlay,
+        sector: routeSector,
+        previousSector: sectorFromProjection(previousProjection, routeSector.id),
+        projection: state.projection,
+        animate,
+      });
+    } else {
+      pathModule()?.destroyRoute?.();
+    }
     syncDeadRelayMarker();
     syncLockedSectorNodePresentation();
     syncNetworkBridge();
@@ -235,6 +283,25 @@
     const content = byId("worldExplorationPanelContent");
     const sector = sectorFor(state.selectedSectorId);
     if (!panel || !content || !sector) return;
+    const path = pathModule();
+    if (path?.isPathSector?.(sector)) {
+      content.innerHTML = path.renderPanel({
+        sector,
+        projection: state.projection,
+        busy: state.requestBusy,
+        busyLabel: state.pendingLabel,
+        message: state.lastMessage,
+        requirementsHtml,
+      });
+      void path.afterPanelRender({
+        sector,
+        projection: state.projection,
+        panel: content,
+        panelOpen: !panel.hidden,
+      });
+      return;
+    }
+    path?.destroyTacticalStage?.("legacy_panel");
     const status = String(sector.status || "locked");
     const description = typeof sector.description === "string" && sector.description.trim()
       ? sector.description.trim()
@@ -252,6 +319,7 @@
     const panel = ensurePanel();
     if (!panel) return;
     panel.hidden = false;
+    renderOverlay();
     renderPanel();
     try {
       const meta = { isOpen: () => !panel.hidden, close: closePanelView, fallback: false };
@@ -263,6 +331,8 @@
     const panel = byId(PANEL_ID);
     if (!panel || panel.hidden) return;
     panel.hidden = true;
+    pathModule()?.destroyTacticalStage?.("panel_closed");
+    renderOverlay();
   }
   function closePanel() {
     const panel = byId(PANEL_ID);
@@ -297,6 +367,96 @@
       throw error;
     }
     return response;
+  }
+  function pathBusyLabel(action) {
+    return {
+      BEGIN: "Tracing…",
+      SELECT_SCOUT: "Assigning…",
+      CHOOSE_TRACE: "Tracing…",
+      START_ENCOUNTER: "Resolving contact…",
+      RETRY_ENCOUNTER: "Resolving contact…",
+      TACTICAL_ACTION: "Resolving contact…",
+      SELECT_ANCHOR_PROTOCOL: "Anchoring…",
+    }[String(action || "").toUpperCase()] || "Processing…";
+  }
+  async function confirmPathBegin(sector) {
+    const amount = Number((asObject(sector?.itemRequirements) || {})[CANONICAL_FRAGMENT_ID] || 0);
+    const message = `Begin the Path of Proof for ${formatSectorName(sector)}? ${amount} map key fragment${amount === 1 ? "" : "s"} will be consumed once. No timer or claim step follows.`;
+    return new Promise((resolve) => {
+      const tg = window.Telegram?.WebApp || window.tg;
+      if (typeof tg?.showConfirm === "function") { tg.showConfirm(message, (ok) => resolve(!!ok)); return; }
+      resolve(window.confirm(message));
+    });
+  }
+  async function submitPathAction(button) {
+    const sector = sectorFor(state.selectedSectorId);
+    const path = pathModule();
+    if (!sector || !path?.isPathSector?.(sector) || state.requestBusy) return;
+    const content = byId("worldExplorationPanelContent");
+    const spec = path.buildAction(button, content);
+    if (!spec) return;
+    if (spec.error) {
+      showMessage(spec.error);
+      return;
+    }
+    if (spec.action === "BEGIN" && !(await confirmPathBegin(sector))) return;
+
+    const previousProjection = state.projection;
+    const previousSector = sectorFromProjection(previousProjection, sector.id);
+    const expectedVersion = pathVersion(previousSector);
+    const requestKey = `${sector.id}:${spec.action}:${expectedVersion}`;
+    const generation = ++state.actionGeneration;
+    state.requestBusy = true;
+    state.pendingLabel = pathBusyLabel(spec.action);
+    state.lastMessage = "";
+    renderPanel();
+    try {
+      const raw = await submit("/webapp/world-exploration/path/action", {
+        sectorId: sector.id,
+        action: spec.action,
+        payload: spec.payload || {},
+        requestId: makeRequestId("path", requestKey),
+        expectedVersion,
+      });
+      const projection = validProjection(raw);
+      if (!projection) throw new Error("The returned Path state is invalid.");
+      const incomingSector = sectorFromProjection(projection, sector.id);
+      const currentSector = sectorFor(sector.id);
+      const incomingPathId = String(incomingSector?.pathOfProof?.pathId || "");
+      const currentPathId = String(currentSector?.pathOfProof?.pathId || "");
+      const stale = (
+        incomingPathId
+        && currentPathId
+        && (
+          incomingPathId !== currentPathId
+          || pathVersion(incomingSector) < pathVersion(currentSector)
+        )
+      );
+      if (!stale) {
+        state.valid = true;
+        state.projection = projection;
+        state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
+      }
+      clearRequestId("path", requestKey);
+      if (generation !== state.actionGeneration) return;
+      renderOverlay({ previousProjection, animate: true });
+      renderPanel();
+      const canonicalSector = sectorFor(sector.id);
+      await path.playCanonicalRound(previousSector, canonicalSector);
+    } catch (error) {
+      state.projection = previousProjection;
+      state.valid = !!previousProjection;
+      state.lastMessage = humanReason(error?.response?.code || error?.message || "Unable to continue the Path.");
+      renderOverlay();
+      renderPanel();
+      try { await refreshState({ force: true }); } catch (_) {}
+    } finally {
+      if (generation === state.actionGeneration) {
+        state.requestBusy = false;
+        state.pendingLabel = "";
+        renderPanel();
+      }
+    }
   }
   async function startSelected() {
     const sector = sectorFor(state.selectedSectorId);
@@ -340,7 +500,7 @@
       if (locked) element.classList.remove("map-state-known");
       else element.classList.add("map-state-known");
       element.setAttribute("aria-disabled", locked ? "true" : "false");
-      if (locked) element.title = "Dead Relay Exchange locked — claim Relay Fringe 01 first.";
+      if (locked) element.title = "Dead Relay Exchange locked — prove and anchor Relay Fringe 01 first.";
     });
   }
   function syncLockedSectorNodePresentation() {
@@ -396,7 +556,7 @@
   }
   function canOpenDeadRelay() { return !!(state.valid && state.projection?.canOpenRelay7 === true && state.projection?.relay7Available === true); }
   function showDeadRelayLocked() {
-    const message = "Dead Relay Exchange is locked. Complete and claim Relay Fringe 01 first.";
+    const message = "Dead Relay Exchange is locked. Prove and anchor the Relay Fringe 01 route first.";
     const tg = window.Telegram?.WebApp || window.tg;
     if (typeof tg?.showAlert === "function") tg.showAlert(message);
     else window.alert(message);
@@ -405,9 +565,11 @@
   function stopTimer() { if (state.timerId) clearInterval(state.timerId); state.timerId = null; }
   function tick() {
     if (!state.valid || !mapIsOpen()) return;
-    renderOverlay();
-    if (!byId(PANEL_ID)?.hidden) renderPanel();
     const active = asObject(state.projection?.activeScan);
+    if (active) {
+      renderOverlay();
+      if (!byId(PANEL_ID)?.hidden) renderPanel();
+    }
     const endsAt = number(active?.ends_at ?? active?.endsAt);
     if (endsAt > 0 && endsAt * 1000 <= Date.now() + state.serverOffsetMs && !state.timerRefreshPending) {
       state.timerRefreshPending = true;
@@ -419,6 +581,7 @@
     const post = apiPost();
     if (typeof post !== "function") { state.valid = false; syncDeadRelayMarker(); return null; }
     const task = (async () => {
+      const previousProjection = state.projection;
       try {
         const raw = await post("/webapp/world-exploration/state", {});
         const projection = validProjection(raw);
@@ -429,7 +592,7 @@
         state.valid = false;
         state.projection = null;
       }
-      renderOverlay();
+      renderOverlay({ previousProjection, animate: false });
       if (!byId(PANEL_ID)?.hidden && !state.valid) closePanel();
       else if (!byId(PANEL_ID)?.hidden) renderPanel();
       return state.projection;
@@ -437,19 +600,59 @@
     state.refreshing = task;
     try { return await task; } finally { if (state.refreshing === task) state.refreshing = null; }
   }
-  function onMapOpened() { ensureOverlay(); void refreshState(); }
+  function onMapOpened() {
+    pathModule()?.setMapVisible?.(true);
+    ensureOverlay();
+    void refreshState();
+  }
+  function onMapVisibilityChanged() {
+    const open = mapIsOpen();
+    pathModule()?.setMapVisible?.(open);
+    if (open) onMapOpened();
+  }
   function init() {
     if (state.initialized) return;
     state.initialized = true;
+    pathModule()?.init?.({
+      apiPost: apiPost(),
+      tg: window.Telegram?.WebApp || window.tg,
+      dbg: !!window.DBG,
+      getSelectedSector: () => sectorFor(state.selectedSectorId),
+      log: (...args) => { if (window.DBG) console.debug("[WorldExplorationPath]", ...args); },
+    });
     ensurePanel();
-    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !byId(PANEL_ID)?.hidden) closePanel(); });
-    document.addEventListener("visibilitychange", () => { if (!document.hidden && mapIsOpen()) void refreshState(); });
-    new MutationObserver(() => { if (mapIsOpen()) onMapOpened(); }).observe(byId("mapBack") || document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    state.keyHandler = (event) => { if (event.key === "Escape" && !byId(PANEL_ID)?.hidden) closePanel(); };
+    state.visibilityHandler = () => {
+      pathModule()?.setMapVisible?.(!document.hidden && mapIsOpen());
+      if (!document.hidden && mapIsOpen()) void refreshState();
+    };
+    document.addEventListener("keydown", state.keyHandler);
+    document.addEventListener("visibilitychange", state.visibilityHandler);
+    state.mapObserver = new MutationObserver(onMapVisibilityChanged);
+    state.mapObserver.observe(byId("mapBack") || document.body, { attributes: true, attributeFilter: ["style", "class"] });
     stopTimer(); state.timerId = window.setInterval(tick, 1000);
     if (mapIsOpen()) onMapOpened();
+    else pathModule()?.setMapVisible?.(false);
   }
 
-  window.WorldExploration = { init, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
+  function destroy() {
+    stopTimer();
+    state.actionGeneration += 1;
+    try { state.mapObserver?.disconnect?.(); } catch (_) {}
+    state.mapObserver = null;
+    if (state.keyHandler) document.removeEventListener("keydown", state.keyHandler);
+    if (state.visibilityHandler) document.removeEventListener("visibilitychange", state.visibilityHandler);
+    state.keyHandler = null;
+    state.visibilityHandler = null;
+    pathModule()?.destroy?.();
+    byId(ROOT_ID)?.remove?.();
+    byId(PANEL_ID)?.remove?.();
+    state.initialized = false;
+    state.requestBusy = false;
+    state.pendingLabel = "";
+  }
+
+  window.WorldExploration = { init, destroy, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();
