@@ -126,7 +126,6 @@
   }
 
   async function openMapRoute() {
-    try { global.requestTelegramFullscreen?.(); } catch (_) {}
     if (!clickSel(".btn.map")) return false;
     return isVisible("mapBack");
   }

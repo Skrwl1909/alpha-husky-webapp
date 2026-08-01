@@ -273,12 +273,13 @@
     return `<button class="world-exploration-action" type="button" data-we-path-action="${esc(action)}"${busy ? " disabled" : ""}>${esc(busy ? (busyLabel || "Resolving…") : label)}</button>`;
   }
 
-  function phaseContent({ sector, path, phase, busy, busyLabel, requirementsHtml }) {
+  function phaseContent({ sector, path, phase, busy, busyLabel, requirementsHtml, fragmentRecoveryHtml }) {
     const requirements = typeof requirementsHtml === "function" ? requirementsHtml(sector) : "";
+    const recovery = typeof fragmentRecoveryHtml === "function" ? fragmentRecoveryHtml(sector) : "";
     const encounter = object(path.encounter);
     if (phase === "LOCKED") {
       const reason = String((sector?.blockingReasons || [])[0] || "The signal remains outside verified Pack reach.").replace(/_/g, " ");
-      return `<p class="world-proof-copy">The route cannot be trusted yet. Complete the listed eligibility proof before attempting contact.</p><h3>Requirements</h3>${requirements}<button class="world-exploration-action" type="button" disabled>${esc(reason.toUpperCase())}</button>`;
+      return `<p class="world-proof-copy">The route cannot be trusted yet. Complete the listed eligibility proof before attempting contact.</p><h3>Requirements</h3>${requirements}${recovery}<button class="world-exploration-action" type="button" disabled>${esc(reason.toUpperCase())}</button>`;
     }
     if (phase === "ELIGIBLE") {
       const cost = Math.max(0, number(sector?.itemRequirements?.map_key_fragment));
@@ -330,6 +331,7 @@
           busy: !!options.busy,
           busyLabel: String(options.busyLabel || ""),
           requirementsHtml: options.requirementsHtml,
+          fragmentRecoveryHtml: options.fragmentRecoveryHtml,
         })}
         <p class="world-exploration-message" aria-live="polite">${esc(options.message || "")}</p>
       </div>

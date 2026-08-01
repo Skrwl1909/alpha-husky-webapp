@@ -155,6 +155,12 @@
         void submitPathAction(pathButton);
         return;
       }
+      const recoveryButton = event.target?.closest?.("[data-we-recovery-source]");
+      if (recoveryButton) {
+        event.preventDefault();
+        void openFragmentRecovery(recoveryButton);
+        return;
+      }
       if (event.target?.closest?.("[data-we-action='start']")) void startSelected();
       if (event.target?.closest?.("[data-we-action='claim']")) void claimSelected();
     });
@@ -305,11 +311,66 @@
     const credits = Math.max(0, Number(state.projection?.relay7LifetimeCredits) || 0);
     const rows = [];
     if (requirement) {
-      rows.push(`<li><img src="${FRAGMENT_ICON_PATH}" alt="" onerror="this.hidden=true"><span>${escapeHtml(CANONICAL_FRAGMENT_ID.replace(/_/g, " "))}</span><b>${fragmentBalance} / ${requirement}</b></li>`);
+      const recovery = asObject(state.projection?.fragmentRecovery);
+      const name = String(recovery?.itemId || "") === CANONICAL_FRAGMENT_ID
+        ? String(recovery?.itemName || "Map Key Fragments")
+        : "Map Key Fragments";
+      rows.push(`<li><img src="${FRAGMENT_ICON_PATH}" alt="" onerror="this.hidden=true"><span>${escapeHtml(name)}</span><b>${fragmentBalance} / ${requirement}</b></li>`);
     }
     if (creditsNeeded) rows.push(`<li><span>Relay-7 credits</span><b>${credits} / ${creditsNeeded}</b></li>`);
     if (sector?.prerequisiteSectorId) rows.push(`<li><span>Prerequisite</span><b>${escapeHtml(formatSectorName({ id: sector.prerequisiteSectorId }))}</b></li>`);
     return rows.length ? `<ul class="world-exploration-requirements">${rows.join("")}</ul>` : '<p class="world-exploration-no-requirements">No item requirements.</p>';
+  }
+
+  function fragmentRecoveryHtml(sector) {
+    const required = Math.max(0, Number(asObject(sector?.itemRequirements)?.[CANONICAL_FRAGMENT_ID]) || 0);
+    if (!required) return "";
+    const recovery = asObject(state.projection?.fragmentRecovery);
+    if (String(recovery?.itemId || "") !== CANONICAL_FRAGMENT_ID) return "";
+    const sources = Array.isArray(recovery.sources) ? recovery.sources.filter(asObject) : [];
+    const source = sources[0];
+    if (!source) {
+      return `<section class="world-exploration-recovery"><h3>HOW TO RECOVER</h3><p>${escapeHtml(String(recovery.fallbackMessage || "No active recovery source is currently available."))}</p></section>`;
+    }
+    const cta = asObject(source.cta);
+    const description = sources.map((entry) => (
+      String(entry.description || "").trim() || `Complete ${String(entry.title || "the active route")} to recover route fragments.`
+    )).join(" ");
+    const button = cta?.target && cta?.label
+      ? `<button class="world-exploration-action world-exploration-recovery-action" type="button" data-we-recovery-source="${escapeHtml(String(source.id || ""))}" data-we-recovery-target="${escapeHtml(String(cta.target))}" data-we-recovery-building-id="${escapeHtml(String(cta.buildingId || ""))}">${escapeHtml(String(cta.label))}</button>`
+      : "";
+    return `<section class="world-exploration-recovery"><h3>HOW TO RECOVER</h3><p>${escapeHtml(description)}</p>${button}</section>`;
+  }
+
+  async function openFragmentRecovery(button) {
+    const target = String(button?.dataset?.weRecoveryTarget || "");
+    const buildingId = String(button?.dataset?.weRecoveryBuildingId || "");
+    try {
+      if (target === "chain_building") {
+        const open = window.openMapKeyFragmentRecovery;
+        if (typeof open !== "function") throw new Error("Recovery expeditions are unavailable.");
+        closePanel();
+        await Promise.resolve(open({ buildingId }));
+        return;
+      }
+      if (target !== "missions") return;
+      closePanel();
+      const ensure = window.ensureMissionsLoaded;
+      if (typeof ensure === "function") await ensure(apiPost(), window.Telegram?.WebApp || window.tg, !!window.DBG);
+      if (typeof window.Missions?.open === "function") {
+        window.Missions.open();
+        return;
+      }
+      if (typeof window.openMissions === "function") {
+        window.openMissions();
+        return;
+      }
+      throw new Error("Missions are unavailable.");
+    } catch (error) {
+      state.lastMessage = "Missions could not be opened. Please try again.";
+      try { window.toast?.(state.lastMessage); } catch (_) {}
+      if (!byId(PANEL_ID)?.hidden) renderPanel();
+    }
   }
 
   function panelActionHtml(sector) {
@@ -339,6 +400,7 @@
         busyLabel: state.pendingLabel,
         message: state.lastMessage,
         requirementsHtml,
+        fragmentRecoveryHtml,
       });
       void path.afterPanelRender({
         sector,
@@ -636,8 +698,10 @@
         state.projection = projection;
         if (projection) state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
       } catch (_) {
-        state.valid = false;
-        state.projection = null;
+        // Keep the last good projection mounted: a transient refresh failure
+        // must not turn an already-open world into an empty or unstable shell.
+        state.valid = !!previousProjection;
+        state.projection = previousProjection;
       }
       renderOverlay({ previousProjection, animate: false });
       if (!byId(PANEL_ID)?.hidden && !state.valid) closePanel();
@@ -650,7 +714,12 @@
   function onMapOpened() {
     pathModule()?.setMapVisible?.(true);
     ensureOverlay();
-    void refreshState();
+    const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+    return refreshState().finally(() => {
+      if (window.DBG) {
+        try { console.debug("[map:timing]", "world-exploration-state-complete", { at: startedAt }); } catch (_) {}
+      }
+    });
   }
   function onMapVisibilityChanged() {
     const open = mapIsOpen();
