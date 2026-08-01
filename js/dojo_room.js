@@ -12,6 +12,9 @@
   const EXIT_RANGE_SQ = 118 * 118;
   const READY_TIMEOUT_MS = 9000;
   const PLAYER_TEXTURE = "ah-dojo-room-player-v1";
+  const PLAYER_SHEET_TEXTURE = "ah-dojo-alpha-player-sheet-v1";
+  const PLAYER_SHEET_URL = "assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png";
+  const PLAYER_SHEET_SCALE = 0.32;
   const DUMMY_TEXTURE = "ah-dojo-room-dummy-v1";
 
   const S = {
@@ -299,6 +302,38 @@
     g.destroy();
   }
 
+  function createPlayerAnimations(scene) {
+    if (!scene.textures.exists(PLAYER_SHEET_TEXTURE)) return false;
+    const directions = ["down", "up", "right", "left"];
+    directions.forEach(function createDirectionAnimations(direction, row) {
+      const idleKey = "ah-dojo-alpha-" + direction + "-idle";
+      const walkKey = "ah-dojo-alpha-" + direction + "-walk";
+      if (!scene.anims.exists(idleKey)) {
+        scene.anims.create({ key: idleKey, frames: [{ key: PLAYER_SHEET_TEXTURE, frame: row * 4 }], frameRate: 1, repeat: -1 });
+      }
+      if (!scene.anims.exists(walkKey)) {
+        scene.anims.create({
+          key: walkKey,
+          frames: [row * 4 + 1, row * 4 + 2, row * 4 + 3, row * 4 + 2].map(function mapFrame(frame) {
+            return { key: PLAYER_SHEET_TEXTURE, frame };
+          }),
+          frameRate: 7,
+          repeat: -1
+        });
+      }
+    });
+    return true;
+  }
+
+  function setPlayerAnimation(scene, direction, moving) {
+    const player = scene.ahPlayer;
+    if (!player || !scene.ahPlayerIsSheet) return;
+    const nextDirection = direction || scene.ahPlayerDirection || "down";
+    scene.ahPlayerDirection = nextDirection;
+    const key = "ah-dojo-alpha-" + nextDirection + (moving ? "-walk" : "-idle");
+    if (player.anims?.currentAnim?.key !== key) player.play(key);
+  }
+
   function createDummyTexture(scene) {
     if (scene.textures.exists(DUMMY_TEXTURE)) return;
     const g = scene.add.graphics();
@@ -375,11 +410,20 @@
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#8cefff", fontStyle: "bold", letterSpacing: 2
     }).setOrigin(0.5);
 
-    createPlayerTexture(scene);
-    scene.ahPlayer = scene.physics.add.sprite(320, 690, PLAYER_TEXTURE);
+    scene.ahPlayerIsSheet = createPlayerAnimations(scene);
+    if (scene.ahPlayerIsSheet) {
+      scene.ahPlayer = scene.physics.add.sprite(320, 690, PLAYER_SHEET_TEXTURE, 0);
+      scene.ahPlayer.setScale(PLAYER_SHEET_SCALE);
+      scene.ahPlayer.body.setSize(70, 90).setOffset(93, 150);
+      scene.ahPlayerDirection = "down";
+      setPlayerAnimation(scene, "down", false);
+    } else {
+      createPlayerTexture(scene);
+      scene.ahPlayer = scene.physics.add.sprite(320, 690, PLAYER_TEXTURE);
+      scene.ahPlayer.body.setSize(22, 28).setOffset(13, 32);
+    }
     scene.ahPlayer.setCollideWorldBounds(true);
     scene.ahPlayer.setDepth(5);
-    scene.ahPlayer.body.setSize(22, 28).setOffset(13, 32);
     scene.physics.add.collider(scene.ahPlayer, blockers);
     scene.physics.add.collider(scene.ahPlayer, scene.ahDummy);
   }
@@ -445,6 +489,7 @@
     scene.ahStopPlayer = function () {
       scene.ahPlayer?.setVelocity(0, 0);
       if (scene.ahMove) scene.ahMove.set(0, 0);
+      setPlayerAnimation(scene, scene.ahPlayerDirection, false);
     };
     scene.ahLayoutControls = function (width, height, safe) { layoutControls(scene, width, height, safe); };
     layoutControls(scene, scene.scale.width, scene.scale.height, S.safeInsets);
@@ -581,13 +626,26 @@
     if (move.lengthSq() > 0) {
       move.normalize().scale(PLAYER_SPEED);
       scene.ahPlayer.setVelocity(move.x, move.y);
-      scene.ahPlayer.setScale(1);
-      if (move.x < -1) scene.ahPlayer.setFlipX(true);
-      else if (move.x > 1) scene.ahPlayer.setFlipX(false);
+      if (scene.ahPlayerIsSheet) {
+        scene.ahPlayer.setScale(PLAYER_SHEET_SCALE);
+        const direction = Math.abs(move.x) > Math.abs(move.y)
+          ? (move.x < 0 ? "left" : "right")
+          : (move.y < 0 ? "up" : "down");
+        setPlayerAnimation(scene, direction, true);
+      } else {
+        scene.ahPlayer.setScale(1);
+        if (move.x < -1) scene.ahPlayer.setFlipX(true);
+        else if (move.x > 1) scene.ahPlayer.setFlipX(false);
+      }
     } else {
       scene.ahPlayer.setVelocity(0, 0);
-      const idle = 1 + Math.sin(time * 0.0035) * 0.008;
-      scene.ahPlayer.setScale(idle, idle);
+      if (scene.ahPlayerIsSheet) {
+        scene.ahPlayer.setScale(PLAYER_SHEET_SCALE);
+        setPlayerAnimation(scene, scene.ahPlayerDirection, false);
+      } else {
+        const idle = 1 + Math.sin(time * 0.0035) * 0.008;
+        scene.ahPlayer.setScale(idle, idle);
+      }
     }
   }
 
@@ -652,6 +710,10 @@
     }
   }
 
+  function scenePreload() {
+    this.load.spritesheet(PLAYER_SHEET_TEXTURE, PLAYER_SHEET_URL, { frameWidth: 256, frameHeight: 256 });
+  }
+
   function sceneUpdate(time) {
     if (S.closing || this.ahVisibilityPaused || !this.ahPlayer) return;
     updatePlayer(this, time);
@@ -700,7 +762,7 @@
           arcade: { gravity: { x: 0, y: 0 }, debug: !!global.DBG }
         },
         render: { roundPixels: true, powerPreference: "low-power" },
-        scene: { create: sceneCreate, update: sceneUpdate }
+        scene: { preload: scenePreload, create: sceneCreate, update: sceneUpdate }
       };
 
       try {
