@@ -1,0 +1,81 @@
+{
+  "version": "v1",
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "columns": 4,
+  "rows": 4,
+  "sheetWidth": 1024,
+  "sheetHeight": 1024,
+  "rowMapping": {
+    "down": 0,
+    "up": 1,
+    "right": 2,
+    "left": 3
+  },
+  "columnMapping": {
+    "idle": 0,
+    "walk_a": 1,
+    "passing": 2,
+    "walk_b": 3
+  },
+  "directionFrames": {
+    "down": {
+      "idle": 0,
+      "walk": [
+        1,
+        2,
+        3,
+        2
+      ]
+    },
+    "up": {
+      "idle": 4,
+      "walk": [
+        5,
+        6,
+        7,
+        6
+      ]
+    },
+    "right": {
+      "idle": 8,
+      "walk": [
+        9,
+        10,
+        11,
+        10
+      ]
+    },
+    "left": {
+      "idle": 12,
+      "walk": [
+        13,
+        14,
+        15,
+        14
+      ]
+    }
+  },
+  "idleFrameIndices": {
+    "down": 0,
+    "up": 4,
+    "right": 8,
+    "left": 12
+  },
+  "suggestedOrigin": {
+    "x": 0.5,
+    "y": 0.955,
+    "feetBaselinePx": 244
+  },
+  "suggestedCollisionBody": {
+    "x": 93,
+    "y": 150,
+    "width": 70,
+    "height": 90,
+    "note": "At the Dojo scale of 0.32 this is approximately 22 x 29 world pixels."
+  },
+  "referenceHierarchy": {
+    "primary": "front, back and right-facing views from supplied Image A",
+    "supplemental": "left-facing cyan-eye profile from supplied Image B"
+  }
+}

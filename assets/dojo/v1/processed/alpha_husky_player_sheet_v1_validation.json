@@ -1,0 +1,215 @@
+{
+  "ok": true,
+  "sheet": "K:\\ALPHA_WORKSPACE\\ALPHA_FRONTEND_CLEAN\\assets\\dojo\\v1\\processed\\alpha_husky_player_sheet_v1.png",
+  "preview": "K:\\ALPHA_WORKSPACE\\ALPHA_FRONTEND_CLEAN\\assets\\dojo\\v1\\processed\\alpha_husky_player_sheet_preview_v1.png",
+  "source": "K:\\ALPHA_WORKSPACE\\ALPHA_FRONTEND_CLEAN\\assets\\dojo\\v1\\processed\\source\\alpha_husky_player_sheet_v1_alpha_raw.png",
+  "mode": "RGBA",
+  "size": [
+    1024,
+    1024
+  ],
+  "frameSize": [
+    256,
+    256
+  ],
+  "transparentCorners": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "frameMetrics": [
+    {
+      "index": 0,
+      "direction": "down",
+      "pose": "idle",
+      "bbox": [
+        52,
+        11,
+        205,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 1,
+      "direction": "down",
+      "pose": "walk_a",
+      "bbox": [
+        55,
+        14,
+        200,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 2,
+      "direction": "down",
+      "pose": "passing",
+      "bbox": [
+        52,
+        12,
+        203,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 3,
+      "direction": "down",
+      "pose": "walk_b",
+      "bbox": [
+        57,
+        12,
+        199,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 4,
+      "direction": "up",
+      "pose": "idle",
+      "bbox": [
+        54,
+        12,
+        202,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 5,
+      "direction": "up",
+      "pose": "walk_a",
+      "bbox": [
+        56,
+        17,
+        201,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 6,
+      "direction": "up",
+      "pose": "passing",
+      "bbox": [
+        53,
+        13,
+        202,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 7,
+      "direction": "up",
+      "pose": "walk_b",
+      "bbox": [
+        57,
+        17,
+        198,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 8,
+      "direction": "right",
+      "pose": "idle",
+      "bbox": [
+        52,
+        6,
+        204,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 9,
+      "direction": "right",
+      "pose": "walk_a",
+      "bbox": [
+        47,
+        18,
+        208,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 10,
+      "direction": "right",
+      "pose": "passing",
+      "bbox": [
+        53,
+        21,
+        204,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 11,
+      "direction": "right",
+      "pose": "walk_b",
+      "bbox": [
+        52,
+        10,
+        204,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 12,
+      "direction": "left",
+      "pose": "idle",
+      "bbox": [
+        52,
+        7,
+        205,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 13,
+      "direction": "left",
+      "pose": "walk_a",
+      "bbox": [
+        48,
+        10,
+        208,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 14,
+      "direction": "left",
+      "pose": "passing",
+      "bbox": [
+        52,
+        7,
+        203,
+        244
+      ],
+      "feetBaseline": 244
+    },
+    {
+      "index": 15,
+      "direction": "left",
+      "pose": "walk_b",
+      "bbox": [
+        51,
+        10,
+        204,
+        244
+      ],
+      "feetBaseline": 244
+    }
+  ]
+}
