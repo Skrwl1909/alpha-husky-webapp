@@ -22,7 +22,10 @@
     requestIds: Object.create(null),
     lastMessage: "",
     renderGeneration: 0,
+    overlayFingerprint: "",
     actionGeneration: 0,
+    refreshGeneration: 0,
+    mapActive: false,
     timerId: null,
     timerRefreshPending: false,
     mapObserver: null,
@@ -247,8 +250,9 @@
     const overlay = ensureOverlay();
     if (!overlay) return;
     state.renderGeneration += 1;
-    overlay.replaceChildren();
     if (!state.valid || !state.projection) {
+      state.overlayFingerprint = "";
+      overlay.replaceChildren();
       overlay.hidden = true;
       pathModule()?.destroyRoute?.();
       syncDeadRelayMarker();
@@ -258,29 +262,38 @@
     }
     overlay.hidden = false;
     const bounds = state.projection.worldBounds;
-    state.projection.sectorCatalog.forEach((sector) => {
-      if (!sector.visible) return;
-      const geometry = sector.geometry;
-      const sectorShell = document.createElement("div");
-      sectorShell.className = "world-exploration-sector";
-      sectorShell.dataset.sectorId = sector.id;
-      sectorShell.dataset.status = String(sector.status || "locked");
-      sectorShell.style.left = `${(geometry.x / bounds.width) * 100}%`;
-      sectorShell.style.top = `${(geometry.y / bounds.height) * 100}%`;
-      sectorShell.style.width = `${(geometry.width / bounds.width) * 100}%`;
-      sectorShell.style.height = `${(geometry.height / bounds.height) * 100}%`;
-      sectorShell.innerHTML = sectorVisualHtml(sector);
-      const marker = document.createElement("button");
-      marker.type = "button";
-      marker.className = "world-exploration-sector-marker";
-      marker.dataset.sectorId = sector.id;
-      marker.dataset.markerState = canonicalSectorState(sector).toLowerCase().replace(/\s+/g, "-");
-      marker.setAttribute("aria-label", `Open ${formatSectorName(sector)}: ${canonicalSectorState(sector)}`);
-      marker.innerHTML = sectorMarkerHtml(sector);
-      bindSectorMarkerInput(marker, sector.id);
-      sectorShell.appendChild(marker);
-      overlay.appendChild(sectorShell);
+    const fingerprint = JSON.stringify({
+      currentFragmentBalance: state.projection.currentFragmentBalance,
+      relay7LifetimeCredits: state.projection.relay7LifetimeCredits,
+      sectorCatalog: state.projection.sectorCatalog,
     });
+    if (state.overlayFingerprint !== fingerprint || !overlay.querySelector(".world-exploration-sector")) {
+      state.overlayFingerprint = fingerprint;
+      overlay.replaceChildren();
+      state.projection.sectorCatalog.forEach((sector) => {
+        if (!sector.visible) return;
+        const geometry = sector.geometry;
+        const sectorShell = document.createElement("div");
+        sectorShell.className = "world-exploration-sector";
+        sectorShell.dataset.sectorId = sector.id;
+        sectorShell.dataset.status = String(sector.status || "locked");
+        sectorShell.style.left = `${(geometry.x / bounds.width) * 100}%`;
+        sectorShell.style.top = `${(geometry.y / bounds.height) * 100}%`;
+        sectorShell.style.width = `${(geometry.width / bounds.width) * 100}%`;
+        sectorShell.style.height = `${(geometry.height / bounds.height) * 100}%`;
+        sectorShell.innerHTML = sectorVisualHtml(sector);
+        const marker = document.createElement("button");
+        marker.type = "button";
+        marker.className = "world-exploration-sector-marker";
+        marker.dataset.sectorId = sector.id;
+        marker.dataset.markerState = canonicalSectorState(sector).toLowerCase().replace(/\s+/g, "-");
+        marker.setAttribute("aria-label", `Open ${formatSectorName(sector)}: ${canonicalSectorState(sector)}`);
+        marker.innerHTML = sectorMarkerHtml(sector);
+        bindSectorMarkerInput(marker, sector.id);
+        sectorShell.appendChild(marker);
+        overlay.appendChild(sectorShell);
+      });
+    }
     const panelOpen = !byId(PANEL_ID)?.hidden;
     const selected = panelOpen ? sectorFor(state.selectedSectorId) : null;
     const routeSector = selected || state.projection.sectorCatalog.find((sector) => {
@@ -357,13 +370,13 @@
       closePanel();
       const mapBack = byId("mapBack");
       if (mapBack && getComputedStyle(mapBack).display !== "none") {
-        const closeMap = byId("closeMap");
-        if (closeMap) closeMap.click();
-        else {
+        if (typeof window.closeMapCanonical === "function") {
+          await window.closeMapCanonical({ source: "world-exploration-missions" });
+        } else {
           mapBack.style.display = "none";
           try { window.navClose?.("mapBack"); } catch (_) {}
+          await new Promise((resolve) => window.requestAnimationFrame ? window.requestAnimationFrame(resolve) : window.setTimeout(resolve, 0));
         }
-        await new Promise((resolve) => window.requestAnimationFrame ? window.requestAnimationFrame(resolve) : window.setTimeout(resolve, 0));
       }
       const ensure = window.ensureMissionsLoaded;
       if (typeof ensure === "function") await ensure(apiPost(), window.Telegram?.WebApp || window.tg, !!window.DBG);
@@ -699,15 +712,18 @@
     if (state.refreshing) return state.refreshing;
     const post = apiPost();
     if (typeof post !== "function") { state.valid = false; syncDeadRelayMarker(); return null; }
+    const generation = state.refreshGeneration;
     const task = (async () => {
       const previousProjection = state.projection;
       try {
         const raw = await post("/webapp/world-exploration/state", {});
+        if (generation !== state.refreshGeneration) return state.projection;
         const projection = validProjection(raw);
         state.valid = !!projection;
         state.projection = projection;
         if (projection) state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
       } catch (_) {
+        if (generation !== state.refreshGeneration) return state.projection;
         // Keep the last good projection mounted: a transient refresh failure
         // must not turn an already-open world into an empty or unstable shell.
         state.valid = !!previousProjection;
@@ -722,6 +738,8 @@
     try { return await task; } finally { if (state.refreshing === task) state.refreshing = null; }
   }
   function onMapOpened() {
+    if (state.mapActive) return state.refreshing || Promise.resolve(state.projection);
+    state.mapActive = true;
     pathModule()?.setMapVisible?.(true);
     ensureOverlay();
     const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -731,10 +749,19 @@
       }
     });
   }
+  function onMapClosed() {
+    if (!state.mapActive && !mapIsOpen()) return;
+    state.mapActive = false;
+    state.refreshGeneration += 1;
+    state.refreshing = null;
+    state.timerRefreshPending = false;
+    closePanel();
+    pathModule()?.setMapVisible?.(false);
+  }
   function onMapVisibilityChanged() {
     const open = mapIsOpen();
-    pathModule()?.setMapVisible?.(open);
-    if (open) onMapOpened();
+    if (open) void onMapOpened();
+    else onMapClosed();
   }
   function init() {
     if (state.initialized) return;
@@ -755,7 +782,7 @@
     document.addEventListener("keydown", state.keyHandler);
     document.addEventListener("visibilitychange", state.visibilityHandler);
     state.mapObserver = new MutationObserver(onMapVisibilityChanged);
-    state.mapObserver.observe(byId("mapBack") || document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    state.mapObserver.observe(byId("mapBack") || document.body, { attributes: true, attributeFilter: ["style"] });
     stopTimer(); state.timerId = window.setInterval(tick, 1000);
     if (mapIsOpen()) onMapOpened();
     else pathModule()?.setMapVisible?.(false);
@@ -764,6 +791,9 @@
   function destroy() {
     stopTimer();
     state.actionGeneration += 1;
+    state.refreshGeneration += 1;
+    state.mapActive = false;
+    state.refreshing = null;
     try { state.mapObserver?.disconnect?.(); } catch (_) {}
     state.mapObserver = null;
     if (state.keyHandler) document.removeEventListener("keydown", state.keyHandler);
@@ -778,7 +808,7 @@
     state.pendingLabel = "";
   }
 
-  window.WorldExploration = { init, destroy, onMapOpened, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
+  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();
