@@ -1246,7 +1246,7 @@ html.ah-skins-open #heroFrame{
   }
   .fallback a { color:#aef; text-decoration:underline; }
 
-.map-back { position:fixed; inset:0; z-index:9001; display:none; align-items:center; justify-content:center; overflow:hidden; background:rgba(0,0,0,.48); }
+.map-back { position:fixed; inset:0; z-index:9001; display:none; align-items:center; justify-content:center; overflow:hidden; background:#03070b; }
 
 /* PATCH: większy modal + flex layout */
 .map-wrap {
@@ -1279,7 +1279,7 @@ html.ah-skins-open #heroFrame{
 }
 
 .map-card {
-  background:rgba(5,9,13,.18);
+  background:#05090d;
   border:0;
   border-radius:18px;
   padding:0;
@@ -2173,12 +2173,13 @@ html.ah-skins-open #heroFrame{
   min-height:100%;
   z-index:1;
   overflow:hidden;
-  background:url("images/map/base/map.2.0.webp") center/cover no-repeat;
+  background:#03070b url("images/map/base/map.2.0.webp") center/cover no-repeat;
   transform:translate3d(0,0,0) scale(1);
   transform-origin:top left;
-  will-change:transform;
+  will-change:auto;
   cursor:grab;
 }
+.map-back.is-map-active .map-stage{ will-change:transform; }
 .map-card.is-intel-expanded .map-intel-stack{
   grid-template-columns:1fr auto;
   grid-template-areas:"content toggle";
@@ -2192,7 +2193,7 @@ html.ah-skins-open #heroFrame{
 .map-stage.is-world-canvas{
   min-width:0;
   min-height:0;
-  background:none;
+  background:#03070b;
 }
 
 .map-world-surface,
@@ -2209,8 +2210,9 @@ html.ah-skins-open #heroFrame{
   z-index:0;
   width:100%;
   height:100%;
-  background:url("images/map/base/map.2.0.webp") center / 100% 100% no-repeat;
+  background:#03070b url("images/map/base/map.2.0.webp") center / 100% 100% no-repeat;
   filter:brightness(1.12) contrast(1.04);
+  opacity:1;
 }
 
 .map-legacy-area{
@@ -2501,6 +2503,10 @@ html.ah-skins-open #heroFrame{
 .world-exploration-action,.world-exploration-complete{ width:100%; min-height:46px; border:1px solid rgba(110,216,223,.4); border-radius:10px; color:#e7fbfc; background:linear-gradient(135deg,#1a6972,#123a42); font:800 13px/1 system-ui,sans-serif; letter-spacing:.04em; cursor:pointer; }
 .world-exploration-action.is-claim{ border-color:rgba(230,193,100,.5); background:linear-gradient(135deg,#816238,#3f3a25); }
 .world-exploration-action:disabled{ border-color:rgba(166,187,191,.18); color:#91a4a7; background:rgba(255,255,255,.045); cursor:not-allowed; }
+.world-exploration-recovery{ margin:15px 0; padding:12px; border:1px solid rgba(116,202,208,.2); border-radius:11px; background:rgba(18,72,78,.12); }
+.world-exploration-recovery h3{ margin:0 0 7px; }
+.world-exploration-recovery p{ margin:0; color:#bfd2d5; font-size:13px; line-height:1.45; }
+.world-exploration-recovery-action{ margin-top:11px; min-height:40px; }
 .world-exploration-complete{ display:grid; place-items:center; border-color:rgba(109,214,161,.35); color:#9ee0bb; background:rgba(49,136,93,.14); }
 @keyframes worldExplorationPulse{ 50%{ filter:brightness(1.25); } }
 @media (max-width:640px){ .world-exploration-panel-shell{ padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); align-items:end; } .world-exploration-panel{ width:100%; max-height:88dvh; border-right:0; border-left:0; border-radius:17px 17px 0 0; } .world-exploration-sector-label{ font-size:9px; } .world-exploration-sector-label em{ font-size:8px; } }
@@ -9201,6 +9207,7 @@ document.addEventListener("click", async (e) => {
         const pinsEl = document.getElementById("pins") || createPinsLayer(mapStageEl);
         const pathsSVG= document.getElementById("pathsSVG") || createPathsLayer(mapStageEl);
         let DATA = null;
+        let mapHasRendered = false;
         let regionsUnlocked = new Set();
         let keys = new Set();
         let fragments = {};
@@ -9726,6 +9733,7 @@ document.addEventListener("click", async (e) => {
         }
 
         let mapViewportRefreshFrame = null;
+        let mapDataAbortController = null;
         function scheduleMapViewportRefresh(){
           if (mapBack?.style?.display !== "flex" || mapViewportRefreshFrame !== null) return;
           mapViewportRefreshFrame = requestAnimationFrame(() => {
@@ -10034,19 +10042,33 @@ document.addEventListener("click", async (e) => {
         }
 
         async function loadMapData(){
+          try { mapDataAbortController?.abort?.(); } catch (_) {}
+          const controller = new AbortController();
+          mapDataAbortController = controller;
           try{
-            DATA = await fetch(`map.json?v=${encodeURIComponent(MAP_DATA_VERSION)}`, { cache: 'no-store' }).then(r => r.json());
+            const nextData = await fetch(`map.json?v=${encodeURIComponent(MAP_DATA_VERSION)}`, {
+              cache: 'no-store',
+              signal: controller.signal,
+            }).then(r => r.json());
+            if (controller.signal.aborted || mapDataAbortController !== controller) return DATA;
+            DATA = nextData;
           }catch(e){
+            if (e?.name === "AbortError") return DATA;
             console.error('map.json load error', e);
             DATA = null;
+          } finally {
+            if (mapDataAbortController === controller) mapDataAbortController = null;
           }
           regionsUnlocked = new Set((DATA && DATA.defaults && DATA.defaults.regionsUnlocked) || ['chain']);
           keys = new Set((DATA && DATA.defaults && DATA.defaults.keys) || []);
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
           window.DATA = DATA;
-          renderMap();
-          refreshMapStage({ recenter: !mapPanState.hasCenteredOnce });
+          if (mapBack?.style?.display === "flex") {
+            renderMap();
+            refreshMapStage({ recenter: !mapPanState.hasCenteredOnce });
+          }
+          return DATA;
         }
 
         function escMapHtml(value){
@@ -11300,8 +11322,9 @@ function isRegionUnlocked(regionId){
         return;
       }
 
-      // TAP 2 = action
+      // TAP 2 = action. Every destination transition owns a closed, inactive Map.
       const bid = String(b.buildingId || b.id || "");
+      await closeMapCanonical({ source: `building:${bid}` });
 
       // Phantom Nodes
       if (bid === "phantom_nodes") {
@@ -11479,7 +11502,7 @@ function isRegionUnlocked(regionId){
   // resolveLabelCollisions(); // jeśli używasz anti-collision
         }
 
-        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); window.WorldExploration?.syncLockedSectorNodePresentation?.(); window.WorldExploration?.syncNetworkBridge?.(); updateUnlockProgress(); updateMapSelectionBrief(); }
+        function renderMap(){ renderWorldTiles(); drawPaths(); renderPins(); mapHasRendered = true; window.WorldExploration?.syncLockedSectorNodePresentation?.(); window.WorldExploration?.syncNetworkBridge?.(); updateUnlockProgress(); updateMapSelectionBrief(); }
 
         const lockedBack = $("#lockedBack");
         const lockedTitle = $("#lockedTitle");
@@ -11758,6 +11781,7 @@ function isRegionUnlocked(regionId){
         }
 
         async function openBuilding(bid, name, desc){
+          await closeMapCanonical({ source: `building:${String(bid || "unknown")}` });
           CURRENT_BID = bid;
           CURRENT_BUILDING_DESC = String(desc || "").trim();
           bTitle.textContent = name || "Building";
@@ -11936,33 +11960,98 @@ function isRegionUnlocked(regionId){
         bBtnRes && bBtnRes.addEventListener("click", () => resolveRun());
 
         /* === BUTTONS / ACTIONS === */
+let mapLifecycleGeneration = 0;
+let mapOpenFrame = null;
+
+function mapShellIsVisible(){
+  return !!mapBack && getComputedStyle(mapBack).display !== "none";
+}
+
+function stopMapRuntime(){
+  mapLifecycleGeneration += 1;
+  if (mapOpenFrame !== null) {
+    cancelAnimationFrame(mapOpenFrame);
+    mapOpenFrame = null;
+  }
+  if (mapViewportRefreshFrame !== null) {
+    cancelAnimationFrame(mapViewportRefreshFrame);
+    mapViewportRefreshFrame = null;
+  }
+  try { mapDataAbortController?.abort?.(); } catch (_) {}
+  mapDataAbortController = null;
+  if (mapPanState.pointerId !== null) {
+    try {
+      if (mapRoot?.hasPointerCapture?.(mapPanState.pointerId)) mapRoot.releasePointerCapture(mapPanState.pointerId);
+    } catch (_) {}
+  }
+  mapPanState.pointerId = null;
+  mapPanState.dragging = false;
+  mapPanState.dragMoved = false;
+  mapStageEl?.classList.remove("is-panning");
+  mapBack?.classList.remove("is-map-active");
+  window.WorldExploration?.onMapClosed?.();
+}
+
+async function closeMapCanonical({ source = "close" } = {}){
+  const wasVisible = mapShellIsVisible();
+  setMapIntelExpanded(false);
+  stopMapRuntime();
+  if (mapBack) mapBack.style.display = "none";
+  navClose("mapBack");
+  if (window.DBG) console.debug("[map] closed", { source, wasVisible });
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return !mapShellIsVisible();
+}
+window.closeMapCanonical = closeMapCanonical;
+
+function openMapShell(source){
+  if (mapShellIsVisible()) return Promise.resolve(false);
+  const generation = ++mapLifecycleGeneration;
+  setMapIntelExpanded(false);
+  mapBack.classList.add("is-map-active");
+  mapBack.style.display = "flex";
+  navOpen("mapBack", {
+    close: () => { void closeMapCanonical({ source: "navigation-back" }); },
+    isOpen: () => mapShellIsVisible(),
+    fallback: false,
+  });
+  window.WorldExploration?.onMapOpened?.();
+  mapZoomRestorePending = true;
+  bindMapPan();
+  bindMapZoomControls();
+  mapOpenFrame = requestAnimationFrame(() => {
+    mapOpenFrame = null;
+    if (generation !== mapLifecycleGeneration || !mapShellIsVisible()) return;
+    refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
+  });
+  const mapDataTask = DATA ? Promise.resolve(DATA) : loadMapData();
+  if (PLAYER_STATE) {
+    applyStateToMap();
+    if (DATA) {
+      if (!mapHasRendered) renderMap();
+      updateUnlockProgress();
+      updateMapSelectionBrief();
+    }
+  }
+  const playerTask = (!PLAYER_STATE || (Date.now() - __lastPlayerStateLoadedAt) > MAP_PLAYER_STATE_FRESH_MS)
+    ? loadPlayerState()
+    : Promise.resolve(PLAYER_STATE);
+  return Promise.allSettled([mapDataTask, playerTask]);
+}
+
+// Navigation only: this delegates to the existing Telegram building route.
+// It does not call a reward, start, resolve, or state-mutating endpoint.
+window.openMapKeyFragmentRecovery = function openMapKeyFragmentRecovery(options = {}){
+  const buildingId = String(options?.buildingId || "");
+  if (buildingId !== "broken_contracts_hub") return false;
+  sendAction("building_enter", { buildingId });
+  return true;
+};
+
 const actions = {
   ".btn.avatar": () => sendAction("avatar_open"),          // Avatar – wraca do bota
   // ".btn.skins" obsługujemy delegacją niżej (bo przycisk bywa rerenderowany)
-  ".btn.map": () => {
-    try { window.requestTelegramFullscreen?.(); } catch (_) {}
-    if (window.DBG) console.debug("[map] open", { source: "button" });
-    setMapIntelExpanded(false);
-    mapBack.style.display = "flex";
-    navOpen("mapBack");
-    window.WorldExploration?.onMapOpened?.();
-    mapZoomRestorePending = true;
-    bindMapPan();
-    bindMapZoomControls();
-    requestAnimationFrame(() => refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA }));
-    if (!DATA) loadMapData();
-    if (PLAYER_STATE) {
-      applyStateToMap();
-      if (DATA) {
-        renderMap();
-        updateUnlockProgress();
-        updateMapSelectionBrief();
-      }
-    }
-    if (!PLAYER_STATE || (Date.now() - __lastPlayerStateLoadedAt) > MAP_PLAYER_STATE_FRESH_MS) {
-      void loadPlayerState();
-    }
-  },
+  ".btn.map": () => openMapShell("button"),
   ".btn.inventory": () => window.Inventory?.open?.(),
   ".btn.char": () => sendAction("char_open"),
   ".btn.shop": () => (window.Shop?.open ? window.Shop.open() : sendAction("shop_open")),
@@ -12044,9 +12133,7 @@ document.addEventListener("click", (e) => {
 
 /* === MAP close === */
 document.getElementById("closeMap")?.addEventListener("click", () => {
-  setMapIntelExpanded(false);
-  mapBack.style.display = "none";
-  navClose("mapBack");
+  void closeMapCanonical({ source: "close-button" });
 });
 
 function openRegion(region, nodeId) { sendAction("region_open", { region, nodeId }); }
@@ -12398,7 +12485,8 @@ if (toastParam && tg?.showAlert) tg.showAlert(toastParam.replace(/_/g,' '));
 async function showSection(name){
   switch(name){
     case "map":
-      try { window.requestTelegramFullscreen?.(); } catch (_) {}
+      return openMapShell("showSection");
+      /* Legacy Map opening path retained below only for historical context.
       if (window.DBG) console.debug("[map] open", { source: "showSection" });
       setMapIntelExpanded(false);
       mapBack.style.display = "flex";
@@ -12421,6 +12509,7 @@ async function showSection(name){
         void loadPlayerState();
       }
       break;
+      */
     case "quests":
       (window.Quests && window.Quests.open) ? window.Quests.open() : openQuests();
       // ✅ ensure qBack is tracked if new quests opens it
