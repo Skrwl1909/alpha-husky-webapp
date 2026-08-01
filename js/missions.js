@@ -651,6 +651,10 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     const last = payload?.lastResolve || payload?.last_resolve || null;
     if (!last || typeof last !== "object") return null;
     const lines = [];
+    const fragmentDrop = (res && typeof res === "object") ? (res.mapKeyFragmentDrop || res.map_key_fragment_drop) : null;
+    if (fragmentDrop?.awarded === true && String(fragmentDrop.asset || "") === "map_key_fragment") {
+      pushMissionToastLine(lines, "Map Key Fragment +1");
+    }
     parseMissionRewardTextToLines(lines, last?.recoveredRewards);
     if (!lines.length) parseMissionRewardTextToLines(lines, last?.rewardMsg || last?.reward_msg);
     if (!lines.length) parseMissionRewardTextToLines(lines, last?.lootMsg || last?.loot_msg);
@@ -712,6 +716,10 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       fallbackRewards.push(...normalizeRewardList(last?.tokenLootMsg || last?.token_loot_msg));
     }
     const rewards = recoveredRewards.length ? recoveredRewards.slice() : fallbackRewards;
+    const fragmentDrop = (resultData && typeof resultData === "object") ? (resultData.mapKeyFragmentDrop || resultData.map_key_fragment_drop) : null;
+    if (fragmentDrop?.awarded === true && String(fragmentDrop.asset || "") === "map_key_fragment") {
+      rewards.push("Map Key Fragment +1");
+    }
     const signalDelta = extractMissionSignalDelta(payload);
     if (signalDelta > 0 && !rewards.some((line) => /signal power/i.test(line))) rewards.push(`Signal Power +${signalDelta}`);
 

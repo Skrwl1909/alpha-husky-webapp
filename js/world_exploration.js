@@ -355,6 +355,16 @@
       }
       if (target !== "missions") return;
       closePanel();
+      const mapBack = byId("mapBack");
+      if (mapBack && getComputedStyle(mapBack).display !== "none") {
+        const closeMap = byId("closeMap");
+        if (closeMap) closeMap.click();
+        else {
+          mapBack.style.display = "none";
+          try { window.navClose?.("mapBack"); } catch (_) {}
+        }
+        await new Promise((resolve) => window.requestAnimationFrame ? window.requestAnimationFrame(resolve) : window.setTimeout(resolve, 0));
+      }
       const ensure = window.ensureMissionsLoaded;
       if (typeof ensure === "function") await ensure(apiPost(), window.Telegram?.WebApp || window.tg, !!window.DBG);
       if (typeof window.Missions?.open === "function") {
