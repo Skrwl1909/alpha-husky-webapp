@@ -7,7 +7,9 @@
   const FRAGMENT_ICON_PATH = "/images/ui/map_key_fragment.webp";
   const REGION_ASSET_PATH = "/images/map/exploration/map_region.webp";
   const LOCK_ASSET_PATH = "/images/map/exploration/lock_region.webp";
-  const TAP_MOVE_PX = 12;
+  // Keep this aligned with the map pan threshold: a sector tap must never win after map panning begins.
+  const TAP_MOVE_PX = 10;
+  const TAP_MAX_DURATION_MS = 700;
   const state = {
     initialized: false,
     valid: false,
@@ -26,11 +28,17 @@
     mapObserver: null,
     keyHandler: null,
     visibilityHandler: null,
+    inputRoot: null,
+    inputHandlers: null,
+    sectorTap: null,
+    lastSectorTap: { sectorId: "", until: 0 },
   };
 
   function byId(id) { return document.getElementById(id); }
   function apiPost() { return window.S?.apiPost || window.apiPost || window.AH?.apiPost || null; }
+  function mapRoot() { return byId("map"); }
   function mapStage() { return byId("mapStage"); }
+  function inputNow() { return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now(); }
   function mapIsOpen() {
     const mapBack = byId("mapBack");
     return !!mapBack && (mapBack.style.display === "flex" || getComputedStyle(mapBack).display !== "none");
@@ -181,7 +189,97 @@
     const echoes = [1, 2, 3].map((index) => (
       `<span class="world-exploration-sector-echo world-exploration-sector-echo--${index}" aria-hidden="true"><span class="world-exploration-sector-echo-core"></span><span class="world-exploration-sector-interference"></span></span>`
     )).join("");
-    return `<span class="world-exploration-sector-visual" aria-hidden="true"><img class="world-exploration-region-asset" src="${REGION_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"><span class="world-exploration-sector-shade"></span>${echoes}<img class="world-exploration-lock-asset" src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(copy[0])}</strong><em>${escapeHtml(copy[1])}</em></span>`;
+    return `<span class="world-exploration-sector-visual" aria-hidden="true"><img class="world-exploration-region-asset" src="${REGION_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"><span class="world-exploration-sector-shade"></span>${echoes}<img class="world-exploration-lock-asset" src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(formatSectorName(sector))}</strong><em>${escapeHtml(`${copy[0]} · ${copy[1]}`)}</em></span>`;
+  }
+
+  function triggerFromEvent(event) {
+    const direct = event?.target?.closest?.(".world-exploration-sector-trigger");
+    if (direct) return direct;
+    return event?.composedPath?.().find?.((entry) => entry?.classList?.contains?.("world-exploration-sector-trigger")) || null;
+  }
+
+  function isValidSectorTap(tap, now = inputNow()) {
+    return !!tap && !tap.cancelled && !tap.moved && !tap.panned && now - tap.startedAt <= TAP_MAX_DURATION_MS;
+  }
+
+  function clearSectorTap(pointerId, cancelled = false) {
+    const tap = state.sectorTap;
+    if (!tap || tap.pointerId !== pointerId) return null;
+    state.sectorTap = null;
+    if (cancelled) tap.cancelled = true;
+    return tap;
+  }
+
+  function bindSectorInput() {
+    const root = mapRoot();
+    if (!root || state.inputRoot === root) return;
+    unbindSectorInput();
+    const onPointerDown = (event) => {
+      const trigger = triggerFromEvent(event);
+      if (!trigger || !event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+      state.sectorTap = {
+        pointerId: event.pointerId,
+        sectorId: String(trigger.dataset.sectorId || ""),
+        startX: event.clientX,
+        startY: event.clientY,
+        startedAt: inputNow(),
+        moved: false,
+        panned: false,
+        cancelled: false,
+      };
+    };
+    const onPointerMove = (event) => {
+      const tap = state.sectorTap;
+      if (!tap || tap.pointerId !== event.pointerId) return;
+      tap.moved ||= Math.hypot(event.clientX - tap.startX, event.clientY - tap.startY) >= TAP_MOVE_PX;
+      tap.panned ||= !!mapStage()?.classList?.contains("is-panning");
+    };
+    const onPointerUp = (event) => {
+      const tap = clearSectorTap(event.pointerId);
+      if (!tap) return;
+      // The map's pointerup handler runs first; panned is recorded during pointermove before capture is released.
+      if (!isValidSectorTap(tap)) return;
+      state.lastSectorTap = { sectorId: tap.sectorId, until: inputNow() + 700 };
+      openSector(tap.sectorId);
+    };
+    const onPointerCancel = (event) => { clearSectorTap(event.pointerId, true); };
+    const onLostPointerCapture = (event) => { clearSectorTap(event.pointerId, true); };
+    const onClick = (event) => {
+      const trigger = triggerFromEvent(event);
+      if (!trigger) return;
+      const sectorId = String(trigger.dataset.sectorId || "");
+      if (!sectorId) return;
+      if (state.lastSectorTap.sectorId === sectorId && state.lastSectorTap.until > inputNow()) {
+        event.preventDefault();
+        return;
+      }
+      // Keyboard activation remains available; pointer activation takes the canonical pointerup path above.
+      openSector(sectorId);
+    };
+    state.inputRoot = root;
+    state.inputHandlers = { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture, onClick };
+    root.addEventListener("pointerdown", onPointerDown);
+    root.addEventListener("pointermove", onPointerMove);
+    root.addEventListener("pointerup", onPointerUp);
+    root.addEventListener("pointercancel", onPointerCancel);
+    root.addEventListener("lostpointercapture", onLostPointerCapture);
+    root.addEventListener("click", onClick);
+  }
+
+  function unbindSectorInput() {
+    const root = state.inputRoot;
+    const handlers = state.inputHandlers;
+    if (root && handlers) {
+      root.removeEventListener("pointerdown", handlers.onPointerDown);
+      root.removeEventListener("pointermove", handlers.onPointerMove);
+      root.removeEventListener("pointerup", handlers.onPointerUp);
+      root.removeEventListener("pointercancel", handlers.onPointerCancel);
+      root.removeEventListener("lostpointercapture", handlers.onLostPointerCapture);
+      root.removeEventListener("click", handlers.onClick);
+    }
+    state.inputRoot = null;
+    state.inputHandlers = null;
+    state.sectorTap = null;
   }
 
   function renderOverlay({ previousProjection = null, animate = false } = {}) {
@@ -202,31 +300,22 @@
     state.projection.sectorCatalog.forEach((sector) => {
       if (!sector.visible) return;
       const geometry = sector.geometry;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "world-exploration-sector";
-      button.dataset.sectorId = sector.id;
-      button.dataset.status = String(sector.status || "locked");
-      button.style.left = `${(geometry.x / bounds.width) * 100}%`;
-      button.style.top = `${(geometry.y / bounds.height) * 100}%`;
-      button.style.width = `${(geometry.width / bounds.width) * 100}%`;
-      button.style.height = `${(geometry.height / bounds.height) * 100}%`;
-      button.setAttribute("aria-label", `${formatSectorName(sector)}: ${sector.status || "locked"}`);
-      button.innerHTML = sectorVisualHtml(sector);
-      let origin = null;
-      let moved = false;
-      button.addEventListener("pointerdown", (event) => { origin = { x: event.clientX, y: event.clientY }; moved = false; });
-      button.addEventListener("pointermove", (event) => {
-        if (!origin) return;
-        moved ||= Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > TAP_MOVE_PX;
-      });
-      button.addEventListener("pointerup", () => { if (moved) button.dataset.draggedUntil = String(performance.now() + 260); origin = null; });
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        if (moved || Number(button.dataset.draggedUntil || 0) > performance.now()) return;
-        openSector(sector.id);
-      });
-      overlay.appendChild(button);
+      const sectorShell = document.createElement("div");
+      sectorShell.className = "world-exploration-sector";
+      sectorShell.dataset.sectorId = sector.id;
+      sectorShell.dataset.status = String(sector.status || "locked");
+      sectorShell.style.left = `${(geometry.x / bounds.width) * 100}%`;
+      sectorShell.style.top = `${(geometry.y / bounds.height) * 100}%`;
+      sectorShell.style.width = `${(geometry.width / bounds.width) * 100}%`;
+      sectorShell.style.height = `${(geometry.height / bounds.height) * 100}%`;
+      sectorShell.innerHTML = sectorVisualHtml(sector);
+      const trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.className = "world-exploration-sector-trigger";
+      trigger.dataset.sectorId = sector.id;
+      trigger.setAttribute("aria-label", `Open ${formatSectorName(sector)}: ${sector.status || "locked"}`);
+      sectorShell.appendChild(trigger);
+      overlay.appendChild(sectorShell);
     });
     const panelOpen = !byId(PANEL_ID)?.hidden;
     const selected = panelOpen ? sectorFor(state.selectedSectorId) : null;
@@ -314,18 +403,21 @@
   function openSector(id) {
     const sector = sectorFor(id);
     if (!sector) return;
-    state.selectedSectorId = sector.id;
-    state.lastMessage = "";
     const panel = ensurePanel();
     if (!panel) return;
+    const wasOpen = !panel.hidden;
+    state.selectedSectorId = sector.id;
+    state.lastMessage = "";
     panel.hidden = false;
     renderOverlay();
     renderPanel();
-    try {
-      const meta = { isOpen: () => !panel.hidden, close: closePanelView, fallback: false };
-      if (window.AlphaNav?.push) window.AlphaNav.push(PANEL_ID, meta);
-      else { window.navRegister?.(PANEL_ID, meta); window.navOpen?.(PANEL_ID); }
-    } catch (_) {}
+    if (!wasOpen) {
+      try {
+        const meta = { isOpen: () => !panel.hidden, close: closePanelView, fallback: false };
+        if (window.AlphaNav?.push) window.AlphaNav.push(PANEL_ID, meta);
+        else { window.navRegister?.(PANEL_ID, meta); window.navOpen?.(PANEL_ID); }
+      } catch (_) {}
+    }
   }
   function closePanelView() {
     const panel = byId(PANEL_ID);
@@ -621,6 +713,7 @@
       log: (...args) => { if (window.DBG) console.debug("[WorldExplorationPath]", ...args); },
     });
     ensurePanel();
+    bindSectorInput();
     state.keyHandler = (event) => { if (event.key === "Escape" && !byId(PANEL_ID)?.hidden) closePanel(); };
     state.visibilityHandler = () => {
       pathModule()?.setMapVisible?.(!document.hidden && mapIsOpen());
@@ -644,6 +737,7 @@
     if (state.visibilityHandler) document.removeEventListener("visibilitychange", state.visibilityHandler);
     state.keyHandler = null;
     state.visibilityHandler = null;
+    unbindSectorInput();
     pathModule()?.destroy?.();
     byId(ROOT_ID)?.remove?.();
     byId(PANEL_ID)?.remove?.();
