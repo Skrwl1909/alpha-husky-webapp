@@ -28,15 +28,11 @@
     mapObserver: null,
     keyHandler: null,
     visibilityHandler: null,
-    inputRoot: null,
-    inputHandlers: null,
-    sectorTap: null,
     lastSectorTap: { sectorId: "", until: 0 },
   };
 
   function byId(id) { return document.getElementById(id); }
   function apiPost() { return window.S?.apiPost || window.apiPost || window.AH?.apiPost || null; }
-  function mapRoot() { return byId("map"); }
   function mapStage() { return byId("mapStage"); }
   function inputNow() { return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now(); }
   function mapIsOpen() {
@@ -192,94 +188,53 @@
     return `<span class="world-exploration-sector-visual" aria-hidden="true"><img class="world-exploration-region-asset" src="${REGION_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"><span class="world-exploration-sector-shade"></span>${echoes}<img class="world-exploration-lock-asset" src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async" aria-hidden="true"></span><span class="world-exploration-sector-label"><strong>${escapeHtml(formatSectorName(sector))}</strong><em>${escapeHtml(`${copy[0]} · ${copy[1]}`)}</em></span>`;
   }
 
-  function triggerFromEvent(event) {
-    const direct = event?.target?.closest?.(".world-exploration-sector-trigger");
-    if (direct) return direct;
-    return event?.composedPath?.().find?.((entry) => entry?.classList?.contains?.("world-exploration-sector-trigger")) || null;
+  function canonicalSectorState(sector) {
+    const phase = String(sector?.pathOfProof?.phase || "").toUpperCase();
+    if (phase === "LOCKED") return "LOCKED";
+    if (phase === "ELIGIBLE") return "SIGNAL DETECTED";
+    if (["SCOUT_SELECTION", "TRACE_CHOICE", "ENCOUNTER_READY", "ENCOUNTER_ACTIVE", "ANCHOR_CHOICE"].includes(phase)) return "PATH ACTIVE";
+    if (phase === "UNLOCKED") return "ROUTE PROVEN";
+    return ({ locked: "LOCKED", available: "SIGNAL DETECTED", scanning: "PATH ACTIVE", claimable: "PATH ACTIVE", unlocked: "ROUTE PROVEN" })[String(sector?.status || "").toLowerCase()] || "LOCKED";
   }
 
-  function isValidSectorTap(tap, now = inputNow()) {
-    return !!tap && !tap.cancelled && !tap.moved && !tap.panned && now - tap.startedAt <= TAP_MAX_DURATION_MS;
+  function sectorMarkerHtml(sector) {
+    const canonicalState = canonicalSectorState(sector);
+    const requirement = Math.max(0, Number(asObject(sector?.itemRequirements)?.[CANONICAL_FRAGMENT_ID]) || 0);
+    const balance = Math.max(0, Number(state.projection?.currentFragmentBalance) || 0);
+    const progress = canonicalState === "LOCKED" && requirement ? `<small>${escapeHtml(`${balance} / ${requirement} FRAGMENTS`)}</small>` : "";
+    return `<span class="world-exploration-sector-marker-icon" aria-hidden="true"><img src="${LOCK_ASSET_PATH}" alt="" draggable="false" decoding="async"></span><span class="world-exploration-sector-marker-copy"><strong>${escapeHtml(formatSectorName(sector))}</strong><em>${escapeHtml(canonicalState)}</em>${progress}</span>`;
   }
 
-  function clearSectorTap(pointerId, cancelled = false) {
-    const tap = state.sectorTap;
-    if (!tap || tap.pointerId !== pointerId) return null;
-    state.sectorTap = null;
-    if (cancelled) tap.cancelled = true;
-    return tap;
-  }
-
-  function bindSectorInput() {
-    const root = mapRoot();
-    if (!root || state.inputRoot === root) return;
-    unbindSectorInput();
-    const onPointerDown = (event) => {
-      const trigger = triggerFromEvent(event);
-      if (!trigger || !event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
-      state.sectorTap = {
-        pointerId: event.pointerId,
-        sectorId: String(trigger.dataset.sectorId || ""),
-        startX: event.clientX,
-        startY: event.clientY,
-        startedAt: inputNow(),
-        moved: false,
-        panned: false,
-        cancelled: false,
-      };
-    };
-    const onPointerMove = (event) => {
-      const tap = state.sectorTap;
+  function bindSectorMarkerInput(marker, sectorId) {
+    let tap = null;
+    const clearTap = () => { tap = null; };
+    marker.addEventListener("pointerdown", (event) => {
+      if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+      tap = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startedAt: inputNow(), moved: false, panned: false, cancelled: false };
+    });
+    marker.addEventListener("pointermove", (event) => {
       if (!tap || tap.pointerId !== event.pointerId) return;
       tap.moved ||= Math.hypot(event.clientX - tap.startX, event.clientY - tap.startY) >= TAP_MOVE_PX;
-      tap.panned ||= !!mapStage()?.classList?.contains("is-panning");
-    };
-    const onPointerUp = (event) => {
-      const tap = clearSectorTap(event.pointerId);
-      if (!tap) return;
-      // The map's pointerup handler runs first; panned is recorded during pointermove before capture is released.
-      if (!isValidSectorTap(tap)) return;
-      state.lastSectorTap = { sectorId: tap.sectorId, until: inputNow() + 700 };
-      openSector(tap.sectorId);
-    };
-    const onPointerCancel = (event) => { clearSectorTap(event.pointerId, true); };
-    const onLostPointerCapture = (event) => { clearSectorTap(event.pointerId, true); };
-    const onClick = (event) => {
-      const trigger = triggerFromEvent(event);
-      if (!trigger) return;
-      const sectorId = String(trigger.dataset.sectorId || "");
-      if (!sectorId) return;
+      // The parent map uses this same threshold before it captures a pan, so a drag is disqualified first.
+      tap.panned ||= tap.moved || !!mapStage()?.classList?.contains("is-panning");
+    });
+    marker.addEventListener("pointerup", (event) => {
+      if (!tap || tap.pointerId !== event.pointerId) return;
+      const completed = tap;
+      clearTap();
+      if (completed.cancelled || completed.moved || completed.panned || inputNow() - completed.startedAt > TAP_MAX_DURATION_MS) return;
+      state.lastSectorTap = { sectorId, until: inputNow() + 700 };
+      openSector(sectorId);
+    });
+    marker.addEventListener("pointercancel", clearTap);
+    marker.addEventListener("lostpointercapture", clearTap);
+    marker.addEventListener("click", (event) => {
       if (state.lastSectorTap.sectorId === sectorId && state.lastSectorTap.until > inputNow()) {
         event.preventDefault();
         return;
       }
-      // Keyboard activation remains available; pointer activation takes the canonical pointerup path above.
       openSector(sectorId);
-    };
-    state.inputRoot = root;
-    state.inputHandlers = { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onLostPointerCapture, onClick };
-    root.addEventListener("pointerdown", onPointerDown);
-    root.addEventListener("pointermove", onPointerMove);
-    root.addEventListener("pointerup", onPointerUp);
-    root.addEventListener("pointercancel", onPointerCancel);
-    root.addEventListener("lostpointercapture", onLostPointerCapture);
-    root.addEventListener("click", onClick);
-  }
-
-  function unbindSectorInput() {
-    const root = state.inputRoot;
-    const handlers = state.inputHandlers;
-    if (root && handlers) {
-      root.removeEventListener("pointerdown", handlers.onPointerDown);
-      root.removeEventListener("pointermove", handlers.onPointerMove);
-      root.removeEventListener("pointerup", handlers.onPointerUp);
-      root.removeEventListener("pointercancel", handlers.onPointerCancel);
-      root.removeEventListener("lostpointercapture", handlers.onLostPointerCapture);
-      root.removeEventListener("click", handlers.onClick);
-    }
-    state.inputRoot = null;
-    state.inputHandlers = null;
-    state.sectorTap = null;
+    });
   }
 
   function renderOverlay({ previousProjection = null, animate = false } = {}) {
@@ -309,12 +264,15 @@
       sectorShell.style.width = `${(geometry.width / bounds.width) * 100}%`;
       sectorShell.style.height = `${(geometry.height / bounds.height) * 100}%`;
       sectorShell.innerHTML = sectorVisualHtml(sector);
-      const trigger = document.createElement("button");
-      trigger.type = "button";
-      trigger.className = "world-exploration-sector-trigger";
-      trigger.dataset.sectorId = sector.id;
-      trigger.setAttribute("aria-label", `Open ${formatSectorName(sector)}: ${sector.status || "locked"}`);
-      sectorShell.appendChild(trigger);
+      const marker = document.createElement("button");
+      marker.type = "button";
+      marker.className = "world-exploration-sector-marker";
+      marker.dataset.sectorId = sector.id;
+      marker.dataset.markerState = canonicalSectorState(sector).toLowerCase().replace(/\s+/g, "-");
+      marker.setAttribute("aria-label", `Open ${formatSectorName(sector)}: ${canonicalSectorState(sector)}`);
+      marker.innerHTML = sectorMarkerHtml(sector);
+      bindSectorMarkerInput(marker, sector.id);
+      sectorShell.appendChild(marker);
       overlay.appendChild(sectorShell);
     });
     const panelOpen = !byId(PANEL_ID)?.hidden;
@@ -648,10 +606,7 @@
   }
   function canOpenDeadRelay() { return !!(state.valid && state.projection?.canOpenRelay7 === true && state.projection?.relay7Available === true); }
   function showDeadRelayLocked() {
-    const message = "Dead Relay Exchange is locked. Prove and anchor the Relay Fringe 01 route first.";
-    const tg = window.Telegram?.WebApp || window.tg;
-    if (typeof tg?.showAlert === "function") tg.showAlert(message);
-    else window.alert(message);
+    openSector("relay_fringe_01");
   }
 
   function stopTimer() { if (state.timerId) clearInterval(state.timerId); state.timerId = null; }
@@ -713,7 +668,6 @@
       log: (...args) => { if (window.DBG) console.debug("[WorldExplorationPath]", ...args); },
     });
     ensurePanel();
-    bindSectorInput();
     state.keyHandler = (event) => { if (event.key === "Escape" && !byId(PANEL_ID)?.hidden) closePanel(); };
     state.visibilityHandler = () => {
       pathModule()?.setMapVisible?.(!document.hidden && mapIsOpen());
@@ -737,7 +691,6 @@
     if (state.visibilityHandler) document.removeEventListener("visibilitychange", state.visibilityHandler);
     state.keyHandler = null;
     state.visibilityHandler = null;
-    unbindSectorInput();
     pathModule()?.destroy?.();
     byId(ROOT_ID)?.remove?.();
     byId(PANEL_ID)?.remove?.();
