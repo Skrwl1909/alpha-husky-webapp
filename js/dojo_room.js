@@ -16,6 +16,15 @@
   const PLAYER_SHEET_URL = "assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png";
   const PLAYER_SHEET_SCALE = 0.32;
   const DUMMY_TEXTURE = "ah-dojo-room-dummy-v1";
+  const TERMINAL_RANGE_SQ = 168 * 168;
+  const FLOOR_TILE_SCALE = 0.52;
+  const WALL_SCALE = 0.25;
+  const TERMINAL_SCALE = 0.26;
+  const ENVIRONMENT_ASSETS = Object.freeze({
+    floor: { key: "dojo-floor-base", url: "assets/dojo/v1/processed/floor.webp" },
+    terminal: { key: "dojo-terminal", url: "assets/dojo/v1/processed/terminal.webp" },
+    wall: { key: "dojo-wall-horizontal", url: "assets/dojo/v1/processed/wall.webp" }
+  });
 
   const S = {
     apiPost: null,
@@ -278,6 +287,11 @@
     return block;
   }
 
+  function refreshStaticBody(object) {
+    if (typeof object?.refreshBody === "function") object.refreshBody();
+    else object?.body?.updateFromGameObject?.();
+  }
+
   function createPlayerTexture(scene) {
     if (scene.textures.exists(PLAYER_TEXTURE)) return;
     const g = scene.add.graphics();
@@ -352,27 +366,88 @@
     g.destroy();
   }
 
-  function drawTrainingFloor(scene) {
+  function drawTrainingFloorFallback(scene) {
     const floor = scene.add.graphics();
+    floor.setDepth(0);
     floor.fillStyle(0x0d1822, 1);
     floor.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     floor.lineStyle(1, 0x254050, 0.25);
     for (let x = 60; x < WORLD_WIDTH; x += 80) floor.lineBetween(x, 0, x, WORLD_HEIGHT);
     for (let y = 60; y < WORLD_HEIGHT; y += 80) floor.lineBetween(0, y, WORLD_WIDTH, y);
 
-    floor.lineStyle(2, 0x4ecce4, 0.16);
-    floor.strokeRect(88, 88, WORLD_WIDTH - 176, WORLD_HEIGHT - 176);
-    floor.strokeRect(142, 142, WORLD_WIDTH - 284, WORLD_HEIGHT - 284);
+    drawTrainingFloorMarkings(scene);
+  }
 
-    floor.fillStyle(0xd7a85a, 0.14);
-    for (let x = 520; x <= 880; x += 60) floor.fillRect(x, 430, 34, 4);
-    floor.fillStyle(0x65e8ff, 0.16);
-    floor.fillRect(132, 716, 150, 6);
-    floor.fillRect(1110, 162, 142, 5);
+  function drawTrainingFloorMarkings(scene) {
+    const markings = scene.add.graphics().setDepth(5);
+    markings.lineStyle(2, 0x4ecce4, 0.16);
+    markings.strokeRect(88, 88, WORLD_WIDTH - 176, WORLD_HEIGHT - 176);
+    markings.strokeRect(142, 142, WORLD_WIDTH - 284, WORLD_HEIGHT - 284);
+
+    markings.fillStyle(0xd7a85a, 0.14);
+    for (let x = 520; x <= 880; x += 60) markings.fillRect(x, 430, 34, 4);
+    markings.fillStyle(0x65e8ff, 0.16);
+    markings.fillRect(132, 716, 150, 6);
+    markings.fillRect(1110, 162, 142, 5);
+  }
+
+  function buildFloor(scene) {
+    const floorAsset = ENVIRONMENT_ASSETS.floor;
+    if (!scene.textures.exists(floorAsset.key)) {
+      log("floor asset unavailable; using procedural floor");
+      drawTrainingFloorFallback(scene);
+      return;
+    }
+    scene.add.tileSprite(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_WIDTH, WORLD_HEIGHT, floorAsset.key)
+      .setOrigin(0.5)
+      .setTileScale(FLOOR_TILE_SCALE, FLOOR_TILE_SCALE)
+      .setTint(0xc2d0d8)
+      .setDepth(0);
+    drawTrainingFloorMarkings(scene);
+  }
+
+  function addEnvironmentWall(scene, group, x, y, width, height) {
+    const wallAsset = ENVIRONMENT_ASSETS.wall;
+    if (!scene.textures.exists(wallAsset.key)) {
+      return addStaticBlock(scene, group, x, y, width, height, 0x1c2934, 0x527083).setDepth(10);
+    }
+    const wall = scene.add.image(x, y, wallAsset.key).setOrigin(0.5).setScale(WALL_SCALE).setDepth(10);
+    scene.physics.add.existing(wall, true);
+    // Source-space bounds cover the metal chassis only; the transparent canvas and upper decoration stay passable.
+    wall.body.setSize(900, 240).setOffset(62, 365);
+    refreshStaticBody(wall);
+    group.add(wall);
+    return wall;
+  }
+
+  function addTrainingTerminal(scene) {
+    const x = 1020;
+    const y = 720;
+    const terminalAsset = ENVIRONMENT_ASSETS.terminal;
+    if (scene.textures.exists(terminalAsset.key)) {
+      const terminal = scene.add.image(x, y, terminalAsset.key).setOrigin(0.5).setScale(TERMINAL_SCALE).setDepth(12);
+      scene.physics.add.existing(terminal, true);
+      // The hologram occupies the upper half of the artwork. Only the console chassis blocks movement.
+      terminal.body.setSize(780, 280).setOffset(122, 515);
+      refreshStaticBody(terminal);
+      scene.ahTerminal = terminal;
+      scene.ahTerminalBaseScale = TERMINAL_SCALE;
+      scene.ahTerminalAnchor = { x, y: 758 };
+      return;
+    }
+
+    log("terminal asset unavailable; using procedural terminal");
+    const terminal = scene.add.rectangle(x, y + 38, 196, 78, 0x142731, 0.94).setStrokeStyle(2, 0x65e8ff, 0.7).setDepth(12);
+    const screen = scene.add.rectangle(x, y + 12, 108, 26, 0x1b8ca4, 0.34).setStrokeStyle(1, 0x8aeeff, 0.7).setDepth(13);
+    scene.physics.add.existing(terminal, true);
+    scene.ahTerminal = terminal;
+    scene.ahTerminalGlow = screen;
+    scene.ahTerminalBaseScale = 1;
+    scene.ahTerminalAnchor = { x, y: y + 38 };
   }
 
   function buildWorld(scene) {
-    drawTrainingFloor(scene);
+    buildFloor(scene);
     const blockers = scene.physics.add.staticGroup();
     const wallFill = 0x151e29;
     const wallStroke = 0x39566a;
@@ -381,12 +456,12 @@
     addStaticBlock(scene, blockers, 26, WORLD_HEIGHT / 2, 52, WORLD_HEIGHT, wallFill, wallStroke);
     addStaticBlock(scene, blockers, WORLD_WIDTH - 26, WORLD_HEIGHT / 2, 52, WORLD_HEIGHT, wallFill, wallStroke);
 
-    addStaticBlock(scene, blockers, 450, 278, 230, 42, 0x1c2934, 0x527083);
-    addStaticBlock(scene, blockers, 450, 610, 230, 42, 0x1c2934, 0x527083);
+    addEnvironmentWall(scene, blockers, 450, 278, 230, 42);
+    addEnvironmentWall(scene, blockers, 450, 610, 230, 42);
     addStaticBlock(scene, blockers, 760, 190, 46, 210, 0x182630, 0x416677);
     addStaticBlock(scene, blockers, 760, 705, 46, 210, 0x182630, 0x416677);
-    addStaticBlock(scene, blockers, 1115, 275, 190, 38, 0x1c2934, 0x527083);
-    addStaticBlock(scene, blockers, 1115, 625, 190, 38, 0x1c2934, 0x527083);
+    addEnvironmentWall(scene, blockers, 1115, 275, 190, 38);
+    addEnvironmentWall(scene, blockers, 1115, 625, 190, 38);
 
     scene.add.text(104, 102, "MOVEMENT GRID 01", {
       fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
@@ -399,6 +474,7 @@
     scene.ahDummy = scene.physics.add.staticSprite(1025, 450, DUMMY_TEXTURE);
     scene.ahDummy.body.setSize(42, 48).setOffset(7, 19);
     scene.ahDummy.refreshBody();
+    scene.ahDummy.setDepth(20);
     scene.add.circle(scene.ahDummy.x, scene.ahDummy.y + 28, 76, 0xd7a85a, 0.035).setStrokeStyle(2, 0xd7a85a, 0.22);
     scene.add.text(scene.ahDummy.x, scene.ahDummy.y - 58, "TRAINING UNIT", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#c59d5d", letterSpacing: 2
@@ -409,6 +485,8 @@
     scene.add.text(scene.ahExit.x, scene.ahExit.y, "EXIT // MAP", {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#8cefff", fontStyle: "bold", letterSpacing: 2
     }).setOrigin(0.5);
+
+    addTrainingTerminal(scene);
 
     scene.ahPlayerIsSheet = createPlayerAnimations(scene);
     if (scene.ahPlayerIsSheet) {
@@ -423,9 +501,10 @@
       scene.ahPlayer.body.setSize(22, 28).setOffset(13, 32);
     }
     scene.ahPlayer.setCollideWorldBounds(true);
-    scene.ahPlayer.setDepth(5);
+    scene.ahPlayer.setDepth(30);
     scene.physics.add.collider(scene.ahPlayer, blockers);
     scene.physics.add.collider(scene.ahPlayer, scene.ahDummy);
+    scene.physics.add.collider(scene.ahPlayer, scene.ahTerminal);
   }
 
   function createControls(scene) {
@@ -551,15 +630,19 @@
     if (scene.ahContext === context) return;
     scene.ahContext = context;
     if (context === "dummy") {
-      scene.ahInteractLabel.setText("TRAIN").setColor("#f0c77f");
+      scene.ahInteractLabel.setText("TRAIN").setFontSize(13).setColor("#f0c77f");
       scene.ahInteractRing.setFillStyle(0x5b3e1d, 0.86).setStrokeStyle(2, 0xd7a85a, 0.95);
       scene.ahPrompt.setText("TRAINING UNIT IN RANGE · E / SPACE").setColor("#e7c98e");
+    } else if (context === "terminal") {
+      scene.ahInteractLabel.setText("CALIBRATE").setFontSize(10).setColor("#baf6ff");
+      scene.ahInteractRing.setFillStyle(0x123741, 0.9).setStrokeStyle(2, 0x65e8ff, 0.98);
+      scene.ahPrompt.setText("TERMINAL IN RANGE - E / SPACE").setColor("#a9edf7");
     } else if (context === "exit") {
-      scene.ahInteractLabel.setText("EXIT").setColor("#b8f6ff");
+      scene.ahInteractLabel.setText("EXIT").setFontSize(13).setColor("#b8f6ff");
       scene.ahInteractRing.setFillStyle(0x123741, 0.86).setStrokeStyle(2, 0x65e8ff, 0.95);
       scene.ahPrompt.setText("EXIT TO MAP · E / SPACE").setColor("#a9edf7");
     } else {
-      scene.ahInteractLabel.setText("--").setColor("#71828e");
+      scene.ahInteractLabel.setText("--").setFontSize(13).setColor("#71828e");
       scene.ahInteractRing.setFillStyle(0x111a23, 0.8).setStrokeStyle(2, 0x50616f, 0.65);
       scene.ahPrompt.setText("WASD / ARROWS · MOVE").setColor("#88a2b3");
     }
@@ -576,6 +659,29 @@
   function performInteraction(scene) {
     if (scene.ahContext === "exit") {
       void close();
+      return;
+    }
+    if (scene.ahContext === "terminal") {
+      showSceneMessage(scene, "Movement telemetry calibrated.");
+      const terminal = scene.ahTerminal;
+      if (!terminal) return;
+      scene.tweens.killTweensOf(terminal);
+      scene.tweens.killTweensOf(scene.ahTerminalGlow);
+      terminal.setTint?.(0xbffaff);
+      scene.tweens.add({
+        targets: terminal,
+        scaleX: scene.ahTerminalBaseScale * 1.025,
+        scaleY: scene.ahTerminalBaseScale * 1.025,
+        duration: 105,
+        yoyo: true,
+        onComplete: function clearTerminalPulse() {
+          terminal?.clearTint?.();
+          terminal?.setScale?.(scene.ahTerminalBaseScale);
+        }
+      });
+      if (scene.ahTerminalGlow) {
+        scene.tweens.add({ targets: scene.ahTerminalGlow, alpha: 0.95, duration: 105, yoyo: true });
+      }
       return;
     }
     if (scene.ahContext !== "dummy") return;
@@ -657,9 +763,16 @@
     const edy = player.y - scene.ahExit.y;
     const dummyDistanceSq = ddx * ddx + ddy * ddy;
     const exitDistanceSq = edx * edx + edy * edy;
-    if (dummyDistanceSq <= DUMMY_RANGE_SQ) setContext(scene, "dummy");
-    else if (exitDistanceSq <= EXIT_RANGE_SQ) setContext(scene, "exit");
-    else setContext(scene, null);
+    const terminal = scene.ahTerminalAnchor;
+    const tdx = terminal ? player.x - terminal.x : Infinity;
+    const tdy = terminal ? player.y - terminal.y : Infinity;
+    const terminalDistanceSq = tdx * tdx + tdy * tdy;
+    const options = [];
+    if (dummyDistanceSq <= DUMMY_RANGE_SQ) options.push({ context: "dummy", distanceSq: dummyDistanceSq });
+    if (terminalDistanceSq <= TERMINAL_RANGE_SQ) options.push({ context: "terminal", distanceSq: terminalDistanceSq });
+    if (exitDistanceSq <= EXIT_RANGE_SQ) options.push({ context: "exit", distanceSq: exitDistanceSq });
+    options.sort(function nearestFirst(a, b) { return a.distanceSq - b.distanceSq; });
+    setContext(scene, options[0]?.context || null);
   }
 
   function handleKeyboardActions(scene) {
@@ -711,6 +824,21 @@
   }
 
   function scenePreload() {
+    this.ahEnvironmentLoadErrors = new Set();
+    this.ahOnAssetLoadError = function onAssetLoadError(file) {
+      const key = file?.key;
+      const asset = Object.values(ENVIRONMENT_ASSETS).find(function matchesEnvironmentAsset(item) { return item.key === key; });
+      if (!asset || this.ahEnvironmentLoadErrors.has(key)) return;
+      this.ahEnvironmentLoadErrors.add(key);
+      log("environment asset failed to load; preserving fallback: " + asset.url);
+    }.bind(this);
+    this.load.on("loaderror", this.ahOnAssetLoadError);
+    this.sys.events.once("shutdown", function removeAssetLoadListener() {
+      this.load?.off?.("loaderror", this.ahOnAssetLoadError);
+    }, this);
+    Object.values(ENVIRONMENT_ASSETS).forEach(function preloadEnvironmentAsset(asset) {
+      this.load.image(asset.key, asset.url);
+    }, this);
     this.load.spritesheet(PLAYER_SHEET_TEXTURE, PLAYER_SHEET_URL, { frameWidth: 256, frameHeight: 256 });
   }
 
