@@ -44,6 +44,7 @@
           (readyName === "dojo.js" && !!global.Dojo) ||
           (readyName === "phaser.min.js" && !!global.Phaser) ||
           (readyName === "dojo_room.js" && !!global.AlphaDojoRoom) ||
+          (readyName === "exploration_room.js" && !!global.AlphaExplorationRoom?.open) ||
           (readyName === "referrals.js" && !!global.Referrals) ||
           (readyName === "siege_pixi.js" && !!global.SiegePixi) ||
           (readyName === "siege.js" && !!global.Siege) ||
@@ -335,6 +336,24 @@
     });
   }
 
+  async function ensureExplorationRoomLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
+      global.AlphaExplorationRoom.init(deps);
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("exploration_room", async () => {
+      await ensurePhaserLoaded();
+      await loadScript("js/exploration_room.js");
+      if (!global.AlphaExplorationRoom?.open || !global.AlphaExplorationRoom?.init) {
+        throw new Error("exploration_room.js loaded but window.AlphaExplorationRoom is missing");
+      }
+      global.AlphaExplorationRoom.init(deps);
+      return true;
+    });
+  }
+
   async function ensureReferralsLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
     if (global.Referrals?.open && global.Referrals?.init) {
@@ -448,6 +467,7 @@
     global.ensureFortressLoaded = ensureFortressLoaded;
     global.ensurePhaserLoaded = ensurePhaserLoaded;
     global.ensureDojoLoaded = ensureDojoLoaded;
+    global.ensureExplorationRoomLoaded = ensureExplorationRoomLoaded;
     global.ensureReferralsLoaded = ensureReferralsLoaded;
     global.ensureSiegeLoaded = ensureSiegeLoaded;
     global.ensureOracleLoaded = ensureOracleLoaded;
@@ -472,6 +492,7 @@
     ensureFortressLoaded,
     ensurePhaserLoaded,
     ensureDojoLoaded,
+    ensureExplorationRoomLoaded,
     ensureReferralsLoaded,
     ensureSiegeLoaded,
     ensureOracleLoaded,
@@ -481,6 +502,7 @@
   };
 
   global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
-  global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
+    global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
+    global.ensureExplorationRoomLoaded = ensureExplorationRoomLoaded;
   global.AHBootLoaders = API;
 })(window);

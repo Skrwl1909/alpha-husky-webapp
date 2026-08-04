@@ -152,6 +152,11 @@
     panel.innerHTML = '<div class="world-exploration-backdrop" data-we-close="1"></div><section class="world-exploration-panel" role="dialog" aria-modal="true" aria-labelledby="worldExplorationTitle"><button class="world-exploration-close" type="button" data-we-close="1" aria-label="Close sector details">&times;</button><div id="worldExplorationPanelContent"></div></section>';
     panel.addEventListener("click", (event) => {
       if (event.target?.closest?.("[data-we-close]")) closePanel();
+      if (event.target?.closest?.("[data-we-action='enter']")) {
+        event.preventDefault();
+        void enterSelected();
+        return;
+      }
       const pathButton = event.target?.closest?.("[data-we-path-action]");
       if (pathButton) {
         event.preventDefault();
@@ -341,18 +346,18 @@
     const recovery = asObject(state.projection?.fragmentRecovery);
     if (String(recovery?.itemId || "") !== CANONICAL_FRAGMENT_ID) return "";
     const sources = Array.isArray(recovery.sources) ? recovery.sources.filter(asObject) : [];
-    const source = sources[0];
+    const source = sources.find((entry) => String(entry.id || "") === "standard_missions") || sources[0];
     if (!source) {
       return `<section class="world-exploration-recovery"><h3>HOW TO RECOVER</h3><p>${escapeHtml(String(recovery.fallbackMessage || "No active recovery source is currently available."))}</p></section>`;
     }
     const cta = asObject(source.cta);
-    const description = sources.map((entry) => (
-      String(entry.description || "").trim() || `Complete ${String(entry.title || "the active route")} to recover route fragments.`
-    )).join(" ");
+    const sourceOrder = ["standard_missions", "chain_abandoned_wallets_expedition", "chain_broken_contracts_expedition"];
+    const ordered = sourceOrder.map((id) => sources.find((entry) => String(entry.id || "") === id)).filter(Boolean);
+    const sourceList = ordered.length ? ordered : sources;
     const button = cta?.target && cta?.label
       ? `<button class="world-exploration-action world-exploration-recovery-action" type="button" data-we-recovery-source="${escapeHtml(String(source.id || ""))}" data-we-recovery-target="${escapeHtml(String(cta.target))}" data-we-recovery-building-id="${escapeHtml(String(cta.buildingId || ""))}">${escapeHtml(String(cta.label))}</button>`
       : "";
-    return `<section class="world-exploration-recovery"><h3>HOW TO RECOVER</h3><p>${escapeHtml(description)}</p>${button}</section>`;
+    return `<section class="world-exploration-recovery"><h3>MAP KEY FRAGMENTS</h3><p class="world-exploration-recovery-balance">${escapeHtml(`${Math.max(0, Number(state.projection?.currentFragmentBalance) || 0)} / ${required}`)}</p><p>Recovered through:</p><ul>${sourceList.map((entry) => `<li>${escapeHtml(String(entry.title || "Recovery route"))}</li>`).join("")}</ul>${button}</section>`;
   }
 
   async function openFragmentRecovery(button) {
@@ -404,6 +409,7 @@
     if (status === "available" && sector?.canStartScan) return '<button class="world-exploration-action" type="button" data-we-action="start">Start scan</button>';
     if (status === "scanning" || (activeScan && remaining > 0)) return `<button class="world-exploration-action" type="button" disabled>Scanning · ${escapeHtml(formatRemaining(remaining))}</button>`;
     if (status === "claimable" && state.projection?.canClaimScan && activeScan) return '<button class="world-exploration-action is-claim" type="button" data-we-action="claim">Claim sector</button>';
+    if (canEnterSector("relay_fringe_01")) return '<button class="world-exploration-action is-claim" type="button" data-we-action="enter">ENTER SECTOR</button>';
     if (status === "unlocked") return '<div class="world-exploration-complete">Sector unlocked</div>';
     const reason = (sector?.blockingReasons || [])[0] || "Requirements are not met.";
     return `<button class="world-exploration-action" type="button" disabled>${escapeHtml(humanReason(reason))}</button>`;
@@ -425,6 +431,9 @@
         requirementsHtml,
         fragmentRecoveryHtml,
       });
+      if (canEnterSector("relay_fringe_01")) {
+        content.insertAdjacentHTML("beforeend", '<div class="world-exploration-panel-body"><button class="world-exploration-action is-claim" type="button" data-we-action="enter">ENTER SECTOR</button></div>');
+      }
       void path.afterPanelRender({
         sector,
         projection: state.projection,
@@ -627,6 +636,43 @@
     }
   }
 
+  function canEnterSector(sectorId) {
+    if (String(sectorId || "") !== "relay_fringe_01" || !state.valid || !state.projection) return false;
+    const sector = sectorFor(sectorId);
+    if (!sector || sector.canEnterSector !== true) return false;
+    const phase = String(sector?.pathOfProof?.phase || "").toUpperCase();
+    const status = String(sector.status || "").toLowerCase();
+    return status === "unlocked" && (!phase || phase === "UNLOCKED");
+  }
+
+  async function enterSelected() {
+    const selected = String(state.selectedSectorId || "");
+    if (selected !== "relay_fringe_01" || state.requestBusy) return;
+    state.requestBusy = true;
+    state.pendingLabel = "Validating routeâ€¦";
+    renderPanel();
+    try {
+      await refreshState({ force: true });
+      if (!canEnterSector(selected)) throw new Error("This sector is not currently authorized for entry.");
+      const ensure = window.ensureExplorationRoomLoaded || window.AHBootLoaders?.ensureExplorationRoomLoaded;
+      if (typeof ensure !== "function") throw new Error("Sector room loader is unavailable.");
+      await ensure(apiPost(), window.Telegram?.WebApp || window.tg, window.DBG);
+      if (!canEnterSector(selected)) throw new Error("This sector authorization is no longer current.");
+      const opened = await window.AlphaExplorationRoom.open({
+        sectorId: selected,
+        onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
+      });
+      if (!opened) throw new Error("Sector room could not be opened.");
+    } catch (error) {
+      state.lastMessage = humanReason(error?.message || "Unable to enter this sector.");
+      renderPanel();
+    } finally {
+      state.requestBusy = false;
+      state.pendingLabel = "";
+      if (!window.AlphaExplorationRoom?.isOpen?.()) renderPanel();
+    }
+  }
+
   function syncDeadRelayMarker() {
     const locked = !canOpenDeadRelay();
     document.querySelectorAll('[data-node-id="dead_relay_exchange"], [data-building-id="dead_relay_exchange"]').forEach((element) => {
@@ -808,7 +854,7 @@
     state.pendingLabel = "";
   }
 
-  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
+  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, canEnterSector, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();
