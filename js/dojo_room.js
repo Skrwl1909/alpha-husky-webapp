@@ -19,11 +19,17 @@
   const TERMINAL_RANGE_SQ = 168 * 168;
   const FLOOR_TILE_SCALE = 0.52;
   const WALL_SCALE = 0.25;
+  const VERTICAL_WALL_SCALE = 0.162;
+  const SENTINEL_SCALE = 0.18;
+  const EXIT_GATE_SCALE = 0.22;
   const TERMINAL_SCALE = 0.26;
   const ENVIRONMENT_ASSETS = Object.freeze({
     floor: { key: "dojo-floor-base", url: "assets/dojo/v1/processed/floor.webp" },
     terminal: { key: "dojo-terminal", url: "assets/dojo/v1/processed/terminal.webp" },
-    wall: { key: "dojo-wall-horizontal", url: "assets/dojo/v1/processed/wall.webp" }
+    wall: { key: "dojo-wall-horizontal", url: "assets/dojo/v1/processed/wall.webp" },
+    verticalWall: { key: "dojo-wall-vertical", url: "assets/dojo/v1/processed/vertical_wall.webp" },
+    sentinel: { key: "dojo-sentinel", url: "assets/dojo/v1/processed/sentinel.webp" },
+    exitGate: { key: "dojo-exit-gate", url: "assets/dojo/v1/processed/exit_gate.webp" }
   });
 
   const S = {
@@ -420,6 +426,71 @@
     return wall;
   }
 
+  function addEnvironmentVerticalWall(scene, group, x, y) {
+    const wallAsset = ENVIRONMENT_ASSETS.verticalWall;
+    // Do not recreate the former procedural blocker if the matching art is unavailable.
+    if (!scene.textures.exists(wallAsset.key)) return null;
+    const wall = scene.add.image(x, y, wallAsset.key).setOrigin(0.5, 0.4606).setScale(VERTICAL_WALL_SCALE).setDepth(10);
+    scene.physics.add.existing(wall, true);
+    refreshStaticBody(wall);
+    // Source alpha bounds: x 395-626, y 58-1357, converted to the 0.162 display scale.
+    wall.body.setSize(38, 210).setOffset(64, 9);
+    group.add(wall);
+    return wall;
+  }
+
+  function addTrainingDummy(scene) {
+    const x = 1025;
+    const y = 450;
+    const sentinelAsset = ENVIRONMENT_ASSETS.sentinel;
+    if (scene.textures.exists(sentinelAsset.key)) {
+      const sentinel = scene.add.image(x, y, sentinelAsset.key).setOrigin(0.5).setScale(SENTINEL_SCALE).setDepth(20);
+      scene.physics.add.existing(sentinel, true);
+      refreshStaticBody(sentinel);
+      // The hologram is non-solid; this is the lower chassis at the 0.18 display scale.
+      sentinel.body.setSize(94, 40).setOffset(45, 122);
+      scene.ahDummy = sentinel;
+      scene.ahDummyBaseScale = SENTINEL_SCALE;
+      return;
+    }
+
+    createDummyTexture(scene);
+    scene.ahDummy = scene.physics.add.staticSprite(x, y, DUMMY_TEXTURE);
+    scene.ahDummy.body.setSize(42, 48).setOffset(7, 19);
+    scene.ahDummy.refreshBody();
+    scene.ahDummy.setDepth(20);
+    scene.ahDummyBaseScale = 1;
+  }
+
+  function addExitGateFrameCollider(scene, group, x, y, width, height) {
+    const frame = scene.add.rectangle(x, y, width, height, 0x000000, 0).setVisible(false);
+    scene.physics.add.existing(frame, true);
+    group.add(frame);
+    return frame;
+  }
+
+  function addExitGate(scene, group) {
+    const x = 188;
+    const y = 760;
+    scene.ahExit = { x, y };
+    const gateAsset = ENVIRONMENT_ASSETS.exitGate;
+    if (scene.textures.exists(gateAsset.key)) {
+      const gate = scene.add.image(x, y, gateAsset.key).setOrigin(0.5).setScale(EXIT_GATE_SCALE).setDepth(10);
+      // Source alpha bounds: x 27-994, y 502-967. Only the visible side pillars collide.
+      scene.ahExitGateFrames = [
+        addExitGateFrameCollider(scene, group, 106, 753, 50, 99),
+        addExitGateFrameCollider(scene, group, 269, 753, 50, 99)
+      ];
+      scene.ahExitGate = gate;
+      return;
+    }
+
+    scene.add.rectangle(x, y, 150, 82, 0x173b44, 0.38).setStrokeStyle(2, 0x65e8ff, 0.65);
+    scene.add.text(x, y, "EXIT // MAP", {
+      fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#8cefff", fontStyle: "bold", letterSpacing: 2
+    }).setOrigin(0.5);
+  }
+
   function addTrainingTerminal(scene) {
     const x = 1020;
     const y = 720;
@@ -458,8 +529,8 @@
 
     addEnvironmentWall(scene, blockers, 450, 278, 230, 42);
     addEnvironmentWall(scene, blockers, 450, 610, 230, 42);
-    addStaticBlock(scene, blockers, 760, 190, 46, 210, 0x182630, 0x416677);
-    addStaticBlock(scene, blockers, 760, 705, 46, 210, 0x182630, 0x416677);
+    addEnvironmentVerticalWall(scene, blockers, 760, 190);
+    addEnvironmentVerticalWall(scene, blockers, 760, 705);
     addEnvironmentWall(scene, blockers, 1115, 275, 190, 38);
     addEnvironmentWall(scene, blockers, 1115, 625, 190, 38);
 
@@ -470,21 +541,13 @@
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#566c79", letterSpacing: 1
     });
 
-    createDummyTexture(scene);
-    scene.ahDummy = scene.physics.add.staticSprite(1025, 450, DUMMY_TEXTURE);
-    scene.ahDummy.body.setSize(42, 48).setOffset(7, 19);
-    scene.ahDummy.refreshBody();
-    scene.ahDummy.setDepth(20);
+    addTrainingDummy(scene);
     scene.add.circle(scene.ahDummy.x, scene.ahDummy.y + 28, 76, 0xd7a85a, 0.035).setStrokeStyle(2, 0xd7a85a, 0.22);
     scene.add.text(scene.ahDummy.x, scene.ahDummy.y - 58, "TRAINING UNIT", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#c59d5d", letterSpacing: 2
     }).setOrigin(0.5);
 
-    scene.ahExit = { x: 188, y: 760 };
-    scene.add.rectangle(scene.ahExit.x, scene.ahExit.y, 150, 82, 0x173b44, 0.38).setStrokeStyle(2, 0x65e8ff, 0.65);
-    scene.add.text(scene.ahExit.x, scene.ahExit.y, "EXIT // MAP", {
-      fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#8cefff", fontStyle: "bold", letterSpacing: 2
-    }).setOrigin(0.5);
+    addExitGate(scene, blockers);
 
     addTrainingTerminal(scene);
 
@@ -690,15 +753,16 @@
     showSceneMessage(scene, "Training signal registered.");
     scene.tweens.killTweensOf(scene.ahDummy);
     scene.ahDummy.setTint(0xffd38a);
+    const dummyBaseScale = scene.ahDummyBaseScale || 1;
     scene.tweens.add({
       targets: scene.ahDummy,
-      scaleX: 1.09,
-      scaleY: 1.09,
+      scaleX: dummyBaseScale * 1.045,
+      scaleY: dummyBaseScale * 1.045,
       duration: 90,
       yoyo: true,
       onComplete: function clearDummySignal() {
         scene.ahDummy?.clearTint?.();
-        scene.ahDummy?.setScale?.(1);
+        scene.ahDummy?.setScale?.(dummyBaseScale);
       }
     });
   }
