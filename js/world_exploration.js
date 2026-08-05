@@ -409,10 +409,16 @@
     if (status === "available" && sector?.canStartScan) return '<button class="world-exploration-action" type="button" data-we-action="start">Start scan</button>';
     if (status === "scanning" || (activeScan && remaining > 0)) return `<button class="world-exploration-action" type="button" disabled>Scanning · ${escapeHtml(formatRemaining(remaining))}</button>`;
     if (status === "claimable" && state.projection?.canClaimScan && activeScan) return '<button class="world-exploration-action is-claim" type="button" data-we-action="claim">Claim sector</button>';
-    if (canEnterSector("relay_fringe_01")) return '<button class="world-exploration-action is-claim" type="button" data-we-action="enter">ENTER SECTOR</button>';
+    if (canEnterSector("relay_fringe_01")) return relayEntryActionHtml(sector);
     if (status === "unlocked") return '<div class="world-exploration-complete">Sector unlocked</div>';
     const reason = (sector?.blockingReasons || [])[0] || "Requirements are not met.";
     return `<button class="world-exploration-action" type="button" disabled>${escapeHtml(humanReason(reason))}</button>`;
+  }
+
+  function relayEntryActionHtml(sector) {
+    const preview = hasRelayFringeDeveloperPreview(sector);
+    const label = preview ? "ENTER SECTOR · DEV PREVIEW" : "ENTER SECTOR";
+    return `<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${label}</button>`;
   }
 
   function renderPanel() {
@@ -432,7 +438,7 @@
         fragmentRecoveryHtml,
       });
       if (canEnterSector("relay_fringe_01")) {
-        content.insertAdjacentHTML("beforeend", '<div class="world-exploration-panel-body"><button class="world-exploration-action is-claim" type="button" data-we-action="enter">ENTER SECTOR</button></div>');
+        content.insertAdjacentHTML("beforeend", `<div class="world-exploration-panel-body">${relayEntryActionHtml(sector)}</div>`);
       }
       void path.afterPanelRender({
         sector,
@@ -636,13 +642,21 @@
     }
   }
 
-  function canEnterSector(sectorId) {
-    if (String(sectorId || "") !== "relay_fringe_01" || !state.valid || !state.projection) return false;
-    const sector = sectorFor(sectorId);
+  function hasProductionRelayAccess(sector) {
     if (!sector || sector.canEnterSector !== true) return false;
     const phase = String(sector?.pathOfProof?.phase || "").toUpperCase();
     const status = String(sector.status || "").toLowerCase();
     return status === "unlocked" && (!phase || phase === "UNLOCKED");
+  }
+
+  function hasRelayFringeDeveloperPreview(sector) {
+    return String(sector?.id || "") === "relay_fringe_01" && sector?.relayFringeDevPreview === true;
+  }
+
+  function canEnterSector(sectorId) {
+    if (String(sectorId || "") !== "relay_fringe_01" || !state.valid || !state.projection) return false;
+    const sector = sectorFor(sectorId);
+    return hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector);
   }
 
   async function enterSelected() {
