@@ -659,6 +659,15 @@
     return hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector);
   }
 
+  function relayEntryFailureMessage(sector, error) {
+    const stage = String(error?.relayStage || "ROOM OPEN FAILED").trim() || "ROOM OPEN FAILED";
+    if (hasRelayFringeDeveloperPreview(sector)) {
+      try { console.error("[WorldExploration] Relay developer preview failed", error); } catch (_) {}
+      return `DEV PREVIEW · ${stage}`;
+    }
+    return humanReason(error?.message || "Unable to enter this sector.");
+  }
+
   async function enterSelected() {
     const selected = String(state.selectedSectorId || "");
     if (selected !== "relay_fringe_01" || state.requestBusy) return;
@@ -678,7 +687,7 @@
       });
       if (!opened) throw new Error("Sector room could not be opened.");
     } catch (error) {
-      state.lastMessage = humanReason(error?.message || "Unable to enter this sector.");
+      state.lastMessage = relayEntryFailureMessage(sectorFor(selected), error);
       renderPanel();
     } finally {
       state.requestBusy = false;

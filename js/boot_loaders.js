@@ -96,6 +96,12 @@
     return !!global.DBG;
   }
 
+  function relayLoaderError(stage, error) {
+    const failure = error instanceof Error ? error : new Error(String(error || stage));
+    failure.relayStage = stage;
+    return failure;
+  }
+
   async function once(key, fn) {
     if (STATE.pending[key]) return await STATE.pending[key];
     STATE.pending[key] = (async () => await fn())();
@@ -339,17 +345,21 @@
   async function ensureExplorationRoomLoaded(apiPost, tg, dbg) {
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
     if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
-      global.AlphaExplorationRoom.init(deps);
+      try { global.AlphaExplorationRoom.init(deps); }
+      catch (error) { throw relayLoaderError("ROOM INIT FAILED", error); }
       return true;
     }
     const loadScript = getLoadScript();
     return await once("exploration_room", async () => {
-      await ensurePhaserLoaded();
-      await loadScript("js/exploration_room.js");
+      try { await ensurePhaserLoaded(); }
+      catch (error) { throw relayLoaderError("PHASER LOAD FAILED", error); }
+      try { await loadScript("js/exploration_room.js"); }
+      catch (error) { throw relayLoaderError("EXPLORATION SCRIPT LOAD FAILED", error); }
       if (!global.AlphaExplorationRoom?.open || !global.AlphaExplorationRoom?.init) {
-        throw new Error("exploration_room.js loaded but window.AlphaExplorationRoom is missing");
+        throw relayLoaderError("ROOM API MISSING", new Error("exploration_room.js loaded but window.AlphaExplorationRoom is missing"));
       }
-      global.AlphaExplorationRoom.init(deps);
+      try { global.AlphaExplorationRoom.init(deps); }
+      catch (error) { throw relayLoaderError("ROOM INIT FAILED", error); }
       return true;
     });
   }
