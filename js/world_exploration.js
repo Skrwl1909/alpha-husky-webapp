@@ -101,6 +101,14 @@
     return root;
   }
 
+  function suspendRelayMapPresentation() {
+    const panel = byId(PANEL_ID);
+    if (!panel) return;
+    panel.hidden = true;
+    panel.setAttribute("aria-hidden", "true");
+    try { panel.inert = true; } catch (_) {}
+  }
+
   function waitForRelayLayout() {
     return new Promise((resolve) => {
       let frames = 0;
@@ -521,6 +529,8 @@
     state.selectedSectorId = sector.id;
     state.lastMessage = "";
     panel.hidden = false;
+    panel.setAttribute("aria-hidden", "false");
+    try { panel.inert = false; } catch (_) {}
     renderOverlay();
     renderPanel();
     if (!wasOpen) {
@@ -783,6 +793,7 @@
       });
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!opened) throw new Error("Sector room could not be opened.");
+      suspendRelayMapPresentation();
       return true;
     })();
     // Late completion is always torn down; it cannot mount behind the restored World Map.
