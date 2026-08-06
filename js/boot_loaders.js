@@ -102,6 +102,10 @@
     return failure;
   }
 
+  function relayTrace(trace, stage) {
+    try { (typeof trace === "function" ? trace : global.__AH_RELAY_STARTUP_TRACE)?.(stage); } catch (_) {}
+  }
+
   async function once(key, fn) {
     if (STATE.pending[key]) return await STATE.pending[key];
     STATE.pending[key] = (async () => await fn())();
@@ -342,24 +346,34 @@
     });
   }
 
-  async function ensureExplorationRoomLoaded(apiPost, tg, dbg) {
-    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+  async function ensureExplorationRoomLoaded(apiPost, tg, dbg, trace) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg), devPreview: global.__AH_RELAY_STARTUP_DEV_PREVIEW === true };
+    relayTrace(trace, "PHASER_LOAD_START");
+    try { await ensurePhaserLoaded(); }
+    catch (error) { throw relayLoaderError("PHASER LOAD FAILED", error); }
+    relayTrace(trace, "PHASER_READY");
     if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
-      try { global.AlphaExplorationRoom.init(deps); }
+      relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
+      relayTrace(trace, "ROOM_SCRIPT_READY");
+      relayTrace(trace, "ROOM_API_READY");
+      try { global.AlphaExplorationRoom.init({ ...deps, trace }); }
       catch (error) { throw relayLoaderError("ROOM INIT FAILED", error); }
+      relayTrace(trace, "ROOM_INIT_DONE");
       return true;
     }
     const loadScript = getLoadScript();
     return await once("exploration_room", async () => {
-      try { await ensurePhaserLoaded(); }
-      catch (error) { throw relayLoaderError("PHASER LOAD FAILED", error); }
+      relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
       try { await loadScript("js/exploration_room.js"); }
       catch (error) { throw relayLoaderError("EXPLORATION SCRIPT LOAD FAILED", error); }
+      relayTrace(trace, "ROOM_SCRIPT_READY");
       if (!global.AlphaExplorationRoom?.open || !global.AlphaExplorationRoom?.init) {
         throw relayLoaderError("ROOM API MISSING", new Error("exploration_room.js loaded but window.AlphaExplorationRoom is missing"));
       }
-      try { global.AlphaExplorationRoom.init(deps); }
+      relayTrace(trace, "ROOM_API_READY");
+      try { global.AlphaExplorationRoom.init({ ...deps, trace }); }
       catch (error) { throw relayLoaderError("ROOM INIT FAILED", error); }
+      relayTrace(trace, "ROOM_INIT_DONE");
       return true;
     });
   }
