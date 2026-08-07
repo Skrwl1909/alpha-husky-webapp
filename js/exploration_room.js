@@ -198,6 +198,143 @@
   function createGame(){return new Promise((resolve,reject)=>{S.resolveReady=resolve;S.rejectReady=reject;S.readyTimer=setTimeout(()=>settle(false,roomError("CANVAS READY TIMEOUT",new Error("Relay room timed out"))),READY_TIMEOUT_MS);const w=S.canvasParent.clientWidth,h=S.canvasParent.clientHeight;try{trace("GAME_CREATED");S.game=new global.Phaser.Game({type:global.Phaser.AUTO,parent:CANVAS_ID,width:w,height:h,backgroundColor:"#071019",audio:{noAudio:true},input:{activePointers:4,touch:{capture:true}},scale:{mode:global.Phaser.Scale.RESIZE,width:w,height:h},physics:{default:"arcade",arcade:{gravity:{x:0,y:0},debug:!!global.DBG}},render:{roundPixels:true,powerPreference:"low-power"},scene:{preload,create,update}});}catch(error){settle(false,roomError("PHASER GAME CREATE FAILED",error));}});}
   async function cleanup(options){settle(false);if(S.diagnosticTimer){clearTimeout(S.diagnosticTimer);S.diagnosticTimer=null;}unbindEvents();const scene=S.scene;scene?.ahResetInput?.();scene?.ahStop?.();if(scene?.input)scene.input.enabled=false;const game=S.game;S.game=null;S.scene=null;if(game)try{game.destroy(true);}catch(error){log("destroy failed",error);}S.canvasParent?.replaceChildren();unregisterNavigation(!!options?.fromNavigation);S.root?.remove();S.root=S.canvasParent=S.loading=null;S.ready=false;restorePage();}
   async function runOpen(generation){try{injectCSS();buildShell();lockPage();readInsets();bindEvents();registerNavigation();if(!global.Phaser?.Game)throw roomError("PHASER LOAD FAILED",new Error("Phaser unavailable"));const delay=Math.max(0,Number(global.__AH_EXPLORATION_SIMULATE_OPEN_DELAY_MS)||0);if(S.dbg&&delay)await new Promise(resolve=>setTimeout(resolve,delay));if(S.dbg&&global.__AH_EXPLORATION_SIMULATE_UNRESOLVED_OPEN===true)await new Promise(()=>{});if(S.closing||generation!==S.generation)return false;await prepareGameMount();if(S.closing||generation!==S.generation)return false;const ready=await createGame();if(!ready||S.closing||generation!==S.generation)return false;if(!S.game||!S.scene?.ahPlayer||!S.scene?.input||!S.canvas)throw roomError("SCENE CREATE FAILED",new Error("Relay ready handshake failed"));await revealAfterReady();if(S.closing||generation!==S.generation)return false;S.ready=true;return true;}catch(error){const failure=roomError(error?.relayStage||"ROOM OPEN FAILED",error);log("open failed",failure);await cleanup();throw failure;}}
+  // Post-ready validation intentionally accepts Relay-owned DOM HUD/controls above the Phaser canvas.
+  function elementName(element) {
+    if (!element) return "missing";
+    if (element.id) return "#" + element.id;
+    const className = String(element.className || "").trim().split(/\s+/).filter(Boolean)[0];
+    return className ? "." + className : String(element.tagName || "element").toLowerCase();
+  }
+  function elementFacts(element) {
+    const style = element?.isConnected ? getComputedStyle(element) : null;
+    const rect = element?.getBoundingClientRect?.();
+    const opacity = Number(style?.opacity);
+    return {
+      connected: !!element?.isConnected, name: elementName(element),
+      rect: { x: Math.round(rect?.x ?? rect?.left ?? 0), y: Math.round(rect?.y ?? rect?.top ?? 0), width: Math.round(rect?.width || 0), height: Math.round(rect?.height || 0), left: Math.round(rect?.left || 0), top: Math.round(rect?.top || 0), right: Math.round(rect?.right || 0), bottom: Math.round(rect?.bottom || 0) },
+      display: style?.display || "missing", visibility: style?.visibility || "missing", opacity: Number.isFinite(opacity) ? opacity : 0,
+      pointerEvents: style?.pointerEvents || "missing", hidden: !!element?.hidden, inert: !!element?.inert,
+    };
+  }
+  function rectIntersectsViewport(rect) { return !!rect && rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.bottom > 0 && rect.left < global.innerWidth && rect.top < global.innerHeight; }
+  function ancestorFacts() {
+    const ancestors = [], canvasVisibility = elementFacts(S.canvas).visibility;
+    let node = S.canvas?.parentElement, blocking = null, firstHiddenOrZero = null;
+    while (node) {
+      const fact = elementFacts(node), zero = !(fact.rect.width > 0 && fact.rect.height > 0);
+      const hidden = fact.hidden || fact.display === "none" || fact.visibility === "hidden" || fact.visibility === "collapse" || !(fact.opacity > 0);
+      fact.zeroSize = zero; ancestors.push(fact);
+      if (!firstHiddenOrZero && (zero || hidden || !fact.connected)) firstHiddenOrZero = { name: fact.name, reason: !fact.connected ? "disconnected" : fact.hidden ? "hidden" : fact.display === "none" ? "display:none" : fact.visibility !== "visible" ? "visibility:" + fact.visibility : !(fact.opacity > 0) ? "opacity:" + fact.opacity : "zero-size" };
+      const visibilityBlocks = fact.visibility === "hidden" || fact.visibility === "collapse";
+      if (!blocking && (!fact.connected || fact.hidden || fact.display === "none" || !(fact.opacity > 0) || (visibilityBlocks && canvasVisibility !== "visible"))) blocking = { name: fact.name, reason: !fact.connected ? "disconnected" : fact.hidden ? "hidden" : fact.display === "none" ? "display:none" : visibilityBlocks ? "visibility:" + fact.visibility : "opacity:" + fact.opacity };
+      if (node === document.body) break;
+      node = node.parentElement;
+    }
+    return { ancestors, blocking, firstHiddenOrZero };
+  }
+  function controlFacts() {
+    const scene = S.scene, canvasRect = S.canvas?.getBoundingClientRect?.(), scaleW = scene?.scale?.width || 1, scaleH = scene?.scale?.height || 1;
+    return ["ahJoyHit", "ahActionHit", "ahDashHit", "ahRestoreHit"].map(name => {
+      const control = scene?.[name], left = (canvasRect?.left || 0) + ((control?.x || 0) / scaleW) * (canvasRect?.width || 0), top = (canvasRect?.top || 0) + ((control?.y || 0) / scaleH) * (canvasRect?.height || 0);
+      return { name, exists: !!control, visible: control?.visible === true, pointerEnabled: control?.input?.enabled === true, viewportIntersect: !!control && left >= 0 && top >= 0 && left < global.innerWidth && top < global.innerHeight };
+    });
+  }
+  function isObsoleteMapLayer(element) { return !!element?.closest?.("#mapBack,#worldExplorationPanel,.world-exploration-backdrop,[data-relay-test-map-blocker]"); }
+  function postReadyFacts() {
+    const canvasRect = S.canvas?.getBoundingClientRect?.();
+    const centerX = Math.max(0, Math.min(global.innerWidth - 1, Math.round((canvasRect?.left || 0) + (canvasRect?.width || 0) / 2)));
+    const centerY = Math.max(0, Math.min(global.innerHeight - 1, Math.round((canvasRect?.top || 0) + (canvasRect?.height || 0) / 2)));
+    const top = document.elementFromPoint?.(centerX, centerY) || null;
+    const mobileControlRoots = controlFacts(), joy = mobileControlRoots.find(control => control.name === "ahJoyHit");
+    return {
+      canvas: elementFacts(S.canvas), root: elementFacts(S.root), loading: elementFacts(S.loading), canvasCount: document.querySelectorAll("#" + ROOT_ID + " canvas").length,
+      mobileControlRoots, controlsVisible: !isTouch() || !!(joy?.exists && joy.visible && joy.pointerEnabled && joy.viewportIntersect),
+      topmost: { tag: top?.tagName || "", id: top?.id || "", className: String(top?.className || "").slice(0, 120), isCanvas: top === S.canvas, insideGameplayRoot: !!(top && S.root?.contains(top)), obsoleteMapLayer: isObsoleteMapLayer(top) },
+      viewport: { width: global.innerWidth, height: global.innerHeight }, canvasIntersectsViewport: rectIntersectsViewport(canvasRect), ancestry: ancestorFacts(),
+    };
+  }
+  function presentationFailures(facts) {
+    const failed = [], add = code => { if (!failed.includes(code)) failed.push(code); };
+    if (!facts.canvas.connected) add("CANVAS_DISCONNECTED");
+    if (!(facts.canvas.rect.width > 0)) add("CANVAS_ZERO_WIDTH");
+    if (!(facts.canvas.rect.height > 0)) add("CANVAS_ZERO_HEIGHT");
+    if (facts.canvas.display === "none") add("CANVAS_DISPLAY_NONE");
+    if (facts.canvas.visibility === "hidden" || facts.canvas.visibility === "collapse") add("CANVAS_VISIBILITY_HIDDEN");
+    if (!(facts.canvas.opacity > 0)) add("CANVAS_OPACITY_ZERO");
+    if (!facts.canvasIntersectsViewport) add("CANVAS_OUTSIDE_VIEWPORT");
+    if (!facts.root.connected) add("ROOT_DISCONNECTED");
+    if (!(facts.root.rect.width > 0 && facts.root.rect.height > 0)) add("ROOT_ZERO_SIZE");
+    if (facts.root.display === "none") add("ROOT_DISPLAY_NONE");
+    if (facts.root.visibility === "hidden" || facts.root.visibility === "collapse") add("ROOT_VISIBILITY_HIDDEN");
+    if (!(facts.root.opacity > 0)) add("ROOT_OPACITY_ZERO");
+    if (facts.root.pointerEvents === "none") add("ROOT_POINTER_EVENTS_NONE");
+    if (facts.ancestry.blocking) add("HIDDEN_ANCESTOR:" + facts.ancestry.blocking.name);
+    if (facts.loading.connected && !facts.loading.hidden && facts.loading.display !== "none" && facts.loading.visibility !== "hidden" && facts.loading.visibility !== "collapse" && facts.loading.opacity > 0) add("LOADING_STILL_VISIBLE");
+    if (facts.canvasIntersectsViewport && facts.topmost.obsoleteMapLayer) add("OBSOLETE_MAP_LAYER_ON_TOP");
+    if (facts.canvasIntersectsViewport && !facts.topmost.insideGameplayRoot) add("TOP_ELEMENT_OUTSIDE_GAMEPLAY_ROOT");
+    if (!facts.controlsVisible) add("CONTROLS_NOT_VISIBLE");
+    return failed;
+  }
+  function diagnosticText(facts, failures) {
+    const c = facts.canvas.rect, r = facts.root.rect, ancestor = facts.ancestry.firstHiddenOrZero;
+    return [`POST_READY_VISIBILITY_${failures.length ? "FAIL" : "READY"}`, `FAILURES: ${failures.join(", ") || "none"}`, `CANVAS: x=${c.x} y=${c.y} width=${c.width} height=${c.height} display=${facts.canvas.display} visibility=${facts.canvas.visibility} opacity=${facts.canvas.opacity}`, `ROOT: x=${r.x} y=${r.y} width=${r.width} height=${r.height} display=${facts.root.display} visibility=${facts.root.visibility} opacity=${facts.root.opacity} pointer-events=${facts.root.pointerEvents}`, `LOADING: display=${facts.loading.display} hidden=${facts.loading.hidden} visibility=${facts.loading.visibility} opacity=${facts.loading.opacity}`, `CANVASES: ${facts.canvasCount}  VIEWPORT: ${facts.viewport.width}x${facts.viewport.height}`, `TOP: ${facts.topmost.tag || "none"} id=${facts.topmost.id || "-"} class=${facts.topmost.className || "-"} inside-root=${facts.topmost.insideGameplayRoot}`, `ANCESTOR: ${ancestor ? `${ancestor.name} (${ancestor.reason})` : "none"}`].join("\n");
+  }
+  function showPostReadyDiagnostic(facts, failures = [], persistent = false) {
+    if (!S.devPreview) return;
+    S.root?.querySelector(".ah-exploration-room__diagnostic")?.remove();
+    const badge = document.createElement("div"); badge.className = "ah-exploration-room__diagnostic"; badge.textContent = diagnosticText(facts, failures); S.root?.appendChild(badge);
+    if (S.diagnosticTimer) clearTimeout(S.diagnosticTimer); S.diagnosticTimer = null;
+    if (!persistent) S.diagnosticTimer = setTimeout(() => badge.remove(), 2600);
+  }
+  function applyDevPresentationSimulation() {
+    if (!S.devPreview) return;
+    if (global.__AH_EXPLORATION_SIMULATE_HIDDEN_CANVAS === true) S.canvas.style.visibility = "hidden";
+    if (global.__AH_EXPLORATION_SIMULATE_ZERO_CANVAS === true) S.canvas.style.transform = "scale(0)";
+    if (global.__AH_EXPLORATION_SIMULATE_HIDDEN_PARENT === true) S.canvasParent.style.display = "none";
+    if (global.__AH_EXPLORATION_SIMULATE_LOADING_VISIBLE === true) { S.loading.hidden = false; S.loading.style.display = "grid"; S.loading.style.pointerEvents = "none"; }
+    if (global.__AH_EXPLORATION_SIMULATE_VALID_HUD === true) { const hud = document.createElement("div"), stage = S.root.querySelector(".ah-exploration-room__stage"); hud.className = "ah-exploration-room__test-hud"; hud.textContent = "RELAY HUD"; hud.style.cssText = "position:absolute;z-index:8;left:calc(50% - 44px);top:calc(50% - 16px);width:88px;height:32px;display:grid;place-items:center;background:#123;color:#bdf;font:700 9px system-ui;pointer-events:auto"; (stage || S.root).appendChild(hud); }
+    if (global.__AH_EXPLORATION_SIMULATE_MAP_BLOCKER === true) { const blocker = document.createElement("div"); blocker.dataset.relayTestMapBlocker = "true"; blocker.className = "world-exploration-backdrop"; blocker.style.cssText = "position:fixed;inset:0;z-index:13020;background:rgba(0,0,0,.01);pointer-events:auto"; document.body.appendChild(blocker); }
+  }
+  function refreshPhaserAfterReveal() {
+    const mount = S.canvasParent?.getBoundingClientRect?.(), canvas = S.canvas?.getBoundingClientRect?.(), width = Math.round(mount?.width || 0), height = Math.round(mount?.height || 0), canvasWidth = Math.round(canvas?.width || 0), canvasHeight = Math.round(canvas?.height || 0);
+    let resized = false, refreshed = false;
+    if (width > 0 && height > 0 && (width !== canvasWidth || height !== canvasHeight || S.game?.scale?.width !== width || S.game?.scale?.height !== height)) try { S.game?.scale?.resize?.(width, height); S.scene?.ahLayout?.(width, height, S.safeInsets); resized = true; } catch (error) { log("post-reveal resize failed", error); }
+    try { if (S.game?.scale?.refresh) { S.game.scale.refresh(); refreshed = true; } } catch (error) { log("post-reveal scale refresh failed", error); }
+    return { mount: { width, height }, canvas: { width: canvasWidth, height: canvasHeight }, resized, refreshed };
+  }
+  async function freezePostReadyFailure(facts, failures) {
+    const scene = S.scene;
+    try { scene.ahPaused = true; scene.ahResetInput?.(); scene.ahStop?.(); if (scene.input) scene.input.enabled = false; if (S.game?.input) S.game.input.enabled = false; scene.physics?.world?.pause?.(); } catch (_) {}
+    showPostReadyDiagnostic(facts, failures, true);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  async function revealAfterReady() {
+    S.root.style.display = "grid"; S.root.style.visibility = "visible"; S.root.style.opacity = "1"; S.root.style.pointerEvents = "auto";
+    S.canvasParent.style.display = "block"; S.canvasParent.style.visibility = "visible"; S.canvasParent.style.opacity = "1";
+    S.canvas.style.display = "block"; S.canvas.style.visibility = "visible"; S.canvas.style.opacity = "1";
+    S.loading.hidden = true; S.loading.style.display = "none"; S.loading.style.pointerEvents = "none";
+    applyDevPresentationSimulation();
+    await waitForLayout();
+    const refresh = refreshPhaserAfterReveal();
+    await nextFrame();
+    const facts = postReadyFacts(), failures = presentationFailures(facts); facts.phaserPostReveal = refresh;
+    if (S.devPreview) { global.__AH_EXPLORATION_POST_READY_FACTS = facts; try { console.debug("[ExplorationRoom] post-ready presentation", facts); } catch (_) {} }
+    if (failures.length) { const error = roomError("CANVAS_NOT_VISIBLE_AFTER_READY", new Error(failures.join(", "))); error.relayPresentationFacts = facts; error.relayPresentationFailures = failures; throw error; }
+    showPostReadyDiagnostic(facts, failures);
+    try { S.game?.canvas?.focus?.(); if (S.game?.input) S.game.input.enabled = true; if (S.scene?.input) S.scene.input.enabled = true; } catch (_) {}
+    return facts;
+  }
+  async function cleanup(options) {
+    settle(false); if (S.diagnosticTimer) { clearTimeout(S.diagnosticTimer); S.diagnosticTimer = null; }
+    document.querySelectorAll("[data-relay-test-map-blocker]").forEach(element => element.remove());
+    unbindEvents(); const scene = S.scene; scene?.ahResetInput?.(); scene?.ahStop?.(); if (scene?.input) scene.input.enabled = false;
+    const game = S.game; S.game = null; S.scene = null; if (game) try { game.destroy(true); } catch (error) { log("destroy failed", error); }
+    S.canvasParent?.replaceChildren(); unregisterNavigation(!!options?.fromNavigation); S.root?.remove(); S.root = S.canvasParent = S.loading = null; S.ready = false; restorePage();
+  }
+  async function runOpen(generation) {
+    try { injectCSS(); buildShell(); lockPage(); readInsets(); bindEvents(); registerNavigation(); if (!global.Phaser?.Game) throw roomError("PHASER LOAD FAILED", new Error("Phaser unavailable")); const delay = Math.max(0, Number(global.__AH_EXPLORATION_SIMULATE_OPEN_DELAY_MS) || 0); if (S.dbg && delay) await new Promise(resolve => setTimeout(resolve, delay)); if (S.dbg && global.__AH_EXPLORATION_SIMULATE_UNRESOLVED_OPEN === true) await new Promise(() => {}); if (S.closing || generation !== S.generation) return false; await prepareGameMount(); if (S.closing || generation !== S.generation) return false; const ready = await createGame(); if (!ready || S.closing || generation !== S.generation) return false; if (!S.game || !S.scene?.ahPlayer || !S.scene?.input || !S.canvas) throw roomError("SCENE CREATE FAILED", new Error("Relay ready handshake failed")); await revealAfterReady(); if (S.closing || generation !== S.generation) return false; S.ready = true; return true; }
+    catch (error) { const failure = roomError(error?.relayStage || "ROOM OPEN FAILED", error); log("open failed", failure); if (S.devPreview && failure.relayPresentationFacts && !S.closing) { global.__AH_RELAY_POST_READY_FAILURE = { failures: failure.relayPresentationFailures || [], facts: failure.relayPresentationFacts }; await freezePostReadyFailure(failure.relayPresentationFacts, failure.relayPresentationFailures || []); } await cleanup(); throw failure; }
+  }
   function init(deps={}){S.tg=deps.tg||S.tg||global.Telegram?.WebApp||null;if(typeof deps.dbg==="boolean"||typeof deps.dbg==="function")S.dbg=deps.dbg;if(typeof deps.trace==="function")S.trace=deps.trace;S.devPreview=deps.devPreview===true;return API;}
   function open(options={}){if(String(options.sectorId||"")!==SECTOR_ID)return Promise.resolve(false);if(S.opening)return S.opening;if(isOpen()&&S.ready)return Promise.resolve(true);S.onClose=typeof options.onClose==="function"?options.onClose:null;S.closing=false;const generation=++S.generation;const task=runOpen(generation);let wrapped;wrapped=task.finally(()=>{if(S.opening===wrapped)S.opening=null;});S.opening=wrapped;return wrapped;}
   async function close(options){if(S.closing)return false;if(!S.root&&!S.game&&!S.opening)return false;S.closing=true;++S.generation;const after=S.onClose;S.onClose=null;try{await cleanup(options);await Promise.resolve(after?.());return true;}finally{S.closing=false;}}

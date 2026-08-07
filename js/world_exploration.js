@@ -109,6 +109,14 @@
     try { panel.inert = true; } catch (_) {}
   }
 
+  function restoreRelayMapPresentation() {
+    const panel = byId(PANEL_ID);
+    if (!panel) return;
+    panel.hidden = false;
+    panel.setAttribute("aria-hidden", "false");
+    try { panel.inert = false; } catch (_) {}
+  }
+
   function waitForRelayLayout() {
     return new Promise((resolve) => {
       let frames = 0;
@@ -735,10 +743,25 @@
     return humanReason(error?.message || "Unable to enter this sector.");
   }
 
+  function relayEntryFailureMessage(sector, error) {
+    const stage = String(error?.relayStage || "ROOM OPEN FAILED").trim() || "ROOM OPEN FAILED";
+    if (hasRelayFringeDeveloperPreview(sector)) {
+      try { console.error("[WorldExploration] Relay developer preview failed", error); } catch (_) {}
+      if (stage === "RELAY STARTUP TIMEOUT") return `RELAY STARTUP TIMEOUT · LAST STAGE: ${String(error?.relayLastStage || state.relayStartupStage || "UNKNOWN")}`;
+      if (stage === "CANVAS_NOT_VISIBLE_AFTER_READY") {
+        const failures = Array.isArray(error?.relayPresentationFailures) ? error.relayPresentationFailures.filter(Boolean) : [];
+        return `DEV PREVIEW · ${stage}${failures.length ? ` · ${failures.join(", ")}` : ""}`;
+      }
+      return `DEV PREVIEW · ${stage}`;
+    }
+    return humanReason(error?.message || "Unable to enter this sector.");
+  }
+
   async function runRelayStartup(selected, preview) {
     let currentStage = "ENTRY_HANDLER";
     let timedOut = false;
     let watchdogId = null;
+    let mapPresentationSuspended = false;
     const updateStage = (stage) => {
       currentStage = String(stage || currentStage);
       state.relayStartupStage = currentStage;
@@ -753,6 +776,7 @@
     const rollback = async () => {
       try { await window.AlphaExplorationRoom?.close?.({ relayStartupRollback: true }); } catch (_) {}
       byId(RELAY_ROOM_ROOT_ID)?.remove();
+      if (mapPresentationSuspended) restoreRelayMapPresentation();
     };
     const timeout = new Promise((_, reject) => {
       watchdogId = window.setTimeout(() => {
@@ -786,6 +810,10 @@
       await ensure(apiPost(), window.Telegram?.WebApp || window.tg, window.DBG, updateStage);
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!canEnterSector(selected)) throw new Error("This sector authorization is no longer current.");
+      // The sector detail panel is z-index:1000002. It must be out before the Room Ready visibility test,
+      // not after open() resolves, otherwise it physically covers the Relay root (z-index:12060).
+      suspendRelayMapPresentation();
+      mapPresentationSuspended = true;
       updateStage("ROOM_OPEN_CALLED");
       const opened = await window.AlphaExplorationRoom.open({
         sectorId: selected,
@@ -793,7 +821,6 @@
       });
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!opened) throw new Error("Sector room could not be opened.");
-      suspendRelayMapPresentation();
       return true;
     })();
     // Late completion is always torn down; it cannot mount behind the restored World Map.
