@@ -8,7 +8,6 @@
   const WORLD_WIDTH = 1400;
   const WORLD_HEIGHT = 900;
   const PLAYER_SPEED = 230;
-  const DUMMY_RANGE_SQ = 132 * 132;
   const EXIT_RANGE_SQ = 118 * 118;
   const READY_TIMEOUT_MS = 9000;
   const PLAYER_TEXTURE = "ah-dojo-room-player-v1";
@@ -23,6 +22,35 @@
   const SENTINEL_SCALE = 0.18;
   const EXIT_GATE_SCALE = 0.22;
   const TERMINAL_SCALE = 0.26;
+  // Local-only vertical-slice tuning. Keep combat numbers together until stats are wired in.
+  const COMBAT = global.AlphaSectorCombatConfig?.makeCombatConfig?.({
+    playerMaxHp: 100,
+    playerDamage: 30,
+    playerSpeed: PLAYER_SPEED,
+    playerAttackRange: 86,
+    playerAttackCooldownMs: 360,
+    playerRespawnMs: 700,
+    enemyMaxHp: 78,
+    enemyDamage: 6,
+    enemySpeed: 92,
+    enemyAggroRange: 260,
+    enemyAttackRange: 48,
+    enemyAttackCooldownMs: 920,
+    lootValue: 1
+  }) || Object.freeze({
+    playerMaxHp: 100, playerDamage: 30, playerSpeed: PLAYER_SPEED, playerAttackRange: 86, playerAttackCooldownMs: 360, playerRespawnMs: 700,
+    enemyMaxHp: 78, enemyDamage: 6, enemySpeed: 92, enemyAggroRange: 260, enemyAttackRange: 48, enemyAttackCooldownMs: 920, lootValue: 1
+  });
+  const ENEMY_SPAWNS = Object.freeze([
+    { x: 520, y: 445 },
+    { x: 610, y: 720 },
+    { x: 875, y: 420 },
+    { x: 1050, y: 505 },
+    { x: 1210, y: 720 }
+  ]);
+  const PLAYER_ATTACK_RANGE_SQ = COMBAT.playerAttackRange * COMBAT.playerAttackRange;
+  const ENEMY_AGGRO_RANGE_SQ = COMBAT.enemyAggroRange * COMBAT.enemyAggroRange;
+  const ENEMY_ATTACK_RANGE_SQ = COMBAT.enemyAttackRange * COMBAT.enemyAttackRange;
   const ENVIRONMENT_ASSETS = Object.freeze({
     floor: { key: "dojo-floor-base", url: "assets/dojo/v1/processed/floor.webp" },
     terminal: { key: "dojo-terminal", url: "assets/dojo/v1/processed/terminal.webp" },
@@ -268,6 +296,7 @@
   function onCanvasPointerCancel() {
     S.scene?.ahResetJoystick?.();
     if (S.scene) S.scene.ahInteractionPointerId = null;
+    if (S.scene) S.scene.ahAttackPointerId = null;
   }
 
   function bindRoomEvents() {
@@ -372,6 +401,42 @@
     g.destroy();
   }
 
+  function createChaserTexture(scene) {
+    const key = "ah-dojo-corrupted-chaser-v1";
+    if (scene.textures.exists(key)) return key;
+    const g = scene.add.graphics();
+    g.fillStyle(0x220b22, 1);
+    g.fillCircle(24, 17, 15);
+    g.fillRoundedRect(14, 29, 20, 25, 7);
+    g.fillTriangle(10, 15, 15, 1, 21, 15);
+    g.fillTriangle(28, 15, 34, 1, 39, 16);
+    g.fillStyle(0xf05aab, 1);
+    g.fillCircle(19, 17, 3);
+    g.fillCircle(29, 17, 3);
+    g.fillRect(17, 35, 14, 4);
+    g.lineStyle(2, 0xff70bd, 0.94);
+    g.strokeCircle(24, 17, 16);
+    g.strokeRoundedRect(13, 28, 22, 27, 8);
+    g.generateTexture(key, 48, 60);
+    g.destroy();
+    return key;
+  }
+
+  function createLootTexture(scene) {
+    const key = "ah-dojo-signal-shard-v1";
+    if (scene.textures.exists(key)) return key;
+    const g = scene.add.graphics();
+    g.fillStyle(0x49e9ff, 0.95);
+    g.fillTriangle(12, 1, 23, 12, 12, 24);
+    g.fillTriangle(12, 1, 1, 12, 12, 24);
+    g.lineStyle(2, 0xd9fbff, 0.98);
+    g.strokeTriangle(12, 1, 23, 12, 12, 24);
+    g.strokeTriangle(12, 1, 1, 12, 12, 24);
+    g.generateTexture(key, 24, 24);
+    g.destroy();
+    return key;
+  }
+
   function drawTrainingFloorFallback(scene) {
     const floor = scene.add.graphics();
     floor.setDepth(0);
@@ -412,17 +477,26 @@
     drawTrainingFloorMarkings(scene);
   }
 
+  function addHorizontalWallCollider(scene, group, x, y, width, height) {
+    const debug = !!S.dbg;
+    const collider = scene.add.rectangle(x, y + 4, width, height, 0x65e8ff, debug ? 0.2 : 0)
+      .setDepth(debug ? 11 : 0)
+      .setVisible(debug);
+    if (debug) collider.setStrokeStyle(1, 0x8cefff, 0.92);
+    scene.physics.add.existing(collider, true);
+    group.add(collider);
+    return collider;
+  }
+
   function addEnvironmentWall(scene, group, x, y, width, height) {
     const wallAsset = ENVIRONMENT_ASSETS.wall;
     if (!scene.textures.exists(wallAsset.key)) {
       return addStaticBlock(scene, group, x, y, width, height, 0x1c2934, 0x527083).setDepth(10);
     }
     const wall = scene.add.image(x, y, wallAsset.key).setOrigin(0.5).setScale(WALL_SCALE).setDepth(10);
-    scene.physics.add.existing(wall, true);
-    // Source-space bounds cover the metal chassis only; the transparent canvas and upper decoration stay passable.
-    wall.body.setSize(900, 240).setOffset(62, 365);
-    refreshStaticBody(wall);
-    group.add(wall);
+    // The visible lower chassis is centered slightly below the image pivot. Keep the body inside its solid metal footprint.
+    const collider = addHorizontalWallCollider(scene, group, x, y, Math.min(218, width), height);
+    (scene.ahHorizontalWalls || (scene.ahHorizontalWalls = [])).push({ image: wall, collider });
     return wall;
   }
 
@@ -517,6 +591,201 @@
     scene.ahTerminalAnchor = { x, y: y + 38 };
   }
 
+  function updateCombatHud(scene) {
+    if (!scene.ahPlayer) return;
+    const hp = Math.max(0, scene.ahPlayerHp || 0);
+    scene.ahHpLabel?.setText("HP  " + hp + " / " + COMBAT.playerMaxHp);
+    const alive = Math.max(0, ENEMY_SPAWNS.length - (scene.ahEnemiesDead || 0));
+    scene.ahCounter?.setText("CHASERS  " + alive + " / " + ENEMY_SPAWNS.length + "   LOOT  " + (scene.ahLootTally || 0));
+  }
+
+  function updateEnemyBar(enemy) {
+    if (!enemy?.active || !enemy.ahCombat) return;
+    const ratio = Math.max(0, enemy.ahCombat.hp / COMBAT.enemyMaxHp);
+    enemy.ahHpBack?.setPosition(enemy.x, enemy.y - 42);
+    enemy.ahHpBar?.setPosition(enemy.x - 15 + (30 * ratio) / 2, enemy.y - 42).setDisplaySize(30 * ratio, 4);
+    enemy.ahName?.setPosition(enemy.x, enemy.y - 58);
+  }
+
+  function addCombatEnemy(scene, x, y) {
+    const enemy = scene.physics.add.sprite(x, y, createChaserTexture(scene));
+    enemy.setDepth(25).setCollideWorldBounds(true);
+    enemy.body.setSize(28, 28).setOffset(10, 28);
+    enemy.ahCombat = { hp: COMBAT.enemyMaxHp, nextAttackAt: 0, dead: false };
+    enemy.ahHpBack = scene.add.rectangle(x, y - 42, 32, 6, 0x130a17, 0.9).setDepth(40);
+    enemy.ahHpBar = scene.add.rectangle(x, y - 42, 30, 4, 0xff5fa8, 0.98).setDepth(41);
+    enemy.ahName = scene.add.text(x, y - 58, "CORRUPTED CHASER", {
+      fontFamily: "system-ui, sans-serif", fontSize: "9px", color: "#ff9bca", fontStyle: "bold", letterSpacing: 1
+    }).setOrigin(0.5).setDepth(40);
+    return enemy;
+  }
+
+  function addCombatEncounter(scene, blockers) {
+    scene.ahEnemies = scene.physics.add.group();
+    scene.ahLoot = scene.physics.add.group();
+    scene.ahEnemiesDead = 0;
+    scene.ahLootTally = 0;
+    scene.ahEncounterCleared = false;
+    scene.ahPlayerHp = COMBAT.playerMaxHp;
+    scene.ahNextPlayerAttackAt = 0;
+    ENEMY_SPAWNS.forEach(function addSpawn(spawn) { scene.ahEnemies.add(addCombatEnemy(scene, spawn.x, spawn.y)); });
+    scene.physics.add.collider(scene.ahEnemies, blockers);
+    scene.physics.add.collider(scene.ahEnemies, scene.ahEnemies);
+    scene.physics.add.collider(scene.ahPlayer, scene.ahEnemies);
+    scene.physics.add.overlap(scene.ahPlayer, scene.ahLoot, collectLoot, undefined, scene);
+  }
+
+  function nearestLivingEnemy(scene) {
+    const player = scene.ahPlayer;
+    if (!player?.active || !scene.ahEnemies) return null;
+    let nearest = null;
+    let nearestDistanceSq = Infinity;
+    scene.ahEnemies.children.iterate(function checkEnemy(enemy) {
+      if (!enemy?.active || enemy.ahCombat?.dead) return;
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distanceSq = dx * dx + dy * dy;
+      if (distanceSq < nearestDistanceSq) {
+        nearest = enemy;
+        nearestDistanceSq = distanceSq;
+      }
+    });
+    return nearest ? { enemy: nearest, distanceSq: nearestDistanceSq } : null;
+  }
+
+  function showAttackSlash(scene, target) {
+    const player = scene.ahPlayer;
+    const angle = Math.atan2(target.y - player.y, target.x - player.x);
+    const slash = scene.add.arc(player.x + Math.cos(angle) * 32, player.y + Math.sin(angle) * 32, 24, 210, 510, false, 0x8cefff, 0)
+      .setStrokeStyle(4, 0xbaf6ff, 0.95).setDepth(50);
+    scene.tweens.add({ targets: slash, alpha: 0, scaleX: 1.35, scaleY: 1.35, duration: 120, onComplete: function () { slash.destroy(); } });
+  }
+
+  function dropLoot(scene, x, y) {
+    const pickup = scene.physics.add.sprite(x, y, createLootTexture(scene)).setDepth(24);
+    pickup.body.setCircle(9, 3, 3);
+    pickup.setVelocity((Math.random() - 0.5) * 90, -45 - Math.random() * 45).setDrag(260, 260).setMaxVelocity(90, 90);
+    pickup.ahLootValue = COMBAT.lootValue;
+    scene.ahLoot.add(pickup);
+    scene.tweens.add({ targets: pickup, angle: 360, duration: 950, repeat: -1 });
+  }
+
+  function unlockRelay(scene) {
+    if (scene.ahEncounterCleared) return;
+    scene.ahEncounterCleared = true;
+    scene.ahRelayLabel?.setText("RELAY // UNLOCKED").setColor("#a9edf7");
+    scene.ahTerminal?.setTint?.(0xbffaff);
+    scene.ahExitGate?.clearTint?.();
+    showSceneMessage(scene, "Encounter cleared. Relay unlocked.");
+    updateCombatHud(scene);
+    scene.ahContext = null;
+    updateProximity(scene);
+  }
+
+  function killEnemy(scene, enemy) {
+    if (!enemy?.active || enemy.ahCombat?.dead) return;
+    enemy.ahCombat.dead = true;
+    dropLoot(scene, enemy.x, enemy.y);
+    enemy.ahHpBack?.destroy();
+    enemy.ahHpBar?.destroy();
+    enemy.ahName?.destroy();
+    scene.tweens.add({ targets: enemy, alpha: 0, scaleX: 1.2, scaleY: 1.2, duration: 170, onComplete: function () { enemy.destroy(); } });
+    enemy.body.enable = false;
+    scene.ahEnemiesDead += 1;
+    updateCombatHud(scene);
+    if (scene.ahEnemiesDead === ENEMY_SPAWNS.length) unlockRelay(scene);
+  }
+
+  function damageEnemy(scene, enemy, damage) {
+    if (!enemy?.active || enemy.ahCombat?.dead) return;
+    enemy.ahCombat.hp = Math.max(0, enemy.ahCombat.hp - damage);
+    enemy.setTint(0xffffff);
+    scene.time.delayedCall(70, function () { if (enemy?.active) enemy.clearTint(); });
+    updateEnemyBar(enemy);
+    if (enemy.ahCombat.hp <= 0) killEnemy(scene, enemy);
+  }
+
+  function respawnPlayer(scene) {
+    const player = scene.ahPlayer;
+    if (!player || S.closing) return;
+    player.enableBody(true, 320, 690, true, true).setAlpha(1).clearTint();
+    scene.ahPlayerHp = COMBAT.playerMaxHp;
+    scene.ahPlayerInvulnerableUntil = scene.time.now + 450;
+    updateCombatHud(scene);
+    showSceneMessage(scene, "Simulation recovery complete.");
+  }
+
+  function damagePlayer(scene, damage, time) {
+    const player = scene.ahPlayer;
+    if (!player?.active || time < (scene.ahPlayerInvulnerableUntil || 0)) return;
+    scene.ahPlayerHp = Math.max(0, scene.ahPlayerHp - damage);
+    player.setTint(0xff8da7);
+    scene.time.delayedCall(90, function () { if (player?.active) player.clearTint(); });
+    updateCombatHud(scene);
+    if (scene.ahPlayerHp > 0) return;
+    player.disableBody(true, true);
+    scene.ahPlayerInvulnerableUntil = Infinity;
+    showSceneMessage(scene, "You were overwhelmed. Recovering...");
+    scene.time.delayedCall(COMBAT.playerRespawnMs, function () { respawnPlayer(scene); });
+  }
+
+  function tryPlayerAttack(scene, time) {
+    if (!scene.ahPlayer?.active || time < (scene.ahNextPlayerAttackAt || 0)) return false;
+    const target = nearestLivingEnemy(scene);
+    if (!target || target.distanceSq > PLAYER_ATTACK_RANGE_SQ) {
+      if (!target) showSceneMessage(scene, "No hostile target.");
+      else showSceneMessage(scene, "Target out of melee range.");
+      return false;
+    }
+    scene.ahNextPlayerAttackAt = time + COMBAT.playerAttackCooldownMs;
+    showAttackSlash(scene, target.enemy);
+    damageEnemy(scene, target.enemy, COMBAT.playerDamage);
+    return true;
+  }
+
+  function collectLoot(player, pickup) {
+    if (!pickup?.active) return;
+    const scene = this;
+    const value = pickup.ahLootValue || 0;
+    pickup.disableBody(true, true);
+    pickup.destroy();
+    scene.ahLootTally += value;
+    updateCombatHud(scene);
+    showSceneMessage(scene, "+" + value + " signal shard");
+  }
+
+  function updateCombat(scene, time) {
+    const player = scene.ahPlayer;
+    const target = nearestLivingEnemy(scene);
+    if (target) {
+      scene.ahTargetRing.setPosition(target.enemy.x, target.enemy.y + 18).setVisible(true);
+      scene.ahTargetLabel.setText("TARGET  " + Math.ceil(Math.sqrt(target.distanceSq))).setVisible(true);
+    } else {
+      scene.ahTargetRing.setVisible(false);
+      scene.ahTargetLabel.setText("AREA CLEAR").setVisible(true);
+    }
+    if (!player?.active || !scene.ahEnemies) return;
+    scene.ahEnemies.children.iterate(function updateEnemy(enemy) {
+      if (!enemy?.active || enemy.ahCombat?.dead) return;
+      const dx = player.x - enemy.x;
+      const dy = player.y - enemy.y;
+      const distanceSq = dx * dx + dy * dy;
+      if (distanceSq <= ENEMY_ATTACK_RANGE_SQ) {
+        enemy.setVelocity(0, 0);
+        if (time >= enemy.ahCombat.nextAttackAt) {
+          enemy.ahCombat.nextAttackAt = time + COMBAT.enemyAttackCooldownMs;
+          damagePlayer(scene, COMBAT.enemyDamage, time);
+        }
+      } else if (distanceSq <= ENEMY_AGGRO_RANGE_SQ) {
+        const length = Math.sqrt(distanceSq) || 1;
+        enemy.setVelocity((dx / length) * COMBAT.enemySpeed, (dy / length) * COMBAT.enemySpeed);
+      } else {
+        enemy.setVelocity(0, 0);
+      }
+      updateEnemyBar(enemy);
+    });
+  }
+
   function buildWorld(scene) {
     buildFloor(scene);
     const blockers = scene.physics.add.staticGroup();
@@ -534,18 +803,12 @@
     addEnvironmentWall(scene, blockers, 1115, 275, 190, 38);
     addEnvironmentWall(scene, blockers, 1115, 625, 190, 38);
 
-    scene.add.text(104, 102, "MOVEMENT GRID 01", {
+    scene.add.text(104, 102, "COMBAT GRID 01", {
       fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
     });
     scene.add.text(1016, 774, "LOCAL SIMULATION · NO REWARDS", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#566c79", letterSpacing: 1
     });
-
-    addTrainingDummy(scene);
-    scene.add.circle(scene.ahDummy.x, scene.ahDummy.y + 28, 76, 0xd7a85a, 0.035).setStrokeStyle(2, 0xd7a85a, 0.22);
-    scene.add.text(scene.ahDummy.x, scene.ahDummy.y - 58, "TRAINING UNIT", {
-      fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#c59d5d", letterSpacing: 2
-    }).setOrigin(0.5);
 
     addExitGate(scene, blockers);
 
@@ -566,8 +829,12 @@
     scene.ahPlayer.setCollideWorldBounds(true);
     scene.ahPlayer.setDepth(30);
     scene.physics.add.collider(scene.ahPlayer, blockers);
-    scene.physics.add.collider(scene.ahPlayer, scene.ahDummy);
     scene.physics.add.collider(scene.ahPlayer, scene.ahTerminal);
+    addCombatEncounter(scene, blockers);
+    scene.ahRelayLabel = scene.add.text(scene.ahTerminalAnchor.x, scene.ahTerminalAnchor.y - 72, "RELAY // LOCKED", {
+      fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#e3a17e", fontStyle: "bold", letterSpacing: 2
+    }).setOrigin(0.5).setDepth(40);
+    scene.ahExitGate?.setTint?.(0x4f4a55);
   }
 
   function createControls(scene) {
@@ -575,8 +842,8 @@
     scene.ahJoystickVector = { x: 0, y: 0 };
     scene.ahJoystickPointerId = null;
     scene.ahInteractionPointerId = null;
+    scene.ahAttackPointerId = null;
     scene.ahContext = null;
-    scene.ahTrainingContacts = 0;
     scene.ahVisibilityPaused = false;
 
     scene.ahJoystickBase = scene.add.circle(86, 86, 54, 0x0b1620, 0.72).setStrokeStyle(2, 0x65e8ff, 0.44).setScrollFactor(0).setDepth(100);
@@ -589,11 +856,17 @@
     }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
     scene.ahInteractHit = scene.add.zone(100, 100, 104, 104).setScrollFactor(0).setDepth(102).setInteractive();
 
+    scene.ahAttackRing = scene.add.circle(100, 100, 37, 0x3b122d, 0.88).setStrokeStyle(2, 0xff70bd, 0.92).setScrollFactor(0).setDepth(100);
+    scene.ahAttackLabel = scene.add.text(100, 100, "ATTACK", {
+      fontFamily: "system-ui, sans-serif", fontSize: "10px", color: "#ffd1e8", fontStyle: "bold", align: "center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+    scene.ahAttackHit = scene.add.zone(100, 100, 104, 104).setScrollFactor(0).setDepth(102).setInteractive();
+
     scene.ahPrompt = scene.add.text(0, 18, "WASD / ARROWS · MOVE", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#88a2b3", fontStyle: "bold",
       backgroundColor: "rgba(5,10,15,.72)", padding: { x: 10, y: 6 }, align: "center"
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
-    scene.ahCounter = scene.add.text(14, 16, "CONTACTS  0", {
+    scene.ahCounter = scene.add.text(14, 16, "CHASERS  5 / 5   LOOT  0", {
       fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#c5d5df", fontStyle: "bold",
       backgroundColor: "rgba(5,10,15,.64)", padding: { x: 8, y: 6 }
     }).setScrollFactor(0).setDepth(100);
@@ -601,6 +874,15 @@
       fontFamily: "system-ui, sans-serif", fontSize: "13px", color: "#d8b570", fontStyle: "bold",
       backgroundColor: "rgba(10,14,18,.78)", padding: { x: 12, y: 7 }, align: "center"
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100).setVisible(false);
+    scene.ahHpLabel = scene.add.text(14, 52, "HP  100 / 100", {
+      fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#baf6ff", fontStyle: "bold",
+      backgroundColor: "rgba(5,10,15,.64)", padding: { x: 8, y: 6 }
+    }).setScrollFactor(0).setDepth(100);
+    scene.ahTargetRing = scene.add.circle(0, 0, 29, 0xff70bd, 0).setStrokeStyle(2, 0xff9bca, 0.85).setDepth(22).setVisible(false);
+    scene.ahTargetLabel = scene.add.text(0, 86, "", {
+      fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#ffb6db", fontStyle: "bold",
+      backgroundColor: "rgba(5,10,15,.64)", padding: { x: 8, y: 6 }
+    }).setScrollFactor(0).setDepth(100).setOrigin(0, 0);
 
     scene.ahOnJoystickDown = function (pointer) {
       if (scene.ahJoystickPointerId !== null || !scene.input.enabled) return;
@@ -613,6 +895,7 @@
     scene.ahOnPointerUp = function (pointer) {
       if (pointer.id === scene.ahJoystickPointerId) resetJoystick(scene);
       if (pointer.id === scene.ahInteractionPointerId) scene.ahInteractionPointerId = null;
+      if (pointer.id === scene.ahAttackPointerId) scene.ahAttackPointerId = null;
     };
     scene.ahOnGameOut = function () { resetJoystick(scene); };
     scene.ahOnInteractionDown = function (pointer) {
@@ -620,9 +903,15 @@
       scene.ahInteractionPointerId = pointer.id;
       performInteraction(scene);
     };
+    scene.ahOnAttackDown = function (pointer) {
+      if (scene.ahAttackPointerId !== null || !scene.input.enabled) return;
+      scene.ahAttackPointerId = pointer.id;
+      tryPlayerAttack(scene, scene.time.now);
+    };
 
     scene.ahJoystickHit.on("pointerdown", scene.ahOnJoystickDown);
     scene.ahInteractHit.on("pointerdown", scene.ahOnInteractionDown);
+    scene.ahAttackHit.on("pointerdown", scene.ahOnAttackDown);
     scene.input.on("pointermove", scene.ahOnPointerMove);
     scene.input.on("pointerup", scene.ahOnPointerUp);
     scene.input.on("gameout", scene.ahOnGameOut);
@@ -635,6 +924,7 @@
     };
     scene.ahLayoutControls = function (width, height, safe) { layoutControls(scene, width, height, safe); };
     layoutControls(scene, scene.scale.width, scene.scale.height, S.safeInsets);
+    updateCombatHud(scene);
   }
 
   function layoutControls(scene, width, height, safe) {
@@ -650,9 +940,15 @@
     scene.ahInteractRing?.setPosition(interactX, controlY);
     scene.ahInteractLabel?.setPosition(interactX, controlY);
     scene.ahInteractHit?.setPosition(interactX, controlY);
+    const attackX = Math.max(joyX + 96, interactX - (compact ? 84 : 94));
+    scene.ahAttackRing?.setPosition(attackX, controlY);
+    scene.ahAttackLabel?.setPosition(attackX, controlY);
+    scene.ahAttackHit?.setPosition(attackX, controlY);
     scene.ahPrompt?.setPosition(width / 2, Math.max(12, insets.top + 12));
     scene.ahMessage?.setPosition(width / 2, Math.max(50, insets.top + 50));
     scene.ahCounter?.setPosition(Math.max(10, insets.left + 10), Math.max(10, insets.top + 10));
+    scene.ahHpLabel?.setPosition(Math.max(10, insets.left + 10), Math.max(46, insets.top + 46));
+    scene.ahTargetLabel?.setPosition(Math.max(10, insets.left + 10), Math.max(82, insets.top + 82));
   }
 
   function updateJoystick(scene, pointer) {
@@ -692,6 +988,30 @@
   function setContext(scene, context) {
     if (scene.ahContext === context) return;
     scene.ahContext = context;
+    if (context === "terminal") {
+      if (scene.ahEncounterCleared) {
+        scene.ahInteractLabel.setText("RELAY").setFontSize(11).setColor("#baf6ff");
+        scene.ahInteractRing.setFillStyle(0x123741, 0.9).setStrokeStyle(2, 0x65e8ff, 0.98);
+        scene.ahPrompt.setText("RELAY IN RANGE - E / SPACE").setColor("#a9edf7");
+      } else {
+        scene.ahInteractLabel.setText("LOCKED").setFontSize(10).setColor("#f1b08b");
+        scene.ahInteractRing.setFillStyle(0x3a211d, 0.9).setStrokeStyle(2, 0xd77d5a, 0.98);
+        scene.ahPrompt.setText("RELAY LOCKED - CLEAR CHASERS").setColor("#e7b28e");
+      }
+      return;
+    }
+    if (context === "exit") {
+      if (scene.ahEncounterCleared) {
+        scene.ahInteractLabel.setText("EXIT").setFontSize(13).setColor("#b8f6ff");
+        scene.ahInteractRing.setFillStyle(0x123741, 0.86).setStrokeStyle(2, 0x65e8ff, 0.95);
+        scene.ahPrompt.setText("EXIT TO MAP - E / SPACE").setColor("#a9edf7");
+      } else {
+        scene.ahInteractLabel.setText("SEALED").setFontSize(10).setColor("#f1b08b");
+        scene.ahInteractRing.setFillStyle(0x3a211d, 0.9).setStrokeStyle(2, 0xd77d5a, 0.98);
+        scene.ahPrompt.setText("EXIT SEALED - CLEAR CHASERS").setColor("#e7b28e");
+      }
+      return;
+    }
     if (context === "dummy") {
       scene.ahInteractLabel.setText("TRAIN").setFontSize(13).setColor("#f0c77f");
       scene.ahInteractRing.setFillStyle(0x5b3e1d, 0.86).setStrokeStyle(2, 0xd7a85a, 0.95);
@@ -709,6 +1029,7 @@
       scene.ahInteractRing.setFillStyle(0x111a23, 0.8).setStrokeStyle(2, 0x50616f, 0.65);
       scene.ahPrompt.setText("WASD / ARROWS · MOVE").setColor("#88a2b3");
     }
+    if (!context) scene.ahPrompt.setText("WASD / ARROWS - MOVE · F / SPACE - ATTACK").setColor("#88a2b3");
   }
 
   function showSceneMessage(scene, text) {
@@ -721,11 +1042,19 @@
 
   function performInteraction(scene) {
     if (scene.ahContext === "exit") {
+      if (!scene.ahEncounterCleared) {
+        showSceneMessage(scene, "Exit sealed. Destroy all Corrupted Chasers.");
+        return;
+      }
       void close();
       return;
     }
     if (scene.ahContext === "terminal") {
-      showSceneMessage(scene, "Movement telemetry calibrated.");
+      if (!scene.ahEncounterCleared) {
+        showSceneMessage(scene, "Relay locked. " + (ENEMY_SPAWNS.length - scene.ahEnemiesDead) + " Chasers remain.");
+        return;
+      }
+      showSceneMessage(scene, "Relay link calibrated.");
       const terminal = scene.ahTerminal;
       if (!terminal) return;
       scene.tweens.killTweensOf(terminal);
@@ -776,12 +1105,14 @@
       down: global.Phaser.Input.Keyboard.KeyCodes.S,
       right: global.Phaser.Input.Keyboard.KeyCodes.D,
       interact: global.Phaser.Input.Keyboard.KeyCodes.E,
+      attack: global.Phaser.Input.Keyboard.KeyCodes.F,
       space: global.Phaser.Input.Keyboard.KeyCodes.SPACE,
       escape: global.Phaser.Input.Keyboard.KeyCodes.ESC
     });
   }
 
   function updatePlayer(scene, time) {
+    if (!scene.ahPlayer?.active) return;
     const keys = scene.ahKeys;
     const cursors = scene.ahCursors;
     let x = scene.ahJoystickVector.x;
@@ -821,18 +1152,14 @@
 
   function updateProximity(scene) {
     const player = scene.ahPlayer;
-    const ddx = player.x - scene.ahDummy.x;
-    const ddy = player.y - scene.ahDummy.y;
     const edx = player.x - scene.ahExit.x;
     const edy = player.y - scene.ahExit.y;
-    const dummyDistanceSq = ddx * ddx + ddy * ddy;
     const exitDistanceSq = edx * edx + edy * edy;
     const terminal = scene.ahTerminalAnchor;
     const tdx = terminal ? player.x - terminal.x : Infinity;
     const tdy = terminal ? player.y - terminal.y : Infinity;
     const terminalDistanceSq = tdx * tdx + tdy * tdy;
     const options = [];
-    if (dummyDistanceSq <= DUMMY_RANGE_SQ) options.push({ context: "dummy", distanceSq: dummyDistanceSq });
     if (terminalDistanceSq <= TERMINAL_RANGE_SQ) options.push({ context: "terminal", distanceSq: terminalDistanceSq });
     if (exitDistanceSq <= EXIT_RANGE_SQ) options.push({ context: "exit", distanceSq: exitDistanceSq });
     options.sort(function nearestFirst(a, b) { return a.distanceSq - b.distanceSq; });
@@ -842,8 +1169,14 @@
   function handleKeyboardActions(scene) {
     if (!scene.ahKeys) return;
     const keyboard = global.Phaser.Input.Keyboard;
-    if (keyboard.JustDown(scene.ahKeys?.interact) || keyboard.JustDown(scene.ahKeys?.space)) {
+    if (keyboard.JustDown(scene.ahKeys?.attack)) tryPlayerAttack(scene, scene.time.now);
+    if (keyboard.JustDown(scene.ahKeys?.interact)) {
       performInteraction(scene);
+    }
+    if (keyboard.JustDown(scene.ahKeys?.space)) {
+      const target = nearestLivingEnemy(scene);
+      if (target && target.distanceSq <= PLAYER_ATTACK_RANGE_SQ) tryPlayerAttack(scene, scene.time.now);
+      else performInteraction(scene);
     }
     if (keyboard.JustDown(scene.ahKeys?.escape)) void close();
   }
@@ -854,6 +1187,7 @@
     scene.ahStopPlayer?.();
     scene.ahJoystickHit?.off("pointerdown", scene.ahOnJoystickDown);
     scene.ahInteractHit?.off("pointerdown", scene.ahOnInteractionDown);
+    scene.ahAttackHit?.off("pointerdown", scene.ahOnAttackDown);
     scene.input?.off("pointermove", scene.ahOnPointerMove);
     scene.input?.off("pointerup", scene.ahOnPointerUp);
     scene.input?.off("gameout", scene.ahOnGameOut);
@@ -910,6 +1244,7 @@
     if (S.closing || this.ahVisibilityPaused || !this.ahPlayer) return;
     updatePlayer(this, time);
     updateProximity(this);
+    updateCombat(this, time);
     handleKeyboardActions(this);
   }
 

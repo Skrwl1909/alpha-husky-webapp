@@ -325,6 +325,7 @@
       if (global.AH_FLAGS?.dojoPhaserRoom !== false) {
         try {
           await ensurePhaserLoaded();
+          if (!global.AlphaSectorCombatConfig) await loadScript("js/sector_combat_config.js");
           if (!global.AlphaDojoRoom?.open) {
             await loadScript("js/dojo_room.js");
           }
@@ -352,6 +353,10 @@
     try { await ensurePhaserLoaded(); }
     catch (error) { throw relayLoaderError("PHASER LOAD FAILED", error); }
     relayTrace(trace, "PHASER_READY");
+    if (!global.AlphaSectorCombatConfig) {
+      try { await getLoadScript()("js/sector_combat_config.js"); }
+      catch (error) { throw relayLoaderError("SECTOR COMBAT CONFIG LOAD FAILED", error); }
+    }
     if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
       relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
       relayTrace(trace, "ROOM_SCRIPT_READY");
