@@ -628,6 +628,7 @@
     scene.ahEncounterCleared = false;
     scene.ahPlayerHp = COMBAT.playerMaxHp;
     scene.ahNextPlayerAttackAt = 0;
+    scene.ahNextHowlAt = 0;
     ENEMY_SPAWNS.forEach(function addSpawn(spawn) { scene.ahEnemies.add(addCombatEnemy(scene, spawn.x, spawn.y)); });
     scene.physics.add.collider(scene.ahEnemies, blockers);
     scene.physics.add.collider(scene.ahEnemies, scene.ahEnemies);
@@ -640,8 +641,8 @@
     if (!player?.active || !scene.ahEnemies) return null;
     let nearest = null;
     let nearestDistanceSq = Infinity;
-    scene.ahEnemies.children.iterate(function checkEnemy(enemy) {
-      if (!enemy?.active || enemy.ahCombat?.dead) return;
+    for (const enemy of global.AlphaSectorCombatConfig.getEnemyChildren(scene)) {
+      if (!enemy?.active || enemy.ahCombat?.dead) continue;
       const dx = enemy.x - player.x;
       const dy = enemy.y - player.y;
       const distanceSq = dx * dx + dy * dy;
@@ -649,7 +650,7 @@
         nearest = enemy;
         nearestDistanceSq = distanceSq;
       }
-    });
+    }
     return nearest ? { enemy: nearest, distanceSq: nearestDistanceSq } : null;
   }
 
@@ -685,6 +686,7 @@
   function killEnemy(scene, enemy) {
     if (!enemy?.active || enemy.ahCombat?.dead) return;
     enemy.ahCombat.dead = true;
+    delete enemy.ahHowlKnockback;
     dropLoot(scene, enemy.x, enemy.y);
     enemy.ahHpBack?.destroy();
     enemy.ahHpBar?.destroy();
@@ -710,6 +712,7 @@
     if (!player || S.closing) return;
     player.enableBody(true, 320, 690, true, true).setAlpha(1).clearTint();
     scene.ahPlayerHp = COMBAT.playerMaxHp;
+    scene.ahNextHowlAt = 0;
     scene.ahPlayerInvulnerableUntil = scene.time.now + 450;
     updateCombatHud(scene);
     showSceneMessage(scene, "Simulation recovery complete.");
@@ -723,6 +726,7 @@
     scene.time.delayedCall(90, function () { if (player?.active) player.clearTint(); });
     updateCombatHud(scene);
     if (scene.ahPlayerHp > 0) return;
+    global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
     player.disableBody(true, true);
     scene.ahPlayerInvulnerableUntil = Infinity;
     showSceneMessage(scene, "You were overwhelmed. Recovering...");
@@ -740,6 +744,24 @@
     scene.ahNextPlayerAttackAt = time + COMBAT.playerAttackCooldownMs;
     showAttackSlash(scene, target.enemy);
     damageEnemy(scene, target.enemy, COMBAT.playerDamage);
+    return true;
+  }
+
+  function updateHowlControl(scene, time) {
+    const remaining = global.AlphaSectorCombatConfig.getHowlCooldownRemaining(scene, time);
+    const active = !!scene.ahPlayer?.active && scene.input?.enabled !== false;
+    const ready = active && remaining <= 0;
+    scene.ahHowlRing?.setAlpha(ready ? 1 : 0.38);
+    scene.ahHowlLabel?.setAlpha(ready ? 1 : 0.52).setText(!active ? "HOWL\n--" : ready ? "HOWL" : "HOWL\n" + Math.ceil(remaining / 1000) + "s");
+    if (scene.ahHowlHit?.input) scene.ahHowlHit.input.enabled = ready;
+  }
+
+  function tryHowlBurst(scene, time) {
+    if (!scene.ahPlayer?.active) return false;
+    const result = global.AlphaSectorCombatConfig.triggerHowlBurst(scene, time, damageEnemy);
+    if (!result.activated) return false;
+    showSceneMessage(scene, result.affected ? "Howl Burst hit " + result.affected + " Chaser" + (result.affected === 1 ? "." : "s.") : "Howl Burst released.");
+    updateHowlControl(scene, time);
     return true;
   }
 
@@ -765,8 +787,12 @@
       scene.ahTargetLabel.setText("AREA CLEAR").setVisible(true);
     }
     if (!player?.active || !scene.ahEnemies) return;
-    scene.ahEnemies.children.iterate(function updateEnemy(enemy) {
-      if (!enemy?.active || enemy.ahCombat?.dead) return;
+    for (const enemy of global.AlphaSectorCombatConfig.getEnemyChildren(scene)) {
+      if (!enemy?.active || enemy.ahCombat?.dead) continue;
+      if (global.AlphaSectorCombatConfig.updateHowlKnockback(enemy, time)) {
+        updateEnemyBar(enemy);
+        continue;
+      }
       const dx = player.x - enemy.x;
       const dy = player.y - enemy.y;
       const distanceSq = dx * dx + dy * dy;
@@ -783,7 +809,7 @@
         enemy.setVelocity(0, 0);
       }
       updateEnemyBar(enemy);
-    });
+    }
   }
 
   function buildWorld(scene) {
@@ -843,6 +869,7 @@
     scene.ahJoystickPointerId = null;
     scene.ahInteractionPointerId = null;
     scene.ahAttackPointerId = null;
+    scene.ahHowlPointerId = null;
     scene.ahContext = null;
     scene.ahVisibilityPaused = false;
 
@@ -861,6 +888,12 @@
       fontFamily: "system-ui, sans-serif", fontSize: "10px", color: "#ffd1e8", fontStyle: "bold", align: "center"
     }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
     scene.ahAttackHit = scene.add.zone(100, 100, 104, 104).setScrollFactor(0).setDepth(102).setInteractive();
+
+    scene.ahHowlRing = scene.add.circle(100, 100, 32, 0x123741, 0.9).setStrokeStyle(2, 0xbaf6ff, 0.92).setScrollFactor(0).setDepth(100);
+    scene.ahHowlLabel = scene.add.text(100, 100, "HOWL", {
+      fontFamily: "system-ui, sans-serif", fontSize: "9px", color: "#e8fdff", fontStyle: "bold", align: "center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+    scene.ahHowlHit = scene.add.zone(100, 100, 84, 84).setScrollFactor(0).setDepth(102).setInteractive();
 
     scene.ahPrompt = scene.add.text(0, 18, "WASD / ARROWS · MOVE", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#88a2b3", fontStyle: "bold",
@@ -896,6 +929,7 @@
       if (pointer.id === scene.ahJoystickPointerId) resetJoystick(scene);
       if (pointer.id === scene.ahInteractionPointerId) scene.ahInteractionPointerId = null;
       if (pointer.id === scene.ahAttackPointerId) scene.ahAttackPointerId = null;
+      if (pointer.id === scene.ahHowlPointerId) scene.ahHowlPointerId = null;
     };
     scene.ahOnGameOut = function () { resetJoystick(scene); };
     scene.ahOnInteractionDown = function (pointer) {
@@ -908,10 +942,16 @@
       scene.ahAttackPointerId = pointer.id;
       tryPlayerAttack(scene, scene.time.now);
     };
+    scene.ahOnHowlDown = function (pointer) {
+      if (scene.ahHowlPointerId !== null || !scene.input.enabled) return;
+      scene.ahHowlPointerId = pointer.id;
+      tryHowlBurst(scene, scene.time.now);
+    };
 
     scene.ahJoystickHit.on("pointerdown", scene.ahOnJoystickDown);
     scene.ahInteractHit.on("pointerdown", scene.ahOnInteractionDown);
     scene.ahAttackHit.on("pointerdown", scene.ahOnAttackDown);
+    scene.ahHowlHit.on("pointerdown", scene.ahOnHowlDown);
     scene.input.on("pointermove", scene.ahOnPointerMove);
     scene.input.on("pointerup", scene.ahOnPointerUp);
     scene.input.on("gameout", scene.ahOnGameOut);
@@ -925,6 +965,7 @@
     scene.ahLayoutControls = function (width, height, safe) { layoutControls(scene, width, height, safe); };
     layoutControls(scene, scene.scale.width, scene.scale.height, S.safeInsets);
     updateCombatHud(scene);
+    updateHowlControl(scene, scene.time.now);
   }
 
   function layoutControls(scene, width, height, safe) {
@@ -944,6 +985,9 @@
     scene.ahAttackRing?.setPosition(attackX, controlY);
     scene.ahAttackLabel?.setPosition(attackX, controlY);
     scene.ahAttackHit?.setPosition(attackX, controlY);
+    scene.ahHowlRing?.setPosition(attackX, controlY - (compact ? 76 : 84));
+    scene.ahHowlLabel?.setPosition(attackX, controlY - (compact ? 76 : 84));
+    scene.ahHowlHit?.setPosition(attackX, controlY - (compact ? 76 : 84));
     scene.ahPrompt?.setPosition(width / 2, Math.max(12, insets.top + 12));
     scene.ahMessage?.setPosition(width / 2, Math.max(50, insets.top + 50));
     scene.ahCounter?.setPosition(Math.max(10, insets.left + 10), Math.max(10, insets.top + 10));
@@ -1029,7 +1073,7 @@
       scene.ahInteractRing.setFillStyle(0x111a23, 0.8).setStrokeStyle(2, 0x50616f, 0.65);
       scene.ahPrompt.setText("WASD / ARROWS · MOVE").setColor("#88a2b3");
     }
-    if (!context) scene.ahPrompt.setText("WASD / ARROWS - MOVE · F / SPACE - ATTACK").setColor("#88a2b3");
+    if (!context) scene.ahPrompt.setText("WASD / ARROWS - MOVE · F / SPACE - ATTACK · Q - HOWL").setColor("#88a2b3");
   }
 
   function showSceneMessage(scene, text) {
@@ -1106,6 +1150,7 @@
       right: global.Phaser.Input.Keyboard.KeyCodes.D,
       interact: global.Phaser.Input.Keyboard.KeyCodes.E,
       attack: global.Phaser.Input.Keyboard.KeyCodes.F,
+      howl: global.Phaser.Input.Keyboard.KeyCodes.Q,
       space: global.Phaser.Input.Keyboard.KeyCodes.SPACE,
       escape: global.Phaser.Input.Keyboard.KeyCodes.ESC
     });
@@ -1170,6 +1215,7 @@
     if (!scene.ahKeys) return;
     const keyboard = global.Phaser.Input.Keyboard;
     if (keyboard.JustDown(scene.ahKeys?.attack)) tryPlayerAttack(scene, scene.time.now);
+    if (keyboard.JustDown(scene.ahKeys?.howl)) tryHowlBurst(scene, scene.time.now);
     if (keyboard.JustDown(scene.ahKeys?.interact)) {
       performInteraction(scene);
     }
@@ -1188,10 +1234,12 @@
     scene.ahJoystickHit?.off("pointerdown", scene.ahOnJoystickDown);
     scene.ahInteractHit?.off("pointerdown", scene.ahOnInteractionDown);
     scene.ahAttackHit?.off("pointerdown", scene.ahOnAttackDown);
+    scene.ahHowlHit?.off("pointerdown", scene.ahOnHowlDown);
     scene.input?.off("pointermove", scene.ahOnPointerMove);
     scene.input?.off("pointerup", scene.ahOnPointerUp);
     scene.input?.off("gameout", scene.ahOnGameOut);
     scene.ahMessageTimer?.remove?.(false);
+    global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
   }
 
   function sceneCreate() {
@@ -1245,6 +1293,7 @@
     updatePlayer(this, time);
     updateProximity(this);
     updateCombat(this, time);
+    updateHowlControl(this, time);
     handleKeyboardActions(this);
   }
 
