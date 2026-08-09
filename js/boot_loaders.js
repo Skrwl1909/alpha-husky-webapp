@@ -357,6 +357,7 @@
       try { await getLoadScript()("js/sector_combat_config.js"); }
       catch (error) { throw relayLoaderError("SECTOR COMBAT CONFIG LOAD FAILED", error); }
     }
+    await ensureActionSectorRuntimeLoaded();
     if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
       relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
       relayTrace(trace, "ROOM_SCRIPT_READY");
@@ -381,6 +382,20 @@
       relayTrace(trace, "ROOM_INIT_DONE");
       return true;
     });
+  }
+
+  async function ensureActionSectorRuntimeLoaded() {
+    if (global.AlphaActionSectorRuntime?.create) return true;
+    return await once("action_sector_runtime", async () => { await getLoadScript()("js/action_sector_runtime.js"); return true; });
+  }
+
+  async function ensureRelayFringe02RoomLoaded(apiPost, tg, dbg, trace) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg), trace };
+    await ensurePhaserLoaded(); await ensureActionSectorRuntimeLoaded();
+    if (!global.AlphaSectorCombatConfig) await getLoadScript()("js/sector_combat_config.js");
+    if (!global.AlphaRelayFringe02Room?.open) await once("relay_fringe_02_room", async () => { await getLoadScript()("js/relay_fringe_02_room.js"); return true; });
+    if (!global.AlphaRelayFringe02Room?.open) throw new Error("Relay Fringe 02 room API missing");
+    global.AlphaRelayFringe02Room.init(deps); return true;
   }
 
   async function ensureReferralsLoaded(apiPost, tg, dbg) {
@@ -497,6 +512,8 @@
     global.ensurePhaserLoaded = ensurePhaserLoaded;
     global.ensureDojoLoaded = ensureDojoLoaded;
     global.ensureExplorationRoomLoaded = ensureExplorationRoomLoaded;
+    global.ensureActionSectorRuntimeLoaded = ensureActionSectorRuntimeLoaded;
+    global.ensureRelayFringe02RoomLoaded = ensureRelayFringe02RoomLoaded;
     global.ensureReferralsLoaded = ensureReferralsLoaded;
     global.ensureSiegeLoaded = ensureSiegeLoaded;
     global.ensureOracleLoaded = ensureOracleLoaded;
@@ -522,6 +539,8 @@
     ensurePhaserLoaded,
     ensureDojoLoaded,
     ensureExplorationRoomLoaded,
+    ensureActionSectorRuntimeLoaded,
+    ensureRelayFringe02RoomLoaded,
     ensureReferralsLoaded,
     ensureSiegeLoaded,
     ensureOracleLoaded,
@@ -533,5 +552,7 @@
   global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
     global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
     global.ensureExplorationRoomLoaded = ensureExplorationRoomLoaded;
+    global.ensureActionSectorRuntimeLoaded = ensureActionSectorRuntimeLoaded;
+    global.ensureRelayFringe02RoomLoaded = ensureRelayFringe02RoomLoaded;
   global.AHBootLoaders = API;
 })(window);

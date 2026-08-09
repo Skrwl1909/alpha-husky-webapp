@@ -12,6 +12,35 @@
   const TAP_MAX_DURATION_MS = 700;
   const RELAY_STARTUP_TIMEOUT_MS = 8000;
   const RELAY_ROOM_ROOT_ID = "alphaExplorationRoom";
+  const runtimeRegistry = window.AlphaSectorRuntimeRegistry || (() => {
+    const runtimes = new Map();
+    return window.AlphaSectorRuntimeRegistry = Object.freeze({
+      register: (sectorId, runtime) => { if (typeof sectorId === "string" && runtime && typeof runtime.open === "function") runtimes.set(sectorId, runtime); },
+      has: sectorId => runtimes.has(String(sectorId || "")),
+      get: sectorId => runtimes.get(String(sectorId || "")),
+      open: (sectorId, options) => runtimes.get(String(sectorId || ""))?.open?.(options),
+    });
+  })();
+  runtimeRegistry.register("relay_fringe_01", {
+    load: async (stage) => {
+      const ensure = window.ensureExplorationRoomLoaded || window.AHBootLoaders?.ensureExplorationRoomLoaded;
+      if (typeof ensure !== "function") throw new Error("Sector room loader is unavailable.");
+      await ensure(apiPost(), window.Telegram?.WebApp || window.tg, window.DBG, stage);
+    },
+    open: options => window.AlphaExplorationRoom?.open?.(options),
+    close: options => window.AlphaExplorationRoom?.close?.(options),
+    isOpen: () => window.AlphaExplorationRoom?.isOpen?.(),
+  });
+  runtimeRegistry.register("relay_fringe_02", {
+    load: async (stage) => {
+      const ensure = window.ensureRelayFringe02RoomLoaded || window.AHBootLoaders?.ensureRelayFringe02RoomLoaded;
+      if (typeof ensure !== "function") throw new Error("Sector room loader is unavailable.");
+      await ensure(apiPost(), window.Telegram?.WebApp || window.tg, window.DBG, stage);
+    },
+    open: options => window.AlphaRelayFringe02Room?.open?.(options),
+    close: options => window.AlphaRelayFringe02Room?.close?.(options),
+    isOpen: () => window.AlphaRelayFringe02Room?.isOpen?.(),
+  });
   const state = {
     initialized: false,
     valid: false,
@@ -190,6 +219,12 @@
     return Math.max(0, Math.ceil((endsAt * 1000 - (Date.now() + state.serverOffsetMs)) / 1000));
   }
   function humanReason(reason) {
+    const known = {
+      sector_locked: "Prerequisite route not unlocked.",
+      prerequisite_sector_not_completed: "Complete Relay Fringe 01 first.",
+      missing_relay7_credits: "Relay-7 credits required.",
+    };
+    if (known[reason]) return known[reason];
     const text = String(reason || "").replace(/_/g, " ").trim();
     return text ? text.replace(/^./, (letter) => letter.toUpperCase()) : "Requirements are not met.";
   }
@@ -479,13 +514,18 @@
     if (status === "available" && sector?.canStartScan) return '<button class="world-exploration-action" type="button" data-we-action="start">Start scan</button>';
     if (status === "scanning" || (activeScan && remaining > 0)) return `<button class="world-exploration-action" type="button" disabled>Scanning · ${escapeHtml(formatRemaining(remaining))}</button>`;
     if (status === "claimable" && state.projection?.canClaimScan && activeScan) return '<button class="world-exploration-action is-claim" type="button" data-we-action="claim">Claim sector</button>';
-    if (canEnterSector("relay_fringe_01")) return relayEntryActionHtml(sector);
+    if (canEnterSector(sector?.id)) return relayEntryActionHtml(sector);
+    if (status === "unlocked" && sector?.actionRunPlayable && !runtimeRegistry.has(sector?.id)) return '<div class="world-exploration-complete">SECTOR ROUTE PROVEN<br>Gameplay sector not yet available</div>';
     if (status === "unlocked") return '<div class="world-exploration-complete">Sector unlocked</div>';
     const reason = (sector?.blockingReasons || [])[0] || "Requirements are not met.";
     return `<button class="world-exploration-action" type="button" disabled>${escapeHtml(humanReason(reason))}</button>`;
   }
 
   function relayEntryActionHtml(sector) {
+    const completed = sector?.runProgress?.completed === true;
+    const progress = completed ? `<div class="world-exploration-complete">CLEARED<br>Best: ${escapeHtml(formatDuration(sector?.runProgress?.bestDuration || 0))}<br>Clears: ${escapeHtml(sector?.runProgress?.clearCount || 1)}</div>` : "";
+    const entryLabel = hasRelayFringeDeveloperPreview(sector) ? "ENTER SECTOR - DEV PREVIEW" : completed ? "RUN AGAIN" : "ENTER SECTOR";
+    return `${progress}<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${entryLabel}</button>`;
     const preview = hasRelayFringeDeveloperPreview(sector);
     const label = preview ? "ENTER SECTOR · DEV PREVIEW" : "ENTER SECTOR";
     return `<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${label}</button>`;
@@ -507,7 +547,7 @@
         requirementsHtml,
         fragmentRecoveryHtml,
       });
-      if (canEnterSector("relay_fringe_01")) {
+      if (canEnterSector(sector.id)) {
         content.insertAdjacentHTML("beforeend", `<div class="world-exploration-panel-body">${relayEntryActionHtml(sector)}</div>`);
       }
       void path.afterPanelRender({
@@ -726,9 +766,9 @@
   }
 
   function canEnterSector(sectorId) {
-    if (String(sectorId || "") !== "relay_fringe_01" || !state.valid || !state.projection) return false;
+    if (!state.valid || !state.projection) return false;
     const sector = sectorFor(sectorId);
-    return hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector);
+    return runtimeRegistry.has(sectorId) && (hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector));
   }
 
   function relayEntryFailureMessage(sector, error) {
@@ -758,6 +798,8 @@
   }
 
   async function runRelayStartup(selected, preview) {
+    const runtime = runtimeRegistry.get(selected);
+    if (!runtime) throw new Error("Gameplay sector not yet available.");
     let currentStage = "ENTRY_HANDLER";
     let timedOut = false;
     let watchdogId = null;
@@ -774,7 +816,7 @@
       }
     };
     const rollback = async () => {
-      try { await window.AlphaExplorationRoom?.close?.({ relayStartupRollback: true }); } catch (_) {}
+      try { await runtime.close?.({ relayStartupRollback: true }); } catch (_) {}
       byId(RELAY_ROOM_ROOT_ID)?.remove();
       if (mapPresentationSuspended) restoreRelayMapPresentation();
     };
@@ -805,9 +847,7 @@
       const rect = root.getBoundingClientRect();
       if (!(rect.width > 0 && rect.height > 0)) throw relayStartupError("MOUNT_HAS_ZERO_SIZE", new Error("Relay gameplay mount has no usable size."));
       updateStage("MOUNT_SIZED");
-      const ensure = window.ensureExplorationRoomLoaded || window.AHBootLoaders?.ensureExplorationRoomLoaded;
-      if (typeof ensure !== "function") throw new Error("Sector room loader is unavailable.");
-      await ensure(apiPost(), window.Telegram?.WebApp || window.tg, window.DBG, updateStage);
+      await runtime.load?.(updateStage);
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!canEnterSector(selected)) throw new Error("This sector authorization is no longer current.");
       // The sector detail panel is z-index:1000002. It must be out before the Room Ready visibility test,
@@ -815,7 +855,7 @@
       suspendRelayMapPresentation();
       mapPresentationSuspended = true;
       updateStage("ROOM_OPEN_CALLED");
-      const opened = await window.AlphaExplorationRoom.open({
+      const opened = await runtime.open({
         sectorId: selected,
         onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
       });
@@ -839,7 +879,7 @@
 
   async function enterSelected() {
     const selected = String(state.selectedSectorId || "");
-    if (selected !== "relay_fringe_01" || state.requestBusy) return;
+    if (!selected || state.requestBusy || !canEnterSector(selected)) return;
     state.requestBusy = true;
     state.pendingLabel = "Validating routeâ€¦";
     renderPanel();
@@ -851,7 +891,7 @@
     } finally {
       state.requestBusy = false;
       state.pendingLabel = "";
-      if (!window.AlphaExplorationRoom?.isOpen?.()) renderPanel();
+      if (!runtimeRegistry.get(selected)?.isOpen?.()) renderPanel();
     }
   }
 
