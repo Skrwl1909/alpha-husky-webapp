@@ -840,6 +840,9 @@
       await refreshState({ force: true });
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!canEnterSector(selected)) throw new Error("This sector is not currently authorized for entry.");
+      const combatProfile = window.AlphaSectorCombatConfig?.normalizeCombatProfile?.(state.projection?.combatProfile);
+      if (!combatProfile) throw new Error("Unable to load combat profile. Retry.");
+      if (window.DBG) try { console.debug("[WorldExploration] resolved action combat profile", combatProfile); } catch (_) {}
       const root = ensureRelayStartupMount();
       updateStage("MOUNT_CREATED");
       try { (window.Telegram?.WebApp || window.tg)?.expand?.(); } catch (_) {}
@@ -857,6 +860,13 @@
       updateStage("ROOM_OPEN_CALLED");
       const opened = await runtime.open({
         sectorId: selected,
+        combatProfile,
+        resolveCombatProfile: async () => {
+          await refreshState({ force: true });
+          const refreshed = window.AlphaSectorCombatConfig?.normalizeCombatProfile?.(state.projection?.combatProfile);
+          if (!refreshed) throw new Error("Unable to load combat profile. Retry.");
+          return refreshed;
+        },
         onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
       });
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");

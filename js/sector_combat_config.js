@@ -2,8 +2,6 @@
 (function (global) {
   "use strict";
   const DEFAULT_COMBAT = Object.freeze({
-    playerMaxHp: 100,
-    playerDamage: 30,
     playerSpeed: 230,
     playerAttackRange: 86,
     playerAttackCooldownMs: 360,
@@ -16,12 +14,48 @@
   });
   const HOWL_BURST = Object.freeze({
     radius: 125,
-    damage: 45,
     cooldownMs: 6000,
     knockbackSpeed: 320,
     knockbackDurationMs: 180,
     vfxDurationMs: 280
   });
+  function normalizeCombatProfile(value) {
+    const raw = value && typeof value === "object" ? value : null;
+    const positiveInt = candidate => Number.isSafeInteger(candidate) && candidate > 0 ? candidate : null;
+    const maxHp = positiveInt(raw?.maxHp), meleeDamage = positiveInt(raw?.meleeDamage), howlDamage = positiveInt(raw?.howlDamage);
+    const mitigation = Number(raw?.damageMitigation);
+    if (!raw || raw.version !== 1 || !maxHp || !meleeDamage || !howlDamage || !Number.isFinite(mitigation) || mitigation < 0 || mitigation >= 1) return null;
+    return Object.freeze({ version: 1, maxHp, meleeDamage, howlDamage, damageMitigation: mitigation, source: Object.freeze({ level: Math.max(1, Number(raw?.source?.level) || 1), equipmentApplied: raw?.source?.equipmentApplied === true }) });
+  }
+  function makeRunCombatSnapshot(profile) {
+    const normalized = normalizeCombatProfile(profile);
+    return normalized ? Object.freeze({ ...normalized, source: Object.freeze({ ...normalized.source }) }) : null;
+  }
+  function logActionCombatProfile(sectorId, profile, snapshot) {
+    if (!global.DBG || !profile || !snapshot) return;
+    try {
+      console.debug("[ACTION_COMBAT_PROFILE]", {
+        buildVersion: String(global.WEBAPP_VER || "unknown"),
+        sectorId: String(sectorId || ""),
+        backendResolvedProfile: {
+          version: profile.version, maxHp: profile.maxHp, meleeDamage: profile.meleeDamage,
+          howlDamage: profile.howlDamage, damageMitigation: profile.damageMitigation,
+          sourceLevel: profile.source?.level, equipmentApplied: profile.source?.equipmentApplied === true,
+        },
+        runSnapshot: {
+          version: snapshot.version, maxHp: snapshot.maxHp, meleeDamage: snapshot.meleeDamage,
+          howlDamage: snapshot.howlDamage, damageMitigation: snapshot.damageMitigation,
+        },
+        snapshotCreated: true,
+      });
+    } catch (_) {}
+  }
+  function incomingPlayerDamage(rawDamage, snapshot) {
+    const raw = Number(rawDamage);
+    const mitigation = Number(snapshot?.damageMitigation);
+    if (!Number.isFinite(raw) || raw <= 0 || !Number.isFinite(mitigation) || mitigation < 0 || mitigation >= 1) return null;
+    return Math.max(1, Math.round(raw * (1 - mitigation)));
+  }
   function makeCombatConfig(overrides) { return Object.freeze({ ...DEFAULT_COMBAT, ...(overrides || {}) }); }
   function makeRunId(prefix, key) { return typeof global.AH_makeRunId === "function" ? global.AH_makeRunId(prefix, key) : String(prefix || "run") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8); }
   function getEnemyChildren(scene) {
@@ -68,6 +102,8 @@
   function triggerHowlBurst(scene, time, damageEnemy) {
     const player = scene?.ahPlayer;
     if (!player?.active || typeof damageEnemy !== "function" || getHowlCooldownRemaining(scene, time) > 0) return { activated: false, affected: 0, killed: 0 };
+    const howlDamage = Number(scene?.ahRun?.combatSnapshot?.howlDamage);
+    if (!Number.isSafeInteger(howlDamage) || howlDamage <= 0) return { activated: false, affected: 0, killed: 0 };
     scene.ahNextHowlAt = time + HOWL_BURST.cooldownMs;
     showHowlBurstVfx(scene, player);
     const radiusSq = HOWL_BURST.radius * HOWL_BURST.radius;
@@ -77,7 +113,7 @@
       const dx = enemy.x - player.x, dy = enemy.y - player.y;
       if (dx * dx + dy * dy > radiusSq) continue;
       affected += 1;
-      damageEnemy(scene, enemy, HOWL_BURST.damage);
+      damageEnemy(scene, enemy, howlDamage);
       if (!enemy.active || enemy.ahCombat?.dead) { killed += 1; continue; }
       const distance = Math.hypot(dx, dy), nx = distance ? dx / distance : 1, ny = distance ? dy / distance : 0;
       enemy.ahHowlKnockback = { x: nx * HOWL_BURST.knockbackSpeed, y: ny * HOWL_BURST.knockbackSpeed, until: time + HOWL_BURST.knockbackDurationMs };
@@ -85,5 +121,5 @@
     }
     return { activated: true, affected, killed };
   }
-  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, getEnemyChildren, getHowlCooldownRemaining, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
+  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, getEnemyChildren, getHowlCooldownRemaining, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
 })(window);
