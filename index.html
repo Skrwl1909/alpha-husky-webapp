@@ -7930,7 +7930,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "action-rpg-rf02-gate-v1";
+    window.WEBAPP_VER = "action-rpg-real-profile-gate-v1-20260810";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script src="/js/telegram_shell.js?v=world-canvas-mobile-ux-v1"></script>
@@ -7956,7 +7956,7 @@ body.bc-open #ahCommunityBtn{
   })(window.WEBAPP_VER);
 </script>
 
-  <script src="/js/boot_loaders.js?v=combat-group-public-api-v1"></script>
+  <script>document.write('<script src="/js/boot_loaders.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <!-- 4) Główny skrypt aplikacji -->
 <script>
   const DEBUG_UI = true;
@@ -12754,8 +12754,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/toast_manager.js?v=2026-06-20-progress-toasts-v1-2-reward-feedback"></script>
 <script src="/js/alpha_den.js?v=den-visual-tiers-v1"></script>
 <script src="/js/signal_broker.js?v=signal-broker-relay7-identity-v1"></script>
-<script src="/js/world_exploration_path.js?v=world-exploration-path-of-proof-v1"></script>
-<script src="/js/world_exploration.js?v=world-exploration-sector-marker-v1"></script>
+<script>document.write('<script src="/js/world_exploration_path.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/world_exploration.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>
 (function initHowlTreasury(){
   function boot(apiPost){
