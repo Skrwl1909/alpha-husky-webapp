@@ -771,6 +771,14 @@
     return runtimeRegistry.has(sectorId) && (hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector));
   }
 
+  function actionCombatProfileNormalizer() {
+    const normalize = window.AlphaSectorCombatConfig?.normalizeCombatProfile;
+    if (typeof normalize !== "function") {
+      throw relayStartupError("COMBAT_PROFILE_NORMALIZER_UNAVAILABLE", new Error("Action combat profile normalizer is unavailable."));
+    }
+    return normalize;
+  }
+
   function relayEntryFailureMessage(sector, error) {
     const stage = String(error?.relayStage || "ROOM OPEN FAILED").trim() || "ROOM OPEN FAILED";
     if (hasRelayFringeDeveloperPreview(sector)) {
@@ -840,9 +848,6 @@
       await refreshState({ force: true });
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!canEnterSector(selected)) throw new Error("This sector is not currently authorized for entry.");
-      const combatProfile = window.AlphaSectorCombatConfig?.normalizeCombatProfile?.(state.projection?.combatProfile);
-      if (!combatProfile) throw new Error("Unable to load combat profile. Retry.");
-      if (window.DBG) try { console.debug("[WorldExploration] resolved action combat profile", combatProfile); } catch (_) {}
       const root = ensureRelayStartupMount();
       updateStage("MOUNT_CREATED");
       try { (window.Telegram?.WebApp || window.tg)?.expand?.(); } catch (_) {}
@@ -853,6 +858,10 @@
       await runtime.load?.(updateStage);
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
       if (!canEnterSector(selected)) throw new Error("This sector authorization is no longer current.");
+      const normalizeCombatProfile = actionCombatProfileNormalizer();
+      const combatProfile = normalizeCombatProfile(state.projection?.combatProfile);
+      if (!combatProfile) throw relayStartupError("COMBAT_PROFILE_INVALID", new Error("Unable to load combat profile. Retry."));
+      if (window.DBG) try { console.debug("[WorldExploration] resolved action combat profile", combatProfile); } catch (_) {}
       // The sector detail panel is z-index:1000002. It must be out before the Room Ready visibility test,
       // not after open() resolves, otherwise it physically covers the Relay root (z-index:12060).
       suspendRelayMapPresentation();
@@ -863,8 +872,8 @@
         combatProfile,
         resolveCombatProfile: async () => {
           await refreshState({ force: true });
-          const refreshed = window.AlphaSectorCombatConfig?.normalizeCombatProfile?.(state.projection?.combatProfile);
-          if (!refreshed) throw new Error("Unable to load combat profile. Retry.");
+          const refreshed = actionCombatProfileNormalizer()(state.projection?.combatProfile);
+          if (!refreshed) throw relayStartupError("COMBAT_PROFILE_INVALID", new Error("Unable to load combat profile. Retry."));
           return refreshed;
         },
         onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
