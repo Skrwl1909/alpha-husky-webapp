@@ -66,14 +66,19 @@
     return Array.isArray(children) ? children : [];
   }
   function getHowlCooldownRemaining(scene, time) { return Math.max(0, (scene?.ahNextHowlAt || 0) - (time || 0)); }
+  // Action sectors may mix Arcade factory objects with ordinary GameObjects that own an attached Arcade Body.
+  function setArcadeVelocity(target, x, y) {
+    if (typeof target?.setVelocity === "function") { target.setVelocity(x, y); return true; }
+    if (typeof target?.body?.setVelocity === "function") { target.body.setVelocity(x, y); return true; }
+    return false;
+  }
   function updateHowlKnockback(enemy, time) {
     if (!enemy?.active || enemy.ahCombat?.dead || !enemy.ahHowlKnockback) return false;
     if (time >= enemy.ahHowlKnockback.until) {
       delete enemy.ahHowlKnockback;
       return false;
     }
-    enemy.setVelocity(enemy.ahHowlKnockback.x, enemy.ahHowlKnockback.y);
-    return true;
+    return setArcadeVelocity(enemy, enemy.ahHowlKnockback.x, enemy.ahHowlKnockback.y);
   }
   function clearHowlBurstState(scene, resetCooldown = true) {
     if (!scene) return;
@@ -81,7 +86,7 @@
     for (const enemy of getEnemyChildren(scene)) {
       if (!enemy?.ahHowlKnockback) continue;
       delete enemy.ahHowlKnockback;
-      if (enemy.active && !enemy.ahCombat?.dead) enemy.setVelocity?.(0, 0);
+      if (enemy.active && !enemy.ahCombat?.dead) setArcadeVelocity(enemy, 0, 0);
     }
     for (const effect of scene.ahHowlVfx || []) {
       scene.tweens?.killTweensOf?.(effect);
@@ -115,11 +120,12 @@
       affected += 1;
       damageEnemy(scene, enemy, howlDamage);
       if (!enemy.active || enemy.ahCombat?.dead) { killed += 1; continue; }
+      if (enemy.ahCombat?.howlKnockbackImmune === true) continue;
       const distance = Math.hypot(dx, dy), nx = distance ? dx / distance : 1, ny = distance ? dy / distance : 0;
       enemy.ahHowlKnockback = { x: nx * HOWL_BURST.knockbackSpeed, y: ny * HOWL_BURST.knockbackSpeed, until: time + HOWL_BURST.knockbackDurationMs };
-      enemy.setVelocity(enemy.ahHowlKnockback.x, enemy.ahHowlKnockback.y);
+      setArcadeVelocity(enemy, enemy.ahHowlKnockback.x, enemy.ahHowlKnockback.y);
     }
     return { activated: true, affected, killed };
   }
-  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, getEnemyChildren, getHowlCooldownRemaining, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
+  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
 })(window);
