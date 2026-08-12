@@ -58,6 +58,21 @@
   }
   function makeCombatConfig(overrides) { return Object.freeze({ ...DEFAULT_COMBAT, ...(overrides || {}) }); }
   function makeRunId(prefix, key) { return typeof global.AH_makeRunId === "function" ? global.AH_makeRunId(prefix, key) : String(prefix || "run") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8); }
+  // Completion profiles validate the mandatory encounter composition. Optional
+  // encounters still count for their own telemetry, but must never inflate the
+  // type totals submitted as the mandatory composition.
+  function recordEnemyKill(run, type, required) {
+    if (!run || typeof run !== "object") return false;
+    const counter = ({ chaser: "chasersKilled", shooter: "shootersKilled", sentinel: "sentinelKilled" })[String(type || "")];
+    if (!counter) return false;
+    if (required === true) {
+      run[counter] = (Number(run[counter]) || 0) + 1;
+      run.mandatoryEnemiesKilled = (Number(run.mandatoryEnemiesKilled) || 0) + 1;
+    } else {
+      run.optionalEnemiesKilled = (Number(run.optionalEnemiesKilled) || 0) + 1;
+    }
+    return true;
+  }
   function getEnemyChildren(scene) {
     const enemies = scene?.ahEnemies;
     if (!enemies) return [];
@@ -127,5 +142,5 @@
     }
     return { activated: true, affected, killed };
   }
-  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
+  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, recordEnemyKill, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
 })(window);
