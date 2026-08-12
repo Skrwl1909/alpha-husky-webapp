@@ -7930,9 +7930,10 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "action-rpg-real-profile-gate-v1-20260810";
+    window.WEBAPP_VER = "relay-optional-kill-accounting-v1-20260812";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
+  <script src="/js/capp_client.js?v=capp-proof-v1"></script>
   <script src="/js/telegram_shell.js?v=world-canvas-mobile-ux-v1"></script>
   <script src="/js/start_links.js?v=WEBAPP_VER"></script>
   <script src="/js/start_router.js?v=WEBAPP_VER"></script>
@@ -12654,6 +12655,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     const init_data = await window.getInitDataSafe(1200);
 
     if (!init_data || init_data.length < 20) {
+      if (window.AlphaHuskyCapp?.isPackagedRuntime?.()) {
+        return window.AlphaHuskyCapp.apiPost(path, data || {});
+      }
       console.warn("[apiPost] NO_UID client-side:", path);
       return { ok:false, reason:"NO_UID" };
     }
