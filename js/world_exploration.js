@@ -64,6 +64,7 @@
     keyHandler: null,
     visibilityHandler: null,
     lastSectorTap: { sectorId: "", until: 0 },
+    threatTierBySector: Object.create(null),
   };
 
   function byId(id) { return document.getElementById(id); }
@@ -257,6 +258,14 @@
     panel.innerHTML = '<div class="world-exploration-backdrop" data-we-close="1"></div><section class="world-exploration-panel" role="dialog" aria-modal="true" aria-labelledby="worldExplorationTitle"><button class="world-exploration-close" type="button" data-we-close="1" aria-label="Close sector details">&times;</button><div id="worldExplorationPanelContent"></div></section>';
     panel.addEventListener("click", (event) => {
       if (event.target?.closest?.("[data-we-close]")) closePanel();
+      const threatButton = event.target?.closest?.("[data-we-threat-tier]");
+      if (threatButton) {
+        event.preventDefault();
+        const sectorId = String(threatButton.getAttribute("data-we-sector-id") || state.selectedSectorId || "");
+        const tier = window.AlphaSectorCombatConfig?.normalizeThreatTier?.(threatButton.getAttribute("data-we-threat-tier"));
+        if (sectorId && tier) { state.threatTierBySector[sectorId] = tier.id; renderPanel(); }
+        return;
+      }
       if (event.target?.closest?.("[data-we-action='enter']")) {
         event.preventDefault();
         void enterSelected();
@@ -525,10 +534,27 @@
     const completed = sector?.runProgress?.completed === true;
     const progress = completed ? `<div class="world-exploration-complete">CLEARED<br>Best: ${escapeHtml(formatDuration(sector?.runProgress?.bestDuration || 0))}<br>Clears: ${escapeHtml(sector?.runProgress?.clearCount || 1)}</div>` : "";
     const entryLabel = hasRelayFringeDeveloperPreview(sector) ? "ENTER SECTOR - DEV PREVIEW" : completed ? "RUN AGAIN" : "ENTER SECTOR";
-    return `${progress}<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${entryLabel}</button>`;
+    return `${progress}${threatSelectorHtml(sector)}<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${entryLabel}</button>`;
     const preview = hasRelayFringeDeveloperPreview(sector);
     const label = preview ? "ENTER SECTOR · DEV PREVIEW" : "ENTER SECTOR";
     return `<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${label}</button>`;
+  }
+
+  function selectedThreatTier(sectorId) {
+    return window.AlphaSectorCombatConfig?.normalizeThreatTier?.(state.threatTierBySector[String(sectorId || "")])?.id || "standard";
+  }
+
+  function threatSelectorHtml(sector) {
+    const api = window.AlphaSectorCombatConfig;
+    if (!api?.THREAT_TIERS) return "";
+    const profile = api.normalizeCombatProfile?.(state.projection?.combatProfile);
+    const recommended = api.recommendThreatTier?.(profile, [58])?.id || "standard";
+    const selected = selectedThreatTier(sector?.id);
+    const options = Object.values(api.THREAT_TIERS).map(tier => {
+      const active = tier.id === selected, recommendation = tier.id === recommended ? " <small>RECOMMENDED</small>" : "";
+      return `<button type="button" data-we-threat-tier="${escapeHtml(tier.id)}" data-we-sector-id="${escapeHtml(sector.id)}" aria-pressed="${active}" style="min-height:34px;border:1px solid ${active ? "rgba(101,232,255,.9)" : "rgba(151,188,207,.32)"};border-radius:7px;background:${active ? "#174755" : "#101a25"};color:#e5fdff;font:800 10px system-ui;letter-spacing:.05em">${escapeHtml(tier.label)}${recommendation}</button>`;
+    }).join("");
+    return `<section aria-label="Threat level" style="margin:14px 0"><strong style="display:block;margin-bottom:7px;font-size:11px;letter-spacing:.08em">THREAT LEVEL</strong><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${options}</div><p style="margin:7px 0 0;color:#8aa3b2;font-size:11px">Selection is fixed when the run begins. STANDARD keeps progression payoff.</p></section>`;
   }
 
   function renderPanel() {
@@ -861,6 +887,8 @@
       const normalizeCombatProfile = actionCombatProfileNormalizer();
       const combatProfile = normalizeCombatProfile(state.projection?.combatProfile);
       if (!combatProfile) throw relayStartupError("COMBAT_PROFILE_INVALID", new Error("Unable to load combat profile. Retry."));
+      const threatTier = window.AlphaSectorCombatConfig?.normalizeThreatTier?.(selectedThreatTier(selected));
+      if (!threatTier) throw relayStartupError("THREAT_TIER_INVALID", new Error("Unable to load threat level. Retry."));
       if (window.DBG) try { console.debug("[WorldExploration] resolved action combat profile", combatProfile); } catch (_) {}
       // The sector detail panel is z-index:1000002. It must be out before the Room Ready visibility test,
       // not after open() resolves, otherwise it physically covers the Relay root (z-index:12060).
@@ -870,6 +898,7 @@
       const opened = await runtime.open({
         sectorId: selected,
         combatProfile,
+        threatTier: threatTier.id,
         resolveCombatProfile: async () => {
           await refreshState({ force: true });
           const refreshed = actionCombatProfileNormalizer()(state.projection?.combatProfile);

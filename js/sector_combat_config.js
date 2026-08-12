@@ -19,6 +19,18 @@
     knockbackDurationMs: 180,
     vfxDurationMs: 280
   });
+  // Authored, visible difficulty choices. These are deliberately independent
+  // from player level and are copied into each run before any enemy spawns.
+  const THREAT_TIERS = Object.freeze({
+    standard: Object.freeze({ id: "standard", label: "STANDARD", enemyHpMultiplier: 1, enemyDamageMultiplier: 1, cadenceMultiplier: 1 }),
+    hardened: Object.freeze({ id: "hardened", label: "HARDENED", enemyHpMultiplier: 2.6, enemyDamageMultiplier: 1.25, cadenceMultiplier: .92 }),
+    overcharged: Object.freeze({ id: "overcharged", label: "OVERCHARGED", enemyHpMultiplier: 4.2, enemyDamageMultiplier: 1.5, cadenceMultiplier: .84 })
+  });
+  const THREAT_ORDER = Object.freeze(["standard", "hardened", "overcharged"]);
+  // Before this pass Phaser used its implicit default zoom of 1. The values
+  // below expose roughly 10-12% more linear world width/height, with a little
+  // extra room on wide desktop displays while retaining readable mobile art.
+  const CAMERA_FRAMING = Object.freeze({ portraitZoom: .91, landscapeZoom: .90, desktopZoom: .89 });
   function normalizeCombatProfile(value) {
     const raw = value && typeof value === "object" ? value : null;
     const positiveInt = candidate => Number.isSafeInteger(candidate) && candidate > 0 ? candidate : null;
@@ -30,6 +42,49 @@
   function makeRunCombatSnapshot(profile) {
     const normalized = normalizeCombatProfile(profile);
     return normalized ? Object.freeze({ ...normalized, source: Object.freeze({ ...normalized.source }) }) : null;
+  }
+  function normalizeThreatTier(value) {
+    const id = String(value && typeof value === "object" ? value.id : value || "standard").toLowerCase();
+    return THREAT_TIERS[id] || THREAT_TIERS.standard;
+  }
+  function makeRunThreatSnapshot(value) {
+    const tier = normalizeThreatTier(value);
+    return Object.freeze({ ...tier });
+  }
+  function scaleEnemyCombat(base, threat) {
+    const tier = makeRunThreatSnapshot(threat);
+    const source = base && typeof base === "object" ? base : {};
+    const positive = (value, fallback) => Math.max(1, Number(value) || fallback);
+    const result = {
+      maxHp: Math.max(1, Math.ceil(positive(source.maxHp, 1) * tier.enemyHpMultiplier)),
+      damage: Math.max(1, Math.ceil(positive(source.damage, 1) * tier.enemyDamageMultiplier)),
+      cooldownMs: Math.max(120, Math.round(positive(source.cooldownMs, 1) * tier.cadenceMultiplier)),
+      recoveryMs: Math.max(120, Math.round(positive(source.recoveryMs, 1) * tier.cadenceMultiplier)),
+    };
+    return Object.freeze(result);
+  }
+  function recommendThreatTier(profile, ordinaryEnemyHp) {
+    const damage = Number(profile?.meleeDamage);
+    const baseHp = Array.isArray(ordinaryEnemyHp) ? Math.min(...ordinaryEnemyHp.map(Number).filter(Number.isFinite)) : Number(ordinaryEnemyHp);
+    if (!Number.isFinite(damage) || damage <= 0 || !Number.isFinite(baseHp) || baseHp <= 0) return THREAT_TIERS.standard;
+    // A recommended tier must leave every ordinary archetype standing after a
+    // first normal hit. This is guidance only; the player remains in control.
+    return THREAT_ORDER.map(id => THREAT_TIERS[id]).find(tier => Math.ceil(baseHp * tier.enemyHpMultiplier / damage) >= 2) || THREAT_TIERS.overcharged;
+  }
+  function cameraZoomForViewport(width, height) {
+    const w = Math.max(1, Number(width) || 1), h = Math.max(1, Number(height) || 1), aspect = w / h;
+    return aspect < .8 ? CAMERA_FRAMING.portraitZoom : (w >= 1000 && aspect >= 1.45) ? CAMERA_FRAMING.desktopZoom : CAMERA_FRAMING.landscapeZoom;
+  }
+  function applyCameraFraming(scene, width, height) {
+    const camera = scene?.cameras?.main;
+    if (!camera?.setZoom) return null;
+    const zoom = cameraZoomForViewport(width ?? scene?.scale?.width, height ?? scene?.scale?.height);
+    camera.setZoom(zoom);
+    return zoom;
+  }
+  function completionPayload(run) {
+    const { threatTier, threatSnapshot, ...payload } = run || {};
+    return payload;
   }
   function logActionCombatProfile(sectorId, profile, snapshot) {
     if (!global.DBG || !profile || !snapshot) return;
@@ -142,5 +197,5 @@
     }
     return { activated: true, affected, killed };
   }
-  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, logActionCombatProfile, incomingPlayerDamage, recordEnemyKill, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
+  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, THREAT_TIERS, CAMERA_FRAMING, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, normalizeThreatTier, makeRunThreatSnapshot, scaleEnemyCombat, recommendThreatTier, cameraZoomForViewport, applyCameraFraming, completionPayload, logActionCombatProfile, incomingPlayerDamage, recordEnemyKill, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
 })(window);
