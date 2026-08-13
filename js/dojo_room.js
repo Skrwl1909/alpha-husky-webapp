@@ -1,15 +1,19 @@
-// Alpha Husky — Phaser Dojo Movement Lab V1
+// Alpha Husky — Phaser Dojo Movement Lab / Exploration Sector V1
 (function (global) {
   "use strict";
 
   const ROOT_ID = "alphaDojoRoom";
   const CANVAS_ID = "alphaDojoCanvas";
   const STYLE_ID = "ah-dojo-room-css";
-  const WORLD_WIDTH = 1400;
-  const WORLD_HEIGHT = 900;
+  const WORLD_WIDTH = 2200;
+  const WORLD_HEIGHT = 1300;
+  const PLAYER_SPAWN = Object.freeze({ x: 250, y: 1080 });
+  const EXIT_POS = Object.freeze({ x: 200, y: 1140 });
+  const RELAY_POS = Object.freeze({ x: 2000, y: 400 });
   const PLAYER_SPEED = 230;
   const EXIT_RANGE_SQ = 118 * 118;
   const READY_TIMEOUT_MS = 9000;
+  const SECTOR_ID = "movement_lab_sector_v1";
   const PLAYER_TEXTURE = "ah-dojo-room-player-v1";
   const PLAYER_SHEET_TEXTURE = "ah-dojo-alpha-player-sheet-v1";
   const PLAYER_SHEET_URL = "assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png";
@@ -41,13 +45,33 @@
     playerMaxHp: 100, playerDamage: 30, playerSpeed: PLAYER_SPEED, playerAttackRange: 86, playerAttackCooldownMs: 360, playerRespawnMs: 700,
     enemyMaxHp: 78, enemyDamage: 6, enemySpeed: 92, enemyAggroRange: 260, enemyAttackRange: 48, enemyAttackCooldownMs: 920, lootValue: 1
   });
-  const ENEMY_SPAWNS = Object.freeze([
-    { x: 520, y: 445 },
-    { x: 610, y: 720 },
-    { x: 875, y: 420 },
-    { x: 1050, y: 505 },
-    { x: 1210, y: 720 }
+  // Compact three-beat sector. Enemies stay on authored walkable pads — never on spawn.
+  const ENCOUNTERS = Object.freeze([
+    {
+      id: "south_ward",
+      name: "SOUTH WARD",
+      required: true,
+      trigger: { x: 1040, y: 1020, w: 560, h: 400 },
+      spawns: [{ x: 920, y: 1040 }, { x: 1140, y: 940 }]
+    },
+    {
+      id: "north_ward",
+      name: "NORTH WARD",
+      required: true,
+      trigger: { x: 1180, y: 360, w: 580, h: 380 },
+      spawns: [{ x: 1020, y: 340 }, { x: 1320, y: 420 }]
+    },
+    {
+      id: "relay_approach",
+      name: "RELAY APPROACH",
+      required: true,
+      trigger: { x: 1900, y: 480, w: 560, h: 560 },
+      spawns: [{ x: 1760, y: 560 }]
+    }
   ]);
+  const REQUIRED_ENEMY_COUNT = ENCOUNTERS.reduce(function countRequired(total, encounter) {
+    return total + (encounter.required ? encounter.spawns.length : 0);
+  }, 0);
   const PLAYER_ATTACK_RANGE_SQ = COMBAT.playerAttackRange * COMBAT.playerAttackRange;
   const ENEMY_AGGRO_RANGE_SQ = COMBAT.enemyAggroRange * COMBAT.enemyAggroRange;
   const ENEMY_ATTACK_RANGE_SQ = COMBAT.enemyAttackRange * COMBAT.enemyAttackRange;
@@ -143,6 +167,14 @@
 }
 .ah-dojo-room__loading span{margin-top:82px}
 .ah-dojo-room__error{background:#090d12;color:#e3bb76}
+.ah-dojo-room .ah-sector-result{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:rgba(4,8,12,.72)}
+.ah-dojo-room .ah-sector-result__card{width:min(420px,92vw);padding:18px 16px 14px;border:1px solid rgba(101,232,255,.28);border-radius:14px;background:linear-gradient(180deg,#15212c,#0c141c);color:#e8f3ff;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.ah-dojo-room .ah-sector-result__card--failed{border-color:rgba(232,160,122,.4)}
+.ah-dojo-room .ah-sector-result__card .ah-sector-result__eyebrow{color:#7f96a8;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.ah-dojo-room .ah-sector-result__card h2{margin:8px 0 6px;font-size:20px;letter-spacing:.04em}
+.ah-dojo-room .ah-sector-result__card p{margin:0 0 12px;color:#b7c6d1;font-size:13px;line-height:1.4}
+.ah-dojo-room .ah-sector-result__actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.ah-dojo-room .ah-sector-result__actions button{min-height:42px;padding:8px 12px;border:1px solid rgba(151,188,207,.3);border-radius:10px;background:#111c27;color:#dcecff;font:700 11px/1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
 @keyframes ah-dojo-room-spin{to{transform:rotate(360deg)}}
 @media (max-width:380px){
   .ah-dojo-room__header{grid-template-columns:68px minmax(0,1fr) 80px;gap:5px}
@@ -168,14 +200,14 @@
       <header class="ah-dojo-room__header">
         <button class="ah-dojo-room__button" type="button" data-dojo-room-action="back" aria-label="Return to map">Back</button>
         <div class="ah-dojo-room__heading">
-          <span class="ah-dojo-room__eyebrow">Testnet Wastes · zero-risk</span>
+          <span class="ah-dojo-room__eyebrow">Exploration Sector V1 · local</span>
           <strong class="ah-dojo-room__title">Movement Lab</strong>
         </div>
         <button class="ah-dojo-room__button ah-dojo-room__button--legacy" type="button" data-dojo-room-action="legacy">DPS Test</button>
       </header>
       <div class="ah-dojo-room__stage">
         <div id="${CANVAS_ID}" class="ah-dojo-room__canvas"></div>
-        <div class="ah-dojo-room__loading" role="status"><span>Entering training simulation…</span></div>
+        <div class="ah-dojo-room__loading" role="status"><span>Entering exploration sector…</span></div>
         <div class="ah-dojo-room__error" role="alert" hidden>Movement lab unavailable. Opening DPS test…</div>
       </div>`;
 
@@ -260,8 +292,9 @@
     const button = event.target.closest?.("[data-dojo-room-action]");
     if (!button || !S.root?.contains(button)) return;
     const action = button.getAttribute("data-dojo-room-action");
-    if (action === "back") void close();
+    if (action === "back" || action === "map") void close();
     if (action === "legacy") void openLegacyAfterClose();
+    if ((action === "again" || action === "restart") && S.scene) resetSectorRun(S.scene);
   }
 
   function onWindowResize() {
@@ -456,10 +489,11 @@
     markings.strokeRect(142, 142, WORLD_WIDTH - 284, WORLD_HEIGHT - 284);
 
     markings.fillStyle(0xd7a85a, 0.14);
-    for (let x = 520; x <= 880; x += 60) markings.fillRect(x, 430, 34, 4);
+    for (let x = 420; x <= 720; x += 60) markings.fillRect(x, 1088, 34, 4);
     markings.fillStyle(0x65e8ff, 0.16);
-    markings.fillRect(132, 716, 150, 6);
-    markings.fillRect(1110, 162, 142, 5);
+    markings.fillRect(180, 1188, 150, 6);
+    markings.fillRect(1680, 620, 180, 5);
+    markings.fillRect(1880, 300, 142, 5);
   }
 
   function buildFloor(scene) {
@@ -498,6 +532,12 @@
     const collider = addHorizontalWallCollider(scene, group, x, y, Math.min(218, width), height);
     (scene.ahHorizontalWalls || (scene.ahHorizontalWalls = [])).push({ image: wall, collider });
     return wall;
+  }
+
+  function addVerticalBlocker(scene, group, x, y, height) {
+    const wall = addEnvironmentVerticalWall(scene, group, x, y);
+    if (wall) return wall;
+    return addStaticBlock(scene, group, x, y, 38, height || 210, 0x1c2934, 0x527083).setDepth(10);
   }
 
   function addEnvironmentVerticalWall(scene, group, x, y) {
@@ -544,16 +584,16 @@
   }
 
   function addExitGate(scene, group) {
-    const x = 188;
-    const y = 760;
+    const x = EXIT_POS.x;
+    const y = EXIT_POS.y;
     scene.ahExit = { x, y };
     const gateAsset = ENVIRONMENT_ASSETS.exitGate;
     if (scene.textures.exists(gateAsset.key)) {
       const gate = scene.add.image(x, y, gateAsset.key).setOrigin(0.5).setScale(EXIT_GATE_SCALE).setDepth(10);
       // Source alpha bounds: x 27-994, y 502-967. Only the visible side pillars collide.
       scene.ahExitGateFrames = [
-        addExitGateFrameCollider(scene, group, 106, 753, 50, 99),
-        addExitGateFrameCollider(scene, group, 269, 753, 50, 99)
+        addExitGateFrameCollider(scene, group, x - 82, y - 7, 50, 99),
+        addExitGateFrameCollider(scene, group, x + 81, y - 7, 50, 99)
       ];
       scene.ahExitGate = gate;
       return;
@@ -566,8 +606,8 @@
   }
 
   function addTrainingTerminal(scene) {
-    const x = 1020;
-    const y = 720;
+    const x = RELAY_POS.x;
+    const y = RELAY_POS.y;
     const terminalAsset = ENVIRONMENT_ASSETS.terminal;
     if (scene.textures.exists(terminalAsset.key)) {
       const terminal = scene.add.image(x, y, terminalAsset.key).setOrigin(0.5).setScale(TERMINAL_SCALE).setDepth(12);
@@ -577,7 +617,7 @@
       refreshStaticBody(terminal);
       scene.ahTerminal = terminal;
       scene.ahTerminalBaseScale = TERMINAL_SCALE;
-      scene.ahTerminalAnchor = { x, y: 758 };
+      scene.ahTerminalAnchor = { x, y: y + 38 };
       return;
     }
 
@@ -591,12 +631,53 @@
     scene.ahTerminalAnchor = { x, y: y + 38 };
   }
 
+  function makeLocalCombatSnapshot() {
+    return Object.freeze({
+      version: 1,
+      maxHp: COMBAT.playerMaxHp,
+      meleeDamage: COMBAT.playerDamage,
+      howlDamage: COMBAT.playerDamage,
+      damageMitigation: 0,
+      source: Object.freeze({ level: 1, equipmentApplied: false, localTraining: true })
+    });
+  }
+
+  function makeRunState() {
+    const combatSnapshot = makeLocalCombatSnapshot();
+    return {
+      runId: global.AlphaSectorCombatConfig?.makeRunId?.(SECTOR_ID, SECTOR_ID) || (SECTOR_ID + "_" + Date.now()),
+      sectorId: SECTOR_ID,
+      status: "active",
+      startedAt: Date.now(),
+      combatSnapshot,
+      playerHP: combatSnapshot.maxHp,
+      lootTally: 0,
+      enemiesDead: 0,
+      requiredKills: REQUIRED_ENEMY_COUNT,
+      relayState: "locked",
+      exitUnlocked: false,
+      encounters: Object.fromEntries(ENCOUNTERS.map(function mapEncounter(encounter) {
+        return [encounter.id, { activated: false, cleared: false, remaining: encounter.spawns.length }];
+      }))
+    };
+  }
+
+  function requiredEncountersCleared(run) {
+    return ENCOUNTERS.filter(function requiredOnly(encounter) { return encounter.required; })
+      .every(function isCleared(encounter) { return run?.encounters?.[encounter.id]?.cleared === true; });
+  }
+
   function updateCombatHud(scene) {
-    if (!scene.ahPlayer) return;
-    const hp = Math.max(0, scene.ahPlayerHp || 0);
-    scene.ahHpLabel?.setText("HP  " + hp + " / " + COMBAT.playerMaxHp);
-    const alive = Math.max(0, ENEMY_SPAWNS.length - (scene.ahEnemiesDead || 0));
-    scene.ahCounter?.setText("CHASERS  " + alive + " / " + ENEMY_SPAWNS.length + "   LOOT  " + (scene.ahLootTally || 0));
+    const run = scene.ahRun;
+    if (!scene.ahPlayer || !run) return;
+    const hp = Math.max(0, run.playerHP || 0);
+    scene.ahHpLabel?.setText("HP  " + hp + " / " + run.combatSnapshot.maxHp);
+    const remaining = Math.max(0, run.requiredKills - run.enemiesDead);
+    const relay = run.relayState === "active" ? "RELAY ACTIVE" : run.relayState === "ready" ? "RELAY READY" : "RELAY LOCKED";
+    scene.ahCounter?.setText("CHASERS  " + remaining + " / " + run.requiredKills + "   LOOT  " + (run.lootTally || 0) + "   " + relay);
+    scene.ahPlayerHp = run.playerHP;
+    scene.ahLootTally = run.lootTally;
+    scene.ahEnemiesDead = run.enemiesDead;
   }
 
   function updateEnemyBar(enemy) {
@@ -607,11 +688,17 @@
     enemy.ahName?.setPosition(enemy.x, enemy.y - 58);
   }
 
-  function addCombatEnemy(scene, x, y) {
+  function addCombatEnemy(scene, x, y, encounter) {
     const enemy = scene.physics.add.sprite(x, y, createChaserTexture(scene));
     enemy.setDepth(25).setCollideWorldBounds(true);
     enemy.body.setSize(28, 28).setOffset(10, 28);
-    enemy.ahCombat = { hp: COMBAT.enemyMaxHp, nextAttackAt: 0, dead: false };
+    enemy.ahCombat = {
+      hp: COMBAT.enemyMaxHp,
+      nextAttackAt: 0,
+      dead: false,
+      encounterId: encounter.id,
+      required: encounter.required !== false
+    };
     enemy.ahHpBack = scene.add.rectangle(x, y - 42, 32, 6, 0x130a17, 0.9).setDepth(40);
     enemy.ahHpBar = scene.add.rectangle(x, y - 42, 30, 4, 0xff5fa8, 0.98).setDepth(41);
     enemy.ahName = scene.add.text(x, y - 58, "CORRUPTED CHASER", {
@@ -621,19 +708,47 @@
   }
 
   function addCombatEncounter(scene, blockers) {
+    scene.ahBlockers = blockers;
     scene.ahEnemies = scene.physics.add.group();
     scene.ahLoot = scene.physics.add.group();
-    scene.ahEnemiesDead = 0;
-    scene.ahLootTally = 0;
-    scene.ahEncounterCleared = false;
-    scene.ahPlayerHp = COMBAT.playerMaxHp;
     scene.ahNextPlayerAttackAt = 0;
     scene.ahNextHowlAt = 0;
-    ENEMY_SPAWNS.forEach(function addSpawn(spawn) { scene.ahEnemies.add(addCombatEnemy(scene, spawn.x, spawn.y)); });
     scene.physics.add.collider(scene.ahEnemies, blockers);
     scene.physics.add.collider(scene.ahEnemies, scene.ahEnemies);
     scene.physics.add.collider(scene.ahPlayer, scene.ahEnemies);
     scene.physics.add.overlap(scene.ahPlayer, scene.ahLoot, collectLoot, undefined, scene);
+  }
+
+  function spawnEncounter(scene, encounter) {
+    encounter.spawns.forEach(function addSpawn(spawn) {
+      scene.ahEnemies.add(addCombatEnemy(scene, spawn.x, spawn.y, encounter));
+    });
+  }
+
+  function playerInTrigger(player, trigger) {
+    return player.x >= trigger.x - trigger.w / 2 && player.x <= trigger.x + trigger.w / 2 &&
+      player.y >= trigger.y - trigger.h / 2 && player.y <= trigger.y + trigger.h / 2;
+  }
+
+  function activateEncounter(scene, encounter) {
+    const run = scene.ahRun;
+    const state = run?.encounters?.[encounter.id];
+    if (!state || state.activated || run.status !== "active") return;
+    state.activated = true;
+    spawnEncounter(scene, encounter);
+    showSceneMessage(scene, encounter.name + " // THREATS ACTIVE");
+    updateCombatHud(scene);
+  }
+
+  function activateEncounters(scene) {
+    const player = scene.ahPlayer;
+    const run = scene.ahRun;
+    if (!player?.active || run?.status !== "active") return;
+    for (const encounter of ENCOUNTERS) {
+      if (!run.encounters[encounter.id].activated && playerInTrigger(player, encounter.trigger)) {
+        activateEncounter(scene, encounter);
+      }
+    }
   }
 
   function nearestLivingEnemy(scene) {
@@ -671,20 +786,65 @@
     scene.tweens.add({ targets: pickup, angle: 360, duration: 950, repeat: -1 });
   }
 
-  function unlockRelay(scene) {
-    if (scene.ahEncounterCleared) return;
-    scene.ahEncounterCleared = true;
-    scene.ahRelayLabel?.setText("RELAY // UNLOCKED").setColor("#a9edf7");
-    scene.ahTerminal?.setTint?.(0xbffaff);
-    scene.ahExitGate?.clearTint?.();
-    showSceneMessage(scene, "Encounter cleared. Relay unlocked.");
+  function setRelayState(scene, state) {
+    if (scene.ahRun) scene.ahRun.relayState = state;
+    scene.ahRelayState = state;
+    scene.ahEncounterCleared = state === "ready" || state === "active";
+    const ready = state === "ready";
+    const active = state === "active";
+    scene.ahRelayLabel?.setText(active ? "RELAY // ACTIVE" : ready ? "RELAY // READY" : "RELAY // LOCKED")
+      .setColor(state === "locked" ? "#e3a17e" : "#a9edf7");
+    if (state === "locked") scene.ahTerminal?.setTint?.(0x7e8a91);
+    else scene.ahTerminal?.setTint?.(0xbffaff);
+    scene.ahRelayGlow?.setAlpha(active ? 0.28 : ready ? 0.18 : 0.04)
+      .setStrokeStyle(2, active || ready ? 0x65e8ff : 0x53636a, active || ready ? 0.84 : 0.18);
+    if (ready) scene.tweens.add({ targets: scene.ahRelayGlow, alpha: 0.36, duration: 520, yoyo: true, repeat: 1 });
+  }
+
+  function setExitLocked(scene, locked) {
+    if (scene.ahRun) scene.ahRun.exitUnlocked = !locked;
+    scene.ahExitUnlocked = !locked;
+    if (locked) scene.ahExitGate?.setTint?.(0x4f4a55);
+    else scene.ahExitGate?.clearTint?.();
+  }
+
+  function markRelayReady(scene) {
+    const run = scene.ahRun;
+    if (!run || run.status !== "active" || run.relayState !== "locked") return;
+    if (!requiredEncountersCleared(run)) return;
+    setRelayState(scene, "ready");
+    showSceneMessage(scene, "Relay READY. Activate the core.");
     updateCombatHud(scene);
     scene.ahContext = null;
     updateProximity(scene);
   }
 
+  function activateRelay(scene) {
+    const run = scene.ahRun;
+    if (!run || run.status !== "active" || run.relayState !== "ready") return;
+    setRelayState(scene, "active");
+    setExitLocked(scene, false);
+    showSceneMessage(scene, "Relay ACTIVE. Exit unsealed.");
+    updateCombatHud(scene);
+    scene.ahContext = null;
+    updateProximity(scene);
+  }
+
+  function clearEncounter(scene, encounterId) {
+    const run = scene.ahRun;
+    const encounter = ENCOUNTERS.find(function findEncounter(item) { return item.id === encounterId; });
+    const state = run?.encounters?.[encounterId];
+    if (!run || !encounter || !state || state.cleared) return;
+    state.cleared = true;
+    showSceneMessage(scene, encounter.name + " SECURED");
+    if (requiredEncountersCleared(run)) markRelayReady(scene);
+    updateCombatHud(scene);
+    updateProximity(scene);
+  }
+
   function killEnemy(scene, enemy) {
     if (!enemy?.active || enemy.ahCombat?.dead) return;
+    const run = scene.ahRun;
     enemy.ahCombat.dead = true;
     delete enemy.ahHowlKnockback;
     dropLoot(scene, enemy.x, enemy.y);
@@ -693,9 +853,15 @@
     enemy.ahName?.destroy();
     scene.tweens.add({ targets: enemy, alpha: 0, scaleX: 1.2, scaleY: 1.2, duration: 170, onComplete: function () { enemy.destroy(); } });
     enemy.body.enable = false;
-    scene.ahEnemiesDead += 1;
+    if (run) {
+      run.enemiesDead += 1;
+      const state = run.encounters[enemy.ahCombat.encounterId];
+      if (state) {
+        state.remaining = Math.max(0, state.remaining - 1);
+        if (state.remaining === 0) clearEncounter(scene, enemy.ahCombat.encounterId);
+      }
+    }
     updateCombatHud(scene);
-    if (scene.ahEnemiesDead === ENEMY_SPAWNS.length) unlockRelay(scene);
   }
 
   function damageEnemy(scene, enemy, damage) {
@@ -707,34 +873,109 @@
     if (enemy.ahCombat.hp <= 0) killEnemy(scene, enemy);
   }
 
-  function respawnPlayer(scene) {
-    const player = scene.ahPlayer;
-    if (!player || S.closing) return;
-    player.enableBody(true, 320, 690, true, true).setAlpha(1).clearTint();
-    scene.ahPlayerHp = COMBAT.playerMaxHp;
+  function removeResultPanel() {
+    S.root?.querySelector(".ah-sector-result")?.remove();
+  }
+
+  function showResultPanel(scene, failed) {
+    removeResultPanel();
+    const run = scene.ahRun;
+    const panel = document.createElement("section");
+    panel.className = "ah-sector-result";
+    panel.innerHTML = failed
+      ? `<div class="ah-sector-result__card ah-sector-result__card--failed"><div class="ah-sector-result__eyebrow">MOVEMENT LAB</div><h2>RUN FAILED</h2><p>The simulation collapsed. The sector will reset.</p><div class="ah-sector-result__actions"><button type="button" data-dojo-room-action="restart">RESTART SECTOR</button><button type="button" data-dojo-room-action="map">RETURN</button></div></div>`
+      : `<div class="ah-sector-result__card"><div class="ah-sector-result__eyebrow">SECTOR COMPLETE</div><h2>Movement Lab</h2><p>Relay restored. Local simulation only — no rewards were claimed.</p><dl style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 0 14px;text-align:left;font-size:12px;color:#c5d5df"><dt>Chasers</dt><dd>${run?.enemiesDead || 0} / ${run?.requiredKills || REQUIRED_ENEMY_COUNT}</dd><dt>Loot</dt><dd>${run?.lootTally || 0}</dd></dl><div class="ah-sector-result__actions"><button type="button" data-dojo-room-action="again">RUN AGAIN</button><button type="button" data-dojo-room-action="map">RETURN</button></div></div>`;
+    S.root?.querySelector(".ah-dojo-room__stage")?.appendChild(panel);
+  }
+
+  function clearRunObjects(scene) {
+    for (const enemy of global.AlphaSectorCombatConfig.getEnemyChildren(scene)) {
+      enemy.ahHpBack?.destroy?.();
+      enemy.ahHpBar?.destroy?.();
+      enemy.ahName?.destroy?.();
+      delete enemy.ahHowlKnockback;
+    }
+    scene.ahEnemies?.clear(true, true);
+    scene.ahLoot?.clear(true, true);
+    scene.ahTargetRing?.setVisible(false);
+    scene.ahResetTimer?.remove?.(false);
+    scene.ahResetTimer = null;
+    removeResultPanel();
+  }
+
+  function resetSectorRun(scene) {
+    if (!scene || S.closing) return;
+    scene.ahRunGeneration = (scene.ahRunGeneration || 0) + 1;
+    global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
+    clearRunObjects(scene);
+    scene.input.enabled = true;
+    if (scene.input?.keyboard) scene.input.keyboard.enabled = true;
+    scene.ahPlayerControl = true;
+    scene.ahRun = makeRunState();
+    scene.ahNextPlayerAttackAt = 0;
     scene.ahNextHowlAt = 0;
     scene.ahPlayerInvulnerableUntil = scene.time.now + 450;
+    scene.ahContext = null;
+    const player = scene.ahPlayer;
+    if (player) {
+      player.enableBody(true, PLAYER_SPAWN.x, PLAYER_SPAWN.y, true, true).setAlpha(1).clearTint();
+      player.setVelocity(0, 0);
+      setPlayerAnimation(scene, "down", false);
+    }
+    setRelayState(scene, "locked");
+    setExitLocked(scene, true);
     updateCombatHud(scene);
-    showSceneMessage(scene, "Simulation recovery complete.");
+    updateProximity(scene);
+    showSceneMessage(scene, "Follow the sector deeper.");
+  }
+
+  function completeSector(scene) {
+    const run = scene.ahRun;
+    if (!run || run.relayState !== "active" || run.status === "completed") return;
+    run.status = "completed";
+    scene.ahPlayerControl = false;
+    scene.ahPlayer?.setVelocity(0, 0);
+    global.AlphaSectorCombatConfig.clearHowlBurstState(scene, false);
+    setContext(scene, null);
+    showResultPanel(scene, false);
+  }
+
+  function failRun(scene) {
+    const run = scene.ahRun;
+    if (!run || run.status !== "active") return;
+    run.status = "failed";
+    scene.ahPlayerControl = false;
+    global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
+    for (const enemy of global.AlphaSectorCombatConfig.getEnemyChildren(scene)) {
+      if (typeof enemy.setVelocity === "function") enemy.setVelocity(0, 0);
+    }
+    scene.ahPlayer?.disableBody(true, true);
+    scene.input.enabled = false;
+    setContext(scene, null);
+    showSceneMessage(scene, "You were overwhelmed. Resetting sector...");
+    showResultPanel(scene, true);
+    const generation = scene.ahRunGeneration || 0;
+    scene.ahResetTimer?.remove?.(false);
+    scene.ahResetTimer = scene.time.delayedCall(COMBAT.playerRespawnMs, function resetAfterDeath() {
+      if (S.closing || scene.ahRunGeneration !== generation) return;
+      resetSectorRun(scene);
+    });
   }
 
   function damagePlayer(scene, damage, time) {
     const player = scene.ahPlayer;
-    if (!player?.active || time < (scene.ahPlayerInvulnerableUntil || 0)) return;
-    scene.ahPlayerHp = Math.max(0, scene.ahPlayerHp - damage);
+    const run = scene.ahRun;
+    if (!player?.active || !run || run.status !== "active" || time < (scene.ahPlayerInvulnerableUntil || 0)) return;
+    run.playerHP = Math.max(0, run.playerHP - damage);
     player.setTint(0xff8da7);
-    scene.time.delayedCall(90, function () { if (player?.active) player.clearTint(); });
+    scene.time.delayedCall(90, function () { if (player?.active && scene.ahRun?.runId === run.runId) player.clearTint(); });
     updateCombatHud(scene);
-    if (scene.ahPlayerHp > 0) return;
-    global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
-    player.disableBody(true, true);
-    scene.ahPlayerInvulnerableUntil = Infinity;
-    showSceneMessage(scene, "You were overwhelmed. Recovering...");
-    scene.time.delayedCall(COMBAT.playerRespawnMs, function () { respawnPlayer(scene); });
+    if (run.playerHP > 0) return;
+    failRun(scene);
   }
 
   function tryPlayerAttack(scene, time) {
-    if (!scene.ahPlayer?.active || time < (scene.ahNextPlayerAttackAt || 0)) return false;
+    if (scene.ahRun?.status !== "active" || !scene.ahPlayer?.active || time < (scene.ahNextPlayerAttackAt || 0)) return false;
     const target = nearestLivingEnemy(scene);
     if (!target || target.distanceSq > PLAYER_ATTACK_RANGE_SQ) {
       if (!target) showSceneMessage(scene, "No hostile target.");
@@ -748,8 +989,9 @@
   }
 
   function updateHowlControl(scene, time) {
+    if (!global.AlphaSectorCombatConfig) return;
     const remaining = global.AlphaSectorCombatConfig.getHowlCooldownRemaining(scene, time);
-    const active = !!scene.ahPlayer?.active && scene.input?.enabled !== false;
+    const active = scene.ahRun?.status === "active" && !!scene.ahPlayer?.active && !!scene.ahPlayerControl && scene.input?.enabled !== false;
     const ready = active && remaining <= 0;
     scene.ahHowlRing?.setAlpha(ready ? 1 : 0.38);
     scene.ahHowlLabel?.setAlpha(ready ? 1 : 0.52).setText(!active ? "HOWL\n--" : ready ? "HOWL" : "HOWL\n" + Math.ceil(remaining / 1000) + "s");
@@ -757,7 +999,7 @@
   }
 
   function tryHowlBurst(scene, time) {
-    if (!scene.ahPlayer?.active) return false;
+    if (scene.ahRun?.status !== "active" || !scene.ahPlayer?.active || !scene.ahPlayerControl) return false;
     const result = global.AlphaSectorCombatConfig.triggerHowlBurst(scene, time, damageEnemy);
     if (!result.activated) return false;
     showSceneMessage(scene, result.affected ? "Howl Burst hit " + result.affected + " Chaser" + (result.affected === 1 ? "." : "s.") : "Howl Burst released.");
@@ -771,7 +1013,8 @@
     const value = pickup.ahLootValue || 0;
     pickup.disableBody(true, true);
     pickup.destroy();
-    scene.ahLootTally += value;
+    if (scene.ahRun) scene.ahRun.lootTally += value;
+    else scene.ahLootTally += value;
     updateCombatHud(scene);
     showSceneMessage(scene, "+" + value + " signal shard");
   }
@@ -784,9 +1027,11 @@
       scene.ahTargetLabel.setText("TARGET  " + Math.ceil(Math.sqrt(target.distanceSq))).setVisible(true);
     } else {
       scene.ahTargetRing.setVisible(false);
-      scene.ahTargetLabel.setText("AREA CLEAR").setVisible(true);
+      const run = scene.ahRun;
+      const label = run?.relayState === "active" ? "EXIT OPEN" : run?.relayState === "ready" ? "RELAY READY" : requiredEncountersCleared(run) ? "AREA CLEAR" : "EXPLORE";
+      scene.ahTargetLabel.setText(label).setVisible(true);
     }
-    if (!player?.active || !scene.ahEnemies) return;
+    if (!player?.active || !scene.ahEnemies || scene.ahRun?.status !== "active") return;
     for (const enemy of global.AlphaSectorCombatConfig.getEnemyChildren(scene)) {
       if (!enemy?.active || enemy.ahCombat?.dead) continue;
       if (global.AlphaSectorCombatConfig.updateHowlKnockback(enemy, time)) {
@@ -822,19 +1067,30 @@
     addStaticBlock(scene, blockers, 26, WORLD_HEIGHT / 2, 52, WORLD_HEIGHT, wallFill, wallStroke);
     addStaticBlock(scene, blockers, WORLD_WIDTH - 26, WORLD_HEIGHT / 2, 52, WORLD_HEIGHT, wallFill, wallStroke);
 
-    addEnvironmentWall(scene, blockers, 450, 278, 230, 42);
-    addEnvironmentWall(scene, blockers, 450, 610, 230, 42);
-    addEnvironmentVerticalWall(scene, blockers, 760, 190);
-    addEnvironmentVerticalWall(scene, blockers, 760, 705);
-    addEnvironmentWall(scene, blockers, 1115, 275, 190, 38);
-    addEnvironmentWall(scene, blockers, 1115, 625, 190, 38);
+    addEnvironmentWall(scene, blockers, 400, 780, 230, 42);
+    addEnvironmentWall(scene, blockers, 1180, 680, 230, 42);
+    addEnvironmentWall(scene, blockers, 1450, 680, 190, 38);
+    addEnvironmentWall(scene, blockers, 1980, 200, 190, 38);
+    addVerticalBlocker(scene, blockers, 760, 180, 220);
+    addVerticalBlocker(scene, blockers, 760, 1220, 220);
+    addVerticalBlocker(scene, blockers, 1580, 180, 220);
+    addVerticalBlocker(scene, blockers, 1580, 1220, 220);
 
-    scene.add.text(104, 102, "COMBAT GRID 01", {
+    scene.add.text(120, 980, "SPAWN YARD", {
       fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
-    });
-    scene.add.text(1016, 774, "LOCAL SIMULATION · NO REWARDS", {
+    }).setDepth(6);
+    scene.add.text(980, 180, "NORTH WARD", {
+      fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
+    }).setDepth(6);
+    scene.add.text(880, 1180, "SOUTH WARD", {
+      fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
+    }).setDepth(6);
+    scene.add.text(1760, 160, "RELAY BAY", {
+      fontFamily: "system-ui, sans-serif", fontSize: "15px", color: "#577487", letterSpacing: 2
+    }).setDepth(6);
+    scene.add.text(160, 1228, "LOCAL SIMULATION · NO REWARDS", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#566c79", letterSpacing: 1
-    });
+    }).setDepth(6);
 
     addExitGate(scene, blockers);
 
@@ -842,14 +1098,14 @@
 
     scene.ahPlayerIsSheet = createPlayerAnimations(scene);
     if (scene.ahPlayerIsSheet) {
-      scene.ahPlayer = scene.physics.add.sprite(320, 690, PLAYER_SHEET_TEXTURE, 0);
+      scene.ahPlayer = scene.physics.add.sprite(PLAYER_SPAWN.x, PLAYER_SPAWN.y, PLAYER_SHEET_TEXTURE, 0);
       scene.ahPlayer.setScale(PLAYER_SHEET_SCALE);
       scene.ahPlayer.body.setSize(70, 90).setOffset(93, 150);
       scene.ahPlayerDirection = "down";
       setPlayerAnimation(scene, "down", false);
     } else {
       createPlayerTexture(scene);
-      scene.ahPlayer = scene.physics.add.sprite(320, 690, PLAYER_TEXTURE);
+      scene.ahPlayer = scene.physics.add.sprite(PLAYER_SPAWN.x, PLAYER_SPAWN.y, PLAYER_TEXTURE);
       scene.ahPlayer.body.setSize(22, 28).setOffset(13, 32);
     }
     scene.ahPlayer.setCollideWorldBounds(true);
@@ -857,10 +1113,12 @@
     scene.physics.add.collider(scene.ahPlayer, blockers);
     scene.physics.add.collider(scene.ahPlayer, scene.ahTerminal);
     addCombatEncounter(scene, blockers);
+    scene.ahRelayGlow = scene.add.circle(scene.ahTerminalAnchor.x, scene.ahTerminalAnchor.y + 8, 62, 0x65e8ff, 0.04).setStrokeStyle(2, 0x65e8ff, 0.18).setDepth(11);
     scene.ahRelayLabel = scene.add.text(scene.ahTerminalAnchor.x, scene.ahTerminalAnchor.y - 72, "RELAY // LOCKED", {
       fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#e3a17e", fontStyle: "bold", letterSpacing: 2
     }).setOrigin(0.5).setDepth(40);
-    scene.ahExitGate?.setTint?.(0x4f4a55);
+    setRelayState(scene, "locked");
+    setExitLocked(scene, true);
   }
 
   function createControls(scene) {
@@ -899,7 +1157,7 @@
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#88a2b3", fontStyle: "bold",
       backgroundColor: "rgba(5,10,15,.72)", padding: { x: 10, y: 6 }, align: "center"
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
-    scene.ahCounter = scene.add.text(14, 16, "CHASERS  5 / 5   LOOT  0", {
+    scene.ahCounter = scene.add.text(14, 16, "CHASERS  " + REQUIRED_ENEMY_COUNT + " / " + REQUIRED_ENEMY_COUNT + "   LOOT  0   RELAY LOCKED", {
       fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#c5d5df", fontStyle: "bold",
       backgroundColor: "rgba(5,10,15,.64)", padding: { x: 8, y: 6 }
     }).setScrollFactor(0).setDepth(100);
@@ -1033,26 +1291,31 @@
     if (scene.ahContext === context) return;
     scene.ahContext = context;
     if (context === "terminal") {
-      if (scene.ahEncounterCleared) {
-        scene.ahInteractLabel.setText("RELAY").setFontSize(11).setColor("#baf6ff");
+      const relayState = scene.ahRun?.relayState || scene.ahRelayState || "locked";
+      if (relayState === "ready") {
+        scene.ahInteractLabel.setText("ACTIVATE").setFontSize(9).setColor("#baf6ff");
         scene.ahInteractRing.setFillStyle(0x123741, 0.9).setStrokeStyle(2, 0x65e8ff, 0.98);
-        scene.ahPrompt.setText("RELAY IN RANGE - E / SPACE").setColor("#a9edf7");
+        scene.ahPrompt.setText("RELAY READY - E / SPACE TO ACTIVATE").setColor("#a9edf7");
+      } else if (relayState === "active") {
+        scene.ahInteractLabel.setText("ACTIVE").setFontSize(10).setColor("#baf6ff");
+        scene.ahInteractRing.setFillStyle(0x123741, 0.9).setStrokeStyle(2, 0x65e8ff, 0.98);
+        scene.ahPrompt.setText("RELAY ACTIVE - RETURN TO THE EXIT").setColor("#a9edf7");
       } else {
         scene.ahInteractLabel.setText("LOCKED").setFontSize(10).setColor("#f1b08b");
         scene.ahInteractRing.setFillStyle(0x3a211d, 0.9).setStrokeStyle(2, 0xd77d5a, 0.98);
-        scene.ahPrompt.setText("RELAY LOCKED - CLEAR CHASERS").setColor("#e7b28e");
+        scene.ahPrompt.setText("RELAY LOCKED - CLEAR THE SECTOR").setColor("#e7b28e");
       }
       return;
     }
     if (context === "exit") {
-      if (scene.ahEncounterCleared) {
+      if (scene.ahRun?.exitUnlocked || scene.ahExitUnlocked) {
         scene.ahInteractLabel.setText("EXIT").setFontSize(13).setColor("#b8f6ff");
         scene.ahInteractRing.setFillStyle(0x123741, 0.86).setStrokeStyle(2, 0x65e8ff, 0.95);
-        scene.ahPrompt.setText("EXIT TO MAP - E / SPACE").setColor("#a9edf7");
+        scene.ahPrompt.setText("EXIT UNLOCKED - E / SPACE").setColor("#a9edf7");
       } else {
         scene.ahInteractLabel.setText("SEALED").setFontSize(10).setColor("#f1b08b");
         scene.ahInteractRing.setFillStyle(0x3a211d, 0.9).setStrokeStyle(2, 0xd77d5a, 0.98);
-        scene.ahPrompt.setText("EXIT SEALED - CLEAR CHASERS").setColor("#e7b28e");
+        scene.ahPrompt.setText("EXIT SEALED - ACTIVATE THE RELAY").setColor("#e7b28e");
       }
       return;
     }
@@ -1073,7 +1336,7 @@
       scene.ahInteractRing.setFillStyle(0x111a23, 0.8).setStrokeStyle(2, 0x50616f, 0.65);
       scene.ahPrompt.setText("WASD / ARROWS · MOVE").setColor("#88a2b3");
     }
-    if (!context) scene.ahPrompt.setText("WASD / ARROWS - MOVE · F / SPACE - ATTACK · Q - HOWL").setColor("#88a2b3");
+    if (!context) scene.ahPrompt.setText("WASD / ARROWS - MOVE · F / SPACE - ATTACK · Q - HOWL · E INTERACT").setColor("#88a2b3");
   }
 
   function showSceneMessage(scene, text) {
@@ -1085,25 +1348,33 @@
   }
 
   function performInteraction(scene) {
+    const run = scene.ahRun;
+    if (!run || run.status === "failed" || run.status === "completed") return;
     if (scene.ahContext === "exit") {
-      if (!scene.ahEncounterCleared) {
-        showSceneMessage(scene, "Exit sealed. Destroy all Corrupted Chasers.");
+      if (!run.exitUnlocked) {
+        showSceneMessage(scene, run.relayState === "ready"
+          ? "Exit sealed. Activate the Relay first."
+          : "Exit sealed. Restore the Relay Core.");
         return;
       }
-      void close();
+      completeSector(scene);
       return;
     }
     if (scene.ahContext === "terminal") {
-      if (!scene.ahEncounterCleared) {
-        showSceneMessage(scene, "Relay locked. " + (ENEMY_SPAWNS.length - scene.ahEnemiesDead) + " Chasers remain.");
+      if (run.relayState === "locked") {
+        const remaining = Math.max(0, run.requiredKills - run.enemiesDead);
+        showSceneMessage(scene, remaining ? "Relay locked. " + remaining + " Chasers remain." : "Relay locked.");
         return;
       }
-      showSceneMessage(scene, "Relay link calibrated.");
+      if (run.relayState === "active") {
+        showSceneMessage(scene, "Relay already active. Use the exit.");
+        return;
+      }
+      activateRelay(scene);
       const terminal = scene.ahTerminal;
       if (!terminal) return;
       scene.tweens.killTweensOf(terminal);
       scene.tweens.killTweensOf(scene.ahTerminalGlow);
-      terminal.setTint?.(0xbffaff);
       scene.tweens.add({
         targets: terminal,
         scaleX: scene.ahTerminalBaseScale * 1.025,
@@ -1111,7 +1382,6 @@
         duration: 105,
         yoyo: true,
         onComplete: function clearTerminalPulse() {
-          terminal?.clearTint?.();
           terminal?.setScale?.(scene.ahTerminalBaseScale);
         }
       });
@@ -1157,7 +1427,10 @@
   }
 
   function updatePlayer(scene, time) {
-    if (!scene.ahPlayer?.active) return;
+    if (!scene.ahPlayerControl || !scene.ahPlayer?.active) {
+      scene.ahStopPlayer?.();
+      return;
+    }
     const keys = scene.ahKeys;
     const cursors = scene.ahCursors;
     let x = scene.ahJoystickVector.x;
@@ -1196,6 +1469,11 @@
   }
 
   function updateProximity(scene) {
+    const run = scene.ahRun;
+    if (!run || run.status === "failed" || run.status === "completed") {
+      setContext(scene, null);
+      return;
+    }
     const player = scene.ahPlayer;
     const edx = player.x - scene.ahExit.x;
     const edy = player.y - scene.ahExit.y;
@@ -1239,7 +1517,10 @@
     scene.input?.off("pointerup", scene.ahOnPointerUp);
     scene.input?.off("gameout", scene.ahOnGameOut);
     scene.ahMessageTimer?.remove?.(false);
+    scene.ahResetTimer?.remove?.(false);
+    scene.ahResetTimer = null;
     global.AlphaSectorCombatConfig.clearHowlBurstState(scene);
+    removeResultPanel();
   }
 
   function sceneCreate() {
@@ -1257,7 +1538,8 @@
       S.scene = this;
       S.canvas = S.canvasParent?.querySelector("canvas") || this.game.canvas || null;
       if (!S.canvas) throw new Error("Phaser renderer did not create a canvas");
-      S.canvas.setAttribute("aria-label", "Playable Alpha Husky movement training room");
+      resetSectorRun(this);
+      S.canvas.setAttribute("aria-label", "Playable Alpha Husky exploration sector");
       S.canvas.addEventListener("pointercancel", onCanvasPointerCancel);
       onWindowResize();
 
@@ -1291,6 +1573,7 @@
   function sceneUpdate(time) {
     if (S.closing || this.ahVisibilityPaused || !this.ahPlayer) return;
     updatePlayer(this, time);
+    activateEncounters(this);
     updateProximity(this);
     updateCombat(this, time);
     updateHowlControl(this, time);
