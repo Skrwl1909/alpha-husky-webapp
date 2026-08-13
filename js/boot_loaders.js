@@ -393,6 +393,7 @@
     const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg), trace };
     await ensurePhaserLoaded(); await ensureActionSectorRuntimeLoaded();
     if (!global.AlphaSectorCombatConfig) await getLoadScript()("js/sector_combat_config.js");
+    if (!global.AlphaActionSectorHud) await getLoadScript()("js/action_sector_hud.js");
     if (!global.AlphaRelayFringe02Room?.open) await once("relay_fringe_02_room", async () => { await getLoadScript()("js/relay_fringe_02_room.js"); return true; });
     if (!global.AlphaRelayFringe02Room?.open) throw new Error("Relay Fringe 02 room API missing");
     global.AlphaRelayFringe02Room.init(deps); return true;

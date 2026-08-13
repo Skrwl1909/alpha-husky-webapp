@@ -595,8 +595,13 @@
   }
 
   async function enterSector(id) {
+    try { await refreshState({ force: true }); } catch (_) {}
     openSector(id);
-    if (!canEnterSector(id)) return false;
+    if (!canEnterSector(id)) {
+      state.lastMessage = "This sector is not currently available.";
+      renderPanel();
+      return false;
+    }
     await enterSelected();
     return true;
   }
@@ -815,18 +820,6 @@
     const stage = String(error?.relayStage || "ROOM OPEN FAILED").trim() || "ROOM OPEN FAILED";
     if (hasRelayFringeDeveloperPreview(sector)) {
       try { console.error("[WorldExploration] Relay developer preview failed", error); } catch (_) {}
-      if (stage === "RELAY STARTUP TIMEOUT") {
-        return `RELAY STARTUP TIMEOUT · LAST STAGE: ${String(error?.relayLastStage || state.relayStartupStage || "UNKNOWN")}`;
-      }
-      return `DEV PREVIEW · ${stage}`;
-    }
-    return humanReason(error?.message || "Unable to enter this sector.");
-  }
-
-  function relayEntryFailureMessage(sector, error) {
-    const stage = String(error?.relayStage || "ROOM OPEN FAILED").trim() || "ROOM OPEN FAILED";
-    if (hasRelayFringeDeveloperPreview(sector)) {
-      try { console.error("[WorldExploration] Relay developer preview failed", error); } catch (_) {}
       if (stage === "RELAY STARTUP TIMEOUT") return `RELAY STARTUP TIMEOUT · LAST STAGE: ${String(error?.relayLastStage || state.relayStartupStage || "UNKNOWN")}`;
       if (stage === "CANVAS_NOT_VISIBLE_AFTER_READY") {
         const failures = Array.isArray(error?.relayPresentationFailures) ? error.relayPresentationFailures.filter(Boolean) : [];
@@ -901,20 +894,26 @@
       suspendRelayMapPresentation();
       mapPresentationSuspended = true;
       updateStage("ROOM_OPEN_CALLED");
-      const opened = await runtime.open({
-        sectorId: selected,
-        combatProfile,
-        threatTier: threatTier.id,
-        resolveCombatProfile: async () => {
-          await refreshState({ force: true });
-          const refreshed = actionCombatProfileNormalizer()(state.projection?.combatProfile);
-          if (!refreshed) throw relayStartupError("COMBAT_PROFILE_INVALID", new Error("Unable to load combat profile. Retry."));
-          return refreshed;
-        },
-        onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
-      });
+      let openedResult = false;
+      try {
+        const opened = await runtime.open({
+          sectorId: selected,
+          combatProfile,
+          threatTier: threatTier.id,
+          resolveCombatProfile: async () => {
+            await refreshState({ force: true });
+            const refreshed = actionCombatProfileNormalizer()(state.projection?.combatProfile);
+            if (!refreshed) throw relayStartupError("COMBAT_PROFILE_INVALID", new Error("Unable to load combat profile. Retry."));
+            return refreshed;
+          },
+          onClose: async () => { try { await refreshState({ force: true }); } catch (_) {} },
+        });
+        openedResult = opened;
+      } catch (error) {
+        throw relayStartupError(error?.relayStage || "ROOM_OPEN_REJECTED", error);
+      }
       if (timedOut) throw relayStartupError("RELAY STARTUP TIMEOUT");
-      if (!opened) throw new Error("Sector room could not be opened.");
+      if (!openedResult) throw relayStartupError("ROOM_OPEN_FALSE", new Error("Sector room open() returned false for " + selected));
       return true;
     })();
     // Late completion is always torn down; it cannot mount behind the restored World Map.

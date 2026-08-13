@@ -10,10 +10,21 @@
     const id = String(definition?.sectorId || "");
     const ensureRoot = () => {
       let root = document.getElementById(ROOT_ID); if (root) root.remove();
-      root = document.createElement("section"); root.id = ROOT_ID;
-      root.style.cssText = "position:fixed;inset:0;z-index:12060;background:#071019;color:#dff8ff;display:grid;overflow:hidden";
-      root.innerHTML = `<div id="alphaActionSectorCanvas" style="min-width:1px;min-height:1px"></div>`;
-      document.body.appendChild(root); S.root = root; S.canvas = root.firstElementChild; return root;
+      global.AlphaActionSectorHud?.inject?.();
+      root = document.createElement("section"); root.id = ROOT_ID; root.className = "ah-exploration-room";
+      root.style.cssText = "position:fixed;inset:0;z-index:12060;display:grid;grid-template-rows:auto minmax(0,1fr);height:100dvh;overflow:hidden;background:#071019;color:#e8f3ff";
+      const title = String(definition?.displayName || definition?.sectorId || "RELAY FRINGE");
+      const kicker = String(definition?.kicker || "RELAY FRINGE 02");
+      root.innerHTML = `<header class="ah-exploration-room__header"><button type="button" class="ah-exploration-room__back" data-action-sector="back">Back</button><div class="ah-exploration-room__heading"><span data-action-sector-kicker>${kicker}</span><strong data-action-sector-title>${title}</strong></div><span class="ah-exploration-room__seal" data-action-sector-seal>LOCAL</span></header><div class="ah-exploration-room__stage"><div id="alphaActionSectorCanvas" class="ah-exploration-room__canvas"></div>${global.AlphaActionSectorHud?.markup?.({ code: definition?.hudCode || "RF-02", seal: "STANDARD", objective: "ENTER THE DEEP CARRIER", detail: "Follow the carrier signal" }) || ""}</div>`;
+      document.body.appendChild(root);
+      root.addEventListener("click", event => {
+        const action = event.target.closest?.("[data-action-sector]")?.getAttribute("data-action-sector");
+        if (action === "back" || action === "map") void close();
+      });
+      S.root = root;
+      S.canvas = root.querySelector("#alphaActionSectorCanvas") || root.lastElementChild;
+      S.hud = global.AlphaActionSectorHud?.bind?.(root) || null;
+      return root;
     };
     const cleanup = async (options) => {
       const scene = S.scene; try { definition.cleanupSector?.(scene); } catch (_) {}
@@ -32,8 +43,9 @@
       S.opening = new Promise((resolve, reject) => {
         try {
           ensureRoot(); if (!global.Phaser?.Game) throw new Error("Phaser unavailable");
-          const config = { type: global.Phaser.AUTO, parent: S.canvas, width: S.canvas.clientWidth || innerWidth, height: S.canvas.clientHeight || innerHeight, backgroundColor: "#071019", audio: { noAudio: true }, input: { activePointers: 4, touch: { capture: true } }, physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: !!global.DBG } }, scale: { mode: global.Phaser.Scale.RESIZE }, scene: {
-            create() { S.scene = this; try { definition.createScene(this, { deps: S.deps, combatProfile: S.combatProfile, threatTier: S.threatTier, resolveCombatProfile: S.resolveCombatProfile, close, definition }); this.events.once("shutdown", () => definition.cleanupSector?.(this)); resolve(true); } catch (error) { reject(error); } },
+          const width = Math.max(2, S.canvas?.clientWidth || innerWidth || 2), height = Math.max(2, S.canvas?.clientHeight || innerHeight || 2);
+          const config = { type: global.Phaser.AUTO, parent: S.canvas, width, height, backgroundColor: "#071019", audio: { noAudio: true }, input: { activePointers: 4, touch: { capture: true } }, physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: !!global.DBG } }, scale: { mode: global.Phaser.Scale.RESIZE }, scene: {
+            create() { S.scene = this; try { this.ahHudDom = S.hud; definition.createScene(this, { deps: S.deps, combatProfile: S.combatProfile, threatTier: S.threatTier, resolveCombatProfile: S.resolveCombatProfile, close, definition, hud: S.hud }); this.events.once("shutdown", () => definition.cleanupSector?.(this)); resolve(true); } catch (error) { error.relayStage = error.relayStage || "RF02_CREATE_SCENE"; reject(error); } },
             update(time, delta) { if (!S.closing && generation === S.generation) definition.updateScene?.(this, time, delta); },
           } };
           S.game = new global.Phaser.Game(config);
@@ -43,7 +55,7 @@
     };
     async function close(options) { if (S.closing || (!S.root && !S.game)) return false; S.closing = true; ++S.generation; try { await cleanup(options); return true; } finally { S.closing = false; } }
     const isOpen = () => !!(S.root && document.documentElement.contains(S.root) && !S.closing);
-    const API = { init, open, close, isOpen, sectorConfig: { sectorId: id } };
+    const API = { init, open, close, isOpen, sectorConfig: { sectorId: id }, definition };
     return API;
   }
   global.AlphaActionSectorRuntime = { create };
