@@ -594,6 +594,12 @@
     content.innerHTML = `<header class="world-exploration-panel-head"><span>WORLD EXPLORATION</span><h2 id="worldExplorationTitle">${escapeHtml(formatSectorName(sector))}</h2><p class="world-exploration-status" data-status="${escapeHtml(status)}">${escapeHtml(status.toUpperCase())}</p></header><div class="world-exploration-panel-body"><p class="world-exploration-description">${escapeHtml(description)}</p><dl class="world-exploration-details"><div><dt>Scan duration</dt><dd>${escapeHtml(duration)}</dd></div><div><dt>Current status</dt><dd>${escapeHtml(status)}</dd></div></dl>${scanning}<h3>Requirements</h3>${requirementsHtml(sector)}<p class="world-exploration-confirmation">Starting a scan spends its listed fragments. That cost is not refunded.</p>${panelActionHtml(sector)}<p class="world-exploration-message" aria-live="polite">${escapeHtml(state.lastMessage)}</p></div>`;
   }
 
+  async function enterSector(id) {
+    openSector(id);
+    if (!canEnterSector(id)) return false;
+    await enterSelected();
+    return true;
+  }
   function openSector(id) {
     const sector = sectorFor(id);
     if (!sector) return;
@@ -788,7 +794,7 @@
   }
 
   function hasRelayFringeDeveloperPreview(sector) {
-    return String(sector?.id || "") === "relay_fringe_01" && sector?.relayFringeDevPreview === true;
+    return sector?.relayFringeDevPreview === true && (String(sector?.id || "") === "relay_fringe_01" || String(sector?.id || "") === "relay_fringe_02");
   }
 
   function canEnterSector(sectorId) {
@@ -1124,7 +1130,7 @@
     state.pendingLabel = "";
   }
 
-  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, canEnterSector, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, closePanel };
+  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, canEnterSector, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, enterSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();

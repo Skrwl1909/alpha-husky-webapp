@@ -86,6 +86,48 @@
     const { threatTier, threatSnapshot, ...payload } = run || {};
     return payload;
   }
+  const SECTOR_COMPLETION_CAPS = Object.freeze({
+    relay_fringe_01: Object.freeze({ exp: 300, bones: 80, scrap: 80, equipment: 8, durationMin: 10, durationMax: 3600 }),
+    relay_fringe_02: Object.freeze({ exp: 288, bones: 26, scrap: 26, equipment: 0, durationMin: 10, durationMax: 4200 }),
+  });
+  function clampCompletionInt(value, maximum) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.min(Math.floor(parsed), Math.max(0, Number(maximum) || 0));
+  }
+  function buildSectorCompletionPayload(run) {
+    const raw = completionPayload(run) || {};
+    const caps = SECTOR_COMPLETION_CAPS[String(raw.sectorId || "")] || SECTOR_COMPLETION_CAPS.relay_fringe_01;
+    const duration = Math.max(caps.durationMin, Math.min(caps.durationMax, Math.round(Number(raw.duration) || 0) || caps.durationMin));
+    return {
+      runId: raw.runId,
+      sectorId: raw.sectorId,
+      runProfileVersion: raw.runProfileVersion,
+      duration,
+      relayActivated: raw.relayActivated === true,
+      chasersKilled: raw.chasersKilled,
+      shootersKilled: raw.shootersKilled,
+      sentinelKilled: raw.sentinelKilled,
+      mandatoryEnemiesKilled: raw.mandatoryEnemiesKilled,
+      optionalEnemiesKilled: raw.optionalEnemiesKilled,
+      damageTaken: raw.damageTaken,
+      howlUses: raw.howlUses,
+      cacheOpened: !!raw.cacheOpened,
+      expEarned: clampCompletionInt(raw.expEarned, caps.exp),
+      bonesEarned: clampCompletionInt(raw.bonesEarned, caps.bones),
+      scrapEarned: clampCompletionInt(raw.scrapEarned, caps.scrap),
+      equipmentDrops: clampCompletionInt(raw.equipmentDrops, caps.equipment),
+    };
+  }
+  function parseSectorCompletionResult(result) {
+    if (!result || typeof result !== "object") return null;
+    if (result.ok === true) return result;
+    if (result.data && result.data.ok === true) return result.data;
+    return null;
+  }
+  function completionFailureCode(error, result) {
+    return String(error?.data?.code || error?.code || result?.code || result?.data?.code || error?.message || "reward_sync_failed");
+  }
   function logActionCombatProfile(sectorId, profile, snapshot) {
     if (!global.DBG || !profile || !snapshot) return;
     try {
@@ -197,5 +239,5 @@
     }
     return { activated: true, affected, killed };
   }
-  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, THREAT_TIERS, CAMERA_FRAMING, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, normalizeThreatTier, makeRunThreatSnapshot, scaleEnemyCombat, recommendThreatTier, cameraZoomForViewport, applyCameraFraming, completionPayload, logActionCombatProfile, incomingPlayerDamage, recordEnemyKill, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
+  global.AlphaSectorCombatConfig = Object.freeze({ DEFAULT_COMBAT, HOWL_BURST, THREAT_TIERS, CAMERA_FRAMING, SECTOR_COMPLETION_CAPS, makeCombatConfig, makeRunId, normalizeCombatProfile, makeRunCombatSnapshot, normalizeThreatTier, makeRunThreatSnapshot, scaleEnemyCombat, recommendThreatTier, cameraZoomForViewport, applyCameraFraming, completionPayload, buildSectorCompletionPayload, parseSectorCompletionResult, completionFailureCode, logActionCombatProfile, incomingPlayerDamage, recordEnemyKill, getEnemyChildren, getHowlCooldownRemaining, setArcadeVelocity, updateHowlKnockback, clearHowlBurstState, triggerHowlBurst });
 })(window);
