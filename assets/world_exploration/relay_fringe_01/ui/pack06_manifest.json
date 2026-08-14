@@ -1,0 +1,46 @@
+{
+  "pack": "ALPHA HUSKY \u2014 PACK 06: RESULTS / RUN COMPLETE",
+  "source": "6cecf378-93e0-5874-b6bd-d2fa2239c728.png",
+  "assets": {
+    "hud_run_complete_panel.png": {
+      "width": 740,
+      "height": 992,
+      "transparent_pixels": 70461
+    },
+    "hud_result_row_divider.png": {
+      "width": 752,
+      "height": 132,
+      "transparent_pixels": 63780
+    },
+    "hud_success_marker.png": {
+      "width": 292,
+      "height": 340,
+      "transparent_pixels": 34404
+    },
+    "hud_sync_warning_marker.png": {
+      "width": 280,
+      "height": 340,
+      "transparent_pixels": 31452
+    },
+    "hud_sync_failed_marker.png": {
+      "width": 228,
+      "height": 340,
+      "transparent_pixels": 23254
+    },
+    "hud_primary_button.png": {
+      "width": 716,
+      "height": 250,
+      "transparent_pixels": 27140
+    },
+    "hud_secondary_button.png": {
+      "width": 688,
+      "height": 220,
+      "transparent_pixels": 18097
+    },
+    "hud_disabled_button.png": {
+      "width": 685,
+      "height": 95,
+      "transparent_pixels": 6182
+    }
+  }
+}

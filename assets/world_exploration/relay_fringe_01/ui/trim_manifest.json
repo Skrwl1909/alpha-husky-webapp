@@ -1,0 +1,103 @@
+{
+  "pack": "Alpha Husky — 4 Assets Trimmed",
+  "threshold_alpha": 20,
+  "padding_px": 4,
+  "assets": [
+    {
+      "file": "hud_hp_bar_fill_red_trimmed.png",
+      "source": "/mnt/data/ghostwriter_images/context/89e9671c-7f50-502a-a97b-940a1fdf5409.png",
+      "original_size": [
+        1536,
+        1024
+      ],
+      "crop_bbox": [
+        32,
+        451,
+        1504,
+        574
+      ],
+      "cropped_size": [
+        1472,
+        123
+      ],
+      "final_size": [
+        1480,
+        131
+      ],
+      "mode": "RGBA",
+      "background": "transparent"
+    },
+    {
+      "file": "hud_minimap_unexplored_overlay_trimmed.png",
+      "source": "/mnt/data/ghostwriter_images/context/04381490-d631-50a1-a4dc-debb47ae190c.png",
+      "original_size": [
+        1254,
+        1254
+      ],
+      "crop_bbox": [
+        20,
+        14,
+        1236,
+        1198
+      ],
+      "cropped_size": [
+        1216,
+        1184
+      ],
+      "final_size": [
+        1224,
+        1192
+      ],
+      "mode": "RGBA",
+      "background": "transparent"
+    },
+    {
+      "file": "hud_resource_bar_fill_cyan_trimmed.png",
+      "source": "/mnt/data/ghostwriter_images/context/71db51e9-e6d2-59fa-9d11-2a5de82e69ff.png",
+      "original_size": [
+        1536,
+        1024
+      ],
+      "crop_bbox": [
+        33,
+        438,
+        1504,
+        596
+      ],
+      "cropped_size": [
+        1471,
+        158
+      ],
+      "final_size": [
+        1479,
+        166
+      ],
+      "mode": "RGBA",
+      "background": "transparent"
+    },
+    {
+      "file": "hud_compass_tick_trimmed.png",
+      "source": "/mnt/data/ghostwriter_images/context/5092e73b-e6d0-57a7-b85d-6e452fb7b3eb.png",
+      "original_size": [
+        1536,
+        1024
+      ],
+      "crop_bbox": [
+        53,
+        378,
+        1483,
+        636
+      ],
+      "cropped_size": [
+        1430,
+        258
+      ],
+      "final_size": [
+        1438,
+        266
+      ],
+      "mode": "RGBA",
+      "background": "transparent"
+    }
+  ]
+}

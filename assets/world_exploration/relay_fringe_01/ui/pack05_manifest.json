@@ -1,0 +1,76 @@
+{
+  "pack": "ALPHA HUSKY \u2014 PACK 05: LOOT / INTERACTION FEEDBACK",
+  "source": "Futurystyczny zestaw ikon HUD i wi\u0105zek \u0142up\u00f3w.png",
+  "assets": {
+    "hud_interaction_prompt_frame.png": {
+      "width": 795,
+      "height": 175,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 22088
+    },
+    "hud_loot_label_frame.png": {
+      "width": 502,
+      "height": 152,
+      "alpha_min": 0,
+      "alpha_max": 253,
+      "transparent_pixels": 11108
+    },
+    "hud_loot_beam_common.png": {
+      "width": 277,
+      "height": 515,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 54926
+    },
+    "hud_loot_beam_rare.png": {
+      "width": 308,
+      "height": 520,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 49697
+    },
+    "hud_loot_beam_epic.png": {
+      "width": 395,
+      "height": 525,
+      "alpha_min": 0,
+      "alpha_max": 253,
+      "transparent_pixels": 75387
+    },
+    "hud_xp_icon.png": {
+      "width": 257,
+      "height": 266,
+      "alpha_min": 0,
+      "alpha_max": 253,
+      "transparent_pixels": 24948
+    },
+    "hud_bones_icon.png": {
+      "width": 255,
+      "height": 251,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 20925
+    },
+    "hud_scrap_icon.png": {
+      "width": 255,
+      "height": 267,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 17167
+    },
+    "hud_equipment_icon.png": {
+      "width": 252,
+      "height": 264,
+      "alpha_min": 0,
+      "alpha_max": 254,
+      "transparent_pixels": 17795
+    },
+    "hud_pickup_flash.png": {
+      "width": 355,
+      "height": 300,
+      "alpha_min": 0,
+      "alpha_max": 253,
+      "transparent_pixels": 12657
+    }
+  }
+}
