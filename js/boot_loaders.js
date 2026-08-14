@@ -359,6 +359,9 @@
     }
     await ensureActionSectorRuntimeLoaded();
     if (global.AlphaExplorationRoom?.open && global.AlphaExplorationRoom?.init) {
+      if (!global.AlphaRf01ProductionHud) {
+        try { await getLoadScript()("js/rf01_production_hud.js"); } catch (_) {}
+      }
       relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
       relayTrace(trace, "ROOM_SCRIPT_READY");
       relayTrace(trace, "ROOM_API_READY");
@@ -370,7 +373,13 @@
     const loadScript = getLoadScript();
     return await once("exploration_room", async () => {
       relayTrace(trace, "ROOM_SCRIPT_LOAD_START");
-      try { await loadScript("js/exploration_room.js"); }
+      try {
+        if (!global.AlphaRf01ProductionHud) {
+          try { await loadScript("js/rf01_production_hud.js"); }
+          catch (hudError) { try { console.warn("[RF01] production HUD failed to load", hudError); } catch (_) {} }
+        }
+        await loadScript("js/exploration_room.js");
+      }
       catch (error) { throw relayLoaderError("EXPLORATION SCRIPT LOAD FAILED", error); }
       relayTrace(trace, "ROOM_SCRIPT_READY");
       if (!global.AlphaExplorationRoom?.open || !global.AlphaExplorationRoom?.init) {
