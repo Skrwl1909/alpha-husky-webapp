@@ -60,38 +60,38 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-.ah-exploration-room--pack .ah-exploration-room__header{min-height:36px;padding:max(2px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) 2px max(7px,env(safe-area-inset-left));background:linear-gradient(#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.16)}
-.ah-exploration-room--pack .ah-exploration-room__back{min-height:30px;border:0;background:url(${url(ASSETS.btnSecondary)}) center top/100% 200% no-repeat;color:#dcecff;font-size:9px}
+.ah-exploration-room--pack .ah-exploration-room__header{min-height:32px;padding:max(2px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) 2px max(7px,env(safe-area-inset-left));background:linear-gradient(#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.13)}
+.ah-exploration-room--pack .ah-exploration-room__back{min-height:28px;border:0;background:url(${url(ASSETS.btnSecondary)}) center top/100% 200% no-repeat;color:#dcecff;font-size:8px}
 .ah-exploration-room--pack .ah-exploration-room__heading span{font-size:7px;letter-spacing:.16em;color:#718895}
-.ah-exploration-room--pack .ah-exploration-room__heading strong{margin-top:1px;font-size:12px;letter-spacing:.07em}
+.ah-exploration-room--pack .ah-exploration-room__heading strong{margin-top:1px;font-size:11px;letter-spacing:.07em}
 .ah-exploration-room--pack .ah-exploration-room__seal{visibility:hidden}
 .ah-exploration-room.is-result-open .ah-rf-hud--pack{opacity:.16}
 .ah-exploration-room.is-result-open .ah-exploration-room__canvas{filter:brightness(.32) saturate(.7)}
 .ah-rf-hud--pack{position:absolute;inset:0;z-index:8;pointer-events:none;font-family:Inter,system-ui,sans-serif;color:#dcecff}
 .ah-rf-hud--pack .ah-rf-hud__cluster,.ah-rf-hud--pack .ah-rf-hud__objective,.ah-rf-hud--pack .ah-rf-hud__radar{pointer-events:none}
-.ah-rf-hud__cluster{position:absolute;top:4px;left:max(5px,env(safe-area-inset-left));width:120px;padding:5px 7px 4px;background-color:rgba(6,10,14,.86);background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
-.ah-rf-hud__id{display:grid;grid-template-columns:28px minmax(0,1fr);gap:5px;align-items:center}
-.ah-rf-hud__portrait{width:28px;height:28px;border-radius:50%;background:
+.ah-rf-hud__cluster{position:absolute;top:3px;left:max(5px,env(safe-area-inset-left));width:110px;padding:4px 6px 3px;background-color:rgba(6,10,14,.72);background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.ah-rf-hud__id{display:grid;grid-template-columns:24px minmax(0,1fr);gap:4px;align-items:center}
+.ah-rf-hud__portrait{width:24px;height:24px;border-radius:50%;background:
   url(assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png) 8% 8%/400% 400% no-repeat,
   url(${url(ASSETS.portrait)}) center/contain no-repeat #05080c;box-shadow:inset 0 0 0 1px rgba(0,0,0,.55)}
-.ah-rf-hud__id strong{display:block;font-size:9px;letter-spacing:.08em}
-.ah-rf-hud__id em,.ah-rf-hud__level{display:block;color:#7c929f;font-size:6px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}
-.ah-rf-hud__bar-frame{position:relative;height:8px;margin-top:2px;background:url(${url(ASSETS.hpFrame)}) center/100% 100% no-repeat}
-.ah-rf-hud__bar-frame--howl{height:6px;margin-top:2px;background-image:url(${url(ASSETS.resFrame)});opacity:.72}
+.ah-rf-hud__id strong{display:block;font-size:8px;letter-spacing:.08em}
+.ah-rf-hud__id em{display:block;color:#7c929f;font-size:5.5px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}.ah-rf-hud__level{display:none}
+.ah-rf-hud__bar-frame{position:relative;height:7px;margin-top:1px;background:url(${url(ASSETS.hpFrame)}) center/100% 100% no-repeat}
+.ah-rf-hud__bar-frame--howl{height:5px;margin-top:1px;background-image:url(${url(ASSETS.resFrame)});opacity:.62}
 .ah-rf-hud__bar-frame.is-inactive{opacity:.38}
 .ah-rf-hud__bar-frame i{display:block;height:100%;width:0;max-width:100%;background:url(${url(ASSETS.hpFill)}) left center/cover no-repeat;clip-path:inset(18% 0 18% 0);transition:width .12s linear}
 .ah-rf-hud__bar-frame--howl i{background-image:url(${url(ASSETS.resFill)})}
-.ah-rf-hud__hp-text{display:block;margin-top:1px;color:#d9e8ee;font-size:7px;font-weight:800;letter-spacing:.05em}
+.ah-rf-hud__hp-text{display:block;margin-top:1px;color:#d9e8ee;font-size:6.5px;font-weight:800;letter-spacing:.05em}
 .ah-rf-hud__howl-text{position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#9abcc7;font-size:5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;z-index:1}
-.ah-rf-hud__loot{display:flex;gap:0 4px;margin-top:2px;color:#748895;font-size:5.5px;font-weight:700;letter-spacing:.02em;opacity:.88}
+.ah-rf-hud__loot{display:none}
 .ah-rf-hud__loot span{white-space:nowrap}
-.ah-rf-hud__objective{position:absolute;top:4px;left:132px;right:82px;width:auto;min-height:36px;padding:6px 27px 5px 31px;background-color:rgba(6,10,14,.78);background-image:url(${url(ASSETS.objIcon)}),url(${url(ASSETS.objPanel)});background-position:8px center,center;background-size:17px 17px,100% 100%;background-repeat:no-repeat;text-align:left}
+.ah-rf-hud__objective{position:absolute;top:3px;left:120px;right:70px;width:auto;min-height:32px;padding:5px 24px 4px 28px;background-color:rgba(6,10,14,.68);background-image:url(${url(ASSETS.objIcon)}),url(${url(ASSETS.objPanel)});background-position:7px center,center;background-size:15px 15px,100% 100%;background-repeat:no-repeat;text-align:left}
 .ah-rf-hud__obj-kicker{display:none}
-.ah-rf-hud__obj-title{display:block;font-size:8.5px;letter-spacing:.02em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ah-rf-hud__obj-detail{display:block;margin-top:2px;color:#8ba0aa;font-size:6.5px;font-style:normal;line-height:1.08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ah-rf-hud__obj-title{display:block;font-size:8px;letter-spacing:.02em;line-height:1.08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ah-rf-hud__obj-detail{display:block;margin-top:1px;color:#8ba0aa;font-size:6px;font-style:normal;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ah-rf-hud__obj-states{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:grid;gap:1px;justify-items:center}
 .ah-rf-hud__state{width:12px;height:12px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
-.ah-rf-hud__radar{position:absolute;top:4px;right:max(5px,env(safe-area-inset-right));width:76px;height:76px}
+.ah-rf-hud__radar{position:absolute;top:3px;right:max(4px,env(safe-area-inset-right));width:66px;height:66px}
 .ah-rf-hud__radar-panel{position:absolute;inset:7px;background:url(${url(ASSETS.mapPanel)}) center/100% 100% no-repeat}
 .ah-rf-hud__radar-inner{position:absolute;inset:12px;overflow:hidden}
 .ah-rf-hud__radar-canvas{display:block;width:100%;height:100%}
@@ -127,18 +127,18 @@
 .ah-rf01-result__btn:active{background-position:center bottom}
 .ah-rf01-result__btn[disabled],.ah-rf01-result__btn.is-disabled{background-image:url(${url(ASSETS.btnDisabled)});background-size:100% 100%;background-position:center;color:#8b9aaa;pointer-events:none}
 @media (max-width:420px){
-  .ah-rf-hud__cluster{width:116px;padding:5px 6px 4px}
-  .ah-rf-hud__objective{left:126px;right:80px;min-height:36px;padding:6px 26px 5px 30px}
-  .ah-rf-hud__obj-title{font-size:8px}
-  .ah-rf-hud__radar{width:74px;height:74px}
+  .ah-rf-hud__cluster{width:106px;padding:4px 6px 3px}
+  .ah-rf-hud__objective{left:116px;right:68px;min-height:32px;padding:5px 23px 4px 27px}
+  .ah-rf-hud__obj-title{font-size:7.5px}
+  .ah-rf-hud__radar{width:64px;height:64px}
   .ah-rf01-result__card{padding:12px 14px 10px;max-height:min(84dvh,580px)}
   .ah-rf01-result__btn{height:38px;min-height:38px}
   .ah-rf-hud__prompt{bottom:max(120px,calc(env(safe-area-inset-bottom) + 120px))}
 }
 @media (max-width:340px){
-  .ah-rf-hud__cluster{width:108px}
-  .ah-rf-hud__objective{left:116px;right:76px;padding:4px 23px 4px 28px}
-  .ah-rf-hud__radar{width:74px;height:74px}
+  .ah-rf-hud__cluster{width:100px}
+  .ah-rf-hud__objective{left:110px;right:64px;padding:4px 21px 4px 25px}
+  .ah-rf-hud__radar{width:60px;height:60px}
   .ah-rf01-result__row{min-height:20px;font-size:10px}
 }`.replace(/\n/g, "");
     document.head.appendChild(style);
@@ -385,7 +385,7 @@
     const againAction = failed ? "restart" : "again";
     const againLabel = failed ? "RESTART SECTOR" : "RUN AGAIN";
     const note = failed ? "" : "<p class=\"ah-rf01-result__note\">Rewards apply only after the server confirms the run.</p>";
-    panel.innerHTML = `<div class="ah-rf01-result__card is-${sync.kind}"><img class="ah-rf01-result__marker" alt="" src="${url(marker)}"><div class="ah-rf01-result__eyebrow">RELAY FRINGE 01</div><h2>${failed ? "RUN FAILED" : "RUN COMPLETE"}</h2><p class="ah-rf01-result__sync">${esc(sync.text)}${!failed && model.saveError && model.saveState === "failed" ? " [" + esc(model.saveError) + "]" : ""}</p>${model.firstClear ? "<p class='ah-rf01-result__sync'>RELAY STABILIZED · RELAY-7 ONLINE</p>" : ""}<div class="ah-rf01-result__rows">${row(ASSETS.xp, "Time", (model.duration || 0) + "s")}${row(ASSETS.gear, "Hostiles", (model.kills || 0) + " / 16")}${row(ASSETS.xp, "EXP", "+" + (reward.exp ?? model.exp ?? 0))}${row(ASSETS.bones, "Bones", "+" + (reward.bones ?? model.bones ?? 0))}${row(ASSETS.scrap, "Scrap", "+" + (reward.scrap ?? model.scrap ?? 0))}${row(ASSETS.gear, "Equipment", String(model.gear ?? 0))}</div>${note}<div class="ah-rf01-result__actions">${retryBtn}${continueBtn}${btn(againAction, againLabel, failed ? "pri" : "sec", saving)}${btn("map", "RETURN TO MAP", "sec", false)}</div></div>`;
+    panel.innerHTML = `<div class="ah-rf01-result__card is-${sync.kind}"><img class="ah-rf01-result__marker" alt="" src="${url(marker)}"><div class="ah-rf01-result__eyebrow">RELAY FRINGE 01</div><h2>${failed ? "RUN FAILED" : "RUN COMPLETE"}</h2><p class="ah-rf01-result__sync">${esc(sync.text)}</p>${model.firstClear ? "<p class='ah-rf01-result__sync'>RELAY STABILIZED · RELAY-7 ONLINE</p>" : ""}<div class="ah-rf01-result__rows">${row(ASSETS.xp, "Time", (model.duration || 0) + "s")}${row(ASSETS.gear, "Hostiles", (model.kills || 0) + " / 16")}${row(ASSETS.xp, "EXP", "+" + (reward.exp ?? model.exp ?? 0))}${row(ASSETS.bones, "Bones", "+" + (reward.bones ?? model.bones ?? 0))}${row(ASSETS.scrap, "Scrap", "+" + (reward.scrap ?? model.scrap ?? 0))}${row(ASSETS.gear, "Equipment", String(model.gear ?? 0))}</div>${note}<div class="ah-rf01-result__actions">${retryBtn}${continueBtn}${btn(againAction, againLabel, failed ? "pri" : "sec", saving)}${btn("map", "RETURN TO MAP", "sec", false)}</div></div>`;
     host.appendChild(panel);
   }
 
