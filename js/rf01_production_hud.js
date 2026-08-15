@@ -60,35 +60,38 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-.ah-exploration-room--pack .ah-exploration-room__header{min-height:44px;padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left));background:linear-gradient(#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.18)}
-.ah-exploration-room--pack .ah-exploration-room__back{min-height:34px;border:0;background:url(${url(ASSETS.btnSecondary)}) center top/100% 200% no-repeat;color:#dcecff}
+.ah-exploration-room--pack .ah-exploration-room__header{min-height:36px;padding:max(2px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) 2px max(7px,env(safe-area-inset-left));background:linear-gradient(#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.16)}
+.ah-exploration-room--pack .ah-exploration-room__back{min-height:30px;border:0;background:url(${url(ASSETS.btnSecondary)}) center top/100% 200% no-repeat;color:#dcecff;font-size:9px}
+.ah-exploration-room--pack .ah-exploration-room__heading span{font-size:7px;letter-spacing:.16em;color:#718895}
+.ah-exploration-room--pack .ah-exploration-room__heading strong{margin-top:1px;font-size:12px;letter-spacing:.07em}
+.ah-exploration-room--pack .ah-exploration-room__seal{visibility:hidden}
 .ah-exploration-room.is-result-open .ah-rf-hud--pack{opacity:.16}
 .ah-exploration-room.is-result-open .ah-exploration-room__canvas{filter:brightness(.32) saturate(.7)}
 .ah-rf-hud--pack{position:absolute;inset:0;z-index:8;pointer-events:none;font-family:Inter,system-ui,sans-serif;color:#dcecff}
 .ah-rf-hud--pack .ah-rf-hud__cluster,.ah-rf-hud--pack .ah-rf-hud__objective,.ah-rf-hud--pack .ah-rf-hud__radar{pointer-events:none}
-.ah-rf-hud__cluster{position:absolute;top:5px;left:max(5px,env(safe-area-inset-left));width:136px;padding:7px 8px 6px;background-color:rgba(6,10,14,.84);background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
-.ah-rf-hud__id{display:grid;grid-template-columns:32px minmax(0,1fr);gap:5px;align-items:center}
-.ah-rf-hud__portrait{width:32px;height:32px;border-radius:50%;background:
+.ah-rf-hud__cluster{position:absolute;top:4px;left:max(5px,env(safe-area-inset-left));width:120px;padding:5px 7px 4px;background-color:rgba(6,10,14,.86);background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.ah-rf-hud__id{display:grid;grid-template-columns:28px minmax(0,1fr);gap:5px;align-items:center}
+.ah-rf-hud__portrait{width:28px;height:28px;border-radius:50%;background:
   url(assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png) 8% 8%/400% 400% no-repeat,
   url(${url(ASSETS.portrait)}) center/contain no-repeat #05080c;box-shadow:inset 0 0 0 1px rgba(0,0,0,.55)}
-.ah-rf-hud__id strong{display:block;font-size:10px;letter-spacing:.07em}
-.ah-rf-hud__id em,.ah-rf-hud__level{display:block;color:#8ea6b6;font-size:7px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}
-.ah-rf-hud__bar-frame{position:relative;height:9px;margin-top:3px;background:url(${url(ASSETS.hpFrame)}) center/100% 100% no-repeat}
-.ah-rf-hud__bar-frame--howl{background-image:url(${url(ASSETS.resFrame)});opacity:.92}
+.ah-rf-hud__id strong{display:block;font-size:9px;letter-spacing:.08em}
+.ah-rf-hud__id em,.ah-rf-hud__level{display:block;color:#7c929f;font-size:6px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}
+.ah-rf-hud__bar-frame{position:relative;height:8px;margin-top:2px;background:url(${url(ASSETS.hpFrame)}) center/100% 100% no-repeat}
+.ah-rf-hud__bar-frame--howl{height:6px;margin-top:2px;background-image:url(${url(ASSETS.resFrame)});opacity:.72}
 .ah-rf-hud__bar-frame.is-inactive{opacity:.38}
 .ah-rf-hud__bar-frame i{display:block;height:100%;width:0;max-width:100%;background:url(${url(ASSETS.hpFill)}) left center/cover no-repeat;clip-path:inset(18% 0 18% 0);transition:width .12s linear}
 .ah-rf-hud__bar-frame--howl i{background-image:url(${url(ASSETS.resFill)})}
-.ah-rf-hud__hp-text{display:block;margin-top:1px;color:#b7c8d3;font-size:7px;font-weight:700;letter-spacing:.04em}
-.ah-rf-hud__howl-text{position:absolute;right:6px;top:50%;transform:translateY(-50%);color:#c5e7ef;font-size:6px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;z-index:1}
-.ah-rf-hud__loot{display:grid;grid-template-columns:1fr 1fr;gap:0 5px;margin-top:3px;color:#b7c8d3;font-size:7px;font-weight:700;letter-spacing:.03em}
+.ah-rf-hud__hp-text{display:block;margin-top:1px;color:#d9e8ee;font-size:7px;font-weight:800;letter-spacing:.05em}
+.ah-rf-hud__howl-text{position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#9abcc7;font-size:5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;z-index:1}
+.ah-rf-hud__loot{display:flex;gap:0 4px;margin-top:2px;color:#748895;font-size:5.5px;font-weight:700;letter-spacing:.02em;opacity:.88}
 .ah-rf-hud__loot span{white-space:nowrap}
-.ah-rf-hud__objective{position:absolute;top:5px;left:146px;right:104px;width:auto;min-height:44px;padding:5px 34px 5px 44px;background-color:rgba(6,10,14,.72);background-image:url(${url(ASSETS.objPanel)});background-position:center;background-size:100% 100%;background-repeat:no-repeat;text-align:left}
-.ah-rf-hud__obj-kicker{display:block;color:#7fd7e8;font-size:6px;font-weight:800;letter-spacing:.12em}
-.ah-rf-hud__obj-title{display:block;margin-top:1px;font-size:10px;letter-spacing:.03em;line-height:1.1}
-.ah-rf-hud__obj-detail{display:block;margin-top:0;color:#9cb2c3;font-size:8px;font-style:normal;line-height:1.15}
-.ah-rf-hud__obj-states{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;gap:2px;justify-items:center}
-.ah-rf-hud__state{width:15px;height:15px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
-.ah-rf-hud__radar{position:absolute;top:5px;right:max(5px,env(safe-area-inset-right));width:96px;height:96px}
+.ah-rf-hud__objective{position:absolute;top:4px;left:132px;right:82px;width:auto;min-height:36px;padding:6px 27px 5px 31px;background-color:rgba(6,10,14,.78);background-image:url(${url(ASSETS.objIcon)}),url(${url(ASSETS.objPanel)});background-position:8px center,center;background-size:17px 17px,100% 100%;background-repeat:no-repeat;text-align:left}
+.ah-rf-hud__obj-kicker{display:none}
+.ah-rf-hud__obj-title{display:block;font-size:8.5px;letter-spacing:.02em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ah-rf-hud__obj-detail{display:block;margin-top:2px;color:#8ba0aa;font-size:6.5px;font-style:normal;line-height:1.08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ah-rf-hud__obj-states{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:grid;gap:1px;justify-items:center}
+.ah-rf-hud__state{width:12px;height:12px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
+.ah-rf-hud__radar{position:absolute;top:4px;right:max(5px,env(safe-area-inset-right));width:76px;height:76px}
 .ah-rf-hud__radar-panel{position:absolute;inset:7px;background:url(${url(ASSETS.mapPanel)}) center/100% 100% no-repeat}
 .ah-rf-hud__radar-inner{position:absolute;inset:12px;overflow:hidden}
 .ah-rf-hud__radar-canvas{display:block;width:100%;height:100%}
@@ -98,12 +101,13 @@
 .ah-rf-hud__mk{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;object-fit:contain;pointer-events:none}
 .ah-rf-hud__mk--player{width:11px;height:11px;margin:-5px 0 0 -5px;z-index:4}
 .ah-rf-hud__mk--obj,.ah-rf-hud__mk--exit{width:10px;height:10px;z-index:3}
+.ah-rf-hud__mk--exit{width:12px;height:12px;margin:-6px 0 0 -6px}
 .ah-rf-hud__mk--enemy{width:7px;height:7px;margin:-3px 0 0 -3px;opacity:.85}
 .ah-rf-hud__enemy-markers{position:absolute;inset:0;pointer-events:none}
-.ah-rf-hud__prompt{position:absolute;left:50%;bottom:max(110px,calc(env(safe-area-inset-bottom) + 110px));transform:translateX(-50%);width:min(200px,68vw);min-height:32px;padding:8px 14px 6px;background:url(${url(ASSETS.prompt)}) center/100% 100% no-repeat;color:#d8fbff;font:800 10px/1.1 system-ui;letter-spacing:.08em;text-align:center;text-transform:uppercase}
+.ah-rf-hud__prompt{position:absolute;left:50%;bottom:max(126px,calc(env(safe-area-inset-bottom) + 126px));transform:translateX(-50%);width:min(190px,66vw);min-height:30px;padding:7px 13px 5px;background:url(${url(ASSETS.prompt)}) center/100% 100% no-repeat;color:#d8fbff;font:800 9px/1.1 system-ui;letter-spacing:.08em;text-align:center;text-transform:uppercase}
 .ah-rf-hud__prompt[hidden]{display:none!important}
 .ah-rf01-result{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:max(8px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));background:rgba(2,5,8,.9);pointer-events:auto}
-.ah-rf01-result__card{position:relative;box-sizing:border-box;width:min(340px,94vw);max-height:min(86dvh,620px);padding:14px 18px 12px;overflow:hidden;background:url(${url(ASSETS.resultPanel)}) center/100% 100% no-repeat;text-align:center;display:flex;flex-direction:column}
+.ah-rf01-result__card{position:relative;box-sizing:border-box;width:min(336px,92vw);max-height:min(86dvh,620px);padding:14px 18px 12px;overflow:hidden;background:url(${url(ASSETS.resultPanel)}) center/100% 100% no-repeat;text-align:center;display:flex;flex-direction:column}
 .ah-rf01-result__marker{width:34px;height:34px;margin:0 auto 2px;object-fit:contain;object-position:top;flex:0 0 auto}
 .ah-rf01-result__eyebrow{color:#7f96a8;font-size:9px;font-weight:800;letter-spacing:.14em}
 .ah-rf01-result__card h2{margin:2px 0 2px;font-size:16px;letter-spacing:.04em}
@@ -123,17 +127,17 @@
 .ah-rf01-result__btn:active{background-position:center bottom}
 .ah-rf01-result__btn[disabled],.ah-rf01-result__btn.is-disabled{background-image:url(${url(ASSETS.btnDisabled)});background-size:100% 100%;background-position:center;color:#8b9aaa;pointer-events:none}
 @media (max-width:420px){
-  .ah-rf-hud__cluster{width:124px;padding:6px 7px 5px}
-  .ah-rf-hud__objective{left:132px;right:92px;min-height:40px;padding:4px 28px 4px 38px}
-  .ah-rf-hud__obj-title{font-size:9px}
-  .ah-rf-hud__radar{width:84px;height:84px}
+  .ah-rf-hud__cluster{width:116px;padding:5px 6px 4px}
+  .ah-rf-hud__objective{left:126px;right:80px;min-height:36px;padding:6px 26px 5px 30px}
+  .ah-rf-hud__obj-title{font-size:8px}
+  .ah-rf-hud__radar{width:74px;height:74px}
   .ah-rf01-result__card{padding:12px 14px 10px;max-height:min(84dvh,580px)}
   .ah-rf01-result__btn{height:38px;min-height:38px}
-  .ah-rf-hud__prompt{bottom:max(104px,calc(env(safe-area-inset-bottom) + 104px))}
+  .ah-rf-hud__prompt{bottom:max(120px,calc(env(safe-area-inset-bottom) + 120px))}
 }
 @media (max-width:340px){
-  .ah-rf-hud__cluster{width:112px}
-  .ah-rf-hud__objective{left:120px;right:80px;padding:4px 24px 4px 34px}
+  .ah-rf-hud__cluster{width:108px}
+  .ah-rf-hud__objective{left:116px;right:76px;padding:4px 23px 4px 28px}
   .ah-rf-hud__radar{width:74px;height:74px}
   .ah-rf01-result__row{min-height:20px;font-size:10px}
 }`.replace(/\n/g, "");
@@ -157,7 +161,7 @@
         <div class="ah-rf-hud__loot" data-rf-hud="loot"><span data-rf-hud="loot-exp">XP 0</span><span data-rf-hud="loot-bones">BN 0</span><span data-rf-hud="loot-scrap">SC 0</span><span data-rf-hud="loot-gear">EQ 0</span></div>
       </div>
       <div class="ah-rf-hud__objective">
-        <span class="ah-rf-hud__obj-kicker">RELAY FRINGE 01</span>
+        <span class="ah-rf-hud__obj-kicker">OBJECTIVE</span>
         <strong class="ah-rf-hud__obj-title" data-rf-hud="obj-title">Reach the Relay approach</strong>
         <em class="ah-rf-hud__obj-detail" data-rf-hud="obj-detail">Follow the fractured signal east</em>
         <div class="ah-rf-hud__obj-states">
