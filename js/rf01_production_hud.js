@@ -116,6 +116,8 @@
 .ah-rf01-result__card.is-failed .ah-rf01-result__sync,.ah-rf01-result__card.is-dead .ah-rf01-result__sync{color:#f0b3a0}
 .ah-rf01-result__card.is-warn .ah-rf01-result__sync{color:#ecd08a}
 .ah-rf01-result__note{margin:0 0 6px;color:#6f8492;font-size:8px;letter-spacing:.06em;line-height:1.25}
+.ah-rf01-result__story{margin:1px 0 6px;padding:5px 8px;border-top:1px solid rgba(101,232,255,.24);border-bottom:1px solid rgba(101,232,255,.18);color:#bfeef4;font:700 8px/1.35 system-ui;letter-spacing:.07em}
+.ah-rf01-result__story strong{display:block;color:#72deed;font-size:9px;letter-spacing:.13em}.ah-rf01-result__story em{display:block;margin-top:3px;color:#d8eff2;font-style:normal;font-size:8px;letter-spacing:.02em}
 .ah-rf01-result__rows{margin:2px 0 6px;flex:1 1 auto;min-height:0}
 .ah-rf01-result__row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:6px;min-height:22px;padding:1px 8px;background:url(${url(ASSETS.resultDiv)}) center/100% 100% no-repeat;font-size:11px;text-align:left}
 .ah-rf01-result__row img{width:14px;height:14px;object-fit:contain}
@@ -385,7 +387,8 @@
     const againAction = failed ? "restart" : "again";
     const againLabel = failed ? "RESTART SECTOR" : "RUN AGAIN";
     const note = failed ? "" : "<p class=\"ah-rf01-result__note\">Rewards apply only after the server confirms the run.</p>";
-    panel.innerHTML = `<div class="ah-rf01-result__card is-${sync.kind}"><img class="ah-rf01-result__marker" alt="" src="${url(marker)}"><div class="ah-rf01-result__eyebrow">RELAY FRINGE 01</div><h2>${failed ? "RUN FAILED" : "RUN COMPLETE"}</h2><p class="ah-rf01-result__sync">${esc(sync.text)}</p>${model.firstClear ? "<p class='ah-rf01-result__sync'>RELAY STABILIZED · RELAY-7 ONLINE</p>" : ""}<div class="ah-rf01-result__rows">${row(ASSETS.xp, "Time", (model.duration || 0) + "s")}${row(ASSETS.gear, "Hostiles", (model.kills || 0) + " / 16")}${row(ASSETS.xp, "EXP", "+" + (reward.exp ?? model.exp ?? 0))}${row(ASSETS.bones, "Bones", "+" + (reward.bones ?? model.bones ?? 0))}${row(ASSETS.scrap, "Scrap", "+" + (reward.scrap ?? model.scrap ?? 0))}${row(ASSETS.gear, "Equipment", String(model.gear ?? 0))}</div>${note}<div class="ah-rf01-result__actions">${retryBtn}${continueBtn}${btn(againAction, againLabel, failed ? "pri" : "sec", saving)}${btn("map", "RETURN TO MAP", "sec", false)}</div></div>`;
+    const story = !failed && model.storyCompletion ? `<div class="ah-rf01-result__story"><strong>SIGNAL RECOVERED</strong>ORIGIN: UNKNOWN · DIRECTION: DEEPER FRINGE · ROUTE: RF02<em>${esc(model.storyCompletion.lines?.[0] || "")}<br>${esc(model.storyCompletion.lines?.[1] || "")}</em></div>` : "";
+    panel.innerHTML = `<div class="ah-rf01-result__card is-${sync.kind}"><img class="ah-rf01-result__marker" alt="" src="${url(marker)}"><div class="ah-rf01-result__eyebrow">RELAY FRINGE 01</div><h2>${failed ? "RUN FAILED" : "RUN COMPLETE"}</h2><p class="ah-rf01-result__sync">${esc(sync.text)}</p>${model.firstClear ? "<p class='ah-rf01-result__sync'>RELAY STABILIZED · RELAY-7 ONLINE</p>" : ""}${story}<div class="ah-rf01-result__rows">${row(ASSETS.xp, "Time", (model.duration || 0) + "s")}${row(ASSETS.gear, "Hostiles", (model.kills || 0) + " / 16")}${row(ASSETS.xp, "EXP", "+" + (reward.exp ?? model.exp ?? 0))}${row(ASSETS.bones, "Bones", "+" + (reward.bones ?? model.bones ?? 0))}${row(ASSETS.scrap, "Scrap", "+" + (reward.scrap ?? model.scrap ?? 0))}${row(ASSETS.gear, "Equipment", String(model.gear ?? 0))}</div>${note}<div class="ah-rf01-result__actions">${retryBtn}${continueBtn}${btn(againAction, againLabel, failed ? "pri" : "sec", saving)}${btn("map", "RETURN TO MAP", "sec", false)}</div></div>`;
     host.appendChild(panel);
   }
 
