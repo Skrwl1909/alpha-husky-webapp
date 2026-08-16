@@ -69,7 +69,7 @@
 .ah-exploration-room.is-result-open .ah-exploration-room__canvas{filter:brightness(.32) saturate(.7)}
 .ah-rf-hud--pack{position:absolute;inset:0;z-index:8;pointer-events:none;font-family:Inter,system-ui,sans-serif;color:#dcecff}
 .ah-rf-hud--pack .ah-rf-hud__cluster,.ah-rf-hud--pack .ah-rf-hud__objective,.ah-rf-hud--pack .ah-rf-hud__radar{pointer-events:none}
-.ah-rf-hud__cluster{position:absolute;top:3px;left:max(5px,env(safe-area-inset-left));width:110px;padding:4px 6px 3px;background-color:rgba(6,10,14,.72);background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.ah-rf-hud__cluster{position:absolute;top:3px;left:max(5px,env(safe-area-inset-left));width:110px;padding:4px 6px 3px;background-color:transparent;background-image:url(${url(ASSETS.panelSmall)});background-position:center;background-size:100% 100%;background-repeat:no-repeat}
 .ah-rf-hud__id{display:grid;grid-template-columns:24px minmax(0,1fr);gap:4px;align-items:center}
 .ah-rf-hud__portrait{width:24px;height:24px;border-radius:50%;background:
   url(assets/dojo/v1/processed/alpha_husky_player_sheet_v1.png) 8% 8%/400% 400% no-repeat,
@@ -85,7 +85,7 @@
 .ah-rf-hud__howl-text{position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#9abcc7;font-size:5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;z-index:1}
 .ah-rf-hud__loot{display:none}
 .ah-rf-hud__loot span{white-space:nowrap}
-.ah-rf-hud__objective{position:absolute;top:3px;left:120px;right:70px;width:auto;min-height:32px;padding:5px 24px 4px 28px;background-color:rgba(6,10,14,.68);background-image:url(${url(ASSETS.objIcon)}),url(${url(ASSETS.objPanel)});background-position:7px center,center;background-size:15px 15px,100% 100%;background-repeat:no-repeat;text-align:left}
+.ah-rf-hud__objective{position:absolute;top:3px;left:120px;right:70px;width:auto;min-height:32px;padding:5px 24px 4px 28px;background-color:transparent;background-image:url(${url(ASSETS.objIcon)}),url(${url(ASSETS.objPanel)});background-position:7px center,center;background-size:15px 15px,100% 100%;background-repeat:no-repeat;text-align:left}
 .ah-rf-hud__obj-kicker{display:none}
 .ah-rf-hud__obj-title{display:block;font-size:8px;letter-spacing:.02em;line-height:1.08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ah-rf-hud__obj-detail{display:block;margin-top:1px;color:#8ba0aa;font-size:6px;font-style:normal;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
