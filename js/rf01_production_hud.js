@@ -293,8 +293,9 @@
     const canvas = hud?.radar;
     if (!canvas || !snap || !world) return;
     const enemies = Array.isArray(snap.enemies) ? snap.enemies.slice(0, 4) : [];
-    const enemyFingerprint = enemies.map(enemy => (enemy.x | 0) + "," + (enemy.y | 0)).join(";");
-    const fp = (snap.x | 0) + "," + (snap.y | 0) + "|" + (snap.facing || "") + "|" + snap.status + "|" + !!snap.relayActivated + "|" + (snap.kills || 0) + "|" + enemyFingerprint;
+    const enemyFingerprint = enemies.map(enemy => (enemy.x | 0) + "," + (enemy.y | 0)).join(";"), ping = snap.signalPing;
+    const pingFingerprint = ping ? ((ping.x | 0) + "," + (ping.y | 0) + "," + (ping.until | 0) + "," + Math.floor(now / 120)) : "";
+    const fp = (snap.x | 0) + "," + (snap.y | 0) + "|" + (snap.facing || "") + "|" + snap.status + "|" + !!snap.relayActivated + "|" + (snap.kills || 0) + "|" + enemyFingerprint + "|" + pingFingerprint;
     if (fp === hud.radarFingerprint && now - hud.radarAt < 160) return;
     hud.radarFingerprint = fp;
     hud.radarAt = now;
@@ -316,6 +317,16 @@
       ctx.fillStyle = state?.cleared ? "rgba(101,232,255,.45)" : state?.activated ? "rgba(232,140,90,.7)" : "rgba(90,110,124,.4)";
       ctx.fillRect(t.x * sx - 2, t.y * sy - 2, 4, 4);
     });
+    if (ping && ping.until > now) {
+      const phase = ((now % 900) / 900), radius = 3 + phase * 7;
+      ctx.strokeStyle = "rgba(255,198,112," + (0.9 - phase * .55).toFixed(2) + ")";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(ping.x * sx, ping.y * sy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,220,150,.95)";
+      ctx.fillRect(ping.x * sx - 1.5, ping.y * sy - 1.5, 3, 3);
+    }
     if (hud.mkRelay) {
       hud.mkRelay.style.left = pct(world.relay.x, world.width);
       hud.mkRelay.style.top = pct(world.relay.y, world.height);
@@ -387,7 +398,8 @@
     const againAction = failed ? "restart" : "again";
     const againLabel = failed ? "RESTART SECTOR" : "RUN AGAIN";
     const note = failed ? "" : "<p class=\"ah-rf01-result__note\">Rewards apply only after the server confirms the run.</p>";
-    const story = !failed && model.storyCompletion ? `<div class="ah-rf01-result__story"><strong>SIGNAL RECOVERED</strong>ORIGIN: UNKNOWN · DIRECTION: DEEPER FRINGE · ROUTE: RF02<em>${esc(model.storyCompletion.lines?.[0] || "")}<br>${esc(model.storyCompletion.lines?.[1] || "")}</em></div>` : "";
+    const branch = model.branchStoryResult;
+    const story = !failed && branch ? `<div class="ah-rf01-result__story"><strong>${esc(branch.title || "SIGNAL RECOVERED")}</strong>${esc(branch.summary || "ROUTE: RF02")}<em>${esc(branch.lines?.[0] || "")}${branch.lines?.[1] ? "<br>" + esc(branch.lines[1]) : ""}</em></div>` : "";
     panel.innerHTML = `<div class="ah-rf01-result__card is-${sync.kind}"><img class="ah-rf01-result__marker" alt="" src="${url(marker)}"><div class="ah-rf01-result__eyebrow">RELAY FRINGE 01</div><h2>${failed ? "RUN FAILED" : "RUN COMPLETE"}</h2><p class="ah-rf01-result__sync">${esc(sync.text)}</p>${model.firstClear ? "<p class='ah-rf01-result__sync'>RELAY STABILIZED · RELAY-7 ONLINE</p>" : ""}${story}<div class="ah-rf01-result__rows">${row(ASSETS.xp, "Time", (model.duration || 0) + "s")}${row(ASSETS.gear, "Hostiles", (model.kills || 0) + " / 16")}${row(ASSETS.xp, "EXP", "+" + (reward.exp ?? model.exp ?? 0))}${row(ASSETS.bones, "Bones", "+" + (reward.bones ?? model.bones ?? 0))}${row(ASSETS.scrap, "Scrap", "+" + (reward.scrap ?? model.scrap ?? 0))}${row(ASSETS.gear, "Equipment", String(model.gear ?? 0))}</div>${note}<div class="ah-rf01-result__actions">${retryBtn}${continueBtn}${btn(againAction, againLabel, failed ? "pri" : "sec", saving)}${btn("map", "RETURN TO MAP", "sec", false)}</div></div>`;
     host.appendChild(panel);
   }
