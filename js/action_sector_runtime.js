@@ -45,6 +45,7 @@
           ensureRoot(); if (!global.Phaser?.Game) throw new Error("Phaser unavailable");
           const width = Math.max(2, S.canvas?.clientWidth || innerWidth || 2), height = Math.max(2, S.canvas?.clientHeight || innerHeight || 2);
           const config = { type: global.Phaser.AUTO, parent: S.canvas, width, height, backgroundColor: "#071019", audio: { noAudio: true }, input: { activePointers: 4, touch: { capture: true } }, physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: !!global.DBG } }, scale: { mode: global.Phaser.Scale.RESIZE }, scene: {
+            preload() { definition.preloadScene?.(this); },
             create() { S.scene = this; try { this.ahHudDom = S.hud; definition.createScene(this, { deps: S.deps, combatProfile: S.combatProfile, threatTier: S.threatTier, resolveCombatProfile: S.resolveCombatProfile, close, definition, hud: S.hud }); this.events.once("shutdown", () => definition.cleanupSector?.(this)); resolve(true); } catch (error) { error.relayStage = error.relayStage || "RF02_CREATE_SCENE"; reject(error); } },
             update(time, delta) { if (!S.closing && generation === S.generation) definition.updateScene?.(this, time, delta); },
           } };
