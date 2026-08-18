@@ -1,7 +1,7 @@
 // Alpha Husky - Relay Fringe 02: Deep Carrier. Authored sector hooks for the shared lifecycle kernel.
 (function (global) {
   "use strict";
-  const BUILD = "rf02-hud-convergence-v1-20260817";
+  const BUILD = "rf02-environment-cohesion-v2-20260818";
   const SECTOR = { sectorId: "relay_fringe_02", displayName: "DEEP CARRIER", runProfileVersion: 1 };
   const WORLD = { width: 5600, height: 1800, spawn: { x: 210, y: 1330 }, relay: { x: 5330, y: 850 }, cache: { x: 3300, y: 1540 } };
   const ZONES = [
@@ -88,6 +88,16 @@
   ];
   const FLOOR_FIELD_COLUMNS = [480,1340,2200,3060,3920,4780,5640];
   const FLOOR_FIELD_ROWS = [210,670,1130,1590];
+  // Visual-only lower-deck masses.  They deliberately overlap at each route hand-off
+  // so the world reads as one carrier hull even where arcade collision keeps spaces apart.
+  // Do not add these to ahBlockers: traversal stays defined exclusively by ROUTE_BLOCKERS/gates.
+  const STRUCTURAL_BAYS = [
+    [80,760,1460,980,0x17262d,0x0b151a],      // Entry bay
+    [1040,430,1780,1040,0x14242c,0x09141a],   // Conduit machinery deck
+    [2510,360,1600,1060,0x183039,0x0a151b],   // Surge power housing
+    [3560,930,1330,800,0x202c32,0x0d161a],    // Cache machinery bay
+    [4420,260,1220,1260,0x1b3038,0x091319],   // Fortified vault approach
+  ];
   const enemyChildren = scene => scene.ahEnemies?.getChildren?.() || [];
   const isTouch = () => global.__AH_EXPLORATION_FORCE_TOUCH === true || !!global.matchMedia?.("(pointer: coarse)")?.matches;
   const nowRun = (combatProfile, threatTier) => { const combatSnapshot = global.AlphaSectorCombatConfig?.makeRunCombatSnapshot?.(combatProfile), threatSnapshot = global.AlphaSectorCombatConfig?.makeRunThreatSnapshot?.(threatTier); if (!combatSnapshot || !threatSnapshot) return null; global.AlphaSectorCombatConfig?.logActionCombatProfile?.(SECTOR.sectorId, combatProfile, combatSnapshot); return { runId: global.AlphaSectorCombatConfig?.makeRunId?.("deep_carrier", SECTOR.sectorId) || `rf02_${Date.now()}`, sectorId: SECTOR.sectorId, runProfileVersion: 1, combatSnapshot, threatTier: threatSnapshot.id, threatSnapshot, status: "active", startedAt: Date.now(), duration: 0, playerHP: combatSnapshot.maxHp, chasersKilled: 0, shootersKilled: 0, sentinelKilled: 0, mandatoryEnemiesKilled: 0, optionalEnemiesKilled: 0, damageTaken: 0, howlUses: 0, hazardHits: 0, cacheOpened: false, cacheHealing: 0, expEarned: 0, bonesEarned: 0, scrapEarned: 0, equipmentDrops: 0, relayActivated: false, encounters: Object.fromEntries(ENCOUNTERS.map(row => [row.id, { activated: false, cleared: false, remaining: row.spawns.length }])) }; };
@@ -100,7 +110,7 @@
     const identity=root.querySelector?.(".ah-rf-hud__id strong");if(identity)identity.textContent="ALPHA // RF-02";
     const styleId="ah-rf02-hud-convergence-css";if(document.getElementById(styleId))return;
     const style=document.createElement("style");style.id=styleId;style.textContent=`
-.ah-exploration-room--rf02-hud .ah-exploration-room__header{min-height:32px;padding:max(2px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) 2px max(7px,env(safe-area-inset-left));background:linear-gradient(180deg,#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.14)}
+.ah-exploration-room--rf02-hud .ah-exploration-room__header{min-height:32px;padding:max(2px,var(--ah-safe-top,env(safe-area-inset-top,0px))) max(7px,var(--ah-safe-right,env(safe-area-inset-right,0px))) 2px max(7px,var(--ah-safe-left,env(safe-area-inset-left,0px)));background:linear-gradient(180deg,#0b1218,#070c11);border-bottom-color:rgba(101,232,255,.14)}
 .ah-exploration-room--rf02-hud .ah-exploration-room__back{min-height:28px;border:1px solid rgba(132,199,214,.20);border-radius:4px;background:linear-gradient(135deg,rgba(22,36,46,.88),rgba(7,12,17,.9));color:#dcecff;font-size:8px;box-shadow:inset 0 0 0 1px rgba(2,6,9,.55)}
 .ah-exploration-room--rf02-hud .ah-exploration-room__heading span{font-size:7px;letter-spacing:.16em;color:#718895}.ah-exploration-room--rf02-hud .ah-exploration-room__heading strong{margin-top:1px;font-size:11px;letter-spacing:.07em}.ah-exploration-room--rf02-hud .ah-exploration-room__seal{visibility:hidden}
 .ah-exploration-room--rf02-hud .ah-rf-hud{display:block;padding:0;pointer-events:none;font-family:Inter,system-ui,sans-serif;color:#e9f7fa}
@@ -116,9 +126,17 @@
   function solid(scene,x,y,w,h,color=0x172630) { const o=scene.add.rectangle(x,y,w,h,color,.18).setStrokeStyle(2,0x426574,.34).setDepth(10); scene.physics.add.existing(o,true); scene.ahBlockers.add(o); return o; }
   function preloadSectorAssets(scene) { ART.forEach(([key,file]) => scene.load.image(key, ASSET_ROOT + file)); scene.load.spritesheet(PRODUCTION_PRESENTATION.player.key,PRODUCTION_PRESENTATION.player.url,{frameWidth:256,frameHeight:256}); scene.load.spritesheet(PRODUCTION_PRESENTATION.chaser.key,PRODUCTION_PRESENTATION.chaser.url,{frameWidth:256,frameHeight:256}); scene.load.spritesheet(PRODUCTION_PRESENTATION.slash.key,PRODUCTION_PRESENTATION.slash.url,{frameWidth:256,frameHeight:256}); scene.load.image(PRODUCTION_PRESENTATION.rewardBeam.key,PRODUCTION_PRESENTATION.rewardBeam.url); Object.values(PRODUCTION_PRESENTATION.combatVfx).forEach(({key,url,frameWidth,frameHeight})=>scene.load.spritesheet(key,url,{frameWidth,frameHeight})); PRODUCTION_PRESENTATION.ui.forEach(([key,file])=>scene.load.image(key,RF01_UI_ROOT+file)); }
   function art(scene, key, x, y, scale, depth=2, alpha=1, rotation=0) { if(!scene.textures.exists(key)) return null; scene.ahEnvironmentInstances=(scene.ahEnvironmentInstances||0)+1; return scene.add.image(x,y,key).setScale(scale).setDepth(depth).setAlpha(alpha).setRotation(rotation); }
-  function zonePanel(scene, zone, color) { return scene.add.rectangle(zone.x,zone.y,zone.w,zone.h,color,.64).setStrokeStyle(3,0x3c6574,.65).setDepth(0); }
+  function zonePanel(scene, zone, color) { return scene.add.rectangle(zone.x,zone.y,zone.w,zone.h,color,.34).setStrokeStyle(3,0x3c6574,.54).setDepth(0); }
   function zoneLabel(scene, zone) { scene.add.text(zone.x-zone.w/2+42,zone.y-zone.h/2+34,zone.name,{fontFamily:"system-ui",fontSize:"15px",color:"#a3d9e7",fontStyle:"bold",letterSpacing:2,backgroundColor:"rgba(5,14,20,.78)",padding:{x:8,y:5}}).setDepth(11); }
-  function drawFacilityDeck(scene) { const deck=scene.add.graphics().setDepth(-2);deck.fillStyle(0x25353c,1).fillRect(-180,-180,WORLD.width+360,WORLD.height+360);deck.lineStyle(2,0x3b5055,.42);for(let x=-120;x<=WORLD.width+120;x+=360)deck.lineBetween(x,-180,x,WORLD.height+180);for(let y=-120;y<=WORLD.height+120;y+=300)deck.lineBetween(-180,y,WORLD.width+180,y);deck.lineStyle(1,0x0b1419,.82);for(let x=60;x<=WORLD.width;x+=180)deck.lineBetween(x,0,x,WORLD.height);for(let y=30;y<=WORLD.height;y+=150)deck.lineBetween(0,y,WORLD.width,y);return deck; }
+  function drawFacilityDeck(scene) {
+    // Level C: deep recess is kept at the outer hull only, never as the default field behind the route.
+    const recess=scene.add.graphics().setDepth(-5);recess.fillStyle(0x061017,1).fillRect(-180,-180,WORLD.width+360,WORLD.height+360);recess.lineStyle(2,0x10232b,.56);for(let x=-120;x<=WORLD.width+120;x+=420)recess.lineBetween(x,-180,x,WORLD.height+180);for(let y=-120;y<=WORLD.height+120;y+=330)recess.lineBetween(-180,y,WORLD.width+180,y);
+    // Level B: non-colliding carrier hull, recessed panels and service trenches beneath the readable deck art.
+    const structure=scene.add.graphics().setDepth(-2);STRUCTURAL_BAYS.forEach(([x,y,w,h,outer,inner],index)=>{structure.fillStyle(outer,.98).fillRect(x,y,w,h).lineStyle(4,0x36525a,.62).strokeRect(x,y,w,h);structure.fillStyle(inner,.82).fillRect(x+28,y+28,w-56,h-56).lineStyle(2,0x31505a,.46).strokeRect(x+28,y+28,w-56,h-56);structure.fillStyle(0x050b0f,.54).fillRect(x+58,y+58,w-116,42).fillRect(x+58,y+h-100,w-116,42);structure.lineStyle(2,0x4c6970,.40);for(let sx=x+150;sx<x+w-80;sx+=260)structure.lineBetween(sx,y+42,sx,y+h-42);for(let sy=y+160;sy<y+h-90;sy+=230)structure.lineBetween(x+42,sy,x+w-42,sy);if(index<STRUCTURAL_BAYS.length-1){const next=STRUCTURAL_BAYS[index+1],joinX=Math.max(x,next[0])+80,joinY=Math.max(y,next[1])+80,joinW=Math.min(x+w,next[0]+next[2])-joinX-160,joinH=Math.min(y+h,next[1]+next[3])-joinY-160;if(joinW>80&&joinH>80){structure.fillStyle(0x233940,.78).fillRect(joinX,joinY,joinW,joinH).lineStyle(2,0x507079,.42).strokeRect(joinX,joinY,joinW,joinH);}}});
+    // Sparse support ribs make the lower deck intentionally structural rather than a flat colour field.
+    structure.fillStyle(0x081217,.64);for(let x=180;x<WORLD.width;x+=360){structure.fillRect(x,0,20,WORLD.height);structure.fillRect(x-26,130,72,18);}for(let y=180;y<WORLD.height;y+=300)structure.fillRect(0,y,WORLD.width,16);
+    return structure;
+  }
   function trackAtmosphere(scene,object) { const items=scene.ahAtmosphereObjects||(scene.ahAtmosphereObjects=[]);items.push(object);return object; }
   function clearAtmosphere(scene) { scene?.scale?.off?.("resize",scene.ahDrawAtmosphereVignette);(scene?.ahAtmosphereObjects||[]).splice(0).forEach(object=>{scene.tweens?.killTweensOf?.(object);object?.destroy?.();});scene.ahVignette=null; }
   function drawAtmosphereVignette(scene) { const vignette=scene.ahVignette;if(!vignette)return;const w=scene.scale.width,h=scene.scale.height;vignette.clear();vignette.fillStyle(0x020609,.14).fillRect(0,0,w,18).fillRect(0,h-18,w,18).fillRect(0,0,18,h).fillRect(w-18,0,18,h);vignette.fillStyle(0x020609,.07).fillRect(18,0,w-36,20).fillRect(18,h-20,w-36,20).fillRect(0,18,20,h-36).fillRect(w-20,18,20,h-36); }
@@ -134,7 +152,7 @@
     installRf02HudSkin(scene);
     scene.events?.once?.("postupdate",()=>styleHudControls(scene));
     scene.ahBlockers=scene.physics.add.staticGroup(); scene.ahGates={}; scene.ahSurgeGraphics=scene.add.graphics().setDepth(30); scene.ahSurge={ index:0, phase:"idle", nextAt:0, hit:false }; scene.ahEnvironmentInstances=0;scene.ahCombatFx=[];scene.events?.once?.("shutdown",()=>{clearCombatFx(scene);destroyActorShadow(scene.ahPlayer);enemyChildren(scene).forEach(destroyActorShadow);});
-    // A static steel deck closes the gaps between prepared floor modules; it is facility floor, not a black canvas mask.
+    // Static visual composition only: lower hull first, then existing playable deck art and collision objects.
     drawFacilityDeck(scene);
     const zoneColors=[0x193039,0x142b35,0x1a3038,0x202c33,0x17313a]; ZONES.forEach((zone,index)=>{zonePanel(scene,zone,zoneColors[index]);zoneLabel(scene,zone);});
     FLOOR_FIELD_COLUMNS.forEach(x=>FLOOR_FIELD_ROWS.forEach(y=>art(scene,"rf02_floor_01",x,y,.20,1,.86)));

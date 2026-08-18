@@ -6,7 +6,7 @@
     // RF01 remains a compatibility API while its proven combat implementation
     // is incrementally consumed through the same runtime boundary.
     if (definition?.legacyApi) return definition.legacyApi;
-    const S = { deps: {}, combatProfile: null, resolveCombatProfile: null, threatTier: "standard", root: null, canvas: null, game: null, scene: null, opening: null, closing: false, generation: 0, onClose: null };
+    const S = { deps: {}, combatProfile: null, resolveCombatProfile: null, threatTier: "standard", root: null, canvas: null, game: null, scene: null, opening: null, closing: false, generation: 0, onClose: null, onViewportChange: null };
     const id = String(definition?.sectorId || "");
     const ensureRoot = () => {
       let root = document.getElementById(ROOT_ID); if (root) root.remove();
@@ -28,6 +28,8 @@
     };
     const cleanup = async (options) => {
       const scene = S.scene; try { definition.cleanupSector?.(scene); } catch (_) {}
+      if (S.onViewportChange) global.removeEventListener?.("ah:telegram-viewport-change", S.onViewportChange);
+      S.onViewportChange = null;
       if (S.game) try { S.game.destroy(true); } catch (_) {}
       S.game = S.scene = null; S.root?.remove(); S.root = S.canvas = null;
       const onClose = S.onClose; S.onClose = null; await Promise.resolve(onClose?.(options));
@@ -50,6 +52,15 @@
             update(time, delta) { if (!S.closing && generation === S.generation) definition.updateScene?.(this, time, delta); },
           } };
           S.game = new global.Phaser.Game(config);
+          // Telegram reports content-safe-area changes independently of CSS viewport resize on some WebViews.
+          // Re-measure the mounted stage so the camera/control layout receives Phaser's normal resize event.
+          const syncViewport = () => {
+            const nextWidth = Math.max(2, S.canvas?.clientWidth || innerWidth || 2);
+            const nextHeight = Math.max(2, S.canvas?.clientHeight || innerHeight || 2);
+            S.game?.scale?.resize?.(nextWidth, nextHeight);
+          };
+          S.onViewportChange = () => global.requestAnimationFrame ? global.requestAnimationFrame(syncViewport) : syncViewport();
+          global.addEventListener?.("ah:telegram-viewport-change", S.onViewportChange);
         } catch (error) { reject(error); }
       }).catch(async error => { await cleanup(); throw error; }).finally(() => { S.opening = null; });
       return S.opening;
