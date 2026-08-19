@@ -2187,6 +2187,25 @@
       }
       return;
     }
+    if (action === "open-pack-cell") {
+      try {
+        const ensureLoaded = window.ensureTacticalCellsLoaded || window.AHBootLoaders?.ensureTacticalCellsLoaded;
+        if (typeof ensureLoaded !== "function") {
+          notify("Pack Cell is unavailable.");
+          return;
+        }
+        await ensureLoaded(getApiPost(), window.Telegram?.WebApp || null, false);
+        if (!window.TacticalCells?.open) {
+          notify("Pack Cell failed to load.");
+          return;
+        }
+        window.TacticalCells.open();
+      } catch (err) {
+        notify("Pack Cell failed to open.");
+        try { console.warn("[AlphaDen] pack cell open failed", err); } catch (_) {}
+      }
+      return;
+    }
     if (action === "command-briefing-nav") {
       await openCommandBriefingTarget(actionEl.getAttribute("data-command-target"));
     }
@@ -2425,6 +2444,7 @@
 ${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}
 ${config.id === "signal_core" ? renderSignalCacheCard() : ""}
 ${config.id === "war_table" ? renderTacticalOpsCard() : ""}
+${config.id === "war_table" ? renderPackCellCard() : ""}
 ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
   }
 
@@ -2559,6 +2579,30 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     <p class="alpha-den-detail__note">${locked
       ? "Build War Table Level 1 to unlock Tactical Ops."
       : "Open a live field operation from this table."}</p>
+  </div>
+</section>`;
+  }
+
+  function renderPackCellCard() {
+    const level = getBuildingLevel("war_table");
+    const locked = level < 1;
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Pack Cell</div>
+  <h3 class="alpha-den-detail__title">Co-op Tactical Operation</h3>
+  <p class="alpha-den-detail__copy">${locked
+    ? "War Table Level 1 required."
+    : "Assemble three Pack operators. Every operator controls their own ready state."}</p>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${locked ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary"}"
+      data-alpha-den-action="${locked ? "noop" : "open-pack-cell"}"
+      ${locked ? "disabled" : ""}
+    >${locked ? "Locked" : "ASSEMBLE CELL"}</button>
+    <p class="alpha-den-detail__note">${locked
+      ? "Build War Table Level 1 to unlock Pack Cell."
+      : "Independent of Solo Op. Feature flag defaults off."}</p>
   </div>
 </section>`;
   }
