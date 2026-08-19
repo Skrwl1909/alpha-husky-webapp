@@ -1,7 +1,7 @@
 // Alpha Husky - Relay Fringe 02: Deep Carrier. Authored sector hooks for the shared lifecycle kernel.
 (function (global) {
   "use strict";
-  const BUILD = "rf02-traversal-alignment-fix-v1-20260819";
+  const BUILD = "rf02-composition-normalization-v1-20260819";
   const SECTOR = { sectorId: "relay_fringe_02", displayName: "DEEP CARRIER", runProfileVersion: 1 };
   const WORLD = { width: 5600, height: 1800, spawn: { x: 210, y: 1330 }, relay: { x: 5330, y: 850 }, cache: { x: 3300, y: 1540 } };
   const ZONES = [
@@ -112,29 +112,29 @@
     [2810,900,90,580], [3740,900,90,580],
     [4010,1350,260,180], [4680,750,150,300], [5200,540,620,80],
   ];
-  // The composition is intentionally authored as a few large carrier assemblies, not a field of floor islands.
+  // Visual-only authored modules are normalized to sit beside the route deck, not piled over it.
   // All entries are visual-only; ROUTE_BLOCKERS and gates remain the sole collision contract.
   const LOWER_SERVICE_DECKS = [
     ["rf02_floor_01",650,1360,.27,-1,.44], ["rf02_floor_02",1450,1040,.29,-1,.42], ["rf02_floor_03",2300,900,.30,-1,.40],
     ["rf02_floor_04",3260,930,.31,-1,.42], ["rf02_floor_05",4120,1280,.32,-1,.44], ["rf02_floor_iso",4700,1120,.34,-1,.36], ["rf02_floor_01",5000,850,.26,-1,.40],
   ];
   const UPPER_ROUTE_DECKS = [
-    ["rf02_floor_01",560,1320,.22,2,.98], ["rf02_floor_02",1510,1060,.22,2,.98], ["rf02_floor_03",2220,900,.23,2,.98],
-    ["rf02_floor_04",3220,920,.23,2,.98], ["rf02_floor_05",4100,1280,.24,2,.98], ["rf02_vault_floor",5050,900,.40,2,.99],
+    ["rf02_floor_01",560,1320,.18,2,.60], ["rf02_floor_02",1510,1060,.18,2,.60], ["rf02_floor_03",2220,900,.19,2,.60],
+    ["rf02_floor_04",3220,920,.19,2,.60], ["rf02_floor_05",4100,1280,.20,2,.60], ["rf02_vault_floor",5050,900,.34,2,.72],
   ];
   const CARRIER_ASSEMBLIES = [
-    { id:"carrier_mouth", props:[["rf02_carrier",520,1330,.46,11,.98],["rf02_wall",240,920,.36,10,.90],["rf02_wall",960,920,.36,10,.90],["rf02_damaged_wall",1180,1120,.34,13,.94],["rf02_support",560,980,.38,14,.94],["rf02_infrastructure",840,1510,.30,7,.62],["rf02_debris",340,1490,.28,9,.76],["rf02_exit",1390,1080,.34,15,.94],["rf02_wall_machinery",1240,1240,.26,14,.88],["rf02_warning",1390,1325,.24,8,.78]] },
-    { id:"conduit_transit", props:[["rf02_conduit",1620,840,.48,4,.94],["rf02_conduit",2110,820,.45,4,.90],["rf02_wall_conduit",1510,700,.38,14,.90,Math.PI/2],["rf02_wall_conduit",2320,760,.38,14,.90,Math.PI/2],["rf02_pipe",1700,550,.34,10,.78],["rf02_pipe",2100,1120,.31,10,.74],["rf02_cable",1770,1090,.34,7,.70],["rf02_cable",2210,1160,.31,7,.70],["rf02_junction_box",1660,710,.20,15,.92],["rf02_junction_box",2140,650,.20,15,.92],["rf02_vent",1900,540,.30,8,.62],["rf02_grate",2040,1230,.26,8,.58],["rf02_cable_junction",2460,1010,.23,15,.92],["rf02_exit",2580,1000,.32,15,.88]] },
-    { id:"surge_lane", props:[["rf02_surge_emitter",3105,590,.22,17,.98],["rf02_surge_emitter",3395,590,.22,17,.98],["rf02_surge_emitter",3685,590,.22,17,.98],["rf02_hazard_marking",3105,900,.25,7,.92],["rf02_hazard_marking",3395,900,.25,7,.92],["rf02_hazard_marking",3685,900,.25,7,.92],["rf02_power_conduit",3000,1210,.34,9,.90],["rf02_power_conduit",3395,1210,.34,9,.90],["rf02_power_conduit",3780,1210,.34,9,.90],["rf02_generator",2870,1380,.30,12,.76],["rf02_generator",3850,1380,.30,12,.76],["rf02_wall_machinery",2810,820,.28,14,.88],["rf02_wall_machinery",3740,820,.28,14,.88],["rf02_light",2950,620,.10,18,.98],["rf02_light",3270,620,.10,18,.98],["rf02_light",3560,620,.10,18,.98],["rf02_light",3810,620,.10,18,.98]] },
-    { id:"cache_junction", props:[["rf02_machinery",4010,1350,.38,16,.96],["rf02_generator",3720,1510,.30,14,.88],["rf02_generator",4300,1450,.30,14,.88],["rf02_small_machinery",3570,1360,.30,13,.80],["rf02_terminal",4380,1220,.25,14,.86],["rf02_cache_station",3170,1535,.30,14,.92],["rf02_cache",WORLD.cache.x,WORLD.cache.y,.18,18,.98],["rf02_cable",3860,1590,.32,7,.70],["rf02_cable_junction",3260,1460,.24,15,.92],["rf02_wall_machinery",4090,1170,.28,14,.90],["rf02_panel",4460,1340,.28,14,.86],["rf02_barrier",4010,1450,.30,15,.84],["rf02_crate",3500,1600,.23,13,.76],["rf02_crate",4410,1570,.23,13,.76]] },
-    { id:"vault_approach", props:[["rf02_vault",5070,700,.42,18,.99],["rf02_vault_wall",4680,750,.40,17,.96],["rf02_vault_wall",5200,540,.42,17,.96],["rf02_exit",4740,1030,.42,17,.96],["rf02_relay_base",WORLD.relay.x,WORLD.relay.y,.32,19,.96],["rf02_pedestal",WORLD.relay.x,WORLD.relay.y,.20,23,.99],["rf02_wall",4850,1180,.34,14,.88],["rf02_wall_corner",5480,1050,.32,15,.92],["rf02_infrastructure",4650,1280,.32,11,.68],["rf02_wall_machinery",4910,1080,.30,16,.90],["rf02_barrier",4680,750,.30,18,.90],["rf02_light",5000,610,.11,22,.98],["rf02_light",5330,620,.11,22,.98],["rf02_dead_light",5480,1120,.20,14,.64],["rf02_warning",4860,1220,.28,8,.80]] },
+    { id:"carrier_mouth", props:[["rf02_carrier",520,1280,.34,11,.98],["rf02_wall",190,940,.26,10,.90],["rf02_wall",980,940,.26,10,.90],["rf02_damaged_wall",1200,1100,.24,13,.94],["rf02_support",680,930,.26,14,.94],["rf02_infrastructure",840,1520,.22,7,.62],["rf02_debris",340,1490,.20,9,.76],["rf02_exit",1390,1080,.26,15,.94],["rf02_wall_machinery",1240,1240,.20,14,.88],["rf02_warning",1390,1325,.20,8,.78]] },
+    { id:"conduit_transit", props:[["rf02_conduit",1600,840,.32,4,.94],["rf02_conduit",2175,820,.32,4,.90],["rf02_wall_conduit",1490,700,.27,14,.90,Math.PI/2],["rf02_wall_conduit",2380,760,.27,14,.90,Math.PI/2],["rf02_pipe",1700,550,.24,10,.78],["rf02_pipe",2100,1120,.23,10,.74],["rf02_cable",1770,1090,.24,7,.70],["rf02_cable",2210,1160,.23,7,.70],["rf02_junction_box",1660,710,.17,15,.92],["rf02_junction_box",2140,650,.17,15,.92],["rf02_vent",1900,540,.20,8,.62],["rf02_grate",2040,1230,.20,8,.58],["rf02_cable_junction",2460,1010,.18,15,.92],["rf02_exit",2580,1000,.25,15,.88]] },
+    { id:"surge_lane", props:[["rf02_surge_emitter",3105,590,.18,17,.98],["rf02_surge_emitter",3395,590,.18,17,.98],["rf02_surge_emitter",3685,590,.18,17,.98],["rf02_hazard_marking",3105,900,.20,7,.92],["rf02_hazard_marking",3395,900,.20,7,.92],["rf02_hazard_marking",3685,900,.20,7,.92],["rf02_power_conduit",3000,1210,.24,9,.90],["rf02_power_conduit",3395,1210,.24,9,.90],["rf02_power_conduit",3780,1210,.24,9,.90],["rf02_generator",2870,1380,.23,12,.76],["rf02_generator",3850,1380,.23,12,.76],["rf02_wall_machinery",2810,820,.22,14,.88],["rf02_wall_machinery",3740,820,.22,14,.88],["rf02_light",2950,620,.09,18,.98],["rf02_light",3270,620,.09,18,.98],["rf02_light",3560,620,.09,18,.98],["rf02_light",3810,620,.09,18,.98]] },
+    { id:"cache_junction", props:[["rf02_machinery",4010,1350,.26,16,.96],["rf02_generator",3720,1510,.22,14,.88],["rf02_generator",4300,1510,.22,14,.88],["rf02_small_machinery",3570,1360,.20,13,.80],["rf02_terminal",4380,1220,.20,14,.86],["rf02_cache_station",3170,1535,.24,14,.92],["rf02_cache",WORLD.cache.x,WORLD.cache.y,.18,18,.98],["rf02_cable",3860,1590,.24,7,.70],["rf02_cable_junction",3260,1460,.20,15,.92],["rf02_wall_machinery",4090,1170,.22,14,.90],["rf02_panel",4460,1340,.22,14,.86],["rf02_crate",3500,1600,.20,13,.76],["rf02_crate",4410,1570,.20,13,.76]] },
+    { id:"vault_approach", props:[["rf02_vault",5070,700,.32,18,.99],["rf02_vault_wall",4680,750,.30,17,.96],["rf02_vault_wall",5200,540,.32,17,.96],["rf02_exit",4740,1030,.30,17,.96],["rf02_relay_base",WORLD.relay.x,WORLD.relay.y,.26,19,.96],["rf02_pedestal",WORLD.relay.x,WORLD.relay.y,.18,23,.99],["rf02_wall",4850,1180,.26,14,.88],["rf02_wall_corner",5480,1050,.24,15,.92],["rf02_infrastructure",4650,1280,.24,11,.68],["rf02_wall_machinery",4910,1080,.22,16,.90],["rf02_barrier",4680,750,.22,18,.90],["rf02_light",5000,610,.09,22,.98],["rf02_light",5330,620,.09,22,.98],["rf02_dead_light",5480,1120,.16,14,.64],["rf02_warning",4860,1220,.20,8,.80]] },
   ];
   const VAULT_INTERIOR_ART = [
-    ["rf02_vault_floor",5300,1570,.42,2,.99], ["rf02_vault_wall",5070,1510,.34,14,.96,Math.PI/2], ["rf02_vault_wall",5530,1510,.34,14,.96,-Math.PI/2],
-    ["rf02_vault",5300,1420,.34,15,.98], ["rf02_relay_base",5300,1570,.34,17,.98],
-    ["rf02_generator",5110,1660,.28,13,.82], ["rf02_generator",5490,1660,.28,13,.82], ["rf02_wall_machinery",5090,1490,.27,14,.86], ["rf02_wall_machinery",5510,1490,.27,14,.86],
-    ["rf02_power_conduit",5170,1510,.25,9,.84], ["rf02_power_conduit",5430,1510,.25,9,.84], ["rf02_cable_junction",5160,1600,.20,15,.88], ["rf02_cable_junction",5440,1600,.20,15,.88],
-    ["rf02_light",5200,1460,.09,19,.94], ["rf02_light",5400,1460,.09,19,.94], ["rf02_warning",5300,1700,.25,8,.72],
+    ["rf02_vault_floor",5300,1570,.42,2,.99], ["rf02_vault_wall",5070,1510,.28,14,.96,Math.PI/2], ["rf02_vault_wall",5530,1510,.28,14,.96,-Math.PI/2],
+    ["rf02_vault",5300,1420,.28,15,.98], ["rf02_relay_base",5300,1570,.26,17,.98],
+    ["rf02_generator",5110,1660,.22,13,.82], ["rf02_generator",5490,1660,.22,13,.82], ["rf02_wall_machinery",5090,1490,.21,14,.86], ["rf02_wall_machinery",5510,1490,.21,14,.86],
+    ["rf02_power_conduit",5170,1510,.20,9,.84], ["rf02_power_conduit",5430,1510,.20,9,.84], ["rf02_cable_junction",5160,1600,.17,15,.88], ["rf02_cable_junction",5440,1600,.17,15,.88],
+    ["rf02_light",5200,1460,.08,19,.94], ["rf02_light",5400,1460,.08,19,.94], ["rf02_warning",5300,1700,.20,8,.72],
   ];
   const VAULT_INTERIOR_BLOCKERS = [[5030,1580,40,320],[5570,1580,40,320],[5300,1740,540,40]];
   const VAULT_FINALE = Object.freeze({ entryY:1420, accessGate:[5300,1285,560,42], lockdownGate:[5300,1370,560,42], core:{x:5300,y:1570}, waves:[[[5150,1530,"chaser",0],[5450,1530,"shooter",0]],[[5300,1640,"sentinel",0],[5120,1620,"chaser",0]]] });
