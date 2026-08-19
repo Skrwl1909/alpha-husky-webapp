@@ -2168,6 +2168,25 @@
       await runServerAction("/webapp/den/war-table/brief/claim", "war_table");
       return;
     }
+    if (action === "open-tactical-ops") {
+      try {
+        const ensureLoaded = window.ensureTacticalOpsLoaded || window.AHBootLoaders?.ensureTacticalOpsLoaded;
+        if (typeof ensureLoaded !== "function") {
+          notify("Tactical Ops is unavailable.");
+          return;
+        }
+        await ensureLoaded(getApiPost(), window.Telegram?.WebApp || null, false);
+        if (!window.TacticalOps?.open) {
+          notify("Tactical Ops failed to load.");
+          return;
+        }
+        window.TacticalOps.open();
+      } catch (err) {
+        notify("Tactical Ops failed to open.");
+        try { console.warn("[AlphaDen] tactical ops open failed", err); } catch (_) {}
+      }
+      return;
+    }
     if (action === "command-briefing-nav") {
       await openCommandBriefingTarget(actionEl.getAttribute("data-command-target"));
     }
@@ -2405,6 +2424,7 @@
 </section>
 ${config.id === "pet_kennel" ? renderPetTrainingCard() : ""}
 ${config.id === "signal_core" ? renderSignalCacheCard() : ""}
+${config.id === "war_table" ? renderTacticalOpsCard() : ""}
 ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
   }
 
@@ -2517,6 +2537,30 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
       data-alpha-den-action="command-briefing-nav"
       data-command-target="${escapeHtml(item.target)}"
     >${escapeHtml(item.label)}</button>`).join("");
+  }
+
+  function renderTacticalOpsCard() {
+    const level = getBuildingLevel("war_table");
+    const locked = level < 1;
+    return `
+<section class="alpha-den-card alpha-den-card--detail">
+  <div class="alpha-den-detail__eyebrow">Tactical Ops</div>
+  <h3 class="alpha-den-detail__title">Field Command Network</h3>
+  <p class="alpha-den-detail__copy">${locked
+    ? "War Table Level 1 required."
+    : "Short tactical operations. Three decisions. One recorded outcome."}</p>
+  <div class="alpha-den-detail__actions">
+    <button
+      type="button"
+      class="${locked ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary"}"
+      data-alpha-den-action="${locked ? "noop" : "open-tactical-ops"}"
+      ${locked ? "disabled" : ""}
+    >${locked ? "Locked" : "OPEN TACTICAL OPS"}</button>
+    <p class="alpha-den-detail__note">${locked
+      ? "Build War Table Level 1 to unlock Tactical Ops."
+      : "Open a live field operation from this table."}</p>
+  </div>
+</section>`;
   }
 
   function renderWarTableBriefCard() {

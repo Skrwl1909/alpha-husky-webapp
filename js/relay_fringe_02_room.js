@@ -1,7 +1,7 @@
 // Alpha Husky - Relay Fringe 02: Deep Carrier. Authored sector hooks for the shared lifecycle kernel.
 (function (global) {
   "use strict";
-  const BUILD = "rf02-chapter-closure-v1-20260818";
+  const BUILD = "rf02-traversal-alignment-fix-v1-20260819";
   const SECTOR = { sectorId: "relay_fringe_02", displayName: "DEEP CARRIER", runProfileVersion: 1 };
   const WORLD = { width: 5600, height: 1800, spawn: { x: 210, y: 1330 }, relay: { x: 5330, y: 850 }, cache: { x: 3300, y: 1540 } };
   const ZONES = [
@@ -71,13 +71,40 @@
   const SHOOTER = { hp: 58, damage: 5, speed: 76, aggro: 430, preferred: 230, cooldown: 1650, projectileSpeed: 180 };
   const SENTINEL = { hp: 210, damage: 12, speed: 48, telegraph: 700, lunge: 440, recovery: 900, lungeSpeed: 430 };
   const ENCOUNTERS = [
-    { id: "carrier_mouth", name: "CARRIER MOUTH", trigger: [760, 1260, 300, 720], spawns: [[900,1200,"chaser",1],[1000,1430,"chaser",1],[1110,1280,"chaser",1],[1180,1110,"shooter",1]], gate: "mouth" },
+    { id: "carrier_mouth", name: "CARRIER MOUTH", trigger: [760, 1260, 300, 720], spawns: [[900,1200,"chaser",1],[1000,1430,"chaser",1],[1070,1320,"chaser",1],[1060,1110,"shooter",1]], gate: "mouth" },
     { id: "split_conduit", name: "CONDUIT TRANSIT", trigger: [1910,780,460,780], spawns: [[1800,740,"chaser",1],[1970,1040,"chaser",1],[2120,720,"shooter",1],[2200,1080,"shooter",1]], gate: "split" },
-    { id: "compression_lane", name: "SURGE LANES", trigger: [3150,900,560,900], spawns: [[2930,650,"chaser",1],[3110,1180,"chaser",1],[3320,800,"chaser",1],[3370,1190,"shooter",1],[3700,650,"shooter",1]], gate: "compression" },
+    { id: "compression_lane", name: "SURGE LANES", trigger: [3150,900,560,900], spawns: [[2930,650,"chaser",1],[3110,1180,"chaser",1],[3320,800,"chaser",1],[3370,1190,"shooter",1],[3600,650,"shooter",1]], gate: "compression" },
     { id: "relay_vault", name: "VAULT APPROACH", trigger: [4620,900,620,950], spawns: [[4490,650,"chaser",1],[4700,1120,"chaser",1],[4850,650,"shooter",1],[4960,1110,"shooter",1],[5150,870,"sentinel",1]], gate: null },
     { id: "maintenance_cache", name: "CACHE JUNCTION", trigger: [3130,1460,370,260], spawns: [[2980,1480,"chaser",0],[3150,1560,"chaser",0],[3290,1470,"shooter",0]], gate: null },
   ];
   const LANE_RECTS = [[3020,560,170,680],[3310,560,170,680],[3600,560,170,680]];
+  // This is the spatial source of truth for RF02. Rectangles describe the safe player-centre
+  // envelope of real deck surfaces, not the full world or the transparent bounds of a prop.
+  // Their overlapping order is the canonical route from the spawn to the Signal Core.
+  const PLAYABLE_DECK_REGIONS = [
+    { id:"spawn", name:"SPAWN", surface:"rf02_vault_floor", rect:[20,1050,560,560] },
+    { id:"carrier_mouth", name:"CARRIER MOUTH", surface:"rf02_vault_floor", rect:[520,1050,1010,560] },
+    { id:"mouth_conduit", name:"MOUTH → CONDUIT", surface:"rf02_vault_floor", rect:[1170,820,560,560] },
+    { id:"conduit", name:"CONDUIT TRANSIT", surface:"rf02_vault_floor", rect:[1420,620,1060,560] },
+    { id:"conduit_surge", name:"CONDUIT → SURGE", surface:"rf02_vault_floor", rect:[2420,620,560,560] },
+    { id:"surge", name:"SURGE LANE", surface:"rf02_vault_floor", rect:[2920,620,1060,560] },
+    { id:"surge_junction", name:"SURGE → JUNCTION", surface:"rf02_vault_floor", rect:[3420,970,560,560] },
+    { id:"junction", name:"MACHINERY / CACHE JUNCTION", surface:"rf02_vault_floor", rect:[2900,1170,1680,560] },
+    { id:"junction_vault", name:"JUNCTION → VAULT", surface:"rf02_vault_floor", rect:[4220,620,560,660] },
+    { id:"vault_approach", name:"VAULT APPROACH", surface:"rf02_vault_floor", rect:[4720,620,910,560] },
+    { id:"vault_transition", name:"VAULT TRANSITION", surface:"rf02_vault_floor", rect:[5020,1120,560,560] },
+    { id:"vault_interior", name:"VAULT INTERIOR / SIGNAL CORE", surface:"rf02_vault_floor", rect:[5050,1320,500,500] },
+  ];
+  // Static authored floor coverage for the regions above. The old large chunks remain as
+  // background composition only; these complete tiles are the actual playable deck layer.
+  const SURFACE_DECKS = [
+    ["rf02_vault_floor",300,1330,.46,0,.99], ["rf02_vault_floor",800,1330,.46,0,.99], ["rf02_vault_floor",1250,1330,.46,0,.99],
+    ["rf02_vault_floor",1450,1100,.46,0,.99], ["rf02_vault_floor",1700,900,.46,0,.99], ["rf02_vault_floor",2200,900,.46,0,.99],
+    ["rf02_vault_floor",2700,900,.46,0,.99], ["rf02_vault_floor",3200,900,.46,0,.99], ["rf02_vault_floor",3700,900,.46,0,.99],
+    ["rf02_vault_floor",3700,1250,.46,0,.99], ["rf02_vault_floor",3200,1450,.46,0,.99], ["rf02_vault_floor",3800,1450,.46,0,.99], ["rf02_vault_floor",4300,1450,.46,0,.99],
+    ["rf02_vault_floor",4500,850,.46,0,.99], ["rf02_vault_floor",5000,900,.46,0,.99], ["rf02_vault_floor",5350,900,.46,0,.99],
+    ["rf02_vault_floor",5300,1400,.46,0,.99],
+  ];
   // These are intentionally broad, visible industrial masses: they give the route real bends without pixel-colliding every prop.
   const ROUTE_BLOCKERS = [
     [560,1050,360,80], [1200,1120,160,290],
@@ -110,7 +137,7 @@
     ["rf02_light",5200,1460,.09,19,.94], ["rf02_light",5400,1460,.09,19,.94], ["rf02_warning",5300,1700,.25,8,.72],
   ];
   const VAULT_INTERIOR_BLOCKERS = [[5030,1580,40,320],[5570,1580,40,320],[5300,1740,540,40]];
-  const VAULT_FINALE = Object.freeze({ entryY:1420, accessGate:[5300,1285,330,42], lockdownGate:[5300,1370,330,42], core:{x:5300,y:1570}, waves:[[[5150,1530,"chaser",0],[5450,1530,"shooter",0]],[[5300,1640,"sentinel",0],[5120,1620,"chaser",0]]] });
+  const VAULT_FINALE = Object.freeze({ entryY:1420, accessGate:[5300,1285,560,42], lockdownGate:[5300,1370,560,42], core:{x:5300,y:1570}, waves:[[[5150,1530,"chaser",0],[5450,1530,"shooter",0]],[[5300,1640,"sentinel",0],[5120,1620,"chaser",0]]] });
   const enemyChildren = scene => scene.ahEnemies?.getChildren?.() || [];
   const isTouch = () => global.__AH_EXPLORATION_FORCE_TOUCH === true || !!global.matchMedia?.("(pointer: coarse)")?.matches;
   const nowRun = (combatProfile, threatTier) => { const combatSnapshot = global.AlphaSectorCombatConfig?.makeRunCombatSnapshot?.(combatProfile), threatSnapshot = global.AlphaSectorCombatConfig?.makeRunThreatSnapshot?.(threatTier); if (!combatSnapshot || !threatSnapshot) return null; global.AlphaSectorCombatConfig?.logActionCombatProfile?.(SECTOR.sectorId, combatProfile, combatSnapshot); return { runId: global.AlphaSectorCombatConfig?.makeRunId?.("deep_carrier", SECTOR.sectorId) || `rf02_${Date.now()}`, sectorId: SECTOR.sectorId, runProfileVersion: 1, combatSnapshot, threatTier: threatSnapshot.id, threatSnapshot, status: "active", startedAt: Date.now(), duration: 0, playerHP: combatSnapshot.maxHp, chasersKilled: 0, shootersKilled: 0, sentinelKilled: 0, mandatoryEnemiesKilled: 0, optionalEnemiesKilled: 0, damageTaken: 0, howlUses: 0, hazardHits: 0, cacheOpened: false, cacheHealing: 0, expEarned: 0, bonesEarned: 0, scrapEarned: 0, equipmentDrops: 0, relayActivated: false, encounters: Object.fromEntries(ENCOUNTERS.map(row => [row.id, { activated: false, cleared: false, remaining: row.spawns.length }])) }; };
@@ -148,16 +175,36 @@
   }
   function hud(scene) { const r=scene.ahRun; if(!r) return; const copy=objectiveCopy(r,scene.ahVault); scene.ahHud?.setText(`DEEP CARRIER // ${r.threatSnapshot.label}\nHP ${r.playerHP}/${r.combatSnapshot.maxHp}\n${copy.title}\nEXP ${r.expEarned}  BONES ${r.bonesEarned}  SCRAP ${r.scrapEarned}`); scene.ahHud?.setVisible(false); const hudApi=global.AlphaActionSectorHud; if(hudApi&&scene.ahHudDom){ hudApi.update(scene.ahHudDom,{hp:r.playerHP,maxHp:r.combatSnapshot.maxHp,title:copy.title,detail:copy.detail,exp:r.expEarned,bones:r.bonesEarned,scrap:r.scrapEarned,gear:r.equipmentDrops,tier:r.threatSnapshot.label,status:r.status,relayActivated:r.relayActivated,encounters:r.encounters,x:scene.ahPlayer?.x||0,y:scene.ahPlayer?.y||0,kills:r.mandatoryEnemiesKilled,cacheOpened:r.cacheOpened}); hudApi.radar(scene.ahHudDom,{...r,x:scene.ahPlayer?.x||0,y:scene.ahPlayer?.y||0,kills:r.mandatoryEnemiesKilled},WORLD,ENCOUNTERS,scene.time?.now||0);} }
   function solid(scene,x,y,w,h,color=0x172630) { const o=scene.add.rectangle(x,y,w,h,color,.18).setStrokeStyle(2,0x426574,.34).setDepth(10); scene.physics.add.existing(o,true); scene.ahBlockers.add(o); return o; }
+  function containmentSolid(scene,x,y,w,h) { const o=scene.add.rectangle(x,y,w,h,0x000000,0).setVisible(false);scene.physics.add.existing(o,true);scene.ahBlockers.add(o);return o; }
+  function deckContainsPoint(x,y) { return PLAYABLE_DECK_REGIONS.some(region=>{const [rx,ry,rw,rh]=region.rect;return x>=rx&&x<=rx+rw&&y>=ry&&y<=ry+rh;}); }
+  // Fill the complement of the deck manifest once at scene construction. This is intentionally
+  // static collision, not an update-loop position correction: Level-C recess stays background.
+  function buildDeckContainment(scene) {
+    const xCuts=[0,WORLD.width],yCuts=[0,WORLD.height];PLAYABLE_DECK_REGIONS.forEach(({rect:[x,y,w,h]})=>{xCuts.push(x,x+w);yCuts.push(y,y+h);});
+    const xs=[...new Set(xCuts)].sort((a,b)=>a-b),ys=[...new Set(yCuts)].sort((a,b)=>a-b),open=new Map(),rects=[];
+    for(let yi=0;yi<ys.length-1;yi++){
+      const y=ys[yi],h=ys[yi+1]-y,spans=[];let start=null;
+      for(let xi=0;xi<xs.length-1;xi++){
+        const x=xs[xi],w=xs[xi+1]-x,inside=deckContainsPoint(x+w/2,y+h/2);
+        if(!inside&&start===null)start=x;
+        if((inside||xi===xs.length-2)&&start!==null){const end=inside?x:xs[xi+1];spans.push([start,end-start]);start=null;}
+      }
+      const next=new Map();spans.forEach(([x,w])=>{const key=`${x}:${w}`,prior=open.get(key);if(prior&&prior.y+prior.h===y){prior.h+=h;next.set(key,prior);}else{const rect={x,y,w,h};rects.push(rect);next.set(key,rect);}});open.clear();next.forEach((value,key)=>open.set(key,value));
+    }
+    rects.filter(rect=>rect.w>0&&rect.h>0).forEach(({x,y,w,h})=>containmentSolid(scene,x+w/2,y+h/2,w,h));
+    scene.ahDeckContainmentCount=rects.length;
+  }
   function preloadSectorAssets(scene) { ART.forEach(([key,file]) => scene.load.image(key, ASSET_ROOT + file)); scene.load.spritesheet(PRODUCTION_PRESENTATION.player.key,PRODUCTION_PRESENTATION.player.url,{frameWidth:256,frameHeight:256}); scene.load.spritesheet(PRODUCTION_PRESENTATION.chaser.key,PRODUCTION_PRESENTATION.chaser.url,{frameWidth:256,frameHeight:256}); scene.load.spritesheet(PRODUCTION_PRESENTATION.slash.key,PRODUCTION_PRESENTATION.slash.url,{frameWidth:256,frameHeight:256}); scene.load.image(PRODUCTION_PRESENTATION.rewardBeam.key,PRODUCTION_PRESENTATION.rewardBeam.url);scene.load.image(RF02_STORY_ASSET.key,RF02_STORY_ASSET.url); Object.values(PRODUCTION_PRESENTATION.combatVfx).forEach(({key,url,frameWidth,frameHeight})=>scene.load.spritesheet(key,url,{frameWidth,frameHeight})); PRODUCTION_PRESENTATION.ui.forEach(([key,file])=>scene.load.image(key,RF01_UI_ROOT+file)); }
   function art(scene, key, x, y, scale, depth=2, alpha=1, rotation=0) { if(!scene.textures.exists(key)) return null; scene.ahEnvironmentInstances=(scene.ahEnvironmentInstances||0)+1; return scene.add.image(x,y,key).setScale(scale).setDepth(depth).setAlpha(alpha).setRotation(rotation); }
   function buildDeepCarrierEnvironment(scene) {
     // Level C is only the distant void. Every camera-corridor mass above it is authored carrier art.
     const recess=scene.add.graphics().setDepth(-6);recess.fillStyle(0x050a0e,1).fillRect(-120,-120,WORLD.width+240,WORLD.height+240);
     const shadows=scene.add.graphics().setDepth(1);shadows.fillStyle(0x010407,.30);[[620,1430,1260,460],[1680,1030,1220,410],[2860,980,1360,480],[4000,1360,1260,400],[5070,910,1080,520]].forEach(args=>shadows.fillEllipse(...args));
+    SURFACE_DECKS.forEach(placement=>art(scene,...placement));
     LOWER_SERVICE_DECKS.forEach(placement=>art(scene,...placement));
     UPPER_ROUTE_DECKS.forEach(placement=>art(scene,...placement));
     CARRIER_ASSEMBLIES.forEach(assembly=>assembly.props.forEach(placement=>art(scene,...placement)));
-    scene.ahEnvironmentStats={textures:ART.length,instances:scene.ahEnvironmentInstances,lowerServiceDecks:LOWER_SERVICE_DECKS.length,upperRouteDecks:UPPER_ROUTE_DECKS.length,assemblies:CARRIER_ASSEMBLIES.length,assemblyProps:CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)};
+    scene.ahEnvironmentStats={textures:ART.length,instances:scene.ahEnvironmentInstances,surfaceDecks:SURFACE_DECKS.length,lowerServiceDecks:LOWER_SERVICE_DECKS.length,upperRouteDecks:UPPER_ROUTE_DECKS.length,assemblies:CARRIER_ASSEMBLIES.length,assemblyProps:CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)};
   }
   function setVaultGate(gate,closed) { if(!gate)return;gate.body.enable=!!closed;gate.setVisible(!!closed); }
   function buildVaultInterior(scene) {
@@ -202,6 +249,7 @@
     buildDeepCarrierEnvironment(scene);
     buildVaultInterior(scene);
     buildAtmosphere(scene);
+    buildDeckContainment(scene);
     [[WORLD.width/2,18,WORLD.width,36],[WORLD.width/2,WORLD.height-18,WORLD.width,36],[18,WORLD.height/2,36,WORLD.height],[WORLD.width-18,WORLD.height/2,36,WORLD.height],[800,780,920,72],[1950,1370,860,76],[4380,520,840,70],[4620,1450,800,70],...ROUTE_BLOCKERS].forEach(v=>solid(scene,...v));
     [[1370,900,"mouth"],[2440,900,"split"],[3910,900,"compression"]].forEach(([x,y,id])=>{const g=solid(scene,x,y,48,700,0x5b2841);g.setAlpha(.24).setDepth(20);scene.ahGates[id]=g;});
     LANE_RECTS.forEach(([x,y,w,h])=>scene.add.rectangle(x+w/2,y+h/2,w,h,0x39c9df,.055).setStrokeStyle(2,0x56d9ee,.30).setDepth(13));
@@ -267,6 +315,6 @@
   async function restart(scene,refreshProfile=false){if(refreshProfile)try{const profile=await scene.ahResolveCombatProfile?.();const normalized=global.AlphaSectorCombatConfig?.normalizeCombatProfile?.(profile);if(!normalized)throw Error("invalid combat profile");scene.ahCombatProfile=normalized;}catch(_){text(scene,"Unable to load combat profile - Retry");return;}const nextRun=nowRun(scene.ahCombatProfile,scene.ahThreatTier);if(!nextRun){text(scene,"Unable to load combat profile - Retry");return;}scene.ahMessageTimer?.remove?.(false);clearRf02Story(scene);clearVaultFinale(scene);clearCombatFx(scene);scene.ahProjectiles.clear(true,true);scene.ahEnemies.getChildren().forEach(destroyActorShadow);scene.ahEnemies.clear(true,true);scene.ahResult?.destroy();scene.ahRun=nextRun;initialiseRf02Story(scene,nextRun);initialiseVaultFinale(scene,nextRun);if(scene.ahHudDom){scene.ahHudDom.fingerprint="";scene.ahHudDom.radarFingerprint="";scene.ahHudDom.radarAt=0;}scene.ahPlayer.setPosition(WORLD.spawn.x,WORLD.spawn.y).setActive(true).setVisible(true).clearTint?.();scene.ahPlayer.body.setVelocity(0,0);animateActor(scene.ahPlayer,"rf02-player",1,0,false);syncActorShadow(scene.ahPlayer);Object.values(scene.ahGates).forEach(g=>{g.body.enable=true;g.setVisible(true);});scene.ahSurge={index:0,phase:"idle",nextAt:0,hit:false};scene.ahSurgeGraphics.clear();setTouchControls(scene,true);[scene.ahInteractRing,scene.ahInteractIcon,scene.ahInteractLabel,scene.ahInteractHit].forEach(item=>item?.setVisible(false));if(scene.ahInteractHit?.input)scene.ahInteractHit.input.enabled=false;setResultControls(scene,false);hud(scene);text(scene,"ENTER THE DEEP CARRIER");storyTimer(scene,850,()=>playRf02StoryBeat(scene,"entry"));}
   const runtime = global.AlphaActionSectorRuntime?.create({ sectorId:SECTOR.sectorId, displayName:SECTOR.displayName, kicker:"RELAY FRINGE 02", hudCode:"RF-02", preloadScene:preloadSectorAssets, createScene(scene,ctx){scene.ahDeps=ctx.deps;scene.ahCombatProfile=ctx.combatProfile;scene.ahThreatTier=ctx.threatTier;scene.ahResolveCombatProfile=ctx.resolveCombatProfile;scene.ahHudDom=ctx.hud||scene.ahHudDom;buildWorld(scene);makePlayer(scene);scene.ahEnemies=scene.physics.add.group();scene.ahProjectiles=scene.physics.add.group();scene.physics.add.collider(scene.ahPlayer,scene.ahEnemies);scene.physics.add.collider(scene.ahEnemies,scene.ahBlockers);scene.physics.add.collider(scene.ahProjectiles,scene.ahBlockers,projectile=>projectile?.destroy?.());scene.physics.add.overlap(scene.ahPlayer,scene.ahProjectiles,(_,b)=>{if(!b?.active)return;const damage=b.ahDamage||SHOOTER.damage;b.destroy();hurt(scene,damage);});makeControls(scene);scene.cameras.main.setBounds(0,0,WORLD.width,WORLD.height).startFollow(scene.ahPlayer,true,.13,.13);layoutControls(scene);restart(scene);}, updateScene(scene,time){const r=scene.ahRun,k=scene.ahKeys,justDown=key=>!!key&&Phaser.Input.Keyboard.JustDown(key);if(!r)return;if(r.status==="active"||r.status==="cleared"){const locked=!!scene.ahVault?.reading;let x=locked?0:scene.ahJoy?.x||0,y=locked?0:scene.ahJoy?.y||0;if(!locked&&(k?.left?.isDown||k?.leftArrow?.isDown))x--;if(!locked&&(k?.right?.isDown||k?.rightArrow?.isDown))x++;if(!locked&&(k?.up?.isDown||k?.upArrow?.isDown))y--;if(!locked&&(k?.down?.isDown||k?.downArrow?.isDown))y++;const v=scene.ahMove||(scene.ahMove=new Phaser.Math.Vector2());v.set(x,y);if(v.lengthSq())v.normalize().scale(TUNE.playerSpeed);scene.ahPlayer.body.setVelocity(v.x,v.y);animateActor(scene.ahPlayer,"rf02-player",v.x,v.y,v.lengthSq()>1);syncActorShadow(scene.ahPlayer);ENCOUNTERS.forEach(e=>{const [x,y,w,h]=e.trigger;if(!r.encounters[e.id].activated&&scene.ahPlayer.x>x-w/2&&scene.ahPlayer.x<x+w/2&&scene.ahPlayer.y>y-h/2&&scene.ahPlayer.y<y+h/2)activate(scene,e);});updateVaultFinale(scene);enemyChildren(scene).forEach(e=>e.active&&!e.ah.dead&&enemyUpdate(scene,e,time));(scene.ahProjectiles.getChildren()||[]).forEach(b=>{if(!b.active||time>b.ahEnd||b.x<0||b.x>WORLD.width||b.y<0||b.y>WORLD.height)b.destroy();});surge(scene,time);triggerRf02Story(scene);updateContext(scene);hud(scene);if(justDown(k?.attack)||justDown(k?.space))attack(scene);if(justDown(k?.howl))howl(scene);if(justDown(k?.interact))interact(scene);}if(justDown(k?.escape)||justDown(k?.map))void runtime.close();if(justDown(k?.restart)&&(r.status==="failed"||r.status==="completed"))void restart(scene,true);}, cleanupSector(scene){scene?.ahMessageTimer?.remove?.(false);clearRf02Story(scene);clearVaultFinale(scene);scene?.scale?.off?.("resize",scene?.ahLayoutControls);scene?.input?.off?.("pointermove",scene?.ahOnMove);scene?.input?.off?.("pointerup",scene?.ahOnUp);scene?.ahSurgeGraphics?.destroy();scene?.ahPlayer?.ahShadow?.destroy();scene?.ahProjectiles?.clear(true,true);scene?.ahEnemies?.getChildren?.().forEach(enemy=>enemy?.ahShadow?.destroy());scene?.ahEnemies?.clear(true,true);} });
   if(!runtime)throw new Error("AlphaActionSectorRuntime must load before Relay Fringe 02");
-  runtime.buildMarker=BUILD;runtime.zoneConfig=Object.freeze(ZONES.map(({id,name})=>({id,name})));runtime.environmentConfig=Object.freeze({textureCount:ART.length,instanceCount:LOWER_SERVICE_DECKS.length+UPPER_ROUTE_DECKS.length+CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)+VAULT_INTERIOR_ART.length,composition:"authored-static-assemblies-v1",lowerServiceDecks:LOWER_SERVICE_DECKS.length,upperRouteDecks:UPPER_ROUTE_DECKS.length,assemblies:CARRIER_ASSEMBLIES.length,vaultInteriorArt:VAULT_INTERIOR_ART.length,vaultInteriorBlockers:VAULT_INTERIOR_BLOCKERS.length});runtime.gameplayPresentationConfig=Object.freeze({textureCount:ART.length+2+PRODUCTION_PRESENTATION.ui.length+8,environmentTextures:ART.length,characterTextures:2,controlTextures:PRODUCTION_PRESENTATION.ui.length,combatTextures:7,storyTextures:1,environmentSprites:LOWER_SERVICE_DECKS.length+UPPER_ROUTE_DECKS.length+CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)+VAULT_INTERIOR_ART.length});runtime.encounterConfig=ENCOUNTERS;runtime.surgeConfig=Object.freeze({telegraphMs:900,activeMs:250,damage:8,intervalMs:2600,lanes:3});
+  runtime.buildMarker=BUILD;runtime.zoneConfig=Object.freeze(ZONES.map(({id,name})=>({id,name})));runtime.spatialConfig=Object.freeze({playableDeckRegions:PLAYABLE_DECK_REGIONS.map(({id,name,rect})=>({id,name,rect:[...rect]})),surfaceDecks:SURFACE_DECKS.length,containment:"static-deck-complement-v1",deepRecess:"background-only"});runtime.environmentConfig=Object.freeze({textureCount:ART.length,instanceCount:SURFACE_DECKS.length+LOWER_SERVICE_DECKS.length+UPPER_ROUTE_DECKS.length+CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)+VAULT_INTERIOR_ART.length,composition:"authored-static-assemblies-v1",surfaceDecks:SURFACE_DECKS.length,lowerServiceDecks:LOWER_SERVICE_DECKS.length,upperRouteDecks:UPPER_ROUTE_DECKS.length,assemblies:CARRIER_ASSEMBLIES.length,vaultInteriorArt:VAULT_INTERIOR_ART.length,vaultInteriorBlockers:VAULT_INTERIOR_BLOCKERS.length});runtime.gameplayPresentationConfig=Object.freeze({textureCount:ART.length+2+PRODUCTION_PRESENTATION.ui.length+8,environmentTextures:ART.length,characterTextures:2,controlTextures:PRODUCTION_PRESENTATION.ui.length,combatTextures:7,storyTextures:1,environmentSprites:SURFACE_DECKS.length+LOWER_SERVICE_DECKS.length+UPPER_ROUTE_DECKS.length+CARRIER_ASSEMBLIES.reduce((count,assembly)=>count+assembly.props.length,0)+VAULT_INTERIOR_ART.length});runtime.encounterConfig=ENCOUNTERS;runtime.surgeConfig=Object.freeze({telegraphMs:900,activeMs:250,damage:8,intervalMs:2600,lanes:3});
   global.AlphaRelayFringe02Room = runtime;
 })(window);

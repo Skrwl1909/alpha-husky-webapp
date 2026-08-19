@@ -36,6 +36,7 @@
           (readyName === "alpha_den.js" && !!global.AlphaDen?.open) ||
           (readyName === "pet_sprite.js" && !!global.PetSprite) ||
           (readyName === "elite_combat_stage.js" && !!global.EliteCombatStage) ||
+          (readyName === "tactical_ops.js" && !!global.TacticalOps?.open) ||
           (readyName === "adopt.js" && !!global.Adopt) ||
           (readyName === "updates.js" && !!global.Updates) ||
           (readyName === "missions.js" && !!global.Missions) ||
@@ -198,6 +199,23 @@
         throw new Error("elite_combat_stage.js loaded but window.EliteCombatStage is missing");
       }
       global.EliteCombatStage.init?.(deps);
+      return true;
+    });
+  }
+
+  async function ensureTacticalOpsLoaded(apiPost, tg, dbg) {
+    const deps = { apiPost: pickApiPost(apiPost), tg: pickTg(tg), dbg: pickDbg(dbg) };
+    if (global.TacticalOps?.open) {
+      try { global.TacticalOps.init?.(deps); } catch (_) {}
+      return true;
+    }
+    const loadScript = getLoadScript();
+    return await once("tactical_ops", async () => {
+      await loadScript("js/tactical_ops.js");
+      if (!global.TacticalOps?.open) {
+        throw new Error("tactical_ops.js loaded but window.TacticalOps.open is missing");
+      }
+      global.TacticalOps.init?.(deps);
       return true;
     });
   }
@@ -514,6 +532,7 @@
     global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
     global.ensurePetSpriteLoaded = ensurePetSpriteLoaded;
     global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
+    global.ensureTacticalOpsLoaded = ensureTacticalOpsLoaded;
     global.ensureAdoptLoaded = ensureAdoptLoaded;
     global.ensureUpdatesLoaded = ensureUpdatesLoaded;
     global.ensureMissionsLoaded = ensureMissionsLoaded;
@@ -541,6 +560,7 @@
     ensureAlphaDenLoaded,
     ensurePetSpriteLoaded,
     ensureEliteCombatStageLoaded,
+    ensureTacticalOpsLoaded,
     ensureAdoptLoaded,
     ensureUpdatesLoaded,
     ensureMissionsLoaded,
@@ -561,6 +581,7 @@
 
   global.ensureAlphaDenLoaded = ensureAlphaDenLoaded;
     global.ensureEliteCombatStageLoaded = ensureEliteCombatStageLoaded;
+    global.ensureTacticalOpsLoaded = ensureTacticalOpsLoaded;
     global.ensureExplorationRoomLoaded = ensureExplorationRoomLoaded;
     global.ensureActionSectorRuntimeLoaded = ensureActionSectorRuntimeLoaded;
     global.ensureRelayFringe02RoomLoaded = ensureRelayFringe02RoomLoaded;
