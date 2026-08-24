@@ -1,0 +1,470 @@
+import { create } from "zustand";
+import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
+import { a1Range, planAi, applyAi, previewQueue, reachableCells, startBattle, tryMove, trySkill, trySkip, advanceToNext } from "../combat";
+import { availableSkills } from "../combat/skills";
+import { skillNeedsTargetPick, validTargetIds } from "../combat/targeting";
+import { getSkill } from "../data/skills";
+import { sfx, setMuted as persistMute, isMuted } from "../audio";
+
+export interface FloatText {
+  id: number;
+  unitId: string;
+  text: string;
+  kind: string;
+}
+
+interface UiBattle {
+  screen: Screen;
+  battle: BattleState;
+  busy: boolean;
+  banner: string | null;
+  ticker: string | null;
+  floats: FloatText[];
+  attackingId: string | null;
+  impactId: string | null;
+  impactKey: number;
+  muted: boolean;
+  queue: string[];
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "undefined") {
+      setTimeout(resolve, ms);
+      return;
+    }
+    const start = performance.now();
+    const step = (t: number) => {
+      if (t - start >= ms) resolve();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+let floatSeq = 1;
+let impactSeq = 1;
+let runGen = 0;
+
+function refreshQueue(battle: BattleState): string[] {
+  return previewQueue(battle, 7);
+}
+
+function emptyBattle(): BattleState {
+  return {
+    units: [],
+    activeId: null,
+    inspectId: null,
+    actionSkillId: null,
+    mode: "idle",
+    round: 1,
+    unitTurn: 0,
+    actionsLeftInRound: 0,
+    outcome: "ongoing",
+    damageTaken: 0,
+    hostilesEliminated: 0,
+    results: null,
+    seed: 1,
+  };
+}
+
+interface Store extends UiBattle {
+  openBrief: () => void;
+  backToHub: () => void;
+  deploy: () => void;
+  inspectUnit: (id: string) => void;
+  selectCell: (c: number, r: number) => void;
+  selectSkill: (skillId: string) => void;
+  selectTarget: (id: string) => void;
+  skipTurn: () => void;
+  cancel: () => void;
+  replay: () => void;
+  dismissSector: () => void;
+  toggleMute: () => void;
+}
+
+function activeUnit(battle: BattleState): CombatUnit | undefined {
+  return battle.units.find((u) => u.id === battle.activeId);
+}
+
+export const useBattleStore = create<Store>((set, get) => {
+  const pushFloat = (unitId: string, text: string, kind: string) => {
+    const id = floatSeq++;
+    set((s) => ({ floats: [...s.floats, { id, unitId, text, kind }] }));
+    void wait(900).then(() => {
+      set((s) => ({ floats: s.floats.filter((f) => f.id !== id) }));
+    });
+  };
+
+  const playEvents = async (events: BattleEvent[], g: number) => {
+    for (const ev of events) {
+      if (g !== runGen) return;
+      if (ev.type === "ticker" && ev.text) set({ ticker: ev.text });
+      if (ev.type === "banner" && ev.text) {
+        set({ banner: ev.text });
+        sfx("turn");
+        await wait(520);
+        if (g !== runGen) return;
+        set({ banner: null });
+      }
+      if (ev.type === "damage" && ev.unitId && ev.text) {
+        sfx("hit");
+        set({ impactId: ev.unitId, impactKey: impactSeq++ });
+        pushFloat(ev.unitId, ev.text, ev.kind ?? "dmg");
+        await wait(280);
+      }
+      if (ev.type === "heal" && ev.unitId && ev.text) {
+        sfx("heal");
+        pushFloat(ev.unitId, ev.text, "heal");
+        await wait(240);
+      }
+      if (ev.type === "status" && ev.unitId && ev.text) {
+        sfx("status");
+        pushFloat(ev.unitId, ev.text, ev.kind ?? "status");
+        await wait(180);
+      }
+      if (ev.type === "expire" && ev.unitId && ev.text) {
+        pushFloat(ev.unitId, ev.text, "info");
+      }
+      if (ev.type === "defeat" && ev.unitId) {
+        pushFloat(ev.unitId, ev.text ?? "DOWN", "info");
+        await wait(260);
+      }
+      if (ev.type === "move") sfx("move");
+    }
+  };
+
+  const finishIfNeeded = async (g: number) => {
+    const { battle } = get();
+    if (battle.outcome === "victory") {
+      set({ busy: true, banner: "SECTOR SECURED", ticker: null, attackingId: null });
+      sfx("win");
+      await wait(1400);
+      if (g !== runGen) return true;
+      set({ screen: "sector", busy: false, banner: null });
+      return true;
+    }
+    if (battle.outcome === "defeat") {
+      set({ busy: true, banner: "OPERATION FAILED", ticker: null, attackingId: null });
+      sfx("lose");
+      await wait(1200);
+      if (g !== runGen) return true;
+      set({ screen: "defeat", busy: false, banner: null });
+      return true;
+    }
+    return false;
+  };
+
+  const continueLoop = async (g: number) => {
+    if (g !== runGen) return;
+    if (await finishIfNeeded(g)) return;
+    const nxt = advanceToNext(get().battle);
+    set({ battle: nxt.state, queue: refreshQueue(nxt.state) });
+    await playEvents(nxt.events, g);
+    if (g !== runGen) return;
+    if (await finishIfNeeded(g)) return;
+    const actor = activeUnit(get().battle);
+    if (!actor) {
+      set({ busy: false });
+      return;
+    }
+    if (actor.team === "enemy") {
+      set({ busy: true, ticker: `${actor.name}` });
+      await wait(280);
+      if (g !== runGen) return;
+      await runEnemy(g);
+      return;
+    }
+    set({
+      busy: false,
+      ticker: actor.hasMoved ? `${actor.name}  ·  act` : `${actor.name}  ·  move or act`,
+    });
+  };
+
+  const runEnemy = async (g: number) => {
+    const st = get().battle;
+    const actor = activeUnit(st);
+    if (!actor || actor.team !== "enemy") {
+      await continueLoop(g);
+      return;
+    }
+    const action = planAi(st);
+    if (action.type === "move") {
+      set({ attackingId: null });
+    }
+    if (action.type === "skill") {
+      set({ attackingId: actor.id });
+    }
+    const applied = applyAi(get().battle, action);
+    set({ battle: applied.state, queue: refreshQueue(applied.state), attackingId: action.type === "skill" ? actor.id : null });
+    await playEvents(applied.events, g);
+    if (g !== runGen) return;
+    set({ attackingId: null });
+    await wait(160);
+    await continueLoop(g);
+  };
+
+  const afterPlayerAction = async (g: number) => {
+    if (await finishIfNeeded(g)) return;
+    await continueLoop(g);
+  };
+
+  return {
+    screen: "hub",
+    battle: emptyBattle(),
+    busy: false,
+    banner: null,
+    ticker: null,
+    floats: [],
+    attackingId: null,
+    impactId: null,
+    impactKey: 0,
+    muted: false,
+    queue: [],
+
+    openBrief: () => {
+      sfx("ui");
+      set({ screen: "brief" });
+    },
+    backToHub: () => {
+      runGen++;
+      sfx("ui");
+      set({
+        screen: "hub",
+        battle: emptyBattle(),
+        banner: null,
+        ticker: null,
+        busy: false,
+        floats: [],
+        queue: [],
+      });
+    },
+    deploy: () => {
+      const g = ++runGen;
+      const started = startBattle();
+      sfx("turn");
+      set({
+        screen: "battle",
+        battle: started.state,
+        queue: refreshQueue(started.state),
+        busy: true,
+        banner: null,
+        ticker: null,
+        floats: [],
+        attackingId: null,
+        impactId: null,
+      });
+      void (async () => {
+        await playEvents(started.events, g);
+        if (g !== runGen) return;
+        const actor = activeUnit(get().battle);
+        if (actor?.team === "enemy") {
+          await runEnemy(g);
+          return;
+        }
+        set({ busy: false, ticker: actor ? `${actor.name}  ·  move or act` : null });
+      })();
+    },
+    inspectUnit: (id: string) => {
+      const { battle, busy, screen } = get();
+      if (busy || screen !== "battle") return;
+      const unit = battle.units.find((u) => u.id === id);
+      if (!unit || unit.defeated) return;
+      if (battle.mode === "targeting" && battle.actionSkillId) {
+        get().selectTarget(id);
+        return;
+      }
+      sfx("select");
+      set({
+        battle: {
+          ...battle,
+          inspectId: battle.inspectId === id ? null : id,
+        },
+      });
+    },
+    selectCell: (c: number, r: number) => {
+      const { battle, busy, screen } = get();
+      if (busy || screen !== "battle") return;
+      const occupant = battle.units.find((u) => !u.defeated && u.c === c && u.r === r);
+      if (occupant) {
+        get().inspectUnit(occupant.id);
+        return;
+      }
+      if (battle.mode === "targeting") {
+        set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
+        return;
+      }
+      const actor = activeUnit(battle);
+      if (!actor || actor.team !== "ally" || actor.hasMoved || actor.hasActed) return;
+      const res = tryMove(battle, c, r);
+      if (!res.ok) return;
+      sfx("move");
+      set({ battle: res.state, queue: refreshQueue(res.state), ticker: `${actor.name}  ·  repositions` });
+    },
+    selectSkill: (skillId: string) => {
+      const { battle, busy } = get();
+      if (busy) return;
+      const actor = activeUnit(battle);
+      if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
+      if (!actor.skillIds.includes(skillId)) return;
+      const skill = getSkill(skillId);
+      if ((actor.cooldowns[skillId] ?? 0) > 0) return;
+      if (battle.mode === "targeting" && battle.actionSkillId === skillId) {
+        set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
+        return;
+      }
+      sfx("select");
+      if (!skillNeedsTargetPick(skill)) {
+        const g = ++runGen;
+        set({ busy: true, attackingId: actor.id });
+        const res = trySkill(battle, skillId);
+        if (!res.ok) {
+          set({ busy: false, attackingId: null, ticker: `${actor.name}  ·  no target in range` });
+          return;
+        }
+        set({ battle: res.state, queue: refreshQueue(res.state) });
+        void (async () => {
+          await playEvents(res.events, g);
+          set({ attackingId: null });
+          await afterPlayerAction(g);
+        })();
+        return;
+      }
+      const targets = validTargetIds(battle.units, actor, skill);
+      set({
+        battle: { ...battle, mode: "targeting", actionSkillId: skillId, inspectId: null },
+        ticker:
+          targets.length === 0
+            ? skill.maxRange <= 1
+              ? `${actor.name}  ·  melee — move adjacent`
+              : `${actor.name}  ·  no target in range`
+            : skill.desc,
+      });
+    },
+    selectTarget: (id: string) => {
+      const { battle, busy } = get();
+      if (busy || battle.mode !== "targeting" || !battle.actionSkillId) return;
+      const actor = activeUnit(battle);
+      if (!actor || actor.hasActed) return;
+      const g = ++runGen;
+      set({ busy: true, attackingId: actor.id });
+      const res = trySkill(battle, battle.actionSkillId, id);
+      if (!res.ok) {
+        set({ busy: false, attackingId: null });
+        return;
+      }
+      set({ battle: res.state, queue: refreshQueue(res.state) });
+      void (async () => {
+        await playEvents(res.events, g);
+        set({ attackingId: null });
+        await afterPlayerAction(g);
+      })();
+    },
+    skipTurn: () => {
+      const { battle, busy } = get();
+      if (busy) return;
+      const actor = activeUnit(battle);
+      if (!actor || actor.team !== "ally" || actor.hasActed) return;
+      const g = ++runGen;
+      const res = trySkip(battle);
+      if (!res.ok) return;
+      set({ battle: res.state, busy: true, ticker: res.events[0]?.text ?? null });
+      void afterPlayerAction(g);
+    },
+    cancel: () => {
+      const { battle, busy } = get();
+      if (busy) return;
+      if (battle.mode === "targeting") {
+        set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
+        return;
+      }
+      set({ battle: { ...battle, inspectId: null } });
+    },
+    replay: () => {
+      get().deploy();
+    },
+    dismissSector: () => {
+      sfx("ui");
+      set({ screen: "results" });
+    },
+    toggleMute: () => {
+      const next = !get().muted;
+      persistMute(next);
+      set({ muted: next });
+    },
+  };
+});
+
+export function snapshotState() {
+  const s = useBattleStore.getState();
+  const b = s.battle;
+  const actor = activeUnit(b);
+  return {
+    version: "tactical_ops.js v2.1.0-combat-core",
+    screen: s.screen,
+    turn: b.round,
+    phase: actor?.team === "enemy" ? "enemy" : "player",
+    mode: b.mode,
+    selectedId: b.activeId,
+    busy: s.busy,
+    units: b.units.map((u) => ({
+      id: u.id,
+      name: u.name,
+      side: u.team,
+      hp: u.hp,
+      maxHp: u.maxHp,
+      atk: u.atk,
+      def: u.def,
+      spd: u.spd,
+      move: u.move,
+      c: u.c,
+      r: u.r,
+      hasMoved: u.hasMoved,
+      hasActed: u.hasActed,
+      guarding: u.statuses.some((st) => st.type === "GUARD"),
+      defeated: u.defeated,
+      strikeRange: a1Range(u),
+      statuses: u.statuses,
+      cooldowns: u.cooldowns,
+    })),
+    results: b.results,
+    activeId: b.activeId,
+    queue: s.queue,
+  };
+}
+
+export function moveCellsNow(): { c: number; r: number }[] {
+  const { battle, busy } = useBattleStore.getState();
+  if (busy || battle.mode === "targeting") return [];
+  const actor = activeUnit(battle);
+  if (!actor || actor.team !== "ally" || actor.hasMoved || actor.hasActed || actor.defeated) return [];
+  return reachableCells(actor, battle.units);
+}
+
+export function targetIdsNow(): Set<string> {
+  const { battle } = useBattleStore.getState();
+  const set = new Set<string>();
+  if (battle.mode !== "targeting" || !battle.actionSkillId) return set;
+  const actor = activeUnit(battle);
+  if (!actor) return set;
+  try {
+    const skill = getSkill(battle.actionSkillId);
+    for (const id of validTargetIds(battle.units, actor, skill)) set.add(id);
+  } catch {
+    /* ignore */
+  }
+  return set;
+}
+
+export function hudSkills() {
+  const { battle } = useBattleStore.getState();
+  const actor = activeUnit(battle);
+  if (!actor) return [];
+  return availableSkills(battle, actor);
+}
+
+if (typeof window !== "undefined") {
+  (window as unknown as { __tactical?: unknown }).__tactical = useBattleStore;
+}
+
+export { availableSkills };
