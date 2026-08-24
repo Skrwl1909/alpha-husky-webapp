@@ -2568,7 +2568,7 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
   <h3 class="alpha-den-detail__title">Field Command Network</h3>
   <p class="alpha-den-detail__copy">${locked
     ? "War Table Level 1 required."
-    : "Short tactical operations. Three decisions. One recorded outcome."}</p>
+    : "Turn-based squad combat. Position your units, choose actions and secure the sector."}</p>
   <div class="alpha-den-detail__actions">
     <button
       type="button"
@@ -2578,7 +2578,7 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
     >${locked ? "Locked" : "OPEN TACTICAL OPS"}</button>
     <p class="alpha-den-detail__note">${locked
       ? "Build War Table Level 1 to unlock Tactical Ops."
-      : "Open a live field operation from this table."}</p>
+      : "Deploy a squad and fight a turn-based sector operation."}</p>
   </div>
 </section>`;
   }
