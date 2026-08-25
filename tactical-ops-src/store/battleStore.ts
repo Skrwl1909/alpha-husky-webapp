@@ -5,6 +5,9 @@ import { availableSkills } from "../combat/skills";
 import { skillNeedsTargetPick, validTargetIds } from "../combat/targeting";
 import { getSkill } from "../data/skills";
 import { sfx, setMuted as persistMute, isMuted } from "../audio";
+import { hydrateEquippedState, identityCache, resolvePlayerIdentity, type PlayerIdentity } from "../host/identity";
+
+export const TACTICAL_VERSION = "tactical_ops.js v2.2.1-acceptance-lock";
 
 export interface FloatText {
   id: number;
@@ -25,6 +28,7 @@ interface UiBattle {
   impactKey: number;
   muted: boolean;
   queue: string[];
+  identity: PlayerIdentity;
 }
 
 function wait(ms: number): Promise<void> {
@@ -81,6 +85,7 @@ interface Store extends UiBattle {
   replay: () => void;
   dismissSector: () => void;
   toggleMute: () => void;
+  refreshIdentity: () => void;
 }
 
 function activeUnit(battle: BattleState): CombatUnit | undefined {
@@ -221,10 +226,20 @@ export const useBattleStore = create<Store>((set, get) => {
     impactKey: 0,
     muted: false,
     queue: [],
+    identity: resolvePlayerIdentity(),
 
+    refreshIdentity: () => {
+      const identity = identityCache(resolvePlayerIdentity());
+      set({ identity });
+      void hydrateEquippedState().then((ok) => {
+        if (!ok) return;
+        const next = identityCache(resolvePlayerIdentity());
+        set({ identity: next });
+      });
+    },
     openBrief: () => {
       sfx("ui");
-      set({ screen: "brief" });
+      set({ screen: "brief", identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       runGen++;
@@ -237,14 +252,17 @@ export const useBattleStore = create<Store>((set, get) => {
         busy: false,
         floats: [],
         queue: [],
+        identity: identityCache(resolvePlayerIdentity()),
       });
     },
     deploy: () => {
       const g = ++runGen;
-      const started = startBattle();
+      const identity = identityCache(resolvePlayerIdentity());
+      const started = startBattle(identity);
       sfx("turn");
       set({
         screen: "battle",
+        identity,
         battle: started.state,
         queue: refreshQueue(started.state),
         busy: true,
@@ -399,8 +417,9 @@ export function snapshotState() {
   const s = useBattleStore.getState();
   const b = s.battle;
   const actor = activeUnit(b);
+  const idn = s.identity;
   return {
-    version: "tactical_ops.js v2.1.0-combat-core",
+    version: TACTICAL_VERSION,
     screen: s.screen,
     turn: b.round,
     phase: actor?.team === "enemy" ? "enemy" : "player",
@@ -430,6 +449,16 @@ export function snapshotState() {
     results: b.results,
     activeId: b.activeId,
     queue: s.queue,
+    identity: {
+      source: idn.source,
+      live: idn.live,
+      unitName: idn.unitName,
+      skinKey: idn.skinKey,
+      skinName: idn.skinName,
+      weapon: idn.weaponLabel,
+      armor: idn.armorLabel,
+      summary: idn.summary,
+    },
   };
 }
 
