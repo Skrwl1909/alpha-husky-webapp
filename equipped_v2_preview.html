@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Alpha Husky — Equipped V2</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #04070d; color: #eef6fb; font-family: ui-sans-serif, system-ui, sans-serif; }
+    #app { position: fixed; inset: 0; overflow: hidden; height: calc(var(--vh, 1vh) * 100); }
+    :root { --vh: 1vh; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    function setVh() {
+      document.documentElement.style.setProperty("--vh", (window.innerHeight * 0.01) + "px");
+    }
+    setVh();
+    window.addEventListener("resize", setVh);
+    window.API_BASE = "";
+    window.WEBAPP_VER = "equipped-v2-complete-rebuild-20260825";
+    window.goHome = function () { window.Equipped?.open?.(); };
+  </script>
+  <script src="js/pet_sprite.js?v=equipped-v2-complete-rebuild-20260825"></script>
+  <script src="tools/equipped_v2_qa_harness.js?v=equipped-v2-complete-rebuild-20260825"></script>
+  <script src="js/equipped.js?v=equipped-v2-complete-rebuild-20260825"></script>
+  <script>
+    window.Equipped.open();
+  </script>
+</body>
+</html>
