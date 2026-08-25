@@ -3,10 +3,11 @@ import { createElement } from "react";
 import { TacticalApp } from "../ui/App";
 import { TACTICAL_CSS } from "../styles";
 import { setHost } from "./bridge";
-import { snapshotState, useBattleStore } from "../store/battleStore";
+import { snapshotState, TACTICAL_VERSION, useBattleStore } from "../store/battleStore";
+import { hydrateEquippedState, identityCache, resolvePlayerIdentity } from "./identity";
 import * as Combat from "../combat";
 
-export const VERSION = "tactical_ops.js v2.1.0-combat-core";
+export const VERSION = TACTICAL_VERSION;
 const ROOT_ID = "tacticalOpsRoot";
 const STYLE_ID = "tacticalOpsStyles";
 const FONT_ID = "tacticalOpsFonts";
@@ -191,6 +192,14 @@ export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }):
   if (typeof t.apiPost === "function") M.apiPost = t.apiPost as Runtime["apiPost"];
   if (t.tg) M.tg = t.tg as Runtime["tg"];
   if (typeof t.dbg === "boolean") M.dbg = t.dbg;
+  try {
+    if (M.apiPost && typeof window !== "undefined") {
+      (window as unknown as { apiPost?: unknown }).apiPost =
+        (window as unknown as { apiPost?: unknown }).apiPost || M.apiPost;
+    }
+  } catch {
+    /* ignore */
+  }
   setHost({ requestClose: closeView, dbg: M.dbg });
   exposeDebug(M.dbg);
   log("init", { dbg: M.dbg, version: VERSION, hasApiPost: typeof M.apiPost === "function" });
@@ -200,6 +209,19 @@ export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }):
 export async function open(): Promise<void> {
   const el = ensureRoot();
   setHost({ requestClose: closeView, dbg: M.dbg });
+  identityCache(resolvePlayerIdentity());
+  void hydrateEquippedState().then(() => {
+    try {
+      useBattleStore.getState().refreshIdentity();
+    } catch {
+      /* ignore */
+    }
+  });
+  try {
+    useBattleStore.getState().refreshIdentity();
+  } catch {
+    /* ignore */
+  }
   M.isOpen = true;
   el.setAttribute("data-open", "1");
   lockScroll();
