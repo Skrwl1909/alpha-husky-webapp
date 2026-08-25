@@ -2,24 +2,41 @@ import { useEffect } from "react";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
 import { loadMuted, setMuted, unlockAudio } from "../audio";
-import { OPERATION } from "../data/units";
+import { FALLBACK_PORTRAIT, OPERATION } from "../data/units";
 import { BattleScreen } from "./Battle";
 import { getHost } from "../host/bridge";
 
-function Background({ dim = 0.55 }: { dim?: number }) {
+function Background({ dim = 0.62 }: { dim?: number }) {
   return (
     <div className="t-bg" aria-hidden="true">
       <img src="/images/tactical_ops/battlefield.jpg" alt="" />
-      <div className="t-vignette" style={{ background: `rgb(10 12 16 / ${dim})` }} />
+      <div className="t-vignette" style={{ background: `rgb(6 8 12 / ${dim})` }} />
     </div>
+  );
+}
+
+function LiveMark({ src, className }: { src: string; className?: string }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      className={className}
+      onError={(e) => {
+        const el = e.currentTarget;
+        if (el.dataset.fb === "1") return;
+        el.dataset.fb = "1";
+        el.src = FALLBACK_PORTRAIT;
+      }}
+    />
   );
 }
 
 function Hub() {
   const openBrief = useBattleStore((s) => s.openBrief);
+  const identity = useBattleStore((s) => s.identity);
   return (
     <div className="t-fill">
-      <Background dim={0.35} />
+      <Background dim={0.42} />
       <div className="t-vignette" />
       <div className="t-hub">
         <div className="t-hub-copy">
@@ -30,6 +47,13 @@ function Hub() {
             <span className="t-kicker">Operation</span>
             <strong>{OPERATION.name}</strong>
             <p>{OPERATION.objective}</p>
+            <div className="t-loadout-line">
+              <LiveMark src={identity.portraitUrl} />
+              <div>
+                <b>{identity.unitName}</b>
+                <span>{identity.summary}</span>
+              </div>
+            </div>
           </div>
           <div className="t-brief-actions">
             <button type="button" className="t-btn t-btn-primary" onClick={openBrief}>
@@ -49,9 +73,10 @@ function Hub() {
 function Brief() {
   const deploy = useBattleStore((s) => s.deploy);
   const backToHub = useBattleStore((s) => s.backToHub);
+  const identity = useBattleStore((s) => s.identity);
   return (
     <div className="t-fill">
-      <Background dim={0.55} />
+      <Background dim={0.62} />
       <div className="t-brief">
         <div className="t-kicker">Tactical Ops</div>
         <h1 className="t-title" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", margin: "0.2rem 0 0.2rem" }}>
@@ -62,24 +87,26 @@ function Brief() {
           <div className="t-panel t-brief-block">
             <h3>Allied squad</h3>
             <div className="t-unit-row">
-              <img src="/images/tactical_ops/alpha-portrait.jpg" alt="" />
+              <LiveMark src={identity.portraitUrl} />
               <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>ALPHA</div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Melee pressure  ·  Strike / Rend / Howl  ·  MOVE 3</div>
+                <div className="t-title" style={{ fontSize: "0.95rem" }}>{identity.unitName}</div>
+                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
+                  Melee pressure  ·  Strike / Rend / Howl  ·  {identity.weaponLabel}
+                </div>
               </div>
             </div>
             <div className="t-unit-row">
-              <img src="/images/tactical_ops/ally02.png" alt="" style={{ objectPosition: "50% 12%" }} />
+              <img src="/images/tactical_ops/ally02-portrait.png" alt="" />
               <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>UNIT 02</div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Ranged control  ·  Shot / Burst / Suppress  ·  MOVE 2</div>
+                <div className="t-title" style={{ fontSize: "0.95rem" }}>KODA</div>
+                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Skirmisher  ·  Thrust / Lunge / Pressure  ·  MOVE 2</div>
               </div>
             </div>
             <div className="t-unit-row">
-              <img src="/images/tactical_ops/ally03.png" alt="" style={{ objectPosition: "50% 12%" }} />
+              <img src="/images/tactical_ops/ally03-portrait.png" alt="" />
               <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>UNIT 03</div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Support  ·  Tap / Mend / Pack Support  ·  MOVE 2</div>
+                <div className="t-title" style={{ fontSize: "0.95rem" }}>SHADOW</div>
+                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Support  ·  Sweep / Mend / Pack Support  ·  MOVE 2</div>
               </div>
             </div>
           </div>
@@ -88,14 +115,14 @@ function Brief() {
             <div className="t-unit-row">
               <div className="t-unit-ph enemy" />
               <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>HOSTILE × 3</div>
+                <div className="t-title" style={{ fontSize: "0.95rem" }}>HOUND MK-2 × 3</div>
                 <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Melee  ·  Strike / Maul  ·  68 HP</div>
               </div>
             </div>
             <div className="t-unit-row">
               <div className="t-unit-ph enemy" />
               <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>HOSTILE LEADER</div>
+                <div className="t-title" style={{ fontSize: "0.95rem" }}>BRUTE LEADER</div>
                 <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Heavy  ·  Crush / Intimidate  ·  148 HP</div>
               </div>
             </div>
@@ -130,8 +157,8 @@ function Sector() {
   }, [dismiss]);
   return (
     <div className="t-fill">
-      <Background dim={0.5} />
-      <div className="t-overlay" style={{ background: "rgb(10 12 16 / 0.45)" }}>
+      <Background dim={0.55} />
+      <div className="t-overlay" style={{ background: "rgb(6 8 12 / 0.5)" }}>
         <div className="t-modal t-panel">
           <div className="t-kicker">Operation</div>
           <h2 className="t-title">Sector Secured</h2>
@@ -150,7 +177,7 @@ function Results() {
   if (!results) return null;
   return (
     <div className="t-fill">
-      <Background dim={0.6} />
+      <Background dim={0.66} />
       <div className="t-overlay">
         <div className="t-modal t-panel">
           <div className="t-kicker">Broken Signal</div>
@@ -176,7 +203,7 @@ function Defeat() {
   const backToHub = useBattleStore((s) => s.backToHub);
   return (
     <div className="t-fill">
-      <Background dim={0.7} />
+      <Background dim={0.74} />
       <div className="t-overlay">
         <div className="t-modal t-panel">
           <div className="t-kicker" style={{ color: "var(--t-enemy)" }}>Broken Signal</div>
@@ -199,13 +226,15 @@ export function TacticalApp() {
   const selectSkill = useBattleStore((s) => s.selectSkill);
   const skipTurn = useBattleStore((s) => s.skipTurn);
   const muted = useBattleStore((s) => s.muted);
+  const refreshIdentity = useBattleStore((s) => s.refreshIdentity);
 
   useEffect(() => {
     if (loadMuted()) {
       useBattleStore.setState({ muted: true });
       setMuted(true);
     }
-  }, []);
+    refreshIdentity();
+  }, [refreshIdentity]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
