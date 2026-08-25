@@ -1,6 +1,6 @@
-// js/equipped.js – Equipment V2 complete rebuild for Alpha Husky WebApp.
+// js/equipped.js – Equipment V2 mobile/skin corrective pass for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-complete-rebuild-20260825";
+  const VERSION = "equipped-v2-portrait-flow-final-20260825";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -52,6 +52,13 @@
     "hp", "attack", "atk", "strength", "str", "defense", "def",
     "vitality", "vit", "agility", "agi", "luck", "luk", "intelligence", "int"
   ];
+  const CANONICAL_ALPHA_FALLBACK = "/images/Ah.png";
+  const PREVIEW_STATE = Object.freeze({
+    LOADING: "loading",
+    READY: "ready",
+    FALLBACK: "fallback",
+    FAILED: "failed"
+  });
 
   function esc(value) {
     return String(value ?? "")
@@ -234,6 +241,116 @@
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 14 8 6l4 3 4-3 4 8-4 6H8z"/><path d="M9 14c.6 1.6 2 2.5 3 2.5s2.4-.9 3-2.5"/></svg>`;
   }
 
+  function isUsableImageUrl(url) {
+    const u = String(url || "").trim();
+    if (!u) return false;
+    if (/^(javascript|file|about):/i.test(u)) return false;
+    if (u === "data:," || u === "about:blank") return false;
+    try {
+      if (typeof location !== "undefined") {
+        if (u === location.href) return false;
+        const locPath = String(location.origin || "") + String(location.pathname || "");
+        if (locPath && u === locPath) return false;
+      }
+    } catch (_) {}
+    return true;
+  }
+
+  function skinObjectUrl(skin) {
+    if (!skin) return "";
+    if (typeof skin === "string") return String(skin).trim();
+    if (typeof skin !== "object") return "";
+    return String(
+      skin.img || skin.url || skin.preview_url || skin.previewUrl ||
+      skin.src || skin.image || skin.heroImg || ""
+    ).trim();
+  }
+
+  function uniqueImageUrls(list) {
+    const seen = new Set();
+    const out = [];
+    for (const raw of list || []) {
+      const u = String(raw || "").trim();
+      if (!isUsableImageUrl(u)) continue;
+      const key = u.split("?")[0].toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(u);
+    }
+    return out;
+  }
+
+  function readProfileRecord() {
+    const p =
+      window.__PROFILE__ ||
+      window.PROFILE ||
+      window.profileState ||
+      window.lastProfile ||
+      {};
+    return p && typeof p === "object" ? p : {};
+  }
+
+  function resolveCharacterSources() {
+    const profile = readProfileRecord();
+    const skinObj = profile.skin || profile.activeSkin || null;
+    const skinFromProfile = skinObjectUrl(skinObj);
+    const skinKey = String(
+      profile.skinKey ||
+      profile.skin_key ||
+      (skinObj && typeof skinObj === "object" ? (skinObj.key || skinObj.skinKey || skinObj.skin_key) : "") ||
+      ""
+    ).trim();
+    const derivedFromKey = skinKey && !/default/i.test(skinKey)
+      ? "/assets/skins/" + skinKey.toLowerCase().replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "") + ".webp"
+      : "";
+    let playerSkinUrl = "";
+    let playerSkinKey = "";
+    try {
+      const el = document.getElementById("player-skin");
+      if (el) {
+        playerSkinUrl = String(el.currentSrc || el.src || "").trim();
+        playerSkinKey = String(el.dataset?.skinKey || el.getAttribute?.("data-skin-key") || "").trim();
+      }
+    } catch (_) {}
+
+    const skin = uniqueImageUrls([
+      window.__AH_ACTIVE_SKIN_URL__,
+      skinFromProfile,
+      typeof profile.activeSkin === "string" ? profile.activeSkin : skinObjectUrl(profile.activeSkin),
+      profile.heroImg,
+      profile.heroPng,
+      profile.characterPng,
+      profile.character,
+      derivedFromKey,
+      playerSkinKey && !/default/i.test(playerSkinKey)
+        ? "/assets/skins/" + playerSkinKey.toLowerCase().replace(/[^\w]+/g, "_") + ".webp"
+        : ""
+    ])[0] || "";
+
+    const profileImg = uniqueImageUrls([
+      playerSkinUrl,
+      profile.avatarImg,
+      profile.avatarUrl,
+      skinObjectUrl(profile.avatar)
+    ])[0] || "";
+
+    const canonical = CANONICAL_ALPHA_FALLBACK;
+    const fallbacks = uniqueImageUrls([skin, profileImg, canonical]);
+
+    return {
+      skin: skin,
+      profile: profileImg,
+      canonical: canonical,
+      fallbacks: fallbacks,
+      skinKey: skinKey || playerSkinKey || ""
+    };
+  }
+
+  function previewTokenAlive(token) {
+    const current = Number(window.__EquippedPreviewToken || 0) || 0;
+    return !token || current === token;
+  }
+
   function ensureEquippedStyles() {
     if (document.getElementById("equipped-v2-css") || document.getElementById("equipped-styles")) return;
     const link = document.createElement("link");
@@ -279,54 +396,40 @@
     return data;
   }
 
-  async function loadCharacterPngInto(imgEl, onLoaded, requestToken) {
-    if (!imgEl) return;
+  async function loadCharacterComposite(requestToken) {
     const tg = getTg();
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
     if (!initData) {
-      window.__EquippedPreviewReady = true;
-      console.warn("Equipped: no initData for /api/character-image");
-      return;
+      return { ok: false, reason: "no_init" };
     }
-
     const token = Number(requestToken || 0) || 0;
-    window.__EquippedPreviewReady = false;
-    if (window.__EquippedCharImgUrl) {
-      try { URL.revokeObjectURL(window.__EquippedCharImgUrl); } catch (_) {}
-      window.__EquippedCharImgUrl = "";
-    }
-
     try {
       const resp = await fetch((API_BASE || "") + "/api/character-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ initData })
       });
+      if (!previewTokenAlive(token)) return { ok: false, reason: "stale" };
       if (!resp.ok) {
-        window.__EquippedPreviewReady = true;
         console.error("Equipped: character-image resp not ok:", resp.status);
-        return;
+        return { ok: false, reason: "http_" + resp.status };
       }
       const blob = await resp.blob();
+      if (!previewTokenAlive(token)) return { ok: false, reason: "stale" };
+      if (!blob || blob.size < 24) return { ok: false, reason: "empty" };
       const url = URL.createObjectURL(blob);
-      if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) {
-        URL.revokeObjectURL(url);
-        return;
+      if (!previewTokenAlive(token)) {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+        return { ok: false, reason: "stale" };
       }
-      imgEl.onload = () => {
-        if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) return;
-        window.__EquippedPreviewReady = true;
-        window.__EquippedPreviewReadyAt = Date.now();
-        try { onLoaded && onLoaded(); } catch (_) {}
-      };
-      imgEl.src = url;
-      if (window.__EquippedCharImgUrl) {
+      if (window.__EquippedCharImgUrl && window.__EquippedCharImgUrl !== url) {
         try { URL.revokeObjectURL(window.__EquippedCharImgUrl); } catch (_) {}
       }
       window.__EquippedCharImgUrl = url;
+      return { ok: true, url: url };
     } catch (err) {
-      window.__EquippedPreviewReady = true;
       console.error("Equipped: loadCharacterImage error", err);
+      return { ok: false, reason: "error" };
     }
   }
 
@@ -428,6 +531,8 @@
     _lastFingerprint: "",
     _toastTimer: 0,
     _resizeBound: false,
+    _previewState: PREVIEW_STATE.LOADING,
+    _previewSource: "",
 
     _canonicalSlotKeys() {
       return CANONICAL_SLOTS.slice();
@@ -606,6 +711,10 @@
 
       const skin = document.getElementById("player-skin");
       this._fallbackCharSrc = String(skin?.currentSrc || skin?.src || "").trim();
+      this._previewState = PREVIEW_STATE.LOADING;
+      this._previewSource = "";
+      window.__EquippedPreviewReady = false;
+      window.__AH_EQUIPPED_PREVIEW_STATE__ = PREVIEW_STATE.LOADING;
 
       const container = document.getElementById("app") || document.body;
       try {
@@ -652,7 +761,7 @@
 
     _renderShell(container) {
       container.innerHTML = `
-        <div id="equipped-root" data-layout="wide" data-pane="loadout">
+        <div id="equipped-root" data-layout="wide" data-pane="loadout" data-preview="loading">
           <header class="eq-header">
             <button type="button" class="eq-hbtn" data-equipped-action="back" aria-label="Back">Back</button>
             <div class="eq-header-brand">
@@ -661,11 +770,11 @@
             </div>
             <button type="button" class="eq-hbtn" data-equipped-action="open-inventory" aria-label="Open Inventory">Inventory</button>
           </header>
-          <div class="eq-mobile-tabs" id="eq-mobile-tabs">
-            <button type="button" class="eq-tab is-on" data-equipped-action="pane-loadout">Loadout</button>
-            <button type="button" class="eq-tab" data-equipped-action="pane-backpack">Backpack</button>
-          </div>
           <div class="eq-shell">
+            <div class="eq-mobile-tabs" id="eq-mobile-tabs">
+              <button type="button" class="eq-tab is-on" data-equipped-action="pane-loadout">Loadout</button>
+              <button type="button" class="eq-tab" data-equipped-action="pane-backpack">Backpack</button>
+            </div>
             <aside class="eq-panel" id="eq-loadout" aria-label="Loadout">
               <div class="eq-panel-title">Loadout</div>
               <div class="eq-loadout-list" id="eq-loadout-list">
@@ -678,7 +787,7 @@
                 <div class="eq-nodes eq-nodes-left" id="eq-nodes-left"></div>
                 <div class="eq-char-hero">
                   <div class="eq-char-frame">
-                    <div class="eq-char-skel" id="eq-char-skel"></div>
+                    <div class="eq-char-skel is-on" id="eq-char-skel"></div>
                     <img id="equipped-character-img" alt="Character" />
                     <div class="eq-char-fallback" id="eq-char-fallback" hidden>Character preview unavailable</div>
                   </div>
@@ -704,12 +813,33 @@
       window.addEventListener("resize", () => this._applyLayout());
     },
 
+    _syncPortraitScroll(mode) {
+      const container = this._containerEl || document.getElementById("app") || document.body;
+      if (!container) return;
+      const portrait = mode === "portrait";
+      try {
+        container.style.height = "calc(var(--vh, 1vh) * 100)";
+        if (portrait) {
+          container.style.overflow = "auto";
+          container.style.overflowX = "hidden";
+          container.style.overflowY = "auto";
+          container.style.webkitOverflowScrolling = "touch";
+        } else {
+          container.style.overflow = "hidden";
+          container.style.overflowX = "";
+          container.style.overflowY = "";
+          container.style.webkitOverflowScrolling = "";
+        }
+      } catch (_) {}
+    },
+
     _applyLayout() {
       const root = document.getElementById("equipped-root");
       if (!root) return;
       const mode = layoutMode();
       root.dataset.layout = mode;
       root.dataset.pane = this.portraitPane || "loadout";
+      this._syncPortraitScroll(mode);
       const tabs = document.getElementById("eq-mobile-tabs");
       if (tabs) {
         tabs.querySelectorAll(".eq-tab").forEach((btn) => {
@@ -959,49 +1089,154 @@
       `;
     },
 
-    _requestCharacterImage(force) {
-      const imgEl = document.getElementById("equipped-character-img");
+    _resolveCharacterSources() {
+      const sources = resolveCharacterSources();
+      if (isUsableImageUrl(this._fallbackCharSrc)) {
+        sources.fallbacks = uniqueImageUrls([
+          sources.skin,
+          sources.profile,
+          this._fallbackCharSrc,
+          sources.canonical
+        ]);
+      }
+      return sources;
+    },
+
+    _setPreviewState(state, url) {
+      const next = PREVIEW_STATE[String(state || "").toUpperCase()] || state || PREVIEW_STATE.LOADING;
+      const img = document.getElementById("equipped-character-img");
+      const visibleImage = !!(img && (img.naturalWidth > 0 || (img.complete && isUsableImageUrl(img.currentSrc || img.src))));
+      let applied = next;
+      if (applied === PREVIEW_STATE.FAILED && visibleImage) {
+        applied = PREVIEW_STATE.FALLBACK;
+      }
+      this._previewState = applied;
+      if (url) this._previewSource = url;
+      window.__AH_EQUIPPED_PREVIEW_STATE__ = applied;
+      window.__EquippedPreviewState = applied;
+      const root = document.getElementById("equipped-root");
+      if (root) root.dataset.preview = applied;
       const skel = document.getElementById("eq-char-skel");
       const fallback = document.getElementById("eq-char-fallback");
+      const loading = applied === PREVIEW_STATE.LOADING;
+      const failed = applied === PREVIEW_STATE.FAILED;
+      if (skel) {
+        skel.hidden = !loading;
+        skel.classList.toggle("is-on", loading);
+      }
+      if (fallback) {
+        fallback.hidden = !failed;
+        fallback.classList.toggle("is-on", failed);
+      }
+      if (img) {
+        img.classList.toggle("is-ready", applied === PREVIEW_STATE.READY || applied === PREVIEW_STATE.FALLBACK);
+        img.classList.toggle("is-fallback", applied === PREVIEW_STATE.FALLBACK);
+      }
+      if (applied === PREVIEW_STATE.READY || applied === PREVIEW_STATE.FALLBACK || applied === PREVIEW_STATE.FAILED) {
+        window.__EquippedPreviewReady = true;
+        window.__EquippedPreviewReadyAt = Date.now();
+      } else {
+        window.__EquippedPreviewReady = false;
+      }
+    },
+
+    _awaitImage(imgEl, url, token) {
+      return new Promise((resolve) => {
+        if (!imgEl || !isUsableImageUrl(url)) return resolve(false);
+        if (!previewTokenAlive(token)) return resolve(false);
+        let settled = false;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          if (!previewTokenAlive(token)) return resolve(false);
+          resolve(!!ok && imgEl.naturalWidth > 0);
+        };
+        imgEl.onload = () => finish(true);
+        imgEl.onerror = () => finish(false);
+        imgEl.alt = "Character";
+        imgEl.decoding = "async";
+        imgEl.src = url;
+        if (imgEl.complete && imgEl.naturalWidth > 0) finish(true);
+      });
+    },
+
+    async _applyFallbackPreview(token) {
+      if (!previewTokenAlive(token)) return false;
+      const imgEl = document.getElementById("equipped-character-img");
+      if (!imgEl) return false;
+      const sources = this._resolveCharacterSources();
+      const chain = sources.fallbacks || [];
+      for (let i = 0; i < chain.length; i++) {
+        if (!previewTokenAlive(token)) return false;
+        const ok = await this._awaitImage(imgEl, chain[i], token);
+        if (!previewTokenAlive(token)) return false;
+        if (ok) {
+          this._setPreviewState(PREVIEW_STATE.FALLBACK, chain[i]);
+          return true;
+        }
+      }
+      if (imgEl.naturalWidth > 0) {
+        this._setPreviewState(PREVIEW_STATE.FALLBACK, imgEl.currentSrc || imgEl.src);
+        return true;
+      }
+      this._setPreviewState(PREVIEW_STATE.FAILED);
+      return false;
+    },
+
+    _requestCharacterImage(force) {
+      const imgEl = document.getElementById("equipped-character-img");
       if (!imgEl) return;
       const fp = this._fingerprint();
-      if (!force && fp && fp === this._lastFingerprint && imgEl.getAttribute("src")) return;
+      if (
+        !force &&
+        fp &&
+        fp === this._lastFingerprint &&
+        this._previewState &&
+        this._previewState !== PREVIEW_STATE.LOADING &&
+        this._previewState !== PREVIEW_STATE.FAILED &&
+        imgEl.getAttribute("src")
+      ) return;
       this._lastFingerprint = fp;
       const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
       window.__EquippedPreviewToken = previewToken;
       window.__EquippedPreviewReady = false;
-      if (skel) skel.hidden = false;
-      if (fallback) fallback.hidden = true;
+      this._setPreviewState(PREVIEW_STATE.LOADING);
 
-      const finish = (ok) => {
-        if (skel) skel.hidden = true;
-        if (!ok) {
-          const fb = this._fallbackCharSrc || "/images/Ah.png";
-          if (fb && imgEl.src !== fb) {
-            imgEl.onerror = () => {
-              if (fallback) fallback.hidden = false;
-              window.__EquippedPreviewReady = true;
-            };
-            imgEl.onload = () => { window.__EquippedPreviewReady = true; };
-            imgEl.src = fb;
-          } else {
-            if (fallback) fallback.hidden = false;
-            window.__EquippedPreviewReady = true;
-          }
-        } else if (fallback) fallback.hidden = true;
+      const sources = this._resolveCharacterSources();
+      const placeholder = sources.fallbacks[0] || "";
+      if (placeholder) {
+        imgEl.alt = "Character";
+        imgEl.src = placeholder;
+      }
+
+      const promotePlaceholder = () => {
+        if (!previewTokenAlive(previewToken)) return;
+        if (this._previewState !== PREVIEW_STATE.LOADING) return;
+        if (imgEl.naturalWidth > 0 || isUsableImageUrl(imgEl.currentSrc || imgEl.src)) {
+          this._setPreviewState(PREVIEW_STATE.FALLBACK, imgEl.currentSrc || imgEl.src || placeholder);
+        }
       };
 
-      loadCharacterPngInto(imgEl, () => finish(true), previewToken).then(() => {
-        if (!imgEl.getAttribute("src") && !window.__EquippedCharImgUrl) finish(false);
-        else if (skel) setTimeout(() => { if (skel) skel.hidden = true; }, 80);
-      });
-      setTimeout(() => {
-        if (window.__EquippedPreviewReady) {
-          if (skel) skel.hidden = true;
-          return;
+      const timeoutId = setTimeout(promotePlaceholder, 2400);
+
+      loadCharacterComposite(previewToken).then(async (result) => {
+        if (!previewTokenAlive(previewToken)) return;
+        if (result && result.ok && result.url) {
+          const ok = await this._awaitImage(imgEl, result.url, previewToken);
+          if (!previewTokenAlive(previewToken)) return;
+          if (ok) {
+            clearTimeout(timeoutId);
+            this._setPreviewState(PREVIEW_STATE.READY, result.url);
+            return;
+          }
         }
-        if (!imgEl.getAttribute("src")) finish(false);
-      }, 2400);
+        clearTimeout(timeoutId);
+        await this._applyFallbackPreview(previewToken);
+      }).catch(async () => {
+        if (!previewTokenAlive(previewToken)) return;
+        clearTimeout(timeoutId);
+        await this._applyFallbackPreview(previewToken);
+      });
     },
 
     _iconError(img, item) {
@@ -1396,6 +1631,8 @@
     _itemStats: itemStatsOf,
     _compareRows: compareRows,
     _itemSet: itemSetOf,
-    _itemKey: itemKeyOf
+    _itemKey: itemKeyOf,
+    resolveCharacterSources: resolveCharacterSources,
+    PREVIEW_STATE: PREVIEW_STATE
   };
 })();
