@@ -1,52 +1,106 @@
-// js/equipped.js – Character panel + Equipped view for Alpha Husky WebApp.
+// js/equipped.js – Equipment V2 complete rebuild for Alpha Husky WebApp.
 (function () {
-  const API_BASE = window.API_BASE || ""; // zostaw puste, jeśli front i API są pod tym samym hostem
+  const VERSION = "equipped-v2-complete-rebuild-20260825";
+  window.__AH_EQUIPPED_VERSION__ = VERSION;
 
-  // Twoje slot coords (px w układzie PNG)
-  // Format: [x, y, w, h]
-  const SLOT_COORDS = {
-    helmet:  [530,  40, 175, 175],
-    fangs:   [195, 100, 134, 134],
-    armor:   [195, 300, 134, 134],
-    ring:    [195, 489, 134, 134],
-    weapon:  [435, 650, 156, 156],
-    cloak:   [945, 100, 134, 134],
-    collar:  [945, 285, 134, 134],
-    gloves:  [945, 450, 134, 134],
-    pet:     [945, 640, 134, 134],
-    offhand: [682, 655, 156, 156],
-  };
-  const SLOT_ORDER = Object.freeze(Object.keys(SLOT_COORDS));
+  const API_BASE = window.API_BASE || "";
+  const CANONICAL_SLOTS = Object.freeze([
+    "helmet", "fangs", "armor", "ring", "weapon",
+    "cloak", "collar", "gloves", "pet", "offhand"
+  ]);
+  const SLOT_LABELS = Object.freeze({
+    helmet: "HELMET",
+    fangs: "FANGS",
+    armor: "ARMOR",
+    ring: "RING",
+    weapon: "WEAPON",
+    cloak: "CLOAK",
+    collar: "COLLAR",
+    gloves: "GLOVES",
+    pet: "PET",
+    offhand: "OFFHAND"
+  });
+  const LEFT_NODES = Object.freeze(["helmet", "fangs", "weapon", "collar", "pet"]);
+  const RIGHT_NODES = Object.freeze(["cloak", "armor", "gloves", "ring", "offhand"]);
+  const CATEGORIES = Object.freeze([
+    { id: "all", label: "ALL", slots: null },
+    { id: "offense", label: "OFFENSE", slots: ["weapon", "offhand", "fangs"] },
+    { id: "armor", label: "ARMOR", slots: ["helmet", "armor", "cloak", "gloves"] },
+    { id: "accessories", label: "ACCESSORIES", slots: ["ring", "collar"] },
+    { id: "pets", label: "PETS", slots: ["pet"] }
+  ]);
+  const CHAR_STATS = Object.freeze([
+    { key: "hp", alts: ["health"], label: "HP" },
+    { key: "attack", alts: ["atk", "str", "strength"], label: "ATK" },
+    { key: "defense", alts: ["def"], label: "DEF" },
+    { key: "agility", alts: ["agi"], label: "AGI" },
+    { key: "luck", alts: ["luk", "lck"], label: "LUCK" }
+  ]);
+  const STAT_LABELS = Object.freeze({
+    strength: "STR", str: "STR",
+    defense: "DEF", def: "DEF",
+    vitality: "VIT", vit: "VIT",
+    attack: "ATK", atk: "ATK",
+    agility: "AGI", agi: "AGI",
+    luck: "LUCK", luk: "LUCK", lck: "LUCK",
+    intelligence: "INT", int: "INT",
+    hp: "HP", health: "HP",
+    speed: "SPD",
+    critical: "CRIT", crit: "CRIT"
+  });
+  const PREF_STATS = [
+    "hp", "attack", "atk", "strength", "str", "defense", "def",
+    "vitality", "vit", "agility", "agi", "luck", "luk", "intelligence", "int"
+  ];
 
   function esc(value) {
     return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(/&/g, "\u0026amp;")
+      .replace(/</g, "\u0026lt;")
+      .replace(/>/g, "\u0026gt;")
+      .replace(/"/g, "\u0026quot;")
+      .replace(/'/g, "\u0026#039;");
+  }
+
+  function getTg() {
+    return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
+  }
+
+  function haptic(kind) {
+    try { getTg()?.HapticFeedback?.impactOccurred?.(kind || "light"); } catch (_) {}
+  }
+
+  function hapticNotify(kind) {
+    try { getTg()?.HapticFeedback?.notificationOccurred?.(kind || "success"); } catch (_) {}
+  }
+
+  function showAlert(msg) {
+    const tg = getTg();
+    if (tg && tg.showAlert) tg.showAlert(msg);
+    else if (window.toast) window.toast(msg);
+    else try { alert(msg); } catch (_) { console.warn(msg); }
+  }
+
+  function normKey(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function normRarity(r) {
+    r = String(r || "").toLowerCase().trim();
+    if (["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(r)) return r;
+    return "common";
   }
 
   function slotLabel(slotKey, slotState) {
+    const fromCanon = SLOT_LABELS[normKey(slotKey)];
+    if (fromCanon) return fromCanon;
     const label = slotState?.label || String(slotKey || "").replace(/_/g, " ");
     return label.replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
   function statPresentationLabel(key) {
     const normalized = String(key || "").toLowerCase().replace(/[\s_-]+/g, "");
-    const labels = {
-      strength: "STR", str: "STR",
-      defense: "DEF", def: "DEF",
-      vitality: "VIT", vit: "VIT",
-      attack: "ATK", atk: "ATK",
-      agility: "AGI", agi: "AGI",
-      luck: "LUCK",
-      intelligence: "INT", int: "INT",
-      hp: "HP", health: "HP",
-      speed: "SPD",
-      critical: "CRIT", crit: "CRIT",
-    };
-    return labels[normalized] || String(key || "").replace(/_/g, " ").toUpperCase();
+    return STAT_LABELS[normalized] || String(key || "").replace(/_/g, " ").toUpperCase();
   }
 
   function formattedStatValue(value) {
@@ -56,1174 +110,168 @@
     return String(value);
   }
 
-  function getTg() {
-    return window.tg || (window.Telegram && window.Telegram.WebApp) || null;
+  function itemKeyOf(item) {
+    if (!item || typeof item !== "object") return "";
+    return String(item.item_key || item.itemKey || item.key || item.item || "").trim();
   }
 
-  function haptic(kind) {
-    const tg = getTg();
-    try {
-      if (tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
-        tg.HapticFeedback.impactOccurred(kind || "light");
-      }
-    } catch (_) {}
+  function itemNameOf(item) {
+    if (!item || typeof item !== "object") return "";
+    return String(item.name || item.itemName || item.label || itemKeyOf(item) || "").trim();
   }
 
-  function showAlert(msg) {
-    const tg = getTg();
-    if (tg && tg.showAlert) tg.showAlert(msg);
-    else alert(msg);
+  function itemSlotOf(item) {
+    return normKey(item?.slot || item?.equippedSlot || item?.slot_key);
   }
 
-  function _normRarity(r) {
-    r = String(r || "").toLowerCase().trim();
-    if (!r) return "common";
-    if (["common", "uncommon", "rare", "epic", "legendary"].includes(r)) return r;
-    return "common";
+  function itemSetOf(item) {
+    if (!item || typeof item !== "object") return "";
+    const raw = item.set || item.setName || item.set_name || item.data?.set;
+    if (!raw) return "";
+    if (typeof raw === "object") return String(raw.name || raw.set || raw.label || "").trim();
+    return String(raw).trim();
+  }
+
+  function itemLevelOf(item) {
+    const n = Number(item?.level ?? item?.item_level ?? item?.itemLevel);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  function itemQtyOf(item) {
+    const n = Number(item?.quantity ?? item?.amount ?? item?.stackQty ?? item?.qty);
+    return Number.isFinite(n) && n > 1 ? n : null;
+  }
+
+  function itemStatsOf(item) {
+    const src = (item && (item.stats || item.data?.stat_bonus || item.bonuses)) || {};
+    const out = {};
+    if (!src || typeof src !== "object") return out;
+    for (const [k, v] of Object.entries(src)) {
+      const num = Number(v);
+      if (!Number.isFinite(num)) continue;
+      out[String(k)] = num;
+    }
+    return out;
+  }
+
+  function pickStat(stats, key, alts) {
+    if (!stats || typeof stats !== "object") return null;
+    if (stats[key] != null && stats[key] !== "") return stats[key];
+    for (const alt of alts || []) {
+      if (stats[alt] != null && stats[alt] !== "") return stats[alt];
+    }
+    return null;
+  }
+
+  function orderedStatKeys(a, b) {
+    const keys = Array.from(new Set([...Object.keys(a || {}), ...Object.keys(b || {})]));
+    const idx = new Map(PREF_STATS.map((k, i) => [k, i]));
+    return keys.sort((x, y) => {
+      const ix = idx.has(String(x).toLowerCase()) ? idx.get(String(x).toLowerCase()) : 999;
+      const iy = idx.has(String(y).toLowerCase()) ? idx.get(String(y).toLowerCase()) : 999;
+      if (ix !== iy) return ix - iy;
+      return String(x).localeCompare(String(y));
+    });
+  }
+
+  function compareRows(selectedItem, equippedItem) {
+    const selectedStats = itemStatsOf(selectedItem);
+    const equippedStats = equippedItem && !equippedItem.empty ? itemStatsOf(equippedItem) : {};
+    const keys = orderedStatKeys(selectedStats, equippedStats);
+    return keys.map((key) => {
+      const selected = Number(selectedStats[key] || 0) || 0;
+      const equipped = Number(equippedStats[key] || 0) || 0;
+      return {
+        key,
+        label: statPresentationLabel(key),
+        selected,
+        equipped,
+        delta: selected - equipped
+      };
+    });
+  }
+
+  function activeSetsOf(state) {
+    const raw = state?.activeSets || state?.active_sets || [];
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  function totalBonusOf(state) {
+    const raw = state?.totalBonus || state?.total_bonus || {};
+    return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  }
+
+  function slotGlyph(slot) {
+    const common = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+    const paths = {
+      helmet: '<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13c0 3 2.5 6 8 6s8-3 8-6"/><path d="M9 19v2M15 19v2"/>',
+      fangs: '<path d="M7 4v9c0 2-1 4-3 5"/><path d="M17 4v9c0 2 1 4 3 5"/><path d="M9 8h6"/>',
+      armor: '<path d="M12 3 20 7v5c0 5-3.5 8.5-8 10C7.5 20.5 4 17 4 12V7l8-4z"/>',
+      ring: '<circle cx="12" cy="13" r="6"/><path d="M9 8 12 4l3 4"/>',
+      weapon: '<path d="M14 4 20 10"/><path d="M12 6l6 6-8 8H4v-6z"/>',
+      cloak: '<path d="M8 4h8v3s4 4 4 10c-5 2-7 3-8 3s-3-1-8-3c0-6 4-10 4-10V4z"/>',
+      collar: '<path d="M7 10c1.5 4 8.5 4 10 0"/><path d="M7 10a8 8 0 0 1 10 0"/><circle cx="12" cy="14" r="1.6"/>',
+      gloves: '<path d="M8 11V6a1.5 1.5 0 0 1 3 0v4"/><path d="M11 10V5a1.5 1.5 0 0 1 3 0v5"/><path d="M14 10V6a1.5 1.5 0 0 1 3 0v6c0 4-2 7-5 7s-5-3-5-7v-1"/>',
+      pet: '<path d="M7 13c0 3 2 6 5 6s5-3 5-6-2-5-5-5-5 2-5 5z"/><circle cx="8" cy="8" r="1.4"/><circle cx="16" cy="8" r="1.4"/><circle cx="5.5" cy="11" r="1.2"/><circle cx="18.5" cy="11" r="1.2"/>',
+      offhand: '<circle cx="12" cy="12" r="7"/><path d="M12 8v8M8 12h8"/>'
+    };
+    return `<svg ${common}>${paths[slot] || paths.weapon}</svg>`;
+  }
+
+  function statGlyph(kind) {
+    const common = 'width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+    const paths = {
+      HP: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10z"/>',
+      ATK: '<path d="M14 4 20 10"/><path d="M12 6l6 6-8 8H4v-6z"/>',
+      DEF: '<path d="M12 3 20 7v5c0 5-3.5 8.5-8 10C7.5 20.5 4 17 4 12V7l8-4z"/>',
+      AGI: '<path d="M4 16c4-2 6-8 8-12 2 4 4 10 8 12"/><path d="M12 4v16"/>',
+      LUCK: '<path d="M12 3 9 9h6l-3 6"/><circle cx="12" cy="18" r="2"/>'
+    };
+    return `<svg ${common}>${paths[kind] || ""}</svg>`;
+  }
+
+  function wolfMark() {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 14 8 6l4 3 4-3 4 8-4 6H8z"/><path d="M9 14c.6 1.6 2 2.5 3 2.5s2.4-.9 3-2.5"/></svg>`;
   }
 
   function ensureEquippedStyles() {
-    if (document.getElementById("equipped-styles")) return;
-    const style = document.createElement("style");
-    style.id = "equipped-styles";
-    style.textContent = `
-      .equip-stage-wrap{
-        position:relative;
-        width:100%;
-        max-width:680px;
-        margin:0 auto;
-        border-radius:22px;
-        overflow:hidden;
-        background:radial-gradient(circle at 50% 0%, rgba(0,229,255,.22), rgba(0,0,0,.92));
-        box-shadow:0 14px 40px rgba(0,0,0,.7);
-
-        /* ✅ kontrola rozmiaru ikon (HOTSPOT) */
-        --equip-icon-inset: 1px;     /* było 6px -> zmniejszało */
-        --equip-icon-zoom: 122%;     /* lekki zoom, żeby padding w assetach nie zmniejszał */
-      }
-
-      /* upewnij się że obraz jest "pod" overlayem */
-      #equipped-character-img{
-        position:relative;
-        z-index:1;
-        display:block;
-        width:100%;
-        height:auto;
-      }
-
-      /* overlay MUSI siedzieć nad PNG */
-      #equip-hotspots{
-        position:absolute;
-        inset:0;
-        pointer-events:auto;
-        z-index:5;
-        opacity: 1 !important;
-        visibility: visible !important;
-      }
-
-      .equip-hotspot{
-        position:absolute;
-        pointer-events:auto;
-        border:0;
-        padding:0;
-        margin:0;
-        background:transparent;
-        border-radius:18px;
-        -webkit-tap-highlight-color: transparent;
-
-        /* 🔥 KLUCZ: NIE UCINAJ GLOW */
-        overflow: visible !important;
-      }
-
-      .equip-hotspot:active{
-        box-shadow:0 0 0 2px rgba(0,229,255,.78) inset, 0 0 22px rgba(0,229,255,.30);
-        background-color: rgba(0,229,255,.10);
-      }
-      .equip-hotspot.is-empty:active{
-        box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
-        background-color: rgba(255,255,255,.06);
-      }
-
-      /* ✅ make Equipped page scrollable inside fixed Telegram view */
-      #equipped-root{
-        height: calc(var(--vh, 1vh) * 100);
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
-        padding-bottom:max(96px,calc(env(safe-area-inset-bottom) + 76px));
-      }
-
-      /* =========================================================
-         ✅ Equipment Glow (UI-only)
-         - master icons stay clean
-         - glow controlled by UI: data-rarity + is-selected/is-equipped
-         ========================================================= */
-
-      /* Hotspot -> icon layer (background) */
-      .equip-hotspot .equip-icon{
-        position:absolute;
-        inset: var(--equip-icon-inset);
-        pointer-events:none;
-        background-repeat:no-repeat;
-        background-position:center;
-        background-size: var(--equip-icon-zoom);
-
-        /* delikatny baseline (w razie braku rarity) */
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.20))
-          drop-shadow(0 0 18px rgba(0,255,255,.10));
-        will-change: filter;
-      }
-
-      .equip-hotspot .equip-icon .equip-pet-sprite{
-        position:absolute;
-        inset:-14%;
-        width:128%;
-        height:128%;
-      }
-      .equip-icon-box .equip-pet-sprite{
-        width:100%;
-        height:100%;
-      }
-      .equip-pet-sprite canvas,
-      .equip-pet-sprite img{
-        width:100%;
-        height:100%;
-        object-fit:contain;
-        image-rendering:pixelated;
-        display:block;
-      }
-
-      /* rarity ladder (hotspot) — mocniejszy baseline */
-      .equip-hotspot[data-rarity="common"] .equip-icon{
-        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
-      }
-      .equip-hotspot[data-rarity="uncommon"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
-      }
-      .equip-hotspot[data-rarity="rare"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
-      }
-      .equip-hotspot[data-rarity="epic"] .equip-icon{
-        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
-      }
-      .equip-hotspot[data-rarity="legendary"] .equip-icon{
-        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
-      }
-
-      /* ✅ boost zachowuje kolor rzadkości (hotspot) — MOCNIEJSZY */
-      .equip-hotspot.is-selected[data-rarity="common"] .equip-icon,
-      .equip-hotspot.is-equipped[data-rarity="common"] .equip-icon{
-        filter: drop-shadow(0 0 10px rgba(255,255,255,.28)) drop-shadow(0 0 26px rgba(255,255,255,.14));
-      }
-      .equip-hotspot.is-selected[data-rarity="uncommon"] .equip-icon,
-      .equip-hotspot.is-equipped[data-rarity="uncommon"] .equip-icon{
-        filter: drop-shadow(0 0 12px rgba(120,255,120,.42)) drop-shadow(0 0 30px rgba(120,255,120,.20));
-      }
-      .equip-hotspot.is-selected[data-rarity="rare"] .equip-icon,
-      .equip-hotspot.is-equipped[data-rarity="rare"] .equip-icon{
-        filter: drop-shadow(0 0 12px rgba(90,170,255,.42)) drop-shadow(0 0 30px rgba(90,170,255,.20));
-      }
-      .equip-hotspot.is-selected[data-rarity="epic"] .equip-icon,
-      .equip-hotspot.is-equipped[data-rarity="epic"] .equip-icon{
-        filter: drop-shadow(0 0 12px rgba(190,120,255,.42)) drop-shadow(0 0 30px rgba(190,120,255,.20));
-      }
-      .equip-hotspot.is-selected[data-rarity="legendary"] .equip-icon,
-      .equip-hotspot.is-equipped[data-rarity="legendary"] .equip-icon{
-        filter: drop-shadow(0 0 14px rgba(255,190,90,.46)) drop-shadow(0 0 34px rgba(255,190,90,.22));
-      }
-
-      /* === Icon boxes (lista + inspect) === */
-      .equip-icon-box{
-        background: rgba(0,0,0,.40);
-        display:block;
-        overflow: visible !important; /* 🔥 KLUCZ: NIE UCINA GLOW */
-        flex-shrink:0;
-      }
-      .equip-icon-box img{
-        width:100%;
-        height:100%;
-        object-fit:contain;
-        display:block;
-
-        /* ✅ lekki zoom, żeby padding w plikach nie zmniejszał ikon */
-        transform: scale(1.08);
-        transform-origin: center;
-      }
-
-      /* Lista slotów — było 32px, dajemy większe */
-      .equip-icon-box.sm{
-        width:38px;
-        height:38px;
-        border-radius:10px;
-      }
-      .equip-icon-box.sm img{
-        border-radius:10px;
-      }
-
-      /* Inspect — 72px (zostaje) */
-      .equip-icon-box.lg{
-        width:72px;
-        height:72px;
-        border-radius:14px;
-      }
-      .equip-icon-box.lg img{
-        border-radius:14px;
-      }
-
-      /* Lista slotów — baseline glow (mocniejszy) */
-      .equip-slot-btn img.item-icon{
-        filter:
-          drop-shadow(0 0 8px rgba(0,255,255,.20))
-          drop-shadow(0 0 18px rgba(0,255,255,.10));
-        will-change: filter;
-      }
-
-      .equip-slot-btn[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
-      }
-      .equip-slot-btn[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
-      }
-      .equip-slot-btn[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
-      }
-      .equip-slot-btn[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
-      }
-      .equip-slot-btn[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
-      }
-
-      /* ✅ boost per rarity (lista) — MOCNIEJSZY */
-      .equip-slot-btn.is-selected[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 10px rgba(255,255,255,.28)) drop-shadow(0 0 26px rgba(255,255,255,.14));
-      }
-      .equip-slot-btn.is-selected[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 12px rgba(120,255,120,.42)) drop-shadow(0 0 30px rgba(120,255,120,.20));
-      }
-      .equip-slot-btn.is-selected[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 12px rgba(90,170,255,.42)) drop-shadow(0 0 30px rgba(90,170,255,.20));
-      }
-      .equip-slot-btn.is-selected[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 12px rgba(190,120,255,.42)) drop-shadow(0 0 30px rgba(190,120,255,.20));
-      }
-      .equip-slot-btn.is-selected[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 14px rgba(255,190,90,.46)) drop-shadow(0 0 34px rgba(255,190,90,.22));
-      }
-
-      /* Inspect — też per rarity (dostaje data-rarity na boxie) */
-      .equip-icon-box[data-rarity="common"] img.item-icon{
-        filter: drop-shadow(0 0 7px rgba(255,255,255,.16)) drop-shadow(0 0 16px rgba(255,255,255,.08));
-      }
-      .equip-icon-box[data-rarity="uncommon"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(120,255,120,.26)) drop-shadow(0 0 18px rgba(120,255,120,.12));
-      }
-      .equip-icon-box[data-rarity="rare"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(90,170,255,.26)) drop-shadow(0 0 18px rgba(90,170,255,.12));
-      }
-      .equip-icon-box[data-rarity="epic"] img.item-icon{
-        filter: drop-shadow(0 0 8px rgba(190,120,255,.26)) drop-shadow(0 0 18px rgba(190,120,255,.12));
-      }
-      .equip-icon-box[data-rarity="legendary"] img.item-icon{
-        filter: drop-shadow(0 0 9px rgba(255,190,90,.28)) drop-shadow(0 0 20px rgba(255,190,90,.13));
-      }
-      /* ===== OVERRIDE: EPIC/LEGENDARY RICH GLOW (slot ring + halo) ===== */
-
-.equip-hotspot{ overflow: visible !important; }
-
-/* ring + halo na slocie (działa nawet jak ikona jest ciemna) */
-.equip-hotspot::after{
-  content:"";
-  position:absolute;
-  inset:-6px;
-  border-radius: inherit;
-  pointer-events:none;
-  opacity:0;           /* domyślnie OFF */
-  filter: blur(6px);
-  transition: opacity .12s ease;
-}
-
-/* EPIC */
-.equip-hotspot[data-rarity="epic"]{
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.10) inset,
-    0 0 18px rgba(190,120,255,.22),
-    0 0 34px rgba(190,120,255,.14);
-}
-.equip-hotspot[data-rarity="epic"]::after{
-  opacity:.55;
-  background:
-    radial-gradient(closest-side, rgba(190,120,255,.45), transparent 68%),
-    radial-gradient(closest-side, rgba(255,255,255,.10), transparent 72%);
-}
-
-/* LEGENDARY (gold + white halo) */
-.equip-hotspot[data-rarity="legendary"]{
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.12) inset,
-    0 0 20px rgba(255,190,90,.26),
-    0 0 44px rgba(255,190,90,.16),
-    0 0 14px rgba(255,255,255,.08);
-}
-.equip-hotspot[data-rarity="legendary"]::after{
-  opacity:.70;
-  background:
-    radial-gradient(closest-side, rgba(255,190,90,.52), transparent 66%),
-    radial-gradient(closest-side, rgba(255,255,255,.16), transparent 74%);
-}
-
-/* mocniej na samej ikonie (bo u Ciebie to background-image na .equip-icon) */
-.equip-hotspot[data-rarity="epic"] .equip-icon{
-  filter:
-    drop-shadow(0 0 10px rgba(255,255,255,.10))
-    drop-shadow(0 0 16px rgba(190,120,255,.55))
-    drop-shadow(0 0 36px rgba(190,120,255,.22));
-}
-.equip-hotspot[data-rarity="legendary"] .equip-icon{
-  filter:
-    drop-shadow(0 0 10px rgba(255,255,255,.18))
-    drop-shadow(0 0 18px rgba(255,190,90,.70))
-    drop-shadow(0 0 44px rgba(255,190,90,.28));
-}
-
-/* selected/equipped = jeszcze mocniej */
-.equip-hotspot.is-selected[data-rarity="epic"]::after,
-.equip-hotspot.is-equipped[data-rarity="epic"]::after{ opacity:.85; }
-
-.equip-hotspot.is-selected[data-rarity="legendary"]::after,
-.equip-hotspot.is-equipped[data-rarity="legendary"]::after{ opacity:1; }
-
-      .equip-hotspot{
-        min-width:44px;
-        min-height:44px;
-        color:#eefaff;
-        cursor:pointer;
-      }
-      .equip-hotspot.is-selected{
-        z-index:8;
-        outline:2px solid rgba(94,225,255,.94);
-        outline-offset:2px;
-        box-shadow:
-          0 0 0 1px rgba(181,245,255,.25) inset,
-          0 0 20px rgba(46,203,255,.38);
-      }
-      .equip-hotspot-label{
-        position:absolute;
-        left:50%;
-        bottom:-15px;
-        transform:translateX(-50%);
-        max-width:86px;
-        padding:2px 5px;
-        border-radius:999px;
-        background:rgba(3,8,16,.88);
-        border:1px solid rgba(255,255,255,.13);
-        color:#dff8ff;
-        font-size:9px;
-        line-height:1.15;
-        font-weight:850;
-        letter-spacing:.25px;
-        text-transform:uppercase;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        pointer-events:none;
-      }
-      .equip-selected-mark{
-        position:absolute;
-        top:-8px;
-        right:-8px;
-        min-width:18px;
-        height:18px;
-        display:grid;
-        place-items:center;
-        border-radius:999px;
-        background:#76e7ff;
-        color:#04121a;
-        border:2px solid rgba(3,8,16,.92);
-        font-size:10px;
-        font-weight:950;
-        opacity:0;
-        pointer-events:none;
-      }
-      .equip-hotspot.is-selected .equip-selected-mark{ opacity:1; }
-
-      #equip-main{
-        display:block !important;
-      }
-      #equip-avatar,
-      #equip-slots{
-        min-width:0 !important;
-        width:100%;
-        max-width:680px;
-        margin:0 auto;
-      }
-      #equip-slots{ margin-top:14px; }
-      .equip-stat-summary{
-        display:grid;
-        grid-template-columns:repeat(5,minmax(0,1fr));
-        gap:6px;
-        width:100%;
-        padding:10px;
-        border-radius:16px;
-        background:rgba(5,11,22,.82);
-        border:1px solid rgba(255,255,255,.09);
-      }
-      .equip-stat-chip{
-        min-width:0;
-        padding:7px 4px;
-        border-radius:10px;
-        background:rgba(255,255,255,.045);
-        text-align:center;
-      }
-      .equip-stat-chip span{
-        display:block;
-        color:#8295ad;
-        font-size:9px;
-        letter-spacing:.45px;
-      }
-      .equip-stat-chip b{
-        display:block;
-        margin-top:2px;
-        color:#f3fbff;
-        font-size:12px;
-        overflow-wrap:anywhere;
-      }
-      .equip-selected-panel{
-        padding:14px;
-        border-radius:20px;
-        background:
-          radial-gradient(circle at 100% 0%,rgba(49,182,255,.10),transparent 36%),
-          linear-gradient(180deg,rgba(17,25,42,.96),rgba(7,11,21,.97));
-        border:1px solid rgba(136,220,255,.15);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 34px rgba(0,0,0,.22);
-      }
-      .equip-selected-head{
-        display:grid;
-        grid-template-columns:88px minmax(0,1fr);
-        gap:13px;
-        align-items:start;
-      }
-      .equip-selected-art{
-        width:88px;
-        height:88px;
-        border-radius:17px;
-        background:rgba(0,0,0,.36);
-        border:1px solid rgba(255,255,255,.12);
-        overflow:visible;
-      }
-      .equip-selected-art img{
-        width:100%;
-        height:100%;
-        object-fit:contain;
-        display:block;
-      }
-      .equip-selected-stats{
-        display:flex;
-        flex-wrap:wrap;
-        gap:7px;
-        margin-top:13px;
-      }
-      .equip-selected-stat{
-        padding:7px 9px;
-        border-radius:10px;
-        background:rgba(255,255,255,.055);
-        border:1px solid rgba(255,255,255,.08);
-        color:#dcecff;
-        font-size:11px;
-        overflow-wrap:anywhere;
-      }
-      .equip-selected-actions{
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:9px;
-        margin-top:14px;
-        padding-bottom:max(2px,env(safe-area-inset-bottom));
-      }
-      .equip-selected-actions button{
-        min-height:44px;
-        border-radius:13px;
-        font-weight:850;
-        cursor:pointer;
-      }
-      .equip-summary-card{
-        max-width:680px;
-        margin:10px auto 0;
-        padding:11px 13px;
-        border-radius:15px;
-        background:rgba(5,11,22,.76);
-        border:1px solid rgba(255,255,255,.08);
-        color:#cbd9e9;
-        line-height:1.45;
-      }
-      .equip-summary-card summary{
-        cursor:pointer;
-        color:#edf8ff;
-        font-weight:800;
-      }
-      @media (max-width:420px){
-        #equipped-root{ padding-left:10px !important; padding-right:10px !important; }
-        .equip-hotspot-label{ bottom:-13px; max-width:68px; font-size:8px; }
-        .equip-stat-summary{ grid-template-columns:repeat(3,minmax(0,1fr)); }
-        .equip-stat-chip:first-child{ grid-column:span 3; }
-        .equip-selected-head{ grid-template-columns:76px minmax(0,1fr); gap:11px; }
-        .equip-selected-art{ width:76px; height:76px; }
-      }
-
-      /* Equipped P1.5A polish; slot geometry remains owned by SLOT_COORDS. */
-      #equipped-root{
-        box-sizing:border-box;
-        padding:12px 12px max(104px,calc(env(safe-area-inset-bottom) + 84px)) !important;
-        background:
-          radial-gradient(circle at 50% -8%,rgba(39,167,220,.12),transparent 34%),
-          linear-gradient(180deg,#07101d 0%,#050914 52%,#040711 100%);
-      }
-      .equip-local-header{
-        position:sticky;
-        top:0;
-        z-index:20;
-        display:grid;
-        grid-template-columns:1fr auto 1fr;
-        align-items:center;
-        gap:8px;
-        min-height:48px;
-        margin:0 0 12px;
-        padding:max(4px,env(safe-area-inset-top)) 2px 7px;
-        background:linear-gradient(180deg,rgba(7,16,29,.98) 72%,rgba(7,16,29,0));
-      }
-      .equip-local-header h2{
-        margin:0;
-        color:#f4fbff;
-        font-size:18px;
-        line-height:1;
-        font-weight:900;
-        letter-spacing:.2px;
-        text-align:center;
-      }
-      .equip-header-btn,
-      .equip-action-btn{
-        min-height:44px;
-        border:1px solid rgba(171,221,244,.16);
-        border-radius:13px;
-        color:#eaf8ff;
-        background:rgba(255,255,255,.065);
-        font:inherit;
-        font-size:12px;
-        font-weight:850;
-        letter-spacing:.15px;
-        cursor:pointer;
-        -webkit-tap-highlight-color:transparent;
-        transition:transform 150ms ease,background-color 150ms ease,border-color 150ms ease,box-shadow 150ms ease;
-      }
-      .equip-header-btn:first-child{ justify-self:start; padding:0 13px; }
-      .equip-header-btn:last-child{
-        justify-self:end;
-        padding:0 13px;
-        border-color:rgba(91,213,255,.25);
-        background:rgba(24,119,159,.20);
-      }
-      .equip-header-btn:active,
-      .equip-action-btn:active{ transform:scale(.97); }
-      .equip-header-btn:focus-visible,
-      .equip-action-btn:focus-visible,
-      .equip-hotspot:focus-visible{
-        outline:2px solid #72dfff;
-        outline-offset:2px;
-      }
-      .equip-stage-wrap{
-        border:1px solid rgba(149,218,245,.13);
-        background:
-          radial-gradient(circle at 50% 4%,rgba(27,177,222,.16),transparent 38%),
-          linear-gradient(180deg,rgba(9,21,37,.98),rgba(2,6,13,.99));
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.055),
-          inset 0 -24px 54px rgba(0,0,0,.34),
-          0 18px 42px rgba(0,0,0,.34);
-      }
-      .equip-hotspot{
-        transition:transform 160ms ease,filter 160ms ease,box-shadow 160ms ease,background-color 160ms ease;
-      }
-      .equip-hotspot:active{ transform:scale(.97); }
-      .equip-hotspot::after{
-        opacity:.18 !important;
-        filter:none !important;
-        box-shadow:0 0 0 1px rgba(170,225,247,.13) inset,0 0 14px rgba(57,185,231,.12) !important;
-      }
-      .equip-hotspot.is-selected::after{
-        opacity:.72 !important;
-        box-shadow:0 0 0 1px rgba(173,240,255,.38) inset,0 0 18px rgba(76,211,255,.28) !important;
-      }
-      .equip-hotspot[data-rarity="epic"] .equip-icon,
-      .equip-hotspot[data-rarity="legendary"] .equip-icon{
-        filter:drop-shadow(0 0 8px rgba(105,211,255,.26));
-      }
-      .equip-hotspot-label{
-        bottom:-14px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        height:17px;
-        max-width:82px;
-        box-sizing:border-box;
-        padding:1px 6px;
-        background:rgba(3,8,16,.92);
-        border-color:rgba(175,224,244,.16);
-        box-shadow:0 3px 8px rgba(0,0,0,.28);
-        line-height:1;
-      }
-      .equip-selected-mark{
-        top:2px;
-        right:2px;
-        width:18px;
-        min-width:18px;
-        height:18px;
-        border-width:1px;
-        box-shadow:0 3px 8px rgba(0,0,0,.34);
-      }
-      .equip-stat-summary{
-        grid-template-columns:repeat(5,minmax(0,1fr));
-        padding:8px;
-        border-radius:14px;
-        background:rgba(8,16,29,.88);
-        border-color:rgba(156,214,239,.11);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
-      }
-      .equip-level-strip{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        width:100%;
-        box-sizing:border-box;
-        padding:9px 12px;
-        border:1px solid rgba(103,218,255,.16);
-        border-radius:13px;
-        background:linear-gradient(90deg,rgba(21,109,146,.20),rgba(255,255,255,.035));
-      }
-      .equip-level-strip span{
-        color:#82a4b9;
-        font-size:9px;
-        font-weight:850;
-        letter-spacing:.9px;
-      }
-      .equip-level-strip b{ color:#effaff; font-size:14px; }
-      .equip-stat-chip{
-        min-height:38px;
-        box-sizing:border-box;
-        padding:6px 3px;
-        border:1px solid rgba(255,255,255,.045);
-        background:rgba(255,255,255,.035);
-      }
-      .equip-stat-chip:first-child{ grid-column:auto; }
-      .equip-selected-panel{
-        overflow:hidden;
-        padding:13px;
-        border-radius:18px;
-        animation:equipPanelIn 150ms ease-out;
-      }
-      .equip-selected-panel[data-rarity="epic"]{ border-color:rgba(175,112,255,.24); }
-      .equip-selected-panel[data-rarity="legendary"]{ border-color:rgba(255,196,92,.25); }
-      .equip-selected-head{
-        grid-template-columns:84px minmax(0,1fr);
-        gap:12px;
-        align-items:center;
-      }
-      .equip-selected-art{
-        width:84px;
-        height:84px;
-        box-sizing:border-box;
-        padding:5px;
-        border-radius:15px;
-        overflow:hidden;
-      }
-      .equip-selected-art img{ border-radius:11px; }
-      .equip-selected-slot-label{
-        color:#72dfff;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.85px;
-        text-transform:uppercase;
-      }
-      .equip-selected-name{
-        display:-webkit-box;
-        margin-top:5px;
-        overflow:hidden;
-        color:#f4f9ff;
-        font-size:18px;
-        line-height:1.16;
-        font-weight:900;
-        overflow-wrap:anywhere;
-        -webkit-box-orient:vertical;
-        -webkit-line-clamp:2;
-      }
-      .equip-selected-meta{
-        margin-top:7px;
-        color:#92a8bc;
-        font-size:10px;
-        font-weight:750;
-        letter-spacing:.45px;
-        text-transform:uppercase;
-      }
-      .equip-selected-stats{ gap:6px; margin-top:11px; }
-      .equip-selected-stat{
-        display:inline-flex;
-        align-items:center;
-        gap:5px;
-        padding:6px 8px;
-        border-color:rgba(139,204,232,.09);
-        background:rgba(255,255,255,.04);
-        color:#8fa5b9;
-        font-size:10px;
-        font-weight:800;
-        letter-spacing:.25px;
-      }
-      .equip-selected-stat b{ color:#edf9ff; font-size:11px; }
-      .equip-action-btn{ width:100%; min-height:44px; }
-      .equip-action-btn.is-inspect,
-      .equip-action-btn.is-inventory{
-        border-color:rgba(92,216,255,.28);
-        background:rgba(23,125,168,.22);
-        color:#dff8ff;
-      }
-      .equip-action-btn.is-unequip{
-        border-color:rgba(255,128,139,.22);
-        background:rgba(91,23,34,.76);
-        color:#ffd9de;
-      }
-      .equip-empty-copy{
-        margin-top:6px;
-        color:#92a8bc;
-        font-size:12px;
-        line-height:1.45;
-      }
-      .equip-summary-card{
-        padding:12px 13px;
-        border-radius:14px;
-        background:rgba(7,14,25,.78);
-      }
-      .equip-summary-card.is-sets{
-        border-color:rgba(91,213,255,.15);
-        background:linear-gradient(180deg,rgba(11,29,45,.88),rgba(6,13,24,.88));
-      }
-      .equip-summary-card.is-total{ opacity:.92; }
-      .equip-summary-card summary{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:8px;
-        list-style:none;
-        font-size:12px;
-      }
-      .equip-summary-card summary::-webkit-details-marker{ display:none; }
-      .equip-summary-count{
-        display:inline-grid;
-        min-width:21px;
-        height:21px;
-        place-items:center;
-        border-radius:999px;
-        background:rgba(105,218,255,.12);
-        color:#aeeeff;
-        font-size:10px;
-      }
-      .equip-summary-rows{ display:grid; gap:6px; margin-top:9px; }
-      .equip-summary-row{
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        padding:7px 8px;
-        border-radius:9px;
-        background:rgba(255,255,255,.035);
-        color:#d9e9f4;
-        font-size:11px;
-      }
-      .equip-summary-row b{ color:#83dffb; }
-      .equip-total-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
-      @keyframes equipPanelIn{
-        from{ opacity:.72; transform:translateY(3px); }
-        to{ opacity:1; transform:translateY(0); }
-      }
-      @media (max-width:420px){
-        .equip-hotspot-label{ max-width:68px; height:16px; }
-        .equip-selected-head{ grid-template-columns:78px minmax(0,1fr); gap:10px; }
-        .equip-selected-art{ width:78px; height:78px; }
-        .equip-selected-name{ font-size:17px; }
-      }
-
-      /* Equipped P1.5B final finish: local presentation only. */
-      #equipped-root{
-        --equip-motion:160ms;
-        --equip-ease:cubic-bezier(.2,.75,.25,1);
-        padding-left:max(10px,env(safe-area-inset-left)) !important;
-        padding-right:max(10px,env(safe-area-inset-right)) !important;
-      }
-      .equip-local-header{
-        grid-template-columns:minmax(72px,1fr) auto minmax(92px,1fr);
-        gap:6px;
-        min-width:0;
-        min-height:50px;
-        margin-bottom:10px;
-        padding:
-          max(5px,env(safe-area-inset-top))
-          max(2px,env(safe-area-inset-right))
-          7px
-          max(2px,env(safe-area-inset-left));
-      }
-      .equip-local-header h2{
-        min-width:0;
-        font-size:17px;
-        letter-spacing:.35px;
-        white-space:nowrap;
-      }
-      .equip-header-btn{
-        min-width:0;
-        min-height:44px;
-        border-radius:12px;
-        color:#d5e7f1;
-        background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
-        font-size:11px;
-        font-weight:800;
-      }
-      .equip-header-btn:first-child{ padding:0 12px; }
-      .equip-header-btn:last-child{
-        padding:0 12px;
-        border-color:rgba(91,213,255,.20);
-        background:linear-gradient(180deg,rgba(25,128,169,.20),rgba(12,72,99,.16));
-      }
-      .equip-stage-wrap{
-        border-color:rgba(127,210,239,.18);
-        border-radius:21px;
-        background:
-          radial-gradient(circle at 50% 3%,rgba(35,186,229,.14),transparent 39%),
-          linear-gradient(180deg,rgba(9,21,37,.97),rgba(2,6,13,.99));
-        box-shadow:
-          inset 0 1px 0 rgba(214,247,255,.055),
-          inset 0 0 0 1px rgba(16,93,121,.08),
-          inset 0 -20px 48px rgba(0,0,0,.28),
-          0 14px 34px rgba(0,0,0,.30);
-      }
-      .equip-hotspot{
-        transition:
-          transform var(--equip-motion) var(--equip-ease),
-          filter var(--equip-motion) var(--equip-ease),
-          box-shadow var(--equip-motion) var(--equip-ease),
-          background-color var(--equip-motion) var(--equip-ease);
-      }
-      .equip-hotspot::after{
-        border-radius:inherit;
-        transition:
-          opacity var(--equip-motion) var(--equip-ease),
-          box-shadow var(--equip-motion) var(--equip-ease);
-      }
-      .equip-hotspot.is-selected{
-        outline:0;
-        box-shadow:
-          0 0 0 2px rgba(106,225,255,.68),
-          0 0 0 1px rgba(224,251,255,.28) inset,
-          0 0 15px rgba(48,191,237,.22);
-      }
-      .equip-hotspot.is-selected::after{
-        opacity:.56 !important;
-        box-shadow:
-          0 0 0 1px rgba(198,247,255,.30) inset,
-          0 0 13px rgba(76,211,255,.20) !important;
-      }
-      .equip-hotspot-label{
-        bottom:-13px;
-        height:16px;
-        max-width:76px;
-        padding:1px 6px 0;
-        border-radius:7px;
-        border-color:rgba(154,216,239,.17);
-        background:linear-gradient(180deg,rgba(8,17,29,.96),rgba(2,7,14,.94));
-        box-shadow:0 2px 6px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.035);
-        color:#d8eff8;
-        font-size:8px;
-        line-height:15px;
-        letter-spacing:.32px;
-      }
-      .equip-hotspot[data-slot="weapon"] .equip-hotspot-label,
-      .equip-hotspot[data-slot="offhand"] .equip-hotspot-label{ max-width:72px; }
-      .equip-selected-mark{
-        top:3px;
-        right:3px;
-        width:17px;
-        min-width:17px;
-        height:17px;
-        background:linear-gradient(180deg,#a5f2ff,#55cee9);
-        border-color:rgba(3,11,18,.96);
-        font-size:9px;
-        transform:scale(.76);
-        transition:
-          opacity var(--equip-motion) var(--equip-ease),
-          transform var(--equip-motion) var(--equip-ease);
-      }
-      .equip-hotspot.is-selected .equip-selected-mark{
-        opacity:1;
-        transform:scale(1);
-      }
-      #equip-avatar > div{ gap:8px !important; }
-      #equip-slots{ margin-top:12px; }
-      .equip-level-strip{
-        padding:8px 11px;
-        border-radius:12px;
-      }
-      .equip-stat-summary{ gap:5px; padding:7px; }
-      .equip-selected-panel{
-        padding:12px;
-        border-color:rgba(136,220,255,.17);
-        background:
-          radial-gradient(circle at 100% 0%,rgba(55,191,241,.095),transparent 34%),
-          linear-gradient(180deg,rgba(16,25,41,.97),rgba(6,11,20,.98));
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.055),
-          inset 0 0 0 1px rgba(64,151,190,.04),
-          0 13px 29px rgba(0,0,0,.21);
-        animation:equipPanelIn var(--equip-motion) var(--equip-ease);
-      }
-      .equip-selected-head{
-        grid-template-columns:82px minmax(0,1fr);
-        gap:11px;
-      }
-      .equip-selected-art{
-        width:82px;
-        height:82px;
-        padding:5px;
-        border-radius:14px;
-        background:
-          radial-gradient(circle at 50% 35%,rgba(255,255,255,.055),transparent 58%),
-          rgba(0,0,0,.31);
-        box-shadow:inset 0 0 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.045);
-      }
-      .equip-selected-art[data-rarity="rare"]{ border-color:rgba(78,171,255,.25); }
-      .equip-selected-art[data-rarity="epic"]{ border-color:rgba(175,112,255,.28); }
-      .equip-selected-art[data-rarity="legendary"]{ border-color:rgba(255,196,92,.30); }
-      .equip-selected-name{ margin-top:4px; font-size:17px; }
-      .equip-selected-meta{ margin-top:5px; }
-      .equip-selected-stats{ gap:5px; margin-top:9px; }
-      .equip-selected-stat{
-        min-height:27px;
-        box-sizing:border-box;
-        justify-content:center;
-        padding:5px 8px 4px;
-        border-radius:8px;
-        border-color:rgba(133,206,235,.10);
-        background:
-          linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
-        line-height:1;
-      }
-      .equip-selected-stat b{ line-height:1; }
-      .equip-selected-actions{
-        gap:8px;
-        margin-top:11px;
-      }
-      .equip-action-btn{
-        height:44px;
-        min-height:44px;
-        border-radius:12px;
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-        transition:
-          transform var(--equip-motion) var(--equip-ease),
-          background-color var(--equip-motion) var(--equip-ease),
-          border-color var(--equip-motion) var(--equip-ease),
-          box-shadow var(--equip-motion) var(--equip-ease);
-      }
-      .equip-action-btn.is-inspect,
-      .equip-action-btn.is-inventory{
-        border-color:rgba(91,216,255,.30);
-        background:linear-gradient(180deg,rgba(29,145,190,.31),rgba(14,84,116,.25));
-        box-shadow:inset 0 1px 0 rgba(198,245,255,.09);
-      }
-      .equip-action-btn.is-unequip{
-        border-color:rgba(239,113,128,.25);
-        background:linear-gradient(180deg,rgba(108,31,43,.86),rgba(67,17,28,.88));
-        box-shadow:inset 0 1px 0 rgba(255,207,213,.055);
-      }
-      .equip-summary-card{
-        margin-top:9px;
-        padding:10px 11px;
-        transition:border-color var(--equip-motion) var(--equip-ease),background-color var(--equip-motion) var(--equip-ease);
-      }
-      .equip-summary-card.is-sets{
-        position:relative;
-        overflow:hidden;
-        border-color:rgba(88,216,255,.20);
-        background:
-          radial-gradient(circle at 0 0,rgba(53,203,240,.10),transparent 36%),
-          linear-gradient(180deg,rgba(11,31,47,.94),rgba(5,14,25,.92));
-        box-shadow:inset 0 1px 0 rgba(196,245,255,.055),0 10px 24px rgba(0,0,0,.16);
-      }
-      .equip-summary-card.is-sets::before{
-        content:"";
-        position:absolute;
-        inset:0 auto 0 0;
-        width:2px;
-        background:linear-gradient(180deg,rgba(111,231,255,.85),rgba(52,155,193,.22));
-      }
-      .equip-summary-card.is-sets summary{
-        color:#f0fbff;
-        font-size:12px;
-        letter-spacing:.15px;
-      }
-      .equip-summary-card.is-sets .equip-summary-count{
-        background:rgba(81,215,255,.17);
-        color:#c5f5ff;
-        box-shadow:inset 0 0 0 1px rgba(130,231,255,.11);
-      }
-      .equip-summary-rows{ gap:7px; margin-top:8px; }
-      .equip-summary-row{
-        display:block;
-        padding:9px;
-        border:1px solid rgba(119,211,240,.09);
-        background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.022));
-      }
-      .equip-set-main{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:10px;
-      }
-      .equip-set-name{
-        min-width:0;
-        color:#edfaff;
-        font-size:12px;
-        font-weight:850;
-        overflow-wrap:anywhere;
-      }
-      .equip-set-count{
-        flex:0 0 auto;
-        padding:4px 7px;
-        border-radius:999px;
-        background:rgba(68,200,239,.11);
-        color:#92e7ff;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.35px;
-        text-transform:uppercase;
-      }
-      .equip-set-bonuses{
-        display:flex;
-        flex-wrap:wrap;
-        gap:5px;
-        margin-top:7px;
-        padding-top:7px;
-        border-top:1px solid rgba(129,215,242,.08);
-      }
-      .equip-set-bonus{
-        min-height:24px;
-        padding:4px 7px 3px;
-        border-color:rgba(80,219,178,.13);
-        background:rgba(40,151,121,.09);
-        color:#82cbb6;
-      }
-      .equip-set-bonus b{ color:#a9f1dc; }
-      .equip-summary-card.is-total{
-        padding-top:9px;
-        padding-bottom:9px;
-        border-color:rgba(255,255,255,.065);
-        background:rgba(5,10,19,.64);
-        opacity:.82;
-        box-shadow:none;
-      }
-      .equip-summary-card.is-total summary{
-        color:#aebdca;
-        font-size:11px;
-        font-weight:750;
-      }
-      .equip-summary-card.is-total .equip-summary-count{
-        min-width:19px;
-        height:19px;
-        background:rgba(255,255,255,.055);
-        color:#93a5b4;
-      }
-      .equip-total-chips{ gap:5px; margin-top:8px; }
-      .equip-total-stat{
-        min-height:24px;
-        padding:4px 7px 3px;
-        border-color:rgba(255,255,255,.055);
-        background:rgba(255,255,255,.025);
-        color:#8c9ba8;
-        font-weight:750;
-      }
-      .equip-summary-card[open] .equip-summary-rows,
-      .equip-summary-card[open] .equip-total-chips{
-        animation:equipSummaryIn var(--equip-motion) var(--equip-ease);
-      }
-      @keyframes equipSummaryIn{
-        from{ opacity:.7; transform:translateY(-2px); }
-        to{ opacity:1; transform:translateY(0); }
-      }
-      @media (hover:hover) and (pointer:fine){
-        .equip-header-btn:hover,
-        .equip-action-btn:hover{ border-color:rgba(113,224,255,.34); }
-        .equip-hotspot:hover{ filter:brightness(1.045); }
-        .equip-summary-card summary:hover{ color:#f1fbff; }
-      }
-      @media (max-width:420px){
-        .equip-local-header{
-          grid-template-columns:minmax(66px,1fr) auto minmax(88px,1fr);
-        }
-        .equip-header-btn:first-child,
-        .equip-header-btn:last-child{ padding-left:10px; padding-right:10px; }
-        .equip-stat-summary{ grid-template-columns:repeat(6,minmax(0,1fr)); }
-        .equip-stat-chip{ grid-column:span 2; }
-        .equip-stat-chip:nth-child(n+4){ grid-column:span 3; }
-        .equip-selected-head{ grid-template-columns:76px minmax(0,1fr); gap:10px; }
-        .equip-selected-art{ width:76px; height:76px; }
-      }
-      @media (max-width:340px){
-        .equip-local-header{
-          grid-template-columns:minmax(60px,1fr) auto minmax(80px,1fr);
-          gap:4px;
-        }
-        .equip-local-header h2{ font-size:16px; }
-        .equip-header-btn{ padding-left:8px !important; padding-right:8px !important; font-size:10px; }
-      }
-      @media (prefers-reduced-motion:reduce){
-        .equip-hotspot,
-        .equip-header-btn,
-        .equip-action-btn,
-        .equip-hotspot::after,
-        .equip-selected-mark,
-        .equip-summary-card{ transition:none; }
-        .equip-selected-panel,
-        .equip-summary-card[open] .equip-summary-rows,
-        .equip-summary-card[open] .equip-total-chips{ animation:none; }
-        .equip-hotspot:active,
-        .equip-header-btn:active,
-        .equip-action-btn:active,
-        .equip-selected-mark,
-        .equip-hotspot.is-selected .equip-selected-mark{ transform:none; }
-      }
-    `;
-    document.head.appendChild(style);
+    if (document.getElementById("equipped-v2-css") || document.getElementById("equipped-styles")) return;
+    const link = document.createElement("link");
+    link.id = "equipped-v2-css";
+    link.rel = "stylesheet";
+    const script = document.querySelector("script[src*='equipped.js']");
+    if (script && script.src) {
+      link.href = script.src.replace(/js\/equipped\.js[^/]*$/, "css/equipped_v2.css?v=" + encodeURIComponent(VERSION));
+    } else {
+      link.href = "css/equipped_v2.css?v=" + encodeURIComponent(VERSION);
+    }
+    document.head.appendChild(link);
   }
 
-  // Uniwersalny POST tylko dla Equipped – nie zależy od globalnego apiPost
   async function equippedPost(path, payload) {
     const tg = getTg();
     const initData = (tg && tg.initData) || window.INIT_DATA || "";
-
+    const apiPost = window.S?.apiPost || window.apiPost || window.AH?.apiPost;
+    if (typeof apiPost === "function") {
+      try {
+        return await apiPost(path, payload || {});
+      } catch (err) {
+        if (!initData) throw err;
+      }
+    }
     if (!initData) {
-      console.warn("Equipped: NO initData – działa poprawnie tylko wewnątrz Telegram Mini App.");
+      console.warn("Equipped: NO initData – works inside Telegram Mini App.");
       throw new Error("NO_INIT_DATA");
     }
-
     const resp = await fetch((API_BASE || "") + path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({ initData }, payload || {})),
+      body: JSON.stringify(Object.assign({ initData }, payload || {}))
     });
-
     let data = null;
-    try {
-      data = await resp.json();
-    } catch (e) {
+    try { data = await resp.json(); } catch (e) {
       console.error("Equipped: JSON parse error", e);
     }
-
     if (!resp.ok) {
       console.error("Equipped API error", resp.status, data);
       return data || { ok: false, reason: "http_" + resp.status };
@@ -1231,7 +279,6 @@
     return data;
   }
 
-  // Ładowanie PNG postaci z backendu
   async function loadCharacterPngInto(imgEl, onLoaded, requestToken) {
     if (!imgEl) return;
     const tg = getTg();
@@ -1253,7 +300,7 @@
       const resp = await fetch((API_BASE || "") + "/api/character-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData }),
+        body: JSON.stringify({ initData })
       });
       if (!resp.ok) {
         window.__EquippedPreviewReady = true;
@@ -1262,23 +309,19 @@
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-
       if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) {
         URL.revokeObjectURL(url);
         return;
       }
-
       imgEl.onload = () => {
         if (token && window.__EquippedPreviewToken && token !== window.__EquippedPreviewToken) return;
         window.__EquippedPreviewReady = true;
         window.__EquippedPreviewReadyAt = Date.now();
         try { onLoaded && onLoaded(); } catch (_) {}
       };
-
       imgEl.src = url;
-
       if (window.__EquippedCharImgUrl) {
-        URL.revokeObjectURL(window.__EquippedCharImgUrl);
+        try { URL.revokeObjectURL(window.__EquippedCharImgUrl); } catch (_) {}
       }
       window.__EquippedCharImgUrl = url;
     } catch (err) {
@@ -1289,63 +332,52 @@
 
   function _bgCandidates(o) {
     if (typeof _iconCandidates === "function") return _iconCandidates(o);
-
     const raw = o?.icon || o?.img || o?.image || o?.image_path || o?.imageUrl || "";
     const key = String(o?.item_key || o?.key || o?.itemKey || o?.item || "").trim().toLowerCase();
     const isGear = !!o?.slot;
-
     const list = [];
     if (raw) list.push(raw);
     if (key) {
       list.push(isGear ? `/assets/equip/${key}.png` : `/assets/items/${key}.png`);
       list.push(isGear ? `/assets/equip/${key}.webp` : `/assets/items/${key}.webp`);
+      list.push(`https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/equip/${key}.png`);
     }
     list.push(`/assets/items/unknown.png`);
-
     const base = window.location.origin;
     const v = window.WEBAPP_VER || "";
-
     return [...new Set(list.filter(Boolean).map((u) => {
       let p = String(u).trim();
-      if (/^https?:\/\//i.test(p)) return p;
+      if (/^https?:\/\//i.test(p) || p.startsWith("blob:") || p.startsWith("data:")) return p;
       if (!p.startsWith("/")) p = "/" + p.replace(/^\.?\//, "");
-      let url = base + p;
-      if (v) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
+      let url = (/^https?:\/\//i.test(base) ? base : "") + p;
+      if (!url) url = p;
+      if (v && !/^https?:\/\/res\.cloudinary/.test(url)) url += (url.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(v);
       return url;
     }))];
   }
 
   function _setBgWithFallback(el, o) {
     if (!el) return;
-
     const urls = _bgCandidates(o);
     let i = 0;
-
     const tryOne = () => {
       const CLOUD = "dnjwvxinh";
       const CDN = `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto`;
-
       const u = urls[i];
       if (!u) {
-        const ph = new Image();
-        ph.onload  = () => { el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
-        ph.onerror = () => { el.style.backgroundImage = `url('${CDN}/items/_unknown.png')`; };
-        ph.src = `${CDN}/items/unknown.png`;
+        el.style.backgroundImage = `url('${CDN}/items/unknown.png')`;
         return;
       }
-
       const im = new Image();
       im.onload = () => { el.style.backgroundImage = `url('${u}')`; };
       im.onerror = () => { i++; if (i < urls.length) tryOne(); else el.style.backgroundImage = `url('${CDN}/items/unknown.png')`; };
       im.src = u;
     };
-
     el.style.setProperty("opacity", "1", "important");
     el.style.setProperty("visibility", "visible", "important");
     el.style.backgroundRepeat = "no-repeat";
     el.style.backgroundPosition = "center";
     el.style.backgroundSize = "contain";
-
     tryOne();
   }
 
@@ -1366,27 +398,39 @@
     }
   }
 
-  function toPctRatio(r) {
-    return (r * 100).toFixed(4) + "%";
+  function layoutMode() {
+    const w = window.innerWidth || 0;
+    const h = window.innerHeight || 0;
+    if (h >= w && w < 900) return "portrait";
+    if (h < 520 && w >= h) return "mobile-landscape";
+    if (w < 1100) return "tablet";
+    return "wide";
   }
 
   window.Equipped = {
     state: null,
     selectedEquippedSlotKey: null,
+    selectedBackpackItemKey: null,
+    backpackCategory: "all",
+    backpackSearch: "",
+    compatibleOnly: false,
+    pendingAction: null,
+    portraitPane: "loadout",
+    backpackItems: [],
+    backpackError: null,
+    equippedError: null,
+    backpackReady: false,
+    equippedReady: false,
 
     _containerEl: null,
     _containerPrev: null,
-
-    _restoreContainer() {
-      const c = this._containerEl;
-      const p = this._containerPrev || {};
-      if (!c) return;
-      try { c.style.height = (p.height != null ? p.height : ""); } catch (_) {}
-      try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
-    },
+    _fallbackCharSrc: "",
+    _lastFingerprint: "",
+    _toastTimer: 0,
+    _resizeBound: false,
 
     _canonicalSlotKeys() {
-      return SLOT_ORDER.slice();
+      return CANONICAL_SLOTS.slice();
     },
 
     _slotState(slotKey) {
@@ -1403,28 +447,131 @@
       }
       if (keys.includes(this.selectedEquippedSlotKey)) return this.selectedEquippedSlotKey;
 
-      const helmet = keys.includes("helmet") ? this._slotState("helmet") : null;
-      if (helmet && !helmet.empty) {
-        this.selectedEquippedSlotKey = "helmet";
+      const weapon = keys.includes("weapon") ? this._slotState("weapon") : null;
+      if (weapon && !weapon.empty) {
+        this.selectedEquippedSlotKey = "weapon";
         return this.selectedEquippedSlotKey;
       }
-
       const firstOccupied = keys.find((key) => !this._slotState(key).empty);
-      this.selectedEquippedSlotKey = firstOccupied || (keys.includes("helmet") ? "helmet" : keys[0]);
+      this.selectedEquippedSlotKey = firstOccupied || (keys.includes("weapon") ? "weapon" : keys[0]);
       return this.selectedEquippedSlotKey;
+    },
+
+    _syncExternalState(data) {
+      if (data && typeof data === "object") {
+        this.state = data;
+        window.__AH_EQUIPPED_STATE__ = data;
+      }
+    },
+
+    _fingerprint() {
+      return (this.state?.slots || []).map((s) => {
+        return `${normKey(s?.slot)}:${itemKeyOf(s)}:${s?.empty ? 0 : 1}`;
+      }).join("|");
+    },
+
+    _toast(msg, kind) {
+      const el = document.getElementById("eq-toast");
+      if (!el) {
+        showAlert(msg);
+        return;
+      }
+      el.textContent = String(msg || "");
+      el.classList.toggle("is-err", kind === "error");
+      el.classList.add("is-on");
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => el.classList.remove("is-on"), 2800);
+    },
+
+    _restoreContainer() {
+      const c = this._containerEl;
+      const p = this._containerPrev || {};
+      if (!c) return;
+      try { c.style.height = (p.height != null ? p.height : ""); } catch (_) {}
+      try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
     },
 
     _selectSlot(slotKey) {
       const key = String(slotKey || "").toLowerCase();
       if (!this._canonicalSlotKeys().includes(key)) return;
       this.selectedEquippedSlotKey = key;
-      try {
-        document.querySelectorAll("#equip-hotspots .equip-hotspot.is-selected").forEach((el) => el.classList.remove("is-selected"));
+      const backpack = this._backpackItemByKey(this.selectedBackpackItemKey);
+      if (!backpack || itemSlotOf(backpack) !== key) this.selectedBackpackItemKey = null;
+      this._paintSelection();
+      this._renderBackpack();
+      this._renderCompare();
+    },
 
-        const hs = document.querySelector(`#equip-hotspots .equip-hotspot[data-slot="${key}"]`);
-        if (hs) hs.classList.add("is-selected");
-      } catch (_) {}
-      this._renderSelectedSlotPanel();
+    _selectBackpackItem(key) {
+      const item = this._backpackItemByKey(key);
+      if (!item) {
+        this.selectedBackpackItemKey = null;
+        this._renderBackpack();
+        this._renderCompare();
+        return;
+      }
+      this.selectedBackpackItemKey = itemKeyOf(item);
+      const slot = itemSlotOf(item);
+      if (this._canonicalSlotKeys().includes(slot)) this.selectedEquippedSlotKey = slot;
+      this._paintSelection();
+      this._renderBackpack();
+      this._renderCompare();
+    },
+
+    _backpackItemByKey(key) {
+      const want = String(key || "");
+      if (!want) return null;
+      return (this.backpackItems || []).find((it) => itemKeyOf(it) === want) || null;
+    },
+
+    _isEquipmentItem(it) {
+      const slot = itemSlotOf(it);
+      if (CANONICAL_SLOTS.includes(slot)) return true;
+      const type = normKey(it?.type);
+      return CANONICAL_SLOTS.includes(type);
+    },
+
+    _filteredBackpack() {
+      const cat = CATEGORIES.find((c) => c.id === this.backpackCategory) || CATEGORIES[0];
+      const q = String(this.backpackSearch || "").trim().toLowerCase();
+      const slotFilter = this.compatibleOnly ? this.selectedEquippedSlotKey : null;
+      return (this.backpackItems || []).filter((it) => {
+        if (!this._isEquipmentItem(it)) return false;
+        const slot = itemSlotOf(it);
+        if (cat.slots && !cat.slots.includes(slot)) return false;
+        if (slotFilter && slot !== slotFilter) return false;
+        if (!q) return true;
+        const blob = [
+          itemNameOf(it), itemKeyOf(it), slot, it.rarity, itemSetOf(it)
+        ].join(" ").toLowerCase();
+        return blob.includes(q);
+      });
+    },
+
+    _setPreview(selected) {
+      if (!selected) return null;
+      const nextSet = itemSetOf(selected);
+      const nextSlot = itemSlotOf(selected);
+      if (!nextSet && !nextSlot) return null;
+      const counts = {};
+      for (const key of CANONICAL_SLOTS) {
+        const slot = this._slotState(key);
+        if (slot.empty) continue;
+        const setName = itemSetOf(slot);
+        if (!setName) continue;
+        counts[setName] = (counts[setName] || 0) + 1;
+      }
+      const current = { ...counts };
+      const replacing = this._slotState(nextSlot);
+      if (!replacing.empty) {
+        const prevSet = itemSetOf(replacing);
+        if (prevSet) counts[prevSet] = Math.max(0, (counts[prevSet] || 0) - 1);
+      }
+      if (nextSet) counts[nextSet] = (counts[nextSet] || 0) + 1;
+      const names = Array.from(new Set([...Object.keys(current), ...Object.keys(counts)]))
+        .filter((name) => (current[name] || 0) > 0 || (counts[name] || 0) > 0);
+      if (!names.length) return null;
+      return { current, next: counts, names };
     },
 
     closeInspect() {
@@ -1443,11 +590,8 @@
       try { this._restoreContainer(); } catch (_) {}
       try { window.navClose?.("equipped-root"); } catch (_) {}
       try {
-        if (typeof window.goHome === "function") {
-          window.goHome();
-        } else {
-          window.location.reload();
-        }
+        if (typeof window.goHome === "function") window.goHome();
+        else window.location.reload();
       } catch (_) {
         window.location.reload();
       }
@@ -1456,51 +600,44 @@
 
     async open() {
       ensureEquippedStyles();
-
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach((el) => {
         el.style.display = "none";
       });
 
-      const container = document.getElementById("app") || document.body;
+      const skin = document.getElementById("player-skin");
+      this._fallbackCharSrc = String(skin?.currentSrc || skin?.src || "").trim();
 
+      const container = document.getElementById("app") || document.body;
       try {
         this._containerEl = container;
         this._containerPrev = {
           height: container.style.height,
-          overflow: container.style.overflow,
+          overflow: container.style.overflow
         };
         container.style.height = "calc(var(--vh, 1vh) * 100)";
         container.style.overflow = "hidden";
       } catch (_) {}
 
-      container.innerHTML = `
-        <div id="equipped-root" style="padding:16px 16px 24px;color:#fff;max-width:760px;margin:0 auto;font-family:system-ui;">
-          <header class="equip-local-header">
-            <button type="button" class="equip-header-btn" data-equipped-action="back">Back</button>
-            <h2>Equipped</h2>
-            <button type="button" class="equip-header-btn" data-equipped-action="open-inventory">Inventory</button>
-          </header>
+      this.backpackItems = [];
+      this.backpackError = null;
+      this.equippedError = null;
+      this.backpackReady = false;
+      this.equippedReady = false;
+      this.pendingAction = null;
+      this.backpackSearch = "";
+      this.compatibleOnly = false;
+      this.portraitPane = this.portraitPane || "loadout";
+      this._lastFingerprint = "";
 
-          <div id="equip-main">
-            <div id="equip-avatar" style="text-align:center;">
-              <div style="font-size:13px;opacity:.8;padding:24px 8px;">Loading character...</div>
-            </div>
-
-            <div id="equip-slots">
-              <div style="font-size:13px;opacity:.8;padding:24px 8px;text-align:center;">Loading selected slot...</div>
-            </div>
-          </div>
-
-          <div id="equip-sets"></div>
-          <div id="equip-total"></div>
-        </div>
-      `;
+      this._renderShell(container);
       this._bindEquippedEvents();
+      this._bindResize();
+      this._applyLayout();
 
       try {
         window.navRegister?.("equipped-root", {
           close: () => this.close(),
-          isOpen: () => !!document.getElementById("equipped-root"),
+          isOpen: () => !!document.getElementById("equipped-root")
         });
         window.navOpen?.("equipped-root");
       } catch (_) {}
@@ -1509,25 +646,76 @@
         await this.refresh();
       } catch (e) {
         console.error("Equipped.open error", e);
-        showAlert("Error while loading equipped.");
+        this._toast("Error while loading equipped.", "error");
       }
     },
 
-    async refresh() {
-      try {
-        window.__EquippedPreviewReady = false;
-        const res = await equippedPost("/webapp/equipped/state", {});
-        if (!res || !res.ok) {
-          console.error("Equipped.state error:", res);
-          showAlert("Failed to load equipped state.");
-          return;
-        }
-        this.state = res.data;
-        this.render();
-      } catch (err) {
-        console.error("Equipped.refresh error", err);
-        showAlert("Error while loading equipped.");
-        throw err;
+    _renderShell(container) {
+      container.innerHTML = `
+        <div id="equipped-root" data-layout="wide" data-pane="loadout">
+          <header class="eq-header">
+            <button type="button" class="eq-hbtn" data-equipped-action="back" aria-label="Back">Back</button>
+            <div class="eq-header-brand">
+              <div class="eq-header-kicker">${wolfMark()} EQUIPPED</div>
+              <div class="eq-header-sub">Alpha Loadout</div>
+            </div>
+            <button type="button" class="eq-hbtn" data-equipped-action="open-inventory" aria-label="Open Inventory">Inventory</button>
+          </header>
+          <div class="eq-mobile-tabs" id="eq-mobile-tabs">
+            <button type="button" class="eq-tab is-on" data-equipped-action="pane-loadout">Loadout</button>
+            <button type="button" class="eq-tab" data-equipped-action="pane-backpack">Backpack</button>
+          </div>
+          <div class="eq-shell">
+            <aside class="eq-panel" id="eq-loadout" aria-label="Loadout">
+              <div class="eq-panel-title">Loadout</div>
+              <div class="eq-loadout-list" id="eq-loadout-list">
+                <div class="eq-skel">Loading loadout…</div>
+              </div>
+            </aside>
+            <section class="eq-panel eq-character" id="eq-character" aria-label="Character">
+              <div class="eq-panel-title">Character</div>
+              <div class="eq-char-stage">
+                <div class="eq-nodes eq-nodes-left" id="eq-nodes-left"></div>
+                <div class="eq-char-hero">
+                  <div class="eq-char-frame">
+                    <div class="eq-char-skel" id="eq-char-skel"></div>
+                    <img id="equipped-character-img" alt="Character" />
+                    <div class="eq-char-fallback" id="eq-char-fallback" hidden>Character preview unavailable</div>
+                  </div>
+                </div>
+                <div class="eq-nodes eq-nodes-right" id="eq-nodes-right"></div>
+              </div>
+              <div class="eq-char-meta" id="eq-char-meta"></div>
+            </section>
+            <aside class="eq-panel" id="eq-backpack" aria-label="Backpack">
+              <div class="eq-panel-title">Backpack</div>
+              <div id="eq-backpack-body"><div class="eq-skel">Loading backpack…</div></div>
+            </aside>
+          </div>
+          <footer class="eq-sets" id="eq-sets" aria-label="Active set bonuses"></footer>
+          <div id="eq-toast" class="eq-toast" role="status" aria-live="polite"></div>
+        </div>
+      `;
+    },
+
+    _bindResize() {
+      if (this._resizeBound) return;
+      this._resizeBound = true;
+      window.addEventListener("resize", () => this._applyLayout());
+    },
+
+    _applyLayout() {
+      const root = document.getElementById("equipped-root");
+      if (!root) return;
+      const mode = layoutMode();
+      root.dataset.layout = mode;
+      root.dataset.pane = this.portraitPane || "loadout";
+      const tabs = document.getElementById("eq-mobile-tabs");
+      if (tabs) {
+        tabs.querySelectorAll(".eq-tab").forEach((btn) => {
+          const isLoadout = btn.dataset.equippedAction === "pane-loadout";
+          btn.classList.toggle("is-on", isLoadout ? this.portraitPane !== "backpack" : this.portraitPane === "backpack");
+        });
       }
     },
 
@@ -1539,193 +727,546 @@
         const slotButton = event.target.closest("[data-equip-slot]");
         if (slotButton && root.contains(slotButton)) {
           event.preventDefault();
-          event.stopPropagation();
           haptic("light");
           this._selectSlot(slotButton.dataset.equipSlot);
           return;
         }
-
+        const tile = event.target.closest("[data-backpack-key]");
+        if (tile && root.contains(tile)) {
+          event.preventDefault();
+          haptic("light");
+          this._selectBackpackItem(tile.dataset.backpackKey);
+          return;
+        }
+        const cat = event.target.closest("[data-eq-cat]");
+        if (cat && root.contains(cat)) {
+          event.preventDefault();
+          haptic("light");
+          this.backpackCategory = cat.dataset.eqCat || "all";
+          this._renderBackpack();
+          return;
+        }
         const actionButton = event.target.closest("[data-equipped-action]");
         if (!actionButton || !root.contains(actionButton)) return;
         event.preventDefault();
-        event.stopPropagation();
         const action = actionButton.dataset.equippedAction;
         if (action === "back") this.close();
         else if (action === "inspect") this.inspectSelected();
         else if (action === "unequip") this.unequipSelected();
+        else if (action === "equip") this.equipSelected();
         else if (action === "open-inventory") this.openInventory();
+        else if (action === "manage-pet") this.managePet();
+        else if (action === "retry-equipped") this.refresh();
+        else if (action === "retry-backpack") this._loadBackpack().then(() => this._renderBackpack());
+        else if (action === "compatible") {
+          this.compatibleOnly = !this.compatibleOnly;
+          haptic("light");
+          this._renderBackpack();
+        } else if (action === "pane-loadout") {
+          this.portraitPane = "loadout";
+          this._applyLayout();
+        } else if (action === "pane-backpack") {
+          this.portraitPane = "backpack";
+          this._applyLayout();
+        }
+      });
+      root.addEventListener("input", (event) => {
+        const search = event.target.closest("[data-eq-search]");
+        if (!search) return;
+        this.backpackSearch = search.value || "";
+        this._renderBackpack({ keepSearch: true });
       });
     },
 
-    _renderP1() {
-      if (!this.state) return;
-      const avatarBox = document.getElementById("equip-avatar");
-      const stats = this.state.stats || {};
-      const level = stats.level || this.state.level || 1;
+    async refresh() {
+      window.__EquippedPreviewReady = false;
+      const eqPromise = this._loadEquipped();
+      const bpPromise = this._loadBackpack();
+      await Promise.allSettled([eqPromise, bpPromise]);
       this._ensureSelectedSlot();
-
-      if (avatarBox) {
-        const statRows = [
-          ["HP", stats.hp],
-          ["ATK", stats.attack],
-          ["DEF", stats.defense],
-          ["AGI", stats.agility],
-          ["LUCK", stats.luck],
-        ];
-        avatarBox.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-            <div class="equip-stage-wrap" aria-label="Equipment slot board">
-              <img id="equipped-character-img" alt="Character" />
-              <div id="equip-hotspots"></div>
-            </div>
-            <div class="equip-level-strip">
-              <span>LEVEL</span>
-              <b>${esc(level)}</b>
-            </div>
-            <div class="equip-stat-summary">
-              ${statRows.map(([label, value]) => `
-                <div class="equip-stat-chip">
-                  <span>${label}</span>
-                  <b>${esc(value ?? "?")}</b>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `;
-
-        const imgEl = document.getElementById("equipped-character-img");
-        const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
-        window.__EquippedPreviewToken = previewToken;
-        window.__EquippedPreviewReady = false;
-        loadCharacterPngInto(imgEl, () => this._mountHotspots(), previewToken);
-        this._waitAndMountHotspots();
-      }
-
-      this._renderSelectedSlotPanel();
-      this._renderSummaries();
+      this._renderLoadout();
+      this._renderNodes();
+      this._renderStats();
+      this._renderSets();
+      this._renderBackpack();
+      this._renderCompare();
+      this._requestCharacterImage(false);
     },
 
-    _renderSelectedSlotPanel() {
-      const panel = document.getElementById("equip-slots");
-      if (!panel) return;
-      const slotKey = this._ensureSelectedSlot();
-      if (!slotKey) {
-        panel.innerHTML = "";
+    async _loadEquipped() {
+      try {
+        const res = await equippedPost("/webapp/equipped/state", {});
+        if (!res || !res.ok) {
+          this.equippedError = res?.reason || res?.message || "Failed to load equipped state.";
+          this.equippedReady = false;
+          console.error("Equipped.state error:", res);
+          this._renderLoadout();
+          this._renderStats();
+          this._renderSets();
+          return;
+        }
+        const data = res.data || res.state || res;
+        this._syncExternalState(data);
+        this.equippedError = null;
+        this.equippedReady = true;
+      } catch (err) {
+        console.error("Equipped.refresh error", err);
+        this.equippedError = err?.message === "NO_INIT_DATA"
+          ? "Equipped needs a live Telegram session."
+          : "Error while loading equipped.";
+        this.equippedReady = false;
+        this._renderLoadout();
+      }
+    },
+
+    async _loadBackpack() {
+      try {
+        const res = await equippedPost("/webapp/inventory/state", {});
+        if (!res || res.ok === false) {
+          this.backpackError = res?.reason || res?.message || "Failed to load backpack.";
+          this.backpackReady = false;
+          this.backpackItems = [];
+          return;
+        }
+        const items = res.slots || res.data?.slots || res.items || [];
+        this.backpackItems = Array.isArray(items) ? items : [];
+        this.backpackError = null;
+        this.backpackReady = true;
+      } catch (err) {
+        console.error("Equipped backpack error", err);
+        this.backpackError = err?.message === "NO_INIT_DATA"
+          ? "Backpack needs a live Telegram session."
+          : "Failed to load backpack.";
+        this.backpackReady = false;
+        this.backpackItems = [];
+      }
+    },
+
+    _renderLoadout() {
+      const list = document.getElementById("eq-loadout-list");
+      if (!list) return;
+      if (this.equippedError && !this.state) {
+        list.innerHTML = `
+          <div class="eq-error">${esc(this.equippedError)}</div>
+          <div style="text-align:center;">
+            <button type="button" class="eq-retry" data-equipped-action="retry-equipped">Retry</button>
+          </div>`;
         return;
       }
-
-      const slot = this._slotState(slotKey);
-      const label = slotLabel(slotKey, slot);
-      if (slot.empty) {
-        panel.innerHTML = `
-          <section class="equip-selected-panel" aria-live="polite" data-rarity="common">
-            <div class="equip-selected-slot-label">${esc(label)}</div>
-            <div class="equip-selected-name">Empty slot</div>
-            <div class="equip-empty-copy">Equip an item from Inventory.</div>
-            <div class="equip-selected-actions" style="grid-template-columns:1fr;">
-              <button type="button" class="equip-action-btn is-inventory" data-equipped-action="open-inventory">
-                OPEN INVENTORY
-              </button>
-            </div>
-          </section>
-        `;
+      if (!this.state) {
+        list.innerHTML = `<div class="eq-skel">Loading loadout…</div>`;
         return;
       }
+      const selected = this._ensureSelectedSlot();
+      list.innerHTML = CANONICAL_SLOTS.map((slotKey) => {
+        const slot = this._slotState(slotKey);
+        const empty = !!slot.empty;
+        const rarity = empty ? "common" : normRarity(slot.rarity);
+        const name = empty ? "EMPTY" : (itemNameOf(slot) || "Unknown");
+        const level = itemLevelOf(slot);
+        const rarityText = empty ? "" : String(slot.rarity || rarity).toUpperCase();
+        const meta = empty
+          ? slotLabel(slotKey, slot)
+          : [rarityText, level != null ? `LV ${level}` : ""].filter(Boolean).join(" · ");
+        return `
+          <button type="button" class="eq-slot${empty ? " is-empty" : ""}${slotKey === selected ? " is-selected" : ""}"
+                  data-equip-slot="${esc(slotKey)}" data-rarity="${rarity}"
+                  aria-label="${esc(slotLabel(slotKey, slot))}: ${esc(name)}"
+                  aria-pressed="${slotKey === selected ? "true" : "false"}">
+            <span class="eq-slot-kind">${slotGlyph(slotKey)}</span>
+            <span class="eq-icon" data-eq-icon="${esc(slotKey)}" data-rarity="${rarity}">
+              ${empty ? `<span class="eq-icon-ph">${esc(slotLabel(slotKey).slice(0, 3))}</span>` : ""}
+            </span>
+            <span class="eq-slot-copy">
+              <span class="eq-slot-name">${esc(name)}</span>
+              <span class="eq-slot-meta">${esc(meta)}</span>
+            </span>
+          </button>`;
+      }).join("");
+      CANONICAL_SLOTS.forEach((slotKey) => {
+        const slot = this._slotState(slotKey);
+        const box = list.querySelector(`[data-eq-icon="${slotKey}"]`);
+        if (!box || slot.empty) return;
+        if (!_mountPetSprite(box, slot, "equip-pet-sprite equip-pet-sprite-list")) {
+          const src = _bgCandidates(slot)[0];
+          if (src) {
+            box.innerHTML = `<img class="item-icon" alt="" src="${esc(src)}" data-icon-i="0">`;
+            const img = box.querySelector("img");
+            if (img) img.onerror = () => this._iconError(img, slot);
+          } else {
+            _setBgWithFallback(box, slot);
+          }
+        }
+      });
+    },
 
-      const itemKey = String(slot.item_key || slot.key || slot.itemKey || slot.item || "");
-      const name = slot.name || itemKey || "Unknown item";
-      const rarity = _normRarity(slot.rarity);
-      const stats = slot.stats && typeof slot.stats === "object" ? slot.stats : {};
-      const statEntries = Object.keys(stats);
-      const statsHtml = statEntries.length
-        ? statEntries.map((key) => `<span class="equip-selected-stat"><b>${esc(formattedStatValue(stats[key]))}</b> ${esc(statPresentationLabel(key))}</span>`).join("")
-        : (slot.bonusesText ? `<span class="equip-selected-stat">${esc(slot.bonusesText)}</span>` : "");
-      const canInspect = !!itemKey && typeof window.Inventory?.openEquippedItem === "function";
-      const levelText = slot.level != null ? `Level ${esc(slot.level)}` : "";
+    _renderNodes() {
+      const left = document.getElementById("eq-nodes-left");
+      const right = document.getElementById("eq-nodes-right");
+      if (!left || !right) return;
+      const renderSide = (el, keys) => {
+        const selected = this.selectedEquippedSlotKey;
+        el.innerHTML = keys.map((slotKey) => {
+          const slot = this._slotState(slotKey);
+          const empty = !!slot.empty;
+          const rarity = empty ? "common" : normRarity(slot.rarity);
+          return `
+            <button type="button" class="eq-node${empty ? " is-empty" : ""}${slotKey === selected ? " is-selected" : ""}"
+                    data-equip-slot="${esc(slotKey)}" data-rarity="${rarity}"
+                    aria-label="${esc(slotLabel(slotKey, slot))}">
+              <span class="eq-icon" data-eq-node-icon="${esc(slotKey)}" data-rarity="${rarity}">
+                ${empty ? slotGlyph(slotKey) : ""}
+              </span>
+            </button>`;
+        }).join("");
+        keys.forEach((slotKey) => {
+          const slot = this._slotState(slotKey);
+          if (slot.empty) return;
+          const box = el.querySelector(`[data-eq-node-icon="${slotKey}"]`);
+          if (!box) return;
+          if (!_mountPetSprite(box, slot, "equip-pet-sprite equip-pet-sprite-hotspot")) {
+            const src = _bgCandidates(slot)[0];
+            if (src) {
+              box.innerHTML = `<img class="item-icon" alt="" src="${esc(src)}">`;
+              const img = box.querySelector("img");
+              if (img) img.onerror = () => this._iconError(img, slot);
+            } else _setBgWithFallback(box, slot);
+          }
+        });
+      };
+      renderSide(left, LEFT_NODES);
+      renderSide(right, RIGHT_NODES);
+    },
 
-      panel.innerHTML = `
-        <section class="equip-selected-panel" aria-live="polite" data-rarity="${rarity}">
-          <div class="equip-selected-head">
-            <div class="equip-selected-art equip-icon-box" data-rarity="${rarity}">
-              ${slot.icon ? `<img src="${esc(slot.icon)}" class="item-icon" alt="">` : ""}
-            </div>
-            <div style="min-width:0;">
-              <div class="equip-selected-slot-label">${esc(label)}</div>
-              <div class="equip-selected-name">${esc(name)}</div>
-              <div class="equip-selected-meta">
-                ${slot.rarity ? esc(slot.rarity) : ""}${slot.rarity && levelText ? " · " : ""}${levelText}
-              </div>
-            </div>
+    _renderStats() {
+      const box = document.getElementById("eq-char-meta");
+      if (!box) return;
+      const stats = this.state?.stats || {};
+      const level = stats.level ?? this.state?.level;
+      const hasLevel = level != null && String(level) !== "";
+      const chips = CHAR_STATS.map((row) => {
+        const value = pickStat(stats, row.key, row.alts);
+        const shown = value == null || value === "" ? "—" : value;
+        return `<div class="eq-stat">
+          ${statGlyph(row.label)}
+          <span>${row.label}</span>
+          <b>${esc(shown)}</b>
+        </div>`;
+      }).join("");
+      box.innerHTML = `
+        ${hasLevel ? `<div class="eq-level"><span>LEVEL</span><b>${esc(level)}</b></div>` : ""}
+        <div class="eq-stats">${chips}</div>
+      `;
+    },
+
+    _requestCharacterImage(force) {
+      const imgEl = document.getElementById("equipped-character-img");
+      const skel = document.getElementById("eq-char-skel");
+      const fallback = document.getElementById("eq-char-fallback");
+      if (!imgEl) return;
+      const fp = this._fingerprint();
+      if (!force && fp && fp === this._lastFingerprint && imgEl.getAttribute("src")) return;
+      this._lastFingerprint = fp;
+      const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
+      window.__EquippedPreviewToken = previewToken;
+      window.__EquippedPreviewReady = false;
+      if (skel) skel.hidden = false;
+      if (fallback) fallback.hidden = true;
+
+      const finish = (ok) => {
+        if (skel) skel.hidden = true;
+        if (!ok) {
+          const fb = this._fallbackCharSrc || "/images/Ah.png";
+          if (fb && imgEl.src !== fb) {
+            imgEl.onerror = () => {
+              if (fallback) fallback.hidden = false;
+              window.__EquippedPreviewReady = true;
+            };
+            imgEl.onload = () => { window.__EquippedPreviewReady = true; };
+            imgEl.src = fb;
+          } else {
+            if (fallback) fallback.hidden = false;
+            window.__EquippedPreviewReady = true;
+          }
+        } else if (fallback) fallback.hidden = true;
+      };
+
+      loadCharacterPngInto(imgEl, () => finish(true), previewToken).then(() => {
+        if (!imgEl.getAttribute("src") && !window.__EquippedCharImgUrl) finish(false);
+        else if (skel) setTimeout(() => { if (skel) skel.hidden = true; }, 80);
+      });
+      setTimeout(() => {
+        if (window.__EquippedPreviewReady) {
+          if (skel) skel.hidden = true;
+          return;
+        }
+        if (!imgEl.getAttribute("src")) finish(false);
+      }, 2400);
+    },
+
+    _iconError(img, item) {
+      if (!img) return;
+      const i = Number(img.dataset.iconI || 0) + 1;
+      const urls = _bgCandidates(item);
+      if (i < urls.length) {
+        img.dataset.iconI = String(i);
+        img.src = urls[i];
+        return;
+      }
+      img.style.display = "none";
+    },
+
+    _renderBackpack(opts) {
+      const body = document.getElementById("eq-backpack-body");
+      if (!body) return;
+      const keepSearch = opts && opts.keepSearch;
+      const searchValue = keepSearch
+        ? (body.querySelector("[data-eq-search]")?.value ?? this.backpackSearch)
+        : this.backpackSearch;
+      this.backpackSearch = searchValue;
+
+      if (this.backpackError && !this.backpackReady) {
+        body.innerHTML = `
+          <div class="eq-error">${esc(this.backpackError)}</div>
+          <div style="text-align:center;">
+            <button type="button" class="eq-retry" data-equipped-action="retry-backpack">Retry backpack</button>
           </div>
-          ${statsHtml ? `<div class="equip-selected-stats">${statsHtml}</div>` : ""}
-          <div class="equip-selected-actions">
-            ${canInspect ? `
-              <button type="button" class="equip-action-btn is-inspect" data-equipped-action="inspect">
-                INSPECT
-              </button>
-            ` : ""}
-            <button type="button" class="equip-action-btn is-unequip" data-equipped-action="unequip"
-                    ${canInspect ? "" : 'style="grid-column:1/-1;"'}>
-              UNEQUIP
+          <div id="eq-compare-host"></div>`;
+        this._renderCompare();
+        return;
+      }
+      if (!this.backpackReady) {
+        body.innerHTML = `<div class="eq-skel">Loading backpack…</div><div id="eq-compare-host"></div>`;
+        this._renderCompare();
+        return;
+      }
+
+      const items = this._filteredBackpack();
+      const cats = CATEGORIES.map((c) => `
+        <button type="button" class="eq-cat${this.backpackCategory === c.id ? " is-on" : ""}"
+                data-eq-cat="${c.id}">${c.label}</button>`).join("");
+      const tiles = items.length
+        ? items.map((it) => {
+            const key = itemKeyOf(it);
+            const rarity = normRarity(it.rarity);
+            const level = itemLevelOf(it);
+            const qty = itemQtyOf(it);
+            const selected = key && key === this.selectedBackpackItemKey;
+            return `
+              <button type="button" class="eq-tile${selected ? " is-selected" : ""}"
+                      data-backpack-key="${esc(key)}" data-rarity="${rarity}"
+                      aria-label="${esc(itemNameOf(it) || key)}" aria-pressed="${selected ? "true" : "false"}">
+                <span class="eq-icon" data-bp-icon="${esc(key)}" data-rarity="${rarity}"></span>
+                ${level != null ? `<span class="eq-tile-lv">LV ${esc(level)}</span>` : ""}
+                ${qty != null ? `<span class="eq-tile-qty">${esc(qty)}</span>` : ""}
+              </button>`;
+          }).join("")
+        : `<div class="eq-empty" style="grid-column:1/-1;">${
+            this.compatibleOnly
+              ? "No compatible items in backpack."
+              : "No unequipped gear."
+          }</div>`;
+
+      body.innerHTML = `
+        <div class="eq-backpack-tools">
+          <div class="eq-cats" role="tablist">${cats}</div>
+          <div class="eq-searchrow">
+            <input class="eq-search" data-eq-search type="search" placeholder="Search items…"
+                   value="${esc(this.backpackSearch)}" aria-label="Search backpack">
+            <button type="button" class="eq-filter${this.compatibleOnly ? " is-on" : ""}"
+                    data-equipped-action="compatible" aria-pressed="${this.compatibleOnly ? "true" : "false"}">
+              Compatible
             </button>
           </div>
-        </section>
+        </div>
+        <div class="eq-grid">${tiles}</div>
+        <div id="eq-compare-host"></div>
       `;
 
-      const art = panel.querySelector(".equip-selected-art");
-      if (art && !_mountPetSprite(art, slot, "equip-pet-sprite equip-pet-sprite-selected") && !slot.icon) {
-        _setBgWithFallback(art, slot);
-      }
+      items.forEach((it) => {
+        const key = itemKeyOf(it);
+        const box = body.querySelector('[data-bp-icon="' + String(key).replace(/"/g, "") + '"]');
+        if (!box) return;
+        if (!_mountPetSprite(box, it, "equip-pet-sprite")) {
+          const src = _bgCandidates(it)[0];
+          if (src) {
+            box.innerHTML = `<img class="item-icon" alt="" src="${esc(src)}">`;
+            const img = box.querySelector("img");
+            if (img) img.onerror = () => this._iconError(img, it);
+          } else _setBgWithFallback(box, it);
+        }
+      });
+      this._renderCompare();
     },
 
-    _renderSummaries() {
-      const setsBox = document.getElementById("equip-sets");
-      const totalBox = document.getElementById("equip-total");
-      const sets = this.state?.activeSets || this.state?.active_sets || [];
-      const total = this.state?.totalBonus || this.state?.total_bonus || {};
+    _renderCompare() {
+      let host = document.getElementById("eq-compare-host");
+      if (!host) {
+        const body = document.getElementById("eq-backpack-body");
+        if (!body) return;
+        host = document.createElement("div");
+        host.id = "eq-compare-host";
+        body.appendChild(host);
+      }
+      const slotKey = this._ensureSelectedSlot();
+      const equipped = slotKey ? this._slotState(slotKey) : null;
+      const selected = this._backpackItemByKey(this.selectedBackpackItemKey);
+      const pending = !!this.pendingAction;
+      const isPetSlot = slotKey === "pet";
+
+      const sideHtml = (label, item, emptyCopy) => {
+        if (!item || item.empty) {
+          return `<div class="eq-side">
+            <span class="eq-icon" data-rarity="common"><span class="eq-icon-ph">—</span></span>
+            <div>
+              <div class="eq-side-kicker">${esc(label)}</div>
+              <div class="eq-side-name">${esc(emptyCopy || "EMPTY SLOT")}</div>
+            </div>
+          </div>`;
+        }
+        const rarity = normRarity(item.rarity);
+        const level = itemLevelOf(item);
+        const src = _bgCandidates(item)[0] || "";
+        return `<div class="eq-side" data-rarity="${rarity}">
+          <span class="eq-icon" data-rarity="${rarity}">
+            ${src ? `<img class="item-icon" alt="" src="${esc(src)}">` : `<span class="eq-icon-ph">${esc(slotLabel(itemSlotOf(item) || slotKey).slice(0, 3))}</span>`}
+          </span>
+          <div>
+            <div class="eq-side-kicker">${esc(label)}</div>
+            <div class="eq-side-name">${esc(itemNameOf(item) || "Unknown")}</div>
+            <div class="eq-side-meta">${esc([
+              item.rarity ? String(item.rarity).toUpperCase() : "",
+              level != null ? `LV ${level}` : "",
+              itemSetOf(item)
+            ].filter(Boolean).join(" · "))}</div>
+          </div>
+        </div>`;
+      };
+
+      let rowsHtml = "";
+      if (selected) {
+        const rows = compareRows(selected, equipped);
+        rowsHtml = rows.length
+          ? `<div class="eq-rows">${rows.map((row) => {
+              const cls = row.delta > 0 ? "is-up" : row.delta < 0 ? "is-down" : "is-flat";
+              const delta = row.delta > 0 ? `+${row.delta}` : String(row.delta);
+              return `<div class="eq-row">
+                <span class="k">${esc(row.label)}</span>
+                <span class="a">${esc(row.equipped)}</span>
+                <span class="b">${esc(row.selected)}</span>
+                <span class="d ${cls}">${esc(delta)}</span>
+              </div>`;
+            }).join("")}</div>`
+          : `<div class="eq-empty">No comparable stats on this item.</div>`;
+      } else if (equipped && !equipped.empty) {
+        const stats = itemStatsOf(equipped);
+        const keys = orderedStatKeys(stats, {});
+        const desc = String(equipped.description || equipped.bonusesText || "").trim();
+        rowsHtml = `
+          ${keys.length ? `<div class="eq-rows">${keys.map((k) => `
+            <div class="eq-row">
+              <span class="k">${esc(statPresentationLabel(k))}</span>
+              <span class="a">${esc(formattedStatValue(stats[k]))}</span>
+              <span class="b"></span>
+              <span class="d is-flat"></span>
+            </div>`).join("")}</div>` : ""}
+          ${desc ? `<div class="eq-empty" style="text-align:left;padding:8px 4px;">${esc(desc)}</div>` : ""}
+        `;
+      } else {
+        rowsHtml = `<div class="eq-empty">Select backpack gear to compare and equip.</div>`;
+      }
+
+      let setHtml = "";
+      if (selected) {
+        const preview = this._setPreview(selected);
+        if (preview) {
+          const fmt = (map) => preview.names
+            .map((n) => `${n} (${map[n] || 0})`)
+            .filter((line) => !line.endsWith("(0)"))
+            .join(" · ") || "None";
+          setHtml = `<div class="eq-set-preview">
+            <div><div class="eq-side-kicker">Current set</div><b>${esc(fmt(preview.current))}</b></div>
+            <div class="eq-vs">››</div>
+            <div><div class="eq-side-kicker">If equipped</div><b>${esc(fmt(preview.next))}</b></div>
+          </div>`;
+        }
+      }
+
+      const actions = [];
+      if (selected) {
+        actions.push(`<button type="button" class="eq-action is-equip" data-equipped-action="equip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "equip" ? "Equipping…" : "Equip selected"}</button>`);
+      }
+      if (equipped && !equipped.empty) {
+        actions.push(`<button type="button" class="eq-action is-unequip" data-equipped-action="unequip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "unequip" ? "Unequipping…" : "Unequip"}</button>`);
+      }
+      if (isPetSlot && typeof window.MyPets?.open === "function") {
+        actions.push(`<button type="button" class="eq-action is-pet" data-equipped-action="manage-pet">Manage pet</button>`);
+      }
+      if (equipped && !equipped.empty && typeof window.Inventory?.openEquippedItem === "function") {
+        actions.push(`<button type="button" class="eq-action" data-equipped-action="inspect">Inspect</button>`);
+      }
+
+      host.innerHTML = `
+        <div class="eq-compare">
+          <div class="eq-compare-pair">
+            ${sideHtml("Equipped", equipped && !equipped.empty ? equipped : null, "EMPTY SLOT")}
+            <div class="eq-vs">VS</div>
+            ${selected ? sideHtml("Selected", selected) : sideHtml("Selected", null, "Select an item")}
+          </div>
+          ${rowsHtml}
+          ${setHtml}
+          ${actions.length ? `<div class="eq-actions" style="${actions.length === 1 ? "grid-template-columns:1fr;" : ""}">${actions.join("")}</div>` : ""}
+        </div>
+      `;
+    },
+
+    _renderSets() {
+      const box = document.getElementById("eq-sets");
+      if (!box) return;
+      const sets = activeSetsOf(this.state);
+      const total = totalBonusOf(this.state);
       const totalKeys = Object.keys(total);
-
-      if (setsBox) {
-        setsBox.innerHTML = sets.length ? `
-          <details class="equip-summary-card is-sets" ${sets.length === 1 ? "open" : ""}>
-            <summary><span>Active set bonuses</span><span class="equip-summary-count">${sets.length}</span></summary>
-            <div class="equip-summary-rows">
-              ${sets.map((set) => {
-                const bonus = set?.bonus && typeof set.bonus === "object" ? set.bonus : {};
-                const bonusKeys = Object.keys(bonus);
-                return `
-                  <div class="equip-summary-row">
-                    <div class="equip-set-main">
-                      <span class="equip-set-name">${esc(set.set)}</span>
-                      <span class="equip-set-count">${esc(set.count)} equipped</span>
-                    </div>
-                    ${bonusKeys.length ? `
-                      <div class="equip-set-bonuses" aria-label="Active set bonuses">
-                        ${bonusKeys.map((key) => `
-                          <span class="equip-selected-stat equip-set-bonus">
-                            <b>${esc(formattedStatValue(bonus[key]))}</b> ${esc(statPresentationLabel(key))}
-                          </span>
-                        `).join("")}
-                      </div>
-                    ` : ""}
-                  </div>
-                `;
-              }).join("")}
-            </div>
-          </details>
-        ` : "";
+      if (!sets.length && !totalKeys.length) {
+        box.innerHTML = `
+          <div class="eq-sets-head"><span>Active set bonuses</span></div>
+          <div class="eq-empty" style="padding:6px 0;">No active set bonus</div>`;
+        return;
       }
+      const cards = sets.map((set) => {
+        const bonus = set?.bonus && typeof set.bonus === "object" ? set.bonus : {};
+        const bonusKeys = Object.keys(bonus);
+        const bonusText = bonusKeys.length
+          ? bonusKeys.map((k) => `${formattedStatValue(bonus[k])} ${statPresentationLabel(k)}`).join(" · ")
+          : "";
+        const count = set.count != null ? `${set.count} equipped` : "";
+        return `<div class="eq-set-card">
+          <div class="eq-set-mark">${wolfMark()}</div>
+          <div>
+            <b>${esc(set.set || set.name || "Set")}</b>
+            <span>${esc([count, bonusText].filter(Boolean).join(" · "))}</span>
+          </div>
+        </div>`;
+      }).join("");
+      const bonusLine = totalKeys.length
+        ? `<div class="eq-bonus">Total gear bonus · ${totalKeys.map((k) => `<b>${esc(k)}+${esc(total[k])}</b>`).join(" · ")}</div>`
+        : "";
+      box.innerHTML = `
+        <div class="eq-sets-head"><span>Active set bonuses</span></div>
+        <div class="eq-set-row">${cards || `<div class="eq-empty">No active set bonus</div>`}</div>
+        ${bonusLine}
+      `;
+    },
 
-      if (totalBox) {
-        totalBox.innerHTML = totalKeys.length ? `
-          <details class="equip-summary-card is-total">
-            <summary><span>Total gear bonus</span><span class="equip-summary-count">${totalKeys.length}</span></summary>
-            <div class="equip-total-chips">
-              ${totalKeys.map((key) => `<span class="equip-selected-stat equip-total-stat">${esc(key)}+${esc(total[key])}</span>`).join("")}
-            </div>
-          </details>
-        ` : "";
-      }
+    _paintSelection() {
+      const root = document.getElementById("equipped-root");
+      if (!root) return;
+      const slot = this.selectedEquippedSlotKey;
+      root.querySelectorAll("[data-equip-slot]").forEach((el) => {
+        el.classList.toggle("is-selected", el.dataset.equipSlot === slot);
+        if (el.getAttribute("aria-pressed") != null) {
+          el.setAttribute("aria-pressed", el.dataset.equipSlot === slot ? "true" : "false");
+        }
+      });
     },
 
     openInventory() {
@@ -1737,260 +1278,106 @@
     inspectSelected() {
       const slot = this._slotState(this.selectedEquippedSlotKey);
       if (!slot || slot.empty) return;
-      const itemKey = String(slot.item_key || slot.key || slot.itemKey || slot.item || "");
-      if (!itemKey || typeof window.Inventory?.openEquippedItem !== "function") return;
-      window.Inventory.openEquippedItem(itemKey);
+      const key = itemKeyOf(slot);
+      if (!key || typeof window.Inventory?.openEquippedItem !== "function") return;
+      window.Inventory.openEquippedItem(key);
+    },
+
+    managePet() {
+      haptic("light");
+      try { window.MyPets?.open?.(); } catch (_) {
+        this._toast("Pet management is unavailable.", "error");
+      }
     },
 
     async unequipSelected() {
       const slotKey = this.selectedEquippedSlotKey;
       const slot = this._slotState(slotKey);
-      if (!slotKey || !slot || slot.empty) return;
+      if (!slotKey || !slot || slot.empty || this.pendingAction) return;
+      this.pendingAction = "unequip";
+      this._renderCompare();
+      haptic("medium");
       try {
         const res = await equippedPost("/webapp/equipped/unequip", { slot: slotKey });
         if (res && res.ok) {
-          this.state = res.data;
-          this.render();
+          const data = res.data || res.state || res;
+          if (data && (data.slots || data.stats)) this._syncExternalState(data);
+          else await this._loadEquipped();
+          await this._loadBackpack();
+          hapticNotify("success");
+          this.pendingAction = null;
+          this._ensureSelectedSlot();
+          this._renderLoadout();
+          this._renderNodes();
+          this._renderStats();
+          this._renderSets();
+          this._renderBackpack();
+          this._renderCompare();
+          this._requestCharacterImage(true);
         } else {
-          showAlert("Failed to unequip.");
+          hapticNotify("error");
+          this.pendingAction = null;
+          this._renderCompare();
+          this._toast(res?.message || res?.reason || "Failed to unequip.", "error");
         }
       } catch (err) {
         console.error("Equipped.unequip error", err);
-        showAlert("Failed to unequip.");
+        hapticNotify("error");
+        this.pendingAction = null;
+        this._renderCompare();
+        this._toast("Failed to unequip.", "error");
+      }
+    },
+
+    async equipSelected() {
+      const item = this._backpackItemByKey(this.selectedBackpackItemKey);
+      const key = itemKeyOf(item);
+      if (!key || this.pendingAction) return;
+      const slot = itemSlotOf(item);
+      if (this._canonicalSlotKeys().includes(slot)) this.selectedEquippedSlotKey = slot;
+      this.pendingAction = "equip";
+      this._renderCompare();
+      haptic("medium");
+      try {
+        const res = await equippedPost("/webapp/inventory/equip", { key });
+        if (res && res.ok) {
+          await this._loadEquipped();
+          await this._loadBackpack();
+          hapticNotify("success");
+          this.pendingAction = null;
+          if (this._canonicalSlotKeys().includes(slot)) this.selectedEquippedSlotKey = slot;
+          this.selectedBackpackItemKey = null;
+          this._renderLoadout();
+          this._renderNodes();
+          this._renderStats();
+          this._renderSets();
+          this._renderBackpack();
+          this._renderCompare();
+          this._requestCharacterImage(true);
+        } else {
+          hapticNotify("error");
+          this.pendingAction = null;
+          this._renderCompare();
+          this._toast(res?.message || res?.reason || "Cannot equip that item.", "error");
+        }
+      } catch (err) {
+        console.error("Equipped.equip error", err);
+        hapticNotify("error");
+        this.pendingAction = null;
+        this._renderCompare();
+        this._toast("Failed to equip.", "error");
       }
     },
 
     render() {
-      return this._renderP1();
-
-      if (!this.state) return;
-
-      const avatarBox = document.getElementById("equip-avatar");
-      const slotsBox = document.getElementById("equip-slots");
-      const setsBox = document.getElementById("equip-sets");
-      const totalBox = document.getElementById("equip-total");
-
-      const stats = this.state.stats || {};
-      const level = stats.level || this.state.level || 1;
-      const hp = stats.hp;
-      const atk = stats.attack;
-      const def = stats.defense;
-      const agi = stats.agility;
-      const luck = stats.luck;
-
-      // --- LEFT: PNG + HOTSPOTY ---
-      if (avatarBox) {
-        avatarBox.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-            <div class="equip-stage-wrap">
-              <img id="equipped-character-img"
-                   alt="Character"
-                   style="width:100%;height:auto;display:block;" />
-              <div id="equip-hotspots"></div>
-            </div>
-
-            <div style="font-size:13px;opacity:.95;">
-              Level <b>${level}</b>
-            </div>
-            <div style="font-size:11px;opacity:.85;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
-              <span>HP: <b>${hp ?? "?"}</b></span>
-              <span>ATK: <b>${atk ?? "?"}</b></span>
-              <span>DEF: <b>${def ?? "?"}</b></span>
-              <span>AGI: <b>${agi ?? "?"}</b></span>
-              <span>LUCK: <b>${luck ?? "?"}</b></span>
-            </div>
-            <div style="font-size:13px;opacity:.9;">
-              Tap a slot on the card (or below) to inspect / unequip.
-            </div>
-          </div>
-        `;
-
-        const imgEl = document.getElementById("equipped-character-img");
-        const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
-        window.__EquippedPreviewToken = previewToken;
-        window.__EquippedPreviewReady = false;
-        loadCharacterPngInto(imgEl, () => this._mountHotspots(), previewToken);
-        this._waitAndMountHotspots();
-      }
-
-      // --- RIGHT: lista slotów ---
-      if (slotsBox) {
-        const slots = this.state.slots || [];
-        const html = slots
-          .map((slot) => {
-            const isEmpty = !!slot.empty;
-            const label = slot.label || slot.slot || "Slot";
-            const itemName = isEmpty ? "Empty" : (slot.name || slot.item_key || "Unknown");
-            const rarityKey = _normRarity(slot.rarity);
-            const rarity = slot.rarity ? `<span style="opacity:.8;">(${slot.rarity})</span>` : "";
-            const subtitle = isEmpty ? "Empty slot" : (slot.level ? `Lv ${slot.level}` : "");
-            const bonuses = slot.bonusesText
-              ? `<div style="font-size:11px;opacity:.7;">${slot.bonusesText}</div>`
-              : "";
-
-            const icon = slot.icon
-              ? `<div class="equip-icon-box sm">
-                   <img src="${slot.icon}" class="item-icon">
-                 </div>`
-              : `<div class="equip-icon-box sm" style="background:transparent;border:1px dashed rgba(255,255,255,.15);"></div>`;
-
-            return `
-              <button data-slot="${slot.slot}"
-                      data-rarity="${rarityKey}"
-                      class="equip-slot-btn"
-                      type="button"
-                      style="
-                        width:100%;
-                        display:flex;
-                        align-items:center;
-                        gap:10px;
-                        background:rgba(10,10,25,.9);
-                        border-radius:14px;
-                        border:1px solid rgba(255,255,255,.06);
-                        padding:8px 10px;
-                        margin-bottom:8px;
-                        color:#fff;
-                        text-align:left;
-                        cursor:pointer;
-                      ">
-                ${icon}
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
-                    ${label}
-                  </div>
-                  <div style="font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    ${itemName} ${rarity}
-                  </div>
-                  <div style="font-size:11px;opacity:.7;">
-                    ${subtitle}
-                  </div>
-                  ${bonuses}
-                </div>
-              </button>
-            `;
-          })
-          .join("");
-
-        slotsBox.innerHTML = `
-          <div style="font-size:13px;margin-bottom:6px;opacity:.9;">
-            Or tap a slot below:
-          </div>
-          <div>${html}</div>
-        `;
-
-        (this.state.slots || []).forEach((slotState) => {
-          if (!slotState?.isPet) return;
-          const iconBox = slotsBox.querySelector(`.equip-slot-btn[data-slot="${slotState.slot}"] .equip-icon-box`);
-          if (iconBox) _mountPetSprite(iconBox, slotState, "equip-pet-sprite equip-pet-sprite-list");
-        });
-      }
-
-      // --- ACTIVE SETS ---
-      if (setsBox) {
-        const sets = this.state.activeSets || this.state.active_sets || [];
-        setsBox.innerHTML = sets.length
-          ? ("<b>Active set bonuses:</b> " + sets.map((s) => `${s.set} (${s.count})`).join(" • "))
-          : "";
-      }
-
-      // --- TOTAL BONUS ---
-      if (totalBox) {
-        const t = this.state.totalBonus || this.state.total_bonus || {};
-        const keys = Object.keys(t);
-        totalBox.innerHTML = keys.length
-          ? ("<b>Total gear bonus:</b> " + keys.map((k) => `${k}+${t[k]}`).join(", "))
-          : "";
-      }
-    },
-
-    _waitAndMountHotspots() {
-      let tries = 0;
-      const tick = () => {
-        tries++;
-        const imgEl = document.getElementById("equipped-character-img");
-        if (imgEl && imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
-          this._mountHotspots();
-          return;
-        }
-        if (tries < 80) setTimeout(tick, 60);
-      };
-      tick();
-    },
-
-    _mountHotspots() {
-      if (!this.state) return;
-
-      const imgEl  = document.getElementById("equipped-character-img");
-      const layer  = document.getElementById("equip-hotspots");
-      if (!imgEl || !layer) return;
-
-      const W = imgEl.naturalWidth || 0;
-      const H = imgEl.naturalHeight || 0;
-      if (!W || !H) return;
-
-      const dbg = (localStorage.getItem("debug_equipped") === "1") || !!window.DEBUG_EQUIPPED;
-
-      const slots = this.state.slots || [];
-      const bySlot = {};
-      slots.forEach((s) => (bySlot[s.slot] = s));
-
-      layer.innerHTML = "";
-
-      SLOT_ORDER.forEach((slotKey) => {
-        const rect = SLOT_COORDS[slotKey];
-        if (!rect) return;
-
-        const s = bySlot[slotKey] || { slot: slotKey, empty: true, label: slotKey };
-        const [x, y, w, h] = rect;
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "equip-hotspot " + (s.empty ? "is-empty" : "is-equipped");
-        if (slotKey === this.selectedEquippedSlotKey) btn.classList.add("is-selected");
-        btn.setAttribute("data-slot", slotKey);
-        btn.setAttribute("data-equip-slot", slotKey);
-        btn.setAttribute("aria-label", `${slotLabel(slotKey, s)}: ${s.empty ? "Empty slot" : (s.name || s.item_key || "Equipped")}`);
-
-        btn.style.left   = toPctRatio(x / W);
-        btn.style.top    = toPctRatio(y / H);
-        btn.style.width  = toPctRatio(w / W);
-        btn.style.height = toPctRatio(h / H);
-
-        // backplate
-        btn.style.backgroundColor = s.empty ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.22)";
-        btn.style.borderRadius = "16px";
-        btn.style.overflow = "visible"; // 🔥 NIE UCINA GLOW
-
-        // rarity dla glow
-        btn.dataset.rarity = _normRarity(s.rarity);
-
-        // ✅ IKONA jako osobna warstwa
-        const icon = document.createElement("div");
-        icon.className = "equip-icon";
-        if (!_mountPetSprite(icon, s || {}, "equip-pet-sprite equip-pet-sprite-hotspot")) {
-          _setBgWithFallback(icon, s || {});
-        }
-        if (s.empty) icon.style.opacity = "0.35";
-        btn.appendChild(icon);
-
-        const label = document.createElement("span");
-        label.className = "equip-hotspot-label";
-        label.textContent = slotLabel(slotKey, s);
-        btn.appendChild(label);
-
-        const selectedMark = document.createElement("span");
-        selectedMark.className = "equip-selected-mark";
-        selectedMark.textContent = "✓";
-        btn.appendChild(selectedMark);
-
-        if (dbg) {
-          btn.style.outline = s.empty
-            ? "1px dashed rgba(255,255,255,.35)"
-            : "1px solid rgba(0,229,255,.65)";
-        }
-
-        layer.appendChild(btn);
-      });
+      this._ensureSelectedSlot();
+      this._applyLayout();
+      this._renderLoadout();
+      this._renderNodes();
+      this._renderStats();
+      this._renderSets();
+      this._renderBackpack();
+      this._renderCompare();
     },
 
     async inspect(slot) {
@@ -1999,11 +1386,16 @@
     },
 
     renderInspect(d) {
-      const itemKey = String(d?.item_key || d?.key || d?.itemKey || d?.item || "");
-      if (itemKey && typeof window.Inventory?.openEquippedItem === "function") {
-        return window.Inventory.openEquippedItem(itemKey);
+      const key = itemKeyOf(d);
+      if (key && typeof window.Inventory?.openEquippedItem === "function") {
+        return window.Inventory.openEquippedItem(key);
       }
       return false;
     },
+
+    _itemStats: itemStatsOf,
+    _compareRows: compareRows,
+    _itemSet: itemSetOf,
+    _itemKey: itemKeyOf
   };
 })();
