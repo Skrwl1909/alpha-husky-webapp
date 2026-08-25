@@ -2,6 +2,10 @@ import type { OperationDef, UnitDef } from "../combat/types";
 
 const IMG = "/images/tactical_ops";
 
+export const FALLBACK_SPRITE = `${IMG}/alpha.png`;
+export const FALLBACK_ATTACK = `${IMG}/alpha-attack.png`;
+export const FALLBACK_PORTRAIT = `${IMG}/alpha-portrait.jpg`;
+
 export const OPERATION: OperationDef = {
   id: "broken-signal",
   name: "BROKEN SIGNAL",
@@ -19,28 +23,28 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
     def: 12,
     spd: 14,
     move: 3,
-    sprite: `${IMG}/alpha.png`,
-    attackSprite: `${IMG}/alpha-attack.png`,
-    portrait: `${IMG}/alpha-portrait.jpg`,
+    sprite: FALLBACK_SPRITE,
+    attackSprite: FALLBACK_ATTACK,
+    portrait: FALLBACK_PORTRAIT,
     skillIds: ["alpha-strike", "alpha-rend", "alpha-howl"],
   },
   "ally-02": {
     defId: "ally-02",
-    name: "UNIT 02",
+    name: "KODA",
     team: "ally",
-    role: "ranged",
+    role: "skirmisher",
     hp: 96,
     atk: 22,
     def: 8,
     spd: 12,
     move: 2,
     sprite: `${IMG}/ally02.png`,
-    portrait: `${IMG}/ally02.png`,
+    portrait: `${IMG}/ally02-portrait.png`,
     skillIds: ["u02-shot", "u02-burst", "u02-suppress"],
   },
   "ally-03": {
     defId: "ally-03",
-    name: "UNIT 03",
+    name: "SHADOW",
     team: "ally",
     role: "support",
     hp: 100,
@@ -49,12 +53,12 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
     spd: 10,
     move: 2,
     sprite: `${IMG}/ally03.png`,
-    portrait: `${IMG}/ally03.png`,
+    portrait: `${IMG}/ally03-portrait.png`,
     skillIds: ["u03-tap", "u03-mend", "u03-pack"],
   },
   hostile: {
     defId: "hostile",
-    name: "HOSTILE",
+    name: "HOUND MK-2",
     team: "enemy",
     role: "hostile",
     hp: 68,
@@ -68,7 +72,7 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
   },
   leader: {
     defId: "leader",
-    name: "HOSTILE LEADER",
+    name: "BRUTE LEADER",
     team: "enemy",
     role: "leader",
     hp: 148,

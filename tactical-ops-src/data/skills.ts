@@ -45,8 +45,8 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   "u02-shot": {
     id: "u02-shot",
-    name: "SHOT",
-    desc: "Single-target ranged fire.",
+    name: "THRUST",
+    desc: "Polearm reach strike. Range 3.",
     slot: "A1",
     cooldownMax: 0,
     targetType: "ENEMY_SINGLE",
@@ -57,8 +57,8 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   "u02-burst": {
     id: "u02-burst",
-    name: "BURST",
-    desc: "High-damage ranged shot.",
+    name: "LUNGE",
+    desc: "Heavy reach hit. Range 3.",
     slot: "A2",
     cooldownMax: 3,
     targetType: "ENEMY_SINGLE",
@@ -69,8 +69,8 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   "u02-suppress": {
     id: "u02-suppress",
-    name: "SUPPRESS",
-    desc: "Lowers enemy ATK for 2 turns.",
+    name: "PRESSURE",
+    desc: "Reach control. Lowers enemy ATK for 2 turns.",
     slot: "A3",
     cooldownMax: 3,
     targetType: "ENEMY_SINGLE",
@@ -84,8 +84,8 @@ export const SKILLS: Record<string, SkillDef> = {
   },
   "u03-tap": {
     id: "u03-tap",
-    name: "TAP",
-    desc: "Light ranged contact fire.",
+    name: "SWEEP",
+    desc: "Staff contact. Range 2.",
     slot: "A1",
     cooldownMax: 0,
     targetType: "ENEMY_SINGLE",
