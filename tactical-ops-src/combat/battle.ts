@@ -14,6 +14,7 @@ import { applySkill } from "./skills";
 import { chooseAiAction, aiUsesLegalRules } from "./ai";
 import type { AiAction } from "./types";
 import { getSkill } from "../data/skills";
+import { applyIdentityToAlpha, type PlayerIdentity } from "../host/identity";
 
 function cloneUnit(u: CombatUnit): CombatUnit {
   return {
@@ -23,12 +24,18 @@ function cloneUnit(u: CombatUnit): CombatUnit {
   };
 }
 
-function spawnUnit(defId: string, id: string, c: number, r: number): CombatUnit {
+function spawnUnit(
+  defId: string,
+  id: string,
+  c: number,
+  r: number,
+  identity?: PlayerIdentity | null,
+): CombatUnit {
   const def = UNIT_DEFS[defId];
   if (!def) throw new Error(`Unknown unit def ${defId}`);
   const cds: Record<string, number> = {};
   for (const sid of def.skillIds) cds[sid] = 0;
-  return {
+  const base: CombatUnit = {
     id,
     defId: def.defId,
     name: def.name,
@@ -53,11 +60,20 @@ function spawnUnit(defId: string, id: string, c: number, r: number): CombatUnit 
     portrait: def.portrait,
     skillIds: [...def.skillIds],
   };
+  if (def.defId === "alpha" && identity) {
+    const stamped = applyIdentityToAlpha(base, identity);
+    return {
+      ...stamped,
+      weaponIcon: identity.weapon?.icon || "",
+      identitySource: identity.source,
+    };
+  }
+  return base;
 }
 
-export function createBattle(): BattleState {
+export function createBattle(identity?: PlayerIdentity | null): BattleState {
   resetStatusSeq();
-  const units = BROKEN_SIGNAL_SPAWNS.map((s) => spawnUnit(s.defId, s.id, s.c, s.r));
+  const units = BROKEN_SIGNAL_SPAWNS.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity));
   return {
     units,
     activeId: null,
@@ -199,8 +215,8 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   return { state: started.state, events };
 }
 
-export function startBattle(): { state: BattleState; events: BattleEvent[] } {
-  const fresh = createBattle();
+export function startBattle(identity?: PlayerIdentity | null): { state: BattleState; events: BattleEvent[] } {
+  const fresh = createBattle(identity);
   return advanceToNext(fresh);
 }
 
