@@ -1,6 +1,6 @@
 // js/equipped.js – Equipment V2 mobile/skin corrective pass for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-portrait-flow-final-20260825";
+  const VERSION = "equipped-v2-character-hero-lock-20260826";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -58,6 +58,20 @@
     READY: "ready",
     FALLBACK: "fallback",
     FAILED: "failed"
+  });
+  const PREVIEW_SOURCE = Object.freeze({
+    NONE: "none",
+    ACTIVE_SKIN: "active-skin",
+    PROFILE: "profile",
+    COMPOSITE: "composite",
+    FALLBACK: "fallback"
+  });
+  const SOURCE_RANK = Object.freeze({
+    none: 0,
+    fallback: 1,
+    composite: 2,
+    profile: 3,
+    "active-skin": 4
   });
 
   function esc(value) {
@@ -300,9 +314,6 @@
       (skinObj && typeof skinObj === "object" ? (skinObj.key || skinObj.skinKey || skinObj.skin_key) : "") ||
       ""
     ).trim();
-    const derivedFromKey = skinKey && !/default/i.test(skinKey)
-      ? "/assets/skins/" + skinKey.toLowerCase().replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "") + ".webp"
-      : "";
     let playerSkinUrl = "";
     let playerSkinKey = "";
     try {
@@ -313,18 +324,19 @@
       }
     } catch (_) {}
 
+    const derivedKey = String(skinKey || playerSkinKey || "").trim();
+    const derivedFromKey = derivedKey && !/default/i.test(derivedKey)
+      ? "/assets/skins/" + derivedKey.toLowerCase().replace(/[^\w]+/g, "_").replace(/^_+|_+$/g, "") + ".webp"
+      : "";
+    const playerIsCustom = !!(playerSkinKey && !/default/i.test(playerSkinKey));
+
     const skin = uniqueImageUrls([
       window.__AH_ACTIVE_SKIN_URL__,
       skinFromProfile,
       typeof profile.activeSkin === "string" ? profile.activeSkin : skinObjectUrl(profile.activeSkin),
       profile.heroImg,
-      profile.heroPng,
-      profile.characterPng,
-      profile.character,
-      derivedFromKey,
-      playerSkinKey && !/default/i.test(playerSkinKey)
-        ? "/assets/skins/" + playerSkinKey.toLowerCase().replace(/[^\w]+/g, "_") + ".webp"
-        : ""
+      playerIsCustom ? playerSkinUrl : "",
+      derivedFromKey
     ])[0] || "";
 
     const profileImg = uniqueImageUrls([
@@ -332,7 +344,7 @@
       profile.avatarImg,
       profile.avatarUrl,
       skinObjectUrl(profile.avatar)
-    ])[0] || "";
+    ]).filter((u) => u !== skin)[0] || "";
 
     const canonical = CANONICAL_ALPHA_FALLBACK;
     const fallbacks = uniqueImageUrls([skin, profileImg, canonical]);
@@ -344,6 +356,26 @@
       fallbacks: fallbacks,
       skinKey: skinKey || playerSkinKey || ""
     };
+  }
+
+  function previewSourceRank(kind) {
+    return SOURCE_RANK[String(kind || "none")] || 0;
+  }
+
+  function logPreviewEvent(event, extra) {
+    try {
+      const rec = Object.assign({
+        t: Date.now(),
+        event: String(event || ""),
+        source: window.__AH_EQUIPPED_PREVIEW_SOURCE__ || "none",
+        state: window.__AH_EQUIPPED_PREVIEW_STATE__ || ""
+      }, extra || {});
+      const log = Array.isArray(window.__AH_EQUIPPED_PREVIEW_LOG__)
+        ? window.__AH_EQUIPPED_PREVIEW_LOG__
+        : [];
+      log.push(rec);
+      window.__AH_EQUIPPED_PREVIEW_LOG__ = log.slice(-40);
+    } catch (_) {}
   }
 
   function previewTokenAlive(token) {
@@ -533,6 +565,8 @@
     _resizeBound: false,
     _previewState: PREVIEW_STATE.LOADING,
     _previewSource: "",
+    _previewSourceKind: PREVIEW_SOURCE.NONE,
+    _previewLocked: false,
 
     _canonicalSlotKeys() {
       return CANONICAL_SLOTS.slice();
@@ -713,8 +747,12 @@
       this._fallbackCharSrc = String(skin?.currentSrc || skin?.src || "").trim();
       this._previewState = PREVIEW_STATE.LOADING;
       this._previewSource = "";
+      this._previewSourceKind = PREVIEW_SOURCE.NONE;
+      this._previewLocked = false;
       window.__EquippedPreviewReady = false;
       window.__AH_EQUIPPED_PREVIEW_STATE__ = PREVIEW_STATE.LOADING;
+      window.__AH_EQUIPPED_PREVIEW_SOURCE__ = PREVIEW_SOURCE.NONE;
+      window.__AH_EQUIPPED_PREVIEW_LOG__ = [];
 
       const container = document.getElementById("app") || document.body;
       try {
@@ -909,7 +947,7 @@
     },
 
     async refresh() {
-      window.__EquippedPreviewReady = false;
+      if (!this._previewLocked) window.__EquippedPreviewReady = false;
       const eqPromise = this._loadEquipped();
       const bpPromise = this._loadBackpack();
       await Promise.allSettled([eqPromise, bpPromise]);
@@ -1102,7 +1140,7 @@
       return sources;
     },
 
-    _setPreviewState(state, url) {
+    _setPreviewState(state, url, kind) {
       const next = PREVIEW_STATE[String(state || "").toUpperCase()] || state || PREVIEW_STATE.LOADING;
       const img = document.getElementById("equipped-character-img");
       const visibleImage = !!(img && (img.naturalWidth > 0 || (img.complete && isUsableImageUrl(img.currentSrc || img.src))));
@@ -1112,10 +1150,17 @@
       }
       this._previewState = applied;
       if (url) this._previewSource = url;
+      if (kind) {
+        this._previewSourceKind = kind;
+        window.__AH_EQUIPPED_PREVIEW_SOURCE__ = kind;
+      }
       window.__AH_EQUIPPED_PREVIEW_STATE__ = applied;
       window.__EquippedPreviewState = applied;
       const root = document.getElementById("equipped-root");
-      if (root) root.dataset.preview = applied;
+      if (root) {
+        root.dataset.preview = applied;
+        if (this._previewSourceKind) root.dataset.previewSource = this._previewSourceKind;
+      }
       const skel = document.getElementById("eq-char-skel");
       const fallback = document.getElementById("eq-char-fallback");
       const loading = applied === PREVIEW_STATE.LOADING;
@@ -1138,6 +1183,29 @@
       } else {
         window.__EquippedPreviewReady = false;
       }
+      logPreviewEvent("state", { applied, kind: this._previewSourceKind || "", url: url || this._previewSource || "" });
+    },
+
+    _acceptPreviewSource(kind, url, token, state) {
+      if (!previewTokenAlive(token)) return false;
+      const nextKind = PREVIEW_SOURCE[String(kind || "").replace(/-/g, "_").toUpperCase()] || kind || PREVIEW_SOURCE.NONE;
+      const nextRank = previewSourceRank(nextKind);
+      const currentRank = previewSourceRank(this._previewSourceKind);
+      if (nextRank < currentRank) {
+        logPreviewEvent("reject-lower-source", { attempted: nextKind, current: this._previewSourceKind, url: url || "" });
+        return false;
+      }
+      if (this._previewLocked && nextRank < currentRank) {
+        logPreviewEvent("reject-locked", { attempted: nextKind, current: this._previewSourceKind });
+        return false;
+      }
+      if (url) this._previewSource = url;
+      this._previewSourceKind = nextKind;
+      this._previewLocked = nextRank >= previewSourceRank(PREVIEW_SOURCE.PROFILE);
+      window.__AH_EQUIPPED_PREVIEW_SOURCE__ = nextKind;
+      this._setPreviewState(state || PREVIEW_STATE.READY, url, nextKind);
+      logPreviewEvent("accept", { kind: nextKind, url: url || "", locked: this._previewLocked });
+      return true;
     },
 
     _awaitImage(imgEl, url, token) {
@@ -1157,29 +1225,49 @@
         imgEl.decoding = "async";
         imgEl.src = url;
         if (imgEl.complete && imgEl.naturalWidth > 0) finish(true);
+        setTimeout(() => finish(false), 2500);
       });
     },
 
     async _applyFallbackPreview(token) {
       if (!previewTokenAlive(token)) return false;
+      if (previewSourceRank(this._previewSourceKind) >= previewSourceRank(PREVIEW_SOURCE.PROFILE)) return true;
       const imgEl = document.getElementById("equipped-character-img");
       if (!imgEl) return false;
       const sources = this._resolveCharacterSources();
-      const chain = sources.fallbacks || [];
+      const chain = uniqueImageUrls([sources.canonical, this._fallbackCharSrc]);
       for (let i = 0; i < chain.length; i++) {
         if (!previewTokenAlive(token)) return false;
         const ok = await this._awaitImage(imgEl, chain[i], token);
         if (!previewTokenAlive(token)) return false;
         if (ok) {
-          this._setPreviewState(PREVIEW_STATE.FALLBACK, chain[i]);
+          this._acceptPreviewSource(PREVIEW_SOURCE.FALLBACK, chain[i], token, PREVIEW_STATE.FALLBACK);
           return true;
         }
       }
       if (imgEl.naturalWidth > 0) {
-        this._setPreviewState(PREVIEW_STATE.FALLBACK, imgEl.currentSrc || imgEl.src);
+        this._acceptPreviewSource(PREVIEW_SOURCE.FALLBACK, imgEl.currentSrc || imgEl.src, token, PREVIEW_STATE.FALLBACK);
         return true;
       }
       this._setPreviewState(PREVIEW_STATE.FAILED);
+      return false;
+    },
+
+    async _applyLocalIdentity(token) {
+      if (!previewTokenAlive(token)) return false;
+      const imgEl = document.getElementById("equipped-character-img");
+      if (!imgEl) return false;
+      const sources = this._resolveCharacterSources();
+      if (sources.skin) {
+        const ok = await this._awaitImage(imgEl, sources.skin, token);
+        if (!previewTokenAlive(token)) return false;
+        if (ok) return this._acceptPreviewSource(PREVIEW_SOURCE.ACTIVE_SKIN, sources.skin, token, PREVIEW_STATE.READY);
+      }
+      if (sources.profile) {
+        const ok = await this._awaitImage(imgEl, sources.profile, token);
+        if (!previewTokenAlive(token)) return false;
+        if (ok) return this._acceptPreviewSource(PREVIEW_SOURCE.PROFILE, sources.profile, token, PREVIEW_STATE.READY);
+      }
       return false;
     },
 
@@ -1187,6 +1275,15 @@
       const imgEl = document.getElementById("equipped-character-img");
       if (!imgEl) return;
       const fp = this._fingerprint();
+      const keepHero =
+        previewSourceRank(this._previewSourceKind) >= previewSourceRank(PREVIEW_SOURCE.PROFILE) &&
+        (this._previewState === PREVIEW_STATE.READY || this._previewState === PREVIEW_STATE.FALLBACK) &&
+        imgEl.naturalWidth > 0;
+      if (keepHero) {
+        this._lastFingerprint = fp;
+        logPreviewEvent("keep-hero", { force: !!force, kind: this._previewSourceKind, url: this._previewSource || "" });
+        return;
+      }
       if (
         !force &&
         fp &&
@@ -1200,42 +1297,50 @@
       const previewToken = (Number(window.__EquippedPreviewToken || 0) || 0) + 1;
       window.__EquippedPreviewToken = previewToken;
       window.__EquippedPreviewReady = false;
+      this._previewLocked = false;
+      this._previewSourceKind = PREVIEW_SOURCE.NONE;
+      window.__AH_EQUIPPED_PREVIEW_SOURCE__ = PREVIEW_SOURCE.NONE;
       this._setPreviewState(PREVIEW_STATE.LOADING);
+      logPreviewEvent("resolve-start", { token: previewToken });
 
-      const sources = this._resolveCharacterSources();
-      const placeholder = sources.fallbacks[0] || "";
-      if (placeholder) {
-        imgEl.alt = "Character";
-        imgEl.src = placeholder;
-      }
-
-      const promotePlaceholder = () => {
+      this._applyLocalIdentity(previewToken).then((localOk) => {
         if (!previewTokenAlive(previewToken)) return;
-        if (this._previewState !== PREVIEW_STATE.LOADING) return;
-        if (imgEl.naturalWidth > 0 || isUsableImageUrl(imgEl.currentSrc || imgEl.src)) {
-          this._setPreviewState(PREVIEW_STATE.FALLBACK, imgEl.currentSrc || imgEl.src || placeholder);
+        this._loadCompositeInBackground(previewToken, !!localOk);
+      }).catch(() => {
+        if (!previewTokenAlive(previewToken)) return;
+        this._loadCompositeInBackground(previewToken, false);
+      });
+    },
+
+    _loadCompositeInBackground(token, localOk) {
+      loadCharacterComposite(token).then(async (result) => {
+        if (!previewTokenAlive(token)) return;
+        if (previewSourceRank(this._previewSourceKind) >= previewSourceRank(PREVIEW_SOURCE.PROFILE)) {
+          logPreviewEvent("composite-ignored", {
+            reason: "higher-authority",
+            current: this._previewSourceKind,
+            compositeOk: !!(result && result.ok)
+          });
+          return;
         }
-      };
-
-      const timeoutId = setTimeout(promotePlaceholder, 2400);
-
-      loadCharacterComposite(previewToken).then(async (result) => {
-        if (!previewTokenAlive(previewToken)) return;
         if (result && result.ok && result.url) {
-          const ok = await this._awaitImage(imgEl, result.url, previewToken);
-          if (!previewTokenAlive(previewToken)) return;
-          if (ok) {
-            clearTimeout(timeoutId);
-            this._setPreviewState(PREVIEW_STATE.READY, result.url);
+          const imgEl = document.getElementById("equipped-character-img");
+          const ok = await this._awaitImage(imgEl, result.url, token);
+          if (!previewTokenAlive(token)) return;
+          if (ok && this._acceptPreviewSource(PREVIEW_SOURCE.COMPOSITE, result.url, token, PREVIEW_STATE.READY)) {
             return;
           }
         }
-        clearTimeout(timeoutId);
-        await this._applyFallbackPreview(previewToken);
+        if (previewSourceRank(this._previewSourceKind) < previewSourceRank(PREVIEW_SOURCE.COMPOSITE)) {
+          await this._applyFallbackPreview(token);
+        }
       }).catch(async () => {
-        if (!previewTokenAlive(previewToken)) return;
-        clearTimeout(timeoutId);
-        await this._applyFallbackPreview(previewToken);
+        if (!previewTokenAlive(token)) return;
+        if (previewSourceRank(this._previewSourceKind) < previewSourceRank(PREVIEW_SOURCE.COMPOSITE)) {
+          await this._applyFallbackPreview(token);
+        } else if (!localOk && previewSourceRank(this._previewSourceKind) < previewSourceRank(PREVIEW_SOURCE.PROFILE)) {
+          await this._applyFallbackPreview(token);
+        }
       });
     },
 
@@ -1633,6 +1738,7 @@
     _itemSet: itemSetOf,
     _itemKey: itemKeyOf,
     resolveCharacterSources: resolveCharacterSources,
-    PREVIEW_STATE: PREVIEW_STATE
+    PREVIEW_STATE: PREVIEW_STATE,
+    PREVIEW_SOURCE: PREVIEW_SOURCE
   };
 })();
