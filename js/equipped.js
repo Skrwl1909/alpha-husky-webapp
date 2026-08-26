@@ -1,6 +1,6 @@
 // js/equipped.js – Equipment V2 mobile/skin corrective pass for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-character-hero-lock-20260826";
+  const VERSION = "equipped-v2-final-cosmetic-20260826";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -13,18 +13,30 @@
     fangs: "FANGS",
     armor: "ARMOR",
     ring: "RING",
-    weapon: "WEAPON",
+    weapon: "MAIN HAND",
     cloak: "CLOAK",
     collar: "COLLAR",
     gloves: "GLOVES",
     pet: "PET",
-    offhand: "OFFHAND"
+    offhand: "OFF HAND"
+  });
+  const SLOT_ABBR = Object.freeze({
+    helmet: "HLM",
+    fangs: "FNG",
+    armor: "ARM",
+    ring: "RNG",
+    weapon: "MH",
+    cloak: "CLK",
+    collar: "CLR",
+    gloves: "GLV",
+    pet: "PET",
+    offhand: "OH"
   });
   const LEFT_NODES = Object.freeze(["helmet", "fangs", "weapon", "collar", "pet"]);
   const RIGHT_NODES = Object.freeze(["cloak", "armor", "gloves", "ring", "offhand"]);
   const CATEGORIES = Object.freeze([
     { id: "all", label: "ALL", slots: null },
-    { id: "offense", label: "OFFENSE", slots: ["weapon", "offhand", "fangs"] },
+    { id: "offense", label: "WEAPONS", slots: ["weapon", "offhand", "fangs"] },
     { id: "armor", label: "ARMOR", slots: ["helmet", "armor", "cloak", "gloves"] },
     { id: "accessories", label: "ACCESSORIES", slots: ["ring", "collar"] },
     { id: "pets", label: "PETS", slots: ["pet"] }
@@ -117,6 +129,15 @@
     if (fromCanon) return fromCanon;
     const label = slotState?.label || String(slotKey || "").replace(/_/g, " ");
     return label.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  function slotAbbr(slotKey) {
+    const key = normKey(slotKey);
+    if (SLOT_ABBR[key]) return SLOT_ABBR[key];
+    const label = slotLabel(key);
+    const parts = label.split(/\s+/).filter(Boolean);
+    if (parts.length > 1) return parts.map((p) => p[0]).join("").slice(0, 3);
+    return label.slice(0, 3);
   }
 
   function statPresentationLabel(key) {
@@ -220,6 +241,90 @@
   function totalBonusOf(state) {
     const raw = state?.totalBonus || state?.total_bonus || {};
     return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  }
+
+  function compactBonusChips(bonus) {
+    const grouped = new Map();
+    for (const [k, v] of Object.entries(bonus || {})) {
+      const label = statPresentationLabel(k);
+      if (!label) continue;
+      const num = Number(v);
+      if (!Number.isFinite(num)) continue;
+      const prev = grouped.get(label);
+      if (prev == null || Math.abs(num) > Math.abs(prev)) grouped.set(label, num);
+    }
+    const rank = new Map([
+      "HP", "ATK", "STR", "DEF", "VIT", "AGI", "LUCK", "INT", "SPD", "CRIT"
+    ].map((k, i) => [k, i]));
+    return Array.from(grouped.entries())
+      .sort((a, b) => {
+        const ia = rank.has(a[0]) ? rank.get(a[0]) : 99;
+        const ib = rank.has(b[0]) ? rank.get(b[0]) : 99;
+        if (ia !== ib) return ia - ib;
+        return a[0].localeCompare(b[0]);
+      })
+      .map(([label, value]) => ({ label, value }));
+  }
+
+  function hasInitData() {
+    try {
+      const tg = getTg();
+      return !!( (tg && tg.initData) || window.INIT_DATA );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function previewFixtureSlot(slot, name, rarity, level, extra) {
+    const itemKey = String(name || slot).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    return Object.assign({
+      slot: slot,
+      label: SLOT_LABELS[slot] || slot,
+      empty: false,
+      name: name,
+      item_key: itemKey,
+      key: itemKey,
+      rarity: rarity,
+      level: level,
+      set: extra && extra.set || ""
+    }, extra || {});
+  }
+
+  function previewFixtureState() {
+    const omen = "Rusted Omen";
+    return {
+      level: 177,
+      stats: { level: 177, hp: 1550, attack: 142, defense: 103, agility: 32, luck: 17 },
+      slots: [
+        previewFixtureSlot("helmet", "Rusted Omen Iron-Jaw", "epic", 4, { set: omen }),
+        previewFixtureSlot("fangs", "Rusted Omen Jawbreaker", "epic", 4, { set: omen }),
+        previewFixtureSlot("armor", "Astral Voidfang Carapace", "legendary", 3, { set: "Astral Voidfang" }),
+        previewFixtureSlot("ring", "Rusted Omen Iron Loop", "epic", 4, { set: omen }),
+        previewFixtureSlot("weapon", "Rusted Omen Greatblade", "epic", 5, { set: omen }),
+        previewFixtureSlot("cloak", "Rad-Core Overdrive Hood", "legendary", 5, { set: "Rad-Core" }),
+        previewFixtureSlot("collar", "Eclipse Torque", "epic", 4, {}),
+        previewFixtureSlot("gloves", "Rusted Omen Vices", "epic", 4, { set: omen }),
+        previewFixtureSlot("pet", "Fracture Sentinel", "uncommon", 33, { isPet: true }),
+        previewFixtureSlot("offhand", "Rusted Omen Aegis-Wall", "epic", 4, { set: omen })
+      ],
+      activeSets: [
+        { set: "Rusted Omen", name: "Rusted Omen", count: 6, bonus: { str: 10, def: 8, vit: 6 } }
+      ],
+      totalBonus: {
+        agility: 19, defense: 59, intelligence: 7, luck: 3,
+        strength: 64, vitality: 52, str: 64, agi: 19, def: 59, vit: 52, int: 7
+      }
+    };
+  }
+
+  function previewFixtureBackpack() {
+    return [
+      previewFixtureSlot("weapon", "Ashline Ripper", "rare", 6, { stats: { attack: 18, strength: 6 } }),
+      previewFixtureSlot("offhand", "Signal Ward Buckler", "epic", 4, { stats: { defense: 12, vitality: 4 } }),
+      previewFixtureSlot("fangs", "Nightglass Canines", "rare", 5, { stats: { attack: 9, luck: 3 } }),
+      previewFixtureSlot("helmet", "Sootveil Visor", "uncommon", 8, { stats: { defense: 7 } }),
+      previewFixtureSlot("ring", "Ion Halo Band", "legendary", 2, { stats: { intelligence: 8, luck: 4 } })
+    ];
   }
 
   function slotGlyph(slot) {
@@ -962,6 +1067,13 @@
     },
 
     async _loadEquipped() {
+      if (!hasInitData()) {
+        this._syncExternalState(previewFixtureState());
+        this.equippedError = null;
+        this.equippedReady = true;
+        if (!this._fallbackCharSrc) this._fallbackCharSrc = CANONICAL_ALPHA_FALLBACK;
+        return;
+      }
       try {
         const res = await equippedPost("/webapp/equipped/state", {});
         if (!res || !res.ok) {
@@ -988,6 +1100,12 @@
     },
 
     async _loadBackpack() {
+      if (!hasInitData()) {
+        this.backpackItems = previewFixtureBackpack();
+        this.backpackError = null;
+        this.backpackReady = true;
+        return;
+      }
       try {
         const res = await equippedPost("/webapp/inventory/state", {});
         if (!res || res.ok === false) {
@@ -1043,7 +1161,7 @@
                   aria-pressed="${slotKey === selected ? "true" : "false"}">
             <span class="eq-slot-kind">${slotGlyph(slotKey)}</span>
             <span class="eq-icon" data-eq-icon="${esc(slotKey)}" data-rarity="${rarity}">
-              ${empty ? `<span class="eq-icon-ph">${esc(slotLabel(slotKey).slice(0, 3))}</span>` : ""}
+              ${empty ? `<span class="eq-icon-ph">${esc(slotAbbr(slotKey))}</span>` : ""}
             </span>
             <span class="eq-slot-copy">
               <span class="eq-slot-name">${esc(name)}</span>
@@ -1469,7 +1587,7 @@
         const src = _bgCandidates(item)[0] || "";
         return `<div class="eq-side" data-rarity="${rarity}">
           <span class="eq-icon" data-rarity="${rarity}">
-            ${src ? `<img class="item-icon" alt="" src="${esc(src)}">` : `<span class="eq-icon-ph">${esc(slotLabel(itemSlotOf(item) || slotKey).slice(0, 3))}</span>`}
+            ${src ? `<img class="item-icon" alt="" src="${esc(src)}">` : `<span class="eq-icon-ph">${esc(slotAbbr(itemSlotOf(item) || slotKey))}</span>`}
           </span>
           <div>
             <div class="eq-side-kicker">${esc(label)}</div>
@@ -1565,8 +1683,8 @@
       if (!box) return;
       const sets = activeSetsOf(this.state);
       const total = totalBonusOf(this.state);
-      const totalKeys = Object.keys(total);
-      if (!sets.length && !totalKeys.length) {
+      const chips = compactBonusChips(total);
+      if (!sets.length && !chips.length) {
         box.innerHTML = `
           <div class="eq-sets-head"><span>Active set bonuses</span></div>
           <div class="eq-empty" style="padding:6px 0;">No active set bonus</div>`;
@@ -1587,8 +1705,13 @@
           </div>
         </div>`;
       }).join("");
-      const bonusLine = totalKeys.length
-        ? `<div class="eq-bonus">Total gear bonus · ${totalKeys.map((k) => `<b>${esc(k)}+${esc(total[k])}</b>`).join(" · ")}</div>`
+      const bonusLine = chips.length
+        ? `<div class="eq-bonus">
+            <div class="eq-bonus-kicker">Total gear bonus</div>
+            <div class="eq-bonus-chips">${chips.map((chip) =>
+              `<span class="eq-bonus-chip"><b>${esc(formattedStatValue(chip.value))}</b> ${esc(chip.label)}</span>`
+            ).join("")}</div>
+          </div>`
         : "";
       box.innerHTML = `
         <div class="eq-sets-head"><span>Active set bonuses</span></div>
