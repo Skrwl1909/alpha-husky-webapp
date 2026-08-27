@@ -1,6 +1,6 @@
-// js/equipped.js – Equipment V2 mobile/skin corrective pass for Alpha Husky WebApp.
+// js/equipped.js – Equipment V2.1 pet companion preview for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-final-cosmetic-20260826";
+  const VERSION = "equipped-v2-1-pet-companion-20260827c";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -325,6 +325,119 @@
       previewFixtureSlot("helmet", "Sootveil Visor", "uncommon", 8, { stats: { defense: 7 } }),
       previewFixtureSlot("ring", "Ion Halo Band", "legendary", 2, { stats: { intelligence: 8, luck: 4 } })
     ];
+  }
+
+  function previewPetMode() {
+    try {
+      const override = window.__AH_EQUIPPED_PREVIEW_PET__;
+      if (override === false || override === "none") return "none";
+      if (override === "broken") return "broken";
+      const q = new URLSearchParams(location.search || "");
+      const v = String(q.get("pet") || q.get("companion") || "").trim().toLowerCase();
+      if (v === "none" || v === "off" || v === "0") return "none";
+      if (v === "broken" || v === "fail" || v === "missing") return "broken";
+    } catch (_) {}
+    return "active";
+  }
+
+  function previewFixtureCompanion() {
+    const mode = previewPetMode();
+    if (mode === "none") return null;
+    if (mode === "broken") {
+      return {
+        id: "preview-broken-pet",
+        petId: "preview-broken-pet",
+        name: "Broken Companion",
+        is_active: true,
+        img: "/images/__missing_pet_asset__.png"
+      };
+    }
+    return {
+      id: "preview-active-pet",
+      petId: "preview-active-pet",
+      name: "Dark Husky Pup",
+      type: "darkhuskypup",
+      pet_type: "darkhuskypup",
+      pet_key: "darkhuskypup",
+      pet_public_id: "darkhuskypup",
+      is_active: true,
+      level: 12,
+      pet_img: "https://res.cloudinary.com/dnjwvxinh/image/upload/f_png,q_auto,w_512/pets/darkhuskypup.png",
+      pet_icon: "https://res.cloudinary.com/dnjwvxinh/image/upload/pets/darkhuskypup.png"
+    };
+  }
+
+  function resolveActivePetRecord(payload) {
+    if (!payload || typeof payload !== "object") return null;
+    const direct = payload.activePet || payload.active_pet || null;
+    if (direct && typeof direct === "object") {
+      const id = String(direct.id || direct.petId || direct.pet_id || "").trim();
+      const named = String(direct.name || direct.petName || direct.pet_name || "").trim();
+      const hasVisual = !!(
+        direct.img || direct.icon || direct.pet_img || direct.pet_icon ||
+        direct.image || direct.pet_public_id || direct.petPublicId
+      );
+      if (id || named || hasVisual) return direct;
+    }
+    const activeId = String(
+      payload.activePetId || payload.active_pet_id || ""
+    ).trim();
+    const rawPets = payload.pets || payload.ownedPets || payload.owned || null;
+    const list = Array.isArray(rawPets)
+      ? rawPets
+      : (rawPets && typeof rawPets === "object" ? Object.values(rawPets) : []);
+    if (activeId) {
+      const found = list.find((p) => {
+        const pid = String(p?.id || p?.petId || p?.pet_id || "").trim();
+        return pid && pid === activeId;
+      });
+      if (found) return found;
+    }
+    const flagged = list.find((p) => p && (p.is_active === true || p.isActive === true));
+    return flagged || null;
+  }
+
+  function petKeyCandidates(pet) {
+    if (!pet || typeof pet !== "object") return [];
+    const raws = [
+      pet.pet_public_id, pet.petPublicId,
+      pet.pet_type, pet.petType, pet.type,
+      pet.pet_key, pet.petKey, pet.resolvedPetKey
+    ];
+    const out = [];
+    for (const raw of raws) {
+      let s = String(raw || "").trim();
+      if (!s) continue;
+      s = s.replace(/[αΑ]/g, "a").replace(/^pets\//i, "").replace(/\.(png|webp|jpg|jpeg)$/i, "");
+      s = s.toLowerCase().replace(/[^a-z0-9 _-]/g, "").replace(/\s+/g, " ").trim();
+      if (!s) continue;
+      if (/^[a-f0-9]{32}$/.test(s)) continue;
+      if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(s)) continue;
+      const joinNo = s.replace(/[\s-]+/g, "");
+      const under = s.replace(/\s+/g, "_");
+      const dash = s.replace(/\s+/g, "-");
+      for (const k of [s, joinNo, under, dash]) if (k) out.push(k);
+    }
+    return Array.from(new Set(out));
+  }
+
+  function resolvePetVisualUrls(pet) {
+    if (!pet || typeof pet !== "object") return [];
+    const portraits = uniqueImageUrls([
+      pet.pet_img, pet.petImg,
+      pet.pet_icon, pet.petIcon
+    ]);
+    const generic = uniqueImageUrls([
+      pet.img, pet.icon, pet.image, pet.imageUrl, pet.image_url
+    ]);
+    const cloud = [];
+    const base = "https://res.cloudinary.com/dnjwvxinh/image/upload";
+    for (const k of petKeyCandidates(pet)) {
+      cloud.push(base + "/pets/" + encodeURIComponent(k) + ".png");
+      cloud.push(base + "/f_png,q_auto,w_512/pets/" + encodeURIComponent(k) + ".png");
+      cloud.push(base + "/pets/icons/" + encodeURIComponent(k) + ".png");
+    }
+    return uniqueImageUrls(portraits.concat(generic, cloud));
   }
 
   function slotGlyph(slot) {
@@ -672,6 +785,9 @@
     _previewSource: "",
     _previewSourceKind: PREVIEW_SOURCE.NONE,
     _previewLocked: false,
+    _activePet: null,
+    _petResolved: false,
+    _petPreviewToken: 0,
 
     _canonicalSlotKeys() {
       return CANONICAL_SLOTS.slice();
@@ -880,6 +996,9 @@
       this.compatibleOnly = false;
       this.portraitPane = this.portraitPane || "loadout";
       this._lastFingerprint = "";
+      this._activePet = null;
+      this._petResolved = false;
+      this._petPreviewToken = 0;
 
       this._renderShell(container);
       this._bindEquippedEvents();
@@ -932,6 +1051,11 @@
                   <div class="eq-char-frame">
                     <div class="eq-char-skel is-on" id="eq-char-skel"></div>
                     <img id="equipped-character-img" alt="Character" />
+                    <div class="eq-pet-companion" id="eq-pet-companion" hidden aria-hidden="true">
+                      <div class="eq-pet-companion__visual" id="eq-pet-companion-visual">
+                        <img class="eq-pet-companion__image" id="eq-pet-companion-img" alt="" draggable="false" />
+                      </div>
+                    </div>
                     <div class="eq-char-fallback" id="eq-char-fallback" hidden>Character preview unavailable</div>
                   </div>
                 </div>
@@ -1055,7 +1179,8 @@
       if (!this._previewLocked) window.__EquippedPreviewReady = false;
       const eqPromise = this._loadEquipped();
       const bpPromise = this._loadBackpack();
-      await Promise.allSettled([eqPromise, bpPromise]);
+      const petPromise = this._loadActivePet();
+      await Promise.allSettled([eqPromise, bpPromise, petPromise]);
       this._ensureSelectedSlot();
       this._renderLoadout();
       this._renderNodes();
@@ -1064,6 +1189,7 @@
       this._renderBackpack();
       this._renderCompare();
       this._requestCharacterImage(false);
+      this._syncPetCompanion();
     },
 
     async _loadEquipped() {
@@ -1302,6 +1428,7 @@
         window.__EquippedPreviewReady = false;
       }
       logPreviewEvent("state", { applied, kind: this._previewSourceKind || "", url: url || this._previewSource || "" });
+      this._applyPetCompanionVisibility();
     },
 
     _acceptPreviewSource(kind, url, token, state) {
@@ -1472,6 +1599,147 @@
         return;
       }
       img.style.display = "none";
+    },
+
+    async _loadActivePet() {
+      this._activePet = null;
+      this._petResolved = false;
+      try {
+        const cached = window.__AH_PETS_STATE__;
+        if (cached && typeof cached === "object") {
+          const fromCache = resolveActivePetRecord(cached);
+          if (fromCache) this._activePet = fromCache;
+        }
+      } catch (_) {}
+      if (!hasInitData()) {
+        this._activePet = previewFixtureCompanion();
+        this._petResolved = true;
+        return;
+      }
+      try {
+        const res = await equippedPost("/webapp/pets/state", {});
+        const payload = res && (res.pets || res.data || res);
+        if (res && res.ok === false) {
+          this._petResolved = true;
+          return;
+        }
+        if (payload && typeof payload === "object") {
+          try { window.__AH_PETS_STATE__ = payload; } catch (_) {}
+          this._activePet = resolveActivePetRecord(payload);
+        }
+      } catch (err) {
+        console.warn("Equipped: active pet state unavailable", err);
+      }
+      this._petResolved = true;
+    },
+
+    _hidePetCompanion() {
+      const host = document.getElementById("eq-pet-companion");
+      const img = document.getElementById("eq-pet-companion-img");
+      if (host) {
+        host.hidden = true;
+        host.classList.remove("is-ready");
+        host.setAttribute("aria-hidden", "true");
+        host.removeAttribute("data-pet-ready");
+      }
+      if (img) {
+        img.onload = null;
+        img.onerror = null;
+        img.removeAttribute("src");
+        img.alt = "";
+      }
+      this._applyPetCompanionVisibility();
+    },
+
+    _markPetCompanionReady() {
+      const host = document.getElementById("eq-pet-companion");
+      if (!host) return;
+      if (this._previewState === PREVIEW_STATE.FAILED) {
+        this._hidePetCompanion();
+        return;
+      }
+      host.hidden = false;
+      host.classList.add("is-ready");
+      host.setAttribute("data-pet-ready", "1");
+      host.setAttribute("aria-hidden", "true");
+      this._applyPetCompanionVisibility();
+    },
+
+    _applyPetCompanionVisibility() {
+      const host = document.getElementById("eq-pet-companion");
+      const root = document.getElementById("equipped-root");
+      const failed = this._previewState === PREVIEW_STATE.FAILED;
+      const petReady = !!(host && host.getAttribute("data-pet-ready") === "1");
+      if (host) {
+        if (failed || !petReady) {
+          host.hidden = true;
+          host.classList.remove("is-ready");
+          host.setAttribute("aria-hidden", "true");
+        } else {
+          host.hidden = false;
+          host.classList.add("is-ready");
+          host.setAttribute("aria-hidden", "true");
+        }
+      }
+      if (root) {
+        root.dataset.pet = failed ? "failed" : (petReady ? "ready" : "off");
+      }
+    },
+
+    _syncPetCompanion() {
+      const host = document.getElementById("eq-pet-companion");
+      const img = document.getElementById("eq-pet-companion-img");
+      if (!host || !img) return;
+
+      const pet = this._activePet;
+      if (!pet || this._previewState === PREVIEW_STATE.FAILED) {
+        this._hidePetCompanion();
+        return;
+      }
+
+      const urls = resolvePetVisualUrls(pet);
+      if (!urls.length) {
+        this._hidePetCompanion();
+        return;
+      }
+
+      const token = (this._petPreviewToken || 0) + 1;
+      this._petPreviewToken = token;
+      host.hidden = false;
+      host.classList.remove("is-ready");
+      host.setAttribute("aria-hidden", "true");
+      host.removeAttribute("data-pet-ready");
+
+      let i = 0;
+      const tryNext = () => {
+        if (token !== this._petPreviewToken) return;
+        if (i >= urls.length) {
+          this._hidePetCompanion();
+          return;
+        }
+        const url = urls[i++];
+        img.onload = () => {
+          if (token !== this._petPreviewToken) return;
+          if (!img.naturalWidth) {
+            tryNext();
+            return;
+          }
+          if (this._previewState === PREVIEW_STATE.FAILED) {
+            this._hidePetCompanion();
+            return;
+          }
+          this._markPetCompanionReady();
+        };
+        img.onerror = () => {
+          if (token !== this._petPreviewToken) return;
+          tryNext();
+        };
+        img.decoding = "async";
+        img.draggable = false;
+        img.alt = "";
+        img.src = url;
+      };
+      tryNext();
     },
 
     _renderBackpack(opts) {
@@ -1777,6 +2045,7 @@
           this._renderBackpack();
           this._renderCompare();
           this._requestCharacterImage(true);
+          this._loadActivePet().then(() => this._syncPetCompanion());
         } else {
           hapticNotify("error");
           this.pendingAction = null;
@@ -1817,6 +2086,7 @@
           this._renderBackpack();
           this._renderCompare();
           this._requestCharacterImage(true);
+          this._loadActivePet().then(() => this._syncPetCompanion());
         } else {
           hapticNotify("error");
           this.pendingAction = null;
