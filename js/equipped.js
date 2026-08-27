@@ -1,6 +1,6 @@
-// js/equipped.js – Equipment V2.1 pet companion preview for Alpha Husky WebApp.
+// js/equipped.js – Equipment V2.2 backpack classification for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-1-pet-companion-20260827c";
+  const VERSION = "equipped-v2-2-backpack-sort-20260827";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -36,11 +36,18 @@
   const RIGHT_NODES = Object.freeze(["cloak", "armor", "gloves", "ring", "offhand"]);
   const CATEGORIES = Object.freeze([
     { id: "all", label: "ALL", slots: null },
-    { id: "offense", label: "WEAPONS", slots: ["weapon", "offhand", "fangs"] },
-    { id: "armor", label: "ARMOR", slots: ["helmet", "armor", "cloak", "gloves"] },
-    { id: "accessories", label: "ACCESSORIES", slots: ["ring", "collar"] },
+    { id: "offense", label: "WEAPONS" },
+    { id: "armor", label: "ARMOR" },
+    { id: "accessories", label: "ACCESSORIES" },
     { id: "pets", label: "PETS", slots: ["pet"] }
   ]);
+  const BACKPACK_CAT = Object.freeze({
+    WEAPONS: "offense",
+    ARMOR: "armor",
+    ACCESSORIES: "accessories",
+    PETS: "pets",
+    UNRESOLVED: "unresolved"
+  });
   const CHAR_STATS = Object.freeze([
     { key: "hp", alts: ["health"], label: "HP" },
     { key: "attack", alts: ["atk", "str", "strength"], label: "ATK" },
@@ -164,6 +171,126 @@
 
   function itemSlotOf(item) {
     return normKey(item?.slot || item?.equippedSlot || item?.slot_key);
+  }
+
+  function itemIdentitySlotOf(item) {
+    const direct = itemSlotOf(item);
+    if (CANONICAL_SLOTS.includes(direct)) return direct;
+    const extras = [
+      item?.gear_slot, item?.gearSlot,
+      item?.equip_slot, item?.equipSlot,
+      item?.equipment_slot, item?.equipmentSlot
+    ];
+    for (const raw of extras) {
+      const key = normKey(raw);
+      if (CANONICAL_SLOTS.includes(key)) return key;
+    }
+    const type = normKey(item?.type || item?.item_type || item?.itemType);
+    if (CANONICAL_SLOTS.includes(type)) return type;
+    return direct;
+  }
+
+  function itemMetaTokens(item) {
+    if (!item || typeof item !== "object") return "";
+    const tags = Array.isArray(item.tags) ? item.tags.join(" ") : (item.tags || "");
+    return [
+      item.item_type, item.itemType, item.type,
+      item.subtype, item.sub_type, item.subType,
+      item.category, item.family, item.class, item.item_class, item.itemClass,
+      item.kind, item.group, item.equip_type, item.equipType,
+      tags
+    ].map((v) => String(v || "").trim().toLowerCase()).filter(Boolean).join(" ");
+  }
+
+  function itemNameBlob(item) {
+    return [
+      itemNameOf(item),
+      itemKeyOf(item),
+      item?.label
+    ].map((v) => String(v || "").trim().toLowerCase()).filter(Boolean).join(" ");
+  }
+
+  function classifyFromStructuredToken(token) {
+    const t = String(token || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+    if (!t) return "";
+    if (/\b(pet|pets|companion)\b/.test(t)) return BACKPACK_CAT.PETS;
+    if (/\b(ring|rings|collar|torque|necklace|amulet|pendant|bracelet|charm|trinket|talisman|locket|belt|relic|focus|orb|totem|accessory|accessories)\b/.test(t)) {
+      return BACKPACK_CAT.ACCESSORIES;
+    }
+    if (/\b(helmet|helm|visor|armor|armour|chest|cuirass|carapace|cloak|hood|mantle|gloves|gauntlet|gauntlets|greaves|boots|pauldron|pauldrons|shield|buckler|aegis|pavise|bulwark)\b/.test(t)) {
+      return BACKPACK_CAT.ARMOR;
+    }
+    if (/\b(weapon|weapons|sword|blade|greatblade|dagger|dirk|knife|axe|spear|polearm|staff|mace|hammer|bow|wand|saber|sabre|ripper|scythe|glaive|pike|halberd|katana|gun|rifle|pistol|fangs|fang|canine|canines)\b/.test(t)) {
+      return BACKPACK_CAT.WEAPONS;
+    }
+    return "";
+  }
+
+  function classifyOffhand(item) {
+    const structured = itemMetaTokens(item);
+    const fromType = classifyFromStructuredToken(structured);
+    if (fromType === BACKPACK_CAT.WEAPONS || fromType === BACKPACK_CAT.ARMOR || fromType === BACKPACK_CAT.ACCESSORIES) {
+      return fromType;
+    }
+    const name = itemNameBlob(item);
+    if (/\b(shield|buckler|aegis|pavise|bulwark|barrier)\b/.test(name)) return BACKPACK_CAT.ARMOR;
+    if (/\b(focus|orb|totem|charm|talisman|idol|relic|amulet|pendant|necklace|torque)\b/.test(name)) return BACKPACK_CAT.ACCESSORIES;
+    if (/\b(sword|blade|greatblade|dagger|dirk|knife|axe|spear|polearm|staff|mace|hammer|bow|wand|saber|sabre|ripper|scythe|glaive|pike|halberd|katana)\b/.test(name)) {
+      return BACKPACK_CAT.WEAPONS;
+    }
+    return BACKPACK_CAT.UNRESOLVED;
+  }
+
+  function resolveBackpackCategory(item) {
+    if (!item || typeof item !== "object") return BACKPACK_CAT.UNRESOLVED;
+    if (item.isPet === true || item.is_pet === true) return BACKPACK_CAT.PETS;
+
+    const slot = itemIdentitySlotOf(item);
+    if (slot === "pet") return BACKPACK_CAT.PETS;
+
+    const structured = classifyFromStructuredToken(itemMetaTokens(item));
+    if (structured === BACKPACK_CAT.PETS) return BACKPACK_CAT.PETS;
+    if (structured && structured !== BACKPACK_CAT.UNRESOLVED) {
+      if (slot === "offhand" && structured === BACKPACK_CAT.WEAPONS) {
+        const off = classifyOffhand(item);
+        if (off !== BACKPACK_CAT.UNRESOLVED) return off;
+      }
+      return structured;
+    }
+
+    if (slot === "weapon" || slot === "fangs") return BACKPACK_CAT.WEAPONS;
+    if (slot === "helmet" || slot === "armor" || slot === "cloak" || slot === "gloves") return BACKPACK_CAT.ARMOR;
+    if (slot === "ring" || slot === "collar") return BACKPACK_CAT.ACCESSORIES;
+    if (slot === "offhand") return classifyOffhand(item);
+
+    const fromName = classifyFromStructuredToken(itemNameBlob(item));
+    if (fromName) return fromName;
+    return BACKPACK_CAT.UNRESOLVED;
+  }
+
+  function auditBackpackCategories(items) {
+    const counts = { all: 0, weapons: 0, armor: 0, accessories: 0, pets: 0, unresolved: 0 };
+    const samples = { weapons: [], armor: [], accessories: [], pets: [], unresolved: [] };
+    const list = Array.isArray(items) ? items : [];
+    for (const it of list) {
+      const slot = itemSlotOf(it);
+      const type = normKey(it?.type);
+      if (!(CANONICAL_SLOTS.includes(slot) || CANONICAL_SLOTS.includes(type))) continue;
+      counts.all += 1;
+      const resolved = resolveBackpackCategory(it);
+      const row = {
+        item: itemNameOf(it) || itemKeyOf(it),
+        rawType: it?.type || it?.item_type || it?.itemType || "",
+        rawSlot: itemSlotOf(it) || itemIdentitySlotOf(it),
+        resolved: resolved
+      };
+      if (resolved === BACKPACK_CAT.WEAPONS) { counts.weapons += 1; samples.weapons.push(row); }
+      else if (resolved === BACKPACK_CAT.ARMOR) { counts.armor += 1; samples.armor.push(row); }
+      else if (resolved === BACKPACK_CAT.ACCESSORIES) { counts.accessories += 1; samples.accessories.push(row); }
+      else if (resolved === BACKPACK_CAT.PETS) { counts.pets += 1; samples.pets.push(row); }
+      else { counts.unresolved += 1; samples.unresolved.push(row); }
+    }
+    return { counts, samples };
   }
 
   function itemSetOf(item) {
@@ -898,7 +1025,13 @@
       return (this.backpackItems || []).filter((it) => {
         if (!this._isEquipmentItem(it)) return false;
         const slot = itemSlotOf(it);
-        if (cat.slots && !cat.slots.includes(slot)) return false;
+        const resolved = resolveBackpackCategory(it);
+        if (cat.id === "pets") {
+          if (slot !== "pet") return false;
+        } else if (cat.id !== "all") {
+          if (resolved === BACKPACK_CAT.PETS) return false;
+          if (resolved !== cat.id) return false;
+        }
         if (slotFilter && slot !== slotFilter) return false;
         if (!q) return true;
         const blob = [
@@ -1230,6 +1363,7 @@
         this.backpackItems = previewFixtureBackpack();
         this.backpackError = null;
         this.backpackReady = true;
+        try { window.__AH_EQUIPPED_BACKPACK_AUDIT__ = auditBackpackCategories(this.backpackItems); } catch (_) {}
         return;
       }
       try {
@@ -1244,6 +1378,7 @@
         this.backpackItems = Array.isArray(items) ? items : [];
         this.backpackError = null;
         this.backpackReady = true;
+        try { window.__AH_EQUIPPED_BACKPACK_AUDIT__ = auditBackpackCategories(this.backpackItems); } catch (_) {}
       } catch (err) {
         console.error("Equipped backpack error", err);
         this.backpackError = err?.message === "NO_INIT_DATA"
@@ -2130,6 +2265,7 @@
     _compareRows: compareRows,
     _itemSet: itemSetOf,
     _itemKey: itemKeyOf,
+    resolveBackpackCategory: resolveBackpackCategory,
     resolveCharacterSources: resolveCharacterSources,
     PREVIEW_STATE: PREVIEW_STATE,
     PREVIEW_SOURCE: PREVIEW_SOURCE
