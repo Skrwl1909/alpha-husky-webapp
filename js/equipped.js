@@ -1,6 +1,6 @@
-// js/equipped.js – Equipment V2.2 backpack classification for Alpha Husky WebApp.
+// js/equipped.js – Equipment V2.3 loadout item inspection for Alpha Husky WebApp.
 (function () {
-  const VERSION = "equipped-v2-2-backpack-sort-20260827";
+  const VERSION = "equipped-v2-3-loadout-inspection-20260827c";
   window.__AH_EQUIPPED_VERSION__ = VERSION;
 
   const API_BASE = window.API_BASE || "";
@@ -402,6 +402,26 @@
     }
   }
 
+  function itemEffectText(item) {
+    if (!item || typeof item !== "object") return "";
+    const blobs = [
+      item.description, item.desc, item.bonusesText, item.bonusText, item.bonus_text,
+      item.effectText, item.effect_text, item.passive, item.passiveText, item.passive_text,
+      item.flavor, item.usedFor, item.used_for,
+      item.data?.description, item.data?.effect, item.data?.passive
+    ];
+    if (item.effect && typeof item.effect === "object") {
+      blobs.push(item.effect.description, item.effect.text, item.effect.name);
+    } else if (typeof item.effect === "string") {
+      blobs.push(item.effect);
+    }
+    for (const raw of blobs) {
+      const s = String(raw || "").trim();
+      if (s) return s;
+    }
+    return "";
+  }
+
   function previewFixtureSlot(slot, name, rarity, level, extra) {
     const itemKey = String(name || slot).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     return Object.assign({
@@ -423,16 +443,16 @@
       level: 177,
       stats: { level: 177, hp: 1550, attack: 142, defense: 103, agility: 32, luck: 17 },
       slots: [
-        previewFixtureSlot("helmet", "Rusted Omen Iron-Jaw", "epic", 4, { set: omen }),
-        previewFixtureSlot("fangs", "Rusted Omen Jawbreaker", "epic", 4, { set: omen }),
-        previewFixtureSlot("armor", "Astral Voidfang Carapace", "legendary", 3, { set: "Astral Voidfang" }),
-        previewFixtureSlot("ring", "Rusted Omen Iron Loop", "epic", 4, { set: omen }),
-        previewFixtureSlot("weapon", "Rusted Omen Greatblade", "epic", 5, { set: omen }),
-        previewFixtureSlot("cloak", "Rad-Core Overdrive Hood", "legendary", 5, { set: "Rad-Core" }),
-        previewFixtureSlot("collar", "Eclipse Torque", "epic", 4, {}),
-        previewFixtureSlot("gloves", "Rusted Omen Vices", "epic", 4, { set: omen }),
+        previewFixtureSlot("helmet", "Rusted Omen Iron-Jaw", "epic", 4, { set: omen, stats: { defense: 8, vitality: 4 } }),
+        previewFixtureSlot("fangs", "Rusted Omen Jawbreaker", "epic", 4, { set: omen, stats: { attack: 11, strength: 6 } }),
+        previewFixtureSlot("armor", "Astral Voidfang Carapace", "legendary", 3, { set: "Astral Voidfang", stats: { defense: 16, vitality: 10 } }),
+        previewFixtureSlot("ring", "Rusted Omen Iron Loop", "epic", 4, { set: omen, stats: { luck: 5, intelligence: 4 } }),
+        previewFixtureSlot("weapon", "Rusted Omen Greatblade", "epic", 5, { set: omen, stats: { attack: 22, strength: 14 } }),
+        previewFixtureSlot("cloak", "Rad-Core Overdrive Hood", "legendary", 5, { set: "Rad-Core", stats: { defense: 7, agility: 6 } }),
+        previewFixtureSlot("collar", "Eclipse Torque", "epic", 4, { stats: { vitality: 5, luck: 3 } }),
+        previewFixtureSlot("gloves", "Rusted Omen Vices", "epic", 4, { set: omen, stats: { strength: 8, defense: 5 } }),
         previewFixtureSlot("pet", "Fracture Sentinel", "uncommon", 33, { isPet: true }),
-        previewFixtureSlot("offhand", "Rusted Omen Aegis-Wall", "epic", 4, { set: omen })
+        previewFixtureSlot("offhand", "Rusted Omen Aegis-Wall", "epic", 4, { set: omen, stats: { defense: 12, vitality: 6 } })
       ],
       activeSets: [
         { set: "Rusted Omen", name: "Rusted Omen", count: 6, bonus: { str: 10, def: 8, vit: 6 } }
@@ -896,6 +916,7 @@
     compatibleOnly: false,
     pendingAction: null,
     portraitPane: "loadout",
+    _loadoutInspectOpen: false,
     backpackItems: [],
     backpackError: null,
     equippedError: null,
@@ -978,15 +999,24 @@
       try { c.style.overflow = (p.overflow != null ? p.overflow : ""); } catch (_) {}
     },
 
-    _selectSlot(slotKey) {
+    _selectSlot(slotKey, opts) {
       const key = String(slotKey || "").toLowerCase();
       if (!this._canonicalSlotKeys().includes(key)) return;
+      const prevKey = this.selectedEquippedSlotKey;
       this.selectedEquippedSlotKey = key;
       const backpack = this._backpackItemByKey(this.selectedBackpackItemKey);
       if (!backpack || itemSlotOf(backpack) !== key) this.selectedBackpackItemKey = null;
+      const occupied = !this._slotState(key).empty;
+      if (opts && opts.fromUser) {
+        if (!occupied) this._loadoutInspectOpen = false;
+        else if (layoutMode() === "portrait") {
+          this._loadoutInspectOpen = !(key === prevKey && this._loadoutInspectOpen);
+        }
+      }
       this._paintSelection();
       this._renderBackpack();
       this._renderCompare();
+      this._renderLoadoutInspect();
     },
 
     _selectBackpackItem(key) {
@@ -995,6 +1025,7 @@
         this.selectedBackpackItemKey = null;
         this._renderBackpack();
         this._renderCompare();
+        this._renderLoadoutInspect();
         return;
       }
       this.selectedBackpackItemKey = itemKeyOf(item);
@@ -1003,6 +1034,7 @@
       this._paintSelection();
       this._renderBackpack();
       this._renderCompare();
+      this._renderLoadoutInspect();
     },
 
     _backpackItemByKey(key) {
@@ -1128,6 +1160,7 @@
       this.backpackSearch = "";
       this.compatibleOnly = false;
       this.portraitPane = this.portraitPane || "loadout";
+      this._loadoutInspectOpen = false;
       this._lastFingerprint = "";
       this._activePet = null;
       this._petResolved = false;
@@ -1175,6 +1208,7 @@
               <div class="eq-loadout-list" id="eq-loadout-list">
                 <div class="eq-skel">Loading loadout…</div>
               </div>
+              <div id="eq-loadout-inspect" class="eq-loadout-inspect" hidden></div>
             </aside>
             <section class="eq-panel eq-character" id="eq-character" aria-label="Character">
               <div class="eq-panel-title">Character</div>
@@ -1240,6 +1274,7 @@
       root.dataset.layout = mode;
       root.dataset.pane = this.portraitPane || "loadout";
       this._syncPortraitScroll(mode);
+      this._renderLoadoutInspect();
       const tabs = document.getElementById("eq-mobile-tabs");
       if (tabs) {
         tabs.querySelectorAll(".eq-tab").forEach((btn) => {
@@ -1258,7 +1293,7 @@
         if (slotButton && root.contains(slotButton)) {
           event.preventDefault();
           haptic("light");
-          this._selectSlot(slotButton.dataset.equipSlot);
+          this._selectSlot(slotButton.dataset.equipSlot, { fromUser: true });
           return;
         }
         const tile = event.target.closest("[data-backpack-key]");
@@ -1284,6 +1319,7 @@
         else if (action === "inspect") this.inspectSelected();
         else if (action === "unequip") this.unequipSelected();
         else if (action === "equip") this.equipSelected();
+        else if (action === "close-inspect") this._closeLoadoutInspect();
         else if (action === "open-inventory") this.openInventory();
         else if (action === "manage-pet") this.managePet();
         else if (action === "retry-equipped") this.refresh();
@@ -1297,6 +1333,7 @@
           this._applyLayout();
         } else if (action === "pane-backpack") {
           this.portraitPane = "backpack";
+          this._closeLoadoutInspect();
           this._applyLayout();
         }
       });
@@ -1321,6 +1358,7 @@
       this._renderSets();
       this._renderBackpack();
       this._renderCompare();
+      this._renderLoadoutInspect();
       this._requestCharacterImage(false);
       this._syncPetCompanion();
     },
@@ -1445,6 +1483,7 @@
           }
         }
       });
+      this._renderLoadoutInspect();
     },
 
     _renderNodes() {
@@ -2020,19 +2059,11 @@
             }).join("")}</div>`
           : `<div class="eq-empty">No comparable stats on this item.</div>`;
       } else if (equipped && !equipped.empty) {
-        const stats = itemStatsOf(equipped);
-        const keys = orderedStatKeys(stats, {});
-        const desc = String(equipped.description || equipped.bonusesText || "").trim();
-        rowsHtml = `
-          ${keys.length ? `<div class="eq-rows">${keys.map((k) => `
-            <div class="eq-row">
-              <span class="k">${esc(statPresentationLabel(k))}</span>
-              <span class="a">${esc(formattedStatValue(stats[k]))}</span>
-              <span class="b"></span>
-              <span class="d is-flat"></span>
-            </div>`).join("")}</div>` : ""}
-          ${desc ? `<div class="eq-empty" style="text-align:left;padding:8px 4px;">${esc(desc)}</div>` : ""}
-        `;
+        if (layoutMode() === "portrait") {
+          rowsHtml = "";
+        } else {
+          rowsHtml = `<div class="eq-empty">Select backpack gear to compare and equip.</div>`;
+        }
       } else {
         rowsHtml = `<div class="eq-empty">Select backpack gear to compare and equip.</div>`;
       }
@@ -2056,29 +2087,209 @@
       const actions = [];
       if (selected) {
         actions.push(`<button type="button" class="eq-action is-equip" data-equipped-action="equip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "equip" ? "Equipping…" : "Equip selected"}</button>`);
+        if (equipped && !equipped.empty) {
+          actions.push(`<button type="button" class="eq-action is-unequip" data-equipped-action="unequip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "unequip" ? "Unequipping…" : "Unequip"}</button>`);
+        }
+        if (isPetSlot && typeof window.MyPets?.open === "function") {
+          actions.push(`<button type="button" class="eq-action is-pet" data-equipped-action="manage-pet">Manage pet</button>`);
+        }
+        if (equipped && !equipped.empty && typeof window.Inventory?.openEquippedItem === "function") {
+          actions.push(`<button type="button" class="eq-action" data-equipped-action="inspect">Inspect</button>`);
+        }
+        host.innerHTML = `
+          <div class="eq-compare">
+            <div class="eq-compare-pair">
+              ${sideHtml("Equipped", equipped && !equipped.empty ? equipped : null, "EMPTY SLOT")}
+              <div class="eq-vs">VS</div>
+              ${sideHtml("Selected", selected)}
+            </div>
+            ${rowsHtml}
+            ${setHtml}
+            ${actions.length ? `<div class="eq-actions" style="${actions.length === 1 ? "grid-template-columns:1fr;" : ""}">${actions.join("")}</div>` : ""}
+          </div>
+        `;
+        return;
       }
-      if (equipped && !equipped.empty) {
-        actions.push(`<button type="button" class="eq-action is-unequip" data-equipped-action="unequip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "unequip" ? "Unequipping…" : "Unequip"}</button>`);
-      }
-      if (isPetSlot && typeof window.MyPets?.open === "function") {
-        actions.push(`<button type="button" class="eq-action is-pet" data-equipped-action="manage-pet">Manage pet</button>`);
-      }
-      if (equipped && !equipped.empty && typeof window.Inventory?.openEquippedItem === "function") {
-        actions.push(`<button type="button" class="eq-action" data-equipped-action="inspect">Inspect</button>`);
+
+      if (equipped && !equipped.empty && layoutMode() === "portrait") {
+        host.innerHTML = `<div class="eq-compare eq-compare-solo">${this._equippedDetailHtml(equipped, slotKey, { showClose: false })}</div>`;
+        this._hydrateInspectIcons(host, equipped, slotKey);
+        return;
       }
 
       host.innerHTML = `
         <div class="eq-compare">
-          <div class="eq-compare-pair">
-            ${sideHtml("Equipped", equipped && !equipped.empty ? equipped : null, "EMPTY SLOT")}
-            <div class="eq-vs">VS</div>
-            ${selected ? sideHtml("Selected", selected) : sideHtml("Selected", null, "Select an item")}
-          </div>
-          ${rowsHtml}
-          ${setHtml}
-          ${actions.length ? `<div class="eq-actions" style="${actions.length === 1 ? "grid-template-columns:1fr;" : ""}">${actions.join("")}</div>` : ""}
+          ${rowsHtml || `<div class="eq-empty">Select backpack gear to compare and equip.</div>`}
         </div>
       `;
+    },
+
+    _equippedDetailHtml(item, slotKey, opts) {
+      const showClose = !!(opts && opts.showClose);
+      const rarity = normRarity(item?.rarity);
+      const name = itemNameOf(item) || "Unknown";
+      const level = itemLevelOf(item);
+      const rarityText = item?.rarity ? String(item.rarity).toUpperCase() : String(rarity).toUpperCase();
+      const meta = [rarityText, level != null ? `LV ${level}` : ""].filter(Boolean).join(" · ");
+      const slotName = slotLabel(slotKey, item);
+      const setName = itemSetOf(item);
+      const stats = itemStatsOf(item);
+      const keys = orderedStatKeys(stats, {});
+      const effect = itemEffectText(item);
+      const pending = !!this.pendingAction;
+      const src = _bgCandidates(item)[0] || "";
+      const isPetSlot = slotKey === "pet";
+      const canInspect = typeof window.Inventory?.openEquippedItem === "function";
+
+      const statHtml = keys.length
+        ? `<div class="eq-inspect-stats">${keys.map((k) => {
+            const shown = formattedStatValue(stats[k]);
+            if (!shown) return "";
+            return `<span class="eq-inspect-stat"><b>${esc(shown)}</b> ${esc(statPresentationLabel(k))}</span>`;
+          }).join("")}</div>`
+        : "";
+
+      const actions = [];
+      actions.push(`<button type="button" class="eq-action is-unequip" data-equipped-action="unequip" ${pending ? "disabled" : ""}>${pending && this.pendingAction === "unequip" ? "Unequipping…" : "Unequip"}</button>`);
+      if (canInspect) {
+        actions.push(`<button type="button" class="eq-action" data-equipped-action="inspect">Inspect</button>`);
+      }
+      if (isPetSlot && typeof window.MyPets?.open === "function") {
+        actions.push(`<button type="button" class="eq-action is-pet" data-equipped-action="manage-pet">Manage pet</button>`);
+      }
+
+      return `
+        <div class="eq-inspect" data-rarity="${rarity}">
+          <div class="eq-inspect-top">
+            <span class="eq-inspect-kicker">Equipped item</span>
+            ${showClose ? `<button type="button" class="eq-inspect-close" data-equipped-action="close-inspect" aria-label="Close details">Close</button>` : ""}
+          </div>
+          <div class="eq-inspect-hero">
+            <span class="eq-icon" data-eq-inspect-icon="${esc(slotKey)}" data-rarity="${rarity}">
+              ${src ? `<img class="item-icon" alt="" src="${esc(src)}">` : `<span class="eq-icon-ph">${esc(slotAbbr(slotKey))}</span>`}
+            </span>
+            <div class="eq-inspect-copy">
+              <div class="eq-inspect-name">${esc(name)}</div>
+              ${meta ? `<div class="eq-inspect-meta">${esc(meta)}</div>` : ""}
+              <div class="eq-inspect-slot">${esc(slotName)}</div>
+              ${setName ? `<div class="eq-inspect-set">${esc(setName)}</div>` : ""}
+            </div>
+          </div>
+          ${statHtml}
+          ${effect ? `<p class="eq-inspect-effect">${esc(effect)}</p>` : ""}
+          <div class="eq-actions" style="${actions.length === 1 ? "grid-template-columns:1fr;" : ""}">${actions.join("")}</div>
+        </div>
+      `;
+    },
+
+    _hydrateInspectIcons(root, item, slotKey) {
+      if (!root || !item) return;
+      const box = root.querySelector("[data-eq-inspect-icon]");
+      if (!box) return;
+      if (_mountPetSprite(box, item, "equip-pet-sprite")) return;
+      const img = box.querySelector("img");
+      if (img) img.onerror = () => this._iconError(img, item);
+      else if (!_bgCandidates(item)[0]) _setBgWithFallback(box, item);
+    },
+
+    _syncInspectScrollLock() {
+      this._syncPortraitScroll(layoutMode());
+    },
+
+    _closeLoadoutInspect() {
+      this._loadoutInspectOpen = false;
+      this._renderLoadoutInspect();
+    },
+
+    _renderLoadoutInspect() {
+      const panel = document.getElementById("eq-loadout-inspect");
+      const inlinePrev = document.getElementById("eq-loadout-inspect-inline");
+      const root = document.getElementById("equipped-root");
+      if (inlinePrev) inlinePrev.remove();
+
+      const slotKey = this.selectedEquippedSlotKey;
+      const slot = slotKey ? this._slotState(slotKey) : null;
+      const occupied = !!(slot && !slot.empty);
+      const portrait = layoutMode() === "portrait";
+      if (!occupied) this._loadoutInspectOpen = false;
+
+      const showPanel = occupied && !portrait;
+      const showInline = occupied && portrait && this._loadoutInspectOpen;
+
+      if (panel) {
+        panel.hidden = !showPanel;
+        if (showPanel) {
+          panel.innerHTML = this._equippedDetailHtml(slot, slotKey, { showClose: false });
+          this._hydrateInspectIcons(panel, slot, slotKey);
+        } else {
+          panel.innerHTML = "";
+        }
+      }
+
+      if (showInline) {
+        const list = document.getElementById("eq-loadout-list");
+        const row = list && slotKey
+          ? list.querySelector('[data-equip-slot="' + String(slotKey).replace(/"/g, "") + '"]')
+          : null;
+        if (row && row.parentNode) {
+          const card = document.createElement("div");
+          card.id = "eq-loadout-inspect-inline";
+          card.className = "eq-loadout-inspect is-inline";
+          card.setAttribute("role", "region");
+          card.setAttribute("aria-label", "Equipped item details");
+          card.innerHTML = this._equippedDetailHtml(slot, slotKey, { showClose: true });
+          row.insertAdjacentElement("afterend", card);
+          this._hydrateInspectIcons(card, slot, slotKey);
+          try { card.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (_) {}
+        }
+      }
+
+      if (root) root.classList.toggle("has-inspect", showInline);
+      this._syncInspectScrollLock();
+    },
+
+    _recomputePreviewSets() {
+      const state = this.state;
+      if (!state || typeof state !== "object") return;
+      const prev = new Map((activeSetsOf(state) || []).map((s) => [String(s.set || s.name || ""), s]));
+      const total = {};
+      const setCounts = {};
+      for (const row of state.slots || []) {
+        if (!row || row.empty) continue;
+        const stats = itemStatsOf(row);
+        for (const [k, v] of Object.entries(stats)) {
+          const num = Number(v);
+          if (!Number.isFinite(num)) continue;
+          total[k] = (total[k] || 0) + num;
+        }
+        const setName = itemSetOf(row);
+        if (setName) setCounts[setName] = (setCounts[setName] || 0) + 1;
+      }
+      state.totalBonus = total;
+      state.activeSets = Object.entries(setCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([name, count]) => {
+          const old = prev.get(name);
+          return { set: name, name, count, bonus: (old && old.bonus) || {} };
+        });
+    },
+
+    _previewUnequipLocal(slotKey) {
+      const slot = this._slotState(slotKey);
+      if (!slot || slot.empty || !this.state) return;
+      const moved = Object.assign({}, slot);
+      delete moved.empty;
+      const key = itemKeyOf(moved);
+      if (key && !this._backpackItemByKey(key)) {
+        this.backpackItems = [moved].concat(this.backpackItems || []);
+      }
+      const slots = (this.state.slots || []).map((row) => {
+        if (normKey(row?.slot) !== slotKey) return row;
+        return { slot: slotKey, label: slotLabel(slotKey), empty: true };
+      });
+      this.state = Object.assign({}, this.state, { slots });
+      this._recomputePreviewSets();
+      this._syncExternalState(this.state);
     },
 
     _renderSets() {
@@ -2162,8 +2373,26 @@
       if (!slotKey || !slot || slot.empty || this.pendingAction) return;
       this.pendingAction = "unequip";
       this._renderCompare();
+      this._renderLoadoutInspect();
       haptic("medium");
       try {
+        if (!hasInitData()) {
+          this._previewUnequipLocal(slotKey);
+          hapticNotify("success");
+          this.pendingAction = null;
+          this._loadoutInspectOpen = false;
+          this.selectedEquippedSlotKey = slotKey;
+          this._renderLoadout();
+          this._renderNodes();
+          this._renderStats();
+          this._renderSets();
+          this._renderBackpack();
+          this._renderCompare();
+          this._renderLoadoutInspect();
+          this._requestCharacterImage(true);
+          this._loadActivePet().then(() => this._syncPetCompanion());
+          return;
+        }
         const res = await equippedPost("/webapp/equipped/unequip", { slot: slotKey });
         if (res && res.ok) {
           const data = res.data || res.state || res;
@@ -2172,19 +2401,22 @@
           await this._loadBackpack();
           hapticNotify("success");
           this.pendingAction = null;
-          this._ensureSelectedSlot();
+          this._loadoutInspectOpen = false;
+          this.selectedEquippedSlotKey = slotKey;
           this._renderLoadout();
           this._renderNodes();
           this._renderStats();
           this._renderSets();
           this._renderBackpack();
           this._renderCompare();
+          this._renderLoadoutInspect();
           this._requestCharacterImage(true);
           this._loadActivePet().then(() => this._syncPetCompanion());
         } else {
           hapticNotify("error");
           this.pendingAction = null;
           this._renderCompare();
+          this._renderLoadoutInspect();
           this._toast(res?.message || res?.reason || "Failed to unequip.", "error");
         }
       } catch (err) {
@@ -2192,6 +2424,7 @@
         hapticNotify("error");
         this.pendingAction = null;
         this._renderCompare();
+        this._renderLoadoutInspect();
         this._toast("Failed to unequip.", "error");
       }
     },
@@ -2204,6 +2437,7 @@
       if (this._canonicalSlotKeys().includes(slot)) this.selectedEquippedSlotKey = slot;
       this.pendingAction = "equip";
       this._renderCompare();
+      this._renderLoadoutInspect();
       haptic("medium");
       try {
         const res = await equippedPost("/webapp/inventory/equip", { key });
@@ -2220,12 +2454,14 @@
           this._renderSets();
           this._renderBackpack();
           this._renderCompare();
+          this._renderLoadoutInspect();
           this._requestCharacterImage(true);
           this._loadActivePet().then(() => this._syncPetCompanion());
         } else {
           hapticNotify("error");
           this.pendingAction = null;
           this._renderCompare();
+          this._renderLoadoutInspect();
           this._toast(res?.message || res?.reason || "Cannot equip that item.", "error");
         }
       } catch (err) {
@@ -2233,6 +2469,7 @@
         hapticNotify("error");
         this.pendingAction = null;
         this._renderCompare();
+        this._renderLoadoutInspect();
         this._toast("Failed to equip.", "error");
       }
     },
@@ -2246,6 +2483,7 @@
       this._renderSets();
       this._renderBackpack();
       this._renderCompare();
+      this._renderLoadoutInspect();
     },
 
     async inspect(slot) {
