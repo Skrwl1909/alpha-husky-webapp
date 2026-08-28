@@ -229,7 +229,15 @@
     }
     const loadScript = getLoadScript();
     return await once("tactical_ops", async () => {
-      await loadScript("js/tactical_ops.js");
+      // Dedicated cache key so Telegram cannot keep the v2.2.1 IIFE
+      // even when window.WEBAPP_VER is stale.
+      const prev = global.WEBAPP_VER;
+      global.WEBAPP_VER = "tops-2.2.3-field-geometry";
+      try {
+        await loadScript("js/tactical_ops.js");
+      } finally {
+        global.WEBAPP_VER = prev;
+      }
       if (!global.TacticalOps?.open) {
         throw new Error("tactical_ops.js loaded but window.TacticalOps.open is missing");
       }
