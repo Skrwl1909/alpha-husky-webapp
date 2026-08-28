@@ -7,14 +7,14 @@ import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
 import { resolveTacticalLayout } from "../layout";
 
-export const VERSION = "tactical_ops.js v2.2.1-responsive-playability";
+export const VERSION = "tactical_ops.js v2.2.3-field-geometry";
 const ROOT_ID = "tacticalOpsRoot";
 const STYLE_ID = "tacticalOpsStyles";
 const FONT_ID = "tacticalOpsFonts";
 
 interface Runtime {
   apiPost: ((...args: unknown[]) => unknown) | null;
-  tg: { expand?: () => void } | null;
+  tg: { expand?: () => void; viewportHeight?: number; viewportStableHeight?: number } | null;
   dbg: boolean;
   root: HTMLElement | null;
   isOpen: boolean;
@@ -23,6 +23,8 @@ interface Runtime {
   resizeBound: boolean;
   prevBodyOverflow: string;
   prevHtmlOverflow: string;
+  resizeObserver: ResizeObserver | null;
+  battleWatcher: MutationObserver | null;
 }
 
 const M: Runtime = {
@@ -36,6 +38,8 @@ const M: Runtime = {
   resizeBound: false,
   prevBodyOverflow: "",
   prevHtmlOverflow: "",
+  resizeObserver: null,
+  battleWatcher: null,
 };
 
 try {
@@ -65,17 +69,88 @@ function injectFonts(): void {
   document.head.appendChild(el);
 }
 
-function stampLayout(): void {
+/** Pixel-box the overlay from visualViewport so Telegram Mini App chrome cannot collapse 100%/100dvh. */
+function applyHostGeometry(): void {
   const el = M.root || document.getElementById(ROOT_ID);
   if (!el) return;
   const vv = window.visualViewport;
-  const w = el.clientWidth || vv?.width || window.innerWidth;
-  const h = el.clientHeight || vv?.height || window.innerHeight;
+  const tgH = M.tg?.viewportStableHeight || M.tg?.viewportHeight;
+  const w = Math.max(1, Math.round(vv?.width || el.clientWidth || window.innerWidth));
+  const h = Math.max(
+    1,
+    Math.round(vv?.height || (typeof tgH === "number" ? tgH : 0) || window.innerHeight),
+  );
+  const top = Math.round(vv?.offsetTop || 0);
+  const left = Math.round(vv?.offsetLeft || 0);
+  el.style.position = "fixed";
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  el.style.right = "auto";
+  el.style.bottom = "auto";
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  el.style.maxHeight = `${h}px`;
+  el.style.setProperty("--tops-w", `${w}px`);
+  el.style.setProperty("--tops-h", `${h}px`);
   el.setAttribute("data-layout", resolveTacticalLayout(w, h));
+  ensureBattlefieldGeometry(el, w, h);
+}
+
+/**
+ * Compact field children are position:absolute, so a 0-height .t-field-wrap
+ * hides the entire board while header/actions still paint. Lock leftover
+ * pixels onto the wrap after HUD chrome is measured.
+ */
+function ensureBattlefieldGeometry(root: HTMLElement, hostW: number, hostH: number): void {
+  const wrap = root.querySelector(".t-field-wrap") as HTMLElement | null;
+  if (!wrap) return;
+  const layout = root.getAttribute("data-layout") || resolveTacticalLayout(hostW, hostH);
+  const measure = (sel: string) => {
+    const n = root.querySelector(sel) as HTMLElement | null;
+    return n ? Math.round(n.getBoundingClientRect().height) : 0;
+  };
+  const chrome = measure(".t-top") + measure(".t-order-wrap") + measure(".t-status") + measure(".t-dock");
+  const available =
+    layout === "wide" ? Math.max(160, hostH) : Math.max(160, hostH - chrome);
+  root.style.setProperty("--tops-field-h", `${available}px`);
+  wrap.style.display = "block";
+  wrap.style.width = "100%";
+  wrap.style.minWidth = "0";
+  wrap.style.overflow = "hidden";
+  if (layout === "wide") {
+    wrap.style.position = "absolute";
+    wrap.style.inset = "0";
+    wrap.style.height = "100%";
+    wrap.style.minHeight = "100%";
+    wrap.style.maxHeight = "none";
+  } else {
+    wrap.style.position = "relative";
+    wrap.style.inset = "auto";
+    wrap.style.flex = "1 1 auto";
+    wrap.style.height = `${available}px`;
+    wrap.style.minHeight = `${available}px`;
+    wrap.style.maxHeight = `${available}px`;
+  }
+  const field = root.querySelector(".t-field") as HTMLElement | null;
+  if (field) {
+    field.style.position = "absolute";
+    field.style.inset = "0";
+    field.style.width = "100%";
+    field.style.height = "100%";
+  }
+  const art = root.querySelector(".t-field-art") as HTMLElement | null;
+  if (art) {
+    art.style.position = "absolute";
+    art.style.inset = "0";
+    art.style.width = "100%";
+    art.style.height = "100%";
+    art.style.objectFit = "cover";
+    art.style.display = "block";
+  }
 }
 
 function onResize(): void {
-  stampLayout();
+  applyHostGeometry();
 }
 
 function bindResize(): void {
@@ -83,10 +158,31 @@ function bindResize(): void {
   window.addEventListener("resize", onResize);
   try {
     window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("scroll", onResize);
   } catch {
     /* ignore */
   }
+  try {
+    M.resizeObserver = new ResizeObserver(onResize);
+    M.resizeObserver.observe(document.documentElement);
+    if (M.root) M.resizeObserver.observe(M.root);
+  } catch {
+    M.resizeObserver = null;
+  }
+  bindBattleWatcher();
   M.resizeBound = true;
+}
+
+function bindBattleWatcher(): void {
+  if (!M.root || M.battleWatcher) return;
+  try {
+    M.battleWatcher = new MutationObserver(() => {
+      requestAnimationFrame(() => applyHostGeometry());
+    });
+    M.battleWatcher.observe(M.root, { childList: true, subtree: true });
+  } catch {
+    M.battleWatcher = null;
+  }
 }
 
 function unbindResize(): void {
@@ -94,9 +190,22 @@ function unbindResize(): void {
   window.removeEventListener("resize", onResize);
   try {
     window.visualViewport?.removeEventListener("resize", onResize);
+    window.visualViewport?.removeEventListener("scroll", onResize);
   } catch {
     /* ignore */
   }
+  try {
+    M.resizeObserver?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  M.resizeObserver = null;
+  try {
+    M.battleWatcher?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  M.battleWatcher = null;
   M.resizeBound = false;
 }
 
@@ -179,11 +288,42 @@ function hardClose(): void {
   }
 }
 
+function pushHostNav(): void {
+  const payload = {
+    close: () => {
+      hardClose();
+    },
+    isOpen: () => M.isOpen,
+  };
+  const w = window as unknown as {
+    AlphaNav?: { push?: (id: string, p: unknown) => void };
+    navRegister?: (id: string, p: unknown) => void;
+    navOpen?: (id: string) => void;
+  };
+  try {
+    if (w.AlphaNav?.push) w.AlphaNav.push(ROOT_ID, payload);
+    else {
+      w.navRegister?.(ROOT_ID, payload);
+      w.navOpen?.(ROOT_ID);
+    }
+  } catch {
+    /* host nav is optional */
+  }
+}
+
 export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }): typeof API {
   const t = deps && typeof deps === "object" ? deps : {};
   if (typeof t.apiPost === "function") M.apiPost = t.apiPost as Runtime["apiPost"];
   if (t.tg) M.tg = t.tg as Runtime["tg"];
   if (typeof t.dbg === "boolean") M.dbg = t.dbg;
+  try {
+    if (M.apiPost && typeof window !== "undefined") {
+      const w = window as unknown as { apiPost?: unknown };
+      if (typeof w.apiPost !== "function") w.apiPost = M.apiPost;
+    }
+  } catch {
+    /* ignore */
+  }
   setHost({ requestClose: closeView, dbg: M.dbg });
   return API;
 }
@@ -196,19 +336,36 @@ export async function open(): Promise<void> {
   lockScroll();
   bindKeys();
   bindResize();
-  stampLayout();
+  applyHostGeometry();
   if (!M.reactRoot) M.reactRoot = createRoot(el);
   M.reactRoot.render(createElement(TacticalApp));
+  pushHostNav();
   try {
     M.tg?.expand?.();
   } catch {
     /* ignore */
   }
+  requestAnimationFrame(() => applyHostGeometry());
+  setTimeout(() => applyHostGeometry(), 50);
 }
 
 export function closeView(): void {
   if (!M.isOpen) return;
+  const w = window as unknown as {
+    AlphaNav?: { close?: (id: string, meta?: unknown) => boolean };
+    navClose?: (id: string) => void;
+  };
+  try {
+    if (w.AlphaNav?.close?.(ROOT_ID, { source: "tactical-ops-close" })) return;
+  } catch {
+    /* fall through */
+  }
   hardClose();
+  try {
+    w.navClose?.(ROOT_ID);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function getState() {
