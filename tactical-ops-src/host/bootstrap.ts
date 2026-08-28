@@ -3,11 +3,11 @@ import { createElement } from "react";
 import { TacticalApp } from "../ui/App";
 import { TACTICAL_CSS } from "../styles";
 import { setHost } from "./bridge";
-import { snapshotState, TACTICAL_VERSION, useBattleStore } from "../store/battleStore";
-import { hydrateEquippedState, identityCache, resolvePlayerIdentity } from "./identity";
+import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
+import { resolveTacticalLayout } from "../layout";
 
-export const VERSION = TACTICAL_VERSION;
+export const VERSION = "tactical_ops.js v2.2.1-responsive-playability";
 const ROOT_ID = "tacticalOpsRoot";
 const STYLE_ID = "tacticalOpsStyles";
 const FONT_ID = "tacticalOpsFonts";
@@ -20,6 +20,7 @@ interface Runtime {
   isOpen: boolean;
   reactRoot: Root | null;
   keyHandlerBound: boolean;
+  resizeBound: boolean;
   prevBodyOverflow: string;
   prevHtmlOverflow: string;
 }
@@ -32,6 +33,7 @@ const M: Runtime = {
   isOpen: false,
   reactRoot: null,
   keyHandlerBound: false,
+  resizeBound: false,
   prevBodyOverflow: "",
   prevHtmlOverflow: "",
 };
@@ -41,15 +43,6 @@ try {
   (window as unknown as { __TACTICAL_COMBAT__: typeof Combat }).__TACTICAL_COMBAT__ = Combat;
 } catch {
   /* ignore */
-}
-
-function log(...args: unknown[]): void {
-  if (!M.dbg) return;
-  try {
-    console.debug("[TacticalOps]", ...args);
-  } catch {
-    /* ignore */
-  }
 }
 
 function injectStyles(): void {
@@ -72,6 +65,41 @@ function injectFonts(): void {
   document.head.appendChild(el);
 }
 
+function stampLayout(): void {
+  const el = M.root || document.getElementById(ROOT_ID);
+  if (!el) return;
+  const vv = window.visualViewport;
+  const w = el.clientWidth || vv?.width || window.innerWidth;
+  const h = el.clientHeight || vv?.height || window.innerHeight;
+  el.setAttribute("data-layout", resolveTacticalLayout(w, h));
+}
+
+function onResize(): void {
+  stampLayout();
+}
+
+function bindResize(): void {
+  if (M.resizeBound) return;
+  window.addEventListener("resize", onResize);
+  try {
+    window.visualViewport?.addEventListener("resize", onResize);
+  } catch {
+    /* ignore */
+  }
+  M.resizeBound = true;
+}
+
+function unbindResize(): void {
+  if (!M.resizeBound) return;
+  window.removeEventListener("resize", onResize);
+  try {
+    window.visualViewport?.removeEventListener("resize", onResize);
+  } catch {
+    /* ignore */
+  }
+  M.resizeBound = false;
+}
+
 function lockScroll(): void {
   M.prevBodyOverflow = document.body.style.overflow;
   M.prevHtmlOverflow = document.documentElement.style.overflow;
@@ -82,18 +110,6 @@ function lockScroll(): void {
 function unlockScroll(): void {
   document.body.style.overflow = M.prevBodyOverflow;
   document.documentElement.style.overflow = M.prevHtmlOverflow;
-}
-
-function exposeDebug(on: boolean): void {
-  const w = window as unknown as { __tactical?: unknown };
-  if (on) w.__tactical = useBattleStore;
-  else if ("__tactical" in w) {
-    try {
-      delete w.__tactical;
-    } catch {
-      w.__tactical = undefined;
-    }
-  }
 }
 
 function onKey(e: KeyboardEvent): void {
@@ -142,35 +158,11 @@ function ensureRoot(): HTMLElement {
   return el;
 }
 
-function navPush(): void {
-  const handle = {
-    close: () => {
-      hardClose();
-    },
-    isOpen: () => M.isOpen,
-  };
-  const w = window as unknown as {
-    AlphaNav?: { push?: (id: string, h: unknown) => void; close?: (id: string, meta?: unknown) => boolean };
-    navRegister?: (id: string, h: unknown) => void;
-    navOpen?: (id: string) => void;
-    navClose?: (id: string) => void;
-  };
-  try {
-    if (w.AlphaNav?.push) w.AlphaNav.push(ROOT_ID, handle);
-    else {
-      w.navRegister?.(ROOT_ID, handle);
-      w.navOpen?.(ROOT_ID);
-    }
-  } catch (err) {
-    log("nav push failed", err);
-  }
-}
-
 function hardClose(): void {
   M.isOpen = false;
   unbindKeys();
+  unbindResize();
   unlockScroll();
-  exposeDebug(false);
   if (M.reactRoot) {
     M.reactRoot.unmount();
     M.reactRoot = null;
@@ -192,81 +184,38 @@ export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }):
   if (typeof t.apiPost === "function") M.apiPost = t.apiPost as Runtime["apiPost"];
   if (t.tg) M.tg = t.tg as Runtime["tg"];
   if (typeof t.dbg === "boolean") M.dbg = t.dbg;
-  try {
-    if (M.apiPost && typeof window !== "undefined") {
-      (window as unknown as { apiPost?: unknown }).apiPost =
-        (window as unknown as { apiPost?: unknown }).apiPost || M.apiPost;
-    }
-  } catch {
-    /* ignore */
-  }
   setHost({ requestClose: closeView, dbg: M.dbg });
-  exposeDebug(M.dbg);
-  log("init", { dbg: M.dbg, version: VERSION, hasApiPost: typeof M.apiPost === "function" });
   return API;
 }
 
 export async function open(): Promise<void> {
   const el = ensureRoot();
   setHost({ requestClose: closeView, dbg: M.dbg });
-  identityCache(resolvePlayerIdentity());
-  void hydrateEquippedState().then(() => {
-    try {
-      useBattleStore.getState().refreshIdentity();
-    } catch {
-      /* ignore */
-    }
-  });
-  try {
-    useBattleStore.getState().refreshIdentity();
-  } catch {
-    /* ignore */
-  }
   M.isOpen = true;
   el.setAttribute("data-open", "1");
   lockScroll();
   bindKeys();
-  exposeDebug(M.dbg);
+  bindResize();
+  stampLayout();
   if (!M.reactRoot) M.reactRoot = createRoot(el);
   M.reactRoot.render(createElement(TacticalApp));
-  navPush();
   try {
     M.tg?.expand?.();
   } catch {
     /* ignore */
   }
-  log("open");
 }
 
 export function closeView(): void {
   if (!M.isOpen) return;
-  const w = window as unknown as {
-    AlphaNav?: { close?: (id: string, meta?: unknown) => boolean };
-    navClose?: (id: string) => void;
-  };
-  try {
-    if (w.AlphaNav?.close?.(ROOT_ID, { source: "tactical-ops-close" })) return;
-  } catch {
-    /* ignore */
-  }
   hardClose();
-  try {
-    w.navClose?.(ROOT_ID);
-  } catch {
-    /* ignore */
-  }
-  log("close");
-}
-
-export async function refresh() {
-  return getState();
 }
 
 export function getState() {
   return { ...snapshotState(), open: M.isOpen, version: VERSION };
 }
 
-export const API = { init, open, close: closeView, refresh, getState };
+export const API = { init, open, close: closeView, refresh: getState, getState };
 
 export function attachGlobal(): typeof API {
   (window as unknown as { TacticalOps: typeof API }).TacticalOps = API;
