@@ -25,9 +25,11 @@
   --tops-dock: 72px;
   z-index: 1500;
   width: 100%;
+  width: 100vw;
   height: 100%;
   height: 100dvh;
-  max-height: 100dvh;
+  height: 100svh;
+  max-height: 100svh;
   color: var(--t-fg);
   font-family: var(--t-font-sans);
   background: var(--t-bg);
@@ -39,6 +41,16 @@
   overflow: hidden;
   container-type: size;
   container-name: tops;
+}
+
+#tacticalOpsRoot[data-open="0"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot[data-open="1"] {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 #tacticalOpsRoot,
@@ -66,6 +78,7 @@
 #tacticalOpsRoot .t-shell {
   height: 100%;
   width: 100%;
+  min-height: 0;
   background: var(--t-bg);
   color: var(--t-fg);
   font-family: var(--t-font-sans);
@@ -74,6 +87,8 @@
   touch-action: manipulation;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 #tacticalOpsRoot .t-fill {
@@ -356,14 +371,14 @@
   white-space: nowrap;
 }
 
-/* ========== BATTLE LAYOUT ==========
-   Compact / standard: stacked HUD, battlefield is the 1fr region.
-   Wide: overlay HUD on a full-bleed field. */
+/* Compact / standard: stacked HUD, battlefield is the 1fr region.
+   Wide: overlay HUD on a full-bleed field.
+   Field row uses minmax(160px, 1fr) so absolute .t-field children cannot collapse the row to 0. */
 
 #tacticalOpsRoot .t-battle {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto minmax(160px, 1fr) auto auto;
   grid-template-areas:
     "top"
     "order"
@@ -372,6 +387,8 @@
     "dock";
   height: 100%;
   width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   position: relative;
   overflow: hidden;
 }
@@ -527,17 +544,31 @@
   box-shadow: 0 0 0 1px #e23d3d99, 0 0 10px #e23d3d55;
 }
 
+#tacticalOpsRoot .t-top,
+#tacticalOpsRoot .t-order-wrap,
+#tacticalOpsRoot .t-status,
+#tacticalOpsRoot .t-dock {
+  flex: 0 0 auto;
+}
+
 #tacticalOpsRoot .t-field-wrap {
   grid-area: field;
-  min-height: 0;
+  min-height: var(--tops-field-h, 160px);
   min-width: 0;
   position: relative;
   overflow: hidden;
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  height: var(--tops-field-h, auto);
+  flex: 1 1 auto;
 }
 
 #tacticalOpsRoot .t-field {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -547,6 +578,9 @@
   filter: saturate(0.78) brightness(0.62) contrast(1.1);
   width: 100%;
   height: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  display: block;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1085,6 +1119,7 @@
   display: grid;
   position: absolute;
   inset: 0;
+  grid-area: field;
 }
 
 #tacticalOpsRoot .t-banner span {
@@ -1204,6 +1239,9 @@
   position: absolute;
   inset: 0;
   grid-area: unset;
+  height: 100%;
+  min-height: 100%;
+  max-height: none;
 }
 
 #tacticalOpsRoot[data-layout="wide"] .t-status {
