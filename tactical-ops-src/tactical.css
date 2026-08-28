@@ -1,0 +1,1355 @@
+/* Alpha Husky Tactical Ops — viewport-first playability (V1)
+   Combat layout only. No orientation gate. */
+
+#tacticalOpsRoot {
+  --t-font-display: "Rajdhani", "Trebuchet MS", sans-serif;
+  --t-font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --t-bg: #07090d;
+  --t-surface: #0c1016;
+  --t-elevated: #121820;
+  --t-fg: #e7edf3;
+  --t-muted: #7f8a97;
+  --t-faint: #55606c;
+  --t-line: #232a33;
+  --t-ally: #3ec6ff;
+  --t-ally-dim: #102e3d;
+  --t-enemy: #e23d3d;
+  --t-enemy-dim: #3d1212;
+  --t-heal: #6fbf8a;
+  --t-radius-sm: 6px;
+  --t-radius-md: 10px;
+  --t-radius-lg: 14px;
+  --tops-header: 52px;
+  --tops-order: 40px;
+  --tops-status: 56px;
+  --tops-dock: 72px;
+  z-index: 1500;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  color: var(--t-fg);
+  font-family: var(--t-font-sans);
+  background: var(--t-bg);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  container-name: tops;
+}
+
+#tacticalOpsRoot,
+#tacticalOpsRoot * {
+  box-sizing: border-box;
+}
+
+#tacticalOpsRoot button:not(:disabled),
+#tacticalOpsRoot [role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+#tacticalOpsRoot .t-ico {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* Rotate gate permanently disabled — portrait is a first-class layout. */
+#tacticalOpsRoot .t-rotate-gate,
+#tacticalOpsRoot .t-hint {
+  display: none !important;
+}
+
+#tacticalOpsRoot .t-shell {
+  height: 100%;
+  width: 100%;
+  background: var(--t-bg);
+  color: var(--t-fg);
+  font-family: var(--t-font-sans);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-fill {
+  position: absolute;
+  inset: 0;
+}
+
+#tacticalOpsRoot .t-bg {
+  background:
+    radial-gradient(120% 80% at 20% 40%, #143c5047, transparent 55%),
+    radial-gradient(100% 80% at 85% 45%, #50101052, transparent 50%),
+    var(--t-bg);
+  position: absolute;
+  inset: 0;
+}
+
+#tacticalOpsRoot .t-bg img {
+  object-fit: cover;
+  opacity: 0.42;
+  filter: saturate(0.72) brightness(0.55) contrast(1.12);
+  width: 100%;
+  height: 100%;
+}
+
+#tacticalOpsRoot .t-vignette {
+  pointer-events: none;
+  background:
+    linear-gradient(#07090de0 0%, transparent 16%, transparent 80%, #07090df2 100%),
+    radial-gradient(transparent 40%, #07090dcc 100%);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+#tacticalOpsRoot .t-panel {
+  background: #080c11e6;
+  border: 1px solid #e8edf21f;
+  box-shadow: 0 12px 40px #00000073;
+}
+
+#tacticalOpsRoot .t-kicker {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--t-ally);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+#tacticalOpsRoot .t-title {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+#tacticalOpsRoot .t-btn {
+  min-height: 48px;
+  font-family: var(--t-font-display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-fg);
+  border-radius: var(--t-radius-sm);
+  background: #171d24eb;
+  border: 1px solid #e8edf229;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+#tacticalOpsRoot .t-btn:hover:not(:disabled) {
+  background: #1e2a34f2;
+  border-color: #3ec6ff8c;
+}
+
+#tacticalOpsRoot .t-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+#tacticalOpsRoot .t-btn:disabled {
+  opacity: 0.38;
+}
+
+#tacticalOpsRoot .t-btn-primary {
+  color: var(--t-ally);
+  background: #3ec6ff24;
+  border-color: #3ec6ff8c;
+}
+
+#tacticalOpsRoot .t-btn-primary:hover:not(:disabled) {
+  background: #3ec6ff38;
+}
+
+#tacticalOpsRoot .t-btn-ghost {
+  background: transparent;
+}
+
+/* Hub / brief / results */
+#tacticalOpsRoot .t-hub {
+  height: 100%;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  flex-direction: column;
+  justify-content: flex-end;
+  display: flex;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+#tacticalOpsRoot .t-hub-copy {
+  z-index: 2;
+  max-width: 36rem;
+  position: relative;
+}
+
+#tacticalOpsRoot .t-hub h1 {
+  margin: 0.2rem 0 0;
+  font-size: max(2.2rem, min(8vw, 4.6rem));
+}
+
+#tacticalOpsRoot .t-hub h2 {
+  color: var(--t-muted);
+  font-size: max(1rem, min(3vw, 1.6rem));
+  font-family: var(--t-font-display);
+  letter-spacing: 0.32em;
+  margin: 0.15rem 0 1.25rem;
+  font-weight: 600;
+}
+
+#tacticalOpsRoot .t-op-card {
+  border-radius: var(--t-radius-md);
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 28rem;
+  margin-bottom: 1.15rem;
+  padding: 1rem 1.15rem;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-op-card strong {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.18em;
+  font-size: 1.05rem;
+}
+
+#tacticalOpsRoot .t-op-card p {
+  color: var(--t-muted);
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+#tacticalOpsRoot .t-brief {
+  z-index: 2;
+  height: 100%;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1.1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  flex-direction: column;
+  display: flex;
+  position: relative;
+  overflow: auto;
+  pointer-events: auto;
+}
+
+#tacticalOpsRoot .t-brief-grid {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin: 1rem 0 auto;
+  display: grid;
+}
+
+@media (min-width: 800px) {
+  #tacticalOpsRoot .t-brief-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+#tacticalOpsRoot .t-brief-block {
+  border-radius: var(--t-radius-md);
+  padding: 0.95rem 1rem;
+}
+
+#tacticalOpsRoot .t-brief-block h3 {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.2em;
+  color: var(--t-muted);
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+}
+
+#tacticalOpsRoot .t-unit-row {
+  border-bottom: 1px solid #e8edf20f;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-unit-row:last-child {
+  border-bottom: 0;
+}
+
+#tacticalOpsRoot .t-unit-row img,
+#tacticalOpsRoot .t-unit-ph {
+  object-fit: cover;
+  object-position: 50% 40%;
+  background: var(--t-elevated);
+  border: 1px solid #3ec6ff40;
+  border-radius: 4px;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+}
+
+#tacticalOpsRoot .t-unit-ph.enemy {
+  border-color: #e23d3d66;
+}
+
+#tacticalOpsRoot .t-brief-actions {
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-overlay {
+  z-index: 50;
+  background: #0a0c109e;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  display: flex;
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+#tacticalOpsRoot .t-modal {
+  border-radius: var(--t-radius-lg);
+  text-align: center;
+  width: min(420px, 100%);
+  padding: 1.4rem 1.3rem 1.2rem;
+}
+
+#tacticalOpsRoot .t-modal h2 {
+  margin: 0.2rem 0 0.7rem;
+  font-size: max(1.6rem, min(4vw, 2.2rem));
+}
+
+#tacticalOpsRoot .t-stats {
+  text-align: left;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 1rem;
+  margin: 1rem 0 1.2rem;
+  display: grid;
+}
+
+#tacticalOpsRoot .t-stats dt {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.12em;
+  color: var(--t-muted);
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
+#tacticalOpsRoot .t-stats dd {
+  font-family: var(--t-font-display);
+  font-variant-numeric: tabular-nums;
+  margin: 0.1rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ========== BATTLE LAYOUT ==========
+   Compact / standard: stacked HUD, battlefield is the 1fr region.
+   Wide: overlay HUD on a full-bleed field. */
+
+#tacticalOpsRoot .t-battle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "top"
+    "order"
+    "field"
+    "status"
+    "dock";
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-top {
+  grid-area: top;
+  z-index: 30;
+  padding: max(0.4rem, env(safe-area-inset-top)) max(0.6rem, env(safe-area-inset-right)) 0.25rem
+    max(0.6rem, env(safe-area-inset-left));
+  pointer-events: none;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.4rem;
+  display: grid;
+  position: relative;
+  background: linear-gradient(#07090de8 0%, #07090d00 100%);
+}
+
+#tacticalOpsRoot .t-top > * {
+  pointer-events: auto;
+}
+
+#tacticalOpsRoot .t-brand {
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-brand img {
+  object-fit: cover;
+  object-position: 50% 12%;
+  border: 1px solid #3ec6ff73;
+  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  box-shadow: 0 0 0 1px #3ec6ff2e, 0 4px 14px #0008;
+  flex-shrink: 0;
+}
+
+#tacticalOpsRoot .t-brand h1 {
+  letter-spacing: 0.12em;
+  margin: 0;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#tacticalOpsRoot .t-brand p {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.18em;
+  color: var(--t-ally);
+  margin: 0;
+  font-size: 0.58rem;
+}
+
+#tacticalOpsRoot .t-turn {
+  text-align: center;
+}
+
+#tacticalOpsRoot .t-turn strong {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.22em;
+  font-size: 0.95rem;
+  display: block;
+}
+
+#tacticalOpsRoot .t-turn-sub {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.16em;
+  color: var(--t-muted);
+  font-size: 0.58rem;
+  display: block;
+  white-space: nowrap;
+}
+
+#tacticalOpsRoot .t-obj {
+  text-align: right;
+  font-family: var(--t-font-display);
+  letter-spacing: 0.14em;
+  color: var(--t-enemy);
+  justify-self: end;
+  font-size: 0.62rem;
+  min-width: 0;
+}
+
+#tacticalOpsRoot .t-obj small {
+  color: var(--t-muted);
+  letter-spacing: 0.12em;
+  margin-top: 0.1rem;
+  display: block;
+}
+
+#tacticalOpsRoot .t-order-wrap {
+  grid-area: order;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0.15rem 0.5rem 0.25rem;
+  pointer-events: auto;
+}
+
+#tacticalOpsRoot .t-order {
+  display: flex;
+  gap: 0.28rem;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+#tacticalOpsRoot .t-order::-webkit-scrollbar {
+  display: none;
+}
+
+#tacticalOpsRoot .t-order-unit {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid #e8edf22e;
+  overflow: hidden;
+  position: relative;
+  opacity: 0.55;
+  flex-shrink: 0;
+  background: var(--t-elevated);
+  box-shadow: 0 2px 8px #0008;
+}
+
+#tacticalOpsRoot .t-order-unit img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  display: block;
+}
+
+#tacticalOpsRoot .t-order-unit.active {
+  opacity: 1;
+  border-color: var(--t-ally);
+  box-shadow: 0 0 0 1px #3ec6ff99, 0 0 10px #3ec6ff55;
+  transform: scale(1.12);
+}
+
+#tacticalOpsRoot .t-order-unit.enemy {
+  border-color: #e23d3d66;
+}
+
+#tacticalOpsRoot .t-order-unit.enemy.active {
+  border-color: var(--t-enemy);
+  box-shadow: 0 0 0 1px #e23d3d99, 0 0 10px #e23d3d55;
+}
+
+#tacticalOpsRoot .t-field-wrap {
+  grid-area: field;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-field-art {
+  object-fit: cover;
+  object-position: 50% 58%;
+  filter: saturate(0.78) brightness(0.62) contrast(1.1);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-field-grade {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, #07090dcc 0%, transparent 18%, transparent 72%, #07090de6 100%),
+    radial-gradient(70% 55% at 22% 48%, #123a4e55 0%, transparent 58%),
+    radial-gradient(60% 50% at 78% 42%, #4a141455 0%, transparent 55%);
+  z-index: 1;
+}
+
+#tacticalOpsRoot .t-field .t-vignette {
+  z-index: 3;
+}
+
+#tacticalOpsRoot .t-grid {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+#tacticalOpsRoot .t-grid i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid #3ec6ff40;
+  background: #3ec6ff14;
+}
+
+#tacticalOpsRoot .t-cell {
+  z-index: 8;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  touch-action: manipulation;
+}
+
+#tacticalOpsRoot .t-cell.move:after {
+  content: "";
+  background: radial-gradient(circle, #3ec6ffa8 0%, #3ec6ff1f 68%, transparent 72%);
+  border: 1px solid #3ec6ffb3;
+  border-radius: 999px;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px #3ec6ff59;
+}
+
+#tacticalOpsRoot .t-cell.move:hover:after,
+#tacticalOpsRoot .t-cell.move:focus-visible:after {
+  width: 20px;
+  height: 20px;
+}
+
+#tacticalOpsRoot .t-token {
+  z-index: 5;
+  pointer-events: none;
+  width: 13.6%;
+  min-width: 48px;
+  max-width: 132px;
+  transition: left 0.28s cubic-bezier(0.22, 1, 0.36, 1), top 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s, filter 0.2s;
+  position: absolute;
+  transform: translate(-50%, -88%);
+}
+
+#tacticalOpsRoot .t-token.alpha {
+  width: 15.2%;
+  min-width: 54px;
+  max-width: 148px;
+}
+
+#tacticalOpsRoot .t-token.leader {
+  width: 16.5%;
+  min-width: 58px;
+  max-width: 160px;
+}
+
+#tacticalOpsRoot .t-token.hound {
+  width: 14.5%;
+  min-width: 52px;
+  max-width: 140px;
+}
+
+#tacticalOpsRoot .t-token.defeated {
+  opacity: 0;
+  pointer-events: none;
+  filter: grayscale() brightness(0.4);
+}
+
+#tacticalOpsRoot .t-token.acted:not(.selected) {
+  filter: saturate(0.7) brightness(0.82);
+}
+
+#tacticalOpsRoot .t-token.subdued {
+  opacity: 0.55;
+  filter: saturate(0.55);
+}
+
+#tacticalOpsRoot .t-token.targetable:not(.defeated) .t-ring {
+  filter: drop-shadow(0 0 8px #e23d3dd9);
+}
+
+#tacticalOpsRoot .t-token.targetable.ally:not(.defeated) .t-ring {
+  filter: drop-shadow(0 0 8px #3ec6ffd9);
+}
+
+#tacticalOpsRoot .t-token.attacking img.body {
+  animation: 0.38s cubic-bezier(0.22, 1, 0.36, 1) t-lunge;
+}
+
+#tacticalOpsRoot .t-token.enemy.attacking img.body {
+  animation: 0.38s cubic-bezier(0.22, 1, 0.36, 1) t-lunge-left;
+}
+
+#tacticalOpsRoot .t-ring {
+  pointer-events: none;
+  width: 108%;
+  position: absolute;
+  bottom: 1%;
+  left: 50%;
+  transform: translate(-50%);
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+#tacticalOpsRoot .t-token.ally .t-ring {
+  color: var(--t-ally);
+}
+
+#tacticalOpsRoot .t-token.enemy .t-ring {
+  color: var(--t-enemy);
+}
+
+#tacticalOpsRoot .t-token.active .t-ring {
+  filter: drop-shadow(0 0 12px #3ec6ffe6);
+}
+
+#tacticalOpsRoot .t-token.enemy.active .t-ring {
+  filter: drop-shadow(0 0 12px #e23d3de6);
+}
+
+#tacticalOpsRoot .t-hit {
+  pointer-events: auto;
+  z-index: 2;
+  background: transparent;
+  border: 0;
+  width: 44px;
+  height: 56px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translate(-50%);
+  touch-action: manipulation;
+}
+
+#tacticalOpsRoot .t-token img.body {
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px #0000008c);
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+#tacticalOpsRoot .t-plate {
+  pointer-events: none;
+  background: #07090df2;
+  border: 1px solid #e8edf21f;
+  border-radius: 4px;
+  min-width: 64px;
+  max-width: 104px;
+  padding: 0.1rem 0.3rem 0.14rem;
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translate(-50%);
+  box-shadow: 0 6px 16px #00000073;
+}
+
+#tacticalOpsRoot .t-token.enemy .t-plate {
+  border-color: #e23d3d73;
+}
+
+#tacticalOpsRoot .t-token.ally .t-plate {
+  border-color: #3ec6ff61;
+}
+
+#tacticalOpsRoot .t-token.inspect:not(.active) .t-plate {
+  border-color: #e8edf273;
+}
+
+#tacticalOpsRoot .t-plate-name {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-hp {
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.12rem;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-hp-bar {
+  background: #e8edf21f;
+  border-radius: 99px;
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-hp-bar > i {
+  background: var(--t-ally);
+  width: 0;
+  height: 100%;
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  display: block;
+}
+
+#tacticalOpsRoot .t-token.ally .t-hp-bar > i {
+  background: linear-gradient(90deg, #2aa8e0, #7ae0ff);
+}
+
+#tacticalOpsRoot .t-token.enemy .t-hp-bar > i {
+  background: linear-gradient(90deg, #c62828, #ff6b6b);
+}
+
+#tacticalOpsRoot .t-hp-num {
+  font-family: var(--t-font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-muted);
+  font-size: 0.58rem;
+}
+
+#tacticalOpsRoot .t-chips {
+  display: flex;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+  margin-top: 0.12rem;
+}
+
+#tacticalOpsRoot .t-chip {
+  font-family: var(--t-font-display);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  padding: 0 0.22rem;
+  border-radius: 2px;
+  border: 1px solid #e8edf233;
+  color: var(--t-muted);
+  line-height: 1.3;
+}
+
+#tacticalOpsRoot .t-chip.buff {
+  color: var(--t-ally);
+  border-color: #3ec6ff66;
+}
+
+#tacticalOpsRoot .t-chip.debuff {
+  color: #ff8a8a;
+  border-color: #e23d3d73;
+}
+
+#tacticalOpsRoot .t-float {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 20;
+  text-shadow: 0 2px 8px #000c;
+  font-size: 1rem;
+  font-weight: 700;
+  animation: 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards t-float;
+  position: absolute;
+  transform: translate(-50%, -120%);
+}
+
+#tacticalOpsRoot .t-float.dmg {
+  color: #ff6b6b;
+}
+
+#tacticalOpsRoot .t-float.heal {
+  color: var(--t-heal);
+}
+
+#tacticalOpsRoot .t-float.guard,
+#tacticalOpsRoot .t-float.info {
+  color: var(--t-ally);
+  font-size: 0.78rem;
+}
+
+#tacticalOpsRoot .t-impact {
+  pointer-events: none;
+  z-index: 18;
+  border: 2px solid #e8edf2d9;
+  border-radius: 99px;
+  width: 54px;
+  height: 54px;
+  animation: 0.38s ease-out forwards t-impact;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+/* Compact always-visible selected-unit status */
+#tacticalOpsRoot .t-status {
+  grid-area: status;
+  z-index: 32;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.28rem 0.55rem;
+  margin: 0 0.45rem 0.15rem;
+  background: #080c11f0;
+  border: 1px solid #e8edf224;
+  border-radius: 8px;
+  pointer-events: auto;
+  min-height: 48px;
+}
+
+#tacticalOpsRoot .t-status img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  object-position: 50% 18%;
+  border-radius: 4px;
+  border: 1px solid #3ec6ff59;
+  flex-shrink: 0;
+}
+
+#tacticalOpsRoot .t-status.enemy img {
+  border-color: #e23d3d73;
+}
+
+#tacticalOpsRoot .t-status-name {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+#tacticalOpsRoot .t-status-stats {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 0.15rem 0.55rem;
+  margin: 0;
+}
+
+#tacticalOpsRoot .t-status-stats dt {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.08em;
+  color: var(--t-muted);
+  font-size: 0.52rem;
+}
+
+#tacticalOpsRoot .t-status-stats dd {
+  margin: 0;
+  font-family: var(--t-font-display);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#tacticalOpsRoot .t-status-empty {
+  opacity: 0.4;
+}
+
+#tacticalOpsRoot .t-dock {
+  grid-area: dock;
+  z-index: 30;
+  padding: 0.3rem max(0.55rem, env(safe-area-inset-right)) max(0.55rem, env(safe-area-inset-bottom))
+    max(0.55rem, env(safe-area-inset-left));
+  background: linear-gradient(#0000, #07090df0 38%);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.4rem;
+  display: grid;
+  position: relative;
+}
+
+#tacticalOpsRoot .t-icon-btn {
+  border-radius: var(--t-radius-sm);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--t-fg);
+  background: #10141acc;
+  border: 1px solid #e8edf21f;
+  place-items: center;
+  display: grid;
+  touch-action: manipulation;
+}
+
+#tacticalOpsRoot .t-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  display: grid;
+}
+
+#tacticalOpsRoot .t-act {
+  text-align: left;
+  min-height: 52px;
+  color: var(--t-fg);
+  border-radius: var(--t-radius-sm);
+  background: #0a0e14f0;
+  border: 1px solid #e8edf224;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  padding: 0.38rem 0.45rem 0.4rem;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+#tacticalOpsRoot .t-act .row {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.14em;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: flex;
+}
+
+#tacticalOpsRoot .t-act .row .slot {
+  color: var(--t-faint);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+}
+
+#tacticalOpsRoot .t-act small {
+  color: var(--t-muted);
+  letter-spacing: 0.02em;
+  font-size: 0.58rem;
+  line-height: 1.2;
+}
+
+#tacticalOpsRoot .t-act:hover:not(:disabled) {
+  border-color: #3ec6ff73;
+}
+
+#tacticalOpsRoot .t-act:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+#tacticalOpsRoot .t-act.on {
+  border-color: var(--t-ally);
+  background: #3ec6ff18;
+  box-shadow: inset 0 0 0 1px #3ec6ff66;
+}
+
+#tacticalOpsRoot .t-act:disabled {
+  opacity: 0.38;
+}
+
+#tacticalOpsRoot .t-act .cd {
+  color: var(--t-enemy);
+  letter-spacing: 0.12em;
+  font-family: var(--t-font-display);
+  font-size: 0.62rem;
+}
+
+#tacticalOpsRoot .t-act.cooling {
+  opacity: 0.72;
+}
+
+#tacticalOpsRoot .t-skip {
+  letter-spacing: 0.16em;
+  min-width: 4.6rem;
+  min-height: 52px;
+  padding: 0 0.7rem;
+}
+
+#tacticalOpsRoot .t-ticker {
+  z-index: 28;
+  font-family: var(--t-font-display);
+  letter-spacing: 0.16em;
+  color: var(--t-fg);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: #07090de8;
+  border: 1px solid #3ec6ff33;
+  border-radius: 99px;
+  max-width: min(92vw, 36rem);
+  padding: 0.22rem 0.7rem;
+  font-size: 0.68rem;
+  position: absolute;
+  top: auto;
+  bottom: auto;
+  left: 50%;
+  overflow: hidden;
+  transform: translate(-50%, 0);
+  grid-area: field;
+  align-self: start;
+  justify-self: center;
+  margin-top: 0.35rem;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-banner {
+  z-index: 40;
+  pointer-events: none;
+  background: #0a0c1047;
+  place-items: center;
+  display: grid;
+  position: absolute;
+  inset: 0;
+}
+
+#tacticalOpsRoot .t-banner span {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.3em;
+  background: #07090de8;
+  border: 1px solid #3ec6ff40;
+  padding: 0.7rem 1.3rem;
+  font-size: max(1.1rem, min(4vw, 2.1rem));
+  font-weight: 700;
+}
+
+/* ---- COMPACT (phones + narrow Mini App) ---- */
+#tacticalOpsRoot[data-layout="compact"] .t-brand p,
+#tacticalOpsRoot[data-layout="compact"] .t-obj small,
+#tacticalOpsRoot[data-layout="compact"] .t-act small {
+  display: none;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-brand h1 {
+  font-size: 0.78rem;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-obj {
+  font-size: 0.55rem;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-token {
+  width: 14%;
+  min-width: 44px;
+  max-width: 88px;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-token.alpha {
+  width: 16%;
+  min-width: 48px;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-token.leader {
+  width: 17%;
+  min-width: 52px;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-token.hound {
+  width: 15%;
+  min-width: 46px;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-plate {
+  min-width: 56px;
+  top: -26px;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-status-stats {
+  display: none;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-skip {
+  min-width: 0;
+  padding: 0 0.55rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+}
+
+#tacticalOpsRoot[data-layout="compact"] .t-cell {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+}
+
+/* ---- STANDARD (tablet) ---- */
+#tacticalOpsRoot[data-layout="standard"] .t-brand img {
+  width: 42px;
+  height: 42px;
+}
+
+#tacticalOpsRoot[data-layout="standard"] .t-order-unit {
+  width: 32px;
+  height: 32px;
+}
+
+#tacticalOpsRoot[data-layout="standard"] .t-act,
+#tacticalOpsRoot[data-layout="standard"] .t-skip {
+  min-height: 58px;
+}
+
+/* ---- WIDE / EXPANDED (landscape + desktop) ---- */
+#tacticalOpsRoot[data-layout="wide"] .t-battle {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-areas: "field";
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-top,
+#tacticalOpsRoot[data-layout="wide"] .t-order-wrap,
+#tacticalOpsRoot[data-layout="wide"] .t-dock,
+#tacticalOpsRoot[data-layout="wide"] .t-status {
+  position: absolute;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  grid-area: unset;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-order-wrap {
+  top: 3.4rem;
+  left: 0;
+  right: 0;
+  grid-area: unset;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-field-wrap {
+  position: absolute;
+  inset: 0;
+  grid-area: unset;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-status {
+  left: max(0.7rem, env(safe-area-inset-left));
+  top: 6.2rem;
+  width: min(220px, 28vw);
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-area: unset;
+  margin: 0;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-status-stats {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-dock {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  grid-area: unset;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-brand img {
+  width: 46px;
+  height: 46px;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-act,
+#tacticalOpsRoot[data-layout="wide"] .t-skip {
+  min-height: 62px;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-skip {
+  min-width: 7.2rem;
+}
+
+#tacticalOpsRoot[data-layout="wide"] .t-ticker {
+  top: 5.6rem;
+  margin-top: 0;
+}
+
+/* Viewport CSS fallback (works even before data-layout is stamped) */
+@container tops (max-width: 599px) {
+  #tacticalOpsRoot .t-act small {
+    display: none;
+  }
+}
+
+@media (max-width: 599px) {
+  #tacticalOpsRoot .t-act small {
+    display: none;
+  }
+}
+
+@media (max-height: 420px) {
+  #tacticalOpsRoot .t-brand img {
+    width: 32px;
+    height: 32px;
+  }
+  #tacticalOpsRoot .t-act,
+  #tacticalOpsRoot .t-skip {
+    min-height: 48px;
+  }
+  #tacticalOpsRoot .t-act small {
+    display: none;
+  }
+  #tacticalOpsRoot .t-status {
+    min-height: 40px;
+    padding: 0.18rem 0.4rem;
+  }
+  #tacticalOpsRoot .t-status img {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-token,
+  #tacticalOpsRoot .t-hp-bar > i,
+  #tacticalOpsRoot .t-btn,
+  #tacticalOpsRoot .t-act {
+    transition: none;
+  }
+  #tacticalOpsRoot .t-token.attacking img.body,
+  #tacticalOpsRoot .t-float,
+  #tacticalOpsRoot .t-impact {
+    animation: none;
+  }
+  #tacticalOpsRoot .t-ring {
+    filter: none;
+  }
+}
+
+@keyframes t-lunge {
+  0% {
+    transform: translate(0);
+  }
+  40% {
+    transform: translate(10px) scale(1.04);
+  }
+  to {
+    transform: translate(0);
+  }
+}
+
+@keyframes t-lunge-left {
+  0% {
+    transform: translate(0);
+  }
+  40% {
+    transform: translate(-10px) scale(1.04);
+  }
+  to {
+    transform: translate(0);
+  }
+}
+
+@keyframes t-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+  18% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -160%);
+  }
+}
+
+@keyframes t-impact {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+
+#tacticalOpsRoot .t-bg,
+#tacticalOpsRoot .t-vignette,
+#tacticalOpsRoot .t-field-art,
+#tacticalOpsRoot .t-field-grade {
+  pointer-events: none;
+}
