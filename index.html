@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <base href="https://app.alphahusky.win/">
+  <link rel="stylesheet" href="css/map_sections_v2.css?v=WEBAPP_VER">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Alpha Husky Dashboard</title>
@@ -7160,6 +7161,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             <div class="paths-layer"><svg id="pathsSVG" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
 <div class="pins" id="pins"></div>
           </div>
+          <div id="mapV2Mount" hidden></div>
         </div>
       </div>
     </div>
@@ -7893,6 +7895,7 @@ body.bc-open #ahCommunityBtn{
 </script>
 
   <script>document.write('<script src="/js/boot_loaders.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+  <script>document.write('<script src="/js/map_activity_router.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <!-- 4) Główny skrypt aplikacji -->
 <script>
   const DEBUG_UI = true;
@@ -9151,6 +9154,79 @@ document.addEventListener("click", async (e) => {
         let PROFILE = null;
         let ACTIVE_PIN_ID = null;
         let mapZoomRestorePending = false;
+        const mapRuntimeDataSubscribers = new Set();
+
+        function cloneMapRuntimeValue(value, seen = new WeakMap()){
+          if (value == null || typeof value !== "object") return value;
+          if (seen.has(value)) return seen.get(value);
+          const copy = Array.isArray(value) ? [] : {};
+          seen.set(value, copy);
+          for (const key of Object.keys(value)) copy[key] = cloneMapRuntimeValue(value[key], seen);
+          return Object.freeze(copy);
+        }
+
+        function getMapCatalogSnapshot(){
+          return DATA ? cloneMapRuntimeValue(DATA) : null;
+        }
+
+        function getMapNodeSnapshot(nodeId){
+          const id = String(nodeId || "").trim();
+          if (!id || !Array.isArray(DATA?.nodes)) return null;
+          const node = DATA.nodes.find((entry) => String(entry?.id || "").trim() === id);
+          return node ? cloneMapRuntimeValue(node) : null;
+        }
+
+        function getMapPlayerSnapshot(){
+          const regionIds = Object.keys(DATA?.regions || {});
+          const regionUnlocks = {};
+          for (const regionId of regionIds) regionUnlocks[regionId] = !!isRegionUnlocked(regionId);
+          return cloneMapRuntimeValue({
+            playerStateLoaded: !!PLAYER_STATE,
+            regionsUnlocked: Array.from(regionsUnlocked),
+            keys: Array.from(keys),
+            fragments: { ...fragments },
+            regionUnlocks,
+          });
+        }
+
+        function publishMapRuntimeData(reason){
+          if (!mapRuntimeDataSubscribers.size) return;
+          const event = Object.freeze({
+            reason: String(reason || "update"),
+            catalogAvailable: !!DATA,
+            playerSnapshot: getMapPlayerSnapshot(),
+          });
+          for (const listener of Array.from(mapRuntimeDataSubscribers)) {
+            try { listener(event); } catch (err) { console.warn("[MapRuntimeData] subscriber failed", err); }
+          }
+        }
+
+        function subscribeMapRuntimeData(listener, options = {}){
+          if (typeof listener !== "function") return () => {};
+          mapRuntimeDataSubscribers.add(listener);
+          if (options?.emitCurrent) {
+            try {
+              listener(Object.freeze({
+                reason: "current",
+                catalogAvailable: !!DATA,
+                playerSnapshot: getMapPlayerSnapshot(),
+              }));
+            } catch (err) { console.warn("[MapRuntimeData] subscriber failed", err); }
+          }
+          let active = true;
+          return () => {
+            if (!active) return false;
+            active = false;
+            return mapRuntimeDataSubscribers.delete(listener);
+          };
+        }
+
+        window.MapRuntimeData = Object.freeze({
+          getCatalog: getMapCatalogSnapshot,
+          getNode: getMapNodeSnapshot,
+          getPlayerSnapshot: getMapPlayerSnapshot,
+          subscribe: subscribeMapRuntimeData,
+        });
         function isMobileMapViewport(){
           return !!MAP_MOBILE_MEDIA?.matches;
         }
@@ -10000,7 +10076,8 @@ document.addEventListener("click", async (e) => {
           fragments = Object.assign({}, (DATA && DATA.defaults && DATA.defaults.fragments) || {});
           window.FORTRESS_ENEMIES = (DATA && DATA.fortress && DATA.fortress.enemies) || {};
           window.DATA = DATA;
-          if (mapBack?.style?.display === "flex") {
+          publishMapRuntimeData(DATA ? "catalog_loaded" : "catalog_unavailable");
+          if (mapBack?.style?.display === "flex" && !mapV2RendererActive) {
             renderMap();
             refreshMapStage({ recenter: !mapPanState.hasCenteredOnce });
           }
@@ -10103,6 +10180,7 @@ document.addEventListener("click", async (e) => {
           if (!PLAYER_STATE) return;
           if (Array.isArray(PLAYER_STATE.regionsUnlocked)) regionsUnlocked = new Set(PLAYER_STATE.regionsUnlocked);
           if (typeof PLAYER_STATE.keyFragments === "number") fragments.map_key_fragment = PLAYER_STATE.keyFragments;
+          publishMapRuntimeData("player_state_applied");
         }
 
         function updateUnlockProgress(){
@@ -10987,7 +11065,7 @@ async function loadPlayerState() {
     // ✅ KROK 4: jeśli topbar przebudował HUD, odmaluj buffy z buffs.js
     try { window.paintBuffs?.(); } catch (_) {}
 
-    if (mapBack.style.display === "flex" && DATA) {
+    if (mapBack.style.display === "flex" && DATA && !mapV2RendererActive) {
       renderMap();
       updateUnlockProgress();
 
@@ -11098,6 +11176,43 @@ function isRegionUnlocked(regionId){
             pathsSVG.appendChild(poly);
           }
         }
+
+        window.MapActivityRouter?.configure?.({
+          getNode: (nodeId) => (DATA?.nodes || []).find((node) => String(node?.id || "") === String(nodeId || "")) || null,
+          getRegion: (regionId) => DATA?.regions?.[regionId] || null,
+          isNodeUnlocked: (node) => node?.id === "oracle_void_doorway" ? true : isRegionUnlocked(node?.region),
+          closeMap: closeMapCanonical,
+          openLocked,
+          openBuilding,
+          openArchiveNodeSheet,
+          openRegionSheet,
+          openRegion,
+          requestFullscreen: () => window.requestTelegramFullscreen?.(),
+          ensureBloodMoon: () => ensureBloodMoonLoaded(apiPost, _tg, _dbg),
+          ensureOracle: () => ensureOracleLoaded(apiPost, _tg, _dbg),
+          ensureSiege: () => ensureSiegeLoaded(apiPost, _tg, _dbg),
+          ensureSlots: () => ensureSlotsLoaded(apiPost, _tg, _dbg),
+          ensureFortress: () => ensureFortressLoaded(apiPost, _tg, _dbg),
+          ensureDojo: () => ensureDojoLoaded(apiPost, _tg, _dbg),
+          ensureAlphaDen: () => ensureAlphaDenLoaded(apiPost, _tg, _dbg),
+          openAlphaDen: async () => {
+            if (window.AlphaDen?.open) {
+              window.AlphaDen.open();
+              return true;
+            }
+            try {
+              await ensureAlphaDenLoaded(apiPost, _tg, _dbg);
+              if (window.AlphaDen?.open) {
+                window.AlphaDen.open();
+                return true;
+              }
+            } catch (err) {
+              console.warn("[AlphaDen] load/open failed", err);
+            }
+            return false;
+          },
+          onAlphaDenUnavailable: (node) => openBuilding(node?.buildingId || node?.id, node?.name, node?.desc)
+        });
 
        function renderPins(){
   if (!DATA) return;
@@ -11259,177 +11374,11 @@ function isRegionUnlocked(regionId){
       }
 
       // TAP 2 = action. Every destination transition owns a closed, inactive Map.
-      const bid = String(b.buildingId || b.id || "");
-      await closeMapCanonical({ source: `building:${bid}` });
-
-      // Phantom Nodes
-      if (bid === "phantom_nodes") {
-        const title = (b.name || bid).replaceAll("_", " ");
-        if (window.Influence?.open) return window.Influence.open(bid, title);
-        console.warn("[Influence] module not ready");
-        return openBuilding(bid, b.name, b.desc);
+      if (!window.MapActivityRouter?.open) {
+        console.error("[MapActivityRouter] module missing; refusing duplicate inline dispatch");
+        return;
       }
-
-      // Blood-Moon Tower
-      if (
-        bid === "blood_moon_tower" ||
-        b.buildingId === "blood_moon_tower" ||
-        b.id === "blood_moon_tower" ||
-        b.action === "open_bloodmoon"
-      ) {
-        try {
-          await ensureBloodMoonLoaded(apiPost, _tg, _dbg);
-          if (window.BloodMoon?.open) {
-            try { window.requestTelegramFullscreen?.(); } catch (_) {}
-            return window.BloodMoon.open();
-          }
-        } catch (err) {
-          console.warn("[BloodMoon] load/open failed", err);
-        }
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      // Oracle
-      if (
-        b.buildingId === "oracle_void_doorway" ||
-        b.id === "oracle_void_doorway" ||
-        b.action === "open_oracle"
-      ) {
-        try {
-          await ensureOracleLoaded(apiPost, _tg, _dbg);
-          if (window.Oracle?.open) return window.Oracle.open();
-        } catch (err) {
-          console.warn("[Oracle] load/open failed", err);
-        }
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (
-        bid === "howl_treasury" ||
-        b.buildingId === "howl_treasury" ||
-        b.id === "howl_treasury" ||
-        b.action === "open_howl_treasury"
-      ) {
-        if (window.HowlTreasury?.open) return window.HowlTreasury.open();
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (
-        bid === "burned_archive" ||
-        b.buildingId === "burned_archive" ||
-        b.id === "burned_archive" ||
-        b.action === "open_burned_archive"
-      ) {
-        return openArchiveNodeSheet(b);
-      }
-
-      if (
-        bid === "alpha_den" ||
-        b.buildingId === "alpha_den" ||
-        b.id === "alpha_den" ||
-        b.action === "open_alpha_den"
-      ) {
-        if (window.AlphaDen?.open) return window.AlphaDen.open();
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (b.action === "open_signal_broker") {
-        if (!window.WorldExploration?.canOpenDeadRelay?.()) {
-          window.WorldExploration?.showDeadRelayLocked?.();
-          return;
-        }
-        if (window.SignalBroker?.open) return window.SignalBroker.open();
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (!unlocked) return await openLocked(b);
-
-      if (
-        b.action === "building_enter" &&
-        (
-          b.buildingId === "abandoned_wallets_vault" ||
-          bid === "abandoned_wallets_vault" ||
-          b.id === "abandoned_wallets"
-        )
-      ) {
-        try {
-          await ensureSlotsLoaded(apiPost, _tg, _dbg);
-          if (window.Slots?.open) {
-            return window.Slots.open({
-              buildingId: b.buildingId || bid,
-              name: b.name,
-              desc: b.desc
-            });
-          }
-        } catch (err) {
-          console.warn("[RecoveryTerminal] load/open failed", err);
-        }
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      // lore-only pins
-      if (b.action === "coming_soon") {
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (
-        b.action === 'open_broken_contracts' ||
-        b.id === 'broken_contracts' ||
-        b.buildingId === 'broken_contracts_hub'
-      ) {
-        if (window.BrokenContracts?.open) return window.BrokenContracts.open({ buildingId: b.buildingId || b.id, name: b.name, desc: b.desc });
-        return openBuilding(b.buildingId || bid, b.name, b.desc);
-      }
-
-      if (b.action === 'open_quests') return (window.Quests ? window.Quests.open() : openQuests());
-
-      if (b.action === 'building_enter' && b.buildingId === 'moonlab_fortress') {
-        try {
-          await ensureFortressLoaded(apiPost, _tg, _dbg);
-          if (window.Fortress?.open) return window.Fortress.open();
-        } catch (err) {
-          console.warn("[Fortress] load/open failed", err);
-        }
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if ((b.id === 'testnet_wastes') ||
-          (b.action === 'building_enter' && b.buildingId === 'testnet_wastes_dojo')) {
-        try {
-          await ensureDojoLoaded(apiPost, _tg, _dbg);
-          if (window.Dojo?.open) return window.Dojo.open();
-        } catch (err) {
-          console.warn("[Dojo] load/open failed", err);
-        }
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      // Faction HQ
-      if (
-        b.id === "alpha_network_hq" ||
-        b.buildingId === "faction_hq" ||
-        b.action === "open_faction_hq" ||
-        b.buildingId === "alpha_network_hq_shop"
-      ) {
-        if (window.FactionHQ?.open) return window.FactionHQ.open();
-        if (window.Shop?.open) return window.Shop.open();
-        return openBuilding(bid, b.name, b.desc);
-      }
-
-      if (
-        b.action === "open_forge" ||
-        b.id === "vault_forge" ||
-        (b.gameplay && b.gameplay.type === "forge")
-      ) {
-        const forgeBid = b.buildingId || b.id || "forge";
-        return window.Forge?.open?.({ buildingId: forgeBid, name: b.name, desc: b.desc });
-      }
-
-      if (b.action === 'building_enter' && b.buildingId) return openBuilding(b.buildingId, b.name, b.desc);
-
-      const reg = DATA && DATA.regions && DATA.regions[b.region];
-      if (reg && (reg.desc || b.desc)) return openRegionSheet(b, reg);
-      return openRegion(b.region);
+      return await window.MapActivityRouter.open(id, { node: b, unlocked });
     });
 
     pinsEl.appendChild(btn);
@@ -11449,21 +11398,6 @@ function isRegionUnlocked(regionId){
         $("#closeLocked")?.addEventListener("click", () => lockedBack.style.display = "none");
 
         async function openLocked(b){
-  if (
-    (b?.id === 'edge_of_chain' || b?.buildingId === 'edge_of_chain' || b?.action === 'open_siege')
-  ) {
-    try {
-      await ensureSiegeLoaded(apiPost, _tg, _dbg);
-      if (window.Siege?.open) {
-        try { window.requestTelegramFullscreen?.(); } catch (_) {}
-        window.Siege.open();
-        return;
-      }
-    } catch (err) {
-      console.warn("[Siege] load/open failed", err);
-    }
-  }
-
   const reg = DATA && DATA.regions && DATA.regions[b.region];
   const u = (reg && reg.unlock) || {};
   const reason = reg && reg.lockedReason;
@@ -11898,12 +11832,35 @@ function isRegionUnlocked(regionId){
         /* === BUTTONS / ACTIONS === */
 let mapLifecycleGeneration = 0;
 let mapOpenFrame = null;
+let mapV2RendererActive = false;
+
+function isMapV2RolloutEnabled(){
+  if (window.__AH_MAP_V2__ === true) return true;
+  try { return new URLSearchParams(window.location.search).get("map_v2") === "1"; } catch (_) { return false; }
+}
+
+function setMapRendererMode(){
+  const useV2 = isMapV2RolloutEnabled() && !!window.MapSectionsV2;
+  const mount = document.getElementById("mapV2Mount");
+  mapV2RendererActive = useV2;
+  mapBack?.classList.toggle("is-map-v2-active", useV2);
+  if (mapRoot) mapRoot.hidden = useV2;
+  if (mount) mount.hidden = !useV2;
+  if (useV2) {
+    window.MapSectionsV2.mount(mount);
+    window.MapSectionsV2.open();
+  } else {
+    window.MapSectionsV2?.close?.();
+  }
+  return useV2;
+}
 
 function mapShellIsVisible(){
   return !!mapBack && getComputedStyle(mapBack).display !== "none";
 }
 
 function stopMapRuntime(){
+  const wasV2Renderer = mapV2RendererActive;
   mapLifecycleGeneration += 1;
   if (mapOpenFrame !== null) {
     cancelAnimationFrame(mapOpenFrame);
@@ -11925,7 +11882,9 @@ function stopMapRuntime(){
   mapPanState.dragMoved = false;
   mapStageEl?.classList.remove("is-panning");
   mapBack?.classList.remove("is-map-active");
-  window.WorldExploration?.onMapClosed?.();
+  if (wasV2Renderer) window.MapSectionsV2?.close?.();
+  else window.WorldExploration?.onMapClosed?.();
+  mapV2RendererActive = false;
 }
 
 async function closeMapCanonical({ source = "close" } = {}){
@@ -11943,6 +11902,7 @@ window.closeMapCanonical = closeMapCanonical;
 function openMapShell(source){
   if (mapShellIsVisible()) return Promise.resolve(false);
   const generation = ++mapLifecycleGeneration;
+  const useV2Renderer = setMapRendererMode();
   setMapIntelExpanded(false);
   mapBack.classList.add("is-map-active");
   mapBack.style.display = "flex";
@@ -11951,19 +11911,21 @@ function openMapShell(source){
     isOpen: () => mapShellIsVisible(),
     fallback: false,
   });
-  window.WorldExploration?.onMapOpened?.();
-  mapZoomRestorePending = true;
-  bindMapPan();
-  bindMapZoomControls();
-  mapOpenFrame = requestAnimationFrame(() => {
-    mapOpenFrame = null;
-    if (generation !== mapLifecycleGeneration || !mapShellIsVisible()) return;
-    refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
-  });
+  if (!useV2Renderer) {
+    window.WorldExploration?.onMapOpened?.();
+    mapZoomRestorePending = true;
+    bindMapPan();
+    bindMapZoomControls();
+    mapOpenFrame = requestAnimationFrame(() => {
+      mapOpenFrame = null;
+      if (generation !== mapLifecycleGeneration || !mapShellIsVisible()) return;
+      refreshMapStage({ recenter: !mapPanState.hasCenteredOnce && !!DATA });
+    });
+  }
   const mapDataTask = DATA ? Promise.resolve(DATA) : loadMapData();
   if (PLAYER_STATE) {
     applyStateToMap();
-    if (DATA) {
+    if (DATA && !useV2Renderer) {
       if (!mapHasRendered) renderMap();
       updateUnlockProgress();
       updateMapSelectionBrief();
@@ -11972,7 +11934,12 @@ function openMapShell(source){
   const playerTask = (!PLAYER_STATE || (Date.now() - __lastPlayerStateLoadedAt) > MAP_PLAYER_STATE_FRESH_MS)
     ? loadPlayerState()
     : Promise.resolve(PLAYER_STATE);
-  return Promise.allSettled([mapDataTask, playerTask]);
+  return Promise.allSettled([mapDataTask, playerTask]).then((results) => {
+    if (useV2Renderer && generation === mapLifecycleGeneration && mapShellIsVisible()) {
+      window.MapSectionsV2?.open?.();
+    }
+    return results;
+  });
 }
 
 // Navigation only: this delegates to the existing Telegram building route.
@@ -12682,6 +12649,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script src="js/missions.js?v=elite-combat-stage-v1"></script>
 <script src="js/cta.js?v=WEBAPP_VER"></script>
+<script src="js/map_section_assignments.js?v=WEBAPP_VER"></script>
+<script src="js/map_objective_resolver.js?v=WEBAPP_VER"></script>
+<script src="js/map_sections_v2.js?v=WEBAPP_VER"></script>
 <script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script src="js/campaign.js?v=WEBAPP_VER"></script>
@@ -13222,12 +13192,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-
-
-
-
-
 
 
 
