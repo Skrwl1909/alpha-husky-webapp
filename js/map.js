@@ -13,6 +13,8 @@
   let _sitrepTried = false;
   let _sitrepLoading = false;
   let _alphaDenLoadPromise = null;
+  let _campaignStateHandler = null;
+  const _nodeRuntimeSubscribers = new Set();
   const MAP_LEADERS_AUTO_STALE_MS = 15000;
   const ALPHA_DEN_RUNTIME_VERSION = "den-visual-tiers-v1";
   const ALPHA_DEN_RUNTIME_SRC = "/js/alpha_den.js?v=" + ALPHA_DEN_RUNTIME_VERSION;
@@ -2935,6 +2937,109 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       : _findLeaderInfoByNodeId(nodeId, _lastLeadersMap) || { nodeId };
     return _extractNodeUx(info, _getViewerFaction());
   }
+
+  function _cloneReadonlyRuntimeValue(value, seen = new WeakMap()) {
+    if (value == null || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    const copy = Array.isArray(value) ? [] : {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) copy[key] = _cloneReadonlyRuntimeValue(value[key], seen);
+    return Object.freeze(copy);
+  }
+
+  function _catalogNodeById(nodeId) {
+    const id = _normalizeNodeId(nodeId);
+    const nodes = Array.isArray(window.DATA?.nodes) ? window.DATA.nodes : [];
+    return nodes.find((node) => _normalizeNodeId(node?.id) === id) || null;
+  }
+
+  function getNodeRuntimeState(nodeId) {
+    const id = _normalizeNodeId(nodeId);
+    if (!id) return null;
+    const node = _catalogNodeById(id);
+    const leaderProjection = _findLeaderInfoByNodeId(id, _lastLeadersMap);
+    const isArchive = ARCHIVE_NODE_IDS.has(id);
+    if (!node && !leaderProjection && !isArchive) return null;
+
+    const resolved = resolveNodeLeader(
+      { liveFactionNode: _isLiveFactionNodeFromNode(node) },
+      leaderProjection || {}
+    );
+    const archiveProjection = isArchive ? _campaignArchivePayload() : null;
+    const archive = isArchive ? _archiveSignalModel() : null;
+    const pressure = resolved.pressureMeta || {};
+
+    return _cloneReadonlyRuntimeValue({
+      nodeId: id,
+      ownerFaction: resolved.owner || "",
+      scores: resolved.scores || {},
+      hot: !!pressure.isHot,
+      contested: !!(resolved.contested || pressure.isContested),
+      fortified: !!pressure.isFortified,
+      pressure,
+      siege: resolved.siegeMeta || {},
+      display: resolved.nodeUx || {},
+      archive,
+      sources: {
+        leadersMap: leaderProjection || null,
+        campaignArchive: archiveProjection || null,
+      },
+    });
+  }
+
+  function _runtimeNodeIds(nodeIds) {
+    const requested = Array.isArray(nodeIds) ? nodeIds : [];
+    const catalogIds = requested.length
+      ? requested
+      : (window.DATA?.nodes || []).map((node) => node?.id);
+    return Array.from(new Set(catalogIds.map(_normalizeNodeId).filter(Boolean)));
+  }
+
+  function _nodeRuntimeEvent(reason, nodeIds) {
+    const ids = _runtimeNodeIds(nodeIds);
+    const states = {};
+    for (const id of ids) {
+      const snapshot = getNodeRuntimeState(id);
+      if (snapshot) states[id] = snapshot;
+    }
+    return _cloneReadonlyRuntimeValue({
+      reason: String(reason || "update"),
+      nodeIds: ids,
+      states,
+    });
+  }
+
+  function _notifyNodeRuntimeSubscribers(reason, nodeIds) {
+    if (!_nodeRuntimeSubscribers.size) return;
+    const event = _nodeRuntimeEvent(reason, nodeIds);
+    for (const listener of Array.from(_nodeRuntimeSubscribers)) {
+      try { listener(event); } catch (err) { console.warn("[AHMap] runtime subscriber failed", err); }
+    }
+  }
+
+  function subscribeNodeRuntime(listener, options = {}) {
+    if (typeof listener !== "function") return () => {};
+    _nodeRuntimeSubscribers.add(listener);
+    if (options?.emitCurrent) {
+      const ids = Array.isArray(options.nodeIds) ? options.nodeIds : undefined;
+      try { listener(_nodeRuntimeEvent("current", ids)); } catch (err) { console.warn("[AHMap] runtime subscriber failed", err); }
+    }
+    let active = true;
+    return () => {
+      if (!active) return false;
+      active = false;
+      return _nodeRuntimeSubscribers.delete(listener);
+    };
+  }
+
+  function _bindCampaignStateUpdates() {
+    if (_campaignStateHandler) return;
+    _campaignStateHandler = () => {
+      _notifyNodeRuntimeSubscribers("campaign_state", ["burned_archive"]);
+    };
+    window.addEventListener("ah:campaign-state-accepted", _campaignStateHandler);
+  }
+
   function applyLeaders(leadersMap) {
     if (!leadersMap || typeof leadersMap !== "object") return;
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
@@ -3028,6 +3133,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       dominantFaction: dominance?.faction || "",
       dominanceSource: dominance?.source || "none"
     });
+    _notifyNodeRuntimeSubscribers("leaders_map", _runtimeNodeIds());
   }
 
   function _isMapVisible() {
@@ -3317,10 +3423,20 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
       event.stopImmediatePropagation?.();
       event.stopPropagation?.();
 
+      if (window.MapActivityRouter?.open) {
+        window.MapActivityRouter.open("alpha_den", {
+          closeMap: false,
+          openAlphaDen: openAlphaDenFromMap,
+          onAlphaDenUnavailable: _showAlphaDenUnavailableNotice
+        }).catch(() => {
+          _showAlphaDenUnavailableNotice();
+        });
+        return;
+      }
+
       openAlphaDenFromMap()
         .then((opened) => {
-          if (opened) return;
-          _showAlphaDenUnavailableNotice();
+          if (!opened) _showAlphaDenUnavailableNotice();
         })
         .catch(() => {
           _showAlphaDenUnavailableNotice();
@@ -3420,6 +3536,8 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     getPressureNote,
     getPressureSummary,
     getNodeUx,
+    getNodeRuntimeState,
+    subscribe: subscribeNodeRuntime,
     getArchiveNodeState: _archiveSignalModel,
     getViewerFaction: _getViewerFaction,
     reapplyLastLeaders: () => {
@@ -3429,6 +3547,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
 
   window.AHMap = API;
   window.Map = window.Map || API;
+  _bindCampaignStateUpdates();
 })();
 
 

@@ -65,7 +65,9 @@
     visibilityHandler: null,
     lastSectorTap: { sectorId: "", until: 0 },
     threatTierBySector: Object.create(null),
+    surfaceHost: null,
   };
+  const snapshotSubscribers = new Set();
 
   function byId(id) { return document.getElementById(id); }
   function apiPost() { return window.S?.apiPost || window.apiPost || window.AH?.apiPost || null; }
@@ -83,6 +85,55 @@
   function asObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : null; }
   function number(value) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
   function plural(value, noun) { return `${value} ${noun}${value === 1 ? "" : "s"}`; }
+  function cloneReadonlySnapshotValue(value, seen = new WeakMap()) {
+    if (value == null || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    const copy = Array.isArray(value) ? [] : {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) copy[key] = cloneReadonlySnapshotValue(value[key], seen);
+    return Object.freeze(copy);
+  }
+  function getSnapshot() {
+    if (!state.valid || !state.projection) return null;
+    return cloneReadonlySnapshotValue({ ...state.projection, valid: true });
+  }
+  function notifySnapshotSubscribers(reason) {
+    if (!snapshotSubscribers.size) return;
+    const snapshot = getSnapshot();
+    if (!snapshot) return;
+    const event = Object.freeze({ reason: String(reason || "update"), snapshot });
+    for (const listener of Array.from(snapshotSubscribers)) {
+      try { listener(event); } catch (error) { console.warn("[WorldExploration] snapshot subscriber failed", error); }
+    }
+  }
+  function subscribe(listener, options = {}) {
+    if (typeof listener !== "function") return () => {};
+    snapshotSubscribers.add(listener);
+    if (options?.emitCurrent) {
+      const snapshot = getSnapshot();
+      if (snapshot) {
+        try { listener(Object.freeze({ reason: "current", snapshot })); } catch (error) { console.warn("[WorldExploration] snapshot subscriber failed", error); }
+      }
+    }
+    let active = true;
+    return () => {
+      if (!active) return false;
+      active = false;
+      return snapshotSubscribers.delete(listener);
+    };
+  }
+  function hasSurfaceHost() { return !!state.surfaceHost?.container; }
+  function isV2MapActive() { return !!byId("mapBack")?.classList?.contains("is-map-v2-active"); }
+  function hideLegacyPresentation() {
+    const overlay = byId(ROOT_ID);
+    if (overlay) overlay.hidden = true;
+    const panel = byId(PANEL_ID);
+    if (panel) {
+      panel.hidden = true;
+      panel.setAttribute("aria-hidden", "true");
+    }
+    pathModule()?.setMapVisible?.(false);
+  }
   function makeRequestId(kind, id) {
     const key = `${kind}:${id}`;
     if (!state.requestIds[key]) {
@@ -145,6 +196,26 @@
     panel.hidden = false;
     panel.setAttribute("aria-hidden", "false");
     try { panel.inert = false; } catch (_) {}
+  }
+
+  function suspendActivePresentation() {
+    if (hasSurfaceHost()) {
+      state.surfaceHost.container.hidden = true;
+      return "surface";
+    }
+    suspendRelayMapPresentation();
+    return "legacy";
+  }
+
+  function restoreActivePresentation(kind) {
+    if (kind === "surface") {
+      if (state.surfaceHost?.container) {
+        state.surfaceHost.container.hidden = false;
+        renderSurface();
+      }
+      return;
+    }
+    restoreRelayMapPresentation();
   }
 
   function waitForRelayLayout() {
@@ -256,36 +327,7 @@
     panel.className = "world-exploration-panel-shell";
     panel.hidden = true;
     panel.innerHTML = '<div class="world-exploration-backdrop" data-we-close="1"></div><section class="world-exploration-panel" role="dialog" aria-modal="true" aria-labelledby="worldExplorationTitle"><button class="world-exploration-close" type="button" data-we-close="1" aria-label="Close sector details">&times;</button><div id="worldExplorationPanelContent"></div></section>';
-    panel.addEventListener("click", (event) => {
-      if (event.target?.closest?.("[data-we-close]")) closePanel();
-      const threatButton = event.target?.closest?.("[data-we-threat-tier]");
-      if (threatButton) {
-        event.preventDefault();
-        const sectorId = String(threatButton.getAttribute("data-we-sector-id") || state.selectedSectorId || "");
-        const tier = window.AlphaSectorCombatConfig?.normalizeThreatTier?.(threatButton.getAttribute("data-we-threat-tier"));
-        if (sectorId && tier) { state.threatTierBySector[sectorId] = tier.id; renderPanel(); }
-        return;
-      }
-      if (event.target?.closest?.("[data-we-action='enter']")) {
-        event.preventDefault();
-        void enterSelected();
-        return;
-      }
-      const pathButton = event.target?.closest?.("[data-we-path-action]");
-      if (pathButton) {
-        event.preventDefault();
-        void submitPathAction(pathButton);
-        return;
-      }
-      const recoveryButton = event.target?.closest?.("[data-we-recovery-source]");
-      if (recoveryButton) {
-        event.preventDefault();
-        void openFragmentRecovery(recoveryButton);
-        return;
-      }
-      if (event.target?.closest?.("[data-we-action='start']")) void startSelected();
-      if (event.target?.closest?.("[data-we-action='claim']")) void claimSelected();
-    });
+    panel.addEventListener("click", (event) => handlePresentationClick(event, byId("worldExplorationPanelContent")));
     document.body.appendChild(panel);
     return panel;
   }
@@ -511,7 +553,7 @@
     } catch (error) {
       state.lastMessage = "Missions could not be opened. Please try again.";
       try { window.toast?.(state.lastMessage); } catch (_) {}
-      if (!byId(PANEL_ID)?.hidden) renderPanel();
+      if (hasSurfaceHost() || !byId(PANEL_ID)?.hidden) renderCurrentPresentation();
     }
   }
 
@@ -533,11 +575,11 @@
   function relayEntryActionHtml(sector) {
     const completed = sector?.runProgress?.completed === true;
     const progress = completed ? `<div class="world-exploration-complete">CLEARED<br>Best: ${escapeHtml(formatDuration(sector?.runProgress?.bestDuration || 0))}<br>Clears: ${escapeHtml(sector?.runProgress?.clearCount || 1)}</div>` : "";
-    const entryLabel = hasRelayFringeDeveloperPreview(sector) ? "ENTER SECTOR - DEV PREVIEW" : completed ? "RUN AGAIN" : "ENTER SECTOR";
-    return `${progress}${threatSelectorHtml(sector)}<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${entryLabel}</button>`;
-    const preview = hasRelayFringeDeveloperPreview(sector);
-    const label = preview ? "ENTER SECTOR · DEV PREVIEW" : "ENTER SECTOR";
-    return `<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${label}</button>`;
+    const developerPreview = hasRelayFringeDeveloperPreview(sector);
+    const publicPlaytest = hasRelayFringePublicPlaytest(sector);
+    const entryLabel = developerPreview ? "ENTER SECTOR · DEV PREVIEW" : publicPlaytest ? "ENTER SECTOR · PUBLIC PLAYTEST" : completed ? "RUN AGAIN" : "ENTER SECTOR";
+    const notice = publicPlaytest ? '<p class="world-exploration-confirmation">TEMPORARY PLAYTEST — MAP KEY FRAGMENTS ARE NOT SPENT. TEST RUN REWARDS AND PROGRESSION ARE NOT SAVED.</p>' : "";
+    return `${progress}${notice}${threatSelectorHtml(sector)}<button class="world-exploration-action is-claim" type="button" data-we-action="enter">${entryLabel}</button>`;
   }
 
   function selectedThreatTier(sectorId) {
@@ -555,6 +597,109 @@
       return `<button type="button" data-we-threat-tier="${escapeHtml(tier.id)}" data-we-sector-id="${escapeHtml(sector.id)}" aria-pressed="${active}" style="min-height:34px;border:1px solid ${active ? "rgba(101,232,255,.9)" : "rgba(151,188,207,.32)"};border-radius:7px;background:${active ? "#174755" : "#101a25"};color:#e5fdff;font:800 10px system-ui;letter-spacing:.05em">${escapeHtml(tier.label)}${recommendation}</button>`;
     }).join("");
     return `<section aria-label="Threat level" style="margin:14px 0"><strong style="display:block;margin-bottom:7px;font-size:11px;letter-spacing:.08em">THREAT LEVEL</strong><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${options}</div><p style="margin:7px 0 0;color:#8aa3b2;font-size:11px">Selection is fixed when the run begins. STANDARD keeps progression payoff.</p></section>`;
+  }
+
+  function surfaceStateLabel(sector) {
+    const status = String(sector?.status || "locked").toUpperCase();
+    const phase = String(sector?.pathOfProof?.phase || "").toUpperCase();
+    return phase ? `${status} · PATH OF PROOF: ${phase}` : status;
+  }
+
+  function surfaceRequirementsSummary(sector) {
+    const rows = [];
+    const duration = Number(sector?.scanDurationSeconds);
+    if (duration > 0) rows.push(`Scan ${formatDuration(duration)}`);
+    const requirement = Math.max(0, Number(asObject(sector?.itemRequirements)?.[CANONICAL_FRAGMENT_ID]) || 0);
+    if (requirement) rows.push(`${Math.max(0, Number(state.projection?.currentFragmentBalance) || 0)} / ${requirement} fragments`);
+    const credits = Math.max(0, Number(asObject(sector?.progressionCreditRequirements)?.relay7) || 0);
+    if (credits) rows.push(`${Math.max(0, Number(state.projection?.relay7LifetimeCredits) || 0)} / ${credits} Relay-7 credits`);
+    if (sector?.prerequisiteSectorId) rows.push(`Requires ${formatSectorName({ id: sector.prerequisiteSectorId })}`);
+    if (String(sector?.status || "") === "scanning") rows.push(`${formatRemaining(remainingFor(sector))} remaining`);
+    if (sector?.runProgress?.completed === true) rows.push(`Cleared · ${Math.max(1, Number(sector.runProgress.clearCount) || 1)} clears`);
+    if (sector?.relayFringeDevPreview === true) rows.push("Developer preview");
+    if (sector?.relayFringePublicPlaytest === true) rows.push("Public playtest");
+    const reason = Array.isArray(sector?.blockingReasons) ? sector.blockingReasons[0] : "";
+    if (reason) rows.push(humanReason(reason));
+    return rows.length ? rows.join(" · ") : "No additional requirements supplied.";
+  }
+
+  function surfaceDetailMarkup(sector) {
+    const path = pathModule();
+    if (path?.isPathSector?.(sector)) {
+      const markup = path.renderPanel({
+        sector,
+        projection: state.projection,
+        busy: state.requestBusy,
+        busyLabel: state.pendingLabel,
+        message: state.lastMessage,
+        requirementsHtml,
+        fragmentRecoveryHtml,
+      }).replace('id="worldExplorationTitle"', 'id="worldExplorationSurfaceTitle"');
+      return canEnterSector(sector.id) ? `${markup}<div class="world-exploration-panel-body">${relayEntryActionHtml(sector)}</div>` : markup;
+    }
+    const status = String(sector.status || "locked");
+    const description = typeof sector.description === "string" && sector.description.trim()
+      ? sector.description.trim()
+      : "No sector description is supplied by the current backend catalog.";
+    const duration = formatDuration(sector.scanDurationSeconds);
+    const scanning = status === "scanning" ? `<p class="world-exploration-timer">${escapeHtml(formatRemaining(remainingFor(sector)))} remaining</p>` : "";
+    return `<header class="world-exploration-panel-head"><span>WORLD EXPLORATION</span><h2 id="worldExplorationSurfaceTitle">${escapeHtml(formatSectorName(sector))}</h2><p class="world-exploration-status" data-status="${escapeHtml(status)}">${escapeHtml(status.toUpperCase())}</p></header><div class="world-exploration-panel-body"><p class="world-exploration-description">${escapeHtml(description)}</p><dl class="world-exploration-details"><div><dt>Scan duration</dt><dd>${escapeHtml(duration)}</dd></div><div><dt>Current status</dt><dd>${escapeHtml(status)}</dd></div></dl>${scanning}<h3>Requirements</h3>${requirementsHtml(sector)}<p class="world-exploration-confirmation">Starting a scan spends its listed fragments. That cost is not refunded.</p>${panelActionHtml(sector)}<p class="world-exploration-message" aria-live="polite">${escapeHtml(state.lastMessage)}</p></div>`;
+  }
+
+  function renderSurface(snapshot = getSnapshot()) {
+    const host = state.surfaceHost;
+    if (!host?.container) return;
+    const container = host.container;
+    if (!snapshot) {
+      container.innerHTML = '<section class="world-exploration-v2-surface"><p class="world-exploration-v2-empty">World Exploration state is unavailable.</p></section>';
+      return;
+    }
+    const selected = host.view === "detail" ? sectorFor(state.selectedSectorId) : null;
+    if (selected) {
+      container.innerHTML = `<section class="world-exploration-v2-surface world-exploration-v2-detail"><button class="world-exploration-v2-back" type="button" data-we-surface-back="1">All sectors</button><div id="worldExplorationSurfaceContent">${surfaceDetailMarkup(selected)}</div></section>`;
+      const content = byId("worldExplorationSurfaceContent");
+      const path = pathModule();
+      if (path?.isPathSector?.(selected)) {
+        void path.afterPanelRender({ sector: selected, projection: state.projection, panel: content, panelOpen: true });
+      } else {
+        path?.destroyTacticalStage?.("surface_detail");
+      }
+      return;
+    }
+    const sectors = snapshot.sectorCatalog.map((sector) => {
+      const description = typeof sector?.description === "string" && sector.description.trim() ? sector.description.trim() : "No sector description supplied.";
+      return `<article class="world-exploration-v2-sector" data-sector-id="${escapeHtml(sector.id)}"><div><p class="world-exploration-v2-state">${escapeHtml(surfaceStateLabel(sector))}</p><h4>${escapeHtml(formatSectorName(sector))}</h4><p>${escapeHtml(description)}</p><p class="world-exploration-v2-meta">${escapeHtml(surfaceRequirementsSummary(sector))}</p></div><button class="world-exploration-v2-open" type="button" data-we-surface-sector="${escapeHtml(sector.id)}">View sector</button></article>`;
+    }).join("");
+    container.innerHTML = `<section class="world-exploration-v2-surface"><header class="world-exploration-v2-head"><p>CAMPAIGN SURFACE</p><h3>WORLD EXPLORATION</h3><span>${escapeHtml(`${snapshot.sectorCatalog.length} live sector${snapshot.sectorCatalog.length === 1 ? "" : "s"}`)}</span></header><div class="world-exploration-v2-list">${sectors}</div></section>`;
+    pathModule()?.destroyTacticalStage?.("surface_catalog");
+  }
+
+  function renderCurrentPresentation() {
+    if (hasSurfaceHost()) renderSurface();
+    else renderPanel();
+  }
+
+  function handlePresentationClick(event, content) {
+    if (event.target?.closest?.("[data-we-close]")) { closePanel(); return; }
+    const surfaceBack = event.target?.closest?.("[data-we-surface-back]");
+    if (surfaceBack) { event.preventDefault(); closePanelView(); return; }
+    const sectorButton = event.target?.closest?.("[data-we-surface-sector]");
+    if (sectorButton) { event.preventDefault(); openSector(sectorButton.getAttribute("data-we-surface-sector")); return; }
+    const threatButton = event.target?.closest?.("[data-we-threat-tier]");
+    if (threatButton) {
+      event.preventDefault();
+      const sectorId = String(threatButton.getAttribute("data-we-sector-id") || state.selectedSectorId || "");
+      const tier = window.AlphaSectorCombatConfig?.normalizeThreatTier?.(threatButton.getAttribute("data-we-threat-tier"));
+      if (sectorId && tier) { state.threatTierBySector[sectorId] = tier.id; renderCurrentPresentation(); }
+      return;
+    }
+    if (event.target?.closest?.("[data-we-action='enter']")) { event.preventDefault(); void enterSelected(); return; }
+    const pathButton = event.target?.closest?.("[data-we-path-action]");
+    if (pathButton) { event.preventDefault(); void submitPathAction(pathButton, content); return; }
+    const recoveryButton = event.target?.closest?.("[data-we-recovery-source]");
+    if (recoveryButton) { event.preventDefault(); void openFragmentRecovery(recoveryButton); return; }
+    if (event.target?.closest?.("[data-we-action='start']")) void startSelected();
+    if (event.target?.closest?.("[data-we-action='claim']")) void claimSelected();
   }
 
   function renderPanel() {
@@ -599,7 +744,7 @@
     openSector(id);
     if (!canEnterSector(id)) {
       state.lastMessage = "This sector is not currently available.";
-      renderPanel();
+      renderCurrentPresentation();
       return false;
     }
     await enterSelected();
@@ -608,6 +753,13 @@
   function openSector(id) {
     const sector = sectorFor(id);
     if (!sector) return;
+    if (hasSurfaceHost()) {
+      state.selectedSectorId = sector.id;
+      state.lastMessage = "";
+      state.surfaceHost.view = "detail";
+      renderSurface();
+      return;
+    }
     const panel = ensurePanel();
     if (!panel) return;
     const wasOpen = !panel.hidden;
@@ -627,6 +779,13 @@
     }
   }
   function closePanelView() {
+    if (hasSurfaceHost()) {
+      state.surfaceHost.view = "catalog";
+      state.selectedSectorId = null;
+      pathModule()?.destroyTacticalStage?.("surface_closed");
+      renderSurface();
+      return;
+    }
     const panel = byId(PANEL_ID);
     if (!panel || panel.hidden) return;
     panel.hidden = true;
@@ -643,8 +802,9 @@
     closePanelView();
   }
   function showMessage(message) {
-    const target = byId("worldExplorationPanelContent")?.querySelector(".world-exploration-message");
     state.lastMessage = String(message || "");
+    if (hasSurfaceHost()) { renderSurface(); return; }
+    const target = byId("worldExplorationPanelContent")?.querySelector(".world-exploration-message");
     if (target) target.textContent = state.lastMessage;
   }
   function confirmStart(sector) {
@@ -687,12 +847,11 @@
       resolve(window.confirm(message));
     });
   }
-  async function submitPathAction(button) {
+  async function submitPathAction(button, contentRoot = byId("worldExplorationPanelContent")) {
     const sector = sectorFor(state.selectedSectorId);
     const path = pathModule();
     if (!sector || !path?.isPathSector?.(sector) || state.requestBusy) return;
-    const content = byId("worldExplorationPanelContent");
-    const spec = path.buildAction(button, content);
+    const spec = path.buildAction(button, contentRoot);
     if (!spec) return;
     if (spec.error) {
       showMessage(spec.error);
@@ -708,7 +867,7 @@
     state.requestBusy = true;
     state.pendingLabel = pathBusyLabel(spec.action);
     state.lastMessage = "";
-    renderPanel();
+    renderCurrentPresentation();
     try {
       const raw = await submit("/webapp/world-exploration/path/action", {
         sectorId: sector.id,
@@ -735,25 +894,27 @@
         state.valid = true;
         state.projection = projection;
         state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
+        notifySnapshotSubscribers("path_action");
       }
       clearRequestId("path", requestKey);
       if (generation !== state.actionGeneration) return;
-      renderOverlay({ previousProjection, animate: true });
-      renderPanel();
+      if (hasSurfaceHost()) {
+        if (stale) renderSurface();
+      } else { renderOverlay({ previousProjection, animate: true }); renderPanel(); }
       const canonicalSector = sectorFor(sector.id);
       await path.playCanonicalRound(previousSector, canonicalSector);
     } catch (error) {
       state.projection = previousProjection;
       state.valid = !!previousProjection;
       state.lastMessage = humanReason(error?.response?.code || error?.message || "Unable to continue the Path.");
-      renderOverlay();
-      renderPanel();
+      if (hasSurfaceHost()) renderSurface();
+      else { renderOverlay(); renderPanel(); }
       try { await refreshState({ force: true }); } catch (_) {}
     } finally {
       if (generation === state.actionGeneration) {
         state.requestBusy = false;
         state.pendingLabel = "";
-        renderPanel();
+        renderCurrentPresentation();
       }
     }
   }
@@ -761,7 +922,7 @@
     const sector = sectorFor(state.selectedSectorId);
     if (!sector || state.requestBusy || !sector.canStartScan) return;
     if (!(await confirmStart(sector))) return;
-    state.requestBusy = true; renderPanel();
+    state.requestBusy = true; renderCurrentPresentation();
     try {
       await submit("/webapp/world-exploration/scan/start", { sectorId: sector.id, requestId: makeRequestId("start", sector.id) });
       clearRequestId("start", sector.id);
@@ -770,7 +931,7 @@
     } catch (error) {
       showMessage(error?.message || "Unable to start scan.");
     } finally {
-      state.requestBusy = false; renderPanel();
+      state.requestBusy = false; renderCurrentPresentation();
     }
   }
   async function claimSelected() {
@@ -778,7 +939,7 @@
     const scan = activeScanFor(sector);
     const scanId = String(scan?.scan_id || scan?.scanId || "");
     if (!sector || !scanId || state.requestBusy || !state.projection?.canClaimScan) return;
-    state.requestBusy = true; renderPanel();
+    state.requestBusy = true; renderCurrentPresentation();
     try {
       await submit("/webapp/world-exploration/scan/claim", { scanId, requestId: makeRequestId("claim", scanId) });
       clearRequestId("claim", scanId);
@@ -787,7 +948,7 @@
     } catch (error) {
       showMessage(error?.message || "Unable to claim this sector.");
     } finally {
-      state.requestBusy = false; renderPanel();
+      state.requestBusy = false; renderCurrentPresentation();
     }
   }
 
@@ -802,10 +963,14 @@
     return sector?.relayFringeDevPreview === true && (String(sector?.id || "") === "relay_fringe_01" || String(sector?.id || "") === "relay_fringe_02");
   }
 
+  function hasRelayFringePublicPlaytest(sector) {
+    return sector?.relayFringePublicPlaytest === true && (String(sector?.id || "") === "relay_fringe_01" || String(sector?.id || "") === "relay_fringe_02");
+  }
+
   function canEnterSector(sectorId) {
     if (!state.valid || !state.projection) return false;
     const sector = sectorFor(sectorId);
-    return runtimeRegistry.has(sectorId) && (hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector));
+    return runtimeRegistry.has(sectorId) && (hasProductionRelayAccess(sector) || hasRelayFringeDeveloperPreview(sector) || hasRelayFringePublicPlaytest(sector));
   }
 
   function actionCombatProfileNormalizer() {
@@ -836,7 +1001,7 @@
     let currentStage = "ENTRY_HANDLER";
     let timedOut = false;
     let watchdogId = null;
-    let mapPresentationSuspended = false;
+    let presentationSuspended = "";
     const updateStage = (stage) => {
       currentStage = String(stage || currentStage);
       state.relayStartupStage = currentStage;
@@ -845,13 +1010,13 @@
         const root = byId(RELAY_ROOM_ROOT_ID);
         const loading = root?.querySelector?.(".ah-exploration-room__loading") || root?.firstElementChild;
         if (loading) loading.textContent = `ENTERING SIGNAL APPROACH... DEV STAGE: ${currentStage}`;
-        if (!byId(PANEL_ID)?.hidden) renderPanel();
+        if (hasSurfaceHost() || !byId(PANEL_ID)?.hidden) renderCurrentPresentation();
       }
     };
     const rollback = async () => {
       try { await runtime.close?.({ relayStartupRollback: true }); } catch (_) {}
       byId(RELAY_ROOM_ROOT_ID)?.remove();
-      if (mapPresentationSuspended) restoreRelayMapPresentation();
+      if (presentationSuspended) restoreActivePresentation(presentationSuspended);
     };
     const timeout = new Promise((_, reject) => {
       watchdogId = window.setTimeout(() => {
@@ -891,8 +1056,7 @@
       if (window.DBG) try { console.debug("[WorldExploration] resolved action combat profile", combatProfile); } catch (_) {}
       // The sector detail panel is z-index:1000002. It must be out before the Room Ready visibility test,
       // not after open() resolves, otherwise it physically covers the Relay root (z-index:12060).
-      suspendRelayMapPresentation();
-      mapPresentationSuspended = true;
+      presentationSuspended = suspendActivePresentation();
       updateStage("ROOM_OPEN_CALLED");
       let openedResult = false;
       try {
@@ -935,16 +1099,16 @@
     if (!selected || state.requestBusy || !canEnterSector(selected)) return;
     state.requestBusy = true;
     state.pendingLabel = "Validating routeâ€¦";
-    renderPanel();
+    renderCurrentPresentation();
     try {
       await runRelayStartup(selected, hasRelayFringeDeveloperPreview(sectorFor(selected)));
     } catch (error) {
       state.lastMessage = relayEntryFailureMessage(sectorFor(selected), error);
-      renderPanel();
+      renderCurrentPresentation();
     } finally {
       state.requestBusy = false;
       state.pendingLabel = "";
-      if (!runtimeRegistry.get(selected)?.isOpen?.()) renderPanel();
+      if (!runtimeRegistry.get(selected)?.isOpen?.()) renderCurrentPresentation();
     }
   }
 
@@ -1010,6 +1174,43 @@
     makePath([archivePoint, relayPoint], "map-signal-dormant");
     makePath([relayPoint, { x: (relayPoint.x + boundary.x) / 2, y: relayPoint.y }, boundary], "map-signal-broken");
   }
+
+  function mountSurface(container) {
+    if (!container || typeof container.addEventListener !== "function") return false;
+    unmountSurface();
+    const host = {
+      container,
+      view: "catalog",
+      onClick: null,
+      unsubscribe: null,
+    };
+    host.onClick = (event) => handlePresentationClick(event, host.container);
+    container.addEventListener("click", host.onClick);
+    state.surfaceHost = host;
+    host.unsubscribe = subscribe(() => renderSurface(), { emitCurrent: true });
+    state.mapActive = true;
+    hideLegacyPresentation();
+    void refreshState();
+    return true;
+  }
+
+  function unmountSurface() {
+    const host = state.surfaceHost;
+    if (!host) return false;
+    try { host.unsubscribe?.(); } catch (_) {}
+    try { host.container?.removeEventListener?.("click", host.onClick); } catch (_) {}
+    try { host.container?.replaceChildren?.(); } catch (_) {}
+    pathModule()?.destroyTacticalStage?.("surface_unmount");
+    state.surfaceHost = null;
+    state.selectedSectorId = null;
+    state.lastMessage = "";
+    state.mapActive = false;
+    state.refreshGeneration += 1;
+    state.refreshing = null;
+    state.timerRefreshPending = false;
+    return true;
+  }
+
   function canOpenDeadRelay() { return !!(state.valid && state.projection?.canOpenRelay7 === true && state.projection?.relay7Available === true); }
   function showDeadRelayLocked() {
     openSector("relay_fringe_01");
@@ -1017,11 +1218,14 @@
 
   function stopTimer() { if (state.timerId) clearInterval(state.timerId); state.timerId = null; }
   function tick() {
-    if (!state.valid || !mapIsOpen()) return;
+    if (!state.valid || !state.mapActive || !mapIsOpen()) return;
     const active = asObject(state.projection?.activeScan);
     if (active) {
-      renderOverlay();
-      if (!byId(PANEL_ID)?.hidden) renderPanel();
+      if (hasSurfaceHost()) renderSurface();
+      else {
+        renderOverlay();
+        if (!byId(PANEL_ID)?.hidden) renderPanel();
+      }
     }
     const endsAt = number(active?.ends_at ?? active?.endsAt);
     if (endsAt > 0 && endsAt * 1000 <= Date.now() + state.serverOffsetMs && !state.timerRefreshPending) {
@@ -1036,13 +1240,17 @@
     const generation = state.refreshGeneration;
     const task = (async () => {
       const previousProjection = state.projection;
+      let acceptedProjection = false;
       try {
         const raw = await post("/webapp/world-exploration/state", {});
         if (generation !== state.refreshGeneration) return state.projection;
         const projection = validProjection(raw);
         state.valid = !!projection;
         state.projection = projection;
-        if (projection) state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
+        if (projection) {
+          state.serverOffsetMs = projection.serverNow * 1000 - Date.now();
+          acceptedProjection = true;
+        }
       } catch (_) {
         if (generation !== state.refreshGeneration) return state.projection;
         // Keep the last good projection mounted: a transient refresh failure
@@ -1050,17 +1258,31 @@
         state.valid = !!previousProjection;
         state.projection = previousProjection;
       }
-      renderOverlay({ previousProjection, animate: false });
-      if (!byId(PANEL_ID)?.hidden && !state.valid) closePanel();
-      else if (!byId(PANEL_ID)?.hidden) renderPanel();
+      if (hasSurfaceHost()) {
+        if (!acceptedProjection) renderSurface();
+      } else {
+        renderOverlay({ previousProjection, animate: false });
+        if (!byId(PANEL_ID)?.hidden && !state.valid) closePanel();
+        else if (!byId(PANEL_ID)?.hidden) renderPanel();
+      }
+      if (acceptedProjection) notifySnapshotSubscribers("state_refresh");
       return state.projection;
     })();
     state.refreshing = task;
     try { return await task; } finally { if (state.refreshing === task) state.refreshing = null; }
   }
   function onMapOpened() {
+    if (isV2MapActive() && !hasSurfaceHost()) {
+      state.mapActive = false;
+      hideLegacyPresentation();
+      return Promise.resolve(state.projection);
+    }
     if (state.mapActive) return state.refreshing || Promise.resolve(state.projection);
     state.mapActive = true;
+    if (hasSurfaceHost()) {
+      hideLegacyPresentation();
+      return refreshState();
+    }
     pathModule()?.setMapVisible?.(true);
     ensureOverlay();
     const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -1072,6 +1294,7 @@
   }
   function onMapClosed() {
     if (!state.mapActive && !mapIsOpen()) return;
+    if (hasSurfaceHost()) unmountSurface();
     state.mapActive = false;
     state.refreshGeneration += 1;
     state.refreshing = null;
@@ -1097,8 +1320,9 @@
     ensurePanel();
     state.keyHandler = (event) => { if (event.key === "Escape" && !byId(PANEL_ID)?.hidden) closePanel(); };
     state.visibilityHandler = () => {
-      pathModule()?.setMapVisible?.(!document.hidden && mapIsOpen());
-      if (!document.hidden && mapIsOpen()) void refreshState();
+      const presentationActive = !isV2MapActive() || hasSurfaceHost();
+      pathModule()?.setMapVisible?.(!document.hidden && mapIsOpen() && presentationActive && !hasSurfaceHost());
+      if (!document.hidden && mapIsOpen() && presentationActive) void refreshState();
     };
     document.addEventListener("keydown", state.keyHandler);
     document.addEventListener("visibilitychange", state.visibilityHandler);
@@ -1111,6 +1335,7 @@
 
   function destroy() {
     stopTimer();
+    unmountSurface();
     state.actionGeneration += 1;
     state.refreshGeneration += 1;
     state.mapActive = false;
@@ -1127,9 +1352,10 @@
     state.initialized = false;
     state.requestBusy = false;
     state.pendingLabel = "";
+    snapshotSubscribers.clear();
   }
 
-  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, canOpenDeadRelay, canEnterSector, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, enterSector, closePanel };
+  window.WorldExploration = { init, destroy, onMapOpened, onMapClosed, refreshState, getSnapshot, subscribe, mountSurface, unmountSurface, canOpenDeadRelay, canEnterSector, showDeadRelayLocked, syncLockedSectorNodePresentation, syncNetworkBridge, openSector, enterSector, closePanel };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();

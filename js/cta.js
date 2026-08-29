@@ -18,6 +18,7 @@
     visHandler: null,
     pageShowHandler: null,
   };
+  const stateSubscribers = new Set();
 
   function log(...args) {
     if (typeof STATE.dbg === "function") {
@@ -59,6 +60,46 @@
   function asInt(value, fallback = 0) {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
+  }
+
+  function cloneReadonlyStateValue(value, seen = new WeakMap()) {
+    if (value == null || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    const copy = Array.isArray(value) ? [] : {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) copy[key] = cloneReadonlyStateValue(value[key], seen);
+    return Object.freeze(copy);
+  }
+
+  function getState() {
+    return STATE.lastData ? cloneReadonlyStateValue(STATE.lastData) : null;
+  }
+
+  function notifyStateSubscribers(reason) {
+    if (!stateSubscribers.size) return;
+    const state = getState();
+    if (!state) return;
+    const event = Object.freeze({ reason: String(reason || "update"), state });
+    for (const listener of Array.from(stateSubscribers)) {
+      try { listener(event); } catch (error) { console.warn("[CTA] state subscriber failed", error); }
+    }
+  }
+
+  function subscribe(listener, options = {}) {
+    if (typeof listener !== "function") return () => {};
+    stateSubscribers.add(listener);
+    if (options?.emitCurrent) {
+      const state = getState();
+      if (state) {
+        try { listener(Object.freeze({ reason: "current", state })); } catch (error) { console.warn("[CTA] state subscriber failed", error); }
+      }
+    }
+    let active = true;
+    return () => {
+      if (!active) return false;
+      active = false;
+      return stateSubscribers.delete(listener);
+    };
   }
 
   function prettifyKind(kind) {
@@ -1075,6 +1116,7 @@
       const data = normalize(raw);
       STATE.lastData = data;
       STATE.lastLoadAt = Date.now();
+      notifyStateSubscribers("state_load");
       render(data);
       return data;
     } catch (err) {
@@ -1406,6 +1448,7 @@
     }
     clearRoot(STATE.cardRoot);
     clearRoot(STATE.highlightsRoot);
+    stateSubscribers.clear();
     STATE.initDone = false;
   }
 
@@ -1436,6 +1479,8 @@
     init,
     load,
     refresh,
+    getState,
+    subscribe,
     render,
     openTarget,
     mount,

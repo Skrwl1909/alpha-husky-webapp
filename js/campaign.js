@@ -110,6 +110,12 @@
     try { console.warn.apply(console, ["[Campaign]"].concat([].slice.call(arguments))); } catch (_) {}
   }
 
+  function notifyAcceptedState() {
+    try {
+      global.dispatchEvent(new global.CustomEvent("ah:campaign-state-accepted"));
+    } catch (_) {}
+  }
+
   function asText(v) {
     return String(v == null ? "" : v).trim();
   }
@@ -1753,6 +1759,7 @@
     STATE.loadPromise = api("/webapp/campaign/state", {}).then(function onLoaded(out) {
       STATE.payload = out || { ok: true, eligible: false, show: false, reason: "EMPTY" };
       STATE.lastLoadAt = Date.now();
+      notifyAcceptedState();
       updateTile();
       if (isOpen()) render();
       return STATE.payload;
@@ -1818,6 +1825,7 @@
       var out = await api("/webapp/campaign/action", payload);
       STATE.payload = out || STATE.payload;
       STATE.lastLoadAt = Date.now();
+      if (out && typeof out === "object") notifyAcceptedState();
       updateTile();
       render();
       return !!(out && out.ok !== false);
@@ -1860,6 +1868,7 @@
       if (out && typeof out === "object") {
         STATE.payload = out;
         STATE.lastLoadAt = Date.now();
+        notifyAcceptedState();
       }
       STATE.archiveFeedback = {
         kind: "success",
