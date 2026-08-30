@@ -18,6 +18,17 @@
     return asText(sectionId).replaceAll("_", " ").toUpperCase();
   }
 
+  const SECTION_PRESENTATION = Object.freeze({
+    citadel: Object.freeze({ code: "CTL", summary: "Command, treasury and pack infrastructure." }),
+    blackglass_reach: Object.freeze({ code: "BGR", summary: "Fractured contracts, archive signals and campaign routes." }),
+    iron_march: Object.freeze({ code: "IRM", summary: "Frontline pressure, siege and high-risk operations." }),
+    locked_horizons: Object.freeze({ code: "LKH", summary: "Uncharted regions beyond the active network." }),
+  });
+
+  function sectionPresentation(sectionId) {
+    return SECTION_PRESENTATION[sectionId] || Object.freeze({ code: "SEC", summary: "Operational sector." });
+  }
+
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -53,7 +64,7 @@
     const runtime = snapshot === undefined
       ? global.AHMap?.getNodeRuntimeState?.(nodeId)
       : snapshot;
-    if (!runtime) return { label: "Runtime status unavailable", detail: "" };
+    if (!runtime) return { label: "Live status unavailable", detail: "", tone: "quiet" };
 
     const labels = [];
     if (runtime.hot) labels.push("HOT");
@@ -82,8 +93,9 @@
     if (attacker || defender) details.push(`SIEGE: ${[attacker, defender].filter(Boolean).join(" → ")}`);
 
     return {
-      label: labels.join(" · ") || "No runtime signal",
+      label: labels.join(" · ") || "No live signal",
       detail: details.join(" · "),
+      tone: runtime.hot || runtime.contested ? "alert" : runtime.fortified ? "fortified" : labels.length ? "active" : "quiet",
     };
   }
 
@@ -125,6 +137,10 @@
     for (const strip of state.root.querySelectorAll("[data-map-v2-objective-section]")) {
       updateObjectiveStrip(strip);
     }
+    const objectiveSectionId = global.MapObjectiveResolver?.getCurrent?.()?.sectionId || "";
+    for (const card of state.root.querySelectorAll("[data-map-v2-section-id]")) {
+      card.dataset.mapV2Objective = card.dataset.mapV2SectionId === objectiveSectionId ? "true" : "false";
+    }
   }
 
   function stopCTAUpdates() {
@@ -144,6 +160,7 @@
     const status = elementNode.querySelector?.(".map-v2-runtime-status");
     const detail = elementNode.querySelector?.(".map-v2-runtime-detail");
     if (status) status.textContent = presentation.label;
+    elementNode.dataset.mapV2RuntimeTone = presentation.tone;
     if (detail) {
       detail.textContent = presentation.detail;
       detail.hidden = !presentation.detail;
@@ -183,12 +200,13 @@
     unmountWorldExplorationSurface();
     state.sectionId = null;
     state.selectedNodeId = null;
+    state.root.dataset.mapV2Surface = "world";
     const view = element("section", "map-v2-view map-v2-world", null);
     const intro = element("header", "map-v2-intro");
     intro.append(
-      element("p", "map-v2-kicker", "WORLD"),
-      element("h3", "map-v2-title", "Alpha Husky"),
-      element("p", "map-v2-copy", "Choose a section, then an activity."),
+      element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD NETWORK"),
+      element("h3", "map-v2-title", "World"),
+      element("p", "map-v2-copy", "Four operational sections. Select one to access its activities."),
     );
     view.append(intro, createObjectiveStrip(null));
 
@@ -198,13 +216,18 @@
       const surfaceCount = Array.isArray(section.campaignSurfaces) ? section.campaignSurfaces.length : 0;
       const meta = count
         ? `${count} activit${count === 1 ? "y" : "ies"}${surfaceCount ? " · Campaign surface" : ""}`
-        : "Presentation only";
+        : "No active operations";
+      const presentation = sectionPresentation(section.sectionId);
       const card = element("article", "map-v2-section-card");
+      card.dataset.mapV2SectionId = section.sectionId;
+      card.dataset.mapV2Objective = global.MapObjectiveResolver?.getCurrent?.()?.sectionId === section.sectionId ? "true" : "false";
+      card.dataset.mapV2Locked = count ? "false" : "true";
       card.append(
-        element("p", "map-v2-section-order", `SECTION ${section.order}`),
+        element("p", "map-v2-section-order", `${presentation.code} // 0${section.order}`),
         element("h4", "map-v2-section-name", sectionLabel(section.sectionId)),
+        element("p", "map-v2-section-summary", presentation.summary),
         element("p", "map-v2-section-meta", meta),
-        button("map-v2-section-action", count ? "View section" : "View horizons", () => renderSection(section.sectionId)),
+        button("map-v2-section-action", count ? "Open section" : "Inspect horizon", () => renderSection(section.sectionId)),
       );
       sections.append(card);
     }
@@ -222,13 +245,16 @@
     card.dataset.mapV2NodeId = node.id;
     const asset = asText(node.icon || node.asset);
     if (asset) {
+      const art = element("span", "map-v2-activity-art");
       const image = element("img", "map-v2-activity-image");
       image.src = asset;
       image.alt = "";
-      card.append(image);
+      art.append(image);
+      card.append(art);
     }
     const text = element("span", "map-v2-activity-copy");
     const runtime = runtimePresentation(node.id);
+    card.dataset.mapV2RuntimeTone = runtime.tone;
     const runtimeStatus = element("span", "map-v2-activity-status map-v2-runtime-status", runtime.label);
     const runtimeDetail = element("span", "map-v2-activity-runtime-detail map-v2-runtime-detail", runtime.detail);
     runtimeDetail.hidden = !runtime.detail;
@@ -245,6 +271,7 @@
     const dock = element("aside", "map-v2-dock");
     dock.dataset.mapV2NodeId = node.id;
     const runtime = runtimePresentation(node.id);
+    dock.dataset.mapV2RuntimeTone = runtime.tone;
     const runtimeDetail = element("p", "map-v2-dock-runtime-detail map-v2-runtime-detail", runtime.detail);
     runtimeDetail.hidden = !runtime.detail;
     dock.append(
@@ -269,10 +296,7 @@
     let host = null;
     for (const surface of section.campaignSurfaces) {
       const slot = element("article", "map-v2-surface-slot");
-      slot.append(
-        element("p", "map-v2-dock-kicker", "CAMPAIGN SURFACE"),
-        element("h4", "map-v2-surface-title", sectionLabel(surface.surfaceId)),
-      );
+      slot.dataset.mapV2SurfaceId = surface.surfaceId;
       host = element("div", "map-v2-world-exploration-host");
       slot.append(host);
       slots.append(slot);
@@ -298,12 +322,14 @@
     const section = getSection(sectionId);
     if (!section) return renderWorld();
     state.sectionId = section.sectionId;
+    state.root.dataset.mapV2Surface = section.sectionId;
     const view = element("section", "map-v2-view map-v2-detail");
     const header = element("header", "map-v2-detail-head");
     header.append(
-      button("map-v2-back", "All sections", renderWorld),
-      element("p", "map-v2-kicker", `SECTION ${section.order}`),
+      button("map-v2-back", "World / Sections", renderWorld),
+      element("p", "map-v2-kicker", `${sectionPresentation(section.sectionId).code} // SECTION 0${section.order}`),
       element("h3", "map-v2-title", sectionLabel(section.sectionId)),
+      element("p", "map-v2-copy", sectionPresentation(section.sectionId).summary),
     );
     view.append(header, createObjectiveStrip(section.sectionId));
 
@@ -362,10 +388,25 @@
     state.active = false;
     state.sectionId = null;
     state.selectedNodeId = null;
+    delete state.root.dataset.mapV2Surface;
     state.root.hidden = true;
     state.root.replaceChildren();
   }
 
-  const API = Object.freeze({ mount, open, close });
+  function back() {
+    if (!state.active) return false;
+    if (state.selectedNodeId) {
+      state.selectedNodeId = null;
+      renderSection(state.sectionId);
+      return true;
+    }
+    if (state.sectionId) {
+      renderWorld();
+      return true;
+    }
+    return false;
+  }
+
+  const API = Object.freeze({ mount, open, close, back });
   global.MapSectionsV2 = API;
 })(window);
