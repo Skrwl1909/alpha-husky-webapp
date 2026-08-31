@@ -50,10 +50,12 @@
   content:"";
   position:absolute;
   inset:0;
-  z-index:1;
+  z-index:3;
   pointer-events:none;
   opacity:.32;
-  background:linear-gradient(115deg, transparent 0 44%, rgba(116,202,232,.06) 44.1% 44.25%, transparent 44.35% 100%);
+  background:
+    linear-gradient(180deg, transparent calc(100% - 30px), rgba(2,6,9,.38) 100%),
+    linear-gradient(115deg, transparent 0 44%, rgba(116,202,232,.06) 44.1% 44.25%, transparent 44.35% 100%);
 }
 
 #mapV2Mount[data-map-v2-surface="world"]{
@@ -163,7 +165,9 @@
   padding:18px 18px 17px;
   overflow:hidden;
   border:1px solid rgba(162,208,231,.12);
-  background:linear-gradient(90deg, rgba(3,8,12,.82), rgba(3,8,12,.25) 74%, transparent);
+  background:
+    linear-gradient(180deg, rgba(3,8,12,.04), rgba(3,8,12,.34)),
+    linear-gradient(90deg, rgba(3,8,12,.84), rgba(3,8,12,.27) 74%, transparent);
   box-shadow:0 18px 40px rgba(0,0,0,.18);
   clip-path:polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
 }
@@ -236,6 +240,7 @@
   line-height:.98;
   letter-spacing:.035em;
   text-transform:uppercase;
+  text-shadow:0 2px 14px rgba(0,0,0,.64);
 }
 
 .map-v2-copy,
@@ -245,6 +250,11 @@
   color:rgba(204,222,233,.67);
   font-size:12px;
   line-height:1.45;
+}
+
+.map-v2-intro .map-v2-copy,
+.map-v2-detail-head .map-v2-copy{
+  text-shadow:0 1px 10px rgba(0,0,0,.72);
 }
 
 .map-v2-objective{
@@ -352,7 +362,7 @@
   min-height:248px;
   padding:120px 16px 14px;
   isolation:isolate;
-  transition:transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition:transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .map-v2-section-card::before{
@@ -362,7 +372,7 @@
   z-index:0;
   pointer-events:none;
   background-image:
-    linear-gradient(180deg, rgba(3,7,11,.06) 0%, rgba(3,7,11,.18) 38%, rgba(5,10,14,.94) 68%, #070d12 100%),
+    linear-gradient(180deg, rgba(3,7,11,.06) 0%, rgba(3,7,11,.2) 40%, rgba(5,10,14,.94) 69%, #070d12 100%),
     linear-gradient(90deg, rgba(3,7,11,.38), transparent 60%),
     var(--map-v2-section-art);
   background-position:center, center, var(--map-v2-section-position);
@@ -422,6 +432,7 @@
   font-weight:850;
   line-height:1.08;
   letter-spacing:.055em;
+  text-shadow:0 2px 10px rgba(0,0,0,.72);
 }
 
 .map-v2-section-summary{
@@ -429,6 +440,7 @@
   color:rgba(197,216,226,.6);
   font-size:11px;
   line-height:1.38;
+  text-shadow:0 1px 8px rgba(0,0,0,.66);
 }
 
 .map-v2-section-meta{
@@ -522,6 +534,7 @@
   color:inherit;
   text-align:left;
   cursor:pointer;
+  transition:transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .map-v2-activity::before{
@@ -554,7 +567,27 @@
 .map-v2-activity.is-selected{
   border-color:rgba(111,201,233,.55);
   background:linear-gradient(155deg, rgba(21,45,58,.98), rgba(7,14,20,.98));
-  box-shadow:0 14px 30px rgba(0,0,0,.28), inset 0 0 0 1px rgba(111,201,233,.09);
+  box-shadow:0 14px 30px rgba(0,0,0,.28), inset 2px 0 rgba(111,201,233,.62), inset 0 0 0 1px rgba(111,201,233,.09);
+}
+
+.map-v2-section-card:focus-within{
+  border-color:color-mix(in srgb, var(--section-accent) 44%, transparent);
+  box-shadow:0 14px 32px rgba(0,0,0,.28), inset 2px 0 color-mix(in srgb, var(--section-accent) 68%, transparent);
+}
+
+.map-v2-section-card:has(.map-v2-section-action:active),
+.map-v2-activity:active{
+  transform:translateY(-1px);
+}
+
+.map-v2-section-card:has(.map-v2-section-action:active){
+  border-color:color-mix(in srgb, var(--section-accent) 52%, transparent);
+  box-shadow:0 16px 34px rgba(0,0,0,.3), inset 2px 0 color-mix(in srgb, var(--section-accent) 72%, transparent);
+}
+
+.map-v2-activity:active{
+  border-color:rgba(132,203,229,.48);
+  box-shadow:0 14px 28px rgba(0,0,0,.27), inset 2px 0 rgba(111,201,233,.52);
 }
 
 .map-v2-activity-art{
@@ -824,6 +857,19 @@
 }
 
 @media (max-width:760px){
+  #mapBack.is-map-v2-active ~ #ahCommunityBtn{
+    top:max(5px, env(safe-area-inset-top, 0px));
+    right:calc(52px + env(safe-area-inset-right, 0px));
+    bottom:auto;
+    width:44px;
+    height:44px;
+  }
+  #mapBack.is-map-v2-active ~ #ahCommunityBtn .ah-community-label{
+    bottom:0;
+    min-width:28px;
+    padding:1px 4px;
+    font-size:7px;
+  }
   .map-v2-view{
     width:100%;
     padding:
@@ -894,4 +940,8 @@
 
 @media (prefers-reduced-motion:reduce){
   .map-v2-section-card,.map-v2-activity{ transition:none; }
+  .map-v2-section-card:hover,
+  .map-v2-section-card:has(.map-v2-section-action:active),
+  .map-v2-activity:hover,
+  .map-v2-activity:active{ transform:none; }
 }
