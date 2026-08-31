@@ -8237,6 +8237,8 @@ body.bc-open #ahCommunityBtn{
         try { tg?.BackButton?.hide?.(); } catch (_) {}
 
         tg?.BackButton?.onClick?.(() => {
+          const mapV2IsActive = !!document.getElementById("mapBack")?.classList?.contains("is-map-v2-active");
+          if (mapV2IsActive && window.MapSectionsV2?.back?.()) return;
           if (window.AlphaNav?.back?.("telegram")) return;
           navGoHome({ source: "telegram" });
         });
@@ -11835,8 +11837,14 @@ let mapOpenFrame = null;
 let mapV2RendererActive = false;
 
 function isMapV2RolloutEnabled(){
+  try {
+    const requested = new URLSearchParams(window.location.search).get("map_v2");
+    if (requested === "0") return false;
+    if (requested === "1") return true;
+  } catch (_) {}
   if (window.__AH_MAP_V2__ === true) return true;
-  try { return new URLSearchParams(window.location.search).get("map_v2") === "1"; } catch (_) { return false; }
+  if (window.__AH_MAP_V2__ === false) return false;
+  return true;
 }
 
 function setMapRendererMode(){
@@ -13192,8 +13200,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-
 
 
 
