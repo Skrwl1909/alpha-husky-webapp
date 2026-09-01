@@ -1,0 +1,21 @@
+{
+  "name": "alpha-husky-tactical-ops",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:tactical-ops": "node tools/build_tactical_ops.mjs",
+    "verify:tactical-ops:combat": "node tools/verify_tactical_ops_combat_core_v2.mjs",
+    "verify:tactical-ops:foundation": "node tools/verify_tactical_ops_foundation.mjs",
+    "verify:tactical-ops:persistence": "node tools/verify_tactical_ops_foundation_persistence.mjs",
+    "verify:tactical-ops": "npm run verify:tactical-ops:combat && npm run verify:tactical-ops:foundation && npm run verify:tactical-ops:persistence"
+  },
+  "dependencies": {
+    "lucide-react": "0.510.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zustand": "5.0.0"
+  },
+  "devDependencies": {
+    "vite": "8.2.0"
+  }
+}
