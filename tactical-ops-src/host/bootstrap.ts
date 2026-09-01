@@ -6,8 +6,10 @@ import { setHost } from "./bridge";
 import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
 import { resolveTacticalLayout } from "../layout";
+import { VERSION } from "../version";
 
-export const VERSION = "tactical_ops.js v2.2.3-field-geometry";
+export { VERSION };
+
 const ROOT_ID = "tacticalOpsRoot";
 const STYLE_ID = "tacticalOpsStyles";
 const FONT_ID = "tacticalOpsFonts";
@@ -41,6 +43,8 @@ const M: Runtime = {
   resizeObserver: null,
   battleWatcher: null,
 };
+
+let progressionReady: Promise<void> = Promise.resolve();
 
 try {
   (window as unknown as { __AH_TACTICAL_OPS_VER__: string }).__AH_TACTICAL_OPS_VER__ = VERSION;
@@ -311,7 +315,12 @@ function pushHostNav(): void {
   }
 }
 
-export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }): typeof API {
+export function init(deps?: {
+  apiPost?: unknown;
+  tg?: unknown;
+  dbg?: boolean;
+  onboarding?: "session" | "off";
+}): typeof API {
   const t = deps && typeof deps === "object" ? deps : {};
   if (typeof t.apiPost === "function") M.apiPost = t.apiPost as Runtime["apiPost"];
   if (t.tg) M.tg = t.tg as Runtime["tg"];
@@ -324,11 +333,21 @@ export function init(deps?: { apiPost?: unknown; tg?: unknown; dbg?: boolean }):
   } catch {
     /* ignore */
   }
+  if (t.onboarding === "session") {
+    useBattleStore.getState().configureOnboarding({ enabled: true });
+    progressionReady = Promise.resolve();
+  } else if (t.onboarding === "off") {
+    useBattleStore.getState().configureOnboarding({ enabled: false });
+    progressionReady = Promise.resolve();
+  } else {
+    progressionReady = useBattleStore.getState().loadFoundationProgression();
+  }
   setHost({ requestClose: closeView, dbg: M.dbg });
   return API;
 }
 
 export async function open(): Promise<void> {
+  await progressionReady;
   const el = ensureRoot();
   setHost({ requestClose: closeView, dbg: M.dbg });
   M.isOpen = true;
