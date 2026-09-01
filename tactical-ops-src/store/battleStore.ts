@@ -6,8 +6,23 @@ import { skillNeedsTargetPick, validTargetIds } from "../combat/targeting";
 import { getSkill } from "../data/skills";
 import { sfx, setMuted as persistMute, isMuted } from "../audio";
 import { hydrateEquippedState, identityCache, resolvePlayerIdentity, type PlayerIdentity } from "../host/identity";
+import {
+  FoundationProgressionError,
+  type FoundationProgressionState,
+  continueFoundationRun,
+  createFoundationRequestId,
+  loadFoundationProgression,
+  startFoundationRun,
+} from "../host/foundationProgression";
+import { VERSION } from "../version";
+import {
+  DEFAULT_ONBOARDING_STAGE,
+  getOnboardingEncounter,
+  resolveDeploySpawns,
+  type OnboardingEncounterId,
+} from "../data/onboarding";
 
-export const TACTICAL_VERSION = "tactical_ops.js v2.2.1-acceptance-lock";
+export const TACTICAL_VERSION = VERSION;
 
 export interface FloatText {
   id: number;
@@ -29,6 +44,17 @@ interface UiBattle {
   muted: boolean;
   queue: string[];
   identity: PlayerIdentity;
+  onboardingEnabled: boolean;
+  onboardingStageId: OnboardingEncounterId;
+  onboardingCompleted: Partial<Record<OnboardingEncounterId, true>>;
+  lastVictoryKey: string | null;
+  currentRunKey: string | null;
+  progression: FoundationProgressionState | null;
+  progressionStatus: "idle" | "loading" | "ready" | "error";
+  progressionError: string | null;
+  progressionCommitPending: boolean;
+  continueRequestId: string | null;
+  foundationCompleted: boolean;
 }
 
 function wait(ms: number): Promise<void> {
@@ -86,10 +112,17 @@ interface Store extends UiBattle {
   dismissSector: () => void;
   toggleMute: () => void;
   refreshIdentity: () => void;
+  loadFoundationProgression: () => Promise<void>;
+  configureOnboarding: (opts: { enabled?: boolean; stageId?: string | null }) => void;
+  continueOnboarding: () => void;
 }
 
 function activeUnit(battle: BattleState): CombatUnit | undefined {
   return battle.units.find((u) => u.id === battle.activeId);
+}
+
+function stageFromProgression(state: FoundationProgressionState): OnboardingEncounterId {
+  return state.foundationStage === "completed" ? "full-broken-signal" : state.foundationStage;
 }
 
 export const useBattleStore = create<Store>((set, get) => {
@@ -214,6 +247,51 @@ export const useBattleStore = create<Store>((set, get) => {
     await continueLoop(g);
   };
 
+  const applyCanonicalProgression = (progression: FoundationProgressionState) => {
+    const stage = stageFromProgression(progression);
+    set({
+      progression,
+      progressionStatus: "ready",
+      progressionError: null,
+      progressionCommitPending: false,
+      onboardingEnabled: true,
+      onboardingStageId: stage,
+      foundationCompleted: progression.completed,
+    });
+  };
+
+  const beginBattle = (g: number, runKey: string) => {
+    const identity = identityCache(resolvePlayerIdentity());
+    const { onboardingEnabled, onboardingStageId } = get();
+    const spawns = resolveDeploySpawns(onboardingEnabled, onboardingStageId);
+    const started = startBattle(identity, spawns);
+    sfx("turn");
+    set({
+      screen: "battle",
+      identity,
+      battle: started.state,
+      queue: refreshQueue(started.state),
+      busy: true,
+      banner: null,
+      ticker: null,
+      floats: [],
+      attackingId: null,
+      impactId: null,
+      currentRunKey: runKey,
+      continueRequestId: null,
+    });
+    void (async () => {
+      await playEvents(started.events, g);
+      if (g !== runGen) return;
+      const actor = activeUnit(get().battle);
+      if (actor?.team === "enemy") {
+        await runEnemy(g);
+        return;
+      }
+      set({ busy: false, ticker: actor ? actor.name + "  ·  move or act" : null });
+    })();
+  };
+
   return {
     screen: "hub",
     battle: emptyBattle(),
@@ -227,7 +305,56 @@ export const useBattleStore = create<Store>((set, get) => {
     muted: false,
     queue: [],
     identity: resolvePlayerIdentity(),
+    onboardingEnabled: false,
+    onboardingStageId: DEFAULT_ONBOARDING_STAGE,
+    onboardingCompleted: {},
+    lastVictoryKey: null,
+    currentRunKey: null,
+    progression: null,
+    progressionStatus: "idle",
+    progressionError: null,
+    progressionCommitPending: false,
+    continueRequestId: null,
+    foundationCompleted: false,
 
+    configureOnboarding: (opts) => {
+      const prevEnabled = get().onboardingEnabled;
+      const nextEnabled = typeof opts.enabled === "boolean" ? opts.enabled : prevEnabled;
+      let nextStage = get().onboardingStageId;
+      let completed = get().onboardingCompleted;
+      let lastVictoryKey = get().lastVictoryKey;
+      let currentRunKey = get().currentRunKey;
+      if (opts.stageId != null && opts.stageId !== "") {
+        nextStage = getOnboardingEncounter(opts.stageId).id;
+      } else if (nextEnabled && !prevEnabled) {
+        nextStage = DEFAULT_ONBOARDING_STAGE;
+        completed = {};
+        lastVictoryKey = null;
+        currentRunKey = null;
+      }
+      set({
+        onboardingEnabled: nextEnabled,
+        onboardingStageId: nextStage,
+        onboardingCompleted: completed,
+        lastVictoryKey,
+        currentRunKey,
+      });
+    },
+    loadFoundationProgression: async () => {
+      set({ progressionStatus: "loading", progressionError: null });
+      try {
+        const progression = await loadFoundationProgression();
+        applyCanonicalProgression(progression);
+      } catch (error) {
+        const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical) applyCanonicalProgression(canonical);
+        set({
+          progressionStatus: canonical ? "ready" : "error",
+          progressionError: reason,
+        });
+      }
+    },
     refreshIdentity: () => {
       const identity = identityCache(resolvePlayerIdentity());
       set({ identity });
@@ -238,6 +365,8 @@ export const useBattleStore = create<Store>((set, get) => {
       });
     },
     openBrief: () => {
+      const current = get();
+      if (current.foundationCompleted || current.progressionStatus === "error") return;
       sfx("ui");
       set({ screen: "brief", identity: identityCache(resolvePlayerIdentity()) });
     },
@@ -257,8 +386,42 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     deploy: () => {
       const g = ++runGen;
+      const persisted = get();
+      if (persisted.onboardingEnabled && persisted.progression) {
+        if (persisted.foundationCompleted || persisted.progressionStatus !== "ready") return;
+        set({ busy: true, ticker: "Preparing Foundation run…", progressionError: null });
+        void (async () => {
+          try {
+            const progression = await startFoundationRun(
+              createFoundationRequestId("start"),
+              persisted.progression.revision,
+            );
+            if (g !== runGen) return;
+            applyCanonicalProgression(progression);
+            if (progression.completed || !progression.activeRunId) {
+              set({ screen: "hub", battle: emptyBattle(), busy: false, ticker: null });
+              return;
+            }
+            beginBattle(g, progression.activeRunId);
+          } catch (error) {
+            if (g !== runGen) return;
+            const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+            const canonical = error instanceof FoundationProgressionError ? error.state : null;
+            if (canonical) applyCanonicalProgression(canonical);
+            set({
+              screen: "brief",
+              busy: false,
+              ticker: null,
+              progressionError: reason,
+            });
+          }
+        })();
+        return;
+      }
       const identity = identityCache(resolvePlayerIdentity());
-      const started = startBattle(identity);
+      const { onboardingEnabled, onboardingStageId } = get();
+      const spawns = resolveDeploySpawns(onboardingEnabled, onboardingStageId);
+      const started = startBattle(identity, spawns);
       sfx("turn");
       set({
         screen: "battle",
@@ -271,6 +434,7 @@ export const useBattleStore = create<Store>((set, get) => {
         floats: [],
         attackingId: null,
         impactId: null,
+        currentRunKey: `${onboardingStageId}:${g}`,
       });
       void (async () => {
         await playEvents(started.events, g);
@@ -400,6 +564,108 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     replay: () => {
       get().deploy();
+    },
+    continueOnboarding: () => {
+      const s = get();
+      if (s.screen !== "results") return;
+      if (s.battle.outcome !== "victory") return;
+      if (!s.onboardingEnabled) {
+        get().backToHub();
+        return;
+      }
+      if (s.progression) {
+        if (s.progressionCommitPending || !s.currentRunKey) return;
+        const requestId = s.continueRequestId || createFoundationRequestId("continue");
+        set({
+          progressionCommitPending: true,
+          progressionError: null,
+          continueRequestId: requestId,
+        });
+        void (async () => {
+          try {
+            const progression = await continueFoundationRun(
+              requestId,
+              s.progression.revision,
+              s.currentRunKey as string,
+            );
+            applyCanonicalProgression(progression);
+            runGen++;
+            sfx("ui");
+            if (progression.completed) {
+              set({
+                screen: "hub",
+                battle: emptyBattle(),
+                banner: null,
+                ticker: null,
+                busy: false,
+                floats: [],
+                queue: [],
+                currentRunKey: null,
+                continueRequestId: null,
+              });
+              return;
+            }
+            set({
+              screen: "brief",
+              battle: emptyBattle(),
+              banner: null,
+              ticker: null,
+              busy: false,
+              floats: [],
+              queue: [],
+              currentRunKey: null,
+              continueRequestId: null,
+              identity: identityCache(resolvePlayerIdentity()),
+            });
+          } catch (error) {
+            const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+            const canonical = error instanceof FoundationProgressionError ? error.state : null;
+            if (canonical) {
+              applyCanonicalProgression(canonical);
+              if (canonical.completed) {
+                set({ screen: "hub", battle: emptyBattle(), currentRunKey: null, continueRequestId: null });
+              } else if (canonical.foundationStage !== s.onboardingStageId) {
+                set({ screen: "brief", battle: emptyBattle(), currentRunKey: null, continueRequestId: null });
+              }
+            }
+            set({
+              progressionCommitPending: false,
+              progressionError: reason,
+            });
+          }
+        })();
+        return;
+      }
+      const current = getOnboardingEncounter(s.onboardingStageId);
+      const key = s.currentRunKey;
+      if (key && s.lastVictoryKey !== key) {
+        const completed = { ...s.onboardingCompleted, [current.id]: true as const };
+        const nextId = current.next;
+        set({
+          onboardingCompleted: completed,
+          lastVictoryKey: key,
+          onboardingStageId: nextId ?? current.id,
+        });
+        if (!nextId) {
+          get().backToHub();
+          return;
+        }
+      } else if (!current.next) {
+        get().backToHub();
+        return;
+      }
+      runGen++;
+      sfx("ui");
+      set({
+        screen: "brief",
+        battle: emptyBattle(),
+        banner: null,
+        ticker: null,
+        busy: false,
+        floats: [],
+        queue: [],
+        identity: identityCache(resolvePlayerIdentity()),
+      });
     },
     dismissSector: () => {
       sfx("ui");
