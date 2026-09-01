@@ -3,7 +3,30 @@ import { ChevronRight, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
 import { loadMuted, setMuted, unlockAudio } from "../audio";
 import { OPERATION } from "../data/units";
+import { SKILLS } from "../data/skills";
 import { BattleScreen } from "./Battle";
+import type { UnitDef } from "../combat/types";
+import {
+  alliedBriefDefs,
+  enemyBriefRows,
+  resolveCurrentEncounter,
+} from "../data/onboarding";
+
+const ROLE_LABEL: Record<string, string> = {
+  alpha: "Melee pressure",
+  skirmisher: "Skirmisher",
+  ranged: "Skirmisher",
+  support: "Support",
+  hostile: "Melee",
+  leader: "Heavy",
+};
+
+function briefSubtitle(def: UnitDef, extra?: string): string {
+  const skills = def.skillIds.map((id) => SKILLS[id]?.name).filter(Boolean).join(" / ");
+  const role = ROLE_LABEL[def.role] || def.role;
+  const tail = extra || `MOVE ${def.move}`;
+  return `${role} · ${skills} · ${tail}`;
+}
 
 function Background({ dim = 0.55 }: { dim?: number }) {
   return (
@@ -16,6 +39,20 @@ function Background({ dim = 0.55 }: { dim?: number }) {
 
 function Hub() {
   const openBrief = useBattleStore((s) => s.openBrief);
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
+  const foundationCompleted = useBattleStore((s) => s.foundationCompleted);
+  const progressionStatus = useBattleStore((s) => s.progressionStatus);
+  const progressionError = useBattleStore((s) => s.progressionError);
+  const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
+  const name = foundationCompleted ? "Foundation complete" : onboardingEnabled ? encounter.operationName : OPERATION.name;
+  const objective = foundationCompleted
+    ? "Broken Signal training sequence completed."
+    : onboardingEnabled
+      ? encounter.objective
+      : progressionStatus === "error"
+        ? "Foundation progression could not be loaded. Reopen Tactical Ops to retry."
+        : OPERATION.objective;
   return (
     <div className="t-fill">
       <Background dim={0.35} />
@@ -27,12 +64,13 @@ function Hub() {
           <h2>Combat Core</h2>
           <div className="t-panel t-op-card">
             <span className="t-kicker">Operation</span>
-            <strong>{OPERATION.name}</strong>
-            <p>{OPERATION.objective}</p>
+            <strong>{name}</strong>
+            <p>{objective}</p>
           </div>
+          {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
           <div className="t-brief-actions">
-            <button type="button" className="t-btn t-btn-primary" onClick={openBrief}>
-              Mission Brief
+            <button type="button" className="t-btn t-btn-primary" onClick={openBrief} disabled={foundationCompleted || progressionStatus === "error"}>
+              {foundationCompleted ? "Foundation complete" : "Mission Brief"}
               <ChevronRight className="t-ico" />
             </button>
           </div>
@@ -45,74 +83,57 @@ function Hub() {
 function Brief() {
   const deploy = useBattleStore((s) => s.deploy);
   const backToHub = useBattleStore((s) => s.backToHub);
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
+  const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
+  const title = onboardingEnabled ? encounter.operationName : OPERATION.name;
+  const objective = onboardingEnabled ? encounter.objective : OPERATION.objective;
+  const allies = alliedBriefDefs(encounter.spawns);
+  const hostiles = enemyBriefRows(encounter.spawns);
+  const footnote = onboardingEnabled
+    ? encounter.teaching
+    : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
   return (
     <div className="t-fill">
       <Background dim={0.55} />
       <div className="t-brief">
         <div className="t-kicker">Tactical Ops</div>
         <h1 className="t-title" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", margin: "0.2rem 0 0.2rem" }}>
-          {OPERATION.name}
+          {title}
         </h1>
-        <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{OPERATION.objective}</p>
+        <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{objective}</p>
         <div className="t-brief-grid">
           <div className="t-panel t-brief-block">
             <h3>Allied squad</h3>
-            <div className="t-unit-row">
-              <img src="/images/tactical_ops/alpha-portrait.jpg" alt="" />
-              <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                  ALPHA
-                </div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
-                  Melee pressure · Strike / Rend / Howl · MOVE 3
-                </div>
-              </div>
-            </div>
-            <div className="t-unit-row">
-              <img src="/images/tactical_ops/ally02.png" alt="" style={{ objectPosition: "50% 12%" }} />
-              <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                  UNIT 02
-                </div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
-                  Ranged control · Shot / Burst / Suppress · MOVE 2
+            {allies.map((def) => (
+              <div className="t-unit-row" key={def.defId}>
+                <img src={def.portrait} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
+                <div>
+                  <div className="t-title" style={{ fontSize: "0.95rem" }}>
+                    {def.name}
+                  </div>
+                  <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div>
                 </div>
               </div>
-            </div>
-            <div className="t-unit-row">
-              <img src="/images/tactical_ops/ally03.png" alt="" style={{ objectPosition: "50% 12%" }} />
-              <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                  UNIT 03
-                </div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
-                  Support · Tap / Mend / Pack Support · MOVE 2
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="t-panel t-brief-block">
             <h3>Hostile force</h3>
-            <div className="t-unit-row">
-              <div className="t-unit-ph enemy" />
-              <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                  HOSTILE × 3
+            {hostiles.map(({ def, count }) => (
+              <div className="t-unit-row" key={def.defId}>
+                <div className="t-unit-ph enemy" />
+                <div>
+                  <div className="t-title" style={{ fontSize: "0.95rem" }}>
+                    {count > 1 ? `${def.name} × ${count}` : def.name}
+                  </div>
+                  <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
+                    {briefSubtitle(def, `${def.hp} HP`)}
+                  </div>
                 </div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Melee · Strike / Maul · 68 HP</div>
               </div>
-            </div>
-            <div className="t-unit-row">
-              <div className="t-unit-ph enemy" />
-              <div>
-                <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                  HOSTILE LEADER
-                </div>
-                <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>Heavy · Crush / Intimidate · 148 HP</div>
-              </div>
-            </div>
+            ))}
             <p style={{ color: "var(--t-faint)", fontSize: "0.78rem", margin: "0.8rem 0 0", lineHeight: 1.45 }}>
-              Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.
+              {footnote}
             </p>
           </div>
         </div>
@@ -163,14 +184,25 @@ function Results() {
   const results = useBattleStore((s) => s.battle.results);
   const replay = useBattleStore((s) => s.replay);
   const backToHub = useBattleStore((s) => s.backToHub);
+  const continueOnboarding = useBattleStore((s) => s.continueOnboarding);
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
+  const progressionCommitPending = useBattleStore((s) => s.progressionCommitPending);
+  const progressionError = useBattleStore((s) => s.progressionError);
+  const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   if (!results) return null;
+  const sessionVictory = onboardingEnabled && results.victory;
+  const hasNext = sessionVictory && encounter.next != null;
   return (
     <div className="t-fill">
       <Background dim={0.6} />
       <div className="t-overlay">
         <div className="t-modal t-panel">
-          <div className="t-kicker">Broken Signal</div>
-          <h2 className="t-title">Operation Complete</h2>
+          <div className="t-kicker">{sessionVictory ? encounter.operationName : "Broken Signal"}</div>
+          <h2 className="t-title">{sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
+          {sessionVictory ? (
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{encounter.resultsNote}</p>
+          ) : null}
           <dl className="t-stats">
             <div>
               <dt>Turns taken</dt>
@@ -182,7 +214,7 @@ function Results() {
             </div>
             <div>
               <dt>Squad standing</dt>
-              <dd>{results.squadStanding} / 3</dd>
+              <dd>{results.squadStanding} / {results.squadDeployed}</dd>
             </div>
             <div>
               <dt>Damage taken</dt>
@@ -190,13 +222,28 @@ function Results() {
             </div>
           </dl>
           <div className="t-brief-actions" style={{ justifyContent: "center" }}>
-            <button type="button" className="t-btn t-btn-primary" onClick={replay}>
-              Replay operation
-            </button>
-            <button type="button" className="t-btn" onClick={backToHub}>
-              Return to Tactical Ops
-            </button>
+            {sessionVictory ? (
+              <>
+                <button type="button" className="t-btn t-btn-primary" onClick={continueOnboarding} disabled={progressionCommitPending}>
+                  {progressionCommitPending ? "Saving…" : hasNext ? "Continue" : "Return to Tactical Ops"}
+                  {hasNext ? <ChevronRight className="t-ico" /> : null}
+                </button>
+                <button type="button" className="t-btn" onClick={replay}>
+                  Replay this drill
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="t-btn t-btn-primary" onClick={replay}>
+                  Replay operation
+                </button>
+                <button type="button" className="t-btn" onClick={backToHub}>
+                  Return to Tactical Ops
+                </button>
+              </>
+            )}
           </div>
+          {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
         </div>
       </div>
     </div>
