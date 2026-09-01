@@ -39,7 +39,7 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
     spd: 12,
     move: 2,
     sprite: `${IMG}/ally02.png`,
-    portrait: `${IMG}/ally02-portrait.png`,
+    portrait: `${IMG}/ally02.png`,
     skillIds: ["u02-shot", "u02-burst", "u02-suppress"],
   },
   "ally-03": {
@@ -53,7 +53,7 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
     spd: 10,
     move: 2,
     sprite: `${IMG}/ally03.png`,
-    portrait: `${IMG}/ally03-portrait.png`,
+    portrait: `${IMG}/ally03.png`,
     skillIds: ["u03-tap", "u03-mend", "u03-pack"],
   },
   hostile: {
