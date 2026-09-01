@@ -13,6 +13,22 @@ export interface FoundationProgressionState {
   activeRunId: string | null;
   lastCompletedRunId: string | null;
   updatedAt: number;
+  operations?: Record<string, OperationProgressionState>;
+  intel?: { routingTrace: boolean };
+}
+
+export type MissionProgressionStatus = "locked" | "available" | "cleared";
+
+export interface OperationMissionRun {
+  runId: string;
+  missionId: string;
+}
+
+export interface OperationProgressionState {
+  status: "active";
+  missions: Record<string, MissionProgressionStatus>;
+  activeMissionRun: OperationMissionRun | null;
+  lastCompletedMissionRunId: string | null;
 }
 
 type ApiPost = (path: string, body?: unknown) => Promise<unknown>;
@@ -46,7 +62,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   if (!["solo-1", "solo-2", "ally-koda", "full-broken-signal", "completed"].includes(stage)) return null;
   const revision = Number(value.revision);
   if (!Number.isInteger(revision) || revision < 0) return null;
-  return {
+  const state: FoundationProgressionState = {
     version: 1,
     foundationStage: stage as FoundationStage,
     completed: value.completed === true || stage === "completed",
@@ -56,6 +72,46 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       typeof value.lastCompletedRunId === "string" && value.lastCompletedRunId ? value.lastCompletedRunId : null,
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : 0,
   };
+  const operations = parseOperations(value.operations);
+  if (operations) state.operations = operations;
+  if (value.intel && typeof value.intel === "object") {
+    state.intel = { routingTrace: Boolean((value.intel as Record<string, unknown>).routingTrace) };
+  }
+  return state;
+}
+
+function parseOperations(raw: unknown): Record<string, OperationProgressionState> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const source = raw as Record<string, unknown>;
+  const parsed: Record<string, OperationProgressionState> = {};
+  for (const [operationId, candidate] of Object.entries(source)) {
+    if (!candidate || typeof candidate !== "object") return null;
+    const value = candidate as Record<string, unknown>;
+    if (value.status !== "active" || !value.missions || typeof value.missions !== "object") return null;
+    const missions: Record<string, MissionProgressionStatus> = {};
+    for (const [missionId, status] of Object.entries(value.missions as Record<string, unknown>)) {
+      if (status !== "locked" && status !== "available" && status !== "cleared") return null;
+      missions[missionId] = status;
+    }
+    const active = value.activeMissionRun;
+    let activeMissionRun: OperationMissionRun | null = null;
+    if (active != null) {
+      if (typeof active !== "object") return null;
+      const activeValue = active as Record<string, unknown>;
+      if (typeof activeValue.runId !== "string" || typeof activeValue.missionId !== "string") return null;
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId };
+    }
+    parsed[operationId] = {
+      status: "active",
+      missions,
+      activeMissionRun,
+      lastCompletedMissionRunId:
+        typeof value.lastCompletedMissionRunId === "string" && value.lastCompletedMissionRunId
+          ? value.lastCompletedMissionRunId
+          : null,
+    };
+  }
+  return parsed;
 }
 
 async function request(path: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
@@ -105,7 +161,31 @@ export async function continueFoundationRun(
   );
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue"): string {
+export async function startOperationMission(
+  requestId: string,
+  expectedRevision: number,
+  missionId: string,
+): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
+  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId });
+  const run = response.run;
+  if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
+  const value = run as Record<string, unknown>;
+  if (typeof value.runId !== "string" || typeof value.missionId !== "string") {
+    throw new FoundationProgressionError("invalid_progression_response");
+  }
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId } };
+}
+
+export async function continueOperationMission(
+  requestId: string,
+  expectedRevision: number,
+  runId: string,
+): Promise<{ state: FoundationProgressionState; firstClear: boolean }> {
+  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId });
+  return { state: responseState(response), firstClear: response.firstClear === true };
+}
+
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
