@@ -11,7 +11,7 @@ import {
   enemyBriefRows,
   resolveCurrentEncounter,
 } from "../data/onboarding";
-import { BROKEN_SIGNAL, getMissionDef } from "../data/operations";
+import { BROKEN_SIGNAL, getMissionDef, recoverSpawnsForSquad } from "../data/operations";
 
 const ROLE_LABEL: Record<string, string> = {
   alpha: "Melee pressure",
@@ -87,6 +87,9 @@ function WarTable() {
   const progressionError = useBattleStore((s) => s.progressionError);
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
+  const firstClearMessage = operation?.missions["broken-signal-recover"] === "cleared"
+    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER UNLOCKED"
+    : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
   return (
     <div className="t-fill">
       <Background dim={0.4} />
@@ -95,7 +98,7 @@ function WarTable() {
         <div className="t-kicker">War Table</div>
         <h1 className="t-title" style={{ margin: "0.2rem 0" }}>OPERATION 01 — {BROKEN_SIGNAL.name}</h1>
         <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>Choose the next tactical mission.</p>
-        {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>BREACH CLEARED · RECOVER SIGNAL UNLOCKED</p> : null}
+        {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>{firstClearMessage}</p> : null}
         <div className="t-brief-grid">
           {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
             const mission = getMissionDef(missionId);
@@ -111,7 +114,7 @@ function WarTable() {
                 <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
                 <div className="t-brief-actions" style={{ marginTop: "0.8rem" }}>
                   <button type="button" className="t-btn t-btn-primary" disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
-                    {status === "locked" ? "Locked" : mission.executable ? status === "cleared" ? "Replay BREACH" : "Mission Brief" : "Pass 2"}
+                    {status === "locked" ? "Locked" : status === "cleared" ? `Replay ${mission.name}` : "Mission Brief"}
                     {isPlayable ? <ChevronRight className="t-ico" /> : null}
                   </button>
                 </div>
@@ -131,9 +134,13 @@ function Brief() {
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const selectedMissionId = useBattleStore((s) => s.selectedMissionId);
+  const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
+  const selectRecoverTeammate = useBattleStore((s) => s.selectRecoverTeammate);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
-  const spawns = mission?.spawns || encounter.spawns;
+  const spawns = mission?.objectiveType === "RECOVER"
+    ? recoverSpawnsForSquad(selectedSquadIds) || recoverSpawnsForSquad(["alpha", "ally-02"])!
+    : mission?.spawns || encounter.spawns;
   const title = mission ? `${BROKEN_SIGNAL.name} — ${mission.name}` : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns);
@@ -152,6 +159,17 @@ function Brief() {
           {title}
         </h1>
         <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{objective}</p>
+        {mission?.objectiveType === "RECOVER" ? (
+          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
+            <div className="t-kicker">Squad selection · cap 2</div>
+            <h3 style={{ margin: "0.35rem 0" }}>ALPHA + one teammate</h3>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose one unlocked companion for this run.</p>
+            <div className="t-brief-actions">
+              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + KODA</button>
+              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW</button>
+            </div>
+          </div>
+        ) : null}
         <div className="t-brief-grid">
           <div className="t-panel t-brief-block">
             <h3>Allied squad</h3>
@@ -191,7 +209,7 @@ function Brief() {
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>
             Back
           </button>
-          <button type="button" className="t-btn t-btn-primary" onClick={deploy}>
+          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={mission?.objectiveType === "RECOVER" && selectedSquadIds.length !== 2}>
             Deploy
             <ChevronRight className="t-ico" />
           </button>
@@ -255,9 +273,9 @@ function Results() {
       <div className="t-overlay">
         <div className="t-modal t-panel">
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{operationVictory ? isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
+          <h2 className="t-title">{operationVictory ? mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : "Continue returns to the canonical War Table." : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL RECOVERED. Continue to confirm the clear and unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED. Continue returns to the canonical War Table." : isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : "Continue returns to the canonical War Table." : encounter.resultsNote}</p>
           ) : null}
           <dl className="t-stats">
             <div>
@@ -285,7 +303,7 @@ function Results() {
                   {operationVictory || hasNext ? <ChevronRight className="t-ico" /> : null}
                 </button>
                 <button type="button" className="t-btn" onClick={replay}>
-                  {operationVictory ? "Replay BREACH" : "Replay this drill"}
+                  {operationVictory ? `Replay ${mission?.name || "mission"}` : "Replay this drill"}
                 </button>
               </>
             ) : (

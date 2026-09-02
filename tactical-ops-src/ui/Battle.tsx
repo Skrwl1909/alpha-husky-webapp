@@ -3,6 +3,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
+import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { OPERATION } from "../data/units";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
@@ -16,7 +17,7 @@ function roleClass(unit: CombatUnit): string {
   if (unit.role === "leader") return "leader";
   if (unit.role === "hostile") return "hound";
   if (unit.role === "alpha") return "alpha";
-  if (unit.role === "ranged") return "skirmisher";
+  if (unit.role === "ranged" || unit.role === "skirmisher") return "skirmisher";
   if (unit.role === "support") return "support";
   return "";
 }
@@ -211,9 +212,12 @@ function SkillHud() {
   const battle = useBattleStore((s) => s.battle);
   const busy = useBattleStore((s) => s.busy);
   const selectSkill = useBattleStore((s) => s.selectSkill);
+  const selectRecover = useBattleStore((s) => s.selectRecover);
   const actor = battle.units.find((u) => u.id === battle.activeId);
   const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
   const skills = actor ? availableSkills(battle, actor) : [];
+  const recoveryMission = battle.objective?.type === "RECOVER" && !battle.objective.completed;
+  const recoverReady = canRecover(battle);
   return (
     <div className="t-actions">
       {([0, 1, 2] as const).map((i) => {
@@ -241,6 +245,12 @@ function SkillHud() {
           </button>
         );
       })}
+      {recoveryMission ? (
+        <button type="button" className={`t-act ${recoverReady ? "on" : "cooling"}`} disabled={!allyTurn || !recoverReady} onClick={() => { unlockAudio(); selectRecover(); }}>
+          <span className="row"><span className="slot">OBJ</span>RECOVER</span>
+          <small>{recoverReady ? "Complete objective · consumes action" : "Move adjacent to relay terminal"}</small>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -264,6 +274,7 @@ export function BattleScreen() {
   const skipTurn = useBattleStore((s) => s.skipTurn);
   const cancel = useBattleStore((s) => s.cancel);
   const toggleMute = useBattleStore((s) => s.toggleMute);
+  const objective = useBattleStore((s) => s.battle.objective);
 
   const moves = useMemo(
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
@@ -296,7 +307,7 @@ export function BattleScreen() {
         </div>
         <div className="t-obj">
           {OPERATION.name}
-          <small>Secure sector</small>
+          <small>{objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : "Secure sector"}</small>
         </div>
       </header>
       <div className="t-order-wrap">
@@ -321,6 +332,10 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
+          {objective?.type === "RECOVER" ? (() => {
+            const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
+            return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
+          })() : null}
           {Array.from({ length: 40 }, (_, i) => {
             const c = i % 8;
             const r = Math.floor(i / 8);
