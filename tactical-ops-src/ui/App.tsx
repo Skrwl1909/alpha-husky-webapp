@@ -98,7 +98,9 @@ function WarTable() {
         <div className="t-kicker">War Table</div>
         <h1 className="t-title" style={{ margin: "0.2rem 0" }}>OPERATION 01 — {BROKEN_SIGNAL.name}</h1>
         <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>Choose the next tactical mission.</p>
+        <p style={{ color: "var(--t-faint)", margin: "0 0 1rem", fontSize: "0.82rem" }}>Routing Trace: {progression?.intel?.routingTrace ? "ACQUIRED · reinforcement telegraphed" : "NOT ACQUIRED · replay BREACH to hunt the tagged carrier"}</p>
         {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>{firstClearMessage}</p> : null}
+        {operation?.status === "cleared" ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>BROKEN SIGNAL · CLEARED</p> : null}
         <div className="t-brief-grid">
           {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
             const mission = getMissionDef(missionId);
@@ -122,6 +124,8 @@ function WarTable() {
             );
           })}
         </div>
+        {progression?.archive?.brokenSignal ? <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}><div className="t-kicker">Archive</div><strong>BROKEN SIGNAL ARCHIVED</strong></div> : null}
+        {progression?.nextOperationSlot === "unassigned" ? <div className="t-panel t-brief-block" style={{ marginTop: "0.6rem", opacity: 0.7 }}><div className="t-kicker">Next Operation Slot</div><strong>EMPTY · UNASSIGNED</strong></div> : null}
         {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
       </div>
     </div>
@@ -148,8 +152,9 @@ function Brief() {
   const footnote = mission
     ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. Existing Combat Core rules apply.`
     : onboardingEnabled
-    ? encounter.teaching
-    : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
+      ? encounter.teaching
+      : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
+  const primaryObjective = mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
   return (
     <div className="t-fill">
       <Background dim={0.55} />
@@ -159,6 +164,9 @@ function Brief() {
           {title}
         </h1>
         <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{objective}</p>
+        {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
+        {mission?.objectiveType === "RECOVER" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : null}
+        {mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}
         {mission?.objectiveType === "RECOVER" ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">Squad selection · cap 2</div>
@@ -260,6 +268,7 @@ function Results() {
   const progression = useBattleStore((s) => s.progression);
   const progressionCommitPending = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
+  const routingTraceAcquired = useBattleStore((s) => s.battle.routingTraceAcquired);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
   if (!results) return null;
@@ -273,10 +282,12 @@ function Results() {
       <div className="t-overlay">
         <div className="t-modal t-panel">
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{operationVictory ? mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
+          <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DEFEATED" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL RECOVERED. Continue to confirm the clear and unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED. Continue returns to the canonical War Table." : isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : "Continue returns to the canonical War Table." : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "BOSS" ? isFirstClear ? "Continue to archive BROKEN SIGNAL and reveal the unassigned next Operation slot." : "Continue returns to the canonical War Table." : mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL RECOVERED. Continue to confirm the clear and unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED. Continue returns to the canonical War Table." : isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : "Continue returns to the canonical War Table." : encounter.resultsNote}</p>
           ) : null}
+          {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
+          {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED ON CONTINUE · NEXT SLOT AVAILABLE</p> : null}
           <dl className="t-stats">
             <div>
               <dt>Turns taken</dt>
