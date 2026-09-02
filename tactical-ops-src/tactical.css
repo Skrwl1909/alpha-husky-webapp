@@ -652,6 +652,39 @@
   height: 20px;
 }
 
+#tacticalOpsRoot .t-terminal {
+  z-index: 7;
+  position: absolute;
+  transform: translate(-50%, -90%);
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 2px solid #3ec6ff;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #173a49ee, #081016ee);
+  box-shadow: 0 0 0 5px #3ec6ff20, 0 0 22px #3ec6ff99;
+  color: #d7f7ff;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-terminal span {
+  font-family: var(--t-font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+#tacticalOpsRoot .t-terminal small {
+  color: #78e6ff;
+  font-size: 0.48rem;
+  letter-spacing: 0.11em;
+}
+
+#tacticalOpsRoot .t-terminal.complete {
+  border-color: #72e6a4;
+  box-shadow: 0 0 0 5px #72e6a420, 0 0 22px #72e6a499;
+}
+
 #tacticalOpsRoot .t-token {
   z-index: 5;
   pointer-events: none;
