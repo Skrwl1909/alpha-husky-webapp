@@ -23,7 +23,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { getMissionDef, recoverSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 
 export const TACTICAL_VERSION = VERSION;
@@ -82,6 +82,7 @@ function wait(ms: number): Promise<void> {
 let floatSeq = 1;
 let impactSeq = 1;
 let runGen = 0;
+let traceNoticeShown = false;
 
 function refreshQueue(battle: BattleState): string[] {
   return previewQueue(battle, 7);
@@ -103,6 +104,9 @@ function emptyBattle(): BattleState {
     results: null,
     seed: 1,
     objective: null,
+    reinforcement: null,
+    signalCarrierId: null,
+    routingTraceAcquired: false,
   };
 }
 
@@ -254,6 +258,14 @@ export const useBattleStore = create<Store>((set, get) => {
   };
 
   const afterPlayerAction = async (g: number) => {
+    if (get().battle.routingTraceAcquired && !traceNoticeShown) {
+      traceNoticeShown = true;
+      set({ banner: "ROUTING TRACE ACQUIRED", ticker: "Carrier signal recovered" });
+      sfx("status");
+      await wait(900);
+      if (g !== runGen) return;
+      set({ banner: null });
+    }
     if (await finishIfNeeded(g)) return;
     await continueLoop(g);
   };
@@ -271,11 +283,16 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null) => {
+    traceNoticeShown = false;
     const identity = identityCache(resolvePlayerIdentity());
     const { onboardingEnabled, onboardingStageId } = get();
     const spawns = spawnsOverride || resolveDeploySpawns(onboardingEnabled, onboardingStageId);
-    const started = startBattle(identity, spawns, recoverTerminal ? { type: "RECOVER", terminal: recoverTerminal, completed: false } : null);
+    const objective = recoverTerminal ? { type: "RECOVER" as const, terminal: recoverTerminal, completed: false }
+      : boss ? { type: "BOSS" as const, targetId: "leader" }
+      : null;
+    const reinforcement = boss ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null;
+    const started = startBattle(identity, spawns, objective, reinforcement, signalCarrierId);
     sfx("turn");
     set({
       screen: "battle",
@@ -418,7 +435,9 @@ export const useBattleStore = create<Store>((set, get) => {
         if (persisted.foundationCompleted) {
           const mission = getMissionDef(persisted.selectedMissionId);
           if (!mission || !mission.executable) return;
-          const squadIds = mission.objectiveType === "RECOVER" ? persisted.selectedSquadIds : undefined;
+          const squadIds = mission.objectiveType === "RECOVER"
+            ? persisted.selectedSquadIds
+            : mission.objectiveType === "BOSS" ? ["alpha", "ally-02", "ally-03"] : undefined;
           const spawns = mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(squadIds || []) : mission.spawns;
           if (!spawns) {
             set({ progressionError: "Choose ALPHA + KODA or ALPHA + SHADOW before deployment." });
@@ -439,7 +458,15 @@ export const useBattleStore = create<Store>((set, get) => {
                 ? recoverSpawnsForSquad(started.run.squadIds)
                 : spawns;
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
-              beginBattle(g, started.run.runId, canonicalSpawns, mission.objectiveType === "RECOVER" ? mission.terminal : undefined);
+              beginBattle(
+                g,
+                started.run.runId,
+                canonicalSpawns,
+                mission.objectiveType === "RECOVER" ? mission.terminal : undefined,
+                mission.objectiveType === "BOSS",
+                persisted.progression.intel?.routingTrace === true,
+                mission.missionId === "broken-signal-breach" ? "h1" : null,
+              );
             } catch (error) {
               if (g !== runGen) return;
               const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
@@ -658,7 +685,12 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
         void (async () => {
           try {
-            const committed = await continueOperationMission(requestId, s.progression.revision, s.currentRunKey as string);
+            const committed = await continueOperationMission(
+              requestId,
+              s.progression.revision,
+              s.currentRunKey as string,
+              s.selectedMissionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
+            );
             applyCanonicalProgression(committed.state);
             runGen++;
             sfx("ui");
