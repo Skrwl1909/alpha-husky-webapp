@@ -112,6 +112,7 @@ export interface BattleResults {
   squadDeployed: number;
   damageTaken: number;
   bonesRecovered: number;
+  objectiveComplete?: boolean;
 }
 
 export type BattleOutcome = "ongoing" | "victory" | "defeat";
@@ -139,6 +140,12 @@ export interface Cell {
   r: number;
 }
 
+export interface RecoverObjective {
+  type: "RECOVER";
+  terminal: Cell;
+  completed: boolean;
+}
+
 export interface BattleState {
   units: CombatUnit[];
   activeId: string | null;
@@ -152,6 +159,7 @@ export interface BattleState {
   damageTaken: number;
   hostilesEliminated: number;
   results: BattleResults | null;
+  objective: RecoverObjective | null;
   seed: number;
 }
 

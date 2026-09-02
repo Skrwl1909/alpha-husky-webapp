@@ -4,8 +4,9 @@ import type {
   BattleState,
   Cell,
   CombatUnit,
+  RecoverObjective,
 } from "./types";
-import { BROKEN_SIGNAL_SPAWNS, UNIT_DEFS } from "../data/units";
+import { BROKEN_SIGNAL_SPAWNS, UNIT_DEFS, type SpawnSpec } from "../data/units";
 import { resetStatusSeq, STATUS_LABEL } from "./effects";
 import { consumeMeter, pickReadyId, tickUntilReady } from "./initiative";
 import { canOccupy, reachableCells } from "./movement";
@@ -71,9 +72,13 @@ function spawnUnit(
   return base;
 }
 
-export function createBattle(identity?: PlayerIdentity | null): BattleState {
+export function createBattle(
+  identity?: PlayerIdentity | null,
+  spawns: SpawnSpec[] = BROKEN_SIGNAL_SPAWNS,
+  objective: RecoverObjective | null = null,
+): BattleState {
   resetStatusSeq();
-  const units = BROKEN_SIGNAL_SPAWNS.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity));
+  const units = spawns.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity));
   return {
     units,
     activeId: null,
@@ -87,20 +92,42 @@ export function createBattle(identity?: PlayerIdentity | null): BattleState {
     damageTaken: 0,
     hostilesEliminated: 0,
     results: null,
+    objective: objective ? { ...objective, terminal: { ...objective.terminal } } : null,
     seed: 1,
   };
+}
+
+function squadDeployedCount(units: CombatUnit[]): number {
+  return units.filter((u) => u.team === "ally").length;
 }
 
 export function evaluateOutcome(state: BattleState): BattleState {
   if (state.outcome !== "ongoing") return state;
   const allies = living(state.units, "ally");
   const enemies = living(state.units, "enemy");
-  if (enemies.length === 0) {
+  const squadDeployed = squadDeployedCount(state.units);
+  if (state.objective?.type === "RECOVER" && state.objective.completed) {
     const results: BattleResults = {
       victory: true,
       turns: state.round,
       hostilesEliminated: state.hostilesEliminated,
       squadStanding: allies.length,
+      squadDeployed,
+      damageTaken: state.damageTaken,
+      bonesRecovered: 0,
+      objectiveComplete: true,
+    };
+    return { ...state, outcome: "victory", results, mode: "locked", activeId: null, actionSkillId: null };
+  }
+  // RECOVER has no eliminate shortcut: an empty field only makes the terminal
+  // safer to reach. The interaction itself is the win condition.
+  if (enemies.length === 0 && state.objective?.type !== "RECOVER") {
+    const results: BattleResults = {
+      victory: true,
+      turns: state.round,
+      hostilesEliminated: state.hostilesEliminated,
+      squadStanding: allies.length,
+      squadDeployed,
       damageTaken: state.damageTaken,
       bonesRecovered: 18 + state.hostilesEliminated * 6,
     };
@@ -112,6 +139,7 @@ export function evaluateOutcome(state: BattleState): BattleState {
       turns: state.round,
       hostilesEliminated: state.hostilesEliminated,
       squadStanding: 0,
+      squadDeployed,
       damageTaken: state.damageTaken,
       bonesRecovered: 0,
     };
@@ -215,9 +243,42 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   return { state: started.state, events };
 }
 
-export function startBattle(identity?: PlayerIdentity | null): { state: BattleState; events: BattleEvent[] } {
-  const fresh = createBattle(identity);
+export function startBattle(
+  identity?: PlayerIdentity | null,
+  spawns: SpawnSpec[] = BROKEN_SIGNAL_SPAWNS,
+  objective: RecoverObjective | null = null,
+): { state: BattleState; events: BattleEvent[] } {
+  const fresh = createBattle(identity, spawns, objective);
   return advanceToNext(fresh);
+}
+
+export function canRecover(state: BattleState): boolean {
+  const actor = state.units.find((u) => u.id === state.activeId);
+  const objective = state.objective;
+  if (!objective || objective.type !== "RECOVER" || objective.completed || !actor || actor.team !== "ally" || actor.defeated || actor.hasActed) return false;
+  return Math.abs(actor.c - objective.terminal.c) + Math.abs(actor.r - objective.terminal.r) <= 1;
+}
+
+export function tryRecover(state: BattleState): { state: BattleState; events: BattleEvent[]; ok: boolean } {
+  if (!canRecover(state)) return { state, events: [], ok: false };
+  const actor = state.units.find((u) => u.id === state.activeId)!;
+  const units = state.units.map((u) => u.id === actor.id ? { ...u, hasActed: true } : u);
+  const completed: BattleState = {
+    ...state,
+    units,
+    objective: { ...state.objective!, completed: true },
+    actionSkillId: null,
+    mode: "locked",
+  };
+  const next = evaluateOutcome(completed);
+  return {
+    state: next,
+    ok: true,
+    events: [
+      { type: "status", unitId: actor.id, text: "SIGNAL RECOVERED", kind: "info" },
+      { type: "ticker", text: "OBJECTIVE COMPLETE · SIGNAL RECOVERED" },
+    ],
+  };
 }
 
 export function tryMove(state: BattleState, c: number, r: number): { state: BattleState; events: BattleEvent[]; ok: boolean } {
