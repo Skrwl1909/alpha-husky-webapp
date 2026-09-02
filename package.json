@@ -9,7 +9,8 @@
     "verify:tactical-ops:persistence": "node tools/verify_tactical_ops_foundation_persistence.mjs",
     "verify:tactical-ops:operation": "node tools/verify_tactical_ops_operation_breach.mjs",
     "verify:tactical-ops:recover": "node tools/verify_tactical_ops_operation_recover.mjs",
-    "verify:tactical-ops": "npm run verify:tactical-ops:combat && npm run verify:tactical-ops:foundation && npm run verify:tactical-ops:persistence && npm run verify:tactical-ops:operation && npm run verify:tactical-ops:recover"
+    "verify:tactical-ops:responsive": "node tools/verify_tactical_ops_responsive.mjs",
+    "verify:tactical-ops": "npm run verify:tactical-ops:combat && npm run verify:tactical-ops:foundation && npm run verify:tactical-ops:persistence && npm run verify:tactical-ops:operation && npm run verify:tactical-ops:recover && npm run verify:tactical-ops:responsive"
   },
   "dependencies": {
     "lucide-react": "0.510.0",
