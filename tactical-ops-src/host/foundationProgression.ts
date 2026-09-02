@@ -22,6 +22,7 @@ export type MissionProgressionStatus = "locked" | "available" | "cleared";
 export interface OperationMissionRun {
   runId: string;
   missionId: string;
+  squadIds: string[];
 }
 
 export interface OperationProgressionState {
@@ -99,7 +100,10 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
       if (typeof active !== "object") return null;
       const activeValue = active as Record<string, unknown>;
       if (typeof activeValue.runId !== "string" || typeof activeValue.missionId !== "string") return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId };
+      const squadIds = Array.isArray(activeValue.squadIds) && activeValue.squadIds.every((id) => typeof id === "string")
+        ? activeValue.squadIds as string[]
+        : [];
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds };
     }
     parsed[operationId] = {
       status: "active",
@@ -165,15 +169,19 @@ export async function startOperationMission(
   requestId: string,
   expectedRevision: number,
   missionId: string,
+  squadIds?: string[],
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
-  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId });
+  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
   if (typeof value.runId !== "string" || typeof value.missionId !== "string") {
     throw new FoundationProgressionError("invalid_progression_response");
   }
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId } };
+  const responseSquadIds = Array.isArray(value.squadIds) && value.squadIds.every((id) => typeof id === "string")
+    ? value.squadIds as string[]
+    : [];
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds } };
 }
 
 export async function continueOperationMission(
@@ -181,7 +189,7 @@ export async function continueOperationMission(
   expectedRevision: number,
   runId: string,
 ): Promise<{ state: FoundationProgressionState; firstClear: boolean }> {
-  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId });
+  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: true });
   return { state: responseState(response), firstClear: response.firstClear === true };
 }
 
