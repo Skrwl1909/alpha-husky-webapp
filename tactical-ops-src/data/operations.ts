@@ -1,4 +1,5 @@
 import type { SpawnSpec } from "./units";
+import type { Cell } from "../combat/types";
 
 export type MissionObjectiveType = "ELIMINATE" | "RECOVER" | "BOSS";
 export type MissionStatus = "locked" | "available" | "cleared";
@@ -13,6 +14,7 @@ export interface MissionDef {
   resultsCopy: string;
   executable: boolean;
   spawns?: SpawnSpec[];
+  terminal?: Cell;
 }
 
 export interface TacticalOperationDef {
@@ -29,6 +31,23 @@ export const BROKEN_SIGNAL_BREACH_SPAWNS: SpawnSpec[] = [
   { defId: "hostile", id: "h2", c: 6, r: 3 },
   { defId: "hostile", id: "h3", c: 7, r: 0 },
 ];
+
+export const BROKEN_SIGNAL_RECOVER_SPAWNS: SpawnSpec[] = [
+  { defId: "alpha", id: "alpha", c: 0, r: 2 },
+  { defId: "hostile", id: "h1", c: 5, r: 1 },
+  { defId: "hostile", id: "h2", c: 6, r: 3 },
+];
+
+export const RECOVER_TERMINAL: Cell = { c: 6, r: 2 };
+
+export function recoverSpawnsForSquad(squadIds: string[]): SpawnSpec[] | null {
+  if (squadIds.length !== 2 || squadIds[0] !== "alpha" || !["ally-02", "ally-03"].includes(squadIds[1])) return null;
+  return [
+    { defId: "alpha", id: "alpha", c: 0, r: 2 },
+    { defId: squadIds[1], id: squadIds[1], c: 1, r: squadIds[1] === "ally-02" ? 0 : 4 },
+    ...BROKEN_SIGNAL_RECOVER_SPAWNS.filter((spawn) => spawn.defId === "hostile"),
+  ];
+}
 
 export const BROKEN_SIGNAL: TacticalOperationDef = {
   operationId: "broken-signal",
@@ -54,9 +73,10 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
     name: "RECOVER SIGNAL",
     objectiveType: "RECOVER",
     squadCap: 2,
-    briefCopy: "Recover the signal source. Objective execution arrives in Pass 2.",
-    resultsCopy: "Signal recovery pending.",
-    executable: false,
+    briefCopy: "Reach the relay terminal and recover the signal before the HOUND MK-2 patrol can stop you.",
+    resultsCopy: "OBJECTIVE COMPLETE · SIGNAL RECOVERED.",
+    executable: true,
+    terminal: RECOVER_TERMINAL,
   },
   "broken-signal-commander": {
     missionId: "broken-signal-commander",
