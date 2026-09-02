@@ -60,6 +60,7 @@ function Token({
   targeting,
   attacking,
   inspecting,
+  signalCarrier,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -67,6 +68,7 @@ function Token({
   targeting: boolean;
   attacking: boolean;
   inspecting: boolean;
+  signalCarrier: boolean;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
@@ -82,6 +84,8 @@ function Token({
     targeting && !validTarget && !selected ? "subdued" : "",
     targeting && validTarget ? "targetable" : "",
     attacking ? "attacking" : "",
+    signalCarrier ? "trace-carrier" : "",
+    unit.role === "leader" ? "boss-target" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -92,6 +96,8 @@ function Token({
       style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0) }}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
+      {signalCarrier && !unit.defeated ? <span className="t-objective-badge trace">TRACE TARGET</span> : null}
+      {unit.role === "leader" && !unit.defeated ? <span className="t-objective-badge boss">BOSS</span> : null}
       <img className="body" src={src} alt="" draggable={false} />
       <button
         type="button"
@@ -126,6 +132,7 @@ function Token({
               ))}
             </div>
           ) : null}
+          {signalCarrier && !unit.defeated ? <div className="t-chips"><span className="t-chip buff">TRACE</span></div> : null}
         </div>
       )}
     </div>
@@ -275,6 +282,8 @@ export function BattleScreen() {
   const cancel = useBattleStore((s) => s.cancel);
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
+  const reinforcement = useBattleStore((s) => s.battle.reinforcement);
+  const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
 
   const moves = useMemo(
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
@@ -307,13 +316,14 @@ export function BattleScreen() {
         </div>
         <div className="t-obj">
           {OPERATION.name}
-          <small>{objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : "Secure sector"}</small>
+          <small>{objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : objective?.type === "BOSS" ? "DEFEAT SIGNAL COMMANDER" : "Secure sector"}</small>
         </div>
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />
       </div>
       {ticker ? <div className="t-ticker">{ticker}</div> : null}
+      {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker" style={{ top: "4.8rem", color: "var(--t-enemy)" }}>ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
         <div
           className="t-field"
@@ -335,6 +345,10 @@ export function BattleScreen() {
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
             return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
+          })() : null}
+          {reinforcement?.telegraphed && !reinforcement.spawned ? (() => {
+            const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
+            return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><span>INBOUND</span><small>HOUND</small></div>;
           })() : null}
           {Array.from({ length: 40 }, (_, i) => {
             const c = i % 8;
@@ -369,6 +383,7 @@ export function BattleScreen() {
                 targeting={mode === "targeting"}
                 attacking={u.id === attackingId}
                 inspecting={u.id === inspectId}
+                signalCarrier={u.id === signalCarrierId}
               />
             ))}
           {floats.map((f) => {

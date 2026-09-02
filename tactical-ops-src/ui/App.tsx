@@ -155,6 +155,8 @@ function Brief() {
       ? encounter.teaching
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
   const primaryObjective = mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
+  const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "KODA JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
+  const missionIntel = mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   return (
     <div className="t-fill">
       <Background dim={0.55} />
@@ -167,14 +169,16 @@ function Brief() {
         {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
         {mission?.objectiveType === "RECOVER" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : null}
         {mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}
+        {mission ? <div className="t-mission-strip"><span>{mission.objectiveType}</span><span>SQUAD {mission.squadCap}</span><span>{missionIntel}</span></div> : null}
+        {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
         {mission?.objectiveType === "RECOVER" ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">Squad selection · cap 2</div>
             <h3 style={{ margin: "0.35rem 0" }}>ALPHA + one teammate</h3>
             <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose one unlocked companion for this run.</p>
             <div className="t-brief-actions">
-              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + KODA</button>
-              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW</button>
+              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + KODA<br /><small>AGGRESSIVE · MOBILITY</small></button>
+              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
             </div>
           </div>
         ) : null}
