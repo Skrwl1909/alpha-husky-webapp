@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
-import { a1Range, planAi, applyAi, previewQueue, reachableCells, startBattle, tryMove, trySkill, trySkip, advanceToNext } from "../combat";
+import { a1Range, planAi, applyAi, previewQueue, reachableCells, startBattle, tryMove, trySkill, trySkip, tryRecover, advanceToNext } from "../combat";
 import { availableSkills } from "../combat/skills";
 import { skillNeedsTargetPick, validTargetIds } from "../combat/targeting";
 import { getSkill } from "../data/skills";
@@ -23,7 +23,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { getMissionDef, type MissionStatus } from "../data/operations";
+import { getMissionDef, recoverSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 
 export const TACTICAL_VERSION = VERSION;
@@ -61,6 +61,7 @@ interface UiBattle {
   foundationCompleted: boolean;
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
+  selectedSquadIds: string[];
 }
 
 function wait(ms: number): Promise<void> {
@@ -101,6 +102,7 @@ function emptyBattle(): BattleState {
     hostilesEliminated: 0,
     results: null,
     seed: 1,
+    objective: null,
   };
 }
 
@@ -113,6 +115,8 @@ interface Store extends UiBattle {
   selectCell: (c: number, r: number) => void;
   selectSkill: (skillId: string) => void;
   selectTarget: (id: string) => void;
+  selectRecover: () => void;
+  selectRecoverTeammate: (unitId: "ally-02" | "ally-03") => void;
   skipTurn: () => void;
   cancel: () => void;
   replay: () => void;
@@ -267,11 +271,11 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[]) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }) => {
     const identity = identityCache(resolvePlayerIdentity());
     const { onboardingEnabled, onboardingStageId } = get();
     const spawns = spawnsOverride || resolveDeploySpawns(onboardingEnabled, onboardingStageId);
-    const started = startBattle(identity, spawns);
+    const started = startBattle(identity, spawns, recoverTerminal ? { type: "RECOVER", terminal: recoverTerminal, completed: false } : null);
     sfx("turn");
     set({
       screen: "battle",
@@ -325,6 +329,7 @@ export const useBattleStore = create<Store>((set, get) => {
     foundationCompleted: false,
     selectedMissionId: null,
     missionFirstClear: null,
+    selectedSquadIds: [],
 
     configureOnboarding: (opts) => {
       const prevEnabled = get().onboardingEnabled;
@@ -385,12 +390,8 @@ export const useBattleStore = create<Store>((set, get) => {
       const mission = getMissionDef(missionId);
       const status = current.progression?.operations?.["broken-signal"]?.missions[missionId] as MissionStatus | undefined;
       if (!current.foundationCompleted || !mission || !status || status === "locked") return;
-      if (!mission.executable) {
-        set({ progressionError: "Mission executor arrives in Pass 2." });
-        return;
-      }
       sfx("ui");
-      set({ screen: "brief", selectedMissionId: missionId, missionFirstClear: null, progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      set({ screen: "brief", selectedMissionId: missionId, missionFirstClear: null, selectedSquadIds: [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       runGen++;
@@ -406,6 +407,7 @@ export const useBattleStore = create<Store>((set, get) => {
         identity: identityCache(resolvePlayerIdentity()),
         selectedMissionId: null,
         missionFirstClear: null,
+        selectedSquadIds: [],
       });
     },
     deploy: () => {
@@ -415,7 +417,13 @@ export const useBattleStore = create<Store>((set, get) => {
         if (persisted.progressionStatus !== "ready") return;
         if (persisted.foundationCompleted) {
           const mission = getMissionDef(persisted.selectedMissionId);
-          if (!mission || !mission.executable || !mission.spawns) return;
+          if (!mission || !mission.executable) return;
+          const squadIds = mission.objectiveType === "RECOVER" ? persisted.selectedSquadIds : undefined;
+          const spawns = mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(squadIds || []) : mission.spawns;
+          if (!spawns) {
+            set({ progressionError: "Choose ALPHA + KODA or ALPHA + SHADOW before deployment." });
+            return;
+          }
           set({ busy: true, ticker: "Preparing operation run…", progressionError: null });
           void (async () => {
             try {
@@ -423,10 +431,15 @@ export const useBattleStore = create<Store>((set, get) => {
                 createFoundationRequestId("mission-start"),
                 persisted.progression.revision,
                 mission.missionId,
+                squadIds,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              beginBattle(g, started.run.runId, mission.spawns);
+              const canonicalSpawns = mission.objectiveType === "RECOVER"
+                ? recoverSpawnsForSquad(started.run.squadIds)
+                : spawns;
+              if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
+              beginBattle(g, started.run.runId, canonicalSpawns, mission.objectiveType === "RECOVER" ? mission.terminal : undefined);
             } catch (error) {
               if (g !== runGen) return;
               const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
@@ -590,6 +603,28 @@ export const useBattleStore = create<Store>((set, get) => {
         await afterPlayerAction(g);
       })();
     },
+    selectRecover: () => {
+      const { battle, busy } = get();
+      if (busy) return;
+      const actor = activeUnit(battle);
+      if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
+      const res = tryRecover(battle);
+      if (!res.ok) {
+        set({ ticker: `${actor.name}  ·  move adjacent to the relay terminal` });
+        return;
+      }
+      const g = ++runGen;
+      set({ busy: true, battle: res.state, queue: refreshQueue(res.state), ticker: "SIGNAL RECOVERED" });
+      void (async () => {
+        await playEvents(res.events, g);
+        await afterPlayerAction(g);
+      })();
+    },
+    selectRecoverTeammate: (unitId) => {
+      const current = get();
+      if (current.selectedMissionId !== "broken-signal-recover") return;
+      set({ selectedSquadIds: ["alpha", unitId], progressionError: null });
+    },
     skipTurn: () => {
       const { battle, busy } = get();
       if (busy) return;
@@ -639,6 +674,7 @@ export const useBattleStore = create<Store>((set, get) => {
               continueRequestId: null,
               missionFirstClear: committed.firstClear,
               selectedMissionId: null,
+              selectedSquadIds: [],
             });
           } catch (error) {
             const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
