@@ -108,16 +108,17 @@ function WarTable() {
             if (missionId === "broken-signal-commander") return null;
             const status = operation?.missions[missionId] || "locked";
             const isPlayable = mission.executable && (status === "available" || status === "cleared");
+            const recoverNext = operation?.missions["broken-signal-recover"] === "available" && missionId === "broken-signal-recover";
             const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
             return (
-              <div className="t-panel t-brief-block" key={missionId} style={{ opacity: status === "locked" ? 0.52 : 1 }}>
+              <div className="t-panel t-brief-block" key={missionId} style={{ opacity: status === "locked" ? 0.52 : recoverNext ? 1 : 0.72 }}>
                 <div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
                 <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
                 <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
                 <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
                 <div className="t-brief-actions" style={{ marginTop: "0.8rem" }}>
-                  <button type="button" className="t-btn t-btn-primary" disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
-                    {status === "locked" ? "Locked" : status === "cleared" ? `Replay ${mission.name}` : "Mission Brief"}
+                  <button type="button" className={recoverNext ? "t-btn t-btn-primary" : "t-btn"} disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
+                    {status === "locked" ? "Locked" : status === "cleared" ? "REPLAY" : recoverNext ? "RECOVER" : "Mission Brief"}
                     {isPlayable ? <ChevronRight className="t-ico" /> : null}
                   </button>
                 </div>
@@ -289,7 +290,7 @@ function Results() {
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
           <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DEFEATED" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL COMMANDER is a future lead." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : null : null : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL COMMANDER is a future lead." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
           {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED ON CONTINUE · NEXT SLOT AVAILABLE</p> : null}
