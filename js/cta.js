@@ -245,6 +245,14 @@
       go: "Start mission",
       stakes: "Stay idle now and you enter the map underpowered and late.",
     },
+    tactical_breach: {
+      context: "Tactical Ops",
+      now: "Trusted route carried the wrong signal.",
+      why: "",
+      reward: "",
+      go: "Respond to the breach",
+      stakes: "",
+    },
     equip_item: {
       context: "Progression",
       now: "Equip your best item",
@@ -358,10 +366,11 @@
 
     const context = resolveGuideValue(play.context, primary) || defaultContextForPrimary(primary);
     const now = resolveGuideValue(play.now, primary) || defaultNowForPrimary(primary);
-    const why = resolveGuideValue(play.why, primary) || defaultWhyForPrimary(primary);
-    const reward = resolveGuideValue(play.reward, primary) || defaultRewardForPrimary(primary);
+    const lockedBrief = key === "tactical_breach";
+    const why = lockedBrief ? resolveGuideValue(play.why, primary) : (resolveGuideValue(play.why, primary) || defaultWhyForPrimary(primary));
+    const reward = lockedBrief ? "" : (resolveGuideValue(play.reward, primary) || defaultRewardForPrimary(primary));
     const go = resolveGuideValue(play.go, primary) || defaultGoForPrimary(primary);
-    const stakes = resolveGuideValue(play.stakes, primary) || defaultStakesForPrimary(primary);
+    const stakes = lockedBrief ? "" : (resolveGuideValue(play.stakes, primary) || defaultStakesForPrimary(primary));
 
     return { context, now, why, reward, go, stakes };
   }
@@ -773,6 +782,9 @@
       const action = asText(target.action).toLowerCase();
       return action ? { type, action } : null;
     }
+    if (type === "tactical_breach") {
+      return { type: "tactical_breach" };
+    }
 
     return null;
   }
@@ -785,6 +797,7 @@
     if (key === "fortress_ready") return "READY";
     if (key === "mission_ready") return "READY";
     if (key === "contracts_claim_ready") return "READY";
+    if (key === "tactical_breach") return "BREACH";
     if (key === "choose_faction" || key === "first_mission" || key === "equip_item" || key === "first_map_action" || key === "contracts_push") return "GUIDE";
     if (key === "node_contested" || key === "node_hot") return "HOT";
 
@@ -1094,14 +1107,77 @@
     log("skip cta/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - Number(STATE.lastLoadAt || 0)) });
   }
 
+  function breachMissionStatus(raw) {
+    const data = unwrapPayload(raw);
+    const ops = data && data.operations && typeof data.operations === "object" ? data.operations : null;
+    const missions = ops && ops["broken-signal"] && ops["broken-signal"].missions;
+    if (!missions || typeof missions !== "object") return "unknown";
+    const status = missions["broken-signal-breach"];
+    if (status === "available" || status === "cleared" || status === "locked") return status;
+    return "unknown";
+  }
+
+  async function readBreachOpening() {
+    const apiPost = getApiPost();
+    if (!apiPost) return "unknown";
+    try {
+      const raw = await apiPost("/webapp/tactical-foundation/state", {});
+      return breachMissionStatus(raw);
+    } catch (err) {
+      warn("tactical-foundation/state failed", err);
+      return "unknown";
+    }
+  }
+
+  function breachPrimary() {
+    return {
+      kind: "tactical_breach",
+      title: "Trusted route carried the wrong signal.",
+      subtitle: "",
+      badge: "BREACH",
+      target: { type: "tactical_breach" },
+      meta: {},
+      priority: 100,
+      expiresInSec: 0,
+    };
+  }
+
+  async function applyBreachOpening(data) {
+    const safe = data && typeof data === "object" ? data : { primary: null, highlights: [] };
+    const status = await readBreachOpening();
+    if (status !== "available") return safe;
+    safe.primary = breachPrimary();
+    return safe;
+  }
+
+  async function openTacticalBreach() {
+    const ensure = window.ensureTacticalOpsLoaded;
+    try {
+      if (typeof ensure === "function") {
+        await ensure(getApiPost(), STATE.tg, STATE.dbg);
+      }
+    } catch (err) {
+      warn("ensureTacticalOpsLoaded failed", err);
+      return false;
+    }
+    if (typeof window.TacticalOps?.open !== "function") {
+      warn("TacticalOps.open missing");
+      return false;
+    }
+    await window.TacticalOps.open("broken-signal-breach");
+    return true;
+  }
+
   async function load(options = {}) {
     const { force = false, reason = "auto" } = options || {};
     if (!mount()) return null;
 
     if (!force && STATE.lastData && isFreshEnough()) {
       logFreshSkip(reason);
-      render(STATE.lastData);
-      return STATE.lastData;
+      const next = await applyBreachOpening({ ...STATE.lastData, highlights: STATE.lastData.highlights || [] });
+      STATE.lastData = next;
+      render(next);
+      return next;
     }
 
     const apiPost = getApiPost();
@@ -1113,7 +1189,7 @@
 
     try {
       const raw = await apiPost("/webapp/cta/state", {});
-      const data = normalize(raw);
+      const data = await applyBreachOpening(normalize(raw));
       STATE.lastData = data;
       STATE.lastLoadAt = Date.now();
       notifyStateSubscribers("state_load");
@@ -1410,6 +1486,9 @@
 
       case "open_action":
         return await openAction(safeTarget.action);
+
+      case "tactical_breach":
+        return await openTacticalBreach();
 
       default:
         warn("unknown target type", safeTarget);
