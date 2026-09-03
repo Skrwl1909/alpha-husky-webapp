@@ -346,8 +346,11 @@ export function init(deps?: {
   return API;
 }
 
-export async function open(): Promise<void> {
+export async function open(missionId?: string): Promise<void> {
   await progressionReady;
+  if (typeof missionId === "string" && missionId) {
+    useBattleStore.getState().openOperationBrief(missionId);
+  }
   const el = ensureRoot();
   setHost({ requestClose: closeView, dbg: M.dbg });
   M.isOpen = true;
