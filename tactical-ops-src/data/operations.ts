@@ -40,6 +40,12 @@ export const BROKEN_SIGNAL_RECOVER_SPAWNS: SpawnSpec[] = [
 
 export const RECOVER_TERMINAL: Cell = { c: 6, r: 2 };
 
+export const COMMANDER_REINFORCEMENT = {
+  spawn: { defId: "hostile", id: "commander-reinforcement", c: 7, r: 4 },
+  triggerRound: 2,
+} as const;
+
+
 export function recoverSpawnsForSquad(squadIds: string[]): SpawnSpec[] | null {
   if (squadIds.length !== 2 || squadIds[0] !== "alpha" || !["ally-02", "ally-03"].includes(squadIds[1])) return null;
   return [
