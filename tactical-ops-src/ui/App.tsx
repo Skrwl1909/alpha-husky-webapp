@@ -88,7 +88,7 @@ function WarTable() {
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
   const firstClearMessage = operation?.missions["broken-signal-recover"] === "cleared"
-    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER UNLOCKED"
+    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER is a future lead."
     : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
   return (
     <div className="t-fill">
@@ -105,6 +105,7 @@ function WarTable() {
           {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
             const mission = getMissionDef(missionId);
             if (!mission) return null;
+            if (missionId === "broken-signal-commander") return null;
             const status = operation?.missions[missionId] || "locked";
             const isPlayable = mission.executable && (status === "available" || status === "cleared");
             const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
@@ -288,7 +289,7 @@ function Results() {
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
           <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DEFEATED" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "BOSS" ? isFirstClear ? "Continue to archive BROKEN SIGNAL and reveal the unassigned next Operation slot." : "Continue returns to the canonical War Table." : mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL RECOVERED. Continue to confirm the clear and unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED. Continue returns to the canonical War Table." : isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : "Continue returns to the canonical War Table." : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL COMMANDER is a future lead." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "Continue to confirm the clear and unlock RECOVER SIGNAL." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
           {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED ON CONTINUE · NEXT SLOT AVAILABLE</p> : null}
@@ -318,7 +319,7 @@ function Results() {
                   {operationVictory || hasNext ? <ChevronRight className="t-ico" /> : null}
                 </button>
                 <button type="button" className="t-btn" onClick={replay}>
-                  {operationVictory ? `Replay ${mission?.name || "mission"}` : "Replay this drill"}
+                  {operationVictory ? "REPLAY" : "Replay this drill"}
                 </button>
               </>
             ) : (
