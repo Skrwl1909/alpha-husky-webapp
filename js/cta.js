@@ -253,6 +253,14 @@
       go: "Respond to the breach",
       stakes: "",
     },
+    tactical_recover_replay: {
+      context: "Tactical Ops",
+      now: "RECOVER SIGNAL",
+      why: "",
+      reward: "",
+      go: "REPLAY",
+      stakes: "",
+    },
     equip_item: {
       context: "Progression",
       now: "Equip your best item",
@@ -366,7 +374,7 @@
 
     const context = resolveGuideValue(play.context, primary) || defaultContextForPrimary(primary);
     const now = resolveGuideValue(play.now, primary) || defaultNowForPrimary(primary);
-    const lockedBrief = key === "tactical_breach";
+    const lockedBrief = key === "tactical_breach" || key === "tactical_recover_replay";
     const why = lockedBrief ? resolveGuideValue(play.why, primary) : (resolveGuideValue(play.why, primary) || defaultWhyForPrimary(primary));
     const reward = lockedBrief ? "" : (resolveGuideValue(play.reward, primary) || defaultRewardForPrimary(primary));
     const go = resolveGuideValue(play.go, primary) || defaultGoForPrimary(primary);
@@ -785,6 +793,9 @@
     if (type === "tactical_breach") {
       return { type: "tactical_breach" };
     }
+    if (type === "tactical_recover_replay") {
+      return { type: "tactical_recover_replay" };
+    }
 
     return null;
   }
@@ -798,6 +809,7 @@
     if (key === "mission_ready") return "READY";
     if (key === "contracts_claim_ready") return "READY";
     if (key === "tactical_breach") return "BREACH";
+    if (key === "tactical_recover_replay") return "REPLAY";
     if (key === "choose_faction" || key === "first_mission" || key === "equip_item" || key === "first_map_action" || key === "contracts_push") return "GUIDE";
     if (key === "node_contested" || key === "node_hot") return "HOT";
 
@@ -1107,25 +1119,28 @@
     log("skip cta/state; fresh cache", { reason, ageMs: Math.max(0, Date.now() - Number(STATE.lastLoadAt || 0)) });
   }
 
-  function breachMissionStatus(raw) {
-    const data = unwrapPayload(raw);
-    const ops = data && data.operations && typeof data.operations === "object" ? data.operations : null;
-    const missions = ops && ops["broken-signal"] && ops["broken-signal"].missions;
-    if (!missions || typeof missions !== "object") return "unknown";
-    const status = missions["broken-signal-breach"];
+  function missionStatusOf(missions, missionId) {
+    const status = missions && missions[missionId];
     if (status === "available" || status === "cleared" || status === "locked") return status;
     return "unknown";
   }
 
-  async function readBreachOpening() {
+  async function readBrokenSignalMissions() {
     const apiPost = getApiPost();
-    if (!apiPost) return "unknown";
+    if (!apiPost) return { breach: "unknown", recover: "unknown" };
     try {
       const raw = await apiPost("/webapp/tactical-foundation/state", {});
-      return breachMissionStatus(raw);
+      const data = unwrapPayload(raw);
+      const ops = data && data.operations && typeof data.operations === "object" ? data.operations : null;
+      const missions = ops && ops["broken-signal"] && ops["broken-signal"].missions;
+      if (!missions || typeof missions !== "object") return { breach: "unknown", recover: "unknown" };
+      return {
+        breach: missionStatusOf(missions, "broken-signal-breach"),
+        recover: missionStatusOf(missions, "broken-signal-recover"),
+      };
     } catch (err) {
       warn("tactical-foundation/state failed", err);
-      return "unknown";
+      return { breach: "unknown", recover: "unknown" };
     }
   }
 
@@ -1142,15 +1157,34 @@
     };
   }
 
-  async function applyBreachOpening(data) {
+  function recoverReplayPrimary() {
+    return {
+      kind: "tactical_recover_replay",
+      title: "RECOVER SIGNAL",
+      subtitle: "",
+      badge: "REPLAY",
+      target: { type: "tactical_recover_replay" },
+      meta: {},
+      priority: 100,
+      expiresInSec: 0,
+    };
+  }
+
+  async function applyCampaignOpening(data) {
     const safe = data && typeof data === "object" ? data : { primary: null, highlights: [] };
-    const status = await readBreachOpening();
-    if (status !== "available") return safe;
-    safe.primary = breachPrimary();
+    const missions = await readBrokenSignalMissions();
+    if (missions.breach === "available") {
+      safe.primary = breachPrimary();
+      return safe;
+    }
+    if (missions.recover === "cleared") {
+      safe.primary = recoverReplayPrimary();
+      return safe;
+    }
     return safe;
   }
 
-  async function openTacticalBreach() {
+  async function openTacticalMission(missionId) {
     const ensure = window.ensureTacticalOpsLoaded;
     try {
       if (typeof ensure === "function") {
@@ -1164,8 +1198,16 @@
       warn("TacticalOps.open missing");
       return false;
     }
-    await window.TacticalOps.open("broken-signal-breach");
+    await window.TacticalOps.open(missionId);
     return true;
+  }
+
+  async function openTacticalBreach() {
+    return openTacticalMission("broken-signal-breach");
+  }
+
+  async function openTacticalRecoverReplay() {
+    return openTacticalMission("broken-signal-recover");
   }
 
   async function load(options = {}) {
@@ -1174,7 +1216,7 @@
 
     if (!force && STATE.lastData && isFreshEnough()) {
       logFreshSkip(reason);
-      const next = await applyBreachOpening({ ...STATE.lastData, highlights: STATE.lastData.highlights || [] });
+      const next = await applyCampaignOpening({ ...STATE.lastData, highlights: STATE.lastData.highlights || [] });
       STATE.lastData = next;
       render(next);
       return next;
@@ -1189,7 +1231,7 @@
 
     try {
       const raw = await apiPost("/webapp/cta/state", {});
-      const data = await applyBreachOpening(normalize(raw));
+      const data = await applyCampaignOpening(normalize(raw));
       STATE.lastData = data;
       STATE.lastLoadAt = Date.now();
       notifyStateSubscribers("state_load");
@@ -1489,6 +1531,9 @@
 
       case "tactical_breach":
         return await openTacticalBreach();
+
+      case "tactical_recover_replay":
+        return await openTacticalRecoverReplay();
 
       default:
         warn("unknown target type", safeTarget);
