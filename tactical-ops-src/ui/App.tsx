@@ -13,6 +13,12 @@ import {
 } from "../data/onboarding";
 import { BROKEN_SIGNAL, getMissionDef, recoverSpawnsForSquad } from "../data/operations";
 
+const PRESENTATION = {
+  startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
+  operationPlate: "/images/tactical_ops/presentation/tactical_ops_broken_signal_operation_plate.png",
+  resultsPlate: "/images/tactical_ops/presentation/tactical_ops_operation_complete_plate.png",
+} as const;
+
 const ROLE_LABEL: Record<string, string> = {
   alpha: "Melee pressure",
   skirmisher: "Skirmisher",
@@ -29,10 +35,10 @@ function briefSubtitle(def: UnitDef, extra?: string): string {
   return `${role} · ${skills} · ${tail}`;
 }
 
-function Background({ dim = 0.55 }: { dim?: number }) {
+function Background({ dim = 0.55, art = "/images/tactical_ops/battlefield.jpg", className = "" }: { dim?: number; art?: string; className?: string }) {
   return (
-    <div className="t-bg" aria-hidden="true">
-      <img src="/images/tactical_ops/battlefield.jpg" alt="" />
+    <div className={`t-bg ${className}`} aria-hidden="true">
+      <img src={art} alt="" />
       <div className="t-vignette" style={{ background: `rgb(10 12 16 / ${dim})` }} />
     </div>
   );
@@ -56,7 +62,7 @@ function Hub() {
         : OPERATION.objective;
   return (
     <div className="t-fill">
-      <Background dim={0.35} />
+      <Background dim={0.35} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
       <div className="t-hub">
         <div className="t-hub-copy">
@@ -168,6 +174,7 @@ function Brief() {
           {title}
         </h1>
         <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{objective}</p>
+        {mission ? <div className="t-operation-plate" aria-hidden="true"><img src={PRESENTATION.operationPlate} alt="" /></div> : null}
         {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
         {mission?.objectiveType === "RECOVER" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : null}
         {mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}
@@ -287,6 +294,7 @@ function Results() {
       <Background dim={0.6} />
       <div className="t-overlay">
         <div className="t-modal t-panel">
+          <img className="t-results-plate" src={PRESENTATION.resultsPlate} alt="" aria-hidden="true" />
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
           <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DEFEATED" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (

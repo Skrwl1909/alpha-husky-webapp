@@ -9,6 +9,14 @@ import { OPERATION } from "../data/units";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 
+const PRESENTATION = {
+  battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
+  traceTarget: "/images/tactical_ops/presentation/tactical_ops_trace_target.png",
+  signalRecovery: "/images/tactical_ops/presentation/tactical_ops_signal_recovery_marker.png",
+  bossTarget: "/images/tactical_ops/presentation/tactical_ops_boss_target.png",
+  reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
+} as const;
+
 function isBuff(t: StatusType): boolean {
   return t === "ATK_UP" || t === "DEF_UP" || t === "SPD_UP" || t === "GUARD";
 }
@@ -96,8 +104,8 @@ function Token({
       style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0) }}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
-      {signalCarrier && !unit.defeated ? <span className="t-objective-badge trace">TRACE TARGET</span> : null}
-      {unit.role === "leader" && !unit.defeated ? <span className="t-objective-badge boss">BOSS</span> : null}
+      {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
+      {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
       <img className="body" src={src} alt="" draggable={false} />
       <button
         type="button"
@@ -331,7 +339,7 @@ export function BattleScreen() {
             if (!busy) cancel();
           }}
         >
-          <img className="t-field-art" src="/images/tactical_ops/battlefield.jpg" alt="" />
+          <img className="t-field-art" src={PRESENTATION.battlefield} alt="" />
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className="t-grid" aria-hidden="true">
@@ -344,11 +352,11 @@ export function BattleScreen() {
           </div>
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
-            return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
+            return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><img className="t-objective-marker-art" src={PRESENTATION.signalRecovery} alt="" /><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
           })() : null}
           {reinforcement?.telegraphed && !reinforcement.spawned ? (() => {
             const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
-            return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><span>INBOUND</span><small>HOUND</small></div>;
+            return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>INBOUND</span><small>HOUND</small></div>;
           })() : null}
           {Array.from({ length: 40 }, (_, i) => {
             const c = i % 8;

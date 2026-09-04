@@ -3,8 +3,9 @@ import { TacticalApp } from "./App";
 import { useTacticalLayout } from "../useTacticalLayout";
 import { snapshotState } from "../store/battleStore";
 import * as Combat from "../combat";
+import { VERSION } from "../version";
 
-export const TACTICAL_VERSION = "tactical_ops.js v2.2.3-field-geometry";
+export const TACTICAL_VERSION = VERSION;
 
 export function TacticalRoot() {
   const ref = useRef<HTMLDivElement>(null);
