@@ -146,6 +146,18 @@ export interface RecoverObjective {
   completed: boolean;
 }
 
+export interface BossObjective {
+  type: "BOSS";
+  targetId: string;
+}
+
+export interface BattleReinforcement {
+  spawn: { defId: string; id: string; c: number; r: number };
+  triggerRound: number;
+  telegraphed: boolean;
+  spawned: boolean;
+}
+
 export interface BattleState {
   units: CombatUnit[];
   activeId: string | null;
@@ -159,7 +171,10 @@ export interface BattleState {
   damageTaken: number;
   hostilesEliminated: number;
   results: BattleResults | null;
-  objective: RecoverObjective | null;
+  objective: RecoverObjective | BossObjective | null;
+  reinforcement: BattleReinforcement | null;
+  signalCarrierId: string | null;
+  routingTraceAcquired: boolean;
   seed: number;
 }
 
