@@ -342,3 +342,4 @@ export function identityCache(next?: PlayerIdentity): PlayerIdentity {
   if (w) w.__AH_TO_IDENTITY__ = resolved;
   return resolved;
 }
+

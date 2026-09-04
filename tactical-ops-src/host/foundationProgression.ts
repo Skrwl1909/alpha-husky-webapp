@@ -14,7 +14,9 @@ export interface FoundationProgressionState {
   lastCompletedRunId: string | null;
   updatedAt: number;
   operations?: Record<string, OperationProgressionState>;
-  intel?: { routingTrace: boolean };
+  intel?: { routingTrace: boolean; commanderProfile: boolean };
+  archive?: { brokenSignal: boolean };
+  nextOperationSlot?: "unassigned" | null;
 }
 
 export type MissionProgressionStatus = "locked" | "available" | "cleared";
@@ -26,7 +28,7 @@ export interface OperationMissionRun {
 }
 
 export interface OperationProgressionState {
-  status: "active";
+  status: "active" | "cleared";
   missions: Record<string, MissionProgressionStatus>;
   activeMissionRun: OperationMissionRun | null;
   lastCompletedMissionRunId: string | null;
@@ -76,8 +78,13 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   const operations = parseOperations(value.operations);
   if (operations) state.operations = operations;
   if (value.intel && typeof value.intel === "object") {
-    state.intel = { routingTrace: Boolean((value.intel as Record<string, unknown>).routingTrace) };
+    state.intel = {
+      routingTrace: Boolean((value.intel as Record<string, unknown>).routingTrace),
+      commanderProfile: Boolean((value.intel as Record<string, unknown>).commanderProfile),
+    };
   }
+  if (value.archive && typeof value.archive === "object") state.archive = { brokenSignal: Boolean((value.archive as Record<string, unknown>).brokenSignal) };
+  if (value.nextOperationSlot === "unassigned" || value.nextOperationSlot === null) state.nextOperationSlot = value.nextOperationSlot;
   return state;
 }
 
@@ -88,7 +95,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
   for (const [operationId, candidate] of Object.entries(source)) {
     if (!candidate || typeof candidate !== "object") return null;
     const value = candidate as Record<string, unknown>;
-    if (value.status !== "active" || !value.missions || typeof value.missions !== "object") return null;
+    if ((value.status !== "active" && value.status !== "cleared") || !value.missions || typeof value.missions !== "object") return null;
     const missions: Record<string, MissionProgressionStatus> = {};
     for (const [missionId, status] of Object.entries(value.missions as Record<string, unknown>)) {
       if (status !== "locked" && status !== "available" && status !== "cleared") return null;
@@ -106,7 +113,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
       activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds };
     }
     parsed[operationId] = {
-      status: "active",
+      status: value.status,
       missions,
       activeMissionRun,
       lastCompletedMissionRunId:
@@ -188,8 +195,9 @@ export async function continueOperationMission(
   requestId: string,
   expectedRevision: number,
   runId: string,
+  routingTraceAcquired = false,
 ): Promise<{ state: FoundationProgressionState; firstClear: boolean }> {
-  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: true });
+  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: true, routingTraceAcquired });
   return { state: responseState(response), firstClear: response.firstClear === true };
 }
 
