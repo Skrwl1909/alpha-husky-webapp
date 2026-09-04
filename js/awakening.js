@@ -913,8 +913,14 @@
       toast("Awakening recorded.");
       haptic("success");
       setTimeout(() => {
-        try { global.Oath?.checkAndOpen?.({ force: true, afterAwakening: true }); }
-        catch (err) { log("oath check skipped", err); }
+        Promise.resolve()
+          .then(() => global.Oath?.checkAndOpen?.({ force: true, afterAwakening: true }))
+          .then((opened) => {
+            if (!opened) {
+              try { global.maybeOpenOnboarding?.(); } catch (_) {}
+            }
+          })
+          .catch((err) => log("oath check skipped", err));
       }, 220);
     } catch (err) {
       log("complete failed", err);
@@ -991,7 +997,7 @@
     return API;
   }
 
-  const API = { init, open, close };
+  const API = { init, open, close, isOpen: () => !!S.open };
   global.Awakening = API;
   global.AWAKENING_ASSETS = AWAKENING_ASSETS;
 })(window);

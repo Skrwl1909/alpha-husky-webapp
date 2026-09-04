@@ -22,6 +22,7 @@
   let _firstSignalMission = null;
   let _focusedBusy = false;
   let _focusedTimer = null;
+  let _laterDeferUntil = 0;
 
   function log(...a) { if (_dbg) console.log("[Onboarding]", ...a); }
   function getTG() { return _tg || window.Telegram?.WebApp || null; }
@@ -171,20 +172,20 @@
   const STEP_CONFIG = {
     profile_stats_seen: {
       icon: "📊",
-      h: "Check Your Profile & Stats",
-      p: "Your account is live. Start by looking at your current profile and base stats.",
+      h: "See what Alpha recorded",
+      p: "Your node has a body. Look once so you know what the Pack can read.",
       label: "Open Stats"
     },
     quests_seen: {
       icon: "📜",
-      h: "See Your Daily Quests",
-      p: "These are your first short-term goals. They help you understand what to do next.",
+      h: "Today’s pressure",
+      p: "Short orders. They are not the war.",
       label: "Open Quests"
     },
     missions_seen: {
       icon: "⚔️",
-      h: "Open Mission Board",
-      p: "Missions are your first real gameplay loop — XP, loot and steady progress.",
+      h: "Trace a live route",
+      p: "Expeditions are how fractures show up as work.",
       label: "Open Missions"
     },
     faction_selected: {
@@ -195,8 +196,8 @@
     },
     chain_building_started: {
       icon: "🗺️",
-      h: "Start Your First Chain Run",
-      p: "Open the map and start one beginner Chain building run. Use Abandoned Wallets Vault or Broken Contracts Hub.",
+      h: "Leave a mark on the chain",
+      p: "Start one beginner run on Abandoned Wallets or Broken Contracts.",
       label: "Open Map",
       note: "Tutorial step completes after starting one of the whitelisted Chain buildings."
     },
@@ -420,7 +421,13 @@
     progressFill = document.getElementById("obProgressFill");
 
     backEl.addEventListener("click", e => { if (e.target === backEl) close(false); });
-    btnLater.onclick = () => close(false);
+    btnLater.onclick = () => {
+      const st = focusedState();
+      if (firstSignalEnabled() && String(st.state || "").toUpperCase() === "MISSION_STARTED" && String(st.status || "").toUpperCase() === "RUNNING") {
+        _laterDeferUntil = Date.now() + 2500;
+      }
+      close(false);
+    };
     btnBack.onclick = () => {
       if (idx > 0) {
         idx--;
@@ -529,8 +536,15 @@
           showToast("Equipped, but the Strength change could not be verified.");
         }
       } else if (action === "next") {
+        const openCampaign = campaignEligibleForNext();
         close(true);
-        requestAnimationFrame(() => openMissions());
+        requestAnimationFrame(() => {
+          if (openCampaign && window.Campaign && typeof window.Campaign.open === "function") {
+            window.Campaign.open();
+            return;
+          }
+          try { window.CTA?.refresh?.(); } catch (_) {}
+        });
         return;
       }
       await refreshFocusedState();
@@ -615,7 +629,7 @@
       copy = "Your first gear upgrade is active.";
       detail = `<div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
-      label = "Start Next Mission";
+      label = campaignEligibleForNext() ? "Answer RELAY-7" : "Return to the Map";
     }
 
     bodyEl.innerHTML = `
@@ -729,14 +743,61 @@
     }, 120);
   }
 
+  function campaignEligibleForNext() {
+    try {
+      if (window.StoryDelivery && typeof window.StoryDelivery.campaignEligible === "function") {
+        return window.StoryDelivery.campaignEligible() === true;
+      }
+    } catch (_) {}
+    try {
+      const payload = window.Campaign && typeof window.Campaign.state === "function" ? window.Campaign.state() : null;
+      return !!(payload && payload.eligible === true && payload.show !== false && payload.ok !== false);
+    } catch (_) {}
+    return false;
+  }
+
+  function identitySequenceOpen() {
+    try {
+      if (window.Awakening && typeof window.Awakening.isOpen === "function" && window.Awakening.isOpen()) return true;
+    } catch (_) {}
+    try {
+      if (window.Oath && typeof window.Oath.isOpen === "function" && window.Oath.isOpen()) return true;
+    } catch (_) {}
+    try {
+      if (document.body.classList.contains("ah-awakening-open") || document.body.classList.contains("ah-oath-open")) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function isOpen() {
+    if (!backEl) return false;
+    if (backEl.hidden) return false;
+    return backEl.style.display !== "none";
+  }
+
   async function open(force = false) {
     ensureCSS();
     ensureHTML();
+
+    if (!force && identitySequenceOpen()) {
+      log("identity sequence open; skipping onboarding auto-open");
+      return;
+    }
+    if (!force && _laterDeferUntil && Date.now() < _laterDeferUntil) {
+      log("FIRST SIGNAL later-defer; skipping auto-open");
+      return;
+    }
 
     await fetchTutorialState();
 
     if (firstSignalEnabled()) {
       await fetchFirstSignalMissionState();
+      const fsState = String(focusedState().state || "").toUpperCase();
+      if (fsState === "COMPLETED") {
+        log("FIRST SIGNAL completed; skipping tutorial checklist");
+        close(false);
+        return;
+      }
       backEl.hidden = false;
       backEl.style.display = "flex";
       document.body.classList.add("ob-lock");
@@ -809,6 +870,22 @@
     init,
     open,
     close,
-    refresh: () => refreshSteps(true)
+    refresh: () => refreshSteps(true),
+    isOpen,
+    getTutorial: () => _tutorial,
+    getFirstSignal: () => {
+      const merged = focusedState();
+      if (_tutorial?.first_signal && typeof _tutorial.first_signal === "object") {
+        return {
+          ..._tutorial.first_signal,
+          ...merged,
+          eligible: _tutorial.first_signal.eligible === true || firstSignalEnabled()
+        };
+      }
+      return {
+        ...merged,
+        eligible: firstSignalEnabled()
+      };
+    }
   };
 })();

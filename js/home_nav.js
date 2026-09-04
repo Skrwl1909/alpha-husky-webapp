@@ -176,6 +176,7 @@
 
   function openHub() {
     openBack("hubBack");
+    try { window.StoryDelivery?.refreshHub?.(); } catch (_) {}
     try { window.Stats?.refreshHubGoal?.(); } catch (_) {}
   }
   function openCharSheet() { openBack("charBack"); }

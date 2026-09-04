@@ -17,6 +17,7 @@
     lastLoadAt: 0,
     visHandler: null,
     pageShowHandler: null,
+    tacticalMissions: { breach: "unknown", recover: "unknown" },
   };
   const stateSubscribers = new Set();
 
@@ -292,6 +293,22 @@
       go: "Claim contracts",
       stakes: "Miss claim timing and reset can void already-earned contract payout.",
     },
+    campaign_incoming: {
+      context: "Chapter 6",
+      now: "RELAY-7 is calling",
+      why: "The Pack is fracturing. Answer the signal.",
+      reward: "",
+      go: "Open Campaign",
+      stakes: "",
+    },
+    campaign_directive: {
+      context: "Chapter 6",
+      now: "Leave Your Mark",
+      why: "First Mission Focus is locked. RELAY-7 is waiting for the mark.",
+      reward: "",
+      go: "Open Campaign",
+      stakes: "",
+    },
   };
 
   function resolveGuideValue(value, primary) {
@@ -380,7 +397,27 @@
     const go = resolveGuideValue(play.go, primary) || defaultGoForPrimary(primary);
     const stakes = lockedBrief ? "" : (resolveGuideValue(play.stakes, primary) || defaultStakesForPrimary(primary));
 
-    return { context, now, why, reward, go, stakes };
+    const guide = { context, now, why, reward, go, stakes, changed: "", openQuestion: "", lockedBrief };
+    return overlayStoryGuide(guide, primary);
+  }
+
+  function overlayStoryGuide(guide, primary) {
+    if (!guide) return guide;
+    if (guide.lockedBrief) {
+      guide.changed = "";
+      guide.openQuestion = "";
+      return guide;
+    }
+    try {
+      const SD = window.StoryDelivery;
+      if (!SD || typeof SD.resolve !== "function") return guide;
+      const scf = (typeof SD.getState === "function" && SD.getState())
+        || SD.resolve(typeof SD.gatherInputs === "function" ? SD.gatherInputs() : {});
+      if (!scf || scf.lockedBrief) return guide;
+      if (asText(scf.changed)) guide.changed = asText(scf.changed);
+      if (asText(scf.openQuestion)) guide.openQuestion = asText(scf.openQuestion);
+    } catch (_) {}
+    return guide;
   }
 
   function isBloodmoonPrimary(primary) {
@@ -564,7 +601,9 @@
   line-height:1.18;
 }
 .cta-why,
-.cta-reward{
+.cta-reward,
+.cta-changed,
+.cta-open{
   margin:1px 0 0;
   font-size:10.5px;
   line-height:1.15;
@@ -574,6 +613,12 @@
 }
 .cta-why{
   color:rgba(255,255,255,.66);
+}
+.cta-changed{
+  color:rgba(186,229,255,.82);
+}
+.cta-open{
+  color:rgba(255,220,160,.86);
 }
 .cta-reward{
   color:rgba(186,229,255,.82);
@@ -811,6 +856,7 @@
     if (key === "tactical_breach") return "BREACH";
     if (key === "tactical_recover_replay") return "REPLAY";
     if (key === "choose_faction" || key === "first_mission" || key === "equip_item" || key === "first_map_action" || key === "contracts_push") return "GUIDE";
+    if (key === "campaign_incoming" || key === "campaign_directive") return "SIGNAL";
     if (key === "node_contested" || key === "node_hot") return "HOT";
 
     const type = asText(target?.type).toLowerCase();
@@ -1008,6 +1054,20 @@
         card.appendChild(why);
       }
 
+      if (guide.changed) {
+        const changed = document.createElement("p");
+        changed.className = "cta-changed";
+        changed.textContent = guide.changed;
+        card.appendChild(changed);
+      }
+
+      if (guide.openQuestion) {
+        const openQ = document.createElement("p");
+        openQ.className = "cta-open";
+        openQ.textContent = guide.openQuestion;
+        card.appendChild(openQ);
+      }
+
       if (guide.reward && !guide.stakes) {
         const reward = document.createElement("p");
         reward.className = "cta-reward";
@@ -1127,21 +1187,36 @@
 
   async function readBrokenSignalMissions() {
     const apiPost = getApiPost();
-    if (!apiPost) return { breach: "unknown", recover: "unknown" };
+    if (!apiPost) {
+      STATE.tacticalMissions = { breach: "unknown", recover: "unknown" };
+      return STATE.tacticalMissions;
+    }
     try {
       const raw = await apiPost("/webapp/tactical-foundation/state", {});
       const data = unwrapPayload(raw);
       const ops = data && data.operations && typeof data.operations === "object" ? data.operations : null;
       const missions = ops && ops["broken-signal"] && ops["broken-signal"].missions;
-      if (!missions || typeof missions !== "object") return { breach: "unknown", recover: "unknown" };
-      return {
+      if (!missions || typeof missions !== "object") {
+        STATE.tacticalMissions = { breach: "unknown", recover: "unknown" };
+        return STATE.tacticalMissions;
+      }
+      STATE.tacticalMissions = {
         breach: missionStatusOf(missions, "broken-signal-breach"),
         recover: missionStatusOf(missions, "broken-signal-recover"),
       };
+      return STATE.tacticalMissions;
     } catch (err) {
       warn("tactical-foundation/state failed", err);
-      return { breach: "unknown", recover: "unknown" };
+      STATE.tacticalMissions = { breach: "unknown", recover: "unknown" };
+      return STATE.tacticalMissions;
     }
+  }
+
+  function getTacticalMissions() {
+    return {
+      breach: asText(STATE.tacticalMissions && STATE.tacticalMissions.breach) || "unknown",
+      recover: asText(STATE.tacticalMissions && STATE.tacticalMissions.recover) || "unknown",
+    };
   }
 
   function breachPrimary() {
@@ -1181,7 +1256,53 @@
       safe.primary = recoverReplayPrimary();
       return safe;
     }
+    try {
+      const SD = window.StoryDelivery;
+      if (SD && typeof SD.resolve === "function") {
+        const scf = SD.resolve({
+          cta: safe,
+          campaign: window.Campaign && typeof window.Campaign.state === "function" ? window.Campaign.state() : null,
+          tutorial: window.Onboarding && typeof window.Onboarding.getTutorial === "function" ? window.Onboarding.getTutorial() : null,
+          firstSignal: window.Onboarding && typeof window.Onboarding.getFirstSignal === "function" ? window.Onboarding.getFirstSignal() : null,
+          tactical: missions
+        });
+        const kind = asText(safe.primary && safe.primary.kind);
+        if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
+          safe.primary = SD.campaignIncomingPrimary();
+        }
+      }
+    } catch (err) {
+      warn("story primary overlay failed", err);
+    }
     return safe;
+  }
+
+  function applyStoryPrimary(primary) {
+    if (!primary || typeof primary !== "object") return STATE.lastData;
+    const currentKind = asText(STATE.lastData && STATE.lastData.primary && STATE.lastData.primary.kind).toLowerCase();
+    if (currentKind === "tactical_breach" || currentKind === "tactical_recover_replay") return STATE.lastData;
+    const liveKinds = {
+      siege_running_defense: true,
+      siege_forming_defense: true,
+      siege_running_attack: true,
+      siege_forming_attack: true,
+      bloodmoon_claim_ready: true,
+      bloodmoon_live: true,
+      fortress_ready: true,
+      mission_ready: true,
+      contracts_claim_ready: true,
+      node_contested: true,
+      node_hot: true
+    };
+    if (liveKinds[currentKind]) return STATE.lastData;
+    const next = {
+      ...(STATE.lastData || { highlights: [] }),
+      primary,
+      highlights: (STATE.lastData && Array.isArray(STATE.lastData.highlights)) ? STATE.lastData.highlights : []
+    };
+    STATE.lastData = next;
+    render(next);
+    return next;
   }
 
   async function openTacticalMission(missionId) {
@@ -1218,6 +1339,7 @@
       logFreshSkip(reason);
       const next = await applyCampaignOpening({ ...STATE.lastData, highlights: STATE.lastData.highlights || [] });
       STATE.lastData = next;
+      notifyStateSubscribers("state_cache");
       render(next);
       return next;
     }
@@ -1433,6 +1555,39 @@
       case "map":
         return openMap();
 
+      case "campaign":
+        try {
+          if (typeof window.Campaign?.open === "function") {
+            window.Campaign.open();
+            return true;
+          }
+        } catch (err) {
+          warn("Campaign open failed", err);
+        }
+        {
+          const tile = document.querySelector("[data-campaign-tile], [data-action='campaign']");
+          if (tile) {
+            tile.click();
+            return true;
+          }
+        }
+        return false;
+
+      case "first_signal":
+        try {
+          if (typeof window.Onboarding?.open === "function") {
+            void window.Onboarding.open(true);
+            return true;
+          }
+          if (typeof window.openOnboarding === "function") {
+            window.openOnboarding(true);
+            return true;
+          }
+        } catch (err) {
+          warn("FIRST SIGNAL open failed", err);
+        }
+        return false;
+
       default:
         warn("unknown open_action", key);
         return false;
@@ -1607,6 +1762,8 @@
     subscribe,
     render,
     openTarget,
+    applyStoryPrimary,
+    getTacticalMissions,
     mount,
     destroy,
   };

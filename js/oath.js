@@ -95,7 +95,8 @@
     back: null,
     pendingCheck: null,
     profileTimer: 0,
-    firstHowlTimer: 0
+    firstHowlTimer: 0,
+    handoffOnClose: false
   };
 
   function log(...args) {
@@ -1312,6 +1313,7 @@
       const faction = normalizeFaction(out.currentFaction || out.faction || S.selected);
       S.completedFaction = faction;
       S.checked = true;
+      S.handoffOnClose = true;
       updateFactionLocally(faction);
       haptic("success");
       setBusy(false);
@@ -1371,6 +1373,7 @@
   }
 
   function close() {
+    const shouldHandoff = !S.preview && !!S.handoffOnClose;
     const back = S.back;
     clearSignalTimers();
     S.open = false;
@@ -1380,6 +1383,7 @@
     S.selected = "";
     S.completedFaction = "";
     S.freshStartV1 = null;
+    S.handoffOnClose = false;
     if (back) {
       back.querySelectorAll("video").forEach((video) => {
         try { video.pause(); } catch (_) {}
@@ -1390,6 +1394,17 @@
     document.body.classList.remove("ah-oath-open");
     if (!global.AH_NAV?.stack?.length && !document.body.classList.contains("ah-awakening-open")) {
       document.documentElement.classList.remove("ah-modal-open");
+    }
+    if (shouldHandoff) {
+      setTimeout(() => {
+        try {
+          if (global.Onboarding && typeof global.Onboarding.open === "function") {
+            void global.Onboarding.open(true);
+            return;
+          }
+        } catch (_) {}
+        try { global.maybeOpenOnboarding && global.maybeOpenOnboarding(); } catch (_) {}
+      }, 80);
     }
   }
 
@@ -1402,6 +1417,16 @@
 
   async function checkAndOpen(options = {}) {
     if (S.open) return false;
+    try {
+      if (
+        !options.afterAwakening
+        && global.Awakening
+        && typeof global.Awakening.isOpen === "function"
+        && global.Awakening.isOpen()
+      ) {
+        return false;
+      }
+    } catch (_) {}
     if (S.pendingCheck) return await S.pendingCheck;
     if (S.checked && !options.force) return false;
 
@@ -1439,7 +1464,7 @@
     return API;
   }
 
-  const API = { init, open, close, checkAndOpen, preview, openPreview: preview };
+  const API = { init, open, close, checkAndOpen, preview, openPreview: preview, isOpen: () => !!S.open };
   global.Oath = API;
   global.OATH_ASSETS = OATH_ASSETS;
 })(window);
