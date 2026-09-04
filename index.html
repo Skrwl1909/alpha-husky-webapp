@@ -1443,6 +1443,8 @@ html.ah-skins-open #heroFrame{
 .map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-card-top,
 .map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-why,
 .map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-reward,
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-changed,
+.map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-open,
 .map-card:not(.is-intel-expanded) #ctaCardRoot .cta-card:not(.is-bloodmoon-compact) .cta-stakes{
   display:none;
 }
@@ -1924,6 +1926,8 @@ html.ah-skins-open #heroFrame{
   }
   #ctaSurface .cta-card:not(.is-bloodmoon-compact) .cta-why,
   #ctaSurface .cta-card:not(.is-bloodmoon-compact) .cta-reward,
+  #ctaSurface .cta-card:not(.is-bloodmoon-compact) .cta-changed,
+  #ctaSurface .cta-card:not(.is-bloodmoon-compact) .cta-open,
   #ctaSurface .cta-card:not(.is-bloodmoon-compact) .cta-stakes{
     display:none;
   }
@@ -2001,6 +2005,8 @@ html.ah-skins-open #heroFrame{
   .map-card.is-intel-expanded .map-intel-content{ max-height:calc(46dvh - 12px); }
   .map-card.is-intel-expanded #ctaSurface .cta-why,
   .map-card.is-intel-expanded #ctaSurface .cta-reward,
+  .map-card.is-intel-expanded #ctaSurface .cta-changed,
+  .map-card.is-intel-expanded #ctaSurface .cta-open,
   .map-card.is-intel-expanded #ctaSurface .cta-stakes{ display:block; }
   .map-card.is-intel-expanded #ctaSurface .cta-highlights-body{ max-height:none; }
   #map .hotspot.map-pin:not(.type-phantom):not(.type-bloodmoon):not(.type-siege):not(.type-oracle):not(.type-hq):not(.theme-signal-broker) img{
@@ -6820,6 +6826,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
     </div>
     <div class="ah-panel-scroll">
+    <div id="hubStoryRoot"></div>
     <div id="hubGoalRoot"></div>
     <div class="ah-grid">
       <button class="ah-tile" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Shop</b></button>
@@ -7866,7 +7873,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tactical-ops-playability-v2.2.3-20260828";
+    window.WEBAPP_VER = "tactical-ops-playability-v2.2.3-sd-p1-dev-fresh-20260904";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
@@ -11086,7 +11093,11 @@ async function loadPlayerState() {
     if (!window.__ahOnboardingDeferred) {
       window.__ahOnboardingDeferred = true;
       window.runAfterFirstProfileRender?.(() => {
-        try { window.maybeOpenOnboarding?.(); } catch (_) {}
+        try {
+          if (window.Awakening?.isOpen?.() || window.Oath?.isOpen?.()) return;
+          if (document.body.classList.contains("ah-awakening-open") || document.body.classList.contains("ah-oath-open")) return;
+          window.maybeOpenOnboarding?.();
+        } catch (_) {}
       }, 900);
     }
 
@@ -12656,13 +12667,14 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/shop.js?v=WEBAPP_VER"></script>
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script src="js/missions.js?v=elite-combat-stage-v1"></script>
-<script src="js/cta.js?v=WEBAPP_VER"></script>
+<script>document.write('<script src="js/cta.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="js/map_section_assignments.js?v=WEBAPP_VER"></script>
 <script src="js/map_objective_resolver.js?v=WEBAPP_VER"></script>
 <script src="js/map_sections_v2.js?v=WEBAPP_VER"></script>
 <script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script src="js/campaign.js?v=WEBAPP_VER"></script>
+<script>document.write('<script src="js/story_delivery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="/js/updates.js?v=WEBAPP_VER"></script>
 <script src="js/pet_sprite.js?v=WEBAPP_VER"></script>
 <script src="js/mypets.js?v=WEBAPP_VER"></script>
@@ -12701,9 +12713,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     });
 })();
 </script>
-<script src="js/onboarding.js?v=WEBAPP_VER"></script>
-<script src="js/awakening.js?v=WEBAPP_VER"></script>
-<script src="js/oath.js?v=WEBAPP_VER"></script>
+<script>document.write('<script src="js/onboarding.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/awakening.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/oath.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <script src="/js/pack_comms.js?v=pack-comms-lite-v1"></script>
   <script src="/js/community_btn.js?v=pack-comms-lite-v1"></script>
 <script src="js/share_card.js?v=WEBAPP_VER"></script>
@@ -12853,6 +12865,27 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     document.addEventListener("DOMContentLoaded", scheduleInitCampaign, { once: true });
   } else {
     scheduleInitCampaign();
+  }
+})();
+</script>
+<script>
+(function initStoryDelivery(){
+  function tryInit(){
+    if (!window.StoryDelivery || window.__storyDeliveryInited) return;
+    try {
+      window.StoryDelivery.init();
+      window.__storyDeliveryInited = true;
+    } catch (e) {
+      if (window.DBG) console.warn("[StoryDelivery] init failed", e);
+    }
+  }
+  function schedule(){
+    window.runAfterFirstProfileRender?.(() => tryInit(), 560);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", schedule, { once: true });
+  } else {
+    schedule();
   }
 })();
 </script>
@@ -13082,7 +13115,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
   
-<script src="/js/home_nav.js?v=hub-icons-v1"></script>
+<script src="/js/home_nav.js?v=hub-icons-v1-story-delivery-p1"></script>
+<script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 
 <!-- SUPPORT (Stars) -->
 <script src="/js/support.js?v=WEBAPP_VER"></script>
