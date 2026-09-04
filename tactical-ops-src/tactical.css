@@ -113,6 +113,12 @@
   height: 100%;
 }
 
+#tacticalOpsRoot .t-bg-hero img {
+  object-position: 50% 36%;
+  opacity: 0.58;
+  filter: saturate(0.82) brightness(0.62) contrast(1.08);
+}
+
 #tacticalOpsRoot .t-vignette {
   pointer-events: none;
   background:
@@ -216,6 +222,39 @@
 #tacticalOpsRoot .t-hub h1 {
   margin: 0.2rem 0 0;
   font-size: max(2.2rem, min(8vw, 4.6rem));
+}
+
+#tacticalOpsRoot .t-operation-plate {
+  width: min(100%, 42rem);
+  height: clamp(4.75rem, 14vw, 8rem);
+  margin: 0.8rem 0 0;
+  overflow: hidden;
+  border: 1px solid #3ec6ff33;
+  background: #080c11;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-operation-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.82;
+  filter: saturate(0.8) brightness(0.82);
+}
+
+#tacticalOpsRoot .t-results-plate {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 38%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.18;
+  filter: saturate(0.72) brightness(0.78);
+  pointer-events: none;
 }
 
 #tacticalOpsRoot .t-hub h2 {
@@ -322,6 +361,41 @@
   display: flex;
 }
 
+#tacticalOpsRoot .t-mission-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+}
+
+#tacticalOpsRoot .t-mission-strip span,
+#tacticalOpsRoot .t-recruit-moment {
+  border: 1px solid #3ec6ff55;
+  background: #0c2534c9;
+  color: #bcefff;
+  border-radius: 4px;
+  padding: 0.28rem 0.4rem;
+  font-family: var(--t-font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+#tacticalOpsRoot .t-recruit-moment {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: #d9ffe9;
+  border-color: #72e6a477;
+  background: #153829c9;
+}
+
+#tacticalOpsRoot .t-brief-actions .t-btn small {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--t-muted);
+  font-size: 0.56rem;
+  letter-spacing: 0.07em;
+}
+
 #tacticalOpsRoot .t-overlay {
   z-index: 50;
   background: #0a0c109e;
@@ -339,6 +413,14 @@
   text-align: center;
   width: min(420px, 100%);
   padding: 1.4rem 1.3rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+#tacticalOpsRoot .t-modal > :not(.t-results-plate) {
+  position: relative;
+  z-index: 1;
 }
 
 #tacticalOpsRoot .t-modal h2 {
@@ -666,6 +748,18 @@
   box-shadow: 0 0 0 5px #3ec6ff20, 0 0 22px #3ec6ff99;
   color: #d7f7ff;
   pointer-events: none;
+  animation: t-objective-pulse 1.8s ease-in-out infinite;
+}
+
+#tacticalOpsRoot .t-objective-marker-art {
+  position: absolute;
+  left: 50%;
+  bottom: 40%;
+  width: 72px;
+  max-width: none;
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 #tacticalOpsRoot .t-terminal span {
@@ -684,6 +778,75 @@
   border-color: #72e6a4;
   box-shadow: 0 0 0 5px #72e6a420, 0 0 22px #72e6a499;
 }
+
+#tacticalOpsRoot .t-reinforcement-marker {
+  z-index: 7;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 2px dashed #ff6666;
+  border-radius: 999px;
+  color: #ffd4d4;
+  background: #3a10107a;
+  box-shadow: 0 0 18px #e23d3d8a;
+  animation: t-objective-pulse 1.1s ease-in-out infinite;
+}
+
+#tacticalOpsRoot .t-reinforcement-marker span,
+#tacticalOpsRoot .t-reinforcement-marker small {
+  font-family: var(--t-font-display);
+  letter-spacing: 0.1em;
+  font-size: 0.52rem;
+}
+
+#tacticalOpsRoot .t-reinforcement-marker small { color: #ffaaaa; font-size: 0.43rem; }
+
+#tacticalOpsRoot .t-reinforcement-marker .t-objective-marker-art {
+  width: 66px;
+  bottom: 36%;
+}
+
+#tacticalOpsRoot .t-objective-badge {
+  z-index: 12;
+  position: absolute;
+  top: -8%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.3rem;
+  border-radius: 3px;
+  font-family: var(--t-font-display);
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-objective-badge.trace { color: #d6f9ff; background: #0b607ac9; border: 1px solid #61ddff; }
+#tacticalOpsRoot .t-objective-badge.boss { color: #ffe1e1; background: #741d1dcc; border: 1px solid #ff7373; }
+#tacticalOpsRoot .t-token.trace-carrier .t-ring { filter: drop-shadow(0 0 12px #61ddff) !important; }
+#tacticalOpsRoot .t-token.boss-target .t-ring { filter: drop-shadow(0 0 14px #ff5959) !important; }
+
+#tacticalOpsRoot .t-token-marker {
+  position: absolute;
+  z-index: 11;
+  left: 50%;
+  bottom: 61%;
+  width: 58%;
+  max-width: 72px;
+  min-width: 34px;
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+#tacticalOpsRoot .t-token-marker.trace { filter: drop-shadow(0 0 7px #61ddffaa); }
+#tacticalOpsRoot .t-token-marker.boss { filter: drop-shadow(0 0 7px #ff5959aa); }
+
+@keyframes t-objective-pulse { 50% { filter: brightness(1.25); box-shadow: 0 0 0 7px #3ec6ff24, 0 0 28px #3ec6ffcc; } }
 
 #tacticalOpsRoot .t-token {
   z-index: 5;
