@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Story Delivery Phase 1 runtime harness</title>
+  <style>
+    body { margin: 0; background: #04070d; color: #eef8ff; font: 14px/1.4 sans-serif; }
+    #hubBack { position: relative; display: block; }
+    #hubBack .ah-panel-scroll { padding: 8px 0; }
+    #hubGoalRoot { min-height: 48px; padding: 12px; }
+    #results { white-space: pre-wrap; padding: 16px; font-family: ui-monospace, monospace; }
+    .pass { color: #8dffb0; }
+    .fail { color: #ff8d8d; }
+  </style>
+</head>
+<body>
+  <div id="hubBack">
+    <div class="ah-panel-scroll">
+      <div id="hubStoryRoot"></div>
+      <div id="hubGoalRoot">Next Alpha Goal placeholder</div>
+    </div>
+  </div>
+  <pre id="results">running…</pre>
+
+  <script>
+    window.WEBAPP_VER = "harness";
+    window.DBG = false;
+    window.Telegram = { WebApp: {} };
+    const FACTIONS = [
+      { key: "rb", name: "Rogue Byte", short: "Hackers of the broken chain.", tags: ["Glitch"] },
+      { key: "ew", name: "Echo Wardens", short: "Keepers of memory.", tags: ["Memory"] },
+      { key: "ih", name: "Inner Howlers", short: "Instinct.", tags: ["Instinct"] },
+      { key: "pb", name: "Pack Burners", short: "Fire.", tags: ["Fire"] }
+    ];
+    window.apiPost = async function apiPost(path) {
+      const p = String(path || "");
+      if (p.indexOf("/webapp/awakening/state") !== -1) {
+        return { ok: true, should_show: true, choices: [
+          { key: "stray", label: "Stray", desc: "A survivor found in the chain noise." }
+        ] };
+      }
+      if (p.indexOf("/webapp/oath/state") !== -1) {
+        return { ok: true, show: true, completed: false, currentFaction: null, factions: FACTIONS };
+      }
+      if (p.indexOf("/webapp/tutorial") !== -1) {
+        return {
+          ok: true,
+          exists: true,
+          started: true,
+          finished: false,
+          first_signal: { eligible: true, faction_selected: false, state: "NOT_STARTED" }
+        };
+      }
+      return { ok: true };
+    };
+  </script>
+  <script src="../js/story_delivery.js"></script>
+  <script src="../js/awakening.js"></script>
+  <script src="../js/oath.js"></script>
+  <script src="../js/onboarding.js"></script>
+  <script>
+    (function () {
+      const results = [];
+      function pass(id, detail) { results.push({ id, ok: true, detail: detail || "" }); }
+      function fail(id, detail) { results.push({ id, ok: false, detail: String(detail || "failed") }); }
+      function check(id, cond, detail) { cond ? pass(id, detail) : fail(id, detail); }
+
+      function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+      async function run() {
+        try {
+          check("A1", typeof window.Awakening?.isOpen === "function", "Awakening.isOpen");
+          check("A2", typeof window.Oath?.isOpen === "function", "Oath.isOpen");
+          check("A3", typeof window.Onboarding?.isOpen === "function", "Onboarding.isOpen");
+
+          const openedAwake = window.Awakening.open({
+            choices: [{ key: "stray", label: "Stray", desc: "A survivor found in the chain noise." }]
+          });
+          check("A4", openedAwake === true && window.Awakening.isOpen() === true, "Awakening opens first");
+
+          window.Oath.init({ apiPost: window.apiPost, dbg: false });
+          await sleep(220);
+          check("A5", window.Awakening.isOpen() === true && window.Oath.isOpen() === false, "Oath.init does not cover open Awakening");
+
+          const skipped = await window.Oath.checkAndOpen();
+          check("A6", skipped === false && window.Oath.isOpen() === false, "checkAndOpen without afterAwakening is skipped");
+
+          window.Awakening.close();
+          const openedOath = await window.Oath.checkAndOpen({ force: true, afterAwakening: true });
+          check("A7", openedOath === true && window.Oath.isOpen() === true, "afterAwakening handoff opens Oath");
+
+          window.Onboarding.init({ apiPost: window.apiPost, dbg: false });
+          await window.Onboarding.open(false);
+          check("A8", window.Onboarding.isOpen() === false, "Onboarding auto-open skipped while Oath is open");
+
+          const SD = window.StoryDelivery;
+          check("B1", typeof SD?.resolve === "function", "StoryDelivery.resolve");
+
+          const fsFaction = SD.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } });
+          check("B2", fsFaction.id === "S-FS-FACTION" && fsFaction.target && fsFaction.target.action === "factions", "S-FS-FACTION");
+
+          const fsStart = SD.resolve({ firstSignal: { eligible: true, faction_selected: true, state: "NOT_STARTED" } });
+          check("B3", fsStart.id === "S-FS-NOT-STARTED" && fsStart.target && fsStart.target.action === "first_signal", "S-FS-NOT-STARTED");
+
+          const fsDone = SD.resolve({
+            firstSignal: { eligible: true, faction_selected: true, state: "COMPLETED" },
+            campaign: { ok: true, eligible: true, show: true, campaign: {} }
+          });
+          check("B4", (fsDone.id === "S-FS-COMPLETED" || fsDone.id === "S-CAMPAIGN-INCOMING") && fsDone.target && fsDone.target.action === "campaign", "FIRST SIGNAL COMPLETED → Campaign");
+
+          const breach = SD.resolve({
+            firstSignal: { eligible: true, state: "COMPLETED", faction_selected: true },
+            campaign: { ok: true, eligible: true, show: true, campaign: {} },
+            tactical: { breach: "available", recover: "locked" }
+          });
+          check("B5", breach.id === "S-TO-BREACH-AVAILABLE" && breach.lockedBrief === true, "tactical P0 outranks campaign");
+
+          const siege = SD.resolve({
+            firstSignal: { eligible: true, state: "COMPLETED", faction_selected: true },
+            campaign: { ok: true, eligible: true, show: true, campaign: {} },
+            cta: { primary: { kind: "siege_running_defense", title: "Defend the live siege", target: { type: "siege", nodeId: "edge_of_chain" } } }
+          });
+          check("B6", siege.target && siege.target.type === "siege", "live siege outranks campaign");
+
+          const campaignScf = SD.resolve({ campaign: { ok: true, eligible: true, show: true, campaign: {} } });
+          const incoming = SD.campaignIncomingPrimary();
+          check("C1", incoming && incoming.kind === "campaign_incoming", "campaignIncomingPrimary");
+          check("C2", SD.shouldReplaceOnboardingPrimary(campaignScf, "first_mission") === true, "campaign may replace onboarding CTA");
+          check("C3", SD.shouldReplaceOnboardingPrimary(campaignScf, "siege_running_defense") === false, "campaign must not replace live siege");
+
+          const storyRoot = document.getElementById("hubStoryRoot");
+          const goalRoot = document.getElementById("hubGoalRoot");
+          check("D1", !!storyRoot && !!goalRoot, "#hubStoryRoot and #hubGoalRoot exist");
+          check("D2", !!(storyRoot && goalRoot && storyRoot.compareDocumentPosition(goalRoot) & Node.DOCUMENT_POSITION_FOLLOWING), "#hubStoryRoot precedes #hubGoalRoot");
+
+          if (window.Onboarding) {
+            window.Onboarding.getFirstSignal = function () {
+              return { eligible: true, faction_selected: false, state: "NOT_STARTED" };
+            };
+          }
+          const scf = SD.refreshHub("harness");
+          const hub = document.getElementById("hubBack");
+          const goalHidden = !goalRoot || getComputedStyle(goalRoot).display === "none" || (scf && scf.hideHubGoal && hub.classList.contains("is-story-first-session"));
+          check("D3", goalHidden === true, "first-session Hub goal collapsed (display:none is PASS)");
+          check("D4", !!(storyRoot && storyRoot.querySelector(".ahs-story-card")), "Hub story card rendered");
+
+          check("E1", typeof SD.subscribe === "function", "subscribe exists");
+        } catch (err) {
+          fail("X", err && err.stack || err);
+        }
+
+        const failed = results.filter((r) => !r.ok);
+        const summary = {
+          ok: failed.length === 0,
+          passed: results.filter((r) => r.ok).length,
+          total: results.length,
+          results
+        };
+        window.__SD_P1_RUNTIME__ = summary;
+        const el = document.getElementById("results");
+        el.className = summary.ok ? "pass" : "fail";
+        el.textContent = (summary.ok ? "PASS " : "FAIL ") + summary.passed + "/" + summary.total + "\n"
+          + results.map((r) => (r.ok ? "OK " : "FAIL ") + r.id + (r.detail ? " — " + r.detail : "")).join("\n");
+      }
+
+      run();
+    })();
+  </script>
+</body>
+</html>
