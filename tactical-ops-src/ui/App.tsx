@@ -12,6 +12,7 @@ import {
   resolveCurrentEncounter,
 } from "../data/onboarding";
 import { BROKEN_SIGNAL, getMissionDef, recoverSpawnsForSquad } from "../data/operations";
+import { withTeammateSidegrades } from "../data/shadowSidegrade";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -24,13 +25,14 @@ const ROLE_LABEL: Record<string, string> = {
   skirmisher: "Skirmisher",
   ranged: "Skirmisher",
   support: "Support",
+  companion: "Mobile control",
   hostile: "Melee",
   leader: "Heavy",
 };
 
 function briefSubtitle(def: UnitDef, extra?: string): string {
   const skills = def.skillIds.map((id) => SKILLS[id]?.name).filter(Boolean).join(" / ");
-  const role = ROLE_LABEL[def.role] || def.role;
+  const role = def.defId === "ally-02" ? "BUG HUNTER WARDEN · Spear skirmisher" : ROLE_LABEL[def.role] || def.role;
   const tail = extra || `MOVE ${def.move}`;
   return `${role} · ${skills} · ${tail}`;
 }
@@ -93,8 +95,10 @@ function WarTable() {
   const progressionError = useBattleStore((s) => s.progressionError);
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
-  const firstClearMessage = operation?.missions["broken-signal-recover"] === "cleared"
-    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER is a future lead."
+  const firstClearMessage = operation?.status === "cleared"
+    ? "OPERATION 01 — BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED · NEXT OPERATION SLOT OPENED"
+    : operation?.missions["broken-signal-recover"] === "cleared"
+    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
     : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
   return (
     <div className="t-fill">
@@ -103,7 +107,7 @@ function WarTable() {
       <div className="t-brief" style={{ maxWidth: "58rem" }}>
         <div className="t-kicker">War Table</div>
         <h1 className="t-title" style={{ margin: "0.2rem 0" }}>OPERATION 01 — {BROKEN_SIGNAL.name}</h1>
-        <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>Choose the next tactical mission.</p>
+        <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>{operation?.status === "cleared" ? "Operation complete. Replay a mission or review the Archive entry below." : "Choose the next tactical mission."}</p>
         <p style={{ color: "var(--t-faint)", margin: "0 0 1rem", fontSize: "0.82rem" }}>Routing Trace: {progression?.intel?.routingTrace ? "ACQUIRED · reinforcement telegraphed" : "NOT ACQUIRED · replay BREACH to hunt the tagged carrier"}</p>
         {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>{firstClearMessage}</p> : null}
         {operation?.status === "cleared" ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>BROKEN SIGNAL · CLEARED</p> : null}
@@ -111,20 +115,19 @@ function WarTable() {
           {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
             const mission = getMissionDef(missionId);
             if (!mission) return null;
-            if (missionId === "broken-signal-commander") return null;
             const status = operation?.missions[missionId] || "locked";
             const isPlayable = mission.executable && (status === "available" || status === "cleared");
-            const recoverNext = operation?.missions["broken-signal-recover"] === "available" && missionId === "broken-signal-recover";
+            const nextMission = status === "available";
             const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
             return (
-              <div className="t-panel t-brief-block" key={missionId} style={{ opacity: status === "locked" ? 0.52 : recoverNext ? 1 : 0.72 }}>
+              <div className="t-panel t-brief-block" key={missionId} style={{ opacity: status === "locked" ? 0.52 : nextMission ? 1 : 0.72 }}>
                 <div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
                 <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
                 <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
                 <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
                 <div className="t-brief-actions" style={{ marginTop: "0.8rem" }}>
-                  <button type="button" className={recoverNext ? "t-btn t-btn-primary" : "t-btn"} disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
-                    {status === "locked" ? "Locked" : status === "cleared" ? "REPLAY" : recoverNext ? "RECOVER" : "Mission Brief"}
+                  <button type="button" className={nextMission ? "t-btn t-btn-primary" : "t-btn"} disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
+                    {status === "locked" ? "Locked" : status === "cleared" ? "REPLAY" : mission.objectiveType === "RECOVER" ? "RECOVER" : "Mission Brief"}
                     {isPlayable ? <ChevronRight className="t-ico" /> : null}
                   </button>
                 </div>
@@ -132,8 +135,8 @@ function WarTable() {
             );
           })}
         </div>
-        {progression?.archive?.brokenSignal ? <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}><div className="t-kicker">Archive</div><strong>BROKEN SIGNAL ARCHIVED</strong></div> : null}
-        {progression?.nextOperationSlot === "unassigned" ? <div className="t-panel t-brief-block" style={{ marginTop: "0.6rem", opacity: 0.7 }}><div className="t-kicker">Next Operation Slot</div><strong>EMPTY · UNASSIGNED</strong></div> : null}
+        {progression?.archive?.brokenSignal ? <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}><div className="t-kicker">Archive · Available</div><strong>BROKEN SIGNAL ARCHIVED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>BREACH CLEARED · SIGNAL RECOVERED · SIGNAL COMMANDER DOWN</p></div> : null}
+        {progression?.nextOperationSlot === "unassigned" ? <div className="t-panel t-brief-block" style={{ marginTop: "0.6rem", opacity: 0.7 }}><div className="t-kicker">Next Operation Slot · Available</div><strong>EMPTY · UNASSIGNED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>No Operation assigned.</p></div> : null}
         {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
       </div>
     </div>
@@ -148,11 +151,22 @@ function Brief() {
   const selectedMissionId = useBattleStore((s) => s.selectedMissionId);
   const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const selectRecoverTeammate = useBattleStore((s) => s.selectRecoverTeammate);
+  const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
+  const kodaSidegrade = useBattleStore((s) => s.progression?.kodaSidegrade);
+  const sidegradesUnlocked = useBattleStore((s) => s.progression?.operations?.["broken-signal"]?.status === "cleared");
+  const kodaSavePending = useBattleStore((s) => s.kodaSavePending);
+  const selectKodaSidegrade = useBattleStore((s) => s.selectKodaSidegrade);
+  const shadowSidegrade = useBattleStore((s) => s.progression?.shadowSidegrade);
+  const shadowSavePending = useBattleStore((s) => s.shadowSavePending);
+  const selectShadowSidegrade = useBattleStore((s) => s.selectShadowSidegrade);
+  const progressionError = useBattleStore((s) => s.progressionError);
+  const busy = useBattleStore((s) => s.busy);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
-  const spawns = mission?.objectiveType === "RECOVER"
-    ? recoverSpawnsForSquad(selectedSquadIds) || recoverSpawnsForSquad(["alpha", "ally-02"])!
+  const baseSpawns = mission?.objectiveType === "RECOVER"
+    ? recoverSpawnsForSquad(selectedSquadIds, equippedPet) || recoverSpawnsForSquad(["alpha", "ally-02"])!
     : mission?.spawns || encounter.spawns;
+  const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade }) : baseSpawns;
   const title = mission ? `${BROKEN_SIGNAL.name} — ${mission.name}` : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns);
@@ -163,7 +177,7 @@ function Brief() {
       ? encounter.teaching
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
   const primaryObjective = mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
-  const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "KODA JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
+  const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
   const missionIntel = mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   return (
     <div className="t-fill">
@@ -184,11 +198,43 @@ function Brief() {
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">Squad selection · cap 2</div>
             <h3 style={{ margin: "0.35rem 0" }}>ALPHA + one teammate</h3>
-            <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose one unlocked companion for this run.</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose CNC for pressure, SHADOW for sustain, or your equipped PET for mobility and control.</p>
             <div className="t-brief-actions">
-              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + KODA<br /><small>AGGRESSIVE · MOBILITY</small></button>
-              <button type="button" className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
+              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + CNC<br /><small>OFFENSE · PRESSURE</small></button>
+              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
+              <button type="button" disabled={busy || !equippedPet} className={`t-btn ${equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => equippedPet && selectRecoverTeammate(`pet:${equippedPet.id}`)}>ALPHA + PET{equippedPet ? ` · ${equippedPet.name}` : ""}<br /><small>{equippedPet ? "MOBILITY · CONTROL" : "UNAVAILABLE · NO VALID PET EQUIPPED"}</small></button>
             </div>
+            {equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? <p style={{ color: "var(--t-muted)", margin: "0.8rem 0 0" }}>MOVE 4 · BITE at melee range. HAMSTRING slows enemy initiative by 50% for 2 turns. A fast relay runner with low armor.</p> : null}
+          </div>
+        ) : null}
+        {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
+          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
+            <div className="t-kicker">COLDNCURSED · BUG HUNTER WARDEN</div>
+            {sidegradesUnlocked ? <>
+              <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose one playstyle for future deployments. You can change it here at any time.</p>
+              <div className="t-brief-actions">
+                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
+                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
+              </div>
+              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>A: MOVE 3. LUNGE requires range 1 and boosts CNC's initiative speed for 2 turns.</p>
+              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>B: MOVE 2. PRESSURE deals no damage; weakens and slows an enemy at range 3 for 2 turns.</p>
+              <small style={{ color: "var(--t-accent)" }}>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
+            </> : <p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</p>}
+          </div>
+        ) : null}
+        {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
+          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
+            <div className="t-kicker">SHADOW · Staff support</div>
+            {sidegradesUnlocked ? <>
+              <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose one support playstyle for future deployments. You can change it here at any time.</p>
+              <div className="t-brief-actions">
+                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
+                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
+              </div>
+              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>A: MEND heals SHADOW and allies within 1 cell. Stay together to recover; distant allies lose access to MEND.</p>
+              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>B: PACK SUPPORT halves incoming damage for allies within 2 cells for 2 turns. It replaces healing and the DEF boost. MEND stays single-target.</p>
+              <small style={{ color: "var(--t-accent)" }}>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
+            </> : <p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</p>}
           </div>
         ) : null}
         <div className="t-brief-grid">
@@ -199,7 +245,7 @@ function Brief() {
                 <img src={def.portrait} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
                 <div>
                   <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                    {def.name}
+                    {def.defId === "ally-02" ? "COLDNCURSED" : def.name}
                   </div>
                   <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div>
                 </div>
@@ -230,11 +276,12 @@ function Brief() {
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>
             Back
           </button>
-          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={mission?.objectiveType === "RECOVER" && selectedSquadIds.length !== 2}>
+          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (mission?.objectiveType === "RECOVER" && !recoverSpawnsForSquad(selectedSquadIds, equippedPet))}>
             Deploy
             <ChevronRight className="t-ico" />
           </button>
         </div>
+        {progressionError ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
       </div>
     </div>
   );
@@ -242,6 +289,7 @@ function Brief() {
 
 function Sector() {
   const dismiss = useBattleStore((s) => s.dismissSector);
+  const bossObjective = useBattleStore((s) => s.battle.objective?.type === "BOSS");
   useEffect(() => {
     let id = 0;
     const t0 = performance.now();
@@ -259,7 +307,7 @@ function Sector() {
         <div className="t-modal t-panel">
           <div className="t-kicker">Operation</div>
           <h2 className="t-title">Sector Secured</h2>
-          <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>Hostile force eliminated.</p>
+          <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{bossObjective ? "BRUTE LEADER defeated. Commander signal broken." : "Hostile force eliminated."}</p>
           <button type="button" className="t-btn t-btn-primary" onClick={dismiss}>
             Continue
           </button>
@@ -293,15 +341,15 @@ function Results() {
     <div className="t-fill">
       <Background dim={0.6} />
       <div className="t-overlay">
-        <div className="t-modal t-panel">
+        <div className="t-modal t-panel" style={{ maxHeight: "100%", overflowY: "auto" }}>
           <img className="t-results-plate" src={PRESENTATION.resultsPlate} alt="" aria-hidden="true" />
           <div className="t-kicker">{operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DEFEATED" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
+          <h2 className="t-title">{operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "SIGNAL COMMANDER is a future lead." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
-          {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED ON CONTINUE · NEXT SLOT AVAILABLE</p> : null}
+          {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
           <dl className="t-stats">
             <div>
               <dt>Turns taken</dt>
@@ -327,7 +375,7 @@ function Results() {
                   {progressionCommitPending ? "Saving…" : operationVictory || hasNext ? "Continue" : "Return to Tactical Ops"}
                   {operationVictory || hasNext ? <ChevronRight className="t-ico" /> : null}
                 </button>
-                <button type="button" className="t-btn" onClick={replay}>
+                <button type="button" className="t-btn" onClick={replay} disabled={progressionCommitPending}>
                   {operationVictory ? "REPLAY" : "Replay this drill"}
                 </button>
               </>
