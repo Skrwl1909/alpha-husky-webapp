@@ -15,6 +15,7 @@ import {
   loadFoundationProgression,
   startOperationMission,
   startFoundationRun,
+  saveTeammateSidegrade,
 } from "../host/foundationProgression";
 import { VERSION } from "../version";
 import {
@@ -25,6 +26,8 @@ import {
 } from "../data/onboarding";
 import { COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
+import type { KodaSidegrade } from "../data/kodaSidegrade";
+import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
 
 export const TACTICAL_VERSION = VERSION;
 
@@ -62,6 +65,8 @@ interface UiBattle {
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
   selectedSquadIds: string[];
+  kodaSavePending: boolean;
+  shadowSavePending: boolean;
 }
 
 function wait(ms: number): Promise<void> {
@@ -120,7 +125,9 @@ interface Store extends UiBattle {
   selectSkill: (skillId: string) => void;
   selectTarget: (id: string) => void;
   selectRecover: () => void;
-  selectRecoverTeammate: (unitId: "ally-02" | "ally-03") => void;
+  selectRecoverTeammate: (unitId: string) => void;
+  selectKodaSidegrade: (choice: KodaSidegrade) => Promise<void>;
+  selectShadowSidegrade: (choice: ShadowSidegrade) => Promise<void>;
   skipTurn: () => void;
   cancel: () => void;
   replay: () => void;
@@ -283,6 +290,24 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
+  const selectTeammateSidegrade = async (teammate: "koda" | "shadow", choice: KodaSidegrade | ShadowSidegrade) => {
+    const current = get();
+    if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || current.progression?.operations?.["broken-signal"]?.status !== "cleared") return;
+    if (choice !== "A" && choice !== "B") return;
+    const pendingKey = teammate === "koda" ? "kodaSavePending" : "shadowSavePending";
+    set({ [pendingKey]: true, progressionError: null });
+    try {
+      const progression = await saveTeammateSidegrade(createFoundationRequestId(`${teammate}-sidegrade`), current.progression.revision, teammate, choice);
+      if (progression.revision >= (get().progression?.revision || 0)) applyCanonicalProgression(progression);
+    } catch (error) {
+      const canonical = error instanceof FoundationProgressionError ? error.state : null;
+      if (canonical && canonical.revision >= (get().progression?.revision || 0)) applyCanonicalProgression(canonical);
+      set({ progressionError: `${teammate === "koda" ? "CNC" : "SHADOW"} selection could not be saved. Retry your choice.` });
+    } finally {
+      set({ [pendingKey]: false });
+    }
+  };
+
   const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null) => {
     traceNoticeShown = false;
     const identity = identityCache(resolvePlayerIdentity());
@@ -347,6 +372,8 @@ export const useBattleStore = create<Store>((set, get) => {
     selectedMissionId: null,
     missionFirstClear: null,
     selectedSquadIds: [],
+    kodaSavePending: false,
+    shadowSavePending: false,
 
     configureOnboarding: (opts) => {
       const prevEnabled = get().onboardingEnabled;
@@ -428,6 +455,7 @@ export const useBattleStore = create<Store>((set, get) => {
       });
     },
     deploy: () => {
+      if (get().kodaSavePending || get().shadowSavePending) return;
       const g = ++runGen;
       const persisted = get();
       if (persisted.onboardingEnabled && persisted.progression) {
@@ -438,9 +466,9 @@ export const useBattleStore = create<Store>((set, get) => {
           const squadIds = mission.objectiveType === "RECOVER"
             ? persisted.selectedSquadIds
             : mission.objectiveType === "BOSS" ? ["alpha", "ally-02", "ally-03"] : undefined;
-          const spawns = mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(squadIds || []) : mission.spawns;
+          const spawns = mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(squadIds || [], persisted.progression.equippedPet) : mission.spawns;
           if (!spawns) {
-            set({ progressionError: "Choose ALPHA + KODA or ALPHA + SHADOW before deployment." });
+            set({ progressionError: "Choose CNC, SHADOW or your equipped PET to accompany ALPHA." });
             return;
           }
           set({ busy: true, ticker: "Preparing operation run…", progressionError: null });
@@ -455,13 +483,13 @@ export const useBattleStore = create<Store>((set, get) => {
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
               const canonicalSpawns = mission.objectiveType === "RECOVER"
-                ? recoverSpawnsForSquad(started.run.squadIds)
+                ? recoverSpawnsForSquad(started.run.squadIds, started.state.equippedPet)
                 : spawns;
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               beginBattle(
                 g,
                 started.run.runId,
-                canonicalSpawns,
+                withTeammateSidegrades(canonicalSpawns, started.state),
                 mission.objectiveType === "RECOVER" ? mission.terminal : undefined,
                 mission.objectiveType === "BOSS",
                 persisted.progression.intel?.routingTrace === true,
@@ -647,9 +675,12 @@ export const useBattleStore = create<Store>((set, get) => {
         await afterPlayerAction(g);
       })();
     },
+    selectKodaSidegrade: (choice) => selectTeammateSidegrade("koda", choice),
+    selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
     selectRecoverTeammate: (unitId) => {
       const current = get();
-      if (current.selectedMissionId !== "broken-signal-recover") return;
+      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || current.selectedMissionId !== "broken-signal-recover") return;
+      if (!recoverSpawnsForSquad(["alpha", unitId], current.progression?.equippedPet)) return;
       set({ selectedSquadIds: ["alpha", unitId], progressionError: null });
     },
     skipTurn: () => {
