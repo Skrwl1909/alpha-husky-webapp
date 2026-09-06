@@ -1,3 +1,7 @@
+import { parseTacticalPet, type TacticalPet } from "../data/companion";
+import type { KodaSidegrade } from "../data/kodaSidegrade";
+import type { ShadowSidegrade } from "../data/shadowSidegrade";
+
 export type FoundationStage =
   | "solo-1"
   | "solo-2"
@@ -17,6 +21,9 @@ export interface FoundationProgressionState {
   intel?: { routingTrace: boolean; commanderProfile: boolean };
   archive?: { brokenSignal: boolean };
   nextOperationSlot?: "unassigned" | null;
+  equippedPet?: TacticalPet | null;
+  kodaSidegrade?: KodaSidegrade | null;
+  shadowSidegrade?: ShadowSidegrade | null;
 }
 
 export type MissionProgressionStatus = "locked" | "available" | "cleared";
@@ -76,7 +83,10 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : 0,
   };
   const operations = parseOperations(value.operations);
+  state.equippedPet = parseTacticalPet(value.equippedPet);
   if (operations) state.operations = operations;
+  state.kodaSidegrade = operations?.["broken-signal"]?.status === "cleared" && (value.kodaSidegrade === "A" || value.kodaSidegrade === "B") ? value.kodaSidegrade : null;
+  state.shadowSidegrade = operations?.["broken-signal"]?.status === "cleared" && (value.shadowSidegrade === "A" || value.shadowSidegrade === "B") ? value.shadowSidegrade : null;
   if (value.intel && typeof value.intel === "object") {
     state.intel = {
       routingTrace: Boolean((value.intel as Record<string, unknown>).routingTrace),
@@ -201,7 +211,15 @@ export async function continueOperationMission(
   return { state: responseState(response), firstClear: response.firstClear === true };
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue"): string {
+export async function saveKodaSidegrade(requestId: string, expectedRevision: number, kodaSidegrade: KodaSidegrade): Promise<FoundationProgressionState> {
+  return saveTeammateSidegrade(requestId, expectedRevision, "koda", kodaSidegrade);
+}
+
+export async function saveTeammateSidegrade(requestId: string, expectedRevision: number, teammate: "koda" | "shadow", choice: KodaSidegrade | ShadowSidegrade): Promise<FoundationProgressionState> {
+  return responseState(await request(`/webapp/tactical-foundation/${teammate}-sidegrade`, { requestId, expectedRevision, [`${teammate}Sidegrade`]: choice }));
+}
+
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "koda-sidegrade" | "shadow-sidegrade"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
