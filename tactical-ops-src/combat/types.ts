@@ -4,7 +4,7 @@ export const METER_MAX = 100;
 export const DEF_CURVE = 50;
 
 export type Team = "ally" | "enemy";
-export type UnitRole = "alpha" | "ranged" | "skirmisher" | "support" | "hostile" | "leader";
+export type UnitRole = "alpha" | "ranged" | "skirmisher" | "support" | "companion" | "hostile" | "leader";
 export type SkillSlot = "A1" | "A2" | "A3";
 export type Screen = "hub" | "war-table" | "brief" | "battle" | "sector" | "results" | "defeat";
 export type BattleMode = "idle" | "selected" | "targeting" | "locked";

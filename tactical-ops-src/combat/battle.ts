@@ -7,6 +7,7 @@ import type {
   RecoverObjective,
   BossObjective,
   BattleReinforcement,
+  UnitDef,
 } from "./types";
 import { BROKEN_SIGNAL_SPAWNS, UNIT_DEFS, type SpawnSpec } from "../data/units";
 import { resetStatusSeq, STATUS_LABEL } from "./effects";
@@ -33,8 +34,9 @@ function spawnUnit(
   c: number,
   r: number,
   identity?: PlayerIdentity | null,
+  unitDef?: UnitDef,
 ): CombatUnit {
-  const def = UNIT_DEFS[defId];
+  const def = unitDef || UNIT_DEFS[defId];
   if (!def) throw new Error(`Unknown unit def ${defId}`);
   const cds: Record<string, number> = {};
   for (const sid of def.skillIds) cds[sid] = 0;
@@ -82,7 +84,7 @@ export function createBattle(
   signalCarrierId: string | null = null,
 ): BattleState {
   resetStatusSeq();
-  const units = spawns.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity));
+  const units = spawns.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef));
   return {
     units,
     activeId: null,
