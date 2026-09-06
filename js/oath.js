@@ -1036,6 +1036,8 @@
     if (!scroll) return;
     S.screen = "confirm";
     setMedia("accepted");
+    // Fresh Start Trail data may still exist for other systems, but must not
+    // interrupt the critical path before FIRST SIGNAL / Onboarding handoff.
     scroll.innerHTML = `
       <div class="oath-confirm">
         <div class="oath-confirm-box">
@@ -1044,25 +1046,10 @@
           </div>
           <h2>SIGNAL BOUND</h2>
           <p>Your oath has been accepted.<br>Your faction now recognizes your signal.</p>
-          <div class="oath-trail-panel">
-            <div class="oath-trail-kicker">Fresh Start Trail unlocked.</div>
-            <div class="oath-trail-copy">
-              Complete your First Howl, link your wallet, and leave your first mark in the Alpha Husky world to become eligible for symbolic $HOWL rewards.
-            </div>
-            <div class="oath-trail-actions">
-              <button type="button" class="oath-secondary" data-oath-trail="howl">Share First Howl</button>
-              <button type="button" class="oath-secondary" data-oath-trail="wallet">Link Wallet</button>
-              <button type="button" class="oath-secondary" data-oath-trail="mission">Start First Mission</button>
-              <button type="button" class="oath-secondary" data-oath-trail="map">Open Map</button>
-            </div>
-          </div>
+          <p class="oath-confirm-next">One signal is waiting. Continue into your first route.</p>
         </div>
       </div>
     `;
-    scroll.querySelector("[data-oath-trail='howl']")?.addEventListener("click", openFirstHowl);
-    scroll.querySelector("[data-oath-trail='wallet']")?.addEventListener("click", openWalletLink);
-    scroll.querySelector("[data-oath-trail='mission']")?.addEventListener("click", openFirstMission);
-    scroll.querySelector("[data-oath-trail='map']")?.addEventListener("click", openMapView);
     setNotice("");
     setFooter({ primary: "Enter the Pack", disabled: false, nextActions: false });
   }

@@ -1266,9 +1266,27 @@
           firstSignal: window.Onboarding && typeof window.Onboarding.getFirstSignal === "function" ? window.Onboarding.getFirstSignal() : null,
           tactical: missions
         });
-        const kind = asText(safe.primary && safe.primary.kind);
+        const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
         if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
           safe.primary = SD.campaignIncomingPrimary();
+        } else if (scf && kind === "fortress_ready" && (scf.firstSession || asText(scf.id).indexOf("S-FS-") === 0 || asText(scf.id).indexOf("S-CAMPAIGN-") === 0)) {
+          // Keep Moon Lab playable later; demote only while Story Delivery owns the lead.
+          if (asText(scf.ctaKind).toLowerCase() === "campaign_incoming" || asText(scf.id).indexOf("CAMPAIGN") >= 0) {
+            safe.primary = typeof SD.campaignIncomingPrimary === "function" ? SD.campaignIncomingPrimary() : null;
+          } else if (scf.target) {
+            safe.primary = {
+              kind: asText(scf.ctaKind) || "story_first_session",
+              title: asText(scf.nextAction) || asText(scf.situation) || "Continue",
+              subtitle: asText(scf.why),
+              badge: asText(scf.nextLead) || "SIGNAL",
+              target: scf.target,
+              meta: {},
+              priority: 97,
+              expiresInSec: 0,
+            };
+          } else {
+            safe.primary = null;
+          }
         }
       }
     } catch (err) {

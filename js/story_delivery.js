@@ -312,8 +312,15 @@
       });
     }
 
+    // Narrow Story Delivery rule: Moon Lab / fortress_ready must not steal
+    // primary direction while FIRST SIGNAL or the RELAY-7 mark is unresolved.
+    // Established players (mark left, or outside first-signal eligibility) keep normal fortress CTA.
+    var suppressFortress = !!firstSession
+      || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
     if (kind && LIVE_CTA_KINDS[kind] && primary) {
-      return frameFromCta(primary, { firstSession: firstSession, hideHubGoal: firstSession });
+      if (!(suppressFortress && kind === "fortress_ready")) {
+        return frameFromCta(primary, { firstSession: firstSession, hideHubGoal: firstSession });
+      }
     }
 
     if (fs.eligible && fs.state === "COMPLETED" && camp.eligible && !camp.directive) {
