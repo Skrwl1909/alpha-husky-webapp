@@ -40,9 +40,26 @@
     watch_edge: "Watch the Edge"
   };
 
+  var DIRECTIVE_PLACES = {
+    trace_signal: "missions",
+    secure_node: "Phantom Nodes",
+    red_static: "Blood-Moon",
+    watch_edge: "Edge of the Chain"
+  };
+
+  var DIRECTIVE_RETURN = {
+    trace_signal: "Return via Missions",
+    secure_node: "Return via Map → Phantom Nodes",
+    red_static: "Return via Map → Blood-Moon",
+    watch_edge: "Return via Map → Edge of the Chain"
+  };
+
+  var MARK_HANDOFF_KEY = "ah.sd.markHandoffConsumed.v1";
+
   var STATE = {
     lastScf: null,
-    inited: false
+    inited: false,
+    returnCueTimer: 0
   };
   var stateSubscribers = new Set();
 
@@ -96,6 +113,76 @@
       introSeen: !!row.introSeen,
       status: asText(row.status).toLowerCase()
     };
+  }
+
+  function readMarkHandoffConsumed() {
+    try {
+      if (!global.localStorage || typeof global.localStorage.getItem !== "function") return "";
+      return asText(global.localStorage.getItem(MARK_HANDOFF_KEY)).toLowerCase();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function markHandoffConsumed(directive) {
+    var key = asText(directive).toLowerCase();
+    if (!key) return false;
+    try {
+      if (global.localStorage && typeof global.localStorage.setItem === "function") {
+        global.localStorage.setItem(MARK_HANDOFF_KEY, key);
+      }
+    } catch (_) {}
+    return true;
+  }
+
+  function isMarkHandoffPending(camp) {
+    return !!(camp && camp.eligible && camp.markLeft && camp.directive && readMarkHandoffConsumed() !== camp.directive);
+  }
+
+  function markContinuePrimaryFromScf(scf) {
+    scf = scf || {};
+    return {
+      kind: asText(scf.ctaKind) || "campaign_mark",
+      title: asText(scf.goLabel) || asText(scf.nextAction) || "Continue",
+      subtitle: asText(scf.why),
+      badge: asText(scf.nextLead) || "SIGNAL",
+      target: scf.target || null,
+      meta: {},
+      priority: 97,
+      expiresInSec: 0
+    };
+  }
+
+  function returnLineFor(directive) {
+    return DIRECTIVE_RETURN[asText(directive).toLowerCase()] || "";
+  }
+
+  function showReturnCue(line) {
+    if (typeof document === "undefined") return;
+    line = asText(line);
+    if (!line) return;
+    ensureStyles();
+    var el = document.getElementById("ahs-story-return-cue");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ahs-story-return-cue";
+      document.body.appendChild(el);
+    }
+    el.textContent = line;
+    el.setAttribute("data-show", "1");
+    try { clearTimeout(STATE.returnCueTimer); } catch (_) {}
+    STATE.returnCueTimer = setTimeout(function hideCue() {
+      try { el.setAttribute("data-show", "0"); } catch (_) {}
+    }, 12000);
+  }
+
+  function consumeMarkHandoffAndCue(directive) {
+    var key = asText(directive).toLowerCase();
+    if (!key) return false;
+    markHandoffConsumed(key);
+    showReturnCue(returnLineFor(key));
+    try { refreshHub("mark_handoff_consumed"); } catch (_) {}
+    return true;
   }
 
   function tacticalOf(inputs) {
@@ -315,10 +402,14 @@
     // Narrow Story Delivery rule: Moon Lab / fortress_ready must not steal
     // primary direction while FIRST SIGNAL or the RELAY-7 mark is unresolved.
     // Established players (mark left, or outside first-signal eligibility) keep normal fortress CTA.
+    // P0-A: while first post-mark Continue is unresolved, demote LIVE_CTA_KINDS only for that window.
+    var holdMarkContinue = isMarkHandoffPending(camp);
     var suppressFortress = !!firstSession
       || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
     if (kind && LIVE_CTA_KINDS[kind] && primary) {
-      if (!(suppressFortress && kind === "fortress_ready")) {
+      if (holdMarkContinue) {
+        // fall through to S-CAMPAIGN-MARK Continue
+      } else if (!(suppressFortress && kind === "fortress_ready")) {
         return frameFromCta(primary, { firstSession: firstSession, hideHubGoal: firstSession });
       }
     }
@@ -377,22 +468,24 @@
       });
     }
 
-    if (camp.eligible && camp.markLeft) {
+    if (camp.eligible && camp.markLeft && isMarkHandoffPending(camp)) {
       var markLabel = DIRECTIVE_LABELS[camp.directive] || "RELAY-7 Guidance";
+      var markPlace = DIRECTIVE_PLACES[camp.directive] || markLabel;
       var markTarget = DIRECTIVE_TARGETS[camp.directive] || { type: "open_action", action: "campaign" };
+      var markReturn = DIRECTIVE_RETURN[camp.directive] || ("Return via Map → " + markPlace);
       return frame({
         id: "S-CAMPAIGN-MARK",
-        situation: "Your mark reached the Pack. The fracture has begun, but you are still standing.",
-        why: "Move with purpose. One front is now yours to hold.",
-        changed: "Mark delivered. " + markLabel + " is the live lead.",
-        nextLead: markLabel,
-        nextAction: markLabel,
+        situation: "You chose " + markLabel + ".",
+        why: "That lead continues at " + markPlace + ". " + markReturn + ".",
+        changed: "Mark delivered. Continue the story at " + markPlace + ".",
+        nextLead: markPlace,
+        nextAction: "Continue at " + markPlace,
         openQuestion: "What answers at that front?",
         target: markTarget,
         ctaKind: camp.directive || "campaign_mark",
         firstSession: false,
-        hideHubGoal: false,
-        goLabel: markLabel
+        hideHubGoal: true,
+        goLabel: "Continue to " + markPlace
       });
     }
 
@@ -503,7 +596,12 @@
       + ".ahs-story-next b{color:#d6f3ff;}"
       + ".ahs-story-go{appearance:none;margin-top:12px;width:100%;padding:11px 12px;border-radius:12px;"
       + "border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));"
-      + "color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}";
+      + "color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
+      + "#ahs-story-return-cue{position:fixed;left:12px;right:12px;bottom:18px;z-index:12000;display:none;"
+      + "padding:10px 12px;border-radius:12px;border:1px solid rgba(145,226,255,.22);"
+      + "background:rgba(8,18,29,.94);color:#e7f4ff;font-size:12px;font-weight:800;line-height:1.35;"
+      + "box-shadow:0 10px 24px rgba(0,0,0,.35);pointer-events:none;}"
+      + "#ahs-story-return-cue[data-show=\"1\"]{display:block;}";
     document.head.appendChild(style);
   }
 
@@ -541,14 +639,22 @@
     var btn = root.querySelector("[data-story-go]");
     if (btn && scf.target) {
       btn.addEventListener("click", function onGo() {
+        var pendingDirective = "";
+        try {
+          var campNow = campaignOf(gatherInputs());
+          if (scf.id === "S-CAMPAIGN-MARK" && campNow.directive) pendingDirective = campNow.directive;
+        } catch (_) {}
         try {
           if (global.CTA && typeof global.CTA.openTarget === "function") {
-            void global.CTA.openTarget(scf.target);
+            Promise.resolve(global.CTA.openTarget(scf.target)).then(function (ok) {
+              if (ok !== false && pendingDirective) consumeMarkHandoffAndCue(pendingDirective);
+            });
             return;
           }
         } catch (_) {}
         if (scf.target && scf.target.action === "campaign" && global.Campaign && typeof global.Campaign.open === "function") {
           global.Campaign.open();
+          if (pendingDirective) consumeMarkHandoffAndCue(pendingDirective);
         }
       });
     }
@@ -602,6 +708,11 @@
     resolve: resolve,
     shouldReplaceOnboardingPrimary: shouldReplaceOnboardingPrimary,
     campaignIncomingPrimary: campaignIncomingPrimary,
+    markContinuePrimaryFromScf: markContinuePrimaryFromScf,
+    markHandoffConsumed: markHandoffConsumed,
+    isMarkHandoffPending: isMarkHandoffPending,
+    returnLineFor: returnLineFor,
+    consumeMarkHandoffAndCue: consumeMarkHandoffAndCue,
     campaignEligible: campaignEligible,
     gatherInputs: gatherInputs,
     refreshHub: refreshHub,

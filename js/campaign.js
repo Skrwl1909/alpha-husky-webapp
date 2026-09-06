@@ -66,30 +66,46 @@
       primaryActionKey: "watch_edge",
     }
   };
+  var DIRECTIVE_PLACES = {
+    trace_signal: "missions",
+    secure_node: "Phantom Nodes",
+    red_static: "Blood-Moon",
+    watch_edge: "Edge of the Chain"
+  };
+  var DIRECTIVE_RETURN = {
+    trace_signal: "Return via Missions",
+    secure_node: "Return via Map → Phantom Nodes",
+    red_static: "Return via Map → Blood-Moon",
+    watch_edge: "Return via Map → Edge of the Chain"
+  };
   var BRIEFING_META = {
     trace_signal: {
       title: "Trace the Signal",
+      place: "missions",
       relayLine: "Expeditions are not errands anymore. You're tracing fractures in the signal.",
-      whyMatters: "Run an Expedition to look for supplies, static, and proof of where the break started.",
-      ctaLabel: "Open Expeditions",
+      whyMatters: "missions is where you run Expeditions and follow the fracture.",
+      ctaLabel: "Continue to missions",
     },
     secure_node: {
       title: "Secure a Phantom Node",
+      place: "Phantom Nodes",
       relayLine: "Nodes are where the signal holds or collapses.",
-      whyMatters: "Patrol the unstable map signal before another faction writes over it.",
-      ctaLabel: "Open Map",
+      whyMatters: "Phantom Nodes is where you patrol the unstable map signal.",
+      ctaLabel: "Continue to Phantom Nodes",
     },
     red_static: {
       title: "Enter Red Static",
+      place: "Blood-Moon",
       relayLine: "Blood-Moon noise is not random.",
-      whyMatters: "Strike the Tower and listen for what answers back.",
-      ctaLabel: "Open Blood-Moon Tower",
+      whyMatters: "Blood-Moon is where you strike the Tower and listen for what answers.",
+      ctaLabel: "Continue to Blood-Moon",
     },
     watch_edge: {
       title: "Watch the Edge",
+      place: "Edge of the Chain",
       relayLine: "Alpha found the doorway there. The Edge is no longer silent.",
-      whyMatters: "If the Edge moves, the Pack needs to know.",
-      ctaLabel: "Open Edge",
+      whyMatters: "Edge of the Chain is the doorway Alpha found.",
+      ctaLabel: "Continue to Edge of the Chain",
     }
   };
   var CAMPAIGN_TILE_BG_URL = "https://res.cloudinary.com/dnjwvxinh/image/upload/v1778846841/awakening/relay7/campaign_hub_tile_bg_v1.webp";
@@ -1464,9 +1480,28 @@
 
     if (campaign.markLeft) {
       afterChoiceHtml += "<div class=\"campaign-note\">Your mark reached the Pack. The fracture has begun, but you are still standing.</div>";
+      if (meta) {
+        var place = asText(DIRECTIVE_PLACES[selected]) || meta.label;
+        afterChoiceHtml += "<div class=\"campaign-directive-line\">You chose: " + esc(meta.label) + "</div>";
+        afterChoiceHtml += "<div class=\"campaign-directive-line\">Where: " + esc(place) + "</div>";
+        afterChoiceHtml += "<button type=\"button\" class=\"campaign-mark-btn\" data-campaign-continue-handoff"
+          + (STATE.busyAction ? " disabled" : "")
+          + ">Continue to " + esc(place) + "</button>";
+      }
     }
     if (lastOpenedMeta) {
       afterChoiceHtml += "<div class=\"campaign-last-opened\">Last opened: " + esc(lastOpenedMeta.label) + "</div>";
+    }
+
+    var guidanceHtml = "";
+    if (!campaign.markLeft) {
+      guidanceHtml = ""
+        + "  <div class=\"campaign-guidance\">"
+        + "    <div class=\"campaign-guidance-head\">RELAY-7 Guidance</div>"
+        + "    <div class=\"campaign-guidance-lead\">Then don't click blindly. Move with purpose.</div>"
+        + "    <div class=\"campaign-guidance-list\">" + renderGuidance(campaign) + "</div>"
+        + "    <div class=\"campaign-foot\">Guidance only. These routes open existing systems and do not fake completion or rewards.</div>"
+        + "  </div>";
     }
 
     return ""
@@ -1489,12 +1524,7 @@
       + "  <div class=\"campaign-directives\">" + renderDirectiveChoices(campaign) + "</div>"
       +      afterChoiceHtml
       +      renderArchivePanel()
-      + "  <div class=\"campaign-guidance\">"
-      + "    <div class=\"campaign-guidance-head\">RELAY-7 Guidance</div>"
-      + "    <div class=\"campaign-guidance-lead\">Then don't click blindly. Move with purpose.</div>"
-      + "    <div class=\"campaign-guidance-list\">" + renderGuidance(campaign) + "</div>"
-      + "    <div class=\"campaign-foot\">Guidance only. These routes open existing systems and do not fake completion or rewards.</div>"
-      + "  </div>"
+      +      guidanceHtml
       +      renderArchiveReportModal()
       +      renderArchiveCelebrationModal()
       + "</div>";
@@ -1508,6 +1538,13 @@
       return renderSignalCard(campaign);
     }
 
+    var place = asText(briefing.place) || asText(DIRECTIVE_PLACES[safeKey]) || briefing.title;
+    var backHtml = campaign.markLeft
+      ? ""
+      : ("      <button type=\"button\" class=\"campaign-briefing-back\" data-campaign-briefing-back"
+        + (STATE.busyAction ? " disabled" : "")
+        + ">Back</button>");
+
     return ""
       + "<div class=\"campaign-card\">"
       +      renderRelayVisual()
@@ -1516,20 +1553,21 @@
       + "  <div class=\"campaign-briefing\">"
       + "    <div class=\"campaign-briefing-kicker\">Signal Directive Handoff</div>"
       + "    <div class=\"campaign-briefing-title\">" + esc(briefing.title) + "</div>"
+      + "    <div class=\"campaign-directive-line\">You chose: " + esc(briefing.title) + "</div>"
+      + "    <div class=\"campaign-directive-line\">Where: " + esc(place) + "</div>"
       + "    <div class=\"campaign-briefing-line\">" + esc(briefing.relayLine) + "</div>"
-      + "    <div class=\"campaign-briefing-why\"><strong>Why it matters:</strong> " + esc(briefing.whyMatters) + "</div>"
+      + "    <div class=\"campaign-briefing-why\"><strong>Why this place:</strong> " + esc(briefing.whyMatters) + "</div>"
+      + "    <div class=\"campaign-directive-line\">" + esc(asText(DIRECTIVE_RETURN[safeKey]) || ("Return via Map → " + place)) + "</div>"
       + "    <div class=\"campaign-briefing-actions\">"
       + "      <button type=\"button\" class=\"campaign-briefing-primary\" data-campaign-briefing-open"
       + (STATE.busyAction ? " disabled" : "")
       + ">" + esc(briefing.ctaLabel) + "</button>"
-      + "      <button type=\"button\" class=\"campaign-briefing-back\" data-campaign-briefing-back"
-      + (STATE.busyAction ? " disabled" : "")
-      + ">Back</button>"
+      + backHtml
       + "    </div>"
       + (STATE.briefingNotice ? "<div class=\"campaign-briefing-notice\">" + esc(STATE.briefingNotice) + "</div>" : "")
       + "  </div>"
       +      renderArchivePanel()
-      + "  <div class=\"campaign-foot\">Guidance only. This handoff explains why RELAY-7 is sending you there first.</div>"
+      + "  <div class=\"campaign-foot\">Guidance only. This handoff opens the existing route for your chosen directive.</div>"
       +      renderArchiveReportModal()
       +      renderArchiveCelebrationModal()
       + "</div>";
@@ -1586,6 +1624,12 @@
       return;
     }
 
+    var campaignView = directiveState();
+    if (campaignView && campaignView.markLeft && campaignView.playerDirective && !activeBriefingKey()) {
+      var handoffKey = asText(campaignView.playerDirective).toLowerCase();
+      if (BRIEFING_META[handoffKey]) STATE.briefingKey = handoffKey;
+    }
+
     if (activeBriefingKey()) {
       STATE.rootEl.innerHTML = renderBriefingCard(directiveState(), activeBriefingKey());
     } else {
@@ -1608,6 +1652,15 @@
     if (markBtn) {
       markBtn.addEventListener("click", function onMark() {
         void postAction("leave_mark");
+      });
+    }
+
+    var continueBtn = STATE.rootEl.querySelector("[data-campaign-continue-handoff]");
+    if (continueBtn) {
+      continueBtn.addEventListener("click", function onContinueHandoff() {
+        var campaign = directiveState() || {};
+        var key = asText(campaign.playerDirective).toLowerCase();
+        if (key) openBriefing(key);
       });
     }
 
@@ -1826,6 +1879,13 @@
       STATE.payload = out || STATE.payload;
       STATE.lastLoadAt = Date.now();
       if (out && typeof out === "object") notifyAcceptedState();
+      if (action === "leave_mark" && out && out.ok !== false) {
+        var selected = asText(((directiveState() || {}).playerDirective)).toLowerCase();
+        if (selected && BRIEFING_META[selected]) {
+          STATE.briefingKey = selected;
+          STATE.briefingNotice = "";
+        }
+      }
       updateTile();
       render();
       return !!(out && out.ok !== false);
@@ -1971,7 +2031,7 @@
 
       if (key === "watch_edge") {
         if (typeof global.CTA?.openTarget === "function") {
-          if (await global.CTA.openTarget({ type: "siege", nodeId: "edge_of_chain" })) {
+          if (await global.CTA.openTarget({ type: "map_node", nodeId: "edge_of_chain" })) {
             close();
             return true;
           }
@@ -2037,6 +2097,11 @@
       STATE.lastOpenedDirective = key;
       STATE.briefingNotice = "";
       STATE.briefingKey = "";
+      try {
+        if (global.StoryDelivery && typeof global.StoryDelivery.consumeMarkHandoffAndCue === "function") {
+          global.StoryDelivery.consumeMarkHandoffAndCue(key);
+        }
+      } catch (_) {}
     }
     return ok;
   }

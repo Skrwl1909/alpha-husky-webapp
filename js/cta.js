@@ -1000,7 +1000,9 @@
 
     const go = () => {
       collapseExpanded(true);
-      void openTarget(primary.target);
+      void Promise.resolve(openTarget(primary.target)).then((ok) => {
+        if (ok !== false) maybeConsumeMarkHandoff(primary);
+      });
     };
 
     if (compactPrimary) {
@@ -1269,6 +1271,20 @@
         const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
         if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
           safe.primary = SD.campaignIncomingPrimary();
+        } else if (scf && asText(scf.id) === "S-CAMPAIGN-MARK" && scf.target) {
+          // P0-A: unresolved first post-mark Continue owns Hub primary over LIVE_CTA_KINDS.
+          safe.primary = typeof SD.markContinuePrimaryFromScf === "function"
+            ? SD.markContinuePrimaryFromScf(scf)
+            : {
+              kind: asText(scf.ctaKind) || "campaign_mark",
+              title: asText(scf.goLabel) || asText(scf.nextAction) || "Continue",
+              subtitle: asText(scf.why),
+              badge: asText(scf.nextLead) || "SIGNAL",
+              target: scf.target,
+              meta: {},
+              priority: 97,
+              expiresInSec: 0,
+            };
         } else if (scf && kind === "fortress_ready" && (scf.firstSession || asText(scf.id).indexOf("S-FS-") === 0 || asText(scf.id).indexOf("S-CAMPAIGN-") === 0)) {
           // Keep Moon Lab playable later; demote only while Story Delivery owns the lead.
           if (asText(scf.ctaKind).toLowerCase() === "campaign_incoming" || asText(scf.id).indexOf("CAMPAIGN") >= 0) {
@@ -1632,6 +1648,28 @@
     }
 
     return true;
+  }
+
+  function maybeConsumeMarkHandoff(primary) {
+    try {
+      const SD = window.StoryDelivery;
+      if (!SD || typeof SD.consumeMarkHandoffAndCue !== "function") return;
+      const kind = asText(primary?.kind).toLowerCase();
+      const markKinds = {
+        trace_signal: true,
+        secure_node: true,
+        red_static: true,
+        watch_edge: true,
+        campaign_mark: true
+      };
+      if (!markKinds[kind]) return;
+      let directive = kind === "campaign_mark" ? "" : kind;
+      if (!directive) {
+        const st = window.Campaign && typeof window.Campaign.state === "function" ? window.Campaign.state() : null;
+        directive = asText(st && st.campaign && st.campaign.playerDirective).toLowerCase();
+      }
+      if (directive) SD.consumeMarkHandoffAndCue(directive);
+    } catch (_) {}
   }
 
   async function openTarget(target) {
