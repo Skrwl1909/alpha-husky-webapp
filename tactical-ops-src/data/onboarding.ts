@@ -40,7 +40,7 @@ export const ENCOUNTER_SOLO_2: EncounterDef = {
   teaching: "Two threats. Reposition between contacts.",
   next: "ally-koda",
   resultsTitle: "DRILL COMPLETE",
-  resultsNote: "Koda is available for the next deployment.",
+  resultsNote: "COLDNCURSED / CNC — BUG HUNTER WARDEN joins Alpha for the next deployment.",
   spawns: [
     { defId: "alpha", id: "alpha", c: 2, r: 2 },
     { defId: "hostile", id: "h1", c: 5, r: 0 },
@@ -51,8 +51,8 @@ export const ENCOUNTER_SOLO_2: EncounterDef = {
 export const ENCOUNTER_ALLY_KODA: EncounterDef = {
   id: "ally-koda",
   operationName: "BROKEN SIGNAL — PACK LINK",
-  objective: "Fight with Koda. Cover range while Alpha holds melee.",
-  teaching: "Koda strikes at range 3. Howl covers nearby allies.",
+  objective: "Fight with CNC. Cover range while Alpha holds melee.",
+  teaching: "CNC strikes at range 3. Howl covers nearby allies.",
   next: "full-broken-signal",
   resultsTitle: "SQUAD LINK ESTABLISHED",
   resultsNote: "Full operation ready.",
@@ -109,7 +109,7 @@ export function alliedBriefDefs(spawns: SpawnSpec[]): UnitDef[] {
   const seen = new Set<string>();
   const out: UnitDef[] = [];
   for (const s of spawns) {
-    const def = UNIT_DEFS[s.defId];
+    const def = s.unitDef || UNIT_DEFS[s.defId];
     if (!def || def.team !== "ally" || seen.has(def.defId)) continue;
     seen.add(def.defId);
     out.push(def);

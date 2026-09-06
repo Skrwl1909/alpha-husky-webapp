@@ -30,7 +30,7 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
   },
   "ally-02": {
     defId: "ally-02",
-    name: "KODA",
+    name: "CNC",
     team: "ally",
     role: "skirmisher",
     hp: 96,
@@ -38,8 +38,8 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
     def: 8,
     spd: 12,
     move: 2,
-    sprite: `${IMG}/ally02.png`,
-    portrait: `${IMG}/ally02.png`,
+    sprite: `${IMG}/cnc_map_unit.webp`,
+    portrait: `${IMG}/cnc_portrait.webp`,
     skillIds: ["u02-shot", "u02-burst", "u02-suppress"],
   },
   "ally-03": {
@@ -88,6 +88,7 @@ export const UNIT_DEFS: Record<string, UnitDef> = {
 
 export interface SpawnSpec {
   defId: string;
+  unitDef?: UnitDef;
   id: string;
   c: number;
   r: number;

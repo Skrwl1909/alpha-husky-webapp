@@ -1,6 +1,22 @@
 import type { SkillDef } from "../combat/types";
 
 export const SKILLS: Record<string, SkillDef> = {
+  "pet-bite": {
+    id: "pet-bite", name: "BITE", desc: "Quick melee bite. Range 1.",
+    slot: "A1", cooldownMax: 0, targetType: "ENEMY_SINGLE",
+    minRange: 1, maxRange: 1, radius: 0,
+    effects: [{ kind: "damage", multiplier: 1, on: "hits" }],
+  },
+  "pet-hamstring": {
+    id: "pet-hamstring", name: "HAMSTRING",
+    desc: "Melee bite. Slows enemy initiative by 50% for 2 turns, buying time to reach the relay.",
+    slot: "A2", cooldownMax: 3, targetType: "ENEMY_SINGLE",
+    minRange: 1, maxRange: 1, radius: 0,
+    effects: [
+      { kind: "damage", multiplier: 0.6, on: "hits" },
+      { kind: "status", status: "SPD_DOWN", duration: 2, value: 0.5, on: "hits" },
+    ],
+  },
   "alpha-strike": {
     id: "alpha-strike",
     name: "STRIKE",
@@ -82,6 +98,24 @@ export const SKILLS: Record<string, SkillDef> = {
       { kind: "status", status: "ATK_DOWN", duration: 2, value: 0.3, on: "hits" },
     ],
   },
+  "u02-lunge-vanguard": {
+    id: "u02-lunge-vanguard", name: "LUNGE", slot: "A2",
+    desc: "VANGUARD: commit to range 1. Heavy hit; gain 50% initiative speed for 2 turns.",
+    cooldownMax: 3, targetType: "ENEMY_SINGLE", minRange: 1, maxRange: 1, radius: 0,
+    effects: [
+      { kind: "damage", multiplier: 1.55, on: "hits" },
+      { kind: "status", status: "SPD_UP", duration: 2, value: 0.5, on: "self" },
+    ],
+  },
+  "u02-pressure-disruptor": {
+    id: "u02-pressure-disruptor", name: "PRESSURE", slot: "A3",
+    desc: "DISRUPTOR: range 3. No damage; lower enemy ATK by 30% and initiative speed by 40% for 2 turns.",
+    cooldownMax: 3, targetType: "ENEMY_SINGLE", minRange: 1, maxRange: 3, radius: 0,
+    effects: [
+      { kind: "status", status: "ATK_DOWN", duration: 2, value: 0.3, on: "hits" },
+      { kind: "status", status: "SPD_DOWN", duration: 2, value: 0.4, on: "hits" },
+    ],
+  },
   "u03-tap": {
     id: "u03-tap",
     name: "SWEEP",
@@ -120,6 +154,18 @@ export const SKILLS: Record<string, SkillDef> = {
       { kind: "heal", base: 18, scale: 0.2, on: "aoe_allies" },
       { kind: "status", status: "DEF_UP", duration: 2, value: 0.4, on: "aoe_allies" },
     ],
+  },
+  "u03-mend-restorer": {
+    id: "u03-mend-restorer", name: "MEND", slot: "A2",
+    desc: "RESTORER: heal SHADOW and allies within 1 cell. Replaces the range-3 single-target heal.",
+    cooldownMax: 2, targetType: "ALLY_AOE", minRange: 0, maxRange: 0, radius: 1,
+    effects: [{ kind: "heal", base: 32, scale: 0.4, on: "aoe_allies" }],
+  },
+  "u03-pack-warden": {
+    id: "u03-pack-warden", name: "PACK SUPPORT", slot: "A3",
+    desc: "WARDEN: protect SHADOW and allies within 2 cells for 2 turns. Halves incoming damage; no healing or DEF boost.",
+    cooldownMax: 4, targetType: "ALLY_AOE", minRange: 0, maxRange: 0, radius: 2,
+    effects: [{ kind: "status", status: "GUARD", duration: 2, value: 0.5, on: "aoe_allies" }],
   },
   "hostile-strike": {
     id: "hostile-strike",

@@ -1,6 +1,5 @@
 import type { SpawnSpec } from "./units";
 import type { Cell } from "../combat/types";
-import { tacticalPetDef, type TacticalPet } from "./companion";
 
 export type MissionObjectiveType = "ELIMINATE" | "RECOVER" | "BOSS";
 export type MissionStatus = "locked" | "available" | "cleared";
@@ -56,13 +55,11 @@ export const COMMANDER_REINFORCEMENT = {
 } as const;
 
 
-export function recoverSpawnsForSquad(squadIds: string[], pet?: TacticalPet | null): SpawnSpec[] | null {
-  const petSelected = Boolean(pet && squadIds[1] === `pet:${pet.id}`);
-  if (squadIds.length !== 2 || squadIds[0] !== "alpha" || (!petSelected && !["ally-02", "ally-03"].includes(squadIds[1]))) return null;
+export function recoverSpawnsForSquad(squadIds: string[]): SpawnSpec[] | null {
+  if (squadIds.length !== 2 || squadIds[0] !== "alpha" || !["ally-02", "ally-03"].includes(squadIds[1])) return null;
   return [
     { defId: "alpha", id: "alpha", c: 0, r: 2 },
-    { defId: squadIds[1], id: squadIds[1], c: 1, r: squadIds[1] === "ally-02" ? 0 : 4,
-      ...(petSelected ? { unitDef: tacticalPetDef(pet!) } : {}) },
+    { defId: squadIds[1], id: squadIds[1], c: 1, r: squadIds[1] === "ally-02" ? 0 : 4 },
     ...BROKEN_SIGNAL_RECOVER_SPAWNS.filter((spawn) => spawn.defId === "hostile"),
   ];
 }
@@ -103,8 +100,8 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
     objectiveType: "BOSS",
     squadCap: 3,
     briefCopy: "Break the commander signal. Control the HOUND pressure or find an opening to defeat the BRUTE LEADER.",
-    resultsCopy: "Continue to save: OPERATION 01 — BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED · NEXT OPERATION SLOT OPENED. No Operation assigned.",
-    executable: true,
+    resultsCopy: "Continue to clear BROKEN SIGNAL and unlock its Archive entry. Next Operation Slot remains EMPTY / UNASSIGNED.",
+    executable: false,
     spawns: BROKEN_SIGNAL_COMMANDER_SPAWNS,
   },
 };
