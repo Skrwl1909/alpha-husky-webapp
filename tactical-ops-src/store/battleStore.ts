@@ -1,3 +1,4 @@
+import { fieldReport, type DeploymentApproach, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
 import { a1Range, planAi, applyAi, previewQueue, reachableCells, startBattle, tryMove, trySkill, trySkip, tryRecover, advanceToNext } from "../combat";
@@ -16,6 +17,7 @@ import {
   startOperationMission,
   startFoundationRun,
   saveTeammateSidegrade,
+  savePackMastery,
 } from "../host/foundationProgression";
 import { VERSION } from "../version";
 import {
@@ -24,7 +26,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { missionBattleRules, missionSpawnsForSquad, type MissionDef, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
@@ -65,6 +67,9 @@ interface UiBattle {
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
   selectedSquadIds: string[];
+  selectedApproach: DeploymentApproach;
+  currentFieldContext: FieldContext | null;
+  fieldResult: FieldResult | null;
   kodaSavePending: boolean;
   shadowSavePending: boolean;
 }
@@ -117,6 +122,9 @@ function emptyBattle(): BattleState {
 
 interface Store extends UiBattle {
   openBrief: () => void;
+  selectApproach: (approach: DeploymentApproach) => void;
+  selectMastery: (unitId: string, choice: "A" | "B") => Promise<void>;
+  saveFieldResult: () => Promise<void>;
   openOperationBrief: (missionId: string) => void;
   backToHub: () => void;
   deploy: () => void;
@@ -126,6 +134,7 @@ interface Store extends UiBattle {
   selectTarget: (id: string) => void;
   selectRecover: () => void;
   selectRecoverTeammate: (unitId: string) => void;
+  toggleCommanderTeammate: (unitId: string) => void;
   selectKodaSidegrade: (choice: KodaSidegrade) => Promise<void>;
   selectShadowSidegrade: (choice: ShadowSidegrade) => Promise<void>;
   skipTurn: () => void;
@@ -136,7 +145,7 @@ interface Store extends UiBattle {
   refreshIdentity: () => void;
   loadFoundationProgression: () => Promise<void>;
   configureOnboarding: (opts: { enabled?: boolean; stageId?: string | null }) => void;
-  continueOnboarding: () => void;
+  continueOnboarding: (replayAfter?: boolean) => void;
 }
 
 function activeUnit(battle: BattleState): CombatUnit | undefined {
@@ -209,7 +218,9 @@ export const useBattleStore = create<Store>((set, get) => {
       sfx("lose");
       await wait(1200);
       if (g !== runGen) return true;
-      set({ screen: "defeat", busy: false, banner: null });
+      const fieldOp = getMissionDef(get().selectedMissionId)?.activity === "FIELD_OP";
+      set({ screen: fieldOp ? "results" : "defeat", busy: false, banner: null });
+      if (fieldOp) void get().saveFieldResult();
       return true;
     }
     return false;
@@ -308,7 +319,7 @@ export const useBattleStore = create<Store>((set, get) => {
     }
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext) => {
     traceNoticeShown = false;
     const identity = identityCache(resolvePlayerIdentity());
     const { onboardingEnabled, onboardingStageId } = get();
@@ -317,7 +328,8 @@ export const useBattleStore = create<Store>((set, get) => {
       : boss ? { type: "BOSS" as const, targetId: "leader" }
       : null;
     const reinforcement = boss ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null;
-    const started = startBattle(identity, spawns, objective, reinforcement, signalCarrierId);
+    const rules = mission ? missionBattleRules(mission, routingTrace, fieldContext) : { objective, reinforcement, directive: null };
+    const started = startBattle(identity, spawns, rules.objective, rules.reinforcement, signalCarrierId, rules.directive);
     sfx("turn");
     set({
       screen: "battle",
@@ -331,6 +343,8 @@ export const useBattleStore = create<Store>((set, get) => {
       attackingId: null,
       impactId: null,
       currentRunKey: runKey,
+      currentFieldContext: fieldContext || null,
+      fieldResult: null,
       continueRequestId: null,
     });
     void (async () => {
@@ -372,6 +386,9 @@ export const useBattleStore = create<Store>((set, get) => {
     selectedMissionId: null,
     missionFirstClear: null,
     selectedSquadIds: [],
+    selectedApproach: "standard",
+    currentFieldContext: null,
+    fieldResult: null,
     kodaSavePending: false,
     shadowSavePending: false,
 
@@ -423,6 +440,48 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ identity: next });
       });
     },
+    selectMastery: async (unitId, choice) => {
+      const current = get();
+      if (!["brief", "war-table"].includes(current.screen) || current.busy || current.progressionCommitPending || !current.progression) return;
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const state = await savePackMastery(createFoundationRequestId("pack-mastery"), current.progression.revision, unitId, choice);
+        applyCanonicalProgression(state);
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical) applyCanonicalProgression(canonical);
+        set({ progressionError: error instanceof FoundationProgressionError && error.code === "mastery_run_active" ? "Finish this companion's committed attempt before changing mastery." : "Mastery option could not be saved. Refresh and retry." });
+      } finally { set({ progressionCommitPending: false }); }
+    },
+    selectApproach: (approach) => {
+      const current = get();
+      if (current.screen !== "brief" || current.busy || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
+      if (!current.progression?.fieldOps?.commander?.unlockedApproaches.includes(approach)) return;
+      set({ selectedApproach: approach });
+    },
+    saveFieldResult: async () => {
+      const current = get();
+      if (current.screen !== "results" || current.progressionCommitPending || !current.currentRunKey || !current.progression || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
+      if (current.fieldResult?.runId === current.currentRunKey) return;
+      const report = fieldReport(current.battle);
+      if (!report) return;
+      const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
+      set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
+      try {
+        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report);
+        if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey) throw new FoundationProgressionError("invalid_progression_response");
+        if (get().currentRunKey !== current.currentRunKey) return;
+        applyCanonicalProgression(committed.state);
+        set({ fieldResult: committed.fieldResult, progressionCommitPending: false });
+      } catch (error) {
+        if (get().currentRunKey !== current.currentRunKey) return;
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical) applyCanonicalProgression(canonical);
+        const recovered = canonical?.fieldOps?.lastResult;
+        if (recovered?.runId === current.currentRunKey) set({ fieldResult: recovered, progressionError: null, progressionCommitPending: false });
+        else set({ progressionCommitPending: false, progressionError: "Result could not be recorded. Retry saving before returning or replaying." });
+      }
+    },
     openBrief: () => {
       const current = get();
       if (current.foundationCompleted || current.progressionStatus === "error") return;
@@ -432,12 +491,23 @@ export const useBattleStore = create<Store>((set, get) => {
     openOperationBrief: (missionId) => {
       const current = get();
       const mission = getMissionDef(missionId);
-      const status = current.progression?.operations?.["broken-signal"]?.missions[missionId] as MissionStatus | undefined;
+      if (mission?.activity === "FIELD_OP" && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
+        set({ screen: "war-table", progressionError: "That Field Op is no longer active. Choose one of the current three missions.", selectedMissionId: null });
+        return;
+      }
+      const status = mission?.activity === "FIELD_OP" ? "available" : current.progression?.operations?.["broken-signal"]?.missions[missionId] as MissionStatus | undefined;
       if (!current.foundationCompleted || !mission || !status || status === "locked") return;
       sfx("ui");
-      set({ screen: "brief", selectedMissionId: missionId, missionFirstClear: null, selectedSquadIds: [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      const active = mission.activity === "FIELD_OP" ? current.progression?.fieldOps?.activeMissionRun : current.progression?.operations?.["broken-signal"]?.activeMissionRun;
+      const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
+      const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
+        ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
+      set({ screen: "brief", selectedMissionId: missionId, selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
+      const current = get();
+      if (current.progressionCommitPending) return;
+      if (current.screen === "results" && getMissionDef(current.selectedMissionId)?.activity === "FIELD_OP" && !current.fieldResult) { void current.saveFieldResult(); return; }
       runGen++;
       sfx("ui");
       set({
@@ -455,6 +525,7 @@ export const useBattleStore = create<Store>((set, get) => {
       });
     },
     deploy: () => {
+      if (get().busy || get().progressionCommitPending) return;
       if (get().kodaSavePending || get().shadowSavePending) return;
       const g = ++runGen;
       const persisted = get();
@@ -463,12 +534,11 @@ export const useBattleStore = create<Store>((set, get) => {
         if (persisted.foundationCompleted) {
           const mission = getMissionDef(persisted.selectedMissionId);
           if (!mission || !mission.executable) return;
-          const squadIds = mission.objectiveType === "RECOVER"
-            ? persisted.selectedSquadIds
-            : mission.objectiveType === "BOSS" ? ["alpha", "ally-02", "ally-03"] : undefined;
-          const spawns = mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(squadIds || [], persisted.progression.equippedPet) : mission.spawns;
+          if (mission.activity === "FIELD_OP" && !persisted.progression.fieldOps?.board) { set({ progressionError: "Refresh the War Table before deploying." }); return; }
+          const squadIds = mission.activity === "FIELD_OP" || mission.objectiveType === "RECOVER" || mission.objectiveType === "BOSS" ? persisted.selectedSquadIds : undefined;
+          const spawns = missionSpawnsForSquad(mission, squadIds || [], persisted.progression.equippedPet, persisted.selectedApproach);
           if (!spawns) {
-            set({ progressionError: "Choose CNC, SHADOW or your equipped PET to accompany ALPHA." });
+            set({ progressionError: mission.objectiveType === "BOSS" ? "Choose exactly two companions for ALPHA." : "Choose CNC, SHADOW or your equipped PET to accompany ALPHA." });
             return;
           }
           set({ busy: true, ticker: "Preparing operation run…", progressionError: null });
@@ -479,21 +549,22 @@ export const useBattleStore = create<Store>((set, get) => {
                 persisted.progression.revision,
                 mission.missionId,
                 squadIds,
+                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach } : undefined,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              const canonicalSpawns = mission.objectiveType === "RECOVER"
-                ? recoverSpawnsForSquad(started.run.squadIds, started.state.equippedPet)
-                : spawns;
+              const canonicalSpawns = missionSpawnsForSquad(mission, started.run.squadIds, started.state.equippedPet, started.run.fieldContext?.approach);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               beginBattle(
                 g,
                 started.run.runId,
-                withTeammateSidegrades(canonicalSpawns, started.state),
+                withTeammateSidegrades(canonicalSpawns, { ...started.state, packMastery: started.run.packMastery || {} }),
                 mission.objectiveType === "RECOVER" ? mission.terminal : undefined,
                 mission.objectiveType === "BOSS",
                 persisted.progression.intel?.routingTrace === true,
                 mission.missionId === "broken-signal-breach" ? "h1" : null,
+                mission,
+                started.run.fieldContext,
               );
             } catch (error) {
               if (g !== runGen) return;
@@ -677,6 +748,14 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectKodaSidegrade: (choice) => selectTeammateSidegrade("koda", choice),
     selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
+    toggleCommanderTeammate: (unitId) => {
+      const current = get();
+      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP")) return;
+      if (!recoverSpawnsForSquad(["alpha", unitId], current.progression?.equippedPet)) return;
+      const companions = current.selectedSquadIds.slice(1);
+      const next = companions.includes(unitId) ? companions.filter((id) => id !== unitId) : companions.length < 2 ? [...companions, unitId] : companions;
+      set({ selectedSquadIds: ["alpha", ...next], progressionError: null });
+    },
     selectRecoverTeammate: (unitId) => {
       const current = get();
       if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || current.selectedMissionId !== "broken-signal-recover") return;
@@ -704,11 +783,25 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ battle: { ...battle, inspectId: null } });
     },
     replay: () => {
-      get().deploy();
+      const current = get();
+      if (current.progressionCommitPending) return;
+      if (getMissionDef(current.selectedMissionId)?.activity === "FIELD_OP") {
+        if (current.screen === "results") current.continueOnboarding(true);
+        else if (current.selectedMissionId) { runGen++; current.openOperationBrief(current.selectedMissionId); }
+        return;
+      }
+      current.deploy();
     },
-    continueOnboarding: () => {
+    continueOnboarding: (replayAfter = false) => {
       const s = get();
       if (s.screen !== "results") return;
+      if (getMissionDef(s.selectedMissionId)?.activity === "FIELD_OP") {
+        if (!s.fieldResult) { void get().saveFieldResult(); return; }
+        if (s.progressionCommitPending) return;
+        get().backToHub();
+        if (replayAfter && s.selectedMissionId) get().openOperationBrief(s.selectedMissionId);
+        return;
+      }
       if (s.battle.outcome !== "victory") return;
       if (s.foundationCompleted && s.selectedMissionId) {
         if (s.progressionCommitPending || !s.currentRunKey || !s.progression) return;
@@ -735,10 +828,11 @@ export const useBattleStore = create<Store>((set, get) => {
               queue: [],
               currentRunKey: null,
               continueRequestId: null,
-              missionFirstClear: committed.firstClear,
+              missionFirstClear: getMissionDef(s.selectedMissionId)?.activity === "FIELD_OP" ? null : committed.firstClear,
               selectedMissionId: null,
               selectedSquadIds: [],
             });
+            if (replayAfter === true && s.selectedMissionId) get().openOperationBrief(s.selectedMissionId);
           } catch (error) {
             const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
             const canonical = error instanceof FoundationProgressionError ? error.state : null;
@@ -849,6 +943,7 @@ export const useBattleStore = create<Store>((set, get) => {
     dismissSector: () => {
       sfx("ui");
       set({ screen: "results" });
+      if (getMissionDef(get().selectedMissionId)?.activity === "FIELD_OP") void get().saveFieldResult();
     },
     toggleMute: () => {
       const next = !get().muted;
