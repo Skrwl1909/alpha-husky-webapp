@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build:tactical-ops": "node tools/build_tactical_ops.mjs",
+    "verify:tactical-ops:field-ops": "node tools/verify_tactical_ops_field_ops.mjs",
     "verify:tactical-ops:combat": "node tools/verify_tactical_ops_combat_core_v2.mjs",
     "verify:tactical-ops:foundation": "node tools/verify_tactical_ops_foundation.mjs",
     "verify:tactical-ops:persistence": "node tools/verify_tactical_ops_foundation_persistence.mjs",
