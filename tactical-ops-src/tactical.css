@@ -1587,3 +1587,9 @@
 #tacticalOpsRoot .t-field-grade {
   pointer-events: none;
 }
+
+/* Field mission information remains visible in the existing order bar on mobile. */
+#tacticalOpsRoot .t-field-rules { color: var(--t-accent); font-size: 0.7rem; line-height: 1.35; text-align: center; padding: 0.3rem 0.45rem; white-space: normal; background: #08151ee8; }
+#tacticalOpsRoot .t-hold-cell { position: absolute; transform: translate(-50%, -50%); width: 10%; height: 15%; border: 1px solid #61ddff; background: #3ec6ff24; color: #a6ebff; font-size: 0.55rem; pointer-events: none; display: flex; align-items: end; justify-content: center; z-index: 2; }
+
+#tacticalOpsRoot .t-order-wrap:has(.t-field-rules) { flex-direction: column; align-items: center; }
