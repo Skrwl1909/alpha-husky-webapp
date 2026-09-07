@@ -1,5 +1,6 @@
 import { UNIT_DEFS, type SpawnSpec } from "./units";
 import { withKodaSidegrade, type KodaSidegrade } from "./kodaSidegrade";
+import { withPackMastery, type PackMastery } from "./packMastery";
 
 export type ShadowSidegrade = "A" | "B";
 
@@ -19,6 +20,7 @@ export function withShadowSidegrade(spawns: SpawnSpec[], choice?: ShadowSidegrad
 export function withTeammateSidegrades(spawns: SpawnSpec[], choices: {
   kodaSidegrade?: KodaSidegrade | null;
   shadowSidegrade?: ShadowSidegrade | null;
+  packMastery?: PackMastery;
 }): SpawnSpec[] {
-  return withShadowSidegrade(withKodaSidegrade(spawns, choices.kodaSidegrade), choices.shadowSidegrade);
+  return withPackMastery(withShadowSidegrade(withKodaSidegrade(spawns, choices.kodaSidegrade), choices.shadowSidegrade), choices.packMastery);
 }
