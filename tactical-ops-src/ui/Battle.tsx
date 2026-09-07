@@ -1,3 +1,5 @@
+import { missionHud, recoverSignalOpen } from "../combat/missionRules";
+import { getMissionDef, missionBattlefield } from "../data/operations";
 import { useMemo } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
@@ -263,7 +265,7 @@ function SkillHud() {
       {recoveryMission ? (
         <button type="button" className={`t-act ${recoverReady ? "on" : "cooling"}`} disabled={!allyTurn || !recoverReady} onClick={() => { unlockAudio(); selectRecover(); }}>
           <span className="row"><span className="slot">OBJ</span>RECOVER</span>
-          <small>{recoverReady ? "Complete objective · consumes action" : "Move adjacent to relay terminal"}</small>
+          <small>{recoverReady ? "Complete objective · consumes action" : !recoverSignalOpen(battle) ? "Jammed / RECOVER on even rounds" : `Move within ${actor?.recoverRange || 1} cells of relay terminal`}</small>
         </button>
       ) : null}
     </div>
@@ -290,6 +292,8 @@ export function BattleScreen() {
   const cancel = useBattleStore((s) => s.cancel);
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
+  const rulesText = useBattleStore((s) => missionHud(s.battle));
+  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
 
@@ -323,15 +327,16 @@ export function BattleScreen() {
           </span>
         </div>
         <div className="t-obj">
-          {OPERATION.name}
+          {mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name}
           <small>{objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : objective?.type === "BOSS" ? "DEFEAT SIGNAL COMMANDER" : "Secure sector"}</small>
         </div>
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />
+        {rulesText || mission?.challenge ? <div className="t-field-rules" role="status">{rulesText}{mission?.challenge ? <small style={{ display: "block" }}>OPTIONAL / {mission.challenge.label}</small> : null}</div> : null}
       </div>
       {ticker ? <div className="t-ticker">{ticker}</div> : null}
-      {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker" style={{ top: "4.8rem", color: "var(--t-enemy)" }}>ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
+      {!rulesText && reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker" style={{ top: "4.8rem", color: "var(--t-enemy)" }}>ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
         <div
           className="t-field"
@@ -339,7 +344,7 @@ export function BattleScreen() {
             if (!busy) cancel();
           }}
         >
-          <img className="t-field-art" src={PRESENTATION.battlefield} alt="" />
+          <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className="t-grid" aria-hidden="true">
@@ -350,6 +355,10 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
+          {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: 40 }, (_, i) => ({ c: i % 8, r: Math.floor(i / 8) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
+            const pos = fieldPercent(cell.c, cell.r);
+            return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
+          }) : null}
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
             return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><img className="t-objective-marker-art" src={PRESENTATION.signalRecovery} alt="" /><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
