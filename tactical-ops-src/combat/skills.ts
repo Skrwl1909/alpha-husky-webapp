@@ -1,3 +1,4 @@
+import { supportCooldownExtra } from "./missionRules";
 import type { BattleEvent, BattleState, Cell, CombatUnit, SkillDef } from "./types";
 import { applyStatus, effectiveAtk, incomingDamageMultiplier, STATUS_LABEL } from "./effects";
 import { computeHeal, mitigatedDamage } from "./damage";
@@ -125,7 +126,7 @@ export function applySkill(
     hasActed: true,
     cooldowns: {
       ...u.cooldowns,
-      [skill.id]: skill.cooldownMax,
+      [skill.id]: skill.cooldownMax + supportCooldownExtra(state.directive, caster, skill),
     },
   }));
   if (skill.cooldownMax > 0) {
@@ -135,6 +136,7 @@ export function applySkill(
   return {
     state: {
       ...state,
+      healingActions: (state.healingActions || 0) + (caster.team === "ally" && skill.effects.some((effect) => effect.kind === "heal") ? 1 : 0),
       units,
       hostilesEliminated,
       damageTaken,
@@ -152,6 +154,7 @@ export function availableSkills(state: BattleState, unit: CombatUnit): Array<Ski
     const ready = cd <= 0;
     return {
       ...skill,
+      desc: supportCooldownExtra(state.directive, unit, skill) ? `${skill.desc} Disrupted Support: cooldown +${supportCooldownExtra(state.directive, unit, skill)}.` : skill.desc,
       ready,
       cd,
       targets: ready ? validTargetIds(state.units, unit, skill) : [],

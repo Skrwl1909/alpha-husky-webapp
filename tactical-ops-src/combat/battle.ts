@@ -1,3 +1,5 @@
+import { recoverSignalOpen, resolveTimedObjective } from "./missionRules";
+import type { BattleObjective, MissionDirective } from "./types";
 import type {
   BattleEvent,
   BattleResults,
@@ -52,6 +54,7 @@ function spawnUnit(
     def: def.def,
     spd: def.spd,
     move: def.move,
+    recoverRange: def.recoverRange,
     c,
     r,
     statuses: [],
@@ -79,9 +82,10 @@ function spawnUnit(
 export function createBattle(
   identity?: PlayerIdentity | null,
   spawns: SpawnSpec[] = BROKEN_SIGNAL_SPAWNS,
-  objective: RecoverObjective | BossObjective | null = null,
+  objective: BattleObjective | null = null,
   reinforcement: BattleReinforcement | null = null,
   signalCarrierId: string | null = null,
+  directive: MissionDirective | null = null,
 ): BattleState {
   resetStatusSeq();
   const units = spawns.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef));
@@ -96,11 +100,13 @@ export function createBattle(
     actionsLeftInRound: living(units).length,
     outcome: "ongoing",
     damageTaken: 0,
+    healingActions: 0,
     hostilesEliminated: 0,
     results: null,
     objective: objective ? objective.type === "RECOVER" ? { ...objective, terminal: { ...objective.terminal } } : { ...objective } : null,
     reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn } } : null,
     signalCarrierId,
+    directive,
     routingTraceAcquired: false,
     seed: 1,
   };
@@ -115,11 +121,19 @@ export function evaluateOutcome(state: BattleState): BattleState {
   const traceAcquired = state.signalCarrierId && !state.routingTraceAcquired
     ? state.units.find((unit) => unit.id === state.signalCarrierId)?.defeated === true && living(state.units, "enemy").length > 0
     : false;
-  const traced = traceAcquired ? { ...state, routingTraceAcquired: true } : state;
+  let traced = traceAcquired ? { ...state, routingTraceAcquired: true } : state;
   const allies = living(traced.units, "ally");
   const enemies = living(traced.units, "enemy");
   const squadDeployed = squadDeployedCount(traced.units);
-  if (traced.objective?.type === "BOSS" && traced.units.find((unit) => unit.id === traced.objective!.targetId)?.defeated) {
+  const timed = resolveTimedObjective(traced);
+  traced = timed.state;
+  if (timed.result) {
+    const victory = timed.result === "victory";
+    const results: BattleResults = { victory, turns: traced.round, hostilesEliminated: traced.hostilesEliminated, squadStanding: allies.length, squadDeployed, damageTaken: traced.damageTaken, bonesRecovered: 0, objectiveComplete: victory };
+    return { ...traced, outcome: timed.result, results, mode: "locked", activeId: null, actionSkillId: null };
+  }
+
+  if (traced.objective?.type === "BOSS" && traced.units.find((unit) => unit.id === (traced.objective as BossObjective).targetId)?.defeated) {
     const results: BattleResults = { victory: true, turns: traced.round, hostilesEliminated: traced.hostilesEliminated, squadStanding: allies.length, squadDeployed, damageTaken: traced.damageTaken, bonesRecovered: 0, objectiveComplete: true };
     return { ...traced, outcome: "victory", results, mode: "locked", activeId: null, actionSkillId: null };
   }
@@ -138,7 +152,7 @@ export function evaluateOutcome(state: BattleState): BattleState {
   }
   // RECOVER has no eliminate shortcut: an empty field only makes the terminal
   // safer to reach. The interaction itself is the win condition.
-  if (enemies.length === 0 && traced.objective?.type !== "RECOVER" && traced.objective?.type !== "BOSS") {
+  if (enemies.length === 0 && !traced.objective) {
     const results: BattleResults = {
       victory: true,
       turns: traced.round,
@@ -255,7 +269,15 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   const events: BattleEvent[] = [...started.events];
   const reinforcement = reinforced.reinforcement;
   if (reinforced.outcome === "ongoing" && reinforcement && !reinforcement.spawned && reinforced.round >= reinforcement.triggerRound) {
-    const unit = spawnUnit(reinforcement.spawn.defId, reinforcement.spawn.id, reinforcement.spawn.c, reinforcement.spawn.r);
+    let entry = reinforcement.spawn;
+    if (reinforced.directive?.type === "REINFORCEMENTS") {
+      const cells = Array.from({ length: 40 }, (_, i) => ({ c: i % 8, r: Math.floor(i / 8) }))
+        .filter((cell) => canOccupy(reinforced.units, cell.c, cell.r))
+        .sort((a, b) => (Math.abs(a.c - entry.c) + Math.abs(a.r - entry.r)) - (Math.abs(b.c - entry.c) + Math.abs(b.r - entry.r)));
+      if (!cells.length) return { state: reinforced, events };
+      entry = { ...entry, ...cells[0] };
+    }
+    const unit = spawnUnit(entry.defId, entry.id, entry.c, entry.r);
     reinforced = { ...reinforced, units: [...reinforced.units, unit], reinforcement: { ...reinforcement, spawned: true } };
     events.push({ type: "ticker", text: "REINFORCEMENT INBOUND · HOUND MK-2" });
   }
@@ -270,11 +292,12 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
 export function startBattle(
   identity?: PlayerIdentity | null,
   spawns: SpawnSpec[] = BROKEN_SIGNAL_SPAWNS,
-  objective: RecoverObjective | BossObjective | null = null,
+  objective: BattleObjective | null = null,
   reinforcement: BattleReinforcement | null = null,
   signalCarrierId: string | null = null,
+  directive: MissionDirective | null = null,
 ): { state: BattleState; events: BattleEvent[] } {
-  const fresh = createBattle(identity, spawns, objective, reinforcement, signalCarrierId);
+  const fresh = createBattle(identity, spawns, objective, reinforcement, signalCarrierId, directive);
   return advanceToNext(fresh);
 }
 
@@ -282,7 +305,7 @@ export function canRecover(state: BattleState): boolean {
   const actor = state.units.find((u) => u.id === state.activeId);
   const objective = state.objective;
   if (!objective || objective.type !== "RECOVER" || objective.completed || !actor || actor.team !== "ally" || actor.defeated || actor.hasActed) return false;
-  return Math.abs(actor.c - objective.terminal.c) + Math.abs(actor.r - objective.terminal.r) <= 1;
+  return recoverSignalOpen(state) && Math.abs(actor.c - objective.terminal.c) + Math.abs(actor.r - objective.terminal.r) <= (actor.recoverRange || 1);
 }
 
 export function tryRecover(state: BattleState): { state: BattleState; events: BattleEvent[]; ok: boolean } {
@@ -292,7 +315,7 @@ export function tryRecover(state: BattleState): { state: BattleState; events: Ba
   const completed: BattleState = {
     ...state,
     units,
-    objective: { ...state.objective!, completed: true },
+    objective: { ...(state.objective as RecoverObjective), completed: true },
     actionSkillId: null,
     mode: "locked",
   };
@@ -317,7 +340,7 @@ export function tryMove(state: BattleState, c: number, r: number): { state: Batt
   if (!cells.some((cell) => cell.c === c && cell.r === r)) return { state, events: [], ok: false };
   const units = state.units.map((u) => (u.id === actor.id ? { ...u, c, r, hasMoved: true } : u));
   return {
-    state: { ...state, units, inspectId: null },
+    state: evaluateOutcome({ ...state, units, inspectId: null }),
     events: [
       { type: "move", unitId: actor.id, text: `${actor.name}  ·  repositions` },
       { type: "ticker", text: `${actor.name}  ·  repositions` },

@@ -48,6 +48,7 @@ export interface SkillEffectSpec {
 }
 
 export interface SkillDef {
+  ignoreDisruption?: boolean;
   id: string;
   name: string;
   desc: string;
@@ -61,6 +62,7 @@ export interface SkillDef {
 }
 
 export interface UnitDef {
+  recoverRange?: number;
   defId: string;
   name: string;
   team: Team;
@@ -77,6 +79,7 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  recoverRange?: number;
   id: string;
   defId: string;
   name: string;
@@ -151,6 +154,25 @@ export interface BossObjective {
   targetId: string;
 }
 
+export interface TimedObjective {
+  type: "HOLD" | "SURVIVE";
+  duration: number;
+  terminal?: Cell;
+  radius?: number;
+  progress: number;
+  checkedRound: number;
+}
+
+export type BattleObjective = RecoverObjective | BossObjective | TimedObjective;
+export interface MissionDirective {
+  type: "SIGNAL_INTERFERENCE" | "REINFORCEMENTS" | "DISRUPTED_SUPPORT";
+  name: string;
+  copy: string;
+  recoverEveryRounds?: number;
+  supportCooldownExtra?: number;
+  reinforcement?: BattleReinforcement;
+}
+
 export interface BattleReinforcement {
   spawn: { defId: string; id: string; c: number; r: number };
   triggerRound: number;
@@ -169,9 +191,11 @@ export interface BattleState {
   actionsLeftInRound: number;
   outcome: BattleOutcome;
   damageTaken: number;
+  healingActions?: number;
   hostilesEliminated: number;
   results: BattleResults | null;
-  objective: RecoverObjective | BossObjective | null;
+  objective: BattleObjective | null;
+  directive?: MissionDirective | null;
   reinforcement: BattleReinforcement | null;
   signalCarrierId: string | null;
   routingTraceAcquired: boolean;
