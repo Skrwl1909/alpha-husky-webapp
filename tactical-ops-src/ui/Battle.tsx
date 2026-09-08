@@ -71,6 +71,7 @@ function Token({
   attacking,
   inspecting,
   signalCarrier,
+  interceptTarget = false,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -79,6 +80,7 @@ function Token({
   attacking: boolean;
   inspecting: boolean;
   signalCarrier: boolean;
+  interceptTarget?: boolean;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
@@ -107,6 +109,7 @@ function Token({
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
+      {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
       <img className="body" src={src} alt="" draggable={false} />
       <button
@@ -328,7 +331,7 @@ export function BattleScreen() {
         </div>
         <div className="t-obj">
           {mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name}
-          <small>{objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : objective?.type === "BOSS" ? "DEFEAT SIGNAL COMMANDER" : "Secure sector"}</small>
+          <small>{objective?.type === "INTERCEPT" ? "STOP THE SIGNAL COURIER" : objective?.type === "HOLD" ? "CONTROL THE RELAY" : objective?.type === "SURVIVE" ? "KEEP THE PACK STANDING" : objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : objective?.type === "BOSS" ? "DEFEAT SIGNAL COMMANDER" : "Secure sector"}</small>
         </div>
       </header>
       <div className="t-order-wrap">
@@ -362,6 +365,10 @@ export function BattleScreen() {
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
             return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><img className="t-objective-marker-art" src={PRESENTATION.signalRecovery} alt="" /><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;
+          })() : null}
+          {objective?.type === "INTERCEPT" ? (() => {
+            const pos = fieldPercent(objective.exit.c, objective.exit.r);
+            return <div className="t-terminal" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Courier escape exit"><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>EXIT</span><small>BLOCK / INTERCEPT</small></div>;
           })() : null}
           {reinforcement?.telegraphed && !reinforcement.spawned ? (() => {
             const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
@@ -401,6 +408,7 @@ export function BattleScreen() {
                 attacking={u.id === attackingId}
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
+                interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
               />
             ))}
           {floats.map((f) => {
