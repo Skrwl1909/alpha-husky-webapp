@@ -2,8 +2,11 @@ import { DEPLOYMENT_APPROACHES, type DeploymentApproach, type FieldContext, type
 import type { SpawnSpec } from "./units";
 import type { BattleObjective, MissionDirective, Cell } from "../combat/types";
 import { tacticalPetDef, type TacticalPet } from "./companion";
+import { UNIT_DEFS } from "./units";
+import { missionDirectives } from "./directives";
+import { composeDirectives } from "../combat/missionRules";
 
-export type MissionObjectiveType = "ELIMINATE" | "RECOVER" | "BOSS" | "HOLD" | "SURVIVE";
+export type MissionObjectiveType = "ELIMINATE" | "RECOVER" | "BOSS" | "HOLD" | "SURVIVE" | "INTERCEPT";
 export type MissionStatus = "locked" | "available" | "cleared";
 
 export interface MissionDef {
@@ -203,6 +206,22 @@ Object.assign(MISSION_DEFS, {
   },
 } satisfies Record<string, MissionDef>);
 
+// V2.6 accepted attempts keep the old RECOVER contract until committed/abandoned.
+const LEGACY_RELAY_INTERCEPT = structuredClone(MISSION_DEFS["field-relay-intercept"]);
+MISSION_DEFS["field-relay-intercept"] = {
+  ...LEGACY_RELAY_INTERCEPT, objectiveType: "INTERCEPT", terminal: undefined,
+  briefCopy: "Stop the SIGNAL COURIER before it reaches the south-east EXIT. It moves 1 cell on each personal turn, taking the shortest free route. Block the route, slow it, or focus fire; patrol kills are optional.",
+  objective: { type: "INTERCEPT", targetId: "courier", exit: { c: 7, r: 4 } },
+  spawns: [{ defId: "hostile", id: "courier", c: 4, r: 0, unitDef: { ...UNIT_DEFS.hostile, defId: "signal-courier", name: "SIGNAL COURIER", move: 1 } },
+    { defId: "hostile", id: "h1", c: 4, r: 2 }, { defId: "hostile", id: "h2", c: 6, r: 3 }],
+  challenge: { type: "NO_HEALING", label: "Intercept without using a healing skill" },
+  squadHint: "CNC DISRUPTOR and PET HAMSTRING slow the courier's turns. PET mobility can block its exit; SHADOW protects a forward blocker at the cost of another control unit.",
+};
+
+export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>): MissionDef {
+  return mission.missionId === "field-relay-intercept" && context?.reportVersion != null && context.reportVersion < 3 ? LEGACY_RELAY_INTERCEPT : mission;
+}
+
 /** The accepted Commander squad rules also supply Field Ops' two tactical slots. */
 export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], pet?: TacticalPet | null, approach: DeploymentApproach = "standard"): SpawnSpec[] | null {
   if (mission.activity === "FIELD_OP") {
@@ -213,11 +232,12 @@ export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], p
     : mission.objectiveType === "BOSS" ? commanderSpawnsForSquad(squadIds, pet) : mission.spawns || null;
 }
 
-export function missionBattleRules(mission: MissionDef, routingTrace = false, context?: Pick<FieldContext, "pressure">) {
+export function missionBattleRules(mission: MissionDef, routingTrace = false, context?: Partial<FieldContext>) {
+  mission = missionForContext(mission, context);
   const objective: BattleObjective | null = mission.objective ? structuredClone(mission.objective)
     : mission.objectiveType === "RECOVER" && mission.terminal ? { type: "RECOVER", terminal: { ...mission.terminal }, completed: false }
     : mission.objectiveType === "BOSS" ? { type: "BOSS", targetId: "leader" } : null;
-  const directive = mission.directive ? structuredClone(mission.directive) : null;
+  const directive = composeDirectives(missionDirectives(mission, context));
   const reinforcement = directive?.reinforcement || (mission.objectiveType === "BOSS" ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null);
   if (mission.activity === "FIELD_OP" && reinforcement && context && context.pressure < 2) {
     reinforcement.triggerRound += 1;

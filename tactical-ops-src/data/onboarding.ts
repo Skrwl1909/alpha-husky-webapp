@@ -118,11 +118,11 @@ export function alliedBriefDefs(spawns: SpawnSpec[]): UnitDef[] {
 }
 
 export function enemyBriefRows(spawns: SpawnSpec[]): Array<{ def: UnitDef; count: number }> {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, { def: UnitDef; count: number }>();
   for (const s of spawns) {
-    const def = UNIT_DEFS[s.defId];
+    const def = s.unitDef || UNIT_DEFS[s.defId];
     if (!def || def.team !== "enemy") continue;
-    counts.set(def.defId, (counts.get(def.defId) || 0) + 1);
+    counts.set(def.defId, { def, count: (counts.get(def.defId)?.count || 0) + 1 });
   }
-  return [...counts.entries()].map(([id, count]) => ({ def: UNIT_DEFS[id], count }));
+  return [...counts.values()];
 }

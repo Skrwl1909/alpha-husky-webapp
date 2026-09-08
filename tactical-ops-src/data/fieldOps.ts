@@ -2,11 +2,15 @@ import type { BattleState, Cell } from "../combat/types";
 import type { MasteryChange } from "./packMastery";
 
 export type DeploymentApproach = "standard" | "south";
+export type DirectiveTier = "standard" | "advanced";
+export type DirectiveSet = "pursuit" | "attrition";
 export interface FieldContext {
   cycleId: number;
   pressure: number;
   approach: DeploymentApproach;
   reportVersion: number;
+  directiveTier?: DirectiveTier;
+  directiveSet?: DirectiveSet;
 }
 export interface MissionChallenge {
   type: "TURN_LIMIT" | "NO_HEALING" | "SQUAD";
@@ -15,6 +19,7 @@ export interface MissionChallenge {
   required?: string[];
 }
 export interface FieldReport {
+  failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   victory: boolean;
   objectiveComplete: boolean;
   turns: number;
@@ -23,6 +28,11 @@ export interface FieldReport {
   squadDeployed: number;
 }
 export interface FieldResult {
+  directiveTier?: DirectiveTier;
+  directiveSet?: DirectiveSet;
+  advancedFirstClear?: boolean;
+  advancedUnlocked?: boolean;
+  failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   masteryChanges?: MasteryChange[];
   runId: string;
   missionId: string;
@@ -57,7 +67,12 @@ export function pressureEffect(value: number): string {
 export function fieldReport(battle: BattleState): FieldReport | null {
   if (!battle.results || battle.outcome === "ongoing") return null;
   const { victory, turns, squadStanding, squadDeployed } = battle.results;
-  return { victory, turns, squadStanding, squadDeployed, objectiveComplete: battle.results.objectiveComplete === true, healingActions: battle.healingActions || 0 };
+  return { victory, turns, squadStanding, squadDeployed, objectiveComplete: battle.results.objectiveComplete === true, healingActions: battle.healingActions || 0, ...(battle.failureReason ? { failureReason: battle.failureReason } : {}) };
+}
+
+export function directiveSetLabel(value?: DirectiveSet): string { return value === "attrition" ? "ATTRITION" : "PURSUIT"; }
+export function fieldFailureCopy(reason?: string, objective?: string): string {
+  return reason === "TARGET_ESCAPED" ? "The signal courier reached its exit." : reason === "DEADLINE" ? "The completion window closed." : objective === "SURVIVE" ? "A squad member fell. The full squad must survive." : "The squad was defeated.";
 }
 
 /** Preview only; the server resolves and awards challenges from the run's report. */
