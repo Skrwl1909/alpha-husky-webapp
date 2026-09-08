@@ -1,4 +1,4 @@
-import { fieldReport, type DeploymentApproach, type FieldContext, type FieldResult } from "../data/fieldOps";
+import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
 import { a1Range, planAi, applyAi, previewQueue, reachableCells, startBattle, tryMove, trySkill, trySkip, tryRecover, advanceToNext } from "../combat";
@@ -26,7 +26,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { missionBattleRules, missionSpawnsForSquad, type MissionDef, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
@@ -68,6 +68,7 @@ interface UiBattle {
   missionFirstClear: boolean | null;
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
+  selectedDirectiveTier: DirectiveTier;
   currentFieldContext: FieldContext | null;
   fieldResult: FieldResult | null;
   kodaSavePending: boolean;
@@ -123,6 +124,7 @@ function emptyBattle(): BattleState {
 interface Store extends UiBattle {
   openBrief: () => void;
   selectApproach: (approach: DeploymentApproach) => void;
+  selectDirectiveTier: (tier: DirectiveTier) => void;
   selectMastery: (unitId: string, choice: "A" | "B") => Promise<void>;
   saveFieldResult: () => Promise<void>;
   openOperationBrief: (missionId: string) => void;
@@ -387,6 +389,7 @@ export const useBattleStore = create<Store>((set, get) => {
     missionFirstClear: null,
     selectedSquadIds: [],
     selectedApproach: "standard",
+    selectedDirectiveTier: "standard",
     currentFieldContext: null,
     fieldResult: null,
     kodaSavePending: false,
@@ -453,6 +456,11 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ progressionError: error instanceof FoundationProgressionError && error.code === "mastery_run_active" ? "Finish this companion's committed attempt before changing mastery." : "Mastery option could not be saved. Refresh and retry." });
       } finally { set({ progressionCommitPending: false }); }
     },
+    selectDirectiveTier: (tier) => {
+      const current = get();
+      if (current.screen !== "brief" || current.busy || current.progressionCommitPending || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" || !current.progression?.fieldOps?.commander?.unlockedDirectiveTiers?.includes(tier)) return;
+      set({ selectedDirectiveTier: tier });
+    },
     selectApproach: (approach) => {
       const current = get();
       if (current.screen !== "brief" || current.busy || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
@@ -502,7 +510,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
         ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
-      set({ screen: "brief", selectedMissionId: missionId, selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      set({ screen: "brief", selectedMissionId: missionId, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       const current = get();
@@ -549,21 +557,22 @@ export const useBattleStore = create<Store>((set, get) => {
                 persisted.progression.revision,
                 mission.missionId,
                 squadIds,
-                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach } : undefined,
+                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach, ...(persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              const canonicalSpawns = missionSpawnsForSquad(mission, started.run.squadIds, started.state.equippedPet, started.run.fieldContext?.approach);
+              const acceptedMission = missionForContext(mission, started.run.fieldContext);
+              const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, started.state.equippedPet, started.run.fieldContext?.approach);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               beginBattle(
                 g,
                 started.run.runId,
                 withTeammateSidegrades(canonicalSpawns, { ...started.state, packMastery: started.run.packMastery || {} }),
-                mission.objectiveType === "RECOVER" ? mission.terminal : undefined,
+                acceptedMission.objectiveType === "RECOVER" ? acceptedMission.terminal : undefined,
                 mission.objectiveType === "BOSS",
                 persisted.progression.intel?.routingTrace === true,
                 mission.missionId === "broken-signal-breach" ? "h1" : null,
-                mission,
+                acceptedMission,
                 started.run.fieldContext,
               );
             } catch (error) {
@@ -799,7 +808,11 @@ export const useBattleStore = create<Store>((set, get) => {
         if (!s.fieldResult) { void get().saveFieldResult(); return; }
         if (s.progressionCommitPending) return;
         get().backToHub();
-        if (replayAfter && s.selectedMissionId) get().openOperationBrief(s.selectedMissionId);
+        if (replayAfter && s.selectedMissionId) {
+          get().openOperationBrief(s.selectedMissionId);
+          get().selectDirectiveTier(s.selectedDirectiveTier);
+          get().selectApproach(s.selectedApproach);
+        }
         return;
       }
       if (s.battle.outcome !== "victory") return;
