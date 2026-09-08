@@ -1,4 +1,4 @@
-import type { DeploymentApproach, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
+import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
@@ -31,11 +31,11 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
-  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastChallengeCycle: number | null; squadIds?: string[] }>;
+  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
   activeMissionRun: OperationMissionRun | null;
   lastCompletedMissionRunId: string | null;
-  board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[] };
-  commander?: { rank: number; progress: number; nextRankAt: number | null; unlockedApproaches: DeploymentApproach[] };
+  board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[]; reportVersion?: number; directiveSet?: DirectiveSet };
+  commander?: { rank: number; progress: number; nextRankAt: number | null; unlockedApproaches: DeploymentApproach[]; unlockedDirectiveTiers?: DirectiveTier[] };
   region?: { regionId: string; cycleId: number; pressure: number; label: string };
   lastResult?: FieldResult | null;
 }
@@ -43,8 +43,9 @@ export interface FieldOpsProgression {
 function parseFieldContext(raw: unknown): FieldContext | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const value = raw as FieldContext;
-  if (!Number.isInteger(value.cycleId) || !Number.isInteger(value.pressure) || value.pressure < 0 || value.pressure > 3 || !["standard", "south"].includes(value.approach) || ![1, 2].includes(value.reportVersion)) return undefined;
-  return { cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion };
+  if (!Number.isInteger(value.cycleId) || !Number.isInteger(value.pressure) || value.pressure < 0 || value.pressure > 3 || !["standard", "south"].includes(value.approach) || ![1, 2, 3].includes(value.reportVersion)) return undefined;
+  if (value.reportVersion === 3 && (!["standard", "advanced"].includes(value.directiveTier!) || !["pursuit", "attrition"].includes(value.directiveSet!))) return undefined;
+  return { cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion, ...(value.reportVersion === 3 ? { directiveTier: value.directiveTier, directiveSet: value.directiveSet } : {}) };
 }
 
 function parseFieldResult(raw: unknown): FieldResult | null {
@@ -125,6 +126,8 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       if (record.missionId !== id || !Number.isInteger(record.clearCount) || Number(record.clearCount) < 0) return null;
       records[id] = { missionId: id, completed: Number(record.clearCount) > 0, clearCount: Number(record.clearCount), lastClearedAt: Number(record.lastClearedAt) || 0, failCount: Number(record.failCount) || 0, challengeCount: Number(record.challengeCount) || 0, lastChallengeCycle: Number.isInteger(record.lastChallengeCycle) ? Number(record.lastChallengeCycle) : null };
       if (Array.isArray(record.squadIds) && record.squadIds.every((unit: unknown) => typeof unit === "string")) records[id].squadIds = [...record.squadIds];
+      records[id].advancedClearCount = Number.isInteger(record.advancedClearCount) && Number(record.advancedClearCount) >= 0 ? Number(record.advancedClearCount) : 0;
+      records[id].lastAdvancedCycle = Number.isInteger(record.lastAdvancedCycle) ? Number(record.lastAdvancedCycle) : null;
     }
     const parsed = parseOperations({ field: { ...field, status: "active", missions: {} } });
     if (!parsed) return null;
@@ -134,7 +137,9 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       const commander = field.commander as NonNullable<FieldOpsProgression["commander"]>;
       const region = field.region as NonNullable<FieldOpsProgression["region"]>;
       if (!board || !Number.isInteger(board.cycleId) || !Number.isInteger(board.nextRotationAt) || !Array.isArray(board.activeMissionIds) || board.activeMissionIds.length !== 3 || new Set(board.activeMissionIds).size !== 3 || !board.activeMissionIds.every((id) => typeof id === "string")) return null;
-      if (!commander || ![1, 2].includes(commander.rank) || !Number.isInteger(commander.progress) || commander.progress < 0 || !Array.isArray(commander.unlockedApproaches) || !commander.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+      if (!commander || ![1, 2, 3].includes(commander.rank) || !Number.isInteger(commander.progress) || commander.progress < 0 || !Array.isArray(commander.unlockedApproaches) || !commander.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+      if (board.reportVersion != null && (board.reportVersion !== 3 || !["pursuit", "attrition"].includes(board.directiveSet!))) return null;
+      if (commander.unlockedDirectiveTiers != null && (!Array.isArray(commander.unlockedDirectiveTiers) || !commander.unlockedDirectiveTiers.every((tier) => ["standard", "advanced"].includes(tier)))) return null;
       if (!region || !Number.isInteger(region.pressure) || region.pressure < 0 || region.pressure > 3 || region.cycleId !== board.cycleId) return null;
       Object.assign(state.fieldOps, { board, commander, region, lastResult: parseFieldResult(field.lastResult) });
     }
@@ -246,7 +251,7 @@ export async function startOperationMission(
   expectedRevision: number,
   missionId: string,
   squadIds?: string[],
-  fieldOptions?: { cycleId: number; approach: DeploymentApproach },
+  fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier },
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
   const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}), ...(fieldOptions ? { fieldOptions } : {}) });
   const run = response.run;
