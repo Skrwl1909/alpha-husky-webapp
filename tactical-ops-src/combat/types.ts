@@ -163,14 +163,21 @@ export interface TimedObjective {
   checkedRound: number;
 }
 
-export type BattleObjective = RecoverObjective | BossObjective | TimedObjective;
+export interface InterceptObjective {
+  type: "INTERCEPT";
+  targetId: string;
+  exit: Cell;
+}
+export type BattleObjective = RecoverObjective | BossObjective | TimedObjective | InterceptObjective;
 export interface MissionDirective {
-  type: "SIGNAL_INTERFERENCE" | "REINFORCEMENTS" | "DISRUPTED_SUPPORT";
+  type: "SIGNAL_INTERFERENCE" | "REINFORCEMENTS" | "DISRUPTED_SUPPORT" | "NO_SAFE_EXTRACTION" | "COMPOSITE";
   name: string;
   copy: string;
   recoverEveryRounds?: number;
   supportCooldownExtra?: number;
   reinforcement?: BattleReinforcement;
+  maxRounds?: number;
+  conditions?: MissionDirective[];
 }
 
 export interface BattleReinforcement {
@@ -194,6 +201,7 @@ export interface BattleState {
   healingActions?: number;
   hostilesEliminated: number;
   results: BattleResults | null;
+  failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   objective: BattleObjective | null;
   directive?: MissionDirective | null;
   reinforcement: BattleReinforcement | null;

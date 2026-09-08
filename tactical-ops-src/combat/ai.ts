@@ -1,6 +1,6 @@
 import type { AiAction, BattleState, Cell, CombatUnit, SkillDef } from "./types";
 import { availableSkills, skillReady } from "./skills";
-import { chebyshev, reachableCells } from "./movement";
+import { chebyshev, reachableCells, inBounds } from "./movement";
 import { inSkillRange, living, skillNeedsTargetPick, validTargetIds } from "./targeting";
 import { getSkill } from "../data/skills";
 import { effectiveAtk } from "./effects";
@@ -49,9 +49,39 @@ function bestMoveForSkill(caster: CombatUnit, units: CombatUnit[], skill: SkillD
   return best;
 }
 
+/** Shortest escape route through free cells; occupied exits can be blockaded.
+ * The courier uses normal movement and initiative, so slows buy interception time. */
+function interceptAction(state: BattleState, caster: CombatUnit): AiAction | null {
+  const objective = state.objective;
+  if (objective?.type !== "INTERCEPT" || objective.targetId !== caster.id) return null;
+  const distance = new Map<string, number>();
+  const key = (cell: Cell) => `${cell.c},${cell.r}`;
+  const blocked = new Set(state.units.filter((u) => !u.defeated && u.id !== caster.id).map(key));
+  const queue = [{ ...objective.exit, d: 0 }];
+  distance.set(key(objective.exit), 0);
+  for (let index = 0; index < queue.length; index++) {
+    const cur = queue[index];
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const next = { c: cur.c + dc, r: cur.r + dr, d: cur.d + 1 };
+      if (!inBounds(next.c, next.r) || blocked.has(key(next)) || distance.has(key(next))) continue;
+      distance.set(key(next), next.d); queue.push(next);
+    }
+  }
+  if (!caster.hasMoved) {
+    const cells = reachableCells(caster, state.units).filter((cell) => (distance.get(key(cell)) ?? Infinity) < (distance.get(key(caster)) ?? Infinity));
+    cells.sort((a, b) => (distance.get(key(a)) ?? Infinity) - (distance.get(key(b)) ?? Infinity));
+    if (cells[0]) return { type: "move", to: cells[0] };
+  }
+  const attack = availableSkills(state, caster).find((s) => s.ready && s.slot === "A1");
+  const target = attack && validTargetIds(state.units, caster, attack)[0];
+  return target ? { type: "skill", skillId: attack!.id, targetId: target } : { type: "skip" };
+}
+
 export function chooseAiAction(state: BattleState): AiAction {
   const caster = state.units.find((u) => u.id === state.activeId);
   if (!caster || caster.defeated || caster.team !== "enemy") return { type: "skip" };
+  const objectiveAction = interceptAction(state, caster);
+  if (objectiveAction) return objectiveAction;
 
   const skills = availableSkills(state, caster).filter((s) => s.ready);
   const foes = foesOf(caster, state.units);

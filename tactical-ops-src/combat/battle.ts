@@ -103,10 +103,10 @@ export function createBattle(
     healingActions: 0,
     hostilesEliminated: 0,
     results: null,
-    objective: objective ? objective.type === "RECOVER" ? { ...objective, terminal: { ...objective.terminal } } : { ...objective } : null,
+    objective: objective ? structuredClone(objective) : null,
     reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn } } : null,
     signalCarrierId,
-    directive,
+    directive: directive ? structuredClone(directive) : null,
     routingTraceAcquired: false,
     seed: 1,
   };
@@ -270,7 +270,7 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   const reinforcement = reinforced.reinforcement;
   if (reinforced.outcome === "ongoing" && reinforcement && !reinforcement.spawned && reinforced.round >= reinforcement.triggerRound) {
     let entry = reinforcement.spawn;
-    if (reinforced.directive?.type === "REINFORCEMENTS") {
+    if (reinforced.directive?.reinforcement) {
       const cells = Array.from({ length: 40 }, (_, i) => ({ c: i % 8, r: Math.floor(i / 8) }))
         .filter((cell) => canOccupy(reinforced.units, cell.c, cell.r))
         .sort((a, b) => (Math.abs(a.c - entry.c) + Math.abs(a.r - entry.r)) - (Math.abs(b.c - entry.c) + Math.abs(b.r - entry.r)));
@@ -388,6 +388,7 @@ export function applyAi(state: BattleState, action: AiAction): { state: BattleSt
       cur = m.state;
       events.push(...m.events);
     }
+    if (cur.outcome !== "ongoing") return { state: cur, events };
     if (action.then) {
       const nested = applyAi(cur, action.then);
       return { state: nested.state, events: [...events, ...nested.events] };
