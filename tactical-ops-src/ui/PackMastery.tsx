@@ -29,13 +29,15 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
 
 export function MasteryFeedback({ changes, victory }: { changes?: MasteryChange[]; victory: boolean }) {
   if (!changes?.length) return null;
-  return <div><strong>PACK MASTERY PROGRESSED</strong>{changes.map((change) => {
+  return <section className="t-mastery-feedback" aria-label="Pack Mastery"><div className="t-kicker">PACK MASTERY</div>{changes.map((change) => {
     const def = masteryDef(change.unitId);
     if (!def) return null;
-    return <p key={change.unitId}>{change.kind} / +{change.gained} mastery / {change.progress}/8 / Stage {change.beforeStage} to {change.stage}.
-      {change.beforeStage < 2 && change.stage >= 2 ? ` UNLOCKED: ${def.trained.name}. ${def.trained.copy}` : ""}
-      {change.newOptions.length ? ` OPTIONS UNLOCKED: ${def.options.A.name} (active) / ${def.options.B.name}. ${def.options.A.copy} Choose outside a committed attempt.` : ""}
-      {!change.gained ? change.progress >= 8 ? " V1 path complete; both options remain available." : victory ? " No new award for this mission/rotation; try another Field Op or its challenge." : " Complete a Field Op to develop this companion." : ""}
-    </p>;
-  })}</div>;
+    return <div className="t-mastery-row" key={change.unitId} data-mastery-unit={change.unitId}>
+      <div className="t-mastery-heading"><strong>{def.name}</strong><span>{change.stage === 3 ? "STAGE 3 COMPLETE" : `STAGE ${change.beforeStage !== change.stage ? `${change.beforeStage} → ` : ""}${change.stage}`}</span><b>+{change.gained}</b></div>
+      <progress className="t-progress" aria-label={`${def.name} mastery`} value={change.progress} max={8} />
+      {change.beforeStage < 2 && change.stage >= 2 ? <details className="t-detail"><summary>UNLOCKED · {def.trained.name}</summary><p>{def.trained.copy}</p></details> : null}
+      {change.newOptions.length ? <details className="t-detail"><summary>SPECIALIZATIONS UNLOCKED</summary><p>{def.options.A.name} (active) · {def.options.B.name}</p><p>{def.options.A.copy}</p><p>Choose outside a committed attempt.</p></details> : null}
+      {!change.gained && change.progress < 8 ? <small>{victory ? "Award already earned. Try another mission or challenge." : "Clear a Field Op to progress."}</small> : null}
+    </div>;
+  })}</section>;
 }

@@ -34,6 +34,16 @@ const ROLE_LABEL: Record<string, string> = {
   leader: "Heavy",
 };
 
+function objectiveHeadline(mission: NonNullable<ReturnType<typeof getMissionDef>>) {
+  const objective = mission.objective;
+  if (objective?.type === "INTERCEPT") return "Stop the courier before the south-east exit.";
+  if (objective?.type === "HOLD") return `Control the relay · ${objective.duration} consecutive round changes.`;
+  if (objective?.type === "SURVIVE") return `Keep the full squad standing · ${objective.duration} rounds.`;
+  if (mission.objectiveType === "RECOVER") return "Reach the relay. Use RECOVER.";
+  if (mission.objectiveType === "BOSS") return "Defeat the SIGNAL COMMANDER.";
+  return "Eliminate the HOUND patrol.";
+}
+
 function briefSubtitle(def: UnitDef, extra?: string): string {
   const skills = def.skillIds.map((id) => SKILLS[id]?.name).filter(Boolean).join(" / ");
   const role = def.defId === "ally-02" ? "BUG HUNTER WARDEN · Spear skirmisher" : ROLE_LABEL[def.role] || def.role;
@@ -94,15 +104,18 @@ function Hub() {
 }
 
 function FieldResultFeedback({ result }: { result: FieldResult }) {
-  return <div className="t-panel t-brief-block t-field-feedback" aria-label="Recorded Field Op result">
-    <div className="t-kicker">RECORDED / {getMissionDef(result.missionId)?.name || "FIELD OP"} / {result.victory ? "CLEARED" : "FAILED"}</div>
-    <p><strong>WHAT PROGRESSED</strong><br />+{result.progressEarned} commander progress · {result.rankAfter > result.rankBefore ? `Rank ${result.rankBefore} → ${result.rankAfter}` : `Rank ${result.rankAfter}`} · {result.progressAfter} total.</p>
-    <p>Optional challenge: {result.legacyReport ? "not measured on this legacy run" : result.challengeSuccess ? `MET / +${result.challengeBonus} bonus${result.challengeBonus ? "" : " (already earned this cycle)"}` : "NOT MET"}.</p>
+  const unlock = result.advancedUnlocked ? "ADVANCED DIRECTIVES" : result.unlockedApproaches.includes("south") ? "SOUTH APPROACH" : null;
+  const target = result.rankAfter < 2 ? 6 : 12;
+  return <section className="t-field-feedback" aria-label="Recorded Field Op result">
+    {unlock ? <div className="t-unlock"><span className="t-kicker">UNLOCKED</span><strong>{unlock}</strong></div> : null}
+    <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
+    <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
+    <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "ALL COMMAND OPTIONS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
+    <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? `CHALLENGE MET · +${result.challengeBonus}` : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.advancedFirstClear ? " · FIRST CLEAR" : result.victory ? " · CLEARED" : " · FAILED"}</span> : null}</div>
+    {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
-    {result.directiveTier === "advanced" ? <p><strong>ADVANCED / {directiveSetLabel(result.directiveSet)}</strong> · {result.advancedFirstClear ? "FIRST ADVANCED CLEAR RECORDED" : result.victory ? "CLEAR RECORDED" : fieldFailureCopy(result.failureReason, getMissionDef(result.missionId)?.objectiveType)}</p> : result.failureReason ? <p>{fieldFailureCopy(result.failureReason)}</p> : null}
-    <p><strong>WHAT CHANGED</strong><br />{result.regionalApplied ? `Signal pressure: ${pressureLabel(result.pressureBefore)} (${result.pressureBefore}) to ${pressureLabel(result.pressureAfter)} (${result.pressureAfter}). ${pressureEffect(result.pressureAfter)}` : "This attempt began in an earlier rotation. Commander progress was recorded; the new cycle's pressure is unchanged."}</p>
-    <p><strong>NOW AVAILABLE</strong><br />{result.advancedUnlocked ? "TACTICAL RANK 3 / ADVANCED DIRECTIVES UNLOCKED. Combine conditions in the Brief." : result.rankAfter >= 3 ? "Try an uncleared Advanced Field Op or a different Pack specialization." : result.unlockedApproaches.includes("south") ? "TACTICAL RANK 2 / SOUTH APPROACH UNLOCKED. Choose your deployment route in the Brief." : result.rankAfter >= 2 ? `${Math.max(0, 12 - result.progressAfter)} progress to Rank 3 / Advanced Directives.` : `Earn ${Math.max(0, 6 - result.progressAfter)} more commander progress for South Approach.`}</p>
-  </div>;
+    <div className="t-world-change"><span className="t-kicker">SIGNAL PRESSURE</span><strong>{result.regionalApplied ? `${pressureLabel(result.pressureBefore)} → ${pressureLabel(result.pressureAfter)}` : "CURRENT ROTATION UNCHANGED"}</strong><small>{result.regionalApplied ? result.pressureAfter < 2 ? "+1 ROUND DELAY · REINFORCEMENTS" : "REINFORCEMENTS ON SCHEDULE" : "Earlier rotation attempt. Commander progress recorded."}</small></div>
+  </section>;
 }
 
 function WarTable() {
@@ -131,13 +144,14 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.4} />
       <div className="t-vignette" />
-      <div className="t-brief" style={{ maxWidth: "58rem" }}>
+      <div className="t-brief t-war-table" style={{ maxWidth: "58rem" }}>
         <div className="t-kicker">War Table</div>
-        <h1 className="t-title" style={{ margin: "0.2rem 0" }}>OPERATION 01 — {BROKEN_SIGNAL.name}</h1>
-        <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>{operation?.status === "cleared" ? "Operation complete. Replay a mission or review the Archive entry below." : "Choose the next tactical mission."}</p>
+        <h1 className="t-title" style={{ margin: "0.2rem 0" }}>{BROKEN_SIGNAL.name}</h1>
+        <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>{operation?.status === "cleared" ? "Canon secured. Field Ops active." : "Choose the next tactical mission."}</p>
         <p style={{ color: "var(--t-faint)", margin: "0 0 1rem", fontSize: "0.82rem" }}>Routing Trace: {progression?.intel?.routingTrace ? "ACQUIRED · reinforcement telegraphed" : "NOT ACQUIRED · replay BREACH to hunt the tagged carrier"}</p>
         {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>{firstClearMessage}</p> : null}
-        {operation?.status === "cleared" ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>BROKEN SIGNAL · CLEARED</p> : null}
+
+        <details className="t-detail" open={operation?.status !== "cleared"}><summary>CANON / BROKEN SIGNAL · {operation?.status === "cleared" ? "CLEARED · REPLAY MISSIONS" : "MISSIONS"}</summary>
         <div className="t-brief-grid">
           {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
             const mission = getMissionDef(missionId);
@@ -147,8 +161,8 @@ function WarTable() {
             const nextMission = status === "available";
             const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
             return (
-              <div className="t-panel t-brief-block" key={missionId} style={{ opacity: status === "locked" ? 0.52 : nextMission ? 1 : 0.72 }}>
-                <div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
+              <div className={`t-panel t-brief-block t-mission-card is-${status}`} key={missionId} style={{ opacity: status === "locked" ? 0.52 : nextMission ? 1 : 0.72 }}>
+                <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
                 <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
                 <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
                 <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
@@ -162,12 +176,14 @@ function WarTable() {
             );
           })}
         </div>
+        </details>
         <section aria-label="Field Ops" style={{ marginTop: "1.5rem" }}>
-          <h2 className="t-title">FIELD OPS / LIVING WAR TABLE</h2>
-          <PackMasteryPanel />
-          <div className="t-panel t-brief-block">
+          <h2 className="t-title">FIELD OPS</h2>
+
+          <div className="t-command-summary"><div><span className="t-kicker">COMMANDER</span><strong>RANK {field?.commander?.rank || 1}</strong><small>{field?.commander?.progress || 0} PROGRESS</small></div><div><span className="t-kicker">SIGNAL PRESSURE</span><strong>{field?.region?.label || "UNAVAILABLE"}</strong><small>{field?.board ? `ROTATES ${rotationTime(field.board.nextRotationAt)}` : "REFRESH REQUIRED"}</small></div></div>
+          <details className="t-detail"><summary>Command rules & rotation</summary>          <div className="t-panel t-brief-block">
             <div className="t-kicker">TACTICAL RANK {field?.commander?.rank || 1}</div>
-            <p>{field?.commander?.progress || 0} commander progress / {field?.commander?.nextRankAt ? `${field.commander.nextRankAt} for next rank` : "All V1 command options unlocked"}.</p>
+            <p>{field?.commander?.progress || 0} commander progress / {field?.commander?.nextRankAt ? `${field.commander.nextRankAt} for next rank` : "All command options unlocked"}.</p>
             <p>Each clear: +2 progress. Optional challenge: +1 once per mission per cycle. Rank 2: South Approach. Rank 3: Advanced Directives.</p>
             {field?.board?.reportVersion === 3 ? <p><strong>ADVANCED CONDITIONS / {directiveSetLabel(field.board.directiveSet)}</strong><br />{field.board.directiveSet === "attrition" ? "Longer support gaps and reinforcement pressure." : "Completion windows and early reinforcement pressure."} Preview the exact combination in each Brief. Advanced clears leave a permanent record; challenge and mastery awards are shared across tiers.</p> : null}
             <p><strong>BROKEN SIGNAL AREA / SIGNAL PRESSURE: {field?.region?.label || "UNAVAILABLE"}</strong><br />{field?.region ? pressureEffect(field.region.pressure) : "Refresh to load regional conditions."}</p>
@@ -175,25 +191,27 @@ function WarTable() {
             {field?.board ? <p>3 ACTIVE / {rotationTime(field.board.nextRotationAt)} next rotation. The next three missions and fresh challenge bonuses arrive then.</p> : <p>Field Ops board unavailable. Refresh to load it.</p>}
             <button className="t-btn" type="button" disabled={loading} onClick={() => void refresh()}>{loading ? "Refreshing..." : "Refresh War Table"}</button>
           </div>
-          {field?.lastResult ? <div style={{ marginTop: "0.7rem" }}><small>LAST RESULT / {rotationTime(field.lastResult.recordedAt)}</small><FieldResultFeedback result={field.lastResult} /></div> : null}
+</details>
           <div className="t-brief-grid" style={{ marginTop: "0.8rem" }}>
             {(field?.board?.activeMissionIds || []).map((id) => {
               const mission = getMissionDef(id);
               if (!mission) return null;
               const record = field?.records[id];
               const bonusEarned = record?.lastChallengeCycle === field?.board?.cycleId;
-              return <div className="t-panel t-brief-block" key={id}>
-                <div className="t-kicker">FIELD OP / ACTIVE / {record?.clearCount || 0} CLEARS</div>
-                <small>ADVANCED: {record?.advancedClearCount || 0} CLEARS{record?.lastAdvancedCycle === field?.board?.cycleId ? " / CLEARED THIS ROTATION" : " / THIS ROTATION UNMASTERED"}</small>
-                <h3>{mission.name}</h3><p>{mission.briefCopy}</p>
-                <p style={{ color: "var(--t-accent)" }}>{mission.objectiveType} / {mission.directive?.name}</p>
-                <p>Signal pressure: {field?.region?.label}. {mission.directive?.reinforcement && field?.region && field.region.pressure < 2 ? "Reinforcement delayed by 1 round." : "Standard mission conditions."}</p>
-                <p><strong>OPTIONAL CHALLENGE</strong><br />{mission.challenge?.label}<br /><small>{bonusEarned ? "BONUS EARNED THIS CYCLE" : "+1 commander progress available"} / {record?.challengeCount || 0} challenge clears</small></p>
+              return <div className={`t-panel t-brief-block t-mission-card ${record?.completed ? "is-cleared" : "is-available"}`} key={id}>
+                <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-card-status"><span>ACTIVE</span><span>{record?.completed ? "CLEARED" : "AVAILABLE"}</span></div>
+                
+                <h3>{mission.name}</h3><p>{objectiveHeadline(missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
+                <div className="t-mission-strip"><span>{mission.objectiveType}</span><span>{mission.directive?.name}</span></div>
+                <div className="t-card-reward">CLEAR +2 <span>COMMANDER PROGRESS</span>{mission.directive?.reinforcement && field?.region && field.region.pressure < 2 ? <small>REINFORCEMENTS · +1 ROUND DELAY</small> : null}</div>
+                <details className="t-detail"><summary>{bonusEarned ? "CHALLENGE BONUS EARNED" : "OPTIONAL CHALLENGE · +1"}</summary><p>{mission.challenge?.label}</p><small>{record?.clearCount || 0} CLEARS · {record?.challengeCount || 0} CHALLENGES · ADVANCED {record?.advancedClearCount || 0}{record?.lastAdvancedCycle === field?.board?.cycleId ? " · CLEARED THIS ROTATION" : " · THIS ROTATION UNMASTERED"}</small></details>
                 <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={() => openOperationBrief(id)}>{record?.completed ? "REPLAY FIELD OP" : "Mission Brief"}<ChevronRight className="t-ico" /></button>
               </div>;
             })}
           </div>
           {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? <div className="t-panel t-brief-block"><p>Unfinished attempt from the previous rotation. Its original conditions are preserved.</p><button type="button" className="t-btn" onClick={() => openOperationBrief(field.activeMissionRun!.missionId)}>Resume {getMissionDef(field.activeMissionRun.missionId)?.name}</button></div> : null}
+          <PackMasteryPanel />
+          {field?.lastResult ? <details className="t-detail"><summary>Last result · {rotationTime(field.lastResult.recordedAt)}</summary><strong>{getMissionDef(field.lastResult.missionId)?.name} · {field.lastResult.victory ? "CLEARED" : "FAILED"}</strong><FieldResultFeedback result={field.lastResult} /></details> : null}
         </section>
         {progression?.archive?.brokenSignal ? <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}><div className="t-kicker">Archive · Available</div><strong>BROKEN SIGNAL ARCHIVED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>BREACH CLEARED · SIGNAL RECOVERED · SIGNAL COMMANDER DOWN</p></div> : null}
         {progression?.nextOperationSlot === "unassigned" ? <div className="t-panel t-brief-block" style={{ marginTop: "0.6rem", opacity: 0.7 }}><div className="t-kicker">Next Operation Slot · Available</div><strong>EMPTY · UNASSIGNED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>No Operation assigned.</p></div> : null}
@@ -242,12 +260,12 @@ function Brief() {
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
   const reinforcementRound = mission && fieldOp ? missionBattleRules(mission, false, fieldContext).reinforcement?.triggerRound : undefined;
-  const title = mission ? `${fieldOp ? "FIELD OP" : BROKEN_SIGNAL.name} — ${mission.name}` : onboardingEnabled ? encounter.operationName : OPERATION.name;
+  const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns);
   const hostiles = enemyBriefRows(spawns);
   const footnote = mission
-    ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. Existing Combat Core rules apply.`
+    ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. `
     : onboardingEnabled
       ? encounter.teaching
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
@@ -257,34 +275,34 @@ function Brief() {
   return (
     <div className="t-fill">
       <Background dim={0.55} />
-      <div className="t-brief">
-        <div className="t-kicker">Tactical Ops</div>
+      <div className="t-brief t-deployment">
+        <header className="t-deploy-hero"><img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-kicker">{fieldOp ? "FIELD OP" : "TACTICAL OPS"} / DEPLOYMENT</div>
         <h1 className="t-title" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", margin: "0.2rem 0 0.2rem" }}>
           {title}
         </h1>
-        <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{objective}</p>
-        {mission && !fieldOp ? <div className="t-operation-plate" aria-hidden="true"><img src={PRESENTATION.operationPlate} alt="" /></div> : null}
+        <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{mission ? objectiveHeadline(mission) : objective}</p>
+        </header>
+        <div className="t-squad-preview" aria-label="Selected squad">{allies.map(def => <div key={def.defId}><img src={def.portrait} alt="" /><span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span></div>)}<span className="t-kicker">SQUAD<br />{allies.length}/{mission?.squadCap || allies.length}</span></div>
         {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
-        {mission?.objectiveType === "RECOVER" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : null}
-        {mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-faint)", margin: "0.35rem 0 0" }}>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}
-        {mission ? <div className="t-mission-strip"><span>{mission.objectiveType}</span><span>SQUAD {mission.squadCap}</span><span>{missionIntel}</span></div> : null}
-        {conditions.length ? <div className="t-panel t-brief-block" style={{ marginTop: "0.8rem" }}><div className="t-kicker">DIRECTIVES / {selectedDirectiveTier.toUpperCase()}</div>{conditions.map((condition) => <p key={condition.type}><strong>{condition.name}</strong><br />{condition.copy}</p>)}<p style={{ color: "var(--t-muted)" }}>{mission?.squadHint}</p></div> : null}
-        {fieldOp ? <div className="t-panel t-brief-block" style={{ marginTop: "0.8rem" }}>
+        {mission ? <details className="t-detail"><summary>Objective & tactical intel</summary><p>{objective}</p>{mission.objectiveType === "RECOVER" ? <p>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : mission.objectiveType === "BOSS" ? <p>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}<small>{missionIntel}</small></details> : null}
+        {conditions.length ? <section className="t-conditions" aria-label="Special conditions"><div className="t-kicker">CONDITIONS / {selectedDirectiveTier.toUpperCase()}{selectedDirectiveTier === "advanced" ? ` / ${directiveSetLabel(fieldContext.directiveSet)}` : ""}</div>{conditions.map((condition) => <details className="t-condition" key={condition.type}><summary>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</summary><p><strong>{condition.name}</strong><br />{condition.copy}</p></details>)}<details className="t-detail"><summary>Squad tactics</summary><p>{mission?.squadHint}</p></details></section> : null}
+        {fieldOp ? <details className="t-detail t-deployment-options"><summary>DEPLOYMENT / {selectedDirectiveTier.toUpperCase()} / {DEPLOYMENT_APPROACHES[selectedApproach].name}</summary>
           <div className="t-kicker">REGIONAL CONDITION / SIGNAL PRESSURE {pressureLabel(fieldContext.pressure)}</div>
-          <p>{pressureEffect(fieldContext.pressure)}{reinforcementRound ? ` This attempt: HOUND arrival in round ${reinforcementRound}.` : " This mission has no scheduled reinforcement."}</p>
-          {resuming ? <p>Saved attempt: objective, tier, conditions, mastery and pressure remain fixed. Changing squad, approach or tier starts a new attempt if this Field Op is still active.</p> : null}
-          {field?.board?.reportVersion === 3 ? <><div className="t-kicker">DIRECTIVE TIER</div><div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div><p>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} / Record an Advanced clear. Same commander, challenge and mastery awards; no extra stats.` : "Standard mission conditions. Advanced adds interacting constraints."}</p></> : null}
-          <p><strong>OPTIONAL CHALLENGE</strong><br />{mission.challenge?.label}. Clear reward: +2 commander progress. Challenge bonus: +1 once per mission per cycle. The challenge is optional; missing it does not fail the mission.</p>
+          <div className="t-mission-strip"><span>{fieldContext.pressure < 2 ? "+1 ROUND DELAY" : "STANDARD ARRIVAL"}</span><span>{reinforcementRound ? `HOUND · ROUND ${reinforcementRound}` : "NO REINFORCEMENTS"}</span></div>
+          {resuming ? <p>RESUMING · Original conditions locked. Squad, route or tier changes start a new attempt while this mission is active.</p> : null}
+          {field?.board?.reportVersion === 3 ? <><div className="t-kicker">DIRECTIVE TIER</div><div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div><p>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} · Same rewards. Advanced clear recorded.` : "Standard conditions. Advanced combines threats."}</p></> : null}
+          <p><strong>OPTIONAL CHALLENGE</strong><br />{mission.challenge?.label}<br /><small>CLEAR +2 · CHALLENGE +1 / ROTATION · OPTIONAL</small></p>
           <div className="t-kicker">DEPLOYMENT APPROACH / TACTICAL RANK {field?.commander?.rank || 1}</div>
           <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
           <p>{DEPLOYMENT_APPROACHES[selectedApproach].copy}</p>
-        </div> : null}
+        </details> : null}
+        {fieldOp ? <div className="t-mission-strip"><span>PRESSURE · {pressureLabel(fieldContext.pressure)}</span><span>CLEAR +2 · CHALLENGE +1</span></div> : null}
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
         {mission ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
         {twoSlots ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">ALPHA + TWO TACTICAL SLOTS · {selectedSquadIds.length - 1}/2 selected</div>
-            <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose exactly two companions. Deselect one to change the composition.</p>
+            <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose two. Deselect a companion to swap.</p>
             <div className="t-brief-actions">
               {[
                 { id: "ally-02", label: "CNC", role: "PRESSURE / DISRUPTION", available: true },
@@ -310,6 +328,7 @@ function Brief() {
             {equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? <p style={{ color: "var(--t-muted)", margin: "0.8rem 0 0" }}>MOVE 4 · BITE at melee range. HAMSTRING slows enemy initiative by 50% for 2 turns. A fast relay runner with low armor.</p> : null}
           </div>
         ) : null}
+        <details className="t-detail t-loadout-details"><summary>Squad abilities & hostile intel</summary>
         {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">COLDNCURSED · BUG HUNTER WARDEN</div>
@@ -375,12 +394,13 @@ function Brief() {
             </p>
           </div>
         </div>
-        <div className="t-brief-actions">
+        </details>
+        <div className="t-brief-actions t-deploy-actions">
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>
             Back
           </button>
           <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-            Deploy
+            DEPLOY
             <ChevronRight className="t-ico" />
           </button>
         </div>
@@ -448,28 +468,29 @@ function Results() {
   return (
     <div className="t-fill">
       <Background dim={0.6} />
-      <div className="t-overlay">
-        <div className="t-modal t-panel" style={{ maxHeight: "100%", overflowY: "auto" }}>
-          <img className="t-results-plate" src={PRESENTATION.resultsPlate} alt="" aria-hidden="true" />
+      <div className="t-overlay t-results-overlay">
+        <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
+          <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
           <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2>
+          <h2 className="t-title">{fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? mission.resultsCopy : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
           {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
           {fieldOp ? <div>
-            <p><strong>OPTIONAL CHALLENGE</strong><br />{mission.challenge?.label}</p>
+            
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
-            {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording challenge, commander progress and regional consequence..." : "Result not recorded yet."}</p>}
+            {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
+          {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           <dl className="t-stats">
             <div>
-              <dt>Turns taken</dt>
+              <dt>Turns</dt>
               <dd>{String(results.turns).padStart(2, "0")}</dd>
             </div>
             <div>
-              <dt>Hostiles eliminated</dt>
+              <dt>Eliminated</dt>
               <dd>{results.hostilesEliminated}</dd>
             </div>
             <div>
@@ -481,12 +502,12 @@ function Results() {
               <dd>{results.damageTaken}</dd>
             </div>
           </dl>
-          <div className="t-brief-actions" style={{ justifyContent: "center" }}>
+          <div className="t-brief-actions t-result-actions">
             {fieldOp ? (
               <>
                 {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>Updated War Table</button>
-                  <button type="button" className="t-btn" onClick={replay}>Replay / squad choice</button>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>War Table</button>
+                  <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>
             ) : sessionVictory ? (
