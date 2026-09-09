@@ -1,3 +1,3 @@
 /** Single canonical Tactical Ops version. Imported by host, store, preview, and the IIFE banner. */
-export const VERSION = "tactical_ops.js v2.7.0-evergreen-v1";
-export const CACHE_KEY = "tops-2.7.0-evergreen-v1";
+export const VERSION = "tactical_ops.js v2.7.1-premium-ui";
+export const CACHE_KEY = "tops-2.7.1-premium-ui";

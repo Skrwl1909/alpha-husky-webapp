@@ -1593,3 +1593,96 @@
 #tacticalOpsRoot .t-hold-cell { position: absolute; transform: translate(-50%, -50%); width: 10%; height: 15%; border: 1px solid #61ddff; background: #3ec6ff24; color: #a6ebff; font-size: 0.55rem; pointer-events: none; display: flex; align-items: end; justify-content: center; z-index: 2; }
 
 #tacticalOpsRoot .t-order-wrap:has(.t-field-rules) { flex-direction: column; align-items: center; }
+
+/* Premium command presentation: gameplay state remains owned by the store. */
+#tacticalOpsRoot .t-deployment > *, #tacticalOpsRoot .t-war-table > * { flex-shrink: 0; }
+#tacticalOpsRoot .t-deployment, #tacticalOpsRoot .t-war-table { gap: .65rem; margin: auto; }
+#tacticalOpsRoot .t-deploy-hero { position: relative; isolation: isolate; padding: 3.5rem 1rem 1.2rem; overflow: hidden; border-bottom: 2px solid var(--t-accent); background: #0b151d; }
+#tacticalOpsRoot .t-deploy-hero > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; opacity:.65; }
+#tacticalOpsRoot .t-deploy-hero::after { content:""; position:absolute; inset:0; background:linear-gradient(0deg,#081018 5%,#08101844 100%); z-index:-1; }
+#tacticalOpsRoot .t-deploy-hero .t-title { font-size:clamp(1.7rem,6vw,2.8rem)!important; line-height:1.08; letter-spacing:.035em; }
+#tacticalOpsRoot .t-deploy-hero p { font-size:.85rem; line-height:1.5; }
+#tacticalOpsRoot .t-conditions { padding:.8rem 0; display:grid; gap:.4rem; }
+#tacticalOpsRoot .t-condition { border-left:3px solid #e5aa59; padding:.3rem .7rem; background:#221d17b8; }
+#tacticalOpsRoot summary { cursor:pointer; min-height:36px; align-content:center; line-height:1.5; }
+#tacticalOpsRoot .t-condition summary { font-size:.78rem; font-weight:700; color:#f4cc90; letter-spacing:.06em; }
+#tacticalOpsRoot .t-condition p, #tacticalOpsRoot .t-detail p { font-size:.82rem; color:var(--t-muted); line-height:1.5; }
+#tacticalOpsRoot .t-detail { padding:.5rem 0; border-top:1px solid #b7d7eb22; text-align:left; }
+#tacticalOpsRoot .t-detail > summary { color:var(--t-muted); font-size:.75rem; letter-spacing:.045em; }
+#tacticalOpsRoot .t-deploy-actions, #tacticalOpsRoot .t-result-actions { position:sticky!important; bottom:0; z-index:5!important; padding:.75rem 0 max(.6rem,env(safe-area-inset-bottom)); background:linear-gradient(#0b1119f5,#0b1119); border-top:1px solid #62c8ef44; margin-top:.75rem; flex-wrap:nowrap; }
+#tacticalOpsRoot .t-deploy-actions .t-btn-primary, #tacticalOpsRoot .t-result-actions .t-btn-primary { flex:1; min-height:48px; background:linear-gradient(135deg,#9be6ff,#49b6dd); color:#07131b; border-color:#b9efff; font-weight:800; }
+#tacticalOpsRoot .t-deployment .t-btn[aria-pressed="true"] { background:#153442; color:#c6f0ff; border-color:#66cdeb; box-shadow:inset 0 -3px #66cdeb; }
+#tacticalOpsRoot .t-deployment .t-brief-grid { margin:.7rem 0; }
+#tacticalOpsRoot .t-results-overlay { padding:.6rem; }
+#tacticalOpsRoot .t-results { width:min(520px,100%); max-height:100%; overflow-y:auto; padding:0 1rem; text-align:left; border-radius:8px; background:#0b1119; }
+#tacticalOpsRoot .t-outcome-hero { position:relative; isolation:isolate; margin:0 -1rem; padding:4rem 1rem 1rem; overflow:hidden; min-height:190px; display:flex; flex-direction:column; justify-content:flex-end; border-bottom:1px solid #76d9fb66; }
+#tacticalOpsRoot .t-outcome-hero .t-results-plate { width:100%; height:100%; inset:0; opacity:.8; filter:none; object-position:50% 40%; z-index:-2; }
+#tacticalOpsRoot .t-outcome-hero::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg,#0b1119 2%,#0b111970 70%,#0b111930); }
+#tacticalOpsRoot .t-outcome-hero h2 { font-size:clamp(1.8rem,7vw,2.6rem); line-height:1.05; letter-spacing:.04em; margin:.4rem 0 0; color:#e1f7ff; }
+#tacticalOpsRoot .t-outcome-stamp { color:#9de4bd; font-size:.65rem; letter-spacing:.2em; margin-bottom:.5rem; font-weight:800; }
+#tacticalOpsRoot .is-failure .t-outcome-stamp { color:#ffa594; }
+#tacticalOpsRoot .is-failure .t-outcome-hero { border-color:#ec6f59; }
+#tacticalOpsRoot .t-field-feedback { padding:.8rem 0 0; text-align:left; }
+#tacticalOpsRoot .t-unlock { padding:.65rem .8rem; background:linear-gradient(110deg,#3d311c,#1b211f); border-left:3px solid #f1c975; margin-bottom:.8rem; }
+#tacticalOpsRoot .t-unlock strong { display:block; color:#ffe0a0; font-size:1rem; letter-spacing:.08em; margin-top:.25rem; }
+#tacticalOpsRoot .t-progress-heading, #tacticalOpsRoot .t-mastery-heading { display:flex; justify-content:space-between; gap:.5rem; align-items:center; }
+#tacticalOpsRoot .t-progress-heading strong { display:block; font-size:1.4rem; letter-spacing:.08em; }
+#tacticalOpsRoot .t-progress-heading b { font-size:2rem; color:#b6eeff; text-align:right; line-height:1; }
+#tacticalOpsRoot .t-progress-heading small { display:block; font-size:.55rem; letter-spacing:.08em; margin-top:.3rem; }
+#tacticalOpsRoot .t-progress { appearance:none; display:block; border:0; border-radius:0; width:100%; height:5px; margin:.65rem 0 .4rem; background:#25313d; accent-color:#76d9fb; }
+#tacticalOpsRoot .t-progress::-webkit-progress-bar { background:#25313d; }
+#tacticalOpsRoot .t-progress::-webkit-progress-value { background:linear-gradient(90deg,#388aaa,#9de8ff); }
+#tacticalOpsRoot .t-progress::-moz-progress-bar { background:#76d9fb; }
+#tacticalOpsRoot .t-progress-caption { display:flex; justify-content:space-between; gap:.5rem; color:var(--t-muted); font-size:.58rem; letter-spacing:.04em; }
+#tacticalOpsRoot .t-mastery-feedback { margin-top:1rem; }
+#tacticalOpsRoot .t-mastery-row { padding:.65rem 0; border-bottom:1px solid #adcee21c; }
+#tacticalOpsRoot .t-mastery-heading strong { font-size:.8rem; letter-spacing:.08em; }
+#tacticalOpsRoot .t-mastery-heading span { margin-left:auto; color:var(--t-muted); font-size:.65rem; }
+#tacticalOpsRoot .t-mastery-heading b { color:#a5e2b9; }
+#tacticalOpsRoot .t-mastery-row small, #tacticalOpsRoot .t-field-feedback > small { font-size:.7rem; color:var(--t-muted); }
+#tacticalOpsRoot .t-world-change { margin-top:.8rem; padding:.65rem .8rem; border-left:2px solid #70b9c5; background:#11232b; }
+#tacticalOpsRoot .t-world-change strong, #tacticalOpsRoot .t-world-change small { display:block; margin-top:.3rem; }
+#tacticalOpsRoot .t-world-change strong { font-size:.95rem; letter-spacing:.08em; }
+#tacticalOpsRoot .t-world-change small { font-size:.65rem; color:var(--t-muted); }
+#tacticalOpsRoot .t-results .t-stats { grid-template-columns:repeat(4,minmax(0,1fr)); gap:.5rem; padding:.8rem 0; margin:.6rem 0 0; border-top:1px solid #adcee222; }
+#tacticalOpsRoot .t-results .t-stats dt { font-size:.52rem; letter-spacing:.04em; }
+#tacticalOpsRoot .t-results .t-stats dd { font-size:1.15rem; }
+#tacticalOpsRoot .t-result-actions .t-btn { font-size:.65rem; padding:.7rem; }
+#tacticalOpsRoot .t-command-summary { display:grid; grid-template-columns:1fr 1fr; gap:1rem; border-block:1px solid #64d3fa55; padding:1rem 0; }
+#tacticalOpsRoot .t-command-summary strong, #tacticalOpsRoot .t-command-summary small { display:block; margin-top:.35rem; }
+#tacticalOpsRoot .t-command-summary strong { font-size:1.25rem; }
+#tacticalOpsRoot .t-command-summary small { font-size:.6rem; color:var(--t-muted); }
+#tacticalOpsRoot .t-mission-card { position:relative; isolation:isolate; overflow:hidden; padding:1.1rem; border-radius:5px; border-color:#64c4e64d; background:#0a141e; display:flex; flex-direction:column; gap:.65rem; }
+#tacticalOpsRoot .t-card-art { position:absolute; inset:0; width:100%; height:150px; object-fit:cover; z-index:-2; opacity:.55; mask-image:linear-gradient(#000,#0000); }
+#tacticalOpsRoot .t-mission-card h3 { color:#eef9ff; font-size:1.3rem; letter-spacing:.045em; margin:.8rem 0 .1rem!important; }
+#tacticalOpsRoot .t-mission-card p { font-size:.82rem; color:var(--t-muted); margin:0!important; min-height:0!important; line-height:1.45; }
+#tacticalOpsRoot .t-mission-card .t-btn { width:100%; margin-top:auto; min-height:44px; }
+#tacticalOpsRoot .t-card-status { display:flex; gap:.4rem; font-size:.6rem; letter-spacing:.1em; color:#baefff; }
+#tacticalOpsRoot .t-card-status span { background:#092234; border:1px solid #7ad7ff55; padding:.3rem .5rem; }
+#tacticalOpsRoot .is-cleared .t-card-status span:last-child { color:#b0eac2; border-color:#83d6a466; background:#102b22; }
+#tacticalOpsRoot .t-card-reward { font-size:.9rem; color:#ace6bd; padding:.6rem 0; }
+#tacticalOpsRoot .t-card-reward span, #tacticalOpsRoot .t-card-reward small { font-size:.6rem; color:var(--t-muted); }
+#tacticalOpsRoot .t-card-reward small { display:block; margin-top:.4rem; }
+@media (max-width:380px) { #tacticalOpsRoot .t-results-overlay { padding:.3rem; } #tacticalOpsRoot .t-outcome-hero { min-height:165px; padding-top:2.5rem; } #tacticalOpsRoot .t-mastery-heading span { font-size:.58rem; } }
+@media (prefers-reduced-motion:reduce) { #tacticalOpsRoot .t-progress { transition:none; } }
+
+#tacticalOpsRoot { --t-accent: #76d9fb; }
+#tacticalOpsRoot .t-outcome-hero .t-results-plate { object-position:50% 8%; }
+#tacticalOpsRoot .t-results, #tacticalOpsRoot .t-deployment, #tacticalOpsRoot .t-war-table { min-width:0; }
+#tacticalOpsRoot .t-war-table > p { margin-bottom:.2rem!important; }
+
+#tacticalOpsRoot .t-deploy-hero > img { object-position:0% 50%; opacity:1; }
+#tacticalOpsRoot .t-deploy-hero::after { background:linear-gradient(0deg,#081018 0%,#08101822 100%); }
+#tacticalOpsRoot .t-card-art { object-position:0% 50%; opacity:.95; }
+#tacticalOpsRoot .t-war-table > section { margin-top:.2rem!important; }
+#tacticalOpsRoot .t-war-table > .t-title { font-size:1.8rem; }
+#tacticalOpsRoot .t-war-table > p { font-size:.8rem!important; margin:0!important; }
+#tacticalOpsRoot .t-war-table section > h2 { margin:.65rem 0; font-size:1.4rem; }
+#tacticalOpsRoot .t-squad-preview { display:flex; gap:.55rem; align-items:center; padding:.5rem 0; }
+#tacticalOpsRoot .t-squad-preview > div { position:relative; width:60px; }
+#tacticalOpsRoot .t-squad-preview img { width:60px; height:52px; object-fit:cover; object-position:50% 15%; border:1px solid #6bcaef66; border-radius:3px; }
+#tacticalOpsRoot .t-squad-preview div span { display:block; text-align:center; font-size:.55rem; letter-spacing:.07em; margin-top:.2rem; }
+#tacticalOpsRoot .t-squad-preview > span { margin-left:auto; line-height:1.8; }
+#tacticalOpsRoot .t-deployment-options { padding:.5rem .7rem; border:1px solid #9bcee433; }
+#tacticalOpsRoot .t-deployment-options > summary { color:#b9e2f2; }
+#tacticalOpsRoot .t-deployment .t-conditions { padding:.2rem 0; }
