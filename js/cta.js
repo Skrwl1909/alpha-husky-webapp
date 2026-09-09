@@ -1250,13 +1250,13 @@
   async function applyCampaignOpening(data) {
     const safe = data && typeof data === "object" ? data : { primary: null, highlights: [] };
     const missions = await readBrokenSignalMissions();
+    // Availability must wait for the StoryDelivery boundary to be available.
+    if (!window.StoryDelivery || typeof window.StoryDelivery.resolve !== "function") return safe;
     if (missions.breach === "available") {
       safe.primary = breachPrimary();
-      return safe;
     }
-    if (missions.recover === "cleared") {
+    else if (missions.recover === "cleared") {
       safe.primary = recoverReplayPrimary();
-      return safe;
     }
     try {
       const SD = window.StoryDelivery;
@@ -1269,7 +1269,10 @@
           tactical: missions
         });
         const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
-        if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
+        if (scf && (scf.ctaKind === "tactical_discovery"
+            || ((kind === "tactical_breach" || kind === "tactical_recover_replay") && !scf.lockedBrief))) {
+          safe.primary = scf.target ? SD.markContinuePrimaryFromScf(scf) : null;
+        } else if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
           safe.primary = SD.campaignIncomingPrimary();
         } else if (scf && asText(scf.id) === "S-CAMPAIGN-MARK" && scf.target) {
           // P0-A: unresolved first post-mark Continue owns Hub primary over LIVE_CTA_KINDS.
@@ -1314,7 +1317,12 @@
   function applyStoryPrimary(primary) {
     if (!primary || typeof primary !== "object") return STATE.lastData;
     const currentKind = asText(STATE.lastData && STATE.lastData.primary && STATE.lastData.primary.kind).toLowerCase();
-    if (currentKind === "tactical_breach" || currentKind === "tactical_recover_replay") return STATE.lastData;
+    if (currentKind === "tactical_breach" || currentKind === "tactical_recover_replay") {
+      const SD = window.StoryDelivery;
+      const scf = SD && SD.resolve(SD.gatherInputs());
+      if (!scf || scf.lockedBrief) return STATE.lastData;
+      primary = scf.target ? SD.markContinuePrimaryFromScf(scf) : null;
+    }
     const liveKinds = {
       siege_running_defense: true,
       siege_forming_defense: true,
@@ -1606,6 +1614,21 @@
           }
         }
         return false;
+
+      case "tactical_discovery":
+        try {
+          if (typeof window.AlphaDen?.open !== "function" && typeof window.ensureAlphaDenLoaded === "function") {
+            await window.ensureAlphaDenLoaded();
+          }
+          if (typeof window.AlphaDen?.open !== "function") return false;
+          const opened = await window.AlphaDen.open("war_table");
+          if (opened === false) return false;
+          window.StoryDelivery?.consumeTacticalDiscovery();
+          return true;
+        } catch (err) {
+          warn("War Table discovery failed", err);
+          return false;
+        }
 
       case "first_signal":
         try {

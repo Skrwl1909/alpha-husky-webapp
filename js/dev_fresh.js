@@ -4,7 +4,7 @@
 
   var ROOT_ID = "ahDevFreshRoot";
   var STYLE_ID = "ah-dev-fresh-css";
-  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction"];
+  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1"];
 
   var S = {
     apiPost: null,
@@ -120,7 +120,7 @@
     try {
       var out = await call(path);
       if (!out || out.ok === false) throw Object.assign(new Error((out && out.reason) || "DEV_FRESH_FAIL"), { data: out });
-      if (kind === "on" || kind === "reset") clearFirstSessionLocal();
+      if (kind === "reset") clearFirstSessionLocal();
       try { global.location.reload(); } catch (_) { S.active = kind !== "off"; S.busy = false; render(); }
     } catch (err) {
       S.busy = false;

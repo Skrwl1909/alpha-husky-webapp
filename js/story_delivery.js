@@ -56,6 +56,18 @@
 
   var MARK_HANDOFF_KEY = "ah.sd.markHandoffConsumed.v1";
 
+  var TACTICAL_DISCOVERY_KEY = "ah.sd.tacticalDiscovery.v1";
+
+  function discoveryState() {
+    try { return global.localStorage.getItem(TACTICAL_DISCOVERY_KEY) || ""; } catch (_) { return ""; }
+  }
+
+  function consumeTacticalDiscovery() {
+    try { global.localStorage.setItem(TACTICAL_DISCOVERY_KEY, "consumed"); } catch (_) {}
+    refreshHub("tactical_discovery_consumed");
+    try { global.CTA.refresh(); } catch (_) {}
+  }
+
   var STATE = {
     lastScf: null,
     inited: false,
@@ -179,8 +191,12 @@
   function consumeMarkHandoffAndCue(directive) {
     var key = asText(directive).toLowerCase();
     if (!key) return false;
+    if (readMarkHandoffConsumed() !== key && !discoveryState()) {
+      try { global.localStorage.setItem(TACTICAL_DISCOVERY_KEY, "pending"); } catch (_) {}
+    }
     markHandoffConsumed(key);
     showReturnCue(returnLineFor(key));
+    try { global.CTA.refresh(); } catch (_) {}
     try { refreshHub("mark_handoff_consumed"); } catch (_) {}
     return true;
   }
@@ -365,7 +381,22 @@
       });
     }
 
-    if (kind === "tactical_breach" || tac.breach === "available") {
+    var holdTactical = firstSession || isMarkHandoffPending(camp)
+      || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
+    if (!holdTactical && camp.markLeft && camp.directive
+        && readMarkHandoffConsumed() === camp.directive && discoveryState() === "pending") {
+      return frame({
+        id: "S-TO-DISCOVERY",
+        situation: "War Table unlocks Tactical Ops.",
+        why: "Build War Table Level 1 in Alpha Den to unlock Tactical Ops.",
+        nextLead: "ALPHA DEN / WAR TABLE",
+        nextAction: "Discover War Table in Alpha Den",
+        target: { type: "open_action", action: "tactical_discovery" },
+        ctaKind: "tactical_discovery",
+        goLabel: "Open War Table"
+      });
+    }
+    if (!holdTactical && (kind === "tactical_breach" || tac.breach === "available")) {
       return frame({
         id: "S-TO-BREACH-AVAILABLE",
         situation: "Trusted route carried the wrong signal.",
@@ -382,7 +413,7 @@
       });
     }
 
-    if (kind === "tactical_recover_replay" || tac.recover === "cleared") {
+    if (!holdTactical && (kind === "tactical_recover_replay" || tac.recover === "cleared")) {
       return frame({
         id: "S-TO-RECOVER-CLEARED",
         situation: "RECOVER SIGNAL",
@@ -407,7 +438,7 @@
     var suppressFortress = !!firstSession
       || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
     if (kind && LIVE_CTA_KINDS[kind] && primary) {
-      if (holdMarkContinue) {
+      if (holdMarkContinue || (holdTactical && (kind === "tactical_breach" || kind === "tactical_recover_replay"))) {
         // fall through to S-CAMPAIGN-MARK Continue
       } else if (!(suppressFortress && kind === "fortress_ready")) {
         return frameFromCta(primary, { firstSession: firstSession, hideHubGoal: firstSession });
@@ -488,6 +519,8 @@
         goLabel: "Continue to " + markPlace
       });
     }
+
+    if (holdTactical && (kind === "tactical_breach" || kind === "tactical_recover_replay")) primary = null;
 
     if (fs.eligible && fs.state === "COMPLETED" && primary) {
       return frameFromCta(primary, {
@@ -706,6 +739,7 @@
 
   var API = {
     resolve: resolve,
+    consumeTacticalDiscovery: consumeTacticalDiscovery,
     shouldReplaceOnboardingPrimary: shouldReplaceOnboardingPrimary,
     campaignIncomingPrimary: campaignIncomingPrimary,
     markContinuePrimaryFromScf: markContinuePrimaryFromScf,
