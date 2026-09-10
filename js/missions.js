@@ -2607,6 +2607,10 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       if (!btn) return;
       const act = btn.dataset.act;
       if (!act) return;
+      if (act === "open_tactical_ops") return void openTacticalOps().catch(err => {
+        const status = document.getElementById("mTacticalAccessStatus");
+        if (status) status.textContent = String(err?.message || "Tactical Ops could not open. Try again.");
+      });
 
       if (act === "guided_start" || act === "guided_relay" || act === "guided_gear") return void guidedAction(act);
 
@@ -2713,6 +2717,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   function close() {
     if (!_modal) return;
     _guidedFocus = false;
+    _tacticalEntryFocused = false;
 
     destroyEliteCombatStage("missions_close");
     _modal.classList.remove("is-open");
@@ -5350,6 +5355,59 @@ function _normalizeRareDropObj(obj) {
     finally { _guidedBusy = false; render(); }
   }
 
+  function tacticalAccess(inputs) {
+    const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
+    const campaign = inputs?.campaign, camp = campaign?.campaign || {};
+    if (!fs || !campaign || campaign.ok === false) return false;
+    if (fs.eligible && (fs.state !== "COMPLETED" || !camp.markLeft)) return false;
+    if (campaign.eligible && !camp.markLeft) return false;
+    if (camp.markLeft && camp.playerDirective) {
+      try { if (window.localStorage.getItem("ah.sd.markHandoffConsumed.v1") !== camp.playerDirective) return false; } catch (_) { return false; }
+    }
+    return true;
+  }
+
+  function renderTacticalAccess() {
+    if (!tacticalAccess(window.StoryDelivery?.gatherInputs())) return;
+    _root.insertAdjacentHTML("afterbegin", '<section class="m-card" id="mTacticalAccess" style="margin:8px 0 16px;border-color:#9fd6ff"><div class="m-row"><div><div class="m-title">Tactical Ops</div><div class="m-muted">Turn-based squad combat. Choose an operation.</div></div><button type="button" class="btn primary" data-act="open_tactical_ops">OPEN</button></div><div id="mTacticalAccessStatus" role="status" class="m-muted"></div></section>');
+    if (_tacticalEntryFocused) document.getElementById("mTacticalAccess").style.outline = "2px solid #9fd6ff";
+  }
+
+  async function openTacticalEntry() {
+    if (!await window.StoryDelivery.refreshReturn()) return false;
+    if (!tacticalAccess(window.StoryDelivery.gatherInputs())) return false;
+    _tacticalEntryFocused = true;
+    if (!open()) return false;
+    await loadState({ force: true, reason: "tactical_access" });
+    render();
+    const entry = document.getElementById("mTacticalAccess");
+    if (!entry) return false;
+    entry.style.outline = "2px solid #9fd6ff";
+    entry.scrollIntoView({ block: "nearest" });
+    entry.querySelector("button")?.focus({ preventScroll: true });
+    return true;
+  }
+
+  let _tacticalOpening = false, _tacticalEntryFocused = false;
+  async function openTacticalOps() {
+    if (_tacticalOpening) return false;
+    _tacticalOpening = true;
+    try {
+      if (!await window.StoryDelivery.refreshReturn() || !tacticalAccess(window.StoryDelivery.gatherInputs())) return false;
+      const ensureLoaded = window.ensureTacticalOpsLoaded || window.AHBootLoaders?.ensureTacticalOpsLoaded;
+      if (typeof ensureLoaded !== "function") throw Error("Tactical Ops is unavailable. Try again.");
+      await ensureLoaded(window.S?.apiPost || window.apiPost, window.Telegram?.WebApp || null, false);
+      if (!window.TacticalOps?.open) throw Error("Tactical Ops failed to load. Try again.");
+      const opened = await window.TacticalOps.open();
+      if (opened === false) return false;
+      close();
+      try {
+        if (window.localStorage.getItem("ah.sd.tacticalDiscovery.v1") === "pending") window.StoryDelivery.consumeTacticalDiscovery();
+      } catch (_) {}
+      return true;
+    } finally { _tacticalOpening = false; }
+  }
+
   function render() {
     if (!_root) return; const payload = normalizePayload(_state); if (!payload || typeof payload !== "object") { renderError("Bad payload", JSON.stringify(_state).slice(0, 900)); return; }
     _syncServerClock(payload); const offers = Array.isArray(payload.offers) ? payload.offers : []; const realActive = getActive(payload); const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive; const last = payload.lastResolve || payload.last_resolve || null; blueSignalHuntProgress(payload);
@@ -5363,6 +5421,7 @@ function _normalizeRareDropObj(obj) {
     const selected = resolveMissionsCompactTab(active, flow); _missionsCompactTab = selected; const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row"); if (row) row.style.display = "none";
     _root.innerHTML = `<div class="m-stage"><div class="m-shell-head"><div class="m-shell-top"><div class="m-title">Missions</div><button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button></div><div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>${renderHelpPanel()}</div>${renderMissionsCompactTabs(selected, activePanel, renderMissionAvailablePanel(offers, realActive), elitePanel)}</div>`;
     renderGuidedLead();
+    renderTacticalAccess();
     window.ScoutGuide?.refresh();
     if (tactical?.phase === "fighting" && flow === "elite") {
       hydrateEliteCombatStage(active, tactical);
@@ -5857,6 +5916,9 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   window.Missions = {
+    tacticalAccess,
+    openTacticalEntry,
+    openTacticalOps,
     openGuided,
     refreshGuided: () => { if (_modal?.classList.contains("is-open")) render(); },
     renderScoutVoice: line => { ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },

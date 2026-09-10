@@ -1631,16 +1631,12 @@
 
       case "tactical_discovery":
         try {
-          if (typeof window.AlphaDen?.open !== "function" && typeof window.ensureAlphaDenLoaded === "function") {
-            await window.ensureAlphaDenLoaded();
-          }
-          if (typeof window.AlphaDen?.open !== "function") return false;
-          const opened = await window.AlphaDen.open("war_table");
+          const opened = await window.Missions.openTacticalEntry();
           if (opened === false) return false;
           window.StoryDelivery?.consumeTacticalDiscovery();
           return true;
         } catch (err) {
-          warn("War Table discovery failed", err);
+          warn("Tactical Ops discovery failed", err);
           return false;
         }
 

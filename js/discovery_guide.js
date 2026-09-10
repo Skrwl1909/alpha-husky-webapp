@@ -4,7 +4,7 @@
   let dismissed = false;
   const destinations = [
     ["missions", "Missions", "Open the mission board."],
-    ["war_table", "Tactical Ops / War Table", "Find Tactical Ops in Alpha Den; requires War Table Level 1."],
+    ["war_table", "Tactical Ops", "Open turn-based squad operations directly."],
     ["shop", "Shop", "Browse gear and supplies."],
     ["badges", "Badges & Titles", "Find your badges and active title."],
     ["howlboard", "Howlboard", "See the player rankings."]
@@ -30,10 +30,7 @@
     if (!eligible(global.StoryDelivery?.gatherInputs?.())) return false;
     if (!destinations.some(row => row[0] === id)) return false;
     if (id === "war_table") {
-      if (!global.AlphaDen?.open) await global.ensureAlphaDenLoaded?.();
-      if (!global.AlphaDen?.open) return false;
-      global.HomeNav?.closeAll();
-      return (await global.AlphaDen.open("war_table")) !== false;
+      return await global.Missions.openTacticalOps();
     }
     if (id === "missions") { global.HomeNav?.closeAll(); global.HomeNav.openMissions(); }
     else if (id === "badges") {

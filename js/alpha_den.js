@@ -107,7 +107,7 @@
       name: "War Table",
       unbuiltName: "Empty Tactical Floor",
       level1Name: "Field War Table",
-      unbuiltCopy: "An empty command spot. Future faction orders will be planned here.",
+      unbuiltCopy: "Tactical Ops is available now. Build War Table for additional Den capabilities: Command Briefing and Pack Cell.",
       level1Copy: "Field War Table assembled. Future SITREP orders and strategy will connect here.",
       role: "Future faction orders, SITREP planning, and map strategy space.",
       buildTimeLabel: "Level 1 build time: 12h",
@@ -2560,25 +2560,18 @@ ${config.id === "war_table" ? renderWarTableBriefCard() : ""}`;
   }
 
   function renderTacticalOpsCard() {
-    const level = getBuildingLevel("war_table");
-    const locked = level < 1;
     return `
 <section class="alpha-den-card alpha-den-card--detail">
   <div class="alpha-den-detail__eyebrow">Tactical Ops</div>
   <h3 class="alpha-den-detail__title">Field Command Network</h3>
-  <p class="alpha-den-detail__copy">${locked
-    ? "War Table Level 1 required."
-    : "Turn-based squad combat. Position your units, choose actions and secure the sector."}</p>
+  <p class="alpha-den-detail__copy">Available now. Turn-based squad combat. Position your units, choose actions and secure the sector.</p>
   <div class="alpha-den-detail__actions">
     <button
       type="button"
-      class="${locked ? "alpha-den-btn alpha-den-btn--passive" : "alpha-den-btn alpha-den-btn--primary"}"
-      data-alpha-den-action="${locked ? "noop" : "open-tactical-ops"}"
-      ${locked ? "disabled" : ""}
-    >${locked ? "Locked" : "OPEN TACTICAL OPS"}</button>
-    <p class="alpha-den-detail__note">${locked
-      ? "Build War Table Level 1 to unlock Tactical Ops."
-      : "Deploy a squad and fight a turn-based sector operation."}</p>
+      class="alpha-den-btn alpha-den-btn--primary"
+      data-alpha-den-action="open-tactical-ops"
+    >OPEN TACTICAL OPS</button>
+    <p class="alpha-den-detail__note">War Table construction adds Den capabilities; it is not required for Tactical Ops.</p>
   </div>
 </section>`;
   }

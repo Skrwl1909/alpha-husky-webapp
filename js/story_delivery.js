@@ -457,13 +457,13 @@
         && readMarkHandoffConsumed() === camp.directive && discoveryState() === "pending") {
       return frame({
         id: "S-TO-DISCOVERY",
-        situation: "War Table unlocks Tactical Ops.",
-        why: "Build War Table Level 1 in Alpha Den to unlock Tactical Ops.",
-        nextLead: "ALPHA DEN / WAR TABLE",
-        nextAction: "Discover War Table in Alpha Den",
+        situation: "Tactical Ops is available in Missions.",
+        why: "Choose an operation and deploy your squad.",
+        nextLead: "MISSIONS / TACTICAL OPS",
+        nextAction: "Find Tactical Ops in Missions",
         target: { type: "open_action", action: "tactical_discovery" },
         ctaKind: "tactical_discovery",
-        goLabel: "Open War Table"
+        goLabel: "Open Missions"
       });
     }
     if (!holdTactical && (kind === "tactical_breach" || tac.breach === "available")) {
