@@ -2608,6 +2608,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       const act = btn.dataset.act;
       if (!act) return;
 
+      if (act === "guided_start" || act === "guided_relay" || act === "guided_gear") return void guidedAction(act);
+
       if (act === "missions_tab") { const tab = String(btn.dataset.tab || "").toLowerCase(); if (["active", "available", "elite"].includes(tab)) { _missionsCompactTab = tab; _missionsCompactTabManual = true; render(); } return; }
       if (act === "refresh") return void doRefresh();
       if (act === "start")   return void doStart(btn.dataset.tier || "", btn.dataset.offer || "");
@@ -2616,7 +2618,12 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       if (act === "elite_start") return void doEliteStart(btn.dataset.operationKey || btn.dataset.operation || "", selectedTacticalChoiceForButton(btn));
       if (act === "elite_operation_begin") return void doEliteOperationBegin();
       if (act === "elite_operation_action") return void doEliteOperationAction(btn.dataset.tacticalAction || "", btn.dataset.expectedRound);
-      if (act === "resolve") return void doResolve();
+      if (act === "resolve") return void doResolve().then(async () => {
+        if (!window.Onboarding?.getFirstSignal()?.eligible || window.Onboarding.getFirstSignal().state === "COMPLETED") return;
+        await window.Onboarding?.refreshContinuity();
+        window.StoryDelivery?.refreshHub("mission_resolved");
+        render();
+      }).catch(err => renderError("Refresh failed", String(err?.message || err)));
       if (act === "continue_mission_debrief") { _missionDebriefState = null; return void render(); }
       if (act === "elite_briefing_back") { _eliteBriefingState = null; _eliteBriefingBusy = false; return void render(); }
       if (act === "elite_operation_close") return void doEliteOperationDismiss(btn.dataset.operationId || "");
@@ -2705,6 +2712,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
   function close() {
     if (!_modal) return;
+    _guidedFocus = false;
 
     destroyEliteCombatStage("missions_close");
     _modal.classList.remove("is-open");
@@ -5278,6 +5286,70 @@ function _normalizeRareDropObj(obj) {
     const planLabel = active.eliteMission ? textOrEmpty(active.tacticalChoiceLabel || tacticalChoiceLabel(active.tacticalChoice), "") : "";
     return `<div class="m-stage m-stage-wait"><div class="m-wait-center">${active.subtitle ? `<div class="m-kicker">${esc(active.subtitle)}</div>` : ""}<div class="m-title">${esc(active.title || "Mission")}</div>${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}${renderTags(tags)}${planLabel ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;"><b>Plan locked:</b> ${esc(planLabel)}</div>` : ""}${hint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(hint)}</div>` : ""}<div id="mClock" class="m-clock">-</div><div id="mClockSub" class="m-clock-sub">-</div><div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>${rare ? renderRareDropCard(rare) : ""}<div class="m-actions"><button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>${active.__pending ? '<button type="button" class="btn" data-act="back_to_offers">Back</button>' : ""}</div></div></div>`;
   }
+  let _guidedFocus = false, _guidedBusy = false, _guidedError = "";
+
+  function guidedLead() {
+    const payload = normalizePayload(_state);
+    const signal = payload?.firstSignal || payload?.first_signal;
+    const campaign = window.Campaign?.state();
+    const camp = campaign?.campaign;
+    if (!signal?.eligible) return "";
+    if (signal.state === "NOT_STARTED" && window.Onboarding?.getFirstSignal()?.faction_selected) return "first_signal";
+    if (signal.state === "REWARD_RECEIVED") return "gear";
+    if (signal.state === "COMPLETED" && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
+    return "";
+  }
+
+  function renderGuidedLead() {
+    const lead = guidedLead();
+    if (!lead) return;
+    const title = lead === "first_signal" ? "FIRST SIGNAL" : lead === "gear" ? "Rustfang Fangs recovered" : "RELAY-7";
+    const action = lead === "first_signal" ? "guided_start" : lead === "gear" ? "guided_gear" : "guided_relay";
+    const label = lead === "first_signal" ? "Start First Mission" : lead === "gear" ? "Inspect recovered gear" : "Answer RELAY-7";
+    _root.insertAdjacentHTML("afterbegin", `<div class="m-card" id="mGuidedLead" style="outline:2px solid #9fd6ff;outline-offset:2px;margin:8px 0 16px"><details><summary style="padding:12px;cursor:pointer;font-weight:900">${title}</summary><div class="m-actions"><button type="button" class="btn primary" data-act="${action}" ${_guidedBusy ? "disabled" : ""}>${label}</button></div></details>${_guidedError ? `<div role="status" class="m-muted">${esc(_guidedError)}</div>` : ""}</div>`);
+  }
+
+  async function openGuided() {
+    _guidedFocus = true;
+    _guidedError = "";
+    window.Onboarding?.close(false);
+    if (!open()) return false;
+    await window.Onboarding?.refreshContinuity();
+    try { await window.Campaign?.refresh({ strict: true }); } catch (_) {}
+    const signal = window.Onboarding?.getFirstSignal();
+    _missionsCompactTab = signal?.state === "MISSION_STARTED" ? "active" : "available";
+    _missionsCompactTabManual = true;
+    await loadState({ force: true, reason: "guided_focus" });
+    render();
+    document.getElementById("mGuidedLead")?.scrollIntoView({ block: "nearest" });
+    return true;
+  }
+
+  async function guidedAction(action) {
+    if (_guidedBusy) return;
+    _guidedBusy = true;
+    _guidedError = "";
+    try {
+      await window.Onboarding.refreshContinuity();
+      const lead = guidedLead();
+      if (action === "guided_start" && lead === "first_signal") {
+        await doFirstSignalStart();
+        _missionsCompactTab = "active";
+        _missionsCompactTabManual = true;
+      } else if (action === "guided_gear" && lead === "gear") {
+        await window.Onboarding.openGuided();
+      } else if (action === "guided_relay" && lead === "relay") {
+        const live = await window.Campaign.refresh({ strict: true });
+        if (!live?.eligible || live.ok === false || live.show === false) throw Error("RELAY-7 could not refresh. Try again.");
+        close();
+        await window.Campaign.open();
+      }
+      await window.Onboarding.refreshContinuity();
+      window.StoryDelivery?.refreshHub("guided_action");
+    } catch (err) { _guidedError = String(err?.message || "Could not refresh. Try again."); }
+    finally { _guidedBusy = false; render(); }
+  }
+
   function render() {
     if (!_root) return; const payload = normalizePayload(_state); if (!payload || typeof payload !== "object") { renderError("Bad payload", JSON.stringify(_state).slice(0, 900)); return; }
     _syncServerClock(payload); const offers = Array.isArray(payload.offers) ? payload.offers : []; const realActive = getActive(payload); const active = (realActive.status === "NONE" && _pendingValid()) ? _activeFromPending() : realActive; const last = payload.lastResolve || payload.last_resolve || null; blueSignalHuntProgress(payload);
@@ -5290,6 +5362,8 @@ function _normalizeRareDropObj(obj) {
     else if (active.status && active.status !== "NONE") { const panel = renderMissionActivePanel(active, payload); if (active.eliteMission) { flow = "elite"; elitePanel = panel; } else activePanel = panel; ticking = true; }
     const selected = resolveMissionsCompactTab(active, flow); _missionsCompactTab = selected; const row = el("missionsRefresh")?.closest?.(".btn-row") || el("missionsResolve")?.closest?.(".btn-row"); if (row) row.style.display = "none";
     _root.innerHTML = `<div class="m-stage"><div class="m-shell-head"><div class="m-shell-top"><div class="m-title">Missions</div><button type="button" class="btn m-compact-btn m-help-btn" data-act="toggle_help">?</button></div><div class="m-shell-sub">Pick a route. Start - Wait - Resolve.</div>${renderHelpPanel()}</div>${renderMissionsCompactTabs(selected, activePanel, renderMissionAvailablePanel(offers, realActive), elitePanel)}</div>`;
+    renderGuidedLead();
+    window.ScoutGuide?.refresh();
     if (tactical?.phase === "fighting" && flow === "elite") {
       hydrateEliteCombatStage(active, tactical);
     } else {
@@ -5783,6 +5857,8 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   window.Missions = {
+    openGuided,
+    refreshGuided: () => { if (_modal?.classList.contains("is-open")) render(); },
     renderScoutVoice: line => { ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },
     init,
     open,

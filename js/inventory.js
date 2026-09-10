@@ -2104,6 +2104,7 @@ async use(key) {
           this.closeItem();
           await this.open();
         }
+        try { await window.Onboarding?.afterManualEquip(res, key); } catch (_) {}
         return res;
       } else {
         throw new Error(res.reason || "Failed");

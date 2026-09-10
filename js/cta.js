@@ -1608,6 +1608,9 @@
       case "map":
         return openMap();
 
+      case "relay_missions":
+        return await window.Missions.openGuided();
+
       case "campaign":
         try {
           if (typeof window.Campaign?.open === "function") {
@@ -1643,6 +1646,7 @@
 
       case "first_signal":
         try {
+          if (window.Onboarding?.openGuided) return await window.Onboarding.openGuided();
           if (typeof window.Onboarding?.open === "function") {
             void window.Onboarding.open(true);
             return true;

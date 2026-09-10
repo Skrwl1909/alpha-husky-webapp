@@ -300,7 +300,7 @@
       title: "RELAY-7 is calling",
       subtitle: "Chapter 6 is incoming. Answer the signal.",
       badge: "SIGNAL",
-      target: { type: "open_action", action: "campaign" },
+      target: { type: "open_action", action: "relay_missions" },
       meta: {},
       priority: 97,
       expiresInSec: 0
@@ -426,13 +426,13 @@
           why: "Equipping it is the consequence. The world records the change.",
           changed: "First gear is waiting to be equipped.",
           nextLead: "First gear",
-          nextAction: "Equip",
+          nextAction: "Inspect recovered gear",
           openQuestion: "What changes when the fangs lock in?",
           target: { type: "open_action", action: "first_signal" },
           ctaKind: "first_signal",
           firstSession: true,
           hideHubGoal: true,
-          goLabel: "Equip"
+          goLabel: "Inspect recovered gear"
         });
       }
       return frame({
@@ -524,7 +524,7 @@
         nextLead: "RELAY-7",
         nextAction: "Answer RELAY-7",
         openQuestion: "What did Alpha find at the Edge?",
-        target: { type: "open_action", action: "campaign" },
+        target: { type: "open_action", action: "relay_missions" },
         ctaKind: "campaign_incoming",
         firstSession: true,
         hideHubGoal: true,
@@ -541,13 +541,13 @@
           ? "Rustfang is equipped. Strength rose."
           : "No mark on the map yet.",
         nextLead: "RELAY-7",
-        nextAction: "Open Campaign",
+        nextAction: "Find RELAY-7 in Missions",
         openQuestion: "What did Alpha find at the Edge?",
-        target: { type: "open_action", action: "campaign" },
+        target: { type: "open_action", action: "relay_missions" },
         ctaKind: "campaign_incoming",
         firstSession: true,
         hideHubGoal: true,
-        goLabel: "Open Campaign"
+        goLabel: "Find RELAY-7 in Missions"
       });
     }
 
@@ -783,6 +783,7 @@
     if (!returnRequested || returnReady) rememberContinuity(inputs, scf);
     STATE.lastScf = scf;
     renderHub(scf);
+    global.Missions?.refreshGuided();
     notifySubscribers(reason || "refresh");
     return scf;
   }

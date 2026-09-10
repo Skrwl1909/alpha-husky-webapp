@@ -2,10 +2,10 @@
   "use strict";
   const KEY = "ah.ftue.scoutGuide.v1";
   const lines = {
-    1: "Signal detected. Your oath is recorded. Take the first mission; I'll watch the route.",
+    1: "Signal detected. Open Missions, select FIRST SIGNAL, then start when you're ready. I'll watch the route.",
     2: "The signal is ready. Resolve the mission and see what came through.",
-    4: "Rustfang Fangs recovered. Equip them. Good gear belongs on you, not in your pack.",
-    8: "You're stronger now. RELAY-7 is calling. Let's see where that signal leads.",
+    4: "Rustfang Fangs recovered. Compare them with your equipped gear, then press Equip when you're ready.",
+    8: "You're stronger now. Open Missions and select RELAY-7. Let's see where that signal leads.",
     16: "Choose your direction, then leave your mark. One lead is enough to move forward.",
     32: "The wider world is open. Lose the trail? Explore Alpha in the Hub shows the places you can go."
   };
@@ -53,6 +53,8 @@
     if (!beat || (!active && (consumed & beat))) return;
     let host = null;
     if (global.Onboarding?.isOpen?.()) host = document.getElementById("obBody");
+    else if (visible("missionsModal")) host = document.getElementById("mGuidedLead") || document.getElementById("missionsRoot");
+    else if (document.getElementById("equipped-root")) host = document.getElementById("eq-compare-host");
     else if (campaignOpen) host = document.getElementById("campaignRoot");
     else if (visible("hubBack")) host = document.getElementById("hubStoryRoot");
     if (!host || !global.Missions?.renderScoutVoice) { hide(); return; }

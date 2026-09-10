@@ -525,31 +525,16 @@
         return;
       }
       if (action === "start") {
-        if (window.Missions?.firstSignalStart) await window.Missions.firstSignalStart();
-        else await getApiPost()("/webapp/missions/action", { action: "first_signal_start", run_id: makeRunId("first_signal_start") });
+        await openGuided();
+        return;
       } else if (action === "resolve") {
-        if (window.Missions?.firstSignalResolve) await window.Missions.firstSignalResolve();
-        else await getApiPost()("/webapp/missions/action", { action: "resolve", run_id: makeRunId("first_signal_resolve") });
+        await openGuided();
+        return;
       } else if (action === "equip") {
-        const res = await window.Inventory?.equip?.("rustfang_fangs", {
-          serverValidated: true,
-          skipRefresh: true,
-          silent: true,
-        });
-        if (!res?.ok) throw new Error(res?.reason || "Equip failed");
-        if (res?.firstSignalCompletion?.completed === false) {
-          showToast("Equipped, but the Strength change could not be verified.");
-        }
+        await openGuided();
+        return;
       } else if (action === "next") {
-        const openCampaign = campaignEligibleForNext();
-        close(true);
-        requestAnimationFrame(() => {
-          if (openCampaign && window.Campaign && typeof window.Campaign.open === "function") {
-            window.Campaign.open();
-            return;
-          }
-          try { window.CTA?.refresh?.(); } catch (_) {}
-        });
+        await openGuided();
         return;
       }
       await refreshFocusedState();
@@ -596,7 +581,7 @@
     let copy = "Your first short mission is ready. Complete it to recover a starter gear signal.";
     let detail = "";
     let action = "start";
-    let label = "Start First Mission";
+    let label = "Find FIRST SIGNAL in Missions";
     let disabled = _focusedBusy;
 
     if (!state.faction_selected) {
@@ -617,7 +602,7 @@
       heading = "Signal Located";
       copy = "The first mission is ready to resolve.";
       action = "resolve";
-      label = "Resolve Mission";
+      label = "Open ready mission";
     } else if (state.state === "REWARD_RECEIVED") {
       const reward = state.reward || {};
       const strength = Number(reward?.statBonus?.strength || 0);
@@ -626,7 +611,7 @@
       copy = "Your first recovered gear is waiting to be equipped.";
       detail = `<div class="ob-note">${escapeHtml(reward.rarity || "common")} · ${escapeHtml(reward.slot || "fangs")}${strength > 0 ? ` · +${strength} Strength` : ""}</div>`;
       action = "equip";
-      label = "Equip";
+      label = "Inspect recovered gear";
     } else if (state.state === "COMPLETED") {
       const completion = state.completion || {};
       icon = "▲";
@@ -634,7 +619,7 @@
       copy = "Your first gear upgrade is active.";
       detail = `<div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
-      label = campaignEligibleForNext() ? "Answer RELAY-7" : "Return to the Map";
+      label = "Find RELAY-7 in Missions";
     }
 
     bodyEl.innerHTML = `
@@ -762,6 +747,35 @@
     return false;
   }
 
+  async function openGuided() {
+    await fetchTutorialState(true);
+    await fetchFirstSignalMissionState(true);
+    const state = focusedState();
+    if (!firstSignalEnabled()) return false;
+    close(false);
+    if (state.state === "REWARD_RECEIVED") {
+      window.Missions?.close();
+      return window.Equipped.openGuidedItem(state.reward?.itemKey || state.reward?.key || "rustfang_fangs");
+    }
+    return window.Missions.openGuided();
+  }
+
+  async function afterManualEquip(result, key) {
+    if (!result?.ok || key !== "rustfang_fangs" || focusedState().state !== "REWARD_RECEIVED") return false;
+    await fetchTutorialState(true);
+    await fetchFirstSignalMissionState(true);
+    if (focusedState().state !== "COMPLETED" || focusedState().completion?.completed !== true) return false;
+    try { await window.Campaign?.refresh({ strict: true }); } catch (_) {}
+    ensureCSS(); ensureHTML();
+    backEl.hidden = false;
+    backEl.style.display = "flex";
+    document.body.classList.add("ob-lock");
+    renderFirstSignal();
+    window.StoryDelivery?.refreshHub("manual_equip");
+    void window.CTA?.refresh();
+    return true;
+  }
+
   function identitySequenceOpen() {
     try {
       if (window.Awakening && typeof window.Awakening.isOpen === "function" && window.Awakening.isOpen()) return true;
@@ -874,6 +888,8 @@
   }
 
   window.Onboarding = {
+    openGuided,
+    afterManualEquip,
     init,
     open,
     close,

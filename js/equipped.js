@@ -1123,6 +1123,17 @@
       return true;
     },
 
+    async openGuidedItem(key) {
+      await this.open();
+      if (!this._backpackItemByKey(key)) { this._toast("Recovered gear could not be loaded. Try again.", "error"); return false; }
+      this.portraitPane = "backpack";
+      this._applyLayout();
+      this._selectBackpackItem(key);
+      document.getElementById("eq-compare-host")?.scrollIntoView({ block: "nearest" });
+      window.ScoutGuide?.refresh();
+      return true;
+    },
+
     async open() {
       ensureEquippedStyles();
       document.querySelectorAll(".map-back, .q-modal, .sheet-back, .locked-back").forEach((el) => {
@@ -2457,6 +2468,7 @@
           this._renderLoadoutInspect();
           this._requestCharacterImage(true);
           this._loadActivePet().then(() => this._syncPetCompanion());
+          try { await window.Onboarding?.afterManualEquip(res, key); } catch (_) {}
         } else {
           hapticNotify("error");
           this.pendingAction = null;
