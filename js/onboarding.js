@@ -651,6 +651,7 @@
     const button = document.getElementById("obFirstSignalDo");
     if (button && action) button.onclick = () => runFocusedAction(action);
     scheduleFocusedCountdown(state);
+    window.ScoutGuide?.refresh();
   }
 
   async function refreshSteps(keepCurrent = true) {
@@ -843,6 +844,7 @@
 
     backEl.style.display = "none";
     document.body.classList.remove("ob-lock");
+    window.ScoutGuide?.refresh();
   }
 
   function init({ apiPost, tg, dbg } = {}) {

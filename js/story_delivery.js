@@ -95,6 +95,7 @@
     if (returnPromise) return returnPromise;
     returnRequested = returnRequested || !!readContinuity();
     returnReady = false;
+    global.ScoutGuide?.setFresh(false);
     renderHub(null);
     returnPromise = Promise.resolve().then(async function () {
       if (!global.Onboarding || !global.Campaign || !global.CTA) return false;
@@ -107,6 +108,7 @@
       return true;
     }).catch(function () { return false; }).finally(function () {
       returnPromise = null;
+      global.ScoutGuide?.setFresh(returnReady);
       refreshHub("return");
     });
     return returnPromise;

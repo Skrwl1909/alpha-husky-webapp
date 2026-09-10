@@ -1636,6 +1636,7 @@
       STATE.rootEl.innerHTML = renderSignalCard(directiveState());
     }
     bind();
+    global.ScoutGuide?.refresh();
   }
 
   function bind() {
@@ -2145,6 +2146,7 @@
     STATE.backEl.style.display = "none";
     setBodyLock(false);
     try { global.navClose && global.navClose("campaignBack"); } catch (_) {}
+    global.ScoutGuide?.refresh();
   }
 
   function init(opts) {

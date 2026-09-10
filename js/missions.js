@@ -5783,6 +5783,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   window.Missions = {
+    renderScoutVoice: line => { ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },
     init,
     open,
     close,
