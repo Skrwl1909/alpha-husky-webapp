@@ -4,7 +4,7 @@
 
   var ROOT_ID = "ahDevFreshRoot";
   var STYLE_ID = "ah-dev-fresh-css";
-  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1"];
+  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1"];
 
   var S = {
     apiPost: null,

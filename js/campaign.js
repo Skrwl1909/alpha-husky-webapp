@@ -1806,7 +1806,13 @@
     if (!force && STATE.payload && isFreshEnough()) {
       return STATE.payload;
     }
-    if (STATE.loadPromise) return STATE.loadPromise;
+    if (STATE.loadPromise) {
+      if (options && options.strict) {
+        await STATE.loadPromise;
+        return loadState(options);
+      }
+      return STATE.loadPromise;
+    }
 
     log("load state", { force: force, reason: reason });
     STATE.loadPromise = api("/webapp/campaign/state", {}).then(function onLoaded(out) {
@@ -1817,6 +1823,7 @@
       if (isOpen()) render();
       return STATE.payload;
     }).catch(function onErr(err) {
+      if (options && options.strict) throw err;
       warn("state load failed", err);
       if (!STATE.payload) {
         STATE.payload = { ok: false, reason: asText(err && err.message) || "LOAD_FAILED" };
@@ -2176,8 +2183,8 @@
     return global.Campaign;
   }
 
-  function refresh() {
-    return loadState({ force: true, reason: "refresh" });
+  function refresh(options) {
+    return loadState({ force: true, reason: "refresh", strict: !!(options && options.strict) });
   }
 
   global.Campaign = {
@@ -2189,5 +2196,3 @@
     state: function getState() { return STATE.payload; }
   };
 })(window);
-
-

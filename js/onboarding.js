@@ -118,7 +118,7 @@
     return out?.data || out?.state || out || {};
   }
 
-  async function fetchFirstSignalMissionState() {
+  async function fetchFirstSignalMissionState(strict = false) {
     if (!firstSignalEnabled()) {
       _firstSignalMission = null;
       return null;
@@ -128,15 +128,17 @@
         ? await window.Missions.firstSignalState()
         : await getApiPost()("/webapp/missions/state", { run_id: makeRunId("first_signal_state") });
       const payload = missionPayload(out);
+      if (strict && (out?.ok === false || !(payload.firstSignal || payload.first_signal))) throw new Error("First Signal refresh unavailable");
       _firstSignalMission = payload.firstSignal || payload.first_signal || null;
     } catch (e) {
+      if (strict) throw e;
       log("FIRST SIGNAL state fetch failed", e);
       _firstSignalMission = null;
     }
     return _firstSignalMission;
   }
 
-  async function fetchTutorialState() {
+  async function fetchTutorialState(strict = false) {
     const debugOverride = getTutorialDebugOverride();
     if (debugOverride && typeof debugOverride === "object") {
       _tutorial = normalizeTutorialPayload({
@@ -149,6 +151,7 @@
 
     const apiPost = getApiPost();
     if (!apiPost) {
+      if (strict) throw new Error("Tutorial refresh unavailable");
       log("No apiPost; cannot fetch tutorial state");
       _tutorial = null;
       return null;
@@ -158,10 +161,12 @@
       const out = await apiPost("/webapp/tutorial/state", {
         run_id: makeRunId("tutorial_state")
       });
+      if (strict && (!out || out.ok === false)) throw new Error("Tutorial refresh unavailable");
       _tutorial = normalizeTutorialPayload(out);
       log("tutorial state", _tutorial);
       return _tutorial;
     } catch (e) {
+      if (strict) throw e;
       log("tutorial state fetch failed", e);
       _tutorial = null;
       return null;
@@ -871,6 +876,11 @@
     open,
     close,
     refresh: () => refreshSteps(true),
+    refreshContinuity: async () => {
+      await fetchTutorialState(true);
+      await fetchFirstSignalMissionState(true);
+      if (isOpen()) render();
+    },
     isOpen,
     getTutorial: () => _tutorial,
     getFirstSignal: () => {

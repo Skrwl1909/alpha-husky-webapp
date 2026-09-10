@@ -55,6 +55,74 @@
   };
 
   var MARK_HANDOFF_KEY = "ah.sd.markHandoffConsumed.v1";
+  var CONTINUITY_KEY = "ah.sd.returnContinuity.v1";
+  var returnRequested = false;
+  var returnReady = false;
+  var returnPromise = null;
+
+  function readContinuity() {
+    try { return JSON.parse(global.localStorage.getItem(CONTINUITY_KEY) || "null"); } catch (_) { return null; }
+  }
+
+  // A single current frame, never a source of routing or progression truth.
+  function continuityFrame(inputs, scf) {
+    scf = scf || resolve(inputs);
+    var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
+    var early = (fs.eligible && fs.state !== "COMPLETED")
+      || (camp.eligible && (!camp.markLeft || isMarkHandoffPending(camp)));
+    if (!early || !scf.target || scf.lockedBrief) return null;
+    var beat = "";
+    if (camp.markLeft) beat = "Mark delivered.";
+    else if (camp.directive) beat = "Your directive is selected.";
+    else if (fs.state === "COMPLETED") beat = "Rustfang is equipped. Strength rose.";
+    else if (fs.state === "REWARD_RECEIVED") beat = "Rustfang Fangs recovered.";
+    else if (fs.state === "MISSION_STARTED") beat = "First Mission started.";
+    else if (fs.faction_selected) beat = "Faction Oath recorded.";
+    return { lastBeat: beat, lead: scf.nextLead, next: { label: scf.nextAction, target: scf.target } };
+  }
+
+  function rememberContinuity(inputs, scf) {
+    // Boot placeholders must not erase a returning player's marker.
+    if (!inputs.tutorial || !inputs.campaign || returnPromise) return;
+    var current = continuityFrame(inputs, scf);
+    try {
+      if (current) global.localStorage.setItem(CONTINUITY_KEY, JSON.stringify(current));
+      else global.localStorage.removeItem(CONTINUITY_KEY);
+    } catch (_) {}
+  }
+
+  function refreshReturn() {
+    if (returnPromise) return returnPromise;
+    returnRequested = returnRequested || !!readContinuity();
+    returnReady = false;
+    renderHub(null);
+    returnPromise = Promise.resolve().then(async function () {
+      if (!global.Onboarding || !global.Campaign || !global.CTA) return false;
+      await global.Onboarding.refreshContinuity();
+      var campaign = await global.Campaign.refresh({ strict: true });
+      if (!campaign || campaign.ok === false) return false;
+      var cta = await global.CTA.refresh({ strict: true });
+      if (!cta) return false;
+      returnReady = true;
+      return true;
+    }).catch(function () { return false; }).finally(function () {
+      returnPromise = null;
+      refreshHub("return");
+    });
+    return returnPromise;
+  }
+
+  async function continueReturn() {
+    if (!await refreshReturn()) return false;
+    var inputs = gatherInputs(), scf = resolve(inputs);
+    if (!continuityFrame(inputs, scf)) return false;
+    var ok = await global.CTA.openTarget(scf.target);
+    if (ok !== false && scf.id === "S-CAMPAIGN-MARK") {
+      consumeMarkHandoffAndCue(campaignOf(inputs).directive);
+    }
+    if (ok !== false) { returnRequested = false; refreshHub("continued"); }
+    return ok;
+  }
 
   var TACTICAL_DISCOVERY_KEY = "ah.sd.tacticalDiscovery.v1";
 
@@ -440,7 +508,7 @@
     if (kind && LIVE_CTA_KINDS[kind] && primary) {
       if (holdMarkContinue || (holdTactical && (kind === "tactical_breach" || kind === "tactical_recover_replay"))) {
         // fall through to S-CAMPAIGN-MARK Continue
-      } else if (!(suppressFortress && kind === "fortress_ready")) {
+      } else if (!firstSession && !(suppressFortress && kind === "fortress_ready")) {
         return frameFromCta(primary, { firstSession: firstSession, hideHubGoal: firstSession });
       }
     }
@@ -619,6 +687,7 @@
     style.textContent = ""
       + "#hubStoryRoot{padding:0 14px 12px;}"
       + "#hubBack.is-story-first-session #hubGoalRoot{display:none !important;}"
+      + "#hubBack.is-story-return #ctaCardRoot{display:none !important;}"
       + ".ahs-story-card{position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(145,226,255,.18);"
       + "background:radial-gradient(circle at 12% -10%, rgba(81,166,214,.18), transparent 42%),linear-gradient(180deg, rgba(8,18,29,.94), rgba(6,12,20,.96));"
       + "box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);}"
@@ -651,18 +720,25 @@
     ensureStyles();
     var hub = document.getElementById("hubBack");
     var root = ensureHubRoot();
+    var continuation = returnRequested && returnReady && !returnPromise && scf
+      ? continuityFrame(gatherInputs(), scf) : null;
+    if (hub) hub.classList.toggle("is-story-return", !!continuation || (returnRequested && (!returnReady || !!returnPromise)));
+    if (returnRequested && (!returnReady || returnPromise)) scf = null;
     if (hub) hub.classList.toggle("is-story-first-session", !!(scf && scf.hideHubGoal));
     if (!root) return scf;
     if (!scf) {
       root.innerHTML = "";
       return scf;
     }
-    var go = scf.goLabel || scf.nextAction || "Go";
+    var storyLead = !!continuityFrame(gatherInputs(), scf);
+    var go = continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go");
     root.innerHTML = ""
       + "<div class=\"ahs-story-card\">"
       + "  <div class=\"ahs-story-pad\">"
-      + "    <div class=\"ahs-story-kicker\">CURRENT SITUATION</div>"
+      + "    <div class=\"ahs-story-kicker\">" + (continuation ? "CONTINUE THE SIGNAL" : "CURRENT SITUATION") + "</div>"
+      + (continuation && continuation.lastBeat ? "<div class=\"ahs-story-next\"><b>LAST:</b> " + esc(continuation.lastBeat) + "</div>" : "")
       + "    <div class=\"ahs-story-situation\">" + esc(scf.situation) + "</div>"
+      + (continuation && scf.changed ? "<div class=\"ahs-story-next\"><b>NOW:</b> " + esc(scf.changed) + "</div>" : "")
       + "    <div class=\"ahs-story-next\"><b>NEXT:</b> " + esc(scf.nextAction) + "</div>"
       + (scf.target
         ? "    <button type=\"button\" class=\"ahs-story-go\" data-story-go=\"1\">" + esc(go) + "</button>"
@@ -672,6 +748,11 @@
     var btn = root.querySelector("[data-story-go]");
     if (btn && scf.target) {
       btn.addEventListener("click", function onGo() {
+        if (continuation || storyLead) {
+          btn.disabled = true;
+          continueReturn().catch(function () {}).finally(function () { btn.disabled = false; });
+          return;
+        }
         var pendingDirective = "";
         try {
           var campNow = campaignOf(gatherInputs());
@@ -695,7 +776,9 @@
   }
 
   function refreshHub(reason) {
-    var scf = resolve(gatherInputs());
+    var inputs = gatherInputs();
+    var scf = resolve(inputs);
+    if (!returnRequested || returnReady) rememberContinuity(inputs, scf);
     STATE.lastScf = scf;
     renderHub(scf);
     notifySubscribers(reason || "refresh");
@@ -709,6 +792,7 @@
   function onCampaignState() {
     var scf = resolve(gatherInputs());
     STATE.lastScf = scf;
+    if (!returnRequested || returnReady) rememberContinuity(gatherInputs(), scf);
     try {
       if (global.CTA && typeof global.CTA.applyStoryPrimary === "function" && shouldReplaceOnboardingPrimary(scf, ctaKindOf(ctaPrimary(gatherInputs())))) {
         global.CTA.applyStoryPrimary(campaignIncomingPrimary());
@@ -725,6 +809,7 @@
       return API;
     }
     STATE.inited = true;
+    returnRequested = !!readContinuity();
     try {
       if (global.CTA && typeof global.CTA.subscribe === "function") {
         global.CTA.subscribe(function () { onCtaState(); }, { emitCurrent: true });
@@ -734,11 +819,15 @@
       global.addEventListener("ah:campaign-state-accepted", function () { onCampaignState(); });
     } catch (_) {}
     refreshHub("init");
+    if (returnRequested) refreshReturn();
     return API;
   }
 
   var API = {
     resolve: resolve,
+    continuityFrame: continuityFrame,
+    refreshReturn: refreshReturn,
+    continueReturn: continueReturn,
     consumeTacticalDiscovery: consumeTacticalDiscovery,
     shouldReplaceOnboardingPrimary: shouldReplaceOnboardingPrimary,
     campaignIncomingPrimary: campaignIncomingPrimary,

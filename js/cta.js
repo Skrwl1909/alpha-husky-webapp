@@ -990,6 +990,7 @@
     const bloodmoonCompact = isBloodmoonPrimary(primary) && !guide.stakes;
     const fortressCompact = isFortressPrimary(primary);
     const compactPrimary = bloodmoonCompact || fortressCompact;
+    const storyPrimary = !!window.StoryDelivery?.continuityFrame(window.StoryDelivery.gatherInputs());
 
     const card = document.createElement("article");
     card.className = "cta-card" + (compactPrimary ? " is-bloodmoon-compact" : "");
@@ -1000,6 +1001,11 @@
 
     const go = () => {
       collapseExpanded(true);
+      const SD = window.StoryDelivery;
+      if (SD && (storyPrimary || SD.continuityFrame(SD.gatherInputs()))) {
+        void SD.continueReturn().catch(err => warn("story route failed", err));
+        return;
+      }
       void Promise.resolve(openTarget(primary.target)).then((ok) => {
         if (ok !== false) maybeConsumeMarkHandoff(primary);
       });
@@ -1269,7 +1275,9 @@
           tactical: missions
         });
         const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
-        if (scf && (scf.ctaKind === "tactical_discovery"
+        if (scf && SD.continuityFrame(SD.gatherInputs(), scf)) {
+          safe.primary = SD.markContinuePrimaryFromScf(scf);
+        } else if (scf && (scf.ctaKind === "tactical_discovery"
             || ((kind === "tactical_breach" || kind === "tactical_recover_replay") && !scf.lockedBrief))) {
           safe.primary = scf.target ? SD.markContinuePrimaryFromScf(scf) : null;
         } else if (typeof SD.shouldReplaceOnboardingPrimary === "function" && SD.shouldReplaceOnboardingPrimary(scf, kind)) {
@@ -1388,6 +1396,7 @@
 
     const apiPost = getApiPost();
     if (!apiPost) {
+      if (options.strict) throw new Error("CTA refresh unavailable");
       warn("apiPost missing");
       if (!STATE.lastData) render({ primary: null, highlights: [] });
       return STATE.lastData;
@@ -1395,6 +1404,7 @@
 
     try {
       const raw = await apiPost("/webapp/cta/state", {});
+      if (options.strict && (!raw || raw.ok === false)) throw new Error("CTA refresh unavailable");
       const data = await applyCampaignOpening(normalize(raw));
       STATE.lastData = data;
       STATE.lastLoadAt = Date.now();
@@ -1402,14 +1412,15 @@
       render(data);
       return data;
     } catch (err) {
+      if (options.strict) throw err;
       warn("load failed", err);
       if (!STATE.lastData) render({ primary: null, highlights: [] });
       return STATE.lastData;
     }
   }
 
-  function refresh() {
-    return load({ force: true, reason: "manual_refresh" });
+  function refresh(options = {}) {
+    return load({ force: true, reason: "manual_refresh", strict: !!options.strict });
   }
 
   function clearPolling() {
@@ -1779,14 +1790,18 @@
     if (!STATE.visHandler) {
       STATE.visHandler = () => {
         if (document.visibilityState === "visible") {
-          void load({ reason: "visibilitychange" });
+          if (window.StoryDelivery?.refreshReturn) void window.StoryDelivery.refreshReturn();
+          else void load({ force: true, reason: "visibilitychange" });
         }
       };
       document.addEventListener("visibilitychange", STATE.visHandler);
     }
 
     if (!STATE.pageShowHandler) {
-      STATE.pageShowHandler = () => { void load({ reason: "pageshow" }); };
+      STATE.pageShowHandler = () => {
+        if (window.StoryDelivery?.refreshReturn) void window.StoryDelivery.refreshReturn();
+        else void load({ force: true, reason: "pageshow" });
+      };
       window.addEventListener("pageshow", STATE.pageShowHandler);
     }
   }
