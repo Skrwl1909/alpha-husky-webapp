@@ -2664,5 +2664,32 @@
     if (qs("hubGoalRoot")) renderHubGoalLoading("Open Hub to see your next objective.");
   };
 
+  function ensureMobileSyncClickBridge(){
+    if (window.__ahMobileSyncClickBridgeBound) return;
+    window.__ahMobileSyncClickBridgeBound = true;
+
+    document.addEventListener("click", function(e){
+      const target = e && e.target;
+      const el = target && target.nodeType === 1
+        ? target
+        : target?.parentElement;
+
+      if (!el || typeof el.closest !== "function") return;
+
+      const btn = el.closest('[data-action="generate-mobile-sync-code"]');
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (_mobileSyncLoading) return;
+
+      btn.textContent = "Generating…";
+      requestMobileLinkCode();
+    }, true);
+  }
+
+  ensureMobileSyncClickBridge();
+
   window.Stats = Stats;
 })();
