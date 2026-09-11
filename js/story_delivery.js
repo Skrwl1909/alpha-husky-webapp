@@ -826,7 +826,18 @@
     return API;
   }
 
+  function contextualDiscoveryReady() {
+    if (!returnReady || returnPromise) return false;
+    var inputs = gatherInputs(), scf = resolve(inputs), camp = campaignOf(inputs);
+    if (!inputs.cta || !inputs.campaign || !inputs.tutorial) return false;
+    if (continuityFrame(inputs, scf) || isMarkHandoffPending(camp)) return false;
+    if (scf.firstSession || scf.hideHubGoal || scf.lockedBrief || scf.id === "S-TO-DISCOVERY") return false;
+    if (ONBOARDING_CTA_KINDS[scf.ctaKind]) return false;
+    return !/(?:mission_(?:ready|running|active)|siege_running|bloodmoon_live|handoff|first_signal|campaign_incoming)/i.test(scf.ctaKind || "");
+  }
+
   var API = {
+    contextualDiscoveryReady: contextualDiscoveryReady,
     resolve: resolve,
     continuityFrame: continuityFrame,
     refreshReturn: refreshReturn,

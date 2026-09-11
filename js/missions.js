@@ -2711,6 +2711,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
 
     renderLoading("Loading missions…");
     loadState({ reason: "open" });
+    void window.StoryDelivery?.refreshReturn();
     return true;
   }
 
@@ -5356,20 +5357,20 @@ function _normalizeRareDropObj(obj) {
   }
 
   function tacticalAccess(inputs) {
-    const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
+    const payload = normalizePayload(_state);
+    const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal || payload?.firstSignal || payload?.first_signal;
     const campaign = inputs?.campaign, camp = campaign?.campaign || {};
-    if (!fs || !campaign || campaign.ok === false) return false;
-    if (fs.eligible && (fs.state !== "COMPLETED" || !camp.markLeft)) return false;
-    if (campaign.eligible && !camp.markLeft) return false;
-    if (camp.markLeft && camp.playerDirective) {
-      try { if (window.localStorage.getItem("ah.sd.markHandoffConsumed.v1") !== camp.playerDirective) return false; } catch (_) { return false; }
-    }
+    // Unknown state stays quiet; veterans need no fresh-player or device-local markers.
+    if (!fs && !(campaign?.ok === true && campaign.eligible === false)) return false;
+    if (fs?.eligible && fs.state !== "COMPLETED") return false;
+    if (campaign?.eligible && campaign.show !== false && !camp.markLeft) return false;
+    if (fs?.eligible && (!campaign || campaign.ok === false)) return false;
     return true;
   }
 
   function renderTacticalAccess() {
     if (!tacticalAccess(window.StoryDelivery?.gatherInputs())) return;
-    _root.insertAdjacentHTML("afterbegin", '<section class="m-card" id="mTacticalAccess" style="margin:8px 0 16px;border-color:#9fd6ff"><div class="m-row"><div><div class="m-title">Tactical Ops</div><div class="m-muted">Turn-based squad combat. Choose an operation.</div></div><button type="button" class="btn primary" data-act="open_tactical_ops">OPEN</button></div><div id="mTacticalAccessStatus" role="status" class="m-muted"></div></section>');
+    _root.insertAdjacentHTML("afterbegin", '<section class="m-card" id="mTacticalAccess" style="margin:8px 0 16px;border-color:#9fd6ff"><div class="m-row"><div><div class="m-title">TACTICAL OPS</div><div class="m-muted">Turn-based squad combat. Choose an operation.</div></div><button type="button" class="btn primary" data-act="open_tactical_ops">OPEN</button></div><div id="mTacticalAccessStatus" role="status" class="m-muted"></div></section>');
     if (_tacticalEntryFocused) document.getElementById("mTacticalAccess").style.outline = "2px solid #9fd6ff";
   }
 

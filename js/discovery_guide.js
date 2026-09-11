@@ -7,11 +7,16 @@
     ["war_table", "Tactical Ops", "Open turn-based squad operations directly."],
     ["shop", "Shop", "Browse gear and supplies."],
     ["badges", "Badges & Titles", "Find your badges and active title."],
-    ["howlboard", "Howlboard", "See the player rankings."]
+    ["howlboard", "Howlboard", "See the player rankings."],
+    ["stats", "Stats", "Inspect your character build."],
+    ["forge", "Forge", "Inspect equipped gear upgrades and costs."],
+    ["skins", "Skins", "Choose an owned look."],
+    ["quests", "Quest Board", "Find daily activities."]
   ];
   function read(key) { try { return global.localStorage.getItem(key) || ""; } catch (_) { return ""; } }
   function eligible(inputs) {
     const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
+    if (inputs?.campaign?.ok === true && inputs.campaign.eligible === false && fs?.eligible === false) return true;
     const camp = inputs?.campaign?.campaign;
     return !!(fs && fs.state === "COMPLETED" && camp?.markLeft && camp.playerDirective
       && read("ah.sd.markHandoffConsumed.v1") === camp.playerDirective
@@ -29,6 +34,7 @@
   async function go(id) {
     if (!eligible(global.StoryDelivery?.gatherInputs?.())) return false;
     if (!destinations.some(row => row[0] === id)) return false;
+    if (["stats", "forge", "skins", "quests"].includes(id)) return await global.ContextualDiscovery?.openDestination(id) === true;
     if (id === "war_table") {
       return await global.Missions.openTacticalOps();
     }
