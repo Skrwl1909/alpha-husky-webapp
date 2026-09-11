@@ -1686,3 +1686,33 @@
 #tacticalOpsRoot .t-deployment-options { padding:.5rem .7rem; border:1px solid #9bcee433; }
 #tacticalOpsRoot .t-deployment-options > summary { color:#b9e2f2; }
 #tacticalOpsRoot .t-deployment .t-conditions { padding:.2rem 0; }
+
+/* Telegram Android presentation: system inset plus Telegram's content controls. */
+#tacticalOpsRoot {
+  --t-safe-top: max(var(--ah-safe-top, 0px), calc(max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 0px)));
+}
+#tacticalOpsRoot .t-war-table,
+#tacticalOpsRoot .t-deployment {
+  padding-top: calc(var(--t-safe-top) + 1rem);
+}
+#tacticalOpsRoot .t-results-overlay {
+  padding-top: calc(var(--t-safe-top) + .6rem);
+}
+body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], [data-screen="brief"], [data-screen="results"])) #ahCommunityBtn {
+  visibility: hidden;
+  pointer-events: none;
+}
+#tacticalOpsRoot .t-war-table { --t-muted: #a3b1bf; --t-faint: #96a5b4; }
+#tacticalOpsRoot .t-war-table .t-mission-card { padding: .9rem; gap: .45rem; }
+#tacticalOpsRoot .t-war-table .t-mission-card h3 { margin: .45rem 0 .1rem!important; }
+#tacticalOpsRoot .t-war-table .t-card-reward { padding: .35rem 0; }
+#tacticalOpsRoot .t-results .t-outcome-hero { min-height: 155px; padding-top: 2rem; }
+#tacticalOpsRoot .t-results .t-mastery-feedback { margin-top: .65rem; }
+#tacticalOpsRoot .t-results .t-mastery-row { padding: .45rem 0; }
+#tacticalOpsRoot .t-results .t-mastery-heading span { color: #a3b1bf; }
+
+#tacticalOpsRoot .t-pack-mastery { margin-top: .8rem; }
+#tacticalOpsRoot .t-mastery-intro { font-size: .8rem; line-height: 1.5; }
+#tacticalOpsRoot .t-mastery-next { margin: .45rem 0; font-size: .7rem; line-height: 1.5; color: var(--t-muted); }
+#tacticalOpsRoot .t-mastery-next strong { color: var(--t-text); }
+#tacticalOpsRoot .t-mastery-heading { flex-wrap: wrap; }
