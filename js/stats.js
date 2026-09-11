@@ -2370,8 +2370,18 @@
     }
   }
 
+  function eventEl(e){
+    const t = e && e.target;
+    if (!t) return null;
+    // Telegram/Android WebView can target the text node inside the button.
+    return (t.nodeType === 1) ? t : (t.parentElement || null);
+  }
+
   async function handleStatsActionClick(e){
-    const claimBtn = e.target.closest('[data-action="claim-signal-milestone"]');
+    const el = eventEl(e);
+    if (!el || typeof el.closest !== "function") return;
+
+    const claimBtn = el.closest('[data-action="claim-signal-milestone"]');
     if (claimBtn) {
       e.preventDefault();
       e.stopPropagation();
@@ -2380,7 +2390,7 @@
       return;
     }
 
-    const trainingBtn = e.target.closest('[data-action="stat-training-purchase"]');
+    const trainingBtn = el.closest('[data-action="stat-training-purchase"]');
     if (trainingBtn) {
       e.preventDefault();
       if (trainingBtn.dataset.loading === "1") return;
@@ -2393,7 +2403,7 @@
       finally { trainingBtn.dataset.loading = ""; trainingBtn.disabled = false; }
       return;
     }
-    const syncBtn = e.target.closest('[data-action="generate-mobile-sync-code"]');
+    const syncBtn = el.closest('[data-action="generate-mobile-sync-code"]');
     if (syncBtn) {
       e.preventDefault();
       if (_mobileSyncLoading) return;
@@ -2401,7 +2411,7 @@
       return;
     }
 
-    const btn = e.target.closest(".ahs-plus");
+    const btn = el.closest(".ahs-plus");
     if (!btn) return;
 
     e.preventDefault();
