@@ -2004,14 +2004,7 @@
     const card = qs("ahs-mobile-sync-card");
     if (!card) return;
     const btn = card.querySelector('[data-action="generate-mobile-sync-code"]');
-    if (btn) {
-      btn.disabled = !!_mobileSyncLoading;
-      try {
-        btn.textContent = _mobileSyncLoading
-          ? "Generating…"
-          : (btn.dataset.syncLabel || "Generate mobile sync code");
-      } catch (_) {}
-    }
+    if (btn) btn.disabled = !!_mobileSyncLoading;
     const oldPanel = card.querySelector(".ahs-mobile-sync-panel");
     const wrap = document.createElement("div");
     wrap.innerHTML = mobileSyncPanelHtml();
@@ -2040,33 +2033,6 @@
     }
     if (message) return message;
     return "Could not generate a mobile sync code. Try again.";
-  }
-
-  function ensureMobileSyncDocListener(){
-    if (typeof window === "undefined") return;
-    if (window.__ahMobileSyncDocBound) return;
-    window.__ahMobileSyncDocBound = true;
-    // Capture-phase on document: survives #statsRoot innerHTML rerenders and late/missing Stats.init.
-    document.addEventListener("click", function ahMobileSyncDocClick(e){
-      try {
-        const raw = e && e.target;
-        if (!raw) return;
-        const el = (raw.nodeType === 1) ? raw : (raw.parentElement || null);
-        if (!el || typeof el.closest !== "function") return;
-        const btn = el.closest('[data-action="generate-mobile-sync-code"]');
-        if (!btn) return;
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          if (!btn.dataset.syncLabel) btn.dataset.syncLabel = String(btn.textContent || "Generate mobile sync code");
-          btn.textContent = "Generating…";
-          btn.disabled = true;
-        } catch (_) {}
-        requestMobileLinkCode();
-      } catch (err) {
-        try { console.warn("[Stats] mobile sync doc listener error", err); } catch (_) {}
-      }
-    }, true);
   }
 
   async function requestMobileLinkCode(){
@@ -2119,7 +2085,6 @@
 
   function render(stats, mystats, extras = _progressionExtras){
     ensureStyles();
-    ensureMobileSyncDocListener();
 
     _lastStats = stats || null;
     _lastMystats = mystats || null;
@@ -2399,7 +2364,52 @@
     } catch (e) {
       if (_dbg) console.error("[Stats] milestone claim failed", e);
       try { _tg?.showAlert?.("Milestone claim failed."); } catch (_) {}
+    } finally {
+      _milestoneClaimLoading = false;
+      setMilestoneClaimButtonsLoading(milestoneKey, false);
+    }
+  }
 
+  function eventEl(e){
+    const t = e && e.target;
+    if (!t) return null;
+    // Telegram/Android WebView can target the text node inside the button.
+    return (t.nodeType === 1) ? t : (t.parentElement || null);
+  }
+
+  async function handleStatsActionClick(e){
+    const el = eventEl(e);
+    if (!el || typeof el.closest !== "function") return;
+
+    const claimBtn = el.closest('[data-action="claim-signal-milestone"]');
+    if (claimBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (_milestoneClaimLoading) return;
+      await claimSignalMilestone(claimBtn.dataset.milestoneId || "");
+      return;
+    }
+
+    const trainingBtn = el.closest('[data-action="stat-training-purchase"]');
+    if (trainingBtn) {
+      e.preventDefault();
+      if (trainingBtn.dataset.loading === "1") return;
+      trainingBtn.dataset.loading = "1"; trainingBtn.disabled = true;
+      try {
+        const res = await _apiPost("/webapp/stats/training/purchase", { t: Date.now() });
+        if (!res?.ok) { _tg?.showAlert?.(String(res?.reason || "Training purchase failed.")); return; }
+        await load();
+      } catch (_) { _tg?.showAlert?.("Training purchase failed."); }
+      finally { trainingBtn.dataset.loading = ""; trainingBtn.disabled = false; }
+      return;
+    }
+    const syncBtn = el.closest('[data-action="generate-mobile-sync-code"]');
+    if (syncBtn) {
+      e.preventDefault();
+      if (_mobileSyncLoading) return;
+      requestMobileLinkCode();
+      return;
+    }
 
     const btn = el.closest(".ahs-plus");
     if (!btn) return;
@@ -2629,7 +2639,6 @@
 
   Stats.init = function({ apiPost, tg, dbg } = {}){
     ensureStyles();
-    ensureMobileSyncDocListener();
 
     _apiPost = apiPost || _apiPost || window.apiPost || window.S?.apiPost || null;
     _tg = tg || _tg || window.Telegram?.WebApp || null;
@@ -2655,6 +2664,5 @@
     if (qs("hubGoalRoot")) renderHubGoalLoading("Open Hub to see your next objective.");
   };
 
-  ensureMobileSyncDocListener();
   window.Stats = Stats;
 })();
