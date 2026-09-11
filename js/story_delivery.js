@@ -59,6 +59,8 @@
   var returnRequested = false;
   var returnReady = false;
   var returnPromise = null;
+  var nextMoveState = { foundation: null, mission: null };
+  var NEXT_MOVE_DISMISSED_KEY = "ah.sd.nextMoveDismissed.v1";
 
   function readContinuity() {
     try { return JSON.parse(global.localStorage.getItem(CONTINUITY_KEY) || "null"); } catch (_) { return null; }
@@ -102,8 +104,10 @@
       await global.Onboarding.refreshContinuity();
       var campaign = await global.Campaign.refresh({ strict: true });
       if (!campaign || campaign.ok === false) return false;
+      nextMoveState.foundation = null;
       var cta = await global.CTA.refresh({ strict: true });
       if (!cta) return false;
+      await refreshNextMoveState();
       returnReady = true;
       return true;
     }).catch(function () { return false; }).finally(function () {
@@ -361,7 +365,7 @@
     });
   }
 
-  function resolve(inputs) {
+  function resolveBase(inputs) {
     inputs = inputs && typeof inputs === "object" ? inputs : {};
     var fs = firstSignalOf(inputs);
     var camp = campaignOf(inputs);
@@ -621,6 +625,105 @@
     });
   }
 
+  function triedTactical(state) {
+    return !!(state && (state.activeRunId || state.lastCompletedRunId || state.completed === true
+      || (state.foundationStage && state.foundationStage !== "solo-1")));
+  }
+
+  function nextMoveEligible(inputs) {
+    var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
+    // Existing veterans keep their current primary; completion alone does not enroll them.
+    return !!(fs.eligible && fs.state === "COMPLETED" && inputs.campaign?.ok === true
+      && camp.markLeft && !isMarkHandoffPending(camp));
+  }
+
+  function resolveNextMove(inputs, base) {
+    if (!nextMoveEligible(inputs) || !returnReady || returnPromise) return null;
+    if (continuityFrame(inputs, base) || base.firstSession || base.hideHubGoal) return null;
+    if (/siege_running|bloodmoon_live/.test(base.ctaKind || "")) return null;
+    var choice = null, foundation = nextMoveState.foundation;
+    if (foundation && foundation.foundationStage === "solo-1" && !triedTactical(foundation)
+        && global.Missions?.tacticalAccess?.(inputs)) {
+      choice = { key: "tactical-first-attempt", action: "Try Tactical Ops", reason: "Lead your squad in turn-based combat.", destination: "tactical", target: { type: "open_action", action: "next_move" } };
+    } else {
+      var tacticalRun = foundation?.activeRunId || foundation?.fieldOps?.activeMissionRun?.runId;
+      if (!tacticalRun && foundation?.operations) {
+        Object.values(foundation.operations).some(op => { tacticalRun = op?.activeMissionRun?.runId; return !!tacticalRun; });
+      }
+      if (tacticalRun && global.Missions?.tacticalAccess?.(inputs)) choice = {
+        key: "tactical-run:" + tacticalRun, action: "Continue Tactical Ops", reason: "Your squad has an unfinished attempt.", destination: "tactical"
+      };
+      var mission = global.Missions?.nextMoveObjective?.(nextMoveState.mission);
+      if (!choice && mission) choice = { ...mission, destination: "mission", target: { type: "missions" } };
+      var primary = ctaPrimary(inputs), kind = ctaKindOf(primary);
+      if (!choice && /^campaign/.test(kind) && primary?.target && kind !== "campaign_mark") {
+        choice = { key: "campaign:" + JSON.stringify(primary.target), action: asText(primary.title), reason: asText(primary.subtitle) || "Continue your current campaign lead.", destination: "campaign", target: primary.target };
+      }
+      if (!choice) {
+        var useful = global.ContextualDiscovery?.nextMoveFacts?.() || {};
+        if (useful.daily) choice = { key: "daily", action: "Open Quest Board", reason: "Daily activities are available.", destination: "quests" };
+        else if (useful.forge) choice = { key: "forge", action: "Improve your gear", reason: "An equipped item can be upgraded with your materials.", destination: "forge" };
+        else if (useful.skin) choice = { key: "skins", action: "Choose your look", reason: "You own another skin you can equip.", destination: "skins" };
+      }
+    }
+    if (!choice) return null;
+    try { if (global.localStorage.getItem(NEXT_MOVE_DISMISSED_KEY) === choice.key) return null; } catch (_) {}
+    return frame({ id: "S-NEXT-MOVE", nextMove: choice, situation: choice.action, why: choice.reason,
+      nextAction: choice.action, goLabel: choice.destination === "tactical" ? "OPEN" : "GO",
+      ctaKind: "next_move", target: { type: "open_action", action: "next_move" } });
+  }
+
+  function resolve(inputs) {
+    inputs = inputs || {};
+    var base = resolveBase(inputs);
+    var next = resolveNextMove(inputs, base);
+    if (next) return next;
+    // A completed attempt or an explicit dismissal must not revive the old discovery prompt.
+    if (base.id === "S-TO-DISCOVERY" && nextMoveEligible(inputs)) {
+      var dismissed = "";
+      try { dismissed = global.localStorage.getItem(NEXT_MOVE_DISMISSED_KEY); } catch (_) {}
+      if (triedTactical(nextMoveState.foundation) || dismissed === "tactical-first-attempt") {
+        return frameFromCta(ctaPrimary(inputs));
+      }
+    }
+    return base;
+  }
+
+  async function refreshNextMoveState() {
+    if (!nextMoveEligible(gatherInputs())) return;
+    var api = global.S?.apiPost || global.apiPost;
+    if (typeof api !== "function") return;
+    nextMoveState.mission = null;
+    await Promise.allSettled([
+      Promise.resolve().then(() => api("/webapp/missions/state", {})).then(out => observeNextMove("/webapp/missions/state", out)),
+      global.ContextualDiscovery?.refreshNextMoveAvailability?.()
+    ]);
+  }
+
+  function observeNextMove(path, out) {
+    if (!out || out.ok !== true) return;
+    var data = out.data || out;
+    if (path.indexOf("/webapp/tactical-foundation/") === 0 && typeof data.foundationStage === "string") nextMoveState.foundation = data;
+    else if (path === "/webapp/missions/state") nextMoveState.mission = out;
+    else if (!/^\/webapp\/(?:missions\/(?:action|start|resolve)|quests\/(?:accept|complete|claim-all)|daily\/action|forge\/upgrade|skins\/(?:equip|buy|claim))$/.test(path)) return;
+    else {
+      // A write result invalidates the old recommendation; normal refresh reads current state.
+      nextMoveState.mission = null;
+      if (nextMoveEligible(gatherInputs())) void refreshReturn();
+      return;
+    }
+    if (!returnPromise) refreshHub("next_move_progression");
+  }
+
+  async function openNextMove(expectedKey) {
+    if (!await refreshReturn()) return false;
+    var current = resolve(gatherInputs()), choice = current.nextMove;
+    if (!choice || (expectedKey && expectedKey !== choice.key)) return false;
+    if (choice.destination === "tactical") return await global.Missions.openTacticalOps();
+    if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
+    return await global.ContextualDiscovery.openDestination(choice.destination);
+  }
+
   function gatherInputs() {
     var ctaState = null;
     try { ctaState = global.CTA && typeof global.CTA.getState === "function" ? global.CTA.getState() : null; } catch (_) {}
@@ -690,6 +793,7 @@
       + "#hubStoryRoot{padding:0 14px 12px;}"
       + "#hubBack.is-story-first-session #hubGoalRoot{display:none !important;}"
       + "#hubBack.is-story-return #ctaCardRoot{display:none !important;}"
+      + "#hubBack.is-next-move #ctaCardRoot,#hubBack.is-next-move #hubGoalRoot{display:none !important;}"
       + ".ahs-story-card{position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(145,226,255,.18);"
       + "background:radial-gradient(circle at 12% -10%, rgba(81,166,214,.18), transparent 42%),linear-gradient(180deg, rgba(8,18,29,.94), rgba(6,12,20,.96));"
       + "box-shadow:0 12px 28px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);}"
@@ -727,9 +831,36 @@
     if (hub) hub.classList.toggle("is-story-return", !!continuation || (returnRequested && (!returnReady || !!returnPromise)));
     if (returnRequested && (!returnReady || returnPromise)) scf = null;
     if (hub) hub.classList.toggle("is-story-first-session", !!(scf && scf.hideHubGoal));
+    if (hub) hub.classList.toggle("is-next-move", !!scf?.nextMove);
     if (!root) return scf;
     if (!scf) {
       root.innerHTML = "";
+      return scf;
+    }
+    if (scf.nextMove) {
+      root.innerHTML = '<div class="ahs-story-card"><div class="ahs-story-pad">'
+        + '<div class="ahs-story-kicker">NEXT MOVE</div><div class="ahs-story-situation">' + esc(scf.situation) + '</div>'
+        + '<div class="ahs-story-next">' + esc(scf.why) + '</div>'
+        + '<button type="button" class="ahs-story-go" data-next-move-go>' + esc(scf.goLabel) + '</button>'
+        + '<button type="button" class="ahs-story-go" data-next-move-dismiss>Not now</button>'
+        + '<small role="status" data-next-move-status></small></div></div>';
+      var nextButton = root.querySelector("[data-next-move-go]");
+      nextButton.onclick = async function () {
+        nextButton.disabled = true;
+        try {
+          if (!await openNextMove(scf.nextMove.key)) {
+            var status = root.querySelector("[data-next-move-status]");
+            if (status) status.textContent = "Your next move changed. Check the current card.";
+          }
+        } catch (_) {
+          var status = root.querySelector("[data-next-move-status]");
+          if (status) status.textContent = "Could not open. Try again.";
+        } finally { nextButton.disabled = false; }
+      };
+      root.querySelector("[data-next-move-dismiss]").onclick = function () {
+        try { global.localStorage.setItem(NEXT_MOVE_DISMISSED_KEY, scf.nextMove.key); } catch (_) {}
+        refreshHub("next_move_dismissed");
+      };
       return scf;
     }
     var storyLead = !!continuityFrame(gatherInputs(), scf);
@@ -818,6 +949,19 @@
         global.CTA.subscribe(function () { onCtaState(); }, { emitCurrent: true });
       }
     } catch (_) {}
+    var hub = typeof document !== "undefined" && document.getElementById("hubBack");
+    var hubWasOpen = false;
+    function onHubReturn() {
+      var open = !!(hub && hub.getClientRects().length && document.visibilityState !== "hidden");
+      if (open && !hubWasOpen) void refreshReturn();
+      hubWasOpen = open;
+    }
+    if (hub && typeof MutationObserver !== "undefined") {
+      new MutationObserver(onHubReturn).observe(hub, { attributes: true, attributeFilter: ["style", "data-open"] });
+      document.addEventListener("visibilitychange", onHubReturn);
+      global.addEventListener("pageshow", onHubReturn);
+      onHubReturn();
+    }
     try {
       global.addEventListener("ah:campaign-state-accepted", function () { onCampaignState(); });
     } catch (_) {}
@@ -829,6 +973,7 @@
   function contextualDiscoveryReady() {
     if (!returnReady || returnPromise) return false;
     var inputs = gatherInputs(), scf = resolve(inputs), camp = campaignOf(inputs);
+    if (scf.nextMove) return false;
     if (!inputs.cta || !inputs.campaign || !inputs.tutorial) return false;
     if (continuityFrame(inputs, scf) || isMarkHandoffPending(camp)) return false;
     if (scf.firstSession || scf.hideHubGoal || scf.lockedBrief || scf.id === "S-TO-DISCOVERY") return false;
@@ -837,6 +982,9 @@
   }
 
   var API = {
+    observeNextMove: observeNextMove,
+    openNextMove: openNextMove,
+    resolveNextMove: resolveNextMove,
     contextualDiscoveryReady: contextualDiscoveryReady,
     resolve: resolve,
     continuityFrame: continuityFrame,

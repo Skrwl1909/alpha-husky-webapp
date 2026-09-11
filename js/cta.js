@@ -1640,6 +1640,9 @@
           return false;
         }
 
+      case "next_move":
+        return await window.StoryDelivery.openNextMove();
+
       case "first_signal":
         try {
           if (window.Onboarding?.openGuided) return await window.Onboarding.openGuided();

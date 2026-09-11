@@ -5917,6 +5917,16 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   window.Missions = {
+    nextMoveObjective: raw => {
+      if (!raw) return null;
+      const active = getActive(normalizePayload(raw));
+      if (!active || !["READY", "RUNNING"].includes(active.status)) return null;
+      return {
+        key: "mission:" + String(active.__raw?.id || active.readyAt || active.title) + ":" + active.status,
+        action: active.status === "READY" ? "Return to your mission" : "Check your active mission",
+        reason: active.status === "READY" ? "Your mission is ready for its next action." : "Your current mission is still underway."
+      };
+    },
     tacticalAccess,
     openTacticalEntry,
     openTacticalOps,

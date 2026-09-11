@@ -42,6 +42,7 @@
   function clearFirstSessionLocal() {
     global.ContextualDiscovery?.reset();
     try { localStorage.removeItem("ah.contextualDiscovery.v1"); } catch (_) {}
+    try { localStorage.removeItem("ah.sd.nextMoveDismissed.v1"); } catch (_) {}
     for (var i = 0; i < LS_KEYS.length; i++) {
       try { localStorage.removeItem(LS_KEYS[i]); } catch (_) {}
     }

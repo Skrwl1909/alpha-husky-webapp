@@ -3,7 +3,7 @@
   const KEY = "ah.contextualDiscovery.v1";
   let saved = { seen: 0, improved: false };
   try { saved = { ...saved, ...JSON.parse(global.localStorage.getItem(KEY) || "{}") }; } catch (_) {}
-  let facts = {}, active = null, card = null, paused = false, probing = false, lastProbe = 0;
+  let facts = {}, active = null, card = null, paused = false, probing = false, lastProbe = 0, availabilityPromise = null;
   const definitions = [
     { id: "stats", eligible: (f, i) => !!f.improved || !!(i.firstSignal?.eligible && i.firstSignal.state === "COMPLETED"), scout: "Your build grew stronger. Stats shows what changed.", destination: "stats", consumed: 1 },
     { id: "forge", eligible: f => !!f.forge, scout: "Your equipped gear has room to grow. The Forge can improve it with the materials you own.", destination: "forge", consumed: 2 },
@@ -56,18 +56,23 @@
         .some(q => ["daily", "daily_pack"].includes(q.category || q.type) && !["claimed", "cooldown", "done", "locked"].includes(q.status));
     }
     // Re-evaluate only the guide; never perform a gameplay action from a response.
-    if (["/webapp/forge/upgrade", "/webapp/forge/state", "/webapp/skins", "/webapp/quests/state"].includes(path)) refresh();
+    if (["/webapp/forge/upgrade", "/webapp/forge/state", "/webapp/skins", "/webapp/quests/state"].includes(path)) {
+      global.StoryDelivery?.refreshHub?.("next_move_availability");
+      refresh();
+    }
   }
-  async function probe() {
-    if (probing || Date.now() - lastProbe < 60000) return;
+  async function probe(forNextMove = false) {
+    if (availabilityPromise) return availabilityPromise;
+    if (!forNextMove && Date.now() - lastProbe < 60000) return;
     const api = global.S?.apiPost || global.apiPost;
     if (typeof api !== "function") return;
     probing = true; lastProbe = Date.now();
     const paths = [[2, "/webapp/forge/state"], [4, "/webapp/skins"], [8, "/webapp/quests/state"]];
-    await Promise.allSettled(paths.filter(([bit]) => !(saved.seen & bit)).map(async ([, path]) => {
+    availabilityPromise = Promise.allSettled(paths.filter(([bit]) => forNextMove || !(saved.seen & bit)).map(async ([, path]) => {
       try { observe(path, await api(path, {})); } catch (_) { /* unavailable means no discovery */ }
     }));
-    probing = false;
+    await availabilityPromise;
+    availabilityPromise = null; probing = false;
   }
   function hide() { card?.remove(); }
   function dismiss() { if (active) { saved.seen |= active.consumed; persist(); } active = null; paused = true; hide(); }
@@ -140,6 +145,9 @@
     document.addEventListener("visibilitychange", refresh);
     refresh();
   }
-  global.ContextualDiscovery = { resolve, coreComplete, observe, refresh, go, dismiss, openDestination, reset };
+  global.ContextualDiscovery = { resolve, coreComplete, observe, refresh, go, dismiss, openDestination, reset,
+    nextMoveFacts: () => ({ daily: !!facts.daily, forge: !!facts.forge, skin: !!facts.skin }),
+    refreshNextMoveAvailability: () => { facts = {}; return probe(true); }
+  };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
 })(window);
