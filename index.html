@@ -7874,7 +7874,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "sd-tactical-ops-access-v1-20260910";
+    window.WEBAPP_VER = "sd-contextual-discovery-v1-20260911";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
@@ -8903,6 +8903,7 @@ async function apiPost(path, payload) {
       ok = !!(out && out.ok !== false);
       status = ok ? 200 : 0;
       if (ok) armLevelToastForAction(safePath);
+      try { if (ok) window.ContextualDiscovery?.observe(safePath, out); } catch (_) {}
       return out;
     } catch (err) {
       status = Number(err?.status || 0);
@@ -13119,6 +13120,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="/js/home_nav.js?v=hub-icons-v1-story-delivery-p1"></script>
 <script>document.write('<script src="/js/discovery_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/scout_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/contextual_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 
 <!-- SUPPORT (Stars) -->
