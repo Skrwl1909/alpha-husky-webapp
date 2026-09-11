@@ -12897,7 +12897,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function loadStats(){
   const tg = window.Telegram?.WebApp || null;
 
-  const v = "stats-sync-code-click-textnode-20260911";
+  const v = "stats-sync-doc-capture-20260911";
   const s = document.createElement("script");
   s.src = "/js/stats.js?v=" + encodeURIComponent(v);
 
@@ -12905,7 +12905,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     console.log("[Stats] script loaded:", s.src);
     window.waitForApiPostReady?.(6000).then((apiPost) => {
       try {
-        if (!window.__statsInited && window.Stats?.init) {
+        if (window.Stats?.init) {
           window.Stats.init({ tg, apiPost, dbg: !!window.DBG });
           window.__statsInited = true;
           console.log("✅ Stats initialized");
