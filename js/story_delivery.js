@@ -71,7 +71,8 @@
     scf = scf || resolve(inputs);
     var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
     var early = (fs.eligible && fs.state !== "COMPLETED")
-      || (camp.eligible && (!camp.markLeft || isMarkHandoffPending(camp)));
+      || (fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery === "pending")
+      || (camp.eligible && (fs.worldDiscovery !== "done" || camp.directive) && (!camp.markLeft || isMarkHandoffPending(camp)));
     if (!early || !scf.target || scf.lockedBrief) return null;
     var beat = "";
     if (camp.markLeft) beat = "Mark delivered.";
@@ -182,6 +183,7 @@
     var eligible = fs.eligible === true || nested.eligible === true;
     return {
       eligible: eligible,
+      worldDiscovery: fs.world_discovery || nested.world_discovery || "",
       faction_selected: fs.faction_selected === true || nested.faction_selected === true,
       state: asUpper(fs.state || nested.state),
       status: asUpper(fs.status || nested.status)
@@ -293,6 +295,7 @@
   }
 
   function isFirstSession(fs, camp) {
+    if (fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery) return fs.worldDiscovery === "pending";
     if (fs.eligible && fs.state !== "COMPLETED") return true;
     if (camp.eligible && !camp.markLeft) return true;
     return false;
@@ -373,6 +376,14 @@
     var primary = ctaPrimary(inputs);
     var kind = ctaKindOf(primary);
     var firstSession = isFirstSession(fs, camp);
+    var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
+    if (worldHandoff && fs.worldDiscovery === "pending") {
+      return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
+        why: "Your faction shares the Blood Moon Tower fight.", nextLead: "Blood Moon Tower",
+        nextAction: "Discover Blood Moon Tower", goLabel: "Discover Blood Moon Tower",
+        target: { type: "open_action", action: "first_signal" }, ctaKind: "first_signal_handoff",
+        firstSession: true, hideHubGoal: true });
+    }
 
     if (fs.eligible && fs.state !== "COMPLETED") {
       if (!fs.faction_selected) {
@@ -456,7 +467,7 @@
     }
 
     var holdTactical = firstSession || isMarkHandoffPending(camp)
-      || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
+      || (!worldHandoff && fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
     if (!holdTactical && camp.markLeft && camp.directive
         && readMarkHandoffConsumed() === camp.directive && discoveryState() === "pending") {
       return frame({
@@ -510,7 +521,7 @@
     // P0-A: while first post-mark Continue is unresolved, demote LIVE_CTA_KINDS only for that window.
     var holdMarkContinue = isMarkHandoffPending(camp);
     var suppressFortress = !!firstSession
-      || (fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
+      || (!worldHandoff && fs.eligible && fs.state === "COMPLETED" && !camp.markLeft);
     if (kind && LIVE_CTA_KINDS[kind] && primary) {
       if (holdMarkContinue || (holdTactical && (kind === "tactical_breach" || kind === "tactical_recover_replay"))) {
         // fall through to S-CAMPAIGN-MARK Continue
@@ -519,7 +530,7 @@
       }
     }
 
-    if (fs.eligible && fs.state === "COMPLETED" && camp.eligible && !camp.directive) {
+    if (!worldHandoff && fs.eligible && fs.state === "COMPLETED" && camp.eligible && !camp.directive) {
       return frame({
         id: "S-FS-COMPLETED",
         situation: "RELAY-7 reached your node.",
@@ -536,7 +547,7 @@
       });
     }
 
-    if (camp.eligible && !camp.directive) {
+    if (!worldHandoff && camp.eligible && !camp.directive) {
       return frame({
         id: "S-CAMPAIGN-INCOMING",
         situation: "RELAY-7 reached your node.",
@@ -632,6 +643,7 @@
 
   function nextMoveEligible(inputs) {
     var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
+    if (fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery) return fs.worldDiscovery === "done";
     // Existing veterans keep their current primary; completion alone does not enroll them.
     return !!(fs.eligible && fs.state === "COMPLETED" && inputs.campaign?.ok === true
       && camp.markLeft && !isMarkHandoffPending(camp));

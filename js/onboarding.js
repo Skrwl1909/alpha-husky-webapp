@@ -534,7 +534,7 @@
         await openGuided();
         return;
       } else if (action === "next") {
-        await openGuided();
+        await showWorldDiscovery();
         return;
       }
       await refreshFocusedState();
@@ -567,6 +567,7 @@
   }
 
   function renderFirstSignal() {
+    if (_worldDiscoveryOpen) return;
     if (!bodyEl) return;
     const state = focusedState();
     const modalTitle = document.querySelector("#obBack .ob-title");
@@ -619,7 +620,7 @@
       copy = "Your first gear upgrade is active.";
       detail = `<div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
-      label = "Find RELAY-7 in Missions";
+      label = "Discover Blood Moon Tower";
     }
 
     bodyEl.innerHTML = `
@@ -752,6 +753,11 @@
     await fetchFirstSignalMissionState(true);
     const state = focusedState();
     if (!firstSignalEnabled()) return false;
+    if (state.state === "COMPLETED") {
+      if (state.world_discovery === "pending") return showWorldDiscovery();
+      close(false);
+      return false;
+    }
     close(false);
     if (state.state === "REWARD_RECEIVED") {
       window.Missions?.close();
@@ -765,7 +771,6 @@
     await fetchTutorialState(true);
     await fetchFirstSignalMissionState(true);
     if (focusedState().state !== "COMPLETED" || focusedState().completion?.completed !== true) return false;
-    try { await window.Campaign?.refresh({ strict: true }); } catch (_) {}
     ensureCSS(); ensureHTML();
     backEl.hidden = false;
     backEl.style.display = "flex";
@@ -814,6 +819,7 @@
       await fetchFirstSignalMissionState();
       const fsState = String(focusedState().state || "").toUpperCase();
       if (fsState === "COMPLETED") {
+        if (focusedState().world_discovery === "pending") return showWorldDiscovery();
         log("FIRST SIGNAL completed; skipping tutorial checklist");
         close(false);
         return;
@@ -850,6 +856,7 @@
   }
 
   function close(done) {
+    if (_worldDiscoveryOpen) { void finishWorldDiscovery(false); return; }
     if (done && !firstSignalEnabled()) markDone();
     if (!backEl) return;
 
@@ -859,6 +866,59 @@
     backEl.style.display = "none";
     document.body.classList.remove("ob-lock");
     window.ScoutGuide?.refresh();
+  }
+
+  let _worldDiscoveryOpen = false, _worldDiscoveryBusy = false;
+  async function showWorldDiscovery() {
+    if (focusedState().world_discovery !== "pending") { close(false); return false; }
+    ensureCSS(); ensureHTML();
+    _worldDiscoveryOpen = true;
+    backEl.hidden = false; backEl.style.display = "flex";
+    document.body.classList.add("ob-lock");
+    document.querySelector("#obBack .ob-title").textContent = "BLOOD MOON TOWER";
+    if (btnBack) btnBack.style.display = "none";
+    if (btnNext) btnNext.style.display = "none";
+    if (btnLater) btnLater.style.display = "none";
+    bodyEl.innerHTML = `<div class="ob-card"><div class="ob-content">
+      <div class="ob-head">Your faction shares this fight.</div>
+      <div class="ob-p">Blood Moon Tower is a shared faction activity. Daily attempts contribute to the weekly waves and boss cycle. The Blood Moon Shop shows the rewards you can work toward.</div>
+      <div class="ob-note" id="obTowerStatus">Open the Tower to see your faction's progress and available attempts. Opening spends no attempt.</div>
+      <button class="ob-btn primary" id="obTowerOpen" type="button">Open Blood Moon Tower</button>
+      <button class="ob-btn" id="obTowerDismiss" type="button">Continue to the world</button>
+      <div class="ob-note" id="obTowerError" role="status"></div>
+    </div></div>`;
+    document.getElementById("obTowerOpen").onclick = () => finishWorldDiscovery(true);
+    document.getElementById("obTowerDismiss").onclick = () => finishWorldDiscovery(false);
+    try {
+      const response = await getApiPost()("/webapp/bloodmoon/state", {});
+      const data = response?.data || response;
+      const my = data?.myContribution, run = data?.myFactionRun;
+      const parts = [];
+      if (my && Number.isFinite(Number(my.attemptsLeft)) && Number.isFinite(Number(my.dailyCap))) parts.push(`Daily attempts: ${my.attemptsLeft} / ${my.dailyCap}`);
+      if (run?.currentWave && run?.maxWave) parts.push(`Faction wave: ${run.currentWave} / ${run.maxWave}`);
+      if (data?.shop) parts.push(data.shop.available ? "Blood Moon Shop is open" : "Blood Moon Shop progression is available in the Tower");
+      const status = document.getElementById("obTowerStatus");
+      if (_worldDiscoveryOpen && status && parts.length) status.textContent = parts.join(" · ") + ". Opening spends no attempt.";
+    } catch (_) { /* Existing Tower remains the authority if its preview is unavailable. */ }
+    return true;
+  }
+
+  async function finishWorldDiscovery(openTower) {
+    if (_worldDiscoveryBusy) return;
+    _worldDiscoveryBusy = true;
+    try {
+      const result = await getApiPost()("/webapp/tutorial/action", { action: "world_discovery_dismiss" });
+      if (!result?.ok) throw Error("Could not save. Please try again.");
+      await fetchTutorialState(true);
+      _worldDiscoveryOpen = false;
+      close(false);
+      window.StoryDelivery?.refreshHub("world_discovery");
+      void window.CTA?.refresh();
+      if (openTower) await window.BloodMoon.open();
+    } catch (error) {
+      const el = document.getElementById("obTowerError");
+      if (el) el.textContent = error?.message || "Could not save. Please try again.";
+    } finally { _worldDiscoveryBusy = false; }
   }
 
   function init({ apiPost, tg, dbg } = {}) {

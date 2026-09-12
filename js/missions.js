@@ -5302,7 +5302,7 @@ function _normalizeRareDropObj(obj) {
     if (!signal?.eligible) return "";
     if (signal.state === "NOT_STARTED" && window.Onboarding?.getFirstSignal()?.faction_selected) return "first_signal";
     if (signal.state === "REWARD_RECEIVED") return "gear";
-    if (signal.state === "COMPLETED" && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
+    if (signal.state === "COMPLETED" && !window.Onboarding?.getFirstSignal()?.world_discovery && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
     return "";
   }
 
@@ -5363,6 +5363,7 @@ function _normalizeRareDropObj(obj) {
     // Unknown state stays quiet; veterans need no fresh-player or device-local markers.
     if (!fs && !(campaign?.ok === true && campaign.eligible === false)) return false;
     if (fs?.eligible && fs.state !== "COMPLETED") return false;
+    if (fs?.eligible && fs.state === "COMPLETED" && fs.world_discovery) return fs.world_discovery === "done";
     if (campaign?.eligible && campaign.show !== false && !camp.markLeft) return false;
     if (fs?.eligible && (!campaign || campaign.ok === false)) return false;
     return true;

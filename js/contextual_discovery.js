@@ -13,6 +13,7 @@
   function persist() { try { global.localStorage.setItem(KEY, JSON.stringify(saved)); } catch (_) {} }
   function coreComplete(inputs) {
     const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
+    if (fs?.eligible && fs.state === "COMPLETED" && fs.world_discovery) return fs.world_discovery === "done";
     const cp = inputs?.campaign, camp = cp?.campaign;
     if (!cp || cp.ok !== true) return false;
     if (!fs && cp.eligible !== false) return false;
