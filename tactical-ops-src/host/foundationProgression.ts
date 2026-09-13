@@ -3,6 +3,7 @@ import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
 import { parsePackMastery, type PackMastery } from "../data/packMastery";
+import { parseTacticalProfile, type TacticalProfile } from "../combat/playerProfile";
 
 export type FoundationStage =
   | "solo-1"
@@ -12,6 +13,8 @@ export type FoundationStage =
   | "completed";
 
 export interface FoundationProgressionState {
+  activeTacticalProfile?: TacticalProfile;
+  playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   version: 1;
   foundationStage: FoundationStage;
@@ -54,12 +57,17 @@ function parseFieldResult(raw: unknown): FieldResult | null {
   if (typeof value.runId !== "string" || typeof value.missionId !== "string" || typeof value.victory !== "boolean" || typeof value.challengeSuccess !== "boolean" || typeof value.regionalApplied !== "boolean") return null;
   if (![value.cycleId, value.challengeBonus, value.progressEarned, value.progressBefore, value.progressAfter, value.rankBefore, value.rankAfter, value.pressureBefore, value.pressureAfter, value.recordedAt].every(Number.isInteger)) return null;
   if (!Array.isArray(value.unlockedApproaches) || !value.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
-  return { ...value };
+  return {
+    ...value,
+    xpGranted: Number.isInteger(value.xpGranted) ? Number(value.xpGranted) : 0,
+    bonesGranted: Number.isInteger(value.bonesGranted) ? Number(value.bonesGranted) : 0,
+  };
 }
 
 export type MissionProgressionStatus = "locked" | "available" | "cleared";
 
 export interface OperationMissionRun {
+  tacticalProfile?: TacticalProfile;
   packMastery?: PackMastery;
   runId: string;
   missionId: string;
@@ -145,6 +153,8 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     }
   }
   const operations = parseOperations(value.operations);
+  state.playerIdentity = value.playerIdentity && typeof value.playerIdentity === "object" ? value.playerIdentity as Record<string, unknown> : undefined;
+  state.activeTacticalProfile = parseTacticalProfile(value.activeTacticalProfile);
   state.equippedPet = parseTacticalPet(value.equippedPet);
   if (operations) state.operations = operations;
   state.kodaSidegrade = operations?.["broken-signal"]?.status === "cleared" && (value.kodaSidegrade === "A" || value.kodaSidegrade === "B") ? value.kodaSidegrade : null;
@@ -184,7 +194,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && !fieldContext) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, packMastery: parsePackMastery(activeValue.packMastery), ...(fieldContext ? { fieldContext } : {}) };
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(fieldContext ? { fieldContext } : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -265,7 +275,7 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, packMastery: parsePackMastery(value.packMastery), ...(fieldContext ? { fieldContext } : {}) } };
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(fieldContext ? { fieldContext } : {}) } };
 }
 
 export async function continueOperationMission(
