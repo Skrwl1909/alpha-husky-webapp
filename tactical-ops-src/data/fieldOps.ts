@@ -51,6 +51,8 @@ export interface FieldResult {
   unlockedApproaches: DeploymentApproach[];
   legacyReport: boolean;
   recordedAt: number;
+  xpGranted: number;
+  bonesGranted: number;
 }
 
 export const DEPLOYMENT_APPROACHES: Record<DeploymentApproach, { name: string; copy: string; cells: Cell[] }> = {
