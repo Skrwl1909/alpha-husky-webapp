@@ -388,6 +388,12 @@
   background: #153829c9;
 }
 
+#tacticalOpsRoot .t-field-rewards span {
+  color: #ace6bd;
+  border-color: #83d6a466;
+  background: #102b22;
+}
+
 #tacticalOpsRoot .t-brief-actions .t-btn small {
   display: block;
   margin-top: 0.18rem;
