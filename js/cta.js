@@ -1631,10 +1631,7 @@
 
       case "tactical_discovery":
         try {
-          const opened = await window.Missions.openTacticalEntry();
-          if (opened === false) return false;
-          window.StoryDelivery?.consumeTacticalDiscovery();
-          return true;
+          return window.GuidedNavigation?.start("tactical") === true;
         } catch (err) {
           warn("Tactical Ops discovery failed", err);
           return false;

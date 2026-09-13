@@ -41,6 +41,8 @@
 
   function clearFirstSessionLocal() {
     global.ContextualDiscovery?.reset();
+    global.GuidedNavigation?.reset();
+    global.FirstSessionSpine?.reset(true);
     try { localStorage.removeItem("ah.contextualDiscovery.v1"); } catch (_) {}
     try { localStorage.removeItem("ah.sd.nextMoveDismissed.v1"); } catch (_) {}
     for (var i = 0; i < LS_KEYS.length; i++) {
@@ -99,6 +101,7 @@
       var out = await call("/dev/fresh/status");
       S.eligible = !!(out && out.ok && out.eligible);
       S.active = !!(out && out.active);
+      if (out?.ok) global.FirstSessionSpine?.setProfile(S.active);
       S.loaded = true;
     } catch (err) {
       var status = err && err.status;
@@ -123,6 +126,7 @@
     try {
       var out = await call(path);
       if (!out || out.ok === false) throw Object.assign(new Error((out && out.reason) || "DEV_FRESH_FAIL"), { data: out });
+      global.FirstSessionSpine?.setProfile(kind !== "off");
       if (kind === "reset") clearFirstSessionLocal();
       try { global.location.reload(); } catch (_) { S.active = kind !== "off"; S.busy = false; render(); }
     } catch (err) {

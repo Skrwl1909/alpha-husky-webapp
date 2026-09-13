@@ -69,6 +69,7 @@
   // A single current frame, never a source of routing or progression truth.
   function continuityFrame(inputs, scf) {
     scf = scf || resolve(inputs);
+    if (scf.nextMove?.spine) return { lastBeat: "Your next goal is still open.", lead: scf.nextAction, next: { label: scf.nextAction, target: scf.target } };
     var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
     var early = (fs.eligible && fs.state !== "COMPLETED")
       || (fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery === "pending")
@@ -380,7 +381,7 @@
     if (worldHandoff && fs.worldDiscovery === "pending") {
       return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
         why: "Your faction shares the Blood Moon Tower fight.", nextLead: "Blood Moon Tower",
-        nextAction: "Discover Blood Moon Tower", goLabel: "Discover Blood Moon Tower",
+        nextAction: "FIND BLOOD MOON TOWER", goLabel: "FIND BLOOD MOON TOWER",
         target: { type: "open_action", action: "first_signal" }, ctaKind: "first_signal_handoff",
         firstSession: true, hideHubGoal: true });
     }
@@ -475,10 +476,10 @@
         situation: "Tactical Ops is available in Missions.",
         why: "Choose an operation and deploy your squad.",
         nextLead: "MISSIONS / TACTICAL OPS",
-        nextAction: "Find Tactical Ops in Missions",
+        nextAction: "FIND TACTICAL OPS",
         target: { type: "open_action", action: "tactical_discovery" },
         ctaKind: "tactical_discovery",
-        goLabel: "Open Missions"
+        goLabel: "FIND TACTICAL OPS"
       });
     }
     if (!holdTactical && (kind === "tactical_breach" || tac.breach === "available")) {
@@ -651,13 +652,14 @@
 
   function resolveNextMove(inputs, base) {
     if (!nextMoveEligible(inputs) || !returnReady || returnPromise) return null;
-    if (continuityFrame(inputs, base) || base.firstSession || base.hideHubGoal) return null;
     if (/siege_running|bloodmoon_live/.test(base.ctaKind || "")) return null;
-    var choice = null, foundation = nextMoveState.foundation;
-    if (foundation && foundation.foundationStage === "solo-1" && !triedTactical(foundation)
+    var foundation = nextMoveState.foundation;
+    var choice = global.FirstSessionSpine?.choice(inputs, foundation) || null;
+    if (!choice && (continuityFrame(inputs, base) || base.firstSession || base.hideHubGoal)) return null;
+    if (!choice && foundation && foundation.foundationStage === "solo-1" && !triedTactical(foundation)
         && global.Missions?.tacticalAccess?.(inputs)) {
-      choice = { key: "tactical-first-attempt", action: "Try Tactical Ops", reason: "Lead your squad in turn-based combat.", destination: "tactical", target: { type: "open_action", action: "next_move" } };
-    } else {
+      choice = { key: "tactical-first-attempt", action: global.GuidedNavigation?.terminal("tactical") ? "Try Tactical Ops" : "FIND TACTICAL OPS", reason: "Lead your squad in turn-based combat.", destination: "tactical", target: { type: "open_action", action: "next_move" } };
+    } else if (!choice) {
       var tacticalRun = foundation?.activeRunId || foundation?.fieldOps?.activeMissionRun?.runId;
       if (!tacticalRun && foundation?.operations) {
         Object.values(foundation.operations).some(op => { tacticalRun = op?.activeMissionRun?.runId; return !!tacticalRun; });
@@ -687,6 +689,7 @@
 
   function resolve(inputs) {
     inputs = inputs || {};
+    global.FirstSessionSpine?.sync(inputs, nextMoveState.foundation);
     var base = resolveBase(inputs);
     var next = resolveNextMove(inputs, base);
     if (next) return next;
@@ -731,7 +734,10 @@
     if (!await refreshReturn()) return false;
     var current = resolve(gatherInputs()), choice = current.nextMove;
     if (!choice || (expectedKey && expectedKey !== choice.key)) return false;
-    if (choice.destination === "tactical") return await global.Missions.openTacticalOps();
+    if (choice.destination === "tactical") {
+      if (choice.key === "tactical-first-attempt" && !global.GuidedNavigation?.terminal("tactical")) return global.GuidedNavigation?.start("tactical") === true;
+      return await global.Missions.openTacticalOps();
+    }
     if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
     return await global.ContextualDiscovery.openDestination(choice.destination);
   }
@@ -871,6 +877,7 @@
       };
       root.querySelector("[data-next-move-dismiss]").onclick = function () {
         try { global.localStorage.setItem(NEXT_MOVE_DISMISSED_KEY, scf.nextMove.key); } catch (_) {}
+        if (scf.nextMove.key === "tactical-first-attempt") global.GuidedNavigation?.dismiss("tactical");
         refreshHub("next_move_dismissed");
       };
       return scf;
