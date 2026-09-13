@@ -1,7 +1,8 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
 import { missionDirectives } from "../data/directives";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { firstSession, type FirstResultReceipt } from "../host/firstSession";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
 import { loadMuted, setMuted, unlockAudio } from "../audio";
@@ -17,6 +18,9 @@ import {
 import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
+
+import { applyIdentityToAlpha } from "../host/identity";
+import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -84,6 +88,7 @@ function Hub() {
         <div className="t-hub-copy">
           <div className="t-kicker">Alpha Husky</div>
           <h1 className="t-title">Tactical Ops</h1>
+          <PlayerIdentityCard />
           <h2>Combat Core</h2>
           <div className="t-panel t-op-card">
             <span className="t-kicker">Operation</span>
@@ -103,6 +108,29 @@ function Hub() {
   );
 }
 
+function RecordedFirstResult({ receipt }: { receipt: FirstResultReceipt }) {
+  const backToHub = useBattleStore(s => s.backToHub);
+  return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
+    <div className={`t-modal t-panel t-results ${receipt.victory ? "is-victory" : "is-failure"}`} data-first-session-result={receipt.runId}>
+      <header className="t-outcome-hero"><span className="t-kicker">ACTION / {receipt.name}</span>
+        <h2 className="t-title">{receipt.victory ? "MISSION SECURED" : "MISSION LOST"}</h2></header>
+      <PlayerIdentityCard />
+      <dl className="t-stats"><div><dt>Turns</dt><dd>{receipt.results.turns}</dd></div>
+        <div><dt>Eliminated</dt><dd>{receipt.results.hostilesEliminated}</dd></div>
+        <div><dt>Squad standing</dt><dd>{receipt.results.squadStanding} / {receipt.results.squadDeployed}</dd></div></dl>
+      <section aria-label="Consequence"><div className="t-kicker">CONSEQUENCE</div><p>{receipt.consequence}</p></section>
+      {receipt.fieldResult ? <FieldResultFeedback result={receipt.fieldResult} /> :
+        <section aria-label="Growth"><div className="t-kicker">GROWTH</div><p>{receipt.growth}</p></section>}
+      <div className="t-brief-actions t-result-actions"><button type="button" className="t-btn t-btn-primary" onClick={() => {
+        if (firstSession()?.acknowledge(receipt.runId)) {
+          const state = useBattleStore.getState();
+          if (["results", "defeat"].includes(state.screen)) backToHub();
+        }
+      }}>Continue</button></div>
+    </div>
+  </div></div>;
+}
+
 function FieldResultFeedback({ result }: { result: FieldResult }) {
   const unlock = result.advancedUnlocked ? "ADVANCED DIRECTIVES" : result.unlockedApproaches.includes("south") ? "SOUTH APPROACH" : null;
   const target = result.rankAfter < 2 ? 6 : 12;
@@ -112,6 +140,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
     <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "ALL COMMAND OPTIONS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
     <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? `CHALLENGE MET · +${result.challengeBonus}` : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.advancedFirstClear ? " · FIRST CLEAR" : result.victory ? " · CLEARED" : " · FAILED"}</span> : null}</div>
+    <div className="t-mission-strip t-field-rewards" aria-label="Character rewards"><span>+{result.xpGranted} EXP</span><span>+{result.bonesGranted} BONES</span></div>
     {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
     <div className="t-world-change"><span className="t-kicker">SIGNAL PRESSURE</span><strong>{result.regionalApplied ? `${pressureLabel(result.pressureBefore)} → ${pressureLabel(result.pressureAfter)}` : "CURRENT ROTATION UNCHANGED"}</strong><small>{result.regionalApplied ? result.pressureAfter < 2 ? "+1 ROUND DELAY · REINFORCEMENTS" : "REINFORCEMENTS ON SCHEDULE" : "Earlier rotation attempt. Commander progress recorded."}</small></div>
@@ -161,7 +190,7 @@ function WarTable() {
             const nextMission = status === "available";
             const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
             return (
-              <div className={`t-panel t-brief-block t-mission-card is-${status}`} key={missionId} style={{ opacity: status === "locked" ? 0.52 : nextMission ? 1 : 0.72 }}>
+              <div className={`t-panel t-brief-block t-mission-card is-${status}`} key={missionId}>
                 <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
                 <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
                 <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
@@ -222,6 +251,7 @@ function WarTable() {
 }
 
 function Brief() {
+  const identity = useBattleStore(s => s.identity);
   const deploy = useBattleStore((s) => s.deploy);
   const backToHub = useBattleStore((s) => s.backToHub);
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
@@ -262,7 +292,7 @@ function Brief() {
   const reinforcementRound = mission && fieldOp ? missionBattleRules(mission, false, fieldContext).reinforcement?.triggerRound : undefined;
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
-  const allies = alliedBriefDefs(spawns);
+  const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   const hostiles = enemyBriefRows(spawns);
   const footnote = mission
     ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. `
@@ -282,11 +312,11 @@ function Brief() {
         </h1>
         <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{mission ? objectiveHeadline(mission) : objective}</p>
         </header>
-        <div className="t-squad-preview" aria-label="Selected squad">{allies.map(def => <div key={def.defId}><img src={def.portrait} alt="" /><span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span></div>)}<span className="t-kicker">SQUAD<br />{allies.length}/{mission?.squadCap || allies.length}</span></div>
+        <div className="t-squad-preview" aria-label="Selected squad">{allies.map(def => <div key={def.defId}><img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" /><span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span></div>)}<span className="t-kicker">SQUAD<br />{allies.length}/{mission?.squadCap || allies.length}</span></div>
         {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
         {mission ? <details className="t-detail"><summary>Objective & tactical intel</summary><p>{objective}</p>{mission.objectiveType === "RECOVER" ? <p>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : mission.objectiveType === "BOSS" ? <p>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}<small>{missionIntel}</small></details> : null}
         {conditions.length ? <section className="t-conditions" aria-label="Special conditions"><div className="t-kicker">CONDITIONS / {selectedDirectiveTier.toUpperCase()}{selectedDirectiveTier === "advanced" ? ` / ${directiveSetLabel(fieldContext.directiveSet)}` : ""}</div>{conditions.map((condition) => <details className="t-condition" key={condition.type}><summary>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</summary><p><strong>{condition.name}</strong><br />{condition.copy}</p></details>)}<details className="t-detail"><summary>Squad tactics</summary><p>{mission?.squadHint}</p></details></section> : null}
-        {fieldOp ? <details className="t-detail t-deployment-options"><summary>DEPLOYMENT / {selectedDirectiveTier.toUpperCase()} / {DEPLOYMENT_APPROACHES[selectedApproach].name}</summary>
+        {fieldOp ? <details className="t-detail t-deployment-options"><summary>DEPLOYMENT / {selectedDirectiveTier.toUpperCase()}{selectedApproach !== "standard" ? ` / ${DEPLOYMENT_APPROACHES[selectedApproach].name}` : ""}</summary>
           <div className="t-kicker">REGIONAL CONDITION / SIGNAL PRESSURE {pressureLabel(fieldContext.pressure)}</div>
           <div className="t-mission-strip"><span>{fieldContext.pressure < 2 ? "+1 ROUND DELAY" : "STANDARD ARRIVAL"}</span><span>{reinforcementRound ? `HOUND · ROUND ${reinforcementRound}` : "NO REINFORCEMENTS"}</span></div>
           {resuming ? <p>RESUMING · Original conditions locked. Squad, route or tier changes start a new attempt while this mission is active.</p> : null}
@@ -301,7 +331,7 @@ function Brief() {
         {mission ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
         {twoSlots ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
-            <div className="t-kicker">ALPHA + TWO TACTICAL SLOTS · {selectedSquadIds.length - 1}/2 selected</div>
+            <div className="t-kicker">{identity.unitName} + TWO TACTICAL SLOTS · {selectedSquadIds.length - 1}/2 selected</div>
             <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose two. Deselect a companion to swap.</p>
             <div className="t-brief-actions">
               {[
@@ -318,12 +348,12 @@ function Brief() {
         {mission?.objectiveType === "RECOVER" && !fieldOp ? (
           <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
             <div className="t-kicker">Squad selection · cap 2</div>
-            <h3 style={{ margin: "0.35rem 0" }}>ALPHA + one teammate</h3>
+            <h3 style={{ margin: "0.35rem 0" }}>{identity.unitName} + one teammate</h3>
             <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose CNC for pressure, SHADOW for sustain, or your equipped PET for mobility and control.</p>
             <div className="t-brief-actions">
-              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>ALPHA + CNC<br /><small>OFFENSE · PRESSURE</small></button>
-              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>ALPHA + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
-              <button type="button" disabled={busy || !equippedPet} className={`t-btn ${equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => equippedPet && selectRecoverTeammate(`pet:${equippedPet.id}`)}>ALPHA + PET{equippedPet ? ` · ${equippedPet.name}` : ""}<br /><small>{equippedPet ? "MOBILITY · CONTROL" : "UNAVAILABLE · NO VALID PET EQUIPPED"}</small></button>
+              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>{identity.unitName} + CNC<br /><small>OFFENSE · PRESSURE</small></button>
+              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>{identity.unitName} + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
+              <button type="button" disabled={busy || !equippedPet} className={`t-btn ${equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => equippedPet && selectRecoverTeammate(`pet:${equippedPet.id}`)}>{identity.unitName} + PET{equippedPet ? ` · ${equippedPet.name}` : ""}<br /><small>{equippedPet ? "MOBILITY · CONTROL" : "UNAVAILABLE · NO VALID PET EQUIPPED"}</small></button>
             </div>
             {equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? <p style={{ color: "var(--t-muted)", margin: "0.8rem 0 0" }}>MOVE 4 · BITE at melee range. HAMSTRING slows enemy initiative by 50% for 2 turns. A fast relay runner with low armor.</p> : null}
           </div>
@@ -362,9 +392,10 @@ function Brief() {
         <div className="t-brief-grid">
           <div className="t-panel t-brief-block">
             <h3>Allied squad</h3>
+            <PlayerIdentityCard />
             {allies.map((def) => (
               <div className="t-unit-row" key={def.defId}>
-                <img src={def.portrait} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
+                <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
                 <div>
                   <div className="t-title" style={{ fontSize: "0.95rem" }}>
                     {def.defId === "ally-02" ? "COLDNCURSED" : def.name}
@@ -484,6 +515,7 @@ function Results() {
             {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
+          <PlayerIdentityCard />
           <dl className="t-stats">
             <div>
               <dt>Turns</dt>
@@ -569,6 +601,10 @@ function Defeat() {
 }
 
 export function TacticalApp() {
+  const [, refreshSpine] = useState(0);
+  useEffect(() => firstSession()?.subscribe(() => refreshSpine(n => n + 1)), []);
+  const receipt = firstSession()?.view().result;
+
   const screen = useBattleStore((s) => s.screen);
   const selectSkill = useBattleStore((s) => s.selectSkill);
   const skipTurn = useBattleStore((s) => s.skipTurn);
@@ -604,7 +640,8 @@ export function TacticalApp() {
   }, [muted]);
 
   return (
-    <div className="t-shell">
+    <div className="t-shell" data-screen={receipt?.confirmed ? "results" : screen}>
+      {receipt?.confirmed ? <RecordedFirstResult receipt={receipt} /> : <>
       {screen === "hub" ? <Hub /> : null}
       {screen === "war-table" ? <WarTable /> : null}
       {screen === "brief" ? <Brief /> : null}
@@ -612,6 +649,7 @@ export function TacticalApp() {
       {screen === "sector" ? <Sector /> : null}
       {screen === "results" ? <Results /> : null}
       {screen === "defeat" ? <Defeat /> : null}
+      </>}
     </div>
   );
 }
