@@ -2,6 +2,7 @@
 (function () {
   try {
     window.AH_BUFFS = window.AH_BUFFS || { line: "", full: [] };
+    window.AH_LIVE_EVENT = window.AH_LIVE_EVENT || { event: null, serverOffsetMs: 0 };
 
     function ensureStyles() {
       if (document.getElementById("ah-buffs-styles")) return;
@@ -12,6 +13,7 @@
           flex:0 0 auto;
           display:flex;
           align-items:center;
+          gap:6px;
           min-width:0;
         }
         #buffsLine.buffs-line,
@@ -86,6 +88,33 @@
           font-size:10px;
           font-weight:900;
           line-height:1;
+        }
+        #liveEventLine.ah-live-event-chip{
+          cursor:default;
+          max-width:min(48vw, 250px);
+          border-color:rgba(116,218,255,.42);
+          background:linear-gradient(180deg, rgba(14,40,57,.94), rgba(7,18,29,.92));
+          box-shadow:0 8px 22px rgba(0,131,190,.20), inset 0 0 18px rgba(98,205,255,.05);
+          color:#effbff;
+          white-space:nowrap;
+        }
+        .ah-live-event-title{
+          font-size:10px;
+          font-weight:950;
+          letter-spacing:.055em;
+        }
+        .ah-live-event-bonus{
+          color:#8ee8ff;
+          font-size:10px;
+          font-weight:950;
+        }
+        .ah-live-event-time{
+          min-width:35px;
+          color:#fff;
+          font-variant-numeric:tabular-nums;
+          font-size:10px;
+          font-weight:900;
+          text-align:right;
         }
         .ah-buffs-modal{
           position:fixed;
@@ -252,7 +281,7 @@
         }
         @media (max-width: 480px){
           .topbar-signals-slot{
-            max-width:30vw;
+            max-width:58vw;
           }
           #buffsLine.buffs-line,
           .ah-buffs-chip{
@@ -273,6 +302,16 @@
             min-width:20px;
             height:16px;
             padding:0 5px;
+            font-size:9px;
+          }
+          #liveEventLine.ah-live-event-chip{
+            max-width:44vw;
+            padding:4px 7px;
+            gap:4px;
+          }
+          .ah-live-event-title,
+          .ah-live-event-bonus,
+          .ah-live-event-time{
             font-size:9px;
           }
         }
@@ -391,6 +430,119 @@
       return el;
     }
 
+    function ensureLiveEventEl() {
+      ensureStyles();
+      const host = findSignalsHost();
+      if (!host) return null;
+      let el = document.getElementById("liveEventLine");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "liveEventLine";
+      }
+      el.className = "ah-buffs-chip ah-live-event-chip";
+      el.style.display = "none";
+      el.setAttribute("role", "status");
+      el.setAttribute("aria-live", "polite");
+      if (el.parentElement !== host) host.insertBefore(el, host.firstChild || null);
+      return el;
+    }
+
+    function refreshSignalsHost() {
+      const host = findSignalsHost();
+      if (!host) return;
+      const buffsEl = document.getElementById("buffsLine");
+      const eventEl = document.getElementById("liveEventLine");
+      const buffsVisible = !!buffsEl && buffsEl.style.display !== "none";
+      const eventVisible = !!eventEl && eventEl.style.display !== "none";
+      host.hidden = !(buffsVisible || eventVisible);
+    }
+
+    function eventRemainingSec() {
+      const state = window.AH_LIVE_EVENT || {};
+      const event = state.event;
+      const endsAt = Number(event?._endsAt || 0);
+      if (!event?.active || !Number.isFinite(endsAt) || endsAt <= 0) return 0;
+      const authoritativeNow = Date.now() + Number(state.serverOffsetMs || 0);
+      return Math.max(0, Math.ceil((endsAt - authoritativeNow) / 1000));
+    }
+
+    function countdownText(seconds) {
+      const total = Math.max(0, Math.trunc(Number(seconds) || 0));
+      const minutes = Math.floor(total / 60);
+      const secs = total % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function paintLiveEvent() {
+      const el = ensureLiveEventEl();
+      if (!el) return false;
+      const event = window.AH_LIVE_EVENT?.event;
+      const left = eventRemainingSec();
+      if (!event?.active || left <= 0) {
+        if (event) event.active = false;
+        el.style.display = "none";
+        el.innerHTML = "";
+        refreshSignalsHost();
+        return true;
+      }
+      const reward = event.rewardType === "bones" ? "BONES" : "EXP";
+      const bonus = Math.max(0, Math.trunc(Number(event.bonusPercent) || 0));
+      el.innerHTML = `
+        <span class="ah-live-event-title">${event.title}</span>
+        <span class="ah-live-event-bonus">+${bonus}% ${reward}</span>
+        <span class="ah-live-event-time">${countdownText(left)}</span>
+      `;
+      el.setAttribute("aria-label", `${event.title}. Plus ${bonus} percent ${reward}. ${countdownText(left)} remaining.`);
+      el.style.display = "inline-flex";
+      refreshSignalsHost();
+      return true;
+    }
+
+    function setLiveEvent(payload, receivedAtMs) {
+      const root = payload && typeof payload === "object" ? payload : {};
+      const state = root.liveEvent || root.live_event || root;
+      const serverNow = parseExpiresAt(state?.serverNow);
+      const receivedAt = Number.isFinite(Number(receivedAtMs)) ? Number(receivedAtMs) : Date.now();
+      if (serverNow) window.AH_LIVE_EVENT.serverOffsetMs = serverNow - receivedAt;
+      const endsAt = parseExpiresAt(state?.endsAt);
+      const valid = state?.active === true && endsAt && ["pack_surge", "bone_rush"].includes(String(state.eventKey || ""));
+      window.AH_LIVE_EVENT.event = valid ? {
+        eventKey: String(state.eventKey),
+        eventInstanceId: String(state.eventInstanceId || ""),
+        title: String(state.title || ""),
+        rewardType: String(state.rewardType || ""),
+        bonusPercent: Number(state.bonusPercent || 0),
+        endsAt: state.endsAt,
+        active: true,
+        _endsAt: endsAt,
+      } : null;
+      paintLiveEvent();
+      return window.AH_LIVE_EVENT.event;
+    }
+
+    async function fetchLiveEvent() {
+      const startedAt = Date.now();
+      try {
+        const response = await fetch(getApiBase() + "/webapp/live-events", { method: "GET", cache: "no-store" });
+        if (!response.ok) return false;
+        const payload = await response.json();
+        const receivedAt = Date.now();
+        setLiveEvent(payload, startedAt + ((receivedAt - startedAt) / 2));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function ensureSignalsTick() {
+      if (window.__AH_SIGNALS_TICK__) return;
+      window.__AH_SIGNALS_TICK__ = setInterval(() => {
+        paintBuffs();
+        paintLiveEvent();
+        if (window.__AH_BUFFS_MODAL_OPEN__) renderModalList();
+      }, 1000);
+    }
+
     function normalizeBuffs(full) {
       const now = Date.now();
       const arr = Array.isArray(full) ? full : [];
@@ -443,9 +595,9 @@
 
       const full = Array.isArray(window.AH_BUFFS.full) ? window.AH_BUFFS.full : [];
       if (!full.length) {
-        host.hidden = true;
         el.style.display = "none";
         el.innerHTML = "";
+        refreshSignalsHost();
         return true;
       }
 
@@ -462,7 +614,7 @@
       `;
       el.style.display = "inline-flex";
       el.setAttribute("aria-label", ariaLabel);
-      host.hidden = false;
+      refreshSignalsHost();
       return true;
     }
 
@@ -471,13 +623,7 @@
       window.AH_BUFFS.line = String(line || "");
       window.AH_BUFFS.full = normalizeBuffs(full);
       paintBuffs();
-
-      if (!window.__AH_BUFFS_TICK__) {
-        window.__AH_BUFFS_TICK__ = setInterval(() => {
-          paintBuffs();
-          if (window.__AH_BUFFS_MODAL_OPEN__) renderModalList();
-        }, 1000);
-      }
+      ensureSignalsTick();
     }
 
     function renderBuffs(out) {
@@ -700,6 +846,10 @@
     window.renderBuffs = renderBuffs;
     window.openBuffsModal = openModal;
     window.closeBuffsModal = closeModal;
+    window.setLiveEvent = setLiveEvent;
+    window.paintLiveEvent = paintLiveEvent;
+    window.fetchLiveEvent = fetchLiveEvent;
+    window.AH_LIVE_EVENTS_TEST = { countdownText, eventRemainingSec, setLiveEvent, paintLiveEvent };
 
     if (!window.__AH_BUFFS_CLICK_BOUND__) {
       window.__AH_BUFFS_CLICK_BOUND__ = true;
@@ -712,7 +862,15 @@
       });
     }
 
-    setTimeout(paintBuffs, 50);
+    ensureSignalsTick();
+    setTimeout(() => {
+      paintBuffs();
+      paintLiveEvent();
+      fetchLiveEvent();
+    }, 50);
+    if (!window.__AH_LIVE_EVENTS_REFRESH__) {
+      window.__AH_LIVE_EVENTS_REFRESH__ = setInterval(fetchLiveEvent, 60000);
+    }
   } catch (err) {
     try { console.error("[BUFFS] init error:", err); } catch (_) {}
   }
