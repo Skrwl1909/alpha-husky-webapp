@@ -1,431 +1,43 @@
 (function (global) {
+  "use strict";
+
   const BUILDING_ID = "abandoned_wallets_vault";
   const MODAL_ID = "recoveryTerminalBack";
-  const STYLE_ID = "recoveryTerminalStyles";
-
-  const IMAGE = {
-    frame: "images/slots/slot_frame_2048.png",
-    reel1: "images/slots/reel1.png",
-    reel2: "images/slots/reel2.png",
-    reel3: "images/slots/reel3.png",
-    spinVideo: "images/slots/reels_spin_512.webm",
-    ghostLedgerAlphaTeaser: "images/slots/ghost_ledger_alpha_teaser.png",
-    VISOR: "images/slots/VISOR.png",
-    WILD: "images/slots/WILD.png",
-    RELIC: "images/slots/RELIC.png",
-    SCATTER: "images/slots/SCATTER.png",
-    SCRAP: "images/slots/SCRAP.png",
-    SHARD: "images/slots/SHARD.png",
-  };
-
-  const DEFAULT_ROWS = [
-    ["VISOR", "RELIC", "SCRAP"],
-    ["SCRAP", "WILD", "SHARD"],
-    ["RELIC", "SCRAP", "VISOR"],
-  ];
-  const SPIN_SYMBOLS = ["VISOR", "WILD", "RELIC", "SCATTER", "SCRAP", "SHARD"];
-  const STRIP_BUFFER_TOP = 2;
-  const STRIP_BUFFER_BOTTOM = 2;
-  const STRIP_VISIBLE_ROWS = 3;
-  const STRIP_TOTAL_ROWS = STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS + STRIP_BUFFER_BOTTOM;
-  const STRIP_MID_INDEX = STRIP_BUFFER_TOP + 1;
-  const SPIN_MIN_MS = 920;
-  const SPIN_TICK_MS = 76;
-  const SPIN_STRIP_STEP_MS = 72;
-  const REEL_STOP_DELAY_MS = 210;
+  const STYLE_ID = "recoveryWheelStyles";
+  const SPIN_MS = 2540;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const GHOST_IMAGE = "images/slots/ghost_ledger_alpha_teaser.png";
 
   const S = {
     apiPost: null,
     tg: null,
-    dbg: false,
     spinning: false,
+    redeeming: false,
     lastState: null,
-    cells: [],
-    cellEls: [],
-    reels: [],
-    reelStrips: [],
-    reelStripCells: [],
-    reelSpinSymbols: [],
-    spinIntervals: [],
-    reelStepTimers: [],
-    reelStepping: [],
-    spinVideo: null,
-    spinVideoUsable: true,
-    spinVideoActive: false,
+    segments: [],
+    rotationDeg: 0,
   };
 
-  function esc(v) {
-    return String(v == null ? "" : v)
+  function el(id) { return document.getElementById(id); }
+  function esc(value) {
+    return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
-
+  function numberOr(value, fallback) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+    const f = Number(fallback);
+    return Number.isFinite(f) ? f : 0;
+  }
+  function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function makeRunId(prefix, key) {
-    if (typeof global.AH_makeRunId === "function") {
-      return global.AH_makeRunId(prefix, key);
-    }
+    if (typeof global.AH_makeRunId === "function") return global.AH_makeRunId(prefix, key);
     const uid = String(global.Telegram?.WebApp?.initDataUnsafe?.user?.id || "0");
-    const rand = Math.random().toString(16).slice(2, 10);
-    return `${prefix}:${uid}:${String(key || "").slice(0, 48)}:${Date.now()}:${rand}`;
-  }
-
-  function el(id) {
-    return document.getElementById(id);
-  }
-
-  function normalizeRows(rows) {
-    const src = Array.isArray(rows) ? rows : DEFAULT_ROWS;
-    const out = [];
-    for (let r = 0; r < 3; r += 1) {
-      const row = Array.isArray(src[r]) ? src[r] : [];
-      const normalized = [];
-      for (let c = 0; c < 3; c += 1) {
-        normalized.push(String(row[c] || "SCRAP").toUpperCase());
-      }
-      out.push(normalized);
-    }
-    return out;
-  }
-
-  function symbolImage(symbol) {
-    return IMAGE[String(symbol || "").toUpperCase()] || IMAGE.SCRAP;
-  }
-
-  function setStatus(text) {
-    const node = el("rtStatus");
-    if (node) node.textContent = text || "";
-  }
-
-  function setResultCard(kind, title, meta) {
-    const box = el("rtResult");
-    const titleEl = el("rtResultTitle");
-    const metaEl = el("rtResultMeta");
-    if (!box || !titleEl || !metaEl) return;
-
-    box.classList.remove("is-neutral", "is-win", "is-special", "is-miss");
-    box.classList.add(kind || "is-neutral");
-    titleEl.textContent = title || "";
-    metaEl.textContent = meta || "";
-  }
-
-  function setSummary(text) {
-    setResultCard("is-neutral", text || "", "");
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms || 0))));
-  }
-
-  function clearWinHighlights() {
-    const cells = S.cellEls || [];
-    for (let r = 0; r < cells.length; r += 1) {
-      const row = cells[r] || [];
-      for (let c = 0; c < row.length; c += 1) {
-        row[c]?.classList?.remove("is-payline-win", "is-hit", "is-wild-hit");
-      }
-    }
-  }
-
-  function clearSpinIntervals() {
-    const arr = Array.isArray(S.spinIntervals) ? S.spinIntervals : [];
-    for (let i = 0; i < arr.length; i += 1) {
-      if (arr[i]) clearInterval(arr[i]);
-    }
-    S.spinIntervals = [];
-
-    const stepTimers = Array.isArray(S.reelStepTimers) ? S.reelStepTimers : [];
-    for (let i = 0; i < stepTimers.length; i += 1) {
-      if (stepTimers[i]) clearTimeout(stepTimers[i]);
-    }
-    S.reelStepTimers = [];
-    S.reelStepping = [];
-  }
-
-  async function startSpinVideoOverlay() {
-    const frame = el("rtBoardFrame");
-    const video = S.spinVideo || el("rtSpinVideo");
-    if (!frame || !video || S.spinVideoUsable === false) return false;
-
-    try {
-      video.currentTime = 0;
-      const maybePromise = video.play?.();
-      if (maybePromise && typeof maybePromise.then === "function") {
-        await maybePromise;
-      }
-      frame.classList.add("video-spin-active");
-      S.spinVideoActive = true;
-      return true;
-    } catch (err) {
-      frame.classList.remove("video-spin-active");
-      S.spinVideoActive = false;
-      if (String(err?.name || "") === "NotSupportedError") {
-        S.spinVideoUsable = false;
-      }
-      return false;
-    }
-  }
-
-  function stopSpinVideoOverlay() {
-    const frame = el("rtBoardFrame");
-    const video = S.spinVideo || el("rtSpinVideo");
-    frame?.classList?.remove("video-spin-active");
-    S.spinVideoActive = false;
-    if (!video) return;
-    try { video.pause?.(); } catch (_) {}
-    try { video.currentTime = 0; } catch (_) {}
-  }
-
-  function getCellSizePx() {
-    const sample = S.cellEls?.[0]?.[0];
-    const h = Math.round(sample?.getBoundingClientRect?.().height || 0);
-    return h > 0 ? h : 76;
-  }
-
-  function randomSpinSymbol() {
-    return SPIN_SYMBOLS[Math.floor(Math.random() * SPIN_SYMBOLS.length)] || "SCRAP";
-  }
-
-  function normalizeSymbol(symbol) {
-    return String(symbol || "SCRAP").toUpperCase();
-  }
-
-  function resetReelStripPosition(col) {
-    const strip = S.reelStrips?.[col];
-    if (!strip) return;
-    const step = Math.max(1, getCellSizePx());
-    strip.style.transition = "none";
-    strip.style.transform = `translateY(${-(step * STRIP_BUFFER_TOP)}px)`;
-  }
-
-  function setStripSymbol(col, stripRow, symbol) {
-    const img = S.reelStripCells?.[col]?.[stripRow];
-    if (!img) return;
-    const sym = normalizeSymbol(symbol);
-    img.src = symbolImage(sym);
-    img.alt = sym;
-    img.dataset.rtSymbol = sym;
-  }
-
-  function buildStripSymbols(top, mid, bot, previous) {
-    const out = Array.from({ length: STRIP_TOTAL_ROWS }, () => randomSpinSymbol());
-    out[STRIP_BUFFER_TOP] = normalizeSymbol(top);
-    out[STRIP_BUFFER_TOP + 1] = normalizeSymbol(mid);
-    out[STRIP_BUFFER_TOP + 2] = normalizeSymbol(bot);
-
-    const prev = Array.isArray(previous) ? previous : [];
-    if (STRIP_BUFFER_TOP > 0 && prev[STRIP_BUFFER_TOP - 1]) {
-      out[STRIP_BUFFER_TOP - 1] = normalizeSymbol(prev[STRIP_BUFFER_TOP - 1]);
-    }
-    const belowVisible = STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS;
-    if (belowVisible < STRIP_TOTAL_ROWS && prev[belowVisible]) {
-      out[belowVisible] = normalizeSymbol(prev[belowVisible]);
-    }
-    return out;
-  }
-
-  function syncColumnStripFromRows(col, rows) {
-    const safe = normalizeRows(rows);
-    const top = normalizeSymbol(safe[0][col]);
-    const mid = normalizeSymbol(safe[1][col]);
-    const bot = normalizeSymbol(safe[2][col]);
-    const nextStrip = buildStripSymbols(top, mid, bot, S.reelSpinSymbols?.[col]);
-    S.reelSpinSymbols[col] = nextStrip;
-    for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) {
-      setStripSymbol(col, i, nextStrip[i]);
-    }
-    resetReelStripPosition(col);
-  }
-
-  function setCellSymbol(row, col, symbol) {
-    const img = S.cells?.[row]?.[col];
-    if (!img) return;
-    const sym = String(symbol || "SCRAP").toUpperCase();
-    img.src = symbolImage(sym);
-    img.alt = sym;
-    img.dataset.rtSymbol = sym;
-  }
-
-  function setColumnSymbols(col, rows) {
-    syncColumnStripFromRows(col, rows);
-  }
-
-  function cycleReelColumn(col, opts) {
-    return new Promise((resolve) => {
-      const strip = S.reelStrips?.[col];
-      const current = S.reelSpinSymbols?.[col];
-      if (!strip || !Array.isArray(current) || current.length < STRIP_TOTAL_ROWS) {
-        resolve(false);
-        return;
-      }
-      if (S.reelStepping[col]) {
-        resolve(false);
-        return;
-      }
-
-      const durationMs = Math.max(28, Number(opts?.durationMs || SPIN_STRIP_STEP_MS));
-      const easing = String(opts?.easing || "linear");
-      const step = Math.max(1, getCellSizePx());
-      const travelRows = Math.max(0, STRIP_BUFFER_TOP - 1);
-      const nextOffset = -(step * travelRows);
-
-      S.reelStepping[col] = true;
-      strip.style.transition = `transform ${durationMs}ms ${easing}`;
-      strip.style.transform = `translateY(${nextOffset}px)`;
-
-      if (S.reelStepTimers[col]) {
-        clearTimeout(S.reelStepTimers[col]);
-        S.reelStepTimers[col] = null;
-      }
-
-      S.reelStepTimers[col] = setTimeout(() => {
-        const snap = Array.isArray(S.reelSpinSymbols?.[col]) ? S.reelSpinSymbols[col] : current;
-        const nextTop = normalizeSymbol(opts?.nextTop || randomSpinSymbol());
-        const shifted = [nextTop, ...snap.slice(0, STRIP_TOTAL_ROWS - 1)];
-        S.reelSpinSymbols[col] = shifted;
-        for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) setStripSymbol(col, i, shifted[i]);
-        resetReelStripPosition(col);
-        void strip.offsetHeight;
-        strip.style.transition = "";
-        S.reelStepping[col] = false;
-        S.reelStepTimers[col] = null;
-        resolve(true);
-      }, durationMs + 12);
-    });
-  }
-
-  function startVisualSpin() {
-    clearWinHighlights();
-    clearSpinIntervals();
-    setResultCard("is-neutral", "Recovering cache...", "Reels spinning.");
-
-    const reels = Array.isArray(S.reels) ? S.reels : [];
-    for (let col = 0; col < reels.length; col += 1) {
-      const reel = reels[col];
-      reel?.classList?.remove("is-settle");
-      reel?.classList?.add("is-rolling");
-      const top = normalizeSymbol(S.cells?.[0]?.[col]?.alt || "SCRAP");
-      const mid = normalizeSymbol(S.cells?.[1]?.[col]?.alt || "SCRAP");
-      const bot = normalizeSymbol(S.cells?.[2]?.[col]?.alt || "SCRAP");
-      S.reelSpinSymbols[col] = buildStripSymbols(top, mid, bot, S.reelSpinSymbols[col]);
-      for (let i = 0; i < STRIP_TOTAL_ROWS; i += 1) setStripSymbol(col, i, S.reelSpinSymbols[col][i]);
-      resetReelStripPosition(col);
-      void cycleReelColumn(col);
-      S.spinIntervals[col] = setInterval(() => { void cycleReelColumn(col); }, SPIN_TICK_MS + (col * 8));
-    }
-  }
-
-  async function stopVisualSpin(finalRows) {
-    const reels = Array.isArray(S.reels) ? S.reels : [];
-    const safeRows = normalizeRows(finalRows);
-    stopSpinVideoOverlay();
-
-    for (let col = 0; col < reels.length; col += 1) {
-      if (S.spinIntervals[col]) {
-        clearInterval(S.spinIntervals[col]);
-        S.spinIntervals[col] = null;
-      }
-      if (S.reelStepTimers[col]) {
-        clearTimeout(S.reelStepTimers[col]);
-        S.reelStepTimers[col] = null;
-      }
-      S.reelStepping[col] = false;
-      resetReelStripPosition(col);
-      const strip = S.reelStrips?.[col];
-      if (strip) void strip.offsetHeight;
-
-      await cycleReelColumn(col, { durationMs: 104 + (col * 10), easing: "cubic-bezier(.24,.64,.34,1)" });
-      await cycleReelColumn(col, { durationMs: 138 + (col * 14), easing: "cubic-bezier(.16,1,.3,1)" });
-
-      setColumnSymbols(col, safeRows);
-      const reel = reels[col];
-      reel?.classList?.remove("is-rolling");
-      reel?.classList?.add("is-settle");
-      setTimeout(() => reel?.classList?.remove("is-settle"), 260);
-
-      if (col < reels.length - 1) await sleep(REEL_STOP_DELAY_MS);
-    }
-
-    clearSpinIntervals();
-  }
-
-  function buildSpinOutcome(out, rows) {
-    const safeRows = normalizeRows(rows);
-    const payline = safeRows[1];
-    const rewards = out?.rewards || {};
-    const lineSymbol = String(out?.result?.lineSymbol || "").toUpperCase();
-    const scatterCount = Number(out?.result?.scatterCount || 0);
-    const freeSpins = Number(rewards.free_spins || 0);
-    const scatterTriggered = scatterCount >= 3 || freeSpins > 0;
-    const fragmentWon = !!out?.fragment?.won;
-    const wildAssist = !!lineSymbol && lineSymbol !== "WILD" && payline.includes("WILD");
-
-    const gains = [];
-    const bones = Number(rewards.bones || 0);
-    const scrap = Number(rewards.scrap || 0);
-    const dust = Number(rewards.rune_dust || 0);
-    const shardAmount = Number(rewards.shard_amount || 0);
-    const shardSlot = String(rewards.shard_slot || "").replace(/_/g, " ").trim();
-
-    if (bones > 0) gains.push(`+${bones} Bones`);
-    if (scrap > 0) gains.push(`+${scrap} Scrap`);
-    if (dust > 0) gains.push(`+${dust} Rune Dust`);
-    if (shardAmount > 0) gains.push(`+${shardAmount} ${shardSlot ? `${shardSlot} Shards` : "Shards"}`);
-
-    const lineWin = !!lineSymbol;
-    const hasAnything = lineWin || scatterTriggered || fragmentWon || gains.length > 0;
-
-    if (!hasAnything) {
-      return {
-        kind: "is-miss",
-        title: "Recovery failed. Nothing salvageable found.",
-        meta: "No rewards this cycle.",
-        lineWin: false,
-        wildAssist: false,
-      };
-    }
-
-    let title = "Recovery successful.";
-    if (wildAssist) title = "WILD completed the line.";
-    else if (lineWin) title = "Line recovery successful.";
-    else if (freeSpins > 0) title = `Cache breach: +${freeSpins} Free Spin${freeSpins > 1 ? "s" : ""}.`;
-    else if (scatterTriggered) title = "Cache breach detected.";
-    else if (fragmentWon) title = "Ledger Shard recovered.";
-    else if (gains.length > 0) title = `Recovered: ${gains.join(", ")}.`;
-
-    const lines = [];
-    if (lineWin && !wildAssist && lineSymbol) lines.push(`Recovered line: ${lineSymbol}.`);
-    if (wildAssist) lines.push("WILD-assisted recovery confirmed.");
-    if (gains.length > 0) lines.push(`Recovered: ${gains.join(", ")}.`);
-    if (freeSpins > 0) lines.push(`Cache breach: +${freeSpins} Free Spin${freeSpins > 1 ? "s" : ""}.`);
-    else if (scatterTriggered) lines.push("Cache breach detected.");
-    if (fragmentWon) lines.push("Ledger Shard recovered.");
-
-    return {
-      kind: lineWin || gains.length ? "is-win" : "is-special",
-      title,
-      meta: lines.join(" "),
-      lineWin: !!lineWin,
-      wildAssist: !!wildAssist,
-      lineSymbol,
-      payline,
-    };
-  }
-
-  function applyWinPresentation(outcome) {
-    clearWinHighlights();
-    if (!outcome || !outcome.lineWin) return;
-
-    const payline = Array.isArray(outcome.payline) ? outcome.payline : [];
-    for (let col = 0; col < 3; col += 1) {
-      const cell = S.cellEls?.[1]?.[col];
-      if (!cell) continue;
-      const symbol = String(payline[col] || "").toUpperCase();
-      cell.classList.add("is-payline-win", "is-hit");
-      if (symbol === "WILD") cell.classList.add("is-wild-hit");
-    }
+    return `${prefix}:${uid}:${String(key || "").slice(0, 48)}:${Date.now()}:${Math.random().toString(16).slice(2, 10)}`;
   }
 
   function ensureStyles() {
@@ -433,887 +45,336 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-.rt-back{
-  position:fixed; inset:0; z-index:100050;
-  display:none; align-items:flex-end; justify-content:center;
-  background:rgba(7,10,14,.72);
-  backdrop-filter:blur(4px);
-}
-.rt-panel{
-  width:min(96vw,760px);
-  max-height:92vh;
-  overflow:auto;
-  color:#eaf3ff;
-  border-radius:18px 18px 0 0;
-  border:1px solid rgba(170,198,255,.22);
-  background:
-    radial-gradient(95% 90% at 50% -10%, rgba(86,140,240,.20), transparent 55%),
-    linear-gradient(180deg, rgba(14,19,28,.98), rgba(9,12,18,.98));
-  box-shadow:0 -16px 48px rgba(0,0,0,.45);
-}
-.rt-head{
-  display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
-  padding:14px 14px 10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.rt-title{
-  margin:0; font-size:19px; font-weight:800; letter-spacing:.01em;
-}
-.rt-sub{
-  margin-top:4px; opacity:.82; font-size:12px; line-height:1.35;
-}
-.rt-close{
-  min-width:38px; height:38px; border-radius:12px;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(255,255,255,.06); color:#fff; font-size:20px; cursor:pointer;
-}
-.rt-body{
-  padding:12px 14px 16px;
-  display:grid; gap:10px;
-}
-.rt-status{
-  font-size:12px; opacity:.82;
-}
-.rt-board-frame{
-  position:relative;
-  overflow:hidden;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.12);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    url("${IMAGE.frame}") center / cover no-repeat;
-  padding:10px;
-}
-.rt-board-wrap{
-  position:relative;
-  border-radius:12px;
-  overflow:hidden;
-}
-.rt-board{
-  --rt-cell-size:76px;
-  position:relative;
-  z-index:1;
-  transition:opacity .18s ease, filter .18s ease;
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:9px;
-}
-.rt-spin-video{
-  position:absolute;
-  inset:0;
-  z-index:3;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .16s ease;
-  border-radius:10px;
-  background:rgba(8,12,18,.45);
-}
-.rt-board-frame.video-spin-active .rt-spin-video{
-  opacity:1;
-}
-.rt-board-frame.video-spin-active .rt-board{
-  opacity:.08;
-  filter:saturate(.8) blur(.6px);
-}
-.rt-reel{
-  position:relative;
-  border-radius:12px;
-  overflow:hidden;
-  height:calc(var(--rt-cell-size) * 3);
-  border:1px solid rgba(255,255,255,.16);
-  background-size:cover;
-  background-position:center;
-  box-shadow:inset 0 0 0 1px rgba(8,12,20,.34);
-}
-.rt-reel::before,
-.rt-reel::after{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  height:calc(var(--rt-cell-size) * .78);
-  z-index:3;
-  pointer-events:none;
-  opacity:.38;
-  transition:opacity .16s ease;
-}
-.rt-reel::before{
-  top:0;
-  background:linear-gradient(180deg, rgba(7,11,18,.88), rgba(7,11,18,0));
-}
-.rt-reel::after{
-  bottom:0;
-  background:linear-gradient(0deg, rgba(7,11,18,.88), rgba(7,11,18,0));
-}
-.rt-reel.is-rolling::before,
-.rt-reel.is-rolling::after{
-  opacity:.94;
-}
-.rt-reel.is-settle::before,
-.rt-reel.is-settle::after{
-  opacity:.64;
-}
-.rt-reel-strip{
-  display:flex;
-  flex-direction:column;
-  transform:translateY(calc(var(--rt-cell-size) * -2));
-}
-.rt-reel.is-rolling{
-  animation:rt-reel-roll-bg .11s linear infinite;
-}
-.rt-reel.is-rolling .rt-reel-strip{
-  will-change:transform;
-  filter:saturate(1.06);
-}
-.rt-reel.is-rolling .rt-symbol-safe{
-  padding:10px 11px;
-}
-.rt-reel.is-rolling .rt-cell img{
-  max-width:40px;
-  max-height:40px;
-  filter:drop-shadow(0 4px 8px rgba(0,0,0,.36)) saturate(1.04);
-}
-.rt-reel.is-rolling .rt-cell img[data-rt-symbol="SCATTER"]{
-  max-width:38px;
-  max-height:38px;
-}
-.rt-reel.is-settle{
-  animation:rt-reel-settle .26s cubic-bezier(.2,.8,.28,1);
-}
-.rt-cell{
-  position:relative;
-  overflow:hidden;
-  box-sizing:border-box;
-  height:var(--rt-cell-size);
-  min-height:var(--rt-cell-size);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-bottom:1px solid rgba(255,255,255,.10);
-  background:linear-gradient(180deg, rgba(8,12,18,.58), rgba(8,12,18,.30));
-}
-.rt-symbol-safe{
-  width:100%;
-  height:100%;
-  box-sizing:border-box;
-  padding:8px 9px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:padding .16s ease;
-}
-.rt-cell:last-child{
-  border-bottom:none;
-}
-.rt-cell.payline{
-  background:linear-gradient(180deg, rgba(176,230,255,.20), rgba(115,191,255,.13));
-  box-shadow:inset 0 0 0 1px rgba(189,230,255,.30);
-}
-.rt-cell.is-payline-win{
-  background:linear-gradient(180deg, rgba(188,255,228,.36), rgba(129,220,255,.30));
-  box-shadow:
-    inset 0 0 0 1px rgba(214,255,236,.50),
-    0 0 12px rgba(144,236,255,.34);
-}
-.rt-cell.is-hit img{
-  animation:rt-hit-pop .42s ease;
-  filter:drop-shadow(0 0 8px rgba(193,255,236,.70));
-}
-.rt-cell.is-wild-hit{
-  box-shadow:
-    inset 0 0 0 1px rgba(255,240,193,.65),
-    0 0 14px rgba(255,228,148,.45);
-}
-.rt-cell.is-wild-hit img{
-  filter:drop-shadow(0 0 10px rgba(255,230,146,.85));
-}
-.rt-cell img{
-  width:100%;
-  height:100%;
-  max-width:46px;
-  max-height:46px;
-  display:block;
-  object-fit:contain;
-  object-position:50% 52%;
-  image-rendering:auto;
-  filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));
-  transition:max-width .16s ease, max-height .16s ease, filter .16s ease;
-}
-.rt-cell img[data-rt-symbol="SCATTER"]{
-  max-width:44px;
-  max-height:44px;
-  object-position:50% 58%;
-}
-.rt-cell img[data-rt-symbol="VISOR"],
-.rt-cell img[data-rt-symbol="WILD"]{
-  object-position:50% 54%;
-}
-.rt-cell img[data-rt-symbol="SCRAP"]{
-  object-position:50% 49%;
-}
-@keyframes rt-reel-roll-bg{
-  from { background-position:center 0px; }
-  to   { background-position:center 32px; }
-}
-@keyframes rt-symbol-roll{
-  from { transform:translateY(-24px); opacity:.58; filter:drop-shadow(0 3px 6px rgba(0,0,0,.35)) blur(.55px); }
-  to   { transform:translateY(24px); opacity:1; filter:drop-shadow(0 3px 6px rgba(0,0,0,.35)) blur(0); }
-}
-@keyframes rt-reel-settle{
-  0%   { transform:translateY(0); }
-  36%  { transform:translateY(5px); }
-  72%  { transform:translateY(-2px); }
-  100% { transform:translateY(0); }
-}
-@keyframes rt-hit-pop{
-  0%   { transform:scale(1); }
-  35%  { transform:scale(1.08); }
-  100% { transform:scale(1); }
-}
-.rt-metrics{
-  display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;
-}
-.rt-metric{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:12px;
-  background:rgba(255,255,255,.04);
-  padding:8px;
-}
-.rt-k{
-  font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.08em;
-}
-.rt-v{
-  margin-top:3px; font-size:14px; font-weight:700;
-}
-.rt-progress{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:12px;
-  padding:9px 10px;
-  background:rgba(255,255,255,.04);
-}
-.rt-progress-top{
-  display:flex; justify-content:space-between; gap:10px; align-items:center;
-  font-size:12px;
-}
-.rt-progress-bar{
-  height:7px; border-radius:999px; overflow:hidden;
-  background:rgba(255,255,255,.11);
-  margin-top:7px;
-}
-.rt-progress-fill{
-  height:100%; width:0%;
-  background:linear-gradient(90deg, rgba(132,236,180,.9), rgba(140,210,255,.95));
-  transition:width .25s ease;
-}
-.rt-teaser{
-  display:grid;
-  grid-template-columns:84px 1fr;
-  gap:10px;
-  border:1px solid rgba(189,208,255,.20);
-  border-radius:12px;
-  padding:8px;
-  background:
-    radial-gradient(120% 120% at 100% -20%, rgba(120,176,255,.14), transparent 45%),
-    rgba(255,255,255,.03);
-}
-.rt-teaser-art{
-  position:relative;
-  border-radius:10px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.18);
-  background:linear-gradient(180deg, rgba(26,34,50,.95), rgba(12,18,28,.95));
-  min-height:86px;
-}
-.rt-teaser-img{
-  width:100%;
-  height:100%;
-  min-height:86px;
-  display:block;
-  object-fit:contain;
-  object-position:center;
-}
-.rt-teaser-sil{
-  display:none;
-  position:absolute;
-  left:50%;
-  top:48%;
-  width:50px;
-  height:62px;
-  transform:translate(-50%, -50%);
-  border-radius:26px 26px 18px 18px;
-  background:linear-gradient(180deg, rgba(188,210,255,.20), rgba(108,126,160,.14));
-  filter:blur(.3px);
-}
-.rt-teaser-lock{
-  position:absolute;
-  z-index:3;
-  left:6px;
-  right:6px;
-  bottom:6px;
-  border-radius:999px;
-  text-align:center;
-  font-size:9px;
-  letter-spacing:.12em;
-  font-weight:800;
-  padding:3px 0;
-  color:#d7e7ff;
-  border:1px solid rgba(255,255,255,.20);
-  background:rgba(10,14,22,.72);
-}
-.rt-teaser-k{
-  font-size:10px;
-  letter-spacing:.11em;
-  text-transform:uppercase;
-  opacity:.72;
-}
-.rt-teaser-name{
-  margin-top:2px;
-  font-size:14px;
-  font-weight:800;
-}
-.rt-teaser-progress{
-  margin-top:4px;
-  font-size:11px;
-  opacity:.90;
-}
-.rt-teaser-line{
-  margin-top:4px;
-  font-size:11px;
-  line-height:1.3;
-  opacity:.80;
-}
-.rt-teaser-bar{
-  margin-top:6px;
-  height:5px;
-  border-radius:999px;
-  overflow:hidden;
-  background:rgba(255,255,255,.12);
-}
-.rt-teaser-fill{
-  width:0%;
-  height:100%;
-  background:linear-gradient(90deg, rgba(160,218,255,.95), rgba(155,248,211,.92));
-  transition:width .25s ease;
-}
-.rt-result{
-  border:1px dashed rgba(170,198,255,.26);
-  border-radius:12px;
-  padding:8px 9px;
-  background:rgba(255,255,255,.02);
-}
-.rt-result-title{
-  font-size:12px;
-  line-height:1.32;
-  font-weight:700;
-}
-.rt-result-meta{
-  margin-top:4px;
-  font-size:11px;
-  line-height:1.32;
-  opacity:.85;
-}
-.rt-result.is-win{
-  border-color:rgba(153,255,209,.50);
-  background:rgba(124,242,192,.10);
-}
-.rt-result.is-special{
-  border-color:rgba(153,213,255,.50);
-  background:rgba(145,205,255,.10);
-}
-.rt-result.is-miss{
-  border-color:rgba(255,170,170,.34);
-  background:rgba(255,122,122,.08);
-}
-.rt-footer{
-  position:sticky; bottom:0; z-index:2;
-  display:flex; gap:8px; align-items:center;
-  padding:10px 14px 14px;
-  background:linear-gradient(180deg, rgba(9,12,18,0), rgba(9,12,18,.98) 38%);
-}
-.rt-recover{
-  width:100%;
-  border:none;
-  border-radius:13px;
-  padding:12px 14px;
-  font-size:15px;
-  font-weight:800;
-  cursor:pointer;
-  color:#062131;
-  background:linear-gradient(90deg, #8ce4ff, #b9f3d6);
-  box-shadow:0 8px 24px rgba(108,220,255,.24);
-}
-.rt-recover[disabled]{
-  opacity:.55; cursor:not-allowed; box-shadow:none;
-}
-.rt-recover.is-loading{
-  opacity:.85;
-  filter:saturate(.78);
-}
-@media (max-width:560px){
-  .rt-board{ --rt-cell-size:68px; }
-  .rt-metrics{ grid-template-columns:1fr; }
-  .rt-cell{ min-height:var(--rt-cell-size); height:var(--rt-cell-size); }
-  .rt-symbol-safe{ padding:7px 8px; }
-  .rt-cell img{
-    max-width:42px;
-    max-height:42px;
-    object-position:50% 53%;
-  }
-  .rt-cell img[data-rt-symbol="SCATTER"]{
-    max-width:40px;
-    max-height:40px;
-    object-position:50% 59%;
-  }
-  .rt-reel.is-rolling .rt-symbol-safe{
-    padding:8px 9px;
-  }
-  .rt-reel.is-rolling .rt-cell img{
-    max-width:36px;
-    max-height:36px;
-  }
-  .rt-reel.is-rolling .rt-cell img[data-rt-symbol="SCATTER"]{
-    max-width:34px;
-    max-height:34px;
-  }
-}
-    `;
+#${MODAL_ID}{position:fixed;inset:0;z-index:999990;display:none;align-items:flex-end;justify-content:center;background:rgba(2,5,9,.78);backdrop-filter:blur(9px);font-family:Inter,system-ui,-apple-system,sans-serif;color:#edf6f8}
+.rw-shell{position:relative;width:min(100%,520px);max-height:96dvh;overflow:auto;border:1px solid rgba(128,193,205,.22);border-bottom:0;border-radius:26px 26px 0 0;background:radial-gradient(circle at 50% 8%,rgba(47,106,119,.20),transparent 34%),linear-gradient(180deg,#10191f,#080d12 72%);box-shadow:0 -24px 80px rgba(0,0,0,.48);padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.rw-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}.rw-eyebrow{font-size:10px;letter-spacing:.24em;color:#75b8c3;font-weight:900}.rw-title{font-size:24px;letter-spacing:.07em;font-weight:950;margin-top:3px}.rw-sub{font-size:12px;color:#91a2a8;margin-top:4px;line-height:1.35}.rw-close{width:38px;height:38px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:#121d23;color:#dfecef;font-size:22px;cursor:pointer}
+.rw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.rw-stat{min-width:0;border:1px solid rgba(126,186,197,.15);border-radius:13px;background:rgba(255,255,255,.035);padding:9px 10px}.rw-stat-label{font-size:9px;letter-spacing:.11em;color:#769099;font-weight:850}.rw-stat-value{margin-top:3px;font-size:15px;font-weight:900;white-space:nowrap}
+.rw-wheel-stage{position:relative;width:min(86vw,360px);aspect-ratio:1;margin:2px auto 12px;filter:drop-shadow(0 18px 28px rgba(0,0,0,.42))}.rw-pointer{position:absolute;z-index:4;left:50%;top:-3px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:27px solid #d9f6f3;filter:drop-shadow(0 3px 5px rgba(0,0,0,.7))}.rw-wheel-ring{position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(178,232,234,.34);background:#081015;box-shadow:inset 0 0 0 7px rgba(4,8,11,.9),inset 0 0 36px rgba(90,185,190,.14)}.rw-rotor{width:100%;height:100%;transform-origin:50% 50%;will-change:transform}.rw-segment{stroke:rgba(2,7,10,.72);stroke-width:1.2}.rw-segment.is-ineligible{opacity:.18}.rw-segment-label{fill:#eefafa;font-size:5px;font-weight:900;letter-spacing:.02em;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.rw-hub{position:absolute;z-index:3;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:31%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid rgba(168,225,227,.32);background:radial-gradient(circle at 45% 35%,#263b42,#0b1318 70%);box-shadow:0 0 0 7px rgba(4,10,13,.85),0 0 30px rgba(71,178,181,.18);font-size:10px;line-height:1.18;letter-spacing:.12em;font-weight:950;color:#d9f4f2}
+.rw-result{min-height:66px;border:1px solid rgba(121,192,199,.18);border-radius:15px;background:rgba(2,8,11,.46);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;text-align:center}.rw-result.is-rare{border-color:rgba(99,186,227,.42)}.rw-result.is-special{border-color:rgba(156,116,232,.44)}.rw-result.is-legendary{border-color:rgba(223,181,83,.52);box-shadow:inset 0 0 24px rgba(213,158,49,.08)}.rw-result-title{font-size:10px;letter-spacing:.18em;font-weight:950;color:#82b7be}.rw-result-value{margin-top:4px;font-size:19px;letter-spacing:.055em;font-weight:950}.rw-status{min-height:18px;text-align:center;font-size:11px;color:#82959c;margin:7px 0}
+.rw-spin{width:100%;min-height:52px;border:1px solid rgba(155,225,218,.35);border-radius:15px;background:linear-gradient(180deg,#29525a,#18363d);color:#f3ffff;font-size:15px;letter-spacing:.13em;font-weight:950;cursor:pointer;box-shadow:0 11px 24px rgba(0,0,0,.24)}.rw-spin:disabled{opacity:.46;cursor:not-allowed}.rw-spin.is-busy{animation:rw-pulse 1s ease-in-out infinite}
+.rw-ledger{display:grid;grid-template-columns:78px 1fr;gap:12px;align-items:center;margin-top:12px;padding:11px;border:1px solid rgba(117,167,177,.15);border-radius:16px;background:rgba(255,255,255,.028)}.rw-ghost{width:78px;height:78px;object-fit:cover;border-radius:12px;filter:saturate(.78) contrast(1.06)}.rw-ledger-name{font-size:13px;font-weight:900}.rw-ledger-meta{margin-top:3px;font-size:11px;color:#8fa0a7}.rw-progress{height:6px;margin-top:8px;overflow:hidden;border-radius:999px;background:#18252b}.rw-progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4b8e9b,#a9e5df);transition:width .25s ease}.rw-redeem{display:none;width:100%;margin-top:9px;padding:10px;border:1px solid rgba(182,230,222,.30);border-radius:11px;background:#172d33;color:#eafffb;font-size:10px;letter-spacing:.08em;font-weight:900;cursor:pointer}.rw-redeem:disabled{opacity:.45}
+@keyframes rw-pulse{50%{filter:brightness(1.15)}}
+@media(min-width:560px){#${MODAL_ID}{align-items:center}.rw-shell{border-bottom:1px solid rgba(128,193,205,.22);border-radius:26px;max-height:92vh}}
+@media(max-width:370px){.rw-shell{padding-left:12px;padding-right:12px}.rw-title{font-size:21px}.rw-stat{padding:8px 7px}.rw-stat-value{font-size:13px}.rw-wheel-stage{width:min(82vw,320px)}}
+@media(prefers-reduced-motion:reduce){.rw-rotor{transition-duration:.01ms!important}.rw-spin.is-busy{animation:none}}
+`;
     document.head.appendChild(style);
   }
 
   function ensureModal() {
     let back = el(MODAL_ID);
     if (back) return back;
-
     back = document.createElement("div");
     back.id = MODAL_ID;
-    back.className = "rt-back";
     back.innerHTML = `
-      <div class="rt-panel" role="dialog" aria-modal="true" aria-label="Recovery Terminal">
-        <div class="rt-head">
-          <div>
-            <h2 class="rt-title">Recovery Terminal</h2>
-            <div class="rt-sub">Abandoned Wallets signal recovery. Stable outputs only.</div>
-          </div>
-          <button id="rtClose" class="rt-close" type="button" aria-label="Close">x</button>
+      <section class="rw-shell" role="dialog" aria-modal="true" aria-labelledby="rwTitle">
+        <header class="rw-head">
+          <div><div class="rw-eyebrow">ABANDONED WALLETS</div><div id="rwTitle" class="rw-title">RECOVERY WHEEL</div><div class="rw-sub">One signal. One real recovery. Server-authoritative.</div></div>
+          <button id="rwClose" class="rw-close" aria-label="Close">×</button>
+        </header>
+        <div class="rw-stats">
+          <div class="rw-stat"><div class="rw-stat-label">BONES</div><div id="rwBones" class="rw-stat-value">—</div></div>
+          <div class="rw-stat"><div class="rw-stat-label">FREE SPINS</div><div id="rwFree" class="rw-stat-value">0</div></div>
+          <div class="rw-stat"><div class="rw-stat-label">SPIN COST</div><div id="rwCost" class="rw-stat-value">25</div></div>
         </div>
-        <div class="rt-body">
-          <div id="rtStatus" class="rt-status">Syncing terminal...</div>
-          <div id="rtBoardFrame" class="rt-board-frame">
-            <div class="rt-board-wrap">
-              <div id="rtBoard" class="rt-board"></div>
-              <video id="rtSpinVideo" class="rt-spin-video" muted playsinline preload="auto" loop aria-hidden="true">
-                <source src="${IMAGE.spinVideo}" type="video/webm">
-              </video>
-            </div>
-          </div>
-          <div class="rt-metrics">
-            <div class="rt-metric"><div class="rt-k">Free Spins</div><div id="rtFree" class="rt-v">0</div></div>
-            <div class="rt-metric"><div class="rt-k">Recovery Cost</div><div id="rtCost" class="rt-v">0 Bones</div></div>
-            <div class="rt-metric"><div class="rt-k">Bones</div><div id="rtBones" class="rt-v">-</div></div>
-          </div>
-          <div class="rt-progress">
-            <div class="rt-progress-top">
-              <div>Ledger Shards</div>
-              <div id="rtFragCount">0 / 0</div>
-            </div>
-            <div class="rt-progress-bar"><div id="rtFragFill" class="rt-progress-fill"></div></div>
-            <div id="rtFragHint" style="margin-top:6px;font-size:11px;opacity:.78;"></div>
-          </div>
-          <div class="rt-teaser">
-            <div class="rt-teaser-art">
-              <img id="rtTeaserImg" class="rt-teaser-img" src="${IMAGE.ghostLedgerAlphaTeaser}" alt="Ghost Ledger Alpha teaser" loading="lazy">
-              <div id="rtTeaserFallback" class="rt-teaser-sil"></div>
-              <div class="rt-teaser-lock">LOCKED</div>
-            </div>
-            <div>
-              <div class="rt-teaser-k">Exclusive Skin</div>
-              <div class="rt-teaser-name">Ghost Ledger Alpha</div>
-              <div id="rtTeaserProgress" class="rt-teaser-progress">0 / 0 Ledger Shards</div>
-              <div class="rt-teaser-line">Collect Ledger Shards to unlock Ghost Ledger Alpha.</div>
-              <div class="rt-teaser-bar"><div id="rtTeaserFill" class="rt-teaser-fill"></div></div>
-            </div>
-          </div>
-          <div id="rtResult" class="rt-result is-neutral" aria-live="polite">
-            <div id="rtResultTitle" class="rt-result-title">Awaiting recovery cycle.</div>
-            <div id="rtResultMeta" class="rt-result-meta">Tap Recover to run the terminal.</div>
-          </div>
+        <div class="rw-wheel-stage">
+          <div class="rw-pointer" aria-hidden="true"></div>
+          <div class="rw-wheel-ring"><svg id="rwRotor" class="rw-rotor" viewBox="0 0 200 200" role="img" aria-label="Weighted Recovery Wheel"></svg></div>
+          <div class="rw-hub">ALPHA<br>RECOVERY</div>
         </div>
-        <div class="rt-footer">
-          <button id="rtRecover" class="rt-recover" type="button">Recover</button>
+        <div id="rwResult" class="rw-result"><div id="rwResultTitle" class="rw-result-title">SYSTEM READY</div><div id="rwResultValue" class="rw-result-value">EVERY SPIN RECOVERS</div></div>
+        <div id="rwStatus" class="rw-status">Syncing wheel…</div>
+        <button id="rwSpin" class="rw-spin" disabled>SPIN</button>
+        <div class="rw-ledger">
+          <img class="rw-ghost" src="${GHOST_IMAGE}" alt="Ghost Ledger Alpha">
+          <div><div class="rw-ledger-name">Ghost Ledger Alpha</div><div id="rwLedgerCount" class="rw-ledger-meta">Ledger Shards: 0 / 180</div><div id="rwLedgerDaily" class="rw-ledger-meta">Daily Ledger Shards: 0 / 2</div><div class="rw-progress"><i id="rwLedgerFill"></i></div><div id="rwGhostStatus" class="rw-ledger-meta">Locked</div><button id="rwRedeem" class="rw-redeem">UNLOCK GHOST LEDGER ALPHA</button></div>
         </div>
-      </div>
-    `;
-
+      </section>`;
     document.body.appendChild(back);
-
-    const teaserImg = el("rtTeaserImg");
-    const teaserFallback = el("rtTeaserFallback");
-    const spinVideo = el("rtSpinVideo");
-    if (teaserImg && teaserFallback) {
-      const showFallback = () => {
-        teaserImg.style.display = "none";
-        teaserFallback.style.display = "block";
-      };
-      const hideFallback = () => {
-        teaserFallback.style.display = "none";
-        teaserImg.style.display = "block";
-      };
-
-      teaserImg.addEventListener("load", hideFallback, { once: true });
-      teaserImg.addEventListener("error", showFallback, { once: true });
-
-      if (teaserImg.complete) {
-        if (teaserImg.naturalWidth > 0) hideFallback();
-        else showFallback();
-      }
-    }
-    if (spinVideo) {
-      spinVideo.muted = true;
-      spinVideo.playsInline = true;
-      spinVideo.preload = "auto";
-      S.spinVideo = spinVideo;
-      S.spinVideoUsable = true;
-      const markVideoUnavailable = () => {
-        S.spinVideoUsable = false;
-        stopSpinVideoOverlay();
-      };
-      spinVideo.addEventListener("error", markVideoUnavailable);
-      try { spinVideo.load?.(); } catch (_) {}
-    } else {
-      S.spinVideo = null;
-      S.spinVideoUsable = false;
-    }
-
-    const board = el("rtBoard");
-    const reelBg = [IMAGE.reel1, IMAGE.reel2, IMAGE.reel3];
-    S.cells = [[], [], []];
-    S.cellEls = [[], [], []];
-    S.reels = [];
-    S.reelStrips = [];
-    S.reelStripCells = [];
-    S.reelSpinSymbols = [];
-    for (let col = 0; col < 3; col += 1) {
-      const reel = document.createElement("div");
-      reel.className = "rt-reel";
-      reel.style.backgroundImage = `url("${reelBg[col]}")`;
-      const strip = document.createElement("div");
-      strip.className = "rt-reel-strip";
-      const stripCells = [];
-      for (let stripRow = 0; stripRow < STRIP_TOTAL_ROWS; stripRow += 1) {
-        const cell = document.createElement("div");
-        cell.className = `rt-cell ${stripRow === STRIP_MID_INDEX ? "payline" : ""}`.trim();
-        const symbolSafe = document.createElement("div");
-        symbolSafe.className = "rt-symbol-safe";
-        const img = document.createElement("img");
-        img.alt = "Slot symbol";
-        img.src = symbolImage("SCRAP");
-        img.dataset.rtSymbol = "SCRAP";
-        symbolSafe.appendChild(img);
-        cell.appendChild(symbolSafe);
-        strip.appendChild(cell);
-        stripCells[stripRow] = img;
-        if (stripRow >= STRIP_BUFFER_TOP && stripRow < (STRIP_BUFFER_TOP + STRIP_VISIBLE_ROWS)) {
-          const row = stripRow - STRIP_BUFFER_TOP;
-          S.cells[row][col] = img;
-          S.cellEls[row][col] = cell;
-        }
-      }
-      reel.appendChild(strip);
-      board.appendChild(reel);
-      S.reels[col] = reel;
-      S.reelStrips[col] = strip;
-      S.reelStripCells[col] = stripCells;
-      S.reelSpinSymbols[col] = Array.from({ length: STRIP_TOTAL_ROWS }, () => "SCRAP");
-      resetReelStripPosition(col);
-    }
-
-    el("rtClose")?.addEventListener("click", close);
-    el("rtRecover")?.addEventListener("click", onRecoverClick);
-    back.addEventListener("click", (ev) => {
-      if (ev.target === back) close();
-    });
-
-    if (!document.body.dataset.rtEscBound) {
-      document.body.dataset.rtEscBound = "1";
-      document.addEventListener("keydown", (ev) => {
-        if (ev.key === "Escape" && el(MODAL_ID)?.style.display !== "none") close();
-      });
-    }
-
+    el("rwClose")?.addEventListener("click", close);
+    el("rwSpin")?.addEventListener("click", spin);
+    el("rwRedeem")?.addEventListener("click", redeemGhost);
+    back.addEventListener("click", (event) => { if (event.target === back) close(); });
     return back;
   }
 
-  function renderBoard(rows) {
-    const safeRows = normalizeRows(rows);
-    for (let col = 0; col < 3; col += 1) {
-      syncColumnStripFromRows(col, safeRows);
-    }
+  function polar(radius, angleDeg) {
+    const radians = (angleDeg - 90) * Math.PI / 180;
+    return { x: 100 + radius * Math.cos(radians), y: 100 + radius * Math.sin(radians) };
   }
 
-  function numOr(value, fallback) {
-    const n = Number(value);
-    if (Number.isFinite(n)) return n;
-    const f = Number(fallback);
-    return Number.isFinite(f) ? f : 0;
+  function arcPath(startDeg, endDeg, radius = 92) {
+    const sweep = Math.max(0, endDeg - startDeg);
+    if (sweep <= 0) return "";
+    const start = polar(radius, startDeg);
+    const end = polar(radius, endDeg);
+    return `M 100 100 L ${start.x.toFixed(4)} ${start.y.toFixed(4)} A ${radius} ${radius} 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(4)} ${end.y.toFixed(4)} Z`;
+  }
+
+  function normalizeSegments(rawSegments) {
+    if (!Array.isArray(rawSegments)) return [];
+    const rows = rawSegments.map((raw) => ({
+      id: String(raw?.id || ""),
+      label: String(raw?.label || raw?.rewardDescription || "REWARD"),
+      tier: String(raw?.tier || "standard"),
+      weight: Math.max(0, numberOr(raw?.weight, 0)),
+      effectiveWeight: Math.max(0, numberOr(raw?.effectiveWeight, raw?.weight)),
+      eligible: raw?.eligible !== false,
+      rewardDescription: String(raw?.rewardDescription || raw?.label || "Reward"),
+    })).filter((row) => row.id);
+    const total = rows.reduce((sum, row) => sum + (row.eligible ? row.effectiveWeight : 0), 0);
+    if (total <= 0) return [];
+    let cursor = 0;
+    return rows.map((row) => {
+      const sweep = row.eligible ? (row.effectiveWeight / total) * 360 : 0;
+      const out = { ...row, startDeg: cursor, endDeg: cursor + sweep, centerDeg: cursor + (sweep / 2), sweepDeg: sweep };
+      cursor += sweep;
+      return out;
+    });
+  }
+
+  function svgNode(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    Object.entries(attrs || {}).forEach(([key, value]) => node.setAttribute(key, String(value)));
+    return node;
+  }
+
+  function segmentColor(segment, index) {
+    const palettes = {
+      standard: ["#1e3940", "#28474e"], rare: ["#235270", "#2f6687"],
+      special: ["#4b386b", "#5a447c"], ledger: ["#315b5c", "#477778"], legendary: ["#806128", "#9b7631"],
+    };
+    const colors = palettes[segment.tier] || palettes.standard;
+    return colors[index % colors.length];
+  }
+
+  function renderWheel(rawSegments) {
+    const rotor = el("rwRotor");
+    const segments = normalizeSegments(rawSegments);
+    S.segments = segments;
+    if (!rotor) return segments;
+    rotor.innerHTML = "";
+    segments.forEach((segment, index) => {
+      const path = svgNode("path", {
+        d: arcPath(segment.startDeg, segment.endDeg),
+        fill: segmentColor(segment, index),
+        class: `rw-segment${segment.eligible ? "" : " is-ineligible"}`,
+        "data-segment-id": segment.id,
+        "data-weight": segment.weight,
+        "data-effective-weight": segment.effectiveWeight,
+        "aria-label": `${segment.label}, ${segment.weight}%`,
+      });
+      const title = svgNode("title");
+      title.textContent = `${segment.label} · ${segment.weight}%`;
+      path.appendChild(title);
+      rotor.appendChild(path);
+
+      if (segment.sweepDeg >= 9) {
+        const pos = polar(segment.sweepDeg >= 30 ? 62 : 70, segment.centerDeg);
+        const label = svgNode("text", { x: pos.x, y: pos.y, class: "rw-segment-label", transform: `rotate(${segment.centerDeg} ${pos.x} ${pos.y})` });
+        label.textContent = segment.label.replace(/^\+1 /, "").replace(/^\+2 /, "2 ").replace(/^\+4 /, "4 ");
+        rotor.appendChild(label);
+      }
+    });
+    return segments;
+  }
+
+  function stateFrom(payload) {
+    if (payload?.state && typeof payload.state === "object") return payload.state;
+    return payload && typeof payload === "object" ? payload : {};
+  }
+
+  function setResult(headline, rewardText, tier) {
+    const box = el("rwResult");
+    if (box) box.className = `rw-result${tier && tier !== "standard" ? ` is-${tier}` : ""}`;
+    if (el("rwResultTitle")) el("rwResultTitle").textContent = String(headline || "RECOVERED");
+    if (el("rwResultValue")) el("rwResultValue").textContent = String(rewardText || "REWARD SECURED");
   }
 
   function renderState(payload) {
-    const prevState = (S.lastState && typeof S.lastState === "object") ? S.lastState : {};
-    const nestedState = payload?.state;
-    const state = (nestedState && typeof nestedState === "object" && !Array.isArray(nestedState) && Object.keys(nestedState).length > 0)
-      ? nestedState
-      : ((payload && typeof payload === "object") ? payload : {});
-    const prevFrag = (prevState.fragments && typeof prevState.fragments === "object") ? prevState.fragments : {};
-    const nextFrag = (state.fragments && typeof state.fragments === "object") ? state.fragments : {};
-    const frag = { ...prevFrag, ...nextFrag };
-    const prevBoard = (prevState.board && typeof prevState.board === "object") ? prevState.board : {};
-    const nextBoard = (state.board && typeof state.board === "object") ? state.board : {};
+    const prior = S.lastState && typeof S.lastState === "object" ? S.lastState : {};
+    const incoming = stateFrom(payload);
+    const state = { ...prior, ...incoming };
+    state.fragments = { ...(prior.fragments || {}), ...(incoming.fragments || {}) };
+    state.ghostLedger = { ...(prior.ghostLedger || {}), ...(incoming.ghostLedger || {}) };
+    state.wheel = { ...(prior.wheel || {}), ...(incoming.wheel || {}) };
+    S.lastState = state;
 
-    const boardRows = state?.board?.rows || payload?.board?.rows || prevBoard?.rows || DEFAULT_ROWS;
-    renderBoard(boardRows);
+    if (Array.isArray(state.wheel.segments)) renderWheel(state.wheel.segments);
+    if (el("rwBones")) el("rwBones").textContent = state.bonesBalance == null ? "—" : String(numberOr(state.bonesBalance, 0));
+    if (el("rwFree")) el("rwFree").textContent = String(numberOr(state.freeSpins, 0));
+    if (el("rwCost")) el("rwCost").textContent = `${numberOr(state.spinCostBones, 25)} Bones`;
 
-    const freeSpins = numOr(state.freeSpins ?? prevState.freeSpins, 0);
-    const spinCost = numOr(state.spinCostBones ?? prevState.spinCostBones, 0);
-    const canRecover = (state.canRecover == null ? !!prevState.canRecover : !!state.canRecover);
-    const bonesBal = (state.bonesBalance == null ? prevState.bonesBalance : state.bonesBalance);
+    const fragments = state.fragments || {};
+    const owned = numberOr(fragments.owned, 0);
+    const goal = Math.max(1, numberOr(fragments.goal, 180));
+    const earned = numberOr(fragments.earnedToday, 0);
+    const cap = Math.max(1, numberOr(fragments.dailyCap, 2));
+    if (el("rwLedgerCount")) el("rwLedgerCount").textContent = `Ledger Shards: ${owned} / ${goal}`;
+    if (el("rwLedgerDaily")) el("rwLedgerDaily").textContent = `Daily Ledger Shards: ${earned} / ${cap}`;
+    if (el("rwLedgerFill")) el("rwLedgerFill").style.width = `${clamp((owned / goal) * 100, 0, 100)}%`;
 
-    const fragOwned = numOr(frag.owned, 0);
-    const fragGoal = numOr(frag.goal, 0);
-    const fragPct = Math.max(0, Math.min(100, numOr(frag.pct, 0)));
-    const earnedToday = numOr(frag.earnedToday, 0);
-    const dailyCap = numOr(frag.dailyCap, 0);
-
-    const freeEl = el("rtFree");
-    if (freeEl) freeEl.textContent = String(freeSpins);
-    const costEl = el("rtCost");
-    if (costEl) costEl.textContent = `${spinCost} Bones`;
-    const bonesEl = el("rtBones");
-    if (bonesEl) bonesEl.textContent = (bonesBal == null ? "-" : String(bonesBal));
-
-    const fragCount = el("rtFragCount");
-    if (fragCount) fragCount.textContent = `${fragOwned} / ${fragGoal}`;
-    const fragFill = el("rtFragFill");
-    if (fragFill) fragFill.style.width = `${fragPct}%`;
-    const teaserProgress = el("rtTeaserProgress");
-    if (teaserProgress) teaserProgress.textContent = `${fragOwned} / ${fragGoal} Ledger Shards`;
-    const teaserFill = el("rtTeaserFill");
-    if (teaserFill) teaserFill.style.width = `${fragPct}%`;
-    const fragHint = el("rtFragHint");
-    if (fragHint) {
-      fragHint.textContent = `Daily Ledger Shards: ${earnedToday}/${dailyCap}.`;
+    const ghost = state.ghostLedger || {};
+    const ghostOwned = ghost.owned === true;
+    const ghostEquipped = ghost.equipped === true;
+    if (el("rwGhostStatus")) el("rwGhostStatus").textContent = ghostOwned ? (ghostEquipped ? "Unlocked · Equipped" : "Unlocked · Ready in Skins") : `${Math.max(0, goal - owned)} shards remaining`;
+    const redeem = el("rwRedeem");
+    if (redeem) {
+      redeem.style.display = ghost.canRedeem === true && !ghostOwned ? "block" : "none";
+      redeem.disabled = S.redeeming || S.spinning;
     }
 
-    const btn = el("rtRecover");
-    if (btn) {
-      btn.disabled = S.spinning || !canRecover;
-      btn.classList.toggle("is-loading", !!S.spinning);
-      btn.textContent = S.spinning ? "Recovering..." : "Recover";
+    const spinButton = el("rwSpin");
+    if (spinButton) {
+      spinButton.disabled = S.spinning || state.canRecover !== true;
+      spinButton.classList.toggle("is-busy", S.spinning);
+      spinButton.textContent = S.spinning ? "RECOVERING…" : "SPIN";
     }
-
-    S.lastState = {
-      ...prevState,
-      ...state,
-      freeSpins,
-      spinCostBones: spinCost,
-      canRecover: !!canRecover,
-      bonesBalance: bonesBal,
-      fragments: frag,
-      board: {
-        ...prevBoard,
-        ...nextBoard,
-        rows: normalizeRows(boardRows),
-      },
-    };
+    return state;
   }
 
-  function listRewards(out) {
-    const rewards = out?.rewards || {};
-    const parts = [];
-    const bones = Number(rewards.bones || 0);
-    const scrap = Number(rewards.scrap || 0);
-    const dust = Number(rewards.rune_dust || 0);
-    const freeSpins = Number(rewards.free_spins || 0);
-    const shardAmount = Number(rewards.shard_amount || 0);
-    const shardSlot = String(rewards.shard_slot || "").replace(/_/g, " ").trim();
+  function selectedGeometry(segmentId) {
+    return S.segments.find((segment) => segment.id === String(segmentId || "")) || null;
+  }
 
-    if (bones > 0) parts.push(`+${bones} Bones`);
-    if (scrap > 0) parts.push(`+${scrap} Scrap`);
-    if (dust > 0) parts.push(`+${dust} Rune Dust`);
-    if (shardAmount > 0) {
-      const label = shardSlot ? `${shardSlot} shards` : "shards";
-      parts.push(`+${shardAmount} ${label}`);
-    }
-    if (freeSpins > 0) {
-      parts.push(`+${freeSpins} Free Spin${freeSpins > 1 ? "s" : ""}`);
-    }
-    if (out?.fragment?.won) {
-      parts.push("+1 Ledger Shard");
-    }
-    return parts;
+  function animateToSegment(segmentId) {
+    const rotor = el("rwRotor");
+    const selected = selectedGeometry(segmentId);
+    if (!rotor || !selected || selected.sweepDeg <= 0) return Promise.resolve(false);
+    const currentTurns = Math.floor(S.rotationDeg / 360);
+    const target = ((currentTurns + 6) * 360) - selected.centerDeg;
+    S.rotationDeg = target;
+    rotor.style.transition = `transform ${SPIN_MS}ms cubic-bezier(.12,.72,.12,1)`;
+    rotor.style.transform = `rotate(${target}deg)`;
+    rotor.dataset.landedSegmentId = selected.id;
+    rotor.dataset.landedCenterDeg = String(selected.centerDeg);
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(true); } };
+      rotor.addEventListener?.("transitionend", finish, { once: true });
+      setTimeout(finish, SPIN_MS + 80);
+    });
   }
 
   async function post(path, payload) {
-    const body = payload || {};
-
     if (typeof S.apiPost === "function") {
-      const out = await S.apiPost(path, body);
-      if (out && out.ok === false) {
-        const err = new Error(String(out.reason || out.message || "REQUEST_FAILED"));
-        err.data = out;
-        throw err;
-      }
+      const out = await S.apiPost(path, payload || {});
+      if (out?.ok === false) { const error = new Error(String(out.reason || "REQUEST_FAILED")); error.data = out; throw error; }
       return out;
     }
-
     const initData = S.tg?.initData || global.Telegram?.WebApp?.initData || "";
-    const res = await fetch((global.API_BASE || "") + path, {
+    const response = await fetch((global.API_BASE || "") + path, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(initData ? { Authorization: `Bearer ${initData}` } : {}),
-      },
-      body: JSON.stringify({ init_data: initData, ...body }),
+      headers: { "Content-Type": "application/json", ...(initData ? { Authorization: `Bearer ${initData}` } : {}) },
+      body: JSON.stringify({ init_data: initData, ...(payload || {}) }),
     });
-    const out = await res.json().catch(() => ({ ok: false, reason: `HTTP_${res.status}` }));
-    if (!res.ok || out?.ok === false) {
-      const err = new Error(String(out?.reason || `HTTP_${res.status}`));
-      err.data = out;
-      throw err;
-    }
+    const out = await response.json().catch(() => ({ ok: false, reason: `HTTP_${response.status}` }));
+    if (!response.ok || out?.ok === false) { const error = new Error(String(out?.reason || `HTTP_${response.status}`)); error.data = out; throw error; }
     return out;
   }
+
+  function setStatus(text) { if (el("rwStatus")) el("rwStatus").textContent = String(text || ""); }
 
   async function loadState() {
-    setStatus("Syncing terminal...");
+    setStatus("Syncing wheel…");
     const out = await post("/webapp/slots/state", { buildingId: BUILDING_ID });
     renderState(out);
-    setSummary("Recover to scan one cycle.");
-    setStatus("Recovery terminal online.");
+    setStatus("Recovery Wheel online.");
     return out;
   }
 
-  async function onRecoverClick() {
-    if (S.spinning) return;
+  async function spin() {
+    if (S.spinning) return false;
     S.spinning = true;
-    const btn = el("rtRecover");
-    if (btn) {
-      btn.disabled = true;
-      btn.classList.add("is-loading");
-      btn.textContent = "Recovering...";
-    }
-
-    const startedAt = Date.now();
-    setStatus("Recovering signal...");
-    startVisualSpin();
-
+    renderState(S.lastState || {});
+    setStatus("Server resolving recovery signal…");
+    setResult("SCANNING", "OUTCOME LOCKED BY SERVER", "standard");
+    let out = null;
     try {
-      const out = await post("/webapp/slots/spin", {
-        buildingId: BUILDING_ID,
-        run_id: makeRunId("slots_spin", "recovery_terminal"),
-      });
-
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < SPIN_MIN_MS) await sleep(SPIN_MIN_MS - elapsed);
-
-      const finalRows = normalizeRows(out?.board?.rows || DEFAULT_ROWS);
-      await stopVisualSpin(finalRows);
-
-      renderState(out?.state || out);
-      const outcome = buildSpinOutcome(out, finalRows);
-      setResultCard(outcome.kind, outcome.title, outcome.meta);
-      applyWinPresentation(outcome);
-
-      setStatus(outcome.kind === "is-miss" ? "No recovery found." : "Cycle complete.");
-      try { S.tg?.HapticFeedback?.notificationOccurred?.(outcome.kind === "is-miss" ? "warning" : "success"); } catch (_) {}
-    } catch (err) {
-      const reason = String(err?.data?.reason || err?.message || "Recovery failed");
-
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < SPIN_MIN_MS) await sleep(SPIN_MIN_MS - elapsed);
-      await stopVisualSpin(S.lastState?.board?.rows || DEFAULT_ROWS);
-
-      if (err?.data?.state) renderState(err.data);
-      clearWinHighlights();
-      setStatus("Recovery failed.");
-      if (reason === "NOT_ENOUGH_BONES") {
-        setResultCard("is-miss", "Recovery aborted.", "Not enough Bones for this recovery cycle.");
-      } else {
-        setResultCard("is-miss", "Recovery failed.", reason);
-      }
+      out = await post("/webapp/slots/spin", { buildingId: BUILDING_ID, run_id: makeRunId("slots_spin", "recovery_wheel") });
+      const segmentId = out?.result?.segmentId || out?.segment?.id;
+      try { await animateToSegment(segmentId); } catch (_) { /* reward remains authoritative */ }
+      renderState(out);
+      const tier = String(out?.segment?.tier || selectedGeometry(segmentId)?.tier || "standard");
+      setResult(out?.result?.headline, out?.result?.rewardText || out?.result?.summary, tier);
+      setStatus("Recovery committed.");
+      try { S.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      return out;
+    } catch (error) {
+      if (error?.data?.state) renderState(error.data);
+      const reason = String(error?.data?.reason || error?.message || "RECOVERY_FAILED");
+      setResult("RECOVERY ABORTED", reason === "NOT_ENOUGH_BONES" ? "NOT ENOUGH BONES" : reason, "standard");
+      setStatus("No reward was committed.");
       try { S.tg?.showAlert?.(reason); } catch (_) {}
+      return false;
     } finally {
-      clearSpinIntervals();
-      stopSpinVideoOverlay();
-      for (let i = 0; i < (S.reels || []).length; i += 1) {
-        S.reels[i]?.classList?.remove("is-rolling", "is-settle");
-        resetReelStripPosition(i);
-        const strip = S.reelStrips?.[i];
-        if (strip) strip.style.transition = "";
-      }
       S.spinning = false;
-      const canRecover = !!S.lastState?.canRecover;
-      if (btn) {
-        btn.classList.remove("is-loading");
-        btn.textContent = "Recover";
-        btn.disabled = !canRecover;
-      }
+      renderState(S.lastState || {});
+    }
+  }
+
+  async function redeemGhost() {
+    if (S.redeeming || S.spinning || S.lastState?.ghostLedger?.canRedeem !== true) return false;
+    S.redeeming = true;
+    renderState(S.lastState || {});
+    setStatus("Confirming Ledger completion…");
+    try {
+      const out = await post("/webapp/slots/redeem", { run_id: makeRunId("slots_redeem", "ghost_ledger_alpha") });
+      renderState(out);
+      setResult("IDENTITY UNLOCKED", "GHOST LEDGER ALPHA", "legendary");
+      setStatus("Permanent skin ownership secured. Equip it from Skins.");
+      return out;
+    } catch (error) {
+      if (error?.data?.state) renderState(error.data);
+      setStatus(String(error?.data?.reason || error?.message || "Unlock failed"));
+      return false;
+    } finally {
+      S.redeeming = false;
+      renderState(S.lastState || {});
     }
   }
 
   function close() {
-    const back = el(MODAL_ID);
-    if (back) back.style.display = "none";
-    clearSpinIntervals();
-    for (let i = 0; i < (S.reels || []).length; i += 1) {
-      S.reels[i]?.classList?.remove("is-rolling", "is-settle");
-      resetReelStripPosition(i);
-      const strip = S.reelStrips?.[i];
-      if (strip) strip.style.transition = "";
-    }
-    stopSpinVideoOverlay();
+    const modal = el(MODAL_ID);
+    if (modal) modal.style.display = "none";
     try { global.navClose?.(MODAL_ID); } catch (_) {}
   }
 
   async function open(meta) {
     ensureStyles();
-    const back = ensureModal();
-    back.style.display = "flex";
+    const modal = ensureModal();
+    modal.style.display = "flex";
     try { global.navOpen?.(MODAL_ID); } catch (_) {}
-
-    const desc = String(meta?.desc || "").trim();
-    if (desc) {
-      const sub = back.querySelector(".rt-sub");
-      if (sub) sub.textContent = `Abandoned Wallets. ${desc}`;
+    const description = String(meta?.desc || "").trim();
+    if (description) {
+      const sub = modal.querySelector?.(".rw-sub");
+      if (sub) sub.textContent = description;
     }
-
-    try {
-      await loadState();
-      return true;
-    } catch (err) {
-      setStatus("Terminal offline.");
-      setSummary("Failed to load Recovery Terminal.");
-      return false;
-    }
+    try { await loadState(); return true; }
+    catch (_) { setStatus("Recovery Wheel offline."); setResult("OFFLINE", "TRY AGAIN LATER", "standard"); return false; }
   }
 
-  function init(opts) {
-    const cfg = opts || {};
-    if (typeof cfg.apiPost === "function") S.apiPost = cfg.apiPost;
-    if (cfg.tg) S.tg = cfg.tg;
-    if (typeof cfg.dbg === "boolean") S.dbg = cfg.dbg;
+  function init(options) {
+    const config = options || {};
+    if (typeof config.apiPost === "function") S.apiPost = config.apiPost;
+    if (config.tg) S.tg = config.tg;
     if (!S.tg) S.tg = global.Telegram?.WebApp || null;
   }
 
-  const API = {
-    init,
-    open,
-    close,
-    refresh: loadState,
-  };
-
+  const API = { init, open, close, refresh: loadState };
   global.RecoveryTerminal = API;
   global.Slots = API;
+  global.AH_SLOTS_WHEEL_TEST = {
+    state: S,
+    normalizeSegments,
+    renderWheel,
+    renderState,
+    selectedGeometry,
+    animateToSegment,
+    setResult,
+    ensureStyles,
+    ensureModal,
+    spin,
+    redeemGhost,
+  };
 })(window);
