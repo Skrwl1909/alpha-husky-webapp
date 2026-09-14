@@ -83,7 +83,8 @@
     back: null,
     busy: false,
     completeDone: false,
-    originRevealTimer: null
+    originRevealTimer: null,
+    lastState: null
   };
 
   function log(...args) {
@@ -924,12 +925,12 @@
       }, 220);
     } catch (err) {
       log("complete failed", err);
-      if (skipped) {
-        close();
-        return;
-      }
+      S.completeDone = false;
       setBusy(false);
-      setNotice("Could not record the Awakening. Try again.");
+      haptic("error");
+      setNotice(skipped
+        ? "Could not skip Awakening. Try again."
+        : "Could not record the Awakening. Try again.");
     }
   }
 
@@ -938,14 +939,17 @@
     await complete(true);
   }
 
-  function open(state) {
-    if (S.open || S.openedOnce) return false;
+  function open(state, options) {
+    options = options || {};
+    if (S.open) return false;
+    if (S.openedOnce && !options.resume && !options.force) return false;
     S.openedOnce = true;
     S.open = true;
     S.index = 0;
-    S.selectedOrigin = "";
+    S.selectedOrigin = asText(state && (state.origin_mark || state.originMark || S.selectedOrigin));
     S.completeDone = false;
-    S.choices = normalizeChoices(state?.choices || DEFAULT_CHOICES);
+    S.lastState = state && typeof state === "object" ? state : S.lastState;
+    S.choices = normalizeChoices((state && state.choices) || DEFAULT_CHOICES);
     ensureModal();
     document.documentElement.classList.add("ah-modal-open");
     document.body.classList.add("ah-awakening-open");
@@ -969,15 +973,65 @@
     if (!global.AH_NAV?.stack?.length) {
       document.documentElement.classList.remove("ah-modal-open");
     }
+    if (!S.completeDone) {
+      try { global.FtueContinuity?.onPresentationClosed?.("awakening"); } catch (_) {}
+    }
   }
 
-  async function checkState() {
-    if (S.checked || typeof S.apiPost !== "function") return;
-    S.checked = true;
+  function isFreshEligible(awakening, tutorial) {
+    try {
+      if (global.FtueContinuity && typeof global.FtueContinuity.isAwakeningFreshEligible === "function") {
+        return global.FtueContinuity.isAwakeningFreshEligible(awakening, tutorial);
+      }
+    } catch (_) {}
+    if (!awakening || awakening.ok === false) return false;
+    if (awakening.completed === true) return false;
+    const enrolled = !!(tutorial && tutorial.first_signal && tutorial.first_signal.eligible === true);
+    const inProgress = !!(awakening.started || awakening.in_progress || awakening.origin_mark);
+    return inProgress || (enrolled && awakening.should_show === true);
+  }
+
+  async function readTutorial() {
+    try {
+      const live = global.Onboarding && typeof global.Onboarding.getTutorial === "function"
+        ? global.Onboarding.getTutorial()
+        : null;
+      if (live && typeof live === "object") return live;
+    } catch (_) {}
+    if (typeof S.apiPost !== "function") return null;
+    try {
+      const out = await S.apiPost("/webapp/tutorial/state", {});
+      if (!out || out.ok === false) return null;
+      return out.data || out.tutorial || out;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function checkState(options) {
+    options = options || {};
+    if (!options.force && S.checked) return;
+    if (typeof S.apiPost !== "function") return;
     try {
       const out = await S.apiPost("/webapp/awakening/state", {});
-      if (!out || out.ok === false || !out.should_show) return;
-      open(out);
+      if (!out || out.ok === false) return;
+      S.lastState = out;
+      const tutorial = await readTutorial();
+      const enrollmentKnown = !!(tutorial && tutorial.first_signal && typeof tutorial.first_signal === "object")
+        || out.fresh_enrolled === true
+        || out.enrolled === true
+        || out.started === true
+        || out.in_progress === true
+        || !!out.origin_mark;
+      if (!enrollmentKnown && !options.force) {
+        if (!options._retried) {
+          setTimeout(() => { void checkState({ _retried: true }); }, 400);
+        }
+        return;
+      }
+      S.checked = true;
+      if (!isFreshEligible(out, tutorial)) return;
+      open(out, { resume: !!options.resume, force: !!options.force });
     } catch (err) {
       log("state skipped", err);
     }
@@ -997,7 +1051,15 @@
     return API;
   }
 
-  const API = { init, open, close, isOpen: () => !!S.open };
+  const API = {
+    init,
+    open,
+    close,
+    checkState,
+    isFreshEligible,
+    getState: () => S.lastState,
+    isOpen: () => !!S.open
+  };
   global.Awakening = API;
   global.AWAKENING_ASSETS = AWAKENING_ASSETS;
 })(window);

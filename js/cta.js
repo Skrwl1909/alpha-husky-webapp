@@ -293,6 +293,30 @@
       go: "Claim contracts",
       stakes: "Miss claim timing and reset can void already-earned contract payout.",
     },
+    awakening: {
+      context: "Awakening",
+      now: "Continue Awakening",
+      why: "Awakening is still your current action.",
+      reward: "",
+      go: "Continue Awakening",
+      stakes: "",
+    },
+    first_signal: {
+      context: "First Signal",
+      now: (primary) => asText(primary.title) || "Continue FIRST SIGNAL",
+      why: (primary) => asText(primary.subtitle) || "This is your current recovered-gear action.",
+      reward: "",
+      go: (primary) => asText(primary.title) || "Open First Signal",
+      stakes: "",
+    },
+    first_signal_handoff: {
+      context: "World",
+      now: "FIND BLOOD MOON TOWER",
+      why: "Your faction shares the Blood Moon Tower fight.",
+      reward: "",
+      go: "FIND BLOOD MOON TOWER",
+      stakes: "",
+    },
     campaign_incoming: {
       context: "Chapter 6",
       now: "RELAY-7 is calling",
@@ -1267,15 +1291,25 @@
     try {
       const SD = window.StoryDelivery;
       if (SD && typeof SD.resolve === "function") {
-        const scf = SD.resolve({
+        const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
+        const scfInputs = {
           cta: safe,
           campaign: window.Campaign && typeof window.Campaign.state === "function" ? window.Campaign.state() : null,
           tutorial: window.Onboarding && typeof window.Onboarding.getTutorial === "function" ? window.Onboarding.getTutorial() : null,
           firstSignal: window.Onboarding && typeof window.Onboarding.getFirstSignal === "function" ? window.Onboarding.getFirstSignal() : null,
-          tactical: missions
-        });
-        const kind = asText(safe.primary && safe.primary.kind).toLowerCase();
-        if (scf && SD.continuityFrame(SD.gatherInputs(), scf)) {
+          tactical: missions,
+          awakening: window.Awakening && typeof window.Awakening.getState === "function" ? window.Awakening.getState() : null
+        };
+        const scf = SD.resolve(scfInputs);
+        const ownHome = !!(scf && (
+          (window.FtueContinuity && typeof window.FtueContinuity.shouldOwnHomeCta === "function" && window.FtueContinuity.shouldOwnHomeCta(scf))
+          || scf.firstSession
+          || asText(scf.id) === "S-AWAKENING"
+          || asText(scf.id).indexOf("S-FS-") === 0
+        ) && scf.target && !scf.lockedBrief);
+        if (ownHome) {
+          safe.primary = SD.markContinuePrimaryFromScf(scf);
+        } else if (scf && SD.continuityFrame(SD.gatherInputs(), scf)) {
           safe.primary = SD.markContinuePrimaryFromScf(scf);
         } else if (scf && (scf.ctaKind === "tactical_discovery"
             || ((kind === "tactical_breach" || kind === "tactical_recover_replay") && !scf.lockedBrief))) {
@@ -1405,6 +1439,17 @@
     try {
       const raw = await apiPost("/webapp/cta/state", {});
       if (options.strict && (!raw || raw.ok === false)) throw new Error("CTA refresh unavailable");
+      try {
+        const fs = window.Onboarding && typeof window.Onboarding.getFirstSignal === "function"
+          ? window.Onboarding.getFirstSignal()
+          : null;
+        const fsState = String(fs && fs.state || "").toUpperCase();
+        const world = String(fs && (fs.world_discovery || fs.worldDiscovery) || "").toLowerCase();
+        if (fs && fs.eligible === true && (fsState !== "COMPLETED" || world === "pending")
+          && window.Onboarding && typeof window.Onboarding.refreshContinuity === "function") {
+          await window.Onboarding.refreshContinuity();
+        }
+      } catch (_) {}
       const data = await applyCampaignOpening(normalize(raw));
       STATE.lastData = data;
       STATE.lastLoadAt = Date.now();
@@ -1530,6 +1575,18 @@
     switch (key) {
       case "factions":
         try {
+          if (window.Oath && typeof window.Oath.checkAndOpen === "function") {
+            const opened = await window.Oath.checkAndOpen({ force: true });
+            if (opened) return true;
+          }
+          if (window.Oath && typeof window.Oath.open === "function" && window.Oath.getState) {
+            window.Oath.open(window.Oath.getState());
+            return true;
+          }
+        } catch (err) {
+          warn("Oath open failed", err);
+        }
+        try {
           if (typeof window.Factions?.openPicker === "function") {
             window.Factions.openPicker();
             return true;
@@ -1639,6 +1696,21 @@
 
       case "next_move":
         return await window.StoryDelivery.openNextMove();
+
+      case "awakening":
+        try {
+          if (window.Awakening && typeof window.Awakening.open === "function") {
+            const opened = window.Awakening.open(window.Awakening.getState && window.Awakening.getState(), { resume: true, force: true });
+            if (opened) return true;
+          }
+          if (window.Awakening && typeof window.Awakening.checkState === "function") {
+            await window.Awakening.checkState({ force: true, resume: true });
+            return window.Awakening.isOpen ? !!window.Awakening.isOpen() : true;
+          }
+        } catch (err) {
+          warn("Awakening open failed", err);
+        }
+        return false;
 
       case "first_signal":
         try {

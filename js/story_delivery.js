@@ -187,7 +187,9 @@
       worldDiscovery: fs.world_discovery || nested.world_discovery || "",
       faction_selected: fs.faction_selected === true || nested.faction_selected === true,
       state: asUpper(fs.state || nested.state),
-      status: asUpper(fs.status || nested.status)
+      status: asUpper(fs.status || nested.status),
+      remainingSec: fs.remainingSec != null ? fs.remainingSec : nested.remainingSec,
+      endsAt: fs.endsAt || fs.ends_at || fs.readyAt || fs.ready_at || nested.endsAt || nested.readyAt
     };
   }
 
@@ -369,6 +371,11 @@
     });
   }
 
+  function awakeningOf(inputs) {
+    var aw = inputs && inputs.awakening && typeof inputs.awakening === "object" ? inputs.awakening : {};
+    return aw;
+  }
+
   function resolveBase(inputs) {
     inputs = inputs && typeof inputs === "object" ? inputs : {};
     var fs = firstSignalOf(inputs);
@@ -377,6 +384,27 @@
     var primary = ctaPrimary(inputs);
     var kind = ctaKindOf(primary);
     var firstSession = isFirstSession(fs, camp);
+    var awakening = awakeningOf(inputs);
+    var awakeningEligible = false;
+    try {
+      awakeningEligible = !!(global.FtueContinuity && global.FtueContinuity.isAwakeningFreshEligible(awakening, inputs.tutorial));
+    } catch (_) { awakeningEligible = false; }
+    if (awakeningEligible) {
+      return frame({
+        id: "S-AWAKENING",
+        situation: "A signal found your trail.",
+        why: "Awakening is still your current action.",
+        changed: "The origin sequence is incomplete.",
+        nextLead: "Awakening",
+        nextAction: "Continue Awakening",
+        openQuestion: "What answered back?",
+        target: { type: "open_action", action: "awakening" },
+        ctaKind: "awakening",
+        firstSession: true,
+        hideHubGoal: true,
+        goLabel: "Continue Awakening"
+      });
+    }
     var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
     if (worldHandoff && fs.worldDiscovery === "pending") {
       return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
@@ -753,12 +781,15 @@
     try { firstSignal = global.Onboarding && typeof global.Onboarding.getFirstSignal === "function" ? global.Onboarding.getFirstSignal() : null; } catch (_) {}
     var tactical = null;
     try { tactical = global.CTA && typeof global.CTA.getTacticalMissions === "function" ? global.CTA.getTacticalMissions() : null; } catch (_) {}
+    var awakening = null;
+    try { awakening = global.Awakening && typeof global.Awakening.getState === "function" ? global.Awakening.getState() : null; } catch (_) {}
     return {
       cta: ctaState,
       campaign: campaignState,
       tutorial: tutorial,
       firstSignal: firstSignal,
-      tactical: tactical
+      tactical: tactical,
+      awakening: awakening
     };
   }
 
@@ -935,6 +966,7 @@
     renderHub(scf);
     global.Missions?.refreshGuided();
     notifySubscribers(reason || "refresh");
+    try { global.FtueContinuity?.sync?.({ reason: reason || "refresh" }); } catch (_) {}
     return scf;
   }
 
