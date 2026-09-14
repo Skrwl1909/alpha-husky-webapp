@@ -263,6 +263,12 @@
   }
 
   function openFactionPicker() {
+    try {
+      if (firstSignalEnabled() && window.Oath && typeof window.Oath.checkAndOpen === "function") {
+        void window.Oath.checkAndOpen({ force: true });
+        return;
+      }
+    } catch (_) {}
     if (window.Factions?.openPicker) return window.Factions.openPicker();
     if (window.chooseFaction) return window.chooseFaction();
     if (window.Factions?.open) return window.Factions.open({ mode: "select" });
@@ -866,6 +872,7 @@
     backEl.style.display = "none";
     document.body.classList.remove("ob-lock");
     window.ScoutGuide?.refresh();
+    try { window.FtueContinuity?.onPresentationClosed?.("onboarding"); } catch (_) {}
   }
 
   let _worldDiscoveryOpen = false, _worldDiscoveryBusy = false;

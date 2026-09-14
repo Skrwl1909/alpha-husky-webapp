@@ -1392,6 +1392,8 @@
         } catch (_) {}
         try { global.maybeOpenOnboarding && global.maybeOpenOnboarding(); } catch (_) {}
       }, 80);
+    } else {
+      try { global.FtueContinuity?.onPresentationClosed?.("oath"); } catch (_) {}
     }
   }
 
@@ -1451,7 +1453,16 @@
     return API;
   }
 
-  const API = { init, open, close, checkAndOpen, preview, openPreview: preview, isOpen: () => !!S.open };
+  const API = {
+    init,
+    open,
+    close,
+    checkAndOpen,
+    preview,
+    openPreview: preview,
+    getState: () => S.state,
+    isOpen: () => !!S.open
+  };
   global.Oath = API;
   global.OATH_ASSETS = OATH_ASSETS;
 })(window);
