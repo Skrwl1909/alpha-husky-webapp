@@ -10816,6 +10816,8 @@ async function loadProfile() {
 
     // ✅ odporny picker na różne wrappery backendu
     const p = out?.profile || out?.data?.profile || out?.data || out || {};
+    window.__ahLastProfilePayload = p;
+    try { window.Callsign?.consumeProfile?.(p); } catch (_) {}
     hydrateFactionFromPayload({ profile: p, ...out });
 
     PROFILE = PROFILE || {};
@@ -12717,6 +12719,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
 <script>document.write('<script src="js/onboarding.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/callsign.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/awakening.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/oath.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/ftue_continuity.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
@@ -13243,8 +13246,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-
 
 
 
