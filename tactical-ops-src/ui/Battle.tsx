@@ -19,6 +19,15 @@ const PRESENTATION = {
   reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
 
+function readHostLevel(): number | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as Record<string, unknown>;
+  const profile = (w.__PROFILE__ || w.PROFILE || w.profileState || w.lastProfile || {}) as Record<string, unknown>;
+  const raw = profile.level ?? profile.lv ?? profile.hero_level ?? profile.heroLevel;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
 function isBuff(t: StatusType): boolean {
   return t === "ATK_UP" || t === "DEF_UP" || t === "SPD_UP" || t === "GUARD";
 }
@@ -200,7 +209,8 @@ function StatusStrip() {
   const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId) || units.find((u) => u.role === "alpha" && u.team === "ally" && !u.defeated);
   if (!unit) return null;
   const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
-  const kit = isAlpha ? [identity.skinName, identity.armorLabel, identity.weaponLabel].filter(Boolean)[0] : null;
+  const level = isAlpha ? readHostLevel() : null;
+  const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
   const atk = effectiveAtk(unit);
   const defn = effectiveDef(unit);
   return (
@@ -277,15 +287,39 @@ function ObjectiveChip() {
             : objective?.type === "BOSS"
               ? "Defeat Commander"
               : mission?.name || "Objective";
-  const timed = objective && (objective.type === "HOLD" || objective.type === "SURVIVE")
-    ? `Round ${Math.max(0, objective.progress)}/${objective.duration}`
-    : null;
+  const body =
+    objective?.type === "RECOVER"
+      ? jammed
+        ? "Even rounds only"
+        : "Reach the relay and recover"
+      : rulesText;
+  const extras = [
+    battle.directive?.supportCooldownExtra ? `Support cooldowns +${battle.directive.supportCooldownExtra}` : "",
+    battle.directive?.maxRounds ? `${Math.max(0, battle.directive.maxRounds - battle.round + 1)} rounds left` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const roundCap =
+    objective && (objective.type === "HOLD" || objective.type === "SURVIVE")
+      ? objective.duration
+      : mission?.challenge?.type === "TURN_LIMIT"
+        ? mission.challenge.limit
+        : null;
   return (
     <div className="t-obj-chip" role="status">
       <strong>{title}</strong>
-      {rulesText ? <span>{rulesText}</span> : null}
+      {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
       {mission?.challenge ? <small>OPTIONAL / {mission.challenge.label}</small> : null}
-      {timed ? <em>{timed}</em> : null}
+      {roundCap ? (
+        <div className="t-obj-rounds">
+          <em>Round {battle.round}/{roundCap}</em>
+          <span className="t-obj-dots" aria-hidden="true">
+            {Array.from({ length: Math.min(roundCap, 8) }, (_, i) => (
+              <i key={i} className={i < battle.round ? "on" : ""} />
+            ))}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -321,11 +355,8 @@ function SkillHud() {
             }}
           >
             <ActIcon name={sk?.name} />
-            <span className="row">
-              <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
-              {sk?.name ?? "—"}
-            </span>
-            <small>{sk?.desc ?? ""}</small>
+            <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
+            <span className="name">{sk?.name ?? "—"}</span>
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}
           </button>
         );
@@ -342,8 +373,8 @@ function SkillHud() {
           }}
         >
           <ActIcon name="RECOVER" />
-          <span className="row"><span className="slot">OBJ</span>RECOVER</span>
-          <small>{recoverReady ? "Complete objective · consumes action" : !recoverSignalOpen(battle) ? "Jammed / RECOVER on even rounds" : `Move within ${actor?.recoverRange || 1} cells of relay terminal`}</small>
+          <span className="slot">OBJ</span>
+          <span className="name">RECOVER</span>
         </button>
       ) : null}
     </div>
