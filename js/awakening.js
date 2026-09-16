@@ -17,10 +17,10 @@
   };
 
   const DEFAULT_CHOICES = [
-    { key: "stray", label: "Stray", desc: "A survivor found in the chain noise." },
-    { key: "broken", label: "Broken", desc: "Something damaged, but not defeated." },
-    { key: "forgotten", label: "Forgotten", desc: "A name the old world tried to erase." },
-    { key: "unchained", label: "Unchained", desc: "A signal that refused to stay buried." }
+    { key: "stray", label: "Stray", desc: "You survived without a pack." },
+    { key: "broken", label: "Broken", desc: "You were damaged, but not defeated." },
+    { key: "forgotten", label: "Forgotten", desc: "The old world stopped keeping your name." },
+    { key: "unchained", label: "Unchained", desc: "You left the chain that tried to hold you." }
   ];
 
   const ORIGIN_ICONS = {
@@ -31,40 +31,40 @@
   };
 
   const ORIGIN_LORE = {
-    stray: "You wandered so long, the silence became your only companion.",
-    broken: "The fractures still hum. Alpha heard the pain in them.",
-    forgotten: "Even memory refused to keep you. Until now.",
-    unchained: "You broke your own chains once. This time, you choose who stands beside you."
+    stray: "You kept moving without a place to return to.",
+    broken: "What happened damaged you. It did not finish you.",
+    forgotten: "The old world stopped keeping your name.",
+    unchained: "You left the chain that tried to hold you."
   };
 
   const SLIDES = [
     {
       key: "signal",
       assetKey: "signal",
-      title: "SIGNAL DETECTED",
-      body: "Something moved through the chain-waste.\nNot a wallet.\nNot a number.\nA survivor.",
+      title: "I WAS THERE",
+      body: "I wasn't always building this.\n\nI was in the same trenches as everyone else — chasing the next signal, the next project, the next chance.",
       button: "Continue"
     },
     {
       key: "trail",
       assetKey: "alphaFoundTrail",
-      title: "ALPHA FOUND YOUR TRAIL",
-      body: "You were not the first to be buried by the old world.\nBut you are still breathing.\nThe Pack is watching.",
+      title: "THE PATTERN",
+      body: "Then the pattern became impossible to ignore.\n\nHype. Promises. People put money and trust in. Builders disappeared.",
       button: "Continue"
     },
     {
       key: "origin",
       assetKey: "originMarks",
-      title: "CHOOSE YOUR ORIGIN MARK",
-      body: "Before the Pack knew your name,\nthe chain tried to define you.\nWhat answered back?",
+      title: "WHAT IT COST",
+      body: "Losing money hurt.\nLosing trust did more damage.\n\nChoose the mark you carried out of that world.",
       button: "Claim Origin",
       isOrigin: true
     },
     {
       key: "enter",
       assetKey: "enterPack",
-      title: "THE HOWL BEGINS",
-      body: "Alpha’s signal stabilizes.\nThe broken chain around you tightens, but it is not yet whole.\nNow choose whose voice will finish what was started.",
+      title: "WHY I BUILT THE PACK",
+      body: "So I stopped looking for the next thing to believe in.\n\nI started building one.\n\nThat's where the Pack began.",
       button: "Enter the Pack",
       isFinal: true
     }

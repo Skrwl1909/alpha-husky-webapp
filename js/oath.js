@@ -29,7 +29,8 @@
     {
       key: "rb",
       name: "Rogue Byte",
-      short: "Hackers of the broken chain.",
+      creed: "BREAK IN",
+      short: "If the system is broken, get inside it. Find where it failed.",
       tags: ["Glitch", "Speed", "Sabotage"],
       accent: "0,229,255",
       mark: "RB"
@@ -37,15 +38,17 @@
     {
       key: "ew",
       name: "Echo Wardens",
-      short: "Keepers of memory and lost transmissions.",
+      creed: "REMEMBER",
+      short: "What gets forgotten can happen again. Keep the record.",
       tags: ["Memory", "Defense", "Signal"],
       accent: "174,132,255",
       mark: "EW"
     },
     {
       key: "ih",
-      name: "Inner Howlers",
-      short: "Instinct, old blood and survival.",
+      name: "Inner Howl",
+      creed: "ENDURE",
+      short: "When everything starts breaking, you stay. Hold the line. Keep moving.",
       tags: ["Instinct", "Loyalty", "Survival"],
       accent: "142,255,168",
       mark: "IH"
@@ -53,7 +56,8 @@
     {
       key: "pb",
       name: "Pack Burners",
-      short: "Fire, pressure and domination.",
+      creed: "BE SEEN",
+      short: "Silence changes nothing. Make sure the Pack cannot be ignored.",
       tags: ["Fire", "Pressure", "Assault"],
       accent: "255,108,82",
       mark: "PB"
@@ -64,13 +68,6 @@
     acc[row.key] = row;
     return acc;
   }, {});
-
-  const FACTION_ECHO = {
-    rb: "A glitch whispers: Freedom is the only chain worth wearing.",
-    ew: "An ancient signal answers: We remember so you don’t have to.",
-    ih: "A low growl rises: The Pack survives. Everything else is noise.",
-    pb: "Embers crackle: Burn the old world. Build the new one from ash."
-  };
 
   const ORIGIN_LABELS = {
     stray: "Stray",
@@ -179,8 +176,9 @@
         const tagsRaw = Array.isArray(row && row.tags) ? row.tags : fallback.tags;
         return {
           key,
-          name: asText(row && row.name) || fallback.name || key.toUpperCase(),
-          short: asText(row && row.short) || fallback.short || "",
+          name: fallback.name || asText(row && row.name) || key.toUpperCase(),
+          creed: fallback.creed || "",
+          short: fallback.short || asText(row && row.short) || "",
           tags: Array.isArray(tagsRaw) ? tagsRaw.map(asText).filter(Boolean).slice(0, 4) : [],
           accent: fallback.accent || "125,211,252",
           mark: fallback.mark || key.toUpperCase(),
@@ -204,10 +202,6 @@
       card: OATH_ASSETS.cards[canon] || "",
       sigil: OATH_ASSETS.sigils[canon] || ""
     };
-  }
-
-  function factionEchoText(key) {
-    return FACTION_ECHO[normalizeFaction(key)] || "";
   }
 
   function haptic(kind) {
@@ -523,6 +517,14 @@
         color:rgba(255,255,255,.75);
         font-size:12.5px;
         line-height:1.35;
+      }
+      .oath-creed{
+        display:block;
+        margin-top:7px;
+        color:rgb(var(--oath-accent));
+        font-size:11px;
+        font-weight:950;
+        letter-spacing:.12em;
       }
       .oath-echo{
         display:block;
@@ -929,10 +931,15 @@
     scroll.innerHTML = `
       <div class="oath-hero">
         <div class="oath-hero-copy">
-          <p class="oath-opening">You were found by Alpha.<br>Now choose who you stand with.</p>
+          <p class="oath-opening">The Pack was built on a simple rule.</p>
           <div class="oath-intro">
-            The Pack is not one voice.<br>
-            Four signals fight for the future of the broken chain.
+            We build before we ask people to believe.<br><br>
+            We don't disappear when things get hard.<br><br>
+            We don't use people just to cash out.<br><br>
+            We don't erase yesterday when it gets uncomfortable.<br><br>
+            No reset button.<br>
+            What happened stays part of the record.<br><br>
+            <strong>RUG-NEVER.</strong>
           </div>
         </div>
       </div>
@@ -950,8 +957,12 @@
     setMedia("intro");
     scroll.innerHTML = `
       <div class="oath-explainer">
-        Origin is who you were before Alpha found you.<br>
-        Faction is who you stand with now.
+        The Pack survived the Meme War.<br><br>
+        But surviving didn't mean trust stayed whole.<br>
+        Trust broke again — this time inside the Pack.<br><br>
+        People reacted differently.<br>
+        So will you.<br><br>
+        <strong>WHAT DO YOU BECOME AFTER TRUST FAILS?</strong>
       </div>
       <div class="oath-grid" role="list">
         ${factions.map((faction) => `
@@ -972,11 +983,8 @@
                 <span>${esc(faction.name)}</span>
                 <span class="oath-lock">Signal locked</span>
               </span>
+              <span class="oath-creed">${esc(faction.creed)}</span>
               <span class="oath-short">${esc(faction.short)}</span>
-              <span class="oath-echo">${esc(factionEchoText(faction.key))}</span>
-              <span class="oath-tags">
-                ${faction.tags.map((tag) => `<span class="oath-tag">${esc(tag)}</span>`).join("")}
-              </span>
             </span>
           </button>
         `).join("")}

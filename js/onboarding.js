@@ -586,7 +586,7 @@
 
     let icon = "⚡";
     let heading = "FIRST SIGNAL";
-    let copy = "Your first short mission is ready. Complete it to recover a starter gear signal.";
+    let copy = "Most of the old network is broken. Some signals died. Some were abandoned. Some were never real. We don't fix all of it at once. Start with one.";
     let detail = "";
     let action = "start";
     let label = "Find FIRST SIGNAL in Missions";
@@ -618,8 +618,8 @@
       const bones = Number(progression.bones || 0);
       const strength = Number(reward?.statBonus?.strength || 0);
       icon = "🦷";
-      heading = "FIRST SIGNAL CLEAR";
-      copy = "Mission rewards secured. Your recovered Rustfang gear is ready to equip.";
+      heading = "FIRST SIGNAL COMPLETE";
+      copy = "Signal held. You did the work. You earned the reward. That's how it works here.";
       detail = `${xp > 0 && bones > 0 ? `<div class="ob-note"><strong>+${escapeHtml(xp)} EXP &middot; +${escapeHtml(bones)} Bones</strong></div>` : ""}
         <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")}</strong> &middot; ${escapeHtml(reward.rarity || "common")} &middot; ${escapeHtml(reward.slot || "fangs")}${strength > 0 ? ` &middot; +${strength} Strength` : ""}</div>`;
       action = "equip";
@@ -632,7 +632,7 @@
       const reward = state.reward || {};
       icon = "▲";
       heading = "BUILD IMPROVED";
-      copy = "FIRST SIGNAL rewards are secured and your first gear upgrade is active.";
+      copy = "What you recover matters. Use it.";
       detail = `${xp > 0 && bones > 0 ? `<div class="ob-note"><strong>+${escapeHtml(xp)} EXP &middot; +${escapeHtml(bones)} Bones</strong></div>` : ""}
         <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")} equipped</strong></div>
         <div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;

@@ -94,7 +94,7 @@
       <section class="ah-callsign-card">
         <div class="ah-callsign-kicker">First identity</div>
         <h1 id="ahCallsignTitle">Choose your callsign</h1>
-        <p>This is the name the Pack will know you by.</p>
+        <p>If you stay, this is the name the Pack will remember.</p>
         <label for="ahCallsignInput">Callsign</label>
         <input id="ahCallsignInput" data-callsign-input maxlength="20" autocomplete="nickname" autocapitalize="words" spellcheck="false">
         <div class="ah-callsign-error" data-callsign-error role="alert" hidden></div>

@@ -680,9 +680,10 @@
 
   function resolveNextMove(inputs, base) {
     if (!nextMoveEligible(inputs) || !returnReady || returnPromise) return null;
-    if (/siege_running|bloodmoon_live/.test(base.ctaKind || "")) return null;
     var foundation = nextMoveState.foundation;
-    var choice = global.FirstSessionSpine?.choice(inputs, foundation) || null;
+    var spine = global.FirstSessionSpine?.view(inputs) || null;
+    if (/siege_running|bloodmoon_live/.test(base.ctaKind || "") && !spine?.active) return null;
+    var choice = foundation ? (global.FirstSessionSpine?.choice(inputs, foundation) || null) : null;
     if (!choice && (continuityFrame(inputs, base) || base.firstSession || base.hideHubGoal)) return null;
     if (!choice && foundation && foundation.foundationStage === "solo-1" && !triedTactical(foundation)
         && global.Missions?.tacticalAccess?.(inputs)) {
@@ -710,7 +711,8 @@
     }
     if (!choice) return null;
     try { if (global.localStorage.getItem(NEXT_MOVE_DISMISSED_KEY) === choice.key) return null; } catch (_) {}
-    return frame({ id: "S-NEXT-MOVE", nextMove: choice, situation: choice.action, why: choice.reason,
+    return frame({ id: "S-NEXT-MOVE", nextMove: choice,
+      returnHook: !!(foundation && spine?.active && choice.key === "tactical-first-attempt"), situation: choice.action, why: choice.reason,
       nextAction: choice.action, goLabel: choice.destination === "tactical" ? "OPEN" : "GO",
       ctaKind: "next_move", target: { type: "open_action", action: "next_move" } });
   }
@@ -739,6 +741,7 @@
     nextMoveState.mission = null;
     await Promise.allSettled([
       Promise.resolve().then(() => api("/webapp/missions/state", {})).then(out => observeNextMove("/webapp/missions/state", out)),
+      Promise.resolve().then(() => api("/webapp/tactical-foundation/state", {})).then(out => observeNextMove("/webapp/tactical-foundation/state", out)),
       global.ContextualDiscovery?.refreshNextMoveAvailability?.()
     ]);
   }
@@ -887,8 +890,15 @@
       return scf;
     }
     if (scf.nextMove) {
+      var returnHook = scf.returnHook
+        ? '<div class="ahs-story-kicker">WORLD OPEN</div>'
+          + '<div class="ahs-story-situation">You know why the Pack exists. You\'ve seen what this world became.</div>'
+          + '<div class="ahs-story-next">From here, you choose where to move. What you do next becomes part of the record.</div>'
+          + '<div class="ahs-story-next">One signal is back. The network is still broken. Your next objective is already waiting. The Pack keeps moving.</div>'
+          + '<div class="ahs-story-kicker" style="margin-top:12px">NEXT OBJECTIVE</div>'
+        : '<div class="ahs-story-kicker">NEXT MOVE</div>';
       root.innerHTML = '<div class="ahs-story-card"><div class="ahs-story-pad">'
-        + '<div class="ahs-story-kicker">NEXT MOVE</div><div class="ahs-story-situation">' + esc(scf.situation) + '</div>'
+        + returnHook + '<div class="ahs-story-situation">' + esc(scf.situation) + '</div>'
         + '<div class="ahs-story-next">' + esc(scf.why) + '</div>'
         + '<button type="button" class="ahs-story-go" data-next-move-go>' + esc(scf.goLabel) + '</button>'
         + '<button type="button" class="ahs-story-go" data-next-move-dismiss>Not now</button>'

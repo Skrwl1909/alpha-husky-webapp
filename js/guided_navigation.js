@@ -46,8 +46,9 @@
             type: "success",
             title: "WORLD OPEN",
             message: dismissed
-              ? "Guidance ended. The Map and normal navigation are now yours."
-              : "Guided route complete. The Map and normal navigation are now yours."
+              ? "Guidance ended. You know why the Pack exists. You've seen what this world became."
+              : "You know why the Pack exists. You've seen what this world became.",
+            meta: "From here, you choose where to move. What you do next becomes part of the record."
           });
         }
       }
@@ -74,7 +75,9 @@
     notice.hidden = !next;
     if (next && notice.dataset.destination !== id) {
       notice.dataset.destination = id;
-      notice.querySelector("span").textContent = id === "bloodmoon" ? "FIND BLOOD MOON TOWER" : "FIND TACTICAL OPS";
+      notice.querySelector("span").textContent = id === "bloodmoon"
+        ? "The Pack survived the Meme War. Then I reached the Edge. I found the Oracle. The Rewrite began. Trust inside the Pack started breaking. What followed became known as: THE FRACTURE.\n\nFIND BLOOD MOON TOWER"
+        : "FIND TACTICAL OPS";
       notice.querySelector("button").onclick = () => dismiss(id);
     }
   }
@@ -115,7 +118,7 @@
   function reset() { saved = {}; paint(null); try { global.localStorage.removeItem(KEY); } catch (_) {} }
   function init() {
     const style = document.createElement("style");
-    style.textContent = '.ah-guided-target{outline:2px solid #9fd6ff!important;outline-offset:2px!important}#ahGuidedNavigation{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:2147483646;max-width:90vw;padding:8px 12px;border-radius:10px;background:#08121df0;color:#eef8ff;font:700 12px system-ui;pointer-events:none}#ahGuidedNavigation[hidden]{display:none}#ahGuidedNavigation button{pointer-events:auto;min-height:44px;margin-left:12px;background:transparent;border:0;color:#bdd7e8}';
+    style.textContent = '.ah-guided-target{outline:2px solid #9fd6ff!important;outline-offset:2px!important}#ahGuidedNavigation{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:2147483646;display:flex;align-items:flex-start;gap:10px;width:min(520px,90vw);padding:10px 12px;border-radius:10px;background:#08121df0;color:#eef8ff;font:700 12px system-ui;pointer-events:none}#ahGuidedNavigation[hidden]{display:none}#ahGuidedNavigation span{display:block;white-space:pre-line;line-height:1.42}#ahGuidedNavigation button{flex:0 0 auto;pointer-events:auto;min-height:44px;margin-left:auto;background:transparent;border:0;color:#bdd7e8}';
     document.head.appendChild(style);
     notice = document.createElement("aside"); notice.id = "ahGuidedNavigation"; notice.hidden = true;
     notice.innerHTML = '<span role="status"></span><button type="button">Not now</button>';
