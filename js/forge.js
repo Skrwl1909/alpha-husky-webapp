@@ -321,13 +321,14 @@
   }
 
   function matIcon(asset) {
+    const svgOpen = `<svg class="ah-mat-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:18px;height:18px;max-width:18px;max-height:18px;min-width:0;min-height:0;display:block;overflow:hidden;flex:none">`;
     if (asset === "bones") {
-      return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.2 8.1c-.9-1.8.1-3.9 2-4.4 1.2-.3 2.4.2 3.1 1.2L12 8.4l2.7-3.5c.7-1 1.9-1.5 3.1-1.2 1.9.5 2.9 2.6 2 4.4l-2.4 4.7 2.4 4.7c.9 1.8-.1 3.9-2 4.4-1.2.3-2.4-.2-3.1-1.2L12 15.6l-2.7 3.5c-.7 1-1.9 1.5-3.1 1.2-1.9-.5-2.9-2.6-2-4.4l2.4-4.7-2.4-4.7z"/></svg>`;
+      return `${svgOpen}<path fill="currentColor" d="M4.2 8.1c-.9-1.8.1-3.9 2-4.4 1.2-.3 2.4.2 3.1 1.2L12 8.4l2.7-3.5c.7-1 1.9-1.5 3.1-1.2 1.9.5 2.9 2.6 2 4.4l-2.4 4.7 2.4 4.7c.9 1.8-.1 3.9-2 4.4-1.2.3-2.4-.2-3.1-1.2L12 15.6l-2.7 3.5c-.7 1-1.9 1.5-3.1 1.2-1.9-.5-2.9-2.6-2-4.4l2.4-4.7-2.4-4.7z"/></svg>`;
     }
     if (asset === "scrap") {
-      return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 16.5 12 4l8 12.5H4zm3.2-1.5h9.6L12 8.2 7.2 15z"/><path fill="currentColor" d="M7 18h10v2H7z"/></svg>`;
+      return `${svgOpen}<path fill="currentColor" d="M4 16.5 12 4l8 12.5H4zm3.2-1.5h9.6L12 8.2 7.2 15z"/><path fill="currentColor" d="M7 18h10v2H7z"/></svg>`;
     }
-    return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.4 18.4 12 12 21.6 5.6 12 12 2.4zm0 3.5L8.2 12 12 18.1 15.8 12 12 5.9z"/></svg>`;
+    return `${svgOpen}<path fill="currentColor" d="M12 2.4 18.4 12 12 21.6 5.6 12 12 2.4zm0 3.5L8.2 12 12 18.1 15.8 12 12 5.9z"/></svg>`;
   }
 
   function mountItemIcon(node, it, fallbackSize) {
@@ -363,11 +364,11 @@
   }
 
   function ensureStyles() {
-    if (document.getElementById("ah-forge-styles")) return;
-
-    const s = el("style");
-    s.id = "ah-forge-styles";
-    s.textContent = `
+    let s = document.getElementById("ah-forge-styles");
+    if (!s) {
+      s = document.createElement("style");
+      s.id = "ah-forge-styles";
+      s.textContent = `
       .ah-forge-backdrop{
         position:fixed; inset:0; z-index:2147483640;
         display:flex; align-items:stretch; justify-content:center;
@@ -437,6 +438,7 @@
         border-radius:10px;
         padding:0 6px 0 2px;
         font-family:var(--ah-font);
+      }
       .ah-forge-back span{ white-space:nowrap; }
       .ah-forge-back:hover, .ah-forge-close:hover{ background:rgba(255,255,255,.05); }
       .ah-head-copy{ min-width:0; flex:1; padding-top:2px; }
@@ -524,11 +526,22 @@
         display:flex; align-items:center; gap:6px; min-width:0;
       }
       .ah-res-ico{
-        width:22px; height:22px; flex:0 0 auto;
+        width:22px; height:22px;
+        min-width:22px; min-height:22px;
+        max-width:22px; max-height:22px;
+        flex:0 0 22px;
+        overflow:hidden;
         color:var(--ah-amber);
         display:grid; place-items:center;
       }
-      .ah-mat-svg{ width:18px; height:18px; display:block; }
+      .ah-mat-svg{
+        width:18px !important; height:18px !important;
+        max-width:18px !important; max-height:18px !important;
+        min-width:0 !important; min-height:0 !important;
+        display:block !important;
+        overflow:hidden;
+        flex:0 0 18px;
+      }
       .ah-res-copy{ min-width:0; display:flex; flex-direction:column; line-height:1.05; }
       .ah-res-label{
         font-size:9px; font-weight:700; letter-spacing:.1em;
@@ -576,7 +589,8 @@
         border:1px solid rgba(255,255,255,.06);
       }
       .ah-gear-tile .ah-ico img, .ah-stage-ico img, .ah-ico img{
-        width:100%; height:100%; object-fit:contain; display:block;
+        width:100%; height:100%; max-width:100%; max-height:100%;
+        object-fit:contain; display:block;
       }
       .ah-gear-tile span{
         font-size:10px; font-weight:700; letter-spacing:.04em;
@@ -617,7 +631,9 @@
       }
       .ah-stage-ico{
         position:relative;
-        width:min(100%, 140px); aspect-ratio:1;
+        width:min(100%, 140px); height:auto; aspect-ratio:1;
+        max-width:140px; max-height:140px;
+        overflow:hidden;
         display:grid; place-items:center;
         filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));
       }
@@ -720,7 +736,7 @@
         display:inline-flex; align-items:center; justify-content:center; gap:8px;
         box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 10px 22px rgba(180,90,10,.28);
       }
-      .ah-upgrade-cta svg{ width:16px; height:16px; }
+      .ah-upgrade-cta svg{ width:16px; height:16px; max-width:16px; max-height:16px; }
       .ah-upgrade-cta:hover:not(:disabled){ filter:brightness(1.05); }
       .ah-upgrade-cta:disabled{
         opacity:.5; cursor:default; filter:saturate(.65);
@@ -827,6 +843,20 @@
       }
       .ah-divider{ height:1px; background:rgba(255,255,255,.08); margin:10px 0; }
       #forge-error{ margin-top:12px; font-size:12px; white-space:pre-wrap; }
+      #ahForgeBack svg{
+        max-width:18px; max-height:18px; overflow:hidden;
+        min-width:0; min-height:0; flex:0 0 auto;
+      }
+      #ahForgeBack .ah-forge-tab svg{ max-width:14px; max-height:14px; width:14px; height:14px; }
+      #ahForgeBack .ah-upgrade-cta svg{ max-width:16px; max-height:16px; width:16px; height:16px; }
+      #ahForgeBack .ah-ico svg, #ahForgeBack .ah-stage-ico svg,
+      #ahForgeBack .ah-ico img, #ahForgeBack .ah-stage-ico img{
+        width:100%; height:100%; max-width:100%; max-height:100%;
+        object-fit:contain; display:block;
+      }
+      #ahForgeBack img{
+        max-width:100%; max-height:100%; object-fit:contain; display:block;
+      }
       @media (max-width:360px){
         .ah-forge-survivor{ display:none; }
         .ah-stage{ grid-template-columns:38% minmax(0,1fr); gap:8px; padding:8px; }
@@ -836,7 +866,10 @@
         .ah-forge *{ transition:none !important; animation:none !important; }
       }
     `;
-    document.head.appendChild(s);
+      (document.body || document.head).appendChild(s);
+    } else if (s.parentNode !== document.body && document.body) {
+      document.body.appendChild(s);
+    }
   }
 
   function toast(msg) {
@@ -1226,7 +1259,7 @@
         <div class="ah-cost-grid">
           ${costRows.map((row) => `
             <div class="ah-cost-cell ${row.ok ? "is-ok" : "is-missing"}">
-              <div class="lab">${matIcon(row.asset)} ${esc(row.label)}</div>
+              <div class="lab"><span class="ah-res-ico">${matIcon(row.asset)}</span> ${esc(row.label)}</div>
               <div class="val">${esc(fmtNum(row.need))}</div>
             </div>
           `).join("")}
