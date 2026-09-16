@@ -574,8 +574,10 @@
   display: flex;
   justify-content: center;
   padding: 0;
-  pointer-events: auto;
+  pointer-events: none;
   max-width: min(28vw, 140px);
+  align-self: start;
+  height: max-content;
 }
 
 #tacticalOpsRoot .t-order {
@@ -1125,9 +1127,12 @@
   background: #080c11f2;
   border: 1px solid #3ec6ff40;
   border-radius: 8px;
-  pointer-events: auto;
+  pointer-events: none;
   min-height: 0;
   box-shadow: 0 8px 22px #00000080;
+  align-self: start;
+  justify-self: start;
+  height: max-content;
 }
 
 #tacticalOpsRoot .t-status.enemy {
@@ -1441,6 +1446,9 @@
   box-shadow: 0 8px 22px #00000080;
   pointer-events: none;
   min-width: 0;
+  align-self: start;
+  justify-self: end;
+  height: max-content;
 }
 
 #tacticalOpsRoot .t-obj-chip strong {
@@ -1530,6 +1538,16 @@
   padding: 0.7rem 1.3rem;
   font-size: max(1.1rem, min(4vw, 2.1rem));
   font-weight: 700;
+}
+
+/* Overlay HUD is painted on the field. pointer-events is not inherited, so
+   children would otherwise steal enemy target taps. */
+#tacticalOpsRoot .t-status *,
+#tacticalOpsRoot .t-obj-chip *,
+#tacticalOpsRoot .t-order-wrap *,
+#tacticalOpsRoot .t-ticker *,
+#tacticalOpsRoot .t-banner * {
+  pointer-events: none;
 }
 
 /* ---- COMPACT (phones + narrow Mini App) ---- */
