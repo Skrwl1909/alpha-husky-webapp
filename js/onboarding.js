@@ -891,7 +891,15 @@
     if (focusedState().world_discovery !== "pending") { close(false); return false; }
     _worldDiscoveryOpen = false;
     close(false);
-    return window.GuidedNavigation?.start("bloodmoon") === true;
+    const started = window.GuidedNavigation?.start("bloodmoon") === true;
+    if (!started) return false;
+    try {
+      if (typeof window.showSection === "function") await window.showSection("map");
+    } catch (e) {
+      log("world discovery map route failed", e);
+    }
+    window.GuidedNavigation?.refresh?.();
+    return true;
   }
 
   async function finishWorldDiscovery() {

@@ -39,6 +39,17 @@
         await global.Onboarding?.refreshContinuity?.();
         global.StoryDelivery?.refreshHub?.("guided_navigation_complete");
         void global.CTA?.refresh?.();
+        if (!saved.bloodmoon?.announced) {
+          const dismissed = saved.bloodmoon?.status === "dismissed";
+          saved.bloodmoon = { ...saved.bloodmoon, announced: true }; persist();
+          global.AlphaToast?.show?.({
+            type: "success",
+            title: "WORLD OPEN",
+            message: dismissed
+              ? "Guidance ended. The Map and normal navigation are now yours."
+              : "Guided route complete. The Map and normal navigation are now yours."
+          });
+        }
       }
     } catch (_) { /* Persisted completion is retried on the next user interaction/reload. */ }
     finally { syncing = false; }
