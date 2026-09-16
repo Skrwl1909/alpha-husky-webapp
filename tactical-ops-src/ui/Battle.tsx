@@ -1,7 +1,7 @@
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { useMemo } from "react";
-import { Volume2, VolumeX } from "lucide-react";
+import { Axe, AudioLines, ChevronsRight, PawPrint, Plus, Slash, Swords, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
@@ -19,6 +19,15 @@ const PRESENTATION = {
   reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
 
+function readHostLevel(): number | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as Record<string, unknown>;
+  const profile = (w.__PROFILE__ || w.PROFILE || w.profileState || w.lastProfile || {}) as Record<string, unknown>;
+  const raw = profile.level ?? profile.lv ?? profile.hero_level ?? profile.heroLevel;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
 function isBuff(t: StatusType): boolean {
   return t === "ATK_UP" || t === "DEF_UP" || t === "SPD_UP" || t === "GUARD";
 }
@@ -30,6 +39,22 @@ function roleClass(unit: CombatUnit): string {
   if (unit.role === "ranged" || unit.role === "skirmisher") return "skirmisher";
   if (unit.role === "support") return "support";
   return "";
+}
+
+function ActIcon({ name }: { name?: string }) {
+  const n = (name || "").toUpperCase();
+  const props = { className: "t-act-svg", "aria-hidden": true as const };
+  if (n === "STRIKE" || n === "BITE" || n === "THRUST") return <Slash {...props} />;
+  if (n === "REND" || n === "LUNGE" || n === "HAMSTRING") return <Axe {...props} />;
+  if (n === "HOWL") return <AudioLines {...props} />;
+  if (n === "RECOVER") return <Plus {...props} />;
+  return <Swords {...props} />;
+}
+
+function formatMod(label: string, effective: number, base: number): string {
+  const delta = effective - base;
+  if (delta === 0) return `${label} ${effective}`;
+  return `${label} ${delta > 0 ? "+" : ""}${delta}`;
 }
 
 function Ring({ selected, guarding }: { selected: boolean; guarding: boolean }) {
@@ -179,15 +204,28 @@ function StatusStrip() {
   const inspectId = useBattleStore((s) => s.battle.inspectId);
   const activeId = useBattleStore((s) => s.battle.activeId);
   const units = useBattleStore((s) => s.battle.units);
-  const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId);
-  if (!unit) {
-    return <aside className="t-status t-status-empty" aria-hidden="true" />;
-  }
+  const identity = useBattleStore((s) => s.identity);
+  const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
+  const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId) || units.find((u) => u.role === "alpha" && u.team === "ally" && !u.defeated);
+  if (!unit) return null;
+  const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
+  const level = isAlpha ? readHostLevel() : null;
+  const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
+  const atk = effectiveAtk(unit);
+  const defn = effectiveDef(unit);
   return (
-    <aside className={`t-status ${unit.team}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
+    <aside className={`t-status ${unit.team}${isAlpha ? " is-alpha" : ""}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
       <img src={unit.portrait || unit.sprite} alt="" />
       <div className="t-status-main">
-        <div className="t-status-name">{unit.name}</div>
+        <div className="t-status-head">
+          <div className="t-status-name">{unit.name}</div>
+          {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
+        </div>
+        {kit ? <div className="t-status-kit">{kit}</div> : null}
+        <div className="t-status-mods">
+          <span>{formatMod("ATK", atk, unit.atk)}</span>
+          <span>{formatMod("DEF", defn, unit.def)}</span>
+        </div>
         <div className="t-hp">
           <div className="t-hp-bar">
             <i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} />
@@ -209,11 +247,11 @@ function StatusStrip() {
       <dl className="t-status-stats">
         <div>
           <dt>ATK</dt>
-          <dd>{effectiveAtk(unit)}</dd>
+          <dd>{atk}</dd>
         </div>
         <div>
           <dt>DEF</dt>
-          <dd>{effectiveDef(unit)}</dd>
+          <dd>{defn}</dd>
         </div>
         <div>
           <dt>SPD</dt>
@@ -228,6 +266,64 @@ function StatusStrip() {
   );
 }
 
+function ObjectiveChip() {
+  const battle = useBattleStore((s) => s.battle);
+  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const rulesText = missionHud(battle);
+  const objective = battle.objective;
+  if (!rulesText && !mission?.challenge && !objective) return null;
+  const jammed = objective?.type === "RECOVER" && !recoverSignalOpen(battle);
+  const title =
+    objective?.type === "RECOVER"
+      ? jammed
+        ? "Recover — Signal Jammed"
+        : "Recover — Signal Open"
+      : objective?.type === "SURVIVE"
+        ? "Survive"
+        : objective?.type === "HOLD"
+          ? "Hold"
+          : objective?.type === "INTERCEPT"
+            ? "Intercept"
+            : objective?.type === "BOSS"
+              ? "Defeat Commander"
+              : mission?.name || "Objective";
+  const body =
+    objective?.type === "RECOVER"
+      ? jammed
+        ? "Even rounds only"
+        : "Reach the relay and recover"
+      : rulesText;
+  const extras = [
+    battle.directive?.supportCooldownExtra ? `Support cooldowns +${battle.directive.supportCooldownExtra}` : "",
+    battle.directive?.maxRounds ? `${Math.max(0, battle.directive.maxRounds - battle.round + 1)} rounds left` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const roundCap =
+    objective && (objective.type === "HOLD" || objective.type === "SURVIVE")
+      ? objective.duration
+      : mission?.challenge?.type === "TURN_LIMIT"
+        ? mission.challenge.limit
+        : null;
+  return (
+    <div className="t-obj-chip" role="status">
+      <strong>{title}</strong>
+      {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
+      {mission?.challenge ? <small>OPTIONAL / {mission.challenge.label}</small> : null}
+      {roundCap ? (
+        <div className="t-obj-rounds">
+          <em>Round {battle.round}/{roundCap}</em>
+          <span className="t-obj-dots" aria-hidden="true">
+            {Array.from({ length: Math.min(roundCap, 8) }, (_, i) => (
+              <i key={i} className={i < battle.round ? "on" : ""} />
+            ))}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SkillHud() {
   const battle = useBattleStore((s) => s.battle);
   const busy = useBattleStore((s) => s.busy);
@@ -239,7 +335,7 @@ function SkillHud() {
   const recoveryMission = battle.objective?.type === "RECOVER" && !battle.objective.completed;
   const recoverReady = canRecover(battle);
   return (
-    <div className="t-actions">
+    <div className={`t-actions${recoveryMission ? " has-obj" : ""}`}>
       {([0, 1, 2] as const).map((i) => {
         const sk = skills[i];
         const on = battle.actionSkillId && sk && battle.actionSkillId === sk.id;
@@ -250,25 +346,35 @@ function SkillHud() {
             type="button"
             className={`t-act ${on ? "on" : ""} ${cooling ? "cooling" : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
+            aria-pressed={!!on}
+            aria-label={sk ? `${sk.slot} ${sk.name}. ${sk.desc}` : `Empty slot A${i + 1}`}
             onClick={() => {
               if (!sk) return;
               unlockAudio();
               selectSkill(sk.id);
             }}
           >
-            <span className="row">
-              <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
-              {sk?.name ?? "—"}
-            </span>
-            <small>{sk?.desc ?? ""}</small>
+            <ActIcon name={sk?.name} />
+            <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
+            <span className="name">{sk?.name ?? "—"}</span>
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}
           </button>
         );
       })}
       {recoveryMission ? (
-        <button type="button" className={`t-act ${recoverReady ? "on" : "cooling"}`} disabled={!allyTurn || !recoverReady} onClick={() => { unlockAudio(); selectRecover(); }}>
-          <span className="row"><span className="slot">OBJ</span>RECOVER</span>
-          <small>{recoverReady ? "Complete objective · consumes action" : !recoverSignalOpen(battle) ? "Jammed / RECOVER on even rounds" : `Move within ${actor?.recoverRange || 1} cells of relay terminal`}</small>
+        <button
+          type="button"
+          className={`t-act t-act-obj ${recoverReady ? "on" : "cooling"}`}
+          disabled={!allyTurn || !recoverReady}
+          aria-label={recoverReady ? "Recover. Complete objective, consumes action." : "Recover unavailable"}
+          onClick={() => {
+            unlockAudio();
+            selectRecover();
+          }}
+        >
+          <ActIcon name="RECOVER" />
+          <span className="slot">OBJ</span>
+          <span className="name">RECOVER</span>
         </button>
       ) : null}
     </div>
@@ -295,7 +401,6 @@ export function BattleScreen() {
   const cancel = useBattleStore((s) => s.cancel);
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
-  const rulesText = useBattleStore((s) => missionHud(s.battle));
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
@@ -311,15 +416,16 @@ export function BattleScreen() {
   const impact = units.find((u) => u.id === impactId && !u.defeated);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
   const phaseLabel = actor?.team === "enemy" ? "Enemy act" : "Your act";
+  const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
 
   return (
     <div className="t-battle">
       <header className="t-top">
         <div className="t-brand">
-          <img src="/images/tactical_ops/alpha-portrait.jpg" alt="" />
           <div>
-            <h1 className="t-title">Alpha Husky</h1>
-            <p>Tactical Ops</p>
+            <h1 className="t-title">
+              Alpha Husky <span className="t-brand-sep">//</span> Tactical Ops
+            </h1>
           </div>
         </div>
         <div className="t-turn">
@@ -329,17 +435,14 @@ export function BattleScreen() {
             {actor ? ` · ${actor.name}` : ""}
           </span>
         </div>
-        <div className="t-obj">
-          {mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name}
-          <small>{objective?.type === "INTERCEPT" ? "STOP THE SIGNAL COURIER" : objective?.type === "HOLD" ? "CONTROL THE RELAY" : objective?.type === "SURVIVE" ? "KEEP THE PACK STANDING" : objective?.type === "RECOVER" ? "RECOVER THE SIGNAL" : objective?.type === "BOSS" ? "DEFEAT SIGNAL COMMANDER" : "Secure sector"}</small>
-        </div>
+        <div className="t-obj">{activityLabel}</div>
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />
-        {rulesText || mission?.challenge ? <div className="t-field-rules" role="status">{rulesText}{mission?.challenge ? <small style={{ display: "block" }}>OPTIONAL / {mission.challenge.label}</small> : null}</div> : null}
       </div>
+      <ObjectiveChip />
       {ticker ? <div className="t-ticker">{ticker}</div> : null}
-      {!rulesText && reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker" style={{ top: "4.8rem", color: "var(--t-enemy)" }}>ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
+      {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker t-ticker-warn">ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
         <div
           className="t-field"
@@ -457,6 +560,7 @@ export function BattleScreen() {
             skipTurn();
           }}
         >
+          <ChevronsRight className="t-act-svg" aria-hidden="true" />
           Skip
         </button>
       </footer>

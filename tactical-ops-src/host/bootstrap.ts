@@ -113,7 +113,7 @@ function ensureBattlefieldGeometry(root: HTMLElement, hostW: number, hostH: numb
     const n = root.querySelector(sel) as HTMLElement | null;
     return n ? Math.round(n.getBoundingClientRect().height) : 0;
   };
-  const chrome = measure(".t-top") + measure(".t-order-wrap") + measure(".t-status") + measure(".t-dock");
+  const chrome = measure(".t-top") + measure(".t-dock");
   const available =
     layout === "wide" ? Math.max(160, hostH) : Math.max(160, hostH - chrome);
   root.style.setProperty("--tops-field-h", `${available}px`);
