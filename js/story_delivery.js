@@ -670,6 +670,33 @@
       || (state.foundationStage && state.foundationStage !== "solo-1")));
   }
 
+  function isMandatoryTrainingStage(stage) {
+    return stage === "solo-1" || stage === "solo-2";
+  }
+
+  function trainingObjective(foundation, inputs) {
+    if (!foundation || !isMandatoryTrainingStage(foundation.foundationStage)) return null;
+    if (!global.Missions?.tacticalAccess?.(inputs)) return null;
+    if (foundation.foundationStage === "solo-1" && !triedTactical(foundation)) {
+      return { key: "tactical-first-attempt", action: global.GuidedNavigation?.terminal("tactical") ? "Try Tactical Ops" : "FIND TACTICAL OPS", reason: "Lead your squad in turn-based combat.", destination: "tactical", target: { type: "open_action", action: "next_move" } };
+    }
+    if (foundation.activeRunId) {
+      return { key: "tactical-run:" + foundation.activeRunId, action: "Continue Tactical Ops", reason: foundation.foundationStage === "solo-2" ? "Complete the second Tactical drill." : "Lead your squad in turn-based combat.", destination: "tactical" };
+    }
+    return { key: "first-session-tactical-run", action: "Continue Tactical Ops", reason: foundation.foundationStage === "solo-2" ? "Complete the second Tactical drill." : "Lead your squad in turn-based combat.", destination: "tactical" };
+  }
+
+  function realTacticalObjective(foundation, inputs) {
+    if (!foundation || foundation.foundationStage !== "completed") return null;
+    if (!global.Missions?.tacticalAccess?.(inputs)) return null;
+    var tacticalRun = foundation.activeRunId || foundation.fieldOps?.activeMissionRun?.runId;
+    if (!tacticalRun && foundation.operations) {
+      Object.values(foundation.operations).some(function (op) { tacticalRun = op && op.activeMissionRun && op.activeMissionRun.runId; return !!tacticalRun; });
+    }
+    if (!tacticalRun) return null;
+    return { key: "tactical-run:" + tacticalRun, action: "Continue Tactical Ops", reason: "Your squad has an unfinished attempt.", destination: "tactical" };
+  }
+
   function nextMoveEligible(inputs) {
     var fs = firstSignalOf(inputs), camp = campaignOf(inputs);
     if (fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery) return fs.worldDiscovery === "done";
@@ -684,18 +711,11 @@
     var spine = global.FirstSessionSpine?.view(inputs) || null;
     if (/siege_running|bloodmoon_live/.test(base.ctaKind || "") && !spine?.active) return null;
     var choice = foundation ? (global.FirstSessionSpine?.choice(inputs, foundation) || null) : null;
+    spine = global.FirstSessionSpine?.view(inputs) || spine;
     if (!choice && (continuityFrame(inputs, base) || base.firstSession || base.hideHubGoal)) return null;
-    if (!choice && foundation && foundation.foundationStage === "solo-1" && !triedTactical(foundation)
-        && global.Missions?.tacticalAccess?.(inputs)) {
-      choice = { key: "tactical-first-attempt", action: global.GuidedNavigation?.terminal("tactical") ? "Try Tactical Ops" : "FIND TACTICAL OPS", reason: "Lead your squad in turn-based combat.", destination: "tactical", target: { type: "open_action", action: "next_move" } };
-    } else if (!choice) {
-      var tacticalRun = foundation?.activeRunId || foundation?.fieldOps?.activeMissionRun?.runId;
-      if (!tacticalRun && foundation?.operations) {
-        Object.values(foundation.operations).some(op => { tacticalRun = op?.activeMissionRun?.runId; return !!tacticalRun; });
-      }
-      if (tacticalRun && global.Missions?.tacticalAccess?.(inputs)) choice = {
-        key: "tactical-run:" + tacticalRun, action: "Continue Tactical Ops", reason: "Your squad has an unfinished attempt.", destination: "tactical"
-      };
+    if (!choice) choice = trainingObjective(foundation, inputs);
+    if (!choice) {
+      choice = realTacticalObjective(foundation, inputs);
       var mission = global.Missions?.nextMoveObjective?.(nextMoveState.mission);
       if (!choice && mission) choice = { ...mission, destination: "mission", target: { type: "missions" } };
       var primary = ctaPrimary(inputs), kind = ctaKindOf(primary);
@@ -709,10 +729,15 @@
         else if (useful.skin) choice = { key: "skins", action: "Choose your look", reason: "You own another skin you can equip.", destination: "skins" };
       }
     }
-    if (!choice) return null;
+    if (!choice) {
+      if (spine && spine.graduationHook) global.FirstSessionSpine?.acknowledgeGraduation?.();
+      return null;
+    }
     try { if (global.localStorage.getItem(NEXT_MOVE_DISMISSED_KEY) === choice.key) return null; } catch (_) {}
     return frame({ id: "S-NEXT-MOVE", nextMove: choice,
-      returnHook: !!(foundation && spine?.active && choice.key === "tactical-first-attempt"), situation: choice.action, why: choice.reason,
+      returnHook: !!(foundation && spine?.active && choice.key === "tactical-first-attempt"),
+      graduationHook: !!(spine && spine.graduationHook),
+      situation: choice.action, why: choice.reason,
       nextAction: choice.action, goLabel: choice.destination === "tactical" ? "OPEN" : "GO",
       ctaKind: "next_move", target: { type: "open_action", action: "next_move" } });
   }
@@ -766,7 +791,7 @@
     var current = resolve(gatherInputs()), choice = current.nextMove;
     if (!choice || (expectedKey && expectedKey !== choice.key)) return false;
     if (choice.destination === "tactical") {
-      if (choice.key === "tactical-first-attempt" && !global.GuidedNavigation?.terminal("tactical")) return global.GuidedNavigation?.start("tactical") === true;
+      if (choice.key === "tactical-first-attempt" && !global.GuidedNavigation?.terminal("tactical") && global.GuidedNavigation?.start("tactical") === true) return true;
       return await global.Missions.openTacticalOps();
     }
     if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
@@ -896,6 +921,11 @@
           + '<div class="ahs-story-next">From here, you choose where to move. What you do next becomes part of the record.</div>'
           + '<div class="ahs-story-next">One signal is back. The network is still broken. Your next objective is already waiting. The Pack keeps moving.</div>'
           + '<div class="ahs-story-kicker" style="margin-top:12px">NEXT OBJECTIVE</div>'
+        : scf.graduationHook
+          ? '<div class="ahs-story-kicker">TACTICAL TRAINING COMPLETE</div>'
+            + '<div class="ahs-story-situation">You know the basics.</div>'
+            + '<div class="ahs-story-next">The rest is yours to learn in the field.</div>'
+            + '<div class="ahs-story-kicker" style="margin-top:12px">NEXT OBJECTIVE</div>'
         : '<div class="ahs-story-kicker">NEXT MOVE</div>';
       root.innerHTML = '<div class="ahs-story-card"><div class="ahs-story-pad">'
         + returnHook + '<div class="ahs-story-situation">' + esc(scf.situation) + '</div>'
@@ -903,6 +933,9 @@
         + '<button type="button" class="ahs-story-go" data-next-move-go>' + esc(scf.goLabel) + '</button>'
         + '<button type="button" class="ahs-story-go" data-next-move-dismiss>Not now</button>'
         + '<small role="status" data-next-move-status></small></div></div>';
+      if (scf.graduationHook) {
+        try { global.FirstSessionSpine?.acknowledgeGraduation?.(); } catch (_) {}
+      }
       var nextButton = root.querySelector("[data-next-move-go]");
       nextButton.onclick = async function () {
         nextButton.disabled = true;

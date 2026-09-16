@@ -2,6 +2,7 @@
   "use strict";
   const KEY = "ah.ftue.firstSessionSpine.v1";
   const PROFILE_KEY = KEY + ".profile";
+  const TRAINING_STAGES = ["solo-1", "solo-2"];
   let profile = "", saved = {}, foundation = null;
   try { profile = global.localStorage.getItem(PROFILE_KEY) === "devFresh" ? "devFresh" : ""; } catch (_) {}
   const storageKey = () => KEY + (profile ? ".devFresh" : "");
@@ -11,13 +12,33 @@
   function inputs() { return global.StoryDelivery?.gatherInputs?.() || {}; }
   function signal(input) { return input?.firstSignal || input?.tutorial?.first_signal || {}; }
   function notify() { listeners.forEach(fn => fn()); global.StoryDelivery?.refreshHub?.("first_session_spine"); }
+  function trainingStage(stage) { return TRAINING_STAGES.includes(String(stage || "")); }
+  function graduated(canonical = foundation) {
+    return !!(canonical && canonical.foundationStage && !trainingStage(canonical.foundationStage));
+  }
+  function announceGraduation() {
+    if (saved.graduationAnnounced) return;
+    saved.graduationAnnounced = true;
+    persist();
+    try {
+      global.AlphaToast?.show?.({
+        type: "success",
+        title: "TACTICAL TRAINING COMPLETE",
+        message: "You know the basics.",
+        meta: "The rest is yours to learn in the field."
+      });
+    } catch (_) {}
+  }
   function milestones(input = inputs()) {
     const fs = signal(input), nav = global.GuidedNavigation?.state?.() || {};
     // COMPLETED is owned by the successful manual reward-equip transaction.
     const a = fs.state === "COMPLETED", b = a && fs.completion?.completed !== false;
     const c = fs.world_discovery === "done" || !!nav.bloodmoon?.reached;
-    const d = !!nav.tactical?.reached;
-    const e = !!saved.result?.confirmed, f = e && saved.ackRunId === saved.result.runId;
+    const progressed = !!(foundation && (foundation.lastCompletedRunId || foundation.activeRunId
+      || (foundation.foundationStage && foundation.foundationStage !== "solo-1")));
+    const d = !!nav.tactical?.reached || progressed;
+    const e = graduated();
+    const f = e;
     return { A: a, B: b, C: c, D: d, E: e, F: f, G: a && b && c && d && e && f };
   }
   function sync(input = inputs(), canonical) {
@@ -47,27 +68,33 @@
         persist();
       }
     }
-    if (milestones(input).G) { saved.complete = true; persist(); }
+    if (graduated(foundation) || milestones(input).G) {
+      saved.complete = true;
+      persist();
+    }
   }
   function view(input = inputs()) {
     const m = milestones(input), eligible = signal(input).eligible === true;
     return { active: eligible && !!saved.enrolled && !saved.complete, complete: eligible && !!saved.complete,
       milestones: m, current: Object.keys(m).find(key => !m[key]) || "G",
+      graduationHook: eligible && !!saved.enrolled && !!saved.complete && !saved.graduationAnnounced,
       result: eligible && saved.enrolled && saved.ackRunId !== saved.result?.runId ? saved.result || null : null };
   }
   function choice(input, canonical) {
     sync(input, canonical);
     const state = view(input), m = state.milestones;
     if (!state.active || !m.A || !m.B || !m.C) return null;
+    if (graduated(canonical)) return null;
     if (state.result) return { key: "first-session-result:" + state.result.runId, action: state.result.confirmed ? "Review Tactical result" : "Finish saving Tactical result",
       reason: "See the outcome and the progression recorded by your attempt.", destination: "tactical", spine: true };
     if (!m.D) {
       if (global.GuidedNavigation?.terminal("tactical")) return null;
       return { key: "tactical-first-attempt", action: "FIND TACTICAL OPS", reason: "Lead your squad in turn-based combat.", destination: "tactical", spine: true };
     }
-    if (!canonical) return null;
+    if (!canonical || !trainingStage(canonical.foundationStage)) return null;
     return { key: "first-session-tactical-run", action: "Continue Tactical Ops",
-      reason: "Follow the current Mission Brief toward the full Broken Signal run.", destination: "tactical", spine: true };
+      reason: canonical.foundationStage === "solo-2" ? "Complete the second Tactical drill." : "Lead your squad in turn-based combat.",
+      destination: "tactical", spine: true };
   }
   function observeTactical(state, mission, capture = false) {
     const before = JSON.stringify(saved);
@@ -95,6 +122,11 @@
     void global.StoryDelivery?.refreshReturn?.();
     return true;
   }
+  function acknowledgeGraduation() {
+    if (!saved.enrolled || !saved.complete || saved.graduationAnnounced) return false;
+    announceGraduation();
+    return true;
+  }
   function setProfile(devFresh) {
     const next = devFresh ? "devFresh" : "";
     if (profile === next) return;
@@ -106,7 +138,7 @@
     try { global.localStorage.removeItem(KEY + (devFresh ? ".devFresh" : "")); } catch (_) {}
     if (devFresh === (profile === "devFresh")) { saved = {}; foundation = null; listeners.forEach(fn => fn()); }
   }
-  global.FirstSessionSpine = { sync, view, choice, observeTactical, acknowledge, reset, setProfile,
+  global.FirstSessionSpine = { sync, view, choice, observeTactical, acknowledge, acknowledgeGraduation, graduated, reset, setProfile,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
   sync();
 })(window);

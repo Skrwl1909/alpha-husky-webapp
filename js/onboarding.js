@@ -6,6 +6,7 @@
 
   const KEY = "ah_onboarding_v";
   const VERSION = "4";
+  const FORGE_DISCOVERY_KEY = "ah.ftue.forgeDiscovery.v1";
   const GROUP_LINK = "https://t.me/The_Alpha_husky";
 
   let backEl = null;
@@ -23,6 +24,7 @@
   let _focusedBusy = false;
   let _focusedTimer = null;
   let _laterDeferUntil = 0;
+  let _forgeDiscoveryOpen = false;
 
   function log(...a) { if (_dbg) console.log("[Onboarding]", ...a); }
   function getTG() { return _tg || window.Telegram?.WebApp || null; }
@@ -434,6 +436,7 @@
     backEl.addEventListener("click", e => { if (e.target === backEl) close(false); });
     btnLater.onclick = () => {
       const st = focusedState();
+      if (_forgeDiscoveryOpen) markForgeDiscoverySeen();
       if (firstSignalEnabled() && String(st.state || "").toUpperCase() === "MISSION_STARTED" && String(st.status || "").toUpperCase() === "RUNNING") {
         _laterDeferUntil = Date.now() + 2500;
       }
@@ -523,7 +526,7 @@
   async function runFocusedAction(action) {
     if (_focusedBusy) return;
     _focusedBusy = true;
-    renderFirstSignal();
+    if (action !== "forge_continue" && action !== "forge_open") renderFirstSignal();
     try {
       if (action === "faction") {
         close(false);
@@ -541,7 +544,13 @@
         await openGuided();
         return;
       } else if (action === "next") {
-        await showWorldDiscovery();
+        await showForgeDiscovery();
+        return;
+      } else if (action === "forge_continue") {
+        await continueForgeDiscovery();
+        return;
+      } else if (action === "forge_open") {
+        await openForgeFromDiscovery();
         return;
       }
       await refreshFocusedState();
@@ -694,6 +703,10 @@
 
   // ====================== RENDER ======================
   function render() {
+    if (_forgeDiscoveryOpen) {
+      renderForgeDiscovery();
+      return;
+    }
     if (firstSignalEnabled()) {
       renderFirstSignal();
       return;
@@ -873,6 +886,10 @@
   }
 
   function close(done) {
+    if (_forgeDiscoveryOpen) {
+      markForgeDiscoverySeen();
+      _forgeDiscoveryOpen = false;
+    }
     if (_worldDiscoveryOpen) { void finishWorldDiscovery(false); return; }
     if (done && !firstSignalEnabled()) markDone();
     if (!backEl) return;
@@ -887,6 +904,71 @@
   }
 
   let _worldDiscoveryOpen = false, _worldDiscoveryBusy = false;
+  function forgeDiscoverySeen() {
+    return lsGet(FORGE_DISCOVERY_KEY) === "1";
+  }
+  function markForgeDiscoverySeen() {
+    lsSet(FORGE_DISCOVERY_KEY, "1");
+  }
+  function renderForgeDiscovery() {
+    if (!bodyEl) return;
+    const modalTitle = document.querySelector("#obBack .ob-title");
+    if (modalTitle) modalTitle.textContent = "FORGE";
+    if (progressFill) progressFill.style.width = "100%";
+    if (btnBack) btnBack.style.display = "none";
+    if (btnNext) btnNext.style.display = "none";
+    if (btnLater) btnLater.style.display = "block";
+    bodyEl.innerHTML = `
+      <div class="ob-card">
+        <div class="ob-icon">⚒</div>
+        <div class="ob-content">
+          <div class="ob-step">DISCOVERY</div>
+          <div class="ob-head">YOUR GEAR DOESN'T HAVE TO STAY THE WAY YOU FOUND IT.</div>
+          <div class="ob-p">Use the Forge when you're ready to improve it.</div>
+          <button class="ob-btn primary" id="obForgeContinue" style="margin-top:14px;width:100%" type="button">Continue</button>
+          <button class="ob-btn ghost" id="obForgeOpen" style="margin-top:8px;width:100%" type="button">Open Forge</button>
+        </div>
+      </div>`;
+    const cont = document.getElementById("obForgeContinue");
+    const openBtn = document.getElementById("obForgeOpen");
+    if (cont) cont.onclick = () => runFocusedAction("forge_continue");
+    if (openBtn) openBtn.onclick = () => runFocusedAction("forge_open");
+  }
+  async function showForgeDiscovery() {
+    if (focusedState().state !== "COMPLETED" || focusedState().world_discovery !== "pending") {
+      return showWorldDiscovery();
+    }
+    if (forgeDiscoverySeen()) return showWorldDiscovery();
+    _forgeDiscoveryOpen = true;
+    ensureCSS(); ensureHTML();
+    backEl.hidden = false;
+    backEl.style.display = "flex";
+    document.body.classList.add("ob-lock");
+    renderForgeDiscovery();
+    return true;
+  }
+  async function continueForgeDiscovery() {
+    markForgeDiscoverySeen();
+    _forgeDiscoveryOpen = false;
+    return showWorldDiscovery();
+  }
+  async function openForgeFromDiscovery() {
+    markForgeDiscoverySeen();
+    _forgeDiscoveryOpen = false;
+    close(false);
+    try {
+      if (window.ContextualDiscovery && typeof window.ContextualDiscovery.openDestination === "function") {
+        return await window.ContextualDiscovery.openDestination("forge") === true;
+      }
+      if (typeof window.Forge?.open === "function") {
+        window.HomeNav?.closeAll?.();
+        return await window.Forge.open() !== false;
+      }
+    } catch (e) {
+      log("forge discovery open failed", e);
+    }
+    return false;
+  }
   async function showWorldDiscovery() {
     if (focusedState().world_discovery !== "pending") { close(false); return false; }
     _worldDiscoveryOpen = false;
@@ -940,6 +1022,9 @@
     init,
     open,
     close,
+    showForgeDiscovery,
+    forgeDiscoverySeen,
+    refresh: () => refreshSteps(true),
     refresh: () => refreshSteps(true),
     refreshContinuity: async () => {
       await fetchTutorialState(true);
