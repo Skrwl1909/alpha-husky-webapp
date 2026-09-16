@@ -446,8 +446,10 @@ export function BattleScreen() {
       <div className="t-field-wrap">
         <div
           className="t-field"
-          onPointerDown={() => {
-            if (!busy) cancel();
+          onPointerDown={(e) => {
+            if (busy) return;
+            if (e.target !== e.currentTarget) return;
+            cancel();
           }}
         >
           <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />
