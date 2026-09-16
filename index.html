@@ -6853,6 +6853,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
     <div style="padding:0 14px 8px;opacity:.68;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Quick Access</div>
     <div id="alphaDiscoveryGuide" hidden style="padding:0 14px 8px"></div>
+    <div id="alphaCoreSystemDiscovery" hidden style="padding:0 14px 8px"></div>
     <div class="ah-actions" id="ahStartAppLinks">
       <div style="display:flex;gap:8px;">
         <button class="ah-action" type="button" style="flex:1;" data-start-link-route="map" data-start-link-action="open">Open War Map</button>
@@ -7874,7 +7875,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.6-first-session-goal-spine-v1-20260913-ftue-p0-continuity-20260916-ftue-p2-world-handoff-p3-final-canon";
+    window.WEBAPP_VER = "tops-2.7.6-first-session-goal-spine-v1-20260913-ftue-p0-continuity-20260916-ftue-p2-world-handoff-p3-final-canon-core-tactical-grad-v1";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
@@ -13128,7 +13129,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="/js/first_session_spine.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/guided_navigation.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/contextual_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/core_system_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<!-- sd-p0-discovery-guide-v1-20260909 sd-ftue-scout-guide-v1-20260910 sd-post-ftue-next-move-v1-20260911 sd-contextual-discovery-v1-20260911 sd-ftue-core-tactical-grad-v1-20260916 -->
 
 <!-- SUPPORT (Stars) -->
 <script src="/js/support.js?v=WEBAPP_VER"></script>
