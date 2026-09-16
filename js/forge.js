@@ -1,4 +1,5 @@
-// js/forge.js — Vault Forge Hub (Upgrade + Shards Craft) for Alpha Husky WebApp (v3.0 visual-only rework)
+// js/forge.js — Vault Forge Hub (Upgrade + Shards Craft) for Alpha Husky WebApp
+// Visual rework: compact mobile forging station. Production APIs, costs, and validation unchanged.
 (function () {
   let _apiPost = null;
   let _tg = null;
@@ -37,13 +38,15 @@
   }
 
   function esc(s) {
-    return String(s ?? "").replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;",
-    }[m]));
+    return String(s ?? "").replace(/[&<>"']/g, (m) => {
+      switch (m) {
+        case "&": return "\u0026amp;";
+        case "<": return "\u0026lt;";
+        case ">": return "\u0026gt;";
+        case '"': return "\u0026quot;";
+        default: return "\u0026#039;";
+      }
+    });
   }
 
   function rid(prefix = "forge") {
@@ -77,6 +80,12 @@
     return n;
   }
 
+  function fmtNum(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "0";
+    return Math.abs(n) >= 1000 ? n.toLocaleString("en-US") : String(n);
+  }
+
   function rarityKey(v) {
     const s = String(v || "").trim().toLowerCase();
     if (s === "legendary") return "legendary";
@@ -95,11 +104,17 @@
     return v ? v.charAt(0).toUpperCase() + v.slice(1) : "";
   }
 
+  function slotCaption(it) {
+    const label = String((it && (it.slotLabel || it.slot)) || "Gear");
+    return label.replace(/_/g, " ");
+  }
+
   function starsHtml(cur, max) {
     const c = Math.max(0, Number(cur || 0));
     const m = Math.max(c, Number(max || 0));
-    let out = `<span class="ah-stars">`;
-    for (let i = 0; i < m; i++) {
+    const shown = Math.min(Math.max(m, 1), 8);
+    let out = `<span class="ah-stars" aria-label="${c} of ${m} stars">`;
+    for (let i = 0; i < shown; i++) {
       out += `<span class="ah-star ${i < c ? "filled" : ""}">★</span>`;
     }
     out += `</span>`;
@@ -121,12 +136,24 @@
       luck: "Luck",
       int: "Intelligence",
       intelligence: "Intelligence",
+      hp: "HP",
+      health: "HP",
+      atk: "Attack",
+      attack: "Attack",
+      armor: "Armor",
+      dmg_resist: "DMG Resist",
+      dmgresist: "DMG Resist",
+      damage_resist: "DMG Resist",
     };
-    return map[raw.toLowerCase()] || cap(raw);
+    return map[raw.toLowerCase()] || cap(raw.replace(/_/g, " "));
   }
 
   function orderedStatKeys(stats) {
-    const preferred = ["strength", "str", "agility", "agi", "defense", "def", "vitality", "vit", "luck", "intelligence", "int"];
+    const preferred = [
+      "armor", "hp", "health", "dmg_resist", "damage_resist", "dmgresist",
+      "strength", "str", "attack", "atk", "agility", "agi",
+      "defense", "def", "vitality", "vit", "luck", "intelligence", "int",
+    ];
     const seen = new Set();
     const keys = [];
     preferred.forEach((key) => {
@@ -141,15 +168,89 @@
     return keys;
   }
 
+  function formatStatValue(value) {
+    if (value == null || value === "") return "";
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return "";
+      if (/[^\d.+eE-]/.test(trimmed)) return trimmed;
+      const n = Number(trimmed);
+      if (!Number.isFinite(n)) return trimmed;
+      if (n > 0) return `+${n}`;
+      return String(n);
+    }
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value);
+    if (n > 0) return `+${n}`;
+    return String(n);
+  }
+
+  function nextStatValue(current, key, preview) {
+    const projected = preview && preview.projectedStats;
+    if (projected && Object.prototype.hasOwnProperty.call(projected, key)) {
+      return projected[key];
+    }
+    const gainType = String((preview && preview.gainType) || "");
+    if (gainType === "exact") {
+      const gain = ((preview && preview.exactGain) || {})[key];
+      if (gain == null) return null;
+      const c = Number(current);
+      const g = Number(gain);
+      if (Number.isFinite(c) && Number.isFinite(g)) return c + g;
+      return null;
+    }
+    const range = ((preview && preview.projectedRanges) || {})[key];
+    if (range && (range.min != null || range.max != null)) {
+      const min = Number(range.min ?? 0);
+      const max = Number(range.max ?? min);
+      return min === max ? min : `${min}–${max}`;
+    }
+    return null;
+  }
+
+  function renderStatDelta(it, preview) {
+    const current = (preview && preview.currentStats) || (it && it.currentStats) || {};
+    const projected = (preview && preview.projectedStats) || {};
+    const exactGain = (preview && preview.exactGain) || {};
+    const ranges = (preview && preview.projectedRanges) || {};
+    const bag = Object.assign({}, current, projected, exactGain, ranges);
+    const keys = orderedStatKeys(bag).slice(0, 6);
+    if (!keys.length) {
+      const summary = getUpgradeGainSummary(preview);
+      return `<div class="ah-stat-empty">${esc(summary.summary)}</div>`;
+    }
+    return keys.map((key) => {
+      const cur = Object.prototype.hasOwnProperty.call(current, key) ? current[key] : null;
+      const next = nextStatValue(cur, key, preview || {});
+      const curTxt = cur == null || cur === "" ? "—" : formatStatValue(cur);
+      if (next == null || next === "") {
+        return `
+          <div class="ah-stat-row">
+            <span class="ah-stat-label">${esc(statLabel(key))}</span>
+            <span class="ah-stat-cur">${esc(curTxt)}</span>
+          </div>`;
+      }
+      return `
+        <div class="ah-stat-row">
+          <span class="ah-stat-label">${esc(statLabel(key))}</span>
+          <span class="ah-stat-pair">
+            <span class="ah-stat-cur">${esc(curTxt)}</span>
+            <span class="ah-stat-arrow" aria-hidden="true">→</span>
+            <span class="ah-stat-next">${esc(formatStatValue(next))}</span>
+          </span>
+        </div>`;
+    }).join("");
+  }
+
   function renderCurrentStats(stats) {
     const keys = orderedStatKeys(stats || {});
     if (!keys.length) {
       return `<div class="ah-small">No item stats on this piece.</div>`;
     }
     return keys.map((key) => `
-      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-        <span class="ah-small">${esc(statLabel(key))}</span>
-        <b>${esc(String((stats || {})[key] ?? 0))}</b>
+      <div class="ah-stat-row">
+        <span class="ah-stat-label">${esc(statLabel(key))}</span>
+        <span class="ah-stat-cur">${esc(formatStatValue((stats || {})[key]))}</span>
       </div>
     `).join("");
   }
@@ -163,29 +264,9 @@
       const max = Number(row.max ?? min);
       const value = (min === max) ? `${min}` : `${min}-${max}`;
       return `
-        <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-          <span class="ah-small">${esc(statLabel(key))}</span>
-          <b>${esc(value)}</b>
-        </div>
-      `;
-    }).join("");
-  }
-
-  function renderMaterialAvailability(materials) {
-    if (!materials || !materials.have || !materials.need) return "";
-    const order = [
-      ["bones", "Bones"],
-      ["scrap", "Scrap"],
-      ["rune_dust", "Rune Dust"],
-    ];
-    return order.map(([asset, label]) => {
-      const have = Number(materials.have[asset] || 0);
-      const need = Number(materials.need[asset] || 0);
-      const ok = !!(materials.enough && materials.enough[asset]);
-      return `
-        <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-          <span class="ah-small">${esc(label)}</span>
-          <b style="color:${ok ? "#8ef0b0" : "#ffb0ae"}">${esc(`${have} / ${need}`)}</b>
+        <div class="ah-stat-row">
+          <span class="ah-stat-label">${esc(statLabel(key))}</span>
+          <span class="ah-stat-cur">${esc(value)}</span>
         </div>
       `;
     }).join("");
@@ -208,17 +289,6 @@
     }).filter((row) => row.need > 0 || row.have > 0);
   }
 
-  function renderCompactMaterialAvailability(cost, materials) {
-    const rows = materialRows(cost, materials);
-    if (!rows.length) return `<div class="ah-small">Availability check not available.</div>`;
-    return rows.map((row) => `
-      <div class="ah-cost-row ${row.ok ? "is-ok" : "is-missing"}">
-        <span>${esc(row.label)}</span>
-        <b>${esc(`${row.need} / ${row.have}`)}</b>
-      </div>
-    `).join("");
-  }
-
   function getUpgradeStatusMeta(it, preview) {
     const atCap = !!(preview && preview.atCap);
     const isMaxed = atCap || Number((it && it.stars) || 0) >= Number((it && it.maxStars) || 0);
@@ -237,7 +307,7 @@
       const exactGain = (preview && preview.exactGain) || {};
       const exactKeys = orderedStatKeys(exactGain);
       const summary = exactKeys.length
-        ? exactKeys.map((key) => `+${Number(exactGain[key] || 0)} ${statLabel(key)}`).join(" � ")
+        ? exactKeys.map((key) => `+${Number(exactGain[key] || 0)} ${statLabel(key)}`).join(" · ")
         : (previewMessage || "Exact stat gain");
       return { summary, pool };
     }
@@ -250,1506 +320,527 @@
     return { summary: previewMessage || "No upgrade preview available.", pool };
   }
 
+  function matIcon(asset) {
+    if (asset === "bones") {
+      return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.2 8.1c-.9-1.8.1-3.9 2-4.4 1.2-.3 2.4.2 3.1 1.2L12 8.4l2.7-3.5c.7-1 1.9-1.5 3.1-1.2 1.9.5 2.9 2.6 2 4.4l-2.4 4.7 2.4 4.7c.9 1.8-.1 3.9-2 4.4-1.2.3-2.4-.2-3.1-1.2L12 15.6l-2.7 3.5c-.7 1-1.9 1.5-3.1 1.2-1.9-.5-2.9-2.6-2-4.4l2.4-4.7-2.4-4.7z"/></svg>`;
+    }
+    if (asset === "scrap") {
+      return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 16.5 12 4l8 12.5H4zm3.2-1.5h9.6L12 8.2 7.2 15z"/><path fill="currentColor" d="M7 18h10v2H7z"/></svg>`;
+    }
+    return `<svg class="ah-mat-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.4 18.4 12 12 21.6 5.6 12 12 2.4zm0 3.5L8.2 12 12 18.1 15.8 12 12 5.9z"/></svg>`;
+  }
+
+  function mountItemIcon(node, it, fallbackSize) {
+    if (!node) return;
+    node.innerHTML = "";
+    const src = it && it.icon;
+    if (!src) {
+      node.textContent = "◈";
+      return;
+    }
+    const img = document.createElement("img");
+    img.alt = (it && (it.name || it.key)) || "item";
+    img.src = src;
+    img.decoding = "async";
+    img.onerror = () => {
+      img.remove();
+      node.textContent = "◈";
+      node.style.display = "grid";
+      node.style.placeItems = "center";
+      node.style.fontWeight = "700";
+      node.style.fontSize = fallbackSize || "22px";
+    };
+    node.appendChild(img);
+  }
+
+  function ensureFonts() {
+    if (document.getElementById("ah-forge-fonts")) return;
+    const l = document.createElement("link");
+    l.id = "ah-forge-fonts";
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap";
+    document.head.appendChild(l);
+  }
+
   function ensureStyles() {
-  if (document.getElementById("ah-forge-styles")) return;
-
-  const s = el("style");
-  s.id = "ah-forge-styles";
-  s.textContent = `
-    :root{
-      --ah-fg:#f4f6ff;
-      --ah-dim:rgba(244,246,255,.72);
-      --ah-soft:rgba(255,255,255,.08);
-      --ah-soft-2:rgba(255,255,255,.12);
-      --ah-panel:rgba(17,19,24,.92);
-      --ah-panel-2:rgba(22,25,31,.92);
-      --ah-amber:rgba(255,181,72,.95);
-      --ah-cyan:rgba(74,199,255,.92);
-      --ah-red:rgba(255,94,94,.95);
-    }
-
-    /* =========================
-       BASE STYLES FIRST
-       ========================= */
-
-    .ah-forge-backdrop{
-      position:fixed; inset:0; z-index:2147483640;
-      display:flex; align-items:flex-end; justify-content:center;
-      background:
-        radial-gradient(circle at 50% 100%, rgba(255,160,40,.07), transparent 30%),
-        radial-gradient(circle at 50% 0%, rgba(60,160,255,.06), transparent 26%),
-        rgba(0,0,0,.72);
-      backdrop-filter:blur(4px);
-    }
-
-    .ah-forge{
-      position:relative;
-      width:min(1120px,100%);
-      max-height:92vh;
-      color:var(--ah-fg);
-      background:
-        linear-gradient(180deg, rgba(36,40,47,.98), rgba(13,15,18,.985)),
-        rgba(14,16,18,.98);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:22px 22px 0 0;
-      overflow:hidden;
-      box-shadow:
-        0 -14px 44px rgba(0,0,0,.58),
-        inset 0 1px 0 rgba(255,255,255,.05);
-    }
-
-    .ah-forge::before{
-      content:"";
-      position:absolute; inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 15% 0%, rgba(255,181,72,.10), transparent 20%),
-        radial-gradient(circle at 85% 10%, rgba(74,199,255,.08), transparent 18%);
-      opacity:.95;
-    }
-
-    .ah-forge *{
-      color:inherit;
-      box-sizing:border-box;
-    }
-
-    .ah-forge-head{
-      position:relative;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:16px 16px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
-    }
-
-    .ah-head-left{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      min-width:0;
-    }
-
-    .ah-forge-eyebrow{
-      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-      font-size:11px;
-      font-weight:900;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      color:rgba(255,214,145,.94);
-    }
-
-    .ah-forge-eyebrow .dot{
-      width:6px;
-      height:6px;
-      border-radius:999px;
-      background:var(--ah-amber);
-      box-shadow:0 0 12px rgba(255,181,72,.75);
-    }
-
-    .ah-forge-title{
-      font-size:clamp(26px,4.3vw,34px);
-      font-weight:1000;
-      letter-spacing:.2px;
-      line-height:1.02;
-      text-shadow:0 0 24px rgba(0,0,0,.35);
-    }
-
-    .ah-forge-sub{
-      opacity:.82;
-      font-size:12px;
-      line-height:1.35;
-    }
-
-    .ah-forge-close{
-      appearance:none;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.05);
-      min-width:42px;
-      height:42px;
-      border-radius:14px;
-      font-size:20px;
-      font-weight:900;
-      cursor:pointer;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-    }
-
-    .ah-forge-tabs{
-      display:flex;
-      gap:10px;
-      padding:12px 16px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
-    }
-
-    .ah-forge-tab{
-      appearance:none;
-      cursor:pointer;
-      padding:10px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      font-weight:1000;
-      letter-spacing:.03em;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-    }
-
-    .ah-forge-tab.active{
-      border-color:rgba(255,196,92,.35);
-      background:
-        linear-gradient(180deg, rgba(255,188,84,.20), rgba(255,146,39,.08)),
-        rgba(255,255,255,.08);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.08),
-        0 0 0 1px rgba(255,181,72,.08),
-        0 8px 24px rgba(255,125,24,.10);
-    }
-
-    .ah-forge-body{
-      position:relative;
-      padding:14px 14px 18px;
-      overflow:auto;
-      max-height:calc(92vh - 146px);
-    }
-
-    .ah-forge-bal{
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0, 1fr));
-      gap:10px;
-      margin-bottom:14px;
-    }
-
-    @media(max-width:760px){
-      .ah-forge-bal{grid-template-columns:1fr 1fr 1fr}
-    }
-
-    @media(max-width:560px){
-      .ah-forge-bal{grid-template-columns:1fr}
-    }
-
-    .ah-pill{
-      padding:10px 12px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)),
-        rgba(255,255,255,.04);
-      font-weight:900;
-      font-size:13px;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-    }
-
-    .ah-note,
-    .ah-panel,
-    .ah-card,
-    .ah-result,
-    .ah-preview-card,
-    .ah-statbox{
-      border:1px solid rgba(255,255,255,.11);
-      border-radius:18px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02)),
-        rgba(255,255,255,.03);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.04),
-        0 10px 26px rgba(0,0,0,.16);
-    }
-
-    .ah-note{padding:14px}
-    .ah-panel{padding:14px}
-
-    .ah-panel + .ah-panel,
-    .ah-note + .ah-note{
-      margin-top:12px;
-    }
-
-    .ah-section-kicker{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:1000;
-      color:rgba(255,211,135,.93);
-      margin-bottom:6px;
-    }
-
-    .ah-section-title{
-      font-size:22px;
-      line-height:1.1;
-      font-weight:1000;
-      margin-bottom:6px;
-    }
-
-    .ah-section-copy{
-      font-size:13px;
-      color:var(--ah-dim);
-      line-height:1.45;
-    }
-
-    .ah-small{
-      opacity:.88;
-      font-size:12px;
-      line-height:1.4;
-    }
-
-    .ah-muted{opacity:.68}
-
-    .ah-divider{
-      height:1px;
-      background:rgba(255,255,255,.10);
-      margin:12px 0;
-    }
-
-    .ah-split{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-    }
-
-    @media(min-width:920px){
-      .ah-split{grid-template-columns:1.02fr .98fr}
-    }
-
-    .ah-list{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
-
-    .ah-card{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px;
-      cursor:pointer;
-      transition:
-        transform .14s ease,
-        border-color .14s ease,
-        background .14s ease,
-        box-shadow .14s ease;
-    }
-
-    .ah-card:hover{
-      transform:translateY(-1px);
-      border-color:rgba(255,255,255,.18);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.03)),
-        rgba(255,255,255,.04);
-    }
-
-    .ah-card.selected{
-      border-color:rgba(255,191,88,.34);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.05),
-        0 0 0 1px rgba(255,181,72,.08),
-        0 8px 22px rgba(255,143,32,.10);
-    }
-
-    .ah-left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-
-    .ah-forge .ah-ico{
-      position:relative;
-      width:54px;
-      height:54px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.28);
-      overflow:hidden;
-      flex:0 0 auto;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
-    }
-
-    .ah-forge .ah-ico img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .ah-meta{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      min-width:0;
-    }
-
-    .ah-meta b,
-    .ah-line{
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .ah-slotline{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      min-width:0;
-      font-size:18px;
-      font-weight:900;
-    }
-
-    .ah-subline{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-      font-size:12px;
-      color:var(--ah-dim);
-    }
-
-    .ah-tag{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:24px;
-      padding:3px 9px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.25);
-      font-size:11px;
-      font-weight:1000;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-    }
-
-    .ah-tag.is-common{border-color:rgba(255,255,255,.11)}
-    .ah-tag.is-uncommon{border-color:rgba(104,255,173,.24); color:#c9ffe1}
-    .ah-tag.is-rare{border-color:rgba(90,170,255,.28); color:#d8ebff}
-    .ah-tag.is-epic{border-color:rgba(197,133,255,.28); color:#ecd7ff}
-    .ah-tag.is-legendary{border-color:rgba(255,192,86,.35); color:#ffe5b6}
-
-    .ah-btn{
-      appearance:none;
-      cursor:pointer;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)),
-        rgba(255,255,255,.04);
-      font-weight:1000;
-      letter-spacing:.02em;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-    }
-
-    .ah-btn:hover:not(:disabled){
-      border-color:rgba(255,255,255,.18);
-    }
-
-    .ah-btn.primary{
-      border-color:rgba(255,190,86,.34);
-      background:
-        linear-gradient(180deg, rgba(255,189,84,.26), rgba(255,117,24,.08)),
-        rgba(255,255,255,.06);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.07),
-        0 10px 24px rgba(255,126,31,.12);
-    }
-
-    .ah-btn.primary:hover:not(:disabled){
-      filter:brightness(1.04);
-      transform:translateY(-1px);
-    }
-
-    .ah-btn.subtle{
-      background:rgba(255,255,255,.035);
-    }
-
-    .ah-btn:disabled{
-      opacity:.45;
-      cursor:default;
-      filter:saturate(.75);
-    }
-
-    .ah-btnrow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .ah-field{
-      display:grid;
-      grid-template-columns:120px minmax(0,1fr);
-      gap:12px;
-      align-items:center;
-      padding:12px;
-      border:1px solid rgba(255,255,255,.11);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02)),
-        rgba(255,255,255,.025);
-      border-radius:18px;
-    }
-
-    @media(max-width:560px){
-      .ah-field{grid-template-columns:1fr}
-    }
-
-    .ah-field label{
-      font-weight:1000;
-      font-size:14px;
-      letter-spacing:.01em;
-    }
-
-    .ah-field .ah-field-copy{
-      font-size:11px;
-      color:var(--ah-dim);
-      margin-top:3px;
-    }
-
-    .ah-control{
-      width:100%;
-      min-width:0;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.14);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03)),
-        rgba(255,255,255,.05);
-      font-weight:900;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-    }
-
-    .ah-control:focus{
-      outline:none;
-      border-color:rgba(255,190,86,.32);
-      box-shadow:0 0 0 3px rgba(255,184,73,.08);
-    }
-
-    .ah-stepper{
-      display:grid;
-      grid-template-columns:auto 1fr auto;
-      gap:8px;
-      align-items:center;
-    }
-
-    .ah-stepper .ah-btn{
-      min-width:42px;
-      height:42px;
-      padding:0;
-    }
-
-    .ah-quick{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-
-    .ah-preview-grid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
-
-    @media(min-width:620px){
-      .ah-preview-grid{grid-template-columns:1fr 1fr}
-    }
-
-    .ah-preview-card{
-      padding:12px;
-      border-radius:16px;
-    }
-
-    .ah-preview-label{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.10em;
-      font-weight:1000;
-      color:rgba(255,214,145,.94);
-      margin-bottom:6px;
-    }
-
-    .ah-preview-value{
-      font-size:16px;
-      line-height:1.25;
-      font-weight:1000;
-    }
-
-    .ah-preview-sub{
-      font-size:12px;
-      color:var(--ah-dim);
-      line-height:1.45;
-      margin-top:4px;
-    }
-
-    .ah-meter-wrap{margin-top:10px}
-
-    .ah-meter-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-      font-size:12px;
-      margin-bottom:6px;
-    }
-
-    .ah-meter{
-      height:10px;
-      border-radius:999px;
-      overflow:hidden;
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .ah-meter-fill{
-      height:100%;
-      width:0%;
-      border-radius:999px;
-      background:linear-gradient(90deg, rgba(255,163,55,.95), rgba(255,211,130,.95));
-      box-shadow:0 0 16px rgba(255,181,72,.30);
-    }
-
-    .ah-results{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
-
-    @media(min-width:560px){
-      .ah-results{grid-template-columns:1fr 1fr}
-    }
-
-    .ah-result{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:12px;
-      border-radius:18px;
-    }
-
-    .ah-results-empty{
-      padding:12px;
-      border-radius:16px;
-      border:1px dashed rgba(255,255,255,.12);
-      color:var(--ah-dim);
-      font-size:13px;
-    }
-
-    .ah-detail-hero{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-
-    .ah-detail-ico{
-      position:relative;
-      width:72px;
-      height:72px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      overflow:hidden;
-      flex:0 0 auto;
-      background:rgba(0,0,0,.25);
-    }
-
-    .ah-detail-ico img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .ah-detail-meta{min-width:0}
-
-    .ah-detail-name{
-      font-size:22px;
-      font-weight:1000;
-      line-height:1.08;
-    }
-
-    .ah-detail-slot{
-      margin-top:4px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-      font-size:12px;
-      color:var(--ah-dim);
-    }
-
-    .ah-detail-grid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-      margin-top:12px;
-    }
-
-    @media(min-width:620px){
-      .ah-detail-grid{grid-template-columns:1fr 1fr}
-    }
-
-    .ah-statbox{
-      padding:12px;
-      border-radius:16px;
-    }
-
-    .ah-statbox .k{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.10em;
-      font-weight:1000;
-      color:rgba(255,214,145,.94);
-      margin-bottom:6px;
-    }
-
-    .ah-statbox .v{
-      font-size:16px;
-      font-weight:1000;
-      line-height:1.3;
-    }
-
-    .ah-missing{
-      margin-top:8px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,120,120,.18);
-      background:rgba(255,75,75,.08);
-      color:#ffd4d4;
-      font-size:12px;
-    }
-
-    .ah-stars{
-      display:inline-flex;
-      gap:2px;
-      flex-wrap:wrap;
-    }
-
-    .ah-star{
-      font-size:13px;
-      opacity:.28;
-    }
-
-    .ah-star.filled{
-      opacity:1;
-      color:#ffd47f;
-      text-shadow:0 0 10px rgba(255,192,76,.25);
-    }
-
-    .ah-toast{
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%);
-      bottom:16px;
-      z-index:2147483641;
-      max-width:min(560px,92vw);
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.82);
-      box-shadow:0 10px 28px rgba(0,0,0,.28);
-    }
-
-    .ah-loreline{
-      margin-top:8px;
-      padding-top:8px;
-      border-top:1px solid rgba(255,255,255,.08);
-      font-size:12px;
-      color:var(--ah-dim);
-    }
-
-    .ah-card.is-common .ah-ico,
-    .ah-result.is-common .ah-ico,
-    .ah-detail-ico.is-common{
-      box-shadow:0 0 0 1px rgba(255,255,255,.04);
-    }
-
-    .ah-card.is-uncommon .ah-ico,
-    .ah-result.is-uncommon .ah-ico,
-    .ah-detail-ico.is-uncommon{
-      box-shadow:
-        0 0 0 1px rgba(104,255,173,.10),
-        0 0 18px rgba(104,255,173,.07);
-    }
-
-    .ah-card.is-rare .ah-ico,
-    .ah-result.is-rare .ah-ico,
-    .ah-detail-ico.is-rare{
-      box-shadow:
-        0 0 0 1px rgba(90,170,255,.12),
-        0 0 18px rgba(90,170,255,.08);
-    }
-
-    .ah-card.is-epic .ah-ico,
-    .ah-result.is-epic .ah-ico,
-    .ah-detail-ico.is-epic{
-      box-shadow:
-        0 0 0 1px rgba(197,133,255,.12),
-        0 0 18px rgba(197,133,255,.08);
-    }
-
-    .ah-card.is-legendary .ah-ico,
-    .ah-result.is-legendary .ah-ico,
-    .ah-detail-ico.is-legendary{
-      box-shadow:
-        0 0 0 1px rgba(255,193,86,.14),
-        0 0 20px rgba(255,193,86,.10);
-    }
-
-    .ah-detail-ico.is-legendary::after{
-      content:"";
-      position:absolute;
-      inset:-8px;
-      border-radius:24px;
-      border:1px solid rgba(255,201,104,.14);
-      pointer-events:none;
-    }
-
-    .ah-forge-hero{
-      position:relative;
-      overflow:hidden;
-      padding:16px;
-      border:1px solid rgba(255,184,73,.14);
-      border-radius:20px;
-      background:
-        radial-gradient(circle at 18% 18%, rgba(255,139,42,.10), transparent 24%),
-        radial-gradient(circle at 84% 14%, rgba(83,199,255,.08), transparent 20%),
-        linear-gradient(180deg, rgba(39,29,22,.72), rgba(13,16,20,.52));
-    }
-
-    .ah-forge-hero::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,.03), transparent 35%),
-        radial-gradient(circle at 78% 22%, rgba(255,255,255,.035), transparent 18%);
-    }
-
-    .ah-forge-halo{
-      position:absolute;
-      right:-20px;
-      top:-20px;
-      width:150px;
-      height:150px;
-      border-radius:999px;
-      background:radial-gradient(circle, rgba(255,150,54,.16), transparent 60%);
-      filter:blur(2px);
-      pointer-events:none;
-    }
-
-    .ah-forge-rune{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:34px;
-      height:34px;
-      border-radius:999px;
-      border:1px solid rgba(255,199,101,.24);
-      background:rgba(255,134,34,.10);
-      color:#ffd59b;
-      font-weight:1000;
-      font-size:15px;
-      box-shadow:0 0 16px rgba(255,134,34,.10);
-    }
-
-    .ah-forge-hero-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:14px;
-    }
-
-    .ah-forge-hero-copy{
-      min-width:0;
-      flex:1;
-    }
-
-    .ah-outcome-strip{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-
-    .ah-outcome-pill{
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.09);
-      background:rgba(255,255,255,.04);
-      font-size:11px;
-      font-weight:1000;
-      letter-spacing:.04em;
-      text-transform:uppercase;
-    }
-
-    .ah-result-cine{
-      position:relative;
-      overflow:hidden;
-      min-height:82px;
-      border-radius:18px;
-    }
-
-    .ah-result-cine::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,.04), transparent 38%),
-        radial-gradient(circle at 82% 18%, rgba(255,196,102,.06), transparent 18%);
-    }
-
-    .ah-result-ribbon{
-      position:absolute;
-      top:10px;
-      right:10px;
-      padding:4px 8px;
-      border-radius:999px;
-      font-size:10px;
-      font-weight:1000;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.25);
-      color:#ffd8a3;
-    }
-
-    .ah-result-cine.is-uncommon .ah-result-ribbon{
-      border-color:rgba(104,255,173,.24);
-      color:#c9ffe1;
-    }
-
-    .ah-result-cine.is-rare .ah-result-ribbon{
-      border-color:rgba(90,170,255,.28);
-      color:#d8ebff;
-    }
-
-    .ah-result-cine.is-epic .ah-result-ribbon{
-      border-color:rgba(197,133,255,.28);
-      color:#ecd7ff;
-    }
-
-    .ah-result-cine.is-legendary .ah-result-ribbon{
-      border-color:rgba(255,192,86,.35);
-      color:#ffe5b6;
-      box-shadow:0 0 16px rgba(255,192,86,.12);
-    }
-
-    #forge-error{
-      margin-top:12px;
-    }
-
-    /* =========================
-       PATCH 2 — VAULT FORGE OVERRIDES
-       MUST COME AFTER BASE
-       ========================= */
-
-    .ah-forge{
-      background:
-        radial-gradient(circle at 14% 0%, rgba(255,128,34,.16), transparent 23%),
-        radial-gradient(circle at 86% 10%, rgba(83,199,255,.11), transparent 20%),
-        linear-gradient(180deg, #0d0a08 0%, #16110d 48%, #0b0f14 100%);
-      border:1px solid rgba(191,137,78,.42);
-      box-shadow:
-        0 -22px 60px rgba(0,0,0,.62),
-        0 0 0 1px rgba(255,166,71,.05),
-        inset 0 1px 0 rgba(255,255,255,.04),
-        inset 0 0 90px rgba(255,132,0,.04);
-    }
-
-    .ah-forge::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.02), transparent 22%),
-        repeating-linear-gradient(
-          90deg,
-          transparent 0 72px,
-          rgba(255,255,255,.012) 72px 73px
-        );
-      opacity:.42;
-    }
-
-    .ah-forge-head{
-      background:
-        linear-gradient(180deg, rgba(255,174,79,.06), rgba(255,255,255,0)),
-        linear-gradient(90deg, rgba(38,27,20,.96), rgba(19,16,14,.96));
-      border-bottom:1px solid rgba(212,175,55,.18);
-    }
-
-    .ah-forge-title{
-      color:#ffd8a3;
-      text-shadow:
-        0 0 18px rgba(255,135,44,.18),
-        0 0 34px rgba(0,0,0,.22);
-    }
-
-    .ah-forge-sub{
-      color:rgba(230,214,193,.76);
-    }
-
-    .ah-forge-tab{
-      border-color:rgba(138,96,55,.30);
-      background:
-        linear-gradient(180deg, rgba(49,36,27,.92), rgba(27,22,18,.94));
-      color:#edd2af;
-    }
-
-    .ah-forge-tab.active{
-      border-color:rgba(255,200,102,.42);
-      background:
-        linear-gradient(180deg, rgba(255,137,41,.28), rgba(114,63,24,.18)),
-        rgba(31,24,20,.96);
-      color:#fff5e2;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.08),
-        0 0 0 1px rgba(255,171,72,.10),
-        0 10px 28px rgba(255,122,24,.12);
-    }
-
-    .ah-note,
-    .ah-panel,
-    .ah-card,
-    .ah-result,
-    .ah-preview-card,
-    .ah-statbox{
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)),
-        linear-gradient(180deg, rgba(42,30,22,.50), rgba(13,16,20,.45));
-      border-color:rgba(138,103,67,.24);
-    }
-
-    .ah-card:hover{
-      border-color:rgba(212,175,55,.26);
-      box-shadow:
-        0 8px 24px rgba(0,0,0,.20),
-        0 0 22px rgba(255,140,33,.07);
-    }
-
-    .ah-card.selected{
-      border-color:rgba(255,191,94,.40);
-      background:
-        linear-gradient(180deg, rgba(255,174,79,.10), rgba(255,255,255,.02)),
-        linear-gradient(180deg, rgba(45,31,21,.62), rgba(13,16,20,.50));
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.06),
-        0 0 0 1px rgba(255,184,73,.10),
-        0 12px 28px rgba(255,126,31,.13);
-    }
-
-    .ah-btn{
-      border-color:rgba(185,152,117,.26);
-      background:
-        linear-gradient(180deg, rgba(58,42,30,.95), rgba(26,20,16,.95));
-      color:#f6d3a6;
-    }
-
-    .ah-btn:hover:not(:disabled){
-      border-color:rgba(255,209,126,.42);
-    }
-
-    .ah-btn.primary{
-      background:
-        linear-gradient(180deg, rgba(255,132,33,.95), rgba(177,74,18,.95));
-      border-color:rgba(255,211,127,.40);
-      color:#fff7eb;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.10),
-        0 12px 26px rgba(255,98,0,.18);
-    }
-
-    .ah-btn.primary:hover:not(:disabled){
-      filter:brightness(1.05);
-      transform:translateY(-1px);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.12),
-        0 0 28px rgba(255,110,16,.26);
-    }
-
-    .ah-control{
-      background:
-        linear-gradient(180deg, rgba(31,25,20,.96), rgba(17,19,24,.96));
-      border-color:rgba(166,125,83,.26);
-      color:#f8e7cd;
-    }
-
-    .ah-control:focus{
-      border-color:rgba(255,194,95,.36);
-      box-shadow:
-        0 0 0 3px rgba(255,184,73,.09),
-        0 0 22px rgba(255,124,19,.08);
-    }
-
-    .ah-preview-label,
-    .ah-statbox .k,
-    .ah-section-kicker{
-      color:#ffcf90;
-    }
-
-    .ah-meter{
-      background:rgba(255,255,255,.05);
-      border-color:rgba(255,255,255,.06);
-    }
-
-    .ah-meter-fill{
-      background:linear-gradient(90deg, rgba(255,121,20,.98), rgba(255,211,124,.98));
-      box-shadow:0 0 16px rgba(255,160,52,.28);
-    }
-
-    .ah-tag{
-      background:rgba(12,12,12,.30);
-    }
-
-    .ah-tag.is-uncommon{
-      border-color:rgba(104,255,173,.24);
-      color:#c9ffe1;
-    }
-
-    .ah-tag.is-rare{
-      border-color:rgba(90,170,255,.30);
-      color:#d8ebff;
-    }
-
-    .ah-tag.is-epic{
-      border-color:rgba(197,133,255,.30);
-      color:#ecd7ff;
-    }
-
-    .ah-tag.is-legendary{
-      border-color:rgba(255,192,86,.38);
-      color:#ffe5b6;
-      box-shadow:0 0 18px rgba(255,192,86,.10);
-    }
-    /* =========================
-   PATCH 3 — CRAFT UI POLISH
-   doklej na sam KONIEC ensureStyles()
-   ========================= */
-
-.ah-chipbar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
-
-.ah-chip{
-  appearance:none;
-  border:1px solid rgba(255,255,255,.10);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
-    rgba(255,255,255,.03);
-  color:inherit;
-  border-radius:999px;
-  padding:9px 12px;
-  font-weight:1000;
-  font-size:12px;
-  line-height:1;
-  cursor:pointer;
-  transition:transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease;
-}
-
-.ah-chip:hover{
-  transform:translateY(-1px);
-  border-color:rgba(255,214,130,.28);
-}
-
-.ah-chip.active{
-  border-color:rgba(255,200,102,.42);
-  background:
-    linear-gradient(180deg, rgba(255,137,41,.26), rgba(114,63,24,.16)),
-    rgba(31,24,20,.96);
-  color:#fff5e2;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    0 0 0 1px rgba(255,171,72,.10),
-    0 10px 22px rgba(255,122,24,.10);
-}
-
-.ah-chip .count{
-  opacity:.82;
-  margin-left:6px;
-}
-
-.ah-slot-ghost-select{
-  position:absolute !important;
-  opacity:0 !important;
-  pointer-events:none !important;
-  width:1px !important;
-  height:1px !important;
-  overflow:hidden !important;
-}
-
-.ah-preview-shell{
-  position:relative;
-  overflow:hidden;
-}
-
-.ah-preview-shell::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255,139,42,.08), transparent 22%),
-    radial-gradient(circle at 84% 14%, rgba(83,199,255,.06), transparent 18%);
-}
-
-.ah-preview-top{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  align-items:flex-start;
-  margin-bottom:12px;
-}
-
-.ah-preview-title{
-  font-size:20px;
-  line-height:1.05;
-  font-weight:1000;
-}
-
-.ah-preview-kicker{
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  font-weight:1000;
-  color:#ffcf90;
-  margin-bottom:6px;
-}
-
-.ah-preview-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:28px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,200,102,.25);
-  background:rgba(255,140,33,.10);
-  color:#ffe0b0;
-  font-size:11px;
-  font-weight:1000;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
-
-.ah-forecast-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:10px;
-}
-
-@media(min-width:620px){
-  .ah-forecast-grid{
-    grid-template-columns:1fr 1fr;
+    if (document.getElementById("ah-forge-styles")) return;
+
+    const s = el("style");
+    s.id = "ah-forge-styles";
+    s.textContent = `
+      .ah-forge-backdrop{
+        position:fixed; inset:0; z-index:2147483640;
+        display:flex; align-items:stretch; justify-content:center;
+        background:
+          radial-gradient(ellipse 80% 40% at 50% 100%, rgba(180,90,18,.22), transparent 52%),
+          radial-gradient(ellipse 50% 30% at 80% 0%, rgba(80,50,20,.18), transparent 46%),
+          #050505;
+      }
+      .ah-forge{
+        --ah-bg:#090b10;
+        --ah-elev:#12151c;
+        --ah-elev-2:#181c24;
+        --ah-line:rgba(196,154,84,.32);
+        --ah-line-dim:rgba(255,255,255,.08);
+        --ah-amber:#e0b15a;
+        --ah-amber-2:#c4892d;
+        --ah-text:#f3ead8;
+        --ah-dim:rgba(243,234,216,.64);
+        --ah-ok:#8ef0b0;
+        --ah-bad:#ffb0ae;
+        --ah-radius:14px;
+        --ah-font:"Rajdhani", "Segoe UI", system-ui, sans-serif;
+        --ah-display:"Cinzel", "Palatino Linotype", Palatino, serif;
+        position:relative;
+        display:flex; flex-direction:column;
+        width:min(430px,100%);
+        height:100%;
+        max-height:100dvh;
+        color:var(--ah-text);
+        font-family:var(--ah-font);
+        background:
+          radial-gradient(ellipse 90% 36% at 50% 118%, rgba(196,90,16,.28), transparent 54%),
+          linear-gradient(180deg, rgba(255,255,255,.03), transparent 18%),
+          linear-gradient(180deg, #141108 0%, #0b0d12 42%, #07080c 100%);
+        border-left:1px solid rgba(196,154,84,.18);
+        border-right:1px solid rgba(196,154,84,.18);
+        overflow:hidden;
+        box-shadow:0 0 80px rgba(0,0,0,.55);
+      }
+      .ah-forge *{ box-sizing:border-box; }
+      .ah-forge::before{
+        content:"";
+        position:absolute; inset:0; pointer-events:none;
+        background:
+          linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px) 0 0 / 72px 72px,
+          radial-gradient(circle at 18% 8%, rgba(224,177,90,.08), transparent 24%);
+        opacity:.7;
+      }
+      .ah-forge-head{
+        position:relative;
+        display:flex; flex-direction:column; gap:4px;
+        padding:8px 12px 8px;
+        flex:0 0 auto;
+        background:
+          linear-gradient(180deg, rgba(20,16,12,.92), rgba(12,12,16,.55));
+        border-bottom:1px solid rgba(196,154,84,.16);
+      }
+      .ah-head-top{
+        display:flex; align-items:center; justify-content:space-between; gap:8px;
+      }
+      .ah-forge-back, .ah-forge-close{
+        appearance:none; border:0; background:transparent;
+        min-width:40px; height:40px; flex:0 0 auto;
+        color:var(--ah-text);
+        display:flex; align-items:center; gap:4px;
+        cursor:pointer;
+        border-radius:10px;
+        padding:0 6px 0 2px;
+        font-family:var(--ah-font);
+      .ah-forge-back span{ white-space:nowrap; }
+      .ah-forge-back:hover, .ah-forge-close:hover{ background:rgba(255,255,255,.05); }
+      .ah-head-copy{ min-width:0; flex:1; padding-top:2px; }
+      .ah-forge-eyebrow{
+        font-size:10px; font-weight:700; letter-spacing:.16em;
+        text-transform:uppercase; color:var(--ah-amber);
+        display:flex; align-items:center; gap:7px;
+      }
+      .ah-forge-eyebrow .dot{
+        width:5px; height:5px; border-radius:99px;
+        background:var(--ah-amber);
+        box-shadow:0 0 10px rgba(224,177,90,.7);
+      }
+      .ah-forge-title{
+        font-family:var(--ah-display);
+        font-size:clamp(20px,5.6vw,24px);
+        font-weight:700; line-height:1.12;
+        letter-spacing:.01em; color:#f6e6c4;
+        margin-top:2px;
+      }
+      .ah-forge-sub{
+        font-size:11px; line-height:1.3; color:var(--ah-dim); margin-top:2px;
+      }
+      .ah-forge-tabs{
+        position:relative;
+        display:flex; align-items:center; gap:8px;
+        padding:8px 12px 10px;
+        flex:0 0 auto;
+      }
+      .ah-forge-tab{
+        appearance:none; cursor:pointer;
+        flex:1; height:40px;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.08);
+        background:linear-gradient(180deg, #1a1d24, #12141a);
+        color:#d8c7a8;
+        font-family:var(--ah-font);
+        font-weight:700; font-size:13px; letter-spacing:.12em;
+        display:inline-flex; align-items:center; justify-content:center; gap:7px;
+      }
+      .ah-forge-tab.active{
+        border-color:rgba(224,177,90,.55);
+        background:linear-gradient(180deg, #d7a44a, #9a6218);
+        color:#1a1208;
+        box-shadow:0 6px 18px rgba(180,100,20,.28), inset 0 1px 0 rgba(255,255,255,.28);
+      }
+      .ah-forge-survivor{
+        flex:0 0 auto;
+        max-width:92px;
+        padding:6px 8px;
+        border:1px solid rgba(196,154,84,.3);
+        border-radius:8px;
+        font-size:9px; font-weight:700; letter-spacing:.08em;
+        text-transform:uppercase; color:#e8d3a4;
+        line-height:1.2; text-align:center;
+        background:rgba(0,0,0,.28);
+      }
+      .ah-forge-body{
+        position:relative;
+        flex:1 1 auto;
+        min-height:0;
+        overflow:auto;
+        overflow-x:hidden;
+        padding:0 12px 12px;
+        -webkit-overflow-scrolling:touch;
+      }
+      .ah-forge-dock{
+        flex:0 0 auto;
+        display:flex; align-items:stretch; gap:8px;
+        padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+        border-top:1px solid rgba(196,154,84,.18);
+        background:linear-gradient(180deg, rgba(10,10,12,.92), rgba(6,6,8,.98));
+      }
+      .ah-forge-bal{
+        display:grid;
+        grid-template-columns:repeat(3, minmax(0,1fr));
+        gap:6px;
+        margin:0 0 10px;
+        padding:8px;
+        border:1px solid rgba(196,154,84,.18);
+        border-radius:12px;
+        background:linear-gradient(180deg, rgba(18,16,14,.9), rgba(10,12,16,.9));
+      }
+      .ah-res{
+        display:flex; align-items:center; gap:6px; min-width:0;
+      }
+      .ah-res-ico{
+        width:22px; height:22px; flex:0 0 auto;
+        color:var(--ah-amber);
+        display:grid; place-items:center;
+      }
+      .ah-mat-svg{ width:18px; height:18px; display:block; }
+      .ah-res-copy{ min-width:0; display:flex; flex-direction:column; line-height:1.05; }
+      .ah-res-label{
+        font-size:9px; font-weight:700; letter-spacing:.1em;
+        text-transform:uppercase; color:var(--ah-dim);
+      }
+      .ah-res-val{
+        font-size:14px; font-weight:700; font-variant-numeric:tabular-nums;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+      .ah-gear-block{ margin-bottom:10px; }
+      .ah-kicker{
+        font-size:10px; font-weight:700; letter-spacing:.16em;
+        text-transform:uppercase; color:rgba(224,177,90,.88);
+        margin-bottom:6px;
+      }
+      .ah-gear-row{ display:flex; align-items:center; gap:4px; }
+      .ah-gear-arrow{
+        appearance:none; border:0; background:transparent;
+        width:28px; height:64px; color:#e8d3a4; cursor:pointer;
+        font-size:22px; flex:0 0 auto;
+      }
+      .ah-gear-scroller{
+        display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
+        scroll-snap-type:x proximity;
+        padding:2px 2px 6px;
+        flex:1; min-width:0;
+        scrollbar-width:none;
+      }
+      .ah-gear-scroller::-webkit-scrollbar{ display:none; }
+      .ah-gear-tile{
+        appearance:none; cursor:pointer;
+        flex:0 0 72px; width:72px;
+        display:flex; flex-direction:column; align-items:center; gap:4px;
+        padding:6px 4px 6px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.08);
+        background:linear-gradient(180deg, #171a21, #101218);
+        color:inherit;
+        scroll-snap-align:start;
+      }
+      .ah-gear-tile .ah-ico{
+        width:48px; height:48px; border-radius:10px;
+        overflow:hidden; background:rgba(0,0,0,.35);
+        display:grid; place-items:center;
+        border:1px solid rgba(255,255,255,.06);
+      }
+      .ah-gear-tile .ah-ico img, .ah-stage-ico img, .ah-ico img{
+        width:100%; height:100%; object-fit:contain; display:block;
+      }
+      .ah-gear-tile span{
+        font-size:10px; font-weight:700; letter-spacing:.04em;
+        text-transform:uppercase; color:var(--ah-dim);
+        white-space:nowrap; overflow:hidden; max-width:100%;
+        text-overflow:ellipsis;
+      }
+      .ah-gear-tile.selected{
+        border-color:rgba(224,177,90,.7);
+        background:linear-gradient(180deg, rgba(80,52,16,.45), #14110c);
+        box-shadow:0 0 0 1px rgba(224,177,90,.2), 0 8px 18px rgba(160,90,16,.2);
+      }
+      .ah-gear-tile.selected span{ color:#f6e6c4; }
+      .ah-stage{
+        display:grid;
+        grid-template-columns:min(42%, 158px) minmax(0,1fr);
+        gap:10px;
+        padding:10px;
+        border:1px solid rgba(196,154,84,.22);
+        border-radius:14px;
+        background:
+          radial-gradient(circle at 30% 80%, rgba(196,90,16,.16), transparent 42%),
+          linear-gradient(180deg, rgba(22,18,14,.88), rgba(10,12,16,.92));
+        margin-bottom:10px;
+        min-height:168px;
+      }
+      .ah-stage-art{
+        position:relative;
+        min-height:148px;
+        display:grid; place-items:center;
+      }
+      .ah-pedestal{
+        position:absolute; left:8%; right:8%; bottom:8px; height:28px;
+        border-radius:50%;
+        background:radial-gradient(ellipse at center, rgba(224,177,90,.45), rgba(80,40,8,.05) 70%);
+        filter:blur(1px);
+        pointer-events:none;
+      }
+      .ah-stage-ico{
+        position:relative;
+        width:min(100%, 140px); aspect-ratio:1;
+        display:grid; place-items:center;
+        filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));
+      }
+      .ah-stage-info{ min-width:0; display:flex; flex-direction:column; gap:4px; }
+      .ah-stage-cat{
+        font-size:10px; font-weight:700; letter-spacing:.16em;
+        text-transform:uppercase; color:var(--ah-amber);
+        display:flex; align-items:center; gap:6px;
+      }
+      .ah-stage-name{
+        font-family:var(--ah-display);
+        font-size:clamp(15px,4.4vw,18px);
+        font-weight:700; line-height:1.15; color:#f7ecd4;
+      }
+      .ah-stage-meta{
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+      }
+      .ah-tag{
+        display:inline-flex; align-items:center; justify-content:center;
+        min-height:20px; padding:2px 8px; border-radius:6px;
+        border:1px solid rgba(255,255,255,.12);
+        font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+      }
+      .ah-tag.is-uncommon{ border-color:rgba(104,255,173,.3); color:#c9ffe1; }
+      .ah-tag.is-rare{ border-color:rgba(90,170,255,.34); color:#d8ebff; }
+      .ah-tag.is-epic{ border-color:rgba(197,133,255,.34); color:#ecd7ff; }
+      .ah-tag.is-legendary{ border-color:rgba(224,177,90,.5); color:#ffe5b6; }
+      .ah-starline{
+        font-size:12px; font-weight:700; color:#ffd47f;
+        font-variant-numeric:tabular-nums;
+      }
+      .ah-star{ font-size:12px; opacity:.28; line-height:1; }
+      .ah-star.filled{ opacity:1; color:#ffd47f; text-shadow:0 0 8px rgba(255,192,76,.28); }
+      .ah-lvl{
+        display:inline-flex; align-items:center; gap:8px;
+        margin-top:2px; padding:5px 8px;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:8px; background:rgba(0,0,0,.28);
+        font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+      }
+      .ah-lvl .to{ color:var(--ah-ok); }
+      .ah-stats{ display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+      .ah-stat-row{
+        display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+        padding:3px 0; border-bottom:1px solid rgba(255,255,255,.05);
+        font-size:12px; font-weight:600;
+      }
+      .ah-stat-row:last-child{ border-bottom:0; }
+      .ah-stat-label{ color:var(--ah-dim); text-transform:capitalize; }
+      .ah-stat-pair{ display:inline-flex; align-items:baseline; gap:6px; font-variant-numeric:tabular-nums; }
+      .ah-stat-cur{ color:#f3ead8; }
+      .ah-stat-arrow{ color:rgba(243,234,216,.4); }
+      .ah-stat-next{ color:var(--ah-ok); }
+      .ah-stat-empty, .ah-small{ font-size:12px; color:var(--ah-dim); line-height:1.35; }
+      .ah-lore{
+        margin-top:4px; font-size:11px; line-height:1.35; color:var(--ah-dim);
+        font-style:italic;
+      }
+      .ah-cost{
+        padding:8px 10px 10px;
+        border:1px solid rgba(196,154,84,.18);
+        border-radius:12px;
+        background:linear-gradient(180deg, rgba(16,14,12,.9), rgba(10,12,16,.9));
+      }
+      .ah-cost-grid{
+        display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px;
+      }
+      .ah-cost-cell{
+        display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+        padding:8px 8px 7px;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,.07);
+        background:rgba(0,0,0,.28);
+        min-width:0;
+      }
+      .ah-cost-cell .lab{
+        display:flex; align-items:center; gap:5px;
+        font-size:10px; font-weight:700; letter-spacing:.08em;
+        text-transform:uppercase; color:var(--ah-dim);
+      }
+      .ah-cost-cell .val{
+        font-size:16px; font-weight:700; font-variant-numeric:tabular-nums;
+      }
+      .ah-cost-cell.is-ok .val{ color:var(--ah-ok); }
+      .ah-cost-cell.is-missing .val{ color:var(--ah-bad); }
+      .ah-missing{
+        margin-top:8px; font-size:11px; color:#ffd4d4;
+      }
+      .ah-upgrade-cta, .ah-btn{
+        appearance:none; cursor:pointer;
+        border-radius:12px; font-family:var(--ah-font);
+        font-weight:700; letter-spacing:.14em;
+      }
+      .ah-upgrade-cta{
+        flex:1; min-height:48px;
+        border:1px solid rgba(255,220,150,.45);
+        background:linear-gradient(180deg, #f0c56a, #c07a22 58%, #8a4e12);
+        color:#1a1208;
+        font-size:16px;
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 10px 22px rgba(180,90,10,.28);
+      }
+      .ah-upgrade-cta svg{ width:16px; height:16px; }
+      .ah-upgrade-cta:hover:not(:disabled){ filter:brightness(1.05); }
+      .ah-upgrade-cta:disabled{
+        opacity:.5; cursor:default; filter:saturate(.65);
+      }
+      .ah-crystal-slot{
+        flex:0 0 84px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:4px;
+        border:1px solid rgba(255,255,255,.1);
+        border-radius:12px;
+        background:rgba(0,0,0,.28);
+        color:var(--ah-dim);
+        font-size:10px; font-weight:700; letter-spacing:.04em;
+        text-transform:uppercase; text-align:center; line-height:1.15;
+        cursor:pointer; padding:6px;
+      }
+      .ah-crystal-slot input{ width:16px; height:16px; accent-color:#e0b15a; }
+      .ah-btn{
+        padding:10px 12px; min-height:42px;
+        border:1px solid rgba(185,152,117,.26);
+        background:linear-gradient(180deg, #2a241c, #161410);
+        color:#f6d3a6; font-size:13px;
+      }
+      .ah-btn.primary{
+        background:linear-gradient(180deg, #d7a44a, #9a6218);
+        border-color:rgba(255,220,150,.4); color:#1a1208;
+      }
+      .ah-btn:disabled{ opacity:.45; cursor:default; }
+      .ah-btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+      .ah-note, .ah-panel{
+        padding:12px;
+        border:1px solid rgba(196,154,84,.18);
+        border-radius:14px;
+        background:linear-gradient(180deg, rgba(22,18,14,.7), rgba(10,12,16,.7));
+        margin-bottom:10px;
+      }
+      .ah-section-title{
+        font-family:var(--ah-display); font-size:18px; font-weight:700; line-height:1.15;
+      }
+      .ah-section-copy{ font-size:12px; color:var(--ah-dim); line-height:1.4; margin-top:4px; }
+      .ah-field{
+        display:grid; gap:6px; padding:10px;
+        border:1px solid rgba(255,255,255,.08); border-radius:12px;
+        background:rgba(0,0,0,.2); margin-bottom:8px;
+      }
+      .ah-field label{ font-weight:700; font-size:13px; letter-spacing:.04em; }
+      .ah-field-copy{ font-size:11px; color:var(--ah-dim); }
+      .ah-control{
+        width:100%; min-width:0; padding:10px 12px; border-radius:10px;
+        border:1px solid rgba(166,125,83,.26);
+        background:#16141a; color:#f8e7cd; font-weight:700; font-family:var(--ah-font);
+      }
+      .ah-stepper{ display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; }
+      .ah-stepper .ah-btn{ min-width:42px; height:42px; padding:0; }
+      .ah-quick{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+      .ah-chipbar{ display:flex; flex-wrap:wrap; gap:6px; }
+      .ah-chip{
+        appearance:none; cursor:pointer;
+        border:1px solid rgba(255,255,255,.1);
+        background:#16141a; color:inherit; border-radius:999px;
+        padding:8px 10px; font-weight:700; font-size:12px; font-family:var(--ah-font);
+      }
+      .ah-chip.active{
+        border-color:rgba(224,177,90,.5);
+        background:linear-gradient(180deg, rgba(215,164,74,.3), rgba(80,40,12,.4));
+        color:#fff5e2;
+      }
+      .ah-chip .count{ opacity:.8; margin-left:5px; }
+      .ah-slot-ghost-select{
+        position:absolute !important; opacity:0 !important; pointer-events:none !important;
+        width:1px !important; height:1px !important; overflow:hidden !important;
+      }
+      .ah-preview-shell, .ah-forecast-card, .ah-result{
+        border:1px solid rgba(255,255,255,.08); border-radius:12px;
+        background:rgba(0,0,0,.22); padding:10px; margin-top:8px;
+      }
+      .ah-preview-kicker, .ah-forecast-card .k{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ah-amber); font-weight:700; }
+      .ah-preview-title, .ah-forecast-card .v{ font-size:16px; font-weight:700; }
+      .ah-forecast-grid{ display:grid; gap:8px; }
+      .ah-preview-badge, .ah-status-chip{
+        display:inline-flex; align-items:center; min-height:22px; padding:3px 8px;
+        border-radius:999px; border:1px solid rgba(255,255,255,.12); font-size:10px;
+        font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      }
+      .ah-status-chip.is-ready, .ah-preview-badge{ border-color:rgba(104,255,173,.28); color:#c9ffe1; }
+      .ah-status-chip.is-missing{ border-color:rgba(255,176,174,.28); color:#ffd2d1; }
+      .ah-status-chip.is-maxed{ border-color:rgba(255,210,122,.28); color:#ffe7bd; }
+      .ah-meter{ height:8px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.08); margin-top:6px; }
+      .ah-meter-fill{ height:100%; width:0; background:linear-gradient(90deg, #c07a22, #f0c56a); }
+      .ah-pity-row{ display:flex; justify-content:space-between; gap:8px; margin-top:10px; font-size:12px; }
+      .ah-results{ display:grid; gap:8px; }
+      .ah-result{ display:flex; align-items:center; gap:10px; }
+      .ah-results-empty{ font-size:12px; color:var(--ah-dim); padding:10px; }
+      .ah-ico{
+        width:44px; height:44px; border-radius:10px; overflow:hidden;
+        background:rgba(0,0,0,.3); display:grid; place-items:center; flex:0 0 auto;
+      }
+      .ah-toast{
+        position:fixed; left:50%; transform:translateX(-50%); bottom:16px;
+        z-index:2147483641; max-width:min(560px,92vw);
+        padding:10px 12px; border-radius:12px;
+        border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.86);
+        color:#f3ead8; font-family:var(--ah-font); font-weight:600;
+      }
+      .ah-divider{ height:1px; background:rgba(255,255,255,.08); margin:10px 0; }
+      #forge-error{ margin-top:12px; font-size:12px; white-space:pre-wrap; }
+      @media (max-width:360px){
+        .ah-forge-survivor{ display:none; }
+        .ah-stage{ grid-template-columns:38% minmax(0,1fr); gap:8px; padding:8px; }
+        .ah-gear-tile{ flex-basis:64px; width:64px; }
+      }
+      @media (prefers-reduced-motion: reduce){
+        .ah-forge *{ transition:none !important; animation:none !important; }
+      }
+    `;
+    document.head.appendChild(s);
   }
-}
-
-.ah-forecast-card{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:16px;
-  padding:12px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-    rgba(255,255,255,.02);
-}
-
-.ah-forecast-card .k{
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.10em;
-  font-weight:1000;
-  color:#ffcf90;
-  margin-bottom:6px;
-}
-
-.ah-forecast-card .v{
-  font-size:16px;
-  font-weight:1000;
-  line-height:1.25;
-}
-
-.ah-forecast-card .sub{
-  margin-top:4px;
-  font-size:12px;
-  color:var(--ah-dim);
-  line-height:1.4;
-}
-
-.ah-pity-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-top:12px;
-  margin-bottom:6px;
-  font-size:12px;
-}
-
-.ah-pity-state{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-weight:1000;
-}
-
-.ah-pity-dot{
-  width:8px;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,181,72,.95);
-  box-shadow:0 0 12px rgba(255,181,72,.35);
-}
-
-.ah-pity-state.hot .ah-pity-dot{
-  background:#ffd27a;
-  box-shadow:0 0 14px rgba(255,210,122,.45);
-}
-
-.ah-pity-state.charged .ah-pity-dot{
-  background:#fff0b8;
-  box-shadow:0 0 16px rgba(255,240,184,.55);
-}
-
-.ah-outcome-note{
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.03);
-  font-size:12px;
-  color:var(--ah-dim);
-  line-height:1.45;
-}
-
-.ah-status-chip{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:24px;
-  padding:4px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.05);
-  font-size:11px;
-  font-weight:1000;
-  letter-spacing:.05em;
-  text-transform:uppercase;
-}
-
-.ah-status-chip.is-ready{ border-color:rgba(104,255,173,.24); color:#c9ffe1; }
-.ah-status-chip.is-missing{ border-color:rgba(255,176,174,.28); color:#ffd2d1; }
-.ah-status-chip.is-maxed{ border-color:rgba(255,210,122,.28); color:#ffe7bd; }
-.ah-status-chip.is-crystal{ border-color:rgba(102,212,255,.28); color:#d7f5ff; }
-
-.ah-card.compact-picker{
-  align-items:stretch;
-  flex-direction:column;
-  gap:12px;
-}
-
-.ah-card.compact-picker .ah-left{ align-items:flex-start; }
-
-.ah-picker-summary{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.ah-picker-meta{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-}
-
-.ah-picker-cost{
-  font-size:12px;
-  color:var(--ah-dim);
-  line-height:1.4;
-}
-
-.ah-picker-action{ min-width:96px; }
-
-.ah-mobile-navbtn{
-  appearance:none;
-  border:0;
-  background:transparent;
-  padding:0;
-  margin:0 0 10px;
-  color:#ffd8a3;
-  font-size:13px;
-  font-weight:1000;
-  letter-spacing:.02em;
-  text-align:left;
-  cursor:pointer;
-}
-
-.ah-mobile-summary-box,
-.ah-mobile-cost-card,
-.ah-mobile-crystal{ padding:14px; }
-
-.ah-mobile-summary-head{
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-}
-
-.ah-mobile-summary-copy{
-  min-width:0;
-  flex:1;
-}
-
-.ah-mobile-starline{
-  margin-top:8px;
-  font-size:13px;
-  font-weight:1000;
-  color:#ffe1b4;
-}
-
-.ah-mobile-summary-lines{
-  display:grid;
-  gap:10px;
-  margin-top:14px;
-}
-
-.ah-mobile-summary-line{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  font-size:12px;
-  line-height:1.45;
-}
-
-.ah-mobile-summary-line span:first-child{ color:var(--ah-dim); }
-.ah-mobile-summary-line b{ text-align:right; }
-
-.ah-cost-list{ display:grid; gap:8px; }
-
-.ah-cost-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:9px 0;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  font-size:13px;
-}
-
-.ah-cost-row:last-child{
-  border-bottom:0;
-  padding-bottom:0;
-}
-
-.ah-cost-row.is-ok b{ color:#8ef0b0; }
-.ah-cost-row.is-missing b{ color:#ffb0ae; }
-
-.ah-mobile-toggle{
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  margin-top:12px;
-  font-size:12px;
-  line-height:1.45;
-}
-
-.ah-mobile-toggle small{
-  display:block;
-  margin-top:4px;
-  color:var(--ah-dim);
-}
-
-.ah-mobile-crystal-note{ margin-top:8px; }
-
-.ah-accordion{
-  margin-top:10px;
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:16px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-    rgba(255,255,255,.02);
-  overflow:hidden;
-}
-
-.ah-accordion > summary{
-  list-style:none;
-  cursor:pointer;
-  padding:13px 14px;
-  font-size:12px;
-  font-weight:1000;
-  letter-spacing:.05em;
-  text-transform:uppercase;
-  color:#ffcf90;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.ah-accordion > summary::-webkit-details-marker{ display:none; }
-.ah-accordion > summary::after{ content:"+"; color:rgba(255,255,255,.82); font-size:16px; line-height:1; }
-.ah-accordion[open] > summary::after{ content:"-"; }
-.ah-accordion-content{ padding:0 14px 14px; }
-
-.ah-mobile-stickybar{ display:none; }
-
-@media(max-width:720px){
-  .ah-forge-body{ padding:12px 12px 108px; }
-
-  .ah-mobile-picker-panel,
-  .ah-mobile-detail-panel{ padding:12px; }
-
-  .ah-card.compact-picker.selected{
-    transform:translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.06),
-      0 0 0 1px rgba(255,184,73,.10),
-      0 16px 30px rgba(255,126,31,.15);
-  }
-
-  .ah-mobile-stickybar{
-    position:sticky;
-    bottom:-1px;
-    z-index:3;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin:16px -12px -12px;
-    padding:12px;
-    border-top:1px solid rgba(255,255,255,.10);
-    background:
-      linear-gradient(180deg, rgba(17,19,24,.92), rgba(10,12,16,.98)),
-      rgba(10,12,16,.98);
-    box-shadow:0 -14px 28px rgba(0,0,0,.28);
-  }
-
-  .ah-mobile-stickycopy{ min-width:0; flex:1; }
-  .ah-mobile-stickytitle{ font-size:12px; font-weight:1000; line-height:1.35; }
-
-  .ah-mobile-stickyfoot{
-    margin-top:4px;
-    font-size:11px;
-    color:var(--ah-dim);
-    line-height:1.35;
-  }
-
-  .ah-mobile-stickybar .ah-btn{
-    min-width:150px;
-    justify-content:center;
-  }
-
-  .ah-btnrow.ah-desktop-actions{ display:none; }
-}
-
-  `;
-
-  document.head.appendChild(s);
-}
 
   function toast(msg) {
-    const t = el("div", "ah-toast", msg);
+    const t = el("div", "ah-toast", esc(msg));
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2400);
   }
@@ -1758,6 +849,7 @@
   let _scrollLockRestore = null;
 
   function lockScroll(lock) {
+    if (!document.body) return;
     if (lock) {
       if (!_scrollLockRestore) {
         _scrollLockRestore = {
@@ -1769,7 +861,6 @@
       document.body.style.touchAction = "none";
       return;
     }
-
     const prev = _scrollLockRestore;
     _scrollLockRestore = null;
     document.body.style.overflow = prev ? prev.overflow : "";
@@ -1788,13 +879,8 @@
     const shell = document.querySelector(".app");
     const nav = document.getElementById("ahBottomNav");
     const clearClasses = [
-      "ah-forge-open",
-      "forge-open",
-      "crafting-open",
-      "craft-open",
-      "route-lock",
-      "modal-open",
-      "sheet-open",
+      "ah-forge-open", "forge-open", "crafting-open", "craft-open",
+      "route-lock", "modal-open", "sheet-open",
     ];
 
     [document.body, app, shell, nav].forEach((node) => {
@@ -1838,6 +924,7 @@
       try { console.debug("[Forge] restored mobile shell", { source, shouldUnlockShell }); } catch (_) {}
     }
   }
+
   function debugBottomNavLayoutSnapshot(phase = "manual") {
     const nav = document.getElementById("ahBottomNav");
     const btn = nav && nav.querySelector(".ah-navbtn");
@@ -1877,47 +964,17 @@
     try { console.table(store.map((item) => ({ phase: item.phase, navHeight: item.nav?.height, navDisplay: item.nav?.display, iconWidth: item.icon?.width, iconHeight: item.icon?.height, iconBorder: item.icon?.["border-width"], navInline: item.navInline || "" }))); } catch (_) {}
     return snap;
   }
+
   let _root = null;
   let _tab = "upgrade";
   let _state = null;
   let _busy = false;
   let _closing = false;
   let _ctx = { buildingId: null, name: "Forgotten Tokens’ Vault" };
-
   let _pityOverride = {};
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
   let _useIceCrystal = false;
-  let _mobileUpgradeView = "picker";
-
-  const MOBILE_FORGE_BREAKPOINT = 720;
-
-  function isCompactForgeMobile() {
-    return !!(typeof window !== "undefined" && window.innerWidth <= MOBILE_FORGE_BREAKPOINT);
-  }
-
-  function scrollForgeSectionToTop(selector, behavior = "auto") {
-    if (!_root) return;
-    const target = _root.querySelector(selector);
-    if (!target) {
-      const body = _root.querySelector(".ah-forge-body");
-      if (!body) return;
-      try { body.scrollTo({ top: 0, behavior }); } catch (_) { body.scrollTop = 0; }
-      return;
-    }
-    const run = () => {
-      try { target.scrollIntoView({ behavior, block: "start" }); }
-      catch (_) {
-        const body = _root && _root.querySelector(".ah-forge-body");
-        if (body) body.scrollTop = 0;
-      }
-    };
-    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(run);
-    } else {
-      run();
-    }
-  }
 
   function getCfg() {
     const cfg = (_state && _state.craftCfg) || {};
@@ -1989,56 +1046,61 @@
     return parts;
   }
 
+  function dockEl() {
+    return _root && _root.querySelector(".ah-forge-dock");
+  }
+
+  function clearDock() {
+    const dock = dockEl();
+    if (dock) dock.innerHTML = "";
+    return dock;
+  }
+
   function renderBalances(container) {
     const b = mats();
     const wrap = el("div", "ah-forge-bal");
     [
-      ["Bones", b.bones],
-      ["Scrap", b.scrap],
-      ["Rune Dust", b.rune_dust],
-    ].forEach(([k, v]) => {
+      ["bones", "Bones", b.bones],
+      ["scrap", "Scrap", b.scrap],
+      ["rune_dust", "Rune Dust", b.rune_dust],
+    ].forEach(([asset, label, v]) => {
       if (v == null) return;
-      wrap.appendChild(el("div", "ah-pill", `<span class="ah-muted">${esc(k)}:</span> ${esc(v)}`));
+      wrap.appendChild(el("div", "ah-res", `
+        <div class="ah-res-ico">${matIcon(asset)}</div>
+        <div class="ah-res-copy">
+          <span class="ah-res-label">${esc(label)}</span>
+          <span class="ah-res-val">${esc(fmtNum(v))}</span>
+        </div>
+      `));
     });
     container.appendChild(wrap);
   }
 
+  function itemLore(it, preview) {
+    const raw = (it && (it.lore || it.flavor || it.description || it.desc)) || "";
+    const text = String(raw).trim();
+    if (text && text.length < 160) return text;
+    const msg = String((preview && preview.message) || "").trim();
+    if (msg && !/upgrade|stat|material|preview/i.test(msg) && msg.length < 140) return msg;
+    return "";
+  }
+
   function renderUpgrade(body) {
     const eq = (_state && _state.equipped) || [];
+    const dock = clearDock();
+
     if (!eq.length) {
       body.appendChild(el("div", "ah-note",
-        `<div class="ah-section-kicker">Forge Bench</div>
+        `<div class="ah-kicker">Forge Bench</div>
          <div class="ah-section-title">No equipped items found</div>
-         <div class="ah-section-copy">Equip a piece of gear first, then return to the vault forge to inspect upgrade costs and push its next star.</div>`
+         <div class="ah-section-copy">Equip a piece of gear first, then return to the vault to inspect upgrade costs.</div>`
       ));
       return;
     }
 
-    const compactMobile = isCompactForgeMobile();
     if (!_selectedUpgradeKey || !eq.some((x) => x.key === _selectedUpgradeKey)) {
       _selectedUpgradeKey = eq[0].key;
-      if (compactMobile) _mobileUpgradeView = "picker";
     }
-    if (!compactMobile) _mobileUpgradeView = "detail";
-
-    body.appendChild(el("div", "ah-note",
-      `<div class="ah-section-kicker">Forgotten Tokens’ Vault</div>
-       <div class="ah-section-title">Upgrade Bench</div>
-       <div class="ah-section-copy">Inspect one equipped item at a time, review the exact material cost, then push its next star without touching the Telegram-side core logic.</div>
-       <div class="ah-loreline">This station is for focused forging — one item, one decision, one clean upgrade.</div>`
-    ));
-
-    const split = el("div", "ah-split");
-    const listPanel = el("div", `ah-panel${compactMobile ? " ah-mobile-picker-panel" : ""}`);
-    const detailPanel = el("div", `ah-panel${compactMobile ? " ah-mobile-detail-panel" : ""}`);
-
-    listPanel.appendChild(el("div", "", `
-      <div class="ah-section-kicker">Equipped Loadout</div>
-      <div class="ah-section-title">Choose a piece to forge</div>
-      <div class="ah-section-copy">${compactMobile ? "Pick one item to inspect. Full stats and extra details open after selection." : "Each row below uses the same upgrade rules as Telegram. This pass changes only presentation, not math."}</div>
-    `));
-
-    const list = el("div", "ah-list");
 
     async function doUpgrade(it) {
       if (!it || _busy || !it.canUpgrade) return;
@@ -2057,8 +1119,7 @@
         });
         _useIceCrystal = false;
         await loadState();
-        toast(`Forged ${it.slotLabel} to \u2605${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
-        if (compactMobile) scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
+        toast(`Forged ${it.slotLabel || it.slot} to ★${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
       } catch (e) {
         toast(`Upgrade failed: ${e.message}`);
       } finally {
@@ -2068,399 +1129,148 @@
       }
     }
 
-    function drawDetail(it) {
-      if (!it) {
-        detailPanel.innerHTML = `
-          <div class="ah-section-kicker">Inspection</div>
-          <div class="ah-section-title">Select an item</div>
-          <div class="ah-section-copy">${compactMobile ? "Choose a piece to open its focused forge view." : "Tap any equipped piece on the left to open its forge preview."}</div>
-        `;
-        return;
-      }
+    const selected = eq.find((x) => x.key === _selectedUpgradeKey) || eq[0];
+    const preview = (selected && selected.upgradePreview) || {};
+    const cost = preview.cost || (selected && selected.costNext) || null;
+    const miss = cost ? missingForCost(cost) : [];
+    const statusMeta = getUpgradeStatusMeta(selected, preview);
+    const isMaxed = statusMeta.isMaxed;
+    const rKey = rarityKey(selected && selected.rarity);
+    const nextStars = Number(preview.nextLevel || Math.min(Number((selected && selected.maxStars) || 0), Number((selected && selected.stars) || 0) + 1));
+    const materials = preview.materials || null;
+    const crystal = preview.iceCrystal || {};
+    const crystalOwned = Number(crystal.owned || 0);
+    const crystalCanUse = !!crystal.canUse && crystalOwned > 0;
+    const crystalMessage = String(crystal.message || "").trim();
+    const showCrystal = !isMaxed && !!(selected && selected.canUpgrade) && (crystalOwned > 0 || crystalMessage);
+    if (!showCrystal || !crystalCanUse) _useIceCrystal = false;
 
-      const preview = it.upgradePreview || {};
-      const cost = preview.cost || it.costNext || null;
-      const miss = cost ? missingForCost(cost) : [];
-      const statusMeta = getUpgradeStatusMeta(it, preview);
-      const isMaxed = statusMeta.isMaxed;
-      const rKey = rarityKey(it.rarity);
-      const nextStars = Number(preview.nextLevel || Math.min(Number(it.maxStars || 0), Number(it.stars || 0) + 1));
-      const currentStats = preview.currentStats || it.currentStats || {};
-      const projectedStats = preview.projectedStats || null;
-      const projectedRanges = preview.projectedRanges || {};
-      const materials = preview.materials || null;
-      const gainSummary = getUpgradeGainSummary(preview);
-      const crystal = preview.iceCrystal || {};
-      const crystalOwned = Number(crystal.owned || 0);
-      const crystalCanUse = !!crystal.canUse && crystalOwned > 0;
-      const crystalBaseChance = Math.max(0, Number(crystal.baseDoubleChance || 0));
-      const crystalBoostedChance = Math.max(crystalBaseChance, Number(crystal.boostedDoubleChance || 0));
-      const crystalMessage = String(crystal.message || "").trim();
-      const showCrystalPanel = !isMaxed && !!it.canUpgrade && (crystalOwned > 0 || crystalMessage);
-      const compactMaterialHtml = renderCompactMaterialAvailability(cost, materials);
-      const compactCostSummary = materialRows(cost, materials).map((row) => `${row.label} ${row.need}`).join(" � ");
-
-      if (!showCrystalPanel || !crystalCanUse) {
-        _useIceCrystal = false;
-      }
-
-      let gainHtml = `<div class="ah-small">${esc(String(preview.message || "No upgrade preview available."))}</div>`;
-      if (String(preview.gainType || "") === "exact") {
-        const exactGain = preview.exactGain || {};
-        const exactKeys = orderedStatKeys(exactGain);
-        gainHtml = exactKeys.map((key) => `
-          <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-            <span class="ah-small">${esc(statLabel(key))}</span>
-            <b>+${esc(String(exactGain[key] || 0))}</b>
-          </div>
-        `).join("");
-      } else if (String(preview.gainType || "") === "random") {
-        gainHtml = `
-          <div class="ah-small" style="margin-bottom:8px;">${esc(String(preview.message || "Upgrade will increase 1-2 item stats."))}</div>
-          ${gainSummary.pool ? `<div class="ah-small" style="margin-bottom:8px;">Possible stat pool: <b>${esc(gainSummary.pool.split(" / ").join(", "))}</b></div>` : ""}
-          <div class="ah-small">Total gain: +1 to +${esc(String((preview.possibleGain && preview.possibleGain.totalPointsMax) || 2))} across the pool above.</div>
-        `;
-      }
-
-      const projectedHtml = projectedStats ? renderCurrentStats(projectedStats) : renderProjectedRanges(projectedRanges);
-      const materialHtml = renderMaterialAvailability(materials);
-
-      detailPanel.className = `ah-panel ${rarityClass(rKey)}`;
-      if (compactMobile) {
-        detailPanel.className = `ah-panel ah-mobile-detail-panel ${rarityClass(rKey)}`;
-        detailPanel.innerHTML = `
-          <button class="ah-mobile-navbtn" id="ah-mobile-change-item" type="button">&larr; Change item</button>
-
-          <div class="ah-statbox ah-mobile-summary-box">
-            <div class="ah-mobile-summary-head">
-              <div class="ah-detail-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
-              <div class="ah-mobile-summary-copy">
-                <div class="ah-detail-name">${esc(it.name || it.slotLabel || "Item")}</div>
-                <div class="ah-detail-slot">
-                  <span>${esc(it.slotLabel || it.slot || "slot")}</span>
-                  <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>
-                </div>
-                <div class="ah-mobile-starline">&#9733;${Number(it.stars || 0)} &rarr; &#9733;${nextStars}</div>
-              </div>
-            </div>
-
-            <div class="ah-mobile-summary-lines">
-              <div class="ah-mobile-summary-line"><span>Upgrade</span><b>${isMaxed ? "No further star" : `to &#9733;${nextStars}`}</b></div>
-              <div class="ah-mobile-summary-line"><span>Gain</span><b>${esc(gainSummary.summary)}</b></div>
-              ${gainSummary.pool ? `<div class="ah-mobile-summary-line"><span>Pool</span><b>${esc(gainSummary.pool)}</b></div>` : ""}
-              <div class="ah-mobile-summary-line"><span>Status</span><span class="ah-status-chip ${statusMeta.className}">${statusMeta.label}</span></div>
-            </div>
-          </div>
-
-          <div class="ah-statbox ah-mobile-cost-card" style="margin-top:12px;">
-            <div class="k">Cost + Availability</div>
-            <div class="v">
-              <div class="ah-cost-list">${compactMaterialHtml}</div>
-              ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
-            </div>
-          </div>
-
-          <div id="ah-blue-crystal-panel"></div>
-
-          <details class="ah-accordion">
-            <summary>Current Stats</summary>
-            <div class="ah-accordion-content">${renderCurrentStats(currentStats)}</div>
-          </details>
-
-          <details class="ah-accordion">
-            <summary>Next Upgrade Gain</summary>
-            <div class="ah-accordion-content">${gainHtml}</div>
-          </details>
-
-          <details class="ah-accordion">
-            <summary>${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</summary>
-            <div class="ah-accordion-content">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div>
-          </details>
-
-          <details class="ah-accordion">
-            <summary>Full Material Details</summary>
-            <div class="ah-accordion-content">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div>
-          </details>
-
-          <details class="ah-accordion">
-            <summary>Advanced Forge Info</summary>
-            <div class="ah-accordion-content"><div class="ah-small">Upgrade cost still uses the same Telegram-side core. This pass only changes presentation and keeps forge math untouched.</div></div>
-          </details>
-
-          <div class="ah-btnrow ah-desktop-actions" id="ah-upg-actions"></div>
-          <div class="ah-mobile-stickybar" id="ah-mobile-stickybar"></div>
-        `;
-      } else {
-        detailPanel.innerHTML = `
-          <div class="ah-forge-hero ${rarityClass(rKey)}">
-            <div class="ah-forge-halo"></div>
-
-            <div class="ah-forge-hero-top">
-              <div class="ah-forge-hero-copy">
-                <div class="ah-section-kicker">Forge Inspection</div>
-                <div class="ah-detail-name">${esc(it.name || it.slotLabel || "Item")}</div>
-                <div class="ah-detail-slot">
-                  <span>${esc(it.slotLabel || it.slot || "slot")}</span>
-                  <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>
-                </div>
-              </div>
-              <div class="ah-forge-rune">✦</div>
-            </div>
-
-            <div class="ah-detail-hero">
-              <div class="ah-detail-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
-              <div class="ah-detail-meta">
-                <div class="ah-small">This piece is currently mounted on your active build and can be pushed further at the vault bench.</div>
-                <div class="ah-outcome-strip">
-                  <span class="ah-outcome-pill">Current ★${Number(it.stars || 0)}</span>
-                  <span class="ah-outcome-pill">Next ★${nextStars}</span>
-                  <span class="ah-outcome-pill">${statusMeta.label}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="ah-detail-grid" style="margin-top:12px">
-            <div class="ah-statbox"><div class="k">Current Rank</div><div class="v">${starsHtml(it.stars, it.maxStars)}<div class="ah-small" style="margin-top:6px">★${Number(it.stars || 0)} / ★${Number(it.maxStars || 0)}</div></div></div>
-            <div class="ah-statbox"><div class="k">Next Step</div><div class="v">${isMaxed ? "No further star" : `Push to ★${nextStars}`}</div></div>
-            <div class="ah-statbox"><div class="k">Forge Cost</div><div class="v">${cost ? esc(fmtCost(cost)) : "No further upgrades"}</div></div>
-            <div class="ah-statbox"><div class="k">Status</div><div class="v">${statusMeta.label}</div></div>
-          </div>
-
-          ${miss.length ? `<div class="ah-missing"><b>Missing:</b> ${esc(miss.join(", "))}</div>` : ``}
-
-          <div class="ah-divider"></div>
-
-          <div class="ah-detail-grid" style="margin-top:12px">
-            <div class="ah-statbox"><div class="k">Current Stats</div><div class="v">${renderCurrentStats(currentStats)}</div></div>
-            <div class="ah-statbox"><div class="k">Next Upgrade Gain</div><div class="v">${gainHtml}</div></div>
-            <div class="ah-statbox"><div class="k">${projectedStats ? "Projected Stats" : "Possible Stats After Upgrade"}</div><div class="v">${projectedHtml || `<div class="ah-small">No stat projection available.</div>`}</div></div>
-            <div class="ah-statbox"><div class="k">Material Availability</div><div class="v">${materialHtml || `<div class="ah-small">Availability check not available.</div>`}</div></div>
-          </div>
-
-          <div class="ah-divider"></div>
-
-          <div id="ah-blue-crystal-panel"></div>
-
-          <div class="ah-btnrow" id="ah-upg-actions"></div>
-
-          <div class="ah-loreline">Upgrade cost still uses the same Telegram-side core. This patch only makes the station feel like a real vault forge instead of a plain script panel.</div>
-        `;
-      }
-
-      const icoMount = detailPanel.querySelector("#ah-detail-ico");
-      if (icoMount) {
-        const img = document.createElement("img");
-        img.alt = it.name || it.key || "item";
-        img.src = it.icon || "";
-        img.onerror = () => {
-          img.remove();
-          icoMount.textContent = "✦";
-          icoMount.style.display = "grid";
-          icoMount.style.placeItems = "center";
-          icoMount.style.fontWeight = "1000";
-          icoMount.style.fontSize = "24px";
-        };
-        icoMount.appendChild(img);
-      }
-
-      const actions = detailPanel.querySelector("#ah-upg-actions");
-      const crystalPanel = detailPanel.querySelector("#ah-blue-crystal-panel");
-      const mobileSticky = detailPanel.querySelector("#ah-mobile-stickybar");
-      const changeItemBtn = detailPanel.querySelector("#ah-mobile-change-item");
-      if (changeItemBtn) {
-        changeItemBtn.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          _mobileUpgradeView = "picker";
-          draw();
-          scrollForgeSectionToTop(".ah-mobile-picker-panel", "auto");
-        });
-      }
-
-      if (crystalPanel) {
-        crystalPanel.innerHTML = "";
-        if (showCrystalPanel) {
-          const crystalBox = el("div", `ah-statbox${compactMobile ? " ah-mobile-crystal" : ""}`);
-          crystalBox.style.marginTop = "12px";
-          crystalBox.appendChild(el("div", "k", "Ice Crystal"));
-          const crystalBody = el("div", "v", "");
-          crystalBody.appendChild(el("div", "ah-small", `Owned: <b>${esc(String(crystalOwned))}</b>`));
-          crystalBody.appendChild(el("div", "ah-small", "Boosts chance for +2 stat gain. Not guaranteed."));
-
-          if (crystalOwned > 0) {
-            crystalBody.appendChild(el("div", "ah-small", `Normal +2 chance: <b>${esc(String(Math.round(crystalBaseChance * 100)))}%</b> � Armed: <b>${esc(String(Math.round(crystalBoostedChance * 100)))}%</b>`));
-            const label = document.createElement("label");
-            label.className = "ah-mobile-toggle";
-            label.style.opacity = crystalCanUse ? "1" : ".7";
-
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.checked = !!(_useIceCrystal && crystalCanUse);
-            checkbox.disabled = !crystalCanUse;
-            checkbox.addEventListener("change", () => {
-              _useIceCrystal = !!checkbox.checked;
-              draw();
-            });
-
-            const copy = document.createElement("span");
-            copy.innerHTML = `Use Ice Crystal<small>Boosts chance for +2 stat gain. Not guaranteed.</small>`;
-
-            label.appendChild(checkbox);
-            label.appendChild(copy);
-            crystalBody.appendChild(label);
-          }
-
-          if (crystalMessage) {
-            crystalBody.appendChild(el("div", "ah-small ah-mobile-crystal-note", esc(crystalMessage)));
-          }
-
-          crystalBox.appendChild(crystalBody);
-          crystalPanel.appendChild(crystalBox);
-        }
-      }
-
-      const btn = el(
-        "button",
-        "ah-btn primary",
-        _busy ? "Forging..." : (isMaxed ? "Item Maxed" : (it.canUpgrade ? `Forge to ?${nextStars}` : "Missing Materials"))
-      );
-      btn.type = "button";
-      btn.disabled = _busy || isMaxed || !it.canUpgrade;
-      btn.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        doUpgrade(it);
-      });
-
-      const secondary = el("button", "ah-btn subtle", "Refresh");
-      secondary.type = "button";
-      secondary.disabled = _busy;
-      secondary.addEventListener("click", async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (_busy) return;
-        _busy = true;
-        draw();
-        try {
-          await loadState();
-          toast("Forge updated.");
-        } catch (e) {
-          toast(`Refresh failed: ${e.message}`);
-        } finally {
-          _busy = false;
-          draw();
-        }
-      });
-
-      if (mobileSticky) {
-        const stickyCopy = el("div", "ah-mobile-stickycopy", "");
-        stickyCopy.innerHTML = `
-          <div class="ah-mobile-stickytitle">${esc([statusMeta.label, (_useIceCrystal && crystalCanUse) ? "Crystal armed" : ""].filter(Boolean).join(" � "))}</div>
-          <div class="ah-mobile-stickyfoot">${esc(compactCostSummary || "No further forge cost")}</div>
-        `;
-        mobileSticky.appendChild(stickyCopy);
-        mobileSticky.appendChild(btn);
-      } else if (actions) {
-        actions.appendChild(btn);
-        actions.appendChild(secondary);
-      }
-    }
+    const selector = el("div", "ah-gear-block");
+    selector.appendChild(el("div", "ah-kicker", "Select Gear"));
+    const row = el("div", "ah-gear-row");
+    const prevBtn = el("button", "ah-gear-arrow", "‹");
+    prevBtn.type = "button";
+    prevBtn.setAttribute("aria-label", "Previous gear");
+    const nextBtn = el("button", "ah-gear-arrow", "›");
+    nextBtn.type = "button";
+    nextBtn.setAttribute("aria-label", "Next gear");
+    const scroller = el("div", "ah-gear-scroller");
 
     eq.forEach((it) => {
-      const rKey = rarityKey(it.rarity);
-      const preview = it.upgradePreview || {};
-      const statusMeta = getUpgradeStatusMeta(it, preview);
-      const row = el("div", `ah-card ${compactMobile ? "compact-picker " : ""}${rarityClass(rKey)} ${_selectedUpgradeKey === it.key ? "selected" : ""}`);
-      const left = el("div", "ah-left");
-
-      const ico = el("div", `ah-ico ${rarityClass(rKey)}`);
-      const img = document.createElement("img");
-      img.alt = it.name || it.key || "item";
-      img.src = it.icon || "";
-      img.onerror = () => { img.remove(); ico.textContent = "✦"; };
-      ico.appendChild(img);
-
-      const meta = el("div", "ah-meta");
-      meta.appendChild(el("div", "ah-slotline", `<span>${esc(it.slotLabel || cap(it.slot) || "Item")}</span>`));
-      meta.appendChild(el("div", "ah-line", `${esc(it.name || "—")}`));
-      meta.appendChild(el("div", "ah-subline", `${starsHtml(it.stars, it.maxStars)} <span class="ah-tag ${rarityClass(rKey)}">${esc(it.rarity || "common")}</span>`));
-      if (!compactMobile && it.costNext) meta.appendChild(el("div", "ah-small", `Next: ${esc(fmtCost(it.costNext))}`));
-
-      left.appendChild(ico);
-      left.appendChild(meta);
-      const btn = el("button", `ah-btn ${compactMobile ? "subtle" : (it.canUpgrade ? "primary" : "subtle")}`, compactMobile ? "Inspect" : (it.canUpgrade ? "Upgrade" : "Maxed"));
-      btn.type = "button";
-      btn.disabled = _busy || (!compactMobile && !it.canUpgrade);
-
-      if (compactMobile) {
-        const summary = el("div", "ah-picker-summary");
-        summary.appendChild(left);
-        summary.appendChild(el("div", "", `<span class="ah-status-chip ${statusMeta.className}">${statusMeta.label}</span>`));
-        row.appendChild(summary);
-
-        const metaRow = el("div", "ah-picker-meta", `<div class="ah-picker-cost">${it.costNext ? esc(fmtCost(it.costNext)) : "No further upgrades"}</div>`);
-        btn.classList.add("ah-picker-action");
-        metaRow.appendChild(btn);
-        row.appendChild(metaRow);
-      } else {
-        row.appendChild(left);
-        row.appendChild(btn);
-      }
-
-      row.addEventListener("click", () => {
+      const tile = el("button", `ah-gear-tile ${rarityClass(it.rarity)}${_selectedUpgradeKey === it.key ? " selected" : ""}`);
+      tile.type = "button";
+      tile.dataset.key = it.key;
+      const ico = el("div", `ah-ico ${rarityClass(it.rarity)}`);
+      mountItemIcon(ico, it, "16px");
+      tile.appendChild(ico);
+      tile.appendChild(el("span", "", esc(slotCaption(it))));
+      tile.addEventListener("click", () => {
         if (_selectedUpgradeKey !== it.key) _useIceCrystal = false;
         _selectedUpgradeKey = it.key;
-        if (compactMobile) _mobileUpgradeView = "detail";
         draw();
-        if (compactMobile) {
-          scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
-        } else if (window.innerWidth < 920) {
-          const target = _root && _root.querySelector(".ah-split");
-          const detail = target && target.lastElementChild;
-          if (detail) detail.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
       });
-
-      btn.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (_selectedUpgradeKey !== it.key) _useIceCrystal = false;
-        _selectedUpgradeKey = it.key;
-        if (compactMobile) {
-          _mobileUpgradeView = "detail";
-          draw();
-          scrollForgeSectionToTop(".ah-mobile-detail-panel", "smooth");
-          return;
-        }
-        doUpgrade(it);
-      });
-
-      list.appendChild(row);
+      scroller.appendChild(tile);
     });
 
-    listPanel.appendChild(el("div", "ah-divider", ""));
-    listPanel.appendChild(list);
+    prevBtn.addEventListener("click", () => {
+      scroller.scrollBy({ left: -88, behavior: "smooth" });
+    });
+    nextBtn.addEventListener("click", () => {
+      scroller.scrollBy({ left: 88, behavior: "smooth" });
+    });
 
-    const selected = eq.find((x) => x.key === _selectedUpgradeKey) || eq[0];
-    drawDetail(selected);
+    row.appendChild(prevBtn);
+    row.appendChild(scroller);
+    row.appendChild(nextBtn);
+    selector.appendChild(row);
+    body.appendChild(selector);
 
-    if (compactMobile) {
-      if (_mobileUpgradeView === "detail") split.appendChild(detailPanel);
-      else split.appendChild(listPanel);
-    } else if (window.innerWidth < 920) {
-      split.appendChild(detailPanel);
-      split.appendChild(listPanel);
-    } else {
-      split.appendChild(listPanel);
-      split.appendChild(detailPanel);
+    requestAnimationFrame(() => {
+      const selTile = scroller.querySelector(".ah-gear-tile.selected");
+      if (selTile && selTile.scrollIntoView) {
+        try { selTile.scrollIntoView({ behavior: "auto", inline: "center", block: "nearest" }); } catch (_) {}
+      }
+    });
+
+    const lore = itemLore(selected, preview);
+    const stage = el("div", `ah-stage ${rarityClass(rKey)}`);
+    stage.innerHTML = `
+      <div class="ah-stage-art">
+        <div class="ah-pedestal"></div>
+        <div class="ah-stage-ico ${rarityClass(rKey)}" id="ah-detail-ico"></div>
+      </div>
+      <div class="ah-stage-info">
+        <div class="ah-stage-cat">◈ ${esc(slotCaption(selected))}</div>
+        <div class="ah-stage-name">${esc(selected.name || selected.slotLabel || "Item")}</div>
+        <div class="ah-stage-meta">
+          <span class="ah-tag ${rarityClass(rKey)}">${esc(selected.rarity || "common")}</span>
+          <span class="ah-starline">★ ${esc(String(Number(selected.stars || 0)))} / ${esc(String(Number(selected.maxStars || 0)))}</span>
+        </div>
+        <div class="ah-lvl">
+          <span>Lv. ${esc(String(Number(selected.stars || 0)))}</span>
+          <span class="ah-stat-arrow">→</span>
+          <span class="to">Lv. ${esc(String(isMaxed ? Number(selected.stars || 0) : nextStars))}</span>
+        </div>
+        <div class="ah-stats">${renderStatDelta(selected, preview)}</div>
+        ${lore ? `<div class="ah-lore">${esc(lore)}</div>` : ""}
+      </div>
+    `;
+    body.appendChild(stage);
+    mountItemIcon(stage.querySelector("#ah-detail-ico"), selected, "28px");
+
+    const costRows = materialRows(cost, materials).filter((row) => row.need > 0);
+    const costBox = el("div", "ah-cost");
+    costBox.innerHTML = `
+      <div class="ah-kicker">Upgrade Cost</div>
+      ${costRows.length ? `
+        <div class="ah-cost-grid">
+          ${costRows.map((row) => `
+            <div class="ah-cost-cell ${row.ok ? "is-ok" : "is-missing"}">
+              <div class="lab">${matIcon(row.asset)} ${esc(row.label)}</div>
+              <div class="val">${esc(fmtNum(row.need))}</div>
+            </div>
+          `).join("")}
+        </div>
+      ` : `<div class="ah-small">${isMaxed ? "No further upgrades." : "No upgrade cost exposed for this piece."}</div>`}
+      ${miss.length ? `<div class="ah-missing">Missing: ${esc(miss.join(", "))}</div>` : ""}
+    `;
+    body.appendChild(costBox);
+
+    if (!dock) return;
+
+    const ctaIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 14.5 12 8.5 18 14.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18.5 12 12.5 18 18.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const cta = el(
+      "button",
+      "ah-upgrade-cta",
+      _busy ? "Forging..." : (isMaxed ? "Item Maxed" : (selected.canUpgrade ? `${ctaIcon} Upgrade` : "Missing Materials"))
+    );
+    cta.type = "button";
+    cta.disabled = _busy || isMaxed || !selected.canUpgrade;
+    cta.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      doUpgrade(selected);
+    });
+    dock.appendChild(cta);
+
+    if (showCrystal) {
+      const slot = el("label", "ah-crystal-slot");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = !!(_useIceCrystal && crystalCanUse);
+      box.disabled = !crystalCanUse || _busy;
+      box.addEventListener("change", () => {
+        _useIceCrystal = !!box.checked;
+      });
+      slot.appendChild(box);
+      slot.appendChild(el("span", "", `Ice Crystal${crystalOwned ? ` (${crystalOwned})` : ""}`));
+      dock.appendChild(slot);
     }
-
-    body.appendChild(split);
   }
 
   function renderCraft(body) {
     const cfg = getCfg();
+    const dock = clearDock();
     const shardSlots = (_state && _state.shardSlots) || [
       "weapon", "armor", "fangs", "cloak", "collar", "helmet", "ring", "offhand", "gloves"
     ];
@@ -2469,29 +1279,16 @@
     const poolsLine = pools
       ? `Pools: C ${pools.common || 0} / U ${pools.uncommon || 0} / R ${pools.rare || 0} / E ${pools.epic || 0} / L ${pools.legendary || 0}`
       : "Slot pool data not exposed.";
-
     const basePlus = Math.min(1, (cfg.uncommonBase || 0));
 
     body.appendChild(el("div", "ah-note",
-      `<div class="ah-section-kicker">Shard Forge</div>
+      `<div class="ah-kicker">Shard Forge</div>
        <div class="ah-section-title">Token-infused crafting</div>
-       <div class="ah-section-copy">
-         Spend slot shards to roll gear from that slot’s pool. Refine increases shard cost per pull and can improve your upgraded odds for uncommon or rare gear. Epic and Legendary only roll if that slot actually has items in those rarities.
-       </div>
-       <div class="ah-loreline">
-         Base cost <b>${cfg.baseCost}</b> · Refine adds <b>${cfg.refineCost}</b>/lvl · Upgraded base <b>${Math.round(basePlus * 100)}%</b> · Pity <b>${cfg.pity}</b> · ${esc(poolsLine)}
-       </div>`
+       <div class="ah-section-copy">Spend slot shards to roll gear from that slot’s pool. Refine increases shard cost per pull.</div>
+       <div class="ah-small" style="margin-top:6px">Base ${cfg.baseCost} · Refine +${cfg.refineCost}/lvl · Pity ${cfg.pity} · ${esc(poolsLine)} · Upgraded base ${Math.round(basePlus * 100)}%</div>`
     ));
 
-    const form = el("div", "ah-split");
     const controls = el("div", "ah-panel");
-    const results = el("div", "ah-panel");
-
-    controls.appendChild(el("div", "", `
-      <div class="ah-section-kicker">Forge Controls</div>
-      <div class="ah-section-title">Shape the pull</div>
-      <div class="ah-section-copy">Choose the slot, how many pulls to consume, and how much refine pressure to add before the vault spends shards.</div>
-    `));
 
     function currentPity(slot) {
       const fromState = _state && _state.pityMap && _state.pityMap[slot];
@@ -2509,55 +1306,48 @@
       return { wrap, right };
     }
 
-    const slotField = makeField("Slot", "Craft consumes <b>{slot}_shards</b> from the chosen category.");
-const sel = document.createElement("select");
-sel.className = "ah-control ah-slot-ghost-select";
+    const slotField = makeField("Slot", "Craft consumes {slot}_shards from the chosen category.");
+    const sel = document.createElement("select");
+    sel.className = "ah-control ah-slot-ghost-select";
+    const chipbar = el("div", "ah-chipbar");
 
-const chipbar = el("div", "ah-chipbar");
+    function renderSlotChips() {
+      chipbar.innerHTML = "";
+      const current = sel.value || shardSlots[0] || "weapon";
+      shardSlots.forEach((s) => {
+        const b = el("button", `ah-chip ${current === s ? "active" : ""}`, `${esc(cap(s))}<span class="count">${shardsHave(s)}</span>`);
+        b.type = "button";
+        b.disabled = _busy;
+        b.addEventListener("click", () => {
+          if (_busy) return;
+          sel.value = s;
+          renderSlotChips();
+          updateCost();
+        });
+        chipbar.appendChild(b);
+      });
+    }
 
-function renderSlotChips() {
-  chipbar.innerHTML = "";
-  const current = sel.value || shardSlots[0] || "weapon";
-
-  shardSlots.forEach((s) => {
-    const b = el(
-      "button",
-      `ah-chip ${current === s ? "active" : ""}`,
-      `${esc(cap(s))}<span class="count">${shardsHave(s)}</span>`
-    );
-    b.type = "button";
-    b.disabled = _busy;
-    b.addEventListener("click", () => {
-      if (_busy) return;
-      sel.value = s;
+    function refreshSlotLabels() {
+      Array.from(sel.options).forEach((opt) => {
+        const s = opt.value;
+        opt.textContent = `${cap(s)} (${shardsHave(s)})`;
+      });
       renderSlotChips();
-      updateCost();
+    }
+
+    shardSlots.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = `${cap(s)} (${shardsHave(s)})`;
+      sel.appendChild(opt);
     });
-    chipbar.appendChild(b);
-  });
-}
-
-function refreshSlotLabels() {
-  Array.from(sel.options).forEach((opt) => {
-    const s = opt.value;
-    opt.textContent = `${cap(s)} (${shardsHave(s)})`;
-  });
-  renderSlotChips();
-}
-
-shardSlots.forEach((s) => {
-  const opt = document.createElement("option");
-  opt.value = s;
-  opt.textContent = `${cap(s)} (${shardsHave(s)})`;
-  sel.appendChild(opt);
-});
-
-slotField.right.appendChild(sel);
-slotField.right.appendChild(chipbar);
+    slotField.right.appendChild(sel);
+    slotField.right.appendChild(chipbar);
 
     const countField = makeField("Count", "How many pulls to execute in one batch.");
     const countWrap = el("div", "ah-stepper");
-    const countMinus = el("button", "ah-btn subtle", "−");
+    const countMinus = el("button", "ah-btn", "−");
     countMinus.type = "button";
     const inpCount = document.createElement("input");
     inpCount.type = "number";
@@ -2565,7 +1355,7 @@ slotField.right.appendChild(chipbar);
     inpCount.max = "50";
     inpCount.value = "1";
     inpCount.className = "ah-control";
-    const countPlus = el("button", "ah-btn subtle", "+");
+    const countPlus = el("button", "ah-btn", "+");
     countPlus.type = "button";
     countWrap.appendChild(countMinus);
     countWrap.appendChild(inpCount);
@@ -2585,9 +1375,9 @@ slotField.right.appendChild(chipbar);
     });
     countField.right.appendChild(quick);
 
-    const refineField = makeField("Refine", "Extra pressure increases shard cost per pull and may improve uncommon or rare odds.");
+    const refineField = makeField("Refine", "Extra pressure increases shard cost per pull.");
     const refWrap = el("div", "ah-stepper");
-    const refMinus = el("button", "ah-btn subtle", "−");
+    const refMinus = el("button", "ah-btn", "−");
     refMinus.type = "button";
     const inpRef = document.createElement("input");
     inpRef.type = "number";
@@ -2595,7 +1385,7 @@ slotField.right.appendChild(chipbar);
     inpRef.max = "5";
     inpRef.value = "0";
     inpRef.className = "ah-control";
-    const refPlus = el("button", "ah-btn subtle", "+");
+    const refPlus = el("button", "ah-btn", "+");
     refPlus.type = "button";
     refWrap.appendChild(refMinus);
     refWrap.appendChild(inpRef);
@@ -2621,7 +1411,6 @@ slotField.right.appendChild(chipbar);
       inpCount.value = String(Math.min(50, n + 1));
       updateCost();
     });
-
     refMinus.addEventListener("click", () => {
       const n = clampField(inpRef, 0, 5);
       inpRef.value = String(Math.max(0, n - 1));
@@ -2634,149 +1423,90 @@ slotField.right.appendChild(chipbar);
     });
 
     function updateCost() {
-  const slot = sel.value;
-  const n = clampField(inpCount, 1, 50);
-  const r = clampField(inpRef, 0, 5);
+      const slot = sel.value;
+      const n = clampField(inpCount, 1, 50);
+      const r = clampField(inpRef, 0, 5);
+      const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
+      const total = per * n;
+      const have = shardsHave(slot);
+      const left = have - total;
+      const pU = Math.min((cfg.uncommonBase || 0) + (cfg.uncommonRefineAdd || 0) * r, (cfg.uncommonCap || 1));
+      const pRare = pU * (cfg.rareShare || 0.25);
+      const pUncommon = Math.max(0, pU - pRare);
+      const pity = currentPity(slot);
+      const pityMax = Number(cfg.pity || 0);
+      const pityRatio = (pity != null && pityMax > 0) ? Math.max(0, Math.min(1, Number(pity) / pityMax)) : 0;
+      let pityClass = "";
+      let pityLabel = "Cold";
+      if (pityRatio >= 1) { pityClass = "charged"; pityLabel = "Charged"; }
+      else if (pityRatio >= 0.66) { pityClass = "hot"; pityLabel = "Heating Up"; }
+      let spendState = "Ready";
+      if (left < 0) spendState = "Insufficient Shards";
+      else if (left === 0) spendState = "Exact Spend";
 
-  const per = (cfg.baseCost || 5) + r * (cfg.refineCost || 2);
-  const total = per * n;
-
-  const have = shardsHave(slot);
-  const left = have - total;
-
-  const pU = Math.min(
-    (cfg.uncommonBase || 0) + (cfg.uncommonRefineAdd || 0) * r,
-    (cfg.uncommonCap || 1)
-  );
-
-  const pRare = pU * (cfg.rareShare || 0.25);
-  const pUncommon = Math.max(0, pU - pRare);
-
-  const pity = currentPity(slot);
-  const pityMax = Number(cfg.pity || 0);
-  const pityRatio = (pity != null && pityMax > 0)
-    ? Math.max(0, Math.min(1, Number(pity) / pityMax))
-    : 0;
-
-  let pityClass = "";
-  let pityLabel = "Cold";
-  if (pityRatio >= 1) {
-    pityClass = "charged";
-    pityLabel = "Charged";
-  } else if (pityRatio >= 0.66) {
-    pityClass = "hot";
-    pityLabel = "Heating Up";
-  }
-
-  let spendState = "Ready";
-  if (left < 0) spendState = "Insufficient Shards";
-  else if (left === 0) spendState = "Exact Spend";
-
-  previewPanel.className = "ah-panel ah-preview-shell";
-  previewPanel.innerHTML = `
-    <div class="ah-preview-top">
-      <div>
-        <div class="ah-preview-kicker">Forge Preview</div>
-        <div class="ah-preview-title">${esc(cap(slot))} shard roll</div>
-      </div>
-      <div class="ah-preview-badge">${esc(spendState)}</div>
-    </div>
-
-    <div class="ah-forecast-grid">
-      <div class="ah-forecast-card">
-        <div class="k">Shard Spend</div>
-        <div class="v">${total} total</div>
-        <div class="sub">Have ${have} · Per pull ${per} · After ${left}</div>
-      </div>
-
-      <div class="ah-forecast-card">
-        <div class="k">Odds Snapshot</div>
-        <div class="v">${Math.round(pU * 100)}% upgraded</div>
-        <div class="sub">
-          Rare ${(pRare * 100).toFixed(2)}% / Uncommon ${(pUncommon * 100).toFixed(2)}% /
-          ${cfg.pEpic ? `Epic ${(cfg.pEpic * 100).toFixed(2)}% / ` : ``}
-          ${cfg.pLegendary ? `Legendary ${(cfg.pLegendary * 100).toFixed(2)}% / ` : ``}
-          Base upgraded ${Math.round((cfg.uncommonBase || 0) * 100)}%
+      previewPanel.className = "ah-panel ah-preview-shell";
+      previewPanel.innerHTML = `
+        <div class="ah-preview-top" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div>
+            <div class="ah-preview-kicker">Forge Preview</div>
+            <div class="ah-preview-title">${esc(cap(slot))} shard roll</div>
+          </div>
+          <div class="ah-preview-badge">${esc(spendState)}</div>
         </div>
-      </div>
-    </div>
+        <div class="ah-forecast-grid">
+          <div class="ah-forecast-card">
+            <div class="k">Shard Spend</div>
+            <div class="v">${total} total</div>
+            <div class="ah-small">Have ${have} · Per pull ${per} · After ${left}</div>
+          </div>
+          <div class="ah-forecast-card">
+            <div class="k">Odds Snapshot</div>
+            <div class="v">${Math.round(pU * 100)}% upgraded</div>
+            <div class="ah-small">Rare ${(pRare * 100).toFixed(2)}% / Uncommon ${(pUncommon * 100).toFixed(2)}%</div>
+          </div>
+        </div>
+        ${pity != null ? `
+          <div class="ah-pity-row">
+            <span>${esc(pityLabel)}</span>
+            <b>${Number(pity)} / ${pityMax}</b>
+          </div>
+          <div class="ah-meter"><div class="ah-meter-fill" style="width:${Math.round(pityRatio * 100)}%"></div></div>
+        ` : ""}
+      `;
+      fDbg.textContent = `preview(per=${per}, total=${total}, count=${n}, refine=${r}, slot=${slot})`;
+      renderSlotChips();
 
-    ${
-      pity != null ? `
-      <div class="ah-pity-row">
-        <span class="ah-pity-state ${pityClass}">
-          <span class="ah-pity-dot"></span>
-          <span>${pityLabel}</span>
-        </span>
-        <b>${Number(pity)} / ${pityMax}</b>
-      </div>
-      <div class="ah-meter">
-        <div class="ah-meter-fill" style="width:${Math.round(pityRatio * 100)}%"></div>
-      </div>
-      ` : ``
+      if (dock) {
+        const existing = dock.querySelector(".ah-upgrade-cta");
+        if (existing) {
+          existing.disabled = _busy || left < 0;
+          existing.textContent = _busy ? "Forging..." : (left < 0 ? "Need Shards" : "Forge Pull");
+        }
+      }
     }
-
-    <div class="ah-outcome-note">
-      Forecast only. Real shard spend, pity updates and drop resolution still come directly from the backend craft endpoint.
-    </div>
-  `;
-
-  fDbg.textContent = `preview(per=${per}, total=${total}, count=${n}, refine=${r}, slot=${slot})`;
-  renderSlotChips();
-}
 
     inpCount.addEventListener("input", updateCost);
     inpRef.addEventListener("input", updateCost);
     sel.addEventListener("change", updateCost);
 
-    const btnRow = el("div", "ah-btnrow");
-    const btn = el("button", "ah-btn primary", "Forge Pull");
+    const btn = el("button", "ah-upgrade-cta", "Forge Pull");
     btn.type = "button";
     btn.disabled = _busy;
-
-    const refreshBtn = el("button", "ah-btn subtle", "Refresh");
-    refreshBtn.type = "button";
-    refreshBtn.disabled = _busy;
-    refreshBtn.addEventListener("click", async () => {
-      if (_busy) return;
-      const perfT0 = window.__ahPerf?.now?.() || Date.now();
-      _busy = true;
-      draw();
-      try {
-        await loadState();
-        toast("Forge updated.");
-      } catch (e) {
-        toast(`Refresh failed: ${e.message}`);
-      } finally {
-        _busy = false;
-        draw();
-        logActionPerf("forge_refresh", perfT0);
-      }
-    });
-
-    btnRow.appendChild(btn);
-    btnRow.appendChild(refreshBtn);
-
     btn.addEventListener("click", async () => {
       if (_busy) return;
       const perfT0 = window.__ahPerf?.now?.() || Date.now();
-
       const slot = sel.value;
       const count = clampField(inpCount, 1, 50);
       const refine = clampField(inpRef, 0, 5);
-
       const per = (cfg.baseCost || 5) + refine * (cfg.refineCost || 2);
       const total = per * count;
-
       const have = shardsHave(slot);
       if (have < total) {
         toast(`Not enough ${slot}_shards (need ${total}, have ${have}).`);
         return;
       }
-
       _busy = true;
       draw();
-
       try {
         const run_id = rid("web_craft");
         const res = await post("/webapp/forge/craft", {
@@ -2787,50 +1517,34 @@ slotField.right.appendChild(chipbar);
           run_id,
           client_preview: { per, total, have, slot, count, refine },
         });
-
         const data = pick(res, "data", null) || pick(res, "result.data", null) || null;
-
         const made = pick(res, "made", null) || pick(res, "result.made", null) || [];
         const pityMap = pick(res, "pityMap", null) || pick(res, "result.pityMap", null) || pick(data, "pityMap", null);
         const pity = pick(res, "pity", null) ?? pick(res, "result.pity", null) ?? pick(data, "pity", null);
-
         const spent = pick(res, "spent", null) ?? pick(res, "need", null) ?? pick(res, "result.spent", null);
         const echo = pick(res, "echo", null) || pick(res, "result.echo", null) || null;
         const have_after = pick(res, "have_after", null) ?? pick(res, "result.have_after", null) ?? pick(data, `shards.${slot}_shards`, null);
-
         _lastCraft = { slot, made, spent: spent != null ? Number(spent) : null, echo };
-
         if (data) {
           _state = data;
         } else {
           _state = _state || {};
           _state.shards = _state.shards || {};
           if (have_after != null) _state.shards[`${slot}_shards`] = Number(have_after);
-
           if (pityMap) _state.pityMap = pityMap;
           else if (pity != null) {
             _state.pityMap = _state.pityMap || {};
             _state.pityMap[slot] = Number(pity);
           }
         }
-
         if (pityMap && pityMap[slot] != null) _pityOverride[slot] = Number(pityMap[slot]);
         else if (pity != null) _pityOverride[slot] = Number(pity);
-
         const craftMessage = String(pick(res, "message", "") || pick(res, "result.message", "") || "");
-        if (craftMessage) {
-          toast(craftMessage);
-        } else if (spent != null && Number(spent) !== Number(total)) {
-          const eCnt = echo && echo.count != null ? `count=${echo.count}` : `count=${count}`;
-          const eRef = echo && echo.refine != null ? `refine=${echo.refine}` : `refine=${refine}`;
-          toast(`Server spent ${spent} (preview ${total}) · ${eCnt} ${eRef}`);
-        } else {
-          toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
-        }
-
+        if (craftMessage) toast(craftMessage);
+        else if (spent != null && Number(spent) !== Number(total)) toast(`Server spent ${spent} (preview ${total})`);
+        else toast(made.length ? `Crafted ${made.length} item(s).` : "Craft complete.");
         try { refreshSlotLabels(); } catch (_) {}
         try { updateCost(); } catch (_) {}
-
         const uiErrorEl = document.getElementById("forge-error");
         if (uiErrorEl) uiErrorEl.textContent = "";
       } catch (e) {
@@ -2838,48 +1552,22 @@ slotField.right.appendChild(chipbar);
         if (!uiErrorEl) {
           uiErrorEl = document.createElement("pre");
           uiErrorEl.id = "forge-error";
-          uiErrorEl.style.whiteSpace = "pre-wrap";
-          uiErrorEl.style.wordBreak = "break-word";
-          uiErrorEl.style.margin = "12px 0 0";
-          uiErrorEl.style.padding = "12px 14px";
-          uiErrorEl.style.border = "1px solid rgba(255,255,255,.16)";
-          uiErrorEl.style.borderRadius = "16px";
-          uiErrorEl.style.background = "rgba(0,0,0,.35)";
-          uiErrorEl.style.fontSize = "12px";
-          uiErrorEl.style.lineHeight = "1.4";
-
           const mount =
             document.querySelector("#forge-modal .modal-body") ||
             document.querySelector("#forge-modal") ||
             document.querySelector("#forge") ||
             (_root && _root.querySelector(".ah-forge-body")) ||
             document.body;
-
           mount.appendChild(uiErrorEl);
         }
-
         console.error("CRAFT ERROR:", e);
-
         const status = e?.status ?? e?.data?.status ?? "";
         const payload = e?.data?.data || e?.data || {};
         const rawMsg = (e && typeof e === "object" && e.message) ? e.message : String(e);
         const reason = payload?.reason || rawMsg || "unknown";
-
         let payloadPretty = "";
-        try { payloadPretty = JSON.stringify(payload, null, 2); }
-        catch { payloadPretty = String(payload); }
-
-        const dbgPretty = payload?.dbg ? (() => {
-          try { return JSON.stringify(payload.dbg, null, 2); } catch { return String(payload.dbg); }
-        })() : "";
-
-        uiErrorEl.textContent =
-          `Craft failed${status ? " [" + status + "]" : ""}: ${reason}\n\n` +
-          `raw: ${String(e)}\n\n` +
-          (dbgPretty ? `DBG:\n${dbgPretty}\n\n` : "") +
-          (payload?.trace ? `TRACE:\n${payload.trace}\n\n` : "") +
-          `PAYLOAD:\n${payloadPretty}`;
-
+        try { payloadPretty = JSON.stringify(payload, null, 2); } catch { payloadPretty = String(payload); }
+        uiErrorEl.textContent = `Craft failed${status ? " [" + status + "]" : ""}: ${reason}\n\nPAYLOAD:\n${payloadPretty}`;
         toast(`Craft failed${status ? " [" + status + "]" : ""}: ${reason}`);
       } finally {
         _busy = false;
@@ -2888,79 +1576,36 @@ slotField.right.appendChild(chipbar);
       }
     });
 
-    controls.appendChild(el("div", "ah-divider", ""));
     controls.appendChild(slotField.wrap);
     controls.appendChild(countField.wrap);
     controls.appendChild(refineField.wrap);
     controls.appendChild(previewPanel);
     controls.appendChild(fDbg);
-    controls.appendChild(el("div", "ah-divider", ""));
-    controls.appendChild(btnRow);
+    body.appendChild(controls);
 
-    results.appendChild(el("div", "", `
-      <div class="ah-section-kicker">Craft Results</div>
-      <div class="ah-section-title">Latest forge output</div>
-      <div class="ah-section-copy">The last crafted batch appears here. This panel is visual only and reads whatever the craft call returned.</div>
-    `));
-
+    const results = el("div", "ah-panel");
+    results.appendChild(el("div", "ah-kicker", "Craft Results"));
     const out = el("div", "ah-results");
-
-    function drawResults() {
-  out.innerHTML = "";
-
-  const made = (_lastCraft && _lastCraft.made) || [];
-  if (!made.length) {
-    out.appendChild(el("div", "ah-results-empty", "No craft results yet. Run a shard pull to populate this panel."));
-  } else {
-    made.forEach((it) => {
-      const obj = (typeof it === "string") ? { key: it } : (it || {});
-      const rKey = rarityKey(obj.rarity);
-      const card = el("div", `ah-result ah-result-cine ${rarityClass(rKey)}`);
-      const ribbon = el("div", "ah-result-ribbon", "FORGED");
-
-      const ico = el("div", `ah-ico ${rarityClass(rKey)}`);
-      const img = document.createElement("img");
-      img.alt = obj.name || obj.key || "item";
-      img.src = obj.icon || "";
-      img.onerror = () => {
-        img.remove();
-        ico.textContent = "✦";
-      };
-      ico.appendChild(img);
-
-      const meta = el("div", "ah-meta");
-      meta.appendChild(el("div", "ah-line", `<b>${esc(obj.name || obj.key || "Item")}</b>`));
-      meta.appendChild(el("div", "ah-subline", `<span class="ah-tag ${rarityClass(rKey)}">${esc(obj.rarity || "common")}</span><span>${esc(cap(_lastCraft.slot || ""))}</span>`));
-      meta.appendChild(el("div", "ah-small", `Pulled from ${esc(cap(_lastCraft.slot || ""))} shard pool.`));
-
-      card.appendChild(ribbon);
-      card.appendChild(ico);
-      card.appendChild(meta);
-      out.appendChild(card);
-    });
-  }
-
-  const spent = _lastCraft && _lastCraft.spent;
-  const echo = _lastCraft && _lastCraft.echo;
-  if (spent != null || echo) {
-    const txt = [
-      (spent != null ? `spent=${spent}` : null),
-      (echo && echo.count != null ? `count=${echo.count}` : null),
-      (echo && echo.refine != null ? `refine=${echo.refine}` : null),
-    ].filter(Boolean).join(" · ");
-
-    out.appendChild(el("div", "ah-results-empty", txt || "Last craft debug metadata unavailable."));
-  }
-}
-
-    drawResults();
-    results.appendChild(el("div", "ah-divider", ""));
+    const made = (_lastCraft && _lastCraft.made) || [];
+    if (!made.length) {
+      out.appendChild(el("div", "ah-results-empty", "No craft results yet. Run a shard pull to populate this panel."));
+    } else {
+      made.forEach((it) => {
+        const obj = (typeof it === "string") ? { key: it } : (it || {});
+        const rKey = rarityKey(obj.rarity);
+        const card = el("div", `ah-result ${rarityClass(rKey)}`);
+        const ico = el("div", `ah-ico ${rarityClass(rKey)}`);
+        mountItemIcon(ico, obj, "16px");
+        const meta = el("div", "", `<b>${esc(obj.name || obj.key || "Item")}</b><div class="ah-small">${esc(obj.rarity || "common")} · ${esc(cap(_lastCraft.slot || ""))}</div>`);
+        card.appendChild(ico);
+        card.appendChild(meta);
+        out.appendChild(card);
+      });
+    }
     results.appendChild(out);
+    body.appendChild(results);
 
-    form.appendChild(controls);
-    form.appendChild(results);
-    body.appendChild(form);
-
+    if (dock) dock.appendChild(btn);
     refreshSlotLabels();
     updateCost();
   }
@@ -2972,14 +1617,9 @@ slotField.right.appendChild(chipbar);
     const sub = _root.querySelector(".ah-forge-sub");
     const eyebrow = _root.querySelector(".ah-forge-eyebrow");
 
-    title.textContent = _ctx.name || "Forgotten Tokens’ Vault";
-    if (eyebrow) {
-      eyebrow.innerHTML = `<span class="dot"></span><span>Vault Forge Station</span>`;
-    }
-
-    sub.textContent = _ctx.buildingId
-      ? `Building: ${_ctx.buildingId} · ${_tab === "upgrade" ? "Upgrade Bench" : "Shard Forge"}`
-      : (_tab === "upgrade" ? "Upgrade Bench" : "Shard Forge");
+    if (title) title.textContent = _ctx.name || "Forgotten Tokens’ Vault";
+    if (eyebrow) eyebrow.innerHTML = `<span class="dot"></span><span>Worksmith Forge</span>`;
+    if (sub) sub.textContent = "Old gear. New power. Forge what endures.";
 
     const tabs = _root.querySelectorAll(".ah-forge-tab");
     tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === _tab));
@@ -2988,8 +1628,9 @@ slotField.right.appendChild(chipbar);
     body.innerHTML = "";
 
     if (!_state) {
+      clearDock();
       body.appendChild(el("div", "ah-note",
-        `<div class="ah-section-kicker">Loading</div>
+        `<div class="ah-kicker">Loading</div>
          <div class="ah-section-title">Connecting to the vault</div>
          <div class="ah-section-copy">Pulling forge state, balances, shard pools and upgrade data…</div>`
       ));
@@ -3027,7 +1668,6 @@ slotField.right.appendChild(chipbar);
     _state = null;
     _busy = false;
     _tab = "upgrade";
-    _mobileUpgradeView = "picker";
     restoreMobileShellAfterForgeExit("forge-teardown");
   }
 
@@ -3046,6 +1686,7 @@ slotField.right.appendChild(chipbar);
   function mount() {
     if (_root && _root.isConnected) return;
 
+    ensureFonts();
     ensureStyles();
     lockScroll(true);
     document.body.classList.add("ah-forge-open");
@@ -3060,21 +1701,24 @@ slotField.right.appendChild(chipbar);
     const modal = el("div", "ah-forge");
 
     const head = el("div", "ah-forge-head");
-    const left = el("div", "ah-head-left");
-    left.appendChild(el("div", "ah-forge-eyebrow", `<span class="dot"></span><span>Vault Forge Station</span>`));
-    left.appendChild(el("div", "ah-forge-title", _ctx.name || "Forgotten Tokens’ Vault"));
-    left.appendChild(el("div", "ah-forge-sub", ""));
-    head.appendChild(left);
+    const top = el("div", "ah-head-top");
+    const back = el("button", "ah-forge-back", `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5 8 12l7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Alpha Husky</span>`);
+    back.type = "button";
+    back.setAttribute("aria-label", "Close forge");
+    back.addEventListener("click", () => closeViaNav("forge-close"));
+    top.appendChild(back);
 
-    const close = el("button", "ah-forge-close", "✕");
-    close.type = "button";
-    close.addEventListener("click", () => closeViaNav("forge-close"));
-    head.appendChild(close);
+    const left = el("div", "ah-head-copy");
+    left.appendChild(el("div", "ah-forge-eyebrow", `<span class="dot"></span><span>Worksmith Forge</span>`));
+    left.appendChild(el("div", "ah-forge-title", _ctx.name || "Forgotten Tokens’ Vault"));
+    left.appendChild(el("div", "ah-forge-sub", "Old gear. New power. Forge what endures."));
+    head.appendChild(top);
+    head.appendChild(left);
 
     const tabs = el("div", "ah-forge-tabs");
     [
-      ["upgrade", "UPGRADE"],
-      ["craft", "CRAFT"],
+      ["upgrade", `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18h4l9.2-9.2a1.5 1.5 0 0 0 0-2.1L15.3 4.8a1.5 1.5 0 0 0-2.1 0L4 14v4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 6.5 17.5 11" stroke="currentColor" stroke-width="1.8"/></svg> Upgrade`],
+      ["craft", `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4 8v8l8 5 8-5V8l-8-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Craft`],
     ].forEach(([k, label]) => {
       const t = el("button", "ah-forge-tab", label);
       t.type = "button";
@@ -3085,11 +1729,14 @@ slotField.right.appendChild(chipbar);
       });
       tabs.appendChild(t);
     });
+    tabs.appendChild(el("div", "ah-forge-survivor", "Forged by survivors"));
 
     const body = el("div", "ah-forge-body", "");
+    const dock = el("div", "ah-forge-dock");
     modal.appendChild(head);
     modal.appendChild(tabs);
     modal.appendChild(body);
+    modal.appendChild(dock);
     backdrop.appendChild(modal);
 
     backdrop.addEventListener("click", (e) => {
