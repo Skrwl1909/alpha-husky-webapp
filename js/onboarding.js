@@ -497,6 +497,7 @@
       state: missionState.state || tutorialState.state || null,
       completion: missionState.completion || tutorialState.completion || null,
       reward: missionState.reward || tutorialState.reward || null,
+      progressionReward: missionState.progressionReward || tutorialState.progressionReward || null,
       faction_selected: tutorialState.faction_selected === true,
     };
   }
@@ -612,19 +613,29 @@
       label = "Open ready mission";
     } else if (state.state === "REWARD_RECEIVED") {
       const reward = state.reward || {};
+      const progression = state.progressionReward || {};
+      const xp = Number(progression.xp || 0);
+      const bones = Number(progression.bones || 0);
       const strength = Number(reward?.statBonus?.strength || 0);
       icon = "🦷";
-      heading = reward.displayName || "Rustfang Fangs";
-      copy = "Your first recovered gear is waiting to be equipped.";
-      detail = `<div class="ob-note">${escapeHtml(reward.rarity || "common")} · ${escapeHtml(reward.slot || "fangs")}${strength > 0 ? ` · +${strength} Strength` : ""}</div>`;
+      heading = "FIRST SIGNAL CLEAR";
+      copy = "Mission rewards secured. Your recovered Rustfang gear is ready to equip.";
+      detail = `${xp > 0 && bones > 0 ? `<div class="ob-note"><strong>+${escapeHtml(xp)} EXP &middot; +${escapeHtml(bones)} Bones</strong></div>` : ""}
+        <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")}</strong> &middot; ${escapeHtml(reward.rarity || "common")} &middot; ${escapeHtml(reward.slot || "fangs")}${strength > 0 ? ` &middot; +${strength} Strength` : ""}</div>`;
       action = "equip";
       label = "Inspect recovered gear";
     } else if (state.state === "COMPLETED") {
       const completion = state.completion || {};
+      const progression = state.progressionReward || {};
+      const xp = Number(progression.xp || 0);
+      const bones = Number(progression.bones || 0);
+      const reward = state.reward || {};
       icon = "▲";
       heading = "BUILD IMPROVED";
-      copy = "Your first gear upgrade is active.";
-      detail = `<div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
+      copy = "FIRST SIGNAL rewards are secured and your first gear upgrade is active.";
+      detail = `${xp > 0 && bones > 0 ? `<div class="ob-note"><strong>+${escapeHtml(xp)} EXP &middot; +${escapeHtml(bones)} Bones</strong></div>` : ""}
+        <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")} equipped</strong></div>
+        <div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
       label = "Discover Blood Moon Tower";
     }
