@@ -99,8 +99,36 @@
     };
   }
 
-  function runtimeLabel(nodeId) {
-    return runtimePresentation(nodeId).label;
+  function activityAccessState(node) {
+    const resolved = global.MapObjectiveResolver?.getCurrent?.() || null;
+    if (resolved?.resolved && asText(resolved.nodeId) === asText(node?.id)) {
+      return { kind: "objective", label: "OBJECTIVE" };
+    }
+    if (asText(node?.action).toLowerCase() === "coming_soon") {
+      return { kind: "sealed", label: "SEALED" };
+    }
+    if (
+      asText(node?.id) === "dead_relay_exchange" &&
+      typeof global.WorldExploration?.canOpenDeadRelay === "function" &&
+      !global.WorldExploration.canOpenDeadRelay()
+    ) {
+      return { kind: "locked", label: "LOCKED" };
+    }
+    return { kind: "ready", label: "READY" };
+  }
+
+  function nodeKindLabel(node) {
+    const action = asText(node?.action);
+    if (!action) return "Activity";
+    return action.replace(/^open_/, "").replaceAll("_", " ");
+  }
+
+  function objectiveRouteText() {
+    const resolved = global.MapObjectiveResolver?.getCurrent?.() || null;
+    if (!resolved?.resolved) return "";
+    const section = sectionLabel(resolved.sectionId);
+    const name = asText(getNode(resolved.nodeId)?.name);
+    return name ? `${section} → ${name}` : section;
   }
 
   function objectiveSummary(sectionId) {
@@ -121,6 +149,10 @@
       element("span", "map-v2-objective-label", "OBJECTIVE"),
       element("span", "map-v2-objective-text", summary.text),
     );
+    const route = !sectionId ? objectiveRouteText() : "";
+    const routeNode = element("span", "map-v2-objective-route", route);
+    routeNode.hidden = !route;
+    strip.append(routeNode);
     return strip;
   }
 
@@ -130,6 +162,12 @@
     strip.className = `map-v2-objective is-${summary.tone}`;
     const text = strip.querySelector?.(".map-v2-objective-text");
     if (text) text.textContent = summary.text;
+    const routeNode = strip.querySelector?.(".map-v2-objective-route");
+    if (routeNode) {
+      const route = sectionId === "world" ? objectiveRouteText() : "";
+      routeNode.textContent = route;
+      routeNode.hidden = !route;
+    }
   }
 
   function refreshObjectiveStrips() {
@@ -204,7 +242,7 @@
     const view = element("section", "map-v2-view map-v2-world", null);
     const intro = element("header", "map-v2-intro");
     intro.append(
-      element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD NETWORK"),
+      element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD"),
       element("h3", "map-v2-title", "World"),
       element("p", "map-v2-copy", "Four operational sections. Select one to access its activities."),
     );
@@ -229,6 +267,9 @@
         element("p", "map-v2-section-meta", meta),
         button("map-v2-section-action", count ? "Open section" : "Inspect horizon", () => renderSection(section.sectionId)),
       );
+      if (card.dataset.mapV2Objective === "true") {
+        card.append(element("span", "map-v2-section-objective-chip", "Objective here"));
+      }
       sections.append(card);
     }
     view.append(sections);
@@ -237,12 +278,14 @@
 
   function createActivityCard(node) {
     const selected = state.selectedNodeId === node.id;
+    const access = activityAccessState(node);
     const card = button(`map-v2-activity${selected ? " is-selected" : ""}`, "", () => {
       state.selectedNodeId = node.id;
       renderSection(state.sectionId);
     });
     card.setAttribute("aria-pressed", selected ? "true" : "false");
     card.dataset.mapV2NodeId = node.id;
+    card.dataset.mapV2Access = access.kind;
     const asset = asText(node.icon || node.asset);
     if (asset) {
       const art = element("span", "map-v2-activity-art");
@@ -258,8 +301,11 @@
     const runtimeStatus = element("span", "map-v2-activity-status map-v2-runtime-status", runtime.label);
     const runtimeDetail = element("span", "map-v2-activity-runtime-detail map-v2-runtime-detail", runtime.detail);
     runtimeDetail.hidden = !runtime.detail;
+    const chip = element("span", `map-v2-access-chip is-${access.kind}`, access.label);
     text.append(
       element("strong", "map-v2-activity-name", asText(node.name) || node.id),
+      element("span", "map-v2-activity-kind", nodeKindLabel(node)),
+      chip,
       runtimeStatus,
       runtimeDetail,
     );
@@ -271,13 +317,35 @@
     const dock = element("aside", "map-v2-dock");
     dock.dataset.mapV2NodeId = node.id;
     const runtime = runtimePresentation(node.id);
+    const access = activityAccessState(node);
     dock.dataset.mapV2RuntimeTone = runtime.tone;
+    dock.dataset.mapV2Access = access.kind;
     const runtimeDetail = element("p", "map-v2-dock-runtime-detail map-v2-runtime-detail", runtime.detail);
     runtimeDetail.hidden = !runtime.detail;
+    const asset = asText(node.icon || node.asset);
+    if (asset) {
+      const hero = element("div", "map-v2-dock-hero");
+      const image = element("img", "map-v2-dock-hero-image");
+      image.src = asset;
+      image.alt = "";
+      hero.append(image);
+      dock.append(hero);
+    }
+    const facts = element("div", "map-v2-dock-facts");
+    const addFact = (label, value) => {
+      const row = element("div", "map-v2-dock-fact");
+      row.append(element("span", "map-v2-dock-fact-label", label), element("span", "map-v2-dock-fact-value", value));
+      facts.append(row);
+    };
+    addFact("Region", sectionLabel(state.sectionId));
+    addFact("Category", nodeKindLabel(node));
+    addFact("Status", access.label);
+    const briefing = asText(node.desc) || asText(node.lore?.identity) || "No production description available.";
     dock.append(
       element("p", "map-v2-dock-kicker", "SELECTED ACTIVITY"),
       element("h4", "map-v2-dock-title", asText(node.name) || node.id),
-      element("p", "map-v2-dock-desc", asText(node.desc) || "No production description available."),
+      element("p", "map-v2-dock-desc", briefing),
+      facts,
       element("p", "map-v2-dock-status map-v2-runtime-status", runtime.label),
       runtimeDetail,
     );
@@ -347,6 +415,7 @@
       view.append(element("p", "map-v2-empty-copy", "Production catalog unavailable. No action is shown."));
     } else {
       if (!nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = null;
+      activities.append(element("p", "map-v2-list-kicker", "Activities"));
       for (const node of nodes) activities.append(createActivityCard(node));
       const campaignSurface = createCampaignSurfaceSlots(section);
       if (campaignSurface) view.append(campaignSurface.slots);
@@ -361,6 +430,18 @@
     state.root.replaceChildren(view);
   }
 
+  function ensureCompactSectionCss() {
+    const doc = global.document;
+    if (!doc || typeof doc.getElementById !== "function" || typeof doc.createElement !== "function") return;
+    if (doc.getElementById("ah-map-v2-compact-lock")) return;
+    if (!doc.head || typeof doc.head.appendChild !== "function") return;
+    const style = doc.createElement("style");
+    if (!style) return;
+    style.id = "ah-map-v2-compact-lock";
+    style.textContent = '#mapV2Mount .map-v2-activity-list{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}#mapV2Mount .map-v2-activity{appearance:none;display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto;min-height:72px;height:auto;padding:0;font:inherit}#mapV2Mount .map-v2-activity::before{content:none;display:none;border:0;border-image-source:none}#mapV2Mount .map-v2-activity-art{min-height:72px;border-right:1px solid rgba(161,203,224,.1);border-bottom:0}#mapV2Mount .map-v2-activity-image{width:48px;height:48px;max-width:48px;padding:0;transform:none}#mapV2Mount .map-v2-activity-copy{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;gap:2px 8px;padding:8px 12px 8px 6px}#mapV2Mount .map-v2-dock{position:relative;bottom:auto;display:flex;flex-direction:column}';
+    doc.head.appendChild(style);
+  }
+
   function mount(root) {
     if (!root || typeof root.replaceChildren !== "function") return false;
     if (state.root && state.root !== root) {
@@ -368,6 +449,7 @@
       stopCTAUpdates();
     }
     state.root = root;
+    ensureCompactSectionCss();
     return true;
   }
 
