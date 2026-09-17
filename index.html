@@ -7878,6 +7878,14 @@ body.bc-open #ahCommunityBtn{
     window.WEBAPP_VER = "tops-2.7.6-first-session-goal-spine-v1-20260913-ftue-p0-continuity-20260916-ftue-p2-world-handoff-p3-final-canon-core-tactical-grad-v1";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
+  <script>
+  (function (ver) {
+    var q = encodeURIComponent(String(ver || "dev"));
+    document.querySelectorAll('link[href*="map_sections_v2.css"]').forEach(function (link) {
+      link.href = "css/map_sections_v2.css?v=" + q;
+    });
+  })(window.WEBAPP_VER);
+  </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
   <script src="/js/capp_client.js?v=capp-proof-v1"></script>
   <script src="/js/telegram_shell.js?v=world-canvas-mobile-ux-v1"></script>
@@ -12674,9 +12682,12 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script src="js/forge.js?v=WEBAPP_VER"></script>
 <script>document.write('<script src="js/missions.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/cta.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script src="js/map_section_assignments.js?v=WEBAPP_VER"></script>
-<script src="js/map_objective_resolver.js?v=WEBAPP_VER"></script>
-<script src="js/map_sections_v2.js?v=WEBAPP_VER"></script>
+<!-- src="js/map_section_assignments.js?v=WEBAPP_VER" -->
+<script>document.write('<script src="js/map_section_assignments.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<!-- src="js/map_objective_resolver.js?v=WEBAPP_VER" -->
+<script>document.write('<script src="js/map_objective_resolver.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<!-- src="js/map_sections_v2.js?v=WEBAPP_VER" -->
+<script>document.write('<script src="js/map_sections_v2.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="js/player_profile.js?v=WEBAPP_VER"></script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script>document.write('<script src="js/campaign.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
