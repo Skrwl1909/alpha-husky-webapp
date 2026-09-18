@@ -4,7 +4,7 @@
 
   var ROOT_ID = "ahDevFreshRoot";
   var STYLE_ID = "ah-dev-fresh-css";
-  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1", "ah.ftue.scoutGuide.v1", "ah.ftue.forgeDiscovery.v1", "ah.ftue.coreSystemDiscovery.v1"];
+  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1", "ah.ftue.scoutGuide.v1", "ah.ftue.forgeDiscovery.v1", "ah.ftue.coreSystemDiscovery.v1", "ah.discovery.postFtue.v1"];
 
   var S = {
     apiPost: null,
@@ -41,6 +41,7 @@
 
   function clearFirstSessionLocal() {
     global.ContextualDiscovery?.reset();
+    global.DiscoveryGuide?.reset?.();
     global.GuidedNavigation?.reset();
     global.FirstSessionSpine?.reset(true);
     try { localStorage.removeItem("ah.contextualDiscovery.v1"); } catch (_) {}
