@@ -7875,7 +7875,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.6-first-session-goal-spine-v1-20260913-ftue-p0-continuity-20260916-ftue-p2-world-handoff-p3-final-canon-core-tactical-grad-v1";
+    window.WEBAPP_VER = "tops-2.7.7-post-ftue-discovery-v1-20260918";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -8494,7 +8494,8 @@ function closeFaqModal(){
             .then(() => window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click())
             .catch(() => document.querySelector('.btn.referral')?.click()),
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
-          profile:   ()=>document.querySelector('.btn.profile')?.click(),
+          profile:   ()=>show(charBack),
+          support:   ()=>{ hide(hubBack); return window.Support?.open?.(); },
           mailbox:   ()=>window.Mailbox?.open?.(),
           campaign:  ()=>window.Campaign?.open?.(),
           faq: () => openFaqModal(),
@@ -8507,6 +8508,7 @@ function closeFaqModal(){
           frames: () => { void openFrames(); },
           badges: () => { void openBadges(); },
           avatar:    ()=>document.querySelector('.btn.avatar')?.click(),
+          stats:     ()=>{ hide(charBack); const back=$('#statsBack'); show(back); window.Stats?.refresh?.(); },
           pets:      ()=>document.querySelector('.btn.mypets')?.click(),
         };
 
@@ -8530,8 +8532,18 @@ function closeFaqModal(){
         // Tap hero-frame => Character sheet
         $('#heroFrame')?.addEventListener('click', ()=>show(charBack));
 
-        $('#heroProfileBtn')?.addEventListener('click', ()=>window.Equipped?.open?.());
+        $('#heroProfileBtn')?.addEventListener('click', ()=>show(charBack));
         $('#heroShareBtn')?.addEventListener('click', ()=>window.ShareCard?.open?.("hub"));
+
+        // Stable facade for discovery/contextual guidance while legacy HomeNav owns clicks.
+        window.HomeNav = window.HomeNav || {
+          openHub: ()=>show(hubBack),
+          openMissions: ()=>actionMap.missions(),
+          openMap: ()=>actionMap.map(),
+          openInventory: ()=>actionMap.inventory(),
+          openSupport: ()=>actionMap.support(),
+          closeAll: ()=>[hubBack,charBack,shareBack,$('#supportBack'),$('#statsBack')].forEach(hide),
+        };
       })();
 
       // ✅ ONE global HOME — deterministic return to main menu/map
@@ -8735,16 +8747,26 @@ async function getInitDataSafe(timeoutMs = 800) {
 }
 
 async function apiPostRaw(path, payload){
-  const init_data = await getInitDataSafe();
+  // Standalone Android SecureSession: do not attach Telegram initData (prevents BAD_HASH spam).
+  const sessionToken = String(window.__ahAlphaAccountSession?.sessionToken || window.__ahAlphaAccountSession?.session_token || "").trim();
+  let init_data = "";
+  if (!sessionToken) {
+    init_data = await getInitDataSafe();
+  }
   const headers = { "Content-Type": "application/json" };
-  if (init_data) headers.Authorization = `Bearer ${init_data}`;
+  if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
+  else if (init_data) headers.Authorization = `Bearer ${init_data}`;
+
+  const bodyObj = { ...(payload||{}) };
+  if (sessionToken) bodyObj.session_token = sessionToken;
+  else if (init_data) bodyObj.init_data = init_data;
 
   const res = await fetch(api(path), {
     method: "POST",
     headers,
-    // ✅ init_data LAST so payload can’t override it
-    body: JSON.stringify({ ...(payload||{}), init_data })
+    body: JSON.stringify(bodyObj)
   });
+
 
   const data = await res.json().catch(()=> ({}));
   if (!res.ok) throw Object.assign(new Error(data.reason || res.statusText), { status: res.status, data });
@@ -13142,7 +13164,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="/js/contextual_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/core_system_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<!-- sd-p0-discovery-guide-v1-20260909 sd-ftue-scout-guide-v1-20260910 sd-post-ftue-next-move-v1-20260911 sd-contextual-discovery-v1-20260911 sd-ftue-core-tactical-grad-v1-20260916 -->
+<!-- sd-post-ftue-discovery-v1-20260918 sd-ftue-scout-guide-v1-20260910 sd-post-ftue-next-move-v1-20260911 sd-contextual-discovery-v1-20260911 sd-ftue-core-tactical-grad-v1-20260916 -->
 
 <!-- SUPPORT (Stars) -->
 <script src="/js/support.js?v=WEBAPP_VER"></script>
