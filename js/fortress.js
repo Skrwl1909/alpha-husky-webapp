@@ -14,6 +14,13 @@
     dbg: (..._args) => {},
   };
 
+  const UI = {
+    state: null,
+    selectedFloor: null,
+    cooldownLeft: 0,
+    ready: false,
+  };
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const el = (t, cls) => {
     const x = document.createElement(t);
@@ -145,15 +152,20 @@
 }
 #fortress-modal{position:fixed;inset:0;z-index:9999;display:flex;color:var(--ml-fg);font-family:var(--ml-body);-webkit-font-smoothing:antialiased;overflow:hidden}
 #fortress-modal.is-embedded{position:absolute;z-index:2}
+#fortress-modal.is-duel{position:fixed!important;inset:0!important;z-index:20000;width:100%;max-width:none;height:100%;background:var(--ml-bg)}
 #fortress-modal *{box-sizing:border-box}
 #fortress-modal button{font:inherit;color:inherit}
+body.ah-moonlab-active{overflow:hidden}
+body.ah-moonlab-active #ahBottomNav,
+body.ah-moonlab-active .ah-bottomnav,
+body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!important;visibility:hidden!important}
 #fortress-modal img{outline:1px solid rgba(255,255,255,.08);outline-offset:-1px}
 .ml-bg{position:absolute;inset:0;background:
   linear-gradient(180deg,rgba(7,9,13,.28) 0%,rgba(7,9,13,.55) 42%,rgba(7,9,13,.92) 100%),
   var(--ml-bg-image, none) center/cover no-repeat, var(--ml-bg);z-index:0}
 .ml-app,.ml-duel{position:relative;z-index:1;display:flex;flex-direction:column;width:100%;max-width:430px;height:100%;min-height:0;margin:0 auto;padding:calc(8px + env(safe-area-inset-top,0px)) 12px calc(10px + env(safe-area-inset-bottom,0px))}
-#fortress-modal.is-embedded .ml-app,
-#fortress-modal.is-embedded .ml-duel{max-width:none;padding-top:8px;padding-bottom:8px}
+#fortress-modal.is-embedded .ml-app{max-width:none;padding-top:8px;padding-bottom:8px}
+#fortress-modal.is-duel .ml-duel{max-width:430px;height:100%;padding:calc(8px + env(safe-area-inset-top,0px)) 12px calc(10px + env(safe-area-inset-bottom,0px))}
 .ml-top{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-height:48px}
 .ml-top-copy{flex:1;min-width:0}
 .ml-kicker{font-family:var(--ml-display);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ml-muted);font-weight:700}
@@ -165,13 +177,15 @@
 .ml-badge.is-cool{color:var(--ml-cyan);background:rgba(125,211,232,.12);border-color:rgba(125,211,232,.28)}
 .ml-stage{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;margin-top:8px}
 .ml-tower{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:2px}
-.ml-floor{position:relative;flex:1 1 0;min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 8px;border-radius:var(--ml-r-sm);background:rgba(10,14,20,.72);border:1px solid var(--ml-line);color:var(--ml-muted);font-family:var(--ml-display);font-weight:700;font-size:12px;letter-spacing:.04em}
+.ml-floor{position:relative;flex:1 1 0;min-height:34px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 8px;border-radius:var(--ml-r-sm);background:rgba(10,14,20,.72);border:1px solid var(--ml-line);color:var(--ml-muted);font-family:var(--ml-display);font-weight:700;font-size:12px;letter-spacing:.04em;cursor:pointer;appearance:none;-webkit-appearance:none;text-align:left}
 .ml-floor b{font-size:13px;color:var(--ml-fg)}
 .ml-floor.is-cleared{color:var(--ml-ok);border-color:rgba(125,206,160,.22)}
 .ml-floor.is-current{color:#1a1408;background:linear-gradient(180deg,#d4b36a,#b68a3e);border-color:transparent;box-shadow:0 0 0 1px rgba(196,163,90,.45)}
 .ml-floor.is-current b{color:#1a1408}
 .ml-floor.is-locked{opacity:.55}
 .ml-floor.is-boss:not(.is-current){border-color:rgba(211,107,107,.38)}
+.ml-floor.is-selected:not(.is-current){outline:1px solid rgba(125,211,232,.55);outline-offset:0;box-shadow:0 0 0 1px rgba(125,211,232,.2);opacity:1}
+.ml-floor.is-next{opacity:.78}
 .ml-floor-mark{font-size:9px;letter-spacing:.08em;text-transform:uppercase}
 .ml-focus{min-width:0;min-height:0;display:flex;flex-direction:column;border-radius:var(--ml-r-lg);background:var(--ml-panel);border:1px solid var(--ml-line);box-shadow:0 0 0 1px rgba(255,255,255,.04);overflow:hidden}
 .ml-focus-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 12px 8px}
@@ -183,6 +197,8 @@
 .ml-tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;border:1px solid var(--ml-line);background:rgba(255,255,255,.04);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ml-muted);white-space:nowrap}
 .ml-tag.is-boss{color:#f3d0d0;border-color:rgba(211,107,107,.4)}
 .ml-tag.is-now{color:#1a1408;background:var(--ml-amber);border-color:transparent}
+.ml-tag.is-ok{color:var(--ml-ok);border-color:rgba(125,206,160,.32)}
+.ml-tag.is-lock{color:var(--ml-faint)}
 .ml-art{position:relative;flex:1 1 auto;min-height:132px;margin:0 10px;border-radius:var(--ml-r-md);overflow:hidden;background:#0a0e14;border:1px solid var(--ml-line)}
 .ml-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}
 .ml-art-fade{position:absolute;inset:auto 0 0 0;height:44%;background:linear-gradient(180deg,transparent,rgba(8,11,16,.92))}
@@ -217,7 +233,7 @@
 .ml-hp-fill{display:block;height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,#67e8f9,#7dcea0);transition:width var(--ml-quick) var(--ml-out)}
 .ml-hp-fill.is-boss{background:linear-gradient(90deg,#d36b6b,#e3a26a)}
 .ml-hp-num{font-family:var(--ml-display);font-variant-numeric:tabular-nums;font-weight:700;font-size:12px;color:var(--ml-fg)}
-.ml-arena{position:relative;flex:1 1 auto;min-height:180px;margin:8px 0;border-radius:var(--ml-r-lg);overflow:hidden;border:1px solid var(--ml-line);background:#07090d}
+.ml-arena{position:relative;flex:1 1 auto;min-height:148px;margin:8px 0;border-radius:var(--ml-r-lg);overflow:hidden;border:1px solid var(--ml-line);background:#07090d}
 .ml-arena-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.9) brightness(.78)}
 .ml-arena-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,9,13,.18),rgba(7,9,13,.08) 40%,rgba(7,9,13,.55))}
 .ml-fighter{position:absolute;bottom:0;height:90%;width:50%;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 18px 28px rgba(0,0,0,.7));transition:transform 180ms var(--ml-out),filter 180ms var(--ml-out);outline:none}
@@ -234,7 +250,13 @@
 .ml-live-dot{width:7px;height:7px;border-radius:99px;background:var(--ml-red);box-shadow:0 0 0 4px rgba(211,107,107,.15)}
 .ml-live b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ml-cyan)}
 .ml-live span{flex:1;min-width:0;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ml-log{display:none}
+.ml-log{display:flex;flex-direction:column;gap:2px;flex:0 0 clamp(70px,14vh,105px);height:clamp(70px,14vh,105px);margin-top:6px;padding:6px 8px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:var(--ml-r-md);background:rgba(12,16,22,.78);border:1px solid var(--ml-line)}
+.ml-log-row{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;align-items:baseline;font-size:11px;line-height:1.35;color:var(--ml-muted)}
+.ml-log-row i{font-style:normal;font-family:var(--ml-display);font-size:10px;font-variant-numeric:tabular-nums;color:var(--ml-faint)}
+.ml-log-row.is-alpha{color:var(--ml-fg)}
+.ml-log-row.is-boss{color:#c9d3df}
+.ml-log-row.is-crit{color:var(--ml-amber)}
+.ml-log-row.is-dodge{color:var(--ml-cyan)}
 .ml-result{position:absolute;inset:0;z-index:8;display:none;align-items:flex-end;background:linear-gradient(180deg,rgba(7,9,13,.2),rgba(7,9,13,.88) 55%,rgba(7,9,13,.96))}
 .ml-result.is-on{display:flex}
 .ml-result-card{width:100%;padding:16px 12px calc(12px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
@@ -262,6 +284,15 @@
   .ml-art{min-height:88px}
   .ml-floor-num{font-size:22px}
   .ml-result-title{font-size:34px}
+  .ml-arena{min-height:128px}
+  .ml-log{flex-basis:clamp(64px,12vh,84px);height:clamp(64px,12vh,84px)}
+}
+@media (max-height:600px){
+  .ml-arena{min-height:96px;margin:6px 0}
+  .ml-log{flex-basis:70px;height:70px}
+  .ml-you-plate{padding:6px}
+  .ml-auto{margin-top:6px}
+  .ml-art{min-height:72px}
 }
 `;
     const s = el("style");
@@ -278,12 +309,19 @@
     }
   }
 
+  function setMoonlabActive(on) {
+    try {
+      document.body.classList.toggle("ah-moonlab-active", !!on);
+    } catch (_) {}
+  }
+
   function closeModal() {
     stopTicker();
     try { globalThis.__FORTRESS_PIXI_CLEANUP__?.(); } catch (_) {}
     try { globalThis.__FORTRESS_PIXI_CLEANUP__ = null; } catch (_) {}
     const m = document.getElementById("fortress-modal");
     if (m) m.remove();
+    setMoonlabActive(false);
     try { S.tg?.MainButton?.show?.(); } catch (_) {}
   }
 
@@ -443,32 +481,73 @@
     return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
 
-  function renderTower(st) {
-    const cur = Number(st.currentFloor || 1) || 1;
-    const best = Number(st.highestClearedFloor ?? st.bestFloor ?? 0) || 0;
+  function currentFloorOf(st) {
+    return Number.isFinite(+st?.currentFloor) ? +st.currentFloor : 1;
+  }
+
+  function bestFloorOf(st) {
+    return Number.isFinite(+st?.highestClearedFloor)
+      ? +st.highestClearedFloor
+      : (Number.isFinite(+st?.bestFloor) ? +st.bestFloor : 0);
+  }
+
+  function sectorRange(st) {
+    const cur = currentFloorOf(st);
+    const sector = Number(st?.sector || Math.ceil(cur / 10) || 1) || 1;
+    const start = Number(st?.sectorStart || ((sector - 1) * 10 + 1)) || 1;
+    const end = Number(st?.sectorEnd || Math.min(Number(st?.maxFloor || 30) || 30, start + 9)) || start;
+    return { sector, start, end };
+  }
+
+  function previewFor(st, floor) {
+    const list = Array.isArray(st?.floorPreviews) ? st.floorPreviews : [];
+    return list.find((p) => Number(p?.floor) === Number(floor)) || null;
+  }
+
+  function floorStatusOf(st, floor) {
+    const preview = previewFor(st, floor);
+    if (preview && preview.status) return String(preview.status).toUpperCase();
+    const cur = currentFloorOf(st);
+    const best = bestFloorOf(st);
+    if (floor === cur) return "CURRENT";
+    if (floor < cur && floor <= best) return "CLEARED";
+    return "LOCKED";
+  }
+
+  function renderTower(st, selectedFloor) {
+    const cur = currentFloorOf(st);
+    const best = bestFloorOf(st);
     const maxFloor = Number(st.maxFloor || 30) || 30;
-    const sector = Number(st.sector || Math.ceil(cur / 10) || 1) || 1;
-    const start = Number(st.sectorStart || ((sector - 1) * 10 + 1)) || 1;
-    const end = Number(st.sectorEnd || Math.min(maxFloor, start + 9)) || start;
+    const { start, end } = sectorRange(st);
+    const selected = Number(selectedFloor || cur);
     const parts = [];
     for (let f = end; f >= start; f--) {
-      const cleared = best >= f;
-      const current = f === cur;
-      const locked = f > cur && !cleared;
-      const boss = !!MILESTONE_FLOORS[f];
-      const mini = !!MINI_MILESTONE_FLOORS[f];
-      let mark = "";
+      if (f > maxFloor) continue;
+      const status = floorStatusOf(st, f);
+      const current = status === "CURRENT" || f === cur;
+      const cleared = status === "CLEARED" || (!current && f < cur && f <= best);
+      const locked = !current && !cleared;
+      const isNext = locked && f === cur + 1;
+      const selectedRow = f === selected;
+      const boss = !locked && !!MILESTONE_FLOORS[f];
+      const mini = !locked && !!MINI_MILESTONE_FLOORS[f];
+      let mark = "LOCK";
       if (current) mark = "NOW";
       else if (cleared) mark = "CLR";
+      else if (isNext) mark = "NEXT";
+      else if (locked) mark = "LOCK";
       else if (boss) mark = "BOSS";
       else if (mini) mark = "GATE";
-      else if (locked) mark = "LOCK";
       const cls = ["ml-floor"];
       if (current) cls.push("is-current");
       else if (cleared) cls.push("is-cleared");
       else cls.push("is-locked");
+      if (isNext) cls.push("is-next");
+      if (selectedRow && !current) cls.push("is-selected");
       if (boss) cls.push("is-boss");
-      parts.push(`<div class="${cls.join(" ")}" data-floor="${f}"><b>${String(f).padStart(2, "0")}</b><span class="ml-floor-mark">${mark}</span></div>`);
+      parts.push(
+        `<button type="button" class="${cls.join(" ")}" data-floor="${f}" aria-pressed="${selectedRow ? "true" : "false"}"><b>${String(f).padStart(2, "0")}</b><span class="ml-floor-mark">${mark}</span></button>`
+      );
     }
     return parts.join("");
   }
@@ -497,10 +576,11 @@
     return `<b>${esc(outcome)}</b> · ${esc(boss)}${floor ? ` · Floor ${esc(floor)}` : ""}`;
   }
 
-  function mountRoot() {
+  function mountRoot(opts) {
+    const forceBody = !!(opts && opts.forceBody);
     const wrap = el("div");
     wrap.id = "fortress-modal";
-    const host = document.getElementById("moonlab-host");
+    const host = forceBody ? null : document.getElementById("moonlab-host");
     if (host) {
       wrap.classList.add("is-embedded");
       host.innerHTML = "";
@@ -508,13 +588,36 @@
     } else {
       document.body.appendChild(wrap);
     }
+    if (forceBody) wrap.classList.add("is-duel");
+    setMoonlabActive(true);
     return wrap;
+  }
+
+  function returnToCurrentFloor() {
+    const st = UI.state;
+    if (!st) return;
+    UI.selectedFloor = currentFloorOf(st);
+    paintFromState();
+  }
+
+  function handleMainCta() {
+    const st = UI.state;
+    if (!st) return;
+    const selected = Number(UI.selectedFloor || 0);
+    const current = currentFloorOf(st);
+    if (selected !== current) {
+      returnToCurrentFloor();
+      return;
+    }
+    doStart();
   }
 
   function open() {
     ensureDeps();
     injectFonts();
     injectCss();
+    UI.selectedFloor = null;
+    UI.state = null;
     closeModal();
 
     const wrap = mountRoot();
@@ -571,6 +674,15 @@
     try { S.tg?.MainButton?.hide?.(); } catch (_) {}
 
     wrap.addEventListener("click", (e) => {
+      const floorBtn = e.target.closest("[data-floor]");
+      if (floorBtn && wrap.querySelector("#ml-tower")?.contains(floorBtn)) {
+        const f = Number(floorBtn.getAttribute("data-floor"));
+        if (Number.isFinite(f) && f > 0) {
+          UI.selectedFloor = f;
+          paintFromState();
+        }
+        return;
+      }
       const btn = e.target.closest("button");
       if (!btn) return;
       switch (btn.id) {
@@ -582,7 +694,7 @@
           refresh();
           break;
         case "fx-start":
-          doStart();
+          handleMainCta();
           break;
       }
     });
@@ -598,15 +710,23 @@
     b.classList.toggle("is-cool", !ready);
   }
 
-  function setEnemyArt(st, wall) {
+  function setEnemyArt(st, wall, opts) {
     const img = $("#fx-enemy");
     if (!img) return;
     const chamber = artUrl("chamber.jpg");
+    const fallback = artUrl("boss-fallback.jpg");
     img.alt = "";
     img.onerror = () => {
-      img.onerror = null;
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = fallback;
+      };
       img.src = chamber;
     };
+    if (opts && opts.obscured) {
+      img.src = chamber;
+      return;
+    }
     const preferWall = wall?.hasFinalAsset ? wall.imageUrl : "";
     const spriteRaw = preferWall || st.bossSprite || st.sprite || st.boss?.sprite || "";
     const remote = spriteRaw && /^https?:\/\//i.test(String(spriteRaw)) ? String(spriteRaw) : "";
@@ -620,94 +740,222 @@
     }
   }
 
+  function setStateTag(text, kind) {
+    const n = $("#ml-state");
+    if (!n) return;
+    n.textContent = text;
+    n.classList.toggle("is-now", kind === "now");
+    n.classList.toggle("is-ok", kind === "ok");
+    n.classList.toggle("is-lock", kind === "lock");
+  }
+
+  function setStartButton({ disabled, label, primary }) {
+    const btn = $("#fx-start");
+    if (!btn) return;
+    btn.disabled = !!disabled;
+    btn.textContent = label;
+    btn.classList.toggle("primary", !!primary);
+  }
+
+  function paintCurrentFocus(st) {
+    const curFloor = currentFloorOf(st);
+    const bestFloor = bestFloorOf(st);
+    const sector = Number(st.sector ?? 1) || 1;
+    const sectorFloor = Number(st.sectorFloor ?? (((curFloor || 1) - 1) % 10) + 1) || 1;
+    const bossPower = Number(st.boss?.power || st.boss?.danger || 0) || 0;
+    const milestoneText = st.boss?.isMilestoneBoss
+      ? "Milestone"
+      : st.boss?.isMiniMilestone
+        ? "Gate"
+        : "Containment";
+    const wall = canonBossWallFromState(st);
+    const encounterLabel = String(
+      st.nextEncounterName || st.bossName || st.boss?.name || `Boss Floor ${curFloor}`
+    );
+    const ready = !!UI.ready;
+    const cd = Math.max(0, UI.cooldownLeft | 0);
+
+    const titleEl = $("#ml-title");
+    if (titleEl) titleEl.textContent = wall.available ? wall.displayName : `Moon Lab Floor ${curFloor}`;
+    setText("#ml-sector", `Sector ${sector} · Chamber ${sectorFloor}`);
+    setText("#ml-floor-num", `Floor ${String(curFloor).padStart(2, "0")}`);
+    setText("#ml-floor-name", encounterLabel);
+    setText("#ml-wall-name", wall.available ? `${wall.arcName || "Boss Wall"} · ${wall.tier || ""}`.trim() : "");
+    setText("#ml-milestone", milestoneText);
+    setText("#ml-best", `Best ${Math.max(0, bestFloor)}`);
+    setText("#ml-power", bossPower > 0 ? String(bossPower) : "—");
+    setText("#fx-cd", ready ? "Ready" : fmtLeft(cd));
+    setText("#ml-clear", st.firstClearAvailable ? "First" : "Replay");
+    setStateTag(ready ? "Current" : "Cooling", "now");
+    setBadge(ready ? "Chamber Ready" : "Cooling", ready);
+    setEnemyArt(st, wall, { obscured: false });
+
+    const rewardsEl = $("#ml-rewards");
+    if (rewardsEl) rewardsEl.innerHTML = renderRewardChips(st);
+    const lastEl = $("#ml-last");
+    if (lastEl) {
+      const html = renderLastFight(st.lastFightReport || st.lastResult || st.lastBattle?.fightReport || null);
+      lastEl.style.display = html ? "" : "none";
+      lastEl.innerHTML = html || "";
+    }
+    const hintEl = $("#fx-hint");
+    if (hintEl) {
+      hintEl.textContent = cd > 0
+        ? (st.cooldownMessage || "Chamber cooling down. Return when the lock releases.")
+        : (wall.shortLore || (st.boss?.isMilestoneBoss
+          ? "Milestone boss. Break containment and claim the chamber reward."
+          : "Boss chamber active. Break containment to unlock the next floor."));
+    }
+    if (cd > 0) {
+      setStartButton({ disabled: true, label: "Cooling Down", primary: true });
+    } else {
+      setStartButton({
+        disabled: !ready,
+        label: ready ? "Enter Chamber" : "Return Stronger",
+        primary: true,
+      });
+    }
+  }
+
+  function paintClearedFocus(st, preview) {
+    const floor = Number(preview?.floor || UI.selectedFloor || 0) || 0;
+    const sector = Number(preview?.sector || st.sector || 1) || 1;
+    const sectorFloor = Number(preview?.sectorFloor || (((floor || 1) - 1) % 10) + 1) || 1;
+    const wall = canonBossWallFromState({ canonBossWall: preview?.canonBossWall });
+    const bossName = String(preview?.boss?.name || `Floor ${floor}`);
+    const power = Number(preview?.boss?.power || preview?.boss?.danger || 0) || 0;
+    const claimed = !!preview?.firstClearRewardClaimed;
+    const milestoneText = preview?.isMilestoneBoss
+      ? "Milestone"
+      : preview?.isMiniMilestone
+        ? "Gate"
+        : "Containment";
+    const titleEl = $("#ml-title");
+    if (titleEl) titleEl.textContent = wall.available ? wall.displayName : bossName;
+    setText("#ml-sector", `Sector ${sector} · Chamber ${sectorFloor}`);
+    setText("#ml-floor-num", `Floor ${String(floor).padStart(2, "0")}`);
+    setText("#ml-floor-name", bossName);
+    setText("#ml-wall-name", wall.available ? `${wall.arcName || "Boss Wall"} · ${wall.tier || ""}`.trim() : "");
+    setText("#ml-milestone", milestoneText);
+    setText("#ml-best", "Defeated");
+    setText("#ml-power", power > 0 ? String(power) : "—");
+    setText("#fx-cd", "—");
+    setText("#ml-clear", "Cleared");
+    setStateTag("Cleared", "ok");
+    setBadge("Cleared", false);
+    setEnemyArt({ boss: preview?.boss, bossSprite: preview?.boss?.sprite }, wall, { obscured: false });
+    const rewardsEl = $("#ml-rewards");
+    if (rewardsEl) {
+      rewardsEl.innerHTML = `<span class="ml-chip is-muted">${claimed ? "First Clear: Claimed" : "First Clear: Claimed"}</span>`;
+    }
+    const lastEl = $("#ml-last");
+    if (lastEl) lastEl.style.display = "none";
+    const hintEl = $("#fx-hint");
+    if (hintEl) hintEl.textContent = "Archived chamber. This opponent has already been defeated.";
+    setStartButton({ disabled: false, label: "Return to Current", primary: false });
+  }
+
+  function paintLockedFocus(st, floor, isNext) {
+    const { sector } = sectorRange(st);
+    const sectorFloor = ((floor - 1) % 10) + 1;
+    const cur = currentFloorOf(st);
+    const titleEl = $("#ml-title");
+    if (titleEl) titleEl.textContent = isNext ? "Locked Chamber" : "Unknown Chamber";
+    setText("#ml-sector", `Sector ${sector} · Chamber ${sectorFloor}`);
+    setText("#ml-floor-num", `Floor ${String(floor).padStart(2, "0")}`);
+    setText("#ml-floor-name", isNext ? "Locked Chamber" : "Unknown Chamber");
+    setText("#ml-wall-name", "");
+    setText("#ml-milestone", "Locked");
+    setText("#ml-best", "Locked");
+    setText("#ml-power", "—");
+    setText("#fx-cd", "Locked");
+    setText("#ml-clear", "Locked");
+    setStateTag("Locked", "lock");
+    setBadge("Locked", false);
+    setEnemyArt(st, null, { obscured: true });
+    const rewardsEl = $("#ml-rewards");
+    if (rewardsEl) rewardsEl.innerHTML = "";
+    const lastEl = $("#ml-last");
+    if (lastEl) lastEl.style.display = "none";
+    const hintEl = $("#fx-hint");
+    if (hintEl) {
+      hintEl.textContent = isNext
+        ? `Clear Floor ${cur} to unlock this chamber.`
+        : "Advance through the ladder to reveal this chamber.";
+    }
+    setStartButton({ disabled: false, label: "Return to Current", primary: false });
+  }
+
+  function paintFromState() {
+    const st = UI.state;
+    if (!st || !document.getElementById("fortress-modal")) return;
+    const cur = currentFloorOf(st);
+    const { start, end } = sectorRange(st);
+    let selected = Number(UI.selectedFloor || cur);
+    if (!Number.isFinite(selected) || selected < start || selected > end) {
+      selected = cur;
+      UI.selectedFloor = cur;
+    }
+    const towerEl = $("#ml-tower");
+    if (towerEl) towerEl.innerHTML = renderTower(st, selected);
+    const status = floorStatusOf(st, selected);
+    if (status === "CURRENT" || selected === cur) {
+      paintCurrentFocus(st);
+      return;
+    }
+    if (status === "CLEARED") {
+      paintClearedFocus(st, previewFor(st, selected) || { floor: selected });
+      return;
+    }
+    paintLockedFocus(st, selected, selected === cur + 1);
+  }
+
   async function refresh() {
     ensureDeps();
     stopTicker();
     try {
       let st = await S.apiPost("/webapp/building/state", { buildingId: BID });
       if (st && st.data) st = st.data;
+      UI.state = st;
 
       const cdRaw = (st.cooldownLeftSec ?? st.cooldownSec ?? st.cooldownSeconds ?? st.cooldown ?? 0) | 0;
       const cd = Math.max(0, cdRaw);
-      const ready =
+      UI.cooldownLeft = cd;
+      UI.ready =
         !!(st.canFight ?? st.canStart ?? st.ready ?? (st.status && String(st.status).toLowerCase() === "ready")) ||
         cd === 0;
 
-      const curFloor = Number.isFinite(+st.currentFloor) ? +st.currentFloor : 1;
-      const bestFloor = Number.isFinite(+st.bestFloor) ? +st.bestFloor : 0;
-      const sector = Number(st.sector ?? 1) || 1;
-      const sectorFloor = Number(st.sectorFloor ?? (((curFloor || 1) - 1) % 10) + 1) || 1;
-      const bossPower = Number(st.boss?.power || st.boss?.danger || 0) || 0;
-      const milestoneText = st.boss?.isMilestoneBoss
-        ? "Milestone"
-        : st.boss?.isMiniMilestone
-          ? "Gate"
-          : "Containment";
-      const wall = canonBossWallFromState(st);
-      const encounterLabel = String(
-        st.nextEncounterName || st.bossName || st.boss?.name || `Boss Floor ${curFloor}`
-      );
-
-      const titleEl = $("#ml-title");
-      if (titleEl) titleEl.textContent = wall.available ? wall.displayName : `Moon Lab Floor ${curFloor}`;
-      setText("#ml-sector", `Sector ${sector} · Chamber ${sectorFloor}`);
-      setText("#ml-floor-num", `Floor ${String(curFloor).padStart(2, "0")}`);
-      setText("#ml-floor-name", encounterLabel);
-      setText("#ml-wall-name", wall.available ? `${wall.arcName || "Boss Wall"} · ${wall.tier || ""}`.trim() : "");
-      setText("#ml-milestone", milestoneText);
-      setText("#ml-best", `Best ${Math.max(0, bestFloor)}`);
-      setText("#ml-power", bossPower > 0 ? String(bossPower) : "—");
-      setText("#fx-cd", ready ? "Ready" : fmtLeft(cd));
-      setText("#ml-clear", st.firstClearAvailable ? "First" : "Replay");
-      setText("#ml-state", ready ? "Current" : "Cooling");
-      setBadge(ready ? "Chamber Ready" : "Cooling", ready);
-      setEnemyArt(st, wall);
-
-      const towerEl = $("#ml-tower");
-      if (towerEl) towerEl.innerHTML = renderTower(st);
-      const rewardsEl = $("#ml-rewards");
-      if (rewardsEl) rewardsEl.innerHTML = renderRewardChips(st);
-      const lastEl = $("#ml-last");
-      if (lastEl) {
-        const html = renderLastFight(st.lastFightReport || st.lastResult || st.lastBattle?.fightReport || null);
-        lastEl.style.display = html ? "" : "none";
-        lastEl.innerHTML = html || "";
+      const curFloor = currentFloorOf(st);
+      const { start, end } = sectorRange(st);
+      if (UI.selectedFloor == null || UI.selectedFloor < start || UI.selectedFloor > end) {
+        UI.selectedFloor = curFloor;
       }
 
-      const hintEl = $("#fx-hint");
-      if (hintEl) {
-        hintEl.textContent = cd > 0
-          ? (st.cooldownMessage || "Chamber cooling down. Return when the lock releases.")
-          : (wall.shortLore || (st.boss?.isMilestoneBoss
-            ? "Milestone boss. Break containment and claim the chamber reward."
-            : "Boss chamber active. Break containment to unlock the next floor."));
-      }
+      paintFromState();
 
-      const btn = $("#fx-start");
-      if (!btn) return;
       if (cd > 0) {
-        btn.disabled = true;
-        btn.textContent = "Cooling Down";
         let left = cd;
         _ticker = setInterval(() => {
           left = Math.max(0, left - 1);
-          setText("#fx-cd", fmtLeft(left));
+          UI.cooldownLeft = left;
           if (!document.getElementById("fortress-modal")) {
             stopTicker();
             return;
           }
-          if (left <= 0) {
+          if (Number(UI.selectedFloor) === currentFloorOf(UI.state || st)) {
+            setText("#fx-cd", left > 0 ? fmtLeft(left) : "Ready");
+            if (left <= 0) {
+              UI.ready = true;
+              stopTicker();
+              setBadge("Chamber Ready", true);
+              setStateTag("Current", "now");
+              setStartButton({ disabled: false, label: "Enter Chamber", primary: true });
+            }
+          } else if (left <= 0) {
+            UI.ready = true;
             stopTicker();
-            setBadge("Chamber Ready", true);
-            setText("#ml-state", "Current");
-            setText("#fx-cd", "Ready");
-            btn.disabled = false;
-            btn.textContent = "Enter Chamber";
           }
         }, 1000);
-      } else {
-        btn.disabled = !ready;
-        btn.textContent = ready ? "Enter Chamber" : "Return Stronger";
       }
     } catch (e) {
       const msg = e?.response?.data?.reason || e?.message || "Failed to load Moon Lab state.";
@@ -718,8 +966,15 @@
 
   async function doStart() {
     ensureDeps();
+    const st = UI.state;
+    const selected = Number(UI.selectedFloor || 0);
+    const current = st ? currentFloorOf(st) : 0;
+    if (!st || selected !== current) return;
+    if (!UI.ready || UI.cooldownLeft > 0) return;
     const btn = $("#fx-start");
     if (!btn || btn.disabled) return;
+    const label = String(btn.textContent || "");
+    if (!/enter chamber/i.test(label)) return;
     btn.disabled = true;
     try {
       S.tg?.HapticFeedback?.impactOccurred?.("light");
@@ -806,7 +1061,7 @@
       return clamp(Math.round((c / m) * 100), 0, 100);
     }
 
-    const wrap = mountRoot();
+    const wrap = mountRoot({ forceBody: true });
     wrap.innerHTML = `
       <div class="ml-duel">
         <header class="ml-top">
@@ -936,6 +1191,39 @@
     let pHpNow = pMax;
     let bHpNow = bMax;
     let idx = 0;
+    let logCount = 0;
+    let logPinned = true;
+
+    if (logEl) {
+      logEl.addEventListener("scroll", () => {
+        const gap = logEl.scrollHeight - logEl.clientHeight - logEl.scrollTop;
+        logPinned = gap <= 20;
+      }, { passive: true });
+    }
+
+    function logLine(actor, dmg, crit, dodge) {
+      if (actor === "you") {
+        return dodge ? "Alpha missed. Boss dodged." : `Alpha hits for ${dmg}${crit ? " CRIT" : ""}.`;
+      }
+      return dodge ? "Boss missed. Alpha dodged." : `Boss hits for ${dmg}${crit ? " CRIT" : ""}.`;
+    }
+
+    function appendLogRow(actor, dmg, crit, dodge) {
+      if (!logEl) return;
+      logCount += 1;
+      const row = el("div", "ml-log-row");
+      row.classList.add(actor === "you" ? "is-alpha" : "is-boss");
+      if (dodge) row.classList.add("is-dodge");
+      else if (crit) row.classList.add("is-crit");
+      const num = el("i");
+      num.textContent = String(logCount).padStart(2, "0");
+      const span = el("span");
+      span.textContent = logLine(actor, dmg, crit, dodge);
+      row.appendChild(num);
+      row.appendChild(span);
+      logEl.appendChild(row);
+      if (logPinned) logEl.scrollTop = logEl.scrollHeight;
+    }
 
     function setHp() {
       if (youHpEl) youHpEl.style.width = hpPct(pHpNow, pMax) + "%";
@@ -1002,10 +1290,17 @@
     }
     function finishPlayback(fromSkip) {
       const steps = data.steps || [];
-      if (fromSkip && steps.length) {
-        const last = steps[steps.length - 1] || {};
-        if (last.p_hp != null) pHpNow = last.p_hp;
-        if (last.b_hp != null) bHpNow = last.b_hp;
+      if (fromSkip) {
+        while (idx < steps.length) {
+          const s0 = steps[idx++] || {};
+          const actor = s0.actor ? s0.actor : (s0.att === "P" ? "you" : "boss");
+          appendLogRow(actor, Number(s0.dmg || 0), !!s0.crit, !!s0.dodge);
+        }
+        if (steps.length) {
+          const last = steps[steps.length - 1] || {};
+          if (last.p_hp != null) pHpNow = last.p_hp;
+          if (last.b_hp != null) bHpNow = last.b_hp;
+        }
         if (data.winner === "you") bHpNow = Math.min(bHpNow, 0);
         if (data.winner !== "you") pHpNow = Math.min(pHpNow, 0);
         setHp();
@@ -1044,7 +1339,27 @@
           renderResultRow("Notes", notes.join(" · "));
       }
       if (nextBtn) nextBtn.textContent = won ? "Ascend" : "Retry";
-      if (logEl) logEl.innerHTML = "";
+    }
+
+    function applyStep(s0, { animate }) {
+      const actor = s0.actor ? s0.actor : (s0.att === "P" ? "you" : "boss");
+      const dmg = Number(s0.dmg || 0);
+      const crit = !!s0.crit;
+      const dodge = !!s0.dodge;
+      if (actor === "you") {
+        bHpNow = s0.b_hp ?? bHpNow;
+        if (!dodge && dmg > 0 && animate) pulseHit(bossImgEl);
+      } else {
+        pHpNow = s0.p_hp ?? pHpNow;
+        if (!dodge && dmg > 0 && animate) pulseHit(youImgEl);
+      }
+      setLatest(logLine(actor, dmg, crit, dodge));
+      appendLogRow(actor, dmg, crit, dodge);
+      setHp();
+      if (animate && !dodge && dmg > 0) {
+        const pos = dmgPos(actor);
+        try { globalThis.Combat.createDamageNumber(pos.x, pos.y, dmg, crit); } catch (_) {}
+      }
     }
 
     function step() {
@@ -1054,27 +1369,7 @@
         finishPlayback(false);
         return;
       }
-      const s0 = steps[idx++] || {};
-      const actor = s0.actor ? s0.actor : (s0.att === "P" ? "you" : "boss");
-      const dmg = Number(s0.dmg || 0);
-      const crit = !!s0.crit;
-      const dodge = !!s0.dodge;
-      if (actor === "you") {
-        bHpNow = s0.b_hp ?? bHpNow;
-        const youTxt = dodge ? "Alpha missed. Boss dodged." : `Alpha hits for ${dmg}${crit ? " CRIT" : ""}.`;
-        setLatest(youTxt);
-        if (!dodge && dmg > 0) pulseHit(bossImgEl);
-      } else {
-        pHpNow = s0.p_hp ?? pHpNow;
-        const bossTxt = dodge ? "Boss missed. Alpha dodged." : `Boss hits for ${dmg}${crit ? " CRIT" : ""}.`;
-        setLatest(bossTxt);
-        if (!dodge && dmg > 0) pulseHit(youImgEl);
-      }
-      setHp();
-      if (!dodge && dmg > 0) {
-        const pos = dmgPos(actor);
-        try { globalThis.Combat.createDamageNumber(pos.x, pos.y, dmg, crit); } catch (_) {}
-      }
+      applyStep(steps[idx++] || {}, { animate: true });
       battleTimer = setTimeout(step, 420);
     }
 
