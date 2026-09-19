@@ -4,7 +4,7 @@
 
   var ROOT_ID = "ahDevFreshRoot";
   var STYLE_ID = "ah-dev-fresh-css";
-  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1", "ah.ftue.scoutGuide.v1", "ah.ftue.forgeDiscovery.v1", "ah.ftue.coreSystemDiscovery.v1", "ah.discovery.postFtue.v1"];
+  var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1", "ah.ftue.scoutGuide.v1", "ah.ftue.forgeDiscovery.v1", "ah.ftue.coreSystemDiscovery.v1", "ah.discovery.postFtue.v1", "ah.fieldRecord.activationSeen.v1", "ah.fieldRecord.activationSeen.v1.devFresh"];
 
   var S = {
     apiPost: null,
@@ -44,6 +44,7 @@
     global.DiscoveryGuide?.reset?.();
     global.GuidedNavigation?.reset();
     global.FirstSessionSpine?.reset(true);
+    global.FieldRecord?.resetPresentation?.();
     try { localStorage.removeItem("ah.contextualDiscovery.v1"); } catch (_) {}
     try { localStorage.removeItem("ah.sd.nextMoveDismissed.v1"); } catch (_) {}
     for (var i = 0; i < LS_KEYS.length; i++) {

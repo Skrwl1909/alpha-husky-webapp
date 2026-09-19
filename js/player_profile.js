@@ -1,4 +1,4 @@
-// Alpha Husky WebApp - Pack Profile + Pack Signals v1
+// Alpha Husky WebApp - Field Record identity surface + Pack Signals
 (function (global) {
   const S = {
     apiPost: null,
@@ -254,7 +254,9 @@
         font-size:22px;
       }
       .pp-main{min-width:0}
-      .pp-name{font-size:22px;font-weight:950;line-height:1.08;overflow-wrap:anywhere}
+      .pp-name{font-size:25px;font-weight:950;line-height:1.04;overflow-wrap:anywhere;letter-spacing:.01em}
+      .pp-active-title{margin-top:7px;font-size:14px;font-weight:800;line-height:1.25;color:rgba(235,242,255,.78)}
+      .pp-path{margin-top:8px;font-size:11px;font-weight:850;line-height:1.35;letter-spacing:.11em;text-transform:uppercase;color:rgba(125,211,252,.78)}
       .pp-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
       .pp-chip{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:999px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);font-size:12px;font-weight:800;color:rgba(243,247,255,.9)}
       .pp-chip.pp-signal{border-color:rgba(245,210,146,.32);background:linear-gradient(180deg,rgba(245,210,146,.12),rgba(190,45,45,.08));color:rgba(255,235,194,.96)}
@@ -272,6 +274,14 @@
       .pp-social-note{margin-top:8px;font-size:11px;line-height:1.35;color:rgba(230,238,255,.62)}
       .pp-section{margin-top:14px}
       .pp-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(230,238,255,.62);margin-bottom:8px}
+      .pp-history{display:grid;gap:8px}
+      .pp-history-row{position:relative;padding:11px 12px 11px 15px;border:1px solid rgba(125,211,252,.13);border-radius:8px;background:linear-gradient(90deg,rgba(125,211,252,.065),rgba(255,255,255,.025))}
+      .pp-history-row::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;background:rgba(125,211,252,.58)}
+      .pp-history-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+      .pp-history-label{font-size:12px;font-weight:900;letter-spacing:.08em;color:rgba(244,248,255,.96)}
+      .pp-history-proof{flex:0 0 auto;font-size:10px;font-weight:850;letter-spacing:.1em;color:rgba(125,211,252,.74)}
+      .pp-history-copy{margin-top:4px;font-size:12px;line-height:1.35;color:rgba(230,238,255,.68)}
+      .pp-recognition-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
       .pp-badges,.pp-loadout{display:flex;gap:8px;overflow:auto;padding-bottom:2px}
       .pp-badge,.pp-item{flex:0 0 auto;width:82px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);border-radius:8px;padding:8px;text-align:center}
       .pp-badge-icon,.pp-item-icon{width:38px;height:38px;margin:0 auto 6px;border-radius:10px;object-fit:contain;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:20px}
@@ -298,9 +308,9 @@
       back.id = "playerProfileBack";
       back.style.display = "none";
       back.innerHTML = `
-        <div class="sheet-card pp-sheet" role="dialog" aria-modal="true" aria-label="Pack Profile">
+        <div class="sheet-card pp-sheet" role="dialog" aria-modal="true" aria-label="Field Record">
           <div class="pp-head">
-            <div class="pp-title">Pack Profile</div>
+            <div class="pp-title">Field Record</div>
             <button type="button" class="pp-close" aria-label="Close profile">x</button>
           </div>
           <div class="pp-notice" role="status" aria-live="polite"></div>
@@ -343,6 +353,39 @@
     return `<div class="${esc(cls)}">${esc(src)}</div>`;
   }
 
+  function displayLabel(value) {
+    return asText(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ").toUpperCase();
+  }
+
+  function compactDate(unixSeconds) {
+    const seconds = Number(unixSeconds);
+    if (!Number.isFinite(seconds) || seconds <= 0) return "";
+    const date = new Date(Math.trunc(seconds) * 1000);
+    if (!Number.isFinite(date.getTime())) return "";
+    try {
+      return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
+    } catch (_) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  function renderRecordedHistory(fieldRecord) {
+    const marks = Array.isArray(fieldRecord?.marks) ? fieldRecord.marks : [];
+    if (!marks.length) return `<div class="pp-empty">No verified history recorded yet</div>`;
+    return `<div class="pp-history">${marks.map((mark) => {
+      const date = mark?.dateKnown === true ? compactDate(mark?.occurredAt) : "";
+      const proof = date || "VERIFIED";
+      return `
+        <article class="pp-history-row" data-field-mark="${esc(mark?.key || "")}">
+          <div class="pp-history-top">
+            <div class="pp-history-label">${esc(mark?.label || "")}</div>
+            <div class="pp-history-proof">${esc(proof)}</div>
+          </div>
+          <div class="pp-history-copy">${esc(mark?.copy || "")}</div>
+        </article>`;
+    }).join("")}</div>`;
+  }
+
   function renderProfile(player) {
     const back = ensureModal();
     const body = back.querySelector(".pp-body");
@@ -364,20 +407,26 @@
     const avatarUrl = asText(p.avatar_url || p.avatarUrl || p.avatar?.img || p.avatar?.url);
     const frameUrl = asText(frame.url || frame.img || frame.preview_url || frame.previewUrl);
     const originLabel = asText(p.origin_label || p.originLabel);
+    const activeTitle = asText(p.displayTitle || p.title);
+    const activeTag = asText(p.displayTag || p.activeTag);
+    const activeAura = asText(p.activeAura?.label || p.activeAura?.name);
+    const identityPath = [displayLabel(originLabel), displayLabel(p.faction)].filter(Boolean).join("  ·  ");
+    const fieldRecord = p.fieldRecord && typeof p.fieldRecord === "object" ? p.fieldRecord : { marks: [] };
     const visualClass = [
       "pp-visual",
       frameUrl ? "has-frame" : "has-default-frame",
       factionKey ? `is-${factionKey}` : "",
     ].filter(Boolean).join(" ");
     const fallback = `<div class="pp-fallback-mark" aria-hidden="true"><b>${esc(initials(p.name))}</b></div>`;
-    const chips = [
+    const identityChips = [
       `Lv ${asInt(p.level, 1)}`,
-      asText(p.faction) || "Unbound",
-      originLabel ? `Origin: ${originLabel}` : "",
-      asText(p.title),
+      activeTag ? `TAG · ${activeTag}` : "",
+      activeAura ? `AURA · ${activeAura}` : "",
+    ].filter(Boolean).map((label) => ({ label, signal: false }));
+    const recognitionChips = [
       ...(Array.isArray(p.prestige_tags) ? p.prestige_tags.map(asText).filter(Boolean) : []),
     ].filter(Boolean).map((label) => ({ label, signal: false }));
-    if (signalActive) chips.push({ label: asText(signal.title) || "HOWL Signal", signal: true });
+    if (signalActive) recognitionChips.push({ label: asText(signal.title) || "HOWL Signal", signal: true });
     const limit = dailyLimit(social);
     const left = dailyLeft(social);
     const button = howlButtonState(social, isSelf);
@@ -402,22 +451,32 @@
         ${visual}
         <div class="pp-main">
           <div class="pp-name">${esc(p.name || "Howler")}</div>
-          <div class="pp-meta">${chips.map((x) => `<span class="pp-chip${x.signal ? " pp-signal" : ""}">${esc(x.label)}</span>`).join("")}</div>
-          <div class="pp-action">
-            <button type="button" class="pp-howl" ${button.disabled ? "disabled" : ""} data-state="${esc(button.key)}">${esc(button.label)}</button>
-            <span class="pp-left">Pack Signals left today: ${esc(left)} / ${esc(limit)}</span>
-          </div>
-          <div class="pp-howl-help">Send a Howl to recognize another player.
-It appears in their mailbox and adds to social counters.
-No gameplay power — just recognition.</div>
+          ${activeTitle ? `<div class="pp-active-title">${esc(activeTitle)}</div>` : ""}
+          ${identityPath ? `<div class="pp-path">${esc(identityPath)}</div>` : ""}
+          <div class="pp-meta">${identityChips.map((x) => `<span class="pp-chip">${esc(x.label)}</span>`).join("")}</div>
         </div>
       </div>
-      <div class="pp-stats">
-        <div class="pp-stat"><strong>${esc(asInt(social.howls_received_total, 0))}</strong><span>Howls Received</span><small>Signals from other players who noticed your trail.</small></div>
-        <div class="pp-stat"><strong>${esc(asInt(social.howls_sent_total, 0))}</strong><span>Howls Sent</span><small>Signals you sent to the pack.</small></div>
-        <div class="pp-stat"><strong>${esc(asInt(social.pack_bonds_total, 0))}</strong><span>Pack Bonds</span><small>Mutual Howls returned on the same day.</small></div>
+      <div class="pp-section">
+        <div class="pp-section-title">Recorded History</div>
+        ${renderRecordedHistory(fieldRecord)}
       </div>
-      <div class="pp-social-note">Pack Signals are social recognition only. They never give gameplay power.</div>
+      <div class="pp-section">
+        <div class="pp-section-title">Pack Recognition</div>
+        ${recognitionChips.length ? `<div class="pp-recognition-meta">${recognitionChips.map((x) => `<span class="pp-chip${x.signal ? " pp-signal" : ""}">${esc(x.label)}</span>`).join("")}</div>` : ""}
+        <div class="pp-action">
+          <button type="button" class="pp-howl" ${button.disabled ? "disabled" : ""} data-state="${esc(button.key)}">${esc(button.label)}</button>
+          <span class="pp-left">Pack Signals left today: ${esc(left)} / ${esc(limit)}</span>
+        </div>
+        <div class="pp-howl-help">Send a Howl to recognize another player.
+It appears in their mailbox and adds to social counters.
+No gameplay power — just recognition.</div>
+        <div class="pp-stats">
+          <div class="pp-stat"><strong>${esc(asInt(social.howls_received_total, 0))}</strong><span>Howls Received</span><small>Signals from other players who noticed your trail.</small></div>
+          <div class="pp-stat"><strong>${esc(asInt(social.howls_sent_total, 0))}</strong><span>Howls Sent</span><small>Signals you sent to the pack.</small></div>
+          <div class="pp-stat"><strong>${esc(asInt(social.pack_bonds_total, 0))}</strong><span>Pack Bonds</span><small>Mutual Howls returned on the same day.</small></div>
+        </div>
+        <div class="pp-social-note">Pack Signals are social recognition only. They never give gameplay power.</div>
+      </div>
       <div class="pp-section">
         <div class="pp-section-title">Displayed Badges</div>
         ${badges.length ? `<div class="pp-badges">${badges.map((b) => `

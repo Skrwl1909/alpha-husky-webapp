@@ -921,11 +921,6 @@
           + '<div class="ahs-story-next">From here, you choose where to move. What you do next becomes part of the record.</div>'
           + '<div class="ahs-story-next">One signal is back. The network is still broken. Your next objective is already waiting. The Pack keeps moving.</div>'
           + '<div class="ahs-story-kicker" style="margin-top:12px">NEXT OBJECTIVE</div>'
-        : scf.graduationHook
-          ? '<div class="ahs-story-kicker">TACTICAL TRAINING COMPLETE</div>'
-            + '<div class="ahs-story-situation">You know the basics.</div>'
-            + '<div class="ahs-story-next">The rest is yours to learn in the field.</div>'
-            + '<div class="ahs-story-kicker" style="margin-top:12px">NEXT OBJECTIVE</div>'
         : '<div class="ahs-story-kicker">NEXT MOVE</div>';
       root.innerHTML = '<div class="ahs-story-card"><div class="ahs-story-pad">'
         + returnHook + '<div class="ahs-story-situation">' + esc(scf.situation) + '</div>'

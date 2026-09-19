@@ -20,12 +20,19 @@
     if (saved.graduationAnnounced) return;
     saved.graduationAnnounced = true;
     persist();
+    if (typeof global.FieldRecord?.presentActivation === "function") {
+      try {
+        const p = global.__PROFILE__ || global.profileState || global.PROFILE || {};
+        global.FieldRecord.presentActivation({ callsign: p.nickname || p.name, faction: p.faction });
+        return;
+      } catch (_) {}
+    }
     try {
       global.AlphaToast?.show?.({
         type: "success",
-        title: "TACTICAL TRAINING COMPLETE",
-        message: "You know the basics.",
-        meta: "The rest is yours to learn in the field."
+        title: "FIELD RECORD ACTIVATED",
+        message: "Training complete. From here, the Network records the trail you actually leave behind.",
+        meta: "The rest is yours to write."
       });
     } catch (_) {}
   }

@@ -776,26 +776,30 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
   }
   function renderMissionDebriefGate(model) {
     const m = model || buildMissionDebriefModel(_state) || { visible: true, missionName: "Field Operation", outcome: "Resolved", recoveredText: "", scoutLine: "Hostile trace cleared. Route is safe for now.", wardenLine: "Clean return. The Pack marks this one." };
+    const tone = textOrEmpty(m?.outcomeTone) || "success";
+    const recovered = textOrEmpty(m?.recoveredText);
 
     return `
       <div class="m-stage m-stage-debrief">
         <div class="m-card m-debrief-card">
-          <div class="m-report-head">
+          <div class="m-kicker">Field Debrief</div>
+          <div class="m-outcome" data-tone="${esc(tone)}">
+            <div class="m-outcome-mark" aria-hidden="true"></div>
             <div style="min-width:0;">
-              <div class="m-kicker">Field Debrief</div>
-              <div class="m-report-title" style="margin-top:8px;">${esc(m?.missionName || "Field Operation")}</div>
+              <div class="m-report-title">${esc(tone === "failed" ? "Mission resolved" : "Mission complete")}</div>
+              <div class="m-muted">${esc(m?.outcome || "Resolved")}</div>
             </div>
-            <div class="m-outcome-badge" data-tone="${esc(m?.outcomeTone || "success")}">${esc(m?.outcome || "Resolved")}</div>
+            <div class="m-outcome-badge" data-tone="${esc(tone)}">${esc(m?.outcome || "Resolved")}</div>
           </div>
           <div class="m-report-section"><div class="m-report-label">Operation</div><div class="m-report-values">${esc(m?.missionName || "Field Operation")}</div></div>
           <div class="m-report-section"><div class="m-report-label">Outcome</div><div class="m-report-values">${esc(m?.outcome || "Resolved")}</div></div>
-          ${textOrEmpty(m?.recoveredText) ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(m.recoveredText)}</div></div>` : ""}
+          ${recovered ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(recovered)}</div></div>` : ""}
           <div class="m-debrief-voices">
             ${renderMissionDebriefVoice("Scout", m?.scoutLine, "Hostile trace cleared. Route is safe for now.")}
             ${renderMissionDebriefVoice("Warden", m?.wardenLine, "Clean return. The Pack marks this one.")}
           </div>
           <div class="m-actions m-debrief-actions">
-            <button type="button" class="btn primary" data-act="continue_mission_debrief">Return to Missions</button>
+            <button type="button" class="btn m-debrief-return" data-act="continue_mission_debrief">Return to Missions</button>
           </div>
         </div>
       </div>
@@ -1899,7 +1903,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         border:1px solid rgba(255,255,255,.10);
         border-radius:24px;
         background:
-          radial-gradient(circle at top center, rgba(255,110,72,.08), transparent 28%),
+          radial-gradient(circle at top center, rgba(56,189,248,.08), transparent 28%),
           linear-gradient(180deg, rgba(12,16,24,.95), rgba(7,9,14,.98));
         box-shadow:0 26px 90px rgba(0,0,0,.58), inset 0 0 0 1px rgba(255,255,255,.03);
         overflow:hidden;
@@ -1930,7 +1934,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         font-size:10px;
         letter-spacing:.32em;
         text-transform:uppercase;
-        color:rgba(255,196,140,.72);
+        color:rgba(125,211,252,.78);
       }
       .m-duel-title{
         margin-top:6px;
@@ -2044,11 +2048,11 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         line-height:1.06;
         color:#fbfdff;
         max-width:100%;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        overflow-wrap:normal;
-        word-break:normal;
+        white-space:normal;
+        overflow:visible;
+        text-overflow:unset;
+        overflow-wrap:anywhere;
+        word-break:break-word;
       }
       .m-duel-state{
         flex:0 0 auto;
@@ -2291,8 +2295,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         width:7px;
         height:7px;
         border-radius:999px;
-        background:rgba(255,176,88,.92);
-        box-shadow:0 0 10px rgba(255,176,88,.65);
+        background:rgba(125,211,252,.92);
+        box-shadow:0 0 10px rgba(56,189,248,.55);
       }
       .m-duel-vs{
         position:relative;
@@ -2428,9 +2432,9 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         color:rgba(240,244,250,.82);
       }
       .m-duel-log-line.is-live{
-        border-color:rgba(255,196,128,.18);
+        border-color:rgba(125,211,252,.22);
         background:rgba(255,255,255,.06);
-        color:#fff8ef;
+        color:#e9fdff;
       }
       .m-duel-footer{
         font-size:11px;
@@ -2569,23 +2573,624 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       }
       #missionsRoot .m-compact-tab{
         min-width:0;
-        min-height:42px;
+        min-height:40px;
         padding:8px 6px;
-        border:1px solid rgba(148,180,205,.28);
-        border-radius:10px;
-        background:rgba(9,16,24,.78);
-        color:rgba(220,236,245,.76);
+        border:1px solid rgba(148,180,205,.22);
+        border-radius:8px;
+        background:rgba(9,16,24,.72);
+        color:rgba(139,154,171,.96);
         font:inherit;
         font-size:12px;
         font-weight:800;
-        letter-spacing:.04em;
+        letter-spacing:.14em;
+        text-transform:uppercase;
       }
       #missionsRoot .m-compact-tab.is-active{
-        border-color:rgba(0,229,255,.7);
-        background:rgba(0,229,255,.12);
+        border-color:rgba(125,211,252,.7);
+        background:rgba(56,189,248,.14);
         color:#e9fdff;
+        box-shadow:inset 0 0 0 1px rgba(125,211,252,.18);
       }
       #missionsRoot .m-compact-panel[hidden]{ display:none !important; }
+
+      /* Production candidate visual system — existing AH stack, no remote fonts */
+      #missionsBack{
+        background:
+          radial-gradient(circle at 18% 10%, rgba(56,189,248,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(8,16,24,.42), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.90), rgba(6,10,14,.96)),
+          var(--missions-bg) !important;
+        background-position:center !important;
+        background-size:cover !important;
+        padding:0 !important;
+        align-items:stretch !important;
+        justify-content:stretch !important;
+      }
+      /* Beat #missions-hotfix (#missionsBack .sheet-card { width:min(560px,100%) !important; background:rgba(14,16,18,.92) !important }) */
+      #missionsBack.sheet-back > .sheet-card{
+        width:100% !important;
+        max-width:none !important;
+        height:100% !important;
+        max-height:none !important;
+        margin:0 !important;
+        padding:0 !important;
+        border-radius:0 !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        border:0 !important;
+        color:rgba(232,238,244,.94) !important;
+        display:flex !important;
+        flex-direction:column !important;
+        min-height:0 !important;
+        overflow:hidden !important;
+      }
+      #missionsBack.sheet-back > .sheet-card > div:first-of-type{
+        position:absolute;
+        top:8px;
+        right:8px;
+        z-index:6;
+        flex:0 0 auto;
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+        padding:0;
+        width:auto;
+        height:auto;
+        background:transparent;
+      }
+      #missionsRoot .m-shell-top{
+        padding-right:42px;
+      }
+      #missionsBack.sheet-back > .sheet-card > div:first-of-type > div:first-child{
+        position:absolute;
+        width:1px;
+        height:1px;
+        overflow:hidden;
+        clip:rect(0,0,0,0);
+      }
+      #missionsBack.sheet-back > .sheet-card > p{ display:none !important; }
+      #missionsBack #missionsRoot{
+        display:block !important;
+        margin-top:0 !important;
+        gap:0 !important;
+        overflow-x:hidden !important;
+        padding:8px 10px calc(12px + env(safe-area-inset-bottom)) 10px !important;
+      }
+      #missionsRoot .m-kicker{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.22em;
+        text-transform:uppercase;
+        opacity:.72;
+      }
+      #missionsRoot .m-shell-head .m-title{
+        font-size:22px;
+        font-weight:800;
+        letter-spacing:.1em;
+        text-transform:uppercase;
+      }
+      #missionsRoot .m-shell-sub{
+        font-size:12px;
+        letter-spacing:.04em;
+        opacity:.76;
+      }
+      #missionsRoot .m-stage{
+        background:
+          radial-gradient(circle at 18% 10%, rgba(56,189,248,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(8,16,24,.42), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.58), rgba(6,10,14,.88)),
+          var(--missions-bg);
+      }
+      #missionsRoot .m-stage.m-stage-wait{
+        background:
+          radial-gradient(circle at 18% 10%, rgba(56,189,248,.10), transparent 55%),
+          radial-gradient(circle at 82% 92%, rgba(8,16,24,.42), transparent 58%),
+          linear-gradient(to bottom, rgba(6,10,14,.58), rgba(6,10,14,.88)),
+          var(--missions-wait-bg);
+      }
+      #missionsRoot .m-title{
+        font-weight:800;
+        letter-spacing:.02em;
+      }
+      #missionsRoot .m-tag,
+      #missionsRoot .m-chip{
+        display:inline-flex;
+        align-items:center;
+        min-height:20px;
+        padding:0 7px;
+        border-radius:999px;
+        border:1px solid rgba(148,180,205,.16);
+        background:rgba(255,255,255,.04);
+        font-size:10px;
+        font-weight:700;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:rgba(232,238,244,.86);
+        white-space:nowrap;
+        max-width:100%;
+      }
+      #missionsRoot .m-chip{
+        text-transform:none;
+        letter-spacing:.04em;
+        color:rgba(232,238,244,.78);
+      }
+      #missionsRoot .m-tag.is-type{
+        letter-spacing:.16em;
+        color:#7dd3fc;
+        border-color:rgba(125,211,252,.22);
+      }
+      #missionsRoot .m-tag.is-t1{
+        border-color:rgba(125,211,252,.28);
+        color:#cfefff;
+      }
+      #missionsRoot .m-tag.is-t2{
+        border-color:rgba(125,211,252,.45);
+        background:rgba(56,189,248,.1);
+        color:#dff6ff;
+      }
+      #missionsRoot .m-tag.is-t3{
+        border-color:rgba(125,211,252,.62);
+        background:rgba(56,189,248,.16);
+        color:#f0fbff;
+      }
+      #missionsRoot .m-offer{
+        padding:8px;
+        border-radius:12px;
+        background:rgba(6,10,14,.62);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      }
+      #missionsRoot .m-offer-main{
+        align-items:stretch;
+        gap:8px;
+      }
+      #missionsRoot .m-offer-top{
+        justify-content:space-between;
+        flex-wrap:nowrap;
+        gap:6px;
+        margin-bottom:2px;
+      }
+      #missionsRoot .m-offer-top-right{
+        display:flex;
+        gap:4px;
+        flex:0 0 auto;
+      }
+      #missionsRoot .m-offer-title{
+        font-size:15px;
+        font-weight:800;
+        line-height:1.12;
+        letter-spacing:.01em;
+      }
+      #missionsRoot .m-offer-body{
+        margin-top:2px;
+        -webkit-line-clamp:1;
+        font-size:11.5px;
+        line-height:1.3;
+      }
+      #missionsRoot .m-intent{
+        display:flex;
+        flex-wrap:wrap;
+        gap:4px;
+        margin-top:4px;
+      }
+      #missionsRoot .m-offer-foot{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:4px;
+        min-width:0;
+      }
+      #missionsRoot .m-offer-meta{
+        min-width:0;
+      }
+      #missionsRoot .m-fit{
+        font-size:10px;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#7dd3fc;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-stats{
+        display:flex;
+        gap:8px;
+        font-variant-numeric:tabular-nums;
+        font-size:11px;
+        opacity:.86;
+      }
+      #missionsRoot .m-stats b{
+        color:rgba(255,255,255,.96);
+        font-weight:700;
+      }
+      #missionsRoot .m-offer-cta{
+        flex:0 0 auto;
+        align-self:center;
+        width:auto;
+      }
+      #missionsRoot .m-offer-cta .btn{
+        min-height:32px;
+        padding:6px 10px;
+        font-size:11px;
+        font-weight:800;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        background:transparent;
+        border-color:rgba(125,211,252,.38);
+        color:#d7f4ff;
+      }
+      #missionsRoot .m-dossier{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        padding:6px 2px 8px;
+      }
+      #missionsRoot .m-dossier-title{
+        font-size:24px;
+        font-weight:800;
+        letter-spacing:.02em;
+        line-height:1.08;
+        text-transform:none;
+      }
+      #missionsRoot .m-panel{
+        padding:10px 12px;
+        border:1px solid rgba(148,180,205,.16);
+        border-radius:12px;
+        background:rgba(6,10,14,.62);
+      }
+      #missionsRoot .m-empty{
+        padding:18px 12px;
+        text-align:center;
+      }
+      #missionsRoot .m-ready-block{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        text-align:center;
+        gap:6px;
+        padding:8px 0 4px;
+      }
+      #missionsRoot .m-clock{
+        font-size:48px;
+        font-weight:800;
+        letter-spacing:.18em;
+        line-height:.95;
+        text-shadow:0 10px 28px rgba(0,0,0,.55);
+      }
+      #missionsRoot .m-clock-sub{
+        font-size:12px;
+        opacity:.78;
+      }
+      #missionsRoot .m-bar{
+        height:8px;
+        width:min(520px, 92%);
+        background:rgba(255,255,255,.08);
+      }
+      #missionsRoot .m-rare{
+        display:grid;
+        grid-template-columns:44px minmax(0,1fr) auto;
+        gap:10px;
+        align-items:center;
+        width:100%;
+        max-width:none;
+        margin-top:0;
+        padding:8px 10px;
+        text-align:left;
+        border-radius:12px;
+        background:rgba(6,12,10,.7);
+      }
+      #missionsRoot .m-rare-ico{
+        width:44px;
+        height:44px;
+        border-radius:10px;
+      }
+      #missionsRoot .m-rare-name{
+        font-size:14px;
+        font-weight:800;
+        white-space:normal;
+        overflow:visible;
+        text-overflow:unset;
+        overflow-wrap:anywhere;
+      }
+      #missionsRoot .m-rare-tag,
+      #missionsRoot .m-rare-sub{
+        font-size:10px;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        opacity:.78;
+        white-space:normal;
+      }
+      #missionsRoot .m-rare-chance{
+        font-variant-numeric:tabular-nums;
+        font-size:12px;
+        font-weight:700;
+        color:#7dd3fc;
+        white-space:nowrap;
+      }
+      #missionsRoot .m-resolve-btn,
+      #missionsRoot #mResolveBtn.m-resolve-btn{
+        width:100%;
+        min-height:48px;
+        padding:10px 14px;
+        font-size:16px;
+        font-weight:800;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:#1a0c04;
+        background:linear-gradient(180deg,#fb923c,#ea580c);
+        border:1px solid rgba(255,210,160,.28);
+        box-shadow:0 10px 24px rgba(234,88,12,.28);
+      }
+      #missionsRoot .m-outcome{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:12px;
+        border-radius:12px;
+        border:1px solid rgba(52,211,153,.28);
+        background:rgba(6,24,18,.7);
+      }
+      #missionsRoot .m-outcome[data-tone="failed"]{
+        border-color:rgba(248,113,113,.3);
+        background:rgba(32,10,12,.72);
+      }
+      #missionsRoot .m-outcome[data-tone="partial"]{
+        border-color:rgba(125,211,252,.28);
+        background:rgba(8,18,28,.72);
+      }
+      #missionsRoot .m-outcome[data-tone="critical"]{
+        border-color:rgba(251,191,36,.34);
+        background:rgba(28,20,8,.72);
+      }
+      #missionsRoot .m-outcome-mark{
+        width:28px;
+        height:28px;
+        border-radius:999px;
+        flex:0 0 auto;
+        background:rgba(52,211,153,.18);
+        position:relative;
+      }
+      #missionsRoot .m-outcome-mark::after{
+        content:"";
+        position:absolute;
+        left:8px;
+        top:6px;
+        width:10px;
+        height:6px;
+        border-left:2px solid #34d399;
+        border-bottom:2px solid #34d399;
+        transform:rotate(-45deg);
+      }
+      #missionsRoot .m-outcome[data-tone="failed"] .m-outcome-mark{
+        background:rgba(248,113,113,.18);
+      }
+      #missionsRoot .m-outcome[data-tone="failed"] .m-outcome-mark::after{
+        left:9px;
+        top:9px;
+        width:10px;
+        height:0;
+        border-left:0;
+        border-bottom:2px solid #f87171;
+        transform:none;
+      }
+      #missionsRoot .m-debrief-card .m-report-title{
+        font-size:18px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+      }
+      #missionsRoot .m-debrief-card .m-report-values{
+        font-size:16px;
+        font-weight:800;
+      }
+      #missionsRoot .m-debrief-return{
+        width:100%;
+        min-height:48px;
+        font-size:15px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:#06202c;
+        background:linear-gradient(180deg,#7dd3fc,#38bdf8);
+        border:1px solid rgba(186,230,253,.35);
+      }
+      #missionsRoot #mTacticalAccess{
+        margin:0 0 10px !important;
+        padding:8px 10px;
+        border:1px solid rgba(125,211,252,.32) !important;
+        border-radius:12px;
+        background:linear-gradient(90deg, rgba(56,189,248,.1), rgba(8,14,20,.55));
+        outline:none;
+      }
+      #missionsRoot #mTacticalAccess .btn{
+        min-height:34px;
+        padding:7px 12px;
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        background:transparent;
+        border-color:rgba(125,211,252,.38);
+        color:#d7f4ff;
+      }
+      #missionsRoot #mTacticalAccess .m-title{
+        font-size:15px;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+      }
+      #missionsRoot .m-elite-card-title,
+      #missionsRoot .m-elite-kicker{
+        font-weight:800;
+        letter-spacing:.04em;
+      }
+      .m-duel-overlay{
+        overflow-x:hidden;
+      }
+      .m-duel-shell{
+        min-width:0;
+      }
+      .m-duel-frame{
+        position:relative;
+        min-width:0;
+      }
+      .m-duel-frame .m-duel-stamp{
+        top:8px;
+        bottom:auto;
+        left:8px;
+        max-width:calc(100% - 16px);
+      }
+      .m-duel-cap{
+        position:absolute;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:3;
+        padding:22px 8px 8px;
+        background:linear-gradient(180deg, transparent, rgba(4,8,12,.9) 55%);
+        pointer-events:none;
+      }
+      .m-duel-cap .m-duel-name{
+        font-size:13px;
+        font-weight:800;
+        line-height:1.15;
+        margin:0 0 4px;
+        color:#f8fbff;
+      }
+      .m-duel-panel-top{
+        align-items:center;
+      }
+      .m-duel-kicker{
+        color:#7dd3fc;
+        letter-spacing:.18em;
+      }
+      .m-duel-title{
+        font-size:20px;
+        font-weight:800;
+        letter-spacing:.04em;
+        overflow-wrap:anywhere;
+        text-transform:none;
+      }
+      .m-duel-exchange-kicker{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.16em;
+        text-transform:uppercase;
+        color:rgba(139,154,171,.95);
+      }
+      .m-duel-name{
+        font-size:16px;
+        font-weight:800;
+        line-height:1.15;
+        white-space:normal;
+        overflow:visible;
+        text-overflow:unset;
+        overflow-wrap:anywhere;
+        word-break:break-word;
+      }
+      .m-duel-hp{
+        margin-top:6px;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        font-variant-numeric:tabular-nums;
+        color:rgba(232,238,244,.82);
+      }
+      .m-duel-bar{
+        height:8px;
+        margin-top:4px;
+        border:1px solid rgba(255,255,255,.12);
+      }
+      .m-duel-log{
+        min-height:0;
+        max-height:132px;
+        overflow:hidden;
+      }
+      .m-duel-log-head{
+        color:rgba(139,154,171,.95);
+      }
+      .m-duel-log-line{
+        padding:5px 0;
+        border-radius:0;
+        background:transparent;
+        border:0;
+        border-top:1px solid rgba(255,255,255,.05);
+      }
+      .m-duel-log-line.is-live{
+        color:#e9fdff;
+        border-color:rgba(125,211,252,.22);
+      }
+      @media (max-width: 520px){
+        #missionsRoot .m-row,
+        #missionsRoot .m-shell-top{
+          flex-direction:row;
+          align-items:center;
+        }
+        #missionsRoot .m-offer-main{
+          flex-direction:row;
+        }
+        #missionsRoot .m-offer button.btn.primary,
+        #missionsRoot .m-offer-cta .btn{
+          width:auto;
+        }
+        #missionsRoot .m-offer-cta{
+          width:auto;
+        }
+        #missionsRoot .m-clock{
+          font-size:42px;
+        }
+        .m-duel-overlay{
+          padding:10px;
+        }
+        .m-duel-shell{
+          padding:12px;
+          gap:10px;
+          border-radius:16px;
+        }
+        .m-duel-arena{
+          gap:8px;
+          grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);
+        }
+        .m-duel-panel{
+          min-height:0;
+          min-width:0;
+          padding:10px;
+          gap:8px;
+        }
+        .m-duel-visual{
+          min-height:110px;
+        }
+        .m-duel-name{
+          font-size:13px;
+        }
+        .m-duel-clash{
+          min-height:0;
+          gap:8px;
+        }
+        .m-duel-vs-ring{
+          width:56px;
+          height:56px;
+        }
+        .m-duel-vs-core{
+          font-size:16px;
+        }
+        .m-duel-clash-text{
+          max-width:72px;
+          font-size:9px;
+        }
+      }
+      @media (max-width: 360px){
+        #missionsRoot .m-offer-title{ font-size:14px; }
+        #missionsRoot .m-stats{ gap:6px; font-size:10.5px; }
+        .m-duel-arena{ grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr); }
+        .m-duel-label{ display:none; }
+      }
+      @media (prefers-reduced-motion: reduce){
+        .m-duel-panel.is-shake,
+        .m-duel-panel.is-hit,
+        #missionsRoot .m-resolve-btn{
+          animation:none;
+          transition:none;
+        }
+      }
     `;
     document.head.appendChild(st);
   }
@@ -2929,17 +3534,13 @@ function _normalizeRareDropObj(obj) {
 
     return `
       <div class="m-rare" data-rarity="${esc(rarity || "")}">
-        <div class="m-rare-top">
+        <div class="m-rare-ico">${img}</div>
+        <div class="m-rare-meta">
           <div class="m-rare-tag">Possible rare drop</div>
-          <div class="m-rare-chance">${chance ? `Chance <b>${esc(chance)}</b>` : `<span style="opacity:.8">Rare</span>`}</div>
+          <div class="m-rare-name">${esc(rare.name || "Rare Drop")}</div>
+          <div class="m-rare-sub">${esc(sub || "Keep an eye on the loot…")}</div>
         </div>
-        <div class="m-rare-row">
-          <div class="m-rare-ico">${img}</div>
-          <div class="m-rare-meta">
-            <div class="m-rare-name">${esc(rare.name || "Rare Drop")}</div>
-            <div class="m-rare-sub">${esc(sub || "Keep an eye on the loot…")}</div>
-          </div>
-        </div>
+        <div class="m-rare-chance">${chance ? esc(chance) : `<span style="opacity:.8">Rare</span>`}</div>
       </div>
     `;
   }
@@ -4051,44 +4652,50 @@ function _normalizeRareDropObj(obj) {
     const bones = (reward.bones ?? o?.bones ?? "?");
     const rolls = (o?.lootRolls ?? o?.loot_rolls ?? reward.rolls ?? reward.loot_rolls ?? "?");
     const petMatchLabel = normalizePetMatchLabel(o);
+    const recommended = normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats);
     const compactHint = textOrEmpty(o?.compactHint) ||
-      (petMatchLabel ? `Pet fit: ${petMatchLabel}` : "") ||
-      (normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)
-        ? `Recommended: ${normalizeStatsText(o?.recommendedStatsText || o?.recommendedStatLabels || o?.recommendedStats)}`
-        : "");
+      (petMatchLabel ? `Pet fit ${petMatchLabel}${recommended ? ` · Recommended ${recommended}` : ""}` : "") ||
+      (recommended ? `Recommended: ${recommended}` : "");
 
     const offerId = String(o?.offerId || o?.id || o?.offer_id || "");
 
     const hasActive = !!(active?.status && active.status !== "NONE");
     const disabled = hasActive ? "disabled" : "";
-    const flavorTags = [];
-    if (modifierLabel) flavorTags.push(modifierLabel);
-    if (rewardIntent.length) flavorTags.push(`Reward intent: ${rewardIntent.join(" · ")}`);
+    const tierKey = String(label || tier || "").toUpperCase();
+    const tierClass = /\bT3\b/.test(tierKey) ? "is-t3" : /\bT2\b/.test(tierKey) ? "is-t2" : /\bT1\b/.test(tierKey) ? "is-t1" : "";
     return `
       <div class="m-offer">
         <div class="m-offer-main">
           <div class="m-offer-copy">
             <div class="m-offer-top">
-              <span class="m-tag">${esc(label)}</span>
-              <span class="m-tag">${esc(dur)}</span>
+              ${subtitle ? `<span class="m-tag is-type">${esc(subtitle)}</span>` : ""}
+              <div class="m-offer-top-right">
+                <span class="m-tag ${tierClass}">${esc(label)}</span>
+                ${dur ? `<span class="m-tag">${esc(dur)}</span>` : ""}
+              </div>
             </div>
             ${title ? `<div class="m-offer-title">${esc(title)}</div>` : ""}
-            ${subtitle ? `<div class="m-kicker" style="margin-top:4px;">${esc(subtitle)}</div>` : ""}
             ${body ? `<div class="m-muted m-offer-body">${esc(body)}</div>` : ""}
-            ${renderTags(flavorTags)}
-            ${compactHint ? `<div class="m-offer-helper">${esc(compactHint)}</div>` : ""}
-            <div class="m-offer-reward">
-              XP: <b>${esc(xp)}</b> · Bones: <b>${esc(bones)}</b> · Rolls: <b>${esc(rolls)}</b>
+            ${(modifierLabel || rewardIntent.length) ? `<div class="m-intent">${modifierLabel ? `<span class="m-tag">${esc(modifierLabel)}</span>` : ""}${rewardIntent.map((item) => `<span class="m-chip">${esc(item)}</span>`).join("")}</div>` : ""}
+            ${rareHint ? `<div class="m-offer-helper">${esc(rareHint)}</div>` : ""}
+            <div class="m-offer-foot">
+              <div class="m-offer-meta">
+                ${compactHint ? `<div class="m-fit">${esc(compactHint)}</div>` : ""}
+                <div class="m-stats">
+                  <span>XP <b>${esc(xp)}</b></span>
+                  <span>Bones <b>${esc(bones)}</b></span>
+                  <span>Rolls <b>${esc(rolls)}</b></span>
+                </div>
+              </div>
+              <div class="m-offer-cta">
+                <button type="button" class="btn primary"
+                  data-act="start"
+                  data-tier="${esc(tier)}"
+                  data-offer="${esc(offerId)}"
+                  ${disabled}
+                >Start</button>
+              </div>
             </div>
-          </div>
-
-          <div class="m-offer-cta">
-            <button type="button" class="btn primary"
-              data-act="start"
-              data-tier="${esc(tier)}"
-              data-offer="${esc(offerId)}"
-              ${disabled}
-            >Start</button>
           </div>
         </div>
       </div>
@@ -4967,26 +5574,29 @@ function _normalizeRareDropObj(obj) {
         <div class="m-duel-shell" role="dialog" aria-modal="true" aria-label="Mission duel playback">
           <div class="m-duel-head">
             <div style="min-width:0;">
-              <div class="m-duel-kicker">Mission Duel Playback</div>
+              <div class="m-duel-kicker">Signal feed</div>
               <div class="m-duel-title">${esc(model.missionTitle)}</div>
               <div class="m-duel-sub">${esc(model.subtitle || model.fieldLine)}</div>
             </div>
             <button type="button" class="btn m-duel-skip">Skip</button>
           </div>
           <div class="m-duel-stage">
+            <div class="m-duel-exchange-kicker m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</div>
             <div class="m-duel-arena">
               <section class="m-duel-panel is-player" data-side="player">
                 <div class="m-duel-panel-top">
-                  <div style="min-width:0;">
-                    <div class="m-duel-side">Alpha Pack</div>
-                    <div class="m-duel-name">${esc(model.playerName)}</div>
-                  </div>
+                  <div class="m-duel-side">Alpha Pack</div>
                   <div class="m-duel-state">Ready</div>
                 </div>
-                ${renderMissionDuelVisual(model.playerVisual, "player", `${model.playerName} visual`, "Alpha")}
-                <div class="m-duel-hp" data-hp="player">100 / 100 HP</div>
-                <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="player" style="width:100%"></div></div>
-                <div class="m-duel-damage" data-damage="player"></div>
+                <div class="m-duel-frame">
+                  ${renderMissionDuelVisual(model.playerVisual, "player", `${model.playerName} visual`, "Alpha")}
+                  <div class="m-duel-cap">
+                    <div class="m-duel-name">${esc(model.playerName)}</div>
+                    <div class="m-duel-hp" data-hp="player">100 / 100 HP</div>
+                    <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="player" style="width:100%"></div></div>
+                  </div>
+                  <div class="m-duel-damage" data-damage="player"></div>
+                </div>
               </section>
               <div class="m-duel-clash">
                 <div class="m-duel-label">Signal Feed Active</div>
@@ -4996,21 +5606,22 @@ function _normalizeRareDropObj(obj) {
                   </div>
                 </div>
                 <div class="m-duel-clash-text">Signal locked.</div>
-                <div class="m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</div>
                 <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
               </div>
               <section class="m-duel-panel is-enemy" data-side="enemy">
                 <div class="m-duel-panel-top">
-                  <div style="min-width:0;">
-                    <div class="m-duel-side">Hostile Trace</div>
-                    <div class="m-duel-name">${esc(model.enemyName)}</div>
-                  </div>
+                  <div class="m-duel-side">Hostile Trace</div>
                   <div class="m-duel-state">Scanning</div>
                 </div>
-                ${renderMissionDuelVisual(model.enemyVisual, "enemy", `${model.enemyName} visual`, "Hostile")}
-                <div class="m-duel-hp" data-hp="enemy">100 / 100 HP</div>
-                <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="enemy" style="width:100%"></div></div>
-                <div class="m-duel-damage" data-damage="enemy"></div>
+                <div class="m-duel-frame">
+                  ${renderMissionDuelVisual(model.enemyVisual, "enemy", `${model.enemyName} visual`, "Hostile")}
+                  <div class="m-duel-cap">
+                    <div class="m-duel-name">${esc(model.enemyName)}</div>
+                    <div class="m-duel-hp" data-hp="enemy">100 / 100 HP</div>
+                    <div class="m-duel-bar"><div class="m-duel-bar-fill" data-bar="enemy" style="width:100%"></div></div>
+                  </div>
+                  <div class="m-duel-damage" data-damage="enemy"></div>
+                </div>
               </section>
             </div>
             <div class="m-duel-stage-meta">
@@ -5285,12 +5896,26 @@ function _normalizeRareDropObj(obj) {
     return `<div class="m-card"><div class="m-row"><div style="min-width:0;"><div class="m-title">Offers</div><div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div></div><button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button></div><div class="m-hr"></div><div>${offers.length ? offers.map((o) => renderOffer(o, realActive)).join("") : '<div class="m-muted">No offers yet. Refresh to scan for routes.</div>'}</div></div>`;
   }
   function renderMissionActivePanel(active, payload) {
-    if (!active?.status || active.status === "NONE") return '<div class="m-card"><div class="m-muted">No active mission. Choose an available route.</div></div>';
+    if (!active?.status || active.status === "NONE") return '<div class="m-card m-empty">No active mission. Choose an available route.</div>';
     const rare = (active.__pending ? (_pendingStart?.rareDrop || null) : null) || _extractRareDrop(active.__raw) || _extractRareDrop(_primaryActive(payload)) || null;
-    const tags = []; if (active.modifierLabel) tags.push(active.modifierLabel); if (Array.isArray(active.rewardIntent) && active.rewardIntent.length) tags.push(`Reward intent: ${active.rewardIntent.join(" / ")}`);
-    const match = normalizePetMatchLabel(active); const hint = textOrEmpty(active.compactHint) || (match ? `Pet fit: ${match}` : "");
+    const match = normalizePetMatchLabel(active.__raw || active);
+    const recommended = normalizeStatsText(
+      active.__raw?.recommendedStatsText ||
+      active.__raw?.recommendedStatLabels ||
+      active.__raw?.recommendedStats ||
+      active.recommendedStatsText ||
+      active.recommendedStatLabels ||
+      active.recommendedStats
+    );
+    const hint = textOrEmpty(active.compactHint) ||
+      (match ? `Pet fit ${match}${recommended ? ` · Recommended ${recommended}` : ""}` : "") ||
+      (recommended ? `Recommended ${recommended}` : "");
     const planLabel = active.eliteMission ? textOrEmpty(active.tacticalChoiceLabel || tacticalChoiceLabel(active.tacticalChoice), "") : "";
-    return `<div class="m-stage m-stage-wait"><div class="m-wait-center">${active.subtitle ? `<div class="m-kicker">${esc(active.subtitle)}</div>` : ""}<div class="m-title">${esc(active.title || "Mission")}</div>${active.lore ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:4px;">${esc(active.lore)}</div>` : ""}${renderTags(tags)}${planLabel ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;"><b>Plan locked:</b> ${esc(planLabel)}</div>` : ""}${hint ? `<div class="m-muted" style="max-width:min(520px, 92%); margin-top:6px;">${esc(hint)}</div>` : ""}<div id="mClock" class="m-clock">-</div><div id="mClockSub" class="m-clock-sub">-</div><div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div>${rare ? renderRareDropCard(rare) : ""}<div class="m-actions"><button id="mResolveBtn" type="button" class="btn primary" data-act="resolve" style="display:none">Resolve</button>${active.__pending ? '<button type="button" class="btn" data-act="back_to_offers">Back</button>' : ""}</div></div></div>`;
+    const intent = Array.isArray(active.rewardIntent) ? active.rewardIntent.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    const tags = [];
+    if (active.subtitle) tags.push({ text: active.subtitle, cls: "is-type" });
+    if (active.modifierLabel) tags.push({ text: active.modifierLabel, cls: "" });
+    return `<div class="m-stage m-stage-wait"><div class="m-dossier"><div class="m-kicker">Active mission</div><div class="m-title m-dossier-title">${esc(active.title || "Mission")}</div>${active.lore ? `<div class="m-muted">${esc(active.lore)}</div>` : ""}${tags.length ? `<div class="m-tag-row">${tags.map((tag) => `<span class="m-tag ${tag.cls}">${esc(tag.text)}</span>`).join("")}</div>` : ""}${intent.length || hint ? `<div class="m-panel">${intent.length ? `<div class="m-kicker">Reward intent</div><div class="m-intent" style="margin-top:6px;">${intent.map((item) => `<span class="m-chip">${esc(item)}</span>`).join("")}</div>` : ""}${hint ? `<div class="m-fit" style="margin-top:8px;">${esc(hint)}</div>` : ""}</div>` : ""}${planLabel ? `<div class="m-muted"><b>Plan locked:</b> ${esc(planLabel)}</div>` : ""}${rare ? renderRareDropCard(rare) : ""}<div class="m-ready-block"><div id="mClock" class="m-clock">-</div><div id="mClockSub" class="m-clock-sub">-</div><div class="m-bar"><div id="mFill" class="m-bar-fill" style="width:0%"></div></div></div><div class="m-actions"><button id="mResolveBtn" type="button" class="btn m-resolve-btn" data-act="resolve" style="display:none">Resolve</button>${active.__pending ? '<button type="button" class="btn" data-act="back_to_offers">Back</button>' : ""}</div></div></div>`;
   }
   let _guidedFocus = false, _guidedBusy = false, _guidedError = "";
 
