@@ -88,9 +88,15 @@
     return true;
   }
 
+  function ticks(n, total) {
+    let html = '<span class="ah-discovery-ticks" aria-hidden="true">';
+    for (let i = 0; i < total; i++) html += i < n ? '<i class="is-on"></i>' : '<i></i>';
+    return html + '</span>';
+  }
+
   function row(item) {
     const known = discovered(item.id);
-    return '<div class="ah-discovery-row" data-discovery-row="' + item.id + '">'
+    return '<div class="ah-discovery-row ' + (known ? 'is-discovered' : 'is-unexplored') + '" data-discovery-row="' + item.id + '">'
       + '<div class="ah-discovery-copy"><div class="ah-discovery-name">' + item.name + '</div>'
       + '<div class="ah-discovery-line">' + item.line + '</div></div>'
       + '<span class="ah-discovery-state" data-discovery-state="' + item.id + '">' + (known ? 'DISCOVERED' : 'UNEXPLORED') + '</span>'
@@ -108,8 +114,8 @@
       + '<p>You know the basics. This stays in Hub → Quick Access whenever you need to find a system again.</p>'
       + '<div class="ah-discovery-intro-actions"><button type="button" class="ah-action" data-guide-start>Explore</button><button type="button" class="ah-action" data-guide-later>Later</button></div>'
       + '</div>'
-      + '<details class="ah-discovery-shell"><summary><span>EXPLORE ALPHA</span><small>' + current.discovered + '/' + current.total + ' discovered</small></summary>'
-      + '<div class="ah-discovery-learned"><b>YOU ALREADY KNOW:</b> Missions · Tactical Ops · Map · Blood Moon</div>'
+      + '<details class="ah-discovery-shell"><summary><span class="ah-discovery-summary-title">EXPLORE ALPHA</span><small><span class="ah-discovery-count">' + current.discovered + '/' + current.total + ' discovered</span>' + ticks(current.discovered, current.total) + '</small></summary>'
+      + '<div class="ah-discovery-learned"><b>YOU ALREADY KNOW</b><span class="ah-discovery-chip">Missions</span><span class="ah-discovery-chip">Tactical Ops</span><span class="ah-discovery-chip">Map</span><span class="ah-discovery-chip">Blood Moon</span></div>'
       + GROUPS.map(group => '<section class="ah-discovery-group" data-discovery-group="' + group.id + '"><div class="ah-discovery-group-head"><b>' + group.title + '</b><span>' + group.line + '</span></div>' + group.items.map(row).join("") + '</section>').join("")
       + '<p role="status" data-guide-status></p></details>';
 
@@ -117,7 +123,11 @@
     const later = root.querySelector("[data-guide-later]");
     const start = root.querySelector("[data-guide-start]");
     if (later) later.onclick = dismiss;
-    if (start) start.onclick = () => { dismiss(); if (details) details.open = true; };
+    if (start) start.onclick = () => {
+      dismiss();
+      const refreshedDetails = root.querySelector(".ah-discovery-shell");
+      if (refreshedDetails) refreshedDetails.open = true;
+    };
     details?.addEventListener("toggle", () => { if (details.open) dismiss(); });
   }
 
@@ -150,7 +160,57 @@
     if (!document.getElementById("ah-post-ftue-discovery-style")) {
       const style = document.createElement("style");
       style.id = "ah-post-ftue-discovery-style";
-      style.textContent = '.ah-discovery-intro{margin:6px 0 10px;padding:14px;border:1px solid rgba(159,214,255,.22);border-radius:14px;background:linear-gradient(180deg,rgba(15,31,45,.94),rgba(7,16,25,.94));color:#eef8ff}.ah-discovery-intro[hidden]{display:none}.ah-discovery-intro p{margin:6px 0 12px;font-size:12px;line-height:1.45;opacity:.82}.ah-discovery-kicker{font-size:10px;font-weight:900;letter-spacing:.14em;color:#9fd6ff;margin-bottom:4px}.ah-discovery-intro-actions{display:flex;gap:8px}.ah-discovery-shell{border-top:1px solid rgba(255,255,255,.08)}.ah-discovery-shell>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;font-weight:900;letter-spacing:.04em}.ah-discovery-shell>summary small{font-size:10px;opacity:.6;font-weight:700;white-space:nowrap}.ah-discovery-learned{padding:0 0 12px;font-size:10px;line-height:1.45;opacity:.62}.ah-discovery-group{padding:10px 0;border-top:1px solid rgba(255,255,255,.07)}.ah-discovery-group-head{margin-bottom:4px}.ah-discovery-group-head>b{display:block;font-size:11px;letter-spacing:.1em;color:#9fd6ff}.ah-discovery-group-head>span{display:block;margin-top:2px;font-size:11px;opacity:.58}.ah-discovery-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:10px 0}.ah-discovery-copy{min-width:0}.ah-discovery-name{font-size:13px;font-weight:850}.ah-discovery-line{margin-top:2px;font-size:11px;line-height:1.35;opacity:.68}.ah-discovery-state{grid-column:1;font-size:9px;font-weight:900;letter-spacing:.11em;opacity:.52}.ah-discovery-go{grid-column:2;grid-row:1/3;min-width:76px;min-height:40px;padding:8px 10px;border:1px solid rgba(159,214,255,.24);border-radius:10px;background:rgba(159,214,255,.08);color:#dff5ff;font-size:10px;font-weight:900;letter-spacing:.05em;cursor:pointer}.ah-discovery-go:disabled{opacity:.45;cursor:default}[data-guide-status]{min-height:14px;margin:6px 0 0;font-size:11px;color:#ffc9c9}';
+      style.textContent = [
+        "#alphaDiscoveryGuide{color:#eef8ff}",
+        ".ah-discovery-intro{margin:0 0 8px;padding:8px 10px 9px;border:1px solid rgba(159,214,255,.12);border-radius:10px;background:rgba(10,16,24,.28);color:rgba(238,248,255,.86)}",
+        ".ah-discovery-intro[hidden]{display:none}",
+        ".ah-discovery-kicker{font-size:8px;font-weight:800;letter-spacing:.16em;color:rgba(159,214,255,.62);margin-bottom:2px}",
+        ".ah-discovery-intro>b{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;line-height:1.2;color:rgba(243,248,255,.88)}",
+        ".ah-discovery-intro p{margin:4px 0 8px;font-size:11px;line-height:1.35;color:rgba(215,228,242,.68)}",
+        ".ah-discovery-intro-actions{display:flex;gap:8px}",
+        ".ah-discovery-intro-actions .ah-action,.ah-discovery-intro-actions [data-guide-start],.ah-discovery-intro-actions [data-guide-later]{height:44px;min-height:44px;flex:1;border-radius:9px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}",
+        ".ah-discovery-intro-actions [data-guide-start]{border:1px solid rgba(159,214,255,.28);background:rgba(159,214,255,.08);color:#e8f6ff}",
+        ".ah-discovery-intro-actions [data-guide-later]{border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(230,240,255,.66)}",
+        ".ah-discovery-intro-actions [data-guide-start]:active,.ah-discovery-intro-actions [data-guide-later]:active{transform:scale(.98)}",
+        ".ah-discovery-shell{border:1px solid rgba(159,214,255,.18);border-radius:12px;background:linear-gradient(180deg,rgba(12,20,30,.62),rgba(8,12,18,.4));overflow:hidden}",
+        ".ah-discovery-shell[open]{border-color:rgba(159,214,255,.22)}",
+        ".ah-discovery-shell>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:8px 10px;user-select:none;background:linear-gradient(180deg,rgba(159,214,255,.05),transparent)}",
+        ".ah-discovery-shell>summary::-webkit-details-marker{display:none}",
+        ".ah-discovery-shell>summary::before{content:\"\";width:6px;height:6px;margin-right:2px;border-right:1.5px solid rgba(159,214,255,.8);border-bottom:1.5px solid rgba(159,214,255,.8);transform:rotate(-45deg);flex:0 0 auto;transition:transform .15s cubic-bezier(.23,1,.32,1)}",
+        ".ah-discovery-shell[open]>summary::before{transform:rotate(45deg);margin-top:-2px}",
+        ".ah-discovery-summary-title{flex:1 1 auto;min-width:0;font-size:13px;font-weight:800;letter-spacing:.12em;color:#f2f8ff}",
+        ".ah-discovery-shell>summary small{display:flex;align-items:center;gap:6px;font-size:8px;font-weight:600;letter-spacing:.04em;color:rgba(186,208,230,.42);white-space:nowrap}",
+        ".ah-discovery-ticks{display:inline-flex;gap:2px}",
+        ".ah-discovery-ticks i{display:block;width:4px;height:2px;border-radius:1px;background:rgba(159,214,255,.1)}",
+        ".ah-discovery-ticks i.is-on{background:rgba(159,214,255,.34)}",
+        ".ah-discovery-learned{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px 9px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;line-height:1.2;color:rgba(186,208,230,.62)}",
+        ".ah-discovery-learned>b{font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(148,164,189,.86);margin-right:2px}",
+        ".ah-discovery-chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:rgba(210,224,240,.72);font-size:9.5px;font-weight:700;letter-spacing:.04em;pointer-events:none}",
+        ".ah-discovery-group{padding:7px 8px 6px;border-top:1px solid rgba(255,255,255,.06)}",
+        ".ah-discovery-group-head{display:flex;flex-direction:column;gap:1px;margin:0 2px 5px}",
+        ".ah-discovery-group-head>b{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;color:#9fd6ff}",
+        ".ah-discovery-group-head>span{display:block;font-size:10px;line-height:1.3;color:rgba(186,208,230,.58);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+        ".ah-discovery-group[data-discovery-group=\"identity\"]{margin:0 6px 2px;padding:8px;border:1px solid rgba(159,214,255,.16);border-radius:10px;background:linear-gradient(90deg,rgba(159,214,255,.1),rgba(159,214,255,.03) 42%,transparent 78%);box-shadow:inset 2px 0 0 rgba(159,214,255,.45)}",
+        ".ah-discovery-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:10px;row-gap:1px;align-items:center;min-height:44px;padding:6px 4px 6px 8px;border-radius:8px}",
+        ".ah-discovery-row.is-unexplored{background:rgba(159,214,255,.03)}",
+        ".ah-discovery-copy{grid-column:1;grid-row:1/3;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px}",
+        ".ah-discovery-name{font-size:13px;font-weight:800;letter-spacing:.01em;color:#f2f6ff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+        ".ah-discovery-line{font-size:11px;line-height:1.25;color:rgba(181,194,214,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+        ".ah-discovery-state{grid-column:2;grid-row:2;justify-self:center;font-size:8px;font-weight:800;letter-spacing:.1em;white-space:nowrap;line-height:1;padding-top:1px}",
+        ".ah-discovery-row.is-unexplored .ah-discovery-state{color:rgba(159,214,255,.88)}",
+        ".ah-discovery-row.is-discovered .ah-discovery-state{color:rgba(186,208,230,.62)}",
+        ".ah-discovery-go{grid-column:2;grid-row:1;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:84px;min-height:36px;height:36px;padding:0 10px 0 11px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.08em;color:#dff5ff;cursor:pointer}",
+        ".ah-discovery-go::before{content:\"\";position:absolute;inset:-4px}",
+        ".ah-discovery-go::after{content:\"\";width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);opacity:.8;margin-left:1px}",
+        ".ah-discovery-row.is-unexplored .ah-discovery-go{border:1px solid rgba(159,214,255,.32);background:rgba(159,214,255,.1)}",
+        ".ah-discovery-row.is-discovered .ah-discovery-go{border:1px solid rgba(220,232,249,.16);background:rgba(10,15,24,.4);color:rgba(223,235,248,.88)}",
+        ".ah-discovery-go:active{transform:scale(.98)}",
+        ".ah-discovery-go:disabled{opacity:.45;cursor:default}",
+        ".ah-discovery-row.is-discovered{box-shadow:inset 0 0 0 1px rgba(159,214,255,.06)}",
+        "[data-guide-status]{min-height:0;margin:0;padding:0 10px 8px;font-size:11px;color:#ffc9c9}",
+        "[data-guide-status]:empty{display:none}",
+        "@media (prefers-reduced-motion:reduce){.ah-discovery-shell>summary::before,.ah-discovery-go,.ah-discovery-intro-actions .ah-action{transition:none}}"
+      ].join("");
       document.head.appendChild(style);
     }
 
