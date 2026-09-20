@@ -272,8 +272,23 @@
         break;
 
       case "profile":
-        if (typeof window.Profile?.open === "function") window.Profile.open();
-        else clickLegacy(".btn.profile") || clickLegacy("button.btn.profile");
+        if (typeof window.FieldRecord?.openSelf === "function") {
+          Promise.resolve(window.FieldRecord.openSelf({ source: "home_nav_profile" }))
+            .then((opened) => { if (!opened) openCharSheet(); })
+            .catch(() => openCharSheet());
+        } else {
+          openCharSheet();
+        }
+        break;
+
+      case "field_record":
+        if (typeof window.FieldRecord?.openSelf === "function") {
+          Promise.resolve(window.FieldRecord.openSelf({ source: "home_nav_character" }))
+            .then((opened) => { if (!opened) openCharSheet(); })
+            .catch(() => openCharSheet());
+        } else {
+          openCharSheet();
+        }
         break;
 
       case "support":
