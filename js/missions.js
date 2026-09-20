@@ -2626,7 +2626,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       }
       #missionsBack.sheet-back > .sheet-card > div:first-of-type{
         position:absolute;
-        top:8px;
+        top:calc(8px + env(safe-area-inset-top));
         right:8px;
         z-index:6;
         flex:0 0 auto;
@@ -2654,7 +2654,7 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         margin-top:0 !important;
         gap:0 !important;
         overflow-x:hidden !important;
-        padding:8px 10px calc(12px + env(safe-area-inset-bottom)) 10px !important;
+        padding:calc(8px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom)) 10px !important;
       }
       #missionsRoot .m-kicker{
         font-size:10px;
@@ -2713,6 +2713,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         text-transform:none;
         letter-spacing:.04em;
         color:rgba(232,238,244,.78);
+        white-space:normal;
+        overflow-wrap:anywhere;
       }
       #missionsRoot .m-tag.is-type{
         letter-spacing:.16em;
@@ -2753,6 +2755,11 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         display:flex;
         gap:4px;
         flex:0 0 auto;
+      }
+      #missionsRoot .m-offer-top > .m-tag.is-type{
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
       }
       #missionsRoot .m-offer-title{
         font-size:15px;
@@ -2807,8 +2814,8 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         width:auto;
       }
       #missionsRoot .m-offer-cta .btn{
-        min-height:32px;
-        padding:6px 10px;
+        min-height:40px;
+        padding:7px 12px;
         font-size:11px;
         font-weight:800;
         letter-spacing:.08em;
@@ -2935,6 +2942,13 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       #missionsRoot .m-outcome[data-tone="partial"]{
         border-color:rgba(125,211,252,.28);
         background:rgba(8,18,28,.72);
+      }
+      #missionsRoot .m-outcome[data-tone="partial"] .m-outcome-mark{
+        background:rgba(125,211,252,.16);
+      }
+      #missionsRoot .m-outcome[data-tone="partial"] .m-outcome-mark::after{
+        border-left-color:#7dd3fc;
+        border-bottom-color:#7dd3fc;
       }
       #missionsRoot .m-outcome[data-tone="critical"]{
         border-color:rgba(251,191,36,.34);
@@ -3104,6 +3118,14 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         max-height:132px;
         overflow:hidden;
       }
+      .m-duel-log-lines{
+        flex:1 1 auto;
+        min-height:0;
+        overflow-y:auto;
+        overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:thin;
+      }
       .m-duel-log-head{
         color:rgba(139,154,171,.95);
       }
@@ -3190,6 +3212,219 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
           animation:none;
           transition:none;
         }
+      }
+
+      /* Duel climax cleanup — overlay-scoped so Elite visuals stay unchanged */
+      .m-duel-overlay{
+        padding:8px;
+        padding-top:max(8px, env(safe-area-inset-top));
+        padding-bottom:max(8px, env(safe-area-inset-bottom));
+        overflow:hidden;
+      }
+      .m-duel-overlay .m-duel-shell{
+        min-height:100%;
+        height:100%;
+        gap:8px;
+        padding:10px;
+        border-radius:16px;
+        overflow:hidden;
+      }
+      .m-duel-overlay .m-duel-head{
+        align-items:center;
+        gap:8px;
+        flex:0 0 auto;
+      }
+      .m-duel-overlay .m-duel-kicker{
+        flex:0 0 auto;
+        letter-spacing:.16em;
+      }
+      .m-duel-overlay .m-duel-progress{
+        flex:1 1 auto;
+        min-width:0;
+        text-align:center;
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        color:rgba(186,210,224,.88);
+      }
+      .m-duel-overlay .m-duel-skip{
+        min-height:36px;
+        min-width:56px;
+        z-index:8;
+      }
+      .m-duel-overlay .m-duel-stage{
+        flex:1 1 auto;
+        min-height:0;
+        gap:8px;
+      }
+      .m-duel-overlay .m-duel-arena{
+        position:relative;
+        flex:1 1 0;
+        min-height:240px;
+        max-height:min(58vh, 500px);
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:6px;
+        align-items:stretch;
+      }
+      .m-duel-overlay .m-duel-panel{
+        min-height:0;
+        min-width:0;
+        padding:0;
+        gap:0;
+        border-radius:14px;
+        background:rgba(5,9,14,.55);
+      }
+      .m-duel-overlay .m-duel-frame{
+        position:relative;
+        height:100%;
+        min-height:0;
+      }
+      .m-duel-overlay .m-duel-visual{
+        position:absolute;
+        inset:0;
+        min-height:100%;
+        border-radius:14px;
+        border:0;
+      }
+      .m-duel-overlay .m-duel-stamp,
+      .m-duel-overlay .m-duel-label,
+      .m-duel-overlay .m-duel-footer,
+      .m-duel-overlay .m-duel-title,
+      .m-duel-overlay .m-duel-sub{
+        display:none !important;
+      }
+      .m-duel-overlay .m-duel-state,
+      .m-duel-overlay .m-duel-stage-meta{
+        position:absolute;
+        width:1px;
+        height:1px;
+        overflow:hidden;
+        clip:rect(0,0,0,0);
+      }
+      .m-duel-overlay .m-duel-side{
+        position:absolute;
+        top:8px;
+        left:8px;
+        z-index:4;
+        max-width:calc(100% - 16px);
+        padding:3px 7px;
+        border-radius:999px;
+        background:rgba(5,10,14,.62);
+        border:1px solid rgba(255,255,255,.08);
+        font-size:9px;
+        letter-spacing:.14em;
+        color:rgba(220,232,240,.78);
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .m-duel-overlay .m-duel-cap{
+        padding:28px 10px 10px;
+      }
+      .m-duel-overlay .m-duel-cap .m-duel-name{
+        font-size:14px;
+        font-weight:800;
+        line-height:1.2;
+        margin:0 0 4px;
+        overflow-wrap:anywhere;
+      }
+      .m-duel-overlay .m-duel-hp{
+        margin-top:0;
+        font-size:10px;
+      }
+      .m-duel-overlay .m-duel-bar{
+        height:7px;
+        margin-top:4px;
+      }
+      .m-duel-overlay .m-duel-portrait{
+        transform:scale(1.12);
+        object-position:center 16%;
+      }
+      .m-duel-overlay .m-duel-panel.is-enemy .m-duel-portrait{
+        object-position:center 18%;
+      }
+      .m-duel-overlay .m-duel-clash{
+        position:absolute;
+        left:50%;
+        top:44%;
+        transform:translate(-50%,-50%);
+        z-index:6;
+        min-height:0;
+        width:max-content;
+        max-width:42%;
+        gap:6px;
+        pointer-events:none;
+      }
+      .m-duel-overlay .m-duel-clash::before{ display:none; }
+      .m-duel-overlay .m-duel-vs-ring{
+        width:52px;
+        height:52px;
+        background:rgba(6,10,14,.82);
+        border:1px solid rgba(125,211,252,.38);
+        box-shadow:0 8px 24px rgba(0,0,0,.45);
+      }
+      .m-duel-overlay .m-duel-vs-core{
+        font-size:15px;
+        letter-spacing:.16em;
+        text-indent:.16em;
+      }
+      .m-duel-overlay .m-duel-clash-text{
+        max-width:128px;
+        font-size:10px;
+        letter-spacing:.08em;
+        line-height:1.3;
+        padding:4px 7px;
+        border-radius:8px;
+        background:rgba(6,10,14,.78);
+        color:#e8f4fb;
+      }
+      .m-duel-overlay .m-duel-result{
+        max-width:128px;
+        font-size:10px;
+      }
+      .m-duel-overlay .m-duel-log{
+        flex:0 0 auto;
+        min-height:72px;
+        max-height:108px;
+        overflow:hidden;
+        padding:8px 10px;
+        border-radius:12px;
+      }
+      .m-duel-overlay .m-duel-log-lines{
+        max-height:68px;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        gap:0;
+      }
+      .m-duel-overlay .m-duel-log-line{
+        padding:4px 0;
+        font-size:12px;
+        line-height:1.35;
+        overflow-wrap:anywhere;
+      }
+      @media (max-width: 520px){
+        .m-duel-overlay .m-duel-arena{
+          min-height:220px;
+          max-height:min(56vh, 420px);
+          gap:5px;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        }
+        .m-duel-overlay .m-duel-frame{ min-height:0; }
+        .m-duel-overlay .m-duel-vs-ring{ width:48px; height:48px; }
+        .m-duel-overlay .m-duel-vs-core{ font-size:14px; }
+        .m-duel-overlay .m-duel-cap .m-duel-name{ font-size:13px; }
+        .m-duel-overlay .m-duel-head{ flex-direction:row; align-items:center; }
+      }
+      @media (max-width: 360px){
+        .m-duel-overlay .m-duel-arena{
+          min-height:200px;
+          max-height:min(52vh, 360px);
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        }
+        .m-duel-overlay .m-duel-frame{ min-height:0; }
+        .m-duel-overlay .m-duel-clash-text{ max-width:108px; font-size:9px; }
       }
     `;
     document.head.appendChild(st);
@@ -4999,7 +5234,7 @@ function _normalizeRareDropObj(obj) {
 
   function collectPlaybackText(value, out = [], seen = new Set()) {
     const addLine = (line) => {
-      const text = textOrEmpty(line).replace(/\s+/g, " ").trim();
+      const text = sanitizeMissionDuelLine(line);
       if (!text) return;
       const key = text.toLowerCase();
       if (seen.has(key)) return;
@@ -5073,6 +5308,63 @@ function _normalizeRareDropObj(obj) {
       remaining -= amount;
     }
     return slices;
+  }
+
+  function sanitizeMissionDuelLine(value) {
+    let text = String(value ?? "");
+    if (!text) return "";
+    text = text.replace(/\uFFFD/g, "");
+    text = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+    const rawMojibakeHits = (text.match(/[ÃÂÄÅÆâ€ž€™œšžË]/g) || []).length;
+    if (rawMojibakeHits >= 2) return "";
+    text = text
+      .replace(/â€™|â€˜/g, "'")
+      .replace(/â€œ|â€�/g, '"')
+      .replace(/â€“|â€”/g, "-")
+      .replace(/Ã—/g, "x")
+      .replace(/Â+/g, "");
+    text = text.replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    const letters = (text.match(/[A-Za-z]/g) || []).length;
+    if (letters < 3) return "";
+    const garbage = (text.match(/[ÃÂ]/g) || []).length;
+    if (garbage >= 2 && garbage * 3 >= letters) return "";
+    return text;
+  }
+
+  function isMissionTypeIdentity(text, subtitle) {
+    const t = textOrEmpty(text).trim();
+    if (!t) return true;
+    const lower = t.toLowerCase();
+    const sub = textOrEmpty(subtitle).trim().toLowerCase();
+    if (sub && lower === sub) return true;
+    if (/^(scout|signal|combat|raid|raider|recovery|hunt|elite)(\s*\/\s*(scout|signal|combat|raid|raider|recovery|hunt|elite))?$/i.test(t)) return true;
+    if (/\s\/\s/.test(t) && /combat|scout|signal|raid/i.test(t) && t.length < 28) return true;
+    return false;
+  }
+
+  function resolveMissionDuelEnemyDisplayName(last, payload, enemyVisual, subtitle) {
+    const enemyBlock = last?.enemy || payload?.enemy || null;
+    const candidates = [
+      enemyVisual?.displayName,
+      last?.enemyName,
+      last?.enemy_name,
+      enemyBlock?.displayName,
+      enemyBlock?.display_name,
+      enemyBlock?.name,
+      last?.targetName,
+      last?.target_name,
+      payload?.enemyName,
+      payload?.enemy_name,
+      payload?.targetName,
+      payload?.target_name,
+    ];
+    for (let i = 0; i < candidates.length; i += 1) {
+      const text = textOrEmpty(candidates[i]);
+      if (!text || isMissionTypeIdentity(text, subtitle)) continue;
+      return text;
+    }
+    return "Hostile Trace";
   }
 
   function buildFallbackPlaybackLines(isVictory) {
@@ -5406,7 +5698,11 @@ function _normalizeRareDropObj(obj) {
             ? `<img class="m-duel-portrait" src="${esc(visual.src)}" alt="${esc(alt)}" loading="eager" decoding="async" onerror="this.closest('.m-duel-visual') && this.closest('.m-duel-visual').classList.remove('has-image'); this.remove();">`
             : ""
         }
-        <div class="m-duel-stamp">${esc(stamp || (side === "player" ? "Pack Signal" : "Threat Trace"))}</div>
+        ${
+          textOrEmpty(stamp)
+            ? `<div class="m-duel-stamp">${esc(stamp)}</div>`
+            : ""
+        }
       </div>
     `;
   }
@@ -5422,17 +5718,13 @@ function _normalizeRareDropObj(obj) {
       last?.playerName || last?.player_name || payload?.playerName || payload?.player_name || payload?.alphaName || payload?.alpha_name,
       "Alpha"
     );
-    const enemyName = toText(
-      last?.enemyName || last?.enemy_name || last?.targetName || last?.target_name || subtitle,
-      "Hostile Signal"
-    );
+    const playerVisual = resolveMissionDuelPlayerVisual(resultData, last);
+    const enemyVisual = resolveMissionDuelEnemyVisual(resultData, last);
+    const enemyDisplayName = resolveMissionDuelEnemyDisplayName(last, payload, enemyVisual, subtitle);
     const outcomeTier = normalizeOutcomeTier(last);
     const outcomeTone = normalizeOutcomeTone(outcomeTier);
     const resultKey = toText(last?.result, "").toLowerCase();
     const isVictory = !!(last?.victory || resultKey === "victory" || outcomeTone === "success" || outcomeTone === "critical" || outcomeTone === "partial");
-    const playerVisual = resolveMissionDuelPlayerVisual(resultData, last);
-    const enemyVisual = resolveMissionDuelEnemyVisual(resultData, last);
-    const enemyDisplayName = textOrEmpty(enemyVisual?.displayName) || enemyName;
     const seed = hashPlaybackSeed([
       missionTitle,
       subtitle,
@@ -5525,7 +5817,7 @@ function _normalizeRareDropObj(obj) {
         enemyHp,
         critical: isFinal || damage >= 22,
         finalStrike: isFinal,
-        logLine: logLines[i] || fallbackLines[Math.min(i, fallbackLines.length - 1)],
+        logLine: sanitizeMissionDuelLine(logLines[i]) || fallbackLines[Math.min(i, fallbackLines.length - 1)],
       });
     }
 
@@ -5573,23 +5865,17 @@ function _normalizeRareDropObj(obj) {
       overlay.innerHTML = `
         <div class="m-duel-shell" role="dialog" aria-modal="true" aria-label="Mission duel playback">
           <div class="m-duel-head">
-            <div style="min-width:0;">
-              <div class="m-duel-kicker">Signal feed</div>
-              <div class="m-duel-title">${esc(model.missionTitle)}</div>
-              <div class="m-duel-sub">${esc(model.subtitle || model.fieldLine)}</div>
-            </div>
+            <div class="m-duel-kicker">Signal feed</div>
+            <div class="m-duel-exchange-kicker m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</div>
             <button type="button" class="btn m-duel-skip">Skip</button>
           </div>
           <div class="m-duel-stage">
-            <div class="m-duel-exchange-kicker m-duel-progress">Exchange 0 / ${esc(model.exchangeCount)}</div>
             <div class="m-duel-arena">
               <section class="m-duel-panel is-player" data-side="player">
-                <div class="m-duel-panel-top">
+                <div class="m-duel-frame">
+                  ${renderMissionDuelVisual(model.playerVisual, "player", `${model.playerName} visual`, "")}
                   <div class="m-duel-side">Alpha Pack</div>
                   <div class="m-duel-state">Ready</div>
-                </div>
-                <div class="m-duel-frame">
-                  ${renderMissionDuelVisual(model.playerVisual, "player", `${model.playerName} visual`, "Alpha")}
                   <div class="m-duel-cap">
                     <div class="m-duel-name">${esc(model.playerName)}</div>
                     <div class="m-duel-hp" data-hp="player">100 / 100 HP</div>
@@ -5598,23 +5884,11 @@ function _normalizeRareDropObj(obj) {
                   <div class="m-duel-damage" data-damage="player"></div>
                 </div>
               </section>
-              <div class="m-duel-clash">
-                <div class="m-duel-label">Signal Feed Active</div>
-                <div class="m-duel-vs">
-                  <div class="m-duel-vs-ring">
-                    <div class="m-duel-vs-core">VS</div>
-                  </div>
-                </div>
-                <div class="m-duel-clash-text">Signal locked.</div>
-                <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
-              </div>
               <section class="m-duel-panel is-enemy" data-side="enemy">
-                <div class="m-duel-panel-top">
+                <div class="m-duel-frame">
+                  ${renderMissionDuelVisual(model.enemyVisual, "enemy", `${model.enemyName} visual`, "")}
                   <div class="m-duel-side">Hostile Trace</div>
                   <div class="m-duel-state">Scanning</div>
-                </div>
-                <div class="m-duel-frame">
-                  ${renderMissionDuelVisual(model.enemyVisual, "enemy", `${model.enemyName} visual`, "Hostile")}
                   <div class="m-duel-cap">
                     <div class="m-duel-name">${esc(model.enemyName)}</div>
                     <div class="m-duel-hp" data-hp="enemy">100 / 100 HP</div>
@@ -5623,6 +5897,15 @@ function _normalizeRareDropObj(obj) {
                   <div class="m-duel-damage" data-damage="enemy"></div>
                 </div>
               </section>
+              <div class="m-duel-clash">
+                <div class="m-duel-vs">
+                  <div class="m-duel-vs-ring">
+                    <div class="m-duel-vs-core">VS</div>
+                  </div>
+                </div>
+                <div class="m-duel-clash-text">Signal locked.</div>
+                <div class="m-duel-result" data-tone="${model.isVictory ? "victory" : "defeat"}">${esc(model.resultLabel)}</div>
+              </div>
             </div>
             <div class="m-duel-stage-meta">
               <span>${esc(model.statusLabel)}</span>
@@ -5635,12 +5918,7 @@ function _normalizeRareDropObj(obj) {
               </div>
               <div class="m-duel-log-lines">
                 <div class="m-duel-log-line">Signal locked.</div>
-                <div class="m-duel-log-line">Hostile trace engaged.</div>
               </div>
-            </div>
-            <div class="m-duel-footer">
-              <span class="m-duel-footer-note">Visual playback only. Rewards already resolved.</span>
-              <span>Auto reveal in progress</span>
             </div>
           </div>
         </div>
@@ -5723,13 +6001,16 @@ function _normalizeRareDropObj(obj) {
 
       const pushLogLine = (text, isLive = false) => {
         if (!logLinesNode) return;
+        const clean = sanitizeMissionDuelLine(text);
+        if (!clean) return;
         const line = document.createElement("div");
         line.className = `m-duel-log-line${isLive ? " is-live" : ""}`;
-        line.textContent = text;
+        line.textContent = clean;
         logLinesNode.appendChild(line);
-        while (logLinesNode.children.length > 6) {
+        while (logLinesNode.children.length > 4) {
           logLinesNode.removeChild(logLinesNode.firstElementChild);
         }
+        logLinesNode.scrollTop = logLinesNode.scrollHeight;
       };
 
       const setPanelState = (panel, text) => {
@@ -5898,7 +6179,7 @@ function _normalizeRareDropObj(obj) {
   function renderMissionActivePanel(active, payload) {
     if (!active?.status || active.status === "NONE") return '<div class="m-card m-empty">No active mission. Choose an available route.</div>';
     const rare = (active.__pending ? (_pendingStart?.rareDrop || null) : null) || _extractRareDrop(active.__raw) || _extractRareDrop(_primaryActive(payload)) || null;
-    const match = normalizePetMatchLabel(active.__raw || active);
+    const match = normalizePetMatchLabel(active);
     const recommended = normalizeStatsText(
       active.__raw?.recommendedStatsText ||
       active.__raw?.recommendedStatLabels ||
