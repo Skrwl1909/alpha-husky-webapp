@@ -6884,6 +6884,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     </div>
 
     <div class="ah-actions ah-character-actions">
+      <button class="ah-action ah-character-row" data-action="field_record" type="button">
+        <span class="ah-character-copy">
+          <span class="ah-character-title">FIELD RECORD</span>
+          <span class="ah-character-sub">Your callsign, identity and recorded history</span>
+        </span>
+        <span class="ah-character-go" aria-hidden="true">&rsaquo;</span>
+      </button>
       <button class="ah-action ah-character-row" data-action="equipped" type="button">
         <span class="ah-character-copy">
           <span class="ah-character-title">Equipped</span>
@@ -7875,7 +7882,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.8-post-ftue-discovery-v1-redeploy-20260919";
+    window.WEBAPP_VER = "tops-2.7.9-field-record-p0-profile-route-fix-20260920";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -8494,7 +8501,11 @@ function closeFaqModal(){
             .then(() => window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click())
             .catch(() => document.querySelector('.btn.referral')?.click()),
           howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
-          profile:   ()=>show(charBack),
+          profile:   async ()=>{
+            let opened = false;
+            try { opened = !!(await window.FieldRecord?.openSelf?.({ source: "hub_profile" })); } catch (_) {}
+            if (!opened) show(charBack);
+          },
           support:   ()=>{ hide(hubBack); return window.Support?.open?.(); },
           mailbox:   ()=>window.Mailbox?.open?.(),
           campaign:  ()=>window.Campaign?.open?.(),
@@ -8503,6 +8514,7 @@ function closeFaqModal(){
           share:     ()=>{ hide(hubBack); window.ShareCard?.open?.("hub"); },
 
           // character sheet actions
+          field_record: ()=>window.FieldRecord?.openSelf?.({ source: "character" }),
           equipped:  ()=>window.Equipped?.open?.() || document.querySelector('.btn.equipped')?.click(),
           skins: () => { void openSkins(); },
           frames: () => { void openFrames(); },
@@ -8532,7 +8544,11 @@ function closeFaqModal(){
         // Tap hero-frame => Character sheet
         $('#heroFrame')?.addEventListener('click', ()=>show(charBack));
 
-        $('#heroProfileBtn')?.addEventListener('click', ()=>show(charBack));
+        $('#heroProfileBtn')?.addEventListener('click', async ()=>{
+          let opened = false;
+          try { opened = !!(await window.FieldRecord?.openSelf?.({ source: "hero_profile" })); } catch (_) {}
+          if (!opened) show(charBack);
+        });
         $('#heroShareBtn')?.addEventListener('click', ()=>window.ShareCard?.open?.("hub"));
 
         // Stable facade for discovery/contextual guidance while legacy HomeNav owns clicks.
@@ -12028,7 +12044,18 @@ const actions = {
       });
   },
 
-  ".btn.profile": () => sendAction("cmd", { name: "profile" }),
+  ".btn.profile": async () => {
+    let opened = false;
+    try { opened = !!(await window.FieldRecord?.openSelf?.({ source: "legacy_profile_button" })); } catch (_) {}
+    if (!opened) {
+      const charBack = document.getElementById("charBack");
+      if (charBack) {
+        charBack.style.display = "flex";
+        document.body.classList.add("ah-sheet-open");
+        try { window.navOpen?.(charBack); } catch (_) {}
+      }
+    }
+  },
   ".btn.referral": () =>
     ensureReferralsLoaded(apiPost, _tg, _dbg)
       .then(() => window.Referrals?.open?.())
@@ -12482,9 +12509,19 @@ async function showSection(name){
     case "shop":
       sendAction("shop_open");
       break;
-    case "profile":
-      sendAction("cmd", { name: "profile" });
+    case "profile": {
+      let opened = false;
+      try { opened = !!(await window.FieldRecord?.openSelf?.({ source: "section_profile" })); } catch (_) {}
+      if (!opened) {
+        const charBack = document.getElementById("charBack");
+        if (charBack) {
+          charBack.style.display = "flex";
+          document.body.classList.add("ah-sheet-open");
+          try { window.navOpen?.(charBack); } catch (_) {}
+        }
+      }
       break;
+    }
     case "pets":
       sendAction("pets_open");
       break;
@@ -12710,7 +12747,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="js/map_objective_resolver.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <!-- src="js/map_sections_v2.js?v=WEBAPP_VER" -->
 <script>document.write('<script src="js/map_sections_v2.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script src="js/player_profile.js?v=WEBAPP_VER"></script>
+<script>document.write('<script src="js/player_profile.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/field_record.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script>document.write('<script src="js/campaign.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/story_delivery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
