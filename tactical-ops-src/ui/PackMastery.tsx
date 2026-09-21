@@ -12,12 +12,16 @@ function compactEffect(unlock: NonNullable<ReturnType<typeof masteryDef>>["train
   return labels[unlock.name] || unlock.copy;
 }
 
-// The result contract reports capped gains, not per-companion award flags.
-// At the cap, name the sources without guessing which supplied the final point.
 function masteryReason(change: MasteryChange) {
   if (change.gained === 3) return "FIRST CLEAR + CHALLENGE";
   if (change.progress < 8) return change.gained === 2 ? "FIRST CLEAR" : "CHALLENGE";
   return "FIRST CLEAR / CHALLENGE / CAP REACHED";
+}
+
+function companionRole(id: string, petName?: string | null) {
+  if (id === "ally-02") return { label: "CNC", sublabel: "RELAY SCOUT" };
+  if (id === "ally-03") return { label: "SHADOW", sublabel: "STEALTH OPERATIVE" };
+  return { label: "PET", sublabel: petName || "COMPANION" };
 }
 
 export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
@@ -26,30 +30,87 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
   const select = useBattleStore((s) => s.selectMastery);
   const pet = progression?.equippedPet;
   const ids = ["ally-02", "ally-03", ...(pet ? [`pet:${pet.id}`] : [])];
-  const runs = [progression?.fieldOps?.activeMissionRun, ...Object.values(progression?.operations || {}).map((op) => op.activeMissionRun)];
-  return <section className="t-panel t-brief-block t-pack-mastery" aria-label="Pack Mastery">
-    <h3 className="t-kicker">PACK MASTERY</h3>
-    <div className="t-mastery-intro">Deploy companions in Field Ops to develop tactical abilities.<br /><small>First clears and challenges earn Mastery.</small></div>
-    {ids.map((id) => {
-      const def = masteryDef(id), m = masteryRecord(snapshot || progression?.packMastery, id);
-      const locked = runs.some((run) => run?.squadIds.includes(id));
-      const active = m.stage >= 3 && m.selected ? def.options[m.selected] : null;
-      return <div key={id} className="t-mastery-row" data-mastery-companion={id}>
-        <div className="t-mastery-heading"><strong>{id.startsWith("pet:") ? `PET / ${pet?.name}` : def.name}</strong><span>STAGE {m.stage} / {m.stage >= 3 ? "COMPLETE" : `${m.progress}/8`}</span></div>
-        {m.stage < 3 ? <progress className="t-progress" aria-label={`${def.name} mastery`} value={m.progress} max={8} /> : null}
-        {m.stage < 3 ? <div className="t-mastery-next">NEXT: STAGE {m.stage + 1} AT {m.stage === 1 ? 3 : 8}<br /><strong>{m.stage === 1 ? compactEffect(def.trained) : "CHOOSE A SPECIALIZATION"}</strong></div> : null}
-        <div className="t-mastery-next">{active ? <>ACTIVE: {active.name}<br /><strong>{compactEffect(active)}</strong></> : m.stage >= 2 ? <>ACTIVE: {def.trained.name}<br /><strong>{compactEffect(def.trained)}</strong></> : "ACTIVE: NONE / UNLOCK AT STAGE 2"}</div>
-        <details className="t-detail"><summary>{m.stage >= 3 ? "Change specialization / details" : "Abilities / details"}</summary>
-          <p>{m.stage >= 2 ? "TRAINED" : "STAGE 2"}: {def.trained.name} / {def.trained.copy}</p>
-          <div className="t-brief-actions">{(["A", "B"] as const).map((choice) => <button key={choice} type="button" className={`t-btn ${m.selected === choice ? "t-btn-primary" : ""}`} aria-pressed={m.selected === choice} disabled={pending || locked || m.stage < 3} onClick={() => void select(id, choice)}>{def.options[choice].name}{m.stage < 3 ? " / STAGE 3" : m.selected === choice ? " / ACTIVE" : ""}</button>)}</div>
-          {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {def.options[choice].copy}</small></p>)}
-        </details>
-        {locked ? <small>Finish this companion's committed attempt to change its option. The attempt keeps its saved mastery.</small> : null}
-      </div>;
-    })}
-    <details className="t-detail"><summary>How Mastery is earned</summary><p>Per deployed companion, per mission, per rotation: first clear +2; first challenge success +1. Repeats give no extra Mastery. Stage 2 at 3; Stage 3 at 8. Tactical Rank is separate.</p></details>
-    {!pet ? <small>Equip a PET to develop its own Mastery.</small> : null}
-  </section>;
+  const runs = [progression?.fieldOps?.activeMissionRun, ...Object.values(progression?.operations || {}).map((op: any) => op.activeMissionRun)] as Array<{ squadIds: string[] } | undefined>;
+
+  return (
+    <section className="t-panel t-brief-block t-pack-mastery t-pack-mastery-premium" aria-label="Pack Mastery">
+      <div className="t-pack-head">
+        <div>
+          <h2 className="t-title">PACK MASTERY</h2>
+          <p>Deploy companions in Tactical Ops to develop their abilities.</p>
+        </div>
+        <small>First clears and challenges earn Mastery.</small>
+      </div>
+
+      <div className="t-pack-list">
+        {ids.map((id) => {
+          const def = masteryDef(id);
+          const m = masteryRecord(snapshot || progression?.packMastery, id);
+          const locked = runs.some((run) => run?.squadIds.includes(id));
+          const active = m.stage >= 3 && m.selected ? def.options[m.selected] : null;
+          const role = companionRole(id, pet?.name);
+          const stageText = m.stage >= 3 ? "COMPLETE" : `STAGE ${m.stage} / 3`;
+          return (
+            <article key={id} className="t-mastery-row t-mastery-premium-row" data-mastery-companion={id}>
+              <div className="t-mastery-avatar" aria-hidden="true">{role.label}</div>
+              <div className="t-mastery-main">
+                <div className="t-mastery-topline">
+                  <div>
+                    <strong>{role.label}</strong>
+                    <span>{role.sublabel}</span>
+                  </div>
+                  <div className="t-mastery-status">
+                    <span>{stageText}</span>
+                    <b>{active ? active.name : m.stage >= 2 ? def.trained.name : "NONE"}</b>
+                  </div>
+                </div>
+                <div className="t-mastery-progressline">
+                  <progress className="t-progress" aria-label={`${def.name} mastery`} value={m.progress} max={8} />
+                  <small>{m.progress}/8 mastery</small>
+                </div>
+                <div className="t-mastery-summary-grid">
+                  <div className="t-mastery-summary-card">
+                    <span className="t-kicker">Active specialization</span>
+                    <strong>{active ? active.name : m.stage >= 2 ? def.trained.name : "None"}</strong>
+                    <small>{active ? compactEffect(active) : m.stage >= 2 ? compactEffect(def.trained) : "Unlocks at Stage 2."}</small>
+                  </div>
+                  <div className="t-mastery-summary-card">
+                    <span className="t-kicker">Next unlock</span>
+                    <strong>{m.stage < 2 ? "STAGE 2 AT 3" : m.stage < 3 ? "STAGE 3 AT 8" : "ALL OPTIONS OPEN"}</strong>
+                    <small>{m.stage < 2 ? compactEffect(def.trained) : m.stage < 3 ? "Choose a specialization." : "You can swap outside a committed attempt."}</small>
+                  </div>
+                </div>
+                <details className="t-detail t-mastery-detail">
+                  <summary>{m.stage >= 3 ? "Change specialization / details" : "Abilities / details"}</summary>
+                  <p>{m.stage >= 2 ? "TRAINED" : "STAGE 2"}: {def.trained.name} / {def.trained.copy}</p>
+                  <div className="t-brief-actions">
+                    {(["A", "B"] as const).map((choice) => (
+                      <button
+                        key={choice}
+                        type="button"
+                        className={`t-btn ${m.selected === choice ? "t-btn-primary" : ""}`}
+                        aria-pressed={m.selected === choice}
+                        disabled={pending || locked || m.stage < 3}
+                        onClick={() => void select(id, choice)}
+                      >
+                        {def.options[choice].name}
+                        {m.stage < 3 ? " / STAGE 3" : m.selected === choice ? " / ACTIVE" : ""}
+                      </button>
+                    ))}
+                  </div>
+                  {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {def.options[choice].copy}</small></p>)}
+                </details>
+                {locked ? <small>Finish this companion's committed attempt before changing its option. Saved mastery stays intact.</small> : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <details className="t-detail"><summary>How Mastery is earned</summary><p>Per deployed companion, per mission, per rotation: first clear +2; first challenge success +1. Repeats give no extra Mastery. Stage 2 at 3; Stage 3 at 8. Tactical Rank is separate.</p></details>
+      {!pet ? <small>Equip a PET to develop its own Mastery.</small> : null}
+    </section>
+  );
 }
 
 export function MasteryFeedback({ changes, victory }: { changes?: MasteryChange[]; victory: boolean }) {

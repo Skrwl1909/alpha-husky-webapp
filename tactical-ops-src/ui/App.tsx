@@ -48,6 +48,24 @@ function objectiveHeadline(mission: NonNullable<ReturnType<typeof getMissionDef>
   return "Eliminate the HOUND patrol.";
 }
 
+function missionSupportCopy(mission: NonNullable<ReturnType<typeof getMissionDef>>) {
+  if (mission.objectiveType === "SURVIVE") return "Your squad is ready. Deploy to earn Commander progress and rewards.";
+  if (mission.objectiveType === "HOLD") return "Hold the relay under pressure and stabilize the area.";
+  if (mission.objectiveType === "RECOVER") return "Move fast, reach the relay and recover the signal before the area collapses.";
+  if (mission.objectiveType === "BOSS") return "End the chain. Defeat the Signal Commander and secure the operation.";
+  return "Clear the route, protect your squad and keep momentum.";
+}
+
+function missionActionLabel(mission: NonNullable<ReturnType<typeof getMissionDef>>, completed: boolean) {
+  if (completed) return "DEPLOY AGAIN";
+  if (mission.objectiveType === "SURVIVE" || mission.objectiveType === "HOLD") return "DEPLOY";
+  return "MISSION BRIEF";
+}
+
+function missionDirectiveLabel(mission: NonNullable<ReturnType<typeof getMissionDef>>) {
+  return mission.directive?.name || "STANDARD CONDITIONS";
+}
+
 function briefSubtitle(def: UnitDef, extra?: string): string {
   const skills = def.skillIds.map((id) => SKILLS[id]?.name).filter(Boolean).join(" / ");
   const role = def.defId === "ally-02" ? "BUG HUNTER WARDEN · Spear skirmisher" : ROLE_LABEL[def.role] || def.role;
@@ -156,95 +174,223 @@ function WarTable() {
   const field = progression?.fieldOps;
   const refresh = useBattleStore((s) => s.loadFoundationProgression);
   const loading = useBattleStore((s) => s.progressionStatus === "loading");
+
   useEffect(() => {
     if (!field?.board) return;
-    const refreshVisible = () => { if (document.visibilityState === "visible" && useBattleStore.getState().progressionStatus !== "loading") void refresh(); };
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible" && useBattleStore.getState().progressionStatus !== "loading") void refresh();
+    };
     const timer = window.setTimeout(refreshVisible, Math.max(1000, field.board.nextRotationAt * 1000 - Date.now() + 250));
     document.addEventListener("visibilitychange", refreshVisible);
     window.addEventListener("focus", refreshVisible);
-    return () => { window.clearTimeout(timer); document.removeEventListener("visibilitychange", refreshVisible); window.removeEventListener("focus", refreshVisible); };
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
+      window.removeEventListener("focus", refreshVisible);
+    };
   }, [field?.board?.nextRotationAt, refresh]);
+
+  const activeMissionIds = field?.board?.activeMissionIds || [];
+  const activeMissionDefs = activeMissionIds.map((id) => getMissionDef(id)).filter(Boolean) as NonNullable<ReturnType<typeof getMissionDef>>[];
+  const activeMissionRun = field?.activeMissionRun && activeMissionIds.includes(field.activeMissionRun.missionId)
+    ? getMissionDef(field.activeMissionRun.missionId)
+    : null;
+  const recommendedMission = activeMissionRun
+    || activeMissionDefs.find((mission) => !field?.records[mission.missionId]?.completed)
+    || activeMissionDefs[0]
+    || null;
+  const recommendedRecord = recommendedMission ? field?.records[recommendedMission.missionId] : null;
+  const rotationLabel = field?.board ? rotationTime(field.board.nextRotationAt) : "REFRESH REQUIRED";
   const firstClearMessage = operation?.status === "cleared"
     ? "OPERATION 01 — BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED · NEXT OPERATION SLOT OPENED"
     : operation?.missions["broken-signal-recover"] === "cleared"
-    ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
-    : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
+      ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
+      : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
+
   return (
     <div className="t-fill">
-      <Background dim={0.4} />
+      <Background dim={0.45} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table" style={{ maxWidth: "58rem" }}>
-        <div className="t-kicker">War Table</div>
-        <h1 className="t-title" style={{ margin: "0.2rem 0" }}>{BROKEN_SIGNAL.name}</h1>
-        <p style={{ color: "var(--t-muted)", margin: "0 0 1rem" }}>{operation?.status === "cleared" ? "Canon secured. Field Ops active." : "Choose the next tactical mission."}</p>
-        <p style={{ color: "var(--t-faint)", margin: "0 0 1rem", fontSize: "0.82rem" }}>Routing Trace: {progression?.intel?.routingTrace ? "ACQUIRED · reinforcement telegraphed" : "NOT ACQUIRED · replay BREACH to hunt the tagged carrier"}</p>
-        {missionFirstClear ? <p style={{ color: "var(--t-accent)", margin: "0 0 1rem" }}>{firstClearMessage}</p> : null}
-
-        <details className="t-detail" open={operation?.status !== "cleared"}><summary>CANON / BROKEN SIGNAL · {operation?.status === "cleared" ? "CLEARED · REPLAY MISSIONS" : "MISSIONS"}</summary>
-        <div className="t-brief-grid">
-          {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
-            const mission = getMissionDef(missionId);
-            if (!mission) return null;
-            const status = operation?.missions[missionId] || "locked";
-            const isPlayable = mission.executable && (status === "available" || status === "cleared");
-            const nextMission = status === "available";
-            const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
-            return (
-              <div className={`t-panel t-brief-block t-mission-card is-${status}`} key={missionId}>
-                <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
-                <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
-                <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
-                <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
-                <div className="t-brief-actions" style={{ marginTop: "0.8rem" }}>
-                  <button type="button" className={nextMission ? "t-btn t-btn-primary" : "t-btn"} disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
-                    {status === "locked" ? "Locked" : status === "cleared" ? "REPLAY" : mission.objectiveType === "RECOVER" ? "RECOVER" : "Mission Brief"}
-                    {isPlayable ? <ChevronRight className="t-ico" /> : null}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        </details>
-        <section aria-label="Field Ops" style={{ marginTop: "1.5rem" }}>
-          <h2 className="t-title">FIELD OPS</h2>
-
-          <div className="t-command-summary"><div><span className="t-kicker">COMMANDER</span><strong>RANK {field?.commander?.rank || 1}</strong><small>{field?.commander?.progress || 0} PROGRESS</small></div><div><span className="t-kicker">SIGNAL PRESSURE</span><strong>{field?.region?.label || "UNAVAILABLE"}</strong><small>{field?.board ? `ROTATES ${rotationTime(field.board.nextRotationAt)}` : "REFRESH REQUIRED"}</small></div></div>
-          <details className="t-detail"><summary>Command rules & rotation</summary>          <div className="t-panel t-brief-block">
-            <div className="t-kicker">TACTICAL RANK {field?.commander?.rank || 1}</div>
-            <p>{field?.commander?.progress || 0} commander progress / {field?.commander?.nextRankAt ? `${field.commander.nextRankAt} for next rank` : "All command options unlocked"}.</p>
-            <p>Each clear: +2 progress. Optional challenge: +1 once per mission per cycle. Rank 2: South Approach. Rank 3: Advanced Directives.</p>
-            {field?.board?.reportVersion === 3 ? <p><strong>ADVANCED CONDITIONS / {directiveSetLabel(field.board.directiveSet)}</strong><br />{field.board.directiveSet === "attrition" ? "Longer support gaps and reinforcement pressure." : "Completion windows and early reinforcement pressure."} Preview the exact combination in each Brief. Advanced clears leave a permanent record; challenge and mastery awards are shared across tiers.</p> : null}
-            <p><strong>BROKEN SIGNAL AREA / SIGNAL PRESSURE: {field?.region?.label || "UNAVAILABLE"}</strong><br />{field?.region ? pressureEffect(field.region.pressure) : "Refresh to load regional conditions."}</p>
-            <p>Temporary state for your Tactical Ops board. A clear lowers pressure by 1; a failed mission raises it by 1 (0-3). Pressure resets to HIGH at each rotation. Canon history is permanent.</p>
-            {field?.board ? <p>3 ACTIVE / {rotationTime(field.board.nextRotationAt)} next rotation. The next three missions and fresh challenge bonuses arrive then.</p> : <p>Field Ops board unavailable. Refresh to load it.</p>}
-            <button className="t-btn" type="button" disabled={loading} onClick={() => void refresh()}>{loading ? "Refreshing..." : "Refresh War Table"}</button>
+      <div className="t-brief t-war-table-premium" style={{ maxWidth: "64rem" }}>
+        <header className="t-panel t-wt-hero">
+          <div className="t-wt-branding">
+            <div className="t-kicker">Alpha Husky / Tactical Ops</div>
+            <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
+            <p className="t-wt-intro">Choose a tactical mission, deploy your squad, and grow your companions.</p>
+            {progressionError ? <p className="t-wt-error">{progressionError}</p> : null}
+            {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
           </div>
-</details>
-          <div className="t-brief-grid" style={{ marginTop: "0.8rem" }}>
-            {(field?.board?.activeMissionIds || []).map((id) => {
-              const mission = getMissionDef(id);
-              if (!mission) return null;
-              const record = field?.records[id];
+          <div className="t-wt-wolfmark" aria-hidden="true">
+            <div className="t-wt-ethos">People<br />Missions<br />A stronger tomorrow</div>
+          </div>
+        </header>
+
+        <section className="t-wt-status-rail" aria-label="Tactical Ops overview">
+          <div className="t-panel t-wt-status-card">
+            <span className="t-kicker">Operation 01</span>
+            <strong>BROKEN SIGNAL</strong>
+            <small>{operation?.status === "cleared" ? "CANON COMPLETE" : "ACTIVE ROTATION"}</small>
+          </div>
+          <div className="t-panel t-wt-status-card">
+            <span className="t-kicker">Tactical Rank</span>
+            <strong>STAGE {field?.commander?.rank || 1}{field?.commander?.nextRankAt ? ` / ${field.commander.nextRankAt}` : " / COMPLETE"}</strong>
+            <small>{field?.commander?.progress || 0} commander progress</small>
+            <progress className="t-progress" value={field?.commander?.nextRankAt ? Math.min(field.commander.progress || 0, field.commander.nextRankAt) : 1} max={field?.commander?.nextRankAt || 1} />
+          </div>
+          <div className="t-panel t-wt-status-card">
+            <span className="t-kicker">Rotation ends in</span>
+            <strong>{rotationLabel}</strong>
+            <small>{field?.region ? `${field.region.label} pressure · ${pressureEffect(field.region.pressure)}` : "Refresh required"}</small>
+          </div>
+        </section>
+
+        {recommendedMission ? (
+          <section className="t-panel t-wt-feature" aria-label="Recommended next step">
+            <div className="t-wt-feature-art">
+              <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+            </div>
+            <div className="t-wt-feature-copy">
+              <div className="t-kicker">Recommended next step</div>
+              <h2>{recommendedMission.name}</h2>
+              <p>{missionSupportCopy(recommendedMission)}</p>
+            </div>
+            <div className="t-wt-feature-cta">
+              <button className="t-btn t-btn-primary t-wt-main-cta" type="button" disabled={loading} onClick={() => openOperationBrief(recommendedMission.missionId)}>
+                {recommendedRecord?.completed ? "REPLAY FIELD OP" : "MISSION BRIEF"}
+                <ChevronRight className="t-ico" />
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="t-panel t-wt-section" aria-label="Missions">
+          <div className="t-wt-section-head">
+            <h2 className="t-title">MISSIONS</h2>
+            <span>{activeMissionIds.length} AVAILABLE</span>
+          </div>
+          <div className="t-wt-mission-list">
+            {activeMissionDefs.map((mission) => {
+              const record = field?.records[mission.missionId];
               const bonusEarned = record?.lastChallengeCycle === field?.board?.cycleId;
-              return <div className={`t-panel t-brief-block t-mission-card ${record?.completed ? "is-cleared" : "is-available"}`} key={id}>
-                <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-card-status"><span>ACTIVE</span><span>{record?.completed ? "CLEARED" : "AVAILABLE"}</span></div>
-                
-                <h3>{mission.name}</h3><p>{objectiveHeadline(missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
-                <div className="t-mission-strip"><span>{mission.objectiveType}</span><span>{mission.directive?.name}</span></div>
-                <div className="t-card-reward">CLEAR +2 <span>COMMANDER PROGRESS</span>{mission.directive?.reinforcement && field?.region && field.region.pressure < 2 ? <small>REINFORCEMENTS · +1 ROUND DELAY</small> : null}</div>
-                <details className="t-detail"><summary>{bonusEarned ? "CHALLENGE BONUS EARNED" : "OPTIONAL CHALLENGE · +1"}</summary><p>{mission.challenge?.label}</p><small>{record?.clearCount || 0} CLEARS · {record?.challengeCount || 0} CHALLENGES · ADVANCED {record?.advancedClearCount || 0}{record?.lastAdvancedCycle === field?.board?.cycleId ? " · CLEARED THIS ROTATION" : " · THIS ROTATION UNMASTERED"}</small></details>
-                <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={() => openOperationBrief(id)}>{record?.completed ? "REPLAY FIELD OP" : "Mission Brief"}<ChevronRight className="t-ico" /></button>
-              </div>;
+              return (
+                <article className={`t-wt-mission-card t-panel ${record?.completed ? "is-cleared" : "is-active"}`} key={mission.missionId}>
+                  <div className="t-wt-mission-art">
+                    <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+                  </div>
+                  <div className="t-wt-mission-body">
+                    <div className="t-wt-mission-head">
+                      <div>
+                        <h3>{mission.name}</h3>
+                        <p>{objectiveHeadline(missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
+                      </div>
+                      <div className="t-wt-mission-state">{record?.completed ? "ACTIVE / CLEARED" : "ACTIVE"}</div>
+                    </div>
+                    <div className="t-mission-strip">
+                      <span>{mission.objectiveType}</span>
+                      <span>{missionDirectiveLabel(mission)}</span>
+                    </div>
+                    <div className="t-wt-rewards-row">
+                      <div className="t-wt-reward-block">
+                        <span className="t-kicker">Rewards</span>
+                        <strong>CLEAR +2</strong>
+                        <small>Commander progress</small>
+                      </div>
+                      <div className="t-wt-reward-block">
+                        <span className="t-kicker">Challenge</span>
+                        <strong>{bonusEarned ? "EARNED" : "+1"}</strong>
+                        <small>{bonusEarned ? "Bonus already claimed this rotation" : mission.challenge?.label}</small>
+                      </div>
+                    </div>
+                    <details className="t-detail t-wt-card-detail">
+                      <summary>Mission details</summary>
+                      <p>{missionSupportCopy(mission)}</p>
+                      <p><strong>Signal Pressure:</strong> {field?.region ? pressureEffect(field.region.pressure) : "Refresh to load regional conditions."}</p>
+                      <p><strong>Rotation rules:</strong> First clear gives +2 Commander progress. First challenge success this cycle gives +1.</p>
+                      <small>{record?.clearCount || 0} clears · {record?.challengeCount || 0} challenge clears · advanced {record?.advancedClearCount || 0}</small>
+                    </details>
+                  </div>
+                  <div className="t-wt-mission-cta">
+                    <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={() => openOperationBrief(mission.missionId)}>
+                      {missionActionLabel(mission, !!record?.completed)}
+                      <ChevronRight className="t-ico" />
+                    </button>
+                  </div>
+                </article>
+              );
             })}
           </div>
-          {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? <div className="t-panel t-brief-block"><p>Unfinished attempt from the previous rotation. Its original conditions are preserved.</p><button type="button" className="t-btn" onClick={() => openOperationBrief(field.activeMissionRun!.missionId)}>Resume {getMissionDef(field.activeMissionRun.missionId)?.name}</button></div> : null}
-          <PackMasteryPanel />
-          {field?.lastResult ? <details className="t-detail"><summary>Last result · {rotationTime(field.lastResult.recordedAt)}</summary><strong>{getMissionDef(field.lastResult.missionId)?.name} · {field.lastResult.victory ? "CLEARED" : "FAILED"}</strong><FieldResultFeedback result={field.lastResult} /></details> : null}
         </section>
+
+        <section className="t-panel t-wt-how" aria-label="How Tactical Ops works">
+          <div className="t-wt-section-head">
+            <h2 className="t-title">HOW IT WORKS</h2>
+          </div>
+          <div className="t-wt-how-grid">
+            <div className="t-wt-how-step"><strong>1. CLEAR MISSIONS</strong><p>Complete objectives with your squad.</p></div>
+            <div className="t-wt-how-step"><strong>2. GAIN PROGRESS</strong><p>Earn Commander progress and rewards.</p></div>
+            <div className="t-wt-how-step"><strong>3. UNLOCK OPTIONS</strong><p>Unlock new missions, specializations and gear.</p></div>
+            <div className="t-wt-how-step"><strong>4. BUILD MASTERY</strong><p>First clears and challenges also grow Pack Mastery.</p></div>
+          </div>
+        </section>
+
+        <PackMasteryPanel />
+
+        <section className="t-panel t-wt-footer-strip" aria-label="Tactical Ops footer summary">
+          <div><span className="t-kicker">Last result</span><strong>{field?.lastResult ? `${rotationTime(field.lastResult.recordedAt)}` : "NO RESULT YET"}</strong></div>
+          <div><span className="t-kicker">Next rotation</span><strong>{rotationLabel}</strong></div>
+          <div className="t-wt-footer-actions">
+            <button className="t-btn" type="button" disabled={loading} onClick={() => void refresh()}>{loading ? "Refreshing..." : "Refresh War Table"}</button>
+          </div>
+        </section>
+
+        {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? (
+          <div className="t-panel t-wt-legacy-run">
+            <div className="t-kicker">Saved attempt</div>
+            <strong>{getMissionDef(field.activeMissionRun.missionId)?.name}</strong>
+            <p>Unfinished attempt from the previous rotation. Its original conditions are preserved.</p>
+            <button type="button" className="t-btn" onClick={() => openOperationBrief(field.activeMissionRun!.missionId)}>Resume mission</button>
+          </div>
+        ) : null}
+
+        {field?.lastResult ? (
+          <details className="t-detail t-wt-last-result">
+            <summary>Last result · {rotationTime(field.lastResult.recordedAt)}</summary>
+            <strong>{getMissionDef(field.lastResult.missionId)?.name} · {field.lastResult.victory ? "CLEARED" : "FAILED"}</strong>
+            <FieldResultFeedback result={field.lastResult} />
+          </details>
+        ) : null}
+
+        <details className="t-detail t-wt-archive" open={operation?.status !== "cleared"}>
+          <summary>CANON / BROKEN SIGNAL · {operation?.status === "cleared" ? "CLEARED · REPLAY MISSIONS" : "MISSIONS"}</summary>
+          <div className="t-brief-grid t-wt-canon-grid">
+            {BROKEN_SIGNAL.orderedMissionIds.map((missionId, index) => {
+              const mission = getMissionDef(missionId);
+              if (!mission) return null;
+              const status = operation?.missions[missionId] || "locked";
+              const isPlayable = mission.executable && (status === "available" || status === "cleared");
+              const nextMission = status === "available";
+              const label = status === "locked" ? "LOCKED" : status === "cleared" ? "CLEARED" : "AVAILABLE";
+              return (
+                <div className={`t-panel t-brief-block t-mission-card is-${status}`} key={missionId}>
+                  <img className="t-card-art" src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+                  <div className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {label}</div>
+                  <h3 style={{ margin: "0.35rem 0" }}>{mission.name}</h3>
+                  <p style={{ color: "var(--t-muted)", minHeight: "2.8em", margin: "0 0 0.8rem" }}>{mission.briefCopy}</p>
+                  <small style={{ color: "var(--t-faint)" }}>{mission.objectiveType} · SQUAD CAP {mission.squadCap}</small>
+                  <div className="t-brief-actions" style={{ marginTop: "0.8rem" }}>
+                    <button type="button" className={nextMission ? "t-btn t-btn-primary" : "t-btn"} disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
+                      {status === "locked" ? "Locked" : status === "cleared" ? "REPLAY" : mission.objectiveType === "RECOVER" ? "RECOVER" : "Mission Brief"}
+                      {isPlayable ? <ChevronRight className="t-ico" /> : null}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+
         {progression?.archive?.brokenSignal ? <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}><div className="t-kicker">Archive · Available</div><strong>BROKEN SIGNAL ARCHIVED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>BREACH CLEARED · SIGNAL RECOVERED · SIGNAL COMMANDER DOWN</p></div> : null}
         {progression?.nextOperationSlot === "unassigned" ? <div className="t-panel t-brief-block" style={{ marginTop: "0.6rem", opacity: 0.7 }}><div className="t-kicker">Next Operation Slot · Available</div><strong>EMPTY · UNASSIGNED</strong><p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>No Operation assigned.</p></div> : null}
-        {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
       </div>
     </div>
   );
