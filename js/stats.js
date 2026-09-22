@@ -2664,9 +2664,9 @@
     if (qs("hubGoalRoot")) renderHubGoalLoading("Open Hub to see your next objective.");
   };
 
-  function ensureMobileSyncClickBridge(){
-    if (window.__ahMobileSyncClickBridgeBound) return;
-    window.__ahMobileSyncClickBridgeBound = true;
+  function ensureStatsClickBridge(){
+    if (window.__ahStatsClickBridgeBound) return;
+    window.__ahStatsClickBridgeBound = true;
 
     document.addEventListener("click", function(e){
       const target = e && e.target;
@@ -2676,20 +2676,32 @@
 
       if (!el || typeof el.closest !== "function") return;
 
-      const btn = el.closest('[data-action="generate-mobile-sync-code"]');
-      if (!btn) return;
+      const syncBtn = el.closest('[data-action="generate-mobile-sync-code"]');
+      if (syncBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (_mobileSyncLoading) return;
+
+        syncBtn.textContent = "Generating…";
+        requestMobileLinkCode();
+        return;
+      }
+
+      const statBtn = el.closest(".ahs-plus[data-stat]");
+      if (!statBtn) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      if (_mobileSyncLoading) return;
+      const stat = String(statBtn.dataset.stat || "").trim().toLowerCase();
+      if (!stat || statBtn.disabled) return;
 
-      btn.textContent = "Generating…";
-      requestMobileLinkCode();
+      upgradeStat(stat);
     }, true);
   }
 
-  ensureMobileSyncClickBridge();
+  ensureStatsClickBridge();
 
   window.Stats = Stats;
 })();
