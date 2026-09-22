@@ -436,7 +436,7 @@
 
   if (_activeTab === "echoes") {
     heroKicker = "LIVE SIGNALS";
-    heroTitle = echoCount > 0 ? `${echoCount} echoes in motion` : "Live echoes online";
+    heroTitle = echoCount > 0 ? `${echoCount} echoes in motion` : "No fresh echoes";
     heroText = "Recent signals, rare moments, world activity and highlights from across Alpha Husky.";
     heroTone = echoCount > 0 ? "is-live" : "is-quiet";
     stats = [
@@ -773,7 +773,7 @@
         <div class="oracle-weekly-row-score">${escapeHtml(String(score))}</div>
         <div class="oracle-weekly-row-meta">
           <span>${qualified} ready ops</span>
-          <span>${players} active now</span>
+          <span>${players} contributors this week</span>
         </div>
       </div>
     </article>
