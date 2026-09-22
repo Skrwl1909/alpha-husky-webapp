@@ -1379,6 +1379,48 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     return artUrl("alpha-portrait.jpg");
   }
 
+  function skinUrlFromValue(value) {
+    if (!value) return "";
+    if (typeof value === "string") return String(value).trim();
+    if (typeof value !== "object") return "";
+    return String(
+      value.img ||
+      value.url ||
+      value.preview_url ||
+      value.previewUrl ||
+      value.src ||
+      value.image ||
+      value.heroImg ||
+      ""
+    ).trim();
+  }
+
+  function getPlayerBattleSkinUrl(data) {
+    const p = window.__PROFILE__ || window.PROFILE || window.lastProfile || window.profileState || window._profile || {};
+    const profileSkin = p?.skin || p?.activeSkin || p?.cosmetics?.skin || null;
+    const direct = [
+      data?.player?.battleSkin,
+      data?.player?.battleSkinUrl,
+      data?.player?.skin,
+      data?.player?.skinUrl,
+      data?.playerSkin,
+      data?.playerSkinUrl,
+      window.__AH_ACTIVE_SKIN_URL__,
+      skinUrlFromValue(profileSkin),
+      typeof p?.activeSkin === "string" ? p.activeSkin : skinUrlFromValue(p?.activeSkin),
+      p?.heroImg,
+    ].map(skinUrlFromValue).find(Boolean);
+    if (direct) return direct;
+
+    try {
+      const hero = document.getElementById("player-skin");
+      const heroUrl = String(hero?.currentSrc || hero?.src || "").trim();
+      if (heroUrl) return heroUrl;
+    } catch (_) {}
+
+    return artUrl("alpha.jpg");
+  }
+
   function renderFortressBattle(data) {
     try { globalThis.__FORTRESS_PIXI_CLEANUP__?.(); } catch (_) {}
     try { globalThis.__FORTRESS_PIXI_CLEANUP__ = null; } catch (_) {}
@@ -1392,6 +1434,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     const rawBossSprite = data?.boss?.sprite || data?.bossSprite || BOSS_FALLBACK;
     const bossSpriteUrl = bossUrlFromKeyOrName(rawBossSprite);
     const playerAvatarUrl = getPlayerBattleAvatarUrl(data) || artUrl("alpha-portrait.jpg");
+    const playerSkinUrl = getPlayerBattleSkinUrl(data) || artUrl("alpha.jpg");
     const floorLabel = data.currentFloor ?? data.level ?? data.lvl ?? "?";
 
     function hpPct(cur, max) {
@@ -1424,7 +1467,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
         <div class="ml-arena" id="fb-stage">
           <img class="ml-arena-bg" alt="" src="${artUrl("arena.jpg")}">
           <div class="ml-arena-veil"></div>
-          <img class="ml-fighter is-you" id="fb-you-img" alt="Alpha" src="${artUrl("alpha.jpg")}">
+          <img class="ml-fighter is-you" id="fb-you-img" alt="Alpha" src="${esc(playerSkinUrl)}">
           <img class="ml-fighter is-boss" id="fb-boss-img" alt="Boss" src="${artUrl("boss-fallback.jpg")}">
         </div>
         <div class="ml-you-plate">
@@ -1463,6 +1506,23 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     const stageHost = $("#fb-stage", wrap);
     const youImgEl = $("#fb-you-img", wrap);
     const bossImgEl = $("#fb-boss-img", wrap);
+    if (youImgEl && playerSkinUrl) {
+      const fallbackPlayer = artUrl("alpha.jpg");
+      youImgEl.onerror = () => {
+        youImgEl.onerror = null;
+        if (youImgEl.isConnected && youImgEl.src !== fallbackPlayer) youImgEl.src = fallbackPlayer;
+      };
+      if (youImgEl.getAttribute("src") !== playerSkinUrl) {
+        const probe = new Image();
+        probe.onload = () => {
+          if (youImgEl.isConnected) youImgEl.src = playerSkinUrl;
+        };
+        probe.onerror = () => {
+          if (youImgEl.isConnected) youImgEl.src = fallbackPlayer;
+        };
+        probe.src = playerSkinUrl;
+      }
+    }
     if (bossImgEl && bossSpriteUrl) {
       const probe = new Image();
       probe.onload = () => {
