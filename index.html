@@ -6828,6 +6828,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="ah-panel-scroll">
     <div id="hubStoryRoot"></div>
     <div id="hubGoalRoot"></div>
+    <div id="hubLivingWorldRoot"></div>
     <div class="ah-grid">
       <button class="ah-tile" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Shop</b></button>
       <!-- ✅ NEW: Support -->
@@ -8306,6 +8307,9 @@ body.bc-open #ahCommunityBtn{
           el.style.display = 'flex';
           document.body.classList.add('ah-sheet-open');
           window.navOpen?.(el);
+          if (el === hubBack) {
+            try { window.LivingWorld?.activate?.(); } catch (_) {}
+          }
         }
         function hide(el){
           if(!el) return;
@@ -13194,6 +13198,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
   
+<script>document.write('<script src="/js/living_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="/js/home_nav.js?v=hub-icons-v1-story-delivery-p1"></script>
 <script>document.write('<script src="/js/discovery_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/scout_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
@@ -13320,9 +13325,6 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-
-
 
 
 
