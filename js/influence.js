@@ -2652,6 +2652,112 @@
 
   }
 
+  function sharedImpactNodeName(nodeId, info) {
+
+    const mapNode = findMapNode(nodeId, info);
+
+    const fromMap = String(mapNode?.name || "").replace(/\s+/g, " ").trim();
+
+    if (fromMap) return fromMap;
+
+    const fromPayload = String(info?.nodeName || info?.displayName || "").replace(/\s+/g, " ").trim();
+
+    if (fromPayload) return fromPayload;
+
+    return String(nodeId || "shared node")
+
+      .replaceAll("_", " ")
+
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  }
+
+  function sharedImpactNumber(value) {
+
+    if (value == null || value === "") return null;
+
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : null;
+
+  }
+
+  function sharedImpactReceipt(kind, payload = {}, currentNodeId = "", phantomMode = false) {
+
+    if (kind !== "patrol" || payload?.ok === false) return null;
+
+    const gain = sharedImpactNumber(payload?.gain);
+
+    if (gain == null || gain <= 0) return null;
+
+    const info = (payload?.info && typeof payload.info === "object") ? payload.info : {};
+
+    const nodeId = normalizeNodeId(payload?.nodeId || currentNodeId);
+
+    const faction = normalizeFaction(payload?.faction || info?.youFaction || payload?.you?.faction || "");
+
+    if (!nodeId || !faction) return null;
+
+    const factionName = fmtFaction(faction);
+
+    const nodeName = sharedImpactNodeName(nodeId, info);
+
+    let stateLine = "";
+
+    if (phantomMode) {
+
+      const before = sharedImpactNumber(payload?.wastelandPressureBefore);
+
+      const after = sharedImpactNumber(payload?.wastelandPressureAfter);
+
+      if (before != null && after != null) stateLine = `Wasteland Pressure: ${before}% -> ${after}%`;
+
+      else if (after != null) stateLine = `Current Wasteland Pressure: ${after}%`;
+
+    } else {
+
+      const pressure = (info?.pressure && typeof info.pressure === "object") ? info.pressure : null;
+
+      const currentPressure = pressure && Object.prototype.hasOwnProperty.call(pressure, faction)
+
+        ? sharedImpactNumber(pressure[faction])
+
+        : null;
+
+      if (currentPressure != null) {
+
+        stateLine = `Current ${factionName} pressure: ${currentPressure}%`;
+
+      } else {
+
+        const scores = (info?.scores && typeof info.scores === "object") ? info.scores : null;
+
+        const currentScore = scores && Object.prototype.hasOwnProperty.call(scores, faction)
+
+          ? sharedImpactNumber(scores[faction])
+
+          : null;
+
+        if (currentScore != null) stateLine = `Current ${factionName} influence: ${currentScore}`;
+
+      }
+
+    }
+
+    if (!stateLine) return null;
+
+    return {
+
+      kicker: `${factionName.toUpperCase()} / SHARED IMPACT`,
+
+      title: `Your patrol strengthened ${factionName} influence at ${nodeName}.`,
+
+      stateLine,
+
+    };
+
+  }
+
   function setActionResult(kind, payload = {}) {
 
     const el = _qs("infStatus");
@@ -2683,6 +2789,8 @@
       : (refunded > 0 ? `Overflow refunded: ${refunded}` : "");
 
     const isPatrol = kind === "patrol";
+
+    const sharedImpact = sharedImpactReceipt(kind, payload, currentNodeId, phantomMode);
 
     const report = (payload?.afterActionReport && typeof payload.afterActionReport === "object") ? payload.afterActionReport : null;
 
@@ -2884,11 +2992,11 @@
 
     el.innerHTML = `
 
-      <div class="inf-result-kicker">${phantomMode ? esc(title) : "Action Confirmed"}</div>
+      <div class="inf-result-kicker">${esc(sharedImpact?.kicker || (phantomMode ? title : "Action Confirmed"))}</div>
 
-      <div class="inf-result-title">${phantomMain ? esc(phantomMain) : title}</div>
+      <div class="inf-result-title">${esc(sharedImpact?.title || phantomMain || title)}</div>
 
-      <div class="inf-result-gain">${esc(lead)}</div>
+      <div class="inf-result-gain">${esc(sharedImpact?.stateLine || lead)}</div>
 
       <div class="inf-result-lines">
 
@@ -13592,6 +13700,14 @@
 
       setActionResult("patrol", {
 
+        ok: r.ok,
+
+        nodeId: r.nodeId,
+
+        faction: r?.you?.faction || r?.info?.youFaction,
+
+        info: r.info,
+
         gain: r.gain,
 
         wastelandPressureBefore: r.wastelandPressureBefore,
@@ -13905,8 +14021,6 @@
   window.Influence = Influence;
 
 })();
-
-
 
 
 
