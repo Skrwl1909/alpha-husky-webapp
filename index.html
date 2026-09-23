@@ -7374,6 +7374,147 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
+<style id="ah-chain-gate-visual-polish">
+#buildingBack[data-building-id="chain_gate"]{
+  background:
+    radial-gradient(circle at 50% 26%,rgba(93,132,170,.10),transparent 34%),
+    rgba(1,4,9,.78);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+#buildingBack[data-building-id="chain_gate"] .sheet-card{
+  position:relative;
+  width:min(94vw,500px);
+  overflow:hidden;
+  border-radius:24px;
+  border:1px solid rgba(132,175,211,.18);
+  background:
+    radial-gradient(circle at 86% 0%,rgba(71,124,165,.14),transparent 32%),
+    linear-gradient(180deg,rgba(8,14,22,.98),rgba(4,8,14,.98));
+  box-shadow:
+    0 30px 84px rgba(0,0,0,.64),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  padding:20px;
+}
+#buildingBack[data-building-id="chain_gate"] .sheet-card::before{
+  content:"";
+  position:absolute;
+  left:18%;
+  right:18%;
+  top:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,rgba(104,183,232,.52),transparent);
+  pointer-events:none;
+}
+#buildingBack[data-building-id="chain_gate"] #buildingTitle{
+  font-size:26px;
+  line-height:1.03;
+  letter-spacing:.015em;
+  color:#f2f7fb;
+  text-shadow:0 8px 26px rgba(0,0,0,.42);
+}
+#buildingBack[data-building-id="chain_gate"] #buildingTitle::before{
+  content:"LONG-HAUL EXPEDITION";
+  display:block;
+  margin-bottom:6px;
+  font-size:9px;
+  line-height:1;
+  letter-spacing:.22em;
+  font-weight:900;
+  color:rgba(111,196,235,.76);
+}
+#buildingBack[data-building-id="chain_gate"] #closeBuilding{
+  width:46px;
+  height:46px;
+  flex:0 0 46px;
+  border-radius:15px;
+  border:1px solid rgba(146,183,210,.14);
+  background:rgba(10,17,26,.84);
+  color:#edf6fb;
+  font-size:24px;
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+#buildingBack[data-building-id="chain_gate"] #buildingDesc{
+  margin:17px 0 0!important;
+  font-size:14px;
+  line-height:1.5;
+  color:rgba(194,207,219,.77);
+}
+#buildingBack[data-building-id="chain_gate"] #buildingDesc .map-node-lore-block,
+#buildingBack[data-building-id="chain_gate"] #buildingDesc .node-lore-block{
+  margin-top:12px;
+}
+#buildingBack[data-building-id="chain_gate"] #buildingState{
+  gap:12px!important;
+  margin-top:16px!important;
+}
+#buildingBack[data-building-id="chain_gate"] #buildingState > div:first-child{
+  padding:11px 13px;
+  border:1px solid rgba(130,174,207,.11);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+  color:rgba(200,215,226,.74);
+}
+#buildingBack[data-building-id="chain_gate"] #buildingState > div:first-child b{
+  color:#eef6fb;
+}
+#buildingBack[data-building-id="chain_gate"] #buildingRoutesWrap{
+  padding:12px;
+  border:1px solid rgba(130,174,207,.12);
+  border-radius:15px;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018));
+}
+#buildingBack[data-building-id="chain_gate"] #buildingRoutesWrap label{
+  display:block;
+  margin-bottom:7px;
+  font-size:9px!important;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(139,169,190,.70)!important;
+}
+#buildingBack[data-building-id="chain_gate"] #buildingRoute{
+  min-height:52px;
+  padding:0 14px!important;
+  border-radius:13px!important;
+  border:1px solid rgba(126,176,211,.20)!important;
+  background:#0b121b!important;
+  color:#f0f6fa!important;
+  font-size:15px;
+  font-weight:750;
+  outline:none;
+}
+#buildingBack[data-building-id="chain_gate"] .btn-row{
+  display:grid!important;
+  grid-template-columns:.82fr 1.38fr;
+  gap:10px!important;
+  margin-top:14px!important;
+}
+#buildingBack[data-building-id="chain_gate"] .btn-row .btn{
+  width:100%;
+  min-height:50px;
+  margin:0;
+  border-radius:14px;
+  border:1px solid rgba(130,174,207,.14);
+  background:linear-gradient(180deg,rgba(18,29,42,.92),rgba(8,14,22,.96));
+  color:#dce9f1;
+  font-weight:850;
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+#buildingBack[data-building-id="chain_gate"] #buildingStartBtn,
+#buildingBack[data-building-id="chain_gate"] #buildingResolveBtn{
+  background:linear-gradient(180deg,#5178f2,#3658cb);
+  border-color:rgba(151,178,255,.36);
+  color:#fff;
+  box-shadow:0 10px 28px rgba(54,88,203,.22),inset 0 1px rgba(255,255,255,.16);
+}
+@media(max-width:380px){
+  #buildingBack[data-building-id="chain_gate"] .sheet-card{padding:17px}
+  #buildingBack[data-building-id="chain_gate"] #buildingTitle{font-size:23px}
+  #buildingBack[data-building-id="chain_gate"] .btn-row{grid-template-columns:1fr 1.25fr}
+}
+</style>
+
     <!-- =========================
      PATCH 2 — MODALS (robust)
      ========================= -->
@@ -7883,7 +8024,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.11-moonlab-visual-polish-v2-20260923";
+    window.WEBAPP_VER = "tops-2.7.12-chain-gate-recovery-wheel-polish-20260923";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -11680,7 +11821,11 @@ function isRegionUnlocked(regionId){
         const bBtnStart=$("#buildingStartBtn");
         const bBtnRes = $("#buildingResolveBtn");
 
-        $("#closeBuilding")?.addEventListener("click", () => { bBack.style.display='none'; stopBuildingTicker(); });
+        $("#closeBuilding")?.addEventListener("click", () => {
+          bBack.style.display='none';
+          delete bBack.dataset.buildingId;
+          stopBuildingTicker();
+        });
 
         const AUTO_RESOLVE_ON_READY = true;
         const READY_GRACE_MS = 2000;
@@ -11690,6 +11835,22 @@ function isRegionUnlocked(regionId){
         let CURRENT_BID = null;
         let CURRENT_BUILDING_DESC = "";
         let ticker = null;
+
+        function cleanBuildingRouteLabel(rawLabel, fallbackId){
+          const fallback = String(fallbackId || "").replace(/[_-]+/g, " ").trim();
+          let text = String(rawLabel || fallback || "").replace(/\s+/g, " ").trim();
+          if (!text) return fallback;
+
+          // Some legacy route labels arrive with a mojibake emoji prefix in Android WebView.
+          // Keep valid Unicode untouched; only strip the damaged prefix when corruption markers exist.
+          const looksCorrupt = /[ÃÂâð�]/.test(text) || /[\u0080-\u009f]/.test(text);
+          if (looksCorrupt) {
+            const readableTail = text.match(/([A-Za-z0-9][A-Za-z0-9 '&+:/().,\-]{3,})$/);
+            if (readableTail?.[1]) text = readableTail[1].trim();
+            text = text.replace(/^[^A-Za-z0-9]+/, "").trim();
+          }
+          return text || fallback;
+        }
         function renderBuildingDesc(bid, descRaw){
           const mapNode = findMapNodeByRef({ id: bid, buildingId: bid }) || {};
           const baseDesc = String(descRaw || mapNode?.desc || "").replace(/\s+/g, " ").trim();
@@ -11723,6 +11884,7 @@ function isRegionUnlocked(regionId){
           await closeMapCanonical({ source: `building:${String(bid || "unknown")}` });
           CURRENT_BID = bid;
           CURRENT_BUILDING_DESC = String(desc || "").trim();
+          bBack.dataset.buildingId = String(bid || "");
           bTitle.textContent = name || "Building";
           renderBuildingDesc(CURRENT_BID, CURRENT_BUILDING_DESC);
           bBack.style.display = 'flex';
@@ -11743,7 +11905,8 @@ function isRegionUnlocked(regionId){
             if (st.routes && st.routes.length){
               for (const r of st.routes){
                 const opt = document.createElement('option');
-                opt.value = r.id; opt.textContent = r.label || r.id;
+                opt.value = r.id;
+                opt.textContent = cleanBuildingRouteLabel(r.label, r.id);
                 bRoute.appendChild(opt);
               }
             }
