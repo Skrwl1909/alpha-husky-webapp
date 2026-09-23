@@ -49,7 +49,7 @@
 .rw-shell{position:relative;width:min(100%,520px);max-height:96dvh;overflow:auto;border:1px solid rgba(128,193,205,.22);border-bottom:0;border-radius:26px 26px 0 0;background:radial-gradient(circle at 50% 8%,rgba(47,106,119,.20),transparent 34%),linear-gradient(180deg,#10191f,#080d12 72%);box-shadow:0 -24px 80px rgba(0,0,0,.48);padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 .rw-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}.rw-eyebrow{font-size:10px;letter-spacing:.24em;color:#75b8c3;font-weight:900}.rw-title{font-size:24px;letter-spacing:.07em;font-weight:950;margin-top:3px}.rw-sub{font-size:12px;color:#91a2a8;margin-top:4px;line-height:1.35}.rw-close{width:38px;height:38px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:#121d23;color:#dfecef;font-size:22px;cursor:pointer}
 .rw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.rw-stat{min-width:0;border:1px solid rgba(126,186,197,.15);border-radius:13px;background:rgba(255,255,255,.035);padding:9px 10px}.rw-stat-label{font-size:9px;letter-spacing:.11em;color:#769099;font-weight:850}.rw-stat-value{margin-top:3px;font-size:15px;font-weight:900;white-space:nowrap}
-.rw-wheel-stage{position:relative;width:min(86vw,360px);aspect-ratio:1;margin:2px auto 12px;filter:drop-shadow(0 18px 28px rgba(0,0,0,.42))}.rw-pointer{position:absolute;z-index:4;left:50%;top:-3px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:27px solid #d9f6f3;filter:drop-shadow(0 3px 5px rgba(0,0,0,.7))}.rw-wheel-ring{position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(178,232,234,.34);background:#081015;box-shadow:inset 0 0 0 7px rgba(4,8,11,.9),inset 0 0 36px rgba(90,185,190,.14)}.rw-rotor{width:100%;height:100%;transform-origin:50% 50%;will-change:transform}.rw-segment{stroke:rgba(2,7,10,.72);stroke-width:1.2}.rw-segment.is-ineligible{opacity:.18}.rw-segment-label{fill:#eefafa;font-size:5px;font-weight:900;letter-spacing:.02em;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.rw-hub{position:absolute;z-index:3;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:31%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid rgba(168,225,227,.32);background:radial-gradient(circle at 45% 35%,#263b42,#0b1318 70%);box-shadow:0 0 0 7px rgba(4,10,13,.85),0 0 30px rgba(71,178,181,.18);font-size:10px;line-height:1.18;letter-spacing:.12em;font-weight:950;color:#d9f4f2}
+.rw-wheel-stage{position:relative;width:min(86vw,360px);aspect-ratio:1;margin:2px auto 12px;filter:drop-shadow(0 18px 28px rgba(0,0,0,.42))}.rw-pointer{position:absolute;z-index:4;left:50%;top:-3px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:27px solid #d9f6f3;filter:drop-shadow(0 3px 5px rgba(0,0,0,.7))}.rw-wheel-ring{position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(178,232,234,.34);background:#081015;box-shadow:inset 0 0 0 7px rgba(4,8,11,.9),inset 0 0 36px rgba(90,185,190,.14)}.rw-rotor{width:100%;height:100%;transform-origin:50% 50%;will-change:transform}.rw-segment{stroke:rgba(2,7,10,.72);stroke-width:1.2}.rw-segment.is-ineligible{opacity:.18}.rw-segment-label{fill:#eefafa;font-size:5.4px;font-weight:900;letter-spacing:.018em;text-anchor:middle;dominant-baseline:middle;pointer-events:none;paint-order:stroke;stroke:rgba(3,9,12,.72);stroke-width:.75px;stroke-linejoin:round}.rw-segment-label.is-compact{font-size:4.55px;letter-spacing:.01em}.rw-hub{position:absolute;z-index:3;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:31%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid rgba(168,225,227,.32);background:radial-gradient(circle at 45% 35%,#263b42,#0b1318 70%);box-shadow:0 0 0 7px rgba(4,10,13,.85),0 0 30px rgba(71,178,181,.18);font-size:10px;line-height:1.18;letter-spacing:.12em;font-weight:950;color:#d9f4f2}
 .rw-result{min-height:66px;border:1px solid rgba(121,192,199,.18);border-radius:15px;background:rgba(2,8,11,.46);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;text-align:center}.rw-result.is-rare{border-color:rgba(99,186,227,.42)}.rw-result.is-special{border-color:rgba(156,116,232,.44)}.rw-result.is-legendary{border-color:rgba(223,181,83,.52);box-shadow:inset 0 0 24px rgba(213,158,49,.08)}.rw-result-title{font-size:10px;letter-spacing:.18em;font-weight:950;color:#82b7be}.rw-result-value{margin-top:4px;font-size:19px;letter-spacing:.055em;font-weight:950}.rw-status{min-height:18px;text-align:center;font-size:11px;color:#82959c;margin:7px 0}
 .rw-spin{width:100%;min-height:52px;border:1px solid rgba(155,225,218,.35);border-radius:15px;background:linear-gradient(180deg,#29525a,#18363d);color:#f3ffff;font-size:15px;letter-spacing:.13em;font-weight:950;cursor:pointer;box-shadow:0 11px 24px rgba(0,0,0,.24)}.rw-spin:disabled{opacity:.46;cursor:not-allowed}.rw-spin.is-busy{animation:rw-pulse 1s ease-in-out infinite}
 .rw-ledger{display:grid;grid-template-columns:78px 1fr;gap:12px;align-items:center;margin-top:12px;padding:11px;border:1px solid rgba(117,167,177,.15);border-radius:16px;background:rgba(255,255,255,.028)}.rw-ghost{width:78px;height:78px;object-fit:cover;border-radius:12px;filter:saturate(.78) contrast(1.06)}.rw-ledger-name{font-size:13px;font-weight:900}.rw-ledger-meta{margin-top:3px;font-size:11px;color:#8fa0a7}.rw-progress{height:6px;margin-top:8px;overflow:hidden;border-radius:999px;background:#18252b}.rw-progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4b8e9b,#a9e5df);transition:width .25s ease}.rw-redeem{display:none;width:100%;margin-top:9px;padding:10px;border:1px solid rgba(182,230,222,.30);border-radius:11px;background:#172d33;color:#eafffb;font-size:10px;letter-spacing:.08em;font-weight:900;cursor:pointer}.rw-redeem:disabled{opacity:.45}
@@ -148,6 +148,29 @@
     return colors[index % colors.length];
   }
 
+  function wheelLabelText(segment) {
+    const raw = String(segment?.label || segment?.rewardDescription || "REWARD")
+      .replace(/^\+(\d+)\s+/, "$1 ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const upper = raw.toUpperCase();
+    if (segment?.sweepDeg >= 28) return upper.length > 13 ? upper.slice(0, 12).trimEnd() + "…" : upper;
+    if (segment?.sweepDeg < 16) return "";
+
+    const compact = upper
+      .replace(/RUNE DUST/g, "RUNE")
+      .replace(/LEDGER SHARDS?/g, "SHARD")
+      .replace(/UNIVERSAL KEY SHARDS?/g, "KEY")
+      .replace(/\bBONES\b/g, "BONES");
+    const first = compact.split(/\s+/).slice(0, 2).join(" ");
+    return first.length > 8 ? first.slice(0, 7) + "…" : first;
+  }
+
+  function uprightWheelLabelRotation(angleDeg) {
+    const angle = ((Number(angleDeg) || 0) % 360 + 360) % 360;
+    return angle > 90 && angle < 270 ? angle + 180 : angle;
+  }
+
   function renderWheel(rawSegments) {
     const rotor = el("rwRotor");
     const segments = normalizeSegments(rawSegments);
@@ -169,10 +192,18 @@
       path.appendChild(title);
       rotor.appendChild(path);
 
-      if (segment.sweepDeg >= 9) {
-        const pos = polar(segment.sweepDeg >= 30 ? 62 : 70, segment.centerDeg);
-        const label = svgNode("text", { x: pos.x, y: pos.y, class: "rw-segment-label", transform: `rotate(${segment.centerDeg} ${pos.x} ${pos.y})` });
-        label.textContent = segment.label.replace(/^\+1 /, "").replace(/^\+2 /, "2 ").replace(/^\+4 /, "4 ");
+      const labelText = wheelLabelText(segment);
+      if (labelText) {
+        const compact = segment.sweepDeg < 28;
+        const pos = polar(compact ? 71 : 62, segment.centerDeg);
+        const rotation = uprightWheelLabelRotation(segment.centerDeg);
+        const label = svgNode("text", {
+          x: pos.x,
+          y: pos.y,
+          class: `rw-segment-label${compact ? " is-compact" : ""}`,
+          transform: `rotate(${rotation} ${pos.x} ${pos.y})`,
+        });
+        label.textContent = labelText;
         rotor.appendChild(label);
       }
     });
