@@ -28,24 +28,24 @@
   });
   const MISSION_DEBRIEF_LINES = Object.freeze({
     scoutSuccess: Object.freeze([
-      "Hostile trace cleared. Route is safe for now.",
-      "Clean contact. No second signal detected.",
-      "Target dropped before the breach widened."
+      "Mission telemetry confirmed. Debrief follows.",
+      "Objective resolved. Rewards verified.",
+      "Contact ended. Field data is locked."
     ]),
     scoutRough: Object.freeze([
-      "Contact broke ugly. Pull back and reset.",
-      "Signal resisted the push. We mark it and move.",
-      "You made it out. That counts."
+      "Outcome recorded. Review what changed.",
+      "Mission ended without a confirmed victory.",
+      "Debrief is ready. Reset before the next push."
     ]),
     wardenSuccess: Object.freeze([
-      "Clean return. The Pack marks this one.",
-      "The line holds another hour.",
-      "Every cleared signal keeps the dark outside."
+      "Your field record has been updated.",
+      "Operation recorded. Review the verified impact.",
+      "The Pack has logged this result."
     ]),
     wardenRough: Object.freeze([
-      "Fall back. The front is not won in one push.",
-      "The line bent, but it did not break.",
-      "You survived the trace. Learn from it."
+      "No victory was recorded.",
+      "Your field record reflects this result.",
+      "Review the outcome before continuing."
     ])
   });
   const MISSION_DUEL_MOON_HUNTER_SCOUT_URL = "https://raw.githubusercontent.com/Skrwl1909/alpha-husky-webapp/main/images/bosses/moon_hunter_scout.png";
@@ -658,8 +658,6 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     parseMissionRewardTextToLines(lines, last?.recoveredRewards);
     if (!lines.length) parseMissionRewardTextToLines(lines, last?.rewardMsg || last?.reward_msg);
     if (!lines.length) parseMissionRewardTextToLines(lines, last?.lootMsg || last?.loot_msg);
-    const signalDelta = extractMissionSignalDelta(payload);
-    if (signalDelta > 0) pushMissionToastLine(lines, `Signal Power +${signalDelta}`);
     const tone = normalizeOutcomeTone(normalizeOutcomeTier(last));
     const title = tone === "failed" ? "Mission Resolved" : "Mission Completed";
     if (!lines.length) {
@@ -720,8 +718,19 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
     if (fragmentDrop?.awarded === true && String(fragmentDrop.asset || "") === "map_key_fragment") {
       rewards.push("Map Key Fragment +1");
     }
-    const signalDelta = extractMissionSignalDelta(payload);
-    if (signalDelta > 0 && !rewards.some((line) => /signal power/i.test(line))) rewards.push(`Signal Power +${signalDelta}`);
+    const rawConsequence = (
+      (resultData && typeof resultData === "object" && resultData.consequence)
+      || payload?.consequence
+      || last?.consequence
+    );
+    const consequence = rawConsequence && typeof rawConsequence === "object" ? {
+      kind: textOrEmpty(rawConsequence.kind),
+      title: textOrEmpty(rawConsequence.title),
+      detail: textOrEmpty(rawConsequence.detail),
+      actionLabel: textOrEmpty(rawConsequence.actionLabel || rawConsequence.action_label),
+      target: rawConsequence.target && typeof rawConsequence.target === "object" ? rawConsequence.target : null,
+      sharedTrace: rawConsequence.sharedTrace && typeof rawConsequence.sharedTrace === "object" ? rawConsequence.sharedTrace : null,
+    } : null;
 
     const seedText = [operation, outcome.label, textOrEmpty(last?.enemyName || last?.enemy_name || last?.targetName || last?.target_name)].join("|");
     const scoutPack = outcome.rough ? MISSION_DEBRIEF_LINES.scoutRough : MISSION_DEBRIEF_LINES.scoutSuccess;
@@ -742,6 +751,11 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       wardenLine: missionDebriefPick(wardenPack, seedText, "warden"),
       scoutAvatar,
       wardenSigil,
+      consequence,
+      nextMove: {
+        label: consequence?.actionLabel || "Run Another Mission",
+        target: consequence?.target || { type: "open_action", action: "missions" },
+      },
     };
   }
 
@@ -774,10 +788,57 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
       </div>
     `;
   }
+
+  async function openMissionConsequenceNext(button) {
+    const type = textOrEmpty(button?.dataset?.nextType || "open_action").toLowerCase();
+    const action = textOrEmpty(button?.dataset?.nextAction || "missions").toLowerCase();
+    const sectorId = textOrEmpty(button?.dataset?.nextSector || "relay_fringe_01");
+
+    if (type === "open_action" && action === "missions") {
+      _missionDebriefState = null;
+      render();
+      return true;
+    }
+
+    if (type === "open_action" && action === "quests" && typeof window.Quests?.open === "function") {
+      _missionDebriefState = null;
+      close();
+      await window.Quests.open();
+      return true;
+    }
+
+    if (type === "relay7") {
+      _missionDebriefState = null;
+      close();
+      const mapOpened = await window.CTA?.openTarget?.({ type: "open_action", action: "map" });
+      if (!mapOpened || !window.WorldExploration) return false;
+      await window.WorldExploration.refreshState?.({ force: true });
+      window.WorldExploration.openSector?.(sectorId || "relay_fringe_01");
+      return true;
+    }
+
+    if (typeof window.CTA?.openTarget === "function") {
+      _missionDebriefState = null;
+      close();
+      return !!(await window.CTA.openTarget({ type, action, sectorId }));
+    }
+    return false;
+  }
+
   function renderMissionDebriefGate(model) {
-    const m = model || buildMissionDebriefModel(_state) || { visible: true, missionName: "Field Operation", outcome: "Resolved", recoveredText: "", scoutLine: "Hostile trace cleared. Route is safe for now.", wardenLine: "Clean return. The Pack marks this one." };
+    const m = model || buildMissionDebriefModel(_state) || { visible: true, missionName: "Field Operation", outcome: "Resolved", recoveredText: "", scoutLine: "Mission telemetry confirmed. Debrief follows.", wardenLine: "Your field record reflects this result." };
     const tone = textOrEmpty(m?.outcomeTone) || "success";
     const recovered = textOrEmpty(m?.recoveredText);
+    const impactTitle = textOrEmpty(m?.consequence?.title);
+    const impactDetail = textOrEmpty(m?.consequence?.detail);
+    const trace = m?.consequence?.sharedTrace;
+    const traceLine = trace?.eligible === true && trace?.recorded === true ? "Recorded in Network Activity." : "";
+    const nextTarget = m?.nextMove?.target && typeof m.nextMove.target === "object" ? m.nextMove.target : { type: "open_action", action: "missions" };
+    const nextType = textOrEmpty(nextTarget.type || "open_action");
+    const nextAction = textOrEmpty(nextTarget.action || "missions");
+    const nextSector = textOrEmpty(nextTarget.sectorId || nextTarget.sector_id || "");
+    const nextLabel = textOrEmpty(m?.nextMove?.label) || "Run Another Mission";
+    const primaryReturnsToMissions = nextType === "open_action" && nextAction === "missions";
 
     return `
       <div class="m-stage m-stage-debrief">
@@ -791,15 +852,16 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
             </div>
             <div class="m-outcome-badge" data-tone="${esc(tone)}">${esc(m?.outcome || "Resolved")}</div>
           </div>
-          <div class="m-report-section"><div class="m-report-label">Operation</div><div class="m-report-values">${esc(m?.missionName || "Field Operation")}</div></div>
-          <div class="m-report-section"><div class="m-report-label">Outcome</div><div class="m-report-values">${esc(m?.outcome || "Resolved")}</div></div>
-          ${recovered ? `<div class="m-report-section"><div class="m-report-label">Recovered</div><div class="m-report-values">${esc(recovered)}</div></div>` : ""}
+          <div class="m-report-section"><div class="m-report-label">Outcome</div><div class="m-report-values">${esc(m?.missionName || "Field Operation")} · ${esc(m?.outcome || "Resolved")}</div></div>
+          ${recovered ? `<div class="m-report-section"><div class="m-report-label">Rewards</div><div class="m-report-values">${esc(recovered)}</div></div>` : ""}
+          ${impactTitle || impactDetail ? `<div class="m-report-section m-debrief-impact"><div class="m-report-label">Impact</div><div class="m-report-values">${impactTitle ? `<strong>${esc(impactTitle)}</strong>` : ""}${impactDetail ? `<div class="m-muted">${esc(impactDetail)}</div>` : ""}${traceLine ? `<div class="m-muted">${esc(traceLine)}</div>` : ""}</div></div>` : ""}
           <div class="m-debrief-voices">
-            ${renderMissionDebriefVoice("Scout", m?.scoutLine, "Hostile trace cleared. Route is safe for now.")}
-            ${renderMissionDebriefVoice("Warden", m?.wardenLine, "Clean return. The Pack marks this one.")}
+            ${renderMissionDebriefVoice("Scout", m?.scoutLine, "Mission telemetry confirmed. Debrief follows.")}
+            ${renderMissionDebriefVoice("Warden", m?.wardenLine, "Your field record reflects this result.")}
           </div>
           <div class="m-actions m-debrief-actions">
-            <button type="button" class="btn m-debrief-return" data-act="continue_mission_debrief">Return to Missions</button>
+            <button type="button" class="btn primary m-debrief-return" data-act="mission_consequence_next" data-next-type="${esc(nextType)}" data-next-action="${esc(nextAction)}" data-next-sector="${esc(nextSector)}">${esc(nextLabel)}</button>
+            ${primaryReturnsToMissions ? "" : `<button type="button" class="btn" data-act="continue_mission_debrief">Back to Missions</button>`}
           </div>
         </div>
       </div>
@@ -3468,6 +3530,9 @@ function resolveMissionDuelBossAssetVisual(payload, last, enemyBlock) {
         window.StoryDelivery?.refreshHub("mission_resolved");
         render();
       }).catch(err => renderError("Refresh failed", String(err?.message || err)));
+      if (act === "mission_consequence_next") return void openMissionConsequenceNext(btn).catch(err => {
+        try { _tg?.showAlert?.(String(err?.message || "Next move could not open.")); } catch (_) {}
+      });
       if (act === "continue_mission_debrief") { _missionDebriefState = null; return void render(); }
       if (act === "elite_briefing_back") { _eliteBriefingState = null; _eliteBriefingBusy = false; return void render(); }
       if (act === "elite_operation_close") return void doEliteOperationDismiss(btn.dataset.operationId || "");
