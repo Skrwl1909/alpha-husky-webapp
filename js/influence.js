@@ -10518,6 +10518,102 @@
 
     `;
 
+    style.textContent += `
+      /* PHANTOM NODE — LIVE FRONT V1 (presentation-only) */
+      #influenceCard.is-phantom-node{
+        padding:0 !important;width:min(98vw,860px) !important;
+        max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 18px) !important;
+        border-radius:26px !important;overflow:auto !important;overscroll-behavior:contain;
+        background:radial-gradient(circle at 78% 8%,rgba(255,56,47,.16),transparent 26%),
+                   radial-gradient(circle at 18% 42%,rgba(76,180,255,.08),transparent 32%),
+                   linear-gradient(180deg,#05080d 0%,#080c13 52%,#05080c 100%) !important;
+        box-shadow:0 34px 100px rgba(0,0,0,.8),inset 0 0 0 1px rgba(145,206,255,.12) !important;
+      }
+      #influenceCard.is-phantom-node .inf-head{
+        position:sticky !important;top:0;z-index:40 !important;min-height:58px !important;padding:12px 16px !important;
+        justify-content:space-between !important;align-items:center !important;
+        background:linear-gradient(180deg,rgba(3,6,10,.98),rgba(3,6,10,.86)) !important;
+        border-bottom:1px solid rgba(130,211,255,.12);backdrop-filter:blur(16px);
+      }
+      #influenceCard.is-phantom-node .inf-title{font-family:Inter,system-ui,sans-serif !important;font-size:18px !important;font-weight:950 !important;letter-spacing:.16em !important;color:#f4f8ff !important;}
+      #influenceCard.is-phantom-node .inf-sub{margin-top:3px;font-size:9px !important;font-weight:850;letter-spacing:.18em;text-transform:uppercase;color:rgba(132,213,255,.72) !important;}
+      #influenceCard.is-phantom-node #infHero{margin:0 !important;border:none !important;border-radius:0 !important;overflow:visible !important;background:transparent !important;box-shadow:none !important;}
+      #influenceCard.is-phantom-node .inf-phantom-hero-media{min-height:320px !important;border-radius:0 !important;overflow:hidden !important;border-bottom:1px solid rgba(255,98,77,.20);background:#05080d;}
+      #influenceCard.is-phantom-node .inf-phantom-hero-media::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(2,4,8,.08),rgba(2,5,9,.20) 38%,rgba(2,5,9,.94) 100%),radial-gradient(circle at 70% 26%,rgba(255,56,47,.16),transparent 34%);}
+      #influenceCard.is-phantom-node .inf-phantom-hero-art{width:100% !important;height:100% !important;object-fit:cover !important;object-position:center 42% !important;filter:saturate(1.08) contrast(1.06) brightness(.82);animation:pnHeroBreath 9s ease-in-out infinite alternate;}
+      #influenceCard.is-phantom-node .inf-phantom-hero-signal{z-index:2 !important;opacity:.32 !important;mix-blend-mode:screen;animation:pnSignalPulse 3.8s ease-in-out infinite;}
+      #influenceCard.is-phantom-node .inf-phantom-status-badge{z-index:8 !important;top:18px !important;right:18px !important;padding:8px 11px !important;border-radius:10px !important;font-size:10px !important;font-weight:950 !important;letter-spacing:.16em !important;background:rgba(8,10,14,.82) !important;backdrop-filter:blur(12px);}
+      #influenceCard.is-phantom-node .inf-phantom-hero-top{position:absolute !important;inset:auto 16px 66px 16px !important;z-index:7 !important;display:grid !important;grid-template-columns:minmax(0,.75fr) minmax(0,1.5fr) minmax(0,.8fr) !important;align-items:end !important;gap:10px !important;padding:0 !important;}
+      #influenceCard.is-phantom-node .inf-phantom-sidecard{min-height:74px !important;border:1px solid rgba(120,208,255,.16) !important;border-radius:14px !important;background:linear-gradient(180deg,rgba(5,10,16,.72),rgba(5,9,14,.9)) !important;backdrop-filter:blur(12px);box-shadow:0 12px 28px rgba(0,0,0,.34);}
+      #influenceCard.is-phantom-node .inf-phantom-center-copy{text-align:center;padding:12px 14px;border-radius:16px;background:linear-gradient(180deg,rgba(5,8,13,.52),rgba(5,8,13,.86));border:1px solid rgba(255,98,77,.18);backdrop-filter:blur(12px);}
+      #influenceCard.is-phantom-node .inf-leader{font-size:26px !important;line-height:1 !important;letter-spacing:.04em !important;color:#fff !important;}
+      #influenceCard.is-phantom-node .inf-panel-kicker{color:#9adfff !important;letter-spacing:.16em !important;}
+      #influenceCard.is-phantom-node .inf-encounter-line{margin-top:7px;font-size:13px !important;line-height:1.35 !important;color:#f4e7df !important;}
+      #influenceCard.is-phantom-node .inf-phantom-hero-bottom{position:absolute !important;z-index:7 !important;left:16px !important;right:16px !important;bottom:14px !important;padding:0 !important;}
+      #influenceCard.is-phantom-node .inf-chip-row{justify-content:center;}
+      #influenceCard.is-phantom-node .inf-hero-flavor,#influenceCard.is-phantom-node .inf-hero-status{display:none !important;}
+
+      #influenceCard.is-phantom-node .inf-clash-meter{margin:0 !important;padding:18px 18px 20px !important;border:0 !important;border-bottom:1px solid rgba(137,218,255,.14) !important;border-radius:0 !important;background:linear-gradient(180deg,rgba(13,18,26,.98),rgba(7,11,17,.96)) !important;}
+      #influenceCard.is-phantom-node .inf-pressure-side .value{font-size:38px !important;font-weight:950 !important;}
+      #influenceCard.is-phantom-node .inf-pressure-state{color:#ff624d !important;}
+      #influenceCard.is-phantom-node .inf-pressure-track{height:78px !important;border-radius:16px !important;border:1px solid rgba(121,213,255,.15) !important;box-shadow:inset 0 0 26px rgba(0,0,0,.44),0 0 34px rgba(255,72,55,.06);}
+      #influenceCard.is-phantom-node .inf-pressure-fill.is-enemy{background:linear-gradient(90deg,#ff4438,#ff784d) !important;box-shadow:0 0 18px rgba(255,68,56,.56) !important;}
+      #influenceCard.is-phantom-node .inf-pressure-fill.is-friendly{background:linear-gradient(90deg,#43d2c0,#72f5e8) !important;box-shadow:0 0 16px rgba(76,232,214,.42) !important;}
+
+      #influenceCard.is-phantom-node .inf-threat-card{position:relative;margin:12px 14px 0 !important;padding:0 !important;min-height:190px;border-radius:18px !important;overflow:hidden;border:1px solid rgba(255,92,70,.28) !important;background:linear-gradient(100deg,rgba(12,8,10,.96),rgba(7,10,15,.86)) !important;box-shadow:0 16px 34px rgba(0,0,0,.35),0 0 36px rgba(255,59,46,.06);}
+      #influenceCard.is-phantom-node .inf-threat-bg-accent{display:block !important;opacity:.36 !important;background-position:right center !important;background-size:52% auto !important;}
+      #influenceCard.is-phantom-node .inf-threat-inner{position:relative;z-index:2;min-height:190px;padding:18px !important;background:linear-gradient(90deg,rgba(7,9,13,.94) 0%,rgba(7,9,13,.82) 53%,rgba(7,9,13,.18) 100%);}
+      #influenceCard.is-phantom-node .inf-threat-boss-portrait{width:86px !important;height:86px !important;flex:0 0 86px !important;border-radius:16px !important;border:1px solid rgba(98,218,255,.26) !important;box-shadow:0 0 30px rgba(56,196,255,.12);}
+      #influenceCard.is-phantom-node .inf-threat-name{font-size:24px !important;font-weight:950 !important;color:#fff !important;}
+      #influenceCard.is-phantom-node .inf-threat-kicker{color:#ff8f6f !important;letter-spacing:.18em !important;}
+
+      #influenceCard.is-phantom-node .inf-frontline-confront{margin:12px 14px 0 !important;padding:16px !important;border-radius:17px !important;border:1px solid rgba(244,185,108,.28) !important;background:radial-gradient(circle at 100% 50%,rgba(244,185,108,.12),transparent 38%),linear-gradient(180deg,rgba(21,16,12,.86),rgba(8,10,14,.94)) !important;}
+      #influenceCard.is-phantom-node .inf-confront-title{font-size:21px !important;}
+
+      #influenceCard.is-phantom-node #infOpsPanel{margin:14px !important;padding:16px !important;border:1px solid rgba(105,204,255,.18) !important;border-radius:18px !important;background:linear-gradient(180deg,rgba(10,15,22,.96),rgba(7,11,17,.94)) !important;box-shadow:0 18px 38px rgba(0,0,0,.30);}
+      #influenceCard.is-phantom-node #infOpsPanel .inf-panel-title{font-size:15px !important;font-weight:950;letter-spacing:.16em;text-transform:uppercase;}
+      #influenceCard.is-phantom-node .inf-action-grid{gap:12px !important;}
+      #influenceCard.is-phantom-node .inf-action-card{min-height:190px !important;overflow:hidden;border-radius:17px !important;border:1px solid rgba(119,213,255,.24) !important;background:linear-gradient(180deg,rgba(9,15,22,.94),rgba(7,11,17,.98)) !important;box-shadow:0 14px 28px rgba(0,0,0,.24);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;}
+      #influenceCard.is-phantom-node .inf-action-card:active{transform:scale(.985);}
+      #influenceCard.is-phantom-node .inf-action-card-primary{border-color:rgba(93,216,255,.34) !important;box-shadow:0 0 28px rgba(58,190,255,.08);}
+      #influenceCard.is-phantom-node .inf-action-card-support{border-color:rgba(244,185,108,.32) !important;box-shadow:0 0 28px rgba(244,165,72,.07);}
+      #influenceCard.is-phantom-node .inf-action-art{height:96px !important;position:relative;overflow:hidden;}
+      #influenceCard.is-phantom-node .inf-action-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 28%,rgba(7,11,17,.92) 100%);pointer-events:none;}
+      #influenceCard.is-phantom-node .inf-action-art img{width:100%;height:100%;object-fit:cover;filter:saturate(1.08) contrast(1.08);}
+      #influenceCard.is-phantom-node .inf-action-copy{padding:12px 13px 14px !important;}
+      #influenceCard.is-phantom-node .inf-action-title{font-size:19px !important;font-weight:950 !important;letter-spacing:.05em !important;}
+
+      #influenceCard.is-phantom-node #infPresenceShell{margin:0 14px 14px !important;padding:14px !important;border-radius:17px !important;border:1px solid rgba(117,213,255,.12) !important;background:linear-gradient(180deg,rgba(8,13,20,.88),rgba(7,10,15,.92)) !important;}
+      #influenceCard.is-phantom-node #infPresenceShell .inf-impact-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:7px !important;}
+      #influenceCard.is-phantom-node #infPresenceShell .inf-impact-card{min-height:96px;padding:11px !important;border-radius:13px !important;background:rgba(255,255,255,.025) !important;}
+      #influenceCard.is-phantom-node #infPresenceShell .inf-impact-value{font-size:18px !important;}
+      #influenceCard.is-phantom-node #infPresenceShell .inf-impact-hint{font-size:9px !important;line-height:1.35 !important;}
+      #influenceCard.is-phantom-node .inf-last-clash,#influenceCard.is-phantom-node .inf-threat-pulse,#influenceCard.is-phantom-node .inf-frontline-target,#influenceCard.is-phantom-node .inf-daily-outcome,#influenceCard.is-phantom-node .inf-frontline-today{margin-left:14px !important;margin-right:14px !important;border-radius:14px !important;}
+      #influenceCard.is-phantom-node #infWarIntel{margin:0 14px 16px !important;border:1px solid rgba(255,255,255,.08) !important;border-radius:15px !important;background:rgba(5,8,12,.72) !important;opacity:.86;}
+
+      @keyframes pnHeroBreath{from{transform:scale(1.02)}to{transform:scale(1.055)}}
+      @keyframes pnSignalPulse{0%,100%{opacity:.18;filter:brightness(.92)}50%{opacity:.42;filter:brightness(1.14)}}
+      @media(max-width:640px){
+        #influenceCard.is-phantom-node{width:100% !important;border-radius:22px !important;}
+        #influenceCard.is-phantom-node .inf-phantom-hero-media{min-height:350px !important;}
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{inset:auto 10px 68px 10px !important;grid-template-columns:1fr 1.45fr !important;}
+        #influenceCard.is-phantom-node .inf-phantom-id-card{display:none !important;}
+        #influenceCard.is-phantom-node .inf-phantom-center-copy{grid-column:1/-1;order:-1;}
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{grid-column:2;}
+        #influenceCard.is-phantom-node .inf-action-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+        #influenceCard.is-phantom-node #infPresenceShell .inf-impact-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+      }
+      @media(max-width:390px){
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{display:none !important;}
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{grid-template-columns:1fr !important;}
+        #influenceCard.is-phantom-node .inf-action-grid{grid-template-columns:1fr !important;}
+      }
+      @media(prefers-reduced-motion:reduce){
+        #influenceCard.is-phantom-node .inf-phantom-hero-art,
+        #influenceCard.is-phantom-node .inf-phantom-hero-signal{animation:none !important;}
+      }
+`;
+
     document.head.appendChild(style);
 
   }
@@ -11838,7 +11934,7 @@
 
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
 
-    if (titleEl) titleEl.textContent = phantomMode ? "Phantom Node" : (title || nodeId);
+    if (titleEl) titleEl.textContent = phantomMode ? "Phantom Node · Live Front" : (title || nodeId);
 
     if (subEl) {
 
@@ -11846,17 +11942,17 @@
 
       subEl.textContent = phantomMode
 
-        ? "Hold the frontline. Push pressure down. Check tomorrow's report."
+        ? "SIGNAL CORE // THE PACK HOLDS THIS LINE TOGETHER"
 
         : (prettyNodeId ? `Frontline objective - ${prettyNodeId}` : "Frontline objective");
 
     }
 
-    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "Pack Frontline" : "Live Node Operations";
+    if (heroKickerEl) heroKickerEl.textContent = phantomMode ? "LIVE FRONT // SIGNAL CORE" : "Live Node Operations";
 
-    if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Impact Today" : "Your Faction Support";
+    if (rewardTitleEl) rewardTitleEl.textContent = phantomMode ? "Your Frontline Impact" : "Your Faction Support";
 
-    if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Operations" : "Your Orders";
+    if (ordersTitleEl) ordersTitleEl.textContent = phantomMode ? "Take Action" : "Your Orders";
 
     if (warIntelEl) warIntelEl.open = !phantomMode;
 
