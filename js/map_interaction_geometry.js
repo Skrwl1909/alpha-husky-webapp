@@ -2,6 +2,7 @@
   "use strict";
 
   const MASTER_ASSET = "images/map/v2/world_map_master_v1.webp";
+  const FALLBACK_ASSET = "images/map/v2/map-v2-world.webp";
 
   const REGIONS = Object.freeze({
     citadel: Object.freeze({
@@ -65,6 +66,7 @@
 
   global.MapInteractionGeometry = Object.freeze({
     MASTER_ASSET,
+    FALLBACK_ASSET,
     REGIONS,
     getRegion,
     getPoi,
