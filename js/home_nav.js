@@ -60,7 +60,7 @@
   }
 
   function hydrateHubIcons() {
-    $$("#hubBack .ah-grid .ah-tile:not([data-campaign-tile])").forEach((tile) => {
+    $$("#hubBack [data-action]").forEach((tile) => {
       const icon = Array.from(tile.children).find((child) => child.classList?.contains("ah-hub-tile-icon"));
       if (!icon) return;
       icon.innerHTML = renderHubIcon(tile.dataset.hubIcon || tile.dataset.action);
@@ -96,12 +96,17 @@
     el.style.display = "flex";
     el.dataset.open = "1";
     setBodyLock(true);
+    if (id === "hubBack") document.body.style.touchAction = "manipulation";
     navOpenId(id);
   }
 
   function closeBack(id) {
     const el = document.getElementById(id);
     if (!el) return;
+
+    if (id === "hubBack") {
+      try { window.HubPremium?.closeSystems?.({ restoreFocus: false }); } catch (_) {}
+    }
 
     if (id === "shareBack" && typeof window.ShareCard?.hide === "function") {
       window.ShareCard.hide();
@@ -174,10 +179,28 @@
     return clickLegacy(".btn.inventory") || clickLegacy("button.btn.inventory");
   }
 
+  async function openMoonLab() {
+    try {
+      if (typeof window.ensureFortressLoaded === "function") {
+        await window.ensureFortressLoaded(window.apiPost || window.S?.apiPost, window.Telegram?.WebApp, false);
+      }
+      if (typeof window.Fortress?.open === "function") {
+        window.Fortress.open();
+        return true;
+      }
+    } catch (err) {
+      console.warn("[HomeNav] MoonLab open failed", err);
+    }
+    try { window.Telegram?.WebApp?.showAlert?.("MoonLab is still loading. Try again in a moment."); } catch (_) {}
+    return false;
+  }
+
   function openHub() {
     openBack("hubBack");
+    try { window.HubPremium?.activate?.(); } catch (_) {}
     try { window.StoryDelivery?.refreshHub?.(); } catch (_) {}
     try { window.Stats?.refreshHubGoal?.(); } catch (_) {}
+    try { window.LivingWorld?.activate?.(); } catch (_) {}
   }
   function openCharSheet() { openBack("charBack"); }
   function openShareSheet() {
@@ -219,6 +242,14 @@
     }
 
     switch (A) {
+      case "moonlab":
+        openMoonLab();
+        break;
+
+      case "missions":
+        openMissions();
+        break;
+
       case "shop":
         if (typeof window.Shop?.open === "function") window.Shop.open();
         else clickLegacy(".btn.shop") || clickLegacy("button.btn.shop");
@@ -372,6 +403,11 @@
       const source = meta.source || "back";
       const st = window.AH_NAV?.stack;
       const topId = st && st.length ? st[st.length - 1] : null;
+
+      if (topId === "hubBack" && source !== "history" && window.HubPremium?.isSystemsOpen?.()) {
+        window.HubPremium.closeSystems();
+        return true;
+      }
 
       if (topId && IS_OUR_SHEET(topId)) {
         if (window.AH_NAV) window.AH_NAV.popClosing = source === "history";

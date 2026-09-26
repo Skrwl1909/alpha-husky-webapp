@@ -111,7 +111,7 @@
     root.innerHTML = '<div class="ah-discovery-intro" data-guide-intro' + (current.intro ? '' : ' hidden') + '>'
       + '<div class="ah-discovery-kicker">TRAINING COMPLETE</div>'
       + '<b>EXPLORE ALPHA</b>'
-      + '<p>You know the basics. This stays in Hub → Quick Access whenever you need to find a system again.</p>'
+      + '<p>You know the basics. This stays in Hub → All Systems whenever you need to find a system again.</p>'
       + '<div class="ah-discovery-intro-actions"><button type="button" class="ah-action" data-guide-start>Explore</button><button type="button" class="ah-action" data-guide-later>Later</button></div>'
       + '</div>'
       + '<details class="ah-discovery-shell"><summary><span class="ah-discovery-summary-title">EXPLORE ALPHA</span><small><span class="ah-discovery-count">' + current.discovered + '/' + current.total + ' discovered</span>' + ticks(current.discovered, current.total) + '</small></summary>'

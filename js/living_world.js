@@ -5,7 +5,7 @@
   const ROOT_ID = "hubLivingWorldRoot";
   const STYLE_ID = "ah-living-world-p0-css";
   const CACHE_TTL_MS = 30000;
-  const MAX_ROWS = 3;
+  const MAX_ROWS = 2;
   const MAX_EVENT_AGE_SEC = 7 * 24 * 60 * 60;
   const PLAYER_EVENT_TYPES = new Set([
     "fortress_cleared",
@@ -207,7 +207,7 @@
   }
 
   function shell(body, stateLabel = "CONFIRMED") {
-    return `<section class="lw-card" aria-label="Network activity"><div class="lw-head"><div class="lw-kicker">NETWORK ACTIVITY</div><div class="lw-state">${escapeHtml(stateLabel)}</div></div>${body}<div class="lw-foot"><button class="lw-oracle" type="button" data-lw-oracle>OPEN ORACLE</button></div></section>`;
+    return `<section class="lw-card" aria-label="World pulse"><div class="lw-head"><div class="lw-kicker">WORLD PULSE</div><div class="lw-state">${escapeHtml(stateLabel)}</div></div>${body}<div class="lw-foot"><button class="lw-oracle" type="button" data-lw-oracle>OPEN ORACLE</button></div></section>`;
   }
 
   function renderLoading() {
@@ -235,7 +235,8 @@
       return `<${tag} class="lw-row" ${attrs}><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}${row.profileUid ? '<span class="lw-chevron" aria-hidden="true">›</span>' : ""}</div></${tag}>`;
     }).join("")}</div>` : '<div class="lw-empty"><div class="lw-empty-title">No new Pack signals yet.</div><div class="lw-empty-copy">The Oracle retains the latest confirmed record of the world.</div></div>';
     const status = statusLine(state?.worldStatus);
-    root.innerHTML = shell(`${list}${status ? `<div class="lw-status">WORLD STATUS · ${escapeHtml(status)}</div>` : ""}`);
+    const hotClass = state?.worldStatus?.hotNodes > 0 ? " is-hot" : "";
+    root.innerHTML = shell(`${list}${status ? `<div class="lw-status${hotClass}">WORLD STATUS · ${escapeHtml(status)}</div>` : ""}`);
     bindActions(root, rows);
   }
 

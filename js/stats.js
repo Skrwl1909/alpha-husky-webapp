@@ -1697,13 +1697,34 @@
     const root = qs("hubGoalRoot");
     if (!root) return;
     root.innerHTML = `
-      <div class="ahg-card">
-        <div class="ahg-pad">
-          <div class="ahg-kicker">Next Alpha Goal</div>
-          <div class="ahg-sub">${esc(msg || "Loading your next objective...")}</div>
-        </div>
+      <div class="ahp-objective ahp-skeleton" aria-label="Loading next move">
+        <div class="ahp-kicker">Next Move</div>
+        <div class="ahp-skeleton-line -short"></div>
+        <div class="ahp-skeleton-line"></div>
+        <div class="ahp-skeleton-line -short"></div>
+        <div class="ahp-skeleton-line"></div>
       </div>
     `;
+  }
+
+  function renderHubSignalLoading(msg){
+    const root = qs("hubSignalRoot");
+    if (!root) return;
+    root.innerHTML = `
+      <div class="ahp-signal-card ahp-skeleton" aria-label="Loading Signal Path">
+        <div class="ahp-signal-kicker">Signal Path</div>
+        <div class="ahp-skeleton-line -short"></div>
+        <div class="ahp-skeleton-line"></div>
+        <div class="ahp-signal-empty">${esc(msg || "Syncing Signal progression...")}</div>
+      </div>
+    `;
+  }
+
+  function hubProgressPercent(current, target){
+    const cur = Math.max(0, n(current, 0));
+    const max = Math.max(0, n(target, 0));
+    if (!max) return 0;
+    return Math.max(0, Math.min(100, (cur / max) * 100));
   }
 
   function renderHubGoalCard(stats, extras){
@@ -1713,71 +1734,120 @@
     const goal = buildGoalState(stats, extras);
     const ctx = getMoonlabWallContext(stats, extras, goal);
     const wall = ctx.wall || { available: false };
-    const hubBestMove = resolveHubBestMove(ctx);
-    const statusLabel = formatMoonlabStatus(wall, ctx.signalPower);
-    const moonlabWallLabel = wall.available ? toText(wall.bossName, "Unknown") : "Syncing...";
-    const floorLabel = wall.available
-      ? `${Math.max(1, n(wall.currentFloor, 1))} / ${Math.max(1, n(wall.maxFloor, 30))}`
-      : "-";
-    const missingPower = Math.max(0, n(ctx.missingPower, goal.missingPower, 0));
-    const unlockName = toText(ctx.nextUnlockLabel, goal.nextThreshold?.label || "Next threshold");
-    const goalState = toText(goal.state, "next_threshold");
-    const isCompleteGoal = goalState === "all_claimed" || goalState === "maxed_or_no_target";
-    const claimableName = toText(goal.claimableMilestone?.shortLabel || goal.claimableMilestone?.name, "");
-    const goalMessage = toText(
-      goal.message,
-      goalState === "claimable_milestone" && claimableName
-        ? `${claimableName} ready to claim`
-        : isCompleteGoal
-          ? "All current Signal milestones claimed. Keep building for the next expansion."
-          : `Reach ${Math.max(0, n(goal.nextThreshold?.value, 0))} Signal Power`
-    );
-    const nextBossName = toText(goal.nextBoss?.name, "");
-    const preparedAttemptHint = toText(goal.preparedAttemptHint, "");
-    const nextSignalUnlock = goalState === "claimable_milestone"
-      ? goalMessage
-      : isCompleteGoal
-        ? goalMessage
-        : (missingPower > 0 ? `+${missingPower} / ${unlockName}` : unlockName);
-    const goalBossName = toText(goal.blockerDisplayName, "");
-    const prepLine = goalBossName
-      ? `Boss Prep ${Math.max(0, n(goal.bossPrep, 0))}/${Math.max(1, n(goal.bossPrepMax, 3))} | ${toText(goal.readiness, "Untracked")}`
-      : "";
-    const suggestedPlan = toText(goal.suggestedElitePlan?.label, "");
-    const nextAction = toText(goal.nextAction, "");
-    const bestMoveText = toText(nextAction, toText(goal.bestMove, hubBestMove));
+    const signalPower = Math.max(0, n(ctx.signalPower, n(goal.signalPower, 0)));
+    const requiredPower = Math.max(0, n(ctx.requiredSignalPower, 0));
+    const nextThreshold = Math.max(0, n(goal.nextThreshold?.value, ctx.nextThreshold, 0));
+    const gateTarget = requiredPower || nextThreshold || Math.max(1, signalPower);
+    const gatePct = hubProgressPercent(signalPower, gateTarget);
+
+    const floor = wall.available ? Math.max(1, n(wall.currentFloor, 1)) : 0;
+    const maxFloor = wall.available ? Math.max(floor || 1, n(wall.maxFloor, 30)) : 30;
+    const objectiveTitle = wall.available
+      ? toText(goal.blockerDisplayName || goal.nextBoss?.name || wall.bossName, "MoonLab Signal Wall")
+      : toText(goal.headline || goal.message || goal.nextThreshold?.label, "Build Your Signal");
+    const context = wall.available ? `MoonLab · Floor ${floor} / ${maxFloor}` : "Signal Objective";
+    const prep = Math.max(0, n(goal.bossPrep, n(wall.bossPrep, 0)));
+    const prepMax = Math.max(1, n(goal.bossPrepMax, n(wall.bossPrepMax, 3)));
+    const readiness = toText(goal.readiness || wall.readinessState, formatMoonlabStatus(wall, signalPower));
+    const missing = Math.max(0, gateTarget - signalPower);
+    const bestMove = toText(goal.nextAction, toText(goal.bestMove, resolveHubBestMove(ctx)));
+    const primaryAction = wall.available ? "moonlab" : "missions";
+    const primaryLabel = wall.available ? "Open MoonLab" : "Open Missions";
 
     root.innerHTML = `
-      <div class="ahg-card">
-        <div class="ahg-pad">
-          <div class="ahg-head">
-            <div>
-              <div class="ahg-kicker">Next Alpha Goal</div>
-              <div class="ahg-sub">Signal path and MoonLab wall preview.</div>
+      <div class="ahp-objective">
+        <div class="ahp-kicker">Next Move</div>
+        <div class="ahp-objective-context">${esc(context)}</div>
+        <div class="ahp-objective-title">${esc(objectiveTitle)}</div>
+
+        <div class="ahp-objective-meta">
+          ${wall.available ? `
+            <div class="ahp-meta-chip">
+              <span class="ahp-meta-label">Boss Prep</span>
+              <span class="ahp-meta-value">${esc(`${prep} / ${prepMax}`)}</span>
             </div>
-            <div class="ahg-tag">Signal ${esc(ctx.signalPower)}</div>
-          </div>
-
-          <div class="ahg-grid">
-            <div class="ahg-row"><span>Signal Power</span><b>${esc(ctx.signalPower)}</b></div>
-            <div class="ahg-row"><span>MoonLab Wall</span><b>${esc(moonlabWallLabel)}</b></div>
-            <div class="ahg-row"><span>Floor</span><b>${esc(floorLabel)}</b></div>
-            <div class="ahg-row"><span>Status</span><b>${esc(statusLabel)}</b></div>
-            <div class="ahg-row"><span>Goal</span><b>${esc(goalMessage)}</b></div>
-            <div class="ahg-row"><span>Next Signal Unlock</span><b>${esc(nextSignalUnlock)}</b></div>
-            ${goalState === "next_threshold" ? `<div class="ahg-row"><span>Missing Signal Power</span><b>${esc(missingPower)}</b></div>` : ""}
-            ${nextBossName ? `<div class="ahg-row"><span>Next Boss</span><b>${esc(nextBossName)}</b></div>` : ""}
-            ${goalBossName ? `<div class="ahg-row"><span>Blocker Boss</span><b>${esc(goalBossName)}</b></div>` : ""}
-            ${prepLine ? `<div class="ahg-row"><span>Boss Prep</span><b>${esc(prepLine)}</b></div>` : ""}
-            ${suggestedPlan ? `<div class="ahg-row"><span>Suggested Plan</span><b>${esc(suggestedPlan)}</b></div>` : ""}
-          </div>
-
-          <div class="ahg-move"><b>Best Move:</b> ${esc(bestMoveText)}</div>
-          ${preparedAttemptHint ? `<div class="ahg-move"><b>War Room:</b> ${esc(preparedAttemptHint)}</div>` : ""}
-          ${renderEliteMissionsBridge(stats)}
+            <div class="ahp-meta-chip">
+              <span class="ahp-meta-label">Readiness</span>
+              <span class="ahp-meta-value">${esc(readiness)}</span>
+            </div>
+          ` : `
+            <div class="ahp-meta-chip">
+              <span class="ahp-meta-label">Signal Power</span>
+              <span class="ahp-meta-value">${esc(signalPower)}</span>
+            </div>
+            <div class="ahp-meta-chip">
+              <span class="ahp-meta-label">To Next</span>
+              <span class="ahp-meta-value">${esc(missing)}</span>
+            </div>
+          `}
         </div>
+
+        <div class="ahp-gate">
+          <div class="ahp-gate-head"><span>Signal Gate</span><b>${esc(signalPower)} / ${esc(gateTarget)}</b></div>
+          <div class="ahp-progress"><i style="--ahp-progress:${gatePct.toFixed(1)}%"></i></div>
+        </div>
+
+        ${bestMove ? `<div class="ahp-objective-copy">${esc(bestMove)}</div>` : ""}
+        <button type="button" class="ahp-primary-action" data-action="${primaryAction}">${primaryLabel}</button>
       </div>
-      ${renderSignalMilestonesCard(stats, extras, { compact: true })}
+    `;
+  }
+
+  function renderHubSignalPathCard(stats, extras){
+    const root = qs("hubSignalRoot");
+    if (!root || !stats) return;
+
+    const progression = normalizeProgressionV1(stats?.progression_v1);
+    const goal = buildGoalState(stats, extras);
+    const milestonesState = progression?.signalMilestones || { currentSignalPower: 0, milestones: [], nextClaimable: null };
+    const milestones = asArray(milestonesState.milestones);
+    const signalPower = Math.max(0, n(milestonesState.currentSignalPower, n(progression?.signalPower, n(goal.signalPower, 0))));
+    const focus = milestones.find((m) => m.status === "claimable")
+      || milestones.find((m) => m.status === "locked")
+      || milestonesState.nextClaimable
+      || null;
+    const target = Math.max(0, n(focus?.threshold, n(goal.nextThreshold?.value, n(progression?.nextThreshold, 0))));
+    const pct = hubProgressPercent(signalPower, target || Math.max(signalPower, 1));
+    const focusName = toText(focus?.shortLabel || focus?.name, toText(goal.nextThreshold?.label, "Next Signal Milestone"));
+    const status = toText(focus?.status, target && signalPower >= target ? "ready" : "locked").toLowerCase();
+    const missing = Math.max(0, n(focus?.missingPower, Math.max(0, target - signalPower)));
+    const statusText = status === "claimable"
+      ? "Ready to claim"
+      : status === "claimed"
+        ? "Claimed"
+        : missing > 0 ? `${missing} Signal to go` : "Signal synced";
+    const art = rewardPreviewUrl(focus, "icon") || rewardPreviewUrl(focus, "frame");
+    const rewards = asArray(focus?.rewardsPreview)
+      .map((item) => toText(item?.label, ""))
+      .filter(Boolean);
+    const shownRewards = rewards.slice(0, 2);
+    const remainingRewards = Math.max(0, rewards.length - shownRewards.length);
+
+    root.innerHTML = `
+      <div class="ahp-signal-card">
+        <div class="ahp-signal-kicker">Signal Path</div>
+        <div class="ahp-signal-title">${esc(focusName)}</div>
+
+        <div class="ahp-signal-progress-block">
+          <div class="ahp-signal-headline"><span>Signal Power</span><b>${esc(signalPower)}${target ? ` / ${esc(target)}` : ""}</b></div>
+          <div class="ahp-progress"><i style="--ahp-progress:${pct.toFixed(1)}%"></i></div>
+        </div>
+
+        ${focus ? `
+          <div class="ahp-milestone-focus">
+            ${art ? `<img class="ahp-milestone-art" src="${esc(art)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">` : `<div class="ahp-milestone-art" aria-hidden="true"></div>`}
+            <div class="ahp-milestone-copy">
+              <div class="ahp-milestone-name">${esc(focusName)}</div>
+              <div class="ahp-milestone-state">${esc(statusText)}</div>
+              ${shownRewards.length || remainingRewards ? `<div class="ahp-reward-preview">
+                ${shownRewards.map((label) => `<span class="ahp-reward-pill">${esc(label)}</span>`).join("")}
+                ${remainingRewards ? `<span class="ahp-reward-pill">+${remainingRewards} more</span>` : ""}
+              </div>` : ""}
+            </div>
+          </div>
+          ${status === "claimable" ? `<button type="button" class="ahp-claim-action" data-action="claim-signal-milestone" data-milestone-id="${esc(focus.id)}">Claim Milestone</button>` : ""}
+        ` : `<div class="ahp-signal-empty">Signal progression is synced. No upcoming milestone is available yet.</div>`}
+      </div>
     `;
   }
 
@@ -2360,6 +2430,7 @@
         _lastStats = nextStats;
         render(nextStats, _lastMystats, _progressionExtras);
         renderHubGoalCard(nextStats, _progressionExtras);
+        renderHubSignalPathCard(nextStats, _progressionExtras);
       }
     } catch (e) {
       if (_dbg) console.error("[Stats] milestone claim failed", e);
@@ -2471,17 +2542,24 @@
   }
 
   async function refreshHubGoal(){
+    ensureStyles();
     const root = qs("hubGoalRoot");
     if (!root) return;
 
     if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
     if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
 
-    if (_lastStats) renderHubGoalCard(_lastStats, _progressionExtras);
-    else renderHubGoalLoading("Loading your next objective...");
+    if (_lastStats) {
+      renderHubGoalCard(_lastStats, _progressionExtras);
+      renderHubSignalPathCard(_lastStats, _progressionExtras);
+    } else {
+      renderHubGoalLoading("Loading your next objective...");
+      renderHubSignalLoading("Syncing Signal progression...");
+    }
 
     if (typeof _apiPost !== "function") {
       renderHubGoalLoading("Next goal is not ready yet.");
+      renderHubSignalLoading("Signal progression is not ready yet.");
       return;
     }
 
@@ -2494,8 +2572,10 @@
       if (!stats) {
         if (_lastStats) {
           renderHubGoalCard(_lastStats, _progressionExtras);
+          renderHubSignalPathCard(_lastStats, _progressionExtras);
         } else {
           renderHubGoalLoading("Next goal is syncing right now.");
+          renderHubSignalLoading("Signal progression is syncing right now.");
         }
         return;
       }
@@ -2504,6 +2584,7 @@
 
       _lastStats = stats;
       renderHubGoalCard(stats, _progressionExtras);
+      renderHubSignalPathCard(stats, _progressionExtras);
 
       if (normalizeProgressionV1(stats?.progression_v1)) {
         return;
@@ -2524,6 +2605,7 @@
         };
 
         renderHubGoalCard(_lastStats, _progressionExtras);
+        renderHubSignalPathCard(_lastStats, _progressionExtras);
 
         const statsBack = qs("statsBack");
         if (statsBack && statsBack.dataset.open === "1" && _lastStats) {
@@ -2531,8 +2613,13 @@
         }
       }).catch(() => {});
     } catch (_) {
-      if (_lastStats) renderHubGoalCard(_lastStats, _progressionExtras);
-      else renderHubGoalLoading("Next goal is syncing right now.");
+      if (_lastStats) {
+        renderHubGoalCard(_lastStats, _progressionExtras);
+        renderHubSignalPathCard(_lastStats, _progressionExtras);
+      } else {
+        renderHubGoalLoading("Next goal is syncing right now.");
+        renderHubSignalLoading("Signal progression is syncing right now.");
+      }
     }
   }
   
@@ -2647,6 +2734,7 @@
     if (_inited) {
       bindClickOnce(qs("statsRoot"), handleStatsActionClick);
       bindClickOnce(qs("hubGoalRoot"), handleStatsActionClick);
+      bindClickOnce(qs("hubSignalRoot"), handleStatsActionClick);
       return;
     }
     _inited = true;
@@ -2657,16 +2745,18 @@
 
     bindClickOnce(qs("statsRoot"), handleStatsActionClick);
     bindClickOnce(qs("hubGoalRoot"), handleStatsActionClick);
+    bindClickOnce(qs("hubSignalRoot"), handleStatsActionClick);
 
     window.openStats = Stats.open;
     window.closeStats = Stats.close;
 
     if (qs("hubGoalRoot")) renderHubGoalLoading("Open Hub to see your next objective.");
+    if (qs("hubSignalRoot")) renderHubSignalLoading("Open Hub to sync Signal progression.");
   };
 
-  function ensureStatsClickBridge(){
-    if (window.__ahStatsClickBridgeBound) return;
-    window.__ahStatsClickBridgeBound = true;
+  function ensureMobileSyncClickBridge(){
+    if (window.__ahMobileSyncClickBridgeBound) return;
+    window.__ahMobileSyncClickBridgeBound = true;
 
     document.addEventListener("click", function(e){
       const target = e && e.target;
@@ -2676,32 +2766,20 @@
 
       if (!el || typeof el.closest !== "function") return;
 
-      const syncBtn = el.closest('[data-action="generate-mobile-sync-code"]');
-      if (syncBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (_mobileSyncLoading) return;
-
-        syncBtn.textContent = "Generating…";
-        requestMobileLinkCode();
-        return;
-      }
-
-      const statBtn = el.closest(".ahs-plus[data-stat]");
-      if (!statBtn) return;
+      const btn = el.closest('[data-action="generate-mobile-sync-code"]');
+      if (!btn) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      const stat = String(statBtn.dataset.stat || "").trim().toLowerCase();
-      if (!stat || statBtn.disabled) return;
+      if (_mobileSyncLoading) return;
 
-      upgradeStat(stat);
+      btn.textContent = "Generating…";
+      requestMobileLinkCode();
     }, true);
   }
 
-  ensureStatsClickBridge();
+  ensureMobileSyncClickBridge();
 
   window.Stats = Stats;
 })();
