@@ -71,6 +71,10 @@
     image.src = masterMapAsset();
     image.alt = "";
     image.draggable = false;
+    image.addEventListener("error", () => {
+      const fallback = global.MapInteractionGeometry?.FALLBACK_ASSET;
+      if (fallback && image.getAttribute("src") !== fallback) image.src = fallback;
+    }, { once: false });
     canvas.append(image);
 
     if (!sectionId) {
