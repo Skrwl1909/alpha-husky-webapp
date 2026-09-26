@@ -534,7 +534,6 @@
 }
 
 .map-v2-activity{
-  appearance:none;
   display:grid;
   grid-template-columns:64px minmax(0,1fr);
   grid-template-rows:auto;
@@ -546,15 +545,23 @@
   color:inherit;
   text-align:left;
   cursor:pointer;
-  font:inherit;
   transition:transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .map-v2-activity::before{
-  content:none;
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:4;
+  box-sizing:border-box;
+  pointer-events:none;
   display:none;
-  border:0;
+  opacity:.82;
+  border:15px solid transparent;
   border-image-source:url("../images/map/v2/map_v2_activity_frame.webp");
+  border-image-slice:92 72 148;
+  border-image-width:15px;
+  border-image-repeat:stretch;
 }
 
 .map-v2-activity::after{
@@ -601,10 +608,8 @@
   align-items:center;
   justify-content:center;
   min-width:0;
-  min-height:72px;
   overflow:hidden;
-  border-right:1px solid rgba(161,203,224,.1);
-  border-bottom:0;
+  border-bottom:1px solid rgba(161,203,224,.1);
   background:
     radial-gradient(circle at 50% 72%, rgba(76,146,177,.2), transparent 58%),
     linear-gradient(180deg, rgba(16,28,38,.42), rgba(7,12,17,.72));
@@ -624,13 +629,13 @@
   position:relative;
   z-index:1;
   display:block;
-  width:48px;
-  height:48px;
-  padding:0;
+  width:min(94%, 168px);
+  height:100%;
+  padding:7px 5px 3px;
   box-sizing:border-box;
   object-fit:contain;
   object-position:50% 50%;
-  transform:none;
+  transform:translateY(2px) scale(1.04);
   filter:drop-shadow(0 9px 10px rgba(0,0,0,.5));
 }
 
@@ -944,6 +949,7 @@
   .world-exploration-v2-sector{ grid-template-columns:1fr; }
   .world-exploration-v2-open{ width:100%; }
   .map-v2-horizon-list{ grid-template-columns:1fr; }
+  .map-v2-activity::before{ opacity:.58; }
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -1216,50 +1222,496 @@
   .map-v2-dock-title{ font-size:22px; }
 }
 
-#mapV2Mount .map-v2-activity-list{
-  display:grid;
-  grid-template-columns:minmax(0,1fr);
-  gap:8px;
-}
-#mapV2Mount .map-v2-activity{
-  appearance:none;
-  display:grid;
-  grid-template-columns:64px minmax(0,1fr);
-  grid-template-rows:auto;
-  min-height:72px;
-  height:auto;
-  padding:0;
-  font:inherit;
-}
-#mapV2Mount .map-v2-activity::before{
-  content:none;
-  display:none;
-  border:0;
-  border-image-source:none;
-}
-#mapV2Mount .map-v2-activity-art{
-  min-height:72px;
-  border-right:1px solid rgba(161,203,224,.1);
-  border-bottom:0;
-}
-#mapV2Mount .map-v2-activity-image{
-  width:48px;
-  height:48px;
-  max-width:48px;
-  padding:0;
-  transform:none;
-}
-#mapV2Mount .map-v2-activity-copy{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-content:center;
-  gap:2px 8px;
-  padding:8px 12px 8px 6px;
-}
-#mapV2Mount .map-v2-dock{
-  position:relative;
-  bottom:auto;
-  display:flex;
-  flex-direction:column;
+
+/* =========================================================
+   Alpha Husky — Engagement Foundation V1
+   Spatial World -> Region -> Location presentation layer.
+   Production routes/state remain owned by MapSectionsV2.
+   ========================================================= */
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-view{
+  padding-bottom:calc(18px + env(safe-area-inset-bottom));
 }
 
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-intro{
+  min-height:auto;
+  margin-bottom:6px;
+  padding:12px 14px 8px;
+  border:0;
+  background:linear-gradient(180deg,rgba(2,7,11,.62),rgba(2,7,11,.08));
+  box-shadow:none;
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-intro::before{ display:none; }
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-title{ font-size:clamp(22px,6vw,30px); }
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-copy{
+  max-width:30rem;
+  color:rgba(196,215,227,.62);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-objective{
+  margin:0 12px 9px;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-list{
+  position:relative;
+  display:block;
+  width:calc(100% - 16px);
+  min-height:clamp(470px,65dvh,650px);
+  margin:0 8px;
+  overflow:hidden;
+  border:1px solid rgba(157,205,229,.13);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(92,164,194,.11),transparent 34%),
+    linear-gradient(180deg,rgba(3,8,12,.08),rgba(3,8,12,.66)),
+    url("../images/map/v2/map_v2_world_bg.webp") 50% 48% / cover no-repeat,
+    url("../images/map/v2/hybrid_world.webp") 50% 48% / cover no-repeat,
+    linear-gradient(165deg,#0a151d,#03070b 74%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.025),
+    inset 0 -90px 100px rgba(0,0,0,.34),
+    0 18px 40px rgba(0,0,0,.28);
+  isolation:isolate;
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-list::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.54;
+  background:
+    radial-gradient(circle at 34% 24%,rgba(112,211,237,.16),transparent 20%),
+    radial-gradient(circle at 72% 28%,rgba(156,140,209,.12),transparent 23%),
+    radial-gradient(circle at 33% 74%,rgba(200,151,111,.12),transparent 24%),
+    linear-gradient(105deg,transparent 0 47%,rgba(130,183,205,.05) 48% 49%,transparent 50%),
+    linear-gradient(20deg,transparent 0 56%,rgba(130,183,205,.035) 57% 58%,transparent 59%);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-list::after{
+  content:"NETWORK TERRITORIES";
+  position:absolute;
+  left:14px;
+  bottom:11px;
+  z-index:8;
+  pointer-events:none;
+  color:rgba(165,205,223,.4);
+  font:850 8px/1 system-ui,sans-serif;
+  letter-spacing:.2em;
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card{
+  position:absolute;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  min-height:0;
+  padding:14px 14px 16px;
+  overflow:hidden;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  clip-path:polygon(8% 5%,88% 0,100% 20%,93% 78%,76% 96%,20% 92%,0 70%,4% 24%);
+  transition:filter 180ms ease,transform 220ms cubic-bezier(.2,.8,.2,1),opacity 180ms ease;
+  -webkit-tap-highlight-color:transparent;
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card::before{
+  inset:0;
+  opacity:.78;
+  background-image:
+    linear-gradient(180deg,rgba(3,8,12,.12),rgba(3,8,12,.08) 36%,rgba(3,8,12,.86) 83%,rgba(3,8,12,.97)),
+    radial-gradient(circle at 50% 48%,transparent 0 42%,rgba(2,6,9,.42) 86%),
+    var(--map-v2-section-art);
+  background-size:cover,cover,cover;
+  filter:saturate(.78) contrast(1.03);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card::after{
+  inset:0;
+  width:auto;
+  height:auto;
+  border:1px solid color-mix(in srgb,var(--section-accent) 22%,transparent);
+  opacity:.7;
+  clip-path:inherit;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--section-accent) 8%,transparent),transparent 46%);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-region="citadel"]{
+  left:3%; top:4%; width:51%; height:44%;
+  clip-path:polygon(7% 10%,74% 0,97% 13%,100% 72%,80% 95%,17% 90%,0 63%);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-region="blackglass_reach"]{
+  right:2%; top:11%; width:48%; height:39%;
+  clip-path:polygon(18% 0,88% 8%,100% 31%,88% 91%,28% 96%,0 69%,6% 17%);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-region="iron_march"]{
+  left:4%; bottom:5%; width:55%; height:48%;
+  clip-path:polygon(2% 19%,24% 2%,83% 7%,100% 42%,87% 96%,24% 100%,0 76%);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-region="locked_horizons"]{
+  right:3%; bottom:8%; width:43%; height:43%;
+  clip-path:polygon(18% 4%,79% 0,100% 31%,91% 86%,66% 100%,9% 89%,0 47%);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card > *{ z-index:3; }
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-order{
+  position:static;
+  align-self:flex-start;
+  margin:0 0 4px;
+  padding:3px 6px;
+  background:rgba(2,7,10,.62);
+  box-shadow:inset 2px 0 var(--section-accent);
+  backdrop-filter:blur(6px);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-name{
+  max-width:86%;
+  font-size:clamp(15px,4.7vw,21px);
+  line-height:1;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-summary{ display:none; }
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-meta{
+  margin:5px 0 0;
+  padding:0;
+  font-size:8px;
+  color:rgba(214,229,237,.58);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-region-pulse{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  align-self:flex-start;
+  margin-top:6px;
+  color:color-mix(in srgb,var(--section-accent) 80%,#fff);
+  font:900 7px/1 system-ui,sans-serif;
+  letter-spacing:.15em;
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-region-pulse::before{
+  content:"";
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 10px currentColor;
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-objective-chip{
+  top:10px;
+  right:10px;
+  border-radius:999px;
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-objective="true"]{
+  border:0;
+  box-shadow:none;
+  filter:saturate(1.08) brightness(1.08);
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card[data-map-v2-locked="true"]{
+  filter:saturate(.46) brightness(.74);
+}
+
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-action{
+  position:absolute;
+  inset:0;
+  z-index:7;
+  width:100%;
+  height:100%;
+  min-height:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:transparent;
+  font-size:0;
+  cursor:pointer;
+  clip-path:inherit;
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card:has(.map-v2-section-action:active){
+  transform:scale(1.025);
+  filter:brightness(1.11) saturate(1.05);
+  box-shadow:none;
+}
+#mapV2Mount[data-map-v2-surface="world"] .map-v2-section-action:focus-visible{
+  outline:2px solid color-mix(in srgb,var(--section-accent) 75%,#fff);
+  outline-offset:-7px;
+}
+
+/* Region entry feels like moving into a place, while keeping the real route model intact. */
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-view{
+  animation:mapV2RegionEnter 260ms cubic-bezier(.2,.82,.2,1) both;
+}
+@keyframes mapV2RegionEnter{
+  from{ opacity:.15; transform:scale(1.035) translateY(7px); filter:blur(2px); }
+  to{ opacity:1; transform:scale(1) translateY(0); filter:blur(0); }
+}
+
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-detail-head{
+  min-height:122px;
+  padding:12px 14px 15px;
+  border-radius:18px;
+  overflow:hidden;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-back{
+  position:relative;
+  z-index:4;
+  min-height:36px;
+  margin-bottom:10px;
+  border-radius:999px;
+  background:rgba(3,9,13,.7);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-list{
+  position:relative;
+  display:block;
+  min-height:clamp(420px,57dvh,610px);
+  margin-top:10px;
+  overflow:hidden;
+  border:1px solid rgba(156,205,228,.12);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 50% 44%,rgba(105,190,222,.08),transparent 35%),
+    linear-gradient(180deg,rgba(3,8,12,.08),rgba(3,8,12,.68));
+  box-shadow:inset 0 -60px 90px rgba(0,0,0,.26);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-list-kicker{
+  position:absolute;
+  top:11px;
+  left:13px;
+  z-index:8;
+  margin:0;
+  padding:5px 7px;
+  border-left:2px solid var(--map-v2-cyan);
+  background:rgba(3,9,13,.68);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity{
+  position:absolute;
+  z-index:4;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:94px;
+  min-height:94px;
+  padding:0;
+  overflow:visible;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  transform:translate(-50%,-50%);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity::after{
+  left:50%;
+  top:50%;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(111,201,233,.18),rgba(111,201,233,.04) 52%,transparent 70%);
+  box-shadow:0 0 0 1px rgba(111,201,233,.18),0 0 22px rgba(75,171,210,.14);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-runtime-tone="alert"]::after{
+  background:radial-gradient(circle,rgba(231,165,109,.22),rgba(231,165,109,.05) 52%,transparent 70%);
+  box-shadow:0 0 0 1px rgba(231,165,109,.3),0 0 24px rgba(231,165,109,.15);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity.is-selected::after{
+  box-shadow:0 0 0 2px rgba(215,162,74,.55),0 0 32px rgba(215,162,74,.25);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-art{
+  position:relative;
+  z-index:5;
+  width:54px;
+  min-height:54px;
+  height:54px;
+  border:1px solid rgba(155,210,233,.2);
+  border-radius:50%;
+  overflow:hidden;
+  background:linear-gradient(180deg,rgba(13,28,38,.88),rgba(4,10,15,.92));
+  box-shadow:0 9px 22px rgba(0,0,0,.4),inset 0 1px rgba(255,255,255,.05);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-image{
+  width:48px;
+  height:48px;
+  padding:4px;
+  object-fit:contain;
+  transform:none;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-copy{
+  position:relative;
+  z-index:6;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:104px;
+  margin-top:5px;
+  padding:4px 5px;
+  border-radius:8px;
+  background:rgba(3,9,13,.72);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  pointer-events:none;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-name{
+  max-width:100%;
+  display:block;
+  overflow:hidden;
+  color:#eef7fb;
+  font-size:9px;
+  font-weight:850;
+  line-height:1.15;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-kind,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-runtime-detail{ display:none; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-access-chip{
+  min-width:0;
+  margin-top:3px;
+  padding:2px 4px;
+  border-radius:999px;
+  font-size:6px;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-status{
+  max-width:96px;
+  margin-top:2px;
+  overflow:hidden;
+  font-size:6px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* Deterministic physical POI placement. Same production nodes, spatial presentation. */
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="0"]{ left:22%; top:27%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="1"]{ left:58%; top:22%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="2"]{ left:78%; top:43%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="3"]{ left:45%; top:49%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="4"]{ left:19%; top:64%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="5"]{ left:64%; top:70%; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity[data-map-v2-poi-index="6"]{ left:38%; top:82%; }
+
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity:active{
+  transform:translate(-50%,-50%) scale(.95);
+  box-shadow:none;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity:focus-visible{
+  outline:2px solid rgba(144,220,247,.82);
+  outline-offset:5px;
+  border-radius:50%;
+}
+
+/* Selecting a location opens a compact detail plate without erasing the region. */
+.map-v2-detail:has(.map-v2-dock) .map-v2-activity-list{
+  display:block !important;
+  min-height:clamp(360px,50dvh,520px);
+  filter:brightness(.72) saturate(.72);
+  transition:filter 180ms ease;
+}
+.map-v2-detail:has(.map-v2-dock) .map-v2-surface-slots{ display:none !important; }
+.map-v2-detail:has(.map-v2-dock) .map-v2-detail-head{
+  min-height:82px;
+  padding:10px 12px 8px;
+}
+.map-v2-detail:has(.map-v2-dock) .map-v2-detail-head .map-v2-copy{ display:none; }
+.map-v2-detail:has(.map-v2-dock) .map-v2-objective{ display:none; }
+
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock{
+  position:sticky;
+  z-index:20;
+  bottom:calc(6px + env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr) auto;
+  gap:4px 10px;
+  align-items:center;
+  margin:-132px 8px 8px;
+  padding:10px;
+  overflow:hidden;
+  border:1px solid rgba(142,213,240,.28);
+  border-radius:16px;
+  background:linear-gradient(155deg,rgba(7,16,23,.97),rgba(3,9,14,.99));
+  box-shadow:0 18px 50px rgba(0,0,0,.62),inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock::before{
+  right:0;
+  background:linear-gradient(90deg,var(--map-v2-cyan),transparent 68%);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-hero{
+  grid-column:1;
+  grid-row:1 / span 5;
+  width:64px;
+  min-height:64px;
+  height:64px;
+  border:1px solid rgba(145,210,236,.16);
+  border-radius:12px;
+  background:rgba(10,23,32,.9);
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-hero-image{
+  width:60px;
+  height:60px;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-kicker,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-title,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-desc,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-status,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-runtime-detail,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-facts,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-primary-action{
+  margin-left:0;
+  margin-right:0;
+}
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-kicker{ grid-column:2; margin:0; font-size:7px; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-title{ grid-column:2; margin:0; font-size:14px; text-transform:uppercase; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-desc{ grid-column:2; margin:0; font-size:9px; -webkit-line-clamp:2; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-status{ grid-column:2; margin:0; font-size:7px; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-runtime-detail,
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-facts{ display:none; }
+#mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-primary-action{
+  grid-column:3;
+  grid-row:1 / span 5;
+  width:auto;
+  min-width:86px;
+  min-height:46px;
+  margin:0;
+  padding:0 11px;
+  border-radius:12px;
+  font-size:9px;
+  letter-spacing:.08em;
+}
+
+@media (max-width:390px){
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-list{ min-height:500px; }
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card{ padding:12px 10px 14px; }
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-meta{ max-width:90%; white-space:normal; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-list{ min-height:455px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock{ grid-template-columns:52px minmax(0,1fr) auto; margin-top:-124px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-hero{ width:52px; height:52px; min-height:52px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-hero-image{ width:48px; height:48px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-primary-action{ min-width:78px; padding:0 8px; }
+}
+
+@media (max-width:360px){
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-list{ min-height:470px; }
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-name{ font-size:14px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity{ width:82px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-copy{ width:88px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-activity-name{ font-size:8px; }
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-dock-desc{ display:none; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  #mapV2Mount:not([data-map-v2-surface="world"]) .map-v2-view{ animation:none; }
+  #mapV2Mount[data-map-v2-surface="world"] .map-v2-section-card{ transition:none; }
+}
