@@ -55,6 +55,7 @@
     const camera = sectionId ? interactionRegion(sectionId)?.camera : null;
     const transform = cameraTransform(camera);
     canvas.style.setProperty("--map-v2-camera-scale", String(transform.scale));
+    canvas.style.setProperty("--map-v2-camera-inverse", String(1 / transform.scale));
     canvas.style.setProperty("--map-v2-camera-tx", `${transform.tx}%`);
     canvas.style.setProperty("--map-v2-camera-ty", `${transform.ty}%`);
     canvas.dataset.mapV2Camera = sectionId || "world";
@@ -87,6 +88,7 @@
         hit.setAttribute("points", region.polygon);
         hit.setAttribute("class", "map-v2-region-hit");
         hit.setAttribute("data-region", currentSection.sectionId);
+        hit.setAttribute("data-map-v2-objective", objectiveSectionId === currentSection.sectionId ? "true" : "false");
         hit.setAttribute("tabindex", "-1");
         hit.addEventListener("click", () => renderSection(currentSection.sectionId));
         svg.append(hit);
