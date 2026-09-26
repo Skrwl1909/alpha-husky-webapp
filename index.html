@@ -6818,58 +6818,120 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 
 
 
-<!-- ✅ Hub Sheet -->
-<div id="hubBack" class="ah-back" style="display:none">
-  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Hub">
+<!-- ✅ Hub Sheet — Premium Command Deck V1 -->
+<div id="hubBack" class="ah-back ah-hub-premium" style="display:none">
+  <div class="ah-panel ah-hub-command-panel" role="dialog" aria-modal="true" aria-label="Hub command center">
     <div class="ah-panel-hd">
-      <div class="ah-title">Hub</div>
-      <button class="ah-x" data-close="hubBack" aria-label="Close" type="button">✕</button>
-    </div>
-    <div class="ah-panel-scroll">
-    <div id="hubStoryRoot"></div>
-    <div id="hubGoalRoot"></div>
-    <div id="hubLivingWorldRoot"></div>
-    <div class="ah-grid">
-      <button class="ah-tile" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Shop</b></button>
-      <!-- ✅ NEW: Support -->
-      <button class="ah-tile" data-action="support" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Support</b></button>
-      <button class="ah-tile" data-action="faq" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>FAQ</b></button>
-      <button class="ah-tile" data-action="adopt" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Adopt</b></button>
-      <button class="ah-tile" data-action="arena" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Arena</b></button>
-      <button class="ah-tile" data-action="referrals" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Referrals</b></button>
-      <button class="ah-tile" data-action="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Howlboard</b></button>
-      <button class="ah-tile" data-action="profile" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Profile</b></button>
-      <button class="ah-tile" data-action="mailbox" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Mailbox</b></button>
-      <button class="ah-tile" data-action="whatsnew" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>What’s New</b></button>
-      <button class="ah-tile" data-action="campaign" data-campaign-tile type="button">
-        <span class="ah-tile-ico">📡</span>
-        <span class="ah-tile-copy">
-          <b>Campaign</b>
-          <span class="ah-tile-status" data-campaign-status hidden></span>
-        </span>
-        <span class="ah-badge ah-tile-badge" data-campaign-badge hidden></span>
-      </button>
-      <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Add to Home</b></button>
-      <button class="ah-tile" data-action="share" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Share</b></button>
-    </div>
-    <div style="padding:0 14px 8px;opacity:.68;font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Quick Access</div>
-    <div id="alphaDiscoveryGuide" hidden style="padding:0 14px 8px"></div>
-    <div id="alphaCoreSystemDiscovery" hidden style="padding:0 14px 8px"></div>
-    <div class="ah-actions" id="ahStartAppLinks">
-      <div style="display:flex;gap:8px;">
-        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="map" data-start-link-action="open">Open War Map</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="map" data-start-link-action="copy" aria-label="Copy War Map link">⧉</button>
+      <div class="ah-hub-head-copy">
+        <div class="ah-title">Hub</div>
+        <div class="ah-hub-head-sub">Pack Command // Live Signal</div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="bloodmoon" data-start-link-action="open">Enter Blood-Moon</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="bloodmoon" data-start-link-action="copy" aria-label="Copy Blood-Moon link">⧉</button>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="ah-action" type="button" style="flex:1;" data-start-link-route="support" data-start-link-action="open">Support Alpha</button>
-        <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">⧉</button>
-      </div>
+      <button class="ah-x" data-close="hubBack" aria-label="Close Hub" type="button">✕</button>
     </div>
+
+    <div class="ah-panel-scroll ah-hub-command-body">
+      <section class="ah-hub-deck-zone" aria-label="Command deck">
+        <div id="ahHubDeck" class="ah-command-deck" tabindex="0" aria-label="Swipe between Hub command cards">
+          <article class="ah-command-slide" data-hub-slide="next" aria-label="Next Move" aria-hidden="false">
+            <div class="ahp-command-card ahp-card-next">
+              <div id="hubStoryRoot"></div>
+              <div id="hubGoalRoot"></div>
+            </div>
+          </article>
+
+          <article class="ah-command-slide" data-hub-slide="signal" aria-label="Signal Path" aria-hidden="true">
+            <div class="ahp-command-card ahp-card-signal">
+              <div id="hubSignalRoot"></div>
+            </div>
+          </article>
+
+          <article class="ah-command-slide" data-hub-slide="world" aria-label="World Pulse" aria-hidden="true">
+            <div class="ahp-command-card ahp-card-world">
+              <div id="hubLivingWorldRoot"></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="ah-hub-deck-dots" role="tablist" aria-label="Hub command cards">
+          <button class="ah-hub-deck-dot" data-hub-deck-dot="0" aria-label="Next Move" aria-selected="true" type="button"></button>
+          <button class="ah-hub-deck-dot" data-hub-deck-dot="1" aria-label="Signal Path" aria-selected="false" tabindex="-1" type="button"></button>
+          <button class="ah-hub-deck-dot" data-hub-deck-dot="2" aria-label="World Pulse" aria-selected="false" tabindex="-1" type="button"></button>
+        </div>
+      </section>
+
+      <section class="ah-hub-quick-zone" aria-label="Quick access">
+        <div class="ah-hub-quick-label">Quick Access</div>
+        <div class="ah-hub-quick-grid">
+          <button class="ah-hub-quick" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Shop</span></button>
+          <button class="ah-hub-quick" data-action="adopt" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Companions</span></button>
+          <button class="ah-hub-quick" data-action="arena" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Arena</span></button>
+          <button class="ah-hub-quick" data-action="support" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Support</span></button>
+        </div>
+      </section>
+
+      <button class="ah-hub-all-systems" data-hub-open-systems type="button" aria-expanded="false" aria-controls="hubSystemsDrawer">All Systems</button>
     </div>
+
+    <aside id="hubSystemsDrawer" class="ah-hub-systems-drawer" data-open="0" aria-hidden="true" aria-label="All Hub systems">
+      <div class="ah-hub-systems-head">
+        <div>
+          <div class="ah-hub-systems-title">All Systems</div>
+          <div class="ah-hub-systems-sub">Choose a destination</div>
+        </div>
+        <button class="ah-hub-systems-close" data-hub-close-systems type="button" aria-label="Close All Systems">✕</button>
+      </div>
+
+      <div class="ah-hub-systems-scroll">
+        <section class="ah-system-section" aria-label="Identity and Pack">
+          <div class="ah-system-section-title">Identity &amp; Pack</div>
+          <div class="ah-system-grid">
+            <button class="ah-tile" data-action="profile" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Field Record</b></button>
+            <button class="ah-tile" data-action="mailbox" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Mailbox</b></button>
+            <button class="ah-tile" data-action="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Howlboard</b></button>
+            <button class="ah-tile" data-action="referrals" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Referrals</b></button>
+          </div>
+        </section>
+
+        <section class="ah-system-section" aria-label="Intel and Community">
+          <div class="ah-system-section-title">Intel &amp; Community</div>
+          <div class="ah-system-grid">
+            <button class="ah-tile" data-action="campaign" data-campaign-tile type="button">
+              <span class="ah-tile-ico" aria-hidden="true">📡</span>
+              <span class="ah-tile-copy"><b>Campaign</b><span class="ah-tile-status" data-campaign-status hidden></span></span>
+              <span class="ah-badge ah-tile-badge" data-campaign-badge hidden></span>
+            </button>
+            <button class="ah-tile" data-action="whatsnew" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>What’s New</b></button>
+            <button class="ah-tile" data-action="faq" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>FAQ</b></button>
+            <button class="ah-tile" data-action="share" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Share Alpha</b></button>
+            <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Add to Home</b></button>
+          </div>
+        </section>
+
+        <section class="ah-system-section" aria-label="Explore Alpha">
+          <div class="ah-system-section-title">Explore Alpha</div>
+          <div id="alphaDiscoveryGuide" hidden style="padding:0 0 8px"></div>
+          <div id="alphaCoreSystemDiscovery" hidden style="padding:0 0 8px"></div>
+        </section>
+
+        <section class="ah-system-section" aria-label="Quick links">
+          <div class="ah-system-section-title">Signal Links</div>
+          <div class="ah-actions ah-hub-signal-links" id="ahStartAppLinks">
+            <div style="display:flex;gap:8px;">
+              <button class="ah-action" type="button" style="flex:1;" data-start-link-route="map" data-start-link-action="open">Open War Map</button>
+              <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="map" data-start-link-action="copy" aria-label="Copy War Map link">⧉</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="ah-action" type="button" style="flex:1;" data-start-link-route="bloodmoon" data-start-link-action="open">Enter Blood-Moon</button>
+              <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="bloodmoon" data-start-link-action="copy" aria-label="Copy Blood-Moon link">⧉</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="ah-action" type="button" style="flex:1;" data-start-link-route="support" data-start-link-action="open">Support Alpha</button>
+              <button class="ah-action" type="button" style="width:46px;min-width:46px;padding:0;" data-start-link-route="support" data-start-link-action="copy" aria-label="Copy Support link">⧉</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -8024,8 +8086,17 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.13-adoption-center-v2-20260926";
+    window.WEBAPP_VER = "tops-2.7.14-hub-premium-command-deck-v1-20260926";
     window.__PET_CLOUD_VER__ = "v1767699377";
+  </script>
+  <script>
+  (function (ver) {
+    var q = encodeURIComponent(String(ver || "dev"));
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/css/hub_premium.css?v=" + q;
+    document.head.appendChild(link);
+  })(window.WEBAPP_VER);
   </script>
   <script>
   (function (ver) {
@@ -13140,7 +13211,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function loadStats(){
   const tg = window.Telegram?.WebApp || null;
 
-  const v = "stats-sync-click-bridge-20260911";
+  const v = window.WEBAPP_VER || "dev";
   const s = document.createElement("script");
   s.src = "/js/stats.js?v=" + encodeURIComponent(v);
 
@@ -13362,7 +13433,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
   
 <script>document.write('<script src="/js/living_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script src="/js/home_nav.js?v=hub-icons-v1-story-delivery-p1"></script>
+<script>document.write('<script src="/js/hub_premium.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/home_nav.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/discovery_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/scout_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/first_session_spine.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
