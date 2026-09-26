@@ -6859,13 +6859,13 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </div>
       </section>
 
-      <section class="ah-hub-quick-zone" aria-label="Quick access">
-        <div class="ah-hub-quick-label">Quick Access</div>
+      <section class="ah-hub-quick-zone ah-hub-active-routes" aria-label="Active routes">
+        <div class="ah-hub-quick-label">Active Routes <span>play now</span></div>
         <div class="ah-hub-quick-grid">
-          <button class="ah-hub-quick" data-action="shop" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Shop</span></button>
-          <button class="ah-hub-quick" data-action="adopt" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Companions</span></button>
-          <button class="ah-hub-quick" data-action="arena" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Arena</span></button>
-          <button class="ah-hub-quick" data-action="support" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Support</span></button>
+          <button class="ah-hub-quick" data-action="tactical_ops" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Tactical Ops</span></button>
+          <button class="ah-hub-quick" data-action="moonlab" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">MoonLab</span></button>
+          <button class="ah-hub-quick" data-action="forge" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Forge</span></button>
+          <button class="ah-hub-quick" data-action="howlboard" data-hub-icon="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Howlboard</span></button>
         </div>
       </section>
 
@@ -6902,6 +6902,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
             </button>
             <button class="ah-tile" data-action="whatsnew" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>What’s New</b></button>
             <button class="ah-tile" data-action="faq" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>FAQ</b></button>
+            <button class="ah-tile" data-action="support" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Support</b></button>
             <button class="ah-tile" data-action="share" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Share Alpha</b></button>
             <button class="ah-tile" id="ahAddToHomeTile" data-action="add_to_home" type="button" hidden><span class="ah-hub-tile-icon" aria-hidden="true"></span><b>Add to Home</b></button>
           </div>
@@ -7261,15 +7262,19 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       </div>
     </div>
 
-    <!-- Howlboard modal -->
-<div class="sheet-back" id="boardBack" style="display:none">
-  <div class="sheet-card" style="width:min(92vw,720px);max-height:86vh;overflow:auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-      <div style="font-weight:700;">Howlboard</div>
-      <button class="btn" id="closeBoard" type="button">×</button>
-    </div>
+    <!-- Howlboard modal — Pack Standing V2 -->
+<div class="sheet-back howlboard-back" id="boardBack" style="display:none" role="dialog" aria-modal="true" aria-label="Howlboard Pack Standing">
+  <div class="sheet-card howlboard-card">
+    <header class="howlboard-head">
+      <div class="howlboard-head-copy">
+        <div class="howlboard-kicker">PACK STANDING // LIVE</div>
+        <div class="howlboard-title">Howlboard</div>
+        <div class="howlboard-sub">Your position, your nearest rival, the gap between you.</div>
+      </div>
+      <button class="btn howlboard-close" id="closeBoard" type="button" aria-label="Close Howlboard">×</button>
+    </header>
 
-    <div class="tabs" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+    <div class="tabs howlboard-tabs" role="tablist" aria-label="Howlboard ranking category">
       <button class="tab" data-sort="signal_power" type="button">Signal Power</button>
       <button class="tab" data-sort="level" type="button">Level</button>
       <button class="tab" data-sort="xp" type="button">XP</button>
@@ -7277,9 +7282,10 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button class="tab" data-sort="badges" type="button">Badges</button>
     </div>
 
-    <div id="boardViewer" style="margin-top:12px;"></div>
-    <div id="boardStatus" style="opacity:.8;margin-top:10px;line-height:1.4;">Signal Power ranks the pack by default.</div>
-    <div id="boardRows" style="margin-top:12px;display:grid;gap:8px;"></div>
+    <div id="boardViewer" class="howlboard-viewer" aria-live="polite"></div>
+    <div id="boardStatus" class="howlboard-status">Signal Power ranks the pack by default.</div>
+    <div class="howlboard-list-head"><span>Pack Standing</span><span>Live ranking</span></div>
+    <div id="boardRows" class="howlboard-rows"></div>
   </div>
 </div>
     <!-- ✅ Support Sheet -->
@@ -8086,7 +8092,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.14-hub-premium-command-deck-v1-20260926";
+    window.WEBAPP_VER = "tops-2.7.15-engagement-foundation-v1-20260926";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -8095,6 +8101,15 @@ body.bc-open #ahCommunityBtn{
     var link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "/css/hub_premium.css?v=" + q;
+    document.head.appendChild(link);
+  })(window.WEBAPP_VER);
+  </script>
+  <script>
+  (function (ver) {
+    var q = encodeURIComponent(String(ver || "dev"));
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "css/engagement_foundation.css?v=" + q;
     document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>
@@ -12369,7 +12384,7 @@ mapRoot?.addEventListener("click", (e) => {
   console.log("coords:", x, y);
 });
 
-/* === Howlboard === */
+/* === Howlboard — Pack Standing V2 === */
 const boardBack = document.getElementById("boardBack");
 const closeBoard = document.getElementById("closeBoard");
 const boardViewer = document.getElementById("boardViewer");
@@ -12378,6 +12393,7 @@ const boardRows = document.getElementById("boardRows");
 
 let boardSort = "signal_power";
 let boardLoadSeq = 0;
+let boardLastState = null;
 const BOARD_SORT_LABELS = {
   signal_power: "Signal Power",
   level: "Level",
@@ -12409,6 +12425,11 @@ function formatBoardNumber(value) {
   return num.toLocaleString("en-US");
 }
 
+function boardNumeric(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
 function setBoardStatus(text) {
   if (boardStatus) boardStatus.textContent = text || "";
 }
@@ -12416,7 +12437,9 @@ function setBoardStatus(text) {
 function setBoardTabs(sort) {
   boardSort = normalizeBoardSort(sort);
   $$("#boardBack .tab[data-sort]").forEach((btn) => {
-    btn.classList.toggle("active", normalizeBoardSort(btn.getAttribute("data-sort")) === boardSort);
+    const active = normalizeBoardSort(btn.getAttribute("data-sort")) === boardSort;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
   });
 }
 
@@ -12431,81 +12454,126 @@ function syncBoardTabs(sortOptions) {
   });
 }
 
-function renderBoardViewer(viewer) {
+function boardSelectedValue(row, sort) {
+  const key = normalizeBoardSort(sort);
+  const direct = boardNumeric(row?.selectedStatValue);
+  if (direct != null) return direct;
+  if (key === "signal_power") return boardNumeric(row?.signalPower ?? row?.signal_power) ?? 0;
+  if (key === "level") return boardNumeric(row?.level) ?? 0;
+  if (key === "xp") return boardNumeric(row?.xp) ?? 0;
+  if (key === "bones") return boardNumeric(row?.bones) ?? 0;
+  if (key === "badges") return boardNumeric(row?.badges ?? row?.badgeCount ?? row?.badge_count) ?? 0;
+  return 0;
+}
+
+function boardFindRivals(viewer, rows, sort) {
+  const rank = Math.trunc(Number(viewer?.rank || 0));
+  const list = Array.isArray(rows) ? rows : [];
+  if (rank <= 0) return { ahead: null, behind: null, viewerValue: boardSelectedValue(viewer, sort) };
+  return {
+    ahead: list.find((row) => Math.trunc(Number(row?.rank || 0)) === rank - 1) || null,
+    behind: list.find((row) => Math.trunc(Number(row?.rank || 0)) === rank + 1) || null,
+    viewerValue: boardSelectedValue(viewer, sort),
+  };
+}
+
+function boardGapCopy(rival, viewerValue, sort, direction) {
+  if (!rival) return direction === "ahead" ? "No rival directly ahead in this board slice." : "No rival directly behind in this board slice.";
+  const rivalValue = boardSelectedValue(rival, sort);
+  const gap = Math.abs(rivalValue - Number(viewerValue || 0));
+  const label = BOARD_SORT_LABELS[normalizeBoardSort(sort)] || "Score";
+  if (!Number.isFinite(gap)) return label;
+  if (gap === 0) return `Tied on ${label}`;
+  return `${formatBoardNumber(gap)} ${label} ${direction === "ahead" ? "ahead" : "behind"}`;
+}
+
+function renderBoardViewer(viewer, rows = [], sort = boardSort) {
   if (!boardViewer) return;
   if (!viewer) {
     boardViewer.innerHTML = `
-      <div style="padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:linear-gradient(180deg,rgba(18,26,44,.94),rgba(8,12,20,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
-        <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;">Your Pack Rank</div>
-        <div style="margin-top:6px;font-weight:700;">Ranking data will appear here once the board loads.</div>
-      </div>
-    `;
+      <section class="hb-player-card is-loading" aria-label="Your Pack Rank">
+        <div class="hb-player-main">
+          <div class="hb-eyebrow">YOUR POSITION</div>
+          <div class="hb-loading-line -rank"></div>
+          <div class="hb-loading-line"></div>
+        </div>
+        <div class="hb-player-stat"><span>SYNCING</span><b>—</b></div>
+      </section>
+      <div class="hb-rival-grid">
+        <div class="hb-rival-card"><span>NEXT RIVAL</span><b>Reading board…</b><small>Confirmed ranking only</small></div>
+        <div class="hb-rival-card"><span>PACK PRESSURE</span><b>Syncing</b><small>No movement is inferred.</small></div>
+      </div>`;
     return;
   }
 
-  const title = boardEscape(viewer?.title || "Your Pack Rank");
+  const safeSort = normalizeBoardSort(sort || viewer?.selectedStatKey);
+  const statLabel = boardEscape(viewer?.selectedStatLabel || BOARD_SORT_LABELS[safeSort] || "Signal Power");
   const name = boardEscape(viewer?.displayName || "Unknown Wolf");
-  const rank = Number(viewer?.rank || 0) > 0 ? `#${formatBoardNumber(viewer.rank)}` : "Unranked";
+  const rankNum = Math.trunc(Number(viewer?.rank || 0));
+  const rank = rankNum > 0 ? `#${formatBoardNumber(rankNum)}` : "UNRANKED";
+  const statValue = boardSelectedValue(viewer, safeSort);
   const signal = formatBoardNumber(viewer?.signalPower || 0);
   const level = formatBoardNumber(viewer?.level || 0);
-  const statLabel = boardEscape(viewer?.selectedStatLabel || BOARD_SORT_LABELS[normalizeBoardSort(viewer?.selectedStatKey)] || "Signal Power");
-  const statValue = formatBoardNumber(viewer?.selectedStatValue || 0);
+  const rivals = boardFindRivals(viewer, rows, safeSort);
+  const ahead = rivals.ahead;
+  const behind = rivals.behind;
+  const aheadName = ahead ? boardEscape(ahead?.displayName || `Rank #${ahead?.rank}`) : (rankNum === 1 ? "PACK LEAD" : "Not in current slice");
+  const behindName = behind ? boardEscape(behind?.displayName || `Rank #${behind?.rank}`) : "Not in current slice";
+  const aheadGap = rankNum === 1 ? "You hold the top confirmed position." : boardGapCopy(ahead, rivals.viewerValue, safeSort, "ahead");
+  const behindGap = boardGapCopy(behind, rivals.viewerValue, safeSort, "behind");
 
   boardViewer.innerHTML = `
-    <div style="padding:12px 14px;border:1px solid rgba(102,224,255,.22);border-radius:14px;background:linear-gradient(180deg,rgba(18,30,50,.96),rgba(8,12,20,.98));box-shadow:0 14px 28px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.05);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-        <div style="min-width:0;">
-          <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;">${title}</div>
-          <div style="margin-top:6px;font-weight:800;font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${rank} ${name}</div>
-          <div style="margin-top:6px;font-size:12px;opacity:.8;">Signal Power ${signal} · Level ${level}</div>
-        </div>
-        <div style="text-align:right;flex:0 0 auto;">
-          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.68;">${statLabel}</div>
-          <div style="margin-top:6px;font-weight:800;font-size:18px;">${statValue}</div>
-        </div>
+    <section class="hb-player-card" aria-label="Your Pack Rank">
+      <div class="hb-player-main">
+        <div class="hb-eyebrow">YOUR POSITION</div>
+        <div class="hb-rank-line"><strong>${rank}</strong><span>${name}</span></div>
+        <div class="hb-player-meta">Signal ${signal}<i></i>Level ${level}</div>
       </div>
-    </div>
-  `;
+      <div class="hb-player-stat"><span>${statLabel}</span><b>${formatBoardNumber(statValue)}</b></div>
+    </section>
+    <div class="hb-rival-grid">
+      <article class="hb-rival-card is-ahead">
+        <span>${rankNum === 1 ? "PACK LEAD" : "NEXT RIVAL"}</span>
+        <b>${aheadName}</b>
+        <small>${boardEscape(aheadGap)}</small>
+      </article>
+      <article class="hb-rival-card is-behind">
+        <span>PRESSURE BEHIND</span>
+        <b>${behindName}</b>
+        <small>${boardEscape(behindGap)}</small>
+      </article>
+    </div>`;
 }
 
-function renderBoardRows(rows, sort) {
+function renderBoardRows(rows, sort, viewer) {
   if (!boardRows) return;
   const list = Array.isArray(rows) ? rows : [];
   if (!list.length) {
-    boardRows.innerHTML = `
-      <div style="padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03);opacity:.82;line-height:1.45;">
-        No pack ranking entries are available yet.
-      </div>
-    `;
+    boardRows.innerHTML = `<div class="hb-empty">No pack ranking entries are available yet.</div>`;
     return;
   }
 
+  const viewerRank = Math.trunc(Number(viewer?.rank || 0));
+  const viewerName = String(viewer?.displayName || "").trim().toLowerCase();
   boardRows.innerHTML = list.map((row, index) => {
-    const rank = Number(row?.rank || index + 1);
-    const name = boardEscape(row?.displayName || `Player ${index + 1}`);
+    const rank = Math.trunc(Number(row?.rank || index + 1));
+    const nameRaw = String(row?.displayName || `Player ${index + 1}`);
+    const name = boardEscape(nameRaw);
     const signal = formatBoardNumber(row?.signalPower || 0);
     const level = formatBoardNumber(row?.level || 0);
     const statLabel = boardEscape(row?.selectedStatLabel || BOARD_SORT_LABELS[normalizeBoardSort(sort)] || "Signal Power");
-    const statValue = formatBoardNumber(row?.selectedStatValue || 0);
-    const rankTone = rank === 1
-      ? "linear-gradient(180deg, rgba(255,214,108,.26), rgba(255,214,108,.08))"
-      : rank <= 3
-        ? "linear-gradient(180deg, rgba(107,200,255,.20), rgba(107,200,255,.06))"
-        : "rgba(255,255,255,.03)";
-
+    const statValue = formatBoardNumber(boardSelectedValue(row, sort));
+    const isViewer = row?.isViewer === true || row?.viewer === true || (viewerRank > 0 && rank === viewerRank && viewerName && nameRaw.trim().toLowerCase() === viewerName);
+    const tone = rank === 1 ? " is-first" : rank <= 3 ? " is-podium" : "";
     return `
-      <div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:${rankTone};box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
-        <div style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:800;background:rgba(8,12,20,.78);border:1px solid rgba(255,255,255,.08);">#${formatBoardNumber(rank)}</div>
-        <div style="min-width:0;overflow:hidden;">
-          <div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-          <div style="margin-top:5px;font-size:12px;opacity:.78;line-height:1.35;">Signal Power ${signal} · Level ${level}</div>
+      <article class="hb-row${tone}${isViewer ? " is-viewer" : ""}" ${isViewer ? 'aria-current="true"' : ""}>
+        <div class="hb-rank-badge">#${formatBoardNumber(rank)}</div>
+        <div class="hb-row-main">
+          <div class="hb-row-name">${name}${isViewer ? '<span class="hb-you">YOU</span>' : ""}</div>
+          <div class="hb-row-meta">Signal ${signal}<i></i>Level ${level}</div>
         </div>
-        <div style="text-align:right;min-width:72px;">
-          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.68;">${statLabel}</div>
-          <div style="margin-top:6px;font-weight:800;white-space:nowrap;">${statValue}</div>
-        </div>
-      </div>
-    `;
+        <div class="hb-row-stat"><span>${statLabel}</span><b>${statValue}</b></div>
+      </article>`;
   }).join("");
 }
 
@@ -12561,7 +12629,7 @@ async function loadBoard(sort) {
 
   setBoardTabs(safeSort);
   syncBoardTabs();
-  setBoardStatus("Loading Howlboard...");
+  setBoardStatus("Reading confirmed Pack standing…");
   renderBoardViewer(null);
   if (boardRows) boardRows.innerHTML = "";
 
@@ -12571,41 +12639,45 @@ async function loadBoard(sort) {
 
     const activeSort = normalizeBoardSort(state?.sort || safeSort);
     const rows = Array.isArray(state?.rows) ? state.rows : [];
+    boardLastState = state || null;
     syncBoardTabs(state?.sortOptions || []);
     setBoardTabs(activeSort);
-    renderBoardViewer(state?.viewer || null);
-    renderBoardRows(rows, activeSort);
-    setBoardStatus(String(state?.caption || "").trim() || (rows.length ? "" : "No pack ranking entries are available yet."));
+    renderBoardViewer(state?.viewer || null, rows, activeSort);
+    renderBoardRows(rows, activeSort, state?.viewer || null);
+    setBoardStatus(String(state?.caption || "").trim() || (rows.length ? "Confirmed server ranking. No movement is inferred unless the backend reports it." : "No pack ranking entries are available yet."));
   } catch (err) {
     if (seq !== boardLoadSeq) return;
     console.error("[Howlboard] load failed:", err);
     syncBoardTabs();
+    boardLastState = null;
     renderBoardViewer(null);
-    if (boardRows) {
-      boardRows.innerHTML = `
-        <div style="padding:14px;border:1px solid rgba(255,120,120,.18);border-radius:14px;background:rgba(86,18,18,.24);line-height:1.45;">
-          Howlboard is unavailable right now. Please try again in a moment.
-        </div>
-      `;
-    }
-    setBoardStatus("Failed to load Howlboard.");
+    if (boardRows) boardRows.innerHTML = `<div class="hb-empty is-error">Howlboard is unavailable right now. Please try again in a moment.</div>`;
+    setBoardStatus("Failed to load confirmed Pack standing.");
   }
 }
 
 function openBoard(sort = "signal_power") {
-  if (!boardBack) return;
+  if (!boardBack) return false;
   boardBack.style.display = "flex";
+  boardBack.dataset.open = "1";
   navOpen("boardBack");
   loadBoard(sort);
+  return true;
 }
 
 function closeBoardModal() {
   boardLoadSeq += 1;
-  if (boardBack) boardBack.style.display = "none";
+  if (boardBack) {
+    boardBack.style.display = "none";
+    delete boardBack.dataset.open;
+  }
   navClose("boardBack");
 }
 
 closeBoard?.addEventListener("click", closeBoardModal);
+boardBack?.addEventListener("click", (event) => {
+  if (event.target === boardBack) closeBoardModal();
+});
 
 $$("#boardBack .tab[data-sort]").forEach((t) => {
   t.addEventListener("click", () => {
@@ -12616,6 +12688,13 @@ $$("#boardBack .tab[data-sort]").forEach((t) => {
 
 document.querySelector(".btn.howlboard")?.addEventListener("click", () => {
   openBoard("signal_power");
+});
+
+window.Howlboard = Object.freeze({
+  open: openBoard,
+  close: closeBoardModal,
+  refresh: () => loadBoard(boardSort),
+  getState: () => boardLastState,
 });
 
 /* Daily fallback (stary modal) */
