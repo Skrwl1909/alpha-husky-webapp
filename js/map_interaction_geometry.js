@@ -5,7 +5,7 @@
 
   const REGIONS = Object.freeze({
     citadel: Object.freeze({
-      polygon: "0,0 544,0 579,104 602,182 567,260 521,339 463,404 382,449 278,443 174,404 81,352 0,326",
+      polygon: "0,0 540,0 590,160 610,280 570,450 400,480 260,460 120,420 0,360",
       label: Object.freeze({ x: 24, y: 18 }),
       camera: Object.freeze({ x: 0.285, y: 0.245, scale: 2.0 }),
       poi: Object.freeze({
@@ -19,20 +19,20 @@
       })
     }),
     blackglass_reach: Object.freeze({
-      polygon: "544,0 1000,0 1000,495 915,508 822,482 741,449 660,423 579,391 521,339 567,260 602,182 579,104",
+      polygon: "540,0 1000,0 1000,530 900,550 820,520 700,470 570,450 610,280 590,160",
       label: Object.freeze({ x: 73, y: 22 }),
       camera: Object.freeze({ x: 0.79, y: 0.265, scale: 2.05 }),
       poi: Object.freeze({
         broken_contracts: Object.freeze({ x: 0.675, y: 0.285 }),
         burned_archive: Object.freeze({ x: 0.825, y: 0.405 }),
-        dead_relay_exchange: Object.freeze({ x: 0.605, y: 0.455 })
+        dead_relay_exchange: Object.freeze({ x: 0.625, y: 0.415 })
       }),
       surfaces: Object.freeze({
-        world_exploration: Object.freeze({ x: 0.755, y: 0.515 })
+        world_exploration: Object.freeze({ x: 0.74, y: 0.44 })
       })
     }),
     iron_march: Object.freeze({
-      polygon: "0,326 81,352 174,404 278,443 382,449 463,404 521,339 579,391 561,469 590,560 567,638 521,723 463,801 382,859 255,879 116,833 0,781",
+      polygon: "0,360 120,420 260,460 400,480 570,450 590,580 575,700 550,820 500,1000 0,1000",
       label: Object.freeze({ x: 20, y: 58 }),
       camera: Object.freeze({ x: 0.31, y: 0.61, scale: 1.88 }),
       poi: Object.freeze({
@@ -44,7 +44,7 @@
       })
     }),
     locked_horizons: Object.freeze({
-      polygon: "1000,495 1000,1000 463,1000 463,964 486,911 463,801 521,723 567,638 590,560 561,469 579,391 660,423 741,449 822,482 915,508",
+      polygon: "570,450 700,470 820,520 900,550 1000,530 1000,1000 500,1000 550,820 575,700 590,580",
       label: Object.freeze({ x: 69, y: 73 }),
       camera: Object.freeze({ x: 0.79, y: 0.72, scale: 2.05 }),
       poi: Object.freeze({})
