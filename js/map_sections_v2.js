@@ -6,6 +6,7 @@
     active: false,
     sectionId: null,
     selectedNodeId: null,
+    selectedSurfaceId: null,
     runtimeUnsubscribe: null,
     ctaUnsubscribe: null,
   };
@@ -28,6 +29,185 @@
   function sectionPresentation(sectionId) {
     return SECTION_PRESENTATION[sectionId] || Object.freeze({ code: "SEC", summary: "Operational sector." });
   }
+
+  function interactionRegion(sectionId) {
+    return global.MapInteractionGeometry?.getRegion?.(sectionId) || null;
+  }
+
+  function masterMapAsset() {
+    return global.MapInteractionGeometry?.MASTER_ASSET || "images/map/v2/map-v2-world.webp";
+  }
+
+  function cameraTransform(camera) {
+    const scale = Number(camera?.scale) || 1;
+    const x = Number(camera?.x);
+    const y = Number(camera?.y);
+    const cx = Number.isFinite(x) ? x : 0.5;
+    const cy = Number.isFinite(y) ? y : 0.5;
+    return {
+      scale,
+      tx: (0.5 - (scale * cx)) * 100,
+      ty: (0.5 - (scale * cy)) * 100,
+    };
+  }
+
+  function setCamera(canvas, sectionId) {
+    const camera = sectionId ? interactionRegion(sectionId)?.camera : null;
+    const transform = cameraTransform(camera);
+    canvas.style.setProperty("--map-v2-camera-scale", String(transform.scale));
+    canvas.style.setProperty("--map-v2-camera-tx", `${transform.tx}%`);
+    canvas.style.setProperty("--map-v2-camera-ty", `${transform.ty}%`);
+    canvas.dataset.mapV2Camera = sectionId || "world";
+  }
+
+  function createMapStage(sectionId, nodes = [], section = null) {
+    const stage = element("div", "map-v2-map-stage");
+    const frame = element("div", "map-v2-map-frame");
+    const canvas = element("div", "map-v2-map-canvas");
+    setCamera(canvas, sectionId);
+
+    const image = element("img", "map-v2-map-master");
+    image.src = masterMapAsset();
+    image.alt = "";
+    image.draggable = false;
+    canvas.append(image);
+
+    if (!sectionId) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "map-v2-region-hit-layer");
+      svg.setAttribute("viewBox", "0 0 1000 1000");
+      svg.setAttribute("preserveAspectRatio", "none");
+      const labels = element("div", "map-v2-region-label-layer");
+      const objectiveSectionId = global.MapObjectiveResolver?.getCurrent?.()?.sectionId || "";
+
+      for (const currentSection of getSections()) {
+        const region = interactionRegion(currentSection.sectionId);
+        if (!region?.polygon) continue;
+        const hit = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        hit.setAttribute("points", region.polygon);
+        hit.setAttribute("class", "map-v2-region-hit");
+        hit.setAttribute("data-region", currentSection.sectionId);
+        hit.setAttribute("tabindex", "-1");
+        hit.addEventListener("click", () => renderSection(currentSection.sectionId));
+        svg.append(hit);
+
+        const presentation = sectionPresentation(currentSection.sectionId);
+        const label = button("map-v2-region-label", "", () => renderSection(currentSection.sectionId));
+        label.dataset.mapV2SectionId = currentSection.sectionId;
+        label.dataset.mapV2Region = currentSection.sectionId;
+        label.dataset.mapV2Objective = objectiveSectionId === currentSection.sectionId ? "true" : "false";
+        label.dataset.mapV2Locked = currentSection.nodes?.length ? "false" : "true";
+        label.style.left = `${region.label?.x ?? 50}%`;
+        label.style.top = `${region.label?.y ?? 50}%`;
+        label.setAttribute("aria-label", `Enter ${sectionLabel(currentSection.sectionId)}`);
+        label.append(
+          element("span", "map-v2-region-code", presentation.code),
+          element("strong", "map-v2-region-name", sectionLabel(currentSection.sectionId)),
+          element("span", "map-v2-region-state", currentSection.nodes?.length ? "ACTIVE" : "UNCHARTED"),
+        );
+        labels.append(label);
+      }
+      canvas.append(svg, labels);
+    } else {
+      const poiLayer = element("div", "map-v2-poi-layer");
+      for (const node of nodes) {
+        const point = global.MapInteractionGeometry?.getPoi?.(sectionId, node.id);
+        if (!point) continue;
+        const access = activityAccessState(node);
+        const poi = button("map-v2-poi", "", () => {
+          state.selectedSurfaceId = null;
+          state.selectedNodeId = node.id;
+          renderSection(sectionId);
+        });
+        poi.dataset.mapV2NodeId = node.id;
+        poi.dataset.mapV2Access = access.kind;
+        poi.dataset.mapV2RuntimeTone = runtimePresentation(node.id).tone;
+        if (state.selectedNodeId === node.id) poi.classList.add("is-selected");
+        poi.style.left = `${Number(point.x) * 100}%`;
+        poi.style.top = `${Number(point.y) * 100}%`;
+        const iconPath = asText(node.icon || node.asset);
+        if (iconPath) {
+          const icon = element("img", "map-v2-poi-icon");
+          icon.src = iconPath;
+          icon.alt = "";
+          poi.append(icon);
+        } else {
+          poi.append(element("span", "map-v2-poi-dot"));
+        }
+        const copy = element("span", "map-v2-poi-copy");
+        copy.append(
+          element("strong", "map-v2-poi-name", asText(node.name) || node.id),
+          element("span", "map-v2-poi-state", access.label),
+          element("span", "map-v2-runtime-status", runtimePresentation(node.id).label),
+        );
+        poi.append(copy);
+        poiLayer.append(poi);
+      }
+
+      for (const surface of (section?.campaignSurfaces || [])) {
+        const point = global.MapInteractionGeometry?.getSurface?.(sectionId, surface.surfaceId);
+        if (!point) continue;
+        const poi = button("map-v2-poi map-v2-poi-surface", "", () => {
+          state.selectedNodeId = null;
+          state.selectedSurfaceId = surface.surfaceId;
+          renderSection(sectionId);
+        });
+        poi.dataset.mapV2SurfaceId = surface.surfaceId;
+        if (state.selectedSurfaceId === surface.surfaceId) poi.classList.add("is-selected");
+        poi.style.left = `${Number(point.x) * 100}%`;
+        poi.style.top = `${Number(point.y) * 100}%`;
+        poi.append(
+          element("span", "map-v2-poi-dot"),
+          element("span", "map-v2-poi-copy", "WORLD EXPLORATION"),
+        );
+        poiLayer.append(poi);
+      }
+      canvas.append(poiLayer);
+    }
+
+    frame.append(canvas);
+    stage.append(frame);
+    return stage;
+  }
+
+  function createMapHud(sectionId) {
+    const hud = element("div", "map-v2-map-hud");
+    const presentation = sectionId ? sectionPresentation(sectionId) : null;
+    if (sectionId) {
+      hud.append(
+        button("map-v2-back map-v2-map-back", "Return to World", renderWorld),
+        element("p", "map-v2-kicker", `${presentation.code} // REGION`),
+        element("h3", "map-v2-title", sectionLabel(sectionId)),
+      );
+    } else {
+      hud.append(
+        element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD"),
+        element("h3", "map-v2-title", "World"),
+        element("p", "map-v2-copy", "Tap a territory to move deeper into the Network."),
+      );
+    }
+    return hud;
+  }
+
+  function createCampaignDock(section) {
+    if (!state.selectedSurfaceId) return null;
+    const surface = (section?.campaignSurfaces || []).find((item) => item.surfaceId === state.selectedSurfaceId);
+    if (!surface) return null;
+    const dock = element("aside", "map-v2-campaign-dock");
+    const head = element("div", "map-v2-campaign-dock-head");
+    head.append(
+      element("p", "map-v2-dock-kicker", "CAMPAIGN SURFACE"),
+      element("h4", "map-v2-dock-title", "World Exploration"),
+      button("map-v2-campaign-close", "Close", () => {
+        state.selectedSurfaceId = null;
+        renderSection(state.sectionId);
+      }),
+    );
+    const host = element("div", "map-v2-world-exploration-host");
+    dock.append(head, host);
+    return { dock, host };
+  }
+
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -238,43 +418,11 @@
     unmountWorldExplorationSurface();
     state.sectionId = null;
     state.selectedNodeId = null;
+    state.selectedSurfaceId = null;
     state.root.dataset.mapV2Surface = "world";
-    const view = element("section", "map-v2-view map-v2-world", null);
-    const intro = element("header", "map-v2-intro");
-    intro.append(
-      element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD"),
-      element("h3", "map-v2-title", "World"),
-      element("p", "map-v2-copy", "Tap a territory to move deeper into the Network."),
-    );
-    view.append(intro, createObjectiveStrip(null));
 
-    const sections = element("div", "map-v2-section-list");
-    for (const section of getSections()) {
-      const count = Array.isArray(section.nodes) ? section.nodes.length : 0;
-      const surfaceCount = Array.isArray(section.campaignSurfaces) ? section.campaignSurfaces.length : 0;
-      const meta = count
-        ? `${count} activit${count === 1 ? "y" : "ies"}${surfaceCount ? " · Campaign surface" : ""}`
-        : "No active operations";
-      const presentation = sectionPresentation(section.sectionId);
-      const card = element("article", "map-v2-section-card");
-      card.dataset.mapV2SectionId = section.sectionId;
-      card.dataset.mapV2Region = section.sectionId;
-      card.dataset.mapV2Objective = global.MapObjectiveResolver?.getCurrent?.()?.sectionId === section.sectionId ? "true" : "false";
-      card.dataset.mapV2Locked = count ? "false" : "true";
-      card.append(
-        element("p", "map-v2-section-order", `${presentation.code} // 0${section.order}`),
-        element("h4", "map-v2-section-name", sectionLabel(section.sectionId)),
-        element("p", "map-v2-section-summary", presentation.summary),
-        element("p", "map-v2-section-meta", meta),
-        element("span", "map-v2-region-pulse", count ? "ACTIVE SIGNAL" : "UNCHARTED"),
-        button("map-v2-section-action", count ? `Enter ${sectionLabel(section.sectionId)}` : "Inspect horizon", () => renderSection(section.sectionId)),
-      );
-      if (card.dataset.mapV2Objective === "true") {
-        card.append(element("span", "map-v2-section-objective-chip", "Objective here"));
-      }
-      sections.append(card);
-    }
-    view.append(sections);
+    const view = element("section", "map-v2-view map-v2-world map-v2-map-mode");
+    view.append(createMapStage(null), createMapHud(null), createObjectiveStrip(null));
     state.root.replaceChildren(view);
   }
 
@@ -392,45 +540,43 @@
     unmountWorldExplorationSurface();
     const section = getSection(sectionId);
     if (!section) return renderWorld();
+
     state.sectionId = section.sectionId;
     state.root.dataset.mapV2Surface = section.sectionId;
-    const view = element("section", "map-v2-view map-v2-detail");
-    const header = element("header", "map-v2-detail-head");
-    header.append(
-      button("map-v2-back", "Return to World", renderWorld),
-      element("p", "map-v2-kicker", `${sectionPresentation(section.sectionId).code} // SECTION 0${section.order}`),
-      element("h3", "map-v2-title", sectionLabel(section.sectionId)),
-      element("p", "map-v2-copy", sectionPresentation(section.sectionId).summary),
-    );
-    view.append(header, createObjectiveStrip(section.sectionId));
+    const nodes = section.nodes.map((assignment) => getNode(assignment.nodeId)).filter(Boolean);
+
+    if (!nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = null;
+    if (!(section.campaignSurfaces || []).some((surface) => surface.surfaceId === state.selectedSurfaceId)) {
+      state.selectedSurfaceId = null;
+    }
+
+    const view = element("section", "map-v2-view map-v2-detail map-v2-map-mode");
+    view.append(createMapStage(section.sectionId, nodes, section), createMapHud(section.sectionId), createObjectiveStrip(section.sectionId));
 
     if (!section.nodes.length) {
       state.selectedNodeId = null;
-      renderLockedHorizons(view);
+      state.selectedSurfaceId = null;
+      const sealed = element("aside", "map-v2-sealed-plate");
+      sealed.append(
+        element("p", "map-v2-dock-kicker", "SEALED FRONTIER"),
+        element("h4", "map-v2-dock-title", "Locked Horizons"),
+        element("p", "map-v2-dock-desc", "Beyond the mapped network. No production activities are assigned here yet."),
+      );
+      view.append(sealed);
       state.root.replaceChildren(view);
       return;
     }
 
-    const activities = element("div", "map-v2-activity-list");
-    const nodes = section.nodes.map((assignment) => getNode(assignment.nodeId)).filter(Boolean);
-    if (!nodes.length) {
-      state.selectedNodeId = null;
-      view.append(element("p", "map-v2-empty-copy", "Production catalog unavailable. No action is shown."));
-    } else {
-      if (!nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = null;
-      activities.append(element("p", "map-v2-list-kicker", "REGION LOCATIONS"));
-      nodes.forEach((node, index) => activities.append(createActivityCard(node, index)));
-      const campaignSurface = createCampaignSurfaceSlots(section);
-      if (campaignSurface) view.append(campaignSurface.slots);
-      view.append(activities);
-      const selected = nodes.find((node) => node.id === state.selectedNodeId);
-      if (selected) view.append(createActivityDock(selected));
-      state.root.replaceChildren(view);
-      if (campaignSurface?.host) global.WorldExploration?.mountSurface?.(campaignSurface.host);
-      startRuntimeUpdates(nodes.map((node) => node.id));
-      return;
-    }
+    const selected = nodes.find((node) => node.id === state.selectedNodeId);
+    if (selected) view.append(createActivityDock(selected));
+
+    const campaignDock = createCampaignDock(section);
+    if (campaignDock) view.append(campaignDock.dock);
+
     state.root.replaceChildren(view);
+
+    if (campaignDock?.host) global.WorldExploration?.mountSurface?.(campaignDock.host);
+    startRuntimeUpdates(nodes.map((node) => node.id));
   }
 
   function mount(root) {
@@ -460,6 +606,7 @@
     state.active = false;
     state.sectionId = null;
     state.selectedNodeId = null;
+    state.selectedSurfaceId = null;
     delete state.root.dataset.mapV2Surface;
     state.root.hidden = true;
     state.root.replaceChildren();
@@ -467,8 +614,9 @@
 
   function back() {
     if (!state.active) return false;
-    if (state.selectedNodeId) {
+    if (state.selectedNodeId || state.selectedSurfaceId) {
       state.selectedNodeId = null;
+      state.selectedSurfaceId = null;
       renderSection(state.sectionId);
       return true;
     }
