@@ -244,7 +244,7 @@
       if (next) return { step: "open_activity", target: next };
       next = find('button[data-map-v2-node-id="vault_forge"]');
       if (next) return { step: "forge", target: next };
-      next = find('[data-map-v2-section-id="citadel"] .map-v2-section-action');
+      next = find('[data-map-v2-section-id="citadel"] .map-v2-section-action') || find('[data-map-v2-section-id="citadel"]');
       if (next) return { step: "citadel", target: next };
       if (find("#mapBack")) {
         next = find(".map-v2-back");
@@ -334,7 +334,7 @@
       if (legacyId === "bloodmoon") {
         next = find('.map-v2-dock[data-map-v2-node-id="blood_moon_tower"] .map-v2-primary-action'); step = "open_activity";
         if (!next) { next = find('button[data-map-v2-node-id="blood_moon_tower"]'); step = "tower"; }
-        if (!next) { next = find('[data-map-v2-section-id="iron_march"] button'); step = "iron_march"; }
+        if (!next) { next = find('[data-map-v2-section-id="iron_march"] button') || find('[data-map-v2-section-id="iron_march"]'); step = "iron_march"; }
         if (!next && find("#mapBack")) { next = find(".map-v2-back"); step = "sections"; }
         if (!next) { next = find('#ahBottomNav [data-go="map"]'); step = "map"; }
       } else {
