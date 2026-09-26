@@ -179,6 +179,43 @@
     return clickLegacy(".btn.inventory") || clickLegacy("button.btn.inventory");
   }
 
+  async function openTacticalOps() {
+    try {
+      if (typeof window.ensureTacticalOpsLoaded === "function") {
+        await window.ensureTacticalOpsLoaded(
+          window.apiPost || window.S?.apiPost,
+          window.Telegram?.WebApp,
+          false
+        );
+      }
+      if (typeof window.TacticalOps?.open === "function") {
+        window.TacticalOps.open();
+        return true;
+      }
+    } catch (err) {
+      console.warn("[HomeNav] Tactical Ops open failed", err);
+    }
+    try { window.Telegram?.WebApp?.showAlert?.("Tactical Ops is still loading. Try again in a moment."); } catch (_) {}
+    return false;
+  }
+
+  function openForge() {
+    try {
+      if (typeof window.Forge?.open === "function") {
+        void window.Forge.open({
+          buildingId: "forgotten_tokens_vault_forge",
+          name: "Forgotten Tokens’ Vault",
+        });
+        return true;
+      }
+      if (clickLegacy(".btn.forge") || clickLegacy("button.btn.forge")) return true;
+    } catch (err) {
+      console.warn("[HomeNav] Forge open failed", err);
+    }
+    try { window.Telegram?.WebApp?.showAlert?.("Forge is still loading. Try again in a moment."); } catch (_) {}
+    return false;
+  }
+
   async function openMoonLab() {
     try {
       if (typeof window.ensureFortressLoaded === "function") {
@@ -248,6 +285,14 @@
 
       case "missions":
         openMissions();
+        break;
+
+      case "tactical_ops":
+        void openTacticalOps();
+        break;
+
+      case "forge":
+        openForge();
         break;
 
       case "shop":
@@ -451,6 +496,15 @@
       routeAction(btn.getAttribute("data-action"));
     });
 
+    // Refresh the live command cards when gameplay reports a meaningful state change.
+    window.addEventListener("ah:session-state-changed", () => {
+      const hub = document.getElementById("hubBack");
+      if (!hub || hub.dataset.open !== "1") return;
+      try { window.StoryDelivery?.refreshHub?.("session_state_changed"); } catch (_) {}
+      try { window.Stats?.refreshHubGoal?.(); } catch (_) {}
+      try { window.LivingWorld?.refresh?.(); } catch (_) {}
+    });
+
     // Char actions
     const ch = document.getElementById("charBack");
     ch?.addEventListener("click", (e) => {
@@ -484,6 +538,9 @@
     openMissions: () => openMissions(),
     openMap: () => openMap(),
     openInventory: () => openInventory(),
+    openTacticalOps: () => openTacticalOps(),
+    openForge: () => openForge(),
+    openMoonLab: () => openMoonLab(),
     openSupport: () => routeAction("support"),
     closeAll: () => closeAllBacks(),
   };

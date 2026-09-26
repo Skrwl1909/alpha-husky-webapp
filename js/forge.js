@@ -1152,6 +1152,9 @@
         });
         _useIceCrystal = false;
         await loadState();
+        try {
+          window.dispatchEvent(new CustomEvent("ah:session-state-changed", { detail: { source: "forge_upgrade" } }));
+        } catch (_) {}
         toast(`Forged ${it.slotLabel || it.slot} to ★${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
       } catch (e) {
         toast(`Upgrade failed: ${e.message}`);

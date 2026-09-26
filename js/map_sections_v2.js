@@ -244,7 +244,7 @@
     intro.append(
       element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD"),
       element("h3", "map-v2-title", "World"),
-      element("p", "map-v2-copy", "Four operational sections. Select one to access its activities."),
+      element("p", "map-v2-copy", "Tap a territory to move deeper into the Network."),
     );
     view.append(intro, createObjectiveStrip(null));
 
@@ -258,6 +258,7 @@
       const presentation = sectionPresentation(section.sectionId);
       const card = element("article", "map-v2-section-card");
       card.dataset.mapV2SectionId = section.sectionId;
+      card.dataset.mapV2Region = section.sectionId;
       card.dataset.mapV2Objective = global.MapObjectiveResolver?.getCurrent?.()?.sectionId === section.sectionId ? "true" : "false";
       card.dataset.mapV2Locked = count ? "false" : "true";
       card.append(
@@ -265,7 +266,8 @@
         element("h4", "map-v2-section-name", sectionLabel(section.sectionId)),
         element("p", "map-v2-section-summary", presentation.summary),
         element("p", "map-v2-section-meta", meta),
-        button("map-v2-section-action", count ? "Open section" : "Inspect horizon", () => renderSection(section.sectionId)),
+        element("span", "map-v2-region-pulse", count ? "ACTIVE SIGNAL" : "UNCHARTED"),
+        button("map-v2-section-action", count ? `Enter ${sectionLabel(section.sectionId)}` : "Inspect horizon", () => renderSection(section.sectionId)),
       );
       if (card.dataset.mapV2Objective === "true") {
         card.append(element("span", "map-v2-section-objective-chip", "Objective here"));
@@ -276,7 +278,7 @@
     state.root.replaceChildren(view);
   }
 
-  function createActivityCard(node) {
+  function createActivityCard(node, poiIndex = 0) {
     const selected = state.selectedNodeId === node.id;
     const access = activityAccessState(node);
     const card = button(`map-v2-activity${selected ? " is-selected" : ""}`, "", () => {
@@ -285,6 +287,7 @@
     });
     card.setAttribute("aria-pressed", selected ? "true" : "false");
     card.dataset.mapV2NodeId = node.id;
+    card.dataset.mapV2PoiIndex = String(Math.max(0, Number(poiIndex) || 0));
     card.dataset.mapV2Access = access.kind;
     const asset = asText(node.icon || node.asset);
     if (asset) {
@@ -394,7 +397,7 @@
     const view = element("section", "map-v2-view map-v2-detail");
     const header = element("header", "map-v2-detail-head");
     header.append(
-      button("map-v2-back", "World / Sections", renderWorld),
+      button("map-v2-back", "Return to World", renderWorld),
       element("p", "map-v2-kicker", `${sectionPresentation(section.sectionId).code} // SECTION 0${section.order}`),
       element("h3", "map-v2-title", sectionLabel(section.sectionId)),
       element("p", "map-v2-copy", sectionPresentation(section.sectionId).summary),
@@ -415,8 +418,8 @@
       view.append(element("p", "map-v2-empty-copy", "Production catalog unavailable. No action is shown."));
     } else {
       if (!nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = null;
-      activities.append(element("p", "map-v2-list-kicker", "Activities"));
-      for (const node of nodes) activities.append(createActivityCard(node));
+      activities.append(element("p", "map-v2-list-kicker", "REGION LOCATIONS"));
+      nodes.forEach((node, index) => activities.append(createActivityCard(node, index)));
       const campaignSurface = createCampaignSurfaceSlots(section);
       if (campaignSurface) view.append(campaignSurface.slots);
       view.append(activities);
@@ -430,18 +433,6 @@
     state.root.replaceChildren(view);
   }
 
-  function ensureCompactSectionCss() {
-    const doc = global.document;
-    if (!doc || typeof doc.getElementById !== "function" || typeof doc.createElement !== "function") return;
-    if (doc.getElementById("ah-map-v2-compact-lock")) return;
-    if (!doc.head || typeof doc.head.appendChild !== "function") return;
-    const style = doc.createElement("style");
-    if (!style) return;
-    style.id = "ah-map-v2-compact-lock";
-    style.textContent = '#mapV2Mount .map-v2-activity-list{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}#mapV2Mount .map-v2-activity{appearance:none;display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto;min-height:72px;height:auto;padding:0;font:inherit}#mapV2Mount .map-v2-activity::before{content:none;display:none;border:0;border-image-source:none}#mapV2Mount .map-v2-activity-art{min-height:72px;border-right:1px solid rgba(161,203,224,.1);border-bottom:0}#mapV2Mount .map-v2-activity-image{width:48px;height:48px;max-width:48px;padding:0;transform:none}#mapV2Mount .map-v2-activity-copy{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;gap:2px 8px;padding:8px 12px 8px 6px}#mapV2Mount .map-v2-dock{position:relative;bottom:auto;display:flex;flex-direction:column}';
-    doc.head.appendChild(style);
-  }
-
   function mount(root) {
     if (!root || typeof root.replaceChildren !== "function") return false;
     if (state.root && state.root !== root) {
@@ -449,7 +440,6 @@
       stopCTAUpdates();
     }
     state.root = root;
-    ensureCompactSectionCss();
     return true;
   }
 
