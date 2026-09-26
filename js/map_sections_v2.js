@@ -120,10 +120,32 @@
         const point = global.MapInteractionGeometry?.getPoi?.(sectionId, node.id);
         if (!point) continue;
         const access = activityAccessState(node);
-        const poi = button("map-v2-poi", "", () => {
+        const poi = button("map-v2-poi", "", async (event) => {
+          event?.preventDefault?.();
+          event?.stopPropagation?.();
           state.selectedSurfaceId = null;
           state.selectedNodeId = node.id;
-          renderSection(sectionId);
+
+          if (typeof global.MapActivityRouter?.open !== "function") {
+            console.error("[MapV2] MapActivityRouter unavailable", { nodeId: node.id });
+            renderSection(sectionId);
+            return;
+          }
+
+          poi.disabled = true;
+          poi.dataset.mapV2Opening = "true";
+          try {
+            const opened = await global.MapActivityRouter.open(node.id, { node });
+            if (opened === false && state.active && state.sectionId === sectionId) {
+              renderSection(sectionId);
+            }
+          } catch (error) {
+            console.warn("[MapV2] POI open failed", { nodeId: node.id, error });
+            if (state.active && state.sectionId === sectionId) renderSection(sectionId);
+          } finally {
+            poi.disabled = false;
+            delete poi.dataset.mapV2Opening;
+          }
         });
         poi.dataset.mapV2NodeId = node.id;
         poi.dataset.mapV2Access = access.kind;
