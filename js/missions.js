@@ -6831,6 +6831,12 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   // =========================
   // Public API
   // =========================
+  function openElite() {
+    _missionsCompactTab = "elite";
+    _missionsCompactTabManual = true;
+    open();
+  }
+
   function init({ apiPost, tg, dbg } = {}) {
     _apiPost = apiPost || _apiPost;
     _tg = tg || _tg;
@@ -6859,6 +6865,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     renderScoutVoice: line => { ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },
     init,
     open,
+    openElite,
     close,
     reload: loadState,
     triggerMissionDuelPlayback,

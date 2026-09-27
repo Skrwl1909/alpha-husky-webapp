@@ -237,6 +237,7 @@
     try { window.HubPremium?.activate?.(); } catch (_) {}
     try { window.StoryDelivery?.refreshHub?.(); } catch (_) {}
     try { window.Stats?.refreshHubGoal?.(); } catch (_) {}
+    try { window.ActivePursuit?.refreshHub?.("hub_open"); } catch (_) {}
     try { window.LivingWorld?.activate?.(); } catch (_) {}
   }
   function openCharSheet() { openBack("charBack"); }
