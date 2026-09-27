@@ -8092,7 +8092,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.18-world-map-poi-polish-v1-20260927";
+    window.WEBAPP_VER = "tops-2.7.19-faction-hq-production-fix-v1-20260927";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -13350,18 +13350,23 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   const s = document.createElement("script");
   s.src = "/js/faction_hq.js?v=" + encodeURIComponent(v);
 
-  s.onload = () => {
-    window.waitForApiPostReady?.(6000).then((apiPost) => {
-      try {
-        if (!window.__factionHQInited && window.FactionHQ?.init) {
-          window.FactionHQ.init({ tg, apiPost, dbg: !!window.DBG });
-          window.__factionHQInited = true;
-          console.log("✅ FactionHQ initialized");
-        }
-      } catch (e) {
-        console.warn("❌ FactionHQ.init failed", e);
+  s.onload = async () => {
+    try {
+      const directApiPost = window.apiPost || window.S?.apiPost || window.AH?.apiPost;
+      const apiPost = typeof directApiPost === "function"
+        ? directApiPost
+        : (typeof window.waitForApiPostReady === "function"
+          ? await window.waitForApiPostReady(6000)
+          : null);
+
+      if (!window.__factionHQInited && window.FactionHQ?.init) {
+        window.FactionHQ.init({ tg, apiPost, dbg: !!window.DBG });
+        window.__factionHQInited = true;
+        console.log("✅ FactionHQ initialized");
       }
-    }).catch(() => console.warn("[FactionHQ] apiPost not ready"));
+    } catch (e) {
+      console.warn("❌ FactionHQ.init failed / apiPost not ready", e);
+    }
   };
 
   s.onerror = () => console.warn("[FactionHQ] FAILED to load:", s.src);
