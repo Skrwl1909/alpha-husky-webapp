@@ -13,6 +13,36 @@
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
+  function _globalApiPost() {
+    const fn = window.apiPost || window.S?.apiPost || window.AH?.apiPost;
+    return typeof fn === "function" ? fn : null;
+  }
+
+  async function _ensureApiPost(timeoutMs = 6000) {
+    if (typeof _apiPost === "function") return _apiPost;
+
+    const direct = _globalApiPost();
+    if (direct) {
+      _apiPost = direct;
+      return _apiPost;
+    }
+
+    const waitForApi = window.waitForApiPostReady;
+    if (typeof waitForApi === "function") {
+      try {
+        const ready = await waitForApi(timeoutMs);
+        if (typeof ready === "function") {
+          _apiPost = ready;
+          return _apiPost;
+        }
+      } catch (error) {
+        log("apiPost readiness wait failed", error);
+      }
+    }
+
+    return null;
+  }
+
   // ---------------------------
   // Helpers
   // ---------------------------
@@ -1954,6 +1984,7 @@ function _contribSummaryLegacy(c) {
     applyHqBg(cached);
     applyHQTheme(cached);
 
+    await _ensureApiPost();
     await render();
   }
 
@@ -2259,7 +2290,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
   }
 
   async function render() {
-    if (!_apiPost) {
+    if (!(await _ensureApiPost(1500))) {
       _root.innerHTML = `
         <div class="hq-card">API not ready.</div>
         <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
@@ -2717,7 +2748,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
   // Init
   // ---------------------------
   function init({ apiPost, tg, dbg } = {}) {
-    _apiPost = apiPost || _apiPost;
+    _apiPost = apiPost || _globalApiPost() || _apiPost;
     _tg = tg || _tg;
     _dbg = !!dbg;
     log("init ok");
