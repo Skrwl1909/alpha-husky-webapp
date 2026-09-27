@@ -1746,6 +1746,218 @@ function _contribSummaryLegacy(c) {
         overflow:hidden !important;
         touch-action:none;
       }
+      /* === WAR ROOM ENTRY V2 === */
+      #factionHQRoot .hq-entry-v2{
+        position:relative;
+        overflow:hidden;
+        margin:-2px -2px 14px;
+        padding:16px;
+        min-height:610px;
+        border-radius:24px;
+        border:1px solid color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.12));
+        background:
+          linear-gradient(180deg, rgba(4,7,12,.08) 0%, rgba(7,10,16,.54) 52%, rgba(7,10,16,.96) 100%),
+          radial-gradient(80% 55% at 50% 35%, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 72%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.26);
+        animation:hqWarRoomIn .38s ease-out both;
+      }
+      #factionHQRoot .hq-entry-v2::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:linear-gradient(115deg, transparent 14%, rgba(255,255,255,.055) 49%, transparent 63%);
+        transform:translateX(-135%);
+        animation:hqWarRoomSweep 1.15s .16s ease-out both;
+      }
+      #factionHQRoot .hq-entry-v2-top{
+        position:relative;
+        z-index:5;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+      #factionHQRoot .hq-entry-v2-copy{
+        position:relative;
+        z-index:5;
+        margin-top:18px;
+        max-width:86%;
+      }
+      #factionHQRoot .hq-entry-v2-kicker{
+        font-size:10px;
+        font-weight:950;
+        letter-spacing:.16em;
+        text-transform:uppercase;
+        color:color-mix(in srgb, var(--faction-color) 72%, white);
+        opacity:.9;
+      }
+      #factionHQRoot .hq-entry-v2 .hq-title{
+        margin:6px 0 4px;
+        font-size:clamp(30px,8vw,42px);
+        line-height:.98;
+        letter-spacing:-.025em;
+        text-shadow:0 10px 28px rgba(0,0,0,.48);
+      }
+      #factionHQRoot .hq-entry-v2 .hq-motto{
+        margin-top:0;
+        max-width:34ch;
+        font-size:13px;
+        opacity:.78;
+      }
+      #factionHQRoot .hq-entry-v2-stage{
+        position:relative;
+        z-index:3;
+        margin:8px -8px 0;
+      }
+      #factionHQRoot .hq-entry-v2-stage .hq-holo-stage{
+        height:300px;
+        margin:0;
+        border:0;
+        box-shadow:none;
+        background:
+          radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--faction-color) 21%, transparent), transparent 31%),
+          linear-gradient(180deg, rgba(11,15,24,.14), rgba(7,10,16,.56));
+      }
+      #factionHQRoot .hq-entry-v2-stage .hq-holo-model{
+        transform:translate(-50%,-50%) scale(1.68);
+        filter:
+          drop-shadow(0 0 10px color-mix(in srgb, var(--faction-color) 24%, transparent))
+          drop-shadow(0 0 34px color-mix(in srgb, var(--faction-color) 24%, transparent));
+      }
+      #factionHQRoot .hq-entry-v2-stage .hq-label{ display:none; }
+      #factionHQRoot .hq-entry-v2-level{
+        position:absolute;
+        left:14px;
+        bottom:12px;
+        z-index:8;
+        padding:6px 9px;
+        border-radius:10px;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.08em;
+        background:rgba(5,8,13,.72);
+        border:1px solid color-mix(in srgb, var(--faction-color) 26%, rgba(255,255,255,.10));
+        backdrop-filter:blur(8px);
+      }
+      #factionHQRoot .hq-entry-v2-level strong{
+        font-size:13px;
+        margin-left:4px;
+      }
+      #factionHQRoot .hq-entry-v2-objective{
+        position:relative;
+        z-index:6;
+        margin-top:-16px;
+        padding:14px;
+        border-radius:18px;
+        background:linear-gradient(180deg,rgba(10,14,22,.93),rgba(7,10,16,.97));
+        border:1px solid color-mix(in srgb,var(--faction-color) 30%,rgba(255,255,255,.10));
+        box-shadow:0 18px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.07);
+        backdrop-filter:blur(12px);
+      }
+      #factionHQRoot .hq-entry-v2-objective-head{
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        align-items:flex-start;
+      }
+      #factionHQRoot .hq-entry-v2-objective-title{
+        margin-top:4px;
+        font-size:16px;
+        font-weight:950;
+      }
+      #factionHQRoot .hq-entry-v2-levelpath{
+        flex:0 0 auto;
+        padding:7px 9px;
+        border-radius:11px;
+        font-size:11px;
+        font-weight:950;
+        letter-spacing:.05em;
+        background:rgba(255,255,255,.045);
+        border:1px solid rgba(255,255,255,.09);
+      }
+      #factionHQRoot .hq-entry-v2-levelpath span{opacity:.5;padding:0 3px;}
+      #factionHQRoot .hq-entry-v2-resources{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:13px;
+      }
+      #factionHQRoot .hq-entry-v2-resources .hq-progress-head{
+        margin-bottom:6px;
+        font-size:11px;
+      }
+      #factionHQRoot .hq-entry-v2-resources .hq-bar{height:8px;}
+      #factionHQRoot .hq-entry-v2-bottom{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        margin-top:13px;
+      }
+      #factionHQRoot .hq-entry-v2-remaining{
+        flex:1;
+        min-width:0;
+        font-size:11px;
+        line-height:1.35;
+        opacity:.72;
+      }
+      #factionHQRoot .hq-entry-v2-cta{
+        width:auto;
+        min-width:126px;
+        padding:11px 14px;
+        white-space:nowrap;
+      }
+      #factionHQRoot .hq-entry-v2-strip{
+        position:relative;
+        z-index:5;
+        display:grid;
+        grid-template-columns:1fr 1.35fr .8fr;
+        gap:8px;
+        margin-top:10px;
+      }
+      #factionHQRoot .hq-entry-v2-strip > div{
+        min-width:0;
+        padding:9px 10px;
+        border-radius:12px;
+        background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.07);
+      }
+      #factionHQRoot .hq-entry-v2-strip span{
+        display:block;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.1em;
+        opacity:.5;
+      }
+      #factionHQRoot .hq-entry-v2-strip strong{
+        display:block;
+        margin-top:3px;
+        overflow:hidden;
+        white-space:nowrap;
+        text-overflow:ellipsis;
+        font-size:11px;
+      }
+      @keyframes hqWarRoomIn{
+        from{opacity:0;transform:translateY(8px) scale(.993);}
+        to{opacity:1;transform:none;}
+      }
+      @keyframes hqWarRoomSweep{
+        from{transform:translateX(-135%);}
+        to{transform:translateX(145%);}
+      }
+      @media(max-width:420px){
+        #factionHQRoot .hq-entry-v2{padding:13px;min-height:590px;border-radius:19px;}
+        #factionHQRoot .hq-entry-v2-stage .hq-holo-stage{height:270px;}
+        #factionHQRoot .hq-entry-v2-objective{padding:13px;}
+        #factionHQRoot .hq-entry-v2-resources{grid-template-columns:1fr;gap:8px;}
+        #factionHQRoot .hq-entry-v2-bottom{align-items:stretch;flex-direction:column;gap:9px;}
+        #factionHQRoot .hq-entry-v2-cta{width:100%;}
+      }
+      @media(prefers-reduced-motion:reduce){
+        #factionHQRoot .hq-entry-v2,
+        #factionHQRoot .hq-entry-v2::after{animation:none!important;}
+      }
+
       /* === HQ HOLOGRAM ASSET STAGE === */
       #factionHQRoot .hq-holo-stage{
         background:
@@ -2397,28 +2609,72 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     ` : "";
 
     _root.innerHTML = `
-      <div class="hq-head">
-        <div class="hq-topline">
-          <div class="hq-pill">HQ | ${esc(factionShort(fk))}</div>
+      <section class="hq-entry-v2">
+        <div class="hq-entry-v2-top">
+          <div class="hq-pill">FACTION HQ · ${esc(factionShort(fk))}</div>
           <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
-            ${canUpgrade ? "UPGRADE READY" : "TREASURY BUILD"}
+            ${canUpgrade ? "UPGRADE READY" : "HQ ONLINE"}
           </div>
         </div>
 
-        <div class="hq-title">${esc(niceFactionName(fk))}</div>
-        <div class="hq-motto">${esc(meta.motto)}</div>
-        <div class="hq-identity">${esc(meta.summary)}</div>
-        <div class="hq-identity">${esc(meta.belonging)}</div>
-        ${renderTags(meta.tags)}
-        <div class="hq-head-strip">
-          <div class="hq-chip">Role <strong>${esc(myPlace.role || "Scout")}</strong></div>
-          <div class="hq-chip">Standing <strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
-          <div class="hq-chip">Members <strong>${num(membersCount)}</strong></div>
+        <div class="hq-entry-v2-copy">
+          <div class="hq-entry-v2-kicker">WAR ROOM</div>
+          <div class="hq-title">${esc(niceFactionName(fk))}</div>
+          <div class="hq-motto">${esc(meta.motto)}</div>
+        </div>
+
+        <div class="hq-entry-v2-stage">
+          ${_hqStageHTML(curLevel, fk)}
+          <div class="hq-entry-v2-level">HQ LEVEL <strong>${num(curLevel)}</strong></div>
+        </div>
+
+        <div class="hq-entry-v2-objective">
+          <div class="hq-entry-v2-objective-head">
+            <div>
+              <div class="hq-entry-v2-kicker">CURRENT OBJECTIVE</div>
+              <div class="hq-entry-v2-objective-title">Raise HQ to Level ${num(nextLevel)}</div>
+            </div>
+            <div class="hq-entry-v2-levelpath">LV ${num(curLevel)} <span>→</span> ${num(nextLevel)}</div>
+          </div>
+
+          <div class="hq-entry-v2-resources">
+            <div>
+              <div class="hq-progress-head">
+                <span>Bones</span>
+                <span>${num(bones)} / ${num(needBones)}</span>
+              </div>
+              <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
+            </div>
+            <div>
+              <div class="hq-progress-head">
+                <span>Scrap</span>
+                <span>${num(scrap)} / ${num(needScrap)}</span>
+              </div>
+              <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
+            </div>
+          </div>
+
+          <div class="hq-entry-v2-bottom">
+            <div class="hq-entry-v2-remaining">
+              ${canUpgrade
+                ? "Treasury threshold reached. HQ can advance."
+                : `${num(bonesLeft)} bones · ${num(scrapLeft)} scrap remaining`}
+            </div>
+            ${canUpgrade ? `
+              <button class="hq-btn primary pulse hq-entry-v2-cta" onclick="FactionHQ._upgrade()">Upgrade HQ</button>
+            ` : `
+              <button class="hq-btn primary hq-entry-v2-cta" onclick="document.getElementById('hqSupportHQ')?.scrollIntoView({behavior:'smooth',block:'center'})">Support HQ</button>
+            `}
+          </div>
+        </div>
+
+        <div class="hq-entry-v2-strip">
+          <div><span>ROLE</span><strong>${esc(myPlace.role || "Scout")}</strong></div>
+          <div><span>STANDING</span><strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
+          <div><span>MEMBERS</span><strong>${num(membersCount)}</strong></div>
         </div>
         ${dbgLine}
-
-        ${_hqStageHTML(curLevel, fk)}
-      </div>
+      </section>
 
       <div class="hq-grid two">
         <div class="hq-card">
@@ -2584,7 +2840,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         </div>
         </div>
 
-        <div class="hq-card">
+        <div class="hq-card" id="hqSupportHQ">
           <div class="hq-card-title">
             <b>Support HQ</b>
             <span class="hq-mini">calm, shared boosts</span>
