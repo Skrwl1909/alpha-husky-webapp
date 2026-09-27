@@ -150,6 +150,20 @@
         poi.dataset.mapV2NodeId = node.id;
         poi.dataset.mapV2Access = access.kind;
         poi.dataset.mapV2RuntimeTone = runtimePresentation(node.id).tone;
+
+        const objectiveNodeId = global.MapObjectiveResolver?.getCurrent?.()?.nodeId || "";
+        if (objectiveNodeId === node.id) poi.dataset.mapV2Objective = "true";
+
+        const landmarkIds = new Set([
+          "alpha_network_hq",
+          "vault_forge",
+          "edge_of_chain",
+          "blood_moon_tower",
+          "moon_lab",
+          "broken_contracts",
+        ]);
+        if (landmarkIds.has(node.id)) poi.dataset.mapV2Landmark = "true";
+
         if (state.selectedNodeId === node.id) poi.classList.add("is-selected");
         poi.style.left = `${Number(point.x) * 100}%`;
         poi.style.top = `${Number(point.y) * 100}%`;
