@@ -2940,6 +2940,21 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       ? `<div class="hq-note"><b>Latest:</b> ${esc(highlight.text)}${highlight.ts ? ` <span class="hq-mini">(${esc(timeAgo(highlight.ts))})</span>` : ``}</div>`
       : `<div class="hq-note">${esc(snapshot.momentumSummary || "Faction movement will surface here when the world state picks up.")}</div>`;
 
+    const frontLive = Number(snapshot.pressureNodes || 0) > 0 || Number(snapshot.contestedPresence || 0) > 0 || Number(snapshot.activeSieges || 0) > 0;
+    const frontLabel = frontLive ? String(snapshot.momentumLabel || "ACTIVE") : "STABLE";
+    const membersRows = d.factionMembersPreview || d.faction_members_preview || [];
+    const latestFeed = feed[0];
+    const latestActivityText = latestFeed
+      ? (latestFeed.type === "upgrade"
+        ? `HQ upgraded to Level ${latestFeed.level || "?"}${latestFeed.t ? ` · ${timeAgo(latestFeed.t)}` : ""}`
+        : `${num(latestFeed.amount || 0)} ${String(latestFeed.asset || "support")} added to HQ${latestFeed.t ? ` · ${timeAgo(latestFeed.t)}` : ""}`)
+      : "No recent HQ support recorded.";
+    _viewModel = {
+      fk, meta, curLevel, nextLevel, nextStageName, bones, scrap, needBones, needScrap, bonesLeft, scrapLeft,
+      supportNeedBones, supportNeedScrap, myPlace, myContribution, snapshot, social, feed, membersRows, membersCount,
+      frontLive, frontLabel, latestActivityText
+    };
+
     const dbgLine = _dbg ? `
       <div class="hq-sub" style="margin-top:8px;opacity:.72;">
         uid ...${_uidTail()} | faction <b>${esc(String(fk || ""))}</b>
