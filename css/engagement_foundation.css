@@ -564,3 +564,148 @@
   #boardBack .hb-loading-line{animation:none;}
   #hubBack .ah-hub-active-routes .ah-hub-quick{transition:none;}
 }
+
+/* ---------------------------------------------------------
+   ACTIVE PURSUIT V1 — one persistent field objective.
+   Presentation only; backend remains authoritative.
+   --------------------------------------------------------- */
+#hubPursuitRoot[hidden]{display:none!important;}
+#hubBack.has-active-pursuit #hubGoalRoot{display:none!important;}
+#hubPursuitRoot{padding:0 14px 12px;}
+.ah-pursuit-card{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(143,217,241,.2);
+  border-radius:16px;
+  padding:13px;
+  background:
+    radial-gradient(circle at 92% -10%,rgba(143,217,241,.10),transparent 38%),
+    linear-gradient(180deg,rgba(10,20,29,.97),rgba(5,11,17,.98));
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 30px rgba(0,0,0,.24);
+}
+.ah-pursuit-card::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:2px;
+  background:linear-gradient(180deg,transparent,var(--ah-ef-cyan),transparent);
+  opacity:.75;
+}
+.ah-pursuit-card.is-complete::before{background:linear-gradient(180deg,transparent,var(--ah-ef-gold),transparent);}
+.ah-pursuit-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.ah-pursuit-head-copy{min-width:0;display:grid;gap:4px;}
+.ah-pursuit-kicker{
+  color:rgba(143,217,241,.78);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.17em;
+  text-transform:uppercase;
+}
+.ah-pursuit-title{
+  color:var(--ah-ef-text);
+  font-size:13px;
+  line-height:1.2;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
+.ah-pursuit-count{
+  flex:0 0 auto;
+  border:1px solid rgba(143,217,241,.2);
+  border-radius:999px;
+  padding:4px 7px;
+  color:var(--ah-ef-ice);
+  background:rgba(4,10,15,.72);
+  font-size:9px;
+  font-weight:900;
+}
+.ah-pursuit-desc{margin:8px 0 0;color:rgba(220,235,241,.67);font-size:10px;line-height:1.4;}
+.ah-pursuit-progress-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;}
+.ah-pursuit-pips{display:flex;gap:5px;flex:1;}
+.ah-pursuit-pip{height:3px;flex:1;border-radius:999px;background:rgba(143,217,241,.12);box-shadow:inset 0 0 0 1px rgba(143,217,241,.08);}
+.ah-pursuit-pip.is-done{background:rgba(143,217,241,.72);box-shadow:0 0 10px rgba(143,217,241,.14);}
+.ah-pursuit-card.is-complete .ah-pursuit-pip.is-done{background:rgba(211,167,84,.82);}
+.ah-pursuit-close-copy{color:rgba(213,233,240,.7);font-size:7px;font-weight:900;letter-spacing:.13em;white-space:nowrap;}
+.ah-pursuit-objectives{display:grid;gap:6px;margin-top:10px;}
+.ah-pursuit-objective{
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  min-height:34px;
+  padding:5px 7px;
+  border:1px solid rgba(143,217,241,.09);
+  border-radius:9px;
+  background:rgba(2,7,11,.38);
+}
+.ah-pursuit-objective-mark{display:grid;place-items:center;width:17px;height:17px;border:1px solid rgba(143,217,241,.22);border-radius:50%;color:rgba(143,217,241,.65);font-size:9px;font-weight:900;}
+.ah-pursuit-objective.is-complete{opacity:.78;}
+.ah-pursuit-objective.is-complete .ah-pursuit-objective-mark{color:#d8f4ff;border-color:rgba(143,217,241,.44);background:rgba(78,151,178,.16);}
+.ah-pursuit-objective-copy{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.ah-pursuit-objective-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eaf4f8;font-size:9px;letter-spacing:.02em;}
+.ah-pursuit-objective-detail{flex:0 0 auto;color:rgba(204,226,235,.55);font-size:8px;white-space:nowrap;}
+.ah-pursuit-next-reason{margin:9px 1px 0;color:rgba(203,224,232,.6);font-size:9px;line-height:1.35;}
+.ah-pursuit-action{
+  width:100%;
+  min-height:42px;
+  margin-top:9px;
+  border:1px solid rgba(143,217,241,.28);
+  border-radius:11px;
+  background:linear-gradient(180deg,rgba(43,91,116,.72),rgba(15,38,53,.92));
+  color:#f2f8fb;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  touch-action:manipulation;
+}
+.ah-pursuit-action:active{transform:translateY(1px);}
+.ah-pursuit-card.is-complete .ah-pursuit-action{border-color:rgba(211,167,84,.35);background:linear-gradient(180deg,rgba(111,82,34,.56),rgba(42,31,15,.9));}
+.ah-pursuit-cue{
+  position:fixed;
+  z-index:12200;
+  left:14px;
+  right:14px;
+  bottom:calc(78px + env(safe-area-inset-bottom,0px));
+  transform:translateY(12px);
+  opacity:0;
+  pointer-events:none;
+  display:grid;
+  gap:2px;
+  padding:10px 12px;
+  border:1px solid rgba(143,217,241,.22);
+  border-radius:12px;
+  background:rgba(5,13,19,.96);
+  box-shadow:0 14px 34px rgba(0,0,0,.42);
+  transition:opacity .18s ease,transform .18s ease;
+}
+.ah-pursuit-cue.is-on{opacity:1;transform:translateY(0);}
+.ah-pursuit-cue strong{color:#d9f3fc;font-size:9px;letter-spacing:.15em;}
+.ah-pursuit-cue span{color:rgba(221,236,242,.72);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Map V2 gets one restrained pursuit signal, never a marker cloud. */
+.map-v2-section-card[data-map-v2-pursuit="true"],
+.map-v2-activity[data-map-v2-pursuit="true"]{box-shadow:inset 0 0 0 1px rgba(143,217,241,.16),0 0 22px rgba(79,156,185,.07);}
+.map-v2-pursuit-chip{
+  position:absolute;
+  top:9px;
+  right:9px;
+  z-index:2;
+  border:1px solid rgba(143,217,241,.24);
+  border-radius:999px;
+  padding:3px 6px;
+  background:rgba(4,13,19,.86);
+  color:rgba(201,237,248,.88);
+  font-size:6px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  pointer-events:none;
+}
+.map-v2-pursuit-node-chip{top:7px;right:7px;}
+
+@media (max-width:380px){
+  .ah-pursuit-card{padding:11px;}
+  .ah-pursuit-desc{font-size:9px;}
+  .ah-pursuit-objective{grid-template-columns:16px minmax(0,1fr);padding-inline:5px;}
+  .ah-pursuit-objective-detail{font-size:7px;}
+}
