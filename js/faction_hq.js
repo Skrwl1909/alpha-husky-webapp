@@ -10,6 +10,7 @@
 
   let _feedExpanded = false;
   let _supportCustomExpanded = false;
+  let _rosterExpanded = false;
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
@@ -433,7 +434,7 @@ function _contribSummaryLegacy(c) {
 
   function renderFactionMembersPreview(rows) {
     const members = Array.isArray(rows)
-      ? rows.filter((row) => row && row.uid).slice(0, 4)
+      ? rows.filter((row) => row && row.uid).slice(0, _rosterExpanded ? 20 : 4)
       : [];
     const otherCount = members.filter((row) => !row.isYou).length;
     if (!members.length || otherCount <= 0) {
@@ -515,6 +516,11 @@ function _contribSummaryLegacy(c) {
     } catch (error) {
       console.warn("[FactionHQ] frontline route failed", error);
     }
+  }
+
+  function _toggleRoster() {
+    _rosterExpanded = !_rosterExpanded;
+    render();
   }
 
   // ---------------------------
@@ -2723,9 +2729,10 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-entry-v2-objective-head">
             <div>
               <div class="hq-entry-v2-kicker">CURRENT OBJECTIVE</div>
-              <div class="hq-entry-v2-objective-title">Raise HQ to Level ${num(nextLevel)}</div>
+              <div class="hq-entry-v2-objective-title">${curLevel >= 6 ? "HQ at maximum level" : `Raise HQ to Level ${num(nextLevel)}`}</div>
+              <div class="hq-next-stage">${curLevel >= 6 ? "Ghost Layer fully established" : `Next: ${esc(nextStageName)}`}</div>
             </div>
-            <div class="hq-entry-v2-levelpath">LV ${num(curLevel)} <span>→</span> ${num(nextLevel)}</div>
+            <div class="hq-entry-v2-levelpath">${curLevel >= 6 ? `LV ${num(curLevel)} · MAX` : `LV ${num(curLevel)} <span>→</span> ${num(nextLevel)}`}</div>
           </div>
 
           <div class="hq-entry-v2-resources">
@@ -2803,7 +2810,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div style="margin-top:12px;">
             ${membersPreviewHTML}
           </div>
-          <div class="hq-roster-more">Showing a compact HQ roster preview.</div>
+          <button class="hq-support-toggle hq-roster-more" onclick="FactionHQ._toggleRoster()">${_rosterExpanded ? "Collapse roster" : "View all members"}</button>
         </div>
 
         <div class="hq-card">
@@ -2823,68 +2830,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
       </div>
 
-      <div class="hq-grid two">
-        <div class="hq-card">
-        <div class="hq-card-title">
-          <b>HQ Status</b>
-          <span class="hq-mini">Lv ${num(curLevel)} -> ${num(nextLevel)}</span>
-        </div>
-
-        <div class="hq-stat-grid">
-          <div class="hq-stat">
-            <div class="hq-stat-value">${num(bones)}</div>
-            <div class="hq-stat-label">Bones</div>
-          </div>
-          <div class="hq-stat">
-            <div class="hq-stat-value">${num(scrap)}</div>
-            <div class="hq-stat-label">Scrap</div>
-          </div>
-        </div>
-
-        <div class="hq-progress">
-          <div class="hq-progress-line">
-            <div class="hq-progress-head">
-              <span>Bones toward Lv ${num(nextLevel)}</span>
-              <span>${num(bones)} / ${num(needBones)}</span>
-            </div>
-            <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
-          </div>
-
-          <div class="hq-progress-line">
-            <div class="hq-progress-head">
-              <span>Scrap toward Lv ${num(nextLevel)}</span>
-              <span>${num(scrap)} / ${num(needScrap)}</span>
-            </div>
-            <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
-          </div>
-        </div>
-
-        <div class="hq-mini" style="margin-top:12px;">
-          Next level: <b>${num(nextLevel)}</b><br/>
-          Cost: <b>${num(needBones)}</b> bones + <b>${num(needScrap)}</b> scrap<br/>
-          Remaining: <b>${num(bonesLeft)}</b> bones + <b>${num(scrapLeft)}</b> scrap<br/>
-          <span style="opacity:.86;">
-            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
-          </span>
-        </div>
-
-        <div style="margin-top:14px;">
-          <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
-            Upgrade to Level ${num(nextLevel)}
-          </button>
-
-          ${canUpgrade ? `
-            <div class="hq-mini" style="margin-top:10px;opacity:.85;">
-              Treasury threshold reached. HQ can be upgraded now.
-            </div>
-          ` : `
-            <div class="hq-mini" style="margin-top:10px;opacity:.8;">
-              Treasury is still building. Donations push it over the line.
-            </div>
-          `}
-        </div>
-        </div>
-
+      <div class="hq-grid">
         <div class="hq-card" id="hqSupportHQ">
           <div class="hq-card-title">
             <b>Support HQ</b>
@@ -3065,6 +3011,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     _toggleSupportCustom,
     _upgrade,
     _toggleFeed,
+    _toggleRoster,
     _openFrontline,
     applyHqBg
   };
