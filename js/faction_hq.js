@@ -2400,6 +2400,202 @@ function _contribSummaryLegacy(c) {
         .hq-v3-sheet-panel.is-tall{max-height:88vh;}
       }
       @media(prefers-reduced-motion:reduce){.hq-v3-sheet-panel{animation:none!important;}}
+
+      /* === FACTION HQ V3 FINAL POLISH === */
+      #factionHQRoot{
+        scrollbar-width:none;
+        overscroll-behavior:contain;
+      }
+      #factionHQRoot::-webkit-scrollbar{display:none;}
+      #factionHQRoot button{
+        -webkit-tap-highlight-color:transparent;
+        cursor:pointer;
+      }
+      #factionHQRoot button:focus-visible{
+        outline:2px solid color-mix(in srgb,var(--faction-color) 78%,white);
+        outline-offset:2px;
+      }
+
+      #factionHQRoot[data-hq-view="hq"] .hq-entry-v2{
+        animation:hqV3HomeIn .24s cubic-bezier(.2,.75,.25,1) both;
+      }
+      #factionHQRoot[data-hq-view="front"] [data-hq-section="front"],
+      #factionHQRoot[data-hq-view="pack"] [data-hq-section="pack"]{
+        animation:hqV3ViewIn .20s ease-out both;
+      }
+
+      #factionHQRoot .hq-entry-v2.hq-v3{
+        margin-bottom:0;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.07),
+          0 18px 44px rgba(0,0,0,.28),
+          0 0 34px color-mix(in srgb,var(--faction-color) 8%,transparent);
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-copy{
+        position:relative;
+        z-index:7;
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-title{
+        letter-spacing:-.025em;
+        text-shadow:0 2px 18px rgba(0,0,0,.55);
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-motto{
+        color:color-mix(in srgb,var(--faction-color) 72%,white);
+        opacity:.90;
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage{
+        position:relative;
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage::after{
+        content:"";
+        position:absolute;
+        left:5%;
+        right:5%;
+        bottom:3%;
+        height:34%;
+        pointer-events:none;
+        z-index:5;
+        background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--faction-color) 16%,transparent),transparent 68%);
+        filter:blur(4px);
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-holo-model{
+        filter:
+          drop-shadow(0 0 16px color-mix(in srgb,var(--faction-color) 26%,transparent))
+          drop-shadow(0 20px 24px rgba(0,0,0,.44));
+      }
+
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-objective{
+        backdrop-filter:blur(12px);
+        background:
+          linear-gradient(180deg,rgba(11,15,23,.92),rgba(6,9,15,.96));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.055),
+          0 12px 28px rgba(0,0,0,.25);
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-cta{
+        font-weight:950;
+        letter-spacing:.01em;
+        transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-cta:active{
+        transform:scale(.985);
+      }
+
+      #factionHQRoot .hq-v3-command-strip button,
+      #factionHQRoot .hq-v3-utility-row button,
+      #factionHQRoot .hq-v3-command-nav button{
+        transition:
+          transform .14s ease,
+          background .14s ease,
+          border-color .14s ease,
+          color .14s ease,
+          box-shadow .14s ease;
+      }
+      @media(hover:hover){
+        #factionHQRoot .hq-v3-command-strip button:hover,
+        #factionHQRoot .hq-v3-utility-row button:hover{
+          transform:translateY(-1px);
+          background:rgba(255,255,255,.055);
+          border-color:color-mix(in srgb,var(--faction-color) 24%,rgba(255,255,255,.08));
+        }
+        #factionHQRoot .hq-v3-command-nav button:hover{color:rgba(255,255,255,.78);}
+      }
+      #factionHQRoot .hq-v3-command-strip button:active,
+      #factionHQRoot .hq-v3-utility-row button:active,
+      #factionHQRoot .hq-v3-command-nav button:active{
+        transform:scale(.98);
+      }
+
+      #factionHQRoot .hq-v3-command-nav{
+        box-shadow:0 -12px 30px rgba(0,0,0,.34);
+      }
+      #factionHQRoot .hq-v3-command-nav button.is-active{
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.045),
+          0 0 18px color-mix(in srgb,var(--faction-color) 8%,transparent);
+      }
+      #factionHQRoot .hq-v3-command-nav button.is-active::before{
+        content:"";
+        position:absolute;
+        left:28%;
+        right:28%;
+        top:-1px;
+        height:2px;
+        border-radius:999px;
+        background:var(--faction-color);
+        box-shadow:0 0 10px color-mix(in srgb,var(--faction-color) 66%,transparent);
+      }
+
+      #factionHQRoot .hq-v3-utility-row button:first-child span:nth-child(2){
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      #factionHQRoot .hq-v3-live-dot{
+        animation:hqV3SignalPulse 2.4s ease-in-out infinite;
+      }
+
+      .hq-v3-sheet-panel{
+        scrollbar-width:none;
+      }
+      .hq-v3-sheet-panel::-webkit-scrollbar{display:none;}
+      .hq-v3-sheet-panel::before{
+        content:"";
+        position:absolute;
+        left:12%;
+        right:12%;
+        top:0;
+        height:1px;
+        background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--faction-color) 58%,white),transparent);
+        opacity:.65;
+      }
+      .hq-v3-sheet-close,
+      .hq-v3-sheet-link,
+      .hq-v3-support-actions button{
+        transition:transform .12s ease,background .12s ease,filter .12s ease;
+      }
+      .hq-v3-sheet-close:active,
+      .hq-v3-sheet-link:active,
+      .hq-v3-support-actions button:active{transform:scale(.98);}
+
+      @media(min-width:421px){
+        #factionHQRoot{
+          max-height:min(780px,calc(100vh - 24px));
+        }
+        #factionHQRoot[data-hq-view="hq"] .hq-entry-v2.hq-v3 .hq-entry-v2-stage .hq-holo-stage{
+          height:clamp(230px,34vh,305px);
+        }
+      }
+
+      @media(max-width:420px){
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-top{padding-top:10px;}
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-copy{padding-top:2px;}
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-title{font-size:25px;}
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage .hq-holo-stage{height:232px;}
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-objective{margin-top:-17px;}
+        #factionHQRoot .hq-v3-command-strip button{padding:8px 7px;}
+      }
+
+      @keyframes hqV3HomeIn{
+        from{opacity:.72;transform:translateY(5px) scale(.996);}
+        to{opacity:1;transform:none;}
+      }
+      @keyframes hqV3ViewIn{
+        from{opacity:0;transform:translateY(5px);}
+        to{opacity:1;transform:none;}
+      }
+      @keyframes hqV3SignalPulse{
+        0%,100%{opacity:.55;box-shadow:0 0 5px var(--faction-color);}
+        50%{opacity:1;box-shadow:0 0 12px var(--faction-color);}
+      }
+
+      @media(prefers-reduced-motion:reduce){
+        #factionHQRoot[data-hq-view="hq"] .hq-entry-v2,
+        #factionHQRoot[data-hq-view="front"] [data-hq-section="front"],
+        #factionHQRoot[data-hq-view="pack"] [data-hq-section="pack"],
+        #factionHQRoot .hq-v3-live-dot{
+          animation:none!important;
+        }
+      }
     `;
     document.head.appendChild(st);
   }
@@ -2877,7 +3073,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
             <div class="hq-card">
               <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
               <div style="height:10px"></div>
-              <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+              <button class="hq-btn ghost hq-v3-legacy-close" onclick="FactionHQ.close()">Close</button>
             </div>
           </div>
         `;
@@ -3188,6 +3384,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
       <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
     `;
+    _syncCommandCenter();
   }
 
   // ---------------------------
