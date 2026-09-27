@@ -1837,336 +1837,6 @@ function _contribSummaryLegacy(c) {
         z-index:4;
       }
 
-      /* === WAR ROOM ENTRY V1 === */
-      #factionHQRoot .hq-entry{
-        position:relative;
-        overflow:hidden;
-        margin:-2px -2px 14px;
-        min-height:clamp(620px, 78vh, 760px);
-        padding:16px;
-        border-radius:24px;
-        border:1px solid color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.12));
-        background:
-          linear-gradient(180deg, rgba(4,7,12,.24) 0%, rgba(7,10,16,.70) 54%, rgba(7,10,16,.96) 100%),
-          radial-gradient(75% 52% at 50% 34%, color-mix(in srgb, var(--faction-color) 20%, transparent), transparent 72%);
-        box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.08),
-          0 24px 50px rgba(0,0,0,.28);
-        animation:hqEntryReveal .42s ease-out both;
-      }
-
-      #factionHQRoot .hq-entry::before{
-        content:"";
-        position:absolute;
-        inset:0;
-        pointer-events:none;
-        background:
-          linear-gradient(115deg, transparent 12%, rgba(255,255,255,.06) 49%, transparent 63%);
-        transform:translateX(-130%);
-        animation:hqEntrySweep 1.1s .2s ease-out both;
-        opacity:.65;
-      }
-
-      #factionHQRoot .hq-close-icon{
-        position:absolute;
-        top:12px;
-        right:12px;
-        z-index:12;
-        width:38px;
-        height:38px;
-        display:grid;
-        place-items:center;
-        padding:0;
-        border-radius:50%;
-        border:1px solid rgba(255,255,255,.14);
-        background:rgba(5,8,13,.54);
-        color:#fff;
-        font:700 25px/1 system-ui, sans-serif;
-        backdrop-filter:blur(10px);
-        box-shadow:0 8px 22px rgba(0,0,0,.24);
-      }
-
-      #factionHQRoot .hq-entry-topline{
-        position:relative;
-        z-index:5;
-        display:flex;
-        align-items:center;
-        gap:8px;
-        padding-right:46px;
-      }
-
-      #factionHQRoot .hq-entry-topline .hq-status-chip{
-        margin-left:auto;
-      }
-
-      #factionHQRoot .hq-entry-copy{
-        position:relative;
-        z-index:5;
-        margin-top:18px;
-        max-width:82%;
-      }
-
-      #factionHQRoot .hq-entry-eyebrow,
-      #factionHQRoot .hq-command-kicker,
-      #factionHQRoot .hq-section-kicker{
-        font-size:10px;
-        font-weight:950;
-        letter-spacing:.16em;
-        text-transform:uppercase;
-      }
-
-      #factionHQRoot .hq-entry-eyebrow{
-        color:color-mix(in srgb, var(--faction-color) 72%, white);
-        opacity:.92;
-      }
-
-      #factionHQRoot .hq-entry .hq-title{
-        margin:6px 0 4px;
-        font-size:clamp(30px, 8vw, 42px);
-        letter-spacing:-.02em;
-        text-shadow:0 8px 24px rgba(0,0,0,.45);
-      }
-
-      #factionHQRoot .hq-entry .hq-motto{
-        margin-top:0;
-        max-width:34ch;
-        font-size:13px;
-        line-height:1.35;
-        opacity:.80;
-      }
-
-      #factionHQRoot .hq-entry .hq-holo-stage{
-        height:clamp(270px, 38vh, 340px);
-        margin:10px -8px 0;
-        border:0;
-        border-radius:18px;
-        background:
-          radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--faction-color) 22%, transparent), transparent 31%),
-          linear-gradient(180deg, rgba(11,15,24,.24), rgba(7,10,16,.62));
-        box-shadow:none;
-      }
-
-      #factionHQRoot .hq-entry .hq-holo-model{
-        transform:translate(-50%,-50%) scale(1.72);
-        filter:
-          drop-shadow(0 0 10px color-mix(in srgb, var(--faction-color) 22%, transparent))
-          drop-shadow(0 0 34px color-mix(in srgb, var(--faction-color) 26%, transparent));
-      }
-
-      #factionHQRoot .hq-entry .hq-holo-stage .hq-label{
-        display:none;
-      }
-
-      #factionHQRoot .hq-entry .hq-holo-stage .hq-badge-mini{
-        top:12px;
-        bottom:auto;
-        opacity:.82;
-      }
-
-      #factionHQRoot .hq-command-deck{
-        position:relative;
-        z-index:6;
-        margin-top:-18px;
-        padding:15px;
-        border-radius:18px;
-        border:1px solid color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.10));
-        background:
-          linear-gradient(180deg, rgba(10,14,22,.92), rgba(7,10,16,.96));
-        box-shadow:
-          0 18px 38px rgba(0,0,0,.34),
-          inset 0 1px 0 rgba(255,255,255,.07);
-        backdrop-filter:blur(12px);
-      }
-
-      #factionHQRoot .hq-command-head{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:14px;
-      }
-
-      #factionHQRoot .hq-command-kicker{
-        color:color-mix(in srgb, var(--faction-color) 70%, white);
-        opacity:.86;
-      }
-
-      #factionHQRoot .hq-command-title{
-        margin-top:4px;
-        font-size:17px;
-        font-weight:950;
-        letter-spacing:-.01em;
-      }
-
-      #factionHQRoot .hq-level-mark{
-        flex:0 0 auto;
-        padding:7px 9px;
-        border-radius:11px;
-        font-size:12px;
-        font-weight:950;
-        letter-spacing:.05em;
-        background:color-mix(in srgb, var(--faction-color) 11%, rgba(255,255,255,.04));
-        border:1px solid color-mix(in srgb, var(--faction-color) 30%, rgba(255,255,255,.10));
-      }
-
-      #factionHQRoot .hq-level-mark span{
-        opacity:.5;
-        padding:0 3px;
-      }
-
-      #factionHQRoot .hq-command-bars{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:10px;
-        margin-top:14px;
-      }
-
-      #factionHQRoot .hq-command-resource{
-        min-width:0;
-      }
-
-      #factionHQRoot .hq-command-resource .hq-progress-head{
-        margin-bottom:6px;
-        font-size:11px;
-      }
-
-      #factionHQRoot .hq-command-resource .hq-bar{
-        height:8px;
-      }
-
-      #factionHQRoot .hq-command-footer{
-        display:flex;
-        align-items:center;
-        gap:12px;
-        margin-top:14px;
-      }
-
-      #factionHQRoot .hq-command-remaining{
-        flex:1;
-        min-width:0;
-        font-size:11px;
-        line-height:1.35;
-        opacity:.74;
-      }
-
-      #factionHQRoot .hq-command-cta{
-        width:auto;
-        min-width:132px;
-        padding:12px 16px;
-        white-space:nowrap;
-      }
-
-      #factionHQRoot .hq-entry-strip{
-        position:relative;
-        z-index:5;
-        display:grid;
-        grid-template-columns:1fr 1.35fr .8fr;
-        gap:8px;
-        margin-top:10px;
-      }
-
-      #factionHQRoot .hq-entry-strip > div{
-        min-width:0;
-        padding:9px 10px;
-        border-radius:12px;
-        background:rgba(255,255,255,.035);
-        border:1px solid rgba(255,255,255,.07);
-      }
-
-      #factionHQRoot .hq-entry-strip span{
-        display:block;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.10em;
-        opacity:.52;
-      }
-
-      #factionHQRoot .hq-entry-strip strong{
-        display:block;
-        margin-top:3px;
-        overflow:hidden;
-        font-size:11px;
-        text-overflow:ellipsis;
-        white-space:nowrap;
-      }
-
-      #factionHQRoot .hq-section-kicker{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
-        margin:4px 3px 10px;
-        opacity:.58;
-      }
-
-      #factionHQRoot .hq-section-kicker span:last-child{
-        font-size:9px;
-        letter-spacing:.08em;
-      }
-
-      #factionHQRoot .hq-support-grid{
-        margin-top:14px;
-      }
-
-      #factionHQRoot .hq-support-card{
-        border-color:color-mix(in srgb, var(--faction-color) 22%, rgba(255,255,255,.10));
-      }
-
-      @keyframes hqEntryReveal{
-        from{ opacity:0; transform:translateY(8px) scale(.992); }
-        to{ opacity:1; transform:none; }
-      }
-
-      @keyframes hqEntrySweep{
-        from{ transform:translateX(-130%); }
-        to{ transform:translateX(140%); }
-      }
-
-      @media (max-width:420px){
-        #factionHQRoot{
-          padding:10px;
-          border-radius:18px;
-        }
-        #factionHQRoot .hq-entry{
-          min-height:610px;
-          padding:13px;
-          border-radius:19px;
-        }
-        #factionHQRoot .hq-entry-copy{
-          max-width:88%;
-        }
-        #factionHQRoot .hq-entry .hq-holo-stage{
-          height:275px;
-        }
-        #factionHQRoot .hq-command-deck{
-          padding:13px;
-        }
-        #factionHQRoot .hq-command-head{
-          gap:8px;
-        }
-        #factionHQRoot .hq-command-title{
-          font-size:15px;
-        }
-        #factionHQRoot .hq-command-bars{
-          grid-template-columns:1fr;
-          gap:8px;
-        }
-        #factionHQRoot .hq-command-footer{
-          align-items:stretch;
-          flex-direction:column;
-          gap:9px;
-        }
-        #factionHQRoot .hq-command-cta{
-          width:100%;
-        }
-      }
-
-      @media (prefers-reduced-motion:reduce){
-        #factionHQRoot .hq-entry,
-        #factionHQRoot .hq-entry::before{
-          animation:none !important;
-        }
-      }
-
       @keyframes hqModelFloat{
         0%,100%{ transform:translate(-50%,-50%) translateY(0px); }
         50%{ transform:translate(-50%,-50%) translateY(-6px); }
@@ -2436,81 +2106,320 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     ` : "";
 
     _root.innerHTML = `
-      <section class="hq-entry">
-        <button type="button" class="hq-close-icon" onclick="FactionHQ.close()" aria-label="Close Faction HQ">×</button>
-
-        <div class="hq-entry-topline">
-          <div class="hq-pill">FACTION HQ · ${esc(factionShort(fk))}</div>
+      <div class="hq-head">
+        <div class="hq-topline">
+          <div class="hq-pill">HQ • ${esc(factionShort(fk))}</div>
           <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
-            ${canUpgrade ? "UPGRADE READY" : "HQ ONLINE"}
+            ${canUpgrade ? "UPGRADE READY" : "FUNDING"}
           </div>
         </div>
 
-        <div class="hq-entry-copy">
-          <div class="hq-entry-eyebrow">WAR ROOM</div>
-          <div class="hq-title">${esc(niceFactionName(fk))}</div>
-          <div class="hq-motto">${esc(meta.motto)}</div>
+        <div class="hq-title">${esc(niceFactionName(fk))}</div>
+        <div class="hq-sub">
+          Level <b>${num(curLevel)}</b> • Members <b>${num(d.membersCount ?? "—")}</b>
         </div>
+        ${dbgLine}
 
         ${_hqStageHTML(curLevel, fk)}
-
-        <div class="hq-command-deck">
-          <div class="hq-command-head">
-            <div>
-              <div class="hq-command-kicker">CURRENT OBJECTIVE</div>
-              <div class="hq-command-title">Raise HQ to Level ${num(nextLevel)}</div>
-            </div>
-            <div class="hq-level-mark">LV ${num(curLevel)} <span>→</span> ${num(nextLevel)}</div>
-          </div>
-
-          <div class="hq-command-bars">
-            <div class="hq-command-resource">
-              <div class="hq-progress-head">
-                <span>Bones</span>
-                <strong>${num(bones)} / ${num(needBones)}</strong>
-              </div>
-              <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
-            </div>
-            <div class="hq-command-resource">
-              <div class="hq-progress-head">
-                <span>Scrap</span>
-                <strong>${num(scrap)} / ${num(needScrap)}</strong>
-              </div>
-              <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
-            </div>
-          </div>
-
-          <div class="hq-command-footer">
-            <div class="hq-command-remaining">
-              ${canUpgrade
-                ? "Treasury threshold reached. The next HQ tier is ready."
-                : `${num(bonesLeft)} bones · ${num(scrapLeft)} scrap remaining`}
-            </div>
-            ${canUpgrade ? `
-              <button class="hq-btn primary pulse hq-command-cta" onclick="FactionHQ._upgrade()">
-                Upgrade HQ
-              </button>
-            ` : `
-              <button class="hq-btn primary hq-command-cta" onclick="document.getElementById('hqSupportCard')?.scrollIntoView({ behavior: 'smooth', block: 'center' })">
-                Support HQ
-              </button>
-            `}
-          </div>
-        </div>
-
-        <div class="hq-entry-strip">
-          <div><span>ROLE</span><strong>${esc(myPlace.role || "Scout")}</strong></div>
-          <div><span>STANDING</span><strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
-          <div><span>MEMBERS</span><strong>${num(membersCount)}</strong></div>
-        </div>
-
-        ${dbgLine}
-      </section>
-
-      <div class="hq-section-kicker">
-        <span>WAR ROOM INTEL</span>
-        <span>Live faction network</span>
       </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>HQ Status</b>
+          <span class="hq-mini">Lv ${num(curLevel)} → ${num(nextLevel)}</span>
+        </div>
+
+        <div class="hq-stat-grid">
+          <div class="hq-stat">
+            <div class="hq-stat-icon">🦴</div>
+            <div class="hq-stat-value">${num(bones)}</div>
+            <div class="hq-stat-label">Bones</div>
+          </div>
+          <div class="hq-stat">
+            <div class="hq-stat-icon">🔩</div>
+            <div class="hq-stat-value">${num(scrap)}</div>
+            <div class="hq-stat-label">Scrap</div>
+          </div>
+        </div>
+
+        <div class="hq-progress">
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Bones toward Lv ${num(nextLevel)}</span>
+              <span>${num(bones)} / ${num(needBones)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
+          </div>
+
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Scrap toward Lv ${num(nextLevel)}</span>
+              <span>${num(scrap)} / ${num(needScrap)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
+          </div>
+        </div>
+
+        <div class="hq-mini" style="margin-top:12px;">
+          Next level: <b>${num(nextLevel)}</b><br/>
+          Cost: <b>${num(needBones)}</b> 🦴 + <b>${num(needScrap)}</b> 🔩<br/>
+          Remaining: <b>${num(bonesLeft)}</b> 🦴 + <b>${num(scrapLeft)}</b> 🔩<br/>
+          <span style="opacity:.86;">
+            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
+          </span>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            Upgrade to Level ${num(nextLevel)}
+          </button>
+
+          ${canUpgrade ? `
+            <div class="hq-mini" style="margin-top:10px;opacity:.85;">
+              Treasury threshold reached — HQ can be upgraded now.
+            </div>
+          ` : `
+            <div class="hq-mini" style="margin-top:10px;opacity:.8;">
+              Not enough in treasury yet — donate to push it over the line.
+            </div>
+          `}
+        </div>
+      </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>Donate</b>
+          <span class="hq-mini">fuel the HQ</span>
+        </div>
+
+        <div class="hq-mini" style="margin-bottom:12px;">
+          Donate to the shared faction treasury and help unlock the next level.
+        </div>
+
+        <div class="hq-actions">
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 25)">Donate 25 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('bones', 100)">Donate 100 🦴</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 10)">Donate 10 🔩</button>
+          <button class="hq-btn" onclick="FactionHQ._donate('scrap', 50)">Donate 50 🔩</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount (numbers only)" />
+          <div class="hq-actions" style="margin-top:10px;">
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('bones')">Custom 🦴</button>
+            <button class="hq-btn ghost" onclick="FactionHQ._donateCustom('scrap')">Custom 🔩</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hq-card">
+        <div class="hq-card-title">
+          <b>Recent activity</b>
+          <button class="hq-btn ghost" style="width:auto;padding:10px 14px;" onclick="FactionHQ.open()">Refresh</button>
+        </div>
+
+        <div class="hq-mini" style="margin-bottom:10px;">
+          Latest members who helped build the headquarters.
+        </div>
+
+        ${
+          contributors.length
+            ? `
+              <div class="hq-contrib-strip">
+                ${contributors.map((c) => `
+                  <div class="hq-contrib">
+                    <div class="hq-contrib-badge">…${esc(c.tail)}</div>
+                    <div class="hq-contrib-name">Member</div>
+                    <div class="hq-contrib-meta">${esc(_contribSummary(c))}</div>
+                  </div>
+                `).join("")}
+              </div>
+            `
+            : `
+              <div class="hq-contrib-empty">
+                No contributors yet — first donations will appear here.
+              </div>
+            `
+        }
+
+        <div class="hq-feed">
+  ${visibleFeed.length ? visibleFeed.map((x) => {
+            const who = x.uid ? String(x.uid).slice(-4) : "????";
+            const t = fmtTs(x.t);
+
+            if (x.type === "upgrade") {
+              const lvl = x.level || "?";
+              return `
+                <div class="hq-feed-item upgrade">
+                  <b>⬆️ HQ upgraded</b> <span class="hq-mini">(Lv ${esc(lvl)})</span><br/>
+                  <span class="hq-mini">by …${esc(who)} • ${esc(t)}</span>
+                </div>
+              `;
+            }
+
+            const amt = Number(x.amount || 0);
+            const asset = String(x.asset || "");
+            const icon = asset === "bones" ? "🦴" : (asset === "scrap" ? "🔩" : "•");
+
+            return `
+              <div class="hq-feed-item">
+                <b>${icon} ${num(amt)}</b> to treasury <span class="hq-mini">(${esc(asset)})</span><br/>
+                <span class="hq-mini">from …${esc(who)} • ${esc(t)}</span>
+              </div>
+            `;
+          }).join("") : `
+            <div class="hq-feed-item hq-mini">No activity yet.</div>
+          `}
+        </div>
+
+        ${feed.length > 3 ? `
+          <div style="margin-top:10px;">
+            <button
+              class="hq-btn ghost"
+              style="width:100%;"
+              onclick="FactionHQ._toggleFeed()"
+            >
+              ${_feedExpanded ? "Show less" : `Show ${feed.length - 3} more`}
+            </button>
+          </div>
+        ` : ``}
+      </div>
+
+      <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+    `;
+  }
+
+  async function render() {
+    if (!(await _ensureApiPost(1500))) {
+      _root.innerHTML = `
+        <div class="hq-card">API not ready.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    _root.innerHTML = `<div class="hq-card" style="text-align:center;">Loading HQ...</div>`;
+
+    let raw;
+    try {
+      raw = await _apiPost("/webapp/faction/hq/state", _dbg ? { dbg: true } : {});
+      log("state raw:", raw);
+    } catch (e) {
+      _root.innerHTML = `
+        <div class="hq-card">HQ load failed.</div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    const res = _normStatePayload(raw);
+    const d = res.data || {};
+
+    if (!res.ok) {
+      const reason = res.reason || "NO_FACTION";
+
+      if (reason === "NO_FACTION") {
+        _root.innerHTML = `
+          <div class="hq-head" style="text-align:center;">
+            <div class="hq-pill">HQ</div>
+            <h2 class="hq-title">Faction HQ</h2>
+            <div class="hq-sub">Join a faction to access headquarters.</div>
+          </div>
+          <div class="hq-grid">
+            <div class="hq-card">
+              <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
+              <div style="height:10px"></div>
+              <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      _root.innerHTML = `
+        <div class="hq-card">HQ error: <b>${esc(reason)}</b></div>
+        <button class="hq-btn" onclick="FactionHQ.close()">Close</button>
+      `;
+      return;
+    }
+
+    const fkRaw = d.faction || res._raw?.faction || "";
+    const fk = _canonFaction(fkRaw) || String(fkRaw || "").toLowerCase();
+
+    applyHqBg(fk);
+    applyHQTheme(fk);
+
+    try {
+      if (fk) localStorage.setItem("ah_faction", fk);
+      window.Influence?.setFaction?.(fk);
+      window.renderFactionBadge?.();
+    } catch (_) { }
+
+    const tre = d.treasury || {};
+    const bones = Number(tre.bones || 0);
+    const scrap = Number(tre.scrap || 0);
+    const feed = Array.isArray(d.feed) ? d.feed : [];
+    const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
+
+    const curLevel = parseInt(d.level || 1, 10) || 1;
+    const nextLevel = curLevel + 1;
+    const nextCost = d.nextUpgradeCost || {};
+    const needBones = parseInt(nextCost.bones || 0, 10) || 0;
+    const needScrap = parseInt(nextCost.scrap || 0, 10) || 0;
+    const canUpgrade = (bones >= needBones) && (scrap >= needScrap);
+    const bonesPct = pct(bones, needBones);
+    const scrapPct = pct(scrap, needScrap);
+    const bonesLeft = Math.max(0, needBones - bones);
+    const scrapLeft = Math.max(0, needScrap - scrap);
+
+    const membersCount = Number(d.membersCount ?? d.members_count ?? 0);
+    const myPlace = d.myPlace || {};
+    const myContribution = d.myContribution || {};
+    const snapshot = d.snapshot || {};
+    const social = d.social || {};
+    const meta = factionHomeMeta(fk);
+    const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
+    const membersPreviewHTML = renderFactionMembersPreview(d.factionMembersPreview || d.faction_members_preview || []);
+    const highlight = snapshot.recentHighlight || {};
+    const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
+      ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
+      : "HQ support has not started from your side yet. Treasury donations show up here as soon as you send them.";
+    const supportNeedBones = Math.max(0, needBones - bones);
+    const supportNeedScrap = Math.max(0, needScrap - scrap);
+    const highlightHTML = highlight.text
+      ? `<div class="hq-note"><b>Latest:</b> ${esc(highlight.text)}${highlight.ts ? ` <span class="hq-mini">(${esc(timeAgo(highlight.ts))})</span>` : ``}</div>`
+      : `<div class="hq-note">${esc(snapshot.momentumSummary || "Faction movement will surface here when the world state picks up.")}</div>`;
+
+    const dbgLine = _dbg ? `
+      <div class="hq-sub" style="margin-top:8px;opacity:.72;">
+        uid ...${_uidTail()} | faction <b>${esc(String(fk || ""))}</b>
+      </div>
+    ` : "";
+
+    _root.innerHTML = `
+      <div class="hq-head">
+        <div class="hq-topline">
+          <div class="hq-pill">HQ | ${esc(factionShort(fk))}</div>
+          <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
+            ${canUpgrade ? "UPGRADE READY" : "TREASURY BUILD"}
+          </div>
+        </div>
+
+        <div class="hq-title">${esc(niceFactionName(fk))}</div>
+        <div class="hq-motto">${esc(meta.motto)}</div>
+        <div class="hq-identity">${esc(meta.summary)}</div>
+        <div class="hq-identity">${esc(meta.belonging)}</div>
+        ${renderTags(meta.tags)}
+        <div class="hq-head-strip">
+          <div class="hq-chip">Role <strong>${esc(myPlace.role || "Scout")}</strong></div>
+          <div class="hq-chip">Standing <strong>${esc(myPlace.rankBand || "Faction member")}</strong></div>
+          <div class="hq-chip">Members <strong>${num(membersCount)}</strong></div>
+        </div>
+        ${dbgLine}
+
+        ${_hqStageHTML(curLevel, fk)}
+      </div>
+
       <div class="hq-grid two">
         <div class="hq-card">
           <div class="hq-card-title">
@@ -2613,8 +2522,69 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         </div>
       </div>
 
-      <div class="hq-grid hq-support-grid">
-        <div class="hq-card hq-support-card" id="hqSupportCard">
+      <div class="hq-grid two">
+        <div class="hq-card">
+        <div class="hq-card-title">
+          <b>HQ Status</b>
+          <span class="hq-mini">Lv ${num(curLevel)} -> ${num(nextLevel)}</span>
+        </div>
+
+        <div class="hq-stat-grid">
+          <div class="hq-stat">
+            <div class="hq-stat-value">${num(bones)}</div>
+            <div class="hq-stat-label">Bones</div>
+          </div>
+          <div class="hq-stat">
+            <div class="hq-stat-value">${num(scrap)}</div>
+            <div class="hq-stat-label">Scrap</div>
+          </div>
+        </div>
+
+        <div class="hq-progress">
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Bones toward Lv ${num(nextLevel)}</span>
+              <span>${num(bones)} / ${num(needBones)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${bonesPct}%"></span></div>
+          </div>
+
+          <div class="hq-progress-line">
+            <div class="hq-progress-head">
+              <span>Scrap toward Lv ${num(nextLevel)}</span>
+              <span>${num(scrap)} / ${num(needScrap)}</span>
+            </div>
+            <div class="hq-bar"><span style="width:${scrapPct}%"></span></div>
+          </div>
+        </div>
+
+        <div class="hq-mini" style="margin-top:12px;">
+          Next level: <b>${num(nextLevel)}</b><br/>
+          Cost: <b>${num(needBones)}</b> bones + <b>${num(needScrap)}</b> scrap<br/>
+          Remaining: <b>${num(bonesLeft)}</b> bones + <b>${num(scrapLeft)}</b> scrap<br/>
+          <span style="opacity:.86;">
+            Bonus: +5% influence multiplier per level (and daily scrap bonus grows).
+          </span>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button class="hq-btn primary ${canUpgrade ? "pulse" : ""}" onclick="FactionHQ._upgrade()" ${canUpgrade ? "" : "disabled"}>
+            Upgrade to Level ${num(nextLevel)}
+          </button>
+
+          ${canUpgrade ? `
+            <div class="hq-mini" style="margin-top:10px;opacity:.85;">
+              Treasury threshold reached. HQ can be upgraded now.
+            </div>
+          ` : `
+            <div class="hq-mini" style="margin-top:10px;opacity:.8;">
+              Treasury is still building. Donations push it over the line.
+            </div>
+          `}
+        </div>
+        </div>
+
+        <div class="hq-card">
           <div class="hq-card-title">
             <b>Support HQ</b>
             <span class="hq-mini">calm, shared boosts</span>
