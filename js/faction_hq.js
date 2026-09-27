@@ -433,7 +433,7 @@ function _contribSummaryLegacy(c) {
 
   function renderFactionMembersPreview(rows) {
     const members = Array.isArray(rows)
-      ? rows.filter((row) => row && row.uid).slice(0, 10)
+      ? rows.filter((row) => row && row.uid).slice(0, 4)
       : [];
     const otherCount = members.filter((row) => !row.isYou).length;
     if (!members.length || otherCount <= 0) {
@@ -465,6 +465,56 @@ function _contribSummaryLegacy(c) {
         }).join("")}
       </div>
     `;
+  }
+
+  function _nextHQStageName(level) {
+    const next = HQ_HOLO_BY_LEVEL[_clampLvl(Number(level || 1) + 1)];
+    return next?.name || "Maximum HQ";
+  }
+
+  function _renderCurrentFront(snapshot) {
+    const s = snapshot && typeof snapshot === "object" ? snapshot : {};
+    const pressure = Number(s.pressureNodes || 0);
+    const contested = Number(s.contestedPresence || 0);
+    const sieges = Number(s.activeSieges || 0);
+    const isLive = pressure > 0 || contested > 0 || sieges > 0;
+    const latest = s.recentHighlight || {};
+    const detail = latest.text || s.momentumSummary || (isLive
+      ? "The faction front is active. Check the line before the state changes."
+      : "No urgent faction pressure is being reported right now.");
+
+    return `
+      <div class="hq-card hq-current-front ${isLive ? "is-live" : "is-calm"}">
+        <div class="hq-card-title">
+          <b>CURRENT FRONT</b>
+          <span class="hq-tone-pill" data-tone="${esc(s.momentumTone || (isLive ? "pressure" : "calm"))}">
+            ${esc(isLive ? (s.momentumLabel || "ACTION REQUIRED") : (s.momentumLabel || "STABLE"))}
+          </span>
+        </div>
+        <div class="hq-front-metrics">
+          <div><span>CONTROLLED</span><strong>${num(s.controlledNodes || 0)}</strong></div>
+          <div><span>PRESSURE</span><strong>${num(pressure)}</strong></div>
+          <div><span>CONTESTED</span><strong>${num(contested)}</strong></div>
+          <div><span>LIVE SIEGES</span><strong>${num(sieges)}</strong></div>
+        </div>
+        <div class="hq-note">${esc(detail)}</div>
+        ${isLive ? `<button class="hq-btn primary hq-front-cta" onclick="FactionHQ._openFrontline()">VIEW FRONT</button>` : ``}
+      </div>
+    `;
+  }
+
+  function _openFrontline() {
+    try {
+      closeView();
+      if (typeof window.Influence?.open === "function") {
+        return window.Influence.open("phantom_nodes", "Phantom Frontline");
+      }
+      if (typeof window.MapActivityRouter?.open === "function") {
+        return window.MapActivityRouter.open("phantom_nodes");
+      }
+    } catch (error) {
+      console.warn("[FactionHQ] frontline route failed", error);
+    }
   }
 
   // ---------------------------
@@ -2080,6 +2130,45 @@ function _contribSummaryLegacy(c) {
             0 0 0 10px color-mix(in srgb, var(--faction-color) 14%, transparent);
         }
       }
+
+      /* === FACTION HQ V3 P0 === */
+      #factionHQRoot .hq-entry-v2.hq-v3{
+        padding:0 0 14px;
+        overflow:hidden;
+        border-radius:22px;
+        background:linear-gradient(180deg,rgba(6,9,15,.18),rgba(7,10,16,.72) 72%,rgba(7,10,16,.95));
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-top,
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-copy{padding-left:16px;padding-right:16px;}
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-top{padding-top:14px;}
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage{margin:8px 0 0;}
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage .hq-holo-stage{
+        height:clamp(310px,44vh,430px);border-radius:0;
+        background:radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--faction-color) 24%,transparent),transparent 34%),linear-gradient(180deg,rgba(5,8,14,.02),rgba(5,8,14,.55));
+      }
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage .hq-holo-model{transform:translate(-50%,-50%) scale(1.78);}
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-objective{margin:-22px 12px 0;border-radius:18px;}
+      #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-strip{margin:10px 12px 0;}
+      #factionHQRoot .hq-next-stage{margin-top:3px;color:color-mix(in srgb,var(--faction-color) 82%,white);font-size:11px;font-weight:900;letter-spacing:.04em;}
+      #factionHQRoot .hq-current-front{border-color:rgba(255,255,255,.08);}
+      #factionHQRoot .hq-current-front.is-live{border-color:color-mix(in srgb,var(--faction-color) 46%,rgba(255,255,255,.12));box-shadow:0 0 28px color-mix(in srgb,var(--faction-color) 12%,transparent);}
+      #factionHQRoot .hq-front-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:11px 0 10px;}
+      #factionHQRoot .hq-front-metrics>div{padding:9px 7px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065);text-align:center;}
+      #factionHQRoot .hq-front-metrics span{display:block;font-size:8px;letter-spacing:.08em;opacity:.55;}
+      #factionHQRoot .hq-front-metrics strong{display:block;margin-top:4px;font-size:16px;}
+      #factionHQRoot .hq-front-cta{margin-top:10px;}
+      #factionHQRoot .hq-weekly-v3 .hq-kpi-grid{margin-top:12px;}
+      #factionHQRoot .hq-roster-more{margin-top:10px;text-align:center;font-size:11px;opacity:.62;}
+      @media(max-width:420px){
+        #factionHQRoot .hq-entry-v2.hq-v3{min-height:0;padding-bottom:12px;}
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-entry-v2-stage .hq-holo-stage{height:315px;}
+        #factionHQRoot .hq-front-metrics{grid-template-columns:repeat(2,1fr);}
+      }
+      @media(prefers-reduced-motion:reduce){
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-holo-model,
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-holo-scan,
+        #factionHQRoot .hq-entry-v2.hq-v3 .hq-holo-ring{animation:none!important;}
+      }
     `;
     document.head.appendChild(st);
   }
@@ -2593,6 +2682,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
     const membersPreviewHTML = renderFactionMembersPreview(d.factionMembersPreview || d.faction_members_preview || []);
     const highlight = snapshot.recentHighlight || {};
+    const nextStageName = curLevel >= 6 ? "Maximum HQ" : _nextHQStageName(curLevel);
+    const currentFrontHTML = _renderCurrentFront(snapshot);
     const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
       ? `HQ support sent: ${num(myContribution.hqBonesDonated || 0)} bones and ${num(myContribution.hqScrapDonated || 0)} scrap across ${num(myContribution.hqDonationCount || 0)} drops.`
       : "HQ support has not started from your side yet. Treasury donations show up here as soon as you send them.";
@@ -2609,7 +2700,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     ` : "";
 
     _root.innerHTML = `
-      <section class="hq-entry-v2">
+      <section class="hq-entry-v2 hq-v3">
         <div class="hq-entry-v2-top">
           <div class="hq-pill">FACTION HQ · ${esc(factionShort(fk))}</div>
           <div class="hq-status-chip ${canUpgrade ? "ready" : ""}">
@@ -2676,11 +2767,15 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         ${dbgLine}
       </section>
 
+      <div class="hq-grid">
+        ${currentFrontHTML}
+      </div>
+
       <div class="hq-grid two">
-        <div class="hq-card">
+        <div class="hq-card hq-weekly-v3">
           <div class="hq-card-title">
             <b>Weekly Signal</b>
-            <span class="hq-mini">Top 3 this week</span>
+            <span class="hq-mini">${esc(myPlace.rankBand || "Faction standing")}</span>
           </div>
 
           <div class="hq-note" style="margin-top:0;">
@@ -2689,37 +2784,13 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div style="margin-top:12px;">
             ${factionCircleHTML}
           </div>
-        </div>
-
-        <div class="hq-card">
-          <div class="hq-card-title">
-            <b>My Place</b>
-            <span class="hq-mini">${esc(myPlace.rankBand || "Faction member")}</span>
+          <div class="hq-kpi-grid">
+            <div class="hq-kpi"><div class="hq-kpi-label">Weekly score</div><div class="hq-kpi-value">${num(myPlace.weeklyScore || 0)}</div></div>
+            <div class="hq-kpi"><div class="hq-kpi-label">Faction rank</div><div class="hq-kpi-value">${esc(rankLabel(myPlace.factionRank))}</div></div>
+            <div class="hq-kpi"><div class="hq-kpi-label">Overall rank</div><div class="hq-kpi-value">${esc(rankLabel(myPlace.overallRank))}</div></div>
+            <div class="hq-kpi"><div class="hq-kpi-label">Player level</div><div class="hq-kpi-value">${num(myPlace.level || 1)}</div></div>
           </div>
-
-          <div class="hq-role-pill">${esc(myPlace.role || "Scout")}</div>
           <div class="hq-note">${esc(myPlace.status || "You are part of the faction network.")}</div>
-
-          <div class="hq-kpi-grid" style="margin-top:12px;">
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Weekly score</div>
-              <div class="hq-kpi-value">${num(myPlace.weeklyScore || 0)}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Faction rank</div>
-              <div class="hq-kpi-value">${esc(rankLabel(myPlace.factionRank))}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Overall rank</div>
-              <div class="hq-kpi-value">${esc(rankLabel(myPlace.overallRank))}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Player level</div>
-              <div class="hq-kpi-value">${num(myPlace.level || 1)}</div>
-            </div>
-          </div>
-
-          <div class="hq-note">${myPlace.qualified ? "Weekly reward threshold is active for you right now." : "Current standing is built from live faction activity and HQ support."}</div>
         </div>
 
         <div class="hq-card">
@@ -2732,6 +2803,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div style="margin-top:12px;">
             ${membersPreviewHTML}
           </div>
+          <div class="hq-roster-more">Showing a compact HQ roster preview.</div>
         </div>
 
         <div class="hq-card">
@@ -2749,33 +2821,6 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-note">${esc(contributionSupportNote)}</div>
         </div>
 
-        <div class="hq-card">
-          <div class="hq-card-title">
-            <b>Faction Snapshot</b>
-            <span class="hq-tone-pill" data-tone="${esc(snapshot.momentumTone || "calm")}">${esc(snapshot.momentumLabel || "Building presence")}</span>
-          </div>
-
-          <div class="hq-kpi-grid">
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Controlled</div>
-              <div class="hq-kpi-value">${num(snapshot.controlledNodes || 0)}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Pressure</div>
-              <div class="hq-kpi-value">${num(snapshot.pressureNodes || 0)}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Contested</div>
-              <div class="hq-kpi-value">${num(snapshot.contestedPresence || 0)}</div>
-            </div>
-            <div class="hq-kpi">
-              <div class="hq-kpi-label">Live sieges</div>
-              <div class="hq-kpi-value">${num(snapshot.activeSieges || 0)}</div>
-            </div>
-          </div>
-
-          ${highlightHTML}
-        </div>
       </div>
 
       <div class="hq-grid two">
@@ -3020,6 +3065,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     _toggleSupportCustom,
     _upgrade,
     _toggleFeed,
+    _openFrontline,
     applyHqBg
   };
 })();
