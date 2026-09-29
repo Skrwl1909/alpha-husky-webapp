@@ -8741,7 +8741,7 @@ function closeFaqModal(){
           referrals: ()=>ensureReferralsLoaded(apiPost, _tg, _dbg)
             .then(() => window.Referrals?.open?.() || document.querySelector('.btn.referral')?.click())
             .catch(() => document.querySelector('.btn.referral')?.click()),
-          howlboard: ()=>document.querySelector('.btn.howlboard')?.click(),
+          howlboard: ()=>window.Howlboard?.open?.("signal_power"),
           profile:   async ()=>{
             let opened = false;
             try { opened = !!(await window.FieldRecord?.openSelf?.({ source: "hub_profile" })); } catch (_) {}
@@ -8775,7 +8775,7 @@ function closeFaqModal(){
 
         // Hub/Character tile click (delegacja)
         document.addEventListener('click', (e)=>{
-          const el = e.target.closest('.ah-tile,.ah-action');
+          const el = e.target.closest('.ah-tile,.ah-action,.ah-hub-quick');
           if(!el) return;
           const a = el.getAttribute('data-action');
           if(!a) return;
@@ -12694,10 +12694,6 @@ $$("#boardBack .tab[data-sort]").forEach((t) => {
     const sort = t.getAttribute("data-sort") || "signal_power";
     loadBoard(sort);
   });
-});
-
-document.querySelector(".btn.howlboard")?.addEventListener("click", () => {
-  openBoard("signal_power");
 });
 
 window.Howlboard = Object.freeze({
