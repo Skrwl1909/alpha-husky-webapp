@@ -2373,3 +2373,670 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     font-size: clamp(1.9rem, 10vw, 2.8rem);
   }
 }
+
+
+/* Tactical Ops v2.9 — playable-loop clarity pass */
+#tacticalOpsRoot .t-war-table-v29 {
+  gap: .72rem;
+}
+#tacticalOpsRoot .t-war-table-v29 .t-panel {
+  background: linear-gradient(180deg, rgba(7,17,27,.96), rgba(6,13,21,.98));
+}
+#tacticalOpsRoot .t-wt-hero-compact {
+  grid-template-columns: minmax(0,1fr) auto;
+  min-height: 0;
+  padding: .92rem 1rem;
+  align-items: center;
+}
+#tacticalOpsRoot .t-wt-hero-compact::after { display:none; }
+#tacticalOpsRoot .t-wt-hero-compact .t-wt-title {
+  font-size: clamp(1.9rem, 7vw, 3rem);
+  margin-bottom: .18rem;
+}
+#tacticalOpsRoot .t-wt-hero-compact .t-wt-intro {
+  font-size: .86rem;
+  color: #c4dbe5;
+}
+#tacticalOpsRoot .t-wt-refresh {
+  border: 1px solid #65cbed45;
+  background: rgba(8,23,34,.72);
+  color: #a8dced;
+  border-radius: 5px;
+  font: inherit;
+  font-size: .61rem;
+  letter-spacing: .13em;
+  padding: .65rem .72rem;
+}
+#tacticalOpsRoot .t-wt-refresh:disabled { opacity:.45; }
+
+#tacticalOpsRoot .t-wt-status-rail-v29 {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: .6rem;
+}
+#tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card {
+  min-height: 92px;
+  padding: .76rem .82rem;
+  justify-content: center;
+}
+#tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card strong {
+  font-size: 1rem;
+}
+#tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card small {
+  font-size: .67rem;
+  line-height: 1.35;
+}
+#tacticalOpsRoot .t-wt-pressure-card.is-high {
+  border-color: rgba(232,103,80,.52);
+  background: linear-gradient(180deg, rgba(42,18,18,.93), rgba(17,12,15,.98));
+}
+#tacticalOpsRoot .t-wt-pressure-card.is-high strong { color:#ff9a86; }
+#tacticalOpsRoot .t-wt-pressure-card.is-reduced,
+#tacticalOpsRoot .t-wt-pressure-card.is-clear {
+  border-color: rgba(101,208,171,.5);
+}
+#tacticalOpsRoot .t-wt-pressure-card.is-reduced strong,
+#tacticalOpsRoot .t-wt-pressure-card.is-clear strong { color:#a6eccd; }
+
+#tacticalOpsRoot .t-wt-next-op {
+  grid-template-columns: 150px minmax(0,1fr) auto;
+  padding: .72rem;
+  border-color: rgba(102,218,255,.66)!important;
+  box-shadow: 0 0 0 1px rgba(102,218,255,.08), 0 12px 34px rgba(0,0,0,.34)!important;
+}
+#tacticalOpsRoot .t-wt-next-op .t-wt-feature-art { height: 122px; }
+#tacticalOpsRoot .t-wt-next-op h2 {
+  font-size: clamp(1.45rem,5vw,2rem);
+  margin:.15rem 0 .2rem;
+}
+#tacticalOpsRoot .t-wt-objective {
+  color:#e5f5fb!important;
+  font-size:.9rem;
+}
+#tacticalOpsRoot .t-wt-reward-chips {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.4rem;
+  margin-top:.65rem;
+}
+#tacticalOpsRoot .t-wt-reward-chips span {
+  border:1px solid rgba(95,199,235,.3);
+  background:rgba(10,27,39,.78);
+  border-radius:999px;
+  padding:.34rem .5rem;
+  color:#aebfca;
+  font-size:.62rem;
+  white-space:nowrap;
+}
+#tacticalOpsRoot .t-wt-reward-chips b { color:#dff8ff; }
+#tacticalOpsRoot .t-wt-reward-chips .is-earned {
+  color:#9fd8b5;
+  border-color:rgba(116,208,150,.38);
+}
+#tacticalOpsRoot .t-wt-main-cta { min-width:165px; }
+
+#tacticalOpsRoot .t-wt-legacy-run {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.8rem;
+  padding:.75rem .9rem;
+  border-color:rgba(243,187,90,.38)!important;
+}
+#tacticalOpsRoot .t-wt-legacy-run p {
+  margin:.25rem 0 0;
+  font-size:.72rem;
+}
+
+#tacticalOpsRoot .t-wt-current-ops {
+  padding:.88rem;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-section-head {
+  margin-bottom:.64rem;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-section-head .t-title {
+  margin-top:.12rem;
+}
+#tacticalOpsRoot .t-wt-mission-list { gap:.58rem; }
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-card {
+  grid-template-columns: 132px minmax(0,1fr) 142px;
+  gap:.7rem;
+  padding:.65rem;
+  align-items:center;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-art {
+  min-height:112px;
+  position:relative;
+}
+#tacticalOpsRoot .t-wt-mission-type {
+  position:absolute;
+  left:.45rem;
+  bottom:.42rem;
+  padding:.25rem .4rem;
+  border:1px solid rgba(119,218,255,.5);
+  background:rgba(3,14,22,.86);
+  color:#b8edff;
+  font-size:.55rem;
+  letter-spacing:.12em;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-head h3 {
+  font-size:1.16rem;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-head p {
+  color:#d5e5eb;
+  font-size:.77rem;
+  line-height:1.35;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-state {
+  padding:.3rem .46rem;
+  font-size:.57rem;
+}
+#tacticalOpsRoot .t-wt-mission-meta {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.4rem;
+  margin-top:.5rem;
+}
+#tacticalOpsRoot .t-wt-mission-meta span {
+  border-left:2px solid rgba(95,199,235,.45);
+  background:rgba(9,23,34,.72);
+  padding:.42rem .5rem;
+  color:#a9b9c4;
+  font-size:.62rem;
+  line-height:1.35;
+}
+#tacticalOpsRoot .t-wt-mission-meta b {
+  color:#dff7ff;
+  margin-right:.2rem;
+}
+#tacticalOpsRoot .t-wt-mission-meta .is-earned {
+  border-left-color:rgba(115,211,151,.58);
+  color:#9dd3b1;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-card-detail {
+  margin-top:.45rem;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-card-detail summary {
+  font-size:.65rem;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-card-detail p {
+  font-size:.7rem!important;
+}
+#tacticalOpsRoot .t-wt-current-ops .t-wt-mission-cta .t-btn {
+  min-width:0;
+  width:100%;
+  min-height:44px;
+}
+
+#tacticalOpsRoot .t-pack-mastery-v29 {
+  padding:.88rem;
+}
+#tacticalOpsRoot .t-pack-mastery-v29 .t-pack-head {
+  margin-bottom:.55rem;
+}
+#tacticalOpsRoot .t-pack-mastery-v29 .t-pack-head p {
+  font-size:.75rem;
+}
+#tacticalOpsRoot .t-pack-mastery-v29 .t-pack-head > small {
+  font-size:.64rem;
+}
+#tacticalOpsRoot .t-pack-mastery-v29 .t-pack-list {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.55rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 {
+  grid-template-columns:48px minmax(0,1fr);
+  gap:.55rem;
+  padding:.62rem;
+  border:1px solid rgba(95,199,235,.25);
+  border-radius:6px;
+  background:rgba(8,21,31,.74);
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-avatar {
+  width:48px;
+  min-height:48px;
+  height:48px;
+  font-size:.64rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-topline strong {
+  font-size:.88rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-topline span {
+  font-size:.58rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-status b {
+  font-size:.67rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-progressline {
+  margin-top:.35rem;
+}
+#tacticalOpsRoot .t-mastery-now-next {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:.42rem;
+  margin-top:.42rem;
+}
+#tacticalOpsRoot .t-mastery-now-next > div {
+  border-left:2px solid rgba(95,199,235,.35);
+  padding-left:.45rem;
+}
+#tacticalOpsRoot .t-mastery-now-next strong,
+#tacticalOpsRoot .t-mastery-now-next small {
+  display:block;
+}
+#tacticalOpsRoot .t-mastery-now-next strong {
+  margin-top:.16rem;
+  color:#e3f8ff;
+  font-size:.69rem;
+}
+#tacticalOpsRoot .t-mastery-now-next small {
+  margin-top:.15rem;
+  font-size:.6rem;
+  color:#97a9b6;
+  line-height:1.32;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-detail {
+  margin-top:.45rem;
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-detail summary {
+  font-size:.62rem;
+}
+#tacticalOpsRoot .t-mastery-locked,
+#tacticalOpsRoot .t-pack-pet-note {
+  display:block;
+  margin-top:.45rem;
+  color:#a8b8c2;
+  font-size:.62rem;
+}
+
+#tacticalOpsRoot .t-wt-story-archive {
+  padding:.78rem .9rem;
+}
+#tacticalOpsRoot .t-wt-story-archive > summary {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:.8rem;
+  cursor:pointer;
+  list-style:none;
+}
+#tacticalOpsRoot .t-wt-story-archive > summary::-webkit-details-marker { display:none; }
+#tacticalOpsRoot .t-wt-story-archive > summary span strong {
+  display:block;
+  margin-top:.18rem;
+  color:#e6f5fa;
+  letter-spacing:.05em;
+}
+#tacticalOpsRoot .t-wt-story-archive > summary > b {
+  color:#9ed8b4;
+  font-size:.63rem;
+  letter-spacing:.12em;
+}
+#tacticalOpsRoot .t-wt-story-archive > p {
+  color:#9fb0bb;
+  font-size:.72rem;
+  margin:.65rem 0 0;
+}
+#tacticalOpsRoot .t-wt-story-archive .t-wt-canon-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+#tacticalOpsRoot .t-story-mission {
+  display:grid;
+  gap:.35rem;
+  padding:.65rem;
+}
+#tacticalOpsRoot .t-story-mission small { color:#98aab5; }
+#tacticalOpsRoot .t-story-mission .t-btn { margin-top:.25rem; }
+#tacticalOpsRoot .t-wt-secondary-detail {
+  opacity:.85;
+  font-size:.72rem;
+}
+
+@media (max-width: 860px) {
+  #tacticalOpsRoot .t-wt-next-op,
+  #tacticalOpsRoot .t-wt-current-ops .t-wt-mission-card {
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-wt-next-op .t-wt-feature-art {
+    height:150px;
+  }
+  #tacticalOpsRoot .t-wt-current-ops .t-wt-mission-art {
+    min-height:128px;
+  }
+  #tacticalOpsRoot .t-pack-mastery-v29 .t-pack-list {
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-mastery-card-v29 {
+    grid-template-columns:54px minmax(0,1fr);
+  }
+}
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-wt-status-rail-v29 {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:.35rem;
+  }
+  #tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card {
+    padding:.55rem .5rem;
+    min-height:84px;
+  }
+  #tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card .t-kicker {
+    font-size:.5rem;
+  }
+  #tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card strong {
+    font-size:.76rem;
+  }
+  #tacticalOpsRoot .t-wt-status-rail-v29 .t-wt-status-card small {
+    font-size:.54rem;
+  }
+  #tacticalOpsRoot .t-wt-status-rail-v29 .t-progress {
+    margin:.35rem 0 .25rem;
+  }
+  #tacticalOpsRoot .t-wt-hero-compact {
+    grid-template-columns:1fr auto;
+    padding:.78rem;
+  }
+  #tacticalOpsRoot .t-wt-refresh {
+    padding:.52rem;
+    font-size:.52rem;
+  }
+  #tacticalOpsRoot .t-wt-reward-chips {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-wt-mission-meta {
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-wt-story-archive .t-wt-canon-grid {
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* Tactical Ops v2.9 — mission brief clarity pass */
+#tacticalOpsRoot .t-deployment-v29 {
+  gap:.68rem;
+}
+#tacticalOpsRoot .t-deploy-hero-v29 {
+  min-height:185px;
+  padding:1rem;
+  display:flex;
+  align-items:flex-end;
+  position:relative;
+  overflow:hidden;
+}
+#tacticalOpsRoot .t-deploy-hero-v29 > img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:0% 50%;
+}
+#tacticalOpsRoot .t-deploy-hero-v29::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(5,12,19,.96) 0%,rgba(5,12,19,.68) 52%,rgba(5,12,19,.26) 100%);
+}
+#tacticalOpsRoot .t-deploy-hero-copy {
+  position:relative;
+  z-index:2;
+  max-width:72%;
+}
+#tacticalOpsRoot .t-deploy-hero-copy .t-title {
+  margin:.18rem 0 .2rem;
+  font-size:clamp(1.9rem,6vw,3rem);
+}
+#tacticalOpsRoot .t-deploy-hero-copy p {
+  margin:0;
+  color:#d6e7ed;
+  font-size:.88rem;
+  line-height:1.42;
+}
+#tacticalOpsRoot .t-deploy-rotation {
+  position:absolute;
+  z-index:3;
+  right:.8rem;
+  top:.8rem;
+  border:1px solid rgba(244,190,88,.45);
+  background:rgba(23,18,8,.86);
+  padding:.55rem .65rem;
+  text-align:right;
+}
+#tacticalOpsRoot .t-deploy-rotation strong {
+  display:block;
+  margin-top:.18rem;
+  color:#f4c96d;
+  font-size:.72rem;
+}
+
+#tacticalOpsRoot .t-deploy-overview {
+  display:grid;
+  grid-template-columns:1.5fr repeat(3,minmax(0,.85fr));
+  gap:.55rem;
+  padding:.75rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main,
+#tacticalOpsRoot .t-deploy-summary-card {
+  border:1px solid rgba(95,199,235,.22);
+  background:rgba(8,22,32,.72);
+  padding:.7rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main strong,
+#tacticalOpsRoot .t-deploy-summary-card strong {
+  display:block;
+  margin-top:.24rem;
+  color:#e7f7fc;
+  letter-spacing:.04em;
+}
+#tacticalOpsRoot .t-deploy-summary-main strong {
+  font-size:1.05rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main p,
+#tacticalOpsRoot .t-deploy-summary-card small {
+  display:block;
+  margin:.35rem 0 0;
+  color:#9eafb9;
+  font-size:.67rem;
+  line-height:1.38;
+}
+#tacticalOpsRoot .t-deploy-pressure.is-high {
+  border-color:rgba(232,103,80,.4);
+}
+#tacticalOpsRoot .t-deploy-pressure.is-high strong { color:#ff9a86; }
+#tacticalOpsRoot .t-deploy-pressure.is-reduced,
+#tacticalOpsRoot .t-deploy-pressure.is-clear {
+  border-color:rgba(101,208,171,.4);
+}
+#tacticalOpsRoot .t-deploy-pressure.is-reduced strong,
+#tacticalOpsRoot .t-deploy-pressure.is-clear strong { color:#a6eccd; }
+
+#tacticalOpsRoot .t-deploy-squad {
+  padding:.8rem;
+}
+#tacticalOpsRoot .t-deploy-squad .t-wt-section-head {
+  margin-bottom:.55rem;
+}
+#tacticalOpsRoot .t-deploy-squad .t-title {
+  margin:.12rem 0 0;
+  font-size:1.08rem;
+}
+#tacticalOpsRoot .t-squad-preview-v29 {
+  border-top:1px solid rgba(95,199,235,.16);
+  border-bottom:1px solid rgba(95,199,235,.16);
+  padding:.6rem 0;
+  margin:0 0 .6rem;
+}
+#tacticalOpsRoot .t-squad-preview-v29 > div {
+  width:68px;
+}
+#tacticalOpsRoot .t-squad-preview-v29 img {
+  width:68px;
+  height:58px;
+}
+#tacticalOpsRoot .t-deploy-squad-picker p {
+  margin:.25rem 0 .5rem;
+  color:#9fb0bb;
+  font-size:.7rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-brief-actions {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.45rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-btn {
+  min-height:52px;
+  font-size:.66rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-btn small {
+  font-size:.52rem;
+  color:#91a6b3;
+}
+
+#tacticalOpsRoot .t-deploy-rules,
+#tacticalOpsRoot .t-deploy-depth {
+  padding:.78rem .85rem;
+}
+#tacticalOpsRoot .t-deploy-rules > summary,
+#tacticalOpsRoot .t-deploy-depth > summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.7rem;
+  cursor:pointer;
+  list-style:none;
+}
+#tacticalOpsRoot .t-deploy-rules > summary::-webkit-details-marker,
+#tacticalOpsRoot .t-deploy-depth > summary::-webkit-details-marker { display:none; }
+#tacticalOpsRoot .t-deploy-rules > summary span strong,
+#tacticalOpsRoot .t-deploy-depth > summary span strong {
+  display:block;
+  margin-top:.18rem;
+  color:#e3f5fa;
+}
+#tacticalOpsRoot .t-deploy-rules > summary > b,
+#tacticalOpsRoot .t-deploy-depth > summary > b {
+  color:#9bdcf4;
+  font-size:.62rem;
+  letter-spacing:.08em;
+}
+#tacticalOpsRoot .t-condition-v29 {
+  margin-top:.55rem;
+  border-left:2px solid rgba(95,199,235,.38);
+  background:rgba(8,20,29,.62);
+  padding:.55rem .65rem;
+}
+#tacticalOpsRoot .t-condition-v29 strong {
+  display:block;
+  color:#dff6ff;
+  font-size:.68rem;
+}
+#tacticalOpsRoot .t-condition-v29 p {
+  margin:.25rem 0 0;
+  color:#9eafb9;
+  font-size:.68rem;
+  line-height:1.4;
+}
+#tacticalOpsRoot .t-deploy-tip,
+#tacticalOpsRoot .t-deploy-resume {
+  margin:.6rem 0 0;
+  color:#aebdc6;
+  font-size:.68rem;
+  line-height:1.42;
+}
+#tacticalOpsRoot .t-deployment-options-v29 {
+  margin-top:.65rem;
+  padding:.65rem;
+  background:rgba(7,18,26,.7);
+}
+#tacticalOpsRoot .t-deployment-options-v29 .t-kicker {
+  margin-top:.5rem;
+}
+#tacticalOpsRoot .t-deployment-options-v29 small {
+  display:block;
+  margin-top:.35rem;
+  color:#9eafb9;
+  font-size:.64rem;
+}
+#tacticalOpsRoot .t-deployment-options-v29 .t-brief-actions {
+  margin-top:.35rem;
+}
+
+#tacticalOpsRoot .t-deploy-depth .t-pack-mastery-v29 {
+  margin-top:.65rem;
+}
+#tacticalOpsRoot .t-sidegrade-card {
+  margin-top:.55rem;
+}
+#tacticalOpsRoot .t-sidegrade-card small {
+  display:block;
+  margin-top:.4rem;
+  color:#9eafb9;
+}
+#tacticalOpsRoot .t-deploy-actions-v29 {
+  position:sticky;
+  bottom:max(.5rem,env(safe-area-inset-bottom));
+  z-index:20;
+  display:grid;
+  grid-template-columns:110px minmax(0,1fr);
+  gap:.55rem;
+  padding:.55rem;
+  border:1px solid rgba(95,199,235,.28);
+  background:rgba(5,13,20,.94);
+  backdrop-filter:blur(10px);
+  box-shadow:0 -8px 26px rgba(0,0,0,.3);
+}
+#tacticalOpsRoot .t-deploy-actions-v29 .t-btn {
+  min-height:50px;
+}
+#tacticalOpsRoot .t-deploy-actions-v29 .t-btn-primary {
+  font-size:.78rem;
+  letter-spacing:.12em;
+}
+
+@media (max-width:860px) {
+  #tacticalOpsRoot .t-deploy-overview {
+    grid-template-columns:1fr 1fr;
+  }
+  #tacticalOpsRoot .t-deploy-summary-main {
+    grid-column:1 / -1;
+  }
+}
+@media (max-width:620px) {
+  #tacticalOpsRoot .t-deploy-hero-v29 {
+    min-height:170px;
+    padding:.78rem;
+  }
+  #tacticalOpsRoot .t-deploy-hero-copy {
+    max-width:100%;
+    padding-top:2.5rem;
+  }
+  #tacticalOpsRoot .t-deploy-rotation {
+    right:.55rem;
+    top:.55rem;
+    padding:.42rem .5rem;
+  }
+  #tacticalOpsRoot .t-deploy-overview {
+    grid-template-columns:1fr 1fr;
+    padding:.6rem;
+    gap:.4rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-main {
+    grid-column:1 / -1;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card {
+    padding:.55rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card strong {
+    font-size:.76rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card small {
+    font-size:.56rem;
+  }
+  #tacticalOpsRoot .t-deploy-squad-picker .t-brief-actions {
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-deploy-actions-v29 {
+    grid-template-columns:84px minmax(0,1fr);
+  }
+}
