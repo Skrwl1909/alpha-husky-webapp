@@ -33,25 +33,34 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
   const runs = [progression?.fieldOps?.activeMissionRun, ...Object.values(progression?.operations || {}).map((op: any) => op.activeMissionRun)] as Array<{ squadIds: string[] } | undefined>;
 
   return (
-    <section className="t-panel t-brief-block t-pack-mastery t-pack-mastery-premium" aria-label="Pack Mastery">
+    <section className="t-panel t-brief-block t-pack-mastery t-pack-mastery-premium t-pack-mastery-v29" aria-label="Pack Mastery">
       <div className="t-pack-head">
         <div>
+          <div className="t-kicker">Your squad</div>
           <h2 className="t-title">PACK MASTERY</h2>
-          <p>Deploy companions in Tactical Ops to develop their abilities.</p>
+          <p>Take companions into Field Ops to unlock permanent tactical abilities.</p>
         </div>
-        <small>First clears and challenges earn Mastery.</small>
+        <small>First clear +2 · challenge +1</small>
       </div>
 
       <div className="t-pack-list">
         {ids.map((id) => {
           const def = masteryDef(id);
+          if (!def) return null;
           const m = masteryRecord(snapshot || progression?.packMastery, id);
           const locked = runs.some((run) => run?.squadIds.includes(id));
           const active = m.stage >= 3 && m.selected ? def.options[m.selected] : null;
           const role = companionRole(id, pet?.name);
-          const stageText = m.stage >= 3 ? "COMPLETE" : `STAGE ${m.stage} / 3`;
+          const activeUnlock = active || (m.stage >= 2 ? def.trained : null);
+          const nextAt = m.stage < 2 ? 3 : m.stage < 3 ? 8 : null;
+          const nextCopy = m.stage < 2
+            ? compactEffect(def.trained)
+            : m.stage < 3
+              ? "Choose a specialization"
+              : "All mastery options unlocked";
+
           return (
-            <article key={id} className="t-mastery-row t-mastery-premium-row" data-mastery-companion={id}>
+            <article key={id} className="t-mastery-row t-mastery-premium-row t-mastery-card-v29" data-mastery-companion={id}>
               <div className="t-mastery-avatar" aria-hidden="true">{role.label}</div>
               <div className="t-mastery-main">
                 <div className="t-mastery-topline">
@@ -60,55 +69,61 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                     <span>{role.sublabel}</span>
                   </div>
                   <div className="t-mastery-status">
-                    <span>{stageText}</span>
-                    <b>{active ? active.name : m.stage >= 2 ? def.trained.name : "NONE"}</b>
+                    <span>{m.progress}/8 MASTERY</span>
+                    <b>{m.stage >= 3 ? "MASTERED" : `STAGE ${m.stage}`}</b>
                   </div>
                 </div>
+
                 <div className="t-mastery-progressline">
                   <progress className="t-progress" aria-label={`${def.name} mastery`} value={m.progress} max={8} />
-                  <small>{m.progress}/8 mastery</small>
                 </div>
-                <div className="t-mastery-summary-grid">
-                  <div className="t-mastery-summary-card">
-                    <span className="t-kicker">Active specialization</span>
-                    <strong>{active ? active.name : m.stage >= 2 ? def.trained.name : "None"}</strong>
-                    <small>{active ? compactEffect(active) : m.stage >= 2 ? compactEffect(def.trained) : "Unlocks at Stage 2."}</small>
+
+                <div className="t-mastery-now-next">
+                  <div>
+                    <span className="t-kicker">Active</span>
+                    <strong>{activeUnlock ? activeUnlock.name : "NO MASTERY YET"}</strong>
+                    <small>{activeUnlock ? compactEffect(activeUnlock) : "Earn 3 Mastery to unlock the first ability."}</small>
                   </div>
-                  <div className="t-mastery-summary-card">
-                    <span className="t-kicker">Next unlock</span>
-                    <strong>{m.stage < 2 ? "STAGE 2 AT 3" : m.stage < 3 ? "STAGE 3 AT 8" : "ALL OPTIONS OPEN"}</strong>
-                    <small>{m.stage < 2 ? compactEffect(def.trained) : m.stage < 3 ? "Choose a specialization." : "You can swap outside a committed attempt."}</small>
+                  <div>
+                    <span className="t-kicker">Next</span>
+                    <strong>{nextAt ? `AT ${nextAt} MASTERY` : "COMPLETE"}</strong>
+                    <small>{nextCopy}</small>
                   </div>
                 </div>
+
                 <details className="t-detail t-mastery-detail">
-                  <summary>{m.stage >= 3 ? "Change specialization / details" : "Abilities / details"}</summary>
-                  <p>{m.stage >= 2 ? "TRAINED" : "STAGE 2"}: {def.trained.name} / {def.trained.copy}</p>
-                  <div className="t-brief-actions">
-                    {(["A", "B"] as const).map((choice) => (
-                      <button
-                        key={choice}
-                        type="button"
-                        className={`t-btn ${m.selected === choice ? "t-btn-primary" : ""}`}
-                        aria-pressed={m.selected === choice}
-                        disabled={pending || locked || m.stage < 3}
-                        onClick={() => void select(id, choice)}
-                      >
-                        {def.options[choice].name}
-                        {m.stage < 3 ? " / STAGE 3" : m.selected === choice ? " / ACTIVE" : ""}
-                      </button>
-                    ))}
-                  </div>
-                  {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {def.options[choice].copy}</small></p>)}
+                  <summary>{m.stage >= 3 ? "Specialization" : "Ability details"}</summary>
+                  <p>{m.stage >= 2 ? "TRAINED" : "AT 3 MASTERY"}: {def.trained.name} / {def.trained.copy}</p>
+                  {m.stage >= 3 ? (
+                    <>
+                      <div className="t-brief-actions">
+                        {(["A", "B"] as const).map((choice) => (
+                          <button
+                            key={choice}
+                            type="button"
+                            className={`t-btn ${m.selected === choice ? "t-btn-primary" : ""}`}
+                            aria-pressed={m.selected === choice}
+                            disabled={pending || locked}
+                            onClick={() => void select(id, choice)}
+                          >
+                            {def.options[choice].name}{m.selected === choice ? " / ACTIVE" : ""}
+                          </button>
+                        ))}
+                      </div>
+                      {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {def.options[choice].copy}</small></p>)}
+                    </>
+                  ) : (
+                    <p><small>Specializations unlock at 8 Mastery.</small></p>
+                  )}
                 </details>
-                {locked ? <small>Finish this companion's committed attempt before changing its option. Saved mastery stays intact.</small> : null}
+                {locked ? <small className="t-mastery-locked">Finish this companion's current run before changing specialization.</small> : null}
               </div>
             </article>
           );
         })}
       </div>
 
-      <details className="t-detail"><summary>How Mastery is earned</summary><p>Per deployed companion, per mission, per rotation: first clear +2; first challenge success +1. Repeats give no extra Mastery. Stage 2 at 3; Stage 3 at 8. Tactical Rank is separate.</p></details>
-      {!pet ? <small>Equip a PET to develop its own Mastery.</small> : null}
+      {!pet ? <small className="t-pack-pet-note">Equip a PET to add it to Pack Mastery.</small> : null}
     </section>
   );
 }
