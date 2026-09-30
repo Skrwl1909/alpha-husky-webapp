@@ -439,134 +439,183 @@ function Brief() {
   const missionIntel = mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   return (
     <div className="t-fill">
-      <Background dim={0.55} />
-      <div className="t-brief t-deployment">
-        <header className="t-deploy-hero"><img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" /><div className="t-kicker">{fieldOp ? "FIELD OP" : "TACTICAL OPS"} / DEPLOYMENT</div>
-        <h1 className="t-title" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", margin: "0.2rem 0 0.2rem" }}>
-          {title}
-        </h1>
-        <p style={{ color: "var(--t-muted)", margin: 0, maxWidth: "40rem" }}>{mission ? objectiveHeadline(mission) : objective}</p>
+      <Background dim={0.58} />
+      <div className="t-brief t-deployment t-deployment-v29">
+        <header className="t-deploy-hero t-deploy-hero-v29">
+          <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+          <div className="t-deploy-hero-copy">
+            <div className="t-kicker">{fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
+            <h1 className="t-title">{title}</h1>
+            <p>{mission ? objectiveHeadline(mission) : objective}</p>
+          </div>
+          {fieldOp && field?.board ? <div className="t-deploy-rotation"><span className="t-kicker">Rotation</span><strong>{rotationTime(field.board.nextRotationAt)}</strong></div> : null}
         </header>
-        <div className="t-squad-preview" aria-label="Selected squad">{allies.map(def => <div key={def.defId}><img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" /><span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span></div>)}<span className="t-kicker">SQUAD<br />{allies.length}/{mission?.squadCap || allies.length}</span></div>
-        {primaryObjective ? <p style={{ color: "var(--t-accent)", margin: "0.65rem 0 0", fontSize: "0.82rem", letterSpacing: "0.08em" }}>{primaryObjective}</p> : null}
-        {mission ? <details className="t-detail"><summary>Objective & tactical intel</summary><p>{objective}</p>{mission.objectiveType === "RECOVER" ? <p>Eliminating hostiles is not required. Reach the terminal and use RECOVER.</p> : mission.objectiveType === "BOSS" ? <p>Defeating the BRUTE LEADER ends the mission even if HOUNDs remain.</p> : null}<small>{missionIntel}</small></details> : null}
-        {conditions.length ? <section className="t-conditions" aria-label="Special conditions"><div className="t-kicker">CONDITIONS / {selectedDirectiveTier.toUpperCase()}{selectedDirectiveTier === "advanced" ? ` / ${directiveSetLabel(fieldContext.directiveSet)}` : ""}</div>{conditions.map((condition) => <details className="t-condition" key={condition.type}><summary>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</summary><p><strong>{condition.name}</strong><br />{condition.copy}</p></details>)}<details className="t-detail"><summary>Squad tactics</summary><p>{mission?.squadHint}</p></details></section> : null}
-        {fieldOp ? <details className="t-detail t-deployment-options"><summary>DEPLOYMENT / {selectedDirectiveTier.toUpperCase()}{selectedApproach !== "standard" ? ` / ${DEPLOYMENT_APPROACHES[selectedApproach].name}` : ""}</summary>
-          <div className="t-kicker">REGIONAL CONDITION / SIGNAL PRESSURE {pressureLabel(fieldContext.pressure)}</div>
-          <div className="t-mission-strip"><span>{fieldContext.pressure < 2 ? "+1 ROUND DELAY" : "STANDARD ARRIVAL"}</span><span>{reinforcementRound ? `HOUND · ROUND ${reinforcementRound}` : "NO REINFORCEMENTS"}</span></div>
-          {resuming ? <p>RESUMING · Original conditions locked. Squad, route or tier changes start a new attempt while this mission is active.</p> : null}
-          {field?.board?.reportVersion === 3 ? <><div className="t-kicker">DIRECTIVE TIER</div><div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div><p>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} · Same rewards. Advanced clear recorded.` : "Standard conditions. Advanced combines threats."}</p></> : null}
-          <p><strong>OPTIONAL CHALLENGE</strong><br />{mission.challenge?.label}<br /><small>CLEAR +2 · CHALLENGE +1 / ROTATION · OPTIONAL</small></p>
-          <div className="t-kicker">DEPLOYMENT APPROACH / TACTICAL RANK {field?.commander?.rank || 1}</div>
-          <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
-          <p>{DEPLOYMENT_APPROACHES[selectedApproach].copy}</p>
-        </details> : null}
-        {fieldOp ? <div className="t-mission-strip"><span>PRESSURE · {pressureLabel(fieldContext.pressure)}</span><span>CLEAR +2 · CHALLENGE +1</span></div> : null}
+
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
-        {mission ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
-        {twoSlots ? (
-          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
-            <div className="t-kicker">{identity.unitName} + TWO TACTICAL SLOTS · {selectedSquadIds.length - 1}/2 selected</div>
-            <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose two. Deselect a companion to swap.</p>
-            <div className="t-brief-actions">
-              {[
-                { id: "ally-02", label: "CNC", role: "PRESSURE / DISRUPTION", available: true },
-                { id: "ally-03", label: "SHADOW", role: "SUSTAIN / PROTECTION", available: true },
-                { id: equippedPet ? `pet:${equippedPet.id}` : "pet:unavailable", label: equippedPet ? `PET · ${equippedPet.name}` : "PET", role: equippedPet ? "MOBILITY / CONTROL" : "NO VALID PET EQUIPPED", available: Boolean(equippedPet) },
-              ].map((candidate) => {
-                const selected = selectedSquadIds.includes(candidate.id);
-                return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
-              })}
-            </div>
+
+        <section className="t-panel t-deploy-overview" aria-label="Mission overview">
+          <div className="t-deploy-summary-main">
+            <div className="t-kicker">Objective</div>
+            <strong>{primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : mission ? objectiveHeadline(mission) : objective}</strong>
+            <p>{mission ? objective : footnote}</p>
           </div>
-        ) : null}
-        {mission?.objectiveType === "RECOVER" && !fieldOp ? (
-          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
-            <div className="t-kicker">Squad selection · cap 2</div>
-            <h3 style={{ margin: "0.35rem 0" }}>{identity.unitName} + one teammate</h3>
-            <p style={{ color: "var(--t-muted)", margin: "0 0 0.8rem" }}>Alpha is mandatory. Choose CNC for pressure, SHADOW for sustain, or your equipped PET for mobility and control.</p>
-            <div className="t-brief-actions">
-              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>{identity.unitName} + CNC<br /><small>OFFENSE · PRESSURE</small></button>
-              <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>{identity.unitName} + SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
-              <button type="button" disabled={busy || !equippedPet} className={`t-btn ${equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => equippedPet && selectRecoverTeammate(`pet:${equippedPet.id}`)}>{identity.unitName} + PET{equippedPet ? ` · ${equippedPet.name}` : ""}<br /><small>{equippedPet ? "MOBILITY · CONTROL" : "UNAVAILABLE · NO VALID PET EQUIPPED"}</small></button>
-            </div>
-            {equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? <p style={{ color: "var(--t-muted)", margin: "0.8rem 0 0" }}>MOVE 4 · BITE at melee range. HAMSTRING slows enemy initiative by 50% for 2 turns. A fast relay runner with low armor.</p> : null}
-          </div>
-        ) : null}
-        <details className="t-detail t-loadout-details"><summary>Squad abilities & hostile intel</summary>
-        {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
-          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
-            <div className="t-kicker">COLDNCURSED · BUG HUNTER WARDEN</div>
-            {sidegradesUnlocked ? <>
-              <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose one playstyle for future deployments. You can change it here at any time.</p>
-              <div className="t-brief-actions">
-                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
-                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
+          {fieldOp ? (
+            <>
+              <div className="t-deploy-summary-card">
+                <span className="t-kicker">Clear reward</span>
+                <strong>+2 COMMANDER</strong>
+                <small>First clear also grows deployed companions.</small>
               </div>
-              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>A: MOVE 3. LUNGE requires range 1 and boosts CNC's initiative speed for 2 turns.</p>
-              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>B: MOVE 2. PRESSURE deals no damage; weakens and slows an enemy at range 3 for 2 turns.</p>
-              <small style={{ color: "var(--t-accent)" }}>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
-            </> : <p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</p>}
-          </div>
-        ) : null}
-        {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
-          <div className="t-panel t-brief-block" style={{ marginTop: "1rem" }}>
-            <div className="t-kicker">SHADOW · Staff support</div>
-            {sidegradesUnlocked ? <>
-              <p style={{ color: "var(--t-muted)", margin: "0.5rem 0" }}>Choose one support playstyle for future deployments. You can change it here at any time.</p>
-              <div className="t-brief-actions">
-                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
-                <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
+              <div className="t-deploy-summary-card">
+                <span className="t-kicker">Bonus challenge</span>
+                <strong>+1 COMMANDER</strong>
+                <small>{mission?.challenge?.label || "Optional challenge"}</small>
               </div>
-              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>A: MEND heals SHADOW and allies within 1 cell. Stay together to recover; distant allies lose access to MEND.</p>
-              <p style={{ color: "var(--t-muted)", margin: "0.65rem 0" }}>B: PACK SUPPORT halves incoming damage for allies within 2 cells for 2 turns. It replaces healing and the DEF boost. MEND stays single-target.</p>
-              <small style={{ color: "var(--t-accent)" }}>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
-            </> : <p style={{ color: "var(--t-muted)", margin: "0.5rem 0 0" }}>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</p>}
+              <div className={`t-deploy-summary-card t-deploy-pressure is-${pressureLabel(fieldContext.pressure).toLowerCase()}`}>
+                <span className="t-kicker">Area status</span>
+                <strong>{pressureLabel(fieldContext.pressure)}</strong>
+                <small>{pressureEffect(fieldContext.pressure)}</small>
+              </div>
+            </>
+          ) : null}
+        </section>
+
+        <section className="t-panel t-deploy-squad" aria-label="Squad">
+          <div className="t-wt-section-head">
+            <div>
+              <div className="t-kicker">Squad</div>
+              <h2 className="t-title">{allies.length} / {mission?.squadCap || allies.length} DEPLOYED</h2>
+            </div>
+            {resuming ? <span>RESUMING SAVED RUN</span> : null}
           </div>
-        ) : null}
-        <div className="t-brief-grid">
-          <div className="t-panel t-brief-block">
-            <h3>Allied squad</h3>
-            <PlayerIdentityCard />
-            {allies.map((def) => (
-              <div className="t-unit-row" key={def.defId}>
-                <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
-                <div>
-                  <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                    {def.defId === "ally-02" ? "COLDNCURSED" : def.name}
-                  </div>
-                  <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div>
-                </div>
+
+          <div className="t-squad-preview t-squad-preview-v29" aria-label="Selected squad">
+            {allies.map(def => (
+              <div key={def.defId}>
+                <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" />
+                <span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span>
               </div>
             ))}
           </div>
-          <div className="t-panel t-brief-block">
-            <h3>Hostile force</h3>
-            {hostiles.map(({ def, count }) => (
-              <div className="t-unit-row" key={def.defId}>
-                <div className="t-unit-ph enemy" />
-                <div>
-                  <div className="t-title" style={{ fontSize: "0.95rem" }}>
-                    {count > 1 ? `${def.name} × ${count}` : def.name}
-                  </div>
-                  <div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>
-                    {briefSubtitle(def, `${def.hp} HP`)}
-                  </div>
-                </div>
+
+          {twoSlots ? (
+            <div className="t-deploy-squad-picker">
+              <p>Choose two tactical companions.</p>
+              <div className="t-brief-actions">
+                {[
+                  { id: "ally-02", label: "CNC", role: "PRESSURE / DISRUPTION", available: true },
+                  { id: "ally-03", label: "SHADOW", role: "SUSTAIN / PROTECTION", available: true },
+                  { id: equippedPet ? `pet:${equippedPet.id}` : "pet:unavailable", label: equippedPet ? `PET · ${equippedPet.name}` : "PET", role: equippedPet ? "MOBILITY / CONTROL" : "NO VALID PET EQUIPPED", available: Boolean(equippedPet) },
+                ].map((candidate) => {
+                  const selected = selectedSquadIds.includes(candidate.id);
+                  return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
+                })}
               </div>
-            ))}
-            <p style={{ color: "var(--t-faint)", fontSize: "0.78rem", margin: "0.8rem 0 0", lineHeight: 1.45 }}>
-              {footnote}
-            </p>
-          </div>
-        </div>
-        </details>
-        <div className="t-brief-actions t-deploy-actions">
-          <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>
-            Back
-          </button>
+            </div>
+          ) : null}
+
+          {mission?.objectiveType === "RECOVER" && !fieldOp ? (
+            <div className="t-deploy-squad-picker">
+              <p>Choose one teammate for this recovery mission.</p>
+              <div className="t-brief-actions">
+                <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-02" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-02")}>CNC<br /><small>OFFENSE · PRESSURE</small></button>
+                <button type="button" disabled={busy} className={`t-btn ${selectedSquadIds[1] === "ally-03" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => selectRecoverTeammate("ally-03")}>SHADOW<br /><small>SUPPORT · SUSTAIN</small></button>
+                <button type="button" disabled={busy || !equippedPet} className={`t-btn ${equippedPet && selectedSquadIds[1] === `pet:${equippedPet.id}` ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => equippedPet && selectRecoverTeammate(`pet:${equippedPet.id}`)}>PET{equippedPet ? ` · ${equippedPet.name}` : ""}<br /><small>{equippedPet ? "MOBILITY · CONTROL" : "UNAVAILABLE"}</small></button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        {conditions.length || fieldOp ? (
+          <details className="t-panel t-deploy-rules">
+            <summary>
+              <span><span className="t-kicker">Tactical setup</span><strong>CONDITIONS & APPROACH</strong></span>
+              <b>{selectedDirectiveTier.toUpperCase()}{selectedApproach !== "standard" ? ` · ${DEPLOYMENT_APPROACHES[selectedApproach].name}` : ""}</b>
+            </summary>
+
+            {conditions.length ? <section className="t-conditions" aria-label="Special conditions">
+              {conditions.map((condition) => <div className="t-condition t-condition-v29" key={condition.type}>
+                <strong>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</strong>
+                <p>{condition.copy}</p>
+              </div>)}
+              {mission?.squadHint ? <p className="t-deploy-tip"><strong>Squad tip:</strong> {mission.squadHint}</p> : null}
+            </section> : null}
+
+            {fieldOp ? <div className="t-deployment-options t-deployment-options-v29">
+              {resuming ? <p className="t-deploy-resume">Original conditions are locked for this saved run. Changing squad, route or tier starts a new attempt.</p> : null}
+              {field?.board?.reportVersion === 3 ? <>
+                <div className="t-kicker">Directive tier</div>
+                <div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div>
+                <small>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} · Advanced clear is recorded.` : "Standard field conditions."}</small>
+              </> : null}
+
+              <div className="t-kicker">Deployment approach</div>
+              <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
+              <small>{DEPLOYMENT_APPROACHES[selectedApproach].copy}</small>
+            </div> : null}
+          </details>
+        ) : null}
+
+        {mission ? <details className="t-panel t-deploy-depth">
+          <summary><span><span className="t-kicker">Optional depth</span><strong>MASTERY & LOADOUT</strong></span><b>VIEW</b></summary>
+          <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} />
+
+          {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
+            <div className="t-panel t-brief-block t-sidegrade-card">
+              <div className="t-kicker">CNC · BUG HUNTER WARDEN</div>
+              {sidegradesUnlocked ? <>
+                <div className="t-brief-actions">
+                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
+                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
+                </div>
+                <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
+              </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
+            </div>
+          ) : null}
+
+          {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
+            <div className="t-panel t-brief-block t-sidegrade-card">
+              <div className="t-kicker">SHADOW · STAFF SUPPORT</div>
+              {sidegradesUnlocked ? <>
+                <div className="t-brief-actions">
+                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
+                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
+                </div>
+                <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
+              </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
+            </div>
+          ) : null}
+
+          <details className="t-detail t-loadout-details"><summary>Squad abilities & hostile intel</summary>
+            <div className="t-brief-grid">
+              <div className="t-panel t-brief-block">
+                <h3>Allied squad</h3>
+                <PlayerIdentityCard />
+                {allies.map((def) => (
+                  <div className="t-unit-row" key={def.defId}>
+                    <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
+                    <div><div className="t-title" style={{ fontSize: "0.95rem" }}>{def.defId === "ally-02" ? "COLDNCURSED" : def.name}</div><div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div></div>
+                  </div>
+                ))}
+              </div>
+              <div className="t-panel t-brief-block">
+                <h3>Hostile force</h3>
+                {hostiles.map(({ def, count }) => (
+                  <div className="t-unit-row" key={def.defId}>
+                    <div className="t-unit-ph enemy" />
+                    <div><div className="t-title" style={{ fontSize: "0.95rem" }}>{count > 1 ? `${def.name} × ${count}` : def.name}</div><div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def, `${def.hp} HP`)}</div></div>
+                  </div>
+                ))}
+                <p style={{ color: "var(--t-faint)", fontSize: "0.78rem", margin: "0.8rem 0 0", lineHeight: 1.45 }}>{missionIntel}</p>
+              </div>
+            </div>
+          </details>
+        </details> : null}
+
+        <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29">
+          <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
           <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-            DEPLOY
+            DEPLOY SQUAD
             <ChevronRight className="t-ico" />
           </button>
         </div>
