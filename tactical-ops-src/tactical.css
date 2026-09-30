@@ -2750,3 +2750,293 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     grid-template-columns:1fr;
   }
 }
+
+
+/* Tactical Ops v2.9 — mission brief clarity pass */
+#tacticalOpsRoot .t-deployment-v29 {
+  gap:.68rem;
+}
+#tacticalOpsRoot .t-deploy-hero-v29 {
+  min-height:185px;
+  padding:1rem;
+  display:flex;
+  align-items:flex-end;
+  position:relative;
+  overflow:hidden;
+}
+#tacticalOpsRoot .t-deploy-hero-v29 > img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:0% 50%;
+}
+#tacticalOpsRoot .t-deploy-hero-v29::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(5,12,19,.96) 0%,rgba(5,12,19,.68) 52%,rgba(5,12,19,.26) 100%);
+}
+#tacticalOpsRoot .t-deploy-hero-copy {
+  position:relative;
+  z-index:2;
+  max-width:72%;
+}
+#tacticalOpsRoot .t-deploy-hero-copy .t-title {
+  margin:.18rem 0 .2rem;
+  font-size:clamp(1.9rem,6vw,3rem);
+}
+#tacticalOpsRoot .t-deploy-hero-copy p {
+  margin:0;
+  color:#d6e7ed;
+  font-size:.88rem;
+  line-height:1.42;
+}
+#tacticalOpsRoot .t-deploy-rotation {
+  position:absolute;
+  z-index:3;
+  right:.8rem;
+  top:.8rem;
+  border:1px solid rgba(244,190,88,.45);
+  background:rgba(23,18,8,.86);
+  padding:.55rem .65rem;
+  text-align:right;
+}
+#tacticalOpsRoot .t-deploy-rotation strong {
+  display:block;
+  margin-top:.18rem;
+  color:#f4c96d;
+  font-size:.72rem;
+}
+
+#tacticalOpsRoot .t-deploy-overview {
+  display:grid;
+  grid-template-columns:1.5fr repeat(3,minmax(0,.85fr));
+  gap:.55rem;
+  padding:.75rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main,
+#tacticalOpsRoot .t-deploy-summary-card {
+  border:1px solid rgba(95,199,235,.22);
+  background:rgba(8,22,32,.72);
+  padding:.7rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main strong,
+#tacticalOpsRoot .t-deploy-summary-card strong {
+  display:block;
+  margin-top:.24rem;
+  color:#e7f7fc;
+  letter-spacing:.04em;
+}
+#tacticalOpsRoot .t-deploy-summary-main strong {
+  font-size:1.05rem;
+}
+#tacticalOpsRoot .t-deploy-summary-main p,
+#tacticalOpsRoot .t-deploy-summary-card small {
+  display:block;
+  margin:.35rem 0 0;
+  color:#9eafb9;
+  font-size:.67rem;
+  line-height:1.38;
+}
+#tacticalOpsRoot .t-deploy-pressure.is-high {
+  border-color:rgba(232,103,80,.4);
+}
+#tacticalOpsRoot .t-deploy-pressure.is-high strong { color:#ff9a86; }
+#tacticalOpsRoot .t-deploy-pressure.is-reduced,
+#tacticalOpsRoot .t-deploy-pressure.is-clear {
+  border-color:rgba(101,208,171,.4);
+}
+#tacticalOpsRoot .t-deploy-pressure.is-reduced strong,
+#tacticalOpsRoot .t-deploy-pressure.is-clear strong { color:#a6eccd; }
+
+#tacticalOpsRoot .t-deploy-squad {
+  padding:.8rem;
+}
+#tacticalOpsRoot .t-deploy-squad .t-wt-section-head {
+  margin-bottom:.55rem;
+}
+#tacticalOpsRoot .t-deploy-squad .t-title {
+  margin:.12rem 0 0;
+  font-size:1.08rem;
+}
+#tacticalOpsRoot .t-squad-preview-v29 {
+  border-top:1px solid rgba(95,199,235,.16);
+  border-bottom:1px solid rgba(95,199,235,.16);
+  padding:.6rem 0;
+  margin:0 0 .6rem;
+}
+#tacticalOpsRoot .t-squad-preview-v29 > div {
+  width:68px;
+}
+#tacticalOpsRoot .t-squad-preview-v29 img {
+  width:68px;
+  height:58px;
+}
+#tacticalOpsRoot .t-deploy-squad-picker p {
+  margin:.25rem 0 .5rem;
+  color:#9fb0bb;
+  font-size:.7rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-brief-actions {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.45rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-btn {
+  min-height:52px;
+  font-size:.66rem;
+}
+#tacticalOpsRoot .t-deploy-squad-picker .t-btn small {
+  font-size:.52rem;
+  color:#91a6b3;
+}
+
+#tacticalOpsRoot .t-deploy-rules,
+#tacticalOpsRoot .t-deploy-depth {
+  padding:.78rem .85rem;
+}
+#tacticalOpsRoot .t-deploy-rules > summary,
+#tacticalOpsRoot .t-deploy-depth > summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.7rem;
+  cursor:pointer;
+  list-style:none;
+}
+#tacticalOpsRoot .t-deploy-rules > summary::-webkit-details-marker,
+#tacticalOpsRoot .t-deploy-depth > summary::-webkit-details-marker { display:none; }
+#tacticalOpsRoot .t-deploy-rules > summary span strong,
+#tacticalOpsRoot .t-deploy-depth > summary span strong {
+  display:block;
+  margin-top:.18rem;
+  color:#e3f5fa;
+}
+#tacticalOpsRoot .t-deploy-rules > summary > b,
+#tacticalOpsRoot .t-deploy-depth > summary > b {
+  color:#9bdcf4;
+  font-size:.62rem;
+  letter-spacing:.08em;
+}
+#tacticalOpsRoot .t-condition-v29 {
+  margin-top:.55rem;
+  border-left:2px solid rgba(95,199,235,.38);
+  background:rgba(8,20,29,.62);
+  padding:.55rem .65rem;
+}
+#tacticalOpsRoot .t-condition-v29 strong {
+  display:block;
+  color:#dff6ff;
+  font-size:.68rem;
+}
+#tacticalOpsRoot .t-condition-v29 p {
+  margin:.25rem 0 0;
+  color:#9eafb9;
+  font-size:.68rem;
+  line-height:1.4;
+}
+#tacticalOpsRoot .t-deploy-tip,
+#tacticalOpsRoot .t-deploy-resume {
+  margin:.6rem 0 0;
+  color:#aebdc6;
+  font-size:.68rem;
+  line-height:1.42;
+}
+#tacticalOpsRoot .t-deployment-options-v29 {
+  margin-top:.65rem;
+  padding:.65rem;
+  background:rgba(7,18,26,.7);
+}
+#tacticalOpsRoot .t-deployment-options-v29 .t-kicker {
+  margin-top:.5rem;
+}
+#tacticalOpsRoot .t-deployment-options-v29 small {
+  display:block;
+  margin-top:.35rem;
+  color:#9eafb9;
+  font-size:.64rem;
+}
+#tacticalOpsRoot .t-deployment-options-v29 .t-brief-actions {
+  margin-top:.35rem;
+}
+
+#tacticalOpsRoot .t-deploy-depth .t-pack-mastery-v29 {
+  margin-top:.65rem;
+}
+#tacticalOpsRoot .t-sidegrade-card {
+  margin-top:.55rem;
+}
+#tacticalOpsRoot .t-sidegrade-card small {
+  display:block;
+  margin-top:.4rem;
+  color:#9eafb9;
+}
+#tacticalOpsRoot .t-deploy-actions-v29 {
+  position:sticky;
+  bottom:max(.5rem,env(safe-area-inset-bottom));
+  z-index:20;
+  display:grid;
+  grid-template-columns:110px minmax(0,1fr);
+  gap:.55rem;
+  padding:.55rem;
+  border:1px solid rgba(95,199,235,.28);
+  background:rgba(5,13,20,.94);
+  backdrop-filter:blur(10px);
+  box-shadow:0 -8px 26px rgba(0,0,0,.3);
+}
+#tacticalOpsRoot .t-deploy-actions-v29 .t-btn {
+  min-height:50px;
+}
+#tacticalOpsRoot .t-deploy-actions-v29 .t-btn-primary {
+  font-size:.78rem;
+  letter-spacing:.12em;
+}
+
+@media (max-width:860px) {
+  #tacticalOpsRoot .t-deploy-overview {
+    grid-template-columns:1fr 1fr;
+  }
+  #tacticalOpsRoot .t-deploy-summary-main {
+    grid-column:1 / -1;
+  }
+}
+@media (max-width:620px) {
+  #tacticalOpsRoot .t-deploy-hero-v29 {
+    min-height:170px;
+    padding:.78rem;
+  }
+  #tacticalOpsRoot .t-deploy-hero-copy {
+    max-width:100%;
+    padding-top:2.5rem;
+  }
+  #tacticalOpsRoot .t-deploy-rotation {
+    right:.55rem;
+    top:.55rem;
+    padding:.42rem .5rem;
+  }
+  #tacticalOpsRoot .t-deploy-overview {
+    grid-template-columns:1fr 1fr;
+    padding:.6rem;
+    gap:.4rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-main {
+    grid-column:1 / -1;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card {
+    padding:.55rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card strong {
+    font-size:.76rem;
+  }
+  #tacticalOpsRoot .t-deploy-summary-card small {
+    font-size:.56rem;
+  }
+  #tacticalOpsRoot .t-deploy-squad-picker .t-brief-actions {
+    grid-template-columns:1fr;
+  }
+  #tacticalOpsRoot .t-deploy-actions-v29 {
+    grid-template-columns:84px minmax(0,1fr);
+  }
+}
