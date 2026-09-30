@@ -22,6 +22,14 @@
     "bloodmoon_tower_finished",
     "faction_hq_upgrade",
   ]);
+  const FRONTLINE_EVENT_TYPES = new Set([
+    "node_patrol",
+    "node_donate",
+    "frontline_confront",
+    "phantom_frontline",
+    "phantom_frontline_echo",
+  ]);
+  const FRONTLINE_STATUSES = new Set(["secured", "unstable", "dangerous", "critical"]);
   const RARE_RARITIES = new Set(["rare", "epic", "legendary", "mythic", "apex"]);
   const MAJOR_MISSION_TIERS = new Set(["hard", "very_hard", "veteran", "elite", "epic", "mythic", "apex"]);
   const FACTION_LABELS = Object.freeze({
@@ -70,8 +78,52 @@
     return text(row?.factionCode).toUpperCase().slice(0, 4) || FACTION_LABELS[key] || "";
   }
 
+  function normalizeNodeId(value) {
+    return text(value).toLowerCase().replace(/[\s-]+/g, "_");
+  }
+
+  function normalizeFrontlineStatus(value) {
+    const status = text(value).toLowerCase();
+    return FRONTLINE_STATUSES.has(status) ? status : "";
+  }
+
+  function statusFromPressure(value) {
+    const pressure = Number(value);
+    if (!Number.isFinite(pressure)) return "";
+    if (pressure <= 29) return "secured";
+    if (pressure <= 59) return "unstable";
+    if (pressure <= 79) return "dangerous";
+    return "critical";
+  }
+
+  function frontlineMeta(row) {
+    const nodeId = normalizeNodeId(
+      row?.nodeId || row?.node_id || row?.buildingId || row?.building_id || row?.node
+    );
+    if (nodeId !== "phantom_nodes") return null;
+
+    const statusBefore = normalizeFrontlineStatus(
+      row?.statusBefore || row?.status_before || row?.packDefenseStatusBefore ||
+      row?.previousStatus || row?.previous_status
+    );
+    const statusAfter = normalizeFrontlineStatus(
+      row?.statusAfter || row?.status_after || row?.packDefenseStatusAfter ||
+      row?.resultingStatus || row?.resulting_status || row?.packDefenseStatus
+    );
+    const meaningful = !!statusBefore && !!statusAfter && statusBefore !== statusAfter;
+    if (!meaningful) return null;
+
+    return {
+      nodeId,
+      statusBefore,
+      statusAfter,
+      cycleId: text(row?.cycleId || row?.cycle_id || row?.resetId || row?.reset_id || row?.dayKey || row?.day_key),
+    };
+  }
+
   function isHighSignal(row) {
     const type = text(row?.type).toLowerCase();
+    if (FRONTLINE_EVENT_TYPES.has(type)) return !!validCallsign(row?.name) && !!frontlineMeta(row);
     if (WORLD_EVENT_TYPES.has(type)) return true;
     if (!PLAYER_EVENT_TYPES.has(type) || !validCallsign(row?.name)) return false;
     if (type === "rare_drop") return RARE_RARITIES.has(text(row?.rarity).toLowerCase());
@@ -123,6 +175,8 @@
       age,
       ts,
       profileUid: callsign ? safeProfileUid(row.uid) : "",
+      actorId: text(row?.actorId || row?.actor_id || row?.uid),
+      frontline: frontlineMeta(row),
     };
   }
 
@@ -186,6 +240,13 @@
       .lw-action{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:550 11px/1.35 ui-sans-serif,system-ui,sans-serif;color:rgba(226,235,246,.73)}
       .lw-age{align-self:center;white-space:nowrap;font:750 9px/1.2 ui-sans-serif,system-ui,sans-serif;color:rgba(207,221,238,.48)}
       .lw-chevron{margin-left:4px;color:rgba(125,211,252,.62)}
+      .lw-frontline{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+      .lw-frontline-copy{font:750 9px/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:rgba(225,235,244,.67)}
+      .lw-row-actions{display:flex;align-items:center;gap:6px}
+      .lw-profile,.lw-frontline-cta{min-height:30px;padding:0 9px;border-radius:8px;font:850 8px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.09em;cursor:pointer}
+      .lw-profile{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(226,235,246,.72)}
+      .lw-frontline-cta{border:1px solid rgba(125,211,252,.30);background:rgba(46,115,155,.22);color:rgba(198,237,255,.95)}
+      .lw-profile:focus-visible,.lw-frontline-cta:focus-visible{outline:2px solid rgba(125,211,252,.78);outline-offset:1px}
       .lw-status{padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.055);font:700 10px/1.35 ui-sans-serif,system-ui,sans-serif;color:rgba(189,214,232,.68)}
       .lw-empty{padding:12px 13px 13px;border-top:1px solid rgba(255,255,255,.055)}
       .lw-empty-title{font:800 11px/1.3 ui-sans-serif,system-ui,sans-serif;color:rgba(240,246,252,.84)}
@@ -229,10 +290,14 @@
     if (!root) return;
     const rows = Array.isArray(state?.rows) ? state.rows.slice(0, MAX_ROWS) : [];
     const list = rows.length ? `<div class="lw-list">${rows.map((row, index) => {
-      const tag = row.profileUid ? "button" : "article";
-      const attrs = row.profileUid ? `type="button" data-lw-row="${index}" aria-label="Open ${escapeHtml(row.callsign)} public profile"` : "";
       const identity = row.callsign || "WORLD SIGNAL";
-      return `<${tag} class="lw-row" ${attrs}><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}${row.profileUid ? '<span class="lw-chevron" aria-hidden="true">›</span>' : ""}</div></${tag}>`;
+      const profile = row.profileUid
+        ? `<button class="lw-profile" type="button" data-lw-profile="${index}">PROFILE</button>`
+        : "";
+      const frontline = row.frontline?.cta
+        ? `<div class="lw-frontline"><span class="lw-frontline-copy">${escapeHtml(row.frontline.statusBefore.toUpperCase())} → ${escapeHtml(row.frontline.statusAfter.toUpperCase())}</span><div class="lw-row-actions">${profile}<button class="lw-frontline-cta" type="button" data-lw-frontline="${index}">${escapeHtml(row.frontline.cta)}</button></div></div>`
+        : (profile ? `<div class="lw-frontline"><span></span><div class="lw-row-actions">${profile}</div></div>` : "");
+      return `<article class="lw-row"><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}</div>${frontline}</article>`;
     }).join("")}</div>` : '<div class="lw-empty"><div class="lw-empty-title">No new Pack signals yet.</div><div class="lw-empty-copy">The Oracle retains the latest confirmed record of the world.</div></div>';
     const status = statusLine(state?.worldStatus);
     const hotClass = state?.worldStatus?.hotNodes > 0 ? " is-hot" : "";
@@ -242,10 +307,16 @@
 
   function bindActions(root, rows) {
     root.querySelector("[data-lw-oracle]")?.addEventListener("click", () => { void openOracle(); });
-    root.querySelectorAll("[data-lw-row]").forEach((button) => {
+    root.querySelectorAll("[data-lw-profile]").forEach((button) => {
       button.addEventListener("click", () => {
-        const row = rows[integer(button.getAttribute("data-lw-row"), -1)];
+        const row = rows[integer(button.getAttribute("data-lw-profile"), -1)];
         if (row?.profileUid) void openProfile(row.profileUid);
+      });
+    });
+    root.querySelectorAll("[data-lw-frontline]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const row = rows[integer(button.getAttribute("data-lw-frontline"), -1)];
+        if (row?.frontline?.nodeId === "phantom_nodes") void openFrontline();
       });
     });
   }
@@ -259,6 +330,72 @@
       return opened;
     } catch (_) {
       return false;
+    }
+  }
+
+  async function openFrontline() {
+    try {
+      global.HomeNav?.closeAll?.();
+      if (typeof global.MapActivityRouter?.open === "function") {
+        const opened = await global.MapActivityRouter.open("phantom_nodes");
+        if (opened !== false) return true;
+      }
+      if (typeof global.Influence?.open === "function") {
+        global.Influence.open("phantom_nodes", "Phantom Frontline");
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function currentFrontlineMeta(raw) {
+    const info = raw?.info || raw?.data?.info || {};
+    const status = normalizeFrontlineStatus(info?.packDefenseStatus) || statusFromPressure(info?.wastelandPressure);
+    const cycleId = text(
+      info?.cycleId || info?.cycle_id || info?.resetId || info?.reset_id || info?.dayKey || info?.day_key ||
+      raw?.cycleId || raw?.cycle_id || raw?.dayKey || raw?.day_key
+    );
+    const outcome = info?.dailyOutcome || raw?.dailyOutcome || raw?.data?.dailyOutcome || {};
+    const resolved = status === "secured" || (
+      outcome && typeof outcome === "object" &&
+      outcome.hasOutcome === true &&
+      text(outcome.result).toLowerCase() === "secured" &&
+      outcome.recoveryMode !== true
+    );
+    return { status, cycleId, resolved };
+  }
+
+  function applyFrontlineCurrentState(state, rawState) {
+    const rows = Array.isArray(state?.rows) ? state.rows : [];
+    const target = rows.find((row) => row?.frontline?.nodeId === "phantom_nodes");
+    if (!target) return state;
+
+    const current = currentFrontlineMeta(rawState);
+    const eventCycle = text(target.frontline.cycleId);
+    const cycleMismatch = !!eventCycle && !!current.cycleId && eventCycle !== current.cycleId;
+    if (cycleMismatch || current.resolved) {
+      target.frontline.cta = "";
+      target.frontline.currentStatus = current.status;
+      return state;
+    }
+
+    target.frontline.currentStatus = current.status;
+    target.frontline.cta = current.status && current.status !== "secured" ? "HOLD THE LINE" : "VIEW FRONT";
+    return state;
+  }
+
+  async function enrichFrontlineCurrentState(state, apiPost) {
+    const hasFrontline = Array.isArray(state?.rows) && state.rows.some((row) => row?.frontline?.nodeId === "phantom_nodes");
+    if (!hasFrontline || typeof apiPost !== "function") return state;
+    try {
+      const current = await apiPost("/webapp/influence/state", { nodeId: "phantom_nodes" });
+      return applyFrontlineCurrentState(state, current);
+    } catch (_) {
+      const target = state.rows.find((row) => row?.frontline?.nodeId === "phantom_nodes");
+      if (target) target.frontline.cta = "VIEW FRONT";
+      return state;
     }
   }
 
@@ -304,6 +441,7 @@
           renderUnavailable();
           return null;
         }
+        await enrichFrontlineCurrentState(normalized, apiPost);
         cache = normalized;
         cacheAt = Date.now();
         renderState(normalized);
@@ -333,7 +471,18 @@
     refresh,
     openOracle,
     openProfile,
-    __test: { compactAge, isHighSignal, normalizeEvent, normalizePayload, safeProfileUid, statusLine },
+    openFrontline,
+    __test: {
+      compactAge,
+      isHighSignal,
+      normalizeEvent,
+      normalizePayload,
+      safeProfileUid,
+      statusLine,
+      frontlineMeta,
+      currentFrontlineMeta,
+      applyFrontlineCurrentState,
+    },
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
