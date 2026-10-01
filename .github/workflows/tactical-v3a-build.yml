@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - tactical-ops-v3a-rotation-spine
+  pull_request:
+    branches:
+      - main
 permissions:
   contents: write
 jobs:
