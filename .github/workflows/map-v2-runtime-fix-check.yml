@@ -1,4 +1,5 @@
 name: Map V2 runtime init regression
+# trigger
 on:
   push:
     branches:
