@@ -16,4 +16,6 @@ jobs:
       - name: Frontend verifier
         run: node tools/verify_actionable_frontline_echo_p0_recovery.mjs
       - name: Diff check
-        run: git diff --check origin/main...HEAD
+        run: |
+          git fetch origin main
+          git diff --check origin/main...HEAD
