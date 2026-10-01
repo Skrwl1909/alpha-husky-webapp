@@ -17,5 +17,5 @@ jobs:
         run: node tools/verify_actionable_frontline_echo_p0_recovery.mjs
       - name: Diff check
         run: |
-          git fetch origin main
-          git diff --check origin/main...HEAD
+          git fetch origin b321faecc32bffa1c044016d33e0c7470d1cd37f
+          git diff --check FETCH_HEAD HEAD
