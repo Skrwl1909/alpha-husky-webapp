@@ -2512,3 +2512,32 @@
   0%,100%{ filter:brightness(1); }
   50%{ filter:brightness(1.08); }
 }
+
+
+.map-v2-region-hit[data-map-v2-runtime-tone="active"],
+.map-v2-region-hit[data-map-v2-runtime-tone="fortified"]{
+  fill:rgba(79,166,201,.028);
+  stroke:rgba(111,201,233,.22);
+}
+
+.map-v2-region-hit[data-map-v2-runtime-tone="hot"]{
+  fill:rgba(231,128,72,.045);
+  stroke:rgba(244,132,77,.4);
+}
+
+.map-v2-region-hit[data-map-v2-runtime-tone="alert"],
+.map-v2-region-hit[data-map-v2-runtime-tone="critical"]{
+  fill:rgba(223,69,48,.06);
+  stroke:rgba(255,94,67,.58);
+  stroke-width:2.2;
+}
+
+.map-v2-region-hit[data-map-v2-runtime-tone="critical"]{
+  fill:rgba(223,69,48,.085);
+  stroke:rgba(255,83,61,.72);
+}
+
+.map-v2-region-hit[data-map-v2-runtime-tone="locked"]{
+  fill:rgba(118,135,145,.014);
+  stroke:rgba(150,166,175,.07);
+}
