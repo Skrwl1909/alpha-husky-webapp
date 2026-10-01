@@ -197,8 +197,6 @@ function WarTable() {
   const currentCycleId = field?.board?.cycleId;
   const rotationProgress = field?.rotationProgress;
   const securedMissionIds = new Set(rotationProgress?.clearedMissionIds || []);
-  const challengeMissionIds = new Set(rotationProgress?.challengeMissionIds || []);
-  const advancedMissionIds = new Set(rotationProgress?.advancedMissionIds || []);
   const activeMissionRun = field?.activeMissionRun && activeMissionIds.includes(field.activeMissionRun.missionId)
     ? getMissionDef(field.activeMissionRun.missionId)
     : null;
