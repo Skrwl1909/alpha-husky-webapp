@@ -49,6 +49,52 @@
     return SECTION_PRESENTATION[sectionId] || Object.freeze({ code: "SEC", summary: "Operational sector." });
   }
 
+  function sectionNodes(sectionId) {
+    const section = getSections().find((item) => asText(item?.sectionId) === asText(sectionId));
+    return Array.isArray(section?.nodes) ? section.nodes.map((assignment) => asText(assignment?.nodeId)).filter(Boolean) : [];
+  }
+
+  function nodeRuntimeSignal(nodeId, snapshot) {
+    const runtime = snapshot === undefined ? global.AHMap?.getNodeRuntimeState?.(nodeId) : snapshot;
+    if (!runtime) return { score: 0, state: "STABLE", tone: "quiet", nodeId: asText(nodeId) };
+
+    const displayStatus = asText(runtime.display?.displayStatus).toUpperCase();
+    const urgency = asText(runtime.display?.urgency).toLowerCase();
+    const siegeStatus = asText(runtime.siege?.siegeStatus).toLowerCase();
+
+    let score = 0;
+    let state = "ACTIVE";
+    let tone = "active";
+
+    if (displayStatus === "SIEGE_LIVE" || siegeStatus === "running" || urgency === "critical") {
+      score = 100; state = "CRITICAL"; tone = "critical";
+    } else if (displayStatus === "SIEGE_FORMING" || siegeStatus === "forming" || runtime.contested || urgency === "high") {
+      score = 80; state = "FRONTLINE PRESSURE"; tone = "alert";
+    } else if (runtime.hot || displayStatus === "HOT" || urgency === "medium") {
+      score = 60; state = "PRESSURE"; tone = "hot";
+    } else if (runtime.fortified || displayStatus === "FORTIFIED") {
+      score = 30; state = "FORTIFIED"; tone = "fortified";
+    } else if (displayStatus === "CALM" || displayStatus === "") {
+      score = 10; state = "STABLE"; tone = "quiet";
+    } else {
+      score = 20; state = displayStatus || "ACTIVE"; tone = "active";
+    }
+
+    return { score, state, tone, nodeId: asText(nodeId) };
+  }
+
+  function regionRuntimePresentation(sectionId, snapshots) {
+    const nodeIds = sectionNodes(sectionId);
+    if (!nodeIds.length) return { state: "UNCHARTED", tone: "locked", score: -1, hotNodeId: "" };
+
+    let best = { state: "STABLE", tone: "quiet", score: 0, hotNodeId: "" };
+    for (const nodeId of nodeIds) {
+      const signal = nodeRuntimeSignal(nodeId, snapshots?.[nodeId]);
+      if (signal.score > best.score) best = { ...signal, hotNodeId: nodeId };
+    }
+    return best;
+  }
+
   function interactionRegion(sectionId) {
     return global.MapInteractionGeometry?.getRegion?.(sectionId) || null;
   }
@@ -111,25 +157,30 @@
         hit.setAttribute("points", region.polygon);
         hit.setAttribute("class", "map-v2-region-hit");
         hit.setAttribute("data-region", currentSection.sectionId);
+        hit.setAttribute("data-map-v2-section-id", currentSection.sectionId);
+        hit.setAttribute("data-map-v2-runtime-tone", runtimeRegion.tone);
         hit.setAttribute("data-map-v2-objective", objectiveSectionId === currentSection.sectionId ? "true" : "false");
         hit.setAttribute("tabindex", "-1");
         hit.addEventListener("click", () => renderSection(currentSection.sectionId));
         svg.append(hit);
 
         const presentation = sectionPresentation(currentSection.sectionId);
+        const runtimeRegion = regionRuntimePresentation(currentSection.sectionId);
         const label = button("map-v2-region-label", "", () => renderSection(currentSection.sectionId));
         label.dataset.mapV2SectionId = currentSection.sectionId;
         label.dataset.mapV2Region = currentSection.sectionId;
         label.dataset.mapV2Objective = objectiveSectionId === currentSection.sectionId ? "true" : "false";
         label.dataset.mapV2Pursuit = pursuitMatchesRegion(currentSection.sectionId) ? "true" : "false";
         label.dataset.mapV2Locked = currentSection.nodes?.length ? "false" : "true";
+        label.dataset.mapV2RuntimeTone = runtimeRegion.tone;
+        label.dataset.mapV2HotNodeId = runtimeRegion.hotNodeId || "";
         label.style.left = `${region.label?.x ?? 50}%`;
         label.style.top = `${region.label?.y ?? 50}%`;
         label.setAttribute("aria-label", `Enter ${sectionLabel(currentSection.sectionId)}`);
         label.append(
           element("span", "map-v2-region-code", presentation.code),
           element("strong", "map-v2-region-name", sectionLabel(currentSection.sectionId)),
-          element("span", "map-v2-region-state", currentSection.nodes?.length ? "ACTIVE" : "UNCHARTED"),
+          element("span", "map-v2-region-state", runtimeRegion.state),
         );
         if (label.dataset.mapV2Pursuit === "true") {
           label.append(element("span", "map-v2-pursuit-chip", "ACTIVE PURSUIT"));
@@ -183,10 +234,12 @@
           "vault_forge",
           "edge_of_chain",
           "blood_moon_tower",
+          "phantom_nodes",
           "moon_lab",
           "broken_contracts",
         ]);
         if (landmarkIds.has(node.id)) poi.dataset.mapV2Landmark = "true";
+        if (node.id === "phantom_nodes") poi.dataset.mapV2Strategic = "frontline";
 
         if (state.selectedNodeId === node.id) poi.classList.add("is-selected");
         poi.style.left = `${Number(point.x) * 100}%`;
@@ -201,10 +254,13 @@
           poi.append(element("span", "map-v2-poi-dot"));
         }
         const copy = element("span", "map-v2-poi-copy");
+        const runtimeNow = runtimePresentation(node.id);
+        const runtimeStatus = element("span", "map-v2-runtime-status", runtimeNow.label);
+        runtimeStatus.hidden = runtimeNow.tone === "quiet" || !runtimeNow.label || runtimeNow.label === "No live signal";
         copy.append(
           element("strong", "map-v2-poi-name", asText(node.name) || node.id),
           element("span", "map-v2-poi-state", access.label),
-          element("span", "map-v2-runtime-status", runtimePresentation(node.id).label),
+          runtimeStatus,
         );
         poi.append(copy);
         if (poi.dataset.mapV2Pursuit === "true") {
@@ -464,6 +520,26 @@
     }
   }
 
+  function updateRegionRuntimeElement(elementNode, sectionId, snapshots) {
+    if (!elementNode) return;
+    const presentation = regionRuntimePresentation(sectionId, snapshots);
+    elementNode.dataset.mapV2RuntimeTone = presentation.tone;
+    elementNode.dataset.mapV2HotNodeId = presentation.hotNodeId || "";
+    const stateNode = elementNode.querySelector?.(".map-v2-region-state");
+    if (stateNode) stateNode.textContent = presentation.state;
+  }
+
+  function refreshRuntimeRegions(nodeIds, snapshots) {
+    if (!state.active || state.sectionId || !state.root?.querySelectorAll) return;
+    const changed = new Set((Array.isArray(nodeIds) ? nodeIds : []).map(asText).filter(Boolean));
+    if (!changed.size) return;
+    for (const regionElement of state.root.querySelectorAll("[data-map-v2-section-id]")) {
+      const sectionId = asText(regionElement.dataset?.mapV2SectionId);
+      const nodes = sectionNodes(sectionId);
+      if (nodes.some((id) => changed.has(id))) updateRegionRuntimeElement(regionElement, sectionId, snapshots);
+    }
+  }
+
   function stopRuntimeUpdates() {
     if (typeof state.runtimeUnsubscribe === "function") state.runtimeUnsubscribe();
     state.runtimeUnsubscribe = null;
@@ -473,7 +549,8 @@
     stopRuntimeUpdates();
     if (!Array.isArray(nodeIds) || !nodeIds.length || typeof global.AHMap?.subscribe !== "function") return;
     state.runtimeUnsubscribe = global.AHMap.subscribe((event) => {
-      refreshRuntimeNodes(event?.nodeIds, event?.states);
+      if (state.sectionId) refreshRuntimeNodes(event?.nodeIds, event?.states);
+      else refreshRuntimeRegions(event?.nodeIds, event?.states);
     }, { nodeIds, emitCurrent: true });
   }
 
@@ -493,6 +570,7 @@
     const view = element("section", "map-v2-view map-v2-world map-v2-map-mode");
     view.append(createMapStage(null), createMapHud(null), createObjectiveStrip(null));
     state.root.replaceChildren(view);
+    startRuntimeUpdates(getSections().flatMap((section) => sectionNodes(section.sectionId)));
   }
 
   function createActivityCard(node, poiIndex = 0) {
@@ -704,6 +782,12 @@
     else renderWorld();
   });
 
-  const API = Object.freeze({ mount, open, close, back });
+  const API = Object.freeze({
+    mount,
+    open,
+    close,
+    back,
+    __test: Object.freeze({ nodeRuntimeSignal, regionRuntimePresentation, runtimePresentation }),
+  });
   global.MapSectionsV2 = API;
 })(window);
