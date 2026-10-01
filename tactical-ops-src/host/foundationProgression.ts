@@ -34,11 +34,13 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
-  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
+  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
   activeMissionRun: OperationMissionRun | null;
   lastCompletedMissionRunId: string | null;
   board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[]; reportVersion?: number; directiveSet?: DirectiveSet };
-  commander?: { rank: number; progress: number; nextRankAt: number | null; unlockedApproaches: DeploymentApproach[]; unlockedDirectiveTiers?: DirectiveTier[] };
+  commander?: { rank: number; progress: number; nextRankAt: number | null; certificationComplete?: boolean; unlockedApproaches: DeploymentApproach[]; unlockedDirectiveTiers?: DirectiveTier[] };
+  rotationProgress?: { cycleId: number; securedCount: number; total: number; clearedMissionIds: string[]; challengeMissionIds: string[]; advancedMissionIds: string[]; frontSecured: boolean };
+  careerRecord?: { version: 1; missionSecures: number; challenges: number; advancedClears: number; frontsSecured: number; lastSecuredCycle: number | null };
   region?: { regionId: string; cycleId: number; pressure: number; label: string };
   lastResult?: FieldResult | null;
 }
@@ -132,7 +134,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       if (!rawRecord || typeof rawRecord !== "object") return null;
       const record = rawRecord as Record<string, unknown>;
       if (record.missionId !== id || !Number.isInteger(record.clearCount) || Number(record.clearCount) < 0) return null;
-      records[id] = { missionId: id, completed: Number(record.clearCount) > 0, clearCount: Number(record.clearCount), lastClearedAt: Number(record.lastClearedAt) || 0, failCount: Number(record.failCount) || 0, challengeCount: Number(record.challengeCount) || 0, lastChallengeCycle: Number.isInteger(record.lastChallengeCycle) ? Number(record.lastChallengeCycle) : null };
+      records[id] = { missionId: id, completed: Number(record.clearCount) > 0, clearCount: Number(record.clearCount), lastClearedAt: Number(record.lastClearedAt) || 0, failCount: Number(record.failCount) || 0, challengeCount: Number(record.challengeCount) || 0, lastClearCycle: Number.isInteger(record.lastClearCycle) ? Number(record.lastClearCycle) : null, lastChallengeCycle: Number.isInteger(record.lastChallengeCycle) ? Number(record.lastChallengeCycle) : null };
       if (Array.isArray(record.squadIds) && record.squadIds.every((unit: unknown) => typeof unit === "string")) records[id].squadIds = [...record.squadIds];
       records[id].advancedClearCount = Number.isInteger(record.advancedClearCount) && Number(record.advancedClearCount) >= 0 ? Number(record.advancedClearCount) : 0;
       records[id].lastAdvancedCycle = Number.isInteger(record.lastAdvancedCycle) ? Number(record.lastAdvancedCycle) : null;
@@ -149,7 +151,18 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       if (board.reportVersion != null && (board.reportVersion !== 3 || !["pursuit", "attrition"].includes(board.directiveSet!))) return null;
       if (commander.unlockedDirectiveTiers != null && (!Array.isArray(commander.unlockedDirectiveTiers) || !commander.unlockedDirectiveTiers.every((tier) => ["standard", "advanced"].includes(tier)))) return null;
       if (!region || !Number.isInteger(region.pressure) || region.pressure < 0 || region.pressure > 3 || region.cycleId !== board.cycleId) return null;
-      Object.assign(state.fieldOps, { board, commander, region, lastResult: parseFieldResult(field.lastResult) });
+      const rotation = field.rotationProgress as NonNullable<FieldOpsProgression["rotationProgress"]> | undefined;
+      if (rotation != null) {
+        if (!Number.isInteger(rotation.cycleId) || rotation.cycleId !== board.cycleId || !Number.isInteger(rotation.securedCount) || !Number.isInteger(rotation.total) || rotation.total !== 3 || rotation.securedCount < 0 || rotation.securedCount > rotation.total) return null;
+        if (![rotation.clearedMissionIds, rotation.challengeMissionIds, rotation.advancedMissionIds].every((ids) => Array.isArray(ids) && ids.every((id) => typeof id === "string" && board.activeMissionIds.includes(id)))) return null;
+        if (typeof rotation.frontSecured !== "boolean" || rotation.frontSecured !== (rotation.securedCount === rotation.total)) return null;
+      }
+      const career = field.careerRecord as NonNullable<FieldOpsProgression["careerRecord"]> | undefined;
+      if (career != null) {
+        if (career.version !== 1 || ![career.missionSecures, career.challenges, career.advancedClears, career.frontsSecured].every((count) => Number.isInteger(count) && count >= 0)) return null;
+        if (career.lastSecuredCycle != null && !Number.isInteger(career.lastSecuredCycle)) return null;
+      }
+      Object.assign(state.fieldOps, { board, commander, region, ...(rotation ? { rotationProgress: rotation } : {}), ...(career ? { careerRecord: career } : {}), lastResult: parseFieldResult(field.lastResult) });
     }
   }
   const operations = parseOperations(value.operations);
