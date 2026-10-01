@@ -22,14 +22,6 @@
     "bloodmoon_tower_finished",
     "faction_hq_upgrade",
   ]);
-  const FRONTLINE_EVENT_TYPES = new Set([
-    "node_patrol",
-    "node_donate",
-    "frontline_confront",
-    "phantom_frontline",
-    "phantom_frontline_echo",
-  ]);
-  const FRONTLINE_STATUSES = new Set(["secured", "unstable", "dangerous", "critical"]);
   const RARE_RARITIES = new Set(["rare", "epic", "legendary", "mythic", "apex"]);
   const MAJOR_MISSION_TIERS = new Set(["hard", "very_hard", "veteran", "elite", "epic", "mythic", "apex"]);
   const FACTION_LABELS = Object.freeze({
@@ -78,52 +70,8 @@
     return text(row?.factionCode).toUpperCase().slice(0, 4) || FACTION_LABELS[key] || "";
   }
 
-  function normalizeNodeId(value) {
-    return text(value).toLowerCase().replace(/[\s-]+/g, "_");
-  }
-
-  function normalizeFrontlineStatus(value) {
-    const status = text(value).toLowerCase();
-    return FRONTLINE_STATUSES.has(status) ? status : "";
-  }
-
-  function statusFromPressure(value) {
-    const pressure = Number(value);
-    if (!Number.isFinite(pressure)) return "";
-    if (pressure <= 29) return "secured";
-    if (pressure <= 59) return "unstable";
-    if (pressure <= 79) return "dangerous";
-    return "critical";
-  }
-
-  function frontlineMeta(row) {
-    const nodeId = normalizeNodeId(
-      row?.nodeId || row?.node_id || row?.buildingId || row?.building_id || row?.node
-    );
-    if (nodeId !== "phantom_nodes") return null;
-
-    const statusBefore = normalizeFrontlineStatus(
-      row?.statusBefore || row?.status_before || row?.packDefenseStatusBefore ||
-      row?.previousStatus || row?.previous_status
-    );
-    const statusAfter = normalizeFrontlineStatus(
-      row?.statusAfter || row?.status_after || row?.packDefenseStatusAfter ||
-      row?.resultingStatus || row?.resulting_status || row?.packDefenseStatus
-    );
-    const meaningful = !!statusBefore && !!statusAfter && statusBefore !== statusAfter;
-    if (!meaningful) return null;
-
-    return {
-      nodeId,
-      statusBefore,
-      statusAfter,
-      cycleId: text(row?.cycleId || row?.cycle_id || row?.resetId || row?.reset_id || row?.dayKey || row?.day_key),
-    };
-  }
-
   function isHighSignal(row) {
     const type = text(row?.type).toLowerCase();
-    if (FRONTLINE_EVENT_TYPES.has(type)) return !!validCallsign(row?.name) && !!frontlineMeta(row);
     if (WORLD_EVENT_TYPES.has(type)) return true;
     if (!PLAYER_EVENT_TYPES.has(type) || !validCallsign(row?.name)) return false;
     if (type === "rare_drop") return RARE_RARITIES.has(text(row?.rarity).toLowerCase());
@@ -175,8 +123,50 @@
       age,
       ts,
       profileUid: callsign ? safeProfileUid(row.uid) : "",
-      actorId: text(row?.actorId || row?.actor_id || row?.uid),
-      frontline: frontlineMeta(row),
+    };
+  }
+
+  function normalizeFrontlineEcho(raw, nowSec = Math.floor(Date.now() / 1000)) {
+    if (!raw || typeof raw !== "object") return null;
+    if (text(raw.kind).toLowerCase() !== "phantom_frontline") return null;
+    if (text(raw.nodeId || raw.node_id).toLowerCase() !== "phantom_nodes") return null;
+
+    const ts = integer(raw.ts, 0);
+    const age = compactAge(ts, nowSec);
+    if (!ts || !age || ts > nowSec + 300) return null;
+
+    const actor = raw.actor && typeof raw.actor === "object" ? raw.actor : {};
+    const actorName = text(actor.name).slice(0, 40) || "PACK MEMBER";
+    const before = text(raw.statusBefore || raw.status_before);
+    const after = text(raw.statusAfter || raw.status_after);
+    if (!before || !after || before.toLowerCase() === after.toLowerCase()) return null;
+
+    const cta = raw.cta && typeof raw.cta === "object" ? raw.cta : {};
+    const ctaNodeId = text(cta.nodeId || cta.node_id).toLowerCase();
+    const ctaLabelRaw = text(cta.label).toUpperCase();
+    const ctaLabel = ctaNodeId === "phantom_nodes" && (ctaLabelRaw === "HOLD THE LINE" || ctaLabelRaw === "VIEW FRONT")
+      ? ctaLabelRaw
+      : "";
+
+    return {
+      type: "phantom_frontline",
+      callsign: actorName,
+      faction: factionLabel({ faction: actor.faction }),
+      action: text(raw.consequence).slice(0, 180) || `moved Phantom Nodes from ${before.toUpperCase()} to ${after.toUpperCase()}`,
+      age,
+      ts,
+      profileUid: safeProfileUid(actor.uid),
+      frontline: {
+        nodeId: "phantom_nodes",
+        cycleId: text(raw.cycleId || raw.cycle_id),
+        statusBefore: before,
+        statusAfter: after,
+        currentStatus: text(raw.currentStatus),
+        currentNeed: text(raw.currentNeed),
+        cta: ctaLabel,
+        actionable: cta.actionable === true,
+        continuation: raw.continuation && typeof raw.continuation === "object" ? raw.continuation : null,
+      },
     };
   }
 
@@ -185,7 +175,12 @@
     if (!data || typeof data !== "object" || !Array.isArray(data.liveEchoes)) return null;
     const rows = [];
     const seen = new Set();
+
+    const frontline = normalizeFrontlineEcho(data.frontlineEcho, nowSec);
+    if (frontline) rows.push(frontline);
+
     for (const rawRow of data.liveEchoes) {
+      if (rows.length >= MAX_ROWS) break;
       const row = normalizeEvent(rawRow, nowSec);
       if (!row) continue;
       const fingerprint = `${row.type}|${row.callsign.toLowerCase()}|${row.action.toLowerCase()}`;
@@ -194,7 +189,6 @@
       seen.add(fingerprint);
       seen.add(actorType);
       rows.push(row);
-      if (rows.length >= MAX_ROWS) break;
     }
     const summary = data.factionPulse?.summary;
     return {
@@ -295,7 +289,7 @@
         ? `<button class="lw-profile" type="button" data-lw-profile="${index}">PROFILE</button>`
         : "";
       const frontline = row.frontline?.cta
-        ? `<div class="lw-frontline"><span class="lw-frontline-copy">${escapeHtml(row.frontline.statusBefore.toUpperCase())} → ${escapeHtml(row.frontline.statusAfter.toUpperCase())}</span><div class="lw-row-actions">${profile}<button class="lw-frontline-cta" type="button" data-lw-frontline="${index}">${escapeHtml(row.frontline.cta)}</button></div></div>`
+        ? `<div class="lw-frontline"><span class="lw-frontline-copy">${escapeHtml(row.frontline.currentNeed || `${row.frontline.statusBefore.toUpperCase()} → ${row.frontline.statusAfter.toUpperCase()}`)}</span><div class="lw-row-actions">${profile}<button class="lw-frontline-cta" type="button" data-lw-frontline="${index}">${escapeHtml(row.frontline.cta)}</button></div></div>`
         : (profile ? `<div class="lw-frontline"><span></span><div class="lw-row-actions">${profile}</div></div>` : "");
       return `<article class="lw-row"><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}</div>${frontline}</article>`;
     }).join("")}</div>` : '<div class="lw-empty"><div class="lw-empty-title">No new Pack signals yet.</div><div class="lw-empty-copy">The Oracle retains the latest confirmed record of the world.</div></div>';
@@ -350,55 +344,6 @@
     }
   }
 
-  function currentFrontlineMeta(raw) {
-    const info = raw?.info || raw?.data?.info || {};
-    const status = normalizeFrontlineStatus(info?.packDefenseStatus) || statusFromPressure(info?.wastelandPressure);
-    const cycleId = text(
-      info?.cycleId || info?.cycle_id || info?.resetId || info?.reset_id || info?.dayKey || info?.day_key ||
-      raw?.cycleId || raw?.cycle_id || raw?.dayKey || raw?.day_key
-    );
-    const outcome = info?.dailyOutcome || raw?.dailyOutcome || raw?.data?.dailyOutcome || {};
-    const resolved = status === "secured" || (
-      outcome && typeof outcome === "object" &&
-      outcome.hasOutcome === true &&
-      text(outcome.result).toLowerCase() === "secured" &&
-      outcome.recoveryMode !== true
-    );
-    return { status, cycleId, resolved };
-  }
-
-  function applyFrontlineCurrentState(state, rawState) {
-    const rows = Array.isArray(state?.rows) ? state.rows : [];
-    const target = rows.find((row) => row?.frontline?.nodeId === "phantom_nodes");
-    if (!target) return state;
-
-    const current = currentFrontlineMeta(rawState);
-    const eventCycle = text(target.frontline.cycleId);
-    const cycleMismatch = !!eventCycle && !!current.cycleId && eventCycle !== current.cycleId;
-    if (cycleMismatch || current.resolved) {
-      target.frontline.cta = "";
-      target.frontline.currentStatus = current.status;
-      return state;
-    }
-
-    target.frontline.currentStatus = current.status;
-    target.frontline.cta = current.status && current.status !== "secured" ? "HOLD THE LINE" : "VIEW FRONT";
-    return state;
-  }
-
-  async function enrichFrontlineCurrentState(state, apiPost) {
-    const hasFrontline = Array.isArray(state?.rows) && state.rows.some((row) => row?.frontline?.nodeId === "phantom_nodes");
-    if (!hasFrontline || typeof apiPost !== "function") return state;
-    try {
-      const current = await apiPost("/webapp/influence/state", { nodeId: "phantom_nodes" });
-      return applyFrontlineCurrentState(state, current);
-    } catch (_) {
-      const target = state.rows.find((row) => row?.frontline?.nodeId === "phantom_nodes");
-      if (target) target.frontline.cta = "VIEW FRONT";
-      return state;
-    }
-  }
-
   async function openOracle() {
     try {
       if (typeof global.ensureOracleLoaded === "function") {
@@ -441,7 +386,6 @@
           renderUnavailable();
           return null;
         }
-        await enrichFrontlineCurrentState(normalized, apiPost);
         cache = normalized;
         cacheAt = Date.now();
         renderState(normalized);
@@ -479,9 +423,7 @@
       normalizePayload,
       safeProfileUid,
       statusLine,
-      frontlineMeta,
-      currentFrontlineMeta,
-      applyFrontlineCurrentState,
+      normalizeFrontlineEcho,
     },
   };
 
