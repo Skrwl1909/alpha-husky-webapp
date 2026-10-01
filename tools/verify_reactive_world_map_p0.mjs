@@ -102,6 +102,15 @@ assert.equal(phantomPresentation.tone, "alert");
 
 assert.match(js, /node\.id === "phantom_nodes"\) poi\.dataset\.mapV2Strategic = "frontline"/);
 assert.match(js, /startRuntimeUpdates\(getSections\(\)\.flatMap/);
+
+// Regression: WORLD render must initialize runtimeRegion before either the SVG hit
+// or the region label reads it. This guards the TDZ crash seen on Map open.
+const runtimeInit = js.indexOf("const runtimeRegion = regionRuntimePresentation(currentSection.sectionId);");
+const runtimeHitRead = js.indexOf('hit.setAttribute("data-map-v2-runtime-tone", runtimeRegion.tone);');
+const runtimeLabelRead = js.indexOf("label.dataset.mapV2RuntimeTone = runtimeRegion.tone;");
+assert.ok(runtimeInit >= 0, "runtimeRegion initialization missing");
+assert.ok(runtimeHitRead > runtimeInit, "WORLD polygon reads runtimeRegion before initialization");
+assert.ok(runtimeLabelRead > runtimeInit, "WORLD label reads runtimeRegion before initialization");
 assert.match(css, /data-map-v2-strategic="frontline"/);
 assert.match(css, /data-map-v2-runtime-tone="critical"/);
 assert.match(css, /opacity:1!important/);

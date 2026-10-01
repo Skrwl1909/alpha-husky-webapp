@@ -153,6 +153,7 @@
       for (const currentSection of getSections()) {
         const region = interactionRegion(currentSection.sectionId);
         if (!region?.polygon) continue;
+        const runtimeRegion = regionRuntimePresentation(currentSection.sectionId);
         const hit = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
         hit.setAttribute("points", region.polygon);
         hit.setAttribute("class", "map-v2-region-hit");
@@ -165,7 +166,6 @@
         svg.append(hit);
 
         const presentation = sectionPresentation(currentSection.sectionId);
-        const runtimeRegion = regionRuntimePresentation(currentSection.sectionId);
         const label = button("map-v2-region-label", "", () => renderSection(currentSection.sectionId));
         label.dataset.mapV2SectionId = currentSection.sectionId;
         label.dataset.mapV2Region = currentSection.sectionId;
