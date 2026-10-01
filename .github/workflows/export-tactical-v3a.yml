@@ -1,0 +1,26 @@
+name: Export Tactical v3A files
+on:
+  push:
+    branches:
+      - tmp-export-tactical-v3a-files
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack Tactical Ops v3A frontend files
+        run: |
+          mkdir -p export/tactical-ops-src/host export/tactical-ops-src/data export/tactical-ops-src/ui export/js
+          cp tactical-ops-src/host/foundationProgression.ts export/tactical-ops-src/host/
+          cp tactical-ops-src/data/fieldOps.ts export/tactical-ops-src/data/
+          cp tactical-ops-src/ui/App.tsx export/tactical-ops-src/ui/
+          cp tactical-ops-src/tactical.css export/tactical-ops-src/
+          cp tactical-ops-src/version.ts export/tactical-ops-src/
+          cp js/tactical_ops.js export/js/
+          cp js/boot_loaders.js export/js/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ALPHA_HUSKY_TACTICAL_OPS_V3A_FRONTEND
+          path: export
