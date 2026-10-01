@@ -1,0 +1,16 @@
+name: Map V2 runtime init regression
+on:
+  push:
+    branches:
+      - fix-map-v2-runtime-region-init
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/verify_reactive_world_map_p0.mjs
