@@ -38,7 +38,7 @@
       key: "pb",
       slug: "pack_burners",
       name: "Pack Burners",
-      color: "#ba68c8",
+      color: "#ff7a1a",
       icon40: "/images/factions/pack_burners_40.webp",
       icon80: "/images/factions/pack_burners_80.webp",
       desc: "Force doctrine of the fractured Alpha Network. Stack pressure, break resistance, and keep fronts moving.",
@@ -604,7 +604,11 @@
   }
 
   // public helpers: for onboarding / buttons
-  function openPicker() { open({ mode: "select" }); }
+  function openPicker() {
+    const my = getMyFactionKey();
+    if (!my && window.FactionChamber?.open) return window.FactionChamber.open();
+    open({ mode: "select" });
+  }
 
   // ----------------------------
   // Public API
