@@ -156,12 +156,14 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     {unlock ? <div className="t-unlock"><span className="t-kicker">UNLOCKED</span><strong>{unlock}</strong></div> : null}
     <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
     <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
-    <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "ALL COMMAND OPTIONS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
-    <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? `CHALLENGE MET · +${result.challengeBonus}` : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.advancedFirstClear ? " · FIRST CLEAR" : result.victory ? " · CLEARED" : " · FAILED"}</span> : null}</div>
+    <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "CERTIFIED · ALL CURRENT COMMAND TOOLS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
+    {result.victory && result.progressEarned === 0 ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
+    {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
+    <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div>
     <div className="t-mission-strip t-field-rewards" aria-label="Character rewards"><span>+{result.xpGranted} EXP</span><span>+{result.bonesGranted} BONES</span></div>
     {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
-    <div className="t-world-change"><span className="t-kicker">SIGNAL PRESSURE</span><strong>{result.regionalApplied ? `${pressureLabel(result.pressureBefore)} → ${pressureLabel(result.pressureAfter)}` : "CURRENT ROTATION UNCHANGED"}</strong><small>{result.regionalApplied ? result.pressureAfter < 2 ? "+1 ROUND DELAY · REINFORCEMENTS" : "REINFORCEMENTS ON SCHEDULE" : "Earlier rotation attempt. Commander progress recorded."}</small></div>
+    <div className="t-world-change"><span className="t-kicker">SIGNAL PRESSURE</span><strong>{result.regionalApplied ? `${pressureLabel(result.pressureBefore)} → ${pressureLabel(result.pressureAfter)}` : "CURRENT ROTATION UNCHANGED"}</strong><small>{result.regionalApplied ? result.pressureAfter < 2 ? "+1 ROUND DELAY · REINFORCEMENTS" : "REINFORCEMENTS ON SCHEDULE" : "Earlier rotation attempt. Current front and Commander certification unchanged."}</small></div>
   </section>;
 }
 
@@ -192,14 +194,21 @@ function WarTable() {
 
   const activeMissionIds = field?.board?.activeMissionIds || [];
   const activeMissionDefs = activeMissionIds.map((id) => getMissionDef(id)).filter(Boolean) as NonNullable<ReturnType<typeof getMissionDef>>[];
+  const currentCycleId = field?.board?.cycleId;
+  const rotationProgress = field?.rotationProgress;
+  const securedMissionIds = new Set(rotationProgress?.clearedMissionIds || []);
+  const challengeMissionIds = new Set(rotationProgress?.challengeMissionIds || []);
+  const advancedMissionIds = new Set(rotationProgress?.advancedMissionIds || []);
   const activeMissionRun = field?.activeMissionRun && activeMissionIds.includes(field.activeMissionRun.missionId)
     ? getMissionDef(field.activeMissionRun.missionId)
     : null;
   const recommendedMission = activeMissionRun
-    || activeMissionDefs.find((mission) => !field?.records[mission.missionId]?.completed)
+    || activeMissionDefs.find((mission) => field?.records[mission.missionId]?.lastClearCycle !== currentCycleId)
     || activeMissionDefs[0]
     || null;
   const recommendedRecord = recommendedMission ? field?.records[recommendedMission.missionId] : null;
+  const recommendedSecured = recommendedMission ? recommendedRecord?.lastClearCycle === currentCycleId : false;
+  const recommendedChallenge = recommendedMission ? recommendedRecord?.lastChallengeCycle === currentCycleId : false;
   const rotationLabel = field?.board ? rotationTime(field.board.nextRotationAt) : "REFRESH REQUIRED";
   const commanderRank = field?.commander?.rank || 1;
   const commanderProgress = field?.commander?.progress || 0;
@@ -234,13 +243,13 @@ function WarTable() {
         <section className="t-wt-status-rail t-wt-status-rail-v29" aria-label="Tactical Ops overview">
           <div className="t-panel t-wt-status-card t-wt-rank-card">
             <span className="t-kicker">Commander</span>
-            <strong>RANK {commanderRank}{commanderTarget ? "" : " / MAX"}</strong>
+            <strong>{commanderRank >= 3 ? "RANK 3 · CERTIFIED" : `RANK ${commanderRank}`}</strong>
             {commanderTarget ? (
               <>
                 <progress className="t-progress" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
                 <small>{commanderProgress} / {commanderTarget} progress</small>
               </>
-            ) : <small>All command options unlocked</small>}
+            ) : <small>All current command tools unlocked</small>}
           </div>
           <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
             <span className="t-kicker">Area status</span>
@@ -254,6 +263,29 @@ function WarTable() {
           </div>
         </section>
 
+        {field?.board && rotationProgress ? (
+          <section className="t-panel t-wt-front" aria-label="Today's Front">
+            <div className="t-wt-front-head">
+              <div>
+                <span className="t-kicker">TODAY'S FRONT</span>
+                <strong>{rotationProgress.securedCount}/{rotationProgress.total} SECURED</strong>
+              </div>
+              <div className="t-wt-front-meta">
+                <span>Challenges {rotationProgress.challengeMissionIds.length}/{rotationProgress.total}</span>
+                {field.commander?.unlockedDirectiveTiers?.includes("advanced") ? <span>Advanced {rotationProgress.advancedMissionIds.length}/{rotationProgress.total}</span> : null}
+              </div>
+            </div>
+            <div className="t-wt-front-list">
+              {activeMissionDefs.map((mission) => (
+                <div className="t-wt-front-row" key={`front-${mission.missionId}`}>
+                  <span>{mission.name}</span>
+                  <b className={securedMissionIds.has(mission.missionId) ? "is-secured" : ""}>{securedMissionIds.has(mission.missionId) ? "SECURED TODAY" : "OPEN"}</b>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {recommendedMission ? (
           <section className="t-panel t-wt-feature t-wt-next-op" aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
@@ -264,16 +296,16 @@ function WarTable() {
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{objectiveHeadline(missionForContext(recommendedMission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
               <div className="t-wt-reward-chips" aria-label="Mission progression rewards">
-                <span><b>+2</b> Commander</span>
-                <span className={recommendedRecord?.lastChallengeCycle === field?.board?.cycleId ? "is-earned" : ""}>
-                  <b>{recommendedRecord?.lastChallengeCycle === field?.board?.cycleId ? "✓" : "+1"}</b> Challenge
+                <span><b>{recommendedSecured ? "✓" : "+2"}</b> {recommendedSecured ? "Clear secured · replay" : "Commander"}</span>
+                <span className={recommendedChallenge ? "is-earned" : ""}>
+                  <b>{recommendedChallenge ? "✓" : "+1"}</b> {recommendedChallenge ? "Challenge" : "Commander · Challenge"}
                 </span>
                 <span><b>+2</b> Mastery first clear</span>
               </div>
             </div>
             <div className="t-wt-feature-cta">
               <button className="t-btn t-btn-primary t-wt-main-cta" type="button" disabled={loading} onClick={() => openOperationBrief(recommendedMission.missionId)}>
-                {activeMissionRun ? "RESUME OP" : recommendedRecord?.completed ? "DEPLOY AGAIN" : "VIEW BRIEF"}
+                {activeMissionRun ? "RESUME OP" : recommendedSecured ? "DEPLOY AGAIN" : "VIEW BRIEF"}
                 <ChevronRight className="t-ico" />
               </button>
             </div>
@@ -302,10 +334,11 @@ function WarTable() {
           <div className="t-wt-mission-list">
             {activeMissionDefs.map((mission) => {
               const record = field?.records[mission.missionId];
+              const securedToday = record?.lastClearCycle === field?.board?.cycleId;
               const bonusEarned = record?.lastChallengeCycle === field?.board?.cycleId;
               const contextualMission = missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 });
               return (
-                <article className={`t-wt-mission-card t-panel ${record?.completed ? "is-cleared" : "is-active"}`} key={mission.missionId}>
+                <article className={`t-wt-mission-card t-panel ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
                   <div className="t-wt-mission-art">
                     <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
                     <span className="t-wt-mission-type">{mission.objectiveType}</span>
@@ -316,11 +349,11 @@ function WarTable() {
                         <h3>{mission.name}</h3>
                         <p>{objectiveHeadline(contextualMission)}</p>
                       </div>
-                      <div className="t-wt-mission-state">{record?.completed ? "CLEARED" : "AVAILABLE"}</div>
+                      <div className="t-wt-mission-state">{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
                     </div>
                     <div className="t-wt-mission-meta">
-                      <span><b>CLEAR</b> +2 Commander</span>
-                      <span className={bonusEarned ? "is-earned" : ""}><b>BONUS</b> {bonusEarned ? "Claimed" : `+1 · ${mission.challenge?.label || "Optional challenge"}`}</span>
+                      <span><b>CLEAR</b> {securedToday ? "SECURED · REPLAY" : "+2 COMMANDER"}</span>
+                      <span className={bonusEarned ? "is-earned" : ""}><b>CHALLENGE</b> {bonusEarned ? "✓" : `+1 COMMANDER · ${mission.challenge?.label || "Optional challenge"}`}</span>
                     </div>
                     <details className="t-detail t-wt-card-detail">
                       <summary>Field conditions</summary>
@@ -330,7 +363,7 @@ function WarTable() {
                   </div>
                   <div className="t-wt-mission-cta">
                     <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={() => openOperationBrief(mission.missionId)}>
-                      {record?.completed ? "DEPLOY AGAIN" : "VIEW BRIEF"}
+                      {securedToday ? "DEPLOY AGAIN" : "VIEW BRIEF"}
                       <ChevronRight className="t-ico" />
                     </button>
                   </div>
