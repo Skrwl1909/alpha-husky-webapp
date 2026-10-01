@@ -2366,3 +2366,149 @@
     font-size:7.1px;
   }
 }
+
+
+/* =========================================================
+   REACTIVE WORLD MAP P0 — truthful live-region visibility
+   ========================================================= */
+
+.map-v2-region-label[data-map-v2-runtime-tone="quiet"] .map-v2-region-state{
+  color:rgba(185,204,215,.62);
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="active"],
+.map-v2-region-label[data-map-v2-runtime-tone="fortified"]{
+  border-color:rgba(111,201,233,.42);
+  box-shadow:
+    0 10px 26px rgba(0,0,0,.3),
+    inset 3px 0 rgba(111,201,233,.52),
+    0 0 18px rgba(111,201,233,.08);
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="active"] .map-v2-region-state,
+.map-v2-region-label[data-map-v2-runtime-tone="fortified"] .map-v2-region-state{
+  color:rgba(137,221,250,.9);
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="hot"],
+.map-v2-region-label[data-map-v2-runtime-tone="alert"],
+.map-v2-region-label[data-map-v2-runtime-tone="critical"]{
+  z-index:3;
+  border-color:rgba(237,116,72,.72);
+  background:linear-gradient(180deg,rgba(28,10,7,.92),rgba(8,9,12,.86));
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.4),
+    inset 3px 0 rgba(244,91,58,.88),
+    0 0 22px rgba(244,91,58,.18);
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="hot"] .map-v2-region-state,
+.map-v2-region-label[data-map-v2-runtime-tone="alert"] .map-v2-region-state,
+.map-v2-region-label[data-map-v2-runtime-tone="critical"] .map-v2-region-state{
+  color:#ff8e69;
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="critical"]{
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.44),
+    inset 3px 0 rgba(255,72,53,.96),
+    0 0 0 1px rgba(255,91,69,.16),
+    0 0 30px rgba(255,72,53,.24);
+}
+
+.map-v2-region-label[data-map-v2-runtime-tone="locked"]{
+  opacity:.62;
+  filter:saturate(.48);
+}
+
+/* World hit-area gets a subtle truth-based tint without repainting the map art. */
+.map-v2-region-hit[data-map-v2-objective="true"]{
+  stroke-width:2;
+}
+
+/* Region-map hotspot: strategic Phantom Nodes must never read like disabled content. */
+.map-v2-poi[data-map-v2-strategic="frontline"]{
+  z-index:5;
+  opacity:1!important;
+  filter:none!important;
+  max-width:164px;
+  border-color:rgba(233,103,67,.48);
+  background:linear-gradient(90deg,rgba(24,8,7,.94),rgba(5,12,17,.9));
+  box-shadow:
+    0 9px 24px rgba(0,0,0,.48),
+    0 0 0 1px rgba(233,103,67,.12),
+    0 0 20px rgba(233,103,67,.12);
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"] .map-v2-poi-icon,
+.map-v2-poi[data-map-v2-strategic="frontline"] .map-v2-poi-dot{
+  width:28px;
+  height:28px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,140,104,.25),
+    0 0 14px rgba(233,103,67,.16);
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"] .map-v2-poi-name{
+  max-width:118px;
+  font-size:8.2px;
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"]::before{
+  background:linear-gradient(180deg,rgba(244,108,70,.82),rgba(244,108,70,.08));
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"]::after{
+  width:7px;
+  height:7px;
+  background:#ef7653;
+  box-shadow:0 0 14px rgba(239,118,83,.52);
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"][data-map-v2-runtime-tone="alert"],
+.map-v2-poi[data-map-v2-strategic="frontline"][data-map-v2-runtime-tone="hot"]{
+  border-color:rgba(255,101,69,.82);
+  box-shadow:
+    0 10px 26px rgba(0,0,0,.5),
+    0 0 0 1px rgba(255,103,72,.2),
+    0 0 26px rgba(255,82,55,.22);
+}
+
+.map-v2-poi[data-map-v2-strategic="frontline"] .map-v2-runtime-status{
+  display:block;
+  max-width:118px;
+  margin-top:2px;
+  overflow:hidden;
+  color:#ff9b76;
+  font-size:6px;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.map-v2-poi[data-map-v2-runtime-tone="alert"]:not([data-map-v2-strategic="frontline"]) .map-v2-runtime-status,
+.map-v2-poi[data-map-v2-runtime-tone="hot"]:not([data-map-v2-strategic="frontline"]) .map-v2-runtime-status,
+.map-v2-poi[data-map-v2-runtime-tone="active"]:not([data-map-v2-strategic="frontline"]) .map-v2-runtime-status{
+  display:block;
+  max-width:108px;
+  margin-top:2px;
+  overflow:hidden;
+  font-size:5.7px;
+  font-weight:850;
+  color:rgba(140,215,241,.82);
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media (prefers-reduced-motion:no-preference){
+  .map-v2-region-label[data-map-v2-runtime-tone="critical"],
+  .map-v2-poi[data-map-v2-strategic="frontline"][data-map-v2-runtime-tone="alert"]{
+    animation:mapV2LiveSignal 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes mapV2LiveSignal{
+  0%,100%{ filter:brightness(1); }
+  50%{ filter:brightness(1.08); }
+}
