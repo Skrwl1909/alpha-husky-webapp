@@ -28,6 +28,37 @@ assert.ok(t, "LivingWorld test helpers missing");
 
 const now = 2_000_000_000;
 
+
+const noContinuation = t.normalizeContinuation(null, now);
+assert.equal(noContinuation, null);
+
+const oneResponder = t.normalizeContinuation({
+  responderCount: 1,
+  latestName: "Pillion",
+  latestTs: now - 240,
+}, now);
+assert.equal(oneResponder?.responderCount, 1);
+assert.equal(oneResponder?.latestName, "Pillion");
+assert.equal(oneResponder?.latestAge, "4m ago");
+assert.equal(t.continuationText(oneResponder), "Pillion continued this front");
+
+const manyResponders = t.normalizeContinuation({
+  responderCount: 3,
+  latestName: "Pillion",
+  latestTs: now - 240,
+}, now);
+assert.equal(t.continuationText(manyResponders), "Pillion +2 more continued this front");
+
+const anonymousResponder = t.normalizeContinuation({
+  responderCount: 1,
+  latestName: "Unknown",
+  latestTs: now - 240,
+}, now);
+assert.equal(
+  t.continuationText(anonymousResponder),
+  "Another Pack member continued this front"
+);
+
 const actionable = t.normalizeFrontlineEcho({
   kind: "phantom_frontline",
   nodeId: "phantom_nodes",
@@ -39,6 +70,12 @@ const actionable = t.normalizeFrontlineEcho({
   consequence: "moved Phantom Nodes from CRITICAL to DANGEROUS",
   currentStatus: "Dangerous",
   currentNeed: "DANGEROUS — FRONTLINE STILL NEEDS SUPPORT",
+  continuation: {
+    responderCount: 1,
+    latestUid: "456",
+    latestName: "Pillion",
+    latestTs: now - 240,
+  },
   cta: { label: "HOLD THE LINE", nodeId: "phantom_nodes", actionable: true },
 }, now);
 
@@ -47,6 +84,13 @@ assert.equal(actionable.frontline.nodeId, "phantom_nodes");
 assert.equal(actionable.frontline.cta, "HOLD THE LINE");
 assert.equal(actionable.frontline.actionable, true);
 assert.equal(actionable.profileUid, "123");
+assert.equal(actionable.frontline.continuation?.responderCount, 1);
+assert.equal(actionable.frontline.continuation?.latestName, "Pillion");
+assert.equal(actionable.frontline.continuation?.latestAge, "4m ago");
+assert.equal(
+  t.continuationText(actionable.frontline.continuation),
+  "Pillion continued this front"
+);
 
 const viewOnly = t.normalizeFrontlineEcho({
   kind: "phantom_frontline",
@@ -113,4 +157,4 @@ assert.equal(payload.rows.length, 2);
 assert.equal(payload.rows[0].type, "phantom_frontline", "Frontline Echo should take priority in compact World Pulse");
 assert.equal(payload.rows[0].frontline.cta, "HOLD THE LINE");
 
-console.log("PASS actionable-frontline-echo-p0 frontend recovery contract");
+console.log("PASS actionable-frontline-echo-p0 + pack-response-p0 frontend contract");
