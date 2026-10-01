@@ -41,6 +41,11 @@ export interface FieldResult {
   challengeSuccess: boolean;
   challengeBonus: number;
   progressEarned: number;
+  clearProgressEarned?: number;
+  firstCycleSecure?: boolean;
+  firstCycleChallenge?: boolean;
+  firstCycleAdvanced?: boolean;
+  frontJustSecured?: boolean;
   progressBefore: number;
   progressAfter: number;
   rankBefore: number;
