@@ -157,6 +157,8 @@
         hit.setAttribute("points", region.polygon);
         hit.setAttribute("class", "map-v2-region-hit");
         hit.setAttribute("data-region", currentSection.sectionId);
+        hit.setAttribute("data-map-v2-section-id", currentSection.sectionId);
+        hit.setAttribute("data-map-v2-runtime-tone", runtimeRegion.tone);
         hit.setAttribute("data-map-v2-objective", objectiveSectionId === currentSection.sectionId ? "true" : "false");
         hit.setAttribute("tabindex", "-1");
         hit.addEventListener("click", () => renderSection(currentSection.sectionId));
@@ -518,12 +520,12 @@
     }
   }
 
-  function updateRegionRuntimeElement(label, sectionId, snapshots) {
-    if (!label) return;
+  function updateRegionRuntimeElement(elementNode, sectionId, snapshots) {
+    if (!elementNode) return;
     const presentation = regionRuntimePresentation(sectionId, snapshots);
-    label.dataset.mapV2RuntimeTone = presentation.tone;
-    label.dataset.mapV2HotNodeId = presentation.hotNodeId || "";
-    const stateNode = label.querySelector?.(".map-v2-region-state");
+    elementNode.dataset.mapV2RuntimeTone = presentation.tone;
+    elementNode.dataset.mapV2HotNodeId = presentation.hotNodeId || "";
+    const stateNode = elementNode.querySelector?.(".map-v2-region-state");
     if (stateNode) stateNode.textContent = presentation.state;
   }
 
@@ -531,10 +533,10 @@
     if (!state.active || state.sectionId || !state.root?.querySelectorAll) return;
     const changed = new Set((Array.isArray(nodeIds) ? nodeIds : []).map(asText).filter(Boolean));
     if (!changed.size) return;
-    for (const label of state.root.querySelectorAll("[data-map-v2-section-id]")) {
-      const sectionId = asText(label.dataset?.mapV2SectionId);
+    for (const regionElement of state.root.querySelectorAll("[data-map-v2-section-id]")) {
+      const sectionId = asText(regionElement.dataset?.mapV2SectionId);
       const nodes = sectionNodes(sectionId);
-      if (nodes.some((id) => changed.has(id))) updateRegionRuntimeElement(label, sectionId, snapshots);
+      if (nodes.some((id) => changed.has(id))) updateRegionRuntimeElement(regionElement, sectionId, snapshots);
     }
   }
 
