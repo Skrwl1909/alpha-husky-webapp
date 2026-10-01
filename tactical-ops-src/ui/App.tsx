@@ -24,9 +24,23 @@ import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
+  battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
   operationPlate: "/images/tactical_ops/presentation/tactical_ops_broken_signal_operation_plate.png",
   resultsPlate: "/images/tactical_ops/presentation/tactical_ops_operation_complete_plate.png",
+  bossTarget: "/images/tactical_ops/presentation/tactical_ops_boss_target.png",
+  recoveryMarker: "/images/tactical_ops/presentation/tactical_ops_signal_recovery_marker.png",
+  traceTarget: "/images/tactical_ops/presentation/tactical_ops_trace_target.png",
+  reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
+
+function missionPresentation(mission: NonNullable<ReturnType<typeof getMissionDef>>) {
+  if (mission.objectiveType === "BOSS") return { art: PRESENTATION.bossTarget, tone: "boss", label: "COMMAND TARGET" };
+  if (mission.objectiveType === "RECOVER") return { art: PRESENTATION.recoveryMarker, tone: "recover", label: "SIGNAL RECOVERY" };
+  if (mission.objectiveType === "INTERCEPT") return { art: PRESENTATION.traceTarget, tone: "intercept", label: "INTERCEPT" };
+  if (mission.objectiveType === "HOLD") return { art: PRESENTATION.reinforcementWarning, tone: "hold", label: "HOLD THE LINE" };
+  if (mission.objectiveType === "SURVIVE") return { art: PRESENTATION.battlefield, tone: "survive", label: "ENDURE" };
+  return { art: PRESENTATION.operationPlate, tone: "assault", label: "ASSAULT" };
+}
 
 const ROLE_LABEL: Record<string, string> = {
   alpha: "Melee pressure",
@@ -284,10 +298,13 @@ function WarTable() {
           </section>
         ) : null}
 
-        {recommendedMission ? (
-          <section className="t-panel t-wt-feature t-wt-next-op" aria-label="Recommended next operation">
+        {recommendedMission ? (() => {
+          const visual = missionPresentation(recommendedMission);
+          return (
+          <section className={`t-panel t-wt-feature t-wt-next-op t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
-              <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+              <img src={visual.art} alt="" aria-hidden="true" />
+              <span className="t-wt-art-label">{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
               <div className="t-kicker">{activeMissionRun ? "Resume run" : "Next op"}</div>
@@ -308,7 +325,8 @@ function WarTable() {
               </button>
             </div>
           </section>
-        ) : null}
+          );
+        })() : null}
 
         {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? (
           <section className="t-panel t-wt-legacy-run">
@@ -335,11 +353,12 @@ function WarTable() {
               const securedToday = record?.lastClearCycle === field?.board?.cycleId;
               const bonusEarned = record?.lastChallengeCycle === field?.board?.cycleId;
               const contextualMission = missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 });
+              const visual = missionPresentation(contextualMission);
               return (
-                <article className={`t-wt-mission-card t-panel ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
+                <article className={`t-wt-mission-card t-panel t-mission-tone-${visual.tone} ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
                   <div className="t-wt-mission-art">
-                    <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
-                    <span className="t-wt-mission-type">{mission.objectiveType}</span>
+                    <img src={visual.art} alt="" aria-hidden="true" />
+                    <span className="t-wt-mission-type">{visual.label}</span>
                   </div>
                   <div className="t-wt-mission-body">
                     <div className="t-wt-mission-head">
@@ -468,13 +487,15 @@ function Brief() {
   const primaryObjective = fieldOp ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
   const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
   const missionIntel = mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
+  const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
   return (
     <div className="t-fill">
       <Background dim={0.58} />
       <div className="t-brief t-deployment t-deployment-v29">
-        <header className="t-deploy-hero t-deploy-hero-v29">
-          <img src={PRESENTATION.operationPlate} alt="" aria-hidden="true" />
+        <header className={`t-deploy-hero t-deploy-hero-v29 t-mission-tone-${missionVisual.tone}`}>
+          <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
+            <div className="t-deploy-mode-label">{missionVisual.label}</div>
             <div className="t-kicker">{fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
             <h1 className="t-title">{title}</h1>
             <p>{mission ? objectiveHeadline(mission) : objective}</p>

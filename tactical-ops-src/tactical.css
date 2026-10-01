@@ -3115,3 +3115,222 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     grid-template-columns:1fr;
   }
 }
+
+
+/* Tactical Ops v3.1 — premium presentation pass */
+#tacticalOpsRoot .t-war-table-v29 {
+  position:relative;
+}
+#tacticalOpsRoot .t-wt-hero-compact {
+  overflow:hidden;
+  border-color:rgba(107,211,244,.34);
+  background:
+    linear-gradient(90deg,rgba(5,15,24,.98),rgba(7,18,28,.9) 58%,rgba(16,27,36,.78)),
+    url("/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png") center 42%/cover no-repeat !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.28), inset 0 1px 0 rgba(185,235,255,.04);
+}
+#tacticalOpsRoot .t-wt-hero-compact::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(120deg,transparent 0 62%,rgba(88,205,244,.07) 62% 63%,transparent 63%),
+    radial-gradient(circle at 82% 28%,rgba(97,211,248,.11),transparent 33%);
+}
+#tacticalOpsRoot .t-wt-hero-compact > * { position:relative; z-index:1; }
+
+#tacticalOpsRoot .t-wt-front {
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,rgba(15,20,24,.96),rgba(6,15,22,.98)) !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.24);
+}
+#tacticalOpsRoot .t-wt-front::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(224,178,80,.08),transparent 30%),
+    repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.018) 18px 19px);
+}
+#tacticalOpsRoot .t-wt-front > * { position:relative; z-index:1; }
+#tacticalOpsRoot .t-wt-front-row {
+  transition:border-color .15s ease, transform .15s ease, background .15s ease;
+}
+#tacticalOpsRoot .t-wt-front-row:has(.is-secured) {
+  border-color:rgba(107,206,147,.28);
+  background:linear-gradient(90deg,rgba(13,43,31,.64),rgba(8,21,31,.76));
+}
+
+#tacticalOpsRoot .t-wt-feature-art,
+#tacticalOpsRoot .t-wt-mission-art {
+  overflow:hidden;
+  border:1px solid rgba(134,224,255,.17);
+  background:#07131c;
+}
+#tacticalOpsRoot .t-wt-feature-art::after,
+#tacticalOpsRoot .t-wt-mission-art::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent 35%,rgba(3,10,16,.78) 100%);
+}
+#tacticalOpsRoot .t-wt-feature-art {
+  position:relative;
+}
+#tacticalOpsRoot .t-wt-feature-art img,
+#tacticalOpsRoot .t-wt-mission-art img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:saturate(.92) contrast(1.08);
+  transform:scale(1.015);
+}
+#tacticalOpsRoot .t-wt-art-label {
+  position:absolute;
+  z-index:2;
+  left:.55rem;
+  bottom:.48rem;
+  border-left:2px solid rgba(157,227,251,.72);
+  background:rgba(4,13,20,.78);
+  padding:.28rem .46rem;
+  color:#def8ff;
+  font-size:.52rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+#tacticalOpsRoot .t-wt-mission-card,
+#tacticalOpsRoot .t-wt-next-op,
+#tacticalOpsRoot .t-deploy-hero-v29 {
+  --mission-accent:95,199,235;
+}
+#tacticalOpsRoot .t-mission-tone-recover { --mission-accent:77,208,199; }
+#tacticalOpsRoot .t-mission-tone-intercept { --mission-accent:205,178,88; }
+#tacticalOpsRoot .t-mission-tone-hold { --mission-accent:230,132,84; }
+#tacticalOpsRoot .t-mission-tone-survive { --mission-accent:155,127,214; }
+#tacticalOpsRoot .t-mission-tone-boss { --mission-accent:223,86,72; }
+#tacticalOpsRoot .t-mission-tone-assault { --mission-accent:95,199,235; }
+
+#tacticalOpsRoot .t-wt-mission-card,
+#tacticalOpsRoot .t-wt-next-op {
+  position:relative;
+  border-color:rgba(var(--mission-accent),.34)!important;
+  background:
+    linear-gradient(90deg,rgba(var(--mission-accent),.055),transparent 34%),
+    linear-gradient(180deg,rgba(7,17,27,.97),rgba(5,12,19,.99)) !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.24), inset 2px 0 0 rgba(var(--mission-accent),.46);
+}
+#tacticalOpsRoot .t-wt-next-op {
+  box-shadow:0 14px 34px rgba(0,0,0,.31), inset 2px 0 0 rgba(var(--mission-accent),.65)!important;
+}
+#tacticalOpsRoot .t-wt-mission-type {
+  z-index:2;
+  border-color:rgba(var(--mission-accent),.52);
+  color:rgb(var(--mission-accent));
+}
+#tacticalOpsRoot .t-wt-mission-state {
+  border-color:rgba(var(--mission-accent),.32);
+  color:rgb(var(--mission-accent));
+  background:rgba(var(--mission-accent),.075);
+}
+#tacticalOpsRoot .t-wt-mission-card.is-cleared {
+  opacity:.94;
+}
+#tacticalOpsRoot .t-wt-mission-card.is-cleared::after {
+  content:"SECURED";
+  position:absolute;
+  top:.48rem;
+  right:.52rem;
+  color:rgba(153,222,181,.12);
+  font-size:1.25rem;
+  font-weight:900;
+  letter-spacing:.16em;
+  pointer-events:none;
+}
+
+#tacticalOpsRoot .t-deploy-hero-v29 {
+  border:1px solid rgba(var(--mission-accent),.36);
+  box-shadow:0 18px 38px rgba(0,0,0,.34), inset 0 -1px 0 rgba(var(--mission-accent),.18);
+}
+#tacticalOpsRoot .t-deploy-hero-v29::after {
+  background:
+    linear-gradient(90deg,rgba(4,11,18,.98) 0%,rgba(4,11,18,.78) 48%,rgba(4,11,18,.28) 100%),
+    linear-gradient(180deg,transparent 55%,rgba(var(--mission-accent),.08) 100%);
+}
+#tacticalOpsRoot .t-deploy-mode-label {
+  display:inline-block;
+  margin-bottom:.38rem;
+  border:1px solid rgba(var(--mission-accent),.38);
+  border-left:3px solid rgba(var(--mission-accent),.86);
+  background:rgba(3,12,18,.76);
+  padding:.3rem .48rem;
+  color:rgb(var(--mission-accent));
+  font-size:.55rem;
+  font-weight:800;
+  letter-spacing:.16em;
+}
+#tacticalOpsRoot .t-deploy-summary-main {
+  border-left:3px solid rgba(var(--mission-accent),.5);
+}
+
+#tacticalOpsRoot .t-pack-mastery-v29 {
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(115deg,rgba(19,16,31,.96),rgba(7,17,27,.98) 42%,rgba(6,14,22,.99)) !important;
+  border-color:rgba(168,134,227,.34)!important;
+}
+#tacticalOpsRoot .t-pack-mastery-v29::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 90% 10%,rgba(174,135,234,.10),transparent 32%),
+    repeating-linear-gradient(135deg,transparent 0 22px,rgba(255,255,255,.012) 22px 23px);
+}
+#tacticalOpsRoot .t-pack-mastery-v29 > * { position:relative; z-index:1; }
+#tacticalOpsRoot .t-pack-mastery-v29 .t-pack-head .t-title {
+  text-shadow:0 0 18px rgba(174,135,234,.16);
+}
+#tacticalOpsRoot .t-mastery-card-v29 {
+  background:
+    linear-gradient(180deg,rgba(18,22,36,.78),rgba(7,18,27,.84));
+  border-color:rgba(171,140,226,.22);
+}
+#tacticalOpsRoot .t-mastery-card-v29 .t-mastery-avatar {
+  border-color:rgba(171,140,226,.42);
+  background:linear-gradient(145deg,rgba(40,31,62,.9),rgba(9,22,31,.92));
+  color:#e7dfff;
+}
+
+#tacticalOpsRoot .t-wt-story-archive {
+  border-color:rgba(129,148,166,.24);
+  background:
+    linear-gradient(180deg,rgba(11,16,22,.95),rgba(5,11,17,.98)) !important;
+}
+#tacticalOpsRoot .t-story-mission {
+  background:
+    linear-gradient(180deg,rgba(12,21,29,.88),rgba(7,14,20,.94));
+  border-color:rgba(129,163,181,.17);
+}
+
+@media (max-width:620px) {
+  #tacticalOpsRoot .t-wt-feature-art,
+  #tacticalOpsRoot .t-wt-current-ops .t-wt-mission-art {
+    min-height:118px;
+  }
+  #tacticalOpsRoot .t-wt-art-label,
+  #tacticalOpsRoot .t-wt-mission-type,
+  #tacticalOpsRoot .t-deploy-mode-label {
+    letter-spacing:.11em;
+  }
+  #tacticalOpsRoot .t-wt-mission-card.is-cleared::after {
+    font-size:.95rem;
+  }
+}
