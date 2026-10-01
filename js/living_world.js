@@ -126,6 +126,35 @@
     };
   }
 
+  function normalizeContinuation(raw, nowSec = Math.floor(Date.now() / 1000)) {
+    if (!raw || typeof raw !== "object") return null;
+    const responderCount = Math.max(0, integer(raw.responderCount, 0));
+    if (responderCount < 1) return null;
+
+    const rawName = validCallsign(raw.latestName);
+    const latestName = rawName || "";
+    const latestTs = integer(raw.latestTs, 0);
+    const latestAge = latestTs > 0 ? compactAge(latestTs, nowSec) : "";
+
+    return {
+      responderCount,
+      latestName,
+      latestTs,
+      latestAge,
+    };
+  }
+
+  function continuationText(continuation) {
+    if (!continuation || typeof continuation !== "object") return "";
+    const count = Math.max(0, integer(continuation.responderCount, 0));
+    if (count < 1) return "";
+
+    const name = validCallsign(continuation.latestName);
+    if (!name) return "Another Pack member continued this front";
+    if (count === 1) return `${name} continued this front`;
+    return `${name} +${count - 1} more continued this front`;
+  }
+
   function normalizeFrontlineEcho(raw, nowSec = Math.floor(Date.now() / 1000)) {
     if (!raw || typeof raw !== "object") return null;
     if (text(raw.kind).toLowerCase() !== "phantom_frontline") return null;
@@ -165,7 +194,7 @@
         currentNeed: text(raw.currentNeed),
         cta: ctaLabel,
         actionable: cta.actionable === true,
-        continuation: raw.continuation && typeof raw.continuation === "object" ? raw.continuation : null,
+        continuation: normalizeContinuation(raw.continuation, nowSec),
       },
     };
   }
@@ -234,6 +263,10 @@
       .lw-action{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:550 11px/1.35 ui-sans-serif,system-ui,sans-serif;color:rgba(226,235,246,.73)}
       .lw-age{align-self:center;white-space:nowrap;font:750 9px/1.2 ui-sans-serif,system-ui,sans-serif;color:rgba(207,221,238,.48)}
       .lw-chevron{margin-left:4px;color:rgba(125,211,252,.62)}
+      .lw-response{grid-column:1/-1;margin-top:4px;padding:7px 9px;border-left:2px solid rgba(125,211,252,.34);background:rgba(125,211,252,.045);border-radius:0 8px 8px 0}
+      .lw-response-kicker{font:900 8px/1.2 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;color:rgba(125,211,252,.76)}
+      .lw-response-copy{margin-top:3px;font:650 10px/1.35 ui-sans-serif,system-ui,sans-serif;color:rgba(225,235,244,.74)}
+      .lw-response-age{color:rgba(207,221,238,.46)}
       .lw-frontline{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
       .lw-frontline-copy{font:750 9px/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;color:rgba(225,235,244,.67)}
       .lw-row-actions{display:flex;align-items:center;gap:6px}
@@ -288,10 +321,15 @@
       const profile = row.profileUid
         ? `<button class="lw-profile" type="button" data-lw-profile="${index}">PROFILE</button>`
         : "";
+      const responseCopy = continuationText(row.frontline?.continuation);
+      const responseAge = text(row.frontline?.continuation?.latestAge);
+      const response = responseCopy
+        ? `<div class="lw-response"><div class="lw-response-kicker">PACK RESPONSE</div><div class="lw-response-copy">${escapeHtml(responseCopy)}${responseAge ? ` <span class="lw-response-age">· ${escapeHtml(responseAge)}</span>` : ""}</div></div>`
+        : "";
       const frontline = row.frontline?.cta
         ? `<div class="lw-frontline"><span class="lw-frontline-copy">${escapeHtml(row.frontline.currentNeed || `${row.frontline.statusBefore.toUpperCase()} → ${row.frontline.statusAfter.toUpperCase()}`)}</span><div class="lw-row-actions">${profile}<button class="lw-frontline-cta" type="button" data-lw-frontline="${index}">${escapeHtml(row.frontline.cta)}</button></div></div>`
         : (profile ? `<div class="lw-frontline"><span></span><div class="lw-row-actions">${profile}</div></div>` : "");
-      return `<article class="lw-row"><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}</div>${frontline}</article>`;
+      return `<article class="lw-row"><div class="lw-main"><div class="lw-identity"><span class="lw-name">${escapeHtml(identity)}</span>${row.faction ? `<span class="lw-faction">${escapeHtml(row.faction)}</span>` : ""}</div><div class="lw-action">${escapeHtml(row.action)}</div></div><div class="lw-age">${escapeHtml(row.age)}</div>${response}${frontline}</article>`;
     }).join("")}</div>` : '<div class="lw-empty"><div class="lw-empty-title">No new Pack signals yet.</div><div class="lw-empty-copy">The Oracle retains the latest confirmed record of the world.</div></div>';
     const status = statusLine(state?.worldStatus);
     const hotClass = state?.worldStatus?.hotNodes > 0 ? " is-hot" : "";
@@ -424,6 +462,8 @@
       safeProfileUid,
       statusLine,
       normalizeFrontlineEcho,
+      normalizeContinuation,
+      continuationText,
     },
   };
 
