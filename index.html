@@ -13117,6 +13117,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="js/onboarding.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/callsign.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/awakening.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<link rel="stylesheet" href="/css/faction_chamber.css?v=faction-identity-v1">
+<script>document.write('<script src="/js/faction_identity.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/faction_chamber.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/oath.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/ftue_continuity.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <script src="/js/pack_comms.js?v=pack-comms-lite-v1"></script>
@@ -13318,6 +13321,16 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   s.onerror = () => console.warn("[Stats] FAILED to load:", s.src);
   document.head.appendChild(s);
+})();
+</script>
+<script>
+(function initFactionChamber(){
+  function boot(apiPost){
+    try { window.FactionChamber?.init?.({ apiPost, tg: window.Telegram?.WebApp || window.tg || null }); }
+    catch (e) { if (window.DBG) console.warn("[FactionChamber] init failed", e); }
+  }
+  if (typeof window.apiPost === "function") boot(window.apiPost);
+  else window.waitForApiPostReady?.(6000).then(boot).catch(()=>{});
 })();
 </script>
 <!-- FACTIONS (loader + init, cache-bust) -->

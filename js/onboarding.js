@@ -528,12 +528,6 @@
     _focusedBusy = true;
     if (action !== "forge_continue" && action !== "forge_open") renderFirstSignal();
     try {
-      if (action === "faction") {
-        close(false);
-        openFactionPicker();
-        waitForFactionSelection();
-        return;
-      }
       if (action === "start") {
         await openGuided();
         return;
@@ -601,13 +595,7 @@
     let label = "Find FIRST SIGNAL in Missions";
     let disabled = _focusedBusy;
 
-    if (!state.faction_selected) {
-      icon = "🏴";
-      heading = "Choose Your Faction";
-      copy = "Choose the pack you fight under before answering your first signal.";
-      action = "faction";
-      label = "Pick Faction";
-    } else if (state.state === "MISSION_STARTED" && state.status === "RUNNING") {
+    if (state.state === "MISSION_STARTED" && state.status === "RUNNING") {
       icon = "◌";
       heading = "Signal in Progress";
       copy = "The server is tracking this mission. You can safely close and return.";

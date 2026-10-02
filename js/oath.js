@@ -813,7 +813,7 @@
         </div>
         <div class="oath-top">
           <div>
-            <div class="oath-kicker">Faction Oath</div>
+            <div class="oath-kicker">Pack Oath</div>
             <div class="oath-title" id="oathTitle">THE OATH</div>
             <div class="oath-dev-label">DEV PREVIEW</div>
           </div>
@@ -945,7 +945,7 @@
       </div>
     `;
     setNotice("");
-    setFooter({ primary: "Choose Faction", disabled: false, nextActions: false });
+    setFooter({ primary: "Swear the Oath", disabled: false, nextActions: false });
   }
 
   function renderPick() {
@@ -1104,7 +1104,7 @@
   function handlePrimary() {
     if (S.screen === "intro") {
       haptic("light");
-      renderPick();
+      void completeUnbound();
       return;
     }
     if (S.screen === "pick") {
@@ -1270,6 +1270,65 @@
     try { global.Influence && global.Influence.setFaction && global.Influence.setFaction(key); } catch (_) {}
     try { global.renderFactionBadge && global.renderFactionBadge(); } catch (_) {}
     try { global.dispatchEvent && global.dispatchEvent(new CustomEvent("ah:oath-complete", { detail: { faction: key } })); } catch (_) {}
+  }
+
+  function renderUnboundProfile() {
+    const back = ensureModal();
+    const scroll = back.querySelector(".oath-scroll");
+    if (!scroll) return;
+    clearSignalTimers();
+    S.screen = "unbound_profile";
+    setMedia("accepted");
+    scroll.innerHTML = `
+      <div class="oath-profile">
+        <div class="oath-profile-card" style="--oath-profile-accent:147,231,255">
+          <div class="oath-profile-title">Signal Profile</div>
+          <div class="oath-profile-rows">
+            <div class="oath-profile-row"><div class="oath-profile-label">Origin</div><div class="oath-profile-value">${esc(currentOriginLabel())}</div></div>
+            <div class="oath-profile-row"><div class="oath-profile-label">Pack</div><div class="oath-profile-value">ALPHA</div></div>
+            <div class="oath-profile-row"><div class="oath-profile-label">Faction</div><div class="oath-profile-value">UNBOUND</div></div>
+            <div class="oath-profile-row"><div class="oath-profile-label">Status</div><div class="oath-profile-value">Bound to the Pack</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+    setNotice("");
+    setFooter({ primary: "Enter the Pack", disabled: false, nextActions: false });
+  }
+
+  async function completeUnbound() {
+    if (S.busy) return;
+    if (S.preview) {
+      S.handoffOnClose = true;
+      renderUnboundProfile();
+      return;
+    }
+    if (typeof S.apiPost !== "function") {
+      setNotice("Connection is not ready. Try again.");
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    setFooter({ primary: "Recording Oath...", disabled: true, nextActions: false });
+    try {
+      const runId = "oath_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+      // V1 sends no faction. Backend must accept an Oath completion independent of faction binding.
+      const out = await S.apiPost("/webapp/oath/complete", { run_id: runId });
+      if (!out || out.ok === false) throw new Error(out && out.reason || "OATH_COMPLETE_FAILED");
+      S.state = Object.assign({}, S.state || {}, out);
+      setFreshStartState(out);
+      S.checked = true;
+      S.handoffOnClose = true;
+      setBusy(false);
+      haptic("success");
+      renderUnboundProfile();
+    } catch (err) {
+      log("unbound oath complete failed", err);
+      setBusy(false);
+      haptic("error");
+      setNotice("Could not record the Oath. Try again.");
+      setFooter({ primary: "Swear the Oath", disabled: false, nextActions: false });
+    }
   }
 
   async function complete() {

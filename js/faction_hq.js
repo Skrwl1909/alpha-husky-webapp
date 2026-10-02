@@ -2702,11 +2702,11 @@ function _contribSummaryLegacy(c) {
       }
     } catch (_) {}
 
+    // State mirrors may hint the theme, but the HQ endpoint remains membership authority.
     let cached =
       window.PROFILE?.faction ||
       window.PLAYER_STATE?.profile?.faction ||
-      (() => { try { return localStorage.getItem("ah_faction") || ""; } catch (_) { return ""; } })();
-
+      "";
     cached = _canonFaction(cached) || cached;
 
     applyHqBg(cached);
@@ -2775,11 +2775,11 @@ function _contribSummaryLegacy(c) {
           <div class="hq-head" style="text-align:center;">
             <div class="hq-pill">HQ</div>
             <h2 class="hq-title">Faction HQ</h2>
-            <div class="hq-sub">Join a faction to access headquarters.</div>
+            <div class="hq-sub">Your Pack signal is unbound. Explore the four doctrines before you choose.</div>
           </div>
           <div class="hq-grid">
             <div class="hq-card">
-              <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
+              <button class="hq-btn primary" onclick="FactionHQ.close();window.FactionChamber?.open?.()">Enter the Faction Signal</button>
               <div style="height:10px"></div>
               <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
             </div>
@@ -3067,11 +3067,11 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-head" style="text-align:center;">
             <div class="hq-pill">HQ</div>
             <h2 class="hq-title">Faction HQ</h2>
-            <div class="hq-sub">Join a faction to access headquarters.</div>
+            <div class="hq-sub">Your Pack signal is unbound. Explore the four doctrines before you choose.</div>
           </div>
           <div class="hq-grid">
             <div class="hq-card">
-              <button class="hq-btn primary" onclick="window.Factions?.open?.()">Choose Faction</button>
+              <button class="hq-btn primary" onclick="FactionHQ.close();window.FactionChamber?.open?.()">Enter the Faction Signal</button>
               <div style="height:10px"></div>
               <button class="hq-btn ghost hq-v3-legacy-close" onclick="FactionHQ.close()">Close</button>
             </div>
