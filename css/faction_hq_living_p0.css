@@ -1,0 +1,85 @@
+/* Alpha Husky — Echo Wardens Living HQ P0 */
+#factionHQLivingP0{display:none}
+#factionHQBack.hq-living-echo #factionHQLivingP0{
+  --ew-gold:255,211,77;
+  position:absolute;inset:0;z-index:2;display:block;overflow:hidden;pointer-events:none;color:#fff;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-scene{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(180deg,rgba(2,4,7,.10) 0%,rgba(2,4,7,.06) 44%,rgba(2,4,7,.72) 82%,rgba(2,4,7,.92) 100%),
+    url("/images/hq/echo_wardens_hq_frame01.webp"),
+    url("/hq_warroom_ew.webp");
+  background-size:cover,cover,cover;background-position:center,center,center;
+  transform:scale(1.018);animation:lhqBreath 14s ease-in-out infinite alternate;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-scene::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 31%,rgba(var(--ew-gold),.13),transparent 19%),
+             radial-gradient(ellipse at 50% 58%,transparent 0 42%,rgba(0,0,0,.34) 76%,rgba(0,0,0,.68) 100%);
+}
+#factionHQLivingP0 .lhq-scan{position:absolute;left:-10%;right:-10%;top:0;height:2px;opacity:.24;
+  background:linear-gradient(90deg,transparent,rgba(var(--ew-gold),.88),transparent);
+  box-shadow:0 0 22px rgba(var(--ew-gold),.55);animation:lhqScan 7.8s linear infinite}
+#factionHQLivingP0 .lhq-core{
+  position:absolute;left:50%;top:30.5%;width:min(31vw,146px);aspect-ratio:1;transform:translate(-50%,-50%);
+  display:grid;place-items:center;border-radius:50%;pointer-events:none;
+}
+#factionHQLivingP0 .lhq-core::before,#factionHQLivingP0 .lhq-core::after{
+  content:"";position:absolute;inset:2%;border:1px solid rgba(var(--ew-gold),.42);border-radius:50%;
+  box-shadow:0 0 24px rgba(var(--ew-gold),.16),inset 0 0 24px rgba(var(--ew-gold),.08);
+  animation:lhqRing 12s linear infinite}
+#factionHQLivingP0 .lhq-core::after{inset:15%;border-style:dashed;animation-direction:reverse;animation-duration:8s}
+#factionHQLivingP0 .lhq-sigil{
+  width:62%;height:62%;object-fit:contain;opacity:.92;
+  filter:sepia(1) saturate(3.8) hue-rotate(2deg) brightness(1.35) drop-shadow(0 0 12px rgba(var(--ew-gold),.72));
+  animation:lhqSigil 5.6s ease-in-out infinite}
+#factionHQLivingP0 .lhq-conduit{position:absolute;left:50%;top:36%;width:1px;height:26%;transform:translateX(-50%);
+ background:linear-gradient(to bottom,rgba(var(--ew-gold),.9),rgba(var(--ew-gold),.12),transparent);
+ box-shadow:0 0 15px rgba(var(--ew-gold),.65);opacity:.64}
+#factionHQLivingP0 .lhq-conduit.c2{left:47.8%;opacity:.28}.lhq-conduit.c3{left:52.2%;opacity:.28}
+#factionHQLivingP0 .lhq-front{
+  position:absolute;left:50%;top:57%;width:min(72vw,360px);height:120px;transform:translate(-50%,-50%);
+  pointer-events:auto;cursor:pointer;border:0;background:transparent;color:#fff;
+}
+#factionHQLivingP0 .lhq-front::before{
+  content:"";position:absolute;left:8%;right:8%;top:36%;height:52%;border-radius:50%;
+  border:1px solid rgba(var(--ew-gold),.46);
+  background:radial-gradient(ellipse,rgba(var(--ew-gold),.11),transparent 62%);
+  box-shadow:0 0 28px rgba(var(--ew-gold),.12);animation:lhqFrontPulse 4.8s ease-in-out infinite}
+#factionHQLivingP0 .lhq-front-copy{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:190px;text-align:center;
+ text-shadow:0 2px 12px #000}
+#factionHQLivingP0 .lhq-kicker{font-size:9px;font-weight:900;letter-spacing:.24em;color:rgba(255,229,150,.82)}
+#factionHQLivingP0 .lhq-front-title{margin-top:4px;font-size:17px;font-weight:950;letter-spacing:.08em}
+#factionHQLivingP0 .lhq-front-state{margin-top:3px;font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.68)}
+#factionHQLivingP0 .lhq-personal{
+  position:absolute;right:18px;bottom:calc(max(90px,env(safe-area-inset-bottom) + 72px));max-width:180px;
+  padding:9px 11px;border:1px solid rgba(var(--ew-gold),.22);border-radius:12px;
+  background:rgba(5,7,10,.56);backdrop-filter:blur(8px);text-align:right;pointer-events:none;
+}
+#factionHQLivingP0 .lhq-personal strong{display:block;margin-top:2px;font-size:12px;letter-spacing:.08em}
+#factionHQLivingP0 .lhq-personal small{font-size:9px;letter-spacing:.17em;color:rgba(255,229,150,.72)}
+#factionHQLivingP0 .lhq-top{
+  position:absolute;left:16px;right:16px;top:max(14px,env(safe-area-inset-top));display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+#factionHQLivingP0 .lhq-title{font-size:13px;font-weight:950;letter-spacing:.11em}.lhq-creed{margin-top:3px;font-size:9px;letter-spacing:.2em;color:rgba(255,229,150,.78)}
+#factionHQLivingP0 .lhq-close{pointer-events:auto;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.34);color:#fff;font-size:18px}
+#factionHQLivingP0 .lhq-recognition{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;
+ background:radial-gradient(circle at center,rgba(var(--ew-gold),.10),transparent 35%);animation:lhqRecognize 1.9s ease both}
+#factionHQLivingP0 .lhq-recognition strong{display:block;font-size:22px;letter-spacing:.11em;text-shadow:0 0 22px rgba(var(--ew-gold),.42)}
+#factionHQLivingP0 .lhq-recognition small{display:block;margin-bottom:8px;font-size:9px;letter-spacing:.25em;color:rgba(255,229,150,.82)}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"]{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;padding:0!important;overflow:visible!important;pointer-events:none}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"] > :not(.hq-v3-command-nav):not(.hq-v3-sheet-layer){display:none!important}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{pointer-events:auto}
+@keyframes lhqBreath{to{transform:scale(1.028) translateY(-.25%)}}
+@keyframes lhqScan{0%{top:6%;opacity:0}10%{opacity:.28}90%{opacity:.18}100%{top:91%;opacity:0}}
+@keyframes lhqRing{to{transform:rotate(360deg)}}
+@keyframes lhqSigil{0%,100%{opacity:.76;transform:scale(.98)}50%{opacity:1;transform:scale(1.035)}}
+@keyframes lhqFrontPulse{0%,100%{opacity:.54;transform:scale(.98)}50%{opacity:1;transform:scale(1.03)}}
+@keyframes lhqRecognize{0%{opacity:0}16%,68%{opacity:1}100%{opacity:0;visibility:hidden}}
+@media(prefers-reduced-motion:reduce){
+ #factionHQLivingP0 *{animation:none!important;transition:none!important}
+ #factionHQLivingP0 .lhq-recognition{display:none!important}
+ #factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-scene{transform:none}
+}
