@@ -1,0 +1,22 @@
+name: Faction HQ Premium Master Port Verify
+on:
+  push:
+    branches: [faction-hq-premium-master-port-v1]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Syntax
+        run: |
+          node --check js/faction_hq_living_p0.js
+          node --check js/faction_hq.js
+      - name: Port contract
+        run: |
+          grep -q 'inner_howl' js/faction_hq_living_p0.js
+          grep -q 'rogue_byte' js/faction_hq_living_p0.js
+          grep -q 'pack_burners' js/faction_hq_living_p0.js
+          grep -q 'echo_wardens_hq_frame01.webp' js/faction_hq_living_p0.js
+          grep -q 'shared Echo master structure' css/faction_hq_living_p0.css
