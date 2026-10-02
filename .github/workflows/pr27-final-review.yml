@@ -24,7 +24,7 @@ jobs:
           node --check js/onboarding.js
       - name: Contract assertions
         run: |
-          grep -q 'Faction UNBOUND' js/oath.js
+          grep -q '>UNBOUND<' js/oath.js
           grep -q 'HOLD TO BIND' js/faction_chamber.js
           grep -q 'Enter the Faction Signal' js/faction_hq.js
           grep -q 'return getFactionKeyFromState() || ""' js/factions.js
