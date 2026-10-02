@@ -126,6 +126,7 @@ function Token({
     attacking ? "attacking" : "",
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
+    `depth-${Math.max(0, Math.min(4, unit.r))}`,
   ]
     .filter(Boolean)
     .join(" ");
