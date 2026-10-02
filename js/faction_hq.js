@@ -2782,7 +2782,7 @@ function _contribSummaryLegacy(c) {
             <div class="hq-card">
               <button class="hq-btn primary" onclick="FactionHQ.close();window.FactionChamber?.open?.()">Enter the Faction Signal</button>
               <div style="height:10px"></div>
-              <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
+              <button class="hq-btn ghost hq-v3-legacy-close" onclick="FactionHQ.close()">Close</button>
             </div>
           </div>
         `;
