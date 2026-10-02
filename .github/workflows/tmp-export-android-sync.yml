@@ -1,0 +1,46 @@
+name: Export Android sync delta
+on:
+  push:
+    branches: [tmp-export-android-sync-20261002]
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage changed runtime files
+        shell: bash
+        run: |
+          mkdir -p export
+          files=(
+            css/faction_chamber.css
+            css/faction_hq_living_p0.css
+            images/factions/faction_chamber_echo_wardens.webp
+            images/factions/faction_chamber_inner_howl.webp
+            images/factions/faction_chamber_neutral.webp
+            images/factions/faction_chamber_pack_burners.webp
+            images/factions/faction_chamber_rogue_byte.webp
+            images/hq/echo_wardens_hq_frame01.webp
+            index.html
+            js/boot_loaders.js
+            js/callsign.js
+            js/faction_chamber.js
+            js/faction_hq.js
+            js/faction_hq_living_p0.js
+            js/faction_identity.js
+            js/factions.js
+            js/map_sections_v2.js
+            js/oath.js
+            js/onboarding.js
+            js/tactical_ops.js
+            tactical-ops-src/tactical.css
+            tactical-ops-src/ui/App.tsx
+            tactical-ops-src/version.ts
+          )
+          for f in "${files[@]}"; do
+            mkdir -p "export/$(dirname "$f")"
+            cp "$f" "export/$f"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alpha-android-sync-frontend-20261002
+          path: export
