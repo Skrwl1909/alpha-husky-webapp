@@ -813,7 +813,7 @@
         </div>
         <div class="oath-top">
           <div>
-            <div class="oath-kicker">Faction Oath</div>
+            <div class="oath-kicker">Pack Oath</div>
             <div class="oath-title" id="oathTitle">THE OATH</div>
             <div class="oath-dev-label">DEV PREVIEW</div>
           </div>
@@ -1309,6 +1309,7 @@
     }
     setBusy(true);
     setNotice("");
+    setFooter({ primary: "Recording Oath...", disabled: true, nextActions: false });
     try {
       const runId = "oath_" + Date.now() + "_" + Math.random().toString(16).slice(2);
       // V1 sends no faction. Backend must accept an Oath completion independent of faction binding.
@@ -1325,7 +1326,8 @@
       log("unbound oath complete failed", err);
       setBusy(false);
       haptic("error");
-      setNotice("Could not record the Oath without a faction. Backend compatibility is required before release.");
+      setNotice("Could not record the Oath. Try again.");
+      setFooter({ primary: "Swear the Oath", disabled: false, nextActions: false });
     }
   }
 
