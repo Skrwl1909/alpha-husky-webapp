@@ -13,7 +13,7 @@ const OVERRIDES: Record<string, Partial<ActionPresentation>> = {
   "alpha-rend": { archetype: "heavy", cue: "CLOSE · BLEED", effectClass: "control" },
   "alpha-howl": { archetype: "support", cue: "AURA · R2", targetClass: "aura", effectClass: "buff" },
   "pet-hamstring": { archetype: "control", cue: "CLOSE · SLOW", effectClass: "control" },
-  "u02-pressure": { archetype: "control", cue: "CONTROL · 3", effectClass: "control" },
+  "u02-suppress": { archetype: "control", cue: "CONTROL · 3", effectClass: "control" },
   "u02-pressure-disruptor": { archetype: "control", cue: "CONTROL · 3", effectClass: "control" },
   "u03-mend": { archetype: "heal", cue: "ALLY · 3", targetClass: "ally", effectClass: "heal" },
   "u03-mend-restorer": { archetype: "heal", cue: "AURA · R1", targetClass: "aura", effectClass: "heal" },
