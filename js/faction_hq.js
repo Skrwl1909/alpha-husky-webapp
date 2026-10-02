@@ -2719,6 +2719,7 @@ function _contribSummaryLegacy(c) {
   function closeView() {
     if (_back) _back.classList.remove("is-open");
     document.body.classList.remove("hq-open");
+    try { globalThis.dispatchEvent?.(new CustomEvent("ah:faction-hq-closed")); } catch (_) {}
   }
 
   function close() {
@@ -3385,6 +3386,18 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       <button class="hq-btn ghost" onclick="FactionHQ.close()">Close</button>
     `;
     _syncCommandCenter();
+    try {
+      globalThis.dispatchEvent?.(new CustomEvent("ah:faction-hq-rendered", {
+        detail: {
+          faction: fk,
+          level: curLevel,
+          frontLive,
+          frontLabel,
+          membersCount,
+          playerName: myPlace?.name || ""
+        }
+      }));
+    } catch (_) {}
   }
 
   // ---------------------------
