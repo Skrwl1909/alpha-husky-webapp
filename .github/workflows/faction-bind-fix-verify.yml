@@ -1,0 +1,13 @@
+name: Faction Bind Fix Verify
+on:
+  push:
+    branches: [fix-faction-bind-canonical-slug]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: node --check js/faction_chamber.js
+      - run: grep -q 'faction:f.slug' js/faction_chamber.js
