@@ -1,10 +1,12 @@
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { useMemo } from "react";
-import { Axe, AudioLines, ChevronsRight, PawPrint, Plus, Slash, Swords, Volume2, VolumeX } from "lucide-react";
+import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
+import { getSkill } from "../data/skills";
+import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { OPERATION } from "../data/units";
@@ -41,13 +43,14 @@ function roleClass(unit: CombatUnit): string {
   return "";
 }
 
-function ActIcon({ name }: { name?: string }) {
-  const n = (name || "").toUpperCase();
+function ActIcon({ archetype }: { archetype?: ActionArchetype }) {
   const props = { className: "t-act-svg", "aria-hidden": true as const };
-  if (n === "STRIKE" || n === "BITE" || n === "THRUST") return <Slash {...props} />;
-  if (n === "REND" || n === "LUNGE" || n === "HAMSTRING") return <Axe {...props} />;
-  if (n === "HOWL") return <AudioLines {...props} />;
-  if (n === "RECOVER") return <Plus {...props} />;
+  if (archetype === "strike") return <Slash {...props} />;
+  if (archetype === "heavy") return <Axe {...props} />;
+  if (archetype === "control") return <Crosshair {...props} />;
+  if (archetype === "heal") return <HeartPulse {...props} />;
+  if (archetype === "support") return <Shield {...props} />;
+  if (archetype === "objective") return <Target {...props} />;
   return <Swords {...props} />;
 }
 
@@ -123,6 +126,7 @@ function Token({
     attacking ? "attacking" : "",
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
+    `depth-${Math.max(0, Math.min(4, unit.r))}`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -133,6 +137,11 @@ function Token({
       style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0) }}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
+      {targeting && validTarget && !unit.defeated ? (
+        <span className={`t-target-reticle ${unit.team}`} aria-hidden="true">
+          <i /><i /><i /><i />
+        </span>
+      ) : null}
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
@@ -334,17 +343,29 @@ function SkillHud() {
   const skills = actor ? availableSkills(battle, actor) : [];
   const recoveryMission = battle.objective?.type === "RECOVER" && !battle.objective.completed;
   const recoverReady = canRecover(battle);
+  if (actor?.team === "enemy") {
+    return (
+      <div className="t-actions t-actions-enemy" aria-live="polite">
+        <div className="t-enemy-command">
+          <Swords className="t-enemy-command-icon" aria-hidden="true" />
+          <span>ENEMY ACTION</span>
+          <small>{actor.name}</small>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`t-actions${recoveryMission ? " has-obj" : ""}`}>
       {([0, 1, 2] as const).map((i) => {
         const sk = skills[i];
         const on = battle.actionSkillId && sk && battle.actionSkillId === sk.id;
         const cooling = sk && !sk.ready;
+        const presentation = sk ? getActionPresentation(sk) : null;
         return (
           <button
             key={i}
             type="button"
-            className={`t-act ${on ? "on" : ""} ${cooling ? "cooling" : ""}`}
+            className={`t-act ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
             aria-pressed={!!on}
             aria-label={sk ? `${sk.slot} ${sk.name}. ${sk.desc}` : `Empty slot A${i + 1}`}
@@ -354,9 +375,10 @@ function SkillHud() {
               selectSkill(sk.id);
             }}
           >
-            <ActIcon name={sk?.name} />
+            <ActIcon archetype={presentation?.archetype} />
             <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
             <span className="name">{sk?.name ?? "—"}</span>
+            {presentation ? <span className="meta">{presentation.cue}</span> : null}
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}
           </button>
         );
@@ -364,7 +386,7 @@ function SkillHud() {
       {recoveryMission ? (
         <button
           type="button"
-          className={`t-act t-act-obj ${recoverReady ? "on" : "cooling"}`}
+          className={`t-act t-act-obj kind-${RECOVER_PRESENTATION.archetype} fx-${RECOVER_PRESENTATION.effectClass} ${recoverReady ? "on" : "cooling"}`}
           disabled={!allyTurn || !recoverReady}
           aria-label={recoverReady ? "Recover. Complete objective, consumes action." : "Recover unavailable"}
           onClick={() => {
@@ -372,9 +394,10 @@ function SkillHud() {
             selectRecover();
           }}
         >
-          <ActIcon name="RECOVER" />
+          <ActIcon archetype={RECOVER_PRESENTATION.archetype} />
           <span className="slot">OBJ</span>
           <span className="name">RECOVER</span>
+          <span className="meta">{RECOVER_PRESENTATION.cue}</span>
         </button>
       ) : null}
     </div>
@@ -388,6 +411,7 @@ export function BattleScreen() {
   const activeId = useBattleStore((s) => s.battle.activeId);
   const inspectId = useBattleStore((s) => s.battle.inspectId);
   const actionSkillId = useBattleStore((s) => s.battle.actionSkillId);
+  const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
@@ -412,6 +436,10 @@ export function BattleScreen() {
   const targets = useMemo(() => targetIdsNow(), [units, activeId, mode, actionSkillId]);
 
   const actor = units.find((u) => u.id === activeId);
+  const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
+  const focusPresentation = activeSkill ? getActionPresentation(activeSkill) : null;
+  const impactSkill = lastActionSkillId ? getSkill(lastActionSkillId) : null;
+  const impactPresentation = impactSkill ? getActionPresentation(impactSkill) : null;
   const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
   const impact = units.find((u) => u.id === impactId && !u.defeated);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
@@ -419,7 +447,10 @@ export function BattleScreen() {
   const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
 
   return (
-    <div className="t-battle">
+    <div
+      className={`t-battle${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      data-impact-kind={impactPresentation?.effectClass || "damage"}
+    >
       <header className="t-top">
         <div className="t-brand">
           <div>
@@ -527,7 +558,11 @@ export function BattleScreen() {
             );
           })}
           {impactPos ? (
-            <div key={impactKey} className="t-impact" style={{ left: `${impactPos.x}%`, top: `${impactPos.y - 4}%` }} />
+            <div
+              key={impactKey}
+              className={`t-impact t-impact-${impactPresentation?.effectClass || "damage"}`}
+              style={{ left: `${impactPos.x}%`, top: `${impactPos.y - 4}%` }}
+            />
           ) : null}
         </div>
       </div>

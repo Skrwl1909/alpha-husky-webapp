@@ -48,6 +48,7 @@ interface UiBattle {
   ticker: string | null;
   floats: FloatText[];
   attackingId: string | null;
+  lastActionSkillId: string | null;
   impactId: string | null;
   impactKey: number;
   muted: boolean;
@@ -266,7 +267,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ attackingId: null });
     }
     if (action.type === "skill") {
-      set({ attackingId: actor.id });
+      set({ attackingId: actor.id, lastActionSkillId: action.skillId });
     }
     const applied = applyAi(get().battle, action);
     set({ battle: applied.state, queue: refreshQueue(applied.state), attackingId: action.type === "skill" ? actor.id : null });
@@ -369,6 +370,7 @@ export const useBattleStore = create<Store>((set, get) => {
     ticker: null,
     floats: [],
     attackingId: null,
+    lastActionSkillId: null,
     impactId: null,
     impactKey: 0,
     muted: false,
@@ -694,7 +696,7 @@ export const useBattleStore = create<Store>((set, get) => {
       sfx("select");
       if (!skillNeedsTargetPick(skill)) {
         const g = ++runGen;
-        set({ busy: true, attackingId: actor.id });
+        set({ busy: true, attackingId: actor.id, lastActionSkillId: skillId });
         const res = trySkill(battle, skillId);
         if (!res.ok) {
           set({ busy: false, attackingId: null, ticker: `${actor.name}  ·  no target in range` });
@@ -725,8 +727,9 @@ export const useBattleStore = create<Store>((set, get) => {
       const actor = activeUnit(battle);
       if (!actor || actor.hasActed) return;
       const g = ++runGen;
-      set({ busy: true, attackingId: actor.id });
-      const res = trySkill(battle, battle.actionSkillId, id);
+      const selectedSkillId = battle.actionSkillId;
+      set({ busy: true, attackingId: actor.id, lastActionSkillId: selectedSkillId });
+      const res = trySkill(battle, selectedSkillId, id);
       if (!res.ok) {
         set({ busy: false, attackingId: null });
         return;

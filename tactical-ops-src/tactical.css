@@ -3334,3 +3334,291 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     font-size:.95rem;
   }
 }
+
+
+/* === Tactical Ops Premium Combat Readability Pass P0 === */
+#tacticalOpsRoot .t-act {
+  min-height: 58px;
+  padding: .34rem .18rem .26rem;
+  background:
+    linear-gradient(180deg, #111822f2, #080c12f7 68%),
+    radial-gradient(120% 80% at 50% 0%, #3ec6ff12, transparent 60%);
+  box-shadow: inset 0 1px 0 #ffffff0a, 0 8px 18px #0007;
+}
+
+#tacticalOpsRoot .t-act .name {
+  font-size: .64rem;
+  letter-spacing: .12em;
+}
+
+#tacticalOpsRoot .t-act .meta {
+  display:block;
+  margin-top:.11rem;
+  color:#8295a6;
+  font-family:var(--t-font-display);
+  font-size:.42rem;
+  line-height:1;
+  letter-spacing:.11em;
+  white-space:nowrap;
+  text-transform:uppercase;
+}
+
+#tacticalOpsRoot .t-act-svg {
+  width:18px;
+  height:18px;
+  margin-bottom:.05rem;
+  filter:drop-shadow(0 0 7px currentColor);
+}
+
+#tacticalOpsRoot .t-act.kind-heavy .t-act-svg { color:#9bdfff; }
+#tacticalOpsRoot .t-act.kind-control .t-act-svg { color:#f3be62; }
+#tacticalOpsRoot .t-act.kind-heal .t-act-svg { color:var(--t-heal); }
+#tacticalOpsRoot .t-act.kind-support .t-act-svg { color:#79e3d2; }
+#tacticalOpsRoot .t-act.kind-objective .t-act-svg { color:#7ae6ff; }
+
+#tacticalOpsRoot .t-act.kind-control {
+  background:
+    linear-gradient(180deg,#181612f4,#0a0d12f8 72%),
+    radial-gradient(120% 80% at 50% 0%,#e8a73a18,transparent 62%);
+}
+#tacticalOpsRoot .t-act.kind-heal,
+#tacticalOpsRoot .t-act.kind-support {
+  background:
+    linear-gradient(180deg,#0f1918f2,#080d11f8 72%),
+    radial-gradient(120% 80% at 50% 0%,#59d8c418,transparent 62%);
+}
+
+#tacticalOpsRoot .t-act.on {
+  transform:translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px #3ec6ff7a,
+    inset 0 0 24px #3ec6ff12,
+    0 0 16px #3ec6ff1e;
+}
+#tacticalOpsRoot .t-act.kind-control.on {
+  border-color:#d7a54c;
+  box-shadow:inset 0 0 0 1px #d7a54c77, 0 0 16px #d7a54c22;
+}
+#tacticalOpsRoot .t-act.kind-heal.on,
+#tacticalOpsRoot .t-act.kind-support.on {
+  border-color:#65dbc7;
+  box-shadow:inset 0 0 0 1px #65dbc777, 0 0 16px #65dbc722;
+}
+
+#tacticalOpsRoot .t-act.cooling::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,#05080bd9,#10141a99);
+  pointer-events:none;
+  z-index:0;
+}
+#tacticalOpsRoot .t-act.cooling > * { position:relative; z-index:1; }
+#tacticalOpsRoot .t-act .cd {
+  z-index:2;
+  padding:.05rem .18rem;
+  border:1px solid #ff6b6b55;
+  border-radius:99px;
+  background:#260d0dd9;
+  color:#ff8585;
+}
+
+#tacticalOpsRoot .t-actions-enemy {
+  min-height:58px;
+  display:flex;
+  align-items:stretch;
+}
+#tacticalOpsRoot .t-enemy-command {
+  position:relative;
+  flex:1;
+  min-height:58px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-rows:1fr 1fr;
+  align-items:center;
+  column-gap:.55rem;
+  padding:.48rem .72rem;
+  overflow:hidden;
+  border:1px solid #e23d3d55;
+  border-radius:var(--t-radius-sm);
+  background:
+    linear-gradient(90deg,#240b0bea,#0a0e14f4 64%),
+    repeating-linear-gradient(135deg,#e23d3d08 0 6px,transparent 6px 12px);
+  box-shadow:inset 0 0 24px #e23d3d12;
+}
+#tacticalOpsRoot .t-enemy-command::after {
+  content:"";
+  position:absolute;
+  top:0; bottom:0;
+  width:28%;
+  left:-30%;
+  background:linear-gradient(90deg,transparent,#ff5b5b1f,transparent);
+  animation:t-enemy-scan 1.15s linear infinite;
+}
+#tacticalOpsRoot .t-enemy-command-icon {
+  grid-row:1 / span 2;
+  width:20px; height:20px;
+  color:#ff7070;
+  filter:drop-shadow(0 0 8px #e23d3d88);
+}
+#tacticalOpsRoot .t-enemy-command span {
+  font-family:var(--t-font-display);
+  letter-spacing:.16em;
+  font-size:.64rem;
+  color:#ff9b9b;
+  align-self:end;
+}
+#tacticalOpsRoot .t-enemy-command small {
+  font-family:var(--t-font-display);
+  letter-spacing:.10em;
+  font-size:.45rem;
+  color:#8d99a6;
+  align-self:start;
+}
+@keyframes t-enemy-scan { to { left:110%; } }
+
+#tacticalOpsRoot .t-battle.is-focusing .t-grid i {
+  opacity:.18;
+  transition:opacity .14s ease;
+}
+#tacticalOpsRoot .t-battle.is-focusing .t-cell.move::after {
+  opacity:.12;
+}
+#tacticalOpsRoot .t-battle.is-focusing .t-token.subdued {
+  opacity:.34;
+  filter:saturate(.35) brightness(.60);
+}
+#tacticalOpsRoot .t-battle.is-focusing .t-token.active {
+  opacity:1;
+  filter:none;
+}
+#tacticalOpsRoot .t-battle.is-focusing .t-token.active .t-ring {
+  filter:drop-shadow(0 0 16px #3ec6ffff) drop-shadow(0 0 28px #3ec6ff66);
+}
+
+#tacticalOpsRoot .t-target-reticle {
+  position:absolute;
+  z-index:14;
+  left:50%;
+  bottom:2%;
+  width:118%;
+  aspect-ratio:1.15;
+  transform:translateX(-50%);
+  pointer-events:none;
+  animation:t-reticle-breathe .9s ease-in-out infinite alternate;
+}
+#tacticalOpsRoot .t-target-reticle i {
+  position:absolute;
+  width:13px;
+  height:13px;
+  border-color:#ff6b6b;
+  filter:drop-shadow(0 0 6px #e23d3daa);
+}
+#tacticalOpsRoot .t-target-reticle.ally i {
+  border-color:#6de7ff;
+  filter:drop-shadow(0 0 6px #3ec6ffaa);
+}
+#tacticalOpsRoot .t-target-reticle i:nth-child(1){left:0;top:0;border-left:2px solid;border-top:2px solid;}
+#tacticalOpsRoot .t-target-reticle i:nth-child(2){right:0;top:0;border-right:2px solid;border-top:2px solid;}
+#tacticalOpsRoot .t-target-reticle i:nth-child(3){left:0;bottom:0;border-left:2px solid;border-bottom:2px solid;}
+#tacticalOpsRoot .t-target-reticle i:nth-child(4){right:0;bottom:0;border-right:2px solid;border-bottom:2px solid;}
+@keyframes t-reticle-breathe {
+  from { transform:translateX(-50%) scale(.96); opacity:.74; }
+  to { transform:translateX(-50%) scale(1.03); opacity:1; }
+}
+
+#tacticalOpsRoot .t-battle.effect-control .t-target-reticle i {
+  border-color:#f2bd59;
+  filter:drop-shadow(0 0 7px #d79f3daa);
+}
+#tacticalOpsRoot .t-battle.focus-aura .t-token.targetable .t-ring,
+#tacticalOpsRoot .t-battle.focus-ally .t-token.targetable .t-ring {
+  filter:drop-shadow(0 0 10px #69dec9) drop-shadow(0 0 20px #69dec955);
+}
+
+#tacticalOpsRoot .t-token {
+  transform-origin:50% 100%;
+}
+#tacticalOpsRoot .t-token.depth-0 { transform:translate(-50%,-88%) scale(.92); }
+#tacticalOpsRoot .t-token.depth-1 { transform:translate(-50%,-88%) scale(.95); }
+#tacticalOpsRoot .t-token.depth-2 { transform:translate(-50%,-88%) scale(.98); }
+#tacticalOpsRoot .t-token.depth-3 { transform:translate(-50%,-88%) scale(1.01); }
+#tacticalOpsRoot .t-token.depth-4 { transform:translate(-50%,-88%) scale(1.04); }
+
+#tacticalOpsRoot .t-token:not(.active):not(.inspect):not(.targetable):not(.trace-carrier):not(.boss-target) .t-plate {
+  min-width:54px;
+  max-width:80px;
+  padding:.08rem .24rem .11rem;
+  background:#07090dc9;
+  opacity:.82;
+}
+#tacticalOpsRoot .t-token:not(.active):not(.inspect):not(.targetable):not(.trace-carrier):not(.boss-target) .t-plate-name,
+#tacticalOpsRoot .t-token:not(.active):not(.inspect):not(.targetable):not(.trace-carrier):not(.boss-target) .t-chips {
+  display:none;
+}
+#tacticalOpsRoot .t-token.active .t-plate,
+#tacticalOpsRoot .t-token.targetable .t-plate,
+#tacticalOpsRoot .t-token.inspect .t-plate {
+  box-shadow:0 8px 20px #000a, 0 0 14px #3ec6ff14;
+}
+
+#tacticalOpsRoot .t-impact {
+  width:58px;
+  height:58px;
+  border-width:2px;
+  box-shadow:0 0 18px #fff4;
+}
+#tacticalOpsRoot .t-impact-damage,
+#tacticalOpsRoot .t-impact-control {
+  border-color:#ffdfdf;
+  animation:.34s ease-out forwards t-premium-hit;
+}
+#tacticalOpsRoot .t-impact-control {
+  border-color:#f3c35d;
+  box-shadow:0 0 18px #e2a83d66;
+}
+#tacticalOpsRoot .t-impact-heal,
+#tacticalOpsRoot .t-impact-buff {
+  border-color:#6fe6ce;
+  box-shadow:0 0 18px #5bd9c777;
+  animation:.42s ease-out forwards t-premium-support;
+}
+@keyframes t-premium-hit {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.28) rotate(-12deg); }
+  35% { opacity:1; transform:translate(-50%,-50%) scale(1.08) rotate(4deg); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.55) rotate(0); }
+}
+@keyframes t-premium-support {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.35); }
+  30% { opacity:1; transform:translate(-50%,-50%) scale(.95); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.8); }
+}
+
+#tacticalOpsRoot .t-token.attacking img.body {
+  filter:drop-shadow(0 12px 16px #000a) brightness(1.08);
+}
+#tacticalOpsRoot .t-float.dmg {
+  font-size:1.08rem;
+  text-shadow:0 0 12px #e23d3d88, 0 2px 8px #000;
+}
+#tacticalOpsRoot .t-float.heal {
+  text-shadow:0 0 12px #59d8c488, 0 2px 8px #000;
+}
+
+@media (max-width: 390px) {
+  #tacticalOpsRoot .t-act { min-height:56px; }
+  #tacticalOpsRoot .t-act .name { font-size:.59rem; letter-spacing:.10em; }
+  #tacticalOpsRoot .t-act .meta { font-size:.38rem; letter-spacing:.08em; }
+  #tacticalOpsRoot .t-act-svg { width:17px; height:17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-target-reticle,
+  #tacticalOpsRoot .t-enemy-command::after,
+  #tacticalOpsRoot .t-impact-heal,
+  #tacticalOpsRoot .t-impact-buff,
+  #tacticalOpsRoot .t-impact-damage,
+  #tacticalOpsRoot .t-impact-control {
+    animation:none !important;
+  }
+}
