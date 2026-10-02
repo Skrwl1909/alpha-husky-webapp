@@ -41,7 +41,7 @@
       <div class="lhq-core"><img class="lhq-sigil" src="/images/factions/echo_wardens_80.webp" alt="" aria-hidden="true"></div>
       <div class="lhq-conduit c1"></div><div class="lhq-conduit c2"></div><div class="lhq-conduit c3"></div>
       <button class="lhq-front" type="button" aria-label="Open Current Front">
-        <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">FACTION SIGNAL</strong><span class="lhq-front-state">${esc(frontState)}</span></span>
+        <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?"SIGNAL PRESSURE":"LINES HOLDING"}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
       ${first?`<div class="lhq-recognition"><div><small>SIGNAL RECOGNIZED</small><strong>WELCOME HOME, ${esc(name)}</strong></div></div>`:""}

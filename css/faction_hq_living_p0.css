@@ -83,3 +83,68 @@
  #factionHQLivingP0 .lhq-recognition{display:none!important}
  #factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-scene{transform:none}
 }
+
+/* P0.1 — composition polish after live-device review */
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"]{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{
+  position:absolute!important;
+  left:12px!important;
+  right:12px!important;
+  bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+  z-index:90!important;
+  margin:0!important;
+  padding:7px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:16px!important;
+  background:rgba(4,6,10,.78)!important;
+  box-shadow:0 16px 34px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  backdrop-filter:blur(16px)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav button{
+  min-height:42px!important;
+  padding:7px 6px!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-personal{
+  bottom:calc(86px + env(safe-area-inset-bottom,0px))!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-front{
+  top:60%!important;
+  height:108px!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-front-copy{
+  bottom:6px!important;
+  min-width:210px!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-front-title{
+  font-size:15px!important;
+  letter-spacing:.11em!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-front-state{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin-top:6px!important;
+  padding:4px 8px!important;
+  border:1px solid rgba(var(--ew-gold),.24)!important;
+  border-radius:999px!important;
+  background:rgba(5,7,10,.42)!important;
+  font-size:8px!important;
+  letter-spacing:.18em!important;
+  color:rgba(255,236,178,.78)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"],
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"]{
+  padding-bottom:88px!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot .hq-v3-legacy-close{
+  display:none!important;
+}
