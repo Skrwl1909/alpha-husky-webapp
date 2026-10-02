@@ -96,7 +96,7 @@
         <h1 id="ahCallsignTitle">Choose your callsign</h1>
         <p>If you stay, this is the name the Pack will remember.</p>
         <label for="ahCallsignInput">Callsign</label>
-        <input id="ahCallsignInput" data-callsign-input maxlength="20" autocomplete="nickname" autocapitalize="words" spellcheck="false">
+        <input id="ahCallsignInput" name="alpha_husky_callsign_v1" data-callsign-input maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" inputmode="text" enterkeyhint="done">
         <div class="ah-callsign-error" data-callsign-error role="alert" hidden></div>
         <button type="button" data-callsign-confirm>CONFIRM CALLSIGN</button>
       </section>`;
@@ -113,7 +113,35 @@
         void submit();
       }
     });
-    setTimeout(() => { input.focus(); input.select(); }, 0);
+    // Telegram Desktop/WebView can create the dialog before the native window
+    // has handed keyboard focus back to the webview. Avoid select() here because
+    // it can trigger saved-info/autofill UI and leave the field visually focused
+    // while hardware keyboard input is still not routed to it.
+    const focusInput = () => {
+      if (!S.back?.isConnected || document.visibilityState === "hidden") return;
+      try {
+        input.focus({ preventScroll: true });
+        const end = String(input.value || "").length;
+        input.setSelectionRange?.(end, end);
+      } catch (_) {
+        try { input.focus(); } catch (_) {}
+      }
+    };
+    requestAnimationFrame(focusInput);
+    setTimeout(focusInput, 120);
+    setTimeout(() => {
+      if (S.back?.isConnected && document.activeElement !== input) focusInput();
+    }, 420);
+
+    // A real pointer interaction is the strongest focus signal on Telegram
+    // Desktop/WebView, so reassert native input focus on first tap/click.
+    input.addEventListener("pointerdown", () => setTimeout(focusInput, 0), { passive: true });
+    input.addEventListener("click", focusInput);
+
+    const onWindowFocus = () => {
+      if (S.back?.isConnected) setTimeout(focusInput, 40);
+    };
+    global.addEventListener("focus", onWindowFocus, { once: true });
   }
 
   function hasMobileSession() {
