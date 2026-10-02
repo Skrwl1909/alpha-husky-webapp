@@ -148,3 +148,99 @@
 #factionHQBack.hq-living-echo #factionHQRoot .hq-v3-legacy-close{
   display:none!important;
 }
+
+
+/* P0.2 — FRONT / PACK premium shell closure */
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"],
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"]{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:72px 12px calc(94px + env(safe-area-inset-bottom,0px))!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:
+    linear-gradient(180deg,rgba(3,5,8,.10) 0%,rgba(3,5,8,.34) 26%,rgba(3,5,8,.82) 74%,rgba(3,5,8,.96) 100%)!important;
+  backdrop-filter:none!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-v3-command-nav,
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-v3-command-nav{
+  position:fixed!important;
+  left:12px!important;
+  right:12px!important;
+  bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+  z-index:95!important;
+  margin:0!important;
+  padding:7px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:16px!important;
+  background:rgba(4,6,10,.86)!important;
+  box-shadow:0 16px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  backdrop-filter:blur(16px)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-grid,
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-grid{
+  width:min(100%,520px)!important;
+  margin:0 auto!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-current-front{
+  min-height:0!important;
+  margin:0!important;
+  padding:16px!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,rgba(8,10,14,.78),rgba(8,10,14,.58))!important;
+  border:1px solid rgba(var(--ew-gold),.18)!important;
+  box-shadow:0 18px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04)!important;
+  backdrop-filter:blur(10px)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-front-metrics{
+  gap:8px!important;
+  margin-top:14px!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-front-metrics > div{
+  padding:11px 8px!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.035)!important;
+  border:1px solid rgba(255,255,255,.06)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-note{
+  background:rgba(255,255,255,.035)!important;
+  border-color:rgba(255,255,255,.06)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="front"] .hq-v3-calm-line{
+  margin-top:12px!important;
+  padding:16px 12px!important;
+  background:rgba(var(--ew-gold),.035)!important;
+  border:1px solid rgba(var(--ew-gold),.10)!important;
+  color:rgba(255,236,178,.66)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-grid.two{
+  width:min(100%,520px)!important;
+  margin:0 auto!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] [data-hq-section="pack"]{
+  margin:0 0 10px!important;
+  padding:14px!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,rgba(8,10,14,.78),rgba(8,10,14,.58))!important;
+  border:1px solid rgba(var(--ew-gold),.14)!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  backdrop-filter:blur(10px)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-card-title{
+  margin-bottom:10px!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-note{
+  background:rgba(255,255,255,.03)!important;
+  border-color:rgba(255,255,255,.055)!important;
+}
+#factionHQBack.hq-living-echo #factionHQRoot[data-hq-view="pack"] .hq-kpi{
+  background:rgba(255,255,255,.025)!important;
+  border-color:rgba(255,255,255,.055)!important;
+}
