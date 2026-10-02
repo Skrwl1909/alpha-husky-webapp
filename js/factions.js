@@ -112,7 +112,9 @@
   }
 
   function getMyFactionKey() {
-    return getFactionKeyFromState() || getLocalFactionKey() || "";
+    // Backend/in-memory player state is authoritative. LocalStorage is only a
+    // display cache after a confirmed join and must never resurrect membership.
+    return getFactionKeyFromState() || "";
   }
 
   function findFactionByKeyOrSlug(x) {
@@ -334,7 +336,10 @@
   // ----------------------------
   function renderAuto() {
     const my = getMyFactionKey();
-    if (!my) return renderSelector(false);
+    if (!my) {
+      close();
+      return window.FactionChamber?.open?.() || renderSelector(false);
+    }
     return renderMyFaction(my);
   }
 
