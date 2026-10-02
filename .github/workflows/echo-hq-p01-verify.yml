@@ -1,0 +1,20 @@
+name: Echo HQ P0.1 Verify
+on:
+  push:
+    branches: [faction-hq-echo-p01-composition-polish]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Syntax
+        run: |
+          node --check js/faction_hq.js
+          node --check js/faction_hq_living_p0.js
+      - name: Composition contract
+        run: |
+          grep -q 'bottom:calc(10px + env(safe-area-inset-bottom' css/faction_hq_living_p0.css
+          grep -q 'LINES HOLDING' js/faction_hq_living_p0.js
+          grep -q 'hq-v3-legacy-close' js/faction_hq.js
