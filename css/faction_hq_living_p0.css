@@ -540,3 +540,80 @@
   #factionHQLivingP0 .lhq-build{left:12px;width:min(47vw,184px);padding:9px 10px}
   #factionHQLivingP0 .lhq-personal{right:12px;max-width:145px}
 }
+
+
+/* === HQ VISUAL PROGRESSION PREVIEW HARNESS === */
+#factionHQLivingP0[data-hq-preview="1"] .lhq-preview-chip{
+  position:absolute;
+  top:calc(56px + env(safe-area-inset-top,0px));
+  left:50%;
+  transform:translateX(-50%);
+  z-index:28;
+  padding:5px 8px;
+  border-radius:999px;
+  border:1px solid rgba(var(--ew-gold),.24);
+  background:rgba(4,6,10,.72);
+  backdrop-filter:blur(10px);
+  color:rgba(var(--ew-gold),.90);
+  font-size:7px;
+  font-weight:950;
+  letter-spacing:.16em;
+  pointer-events:none;
+}
+#factionHQLivingP0[data-hq-preview="1"] .lhq-build{
+  opacity:.72;
+}
+
+/* Rogue Byte master progression: prioritize silhouette + physical infrastructure over glow. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-growth-layer{opacity:0!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-scan{opacity:.04!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-front::before{opacity:.35!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-scene{
+  filter:brightness(.72) saturate(.72) contrast(1.08)!important;
+}
+
+/* LV3 — visible network activation without fortress mass yet. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .lhq-growth-l2,
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .lhq-growth-l3{opacity:1!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .g-node{
+  box-shadow:0 0 14px rgba(var(--ew-gold),.26),inset 0 0 8px rgba(var(--ew-gold),.16);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .g-link{
+  opacity:.85;
+}
+
+/* LV4 — structural jump: stronger clamps, side mass, perimeter routing. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace{
+  width:24%;
+  height:20%;
+  opacity:.95;
+  border-top-width:3px;
+  border-bottom-color:rgba(var(--ew-gold),.22);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace.b1{left:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace.b2{right:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-rail.r2,
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-rail.r3{
+  height:3px;
+  box-shadow:0 0 15px rgba(var(--ew-gold),.28);
+}
+
+/* LV6 — prestige: refined, controlled depth. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-prestige{
+  width:2px;
+  opacity:.85;
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-orbit.o1{
+  opacity:.42;
+  transform:translate(-50%,-50%) rotate(8deg);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-orbit.o2{
+  opacity:.22;
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-core-pulse{
+  box-shadow:0 0 52px rgba(var(--ew-gold),.16),inset 0 0 28px rgba(var(--ew-gold),.08);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .lhq-scene{
+  filter:brightness(1.01) saturate(1.03) contrast(1.03)!important;
+}
