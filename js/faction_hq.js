@@ -613,6 +613,7 @@ function _contribSummaryLegacy(c) {
     if (!_root || !_viewModel) return;
     _root.setAttribute("data-hq-view", _activeView);
     _root.setAttribute("data-sheet-open", _activeSheet ? "1" : "0");
+    document.getElementById("factionHQBack")?.classList.toggle("hq-sheet-open", !!_activeSheet);
   
     _root.querySelectorAll(".hq-v3-command-nav,.hq-v3-sheet-layer").forEach((el) => el.remove());
     _root.insertAdjacentHTML("beforeend", `<nav class="hq-v3-command-nav" aria-label="Faction HQ sections">
