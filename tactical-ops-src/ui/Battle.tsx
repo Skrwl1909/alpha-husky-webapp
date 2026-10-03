@@ -127,6 +127,8 @@ function Token({
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
     `depth-${Math.max(0, Math.min(4, unit.r))}`,
+    unit.c <= 1 ? "edge-left" : "",
+    unit.c >= 6 ? "edge-right" : "",
   ]
     .filter(Boolean)
     .join(" ");
