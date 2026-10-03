@@ -563,27 +563,38 @@
 #factionHQLivingP0[data-hq-preview="1"] .lhq-build{
   opacity:.72;
 }
+#factionHQLivingP0[data-hq-preview="1"] .lhq-build{
+  cursor:default;
+}
+#factionHQLivingP0[data-hq-preview="1"] .lhq-build-preview-note{
+  display:block;
+  margin-top:6px;
+  font-size:6px;
+  line-height:1.25;
+  letter-spacing:.10em;
+  color:rgba(255,255,255,.42);
+}
 
 /* Rogue Byte master progression: prioritize silhouette + physical infrastructure over glow. */
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-growth-layer{opacity:0!important}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-scan{opacity:.04!important}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-front::before{opacity:.35!important}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="1"] .lhq-scene{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="1"] .lhq-growth-layer{opacity:0!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="1"] .lhq-scan{opacity:.04!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="1"] .lhq-front::before{opacity:.35!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="1"] .lhq-scene{
   filter:brightness(.72) saturate(.72) contrast(1.08)!important;
 }
 
 /* LV3 — visible network activation without fortress mass yet. */
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .lhq-growth-l2,
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .lhq-growth-l3{opacity:1!important}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .g-node{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="3"] .lhq-growth-l2,
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="3"] .lhq-growth-l3{opacity:1!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="3"] .g-node{
   box-shadow:0 0 14px rgba(var(--ew-gold),.26),inset 0 0 8px rgba(var(--ew-gold),.16);
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="3"] .g-link{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="3"] .g-link{
   opacity:.85;
 }
 
 /* LV4 — structural jump: stronger clamps, side mass, perimeter routing. */
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="4"] .g-brace{
   width:24%;
   height:20%;
   opacity:.95;
@@ -591,29 +602,45 @@
   border-bottom-color:rgba(var(--ew-gold),.22);
   box-shadow:0 8px 20px rgba(0,0,0,.28);
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace.b1{left:3%}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-brace.b2{right:3%}
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-rail.r2,
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="4"] .g-rail.r3{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="4"] .g-brace.b1{left:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="4"] .g-brace.b2{right:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="4"] .g-rail.r2,
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="4"] .g-rail.r3{
   height:3px;
   box-shadow:0 0 15px rgba(var(--ew-gold),.28);
 }
 
 /* LV6 — prestige: refined, controlled depth. */
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-prestige{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-brace{
+  width:24%;
+  height:20%;
+  opacity:.92;
+  border-top-width:3px;
+  border-bottom-color:rgba(var(--ew-gold),.20);
+  box-shadow:0 8px 20px rgba(0,0,0,.24);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-brace.b1{left:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-brace.b2{right:3%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-rail.r2,
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-rail.r3{
+  height:3px;
+  opacity:.82;
+  box-shadow:0 0 13px rgba(var(--ew-gold),.22);
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-prestige{
   width:2px;
   opacity:.85;
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-orbit.o1{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-orbit.o1{
   opacity:.42;
   transform:translate(-50%,-50%) rotate(8deg);
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-orbit.o2{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-orbit.o2{
   opacity:.22;
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .g-core-pulse{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .g-core-pulse{
   box-shadow:0 0 52px rgba(var(--ew-gold),.16),inset 0 0 28px rgba(var(--ew-gold),.08);
 }
-#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-level="6"] .lhq-scene{
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .lhq-scene{
   filter:brightness(1.01) saturate(1.03) contrast(1.03)!important;
 }
