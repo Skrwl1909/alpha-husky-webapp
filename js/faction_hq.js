@@ -14,6 +14,7 @@
   let _activeView = "hq";
   let _activeSheet = "";
   let _viewModel = null;
+  let _supportActionBusy = false;
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
@@ -556,13 +557,13 @@ function _contribSummaryLegacy(c) {
           <div class="hq-v3-sheet-progress"><div><span>Bones</span><strong>${num(vm.bones)} / ${num(vm.needBones)}</strong></div><div class="hq-bar"><span style="width:${pct(vm.bones, vm.needBones)}%"></span></div></div>
           <div class="hq-v3-sheet-progress"><div><span>Scrap</span><strong>${num(vm.scrap)} / ${num(vm.needScrap)}</strong></div><div class="hq-bar"><span style="width:${pct(vm.scrap, vm.needScrap)}%"></span></div></div>
           <div class="hq-v3-support-actions">
-            <button class="hq-btn mini subtle" onclick="FactionHQ._donate('bones',25)">+25 Bones</button>
-            <button class="hq-btn mini subtle" onclick="FactionHQ._donate('bones',100)">+100 Bones</button>
-            <button class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap',10)">+10 Scrap</button>
-            <button class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap',50)">+50 Scrap</button>
+            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="bones" data-amount="25">+25 Bones</button>
+            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="bones" data-amount="100">+100 Bones</button>
+            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="scrap" data-amount="10">+10 Scrap</button>
+            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="scrap" data-amount="50">+50 Scrap</button>
           </div>
-          <button class="hq-v3-sheet-link" onclick="FactionHQ._toggleSupportCustom()">${_supportCustomExpanded ? "Hide custom support" : "Custom support"}</button>
-          ${_supportCustomExpanded ? `<div class="hq-v3-custom-support"><input id="hqCustomAmt" class="hq-input" inputmode="numeric" placeholder="Custom amount"><div class="hq-v3-support-actions"><button class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('bones')">Send Bones</button><button class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('scrap')">Send Scrap</button></div></div>` : ""}
+          <button type="button" class="hq-v3-sheet-link" data-hq-support="toggle-custom">${_supportCustomExpanded ? "Hide custom support" : "Custom support"}</button>
+          ${_supportCustomExpanded ? `<div class="hq-v3-custom-support"><input id="hqCustomAmt" class="hq-input" inputmode="numeric" pattern="[0-9]*" placeholder="Custom amount"><div class="hq-v3-support-actions"><button type="button" class="hq-btn mini ghost" data-hq-support="custom" data-asset="bones">Send Bones</button><button type="button" class="hq-btn mini ghost" data-hq-support="custom" data-asset="scrap">Send Scrap</button></div></div>` : ""}
           <p class="hq-v3-sheet-note">Shared HQ progression only. No pay-to-win combat power.</p>
         </section>
       </div>`;
@@ -621,10 +622,71 @@ function _contribSummaryLegacy(c) {
       <button class="${_activeView === "front" ? "is-active" : ""} ${_viewModel.frontLive ? "has-alert" : ""}" onclick="FactionHQ._switchView('front')"><span>FRONT</span><small>${esc(_viewModel.frontLabel)}</small></button>
       <button class="${_activeView === "pack" ? "is-active" : ""}" onclick="FactionHQ._switchView('pack')"><span>PACK</span><small>${esc(rankLabel(_viewModel.myPlace.factionRank))}</small></button>
     </nav>${_renderAuxSheet()}`);
+    _bindSupportSheetActions();
   
     try { _root.scrollTop = 0; } catch (_) {}
   }
 
+  function _bindSupportSheetActions() {
+    if (!_root || _activeSheet !== "support") return;
+    const layer = _root.querySelector(".hq-v3-sheet-layer");
+    if (!layer || layer.dataset.boundSupport === "1") return;
+    layer.dataset.boundSupport = "1";
+
+    const invoke = async (button) => {
+      if (!button || _supportActionBusy) return;
+      const action = button.dataset.hqSupport || "";
+      if (!action) return;
+      try { _tg?.HapticFeedback?.selectionChanged?.(); } catch (_) {}
+
+      if (action === "toggle-custom") {
+        _toggleSupportCustom();
+        return;
+      }
+
+      if (action === "donate") {
+        const asset = String(button.dataset.asset || "");
+        const amount = Number(button.dataset.amount || 0);
+        if (!asset || amount <= 0) return;
+        _supportActionBusy = true;
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        try { await _donate(asset, amount); } finally { _supportActionBusy = false; }
+        return;
+      }
+
+      if (action === "custom") {
+        const asset = String(button.dataset.asset || "");
+        if (!asset) return;
+        _supportActionBusy = true;
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        try { await _donateCustom(asset); } finally { _supportActionBusy = false; }
+      }
+    };
+
+    layer.querySelectorAll("[data-hq-support]").forEach((button) => {
+      let handledPointer = false;
+      button.addEventListener("pointerup", (event) => {
+        if (event.pointerType === "mouse") return;
+        handledPointer = true;
+        event.preventDefault();
+        event.stopPropagation();
+        invoke(button);
+        setTimeout(() => { handledPointer = false; }, 450);
+      }, { passive: false });
+      button.addEventListener("click", (event) => {
+        if (handledPointer) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        invoke(button);
+      });
+    });
+  }
   function _switchView(view) {
     const next = ["hq", "front", "pack"].includes(view) ? view : "hq";
     _activeView = next;
@@ -3414,7 +3476,10 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
   // Actions
   // ---------------------------
   async function _donate(asset, amount) {
-    if (!_apiPost) return;
+    if (!(await _ensureApiPost(2500))) {
+      alert("Support connection is not ready. Please try again.");
+      return;
+    }
     const run_id = _rid("hq:donate");
 
     try {
