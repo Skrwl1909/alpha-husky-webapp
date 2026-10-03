@@ -29,7 +29,7 @@
     document.getElementById(ROOT_ID)?.remove();
     const back=document.getElementById("factionHQBack");
     clearFactionClasses(back);
-    if(back) delete back.dataset.hqFaction;
+    if(back){ delete back.dataset.hqFaction; delete back.dataset.hqLevel; }
   }
   function recognitionSeen(key){try{return localStorage.getItem(key)==="1"}catch(_){return false}}
   function markRecognitionSeen(key){try{localStorage.setItem(key,"1")}catch(_){}}
@@ -41,18 +41,35 @@
     if(!back||!modal)return;
     remove(); back.classList.add(cfg.cls);
     const node=document.createElement("div");
+    const name=callsign(detail);
+    const level=Math.max(1,Number(detail.level||1)||1);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
     node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
+    node.setAttribute("data-hq-level",String(level));
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
-    const name=callsign(detail);
+    back.dataset.hqLevel=String(level);
+    const nextLevel=Math.max(level+1,Number(detail.nextLevel||level+1)||level+1);
+    const bones=Math.max(0,Number(detail.bones||0)||0);
+    const scrap=Math.max(0,Number(detail.scrap||0)||0);
+    const needBones=Math.max(0,Number(detail.needBones||0)||0);
+    const needScrap=Math.max(0,Number(detail.needScrap||0)||0);
+    const canUpgrade=!!detail.canUpgrade;
+    const pct=(v,max)=>max>0?Math.max(0,Math.min(100,Math.round((v/max)*100))):0;
     const frontState=detail.frontLive?String(detail.frontLabel||"ACTIVE"):"STABLE";
     const first=!recognitionSeen(cfg.recognition);
     node.innerHTML=`
       <div class="lhq-scene"></div>
+      <div class="lhq-growth" aria-hidden="true">
+        <div class="lhq-growth-layer lhq-growth-l2"><span class="g-node n1"></span><span class="g-node n2"></span><span class="g-rail r1"></span></div>
+        <div class="lhq-growth-layer lhq-growth-l3"><span class="g-node n3"></span><span class="g-node n4"></span><span class="g-link l1"></span><span class="g-link l2"></span></div>
+        <div class="lhq-growth-layer lhq-growth-l4"><span class="g-brace b1"></span><span class="g-brace b2"></span><span class="g-rail r2"></span><span class="g-rail r3"></span></div>
+        <div class="lhq-growth-layer lhq-growth-l5"><span class="g-core-pulse"></span><span class="g-link l3"></span><span class="g-link l4"></span></div>
+        <div class="lhq-growth-layer lhq-growth-l6"><span class="g-prestige"></span><span class="g-orbit o1"></span><span class="g-orbit o2"></span></div>
+      </div>
       <div class="lhq-scan"></div>
       <div class="lhq-top">
         <div><div class="lhq-title">${cfg.name} · HQ LV ${esc(detail.level||1)}</div><div class="lhq-creed">${cfg.creed}</div></div>
@@ -64,14 +81,51 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
+      <button class="lhq-build" type="button" aria-label="Open HQ build progression">
+        <span class="lhq-build-kicker">HQ BUILD</span>
+        <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
+        <span class="lhq-build-stage">${esc(detail.currentStageName||"HQ ONLINE")} ${level>=6?"· MAX":`· NEXT ${esc(detail.nextStageName||"STAGE")}`}</span>
+        <span class="lhq-build-bars">
+          <span class="lhq-build-meter"><em>BONES ${esc(bones)} / ${esc(needBones)}</em><span><i style="width:${pct(bones,needBones)}%"></i></span></span>
+          <span class="lhq-build-meter"><em>SCRAP ${esc(scrap)} / ${esc(needScrap)}</em><span><i style="width:${pct(scrap,needScrap)}%"></i></span></span>
+        </span>
+        <span class="lhq-build-cta">${level>=6?"COMPLETE":canUpgrade?"UPGRADE READY":"SUPPORT HQ"}</span>
+      </button>
       ${first?`<div class="lhq-recognition"><div><small>SIGNAL RECOGNIZED</small><strong>WELCOME HOME, ${esc(name)}</strong></div></div>`:""}
     `;
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
     node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
+    node.querySelector(".lhq-build")?.addEventListener("click",()=>{
+      if(level>=6)return;
+      if(canUpgrade)global.FactionHQ?._upgrade?.();
+      else global.FactionHQ?._openSheet?.("support");
+    });
     if(first)markRecognitionSeen(cfg.recognition);
   }
+  function upgradeMoment(detail={}){
+    const node=document.getElementById(ROOT_ID);
+    if(!node)return;
+    const fromLevel=Math.max(1,Number(detail.fromLevel||node.dataset.hqLevel||1)||1);
+    const toLevel=Math.max(fromLevel,Math.min(6,Number(detail.toLevel||fromLevel+1)||fromLevel+1));
+    node.classList.remove("is-upgrading");
+    void node.offsetWidth;
+    node.classList.add("is-upgrading");
+    const old=node.querySelector(".lhq-upgrade-moment");
+    old?.remove();
+    const fx=document.createElement("div");
+    fx.className="lhq-upgrade-moment";
+    fx.innerHTML='<div class="lhq-upgrade-surge"></div><div class="lhq-upgrade-copy"><small>HQ NETWORK EXPANDING</small><strong>LEVEL '+esc(toLevel)+' — '+esc(detail.stageName||"NEW STAGE")+' ONLINE</strong></div>';
+    node.appendChild(fx);
+    setTimeout(()=>{
+      node.dataset.hqLevel=String(toLevel);
+      const back=document.getElementById("factionHQBack");
+      if(back)back.dataset.hqLevel=String(toLevel);
+    },850);
+    setTimeout(()=>{ node.classList.remove("is-upgrading"); fx.remove(); },2600);
+  }
   global.addEventListener("ah:faction-hq-rendered",(event)=>mount(event.detail||{}));
+  global.addEventListener("ah:faction-hq-upgrade-confirmed",(event)=>upgradeMoment(event.detail||{}));
   global.addEventListener("ah:faction-hq-closed",remove);
   global.FactionHQLivingP0={mount,remove};
 })(window);
