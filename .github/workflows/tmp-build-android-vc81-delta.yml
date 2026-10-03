@@ -1,0 +1,75 @@
+name: Build Android vc81 delta package
+on:
+  push:
+    branches: [tmp/android-vc81-delta-package-20261003]
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble exact delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="ALPHA_ANDROID_VC81_DELTA_20261003"
+          mkdir -p "$ROOT/SAFE_REPLACE/css" "$ROOT/SAFE_REPLACE/js" "$ROOT/SAFE_REPLACE/tactical-ops-src/store" "$ROOT/SAFE_REPLACE/tactical-ops-src/ui" "$ROOT/MANUAL_MERGE_REFERENCE/js"
+          cp css/faction_chamber.css "$ROOT/SAFE_REPLACE/css/"
+          cp css/faction_hq_living_p0.css "$ROOT/SAFE_REPLACE/css/"
+          cp js/faction_chamber.js "$ROOT/SAFE_REPLACE/js/"
+          cp js/faction_hq_living_p0.js "$ROOT/SAFE_REPLACE/js/"
+          cp hq_warroom_ew.webp "$ROOT/SAFE_REPLACE/"
+          cp hq_warroom_ih.webp "$ROOT/SAFE_REPLACE/"
+          cp hq_warroom_pb.webp "$ROOT/SAFE_REPLACE/"
+          cp hq_warroom_rb.webp "$ROOT/SAFE_REPLACE/"
+          cp tactical-ops-src/store/battleStore.ts "$ROOT/SAFE_REPLACE/tactical-ops-src/store/"
+          cp tactical-ops-src/tactical.css "$ROOT/SAFE_REPLACE/tactical-ops-src/"
+          cp tactical-ops-src/ui/Battle.tsx "$ROOT/SAFE_REPLACE/tactical-ops-src/ui/"
+          cp tactical-ops-src/ui/actionPresentation.ts "$ROOT/SAFE_REPLACE/tactical-ops-src/ui/"
+          cp index.html "$ROOT/MANUAL_MERGE_REFERENCE/"
+          cp js/faction_hq.js "$ROOT/MANUAL_MERGE_REFERENCE/js/"
+          cat > "$ROOT/README_APPLY_FIRST.md" <<'EOF'
+# Alpha Husky Android vc81 delta package
+
+Baseline used for yesterday's Android 2.0.18 package:
+caf0d0d836a1bc51d97af0540c60528887249643
+
+Current origin/main audited:
+821fda10573df2b16647d23600de73b3813cb8ea
+
+GitHub compare reports 31 commits and 14 changed files between those exact commits.
+
+## SAFE_REPLACE
+These files can replace the older local copies directly:
+- css/faction_chamber.css
+- css/faction_hq_living_p0.css
+- hq_warroom_ew.webp
+- hq_warroom_ih.webp
+- hq_warroom_pb.webp
+- hq_warroom_rb.webp
+- js/faction_chamber.js
+- js/faction_hq_living_p0.js
+- tactical-ops-src/store/battleStore.ts
+- tactical-ops-src/tactical.css
+- tactical-ops-src/ui/Battle.tsx
+- tactical-ops-src/ui/actionPresentation.ts
+
+## MANUAL_MERGE_REFERENCE
+Do NOT overwrite your Android-patched local copies wholesale:
+- index.html
+- js/faction_hq.js
+
+These two files contain newer main changes but the local Android workspace also contains standalone-specific session/auth/safe-area patches. Use these packaged main versions only as merge references.
+
+## Important
+This package intentionally contains ONLY files changed between the stated baseline and current main. It does not include unrelated files, verifiers, or already-matching assets.
+
+Before applying, back up the local files. After applying SAFE_REPLACE, manually merge the two reference files and run the Android-specific verification before building vc81.
+
+EOF
+          sha256sum             "$ROOT/SAFE_REPLACE/css/faction_chamber.css"             "$ROOT/SAFE_REPLACE/css/faction_hq_living_p0.css"             "$ROOT/SAFE_REPLACE/js/faction_chamber.js"             "$ROOT/SAFE_REPLACE/js/faction_hq_living_p0.js"             "$ROOT/SAFE_REPLACE/hq_warroom_ew.webp"             "$ROOT/SAFE_REPLACE/hq_warroom_ih.webp"             "$ROOT/SAFE_REPLACE/hq_warroom_pb.webp"             "$ROOT/SAFE_REPLACE/hq_warroom_rb.webp"             "$ROOT/SAFE_REPLACE/tactical-ops-src/store/battleStore.ts"             "$ROOT/SAFE_REPLACE/tactical-ops-src/tactical.css"             "$ROOT/SAFE_REPLACE/tactical-ops-src/ui/Battle.tsx"             "$ROOT/SAFE_REPLACE/tactical-ops-src/ui/actionPresentation.ts"             "$ROOT/MANUAL_MERGE_REFERENCE/index.html"             "$ROOT/MANUAL_MERGE_REFERENCE/js/faction_hq.js"             > "$ROOT/SHA256SUMS.txt"
+          zip -r ALPHA_ANDROID_VC81_DELTA_20261003.zip "$ROOT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ALPHA_ANDROID_VC81_DELTA_20261003
+          path: ALPHA_ANDROID_VC81_DELTA_20261003.zip
+          if-no-files-found: error
