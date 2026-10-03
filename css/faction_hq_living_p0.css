@@ -348,3 +348,51 @@
   #factionHQLivingP0 .lhq-front{width:min(78vw,340px)}
   #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{left:10px!important;right:10px!important}
 }
+
+
+/* === HQ BUILD PROGRESSION RECOVERY === */
+#factionHQLivingP0 .lhq-build{
+  position:absolute;
+  left:16px;
+  bottom:calc(86px + env(safe-area-inset-bottom,0px));
+  z-index:24;
+  width:min(48vw,210px);
+  padding:10px 11px;
+  border:1px solid rgba(var(--ew-gold),.24);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(5,7,10,.72),rgba(5,7,10,.88));
+  color:#fff;
+  text-align:left;
+  pointer-events:auto;
+  box-shadow:0 12px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(10px);
+}
+#factionHQLivingP0 .lhq-build-kicker{display:block;font-size:8px;font-weight:950;letter-spacing:.18em;color:rgba(var(--ew-gold),.82)}
+#factionHQLivingP0 .lhq-build-level{display:block;margin-top:3px;font-size:13px;font-weight:950;letter-spacing:.05em}
+#factionHQLivingP0 .lhq-build-level b{color:rgba(var(--ew-gold),.88);padding:0 3px}
+#factionHQLivingP0 .lhq-build-stage{display:block;margin-top:2px;font-size:7px;line-height:1.2;letter-spacing:.09em;color:rgba(255,255,255,.48);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#factionHQLivingP0 .lhq-build-bars{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
+#factionHQLivingP0 .lhq-build-bars>span{height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+#factionHQLivingP0 .lhq-build-bars i{display:block;height:100%;border-radius:99px;background:rgba(var(--ew-gold),.78);box-shadow:0 0 8px rgba(var(--ew-gold),.22)}
+#factionHQLivingP0 .lhq-build-cta{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;border:1px solid rgba(var(--ew-gold),.22);font-size:7px;font-weight:950;letter-spacing:.12em;color:rgba(var(--ew-gold),.86)}
+#factionHQLivingP0 .lhq-build:active{transform:translateY(1px)}
+
+/* Let HQ level visibly mature the environment without replacing faction identity. */
+#factionHQLivingP0[data-hq-level="1"] .lhq-scene{filter:saturate(.78) brightness(.82) contrast(1.04)}
+#factionHQLivingP0[data-hq-level="2"] .lhq-scene{filter:saturate(.88) brightness(.88) contrast(1.045)}
+#factionHQLivingP0[data-hq-level="3"] .lhq-scene{filter:saturate(.96) brightness(.94) contrast(1.05)}
+#factionHQLivingP0[data-hq-level="4"] .lhq-scene{filter:saturate(1.02) brightness(.98) contrast(1.055)}
+#factionHQLivingP0[data-hq-level="5"] .lhq-scene{filter:saturate(1.08) brightness(1.01) contrast(1.06)}
+#factionHQLivingP0[data-hq-level="6"] .lhq-scene{filter:saturate(1.12) brightness(1.03) contrast(1.065)}
+#factionHQLivingP0[data-hq-level="4"]::after,
+#factionHQLivingP0[data-hq-level="5"]::after,
+#factionHQLivingP0[data-hq-level="6"]::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(180deg,transparent 0 56%,rgba(var(--ew-gold),.025) 72%,transparent 100%);
+}
+#factionHQLivingP0[data-hq-level="6"]::after{background:radial-gradient(ellipse at 50% 46%,rgba(var(--ew-gold),.055),transparent 58%)}
+
+@media(max-width:390px){
+  #factionHQLivingP0 .lhq-build{left:12px;width:min(47vw,184px);padding:9px 10px}
+  #factionHQLivingP0 .lhq-personal{right:12px;max-width:145px}
+}
