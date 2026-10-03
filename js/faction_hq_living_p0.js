@@ -29,7 +29,7 @@
     document.getElementById(ROOT_ID)?.remove();
     const back=document.getElementById("factionHQBack");
     clearFactionClasses(back);
-    if(back) delete back.dataset.hqFaction;
+    if(back){ delete back.dataset.hqFaction; delete back.dataset.hqLevel; }
   }
   function recognitionSeen(key){try{return localStorage.getItem(key)==="1"}catch(_){return false}}
   function markRecognitionSeen(key){try{localStorage.setItem(key,"1")}catch(_){}}
@@ -46,9 +46,19 @@
     node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
+    node.setAttribute("data-hq-level",String(level));
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
+    back.dataset.hqLevel=String(level);
     const name=callsign(detail);
+    const level=Math.max(1,Number(detail.level||1)||1);
+    const nextLevel=Math.max(level+1,Number(detail.nextLevel||level+1)||level+1);
+    const bones=Math.max(0,Number(detail.bones||0)||0);
+    const scrap=Math.max(0,Number(detail.scrap||0)||0);
+    const needBones=Math.max(0,Number(detail.needBones||0)||0);
+    const needScrap=Math.max(0,Number(detail.needScrap||0)||0);
+    const canUpgrade=!!detail.canUpgrade;
+    const pct=(v,max)=>max>0?Math.max(0,Math.min(100,Math.round((v/max)*100))):0;
     const frontState=detail.frontLive?String(detail.frontLabel||"ACTIVE"):"STABLE";
     const first=!recognitionSeen(cfg.recognition);
     node.innerHTML=`
@@ -64,11 +74,26 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
+      <button class="lhq-build" type="button" aria-label="Open HQ build progression">
+        <span class="lhq-build-kicker">HQ BUILD</span>
+        <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
+        <span class="lhq-build-stage">${level>=6?"MAXIMUM HQ":esc(detail.nextStageName||"Next stage")}</span>
+        <span class="lhq-build-bars">
+          <span><i style="width:${pct(bones,needBones)}%"></i></span>
+          <span><i style="width:${pct(scrap,needScrap)}%"></i></span>
+        </span>
+        <span class="lhq-build-cta">${level>=6?"COMPLETE":canUpgrade?"UPGRADE READY":"SUPPORT HQ"}</span>
+      </button>
       ${first?`<div class="lhq-recognition"><div><small>SIGNAL RECOGNIZED</small><strong>WELCOME HOME, ${esc(name)}</strong></div></div>`:""}
     `;
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
     node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
+    node.querySelector(".lhq-build")?.addEventListener("click",()=>{
+      if(level>=6)return;
+      if(canUpgrade)global.FactionHQ?._upgrade?.();
+      else global.FactionHQ?._openSheet?.("support");
+    });
     if(first)markRecognitionSeen(cfg.recognition);
   }
   global.addEventListener("ah:faction-hq-rendered",(event)=>mount(event.detail||{}));
