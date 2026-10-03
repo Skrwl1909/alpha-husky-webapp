@@ -534,11 +534,39 @@
 }
 
 
-#factionHQBack.hq-sheet-open #factionHQLivingP0{pointer-events:none!important}
-#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-front,
-#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-build,
-#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-close{pointer-events:none!important}
-#factionHQBack.hq-sheet-open #factionHQRoot{pointer-events:auto!important}
-#factionHQBack.hq-sheet-open .hq-v3-sheet-layer{pointer-events:auto!important}
-#factionHQBack.hq-sheet-open .hq-v3-sheet-panel,
-#factionHQBack.hq-sheet-open .hq-v3-sheet-panel *{pointer-events:auto!important}
+
+/* === AUX SHEET PORTAL ===
+   Support/roster/activity/intel live outside #factionHQRoot so Living HQ pointer rules cannot swallow input. */
+#factionHQSheetPortal{position:absolute;inset:0;z-index:120;display:none;pointer-events:none}
+#factionHQSheetPortal.is-open{display:block;pointer-events:auto}
+#factionHQSheetPortal .hq-v3-sheet-layer{pointer-events:auto}
+#factionHQSheetPortal .hq-v3-sheet-backdrop{pointer-events:auto}
+#factionHQSheetPortal .hq-v3-sheet-panel{pointer-events:auto}
+#factionHQSheetPortal .hq-v3-sheet-panel button,
+#factionHQSheetPortal .hq-v3-sheet-panel input{pointer-events:auto;touch-action:manipulation}
+
+/* Reuse the visual language that was previously scoped to #factionHQRoot. */
+#factionHQSheetPortal .hq-btn{
+  width:100%;padding:14px 14px;border-radius:14px;font-weight:800;font-size:15px;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.09);color:#fff;
+  transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease,filter .15s ease;
+  box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+#factionHQSheetPortal .hq-btn:active{transform:translateY(1px) scale(.995)}
+#factionHQSheetPortal .hq-btn.mini{padding:10px 10px;border-radius:12px;font-size:13px;font-weight:800;box-shadow:none}
+#factionHQSheetPortal .hq-btn.subtle{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+#factionHQSheetPortal .hq-btn.ghost{background:rgba(255,255,255,.05)}
+#factionHQSheetPortal .hq-btn[disabled]{opacity:.45;filter:saturate(.6);box-shadow:none}
+#factionHQSheetPortal .hq-input{
+  width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.28);color:#fff;font-size:16px;outline:none;
+}
+#factionHQSheetPortal .hq-input:focus{border-color:color-mix(in srgb,var(--faction-color) 62%,white);box-shadow:0 0 0 2px color-mix(in srgb,var(--faction-color) 13%,transparent)}
+#factionHQSheetPortal .hq-bar{
+  height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.06);
+}
+#factionHQSheetPortal .hq-bar>span{
+  display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--faction-color) 62%,white),var(--faction-color));
+  box-shadow:0 0 16px color-mix(in srgb,var(--faction-color) 35%,transparent);
+}
