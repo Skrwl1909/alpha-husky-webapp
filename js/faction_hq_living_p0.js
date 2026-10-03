@@ -84,7 +84,7 @@
     const scene=progressionScene(cfg,key,visualLevel);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
-    node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
+    node.style.setProperty("--hq-scene",'url("'+scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
     node.setAttribute("data-hq-level",String(level));
