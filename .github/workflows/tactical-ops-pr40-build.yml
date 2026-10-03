@@ -1,0 +1,47 @@
+name: Tactical Ops PR40 build and verify
+
+on:
+  push:
+    branches:
+      - feat/tactical-ops-real-device-premium-polish-20261003
+    paths-ignore:
+      - js/tactical_ops.js
+
+permissions:
+  contents: write
+
+jobs:
+  build-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/tactical-ops-real-device-premium-polish-20261003
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build production Tactical Ops bundle
+        run: npm run build:tactical-ops
+      - name: Verify full Tactical Ops regression suite
+        run: npm run verify:tactical-ops
+      - name: Verify generated runtime markers
+        run: |
+          grep -q "v3.1.1-real-device-premium-polish" js/tactical_ops.js
+          grep -q "CLOSE · SLOW" js/tactical_ops.js
+          grep -q "ENEMY ACTION" js/tactical_ops.js
+          grep -q "t-target-reticle" js/tactical_ops.js
+          grep -q "edge-left" js/tactical_ops.js
+          grep -q "Tactical Ops Real-Device Premium Polish P1" js/tactical_ops.js
+      - name: Commit generated production bundle
+        run: |
+          if git diff --quiet -- js/tactical_ops.js; then
+            echo "Production bundle already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tactical_ops.js
+          git commit -m "build(tactical): refresh v3.1.1 production bundle"
+          git push origin HEAD:feat/tactical-ops-real-device-premium-polish-20261003
