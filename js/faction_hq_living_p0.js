@@ -5,7 +5,7 @@
   const esc=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const canon=(v)=>String(v||"").toLowerCase().replace(/\s+/g,"_");
   const CFG={
-    echo_wardens:{cls:"hq-living-echo",rgb:"255,211,77",name:"ECHO WARDENS",creed:"REMEMBER",icon:"/images/factions/echo_wardens_80.webp",scene:"/images/hq/echo_wardens_hq_frame01.webp",fallback:"/hq_warroom_ew.webp",idle:"LINES HOLDING",active:"SIGNAL PRESSURE",recognition:"ah_hq_recognition_echo_wardens_v1"},
+    echo_wardens:{cls:"hq-living-echo",rgb:"255,211,77",name:"ECHO WARDENS",creed:"REMEMBER",icon:"/images/factions/echo_wardens_80.webp",scene:"/hq_warroom_ew.webp",fallback:"/hq_warroom_ew.webp",idle:"LINES HOLDING",active:"SIGNAL PRESSURE",recognition:"ah_hq_recognition_echo_wardens_v1"},
     inner_howl:{cls:"hq-living-inner",rgb:"64,196,255",name:"INNER HOWL",creed:"ENDURE",icon:"/images/factions/inner_howl_80.webp",scene:"/hq_warroom_ih.webp",fallback:"/hq_warroom_ih.webp",idle:"LINE STABLE",active:"PRESSURE RISING",recognition:"ah_hq_recognition_inner_howl_v1"},
     rogue_byte:{cls:"hq-living-rogue",rgb:"255,59,59",name:"ROGUE BYTE",creed:"BREAK IN",icon:"/images/factions/rogue_byte_80.webp",scene:"/hq_warroom_rb.webp",fallback:"/hq_warroom_rb.webp",idle:"CHANNEL QUIET",active:"BREACH SIGNAL",recognition:"ah_hq_recognition_rogue_byte_v1"},
     pack_burners:{cls:"hq-living-burners",rgb:"255,122,26",name:"PACK BURNERS",creed:"BE SEEN",icon:"/images/factions/pack_burners_80.webp",scene:"/hq_warroom_pb.webp",fallback:"/hq_warroom_pb.webp",idle:"HEAT LOW",active:"PRESSURE IGNITED",recognition:"ah_hq_recognition_pack_burners_v1"}
@@ -27,7 +27,9 @@
   }
   function remove(){
     document.getElementById(ROOT_ID)?.remove();
-    clearFactionClasses(document.getElementById("factionHQBack"));
+    const back=document.getElementById("factionHQBack");
+    clearFactionClasses(back);
+    if(back) delete back.dataset.hqFaction;
   }
   function recognitionSeen(key){try{return localStorage.getItem(key)==="1"}catch(_){return false}}
   function markRecognitionSeen(key){try{localStorage.setItem(key,"1")}catch(_){}}
@@ -45,6 +47,7 @@
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
+    back.dataset.hqFaction=key;
     const name=callsign(detail);
     const frontState=detail.frontLive?String(detail.frontLabel||"ACTIVE"):"STABLE";
     const first=!recognitionSeen(cfg.recognition);
