@@ -7,6 +7,7 @@
   let _back = null;   // #factionHQBack
   let _modal = null;  // #factionHQModal
   let _root = null;   // #factionHQRoot
+  let _sheetPortal = null; // #factionHQSheetPortal — direct child of #factionHQBack
 
   let _feedExpanded = false;
   let _supportCustomExpanded = false;
@@ -15,6 +16,7 @@
   let _activeSheet = "";
   let _viewModel = null;
   let _supportActionBusy = false;
+  let _lastSheetPointerAt = 0;
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
@@ -544,11 +546,11 @@ function _contribSummaryLegacy(c) {
   function _renderAuxSheet() {
     if (!_activeSheet || !_viewModel) return "";
     const vm = _viewModel;
-    const close = `<button class="hq-v3-sheet-close" onclick="FactionHQ._closeSheet()" aria-label="Close">×</button>`;
+    const close = `<button type="button" class="hq-v3-sheet-close" data-hq-sheet-action="close" aria-label="Close">×</button>`;
   
     if (_activeSheet === "support") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
+        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
         <section class="hq-v3-sheet-panel">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">SHARED PROGRESSION</span>
@@ -571,7 +573,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "roster") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
+        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">PACK NETWORK</span>
@@ -585,7 +587,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "activity") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
+        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">FACTION RECORD</span>
@@ -597,7 +599,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "intel") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
+        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">FACTION INTEL</span>
@@ -610,83 +612,100 @@ function _contribSummaryLegacy(c) {
     return "";
   }
 
+  function _sheetActionTarget(target) {
+    return target?.closest?.("[data-hq-sheet-action],[data-hq-support]") || null;
+  }
+
+  async function _runSheetAction(target) {
+    if (!target) return;
+    const sheetAction = String(target.dataset.hqSheetAction || "");
+    if (sheetAction === "close") {
+      _closeSheet();
+      return;
+    }
+
+    const action = String(target.dataset.hqSupport || "");
+    if (!action || _supportActionBusy) return;
+
+    try { _tg?.HapticFeedback?.selectionChanged?.(); } catch (_) {}
+
+    if (action === "toggle-custom") {
+      _toggleSupportCustom();
+      return;
+    }
+
+    if (action === "donate") {
+      const asset = String(target.dataset.asset || "");
+      const amount = Number(target.dataset.amount || 0);
+      if (!asset || amount <= 0) return;
+      _supportActionBusy = true;
+      target.disabled = true;
+      target.setAttribute("aria-busy", "true");
+      try { await _donate(asset, amount); }
+      finally { _supportActionBusy = false; }
+      return;
+    }
+
+    if (action === "custom") {
+      const asset = String(target.dataset.asset || "");
+      if (!asset) return;
+      _supportActionBusy = true;
+      target.disabled = true;
+      target.setAttribute("aria-busy", "true");
+      try { await _donateCustom(asset); }
+      finally { _supportActionBusy = false; }
+    }
+  }
+
+  function _bindSheetPortal() {
+    if (!_sheetPortal || _sheetPortal.__hqSheetBound) return;
+    _sheetPortal.__hqSheetBound = true;
+
+    _sheetPortal.addEventListener("pointerup", (event) => {
+      if (event.pointerType === "mouse") return;
+      const target = _sheetActionTarget(event.target);
+      if (!target) return;
+      _lastSheetPointerAt = Date.now();
+      event.preventDefault();
+      event.stopPropagation();
+      void _runSheetAction(target);
+    }, { capture: true, passive: false });
+
+    _sheetPortal.addEventListener("click", (event) => {
+      const target = _sheetActionTarget(event.target);
+      if (!target) return;
+      if (Date.now() - _lastSheetPointerAt < 550) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      void _runSheetAction(target);
+    }, true);
+  }
+
   function _syncCommandCenter() {
     if (!_root || !_viewModel) return;
     _root.setAttribute("data-hq-view", _activeView);
     _root.setAttribute("data-sheet-open", _activeSheet ? "1" : "0");
-    document.getElementById("factionHQBack")?.classList.toggle("hq-sheet-open", !!_activeSheet);
-  
+
     _root.querySelectorAll(".hq-v3-command-nav,.hq-v3-sheet-layer").forEach((el) => el.remove());
     _root.insertAdjacentHTML("beforeend", `<nav class="hq-v3-command-nav" aria-label="Faction HQ sections">
       <button class="${_activeView === "hq" ? "is-active" : ""}" onclick="FactionHQ._switchView('hq')"><span>HQ</span><small>HOME</small></button>
       <button class="${_activeView === "front" ? "is-active" : ""} ${_viewModel.frontLive ? "has-alert" : ""}" onclick="FactionHQ._switchView('front')"><span>FRONT</span><small>${esc(_viewModel.frontLabel)}</small></button>
       <button class="${_activeView === "pack" ? "is-active" : ""}" onclick="FactionHQ._switchView('pack')"><span>PACK</span><small>${esc(rankLabel(_viewModel.myPlace.factionRank))}</small></button>
-    </nav>${_renderAuxSheet()}`);
-    _bindSupportSheetActions();
-  
+    </nav>`);
+
+    if (_sheetPortal) {
+      _sheetPortal.innerHTML = _renderAuxSheet();
+      _sheetPortal.classList.toggle("is-open", !!_activeSheet);
+      _bindSheetPortal();
+    }
+
     try { _root.scrollTop = 0; } catch (_) {}
   }
 
-  function _bindSupportSheetActions() {
-    if (!_root || _activeSheet !== "support") return;
-    const layer = _root.querySelector(".hq-v3-sheet-layer");
-    if (!layer || layer.dataset.boundSupport === "1") return;
-    layer.dataset.boundSupport = "1";
-
-    const invoke = async (button) => {
-      if (!button || _supportActionBusy) return;
-      const action = button.dataset.hqSupport || "";
-      if (!action) return;
-      try { _tg?.HapticFeedback?.selectionChanged?.(); } catch (_) {}
-
-      if (action === "toggle-custom") {
-        _toggleSupportCustom();
-        return;
-      }
-
-      if (action === "donate") {
-        const asset = String(button.dataset.asset || "");
-        const amount = Number(button.dataset.amount || 0);
-        if (!asset || amount <= 0) return;
-        _supportActionBusy = true;
-        button.disabled = true;
-        button.setAttribute("aria-busy", "true");
-        try { await _donate(asset, amount); } finally { _supportActionBusy = false; }
-        return;
-      }
-
-      if (action === "custom") {
-        const asset = String(button.dataset.asset || "");
-        if (!asset) return;
-        _supportActionBusy = true;
-        button.disabled = true;
-        button.setAttribute("aria-busy", "true");
-        try { await _donateCustom(asset); } finally { _supportActionBusy = false; }
-      }
-    };
-
-    layer.querySelectorAll("[data-hq-support]").forEach((button) => {
-      let handledPointer = false;
-      button.addEventListener("pointerup", (event) => {
-        if (event.pointerType === "mouse") return;
-        handledPointer = true;
-        event.preventDefault();
-        event.stopPropagation();
-        invoke(button);
-        setTimeout(() => { handledPointer = false; }, 450);
-      }, { passive: false });
-      button.addEventListener("click", (event) => {
-        if (handledPointer) {
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        invoke(button);
-      });
-    });
-  }
   function _switchView(view) {
     const next = ["hq", "front", "pack"].includes(view) ? view : "hq";
     _activeView = next;
@@ -2723,6 +2742,14 @@ function _contribSummaryLegacy(c) {
       _modal.appendChild(_root);
     }
 
+    _sheetPortal = document.getElementById("factionHQSheetPortal");
+    if (!_sheetPortal) {
+      _sheetPortal = document.createElement("div");
+      _sheetPortal.id = "factionHQSheetPortal";
+      _back.appendChild(_sheetPortal);
+    }
+    _bindSheetPortal();
+
     ensureHQVignette();
 
     if (!_back.__hq_click) {
@@ -2749,6 +2776,9 @@ function _contribSummaryLegacy(c) {
     ensureModal();
     _feedExpanded = false;
     _supportCustomExpanded = false;
+    _supportActionBusy = false;
+    _activeView = "hq";
+    _activeSheet = "";
 
     _back.classList.add("is-open");
     document.body.classList.add("hq-open");
@@ -2780,6 +2810,13 @@ function _contribSummaryLegacy(c) {
   }
 
   function closeView() {
+    _activeSheet = "";
+    _supportCustomExpanded = false;
+    _supportActionBusy = false;
+    if (_sheetPortal) {
+      _sheetPortal.innerHTML = "";
+      _sheetPortal.classList.remove("is-open");
+    }
     if (_back) _back.classList.remove("is-open");
     document.body.classList.remove("hq-open");
     try { globalThis.dispatchEvent?.(new CustomEvent("ah:faction-hq-closed")); } catch (_) {}
