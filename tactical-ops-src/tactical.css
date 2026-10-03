@@ -3907,3 +3907,25 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     display: none;
   }
 }
+
+
+/* Edge-cell plate anchoring: labels stay inside the battlefield on narrow phones. */
+#tacticalOpsRoot .t-token.edge-left .t-plate {
+  left: 0;
+  transform: translateX(-12%);
+}
+
+#tacticalOpsRoot .t-token.edge-right .t-plate {
+  left: 100%;
+  transform: translateX(-88%);
+}
+
+#tacticalOpsRoot .t-token.edge-left .t-objective-badge {
+  left: 0;
+  transform: translateX(-12%);
+}
+
+#tacticalOpsRoot .t-token.edge-right .t-objective-badge {
+  left: 100%;
+  transform: translateX(-88%);
+}
