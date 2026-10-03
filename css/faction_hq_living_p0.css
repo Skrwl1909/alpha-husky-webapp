@@ -371,8 +371,10 @@
 #factionHQLivingP0 .lhq-build-level{display:block;margin-top:3px;font-size:13px;font-weight:950;letter-spacing:.05em}
 #factionHQLivingP0 .lhq-build-level b{color:rgba(var(--ew-gold),.88);padding:0 3px}
 #factionHQLivingP0 .lhq-build-stage{display:block;margin-top:2px;font-size:7px;line-height:1.2;letter-spacing:.09em;color:rgba(255,255,255,.48);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#factionHQLivingP0 .lhq-build-bars{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
-#factionHQLivingP0 .lhq-build-bars>span{height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+#factionHQLivingP0 .lhq-build-bars{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+#factionHQLivingP0 .lhq-build-meter{display:grid;gap:3px;min-width:0}
+#factionHQLivingP0 .lhq-build-meter em{font-style:normal;font-size:6px;line-height:1;letter-spacing:.08em;color:rgba(255,255,255,.46);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#factionHQLivingP0 .lhq-build-meter>span{height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
 #factionHQLivingP0 .lhq-build-bars i{display:block;height:100%;border-radius:99px;background:rgba(var(--ew-gold),.78);box-shadow:0 0 8px rgba(var(--ew-gold),.22)}
 #factionHQLivingP0 .lhq-build-cta{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;border:1px solid rgba(var(--ew-gold),.22);font-size:7px;font-weight:950;letter-spacing:.12em;color:rgba(var(--ew-gold),.86)}
 #factionHQLivingP0 .lhq-build:active{transform:translateY(1px)}
