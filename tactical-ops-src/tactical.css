@@ -3622,3 +3622,310 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     animation:none !important;
   }
 }
+
+
+/* === Tactical Ops Real-Device Premium Polish P1 ===
+   Phone QA pass: command readability, HUD hierarchy and battlefield declutter.
+   Presentation only — combat rules, targeting, AI and progression remain unchanged. */
+#tacticalOpsRoot .t-dock {
+  grid-template-columns: 42px minmax(0, 1fr) 54px;
+  gap: .22rem;
+  padding-left: max(.32rem, env(safe-area-inset-left));
+  padding-right: max(.32rem, env(safe-area-inset-right));
+}
+
+#tacticalOpsRoot .t-actions {
+  gap: .18rem;
+  min-width: 0;
+}
+
+#tacticalOpsRoot .t-act {
+  min-width: 0;
+  min-height: 60px;
+  padding: .42rem .10rem .28rem;
+}
+
+#tacticalOpsRoot .t-act .name {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 .04rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(.48rem, 1.75vw, .62rem);
+  letter-spacing: clamp(.055em, .22vw, .11em);
+  line-height: 1.05;
+}
+
+#tacticalOpsRoot .t-act .meta {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(.34rem, 1.25vw, .40rem);
+  letter-spacing: .06em;
+}
+
+#tacticalOpsRoot .t-act .slot {
+  top: .10rem;
+  left: .16rem;
+  font-size: .43rem;
+}
+
+#tacticalOpsRoot .t-act .cd {
+  top: .08rem;
+  right: .12rem;
+  font-size: .43rem;
+}
+
+#tacticalOpsRoot .t-act-svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+#tacticalOpsRoot .t-skip {
+  min-width: 0;
+  width: 54px;
+  padding: .38rem .18rem .28rem;
+  letter-spacing: .08em;
+  font-size: .57rem;
+}
+
+#tacticalOpsRoot .t-icon-btn {
+  width: 42px;
+  min-width: 42px;
+}
+
+/* The selected-unit strip is the single source of detailed unit information.
+   Active/inspected battlefield plates duplicate it and were the main source
+   of the real-device card collisions seen in QA. */
+#tacticalOpsRoot .t-token.active .t-plate,
+#tacticalOpsRoot .t-token.inspect .t-plate {
+  display: none;
+}
+
+/* Non-focus units keep only a compact tactical HP marker. */
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-plate {
+  top: -17px;
+  min-width: 44px;
+  width: 48px;
+  max-width: 48px;
+  padding: .07rem .14rem .09rem;
+  border-radius: 3px;
+  opacity: .72;
+  background: #07090dc4;
+}
+
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-plate-name,
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-chips,
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-hp-num {
+  display: none;
+}
+
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-hp {
+  margin: 0;
+  gap: 0;
+}
+
+#tacticalOpsRoot .t-token:not(.targetable):not(.trace-carrier):not(.boss-target):not(.active):not(.inspect) .t-hp-bar {
+  height: 3px;
+}
+
+/* Focused targets remain readable but are capped to a phone-safe footprint. */
+#tacticalOpsRoot .t-token.targetable .t-plate,
+#tacticalOpsRoot .t-token.trace-carrier .t-plate,
+#tacticalOpsRoot .t-token.boss-target .t-plate {
+  min-width: 58px;
+  max-width: 88px;
+  padding: .09rem .24rem .12rem;
+}
+
+#tacticalOpsRoot .t-token.targetable .t-plate-name,
+#tacticalOpsRoot .t-token.trace-carrier .t-plate-name,
+#tacticalOpsRoot .t-token.boss-target .t-plate-name {
+  min-width: 0;
+  font-size: .56rem;
+  letter-spacing: .07em;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-token.targetable .t-plate-name span,
+#tacticalOpsRoot .t-token.trace-carrier .t-plate-name span,
+#tacticalOpsRoot .t-token.boss-target .t-plate-name span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keep top HUD cards as two deliberate corners rather than competing panels. */
+#tacticalOpsRoot .t-status {
+  width: min(184px, 48vw);
+  padding: .30rem .38rem .32rem;
+  gap: .32rem;
+}
+
+#tacticalOpsRoot .t-status img {
+  width: 32px;
+  height: 32px;
+}
+
+#tacticalOpsRoot .t-status-name {
+  font-size: .65rem;
+  letter-spacing: .10em;
+}
+
+#tacticalOpsRoot .t-status-kit {
+  font-size: .44rem;
+}
+
+#tacticalOpsRoot .t-status-mods {
+  gap: .20rem;
+  font-size: .49rem;
+}
+
+#tacticalOpsRoot .t-status-mods span {
+  padding: .03rem .20rem;
+}
+
+#tacticalOpsRoot .t-obj-chip {
+  width: min(164px, 43vw);
+  padding: .30rem .38rem .32rem;
+}
+
+#tacticalOpsRoot .t-obj-chip strong {
+  font-size: .52rem;
+  letter-spacing: .08em;
+}
+
+#tacticalOpsRoot .t-obj-chip span,
+#tacticalOpsRoot .t-obj-chip small,
+#tacticalOpsRoot .t-obj-chip em {
+  font-size: .44rem;
+}
+
+/* Move order portraits into the quiet center lane between both corner cards. */
+#tacticalOpsRoot .t-order-wrap {
+  top: .30rem;
+  max-width: min(22vw, 108px);
+}
+
+#tacticalOpsRoot .t-order-unit {
+  width: 19px;
+  height: 19px;
+}
+
+#tacticalOpsRoot .t-ticker {
+  max-width: min(68vw, 24rem);
+  font-size: .55rem;
+}
+
+/* Phone battlefield: preserve characters as the visual focus, not labels. */
+@media (max-width: 430px) {
+  #tacticalOpsRoot .t-brand h1 {
+    font-size: .62rem;
+    letter-spacing: .10em;
+  }
+
+  #tacticalOpsRoot .t-turn strong {
+    font-size: .62rem;
+    letter-spacing: .14em;
+  }
+
+  #tacticalOpsRoot .t-obj {
+    font-size: .50rem;
+    letter-spacing: .08em;
+  }
+
+  #tacticalOpsRoot .t-token {
+    max-width: 92px;
+  }
+
+  #tacticalOpsRoot .t-token.alpha {
+    max-width: 104px;
+  }
+
+  #tacticalOpsRoot .t-token.leader {
+    max-width: 112px;
+  }
+
+  #tacticalOpsRoot .t-token.hound {
+    max-width: 98px;
+  }
+}
+
+@media (max-width: 370px) {
+  #tacticalOpsRoot .t-dock {
+    grid-template-columns: 38px minmax(0, 1fr) 48px;
+    gap: .14rem;
+    padding-left: max(.24rem, env(safe-area-inset-left));
+    padding-right: max(.24rem, env(safe-area-inset-right));
+  }
+
+  #tacticalOpsRoot .t-icon-btn {
+    width: 38px;
+    min-width: 38px;
+  }
+
+  #tacticalOpsRoot .t-skip {
+    width: 48px;
+    font-size: .51rem;
+  }
+
+  #tacticalOpsRoot .t-actions {
+    gap: .12rem;
+  }
+
+  #tacticalOpsRoot .t-act {
+    padding-left: .05rem;
+    padding-right: .05rem;
+  }
+
+  #tacticalOpsRoot .t-act .name {
+    font-size: .45rem;
+    letter-spacing: .04em;
+  }
+
+  #tacticalOpsRoot .t-act .meta {
+    font-size: .31rem;
+    letter-spacing: .03em;
+  }
+
+  #tacticalOpsRoot .t-status {
+    width: min(166px, 47vw);
+  }
+
+  #tacticalOpsRoot .t-obj-chip {
+    width: min(150px, 42vw);
+  }
+
+  #tacticalOpsRoot .t-order-wrap {
+    display: none;
+  }
+}
+
+
+/* Edge-cell plate anchoring: labels stay inside the battlefield on narrow phones. */
+#tacticalOpsRoot .t-token.edge-left .t-plate {
+  left: 0;
+  transform: translateX(-12%);
+}
+
+#tacticalOpsRoot .t-token.edge-right .t-plate {
+  left: 100%;
+  transform: translateX(-88%);
+}
+
+#tacticalOpsRoot .t-token.edge-left .t-objective-badge {
+  left: 0;
+  transform: translateX(-12%);
+}
+
+#tacticalOpsRoot .t-token.edge-right .t-objective-badge {
+  left: 100%;
+  transform: translateX(-88%);
+}
