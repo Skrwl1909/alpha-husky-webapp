@@ -159,7 +159,9 @@
   max-width:none!important;
   max-height:none!important;
   margin:0!important;
-  padding:72px 12px calc(94px + env(safe-area-inset-bottom,0px))!important;
+  padding:72px 12px calc(126px + env(safe-area-inset-bottom,0px))!important;
+  scroll-padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))!important;
+  overscroll-behavior-y:contain;
   border:0!important;
   border-radius:0!important;
   box-shadow:none!important;
@@ -180,8 +182,8 @@
   padding:7px!important;
   border:1px solid rgba(255,255,255,.08)!important;
   border-radius:16px!important;
-  background:rgba(4,6,10,.86)!important;
-  box-shadow:0 16px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  background:linear-gradient(180deg,rgba(4,6,10,.94),rgba(4,6,10,.98))!important;
+  box-shadow:0 -20px 30px rgba(3,5,8,.58),0 16px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
   backdrop-filter:blur(16px)!important;
 }
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="front"] .hq-grid,
@@ -223,6 +225,9 @@
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"] .hq-grid.two{
   width:min(100%,520px)!important;
   margin:0 auto!important;
+}
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"] .hq-grid.two > [data-hq-section="pack"]:last-child{
+  margin-bottom:18px!important;
 }
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"] [data-hq-section="pack"]{
   margin:0 0 10px!important;
