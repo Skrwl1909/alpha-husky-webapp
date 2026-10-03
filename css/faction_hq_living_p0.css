@@ -72,6 +72,12 @@
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"]{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;padding:0!important;overflow:visible!important;pointer-events:none}
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"] > :not(.hq-v3-command-nav):not(.hq-v3-sheet-layer){display:none!important}
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{pointer-events:auto}
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"]{pointer-events:auto!important}
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"] .hq-v3-sheet-layer,
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"] .hq-v3-sheet-panel,
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"] .hq-v3-sheet-panel button,
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"] .hq-v3-sheet-panel input{pointer-events:auto!important}
+#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"][data-sheet-open="1"] .hq-v3-sheet-backdrop{pointer-events:auto!important}
 @keyframes lhqBreath{to{transform:scale(1.028) translateY(-.25%)}}
 @keyframes lhqScan{0%{top:6%;opacity:0}10%{opacity:.28}90%{opacity:.18}100%{top:91%;opacity:0}}
 @keyframes lhqRing{to{transform:rotate(360deg)}}
