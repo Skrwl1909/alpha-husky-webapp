@@ -50,7 +50,7 @@
   box-shadow:0 0 28px rgba(var(--ew-gold),.12);animation:lhqFrontPulse 4.8s ease-in-out infinite}
 #factionHQLivingP0 .lhq-front-copy{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:190px;text-align:center;
  text-shadow:0 2px 12px #000}
-#factionHQLivingP0 .lhq-kicker{font-size:9px;font-weight:900;letter-spacing:.24em;color:rgba(255,229,150,.82)}
+#factionHQLivingP0 .lhq-kicker{font-size:9px;font-weight:900;letter-spacing:.24em;color:rgba(var(--ew-gold),.82)}
 #factionHQLivingP0 .lhq-front-title{margin-top:4px;font-size:17px;font-weight:950;letter-spacing:.08em}
 #factionHQLivingP0 .lhq-front-state{margin-top:3px;font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.68)}
 #factionHQLivingP0 .lhq-personal{
@@ -59,11 +59,11 @@
   background:rgba(5,7,10,.56);backdrop-filter:blur(8px);text-align:right;pointer-events:none;
 }
 #factionHQLivingP0 .lhq-personal strong{display:block;margin-top:2px;font-size:12px;letter-spacing:.08em}
-#factionHQLivingP0 .lhq-personal small{font-size:9px;letter-spacing:.17em;color:rgba(255,229,150,.72)}
+#factionHQLivingP0 .lhq-personal small{font-size:9px;letter-spacing:.17em;color:rgba(var(--ew-gold),.72)}
 #factionHQLivingP0 .lhq-top{
   position:absolute;left:16px;right:16px;top:max(14px,env(safe-area-inset-top));display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
 }
-#factionHQLivingP0 .lhq-title{font-size:13px;font-weight:950;letter-spacing:.11em}.lhq-creed{margin-top:3px;font-size:9px;letter-spacing:.2em;color:rgba(255,229,150,.78)}
+#factionHQLivingP0 .lhq-title{font-size:13px;font-weight:950;letter-spacing:.11em}.lhq-creed{margin-top:3px;font-size:9px;letter-spacing:.2em;color:rgba(var(--ew-gold),.78)}
 #factionHQLivingP0 .lhq-close{pointer-events:auto;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.34);color:#fff;font-size:18px}
 #factionHQLivingP0 .lhq-recognition{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;
  background:radial-gradient(circle at center,rgba(var(--ew-gold),.10),transparent 35%);animation:lhqRecognize 1.9s ease both}
@@ -139,7 +139,7 @@
   background:rgba(5,7,10,.42)!important;
   font-size:8px!important;
   letter-spacing:.18em!important;
-  color:rgba(255,236,178,.78)!important;
+  color:rgba(var(--ew-gold),.82)!important;
 }
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="front"],
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"]{
@@ -220,7 +220,7 @@
   padding:16px 12px!important;
   background:rgba(var(--ew-gold),.035)!important;
   border:1px solid rgba(var(--ew-gold),.10)!important;
-  color:rgba(255,236,178,.66)!important;
+  color:rgba(var(--ew-gold),.70)!important;
 }
 #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"] .hq-grid.two{
   width:min(100%,520px)!important;
@@ -262,3 +262,89 @@
 #factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-sigil{animation-duration:7.5s}
 #factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-front::before{animation-duration:3.2s}
 #factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-sigil{animation-duration:4s}
+
+
+/* === Faction HQ Runtime Integration V2 — final scene-aware composition === */
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0 .lhq-scene{
+  background-position:center center, var(--hq-scene-position,50% 50%), var(--hq-scene-position,50% 50%)!important;
+  background-size:cover,cover,cover!important;
+}
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0 .lhq-scene::after{
+  background:
+    linear-gradient(180deg,rgba(2,4,7,.44) 0%,rgba(2,4,7,.04) 18%,rgba(2,4,7,.02) 50%,rgba(2,4,7,.36) 72%,rgba(2,4,7,.88) 100%),
+    radial-gradient(ellipse at var(--hq-focus-x,50%) var(--hq-focus-y,38%),transparent 0 28%,rgba(0,0,0,.10) 54%,rgba(0,0,0,.42) 100%)!important;
+}
+#factionHQBack.hq-living-echo #factionHQLivingP0{--hq-scene-position:50% 50%;--hq-focus-x:50%;--hq-focus-y:31%}
+#factionHQBack.hq-living-inner #factionHQLivingP0{--hq-scene-position:50% 50%;--hq-focus-x:50%;--hq-focus-y:33%}
+#factionHQBack.hq-living-rogue #factionHQLivingP0{--hq-scene-position:50% 49%;--hq-focus-x:49%;--hq-focus-y:37%}
+#factionHQBack.hq-living-burners #factionHQLivingP0{--hq-scene-position:50% 50%;--hq-focus-x:50%;--hq-focus-y:45%}
+
+#factionHQLivingP0 .lhq-top{
+  z-index:24;
+  padding:7px 8px;
+  margin:-7px -8px;
+  border-radius:12px;
+  text-shadow:0 2px 14px rgba(0,0,0,.96);
+}
+#factionHQLivingP0 .lhq-title{font-size:12px;line-height:1.15}
+#factionHQLivingP0 .lhq-creed{color:rgba(var(--ew-gold),.82)!important;text-shadow:0 2px 12px rgba(0,0,0,.95)}
+#factionHQLivingP0 .lhq-close{background:rgba(4,6,10,.58);backdrop-filter:blur(10px);box-shadow:0 8px 20px rgba(0,0,0,.22)}
+#factionHQLivingP0 .lhq-personal{
+  z-index:24;
+  border-color:rgba(var(--ew-gold),.25)!important;
+  background:linear-gradient(180deg,rgba(5,7,10,.66),rgba(5,7,10,.82))!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035);
+}
+#factionHQLivingP0 .lhq-personal small{color:rgba(var(--ew-gold),.76)!important}
+#factionHQLivingP0 .lhq-kicker{color:rgba(var(--ew-gold),.84)!important}
+#factionHQLivingP0 .lhq-front-copy{
+  padding:7px 12px 8px;
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(3,5,8,.16),rgba(3,5,8,.68));
+  box-shadow:0 12px 26px rgba(0,0,0,.18);
+  backdrop-filter:blur(4px);
+}
+#factionHQLivingP0 .lhq-front-state{border-color:rgba(var(--ew-gold),.24)!important;color:rgba(var(--ew-gold),.82)!important}
+
+/* The final art already carries each faction hero object. Do not stamp a generic Echo-style core over it. */
+#factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-core,
+#factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-conduit,
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-core,
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-conduit,
+#factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-core,
+#factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-conduit{display:none!important}
+
+/* CURRENT FRONT sits on each environment's natural interaction plane. */
+#factionHQBack.hq-living-echo #factionHQLivingP0 .lhq-front{top:60%!important}
+#factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-front{top:61%!important}
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-front{top:63%!important}
+#factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-front{top:61.5%!important}
+
+/* Inner Howl: quiet resonance — no generic scanning beam. */
+#factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-scan{opacity:.10;animation-duration:12s}
+#factionHQBack.hq-living-inner #factionHQLivingP0 .lhq-front::before{
+  left:18%;right:18%;top:47%;height:34%;border:0;border-top:1px solid rgba(var(--ew-gold),.30);border-radius:50%;
+  background:radial-gradient(ellipse,rgba(var(--ew-gold),.07),transparent 68%);box-shadow:0 -6px 22px rgba(var(--ew-gold),.08)
+}
+
+/* Rogue Byte: hacked signal should feel fractured, not like a second reactor ring. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-scan{left:5%;right:18%;height:1px;opacity:.28;animation-duration:4.2s}
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-front::before{
+  left:15%;right:10%;top:49%;height:28%;border:0;border-left:1px solid rgba(var(--ew-gold),.34);border-bottom:1px solid rgba(var(--ew-gold),.24);border-radius:2px;
+  background:linear-gradient(90deg,rgba(var(--ew-gold),.07),transparent 72%);box-shadow:none
+}
+
+/* Pack Burners: heat under pressure, not a floating hologram. */
+#factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-scan{display:none!important}
+#factionHQBack.hq-living-burners #factionHQLivingP0 .lhq-front::before{
+  left:18%;right:18%;top:52%;height:22%;border:0;border-top:1px solid rgba(var(--ew-gold),.34);border-bottom:1px solid rgba(var(--ew-gold),.15);border-radius:4px;
+  background:linear-gradient(90deg,transparent,rgba(var(--ew-gold),.09),transparent);box-shadow:0 0 20px rgba(var(--ew-gold),.08)
+}
+
+/* Mobile runtime protection: keep real artwork readable but reserve the nav dock. */
+@media(max-width:480px){
+  #factionHQLivingP0 .lhq-top{left:14px;right:14px}
+  #factionHQLivingP0 .lhq-personal{right:14px;max-width:155px;padding:8px 10px}
+  #factionHQLivingP0 .lhq-front{width:min(78vw,340px)}
+  #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{left:10px!important;right:10px!important}
+}
