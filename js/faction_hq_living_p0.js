@@ -41,6 +41,8 @@
     if(!back||!modal)return;
     remove(); back.classList.add(cfg.cls);
     const node=document.createElement("div");
+    const name=callsign(detail);
+    const level=Math.max(1,Number(detail.level||1)||1);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
     node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
@@ -50,8 +52,6 @@
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
     back.dataset.hqLevel=String(level);
-    const name=callsign(detail);
-    const level=Math.max(1,Number(detail.level||1)||1);
     const nextLevel=Math.max(level+1,Number(detail.nextLevel||level+1)||level+1);
     const bones=Math.max(0,Number(detail.bones||0)||0);
     const scrap=Math.max(0,Number(detail.scrap||0)||0);
