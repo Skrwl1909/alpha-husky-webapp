@@ -109,7 +109,7 @@
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
       ${forcedPreview?`<div class="lhq-preview-chip">VISUAL PREVIEW · LV ${esc(level)}</div>`:""}
-      <button class="lhq-build" type="button" aria-label="Open HQ build progression">
+      <button class="lhq-build" type="button" aria-label="${forcedPreview?"HQ visual preview only":"Open HQ build progression"}" ${forcedPreview?'aria-disabled="true" tabindex="-1"':""}>
         <span class="lhq-build-kicker">HQ BUILD</span>
         <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
         <span class="lhq-build-stage">${esc(currentStageName)} ${level>=6?"· MAX":`· NEXT ${esc(nextStageName)}`}</span>
