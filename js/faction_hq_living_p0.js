@@ -33,6 +33,14 @@
   }
   function recognitionSeen(key){try{return localStorage.getItem(key)==="1"}catch(_){return false}}
   function markRecognitionSeen(key){try{localStorage.setItem(key,"1")}catch(_){}}
+  function previewLevel(){
+    try {
+      const q=new URLSearchParams(global.location.search);
+      const raw=Number(q.get("hqpreview")||0);
+      return [1,3,4,6].includes(raw)?raw:0;
+    } catch(_){ return 0; }
+  }
+  function previewEnabled(){ return previewLevel()>0; }
   function mount(detail={}){
     const key=factionKey(detail),cfg=CFG[key];
     if(!cfg){remove();return}
@@ -42,13 +50,15 @@
     remove(); back.classList.add(cfg.cls);
     const node=document.createElement("div");
     const name=callsign(detail);
-    const level=Math.max(1,Number(detail.level||1)||1);
+    const forcedPreview=previewLevel();
+    const level=forcedPreview||Math.max(1,Number(detail.level||1)||1);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
     node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
     node.setAttribute("data-hq-level",String(level));
+    if(forcedPreview) node.setAttribute("data-hq-preview","1");
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
     back.dataset.hqLevel=String(level);
@@ -72,7 +82,7 @@
       </div>
       <div class="lhq-scan"></div>
       <div class="lhq-top">
-        <div><div class="lhq-title">${cfg.name} · HQ LV ${esc(detail.level||1)}</div><div class="lhq-creed">${cfg.creed}</div></div>
+        <div><div class="lhq-title">${cfg.name} · HQ LV ${esc(level)}${forcedPreview?" · PREVIEW":""}</div><div class="lhq-creed">${cfg.creed}</div></div>
         <button class="lhq-close" type="button" aria-label="Close HQ">×</button>
       </div>
       <div class="lhq-core"><img class="lhq-sigil" src="${cfg.icon}" alt="" aria-hidden="true"></div>
@@ -81,6 +91,7 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
+      ${forcedPreview?`<div class="lhq-preview-chip">VISUAL PREVIEW · LV ${esc(level)}</div>`:""}
       <button class="lhq-build" type="button" aria-label="Open HQ build progression">
         <span class="lhq-build-kicker">HQ BUILD</span>
         <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
@@ -97,6 +108,7 @@
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
     node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
     node.querySelector(".lhq-build")?.addEventListener("click",()=>{
+      if(forcedPreview)return;
       if(level>=6)return;
       if(canUpgrade)global.FactionHQ?._upgrade?.();
       else global.FactionHQ?._openSheet?.("support");
@@ -127,5 +139,5 @@
   global.addEventListener("ah:faction-hq-rendered",(event)=>mount(event.detail||{}));
   global.addEventListener("ah:faction-hq-upgrade-confirmed",(event)=>upgradeMoment(event.detail||{}));
   global.addEventListener("ah:faction-hq-closed",remove);
-  global.FactionHQLivingP0={mount,remove};
+  global.FactionHQLivingP0={mount,remove,previewLevel,previewEnabled};
 })(window);
