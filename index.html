@@ -13367,7 +13367,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 (function loadFactionHQ(){
   const tg = window.Telegram?.WebApp || null;
 
-  const v = String(window.WEBAPP_VER || "hq");
+  const v = String(window.WEBAPP_VER || "hq") + "-faction-hq-growth-v5";
   const s = document.createElement("script");
   s.src = "/js/faction_hq.js?v=" + encodeURIComponent(v);
 
