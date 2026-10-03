@@ -3391,6 +3391,13 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         detail: {
           faction: fk,
           level: curLevel,
+          nextLevel,
+          nextStageName,
+          canUpgrade,
+          bones,
+          scrap,
+          needBones,
+          needScrap,
           frontLive,
           frontLabel,
           membersCount,
