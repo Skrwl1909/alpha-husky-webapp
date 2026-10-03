@@ -2838,7 +2838,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
         : `${num(latestFeed.amount || 0)} ${String(latestFeed.asset || "support")} added to HQ${latestFeed.t ? ` · ${timeAgo(latestFeed.t)}` : ""}`)
       : "No recent HQ support recorded.";
     _viewModel = {
-      fk, meta, curLevel, nextLevel, nextStageName, bones, scrap, needBones, needScrap, bonesLeft, scrapLeft,
+      fk, meta, curLevel, nextLevel, currentStageName, nextStageName, bones, scrap, needBones, needScrap, bonesLeft, scrapLeft,
       supportNeedBones, supportNeedScrap, myPlace, myContribution, snapshot, social, feed, membersRows, membersCount,
       frontLive, frontLabel, latestActivityText
     };
@@ -3126,6 +3126,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const factionCircleHTML = renderFactionCircle(social, myPlace, myContribution);
     const membersPreviewHTML = renderFactionMembersPreview(d.factionMembersPreview || d.faction_members_preview || []);
     const highlight = snapshot.recentHighlight || {};
+    const currentStageName = _hqAsset(curLevel)?.name || `Level ${curLevel}`;
     const nextStageName = curLevel >= 6 ? "Maximum HQ" : _nextHQStageName(curLevel);
     const currentFrontHTML = _renderCurrentFront(snapshot);
     const contributionSupportNote = Number(myContribution.hqDonationCount || 0) > 0
@@ -3392,6 +3393,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           faction: fk,
           level: curLevel,
           nextLevel,
+          currentStageName,
           nextStageName,
           canUpgrade,
           bones,
@@ -3452,6 +3454,21 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
       if (r && r.ok) {
         try { _tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) { }
+        const fromLevel = Number(_viewModel?.curLevel || 1);
+        const toLevel = Math.min(6, fromLevel + 1);
+        const stageName = _hqAsset(toLevel)?.name || ("Level " + toLevel);
+        try {
+          globalThis.dispatchEvent?.(new CustomEvent("ah:faction-hq-upgrade-confirmed", {
+            detail: {
+              faction: _viewModel?.fk || "",
+              fromLevel,
+              toLevel,
+              stageName
+            }
+          }));
+        } catch (_) {}
+        const reduced = !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        await new Promise((resolve) => setTimeout(resolve, reduced ? 220 : 2300));
         await render();
         return;
       }
