@@ -16,7 +16,6 @@
   let _activeSheet = "";
   let _viewModel = null;
   let _supportActionBusy = false;
-  let _lastSheetPointerAt = 0;
 
   function log(...a) { if (_dbg) console.log("[FactionHQ]", ...a); }
 
@@ -546,11 +545,11 @@ function _contribSummaryLegacy(c) {
   function _renderAuxSheet() {
     if (!_activeSheet || !_viewModel) return "";
     const vm = _viewModel;
-    const close = `<button type="button" class="hq-v3-sheet-close" data-hq-sheet-action="close" aria-label="Close">×</button>`;
+    const close = `<button type="button" class="hq-v3-sheet-close" onclick="FactionHQ._closeSheet()" aria-label="Close">×</button>`;
   
     if (_activeSheet === "support") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
+        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
         <section class="hq-v3-sheet-panel">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">SHARED PROGRESSION</span>
@@ -559,13 +558,13 @@ function _contribSummaryLegacy(c) {
           <div class="hq-v3-sheet-progress"><div><span>Bones</span><strong>${num(vm.bones)} / ${num(vm.needBones)}</strong></div><div class="hq-bar"><span style="width:${pct(vm.bones, vm.needBones)}%"></span></div></div>
           <div class="hq-v3-sheet-progress"><div><span>Scrap</span><strong>${num(vm.scrap)} / ${num(vm.needScrap)}</strong></div><div class="hq-bar"><span style="width:${pct(vm.scrap, vm.needScrap)}%"></span></div></div>
           <div class="hq-v3-support-actions">
-            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="bones" data-amount="25">+25 Bones</button>
-            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="bones" data-amount="100">+100 Bones</button>
-            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="scrap" data-amount="10">+10 Scrap</button>
-            <button type="button" class="hq-btn mini subtle" data-hq-support="donate" data-asset="scrap" data-amount="50">+50 Scrap</button>
+            <button type="button" class="hq-btn mini subtle" onclick="FactionHQ._donate('bones',25)">+25 Bones</button>
+            <button type="button" class="hq-btn mini subtle" onclick="FactionHQ._donate('bones',100)">+100 Bones</button>
+            <button type="button" class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap',10)">+10 Scrap</button>
+            <button type="button" class="hq-btn mini subtle" onclick="FactionHQ._donate('scrap',50)">+50 Scrap</button>
           </div>
-          <button type="button" class="hq-v3-sheet-link" data-hq-support="toggle-custom">${_supportCustomExpanded ? "Hide custom support" : "Custom support"}</button>
-          ${_supportCustomExpanded ? `<div class="hq-v3-custom-support"><input id="hqCustomAmt" class="hq-input" inputmode="numeric" pattern="[0-9]*" placeholder="Custom amount"><div class="hq-v3-support-actions"><button type="button" class="hq-btn mini ghost" data-hq-support="custom" data-asset="bones">Send Bones</button><button type="button" class="hq-btn mini ghost" data-hq-support="custom" data-asset="scrap">Send Scrap</button></div></div>` : ""}
+          <button type="button" class="hq-v3-sheet-link" onclick="FactionHQ._toggleSupportCustom()">${_supportCustomExpanded ? "Hide custom support" : "Custom support"}</button>
+          ${_supportCustomExpanded ? `<div class="hq-v3-custom-support"><input id="hqCustomAmt" class="hq-input" inputmode="numeric" pattern="[0-9]*" placeholder="Custom amount"><div class="hq-v3-support-actions"><button type="button" class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('bones')">Send Bones</button><button type="button" class="hq-btn mini ghost" onclick="FactionHQ._donateCustom('scrap')">Send Scrap</button></div></div>` : ""}
           <p class="hq-v3-sheet-note">Shared HQ progression only. No pay-to-win combat power.</p>
         </section>
       </div>`;
@@ -573,7 +572,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "roster") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
+        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">PACK NETWORK</span>
@@ -587,7 +586,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "activity") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
+        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">FACTION RECORD</span>
@@ -599,7 +598,7 @@ function _contribSummaryLegacy(c) {
   
     if (_activeSheet === "intel") {
       return `<div class="hq-v3-sheet-layer">
-        <div class="hq-v3-sheet-backdrop" data-hq-sheet-action="close"></div>
+        <div class="hq-v3-sheet-backdrop" onclick="FactionHQ._closeSheet()"></div>
         <section class="hq-v3-sheet-panel is-tall">
           <div class="hq-v3-sheet-handle"></div>${close}
           <span class="hq-v3-sheet-kicker">FACTION INTEL</span>
@@ -610,79 +609,6 @@ function _contribSummaryLegacy(c) {
       </div>`;
     }
     return "";
-  }
-
-  function _sheetActionTarget(target) {
-    return target?.closest?.("[data-hq-sheet-action],[data-hq-support]") || null;
-  }
-
-  async function _runSheetAction(target) {
-    if (!target) return;
-    const sheetAction = String(target.dataset.hqSheetAction || "");
-    if (sheetAction === "close") {
-      _closeSheet();
-      return;
-    }
-
-    const action = String(target.dataset.hqSupport || "");
-    if (!action || _supportActionBusy) return;
-
-    try { _tg?.HapticFeedback?.selectionChanged?.(); } catch (_) {}
-
-    if (action === "toggle-custom") {
-      _toggleSupportCustom();
-      return;
-    }
-
-    if (action === "donate") {
-      const asset = String(target.dataset.asset || "");
-      const amount = Number(target.dataset.amount || 0);
-      if (!asset || amount <= 0) return;
-      _supportActionBusy = true;
-      target.disabled = true;
-      target.setAttribute("aria-busy", "true");
-      try { await _donate(asset, amount); }
-      finally { _supportActionBusy = false; }
-      return;
-    }
-
-    if (action === "custom") {
-      const asset = String(target.dataset.asset || "");
-      if (!asset) return;
-      _supportActionBusy = true;
-      target.disabled = true;
-      target.setAttribute("aria-busy", "true");
-      try { await _donateCustom(asset); }
-      finally { _supportActionBusy = false; }
-    }
-  }
-
-  function _bindSheetPortal() {
-    if (!_sheetPortal || _sheetPortal.__hqSheetBound) return;
-    _sheetPortal.__hqSheetBound = true;
-
-    _sheetPortal.addEventListener("pointerup", (event) => {
-      if (event.pointerType === "mouse") return;
-      const target = _sheetActionTarget(event.target);
-      if (!target) return;
-      _lastSheetPointerAt = Date.now();
-      event.preventDefault();
-      event.stopPropagation();
-      void _runSheetAction(target);
-    }, { capture: true, passive: false });
-
-    _sheetPortal.addEventListener("click", (event) => {
-      const target = _sheetActionTarget(event.target);
-      if (!target) return;
-      if (Date.now() - _lastSheetPointerAt < 550) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      void _runSheetAction(target);
-    }, true);
   }
 
   function _syncCommandCenter() {
@@ -700,7 +626,6 @@ function _contribSummaryLegacy(c) {
     if (_sheetPortal) {
       _sheetPortal.innerHTML = _renderAuxSheet();
       _sheetPortal.classList.toggle("is-open", !!_activeSheet);
-      _bindSheetPortal();
     }
 
     try { _root.scrollTop = 0; } catch (_) {}
@@ -2748,7 +2673,6 @@ function _contribSummaryLegacy(c) {
       _sheetPortal.id = "factionHQSheetPortal";
       _back.appendChild(_sheetPortal);
     }
-    _bindSheetPortal();
 
     ensureHQVignette();
 
@@ -3513,14 +3437,17 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
   // Actions
   // ---------------------------
   async function _donate(asset, amount) {
-    if (!(await _ensureApiPost(2500))) {
+    if (_supportActionBusy) return;
+    const api = await _ensureApiPost(2500);
+    if (typeof api !== "function") {
       alert("Support connection is not ready. Please try again.");
       return;
     }
+    _supportActionBusy = true;
     const run_id = _rid("hq:donate");
 
     try {
-      const r = await _apiPost("/webapp/faction/hq/donate", { asset, amount, run_id });
+      const r = await api("/webapp/faction/hq/donate", { asset, amount, run_id });
       if (r && r.ok) {
         _supportCustomExpanded = false;
         try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) { }
@@ -3530,6 +3457,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
       alert((r && r.reason) ? `Donate failed: ${r.reason}` : "Donate failed.");
     } catch (e) {
       alert("Donate failed.");
+    } finally {
+      _supportActionBusy = false;
     }
   }
 
