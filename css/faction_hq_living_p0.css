@@ -532,3 +532,13 @@
   #factionHQLivingP0 .lhq-build{left:12px;width:min(47vw,184px);padding:9px 10px}
   #factionHQLivingP0 .lhq-personal{right:12px;max-width:145px}
 }
+
+
+#factionHQBack.hq-sheet-open #factionHQLivingP0{pointer-events:none!important}
+#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-front,
+#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-build,
+#factionHQBack.hq-sheet-open #factionHQLivingP0 .lhq-close{pointer-events:none!important}
+#factionHQBack.hq-sheet-open #factionHQRoot{pointer-events:auto!important}
+#factionHQBack.hq-sheet-open .hq-v3-sheet-layer{pointer-events:auto!important}
+#factionHQBack.hq-sheet-open .hq-v3-sheet-panel,
+#factionHQBack.hq-sheet-open .hq-v3-sheet-panel *{pointer-events:auto!important}
