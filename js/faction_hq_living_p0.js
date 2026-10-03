@@ -86,8 +86,8 @@
         <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
         <span class="lhq-build-stage">${esc(detail.currentStageName||"HQ ONLINE")} ${level>=6?"· MAX":`· NEXT ${esc(detail.nextStageName||"STAGE")}`}</span>
         <span class="lhq-build-bars">
-          <span><i style="width:${pct(bones,needBones)}%"></i></span>
-          <span><i style="width:${pct(scrap,needScrap)}%"></i></span>
+          <span class="lhq-build-meter"><em>BONES ${esc(bones)} / ${esc(needBones)}</em><span><i style="width:${pct(bones,needBones)}%"></i></span></span>
+          <span class="lhq-build-meter"><em>SCRAP ${esc(scrap)} / ${esc(needScrap)}</em><span><i style="width:${pct(scrap,needScrap)}%"></i></span></span>
         </span>
         <span class="lhq-build-cta">${level>=6?"COMPLETE":canUpgrade?"UPGRADE READY":"SUPPORT HQ"}</span>
       </button>
