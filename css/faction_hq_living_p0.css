@@ -724,3 +724,13 @@
     padding:0 6px;
   }
 }
+
+
+/* Rogue Byte hidden real-device selector trigger.
+   The HQ root is otherwise pointer-events:none, so only the title receives taps. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-title{
+  pointer-events:auto;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}

@@ -153,6 +153,42 @@
     `;
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
+
+    // Hidden real-device dev trigger: five quick taps on the Rogue Byte HQ title
+    // reveal/hide the existing visual-only LV1/LV3/LV4/LV6/LIVE selector.
+    // This only changes URL presentation state and never writes HQ level/resources/backend data.
+    const title=node.querySelector(".lhq-title");
+    if(key==="rogue_byte"&&title){
+      let titleTapCount=0;
+      let titleTapWindowStart=0;
+      title.addEventListener("pointerup",(event)=>{
+        const now=Date.now();
+        if(!titleTapWindowStart||now-titleTapWindowStart>2400){
+          titleTapWindowStart=now;
+          titleTapCount=1;
+        }else{
+          titleTapCount+=1;
+        }
+        if(titleTapCount<5)return;
+        titleTapCount=0;
+        titleTapWindowStart=0;
+        event.preventDefault();
+        try{
+          const q=new URLSearchParams(global.location.search);
+          const enabled=q.get("hqselector")==="1";
+          if(enabled){
+            q.delete("hqselector");
+            q.delete("hqpreview");
+          }else{
+            q.set("hqselector","1");
+          }
+          const qs=q.toString();
+          global.history.replaceState(null,"",global.location.pathname+(qs?"?"+qs:"")+global.location.hash);
+          mount(detail);
+        }catch(_){}
+      });
+    }
+
     node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
     node.querySelectorAll("[data-hq-preview-level]").forEach((btn)=>btn.addEventListener("click",()=>{
       try{
