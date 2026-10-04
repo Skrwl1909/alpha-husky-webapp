@@ -10,6 +10,18 @@
     rogue_byte:{cls:"hq-living-rogue",rgb:"255,59,59",name:"ROGUE BYTE",creed:"BREAK IN",icon:"/images/factions/rogue_byte_80.webp",scene:"/hq_warroom_rb.webp",fallback:"/hq_warroom_rb.webp",progression:{1:"/images/hq/progression/rogue_byte/lv1.webp",3:"/images/hq/progression/rogue_byte/lv3.webp",4:"/images/hq/progression/rogue_byte/lv4.webp",6:"/images/hq/progression/rogue_byte/lv6.webp"},idle:"CHANNEL QUIET",active:"BREACH SIGNAL",recognition:"ah_hq_recognition_rogue_byte_v1"},
     pack_burners:{cls:"hq-living-burners",rgb:"255,122,26",name:"PACK BURNERS",creed:"BE SEEN",icon:"/images/factions/pack_burners_80.webp",scene:"/hq_warroom_pb.webp",fallback:"/hq_warroom_pb.webp",idle:"HEAT LOW",active:"PRESSURE IGNITED",recognition:"ah_hq_recognition_pack_burners_v1"}
   };
+  const ROGUE_ART_BY_LEVEL={
+    1:"/rb_hq_progression_lv1.webp",
+    2:"/rb_hq_progression_lv1.webp",
+    3:"/rb_hq_progression_lv3.webp",
+    4:"/rb_hq_progression_lv4.webp",
+    5:"/rb_hq_progression_lv4.webp",
+    6:"/rb_hq_progression_lv6.webp"
+  };
+  function rogueArtForLevel(level){
+    const n=Math.max(1,Math.min(6,Number(level||1)||1));
+    return ROGUE_ART_BY_LEVEL[n]||ROGUE_ART_BY_LEVEL[1];
+  }
   function factionKey(detail={}){
     const raw=canon(detail.faction||detail.fk);
     if(raw==="ew")return"echo_wardens";
@@ -86,6 +98,7 @@
     node.style.setProperty("--hq-accent",cfg.rgb);
     node.style.setProperty("--hq-scene",'url("'+scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
+    if(key==="rogue_byte") node.style.setProperty("--hq-structure",'url("'+rogueArtForLevel(level)+'")');
     node.setAttribute("data-faction",key);
     node.setAttribute("data-hq-level",String(level));
     node.setAttribute("data-hq-visual-level",String(visualLevel));
@@ -113,6 +126,7 @@
     const first=!forcedPreview&&!recognitionSeen(cfg.recognition);
     node.innerHTML=`
       <div class="lhq-scene"></div>
+      ${key==="rogue_byte"?`<div class="lhq-structure" aria-hidden="true"></div>`:""}
       <div class="lhq-growth" aria-hidden="true">
         <div class="lhq-growth-layer lhq-growth-l2"><span class="g-node n1"></span><span class="g-node n2"></span><span class="g-rail r1"></span></div>
         <div class="lhq-growth-layer lhq-growth-l3"><span class="g-node n3"></span><span class="g-node n4"></span><span class="g-link l1"></span><span class="g-link l2"></span></div>
