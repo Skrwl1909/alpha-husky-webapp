@@ -122,7 +122,7 @@
       </div>
       <div class="lhq-scan"></div>
       <div class="lhq-top">
-        <div><div class="lhq-title">${cfg.name} · HQ LV ${esc(level)}${forcedPreview?" · PREVIEW":""}</div><div class="lhq-creed">${cfg.creed}</div></div>
+        <div class="lhq-title-zone"><div class="lhq-title">${cfg.name} · HQ LV ${esc(level)}${forcedPreview?" · PREVIEW":""}</div><div class="lhq-creed">${cfg.creed}</div></div>
         <button class="lhq-close" type="button" aria-label="Close HQ">×</button>
       </div>
       <div class="lhq-core"><img class="lhq-sigil" src="${cfg.icon}" alt="" aria-hidden="true"></div>
@@ -154,25 +154,27 @@
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
 
-    // Hidden real-device dev trigger: five quick taps on the Rogue Byte HQ title
+    // Hidden real-device dev trigger: five quick taps in the enlarged Rogue Byte HQ title zone
     // reveal/hide the existing visual-only LV1/LV3/LV4/LV6/LIVE selector.
+    // Pointer-down is intentional: it is more reliable than pointer-up for rapid taps in Android WebView.
     // This only changes URL presentation state and never writes HQ level/resources/backend data.
-    const title=node.querySelector(".lhq-title");
-    if(key==="rogue_byte"&&title){
+    const titleZone=node.querySelector(".lhq-title-zone");
+    if(key==="rogue_byte"&&titleZone){
       let titleTapCount=0;
       let titleTapWindowStart=0;
-      title.addEventListener("pointerup",(event)=>{
+      titleZone.addEventListener("pointerdown",(event)=>{
         const now=Date.now();
-        if(!titleTapWindowStart||now-titleTapWindowStart>2400){
+        if(!titleTapWindowStart||now-titleTapWindowStart>3000){
           titleTapWindowStart=now;
           titleTapCount=1;
         }else{
           titleTapCount+=1;
         }
+        event.preventDefault();
         if(titleTapCount<5)return;
         titleTapCount=0;
         titleTapWindowStart=0;
-        event.preventDefault();
+        event.stopPropagation();
         try{
           const q=new URLSearchParams(global.location.search);
           const enabled=q.get("hqselector")==="1";
