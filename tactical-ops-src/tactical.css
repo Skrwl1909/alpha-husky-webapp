@@ -3985,3 +3985,78 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     opacity: .62;
   }
 }
+
+
+/* === Tactical Ops Real-Device Micro Polish P3 ===
+   Final phone pass from real-device INTERCEPT proof.
+   Header collision + right-edge objective CTA only. Presentation-only. */
+@media (max-width: 430px) {
+  /* Three-column header was competing for the same narrow center lane.
+     Give brand/objective fixed safe shares and keep TURN isolated. */
+  #tacticalOpsRoot .t-top {
+    grid-template-columns: minmax(0, 34%) minmax(64px, 18%) minmax(0, 48%);
+    gap: .12rem;
+    padding-left: max(.42rem, env(safe-area-inset-left));
+    padding-right: max(.42rem, env(safe-area-inset-right));
+  }
+
+  #tacticalOpsRoot .t-brand {
+    overflow: hidden;
+  }
+
+  #tacticalOpsRoot .t-brand h1 {
+    width: 100%;
+    font-size: .52rem;
+    letter-spacing: .075em;
+    text-overflow: ellipsis;
+  }
+
+  #tacticalOpsRoot .t-turn {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #tacticalOpsRoot .t-turn strong {
+    display: block;
+    font-size: .54rem;
+    letter-spacing: .10em;
+    white-space: nowrap;
+  }
+
+  #tacticalOpsRoot .t-obj {
+    width: 100%;
+    max-width: 100%;
+    font-size: .46rem;
+    letter-spacing: .055em;
+    padding-left: .08rem;
+  }
+
+  /* INTERCEPT/BLOCK badge on the rightmost objective cell must remain inside
+     the battlefield and read as a compact tactical affordance, not a card. */
+  #tacticalOpsRoot .t-token.edge-right .t-objective-badge,
+  #tacticalOpsRoot .t-objective-badge.edge-right {
+    left: auto;
+    right: -2px;
+    transform: none;
+  }
+
+  #tacticalOpsRoot .t-objective-badge {
+    max-width: 76px;
+    padding: .16rem .24rem;
+    font-size: .42rem;
+    line-height: 1.05;
+    letter-spacing: .055em;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (max-width: 370px) {
+  #tacticalOpsRoot .t-top {
+    grid-template-columns: minmax(0, 32%) minmax(58px, 18%) minmax(0, 50%);
+  }
+
+  #tacticalOpsRoot .t-brand h1 { font-size: .47rem; }
+  #tacticalOpsRoot .t-turn strong { font-size: .49rem; }
+  #tacticalOpsRoot .t-obj { font-size: .42rem; }
+}
