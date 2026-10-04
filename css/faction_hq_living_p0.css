@@ -727,10 +727,20 @@
 
 
 /* Rogue Byte hidden real-device selector trigger.
-   The HQ root is otherwise pointer-events:none, so only the title receives taps. */
-#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-title{
+   Give the five-tap gesture a phone-sized invisible hit area instead of relying
+   on the text glyph box. The close button remains a separate sibling target. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0 .lhq-title-zone{
   pointer-events:auto;
   touch-action:manipulation;
   user-select:none;
   -webkit-user-select:none;
+  min-width:min(62vw,240px);
+  max-width:calc(100% - 58px);
+  min-height:44px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:10px 18px 10px 8px;
+  margin:-10px 0 -10px -8px;
 }
