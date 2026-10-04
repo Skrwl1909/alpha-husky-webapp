@@ -7,7 +7,7 @@
   const CFG={
     echo_wardens:{cls:"hq-living-echo",rgb:"255,211,77",name:"ECHO WARDENS",creed:"REMEMBER",icon:"/images/factions/echo_wardens_80.webp",scene:"/hq_warroom_ew.webp",fallback:"/hq_warroom_ew.webp",idle:"LINES HOLDING",active:"SIGNAL PRESSURE",recognition:"ah_hq_recognition_echo_wardens_v1"},
     inner_howl:{cls:"hq-living-inner",rgb:"64,196,255",name:"INNER HOWL",creed:"ENDURE",icon:"/images/factions/inner_howl_80.webp",scene:"/hq_warroom_ih.webp",fallback:"/hq_warroom_ih.webp",idle:"LINE STABLE",active:"PRESSURE RISING",recognition:"ah_hq_recognition_inner_howl_v1"},
-    rogue_byte:{cls:"hq-living-rogue",rgb:"255,59,59",name:"ROGUE BYTE",creed:"BREAK IN",icon:"/images/factions/rogue_byte_80.webp",scene:"/hq_warroom_rb.webp",fallback:"/hq_warroom_rb.webp",idle:"CHANNEL QUIET",active:"BREACH SIGNAL",recognition:"ah_hq_recognition_rogue_byte_v1"},
+    rogue_byte:{cls:"hq-living-rogue",rgb:"255,59,59",name:"ROGUE BYTE",creed:"BREAK IN",icon:"/images/factions/rogue_byte_80.webp",scene:"/hq_warroom_rb.webp",fallback:"/hq_warroom_rb.webp",progression:{1:"/images/hq/progression/rogue_byte/lv1.webp",3:"/images/hq/progression/rogue_byte/lv3.webp",4:"/images/hq/progression/rogue_byte/lv4.webp",6:"/images/hq/progression/rogue_byte/lv6.webp"},idle:"CHANNEL QUIET",active:"BREACH SIGNAL",recognition:"ah_hq_recognition_rogue_byte_v1"},
     pack_burners:{cls:"hq-living-burners",rgb:"255,122,26",name:"PACK BURNERS",creed:"BE SEEN",icon:"/images/factions/pack_burners_80.webp",scene:"/hq_warroom_pb.webp",fallback:"/hq_warroom_pb.webp",idle:"HEAT LOW",active:"PRESSURE IGNITED",recognition:"ah_hq_recognition_pack_burners_v1"}
   };
   function factionKey(detail={}){
@@ -50,6 +50,24 @@
     } catch(_){ return 0; }
   }
   function previewEnabled(faction=""){ return previewLevel(faction)>0; }
+  function previewSelectorEnabled(faction=""){
+    if(faction!=="rogue_byte")return false;
+    try {
+      const q=new URLSearchParams(global.location.search);
+      return q.get("hqselector")==="1";
+    } catch(_){ return false; }
+  }
+  function progressionAnchor(level=1){
+    const n=Math.max(1,Math.min(6,Number(level)||1));
+    if(n>=6)return 6;
+    if(n>=4)return 4;
+    if(n>=3)return 3;
+    return 1;
+  }
+  function progressionScene(cfg,faction,level){
+    if(faction!=="rogue_byte"||!cfg?.progression)return cfg?.scene||"";
+    return cfg.progression[progressionAnchor(level)]||cfg.scene;
+  }
   function mount(detail={}){
     const key=factionKey(detail),cfg=CFG[key];
     if(!cfg){remove();return}
@@ -61,12 +79,17 @@
     const name=callsign(detail);
     const forcedPreview=previewLevel(key);
     const level=forcedPreview||Math.max(1,Number(detail.level||1)||1);
+    const selectorOn=previewSelectorEnabled(key);
+    const visualLevel=key==="rogue_byte"?progressionAnchor(level):level;
+    const scene=progressionScene(cfg,key,visualLevel);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
-    node.style.setProperty("--hq-scene",'url("'+cfg.scene+'")');
+    node.style.setProperty("--hq-scene",'url("'+scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
     node.setAttribute("data-hq-level",String(level));
+    node.setAttribute("data-hq-visual-level",String(visualLevel));
+    if(key==="rogue_byte"&&cfg.progression) node.setAttribute("data-hq-progress-art","1");
     if(forcedPreview) node.setAttribute("data-hq-preview","1");
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
@@ -108,6 +131,11 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
+      ${selectorOn?`<div class="lhq-visual-selector" aria-label="Rogue Byte HQ visual selector">
+        <span>VISUAL</span>
+        ${[1,3,4,6].map(v=>`<button type="button" data-hq-preview-level="${v}" aria-pressed="${forcedPreview===v?"true":"false"}">LV${v}</button>`).join("")}
+        <button type="button" data-hq-preview-level="live" aria-pressed="${!forcedPreview?"true":"false"}">LIVE</button>
+      </div>`:""}
       ${forcedPreview?`<div class="lhq-preview-chip">VISUAL PREVIEW · LV ${esc(level)}</div>`:""}
       <button class="lhq-build" type="button" aria-label="${forcedPreview?"HQ visual preview only":"Open HQ build progression"}" ${forcedPreview?'aria-disabled="true" tabindex="-1"':""}>
         <span class="lhq-build-kicker">HQ BUILD</span>
@@ -126,6 +154,18 @@
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
     node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
+    node.querySelectorAll("[data-hq-preview-level]").forEach((btn)=>btn.addEventListener("click",()=>{
+      try{
+        const requested=String(btn.dataset.hqPreviewLevel||"live");
+        const q=new URLSearchParams(global.location.search);
+        if(requested==="live")q.delete("hqpreview");
+        else q.set("hqpreview",requested);
+        q.set("hqselector","1");
+        const qs=q.toString();
+        global.history.replaceState(null,"",global.location.pathname+(qs?"?"+qs:"")+global.location.hash);
+        mount(detail);
+      }catch(_){}
+    }));
     node.querySelector(".lhq-build")?.addEventListener("click",()=>{
       if(forcedPreview)return;
       if(level>=6)return;
@@ -158,5 +198,5 @@
   global.addEventListener("ah:faction-hq-rendered",(event)=>mount(event.detail||{}));
   global.addEventListener("ah:faction-hq-upgrade-confirmed",(event)=>upgradeMoment(event.detail||{}));
   global.addEventListener("ah:faction-hq-closed",remove);
-  global.FactionHQLivingP0={mount,remove,previewLevel,previewEnabled,HQ_STAGE_BY_LEVEL};
+  global.FactionHQLivingP0={mount,remove,previewLevel,previewEnabled,previewSelectorEnabled,progressionAnchor,progressionScene,HQ_STAGE_BY_LEVEL};
 })(window);

@@ -644,3 +644,83 @@
 #factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-preview="1"][data-hq-level="6"] .lhq-scene{
   filter:brightness(1.01) saturate(1.03) contrast(1.03)!important;
 }
+
+
+/* === ROGUE BYTE AUTHENTICATED STRUCTURAL ART PASS ===
+   Real HQ state stays authoritative. LV2 temporarily reuses LV1 art and LV5 reuses LV4
+   until dedicated First Expansion / Energy Core assets are approved. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-progress-art="1"] .lhq-scene{
+  background-size:cover,contain,cover!important;
+  background-position:center center,50% 50%,var(--hq-scene-position,50% 49%)!important;
+  background-repeat:no-repeat,no-repeat,no-repeat!important;
+}
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-progress-art="1"] .lhq-growth{
+  display:none!important;
+}
+/* Keep the transparent structural asset dominant while the existing Rogue warroom
+   remains underneath as atmosphere / depth rather than a competing hero object. */
+#factionHQBack.hq-living-rogue #factionHQLivingP0[data-hq-progress-art="1"] .lhq-scene::after{
+  background:
+    linear-gradient(180deg,rgba(2,4,7,.54) 0%,rgba(2,4,7,.12) 19%,rgba(2,4,7,.04) 50%,rgba(2,4,7,.42) 74%,rgba(2,4,7,.90) 100%),
+    radial-gradient(ellipse at 50% 45%,transparent 0 31%,rgba(0,0,0,.08) 56%,rgba(0,0,0,.46) 100%)!important;
+}
+
+/* In-HQ authenticated visual selector. Hidden unless ?hqselector=1 is present.
+   It only swaps presentation state; it never writes HQ level, resources or backend state. */
+#factionHQLivingP0 .lhq-visual-selector{
+  position:absolute;
+  left:50%;
+  top:calc(54px + env(safe-area-inset-top,0px));
+  z-index:42;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:4px;
+  max-width:calc(100vw - 24px);
+  padding:5px 6px;
+  border:1px solid rgba(var(--ew-gold),.25);
+  border-radius:999px;
+  background:rgba(4,6,10,.86);
+  box-shadow:0 10px 28px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(12px);
+  pointer-events:auto;
+}
+#factionHQLivingP0 .lhq-visual-selector>span{
+  padding:0 3px 0 4px;
+  font-size:6px;
+  font-weight:950;
+  letter-spacing:.14em;
+  color:rgba(var(--ew-gold),.72);
+}
+#factionHQLivingP0 .lhq-visual-selector button{
+  min-width:34px;
+  height:26px;
+  padding:0 7px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  color:rgba(255,255,255,.66);
+  font-size:7px;
+  font-weight:950;
+  letter-spacing:.08em;
+}
+#factionHQLivingP0 .lhq-visual-selector button[aria-pressed="true"]{
+  border-color:rgba(var(--ew-gold),.48);
+  background:rgba(var(--ew-gold),.13);
+  color:rgba(var(--ew-gold),.96);
+  box-shadow:0 0 12px rgba(var(--ew-gold),.12);
+}
+#factionHQLivingP0 .lhq-visual-selector + .lhq-preview-chip{
+  top:calc(91px + env(safe-area-inset-top,0px));
+}
+@media(max-width:390px){
+  #factionHQLivingP0 .lhq-visual-selector{
+    gap:3px;
+    padding:4px 5px;
+  }
+  #factionHQLivingP0 .lhq-visual-selector button{
+    min-width:31px;
+    height:24px;
+    padding:0 6px;
+  }
+}
