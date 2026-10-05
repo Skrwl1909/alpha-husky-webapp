@@ -9,6 +9,7 @@
     selectedSurfaceId: null,
     runtimeUnsubscribe: null,
     ctaUnsubscribe: null,
+    lunarUnsubscribe: null,
   };
 
   function asText(value) {
@@ -124,6 +125,180 @@
     canvas.style.setProperty("--map-v2-camera-tx", `${transform.tx}%`);
     canvas.style.setProperty("--map-v2-camera-ty", `${transform.ty}%`);
     canvas.dataset.mapV2Camera = sectionId || "world";
+  }
+
+  function currentLunarState() {
+    return global.LunarWorld?.getState?.() || null;
+  }
+
+  function lunarFocusNodeId(lunar = currentLunarState()) {
+    return asText(lunar?.primaryFocus?.nodeId || lunar?.primaryFocus?.cta?.nodeId).toLowerCase();
+  }
+
+  function setLunarLayerState(layer, lunar) {
+    if (!layer) return;
+    if (!lunar) {
+      layer.hidden = true;
+      return;
+    }
+    layer.hidden = false;
+    const visuals = global.LunarWorld?.getVisuals?.(lunar);
+    if (!visuals) return;
+
+    const moon = layer.querySelector?.("[data-lunar-moon]");
+    if (moon && moon.getAttribute("src") !== visuals.moon) moon.setAttribute("src", visuals.moon);
+
+    const phase = layer.querySelector?.("[data-lunar-phase-label]");
+    if (phase) phase.textContent = lunar.visualOnly ? `${lunar.phaseLabel} · VISUAL ONLY` : lunar.phaseLabel;
+
+    const next = layer.querySelector?.("[data-lunar-next-label]");
+    if (next) next.textContent = global.LunarWorld?.countdownLabel?.(lunar) || "";
+
+    const lab = layer.querySelector?.(".map-v2-lunar-lab");
+    lab?.querySelectorAll?.("[data-lunar-preview]").forEach((buttonNode) => {
+      const value = asText(buttonNode.dataset?.lunarPreview);
+      const active = value === "live"
+        ? !global.LunarWorld?.isPreview?.()
+        : value === lunar.phase && !!global.LunarWorld?.isPreview?.();
+      buttonNode.dataset.active = active ? "true" : "false";
+    });
+  }
+
+  function createLunarLayer() {
+    const layer = element("div", "map-v2-lunar-layer");
+    layer.hidden = true;
+
+    const addOverlay = (className, assetKey) => {
+      const image = element("img", `map-v2-lunar-overlay ${className}`);
+      image.src = global.LunarWorld?.ASSETS?.[assetKey] || "";
+      image.alt = "";
+      image.draggable = false;
+      layer.append(image);
+    };
+
+    addOverlay("map-v2-lunar-haze", "haze");
+    addOverlay("map-v2-lunar-rim", "rimGlow");
+    addOverlay("map-v2-lunar-interference", "interference");
+    addOverlay("map-v2-lunar-dust", "aftermathDust");
+
+    const moonButton = button("map-v2-lunar-moon-button", "", () => {});
+    moonButton.type = "button";
+    moonButton.setAttribute("aria-label", "Current lunar phase");
+    const moon = element("img", "map-v2-lunar-moon");
+    moon.dataset.lunarMoon = "true";
+    moon.alt = "";
+    moon.draggable = false;
+    moonButton.append(moon);
+    layer.append(moonButton);
+
+    const badge = element("div", "map-v2-lunar-badge");
+    const phaseLabel = element("span", "map-v2-lunar-badge-phase");
+    phaseLabel.dataset.lunarPhaseLabel = "true";
+    const nextLabel = element("span", "map-v2-lunar-badge-next");
+    nextLabel.dataset.lunarNextLabel = "true";
+    badge.append(phaseLabel, nextLabel);
+    layer.append(badge);
+
+    const lab = element("div", "map-v2-lunar-lab");
+    lab.hidden = true;
+    lab.append(element("p", "map-v2-lunar-lab-title", "LUNAR VISUAL LAB · PRESENTATION ONLY"));
+    for (const [value, label] of [
+      ["dormant", "Dormant"],
+      ["rising", "Rising"],
+      ["convergence", "Convergence"],
+      ["full_blood_moon", "Full"],
+      ["fading", "Fading"],
+      ["live", "Live"],
+    ]) {
+      const control = button("", label, () => {
+        if (value === "live") global.LunarWorld?.clearPreview?.();
+        else global.LunarWorld?.setPreviewPhase?.(value);
+      });
+      control.dataset.lunarPreview = value;
+      lab.append(control);
+    }
+    layer.append(lab);
+
+    let taps = 0;
+    let firstTapAt = 0;
+    moonButton.addEventListener("click", () => {
+      const now = Date.now();
+      if (!firstTapAt || now - firstTapAt > 2600) {
+        firstTapAt = now;
+        taps = 0;
+      }
+      taps += 1;
+      if (taps >= 5) {
+        taps = 0;
+        firstTapAt = 0;
+        lab.hidden = !lab.hidden;
+      }
+    });
+
+    setLunarLayerState(layer, currentLunarState());
+    return layer;
+  }
+
+  function applyLunarPresentation(lunar = currentLunarState()) {
+    if (!state.root) return;
+    const layer = state.root.querySelector?.(".map-v2-lunar-layer");
+    if (!lunar) {
+      delete state.root.dataset.lunarPhase;
+      delete state.root.dataset.lunarFocus;
+      state.root.style.removeProperty("--lunar-haze-opacity");
+      state.root.style.removeProperty("--lunar-interference-opacity");
+      state.root.style.removeProperty("--lunar-rim-opacity");
+      state.root.style.removeProperty("--lunar-dust-opacity");
+      if (layer) layer.hidden = true;
+      return;
+    }
+
+    const visuals = global.LunarWorld?.getVisuals?.(lunar);
+    state.root.dataset.lunarPhase = asText(lunar.phase);
+    state.root.dataset.lunarFocus = lunarFocusNodeId(lunar);
+    state.root.dataset.lunarPreview = lunar.visualOnly ? "true" : "false";
+    if (visuals?.opacity) {
+      state.root.style.setProperty("--lunar-haze-opacity", String(visuals.opacity.haze || 0));
+      state.root.style.setProperty("--lunar-interference-opacity", String(visuals.opacity.interference || 0));
+      state.root.style.setProperty("--lunar-rim-opacity", String(visuals.opacity.rimGlow || 0));
+      state.root.style.setProperty("--lunar-dust-opacity", String(visuals.opacity.aftermathDust || 0));
+    }
+    setLunarLayerState(layer, lunar);
+
+    state.root.querySelectorAll?.("[data-map-v2-lunar-focus]").forEach((node) => {
+      delete node.dataset.mapV2LunarFocus;
+    });
+
+    const focusNodeId = lunarFocusNodeId(lunar);
+    if (!focusNodeId) return;
+    if (state.sectionId) {
+      state.root.querySelectorAll?.("[data-map-v2-node-id]").forEach((node) => {
+        if (asText(node.dataset?.mapV2NodeId).toLowerCase() === focusNodeId) node.dataset.mapV2LunarFocus = "true";
+      });
+      return;
+    }
+
+    const assignment = global.MapSectionAssignments?.getSectionForNode?.(focusNodeId);
+    const sectionId = asText(assignment?.sectionId);
+    if (!sectionId) return;
+    state.root.querySelectorAll?.("[data-map-v2-section-id]").forEach((node) => {
+      if (asText(node.dataset?.mapV2SectionId) === sectionId) node.dataset.mapV2LunarFocus = "true";
+    });
+  }
+
+  function stopLunarUpdates() {
+    if (typeof state.lunarUnsubscribe === "function") state.lunarUnsubscribe();
+    state.lunarUnsubscribe = null;
+  }
+
+  function startLunarUpdates() {
+    stopLunarUpdates();
+    if (typeof global.LunarWorld?.subscribe === "function") {
+      state.lunarUnsubscribe = global.LunarWorld.subscribe((lunar) => {
+        if (state.active) applyLunarPresentation(lunar);
+      }, { emitCurrent: true });
+    }
+    void global.LunarWorld?.refresh?.({ force: false });
   }
 
   function createMapStage(sectionId, nodes = [], section = null) {
@@ -291,7 +466,7 @@
     }
 
     frame.append(canvas);
-    stage.append(frame);
+    stage.append(frame, createLunarLayer());
     return stage;
   }
 
@@ -570,6 +745,7 @@
     const view = element("section", "map-v2-view map-v2-world map-v2-map-mode");
     view.append(createMapStage(null), createMapHud(null), createObjectiveStrip(null));
     state.root.replaceChildren(view);
+    applyLunarPresentation();
     startRuntimeUpdates(getSections().flatMap((section) => sectionNodes(section.sectionId)));
   }
 
@@ -713,6 +889,7 @@
       );
       view.append(sealed);
       state.root.replaceChildren(view);
+      applyLunarPresentation();
       return;
     }
 
@@ -723,6 +900,7 @@
     if (campaignDock) view.append(campaignDock.dock);
 
     state.root.replaceChildren(view);
+    applyLunarPresentation();
 
     if (campaignDock?.host) global.WorldExploration?.mountSurface?.(campaignDock.host);
     startRuntimeUpdates(nodes.map((node) => node.id));
@@ -744,6 +922,7 @@
     state.root.hidden = false;
     renderWorld();
     startCTAUpdates();
+    startLunarUpdates();
     return true;
   }
 
@@ -751,6 +930,7 @@
     if (!state.root) return;
     stopRuntimeUpdates();
     stopCTAUpdates();
+    stopLunarUpdates();
     unmountWorldExplorationSurface();
     state.active = false;
     state.sectionId = null;
@@ -787,7 +967,7 @@
     open,
     close,
     back,
-    __test: Object.freeze({ nodeRuntimeSignal, regionRuntimePresentation, runtimePresentation }),
+    __test: Object.freeze({ nodeRuntimeSignal, regionRuntimePresentation, runtimePresentation, lunarFocusNodeId }),
   });
   global.MapSectionsV2 = API;
 })(window);
