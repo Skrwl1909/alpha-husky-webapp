@@ -98,6 +98,47 @@
     return `${days}d ago`;
   }
 
+  function _packPresenceSnapshot({ membersCount = 0, feed = [], social = {}, frontLive = false, playerName = "" } = {}) {
+    const rows = Array.isArray(feed) ? feed : [];
+    const latest = rows[0] && typeof rows[0] === "object" ? rows[0] : null;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const latestTs = Number(latest?.t || 0);
+    const ageSec = latestTs > 0 ? Math.max(0, nowSec - latestTs) : Number.POSITIVE_INFINITY;
+    const weekly = Array.isArray(social?.topContributors) ? social.topContributors : [];
+    const otherWeekly = weekly.find((row) => row && !row.isYou && String(row.name || "").trim());
+
+    const recentHqSignal = ageSec <= 86400;
+    const packMoving = !!frontLive && (recentHqSignal || !!otherWeekly);
+    const state = packMoving ? "pack_moving" : (recentHqSignal || !!otherWeekly) ? "recent_signal" : "quiet";
+    const stateLabel = state === "pack_moving" ? "PACK MOVING" : state === "recent_signal" ? "RECENT SIGNAL" : "QUIET";
+
+    let activity = "";
+    if (latest && ageSec <= 7 * 86400) {
+      const when = latestTs ? timeAgo(latestTs) : "";
+      if (latest.type === "upgrade") {
+        activity = `HQ upgraded to Lv ${latest.level || "?"}`;
+      } else {
+        const amount = num(latest.amount || 0);
+        const asset = String(latest.asset || "support").toLowerCase();
+        const label = asset === "bones" ? "Bones" : asset === "scrap" ? "Scrap" : "support";
+        activity = `${amount} ${label} added`;
+      }
+      if (when) activity += ` · ${when}`;
+    } else if (otherWeekly) {
+      activity = `${String(otherWeekly.name || "Pack member").trim()} carrying this week's signal`;
+    } else {
+      activity = "No recent pack signal recorded";
+    }
+
+    return {
+      state,
+      stateLabel,
+      membersCount: Math.max(0, Number(membersCount) || 0),
+      activity: String(activity || "").slice(0, 96),
+      playerName: String(playerName || "").slice(0, 32)
+    };
+  }
+
   function rankLabel(rank) {
     const n = Number(rank || 0);
     return n > 0 ? `#${num(n)}` : "Unranked";
@@ -3141,6 +3182,13 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     const frontLive = Number(snapshot.pressureNodes || 0) > 0 || Number(snapshot.contestedPresence || 0) > 0 || Number(snapshot.activeSieges || 0) > 0;
     const frontLabel = frontLive ? String(snapshot.momentumLabel || "ACTIVE") : "STABLE";
     const membersRows = d.factionMembersPreview || d.faction_members_preview || [];
+    const packPresence = _packPresenceSnapshot({
+      membersCount,
+      feed,
+      social,
+      frontLive,
+      playerName: myPlace?.name || ""
+    });
     const latestFeed = feed[0];
     const latestActivityText = latestFeed
       ? (latestFeed.type === "upgrade"
@@ -3150,7 +3198,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
     _viewModel = {
       fk, meta, curLevel, nextLevel, nextStageName, bones, scrap, needBones, needScrap, bonesLeft, scrapLeft,
       supportNeedBones, supportNeedScrap, myPlace, myContribution, snapshot, social, feed, membersRows, membersCount,
-      frontLive, frontLabel, latestActivityText
+      frontLive, frontLabel, latestActivityText, packPresence
     };
 
     const dbgLine = _dbg ? `
@@ -3403,7 +3451,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           frontLive,
           frontLabel,
           membersCount,
-          playerName: myPlace?.name || ""
+          playerName: myPlace?.name || "",
+          packPresence
         }
       }));
     } catch (_) {}
