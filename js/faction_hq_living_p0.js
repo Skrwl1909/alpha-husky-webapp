@@ -57,6 +57,16 @@
       return q.get("hqselector")==="1";
     } catch(_){ return false; }
   }
+  const HQ_PREVIEW_FACTIONS=["echo_wardens","inner_howl","rogue_byte","pack_burners"];
+  const HQ_PREVIEW_LABELS={echo_wardens:"EW",inner_howl:"IH",rogue_byte:"RB",pack_burners:"PB"};
+  function previewFaction(realFaction=""){
+    try{
+      const q=new URLSearchParams(global.location.search);
+      const requested=canon(q.get("hqfactionpreview")||"");
+      if(requested&&HQ_PREVIEW_FACTIONS.includes(requested)&&CFG[requested]?.progression)return requested;
+    }catch(_){}
+    return "";
+  }
   function progressionAnchor(level=1){
     const n=Math.max(1,Math.min(6,Number(level)||1));
     if(n>=6)return 6;
@@ -73,8 +83,11 @@
     return "VISUAL STATE";
   }
   function mount(detail={}){
-    const key=factionKey(detail),cfg=CFG[key];
-    if(!cfg){remove();return}
+    const realKey=factionKey(detail);
+    const forcedFaction=previewFaction(realKey);
+    const key=forcedFaction||realKey;
+    const cfg=CFG[key];
+    if(!CFG[realKey]||!cfg){remove();return}
     const back=document.getElementById("factionHQBack");
     const modal=document.getElementById("factionHQModal");
     if(!back||!modal)return;
@@ -82,8 +95,11 @@
     const node=document.createElement("div");
     const name=callsign(detail);
     const forcedPreview=previewLevel(key);
-    const level=forcedPreview||Math.max(1,Number(detail.level||1)||1);
+    const liveLevel=Math.max(1,Number(detail.level||1)||1);
+    const level=forcedPreview||liveLevel;
     const selectorOn=previewSelectorEnabled(key);
+    const crossFactionPreview=!!forcedFaction&&forcedFaction!==realKey;
+    const visualOnly=!!forcedPreview||crossFactionPreview;
     const visualLevel=cfg.progression?progressionAnchor(level):level;
     const scene=progressionScene(cfg,key,visualLevel);
     node.id=ROOT_ID;
@@ -91,20 +107,22 @@
     node.style.setProperty("--hq-scene",'url("'+scene+'")');
     node.style.setProperty("--hq-fallback",'url("'+cfg.fallback+'")');
     node.setAttribute("data-faction",key);
+    node.setAttribute("data-hq-real-faction",realKey);
     node.setAttribute("data-hq-level",String(level));
     node.setAttribute("data-hq-visual-level",String(visualLevel));
     if(cfg.progression) node.setAttribute("data-hq-progress-art","1");
-    if(forcedPreview) node.setAttribute("data-hq-preview","1");
+    if(visualOnly) node.setAttribute("data-hq-preview","1");
+    if(crossFactionPreview) node.setAttribute("data-hq-cross-faction-preview","1");
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
-    back.dataset.hqFaction=key;
-    back.dataset.hqLevel=String(level);
+    back.dataset.hqFaction=realKey;
+    back.dataset.hqLevel=String(liveLevel);
     const nextLevel=forcedPreview
       ? Math.min(6,level+1)
       : Math.max(level+1,Number(detail.nextLevel||level+1)||level+1);
-    const currentStageName=forcedPreview
+    const currentStageName=visualOnly
       ? previewStageName(key,level)
       : String(detail.currentStageName||"HQ ONLINE");
-    const nextStageName=forcedPreview
+    const nextStageName=visualOnly
       ? (level>=6?"Maximum HQ":previewStageName(key,nextLevel))
       : String(detail.nextStageName||"STAGE");
     const bones=Math.max(0,Number(detail.bones||0)||0);
@@ -114,7 +132,7 @@
     const canUpgrade=!!detail.canUpgrade;
     const pct=(v,max)=>max>0?Math.max(0,Math.min(100,Math.round((v/max)*100))):0;
     const frontState=detail.frontLive?String(detail.frontLabel||"ACTIVE"):"STABLE";
-    const first=!forcedPreview&&!recognitionSeen(cfg.recognition);
+    const first=!visualOnly&&!recognitionSeen(cfg.recognition);
     node.innerHTML=`
       <div class="lhq-scene"></div>
       <div class="lhq-growth" aria-hidden="true">
@@ -135,23 +153,29 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
-      ${selectorOn?`<div class="lhq-visual-selector" aria-label="${cfg.name} HQ visual selector">
-        <span>VISUAL</span>
-        ${[1,3,4,6].map(v=>`<button type="button" data-hq-preview-level="${v}" aria-pressed="${forcedPreview===v?"true":"false"}">LV${v}</button>`).join("")}
-        <button type="button" data-hq-preview-level="live" aria-pressed="${!forcedPreview?"true":"false"}">LIVE</button>
+      ${selectorOn?`<div class="lhq-visual-selector" aria-label="HQ Visual Lab" style="display:flex;flex-direction:column;gap:5px;align-items:center;">
+        <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;">
+          <span>FACTION</span>
+          ${HQ_PREVIEW_FACTIONS.map(f=>`<button type="button" data-hq-preview-faction="${f}" aria-pressed="${key===f?"true":"false"}">${HQ_PREVIEW_LABELS[f]}</button>`).join("")}
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;">
+          <span>LEVEL</span>
+          ${[1,3,4,6].map(v=>`<button type="button" data-hq-preview-level="${v}" aria-pressed="${forcedPreview===v?"true":"false"}">LV${v}</button>`).join("")}
+          <button type="button" data-hq-preview-level="live" aria-pressed="${!visualOnly?"true":"false"}">LIVE</button>
+        </div>
       </div>`:""}
-      ${forcedPreview?`<div class="lhq-preview-chip">VISUAL PREVIEW · LV ${esc(level)}</div>`:""}
-      <button class="lhq-build" type="button" aria-label="${forcedPreview?"HQ visual preview only":"Open HQ build progression"}" ${forcedPreview?'aria-disabled="true" tabindex="-1"':""}>
+      ${visualOnly?`<div class="lhq-preview-chip">VISUAL LAB · ${esc(cfg.name)} · LV ${esc(visualLevel)}</div>`:""}
+      <button class="lhq-build" type="button" aria-label="${visualOnly?"HQ visual preview only":"Open HQ build progression"}" ${visualOnly?'aria-disabled="true" tabindex="-1"':""}>
         <span class="lhq-build-kicker">HQ BUILD</span>
         <span class="lhq-build-level">LV ${esc(level)} <b>→</b> ${level>=6?"MAX":`LV ${esc(nextLevel)}`}</span>
         <span class="lhq-build-stage">${esc(currentStageName)} ${level>=6?"· MAX":`· NEXT ${esc(nextStageName)}`}</span>
-        ${forcedPreview
+        ${visualOnly
           ? `<span class="lhq-build-preview-note">VISUAL STATE ONLY · LIVE ECONOMY UNCHANGED</span>`
           : `<span class="lhq-build-bars">
               <span class="lhq-build-meter"><em>BONES ${esc(bones)} / ${esc(needBones)}</em><span><i style="width:${pct(bones,needBones)}%"></i></span></span>
               <span class="lhq-build-meter"><em>SCRAP ${esc(scrap)} / ${esc(needScrap)}</em><span><i style="width:${pct(scrap,needScrap)}%"></i></span></span>
             </span>`}
-        <span class="lhq-build-cta">${forcedPreview?"VISUAL ONLY":level>=6?"COMPLETE":canUpgrade?"UPGRADE READY":"SUPPORT HQ"}</span>
+        <span class="lhq-build-cta">${visualOnly?"VISUAL ONLY":level>=6?"COMPLETE":canUpgrade?"UPGRADE READY":"SUPPORT HQ"}</span>
       </button>
       ${first?`<div class="lhq-recognition"><div><small>SIGNAL RECOGNIZED</small><strong>WELCOME HOME, ${esc(name)}</strong></div></div>`:""}
     `;
@@ -185,6 +209,7 @@
           if(enabled){
             q.delete("hqselector");
             q.delete("hqpreview");
+            q.delete("hqfactionpreview");
           }else{
             q.set("hqselector","1");
           }
@@ -195,13 +220,33 @@
       });
     }
 
-    node.querySelector(".lhq-front")?.addEventListener("click",()=>global.FactionHQ?._switchView?.("front"));
+    node.querySelector(".lhq-front")?.addEventListener("click",()=>{
+      if(visualOnly)return;
+      global.FactionHQ?._switchView?.("front");
+    });
+    node.querySelectorAll("[data-hq-preview-faction]").forEach((btn)=>btn.addEventListener("click",()=>{
+      try{
+        const requested=String(btn.dataset.hqPreviewFaction||"");
+        if(!HQ_PREVIEW_FACTIONS.includes(requested))return;
+        const q=new URLSearchParams(global.location.search);
+        if(requested===realKey)q.delete("hqfactionpreview");
+        else q.set("hqfactionpreview",requested);
+        q.set("hqselector","1");
+        const qs=q.toString();
+        global.history.replaceState(null,"",global.location.pathname+(qs?"?"+qs:"")+global.location.hash);
+        mount(detail);
+      }catch(_){}
+    }));
     node.querySelectorAll("[data-hq-preview-level]").forEach((btn)=>btn.addEventListener("click",()=>{
       try{
         const requested=String(btn.dataset.hqPreviewLevel||"live");
         const q=new URLSearchParams(global.location.search);
-        if(requested==="live")q.delete("hqpreview");
-        else q.set("hqpreview",requested);
+        if(requested==="live"){
+          q.delete("hqpreview");
+          q.delete("hqfactionpreview");
+        }else{
+          q.set("hqpreview",requested);
+        }
         q.set("hqselector","1");
         const qs=q.toString();
         global.history.replaceState(null,"",global.location.pathname+(qs?"?"+qs:"")+global.location.hash);
@@ -209,7 +254,7 @@
       }catch(_){}
     }));
     node.querySelector(".lhq-build")?.addEventListener("click",()=>{
-      if(forcedPreview)return;
+      if(visualOnly)return;
       if(level>=6)return;
       if(canUpgrade)global.FactionHQ?._upgrade?.();
       else global.FactionHQ?._openSheet?.("support");
@@ -248,5 +293,5 @@
   global.addEventListener("ah:faction-hq-rendered",(event)=>mount(event.detail||{}));
   global.addEventListener("ah:faction-hq-upgrade-confirmed",(event)=>upgradeMoment(event.detail||{}));
   global.addEventListener("ah:faction-hq-closed",remove);
-  global.FactionHQLivingP0={mount,remove,previewLevel,previewEnabled,previewSelectorEnabled,progressionAnchor,progressionScene,HQ_STAGE_BY_LEVEL};
+  global.FactionHQLivingP0={mount,remove,previewLevel,previewEnabled,previewSelectorEnabled,previewFaction,progressionAnchor,progressionScene,HQ_STAGE_BY_LEVEL};
 })(window);
