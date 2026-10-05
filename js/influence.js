@@ -1990,6 +1990,47 @@
 
 
 
+  function ensurePhantomCompactIntel() {
+    const card = _qs("influenceCard");
+    if (!card || !card.classList.contains("is-phantom-node")) return;
+
+    const confront = _qs("infFrontlineConfront");
+    const contested = _qs("infContested");
+    if (!confront || !contested) return;
+
+    let fold = _qs("infPhantomIntelFold");
+    if (!fold) {
+      fold = document.createElement("details");
+      fold.id = "infPhantomIntelFold";
+      fold.className = "inf-phantom-intel-fold";
+      fold.innerHTML = `
+        <summary>
+          <span>
+            <strong>INTEL & REPORTS</strong>
+            <small>Daily target, activity and previous frontline results</small>
+          </span>
+          <span class="inf-phantom-intel-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div id="infPhantomIntelFoldBody" class="inf-phantom-intel-fold-body"></div>
+      `;
+      confront.insertAdjacentElement("afterend", fold);
+    }
+
+    const body = _qs("infPhantomIntelFoldBody");
+    if (!body) return;
+
+    [
+      "infLastClash",
+      "infThreatPulse",
+      "infFrontlineTarget",
+      "infDailyOutcome",
+      "infFrontlineToday"
+    ].forEach((id) => {
+      const el = _qs(id);
+      if (el && el.parentElement !== body) body.appendChild(el);
+    });
+  }
+
   function renderPhantomThreatLayers(nodeId, info) {
 
     if (!isPhantomNode(nodeId)) {
@@ -2025,6 +2066,8 @@
     renderPhantomFrontlineToday(info);
 
     renderPhantomFrontlineConfront(info);
+
+    ensurePhantomCompactIntel();
 
   }
 
@@ -10607,6 +10650,314 @@
         #influenceCard.is-phantom-node .inf-phantom-faction-card{display:none !important;}
         #influenceCard.is-phantom-node .inf-phantom-hero-top{grid-template-columns:1fr !important;}
         #influenceCard.is-phantom-node .inf-action-grid{grid-template-columns:1fr !important;}
+      }
+
+      /* Phantom Node Compact Pass — primary loop first: STATE → THREAT → ACTION → RESULT */
+      #influenceCard.is-phantom-node{
+        --phantom-cold:#9fd7ff;
+        --phantom-ice:#dff5ff;
+        --phantom-threat:#ff654f;
+        --phantom-panel:rgba(8,14,22,.92);
+        font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      }
+      #influenceCard.is-phantom-node .inf-title,
+      #influenceCard.is-phantom-node .inf-panel-title,
+      #influenceCard.is-phantom-node .inf-leader,
+      #influenceCard.is-phantom-node .inf-phantom-faction-name,
+      #influenceCard.is-phantom-node .inf-action-title,
+      #influenceCard.is-phantom-node .inf-donate-shell,
+      #influenceCard.is-phantom-node .inf-war-intel summary{
+        font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+      }
+      #influenceCard.is-phantom-node .inf-panel-kicker,
+      #influenceCard.is-phantom-node .inf-phantom-sidecard-label,
+      #influenceCard.is-phantom-node .inf-action-eyebrow,
+      #influenceCard.is-phantom-node .inf-impact-label{
+        color:#88b9d8;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-media{
+        min-height:270px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-top{
+        grid-template-columns:minmax(0,1fr) 150px;
+        padding:14px 14px 0;
+        gap:10px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-id-card{
+        display:none !important;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-center-copy{
+        text-align:left;
+        padding:34px 0 0;
+      }
+      #influenceCard.is-phantom-node .inf-leader{
+        margin-top:5px;
+        font-size:clamp(20px,5vw,28px);
+        letter-spacing:.025em;
+      }
+      #influenceCard.is-phantom-node .inf-control-line{
+        margin-top:5px;
+        font-size:11px;
+        line-height:1.35;
+        color:#bad0df;
+      }
+      #influenceCard.is-phantom-node .inf-encounter-line{
+        margin-top:4px;
+        font-size:15px;
+        line-height:1.2;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-card{
+        min-height:auto;
+        padding:9px 10px;
+        border-radius:12px;
+        background:rgba(7,12,18,.78);
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-sigil-wrap{
+        width:34px;height:34px;flex-basis:34px;border-radius:9px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-name{
+        font-size:13px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-faction-lead,
+      #influenceCard.is-phantom-node .inf-phantom-faction-status{
+        font-size:9px;
+        line-height:1.25;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-hero-bottom{
+        padding:92px 14px 13px;
+        gap:4px;
+      }
+      #influenceCard.is-phantom-node .inf-hero-flavor{
+        font-size:11px;
+        line-height:1.35;
+        color:#d8e9f2;
+      }
+      #influenceCard.is-phantom-node .inf-hero-status{
+        font-size:10px;
+        line-height:1.35;
+        color:#9db5c5;
+      }
+
+      #influenceCard.is-phantom-node .inf-threat-card{
+        margin-top:8px;
+        padding:10px 11px;
+        border-radius:14px;
+        border:1px solid rgba(255,101,79,.20);
+        background:
+          linear-gradient(90deg,rgba(255,82,62,.10),rgba(10,17,25,.92) 48%),
+          rgba(8,14,22,.92);
+      }
+      #influenceCard.is-phantom-node .inf-threat-head{
+        gap:9px;
+        align-items:center;
+      }
+      #influenceCard.is-phantom-node .inf-threat-boss-portrait{
+        width:58px;height:58px;flex-basis:58px;border-radius:12px;
+      }
+      #influenceCard.is-phantom-node .inf-threat-name{
+        margin-top:2px;
+        font-size:15px;
+      }
+      #influenceCard.is-phantom-node .inf-threat-meta{
+        margin-top:3px;
+        font-size:10px;
+        line-height:1.3;
+      }
+      #influenceCard.is-phantom-node .inf-threat-note,
+      #influenceCard.is-phantom-node .inf-threat-pulse-copy{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-maw-intent{
+        margin-top:8px;
+        padding:8px 10px;
+        border-radius:10px;
+        border-left:2px solid rgba(255,101,79,.72);
+        background:rgba(255,101,79,.055);
+      }
+      #influenceCard.is-phantom-node .inf-maw-intent-kicker,
+      #influenceCard.is-phantom-node .inf-maw-intent-rate{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-maw-intent-label{
+        color:#ff8a75;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.12em;
+      }
+      #influenceCard.is-phantom-node .inf-maw-intent-detail,
+      #influenceCard.is-phantom-node .inf-maw-intent-next{
+        margin-top:3px;
+        font-size:10px;
+        line-height:1.3;
+      }
+
+      #influenceCard.is-phantom-node .inf-frontline-confront{
+        margin-top:8px;
+        padding:11px;
+        border-radius:14px;
+        background:linear-gradient(180deg,rgba(255,71,50,.13),rgba(8,14,22,.94));
+      }
+      #influenceCard.is-phantom-node .inf-frontline-confront.is-available{
+        border-color:rgba(255,101,79,.58);
+        box-shadow:0 0 24px rgba(255,71,50,.13), inset 0 1px 0 rgba(255,255,255,.04);
+      }
+      #influenceCard.is-phantom-node .inf-confront-kicker{
+        display:none;
+      }
+      #influenceCard.is-phantom-node .inf-confront-title{
+        margin-top:0;
+        font-size:12px;
+        letter-spacing:.16em;
+        color:#ff8a75;
+      }
+      #influenceCard.is-phantom-node .inf-confront-copy,
+      #influenceCard.is-phantom-node .inf-confront-meta{
+        margin-top:4px;
+        font-size:10px;
+        line-height:1.3;
+      }
+      #influenceCard.is-phantom-node .inf-confront-btn{
+        min-height:48px;
+        margin-top:8px;
+        padding:12px 14px;
+        border-radius:11px;
+        border-color:rgba(255,112,90,.72);
+        background:linear-gradient(180deg,rgba(255,94,70,.52),rgba(167,42,31,.42));
+        box-shadow:0 0 18px rgba(255,68,46,.14);
+        font-size:13px;
+        letter-spacing:.11em;
+      }
+
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold{
+        margin-top:8px;
+        border:1px solid rgba(127,189,225,.14);
+        border-radius:12px;
+        background:rgba(8,14,22,.72);
+        overflow:hidden;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold summary{
+        list-style:none;
+        cursor:pointer;
+        min-height:48px;
+        padding:9px 11px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        color:#dff5ff;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold summary::-webkit-details-marker{display:none;}
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold summary strong{
+        display:block;
+        font-size:10px;
+        letter-spacing:.15em;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold summary small{
+        display:block;
+        margin-top:2px;
+        font-size:9px;
+        line-height:1.2;
+        color:#7fa5bc;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-chevron{
+        font-size:18px;
+        color:#7fc4e8;
+        transition:transform .18s ease;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold[open] .inf-phantom-intel-chevron{
+        transform:rotate(180deg);
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold-body{
+        padding:0 8px 8px;
+      }
+      #influenceCard.is-phantom-node .inf-phantom-intel-fold-body > *{
+        margin-top:6px !important;
+      }
+
+      #influenceCard.is-phantom-node .inf-action-grid{
+        gap:8px;
+      }
+      #influenceCard.is-phantom-node .inf-action-card{
+        min-height:112px;
+        display:grid;
+        grid-template-columns:88px minmax(0,1fr);
+        align-items:stretch;
+        border-radius:14px;
+      }
+      #influenceCard.is-phantom-node .inf-action-art{
+        height:auto;
+        min-height:112px;
+      }
+      #influenceCard.is-phantom-node .inf-action-copy{
+        gap:4px;
+        padding:10px;
+      }
+      #influenceCard.is-phantom-node .inf-action-title{
+        font-size:17px;
+        letter-spacing:.03em;
+      }
+      #influenceCard.is-phantom-node .inf-action-effect{
+        font-size:10px;
+        line-height:1.3;
+      }
+      #influenceCard.is-phantom-node .inf-action-chip{
+        min-height:28px;
+        padding:4px 8px;
+        font-size:9px;
+      }
+      #influenceCard.is-phantom-node .inf-watch-line,
+      #influenceCard.is-phantom-node .inf-orders-cooldown{
+        margin-top:7px;
+        font-size:9px;
+        line-height:1.3;
+      }
+
+      #influenceCard.is-phantom-node #infPresenceShell .inf-impact-grid{
+        gap:6px;
+      }
+      #influenceCard.is-phantom-node .inf-impact-card{
+        min-height:72px;
+        padding:8px;
+      }
+      #influenceCard.is-phantom-node .inf-impact-value{
+        margin-top:4px;
+        font-size:17px;
+      }
+      #influenceCard.is-phantom-node .inf-impact-hint{
+        margin-top:4px;
+        font-size:9px;
+        line-height:1.25;
+      }
+
+      @media(max-width:720px){
+        #influenceCard.is-phantom-node .inf-phantom-hero-media{min-height:248px;}
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{
+          grid-template-columns:minmax(0,1fr) 112px !important;
+          inset:auto !important;
+          padding:12px 12px 0 !important;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-center-copy{
+          grid-column:auto !important;
+          order:0 !important;
+          padding-top:34px;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{
+          grid-column:auto !important;
+          display:flex !important;
+        }
+        #influenceCard.is-phantom-node .inf-phantom-hero-bottom{padding:88px 12px 11px;}
+        #influenceCard.is-phantom-node .inf-action-grid{grid-template-columns:1fr 1fr !important;}
+        #influenceCard.is-phantom-node .inf-action-card{
+          grid-template-columns:1fr;
+          min-height:116px;
+        }
+        #influenceCard.is-phantom-node .inf-action-art{display:none;}
+        #influenceCard.is-phantom-node .inf-action-copy{padding:10px;}
+      }
+      @media(max-width:390px){
+        #influenceCard.is-phantom-node .inf-phantom-faction-card{display:none !important;}
+        #influenceCard.is-phantom-node .inf-phantom-hero-top{grid-template-columns:1fr !important;}
+        #influenceCard.is-phantom-node .inf-action-grid{grid-template-columns:1fr 1fr !important;}
       }
       @media(prefers-reduced-motion:reduce){
         #influenceCard.is-phantom-node .inf-phantom-hero-art,
