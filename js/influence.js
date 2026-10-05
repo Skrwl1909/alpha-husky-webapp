@@ -1569,6 +1569,7 @@
       strip.className = "inf-phantom-impact-strip";
       ops.insertAdjacentElement("afterend", strip);
     }
+    strip.style.display = "grid";
     return strip;
   }
 
@@ -2034,6 +2035,22 @@
 
 
 
+  function restoreNonPhantomLayout() {
+    const donateBox = _qs("infDonateBox");
+    const presence = _qs("infPresenceShell");
+    const status = _qs("infStatus");
+    const warIntel = _qs("infWarIntel");
+    const fold = _qs("infPhantomIntelFold");
+    const impact = _qs("infPhantomImpactStrip");
+
+    if (impact) impact.style.display = "none";
+    if (fold) fold.style.display = "none";
+
+    if (donateBox && presence) donateBox.insertAdjacentElement("afterend", presence);
+    if (presence && status) presence.insertAdjacentElement("afterend", status);
+    if (status && warIntel) status.insertAdjacentElement("afterend", warIntel);
+  }
+
   function ensurePhantomCompactIntel() {
     const card = _qs("influenceCard");
     if (!card || !card.classList.contains("is-phantom-node")) return;
@@ -2066,6 +2083,7 @@
     }
     if (impact) impact.insertAdjacentElement("afterend", fold);
     else ops.insertAdjacentElement("afterend", fold);
+    fold.style.display = "block";
 
     const body = _qs("infPhantomIntelFoldBody");
     if (!body) return;
@@ -2087,6 +2105,8 @@
   function renderPhantomThreatLayers(nodeId, info) {
 
     if (!isPhantomNode(nodeId)) {
+
+      restoreNonPhantomLayout();
 
       renderPhantomThreatCard(null);
 
@@ -12607,6 +12627,7 @@
     const warIntelEl = document.getElementById("infWarIntel");
 
     if (cardEl) cardEl.classList.toggle("is-phantom-node", phantomMode);
+    if (!phantomMode) restoreNonPhantomLayout();
 
     if (titleEl) titleEl.textContent = phantomMode ? "PHANTOM NODE" : (title || nodeId);
 
