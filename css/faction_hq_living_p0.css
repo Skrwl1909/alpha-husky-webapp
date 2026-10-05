@@ -54,12 +54,20 @@
 #factionHQLivingP0 .lhq-front-title{margin-top:4px;font-size:17px;font-weight:950;letter-spacing:.08em}
 #factionHQLivingP0 .lhq-front-state{margin-top:3px;font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.68)}
 #factionHQLivingP0 .lhq-personal{
-  position:absolute;right:18px;bottom:calc(max(90px,env(safe-area-inset-bottom) + 72px));max-width:180px;
-  padding:9px 11px;border:1px solid rgba(var(--ew-gold),.22);border-radius:12px;
-  background:rgba(5,7,10,.56);backdrop-filter:blur(8px);text-align:right;pointer-events:none;
+  position:absolute;right:18px;bottom:calc(max(90px,env(safe-area-inset-bottom) + 72px));width:min(43vw,180px);max-width:180px;
+  padding:9px 11px 8px;border:1px solid rgba(var(--ew-gold),.22);border-radius:12px;
+  background:rgba(5,7,10,.56);backdrop-filter:blur(8px);text-align:left;pointer-events:auto;
+  appearance:none;-webkit-appearance:none;color:#fff;cursor:pointer;
 }
-#factionHQLivingP0 .lhq-personal strong{display:block;margin-top:2px;font-size:12px;letter-spacing:.08em}
-#factionHQLivingP0 .lhq-personal small{font-size:9px;letter-spacing:.17em;color:rgba(var(--ew-gold),.72)}
+#factionHQLivingP0 .lhq-personal strong{display:block;margin-top:3px;font-size:11px;line-height:1.1;letter-spacing:.07em}
+#factionHQLivingP0 .lhq-personal small{display:flex;align-items:center;gap:5px;font-size:7px;line-height:1.15;letter-spacing:.12em;color:rgba(var(--ew-gold),.78);white-space:nowrap}
+#factionHQLivingP0 .lhq-pack-activity{display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px;line-height:1.2;color:rgba(255,255,255,.64)}
+#factionHQLivingP0 .lhq-personal em{display:block;margin-top:4px;font-style:normal;font-size:7px;line-height:1;letter-spacing:.12em;color:rgba(255,255,255,.38)}
+#factionHQLivingP0 .lhq-presence-dot{display:inline-block;flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:rgba(var(--ew-gold),.42);box-shadow:0 0 0 rgba(var(--ew-gold),0)}
+#factionHQLivingP0 .lhq-pack-signal[data-presence-state="recent_signal"] .lhq-presence-dot{background:rgba(var(--ew-gold),.88);box-shadow:0 0 9px rgba(var(--ew-gold),.30)}
+#factionHQLivingP0 .lhq-pack-signal[data-presence-state="pack_moving"] .lhq-presence-dot{background:rgba(var(--ew-gold),1);box-shadow:0 0 11px rgba(var(--ew-gold),.42);animation:lhqPresencePulse 2.8s ease-in-out infinite}
+#factionHQLivingP0 .lhq-pack-signal:active{transform:translateY(1px)}
+#factionHQLivingP0 .lhq-pack-signal[aria-disabled="true"]{cursor:default;opacity:.74}
 #factionHQLivingP0 .lhq-top{
   position:absolute;left:16px;right:16px;top:max(14px,env(safe-area-inset-top));display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
 }
@@ -91,6 +99,7 @@
 @keyframes lhqRing{to{transform:rotate(360deg)}}
 @keyframes lhqSigil{0%,100%{opacity:.76;transform:scale(.98)}50%{opacity:1;transform:scale(1.035)}}
 @keyframes lhqFrontPulse{0%,100%{opacity:.54;transform:scale(.98)}50%{opacity:1;transform:scale(1.03)}}
+@keyframes lhqPresencePulse{0%,100%{opacity:.64;box-shadow:0 0 6px rgba(var(--ew-gold),.18)}50%{opacity:1;box-shadow:0 0 13px rgba(var(--ew-gold),.48)}}
 @keyframes lhqRecognize{0%{opacity:0}16%,68%{opacity:1}100%{opacity:0;visibility:hidden}}
 @media(prefers-reduced-motion:reduce){
  #factionHQLivingP0 *{animation:none!important;transition:none!important}
@@ -358,7 +367,7 @@
 /* Mobile runtime protection: keep real artwork readable but reserve the nav dock. */
 @media(max-width:480px){
   #factionHQLivingP0 .lhq-top{left:14px;right:14px}
-  #factionHQLivingP0 .lhq-personal{right:14px;max-width:155px;padding:8px 10px}
+  #factionHQLivingP0 .lhq-personal{right:14px;width:min(43vw,165px);max-width:165px;padding:8px 10px}
   #factionHQLivingP0 .lhq-front{width:min(78vw,340px)}
   #factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="hq"] .hq-v3-command-nav{left:10px!important;right:10px!important}
 }
@@ -538,7 +547,8 @@
 
 @media(max-width:390px){
   #factionHQLivingP0 .lhq-build{left:12px;width:min(47vw,184px);padding:9px 10px}
-  #factionHQLivingP0 .lhq-personal{right:12px;max-width:145px}
+  #factionHQLivingP0 .lhq-personal{right:12px;width:min(42vw,158px);max-width:158px}
+  #factionHQLivingP0 .lhq-pack-activity{font-size:7px}
 }
 
 
