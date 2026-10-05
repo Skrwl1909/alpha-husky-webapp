@@ -17,6 +17,36 @@
 
 .map-v2-lunar-layer[hidden]{ display:none!important; }
 
+
+#mapV2Mount[data-lunar-phase="dormant"] .map-v2-lunar-layer::before,
+#mapV2Mount[data-lunar-phase="rising"] .map-v2-lunar-layer::before,
+#mapV2Mount[data-lunar-phase="convergence"] .map-v2-lunar-layer::before,
+#mapV2Mount[data-lunar-phase="full_blood_moon"] .map-v2-lunar-layer::before,
+#mapV2Mount[data-lunar-phase="fading"] .map-v2-lunar-layer::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  transition:background 900ms ease, opacity 900ms ease;
+}
+#mapV2Mount[data-lunar-phase="dormant"] .map-v2-lunar-layer::before{
+  background:linear-gradient(180deg,rgba(100,138,164,.035),rgba(5,10,15,.04) 58%,rgba(4,7,10,.12));
+}
+#mapV2Mount[data-lunar-phase="rising"] .map-v2-lunar-layer::before{
+  background:radial-gradient(circle at 86% 12%,rgba(132,34,31,.11),transparent 26%),linear-gradient(180deg,rgba(109,91,106,.03),rgba(14,7,10,.08));
+}
+#mapV2Mount[data-lunar-phase="convergence"] .map-v2-lunar-layer::before{
+  background:radial-gradient(circle at 84% 12%,rgba(177,40,31,.16),transparent 31%),linear-gradient(180deg,rgba(90,24,26,.04),rgba(12,5,8,.1));
+}
+#mapV2Mount[data-lunar-phase="full_blood_moon"] .map-v2-lunar-layer::before{
+  background:radial-gradient(circle at 83% 11%,rgba(211,44,31,.23),transparent 34%),linear-gradient(180deg,rgba(114,23,25,.06),rgba(14,4,7,.14));
+}
+#mapV2Mount[data-lunar-phase="fading"] .map-v2-lunar-layer::before{
+  background:radial-gradient(circle at 86% 12%,rgba(116,37,34,.09),transparent 28%),linear-gradient(180deg,rgba(91,66,73,.025),rgba(7,6,8,.09));
+}
+
+
 .map-v2-lunar-overlay,
 .map-v2-lunar-moon{
   position:absolute;
@@ -27,42 +57,48 @@
 }
 
 .map-v2-lunar-overlay{
-  inset:-4%;
-  width:108%;
-  height:108%;
+  inset:-6%;
+  width:112%;
+  height:112%;
   object-fit:cover;
   object-position:center;
+  transition:opacity 900ms ease, filter 900ms ease, transform 1200ms ease;
 }
 
 .map-v2-lunar-haze{
   opacity:var(--lunar-haze-opacity);
   mix-blend-mode:screen;
-  filter:saturate(.82) contrast(1.04);
+  filter:saturate(.78) contrast(1.02) brightness(.9);
+  transform:scale(1.015);
 }
 
 .map-v2-lunar-rim{
   opacity:var(--lunar-rim-opacity);
   mix-blend-mode:screen;
-  filter:saturate(.92);
+  filter:saturate(.88) brightness(.94);
+  transform:scale(1.01);
 }
 
 .map-v2-lunar-interference{
   opacity:var(--lunar-interference-opacity);
   mix-blend-mode:screen;
-  filter:saturate(.82) contrast(1.06);
+  filter:saturate(.78) contrast(1.04) brightness(.88);
+  transform:scale(1.02);
 }
 
 .map-v2-lunar-dust{
   opacity:var(--lunar-dust-opacity);
   mix-blend-mode:screen;
+  filter:brightness(.82) saturate(.72);
+  transform:scale(1.01);
 }
 
 .map-v2-lunar-moon-button{
   position:absolute;
   z-index:4;
-  top:calc(62px + env(safe-area-inset-top));
-  right:max(14px,env(safe-area-inset-right));
-  width:clamp(74px,20vw,118px);
+  top:calc(58px + env(safe-area-inset-top));
+  right:max(10px,env(safe-area-inset-right));
+  width:clamp(92px,24vw,138px);
   aspect-ratio:1;
   padding:0;
   overflow:visible;
@@ -79,9 +115,11 @@
   width:100%;
   height:100%;
   object-fit:contain;
+  opacity:.88;
   filter:
-    drop-shadow(0 10px 20px rgba(0,0,0,.58))
-    drop-shadow(0 0 18px rgba(205,67,57,.12));
+    drop-shadow(0 12px 28px rgba(0,0,0,.5))
+    drop-shadow(0 0 24px rgba(205,67,57,.12));
+  transition:filter 900ms ease, opacity 900ms ease, transform 900ms ease;
 }
 
 #mapV2Mount[data-lunar-phase="dormant"] .map-v2-lunar-moon{
@@ -103,14 +141,15 @@
 .map-v2-lunar-badge{
   position:absolute;
   z-index:5;
-  top:calc(160px + env(safe-area-inset-top));
-  right:max(14px,env(safe-area-inset-right));
+  top:calc(176px + env(safe-area-inset-top));
+  right:max(10px,env(safe-area-inset-right));
   max-width:min(56vw,230px);
   padding:7px 9px 8px;
   border:1px solid rgba(221,101,86,.2);
   border-radius:3px;
-  background:linear-gradient(90deg,rgba(7,11,15,.88),rgba(13,8,10,.68));
-  box-shadow:0 10px 26px rgba(0,0,0,.34), inset 2px 0 rgba(208,75,61,.42);
+  background:linear-gradient(90deg,rgba(7,11,15,.76),rgba(13,8,10,.5));
+  box-shadow:0 10px 26px rgba(0,0,0,.24), inset 2px 0 rgba(208,75,61,.32);
+  backdrop-filter:blur(2px);
   color:#f5eeee;
   text-align:right;
   pointer-events:none;
@@ -209,11 +248,11 @@
 
 @media (max-width:430px){
   .map-v2-lunar-moon-button{
-    top:calc(58px + env(safe-area-inset-top));
-    width:78px;
+    top:calc(54px + env(safe-area-inset-top));
+    width:92px;
   }
   .map-v2-lunar-badge{
-    top:calc(130px + env(safe-area-inset-top));
+    top:calc(144px + env(safe-area-inset-top));
     max-width:54vw;
     padding:6px 8px 7px;
   }
@@ -226,9 +265,16 @@
 }
 
 @media (prefers-reduced-motion:no-preference){
+  #mapV2Mount[data-lunar-phase="rising"] .map-v2-lunar-haze{
+    animation:ahLunarDrift 14s ease-in-out infinite alternate;
+  }
+  #mapV2Mount[data-lunar-phase="convergence"] .map-v2-lunar-interference,
+  #mapV2Mount[data-lunar-phase="full_blood_moon"] .map-v2-lunar-interference{
+    animation:ahLunarInterference 8.5s ease-in-out infinite alternate;
+  }
   #mapV2Mount[data-lunar-phase="convergence"] .map-v2-lunar-moon,
   #mapV2Mount[data-lunar-phase="full_blood_moon"] .map-v2-lunar-moon{
-    animation:ahLunarMoonBreath 5.8s ease-in-out infinite;
+    animation:ahLunarMoonBreath 6.4s ease-in-out infinite;
   }
   .map-v2-poi[data-map-v2-lunar-focus="true"],
   .map-v2-region-label[data-map-v2-lunar-focus="true"]{
@@ -244,6 +290,14 @@
 @keyframes ahLunarFocusPulse{
   0%,100%{ filter:brightness(1); }
   50%{ filter:brightness(1.08); }
+}
+@keyframes ahLunarDrift{
+  0%{ transform:scale(1.015) translate3d(-.5%,0,0); }
+  100%{ transform:scale(1.025) translate3d(.6%,-.35%,0); }
+}
+@keyframes ahLunarInterference{
+  0%{ transform:scale(1.02) translate3d(-.25%,0,0); opacity:calc(var(--lunar-interference-opacity) * .78); }
+  100%{ transform:scale(1.035) translate3d(.35%,-.2%,0); opacity:var(--lunar-interference-opacity); }
 }
 
 html.ah-perf-lite .map-v2-lunar-interference,
@@ -270,3 +324,29 @@ body.ah-perf-lite .map-v2-region-label[data-map-v2-lunar-focus="true"]{
     animation:none!important;
   }
 }
+
+
+/* Final P0-B phase polish: make the moon feel like part of the world, not a HUD icon. */
+#mapV2Mount[data-lunar-phase="dormant"] .map-v2-map-master{ filter:saturate(.88) contrast(1.025) brightness(.89); }
+#mapV2Mount[data-lunar-phase="rising"] .map-v2-map-master{ filter:saturate(.91) contrast(1.035) brightness(.88); }
+#mapV2Mount[data-lunar-phase="convergence"] .map-v2-map-master{ filter:saturate(.94) contrast(1.045) brightness(.86); }
+#mapV2Mount[data-lunar-phase="full_blood_moon"] .map-v2-map-master{ filter:saturate(.98) contrast(1.055) brightness(.845); }
+#mapV2Mount[data-lunar-phase="fading"] .map-v2-map-master{ filter:saturate(.86) contrast(1.035) brightness(.87); }
+
+#mapV2Mount[data-lunar-preview="true"] .map-v2-lunar-badge{
+  border-color:rgba(233,113,91,.34);
+}
+#mapV2Mount[data-lunar-preview="true"] .map-v2-lunar-badge::before{
+  content:"VISUAL LAB";
+  display:block;
+  margin-bottom:3px;
+  color:rgba(255,141,117,.62);
+  font-size:6px;
+  font-weight:900;
+  letter-spacing:.15em;
+}
+
+@media (max-width:430px){
+  .map-v2-lunar-overlay{ inset:-7%; width:114%; height:114%; }
+}
+
