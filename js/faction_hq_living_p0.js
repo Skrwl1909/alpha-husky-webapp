@@ -22,6 +22,14 @@
     const raw=detail?.callsign||global.PROFILE?.nickname||global.PLAYER_STATE?.profile?.nickname||detail?.playerName||"HOWLER";
     return String(raw||"HOWLER").trim().slice(0,20)||"HOWLER";
   };
+  function packPresence(detail={}){
+    const raw=detail?.packPresence&&typeof detail.packPresence==="object"?detail.packPresence:{};
+    const state=["quiet","recent_signal","pack_moving"].includes(String(raw.state||""))?String(raw.state):"quiet";
+    const stateLabel=String(raw.stateLabel||(state==="pack_moving"?"PACK MOVING":state==="recent_signal"?"RECENT SIGNAL":"QUIET")).slice(0,24);
+    const members=Math.max(0,Number(raw.membersCount??detail.membersCount??0)||0);
+    const activity=String(raw.activity||"No recent pack signal recorded").trim().slice(0,96)||"No recent pack signal recorded";
+    return {state,stateLabel,members,activity};
+  }
   function clearFactionClasses(back){
     ["hq-living-echo","hq-living-inner","hq-living-rogue","hq-living-burners"].forEach(x=>back?.classList.remove(x));
   }
@@ -100,6 +108,9 @@
     const selectorOn=previewSelectorEnabled(key);
     const crossFactionPreview=!!forcedFaction&&forcedFaction!==realKey;
     const visualOnly=!!forcedPreview||crossFactionPreview;
+    const presence=visualOnly
+      ? {state:"quiet",stateLabel:"VISUAL ONLY",members:Math.max(0,Number(detail.membersCount||0)||0),activity:"Live pack data unchanged"}
+      : packPresence(detail);
     const visualLevel=cfg.progression?progressionAnchor(level):level;
     const scene=progressionScene(cfg,key,visualLevel);
     node.id=ROOT_ID;
@@ -152,7 +163,12 @@
       <button class="lhq-front" type="button" aria-label="Open Current Front">
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
-      <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
+      <button class="lhq-personal lhq-pack-signal" type="button" data-presence-state="${esc(presence.state)}" aria-label="${visualOnly?"Pack signal visual preview":"Open Pack signal"}" ${visualOnly?'aria-disabled="true" tabindex="-1"':""}>
+        <small><i class="lhq-presence-dot" aria-hidden="true"></i>PACK SIGNAL · ${esc(presence.stateLabel)}</small>
+        <strong>${presence.members>0?`${esc(presence.members)} MEMBER${presence.members===1?"":"S"}`:"PACK SIGNAL"}</strong>
+        <span class="lhq-pack-activity" title="${esc(presence.activity)}">${esc(presence.activity)}</span>
+        <em>${esc(name)} · BOUND</em>
+      </button>
       ${selectorOn?`<div class="lhq-visual-selector" aria-label="HQ Visual Lab" style="display:flex;flex-direction:column;gap:5px;align-items:center;">
         <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;">
           <span>FACTION</span>
@@ -223,6 +239,10 @@
     node.querySelector(".lhq-front")?.addEventListener("click",()=>{
       if(visualOnly)return;
       global.FactionHQ?._switchView?.("front");
+    });
+    node.querySelector(".lhq-pack-signal")?.addEventListener("click",()=>{
+      if(visualOnly)return;
+      global.FactionHQ?._switchView?.("pack");
     });
     node.querySelectorAll("[data-hq-preview-faction]").forEach((btn)=>btn.addEventListener("click",()=>{
       try{
