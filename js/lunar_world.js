@@ -31,11 +31,11 @@
     aftermathDust: `${ASSET_BASE}/lunar_aftermath_dust.webp`,
   });
   const PHASE_OPACITY = Object.freeze({
-    dormant: Object.freeze({ haze: .16, interference: 0, rimGlow: .07, aftermathDust: 0 }),
-    rising: Object.freeze({ haze: .20, interference: .05, rimGlow: .14, aftermathDust: 0 }),
-    convergence: Object.freeze({ haze: .26, interference: .16, rimGlow: .25, aftermathDust: .03 }),
-    full_blood_moon: Object.freeze({ haze: .30, interference: .23, rimGlow: .34, aftermathDust: .07 }),
-    fading: Object.freeze({ haze: .21, interference: .05, rimGlow: .11, aftermathDust: .19 }),
+    dormant: Object.freeze({ haze: .12, interference: 0, rimGlow: .05, aftermathDust: 0 }),
+    rising: Object.freeze({ haze: .16, interference: .035, rimGlow: .11, aftermathDust: 0 }),
+    convergence: Object.freeze({ haze: .22, interference: .12, rimGlow: .21, aftermathDust: .02 }),
+    full_blood_moon: Object.freeze({ haze: .27, interference: .18, rimGlow: .29, aftermathDust: .06 }),
+    fading: Object.freeze({ haze: .17, interference: .025, rimGlow: .08, aftermathDust: .16 }),
   });
 
   const CACHE_TTL_MS = 30000;
@@ -246,6 +246,7 @@
   function countdownLabel(state = getState()) {
     if (!state) return "";
     const next = PHASE_LABELS[state.nextPhase] || NEXT_LABELS[state.phase] || "NEXT PHASE";
+    if (state.visualOnly) return `PREVIEW PATH · ${next}`;
     if (!state.nextTransitionAt) return next;
     return `${next} IN ${compactDuration(countdownSeconds(state))}`;
   }
