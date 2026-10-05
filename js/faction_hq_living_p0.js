@@ -5,10 +5,10 @@
   const esc=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const canon=(v)=>String(v||"").toLowerCase().replace(/\s+/g,"_");
   const CFG={
-    echo_wardens:{cls:"hq-living-echo",rgb:"255,211,77",name:"ECHO WARDENS",creed:"REMEMBER",icon:"/images/factions/echo_wardens_80.webp",scene:"/hq_warroom_ew.webp",fallback:"/hq_warroom_ew.webp",idle:"LINES HOLDING",active:"SIGNAL PRESSURE",recognition:"ah_hq_recognition_echo_wardens_v1"},
-    inner_howl:{cls:"hq-living-inner",rgb:"64,196,255",name:"INNER HOWL",creed:"ENDURE",icon:"/images/factions/inner_howl_80.webp",scene:"/hq_warroom_ih.webp",fallback:"/hq_warroom_ih.webp",idle:"LINE STABLE",active:"PRESSURE RISING",recognition:"ah_hq_recognition_inner_howl_v1"},
+    echo_wardens:{cls:"hq-living-echo",rgb:"255,211,77",name:"ECHO WARDENS",creed:"REMEMBER",icon:"/images/factions/echo_wardens_80.webp",scene:"/hq_warroom_ew.webp",fallback:"/hq_warroom_ew.webp",progression:{1:"/images/hq/progression/echo_wardens/lv1.webp",3:"/images/hq/progression/echo_wardens/lv3.webp",4:"/images/hq/progression/echo_wardens/lv4.webp",6:"/images/hq/progression/echo_wardens/lv6.webp"},idle:"LINES HOLDING",active:"SIGNAL PRESSURE",recognition:"ah_hq_recognition_echo_wardens_v1"},
+    inner_howl:{cls:"hq-living-inner",rgb:"64,196,255",name:"INNER HOWL",creed:"ENDURE",icon:"/images/factions/inner_howl_80.webp",scene:"/hq_warroom_ih.webp",fallback:"/hq_warroom_ih.webp",progression:{1:"/images/hq/progression/inner_howl/lv1.webp",3:"/images/hq/progression/inner_howl/lv3.webp",4:"/images/hq/progression/inner_howl/lv4.webp",6:"/images/hq/progression/inner_howl/lv6.webp"},idle:"LINE STABLE",active:"PRESSURE RISING",recognition:"ah_hq_recognition_inner_howl_v1"},
     rogue_byte:{cls:"hq-living-rogue",rgb:"255,59,59",name:"ROGUE BYTE",creed:"BREAK IN",icon:"/images/factions/rogue_byte_80.webp",scene:"/hq_warroom_rb.webp",fallback:"/hq_warroom_rb.webp",progression:{1:"/images/hq/progression/rogue_byte/lv1.webp",3:"/images/hq/progression/rogue_byte/lv3.webp",4:"/images/hq/progression/rogue_byte/lv4.webp",6:"/images/hq/progression/rogue_byte/lv6.webp"},idle:"CHANNEL QUIET",active:"BREACH SIGNAL",recognition:"ah_hq_recognition_rogue_byte_v1"},
-    pack_burners:{cls:"hq-living-burners",rgb:"255,122,26",name:"PACK BURNERS",creed:"BE SEEN",icon:"/images/factions/pack_burners_80.webp",scene:"/hq_warroom_pb.webp",fallback:"/hq_warroom_pb.webp",idle:"HEAT LOW",active:"PRESSURE IGNITED",recognition:"ah_hq_recognition_pack_burners_v1"}
+    pack_burners:{cls:"hq-living-burners",rgb:"255,122,26",name:"PACK BURNERS",creed:"BE SEEN",icon:"/images/factions/pack_burners_80.webp",scene:"/hq_warroom_pb.webp",fallback:"/hq_warroom_pb.webp",progression:{1:"/images/hq/progression/pack_burners/lv1.webp",3:"/images/hq/progression/pack_burners/lv3.webp",4:"/images/hq/progression/pack_burners/lv4.webp",6:"/images/hq/progression/pack_burners/lv6.webp"},idle:"HEAT LOW",active:"PRESSURE IGNITED",recognition:"ah_hq_recognition_pack_burners_v1"}
   };
   function factionKey(detail={}){
     const raw=canon(detail.faction||detail.fk);
@@ -42,7 +42,7 @@
     6:"Ghost Layer"
   };
   function previewLevel(faction=""){
-    if(faction!=="rogue_byte")return 0;
+    if(!CFG[faction]?.progression)return 0;
     try {
       const q=new URLSearchParams(global.location.search);
       const raw=Number(q.get("hqpreview")||0);
@@ -51,7 +51,7 @@
   }
   function previewEnabled(faction=""){ return previewLevel(faction)>0; }
   function previewSelectorEnabled(faction=""){
-    if(faction!=="rogue_byte")return false;
+    if(!CFG[faction]?.progression)return false;
     try {
       const q=new URLSearchParams(global.location.search);
       return q.get("hqselector")==="1";
@@ -65,8 +65,12 @@
     return 1;
   }
   function progressionScene(cfg,faction,level){
-    if(faction!=="rogue_byte"||!cfg?.progression)return cfg?.scene||"";
+    if(!cfg?.progression)return cfg?.scene||"";
     return cfg.progression[progressionAnchor(level)]||cfg.scene;
+  }
+  function previewStageName(faction="",level=1){
+    if(faction==="rogue_byte")return HQ_STAGE_BY_LEVEL[level]||"HQ ONLINE";
+    return "VISUAL STATE";
   }
   function mount(detail={}){
     const key=factionKey(detail),cfg=CFG[key];
@@ -80,7 +84,7 @@
     const forcedPreview=previewLevel(key);
     const level=forcedPreview||Math.max(1,Number(detail.level||1)||1);
     const selectorOn=previewSelectorEnabled(key);
-    const visualLevel=key==="rogue_byte"?progressionAnchor(level):level;
+    const visualLevel=cfg.progression?progressionAnchor(level):level;
     const scene=progressionScene(cfg,key,visualLevel);
     node.id=ROOT_ID;
     node.style.setProperty("--hq-accent",cfg.rgb);
@@ -89,7 +93,7 @@
     node.setAttribute("data-faction",key);
     node.setAttribute("data-hq-level",String(level));
     node.setAttribute("data-hq-visual-level",String(visualLevel));
-    if(key==="rogue_byte"&&cfg.progression) node.setAttribute("data-hq-progress-art","1");
+    if(cfg.progression) node.setAttribute("data-hq-progress-art","1");
     if(forcedPreview) node.setAttribute("data-hq-preview","1");
     node.setAttribute("aria-label",cfg.name+" Living Headquarters");
     back.dataset.hqFaction=key;
@@ -98,10 +102,10 @@
       ? Math.min(6,level+1)
       : Math.max(level+1,Number(detail.nextLevel||level+1)||level+1);
     const currentStageName=forcedPreview
-      ? (HQ_STAGE_BY_LEVEL[level]||"HQ ONLINE")
+      ? previewStageName(key,level)
       : String(detail.currentStageName||"HQ ONLINE");
     const nextStageName=forcedPreview
-      ? (level>=6?"Maximum HQ":(HQ_STAGE_BY_LEVEL[nextLevel]||"NEXT STAGE"))
+      ? (level>=6?"Maximum HQ":previewStageName(key,nextLevel))
       : String(detail.nextStageName||"STAGE");
     const bones=Math.max(0,Number(detail.bones||0)||0);
     const scrap=Math.max(0,Number(detail.scrap||0)||0);
@@ -131,7 +135,7 @@
         <span class="lhq-front-copy"><span class="lhq-kicker">CURRENT FRONT</span><strong class="lhq-front-title">${detail.frontLive?cfg.active:cfg.idle}</strong><span class="lhq-front-state">${esc(frontState)} · TAP TO OPEN</span></span>
       </button>
       <div class="lhq-personal"><small>BOUND SIGNAL</small><strong>${esc(name)}</strong></div>
-      ${selectorOn?`<div class="lhq-visual-selector" aria-label="Rogue Byte HQ visual selector">
+      ${selectorOn?`<div class="lhq-visual-selector" aria-label="${cfg.name} HQ visual selector">
         <span>VISUAL</span>
         ${[1,3,4,6].map(v=>`<button type="button" data-hq-preview-level="${v}" aria-pressed="${forcedPreview===v?"true":"false"}">LV${v}</button>`).join("")}
         <button type="button" data-hq-preview-level="live" aria-pressed="${!forcedPreview?"true":"false"}">LIVE</button>
@@ -154,12 +158,12 @@
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
     node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
 
-    // Hidden real-device dev trigger: five quick taps in the enlarged Rogue Byte HQ title zone
+    // Hidden real-device dev trigger: five quick taps in the enlarged HQ title zone
     // reveal/hide the existing visual-only LV1/LV3/LV4/LV6/LIVE selector.
     // Pointer-down is intentional: it is more reliable than pointer-up for rapid taps in Android WebView.
     // This only changes URL presentation state and never writes HQ level/resources/backend data.
     const titleZone=node.querySelector(".lhq-title-zone");
-    if(key==="rogue_byte"&&titleZone){
+    if(cfg.progression&&titleZone){
       let titleTapCount=0;
       let titleTapWindowStart=0;
       titleZone.addEventListener("pointerdown",(event)=>{
@@ -228,6 +232,14 @@
     node.appendChild(fx);
     setTimeout(()=>{
       node.dataset.hqLevel=String(toLevel);
+      const faction=String(node.dataset.faction||"");
+      const cfg=CFG[faction];
+      if(cfg?.progression){
+        const visualLevel=progressionAnchor(toLevel);
+        const scene=progressionScene(cfg,faction,visualLevel);
+        node.dataset.hqVisualLevel=String(visualLevel);
+        node.style.setProperty("--hq-scene",'url("'+scene+'")');
+      }
       const back=document.getElementById("factionHQBack");
       if(back)back.dataset.hqLevel=String(toLevel);
     },850);
