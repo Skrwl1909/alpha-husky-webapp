@@ -220,8 +220,10 @@
       rows.push(row);
     }
     const summary = data.factionPulse?.summary;
+    const lunar = global.LunarWorld?.normalize?.(data.worldLunarState) || null;
     return {
       rows,
+      lunar,
       worldStatus: summary && typeof summary === "object" ? {
         hotNodes: Math.max(0, integer(summary.hotNodes, 0)),
         activeSieges: Math.max(0, integer(summary.activeSieges, 0)),
@@ -275,6 +277,16 @@
       .lw-frontline-cta{border:1px solid rgba(125,211,252,.30);background:rgba(46,115,155,.22);color:rgba(198,237,255,.95)}
       .lw-profile:focus-visible,.lw-frontline-cta:focus-visible{outline:2px solid rgba(125,211,252,.78);outline-offset:1px}
       .lw-status{padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.055);font:700 10px/1.35 ui-sans-serif,system-ui,sans-serif;color:rgba(189,214,232,.68)}
+      .lw-lunar{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:8px 10px;align-items:center;padding:9px 10px 10px 9px;border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(213,91,72,.12);background:linear-gradient(90deg,rgba(39,13,15,.22),rgba(7,13,20,.16))}
+      .lw-lunar-moon{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(214,77,59,.15))}
+      .lw-lunar-main{min-width:0}
+      .lw-lunar-phase{font:900 9px/1.2 ui-sans-serif,system-ui,sans-serif;letter-spacing:.13em;color:rgba(255,183,166,.9)}
+      .lw-lunar-next{margin-top:3px;font:760 8px/1.2 ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;color:rgba(215,222,231,.5)}
+      .lw-lunar-focus{margin-top:5px;display:flex;min-width:0;gap:5px;align-items:baseline;font:760 10px/1.3 ui-sans-serif,system-ui,sans-serif;color:rgba(239,243,247,.82)}
+      .lw-lunar-focus strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:850 10px/1.3 ui-sans-serif,system-ui,sans-serif;color:#f4f7fa}
+      .lw-lunar-focus-state{flex:0 0 auto;color:rgba(255,151,126,.82);font-size:8px;letter-spacing:.07em}
+      .lw-lunar-cta{min-height:34px;padding:0 9px;border:1px solid rgba(225,101,78,.28);border-radius:8px;background:rgba(97,29,24,.2);color:rgba(255,207,194,.92);font:850 8px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
+      .lw-lunar-cta:focus-visible{outline:2px solid rgba(238,127,102,.72);outline-offset:1px}
       .lw-empty{padding:12px 13px 13px;border-top:1px solid rgba(255,255,255,.055)}
       .lw-empty-title{font:800 11px/1.3 ui-sans-serif,system-ui,sans-serif;color:rgba(240,246,252,.84)}
       .lw-empty-copy{margin-top:4px;font:500 10px/1.45 ui-sans-serif,system-ui,sans-serif;color:rgba(198,211,226,.55)}
@@ -312,6 +324,24 @@
     bindActions(root, []);
   }
 
+  function lunarPulseHtml(lunar) {
+    if (!lunar) return "";
+    const visuals = global.LunarWorld?.getVisuals?.(lunar);
+    const focus = lunar.primaryFocus;
+    const metric = global.LunarWorld?.focusMetricLabel?.(focus);
+    const focusState = [text(focus?.state), metric].filter(Boolean).join(" · ");
+    const ctaLabel = text(focus?.cta?.label || (focus?.nodeId ? "VIEW" : ""));
+    return `<div class="lw-lunar">
+      <img class="lw-lunar-moon" src="${escapeHtml(visuals?.moon || "")}" alt="" />
+      <div class="lw-lunar-main">
+        <div class="lw-lunar-phase">${escapeHtml(lunar.phaseLabel || lunar.phase)}</div>
+        <div class="lw-lunar-next">${escapeHtml(global.LunarWorld?.countdownLabel?.(lunar) || "")}</div>
+        ${focus ? `<div class="lw-lunar-focus"><strong>${escapeHtml(focus.label)}</strong>${focusState ? `<span class="lw-lunar-focus-state">${escapeHtml(focusState)}</span>` : ""}</div>` : ""}
+      </div>
+      ${ctaLabel && focus?.nodeId ? `<button class="lw-lunar-cta" type="button" data-lw-lunar-focus>${escapeHtml(ctaLabel)}</button>` : ""}
+    </div>`;
+  }
+
   function renderState(state) {
     const root = ensureRoot();
     if (!root) return;
@@ -333,12 +363,16 @@
     }).join("")}</div>` : '<div class="lw-empty"><div class="lw-empty-title">No new Pack signals yet.</div><div class="lw-empty-copy">The Oracle retains the latest confirmed record of the world.</div></div>';
     const status = statusLine(state?.worldStatus);
     const hotClass = state?.worldStatus?.hotNodes > 0 ? " is-hot" : "";
-    root.innerHTML = shell(`${list}${status ? `<div class="lw-status${hotClass}">WORLD STATUS · ${escapeHtml(status)}</div>` : ""}`);
+    const lunar = lunarPulseHtml(state?.lunar || global.LunarWorld?.getState?.());
+    root.innerHTML = shell(`${lunar}${list}${status ? `<div class="lw-status${hotClass}">WORLD STATUS · ${escapeHtml(status)}</div>` : ""}`);
     bindActions(root, rows);
   }
 
   function bindActions(root, rows) {
     root.querySelector("[data-lw-oracle]")?.addEventListener("click", () => { void openOracle(); });
+    root.querySelector("[data-lw-lunar-focus]")?.addEventListener("click", () => {
+      global.LunarWorld?.openFocus?.(global.LunarWorld?.getState?.());
+    });
     root.querySelectorAll("[data-lw-profile]").forEach((button) => {
       button.addEventListener("click", () => {
         const row = rows[integer(button.getAttribute("data-lw-profile"), -1)];
@@ -419,6 +453,7 @@
     inFlight = (async () => {
       try {
         const raw = await apiPost("/webapp/oracle/state", {});
+        global.LunarWorld?.ingest?.(raw);
         const normalized = normalizePayload(raw);
         if (!normalized) {
           renderUnavailable();
@@ -461,6 +496,7 @@
       normalizePayload,
       safeProfileUid,
       statusLine,
+      lunarPulseHtml,
       normalizeFrontlineEcho,
       normalizeContinuation,
       continuationText,

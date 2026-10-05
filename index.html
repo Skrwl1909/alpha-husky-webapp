@@ -8102,7 +8102,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.28-active-pursuit-map-rebase-20260927";
+    window.WEBAPP_VER = "tops-2.7.29-lunar-world-p0b-20261005";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -8129,6 +8129,15 @@ body.bc-open #ahCommunityBtn{
     document.querySelectorAll('link[href*="map_sections_v2.css"]').forEach(function (link) {
       link.href = "css/map_sections_v2.css?v=" + q;
     });
+  })(window.WEBAPP_VER);
+  </script>
+  <script>
+  (function (ver) {
+    var q = encodeURIComponent(String(ver || "dev"));
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/css/lunar_world.css?v=" + q;
+    document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
@@ -13070,6 +13079,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="js/map_objective_resolver.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <!-- src="js/map_sections_v2.js?v=WEBAPP_VER" -->
 <script>document.write('<script src="js/map_interaction_geometry.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/lunar_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/map_sections_v2.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/player_profile.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/field_record.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
