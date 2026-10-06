@@ -83,6 +83,10 @@
     } catch (_) {}
     startAutoRefresh();
 
+    if (els.scroller) els.scroller.scrollTop = 0;
+
+
+
     if (!_state) {
       fetchState({ silent: false });
     } else {
@@ -135,6 +139,7 @@
     closeBtn: null,
     statusDot: null,
     lunar: null,
+    scroller: null,
   };
 
   function getApiPost() {
@@ -163,7 +168,7 @@
 
   function lockScroll(lock) {
     document.body.style.overflow = lock ? "hidden" : "";
-    document.body.style.touchAction = lock ? "none" : "";
+    document.body.style.overscrollBehavior = lock ? "none" : "";
   }
 
   function toast(msg) {
@@ -210,29 +215,31 @@
         </div>
       </div>
 
-      <div class="oracle-hero" id="oracleHero"></div>
-
-      <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
-
-      <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
-
-      <div class="oracle-tabs" id="oracleTabs">
-        <button type="button" class="oracle-tab is-active" data-tab="echoes">
-          <span class="oracle-tab-ico">◉</span>
-          <span>Live Echoes</span>
-        </button>
-        <button type="button" class="oracle-tab" data-tab="pulse">
-          <span class="oracle-tab-ico">⌁</span>
-          <span>Faction Pulse</span>
-        </button>
-        <button type="button" class="oracle-tab" data-tab="hall">
-          <span class="oracle-tab-ico">✦</span>
-          <span>Hall of Fame</span>
-        </button>
-      </div>
-
-      <div class="oracle-body" id="oracleBody">
-        <div class="oracle-root" id="oracleRoot"></div>
+      <div class="oracle-scroll-shell" id="oracleScrollShell">
+        <div class="oracle-hero" id="oracleHero"></div>
+  
+        <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
+  
+        <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
+  
+        <div class="oracle-tabs" id="oracleTabs">
+          <button type="button" class="oracle-tab is-active" data-tab="echoes">
+            <span class="oracle-tab-ico">◉</span>
+            <span>Live Echoes</span>
+          </button>
+          <button type="button" class="oracle-tab" data-tab="pulse">
+            <span class="oracle-tab-ico">⌁</span>
+            <span>Faction Pulse</span>
+          </button>
+          <button type="button" class="oracle-tab" data-tab="hall">
+            <span class="oracle-tab-ico">✦</span>
+            <span>Hall of Fame</span>
+          </button>
+        </div>
+  
+        <div class="oracle-body" id="oracleBody">
+          <div class="oracle-root" id="oracleRoot"></div>
+        </div>
       </div>
     </div>
   `;
@@ -250,6 +257,7 @@
   els.statusDot = back.querySelector("#oracleStatusDot");
   els.hero = back.querySelector("#oracleHero");
   els.lunar = back.querySelector("#oracleLunarSlot");
+  els.scroller = back.querySelector("#oracleScrollShell");
 
   _mounted = true;
   }
@@ -271,9 +279,23 @@
       if (!TAB_IDS.includes(tab)) return;
       _activeTab = tab;
       render();
+      requestAnimationFrame(() => scrollActiveContentIntoView({ smooth: true }));
     });
   }
 
+  function scrollActiveContentIntoView({ smooth = false } = {}) {
+    if (!els.scroller || !els.body || !els.tabs) return;
+    const target = Math.max(0, els.body.offsetTop - els.tabs.offsetHeight - 6);
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    try {
+      els.scroller.scrollTo({
+        top: target,
+        behavior: smooth && !reduced ? "smooth" : "auto",
+      });
+    } catch (_) {
+      els.scroller.scrollTop = target;
+    }
+  }
   async function fetchState({ silent = false } = {}) {
     if (_loading) return;
     const apiPost = getApiPost();
