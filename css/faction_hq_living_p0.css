@@ -805,8 +805,8 @@
 /* P0-C acceptance follow-up: FRONT/PACK use the persistent top-right X as BACK to HOME.
    HOME keeps the same X as the true HQ exit. Lunar World state is surfaced directly
    in the Living HQ layer because the legacy HOME card is intentionally hidden. */
-#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="front"] ~ #factionHQLivingP0 .lhq-lunar-host,
-#factionHQBack[class*="hq-living-"] #factionHQRoot[data-hq-view="pack"] ~ #factionHQLivingP0 .lhq-lunar-host{
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0:has(+ #factionHQRoot[data-hq-view="front"]) .lhq-lunar-host,
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0:has(+ #factionHQRoot[data-hq-view="pack"]) .lhq-lunar-host{
   display:none;
 }
 @media(max-width:420px){
