@@ -350,3 +350,305 @@ body.ah-perf-lite .map-v2-region-label[data-map-v2-lunar-focus="true"]{
   .map-v2-lunar-overlay{ inset:-7%; width:114%; height:114%; }
 }
 
+
+
+/* =========================================================
+   P0-C — CROSS-WORLD LUNAR REACTION
+   Oracle predicts, HQ interprets, Blood Moon Tower culminates.
+   ========================================================= */
+
+/* ---------- ORACLE ---------- */
+.oracle-lunar-slot[hidden]{ display:none!important; }
+.oracle-lunar-slot{
+  position:relative;
+  z-index:2;
+  padding:0 18px 4px;
+}
+.oracle-lunar-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr) auto;
+  gap:10px 12px;
+  align-items:center;
+  overflow:hidden;
+  padding:11px 12px 12px 10px;
+  border:1px solid rgba(165,137,255,.18);
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 8% 50%,rgba(107,91,205,.14),transparent 28%),
+    linear-gradient(90deg,rgba(14,17,35,.86),rgba(16,12,29,.68));
+  box-shadow:inset 0 1px rgba(255,255,255,.04),0 10px 26px rgba(0,0,0,.16);
+}
+.oracle-lunar-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 18%,rgba(255,255,255,.025) 48%,transparent 70%);
+}
+.oracle-lunar-moon-wrap{
+  position:relative;
+  width:58px;
+  height:58px;
+  z-index:1;
+}
+.oracle-lunar-moon{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 0 14px rgba(120,103,255,.18));
+}
+.oracle-lunar-copy{ position:relative; z-index:1; min-width:0; }
+.oracle-lunar-kicker{
+  color:rgba(171,164,225,.76);
+  font-size:8px;
+  font-weight:900;
+  line-height:1.2;
+  letter-spacing:.16em;
+}
+.oracle-lunar-phase{
+  margin-top:2px;
+  color:#f3f1ff;
+  font-size:14px;
+  font-weight:950;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
+.oracle-lunar-next{
+  margin-top:2px;
+  color:rgba(193,199,231,.58);
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.oracle-lunar-focus{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:3px 6px;
+  margin-top:7px;
+  color:rgba(224,228,248,.72);
+  font-size:9px;
+}
+.oracle-lunar-focus span{
+  color:rgba(166,155,221,.68);
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.11em;
+}
+.oracle-lunar-focus strong{ color:#f4f5ff; font-size:10px; }
+.oracle-lunar-focus em{
+  color:rgba(255,173,150,.78);
+  font-size:8px;
+  font-style:normal;
+  font-weight:850;
+}
+.oracle-lunar-reason{
+  margin-top:4px;
+  color:rgba(190,198,225,.6);
+  font-size:8.5px;
+  line-height:1.35;
+}
+.oracle-lunar-secondary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:6px;
+}
+.oracle-lunar-secondary span{
+  padding:3px 6px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:999px;
+  color:rgba(188,197,225,.55);
+  background:rgba(255,255,255,.025);
+  font-size:7px;
+  font-weight:800;
+}
+.oracle-lunar-cta{
+  position:relative;
+  z-index:2;
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid rgba(154,133,255,.25);
+  border-radius:10px;
+  background:rgba(87,66,169,.16);
+  color:rgba(227,222,255,.9);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.07em;
+  cursor:pointer;
+}
+#oracleBack[data-lunar-phase="rising"] .oracle-lunar-card{
+  border-color:rgba(204,105,113,.2);
+  background:radial-gradient(circle at 8% 50%,rgba(133,52,64,.16),transparent 30%),linear-gradient(90deg,rgba(17,16,31,.88),rgba(24,11,19,.68));
+}
+#oracleBack[data-lunar-phase="convergence"] .oracle-lunar-card,
+#oracleBack[data-lunar-phase="full_blood_moon"] .oracle-lunar-card{
+  border-color:rgba(232,95,76,.24);
+  background:radial-gradient(circle at 8% 50%,rgba(177,43,42,.18),transparent 31%),linear-gradient(90deg,rgba(19,14,27,.9),rgba(30,9,14,.72));
+}
+#oracleBack[data-lunar-phase="full_blood_moon"] .oracle-lunar-moon{
+  filter:drop-shadow(0 0 20px rgba(230,67,49,.3));
+}
+#oracleBack[data-lunar-phase="fading"] .oracle-lunar-card{
+  border-color:rgba(151,110,131,.16);
+  filter:saturate(.84);
+}
+
+/* ---------- FACTION HQ ---------- */
+#factionHQBack .hq-lunar-ambient{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  overflow:hidden;
+  pointer-events:none;
+}
+#factionHQBack .hq-lunar-ambient img{
+  position:absolute;
+  inset:-5%;
+  width:110%;
+  height:110%;
+  object-fit:cover;
+  opacity:0;
+  mix-blend-mode:screen;
+  transition:opacity .8s ease;
+}
+#factionHQBack[data-lunar-phase="dormant"] .hq-lunar-haze{ opacity:.035; }
+#factionHQBack[data-lunar-phase="rising"] .hq-lunar-haze{ opacity:.06; }
+#factionHQBack[data-lunar-phase="rising"] .hq-lunar-rim{ opacity:.045; }
+#factionHQBack[data-lunar-phase="convergence"] .hq-lunar-haze{ opacity:.085; }
+#factionHQBack[data-lunar-phase="convergence"] .hq-lunar-rim{ opacity:.075; }
+#factionHQBack[data-lunar-phase="full_blood_moon"] .hq-lunar-haze{ opacity:.11; }
+#factionHQBack[data-lunar-phase="full_blood_moon"] .hq-lunar-rim{ opacity:.1; }
+#factionHQBack[data-lunar-phase="fading"] .hq-lunar-haze{ opacity:.055; filter:saturate(.6); }
+
+#factionHQRoot .hq-lunar-signal{
+  position:relative;
+  z-index:6;
+  display:grid;
+  grid-template-columns:50px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  margin:12px 0 2px;
+  padding:9px 10px;
+  border:1px solid color-mix(in srgb,var(--faction-color) 18%,rgba(255,255,255,.08));
+  border-radius:14px;
+  background:linear-gradient(90deg,rgba(5,9,14,.74),rgba(8,11,17,.5));
+  box-shadow:inset 2px 0 color-mix(in srgb,var(--faction-color) 42%,transparent);
+  backdrop-filter:blur(3px);
+}
+#factionHQRoot .hq-lunar-moon{
+  width:50px;
+  height:50px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 13px color-mix(in srgb,var(--faction-color) 18%,transparent));
+}
+#factionHQRoot .hq-lunar-copy{ min-width:0; }
+#factionHQRoot .hq-lunar-kicker{
+  color:color-mix(in srgb,var(--faction-color) 58%,#b7c1ce);
+  font-size:7px;
+  font-weight:950;
+  letter-spacing:.14em;
+}
+#factionHQRoot .hq-lunar-phase{
+  margin-top:2px;
+  color:#f1f5f8;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.045em;
+}
+#factionHQRoot .hq-lunar-next{
+  margin-top:2px;
+  color:rgba(211,221,230,.5);
+  font-size:7px;
+  font-weight:800;
+  letter-spacing:.06em;
+}
+#factionHQRoot .hq-lunar-reaction{
+  margin-top:5px;
+  color:rgba(222,228,234,.72);
+  font-size:9px;
+  line-height:1.35;
+}
+#factionHQRoot .hq-lunar-focus{
+  display:flex;
+  flex-wrap:wrap;
+  gap:3px 6px;
+  align-items:baseline;
+  margin-top:5px;
+  font-size:8px;
+}
+#factionHQRoot .hq-lunar-focus span{
+  color:rgba(190,201,211,.45);
+  font-size:6px;
+  font-weight:950;
+  letter-spacing:.1em;
+}
+#factionHQRoot .hq-lunar-focus strong{ color:#eef4f7; }
+#factionHQRoot .hq-lunar-focus em{
+  color:rgba(255,163,137,.78);
+  font-size:7px;
+  font-style:normal;
+  font-weight:850;
+}
+#factionHQBack[data-lunar-phase="full_blood_moon"] #factionHQRoot .hq-lunar-signal{
+  border-color:rgba(228,91,67,.22);
+  box-shadow:inset 2px 0 rgba(224,85,64,.62),0 0 24px rgba(174,47,37,.08);
+}
+
+/* ---------- BLOOD MOON TOWER ---------- */
+.bm-v2-world-haze,
+.bm-v2-world-rim,
+.bm-v2-world-interference,
+.bm-v2-world-dust{
+  opacity:0;
+  mix-blend-mode:screen;
+  transition:opacity .8s ease;
+}
+.bm-v2-hero.is-dormant .bm-v2-world-haze{ opacity:.08; }
+.bm-v2-hero.is-rising .bm-v2-world-haze{ opacity:.14; }
+.bm-v2-hero.is-rising .bm-v2-world-rim{ opacity:.1; }
+.bm-v2-hero.is-convergence .bm-v2-world-haze{ opacity:.2; }
+.bm-v2-hero.is-convergence .bm-v2-world-rim{ opacity:.18; }
+.bm-v2-hero.is-convergence .bm-v2-world-interference{ opacity:.09; }
+.bm-v2-hero.is-full_blood_moon .bm-v2-world-haze{ opacity:.25; }
+.bm-v2-hero.is-full_blood_moon .bm-v2-world-rim{ opacity:.25; }
+.bm-v2-hero.is-full_blood_moon .bm-v2-world-interference{ opacity:.15; }
+.bm-v2-hero.is-full_blood_moon .bm-v2-world-dust{ opacity:.05; }
+.bm-v2-hero.is-fading .bm-v2-world-haze{ opacity:.12; }
+.bm-v2-hero.is-fading .bm-v2-world-rim{ opacity:.06; }
+.bm-v2-hero.is-fading .bm-v2-world-dust{ opacity:.15; }
+.bm-v2-hero.is-full_blood_moon .bm-v2-moon{
+  filter:drop-shadow(0 0 28px rgba(235,55,47,.38));
+}
+.bm-v2-hero.is-convergence .bm-v2-moon{
+  filter:drop-shadow(0 0 20px rgba(211,66,54,.24));
+}
+.bm-v2-hero.is-fading .bm-v2-moon{ opacity:.86; filter:saturate(.8); }
+
+@media (max-width:430px){
+  .oracle-lunar-card{
+    grid-template-columns:48px minmax(0,1fr);
+  }
+  .oracle-lunar-moon-wrap{ width:48px; height:48px; }
+  .oracle-lunar-cta{
+    grid-column:1/-1;
+    width:100%;
+  }
+  #factionHQRoot .hq-lunar-signal{
+    grid-template-columns:42px minmax(0,1fr);
+  }
+  #factionHQRoot .hq-lunar-moon{ width:42px; height:42px; }
+}
+
+html.ah-perf-lite #factionHQBack .hq-lunar-rim,
+body.ah-perf-lite #factionHQBack .hq-lunar-rim,
+html.ah-perf-lite .bm-v2-world-interference,
+body.ah-perf-lite .bm-v2-world-interference{
+  display:none!important;
+}
+html.ah-perf-lite #factionHQBack .hq-lunar-ambient img,
+body.ah-perf-lite #factionHQBack .hq-lunar-ambient img{
+  transform:none!important;
+}
